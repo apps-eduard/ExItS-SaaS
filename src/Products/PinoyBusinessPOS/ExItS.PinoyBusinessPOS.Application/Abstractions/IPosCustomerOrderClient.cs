@@ -88,4 +88,17 @@ public interface IPosCustomerOrderClient
         Guid sellerOrganizationId,
         PlaceCustomerOrderRequest request,
         CancellationToken ct = default);
+
+    Task<ApiResult<CustomerStorefrontDto>> GetStorefrontAsync(
+        Guid sellerOrganizationId,
+        string? search = null,
+        Guid? categoryId = null,
+        int page = 1,
+        int pageSize = 40,
+        CancellationToken ct = default);
+
+    Task<ApiResult<QuoteCustomerOrderDeliveryDto>> QuoteDeliveryAsCustomerAsync(
+        Guid sellerOrganizationId,
+        QuoteCustomerOrderDeliveryRequest request,
+        CancellationToken ct = default);
 }

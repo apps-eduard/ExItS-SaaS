@@ -584,6 +584,13 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
             $"/api/v1/personal/linked-merchants?page={page}&pageSize={pageSize}",
             ct);
 
+    public Task<ApiResult<LinkedMerchantOrderingCapabilityDto>> GetLinkedMerchantOrderingCapabilityAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        api.GetAsync<LinkedMerchantOrderingCapabilityDto>(
+            $"/api/v1/personal/linked-merchants/{organizationId:D}/ordering-capability",
+            ct);
+
     public Task<ApiResult<CreateBusinessCustomerWithPersonalLinkResultDto>> CreateBusinessCustomerWithPersonalLinkAsync(
         Guid organizationId,
         CreateBusinessCustomerWithPersonalLinkRequest request,

@@ -210,6 +210,7 @@ builder.Services.AddScoped<CheckoutSale>();
 builder.Services.AddScoped<VoidSale>();
 builder.Services.AddScoped<CustomerOrderQueryService>();
 builder.Services.AddScoped<PlaceCustomerOrder>();
+builder.Services.AddScoped<GetCustomerStorefront>();
 builder.Services.AddScoped<QuoteCustomerOrderDelivery>();
 builder.Services.AddScoped<AcceptCustomerOrder>();
 builder.Services.AddScoped<RejectCustomerOrder>();
@@ -217,6 +218,16 @@ builder.Services.AddScoped<CancelCustomerOrder>();
 builder.Services.AddScoped<AdvanceCustomerOrderFulfillment>();
 builder.Services.AddScoped<CompleteCustomerOrder>();
 builder.Services.AddHttpClient<ICustomerOrderBranchDirectory, PosCustomerOrderBranchDirectory>((provider, client) =>
+{
+    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
+    if (!string.IsNullOrWhiteSpace(options.BaseUrl))
+    {
+        client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+    }
+
+    client.Timeout = TimeSpan.FromSeconds(3);
+});
+builder.Services.AddHttpClient<ISellerCustomerOrderingCapability, PosSellerCustomerOrderingCapability>((provider, client) =>
 {
     var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
     if (!string.IsNullOrWhiteSpace(options.BaseUrl))

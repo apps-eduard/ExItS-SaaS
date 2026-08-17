@@ -6322,6 +6322,144 @@
   <data name="Personal_MerchantsUnknownOrg" xml:space="preserve">
     <value>Merchant</value>
   </data>
+  <data name="Personal_Shop" xml:space="preserve">
+    <value>Shop</value>
+  </data>
+  <data name="Personal_ShopAt" xml:space="preserve">
+    <value>Shop at {0}</value>
+  </data>
+  <data name="Personal_MerchantsOpenStatement" xml:space="preserve">
+    <value>Open statement for {0}</value>
+  </data>
+  <data name="Personal_ShopTitle" xml:space="preserve">
+    <value>Shop</value>
+  </data>
+  <data name="Personal_ShopSubtitle" xml:space="preserve">
+    <value>Add items, then review and place your order.</value>
+  </data>
+  <data name="Personal_ShopErrorTitle" xml:space="preserve">
+    <value>Could not load shop</value>
+  </data>
+  <data name="Personal_ShopUnavailableTitle" xml:space="preserve">
+    <value>Shop unavailable</value>
+  </data>
+  <data name="Personal_ShopUnavailableMessage" xml:space="preserve">
+    <value>This merchant is not accepting customer orders right now.</value>
+  </data>
+  <data name="Personal_ShopSearchPlaceholder" xml:space="preserve">
+    <value>Search products</value>
+  </data>
+  <data name="Personal_ShopAllCategories" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="Personal_ShopEmptyTitle" xml:space="preserve">
+    <value>No products</value>
+  </data>
+  <data name="Personal_ShopEmptyMessage" xml:space="preserve">
+    <value>No sellable products match your filters.</value>
+  </data>
+  <data name="Personal_ShopUnavailable" xml:space="preserve">
+    <value>Unavailable</value>
+  </data>
+  <data name="Personal_ShopQtyLabel" xml:space="preserve">
+    <value>Quantity for {0}</value>
+  </data>
+  <data name="Personal_ShopIncrease" xml:space="preserve">
+    <value>Increase {0}</value>
+  </data>
+  <data name="Personal_ShopDecrease" xml:space="preserve">
+    <value>Decrease {0}</value>
+  </data>
+  <data name="Personal_ShopCartItems" xml:space="preserve">
+    <value>{0} items</value>
+  </data>
+  <data name="Personal_ShopReview" xml:space="preserve">
+    <value>Review order</value>
+  </data>
+  <data name="Personal_ShopOffline" xml:space="preserve">
+    <value>Shopping requires an online connection.</value>
+  </data>
+  <data name="Personal_ShopLoadFailed" xml:space="preserve">
+    <value>Could not load this merchant storefront.</value>
+  </data>
+  <data name="Personal_ShopReviewTitle" xml:space="preserve">
+    <value>Review order</value>
+  </data>
+  <data name="Personal_ShopCartEmptyTitle" xml:space="preserve">
+    <value>Cart is empty</value>
+  </data>
+  <data name="Personal_ShopCartEmptyMessage" xml:space="preserve">
+    <value>Add products from the shop before placing an order.</value>
+  </data>
+  <data name="Personal_ShopBackToShop" xml:space="preserve">
+    <value>Back to shop</value>
+  </data>
+  <data name="Personal_ShopPlaceErrorTitle" xml:space="preserve">
+    <value>Could not place order</value>
+  </data>
+  <data name="Personal_ShopCartSection" xml:space="preserve">
+    <value>Cart lines</value>
+  </data>
+  <data name="Personal_ShopRemove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Personal_ShopFulfillment" xml:space="preserve">
+    <value>Fulfillment</value>
+  </data>
+  <data name="Personal_ShopBranch" xml:space="preserve">
+    <value>Branch</value>
+  </data>
+  <data name="Personal_ShopDeliveryDetails" xml:space="preserve">
+    <value>Delivery details</value>
+  </data>
+  <data name="Personal_ShopRecipientName" xml:space="preserve">
+    <value>Recipient name</value>
+  </data>
+  <data name="Personal_ShopRecipientPhone" xml:space="preserve">
+    <value>Phone</value>
+  </data>
+  <data name="Personal_ShopAddress1" xml:space="preserve">
+    <value>Address</value>
+  </data>
+  <data name="Personal_ShopAddress2" xml:space="preserve">
+    <value>Address line 2</value>
+  </data>
+  <data name="Personal_ShopCity" xml:space="preserve">
+    <value>City</value>
+  </data>
+  <data name="Personal_ShopDeliveryNotes" xml:space="preserve">
+    <value>Delivery notes</value>
+  </data>
+  <data name="Personal_ShopLatitude" xml:space="preserve">
+    <value>Latitude</value>
+  </data>
+  <data name="Personal_ShopLongitude" xml:space="preserve">
+    <value>Longitude</value>
+  </data>
+  <data name="Personal_ShopDeliveryFee" xml:space="preserve">
+    <value>Delivery fee</value>
+  </data>
+  <data name="Personal_ShopDeliveryUnavailable" xml:space="preserve">
+    <value>Delivery is not available for this location.</value>
+  </data>
+  <data name="Personal_ShopQuoteDelivery" xml:space="preserve">
+    <value>Quote delivery</value>
+  </data>
+  <data name="Personal_ShopQuoteFailed" xml:space="preserve">
+    <value>Could not quote delivery.</value>
+  </data>
+  <data name="Personal_ShopSubtotal" xml:space="preserve">
+    <value>Subtotal</value>
+  </data>
+  <data name="Personal_ShopTotal" xml:space="preserve">
+    <value>Total</value>
+  </data>
+  <data name="Personal_ShopPlaceOrder" xml:space="preserve">
+    <value>Place order</value>
+  </data>
+  <data name="Personal_ShopPlaceFailed" xml:space="preserve">
+    <value>Could not place this order.</value>
+  </data>
   <data name="Personal_MerchantStatementTitle" xml:space="preserve">
     <value>Merchant statement</value>
   </data>

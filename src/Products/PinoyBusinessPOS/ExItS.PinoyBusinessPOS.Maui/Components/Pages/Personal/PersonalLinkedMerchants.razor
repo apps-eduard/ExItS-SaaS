@@ -38,17 +38,34 @@
         <div class="pos-personal-list" role="list">
             @foreach (var merchant in _merchants)
             {
+                var orgName = string.IsNullOrWhiteSpace(merchant.OrganizationDisplayName) ? L["Personal_MerchantsUnknownOrg"].Value : merchant.OrganizationDisplayName;
                 var href = $"/personal/linked-merchants/{merchant.OrganizationId:D}/{merchant.BusinessCustomerId:D}";
-                <button type="button"
-                        class="pos-personal-row"
-                        role="listitem"
-                        @onclick="() => OpenMerchantAsync(href)">
-                    <span class="pos-personal-row__body">
-                        <span class="pos-personal-row__title">@(string.IsNullOrWhiteSpace(merchant.OrganizationDisplayName) ? L["Personal_MerchantsUnknownOrg"] : merchant.OrganizationDisplayName)</span>
+                var shopHref = $"/personal/linked-merchants/{merchant.OrganizationId:D}/shop";
+                <div class="pos-personal-row" role="listitem">
+                    <button type="button"
+                            class="pos-personal-row__body pos-personal-row__body--button"
+                            @onclick="() => OpenMerchantAsync(href)">
+                        <span class="pos-personal-row__title">@orgName</span>
                         <span class="pos-personal-row__meta">@merchant.CustomerDisplayName · @merchant.LinkStatus</span>
-                    </span>
-                    <span class="pos-personal-row__chevron" aria-hidden="true">›</span>
-                </button>
+                    </button>
+                    @if (merchant.CanCustomerOrder)
+                    {
+                        <button type="button"
+                                class="pos-personal-row__shop"
+                                title="@L["Personal_ShopAt", orgName]"
+                                aria-label="@L["Personal_ShopAt", orgName]"
+                                @onclick="() => OpenShopAsync(shopHref)"
+                                @onclick:stopPropagation="true">
+                            @L["Personal_Shop"]
+                        </button>
+                    }
+                    <button type="button"
+                            class="pos-personal-row__chevron-btn"
+                            aria-label="@L["Personal_MerchantsOpenStatement", orgName]"
+                            @onclick="() => OpenMerchantAsync(href)">
+                        <span class="pos-personal-row__chevron" aria-hidden="true">›</span>
+                    </button>
+                </div>
             }
         </div>
         @if (_hasMore)
@@ -181,5 +198,6 @@
     }
 
     private Task OpenMerchantAsync(string href) => OfflineNav.NavigateAsync(href);
+    private Task OpenShopAsync(string href) => OfflineNav.NavigateAsync(href);
     private void GoSignIn() => Nav.NavigateTo("/signin");
 }

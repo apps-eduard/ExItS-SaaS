@@ -94,6 +94,7 @@ public sealed class PlaceCustomerOrder
     private readonly ICustomerOrderBranchDirectory _branches;
     private readonly ICustomerOrderStockService _stock;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly ISellerCustomerOrderingCapability _sellerCapability;
     private readonly IClock _clock;
 
     public PlaceCustomerOrder(
@@ -102,6 +103,7 @@ public sealed class PlaceCustomerOrder
         ICustomerOrderBranchDirectory branches,
         ICustomerOrderStockService stock,
         IClock clock,
+        ISellerCustomerOrderingCapability? sellerCapability = null,
         IOrganizationBusinessNotificationPublisher? notifications = null)
     {
         _orders = orders;
@@ -109,6 +111,7 @@ public sealed class PlaceCustomerOrder
         _branches = branches;
         _stock = stock;
         _clock = clock;
+        _sellerCapability = sellerCapability ?? new AllowAllSellerCustomerOrderingCapability();
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
     }
 
@@ -132,11 +135,29 @@ public sealed class PlaceCustomerOrder
                 }
             }
 
+            var sellerCapability = await _sellerCapability
+                .ResolveAsync(sellerOrganizationId, cancellationToken)
+                .ConfigureAwait(false);
+            if (!sellerCapability.CanCustomerOrder)
+            {
+                return ApplicationResult<CustomerOrderDto>.Failure(
+                    ApplicationErrorCodes.CustomerOrderOrderingUnavailable,
+                    "This merchant is not accepting customer orders.");
+            }
+
             if (!Enum.TryParse<CustomerOrderFulfillmentType>(request.FulfillmentType, true, out var fulfillmentType))
             {
                 return ApplicationResult<CustomerOrderDto>.Failure(
                     DomainErrorCodes.InvalidCustomerOrderFulfillmentType,
                     "Fulfillment type is invalid.");
+            }
+
+            if (fulfillmentType == CustomerOrderFulfillmentType.Delivery
+                && !sellerCapability.CanCustomerDelivery)
+            {
+                return ApplicationResult<CustomerOrderDto>.Failure(
+                    ApplicationErrorCodes.CustomerOrderOrderingUnavailable,
+                    "This merchant is not accepting delivery orders.");
             }
 
             if (!Enum.TryParse<CustomerPartyType>(request.CustomerPartyType, true, out var partyType))
@@ -200,7 +221,7 @@ public sealed class PlaceCustomerOrder
                         "One or more products were not found in this organization.");
                 }
 
-                if (product.Status != CatalogProductStatus.Active || !product.CanBeSold)
+                if (product.Status != CatalogProductStatus.Active || !product.CanBeSold || product.SellingPrice <= 0m)
                 {
                     return ApplicationResult<CustomerOrderDto>.Failure(
                         ApplicationErrorCodes.SaleProductNotActive,

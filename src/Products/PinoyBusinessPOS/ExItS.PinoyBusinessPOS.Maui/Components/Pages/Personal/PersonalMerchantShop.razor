@@ -1,0 +1,251 @@
+@page "/personal/linked-merchants/{OrganizationId:guid}/shop"
+@layout Layout.PersonalShell
+@using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Application.CustomerOrdering
+@implements IDisposable
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPosCustomerOrderClient Orders
+@inject PersonalMerchantCart Cart
+@inject OnlineRequiredGuard OnlineRequired
+@inject OfflineAwareNavigation OfflineNav
+@inject NavigationManager Nav
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-personal-shop">
+    <StoreHeaderBack Href="/personal/linked-merchants" />
+    <Page>
+        <header class="pos-personal-shop__header">
+            <h1 class="pos-personal-shop__title">@(_storefront?.OrganizationDisplayName ?? L["Personal_ShopTitle"])</h1>
+            <p class="pos-personal-shop__subtitle">@L["Personal_ShopSubtitle"]</p>
+        </header>
+
+        @if (_loading)
+        {
+            <div class="pos-personal-shop__loading"><Spinner /><span>@L["Common_Loading"]</span></div>
+        }
+        else if (!_authenticated)
+        {
+            <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+        }
+        else if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <ErrorState Title="@L["Personal_ShopErrorTitle"]" Message="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+        }
+        else if (_storefront is null)
+        {
+            <EmptyState Title="@L["Personal_ShopUnavailableTitle"]" Message="@L["Personal_ShopUnavailableMessage"]" />
+        }
+        else
+        {
+            <div class="pos-personal-shop__search">
+                <input class="pos-personal-shop__search-input"
+                       type="search"
+                       value="@_search"
+                       placeholder="@L["Personal_ShopSearchPlaceholder"]"
+                       aria-label="@L["Personal_ShopSearchPlaceholder"]"
+                       @oninput="OnSearchInput" />
+            </div>
+
+            @if (_storefront.Categories.Count > 0)
+            {
+                <div class="pos-personal-shop__chips" role="list">
+                    <button type="button"
+                            class="pos-personal-shop__chip @(_categoryId is null ? "pos-personal-shop__chip--active" : null)"
+                            @onclick="() => SelectCategoryAsync(null)">@L["Personal_ShopAllCategories"]</button>
+                    @foreach (var category in _storefront.Categories)
+                    {
+                        <button type="button"
+                                class="pos-personal-shop__chip @(_categoryId == category.CategoryId ? "pos-personal-shop__chip--active" : null)"
+                                @onclick="() => SelectCategoryAsync(category.CategoryId)">@category.Name</button>
+                    }
+                </div>
+            }
+
+            @if (_storefront.Products.Count == 0)
+            {
+                <EmptyState Title="@L["Personal_ShopEmptyTitle"]" Message="@L["Personal_ShopEmptyMessage"]" />
+            }
+            else
+            {
+                <div class="pos-personal-shop__products" role="list">
+                    @foreach (var product in _storefront.Products)
+                    {
+                        var qty = Cart.GetQuantity(product.ProductId);
+                        <div class="pos-personal-shop__product" role="listitem">
+                            <div class="pos-personal-shop__product-body">
+                                <div class="pos-personal-shop__product-name">@product.Name</div>
+                                <div class="pos-personal-shop__product-meta">
+                                    <MoneyDisplay Amount="@product.UnitPrice" CurrencyCode="PHP" />
+                                    · @product.UnitOfMeasure
+                                    @if (!product.IsAvailable)
+                                    {
+                                        <span class="pos-personal-shop__unavailable">· @L["Personal_ShopUnavailable"]</span>
+                                    }
+                                </div>
+                            </div>
+                            <div class="pos-personal-shop__qty" role="group" aria-label="@L["Personal_ShopQtyLabel", product.Name]">
+                                <button type="button"
+                                        class="pos-personal-shop__qty-btn"
+                                        disabled="@(qty <= 0)"
+                                        aria-label="@L["Personal_ShopDecrease", product.Name]"
+                                        @onclick="() => Decrement(product.ProductId)">−</button>
+                                <span class="pos-personal-shop__qty-value">@qty.ToString("0.##")</span>
+                                <button type="button"
+                                        class="pos-personal-shop__qty-btn"
+                                        disabled="@(!product.IsAvailable)"
+                                        aria-label="@L["Personal_ShopIncrease", product.Name]"
+                                        @onclick="() => Increment(product)">+</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </Page>
+
+    @if (Cart.LineCount > 0)
+    {
+        <div class="pos-personal-shop__cart-bar">
+            <div class="pos-personal-shop__cart-summary">
+                <strong>@L["Personal_ShopCartItems", Cart.ItemCount.ToString("0.##")]</strong>
+                <span><MoneyDisplay Amount="@Cart.MerchandiseSubtotal" CurrencyCode="PHP" /></span>
+            </div>
+            <Button Variant="ButtonVariant.Primary" OnClick="GoReviewAsync">@L["Personal_ShopReview"]</Button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid OrganizationId { get; set; }
+
+    private bool _loading = true;
+    private bool _authenticated;
+    private string? _error;
+    private string _search = string.Empty;
+    private Guid? _categoryId;
+    private CustomerStorefrontDto? _storefront;
+    private CancellationTokenSource? _searchCts;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Cart.EnsureMerchant(OrganizationId, null);
+        Cart.Changed += OnCartChanged;
+        await LoadAsync();
+    }
+
+    public void Dispose()
+    {
+        Cart.Changed -= OnCartChanged;
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+    }
+
+    private void OnCartChanged() => InvokeAsync(StateHasChanged);
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            if (!await EnsureSessionAsync())
+            {
+                return;
+            }
+
+            if (!await Connectivity.IsConnectedAsync())
+            {
+                _error = L["Personal_ShopOffline"];
+                _storefront = null;
+                return;
+            }
+
+            if (!await OnlineRequired.EnsureOnlineForRouteAsync($"/personal/linked-merchants/{OrganizationId:D}/shop"))
+            {
+                _error = L["Personal_ShopOffline"];
+                return;
+            }
+
+            var result = await Orders.GetStorefrontAsync(
+                OrganizationId,
+                string.IsNullOrWhiteSpace(_search) ? null : _search,
+                _categoryId,
+                page: 1,
+                pageSize: 40);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _storefront = null;
+                _error = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+                return;
+            }
+
+            _storefront = result.Data;
+            Cart.EnsureMerchant(OrganizationId, result.Data.OrganizationDisplayName);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SelectCategoryAsync(Guid? categoryId)
+    {
+        _categoryId = categoryId;
+        await LoadAsync();
+    }
+
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        _search = e.Value?.ToString() ?? string.Empty;
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+        try
+        {
+            await Task.Delay(250, token);
+            await LoadAsync();
+        }
+        catch (TaskCanceledException)
+        {
+        }
+    }
+
+    private void Increment(CustomerStorefrontProductDto product) => Cart.Increment(product);
+    private void Decrement(Guid productId) => Cart.Decrement(productId);
+
+    private Task GoReviewAsync() =>
+        OfflineNav.NavigateAsync($"/personal/linked-merchants/{OrganizationId:D}/shop/review");
+
+    private async Task<bool> EnsureSessionAsync()
+    {
+        if (!CurrentUser.IsAuthenticated)
+        {
+            var restore = await Auth.RestoreSessionAsync();
+            _authenticated = restore.Succeeded;
+        }
+        else
+        {
+            _authenticated = true;
+        }
+
+        if (!_authenticated)
+        {
+            return false;
+        }
+
+        var personal = await Auth.EnsurePersonalAccountProfileAsync();
+        if (!personal.Succeeded)
+        {
+            _error = L[personal.SafeMessageKey ?? "Access_Denied"];
+            return false;
+        }
+
+        return true;
+    }
+
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+}

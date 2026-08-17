@@ -203,6 +203,38 @@ public sealed class PosCustomerOrderClient(HttpClient httpClient, IConnectivityS
             ct);
     }
 
+    public Task<ApiResult<CustomerStorefrontDto>> GetStorefrontAsync(
+        Guid sellerOrganizationId,
+        string? search = null,
+        Guid? categoryId = null,
+        int page = 1,
+        int pageSize = 40,
+        CancellationToken ct = default)
+    {
+        var query = new StringBuilder(
+            $"/api/v1/pos/customer-orders/organizations/{sellerOrganizationId:D}/storefront?");
+        query.Append("page=").Append(page.ToString(CultureInfo.InvariantCulture));
+        query.Append("&pageSize=").Append(pageSize.ToString(CultureInfo.InvariantCulture));
+        AppendOptional(query, "search", search);
+        if (categoryId is Guid id)
+        {
+            query.Append("&categoryId=").Append(id.ToString("D"));
+        }
+
+        return SendAsync<CustomerStorefrontDto>(HttpMethod.Get, query.ToString(), null, null, ct);
+    }
+
+    public Task<ApiResult<QuoteCustomerOrderDeliveryDto>> QuoteDeliveryAsCustomerAsync(
+        Guid sellerOrganizationId,
+        QuoteCustomerOrderDeliveryRequest request,
+        CancellationToken ct = default) =>
+        SendAsync<QuoteCustomerOrderDeliveryDto>(
+            HttpMethod.Post,
+            $"/api/v1/pos/customer-orders/organizations/{sellerOrganizationId:D}/quote-delivery",
+            request,
+            null,
+            ct);
+
     private Task<ApiResult<CustomerOrderDto>> PostFulfillmentAsync(
         Guid organizationId,
         Guid orderId,

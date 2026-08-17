@@ -6,6 +6,7 @@ using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Auth;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
+using ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Application.Options;
 using ExItS.PinoyBusinessPOS.Application.Support;
@@ -194,6 +195,7 @@ public static class MauiProgram
         // The checkout cart lives only in memory for the signed-in session and clears itself on
         // sign-out or organization switch; it is never persisted or queued.
         services.AddSingleton<SaleCartService>();
+        services.AddSingleton<PersonalMerchantCart>();
         services.AddSingleton<MauiPendingPaymentStore>();
         // Phase marker: P8-WP02-simple-sales
     }

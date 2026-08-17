@@ -27,4 +27,9 @@ public interface ICustomerOrderBranchDirectory
         Guid sellerOrganizationId,
         Guid branchId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Active fulfillment branches for the seller organization (customer storefront).</summary>
+    Task<IReadOnlyList<CustomerOrderBranchSnapshot>> ListBranchesAsync(
+        Guid sellerOrganizationId,
+        CancellationToken cancellationToken = default);
 }

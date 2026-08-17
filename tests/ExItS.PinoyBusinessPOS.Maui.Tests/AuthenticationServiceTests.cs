@@ -1657,6 +1657,12 @@ public sealed class AuthenticationServiceTests
             Task.FromResult(ApiResult<PlatformPagedResult<LinkedMerchantDto>>.Success(
                 new PlatformPagedResult<LinkedMerchantDto>(Array.Empty<LinkedMerchantDto>(), 0, page, pageSize)));
 
+        public Task<ApiResult<LinkedMerchantOrderingCapabilityDto>> GetLinkedMerchantOrderingCapabilityAsync(
+            Guid organizationId,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<LinkedMerchantOrderingCapabilityDto>.Success(
+                new LinkedMerchantOrderingCapabilityDto(organizationId, false, false)));
+
         public Task<ApiResult<CreateBusinessCustomerWithPersonalLinkResultDto>> CreateBusinessCustomerWithPersonalLinkAsync(
             Guid organizationId,
             CreateBusinessCustomerWithPersonalLinkRequest request,

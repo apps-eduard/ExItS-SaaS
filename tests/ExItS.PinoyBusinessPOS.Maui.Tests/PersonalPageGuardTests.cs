@@ -343,6 +343,7 @@ public sealed class PersonalPageGuardTests
                      "PersonalBorrowed.razor", "PersonalRelationshipDetail.razor", "PersonalUtangInvitations.razor",
                      "PersonalLinkedMerchants.razor", "PersonalLinkedMerchantStatement.razor",
                      "PersonalLinkedMerchantReceipt.razor", "PersonalRewards.razor",
+                     "PersonalMerchantShop.razor", "PersonalMerchantShopReview.razor",
                      "PersonalProfile.razor", "PersonalSettings.razor", "PersonalExplorePos.razor",
                      "PersonalPeopleDetail.razor", "PersonalMyQr.razor", "PublicUserResolve.razor",
                      "PersonalSupportDiagnosticsPage.razor"
@@ -413,12 +414,21 @@ public sealed class PersonalPageGuardTests
         var personal = PersonalPagesDirectory();
         var list = File.ReadAllText(Path.Combine(personal, "PersonalLinkedMerchants.razor"));
         var statement = File.ReadAllText(Path.Combine(personal, "PersonalLinkedMerchantStatement.razor"));
+        var shop = File.ReadAllText(Path.Combine(personal, "PersonalMerchantShop.razor"));
+        var review = File.ReadAllText(Path.Combine(personal, "PersonalMerchantShopReview.razor"));
         var linkedClient = File.ReadAllText(Path.Combine(
             FindRepoRoot(),
             "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.ApiClient", "PosLinkedCustomerClient.cs"));
+        var orderClient = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.ApiClient", "PosCustomerOrderClient.cs"));
 
         Assert.Contains("@page \"/personal/linked-merchants\"", list, StringComparison.Ordinal);
         Assert.Contains("GetLinkedMerchantsAsync", list, StringComparison.Ordinal);
+        Assert.Contains("CanCustomerOrder", list, StringComparison.Ordinal);
+        Assert.Contains("Personal_ShopAt", list, StringComparison.Ordinal);
+        Assert.Contains("@onclick:stopPropagation", list, StringComparison.Ordinal);
+        Assert.Contains("/shop", list, StringComparison.Ordinal);
         Assert.Contains("@page \"/personal/linked-merchants/{OrganizationId:guid}/{PlatformBusinessCustomerId:guid}\"", statement, StringComparison.Ordinal);
         Assert.Contains("IPosLinkedCustomerClient", statement, StringComparison.Ordinal);
         Assert.Contains("GetStatementAsync", statement, StringComparison.Ordinal);
@@ -426,10 +436,18 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("GetOpenDebtActivityAsync", statement, StringComparison.Ordinal);
         Assert.DoesNotContain("RecordPersonalUtangEntryAsync", statement, StringComparison.Ordinal);
         Assert.DoesNotContain("ILocalPersonalUtangStore", statement, StringComparison.Ordinal);
+        Assert.Contains("@page \"/personal/linked-merchants/{OrganizationId:guid}/shop\"", shop, StringComparison.Ordinal);
+        Assert.Contains("GetStorefrontAsync", shop, StringComparison.Ordinal);
+        Assert.Contains("PersonalMerchantCart", shop, StringComparison.Ordinal);
+        Assert.Contains("@page \"/personal/linked-merchants/{OrganizationId:guid}/shop/review\"", review, StringComparison.Ordinal);
+        Assert.Contains("PlaceAsCustomerAsync", review, StringComparison.Ordinal);
+        Assert.Contains("/personal/orders/", review, StringComparison.Ordinal);
         Assert.Contains("/api/v1/pos/personal/linked-customers/", linkedClient, StringComparison.Ordinal);
         Assert.Contains("open-debt-activity", linkedClient, StringComparison.Ordinal);
         Assert.Contains("older-activity", linkedClient, StringComparison.Ordinal);
         Assert.Contains("/receipts/", linkedClient, StringComparison.Ordinal);
+        Assert.Contains("/storefront", orderClient, StringComparison.Ordinal);
+        Assert.Contains("QuoteDeliveryAsCustomerAsync", orderClient, StringComparison.Ordinal);
     }
 
     [Fact]

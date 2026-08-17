@@ -327,6 +327,28 @@ internal static class CustomerOrderEndpoints
             return order is null ? Results.NotFound() : Results.Ok(order);
         });
 
+        group.MapGet("/organizations/{sellerOrganizationId:guid}/storefront", async (
+            HttpRequest request,
+            Guid sellerOrganizationId,
+            string? search,
+            Guid? categoryId,
+            int? page,
+            int? pageSize,
+            GetCustomerStorefront useCase,
+            CancellationToken ct) =>
+        {
+            if (!PosOrganizationScope.TryGetActorId(request, out _, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(
+                await useCase
+                    .ExecuteAsync(sellerOrganizationId, search, categoryId, page, pageSize, ct)
+                    .ConfigureAwait(false),
+                Results.Ok);
+        });
+
         group.MapPost("/organizations/{sellerOrganizationId:guid}", async (
             HttpRequest request,
             Guid sellerOrganizationId,
@@ -360,13 +382,21 @@ internal static class CustomerOrderEndpoints
         });
 
         group.MapPost("/organizations/{sellerOrganizationId:guid}/quote-delivery", async (
+            HttpRequest request,
             Guid sellerOrganizationId,
             QuoteCustomerOrderDeliveryRequest body,
             QuoteCustomerOrderDelivery useCase,
             CancellationToken ct) =>
-            PosApiResults.FromResult(
+        {
+            if (!PosOrganizationScope.TryGetActorId(request, out _, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(
                 await useCase.ExecuteAsync(sellerOrganizationId, body, ct).ConfigureAwait(false),
-                Results.Ok));
+                Results.Ok);
+        });
 
         group.MapPost("/organizations/{sellerOrganizationId:guid}/{orderId:guid}/cancel", async (
             HttpRequest request,

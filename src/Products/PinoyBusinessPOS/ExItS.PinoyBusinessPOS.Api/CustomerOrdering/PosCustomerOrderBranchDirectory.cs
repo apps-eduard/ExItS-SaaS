@@ -31,33 +31,44 @@ internal sealed class PosCustomerOrderBranchDirectory(
             return null;
         }
 
-        if (environment.IsEnvironment("Testing"))
+        var branches = await ListBranchesAsync(sellerOrganizationId, cancellationToken).ConfigureAwait(false);
+        return branches.FirstOrDefault(b => b.BranchId == branchId);
+    }
+
+    public async Task<IReadOnlyList<CustomerOrderBranchSnapshot>> ListBranchesAsync(
+        Guid sellerOrganizationId,
+        CancellationToken cancellationToken = default)
+    {
+        if (sellerOrganizationId == Guid.Empty)
         {
-            return new CustomerOrderBranchSnapshot(
-                branchId,
-                "Test Branch",
-                PickupEnabled: true,
-                DeliveryEnabled: true,
-                Latitude: 14.5995m,
-                Longitude: 120.9842m,
-                new CustomerOrderBranchDeliveryPolicySnapshot(
-                    MinimumOrderAmount: 0m,
-                    BaseDeliveryFee: 49m,
-                    IncludedDistanceKm: 2m,
-                    AdditionalFeePerKm: 10m,
-                    MaximumDeliveryDistanceKm: 15m,
-                    FreeDeliveryThreshold: 500m));
+            return [];
         }
 
+        if (environment.IsEnvironment("Testing"))
+        {
+            return
+            [
+                new CustomerOrderBranchSnapshot(
+                    Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                    "Test Branch",
+                    PickupEnabled: true,
+                    DeliveryEnabled: true,
+                    Latitude: 14.5995m,
+                    Longitude: 120.9842m,
+                    new CustomerOrderBranchDeliveryPolicySnapshot(
+                        MinimumOrderAmount: 0m,
+                        BaseDeliveryFee: 49m,
+                        IncludedDistanceKm: 2m,
+                        AdditionalFeePerKm: 10m,
+                        MaximumDeliveryDistanceKm: 15m,
+                        FreeDeliveryThreshold: 500m))
+            ];
+        }
+
+        EnsureBaseAddress();
         if (client.BaseAddress is null)
         {
-            var baseUrl = options.Value.BaseUrl;
-            if (string.IsNullOrWhiteSpace(baseUrl))
-            {
-                return null;
-            }
-
-            client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+            return [];
         }
 
         using var platformRequest = new HttpRequestMessage(
@@ -80,47 +91,70 @@ internal sealed class PosCustomerOrderBranchDirectory(
             using var response = await client.SendAsync(platformRequest, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
-                return null;
+                return [];
             }
 
             var branches = await response.Content
                 .ReadFromJsonAsync<IReadOnlyList<OrganizationBranchDto>>(JsonOptions, cancellationToken)
                 .ConfigureAwait(false)
                 ?? [];
-            var branch = branches.FirstOrDefault(b => b.Id == branchId);
-            if (branch is null)
-            {
-                return null;
-            }
 
-            CustomerOrderBranchDeliveryPolicySnapshot? policy = null;
-            if (branch.DeliveryPolicy is not null)
-            {
-                policy = new CustomerOrderBranchDeliveryPolicySnapshot(
-                    branch.DeliveryPolicy.MinimumOrderAmount,
-                    branch.DeliveryPolicy.BaseDeliveryFee,
-                    branch.DeliveryPolicy.IncludedDistanceKm,
-                    branch.DeliveryPolicy.AdditionalFeePerKm,
-                    branch.DeliveryPolicy.MaximumDeliveryDistanceKm,
-                    branch.DeliveryPolicy.FreeDeliveryThreshold);
-            }
-
-            return new CustomerOrderBranchSnapshot(
-                branch.Id,
-                string.IsNullOrWhiteSpace(branch.Name) ? branch.Code : branch.Name,
-                branch.PickupEnabled,
-                branch.DeliveryEnabled,
-                branch.Latitude,
-                branch.Longitude,
-                policy);
+            return branches
+                .Where(b => string.Equals(b.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                .Select(MapBranch)
+                .ToList();
         }
         catch (HttpRequestException)
         {
-            return null;
+            return [];
         }
         catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            return null;
+            return [];
         }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
+    private void EnsureBaseAddress()
+    {
+        if (client.BaseAddress is not null)
+        {
+            return;
+        }
+
+        var baseUrl = options.Value.BaseUrl;
+        if (string.IsNullOrWhiteSpace(baseUrl))
+        {
+            return;
+        }
+
+        client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+    }
+
+    private static CustomerOrderBranchSnapshot MapBranch(OrganizationBranchDto branch)
+    {
+        CustomerOrderBranchDeliveryPolicySnapshot? policy = null;
+        if (branch.DeliveryPolicy is not null)
+        {
+            policy = new CustomerOrderBranchDeliveryPolicySnapshot(
+                branch.DeliveryPolicy.MinimumOrderAmount,
+                branch.DeliveryPolicy.BaseDeliveryFee,
+                branch.DeliveryPolicy.IncludedDistanceKm,
+                branch.DeliveryPolicy.AdditionalFeePerKm,
+                branch.DeliveryPolicy.MaximumDeliveryDistanceKm,
+                branch.DeliveryPolicy.FreeDeliveryThreshold);
+        }
+
+        return new CustomerOrderBranchSnapshot(
+            branch.Id,
+            string.IsNullOrWhiteSpace(branch.Name) ? branch.Code : branch.Name,
+            branch.PickupEnabled,
+            branch.DeliveryEnabled,
+            branch.Latitude,
+            branch.Longitude,
+            policy);
     }
 }

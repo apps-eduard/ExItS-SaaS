@@ -364,7 +364,7 @@ public sealed class CustomerLinkCompletenessTests
                 orgs,
                 new AcceptCustomerLinkRequest(requests, customers, links, memberships, users, uow, clock, orgNotifications),
                 new UnlinkAcceptedCustomerLink(links, customers, uow, clock),
-                new ListLinkedMerchantsForPersonalUser(links, customers, orgs),
+                new ListLinkedMerchantsForPersonalUser(links, customers, orgs, new InMemoryEntitlementSnapshotRepository()),
                 new RevokeCustomerLinkRequest(requests, uow, clock),
                 new CreateCustomerLinkRequest(
                     customers,

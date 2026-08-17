@@ -1,0 +1,401 @@
+@page "/personal/linked-merchants/{OrganizationId:guid}/shop/review"
+@layout Layout.PersonalShell
+@using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Application.CustomerOrdering
+@implements IDisposable
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPosCustomerOrderClient Orders
+@inject PersonalMerchantCart Cart
+@inject OnlineRequiredGuard OnlineRequired
+@inject OfflineAwareNavigation OfflineNav
+@inject NavigationManager Nav
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-personal-shop-review">
+    <StoreHeaderBack Href="@($"/personal/linked-merchants/{OrganizationId:D}/shop")" />
+    <Page>
+        <header class="pos-personal-shop-review__header">
+            <h1>@L["Personal_ShopReviewTitle"]</h1>
+            <p class="pos-muted">@(_organizationName ?? L["Personal_ShopTitle"])</p>
+        </header>
+
+        @if (_loading)
+        {
+            <div class="pos-personal-shop__loading"><Spinner /><span>@L["Common_Loading"]</span></div>
+        }
+        else if (!_authenticated)
+        {
+            <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+        }
+        else if (Cart.LineCount == 0)
+        {
+            <EmptyState Title="@L["Personal_ShopCartEmptyTitle"]" Message="@L["Personal_ShopCartEmptyMessage"]" />
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoShopAsync">@L["Personal_ShopBackToShop"]</Button>
+        }
+        else
+        {
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <Alert Tone="AlertTone.Danger" Title="@L["Personal_ShopPlaceErrorTitle"]" Message="@_error" />
+            }
+
+            <section class="pos-personal-shop-review__section" aria-label="@L["Personal_ShopCartSection"]">
+                @foreach (var line in Cart.Lines)
+                {
+                    <div class="pos-personal-shop-review__line">
+                        <div>
+                            <strong>@line.Name</strong>
+                            <div class="pos-muted">
+                                @line.Quantity.ToString("0.##") ×
+                                <MoneyDisplay Amount="@line.UnitPrice" CurrencyCode="PHP" />
+                            </div>
+                        </div>
+                        <div class="pos-personal-shop-review__line-actions">
+                            <MoneyDisplay Amount="@line.LineTotal" CurrencyCode="PHP" />
+                            <button type="button" class="pos-personal-shop-review__remove" @onclick="() => Cart.Remove(line.ProductId)">@L["Personal_ShopRemove"]</button>
+                        </div>
+                    </div>
+                }
+            </section>
+
+            <section class="pos-personal-shop-review__section">
+                <h2>@L["Personal_ShopFulfillment"]</h2>
+                <div class="pos-personal-shop-review__fulfillment">
+                    @if (_pickupBranches.Count > 0)
+                    {
+                        <button type="button"
+                                class="@FulfillmentModeClass("Pickup")"
+                                @onclick="@(() => SelectFulfillment("Pickup"))">@L["Orders_Pickup"]</button>
+                    }
+                    @if (_canDelivery && _deliveryBranches.Count > 0)
+                    {
+                        <button type="button"
+                                class="@FulfillmentModeClass("Delivery")"
+                                @onclick="@(() => SelectFulfillment("Delivery"))">@L["Orders_Delivery"]</button>
+                    }
+                </div>
+
+                <label class="pos-personal-shop-review__field">
+                    <span>@L["Personal_ShopBranch"]</span>
+                    <select @bind="_branchIdText">
+                        @foreach (var branch in EligibleBranches)
+                        {
+                            <option value="@branch.BranchId.ToString("D")">@branch.Name</option>
+                        }
+                    </select>
+                </label>
+            </section>
+
+            @if (_fulfillment == "Delivery")
+            {
+                <section class="pos-personal-shop-review__section">
+                    <h2>@L["Personal_ShopDeliveryDetails"]</h2>
+                    <label class="pos-personal-shop-review__field">
+                        <span>@L["Personal_ShopRecipientName"]</span>
+                        <input @bind="_recipientName" />
+                    </label>
+                    <label class="pos-personal-shop-review__field">
+                        <span>@L["Personal_ShopRecipientPhone"]</span>
+                        <input @bind="_recipientPhone" />
+                    </label>
+                    <label class="pos-personal-shop-review__field">
+                        <span>@L["Personal_ShopAddress1"]</span>
+                        <input @bind="_address1" />
+                    </label>
+                    <label class="pos-personal-shop-review__field">
+                        <span>@L["Personal_ShopAddress2"]</span>
+                        <input @bind="_address2" />
+                    </label>
+                    <label class="pos-personal-shop-review__field">
+                        <span>@L["Personal_ShopCity"]</span>
+                        <input @bind="_city" />
+                    </label>
+                    <label class="pos-personal-shop-review__field">
+                        <span>@L["Personal_ShopDeliveryNotes"]</span>
+                        <input @bind="_deliveryNotes" />
+                    </label>
+                    <div class="pos-personal-shop-review__coords">
+                        <label class="pos-personal-shop-review__field">
+                            <span>@L["Personal_ShopLatitude"]</span>
+                            <input type="number" step="0.000001" @bind="_latitude" />
+                        </label>
+                        <label class="pos-personal-shop-review__field">
+                            <span>@L["Personal_ShopLongitude"]</span>
+                            <input type="number" step="0.000001" @bind="_longitude" />
+                        </label>
+                    </div>
+                    @if (_quote is not null)
+                    {
+                        <p class="pos-muted">
+                            @if (_quote.Available)
+                            {
+                                <span>@L["Personal_ShopDeliveryFee"]: </span>
+                                <MoneyDisplay Amount="@_quote.DeliveryFee" CurrencyCode="PHP" />
+                            }
+                            else
+                            {
+                                @(_quote.UnavailableReason ?? L["Personal_ShopDeliveryUnavailable"])
+                            }
+                        </p>
+                    }
+                    <Button Variant="ButtonVariant.Secondary" IsLoading="_quoting" Disabled="_quoting" OnClick="QuoteAsync">@L["Personal_ShopQuoteDelivery"]</Button>
+                </section>
+            }
+
+            <section class="pos-personal-shop-review__totals">
+                <div><span>@L["Personal_ShopSubtotal"]</span><MoneyDisplay Amount="@Cart.MerchandiseSubtotal" CurrencyCode="PHP" /></div>
+                @if (_fulfillment == "Delivery" && _quote?.Available == true)
+                {
+                    <div><span>@L["Personal_ShopDeliveryFee"]</span><MoneyDisplay Amount="@_quote.DeliveryFee" CurrencyCode="PHP" /></div>
+                    <div class="pos-personal-shop-review__total"><span>@L["Personal_ShopTotal"]</span><MoneyDisplay Amount="@(Cart.MerchandiseSubtotal + _quote.DeliveryFee)" CurrencyCode="PHP" /></div>
+                }
+                else
+                {
+                    <div class="pos-personal-shop-review__total"><span>@L["Personal_ShopTotal"]</span><MoneyDisplay Amount="@Cart.MerchandiseSubtotal" CurrencyCode="PHP" /></div>
+                }
+            </section>
+
+            <div class="pos-personal-shop-review__actions">
+                <Button Variant="ButtonVariant.Primary" IsLoading="_placing" Disabled="_placing || !CanSubmit" OnClick="PlaceAsync">@L["Personal_ShopPlaceOrder"]</Button>
+            </div>
+        }
+    </Page>
+</div>
+
+@code {
+    [Parameter] public Guid OrganizationId { get; set; }
+
+    private bool _loading = true;
+    private bool _authenticated;
+    private bool _placing;
+    private bool _quoting;
+    private string? _error;
+    private string? _organizationName;
+    private bool _canDelivery;
+    private string _fulfillment = "Pickup";
+    private string _branchIdText = string.Empty;
+    private IReadOnlyList<CustomerStorefrontBranchDto> _pickupBranches = [];
+    private IReadOnlyList<CustomerStorefrontBranchDto> _deliveryBranches = [];
+    private QuoteCustomerOrderDeliveryDto? _quote;
+
+    private string _recipientName = string.Empty;
+    private string? _recipientPhone;
+    private string _address1 = string.Empty;
+    private string? _address2;
+    private string? _city;
+    private string? _deliveryNotes;
+    private decimal _latitude = 14.5995m;
+    private decimal _longitude = 120.9842m;
+
+    private IEnumerable<CustomerStorefrontBranchDto> EligibleBranches =>
+        _fulfillment == "Delivery" ? _deliveryBranches : _pickupBranches;
+
+    private bool CanSubmit =>
+        Guid.TryParse(_branchIdText, out _)
+        && (_fulfillment != "Delivery"
+            || (!string.IsNullOrWhiteSpace(_recipientName)
+                && !string.IsNullOrWhiteSpace(_address1)
+                && _quote?.Available == true));
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Cart.EnsureMerchant(OrganizationId, Cart.OrganizationDisplayName);
+        Cart.Changed += OnCartChanged;
+        await LoadAsync();
+    }
+
+    public void Dispose() => Cart.Changed -= OnCartChanged;
+
+    private void OnCartChanged() => InvokeAsync(StateHasChanged);
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            if (!await EnsureSessionAsync())
+            {
+                return;
+            }
+
+            if (!await Connectivity.IsConnectedAsync()
+                || !await OnlineRequired.EnsureOnlineForRouteAsync($"/personal/linked-merchants/{OrganizationId:D}/shop/review"))
+            {
+                _error = L["Personal_ShopOffline"];
+                return;
+            }
+
+            var result = await Orders.GetStorefrontAsync(OrganizationId, page: 1, pageSize: 1);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+                return;
+            }
+
+            _organizationName = result.Data.OrganizationDisplayName;
+            _canDelivery = result.Data.CanCustomerDelivery;
+            _pickupBranches = result.Data.Branches.Where(b => b.PickupEnabled).ToList();
+            _deliveryBranches = result.Data.Branches.Where(b => b.DeliveryEnabled).ToList();
+            Cart.EnsureMerchant(OrganizationId, _organizationName);
+
+            if (_pickupBranches.Count > 0)
+            {
+                _fulfillment = "Pickup";
+                _branchIdText = _pickupBranches[0].BranchId.ToString("D");
+            }
+            else if (_canDelivery && _deliveryBranches.Count > 0)
+            {
+                _fulfillment = "Delivery";
+                _branchIdText = _deliveryBranches[0].BranchId.ToString("D");
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void SelectFulfillment(string fulfillment)
+    {
+        _fulfillment = fulfillment;
+        _quote = null;
+        var branches = EligibleBranches.ToList();
+        if (branches.Count > 0)
+        {
+            _branchIdText = branches[0].BranchId.ToString("D");
+        }
+    }
+
+    private string FulfillmentModeClass(string mode) =>
+        _fulfillment == mode
+            ? "pos-personal-shop-review__mode pos-personal-shop-review__mode--active"
+            : "pos-personal-shop-review__mode";
+
+    private async Task QuoteAsync()
+    {
+        if (!Guid.TryParse(_branchIdText, out var branchId))
+        {
+            return;
+        }
+
+        _quoting = true;
+        _error = null;
+        try
+        {
+            var result = await Orders.QuoteDeliveryAsCustomerAsync(
+                OrganizationId,
+                new QuoteCustomerOrderDeliveryRequest(branchId, Cart.MerchandiseSubtotal, _latitude, _longitude));
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _quote = null;
+                _error = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+                return;
+            }
+
+            _quote = result.Data;
+        }
+        finally
+        {
+            _quoting = false;
+        }
+    }
+
+    private async Task PlaceAsync()
+    {
+        if (!CanSubmit || !Guid.TryParse(_branchIdText, out var branchId))
+        {
+            return;
+        }
+
+        if (!await Connectivity.IsConnectedAsync())
+        {
+            _error = L["Personal_ShopOffline"];
+            return;
+        }
+
+        _placing = true;
+        _error = null;
+        try
+        {
+            var actorId = CurrentUser.Session?.UserId ?? Guid.Empty;
+            var displayName = CurrentUser.Session?.DisplayName ?? "Customer";
+            var clientOrderId = Guid.NewGuid();
+            PlaceCustomerOrderDeliveryRequest? delivery = null;
+            if (_fulfillment == "Delivery")
+            {
+                delivery = new PlaceCustomerOrderDeliveryRequest(
+                    _recipientName.Trim(),
+                    string.IsNullOrWhiteSpace(_recipientPhone) ? null : _recipientPhone.Trim(),
+                    _address1.Trim(),
+                    string.IsNullOrWhiteSpace(_address2) ? null : _address2.Trim(),
+                    string.IsNullOrWhiteSpace(_city) ? null : _city.Trim(),
+                    string.IsNullOrWhiteSpace(_deliveryNotes) ? null : _deliveryNotes.Trim(),
+                    _latitude,
+                    _longitude);
+            }
+
+            var request = new PlaceCustomerOrderRequest(
+                _fulfillment,
+                branchId,
+                "Personal",
+                displayName,
+                actorId,
+                null,
+                null,
+                Cart.Lines.Select(l => new PlaceCustomerOrderLineRequest(l.ProductId, l.Quantity, 0m)).ToList(),
+                delivery,
+                clientOrderId,
+                clientOrderId.ToString("D"));
+
+            var result = await Orders.PlaceAsCustomerAsync(OrganizationId, request);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+                return;
+            }
+
+            Cart.ClearLinesOnly();
+            Nav.NavigateTo($"/personal/orders/{result.Data.OrderId:D}");
+        }
+        finally
+        {
+            _placing = false;
+        }
+    }
+
+    private Task GoShopAsync() =>
+        OfflineNav.NavigateAsync($"/personal/linked-merchants/{OrganizationId:D}/shop");
+
+    private async Task<bool> EnsureSessionAsync()
+    {
+        if (!CurrentUser.IsAuthenticated)
+        {
+            var restore = await Auth.RestoreSessionAsync();
+            _authenticated = restore.Succeeded;
+        }
+        else
+        {
+            _authenticated = true;
+        }
+
+        if (!_authenticated)
+        {
+            return false;
+        }
+
+        var personal = await Auth.EnsurePersonalAccountProfileAsync();
+        if (!personal.Succeeded)
+        {
+            _error = L[personal.SafeMessageKey ?? "Access_Denied"];
+            return false;
+        }
+
+        return true;
+    }
+
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+}

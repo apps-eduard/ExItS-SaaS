@@ -6322,6 +6322,144 @@
   <data name="Personal_MerchantsUnknownOrg" xml:space="preserve">
     <value>Merchant</value>
   </data>
+  <data name="Personal_Shop" xml:space="preserve">
+    <value>Mamili</value>
+  </data>
+  <data name="Personal_ShopAt" xml:space="preserve">
+    <value>Mamili sa {0}</value>
+  </data>
+  <data name="Personal_MerchantsOpenStatement" xml:space="preserve">
+    <value>Buksan ang statement para sa {0}</value>
+  </data>
+  <data name="Personal_ShopTitle" xml:space="preserve">
+    <value>Tindahan</value>
+  </data>
+  <data name="Personal_ShopSubtitle" xml:space="preserve">
+    <value>Magdagdag ng items, pagkatapos i-review at i-place ang order.</value>
+  </data>
+  <data name="Personal_ShopErrorTitle" xml:space="preserve">
+    <value>Hindi ma-load ang tindahan</value>
+  </data>
+  <data name="Personal_ShopUnavailableTitle" xml:space="preserve">
+    <value>Hindi available ang tindahan</value>
+  </data>
+  <data name="Personal_ShopUnavailableMessage" xml:space="preserve">
+    <value>Hindi tumatanggap ng customer orders ang merchant ngayon.</value>
+  </data>
+  <data name="Personal_ShopSearchPlaceholder" xml:space="preserve">
+    <value>Maghanap ng produkto</value>
+  </data>
+  <data name="Personal_ShopAllCategories" xml:space="preserve">
+    <value>Lahat</value>
+  </data>
+  <data name="Personal_ShopEmptyTitle" xml:space="preserve">
+    <value>Walang produkto</value>
+  </data>
+  <data name="Personal_ShopEmptyMessage" xml:space="preserve">
+    <value>Walang produktong mabibili ayon sa filter.</value>
+  </data>
+  <data name="Personal_ShopUnavailable" xml:space="preserve">
+    <value>Hindi available</value>
+  </data>
+  <data name="Personal_ShopQtyLabel" xml:space="preserve">
+    <value>Dami para sa {0}</value>
+  </data>
+  <data name="Personal_ShopIncrease" xml:space="preserve">
+    <value>Dagdagan ang {0}</value>
+  </data>
+  <data name="Personal_ShopDecrease" xml:space="preserve">
+    <value>Bawasan ang {0}</value>
+  </data>
+  <data name="Personal_ShopCartItems" xml:space="preserve">
+    <value>{0} items</value>
+  </data>
+  <data name="Personal_ShopReview" xml:space="preserve">
+    <value>I-review ang order</value>
+  </data>
+  <data name="Personal_ShopOffline" xml:space="preserve">
+    <value>Kailangan ng online connection para mamili.</value>
+  </data>
+  <data name="Personal_ShopLoadFailed" xml:space="preserve">
+    <value>Hindi ma-load ang storefront ng merchant.</value>
+  </data>
+  <data name="Personal_ShopReviewTitle" xml:space="preserve">
+    <value>I-review ang order</value>
+  </data>
+  <data name="Personal_ShopCartEmptyTitle" xml:space="preserve">
+    <value>Walang laman ang cart</value>
+  </data>
+  <data name="Personal_ShopCartEmptyMessage" xml:space="preserve">
+    <value>Magdagdag muna ng produkto bago mag-place ng order.</value>
+  </data>
+  <data name="Personal_ShopBackToShop" xml:space="preserve">
+    <value>Bumalik sa tindahan</value>
+  </data>
+  <data name="Personal_ShopPlaceErrorTitle" xml:space="preserve">
+    <value>Hindi ma-place ang order</value>
+  </data>
+  <data name="Personal_ShopCartSection" xml:space="preserve">
+    <value>Mga item sa cart</value>
+  </data>
+  <data name="Personal_ShopRemove" xml:space="preserve">
+    <value>Alisin</value>
+  </data>
+  <data name="Personal_ShopFulfillment" xml:space="preserve">
+    <value>Paraan ng pagkuha</value>
+  </data>
+  <data name="Personal_ShopBranch" xml:space="preserve">
+    <value>Sangay</value>
+  </data>
+  <data name="Personal_ShopDeliveryDetails" xml:space="preserve">
+    <value>Detalye ng delivery</value>
+  </data>
+  <data name="Personal_ShopRecipientName" xml:space="preserve">
+    <value>Pangalan ng tatanggap</value>
+  </data>
+  <data name="Personal_ShopRecipientPhone" xml:space="preserve">
+    <value>Telepono</value>
+  </data>
+  <data name="Personal_ShopAddress1" xml:space="preserve">
+    <value>Address</value>
+  </data>
+  <data name="Personal_ShopAddress2" xml:space="preserve">
+    <value>Address line 2</value>
+  </data>
+  <data name="Personal_ShopCity" xml:space="preserve">
+    <value>Lungsod</value>
+  </data>
+  <data name="Personal_ShopDeliveryNotes" xml:space="preserve">
+    <value>Tala para sa delivery</value>
+  </data>
+  <data name="Personal_ShopLatitude" xml:space="preserve">
+    <value>Latitude</value>
+  </data>
+  <data name="Personal_ShopLongitude" xml:space="preserve">
+    <value>Longitude</value>
+  </data>
+  <data name="Personal_ShopDeliveryFee" xml:space="preserve">
+    <value>Bayad sa delivery</value>
+  </data>
+  <data name="Personal_ShopDeliveryUnavailable" xml:space="preserve">
+    <value>Hindi available ang delivery sa lokasyong ito.</value>
+  </data>
+  <data name="Personal_ShopQuoteDelivery" xml:space="preserve">
+    <value>Kunin ang quote ng delivery</value>
+  </data>
+  <data name="Personal_ShopQuoteFailed" xml:space="preserve">
+    <value>Hindi makuha ang quote ng delivery.</value>
+  </data>
+  <data name="Personal_ShopSubtotal" xml:space="preserve">
+    <value>Subtotal</value>
+  </data>
+  <data name="Personal_ShopTotal" xml:space="preserve">
+    <value>Kabuuan</value>
+  </data>
+  <data name="Personal_ShopPlaceOrder" xml:space="preserve">
+    <value>I-place ang order</value>
+  </data>
+  <data name="Personal_ShopPlaceFailed" xml:space="preserve">
+    <value>Hindi ma-place ang order na ito.</value>
+  </data>
   <data name="Personal_MerchantStatementTitle" xml:space="preserve">
     <value>Statement ng merchant</value>
   </data>

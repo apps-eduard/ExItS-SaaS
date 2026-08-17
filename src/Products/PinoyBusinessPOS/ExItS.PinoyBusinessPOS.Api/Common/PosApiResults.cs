@@ -132,7 +132,9 @@ internal static class PosApiResults
             or ApplicationErrorCodes.DevelopmentHeadersUnavailable
             or ApplicationErrorCodes.LinkedCustomerDenied
             or ApplicationErrorCodes.ExtendedHistoryRequired
-            or ApplicationErrorCodes.InventoryTransferBranchForbidden => StatusCodes.Status403Forbidden,
+            or ApplicationErrorCodes.InventoryTransferBranchForbidden
+            or ApplicationErrorCodes.CustomerOrderOrderingUnavailable
+            or ApplicationErrorCodes.CustomerOrderPartyMismatch => StatusCodes.Status403Forbidden,
 
         ApplicationErrorCodes.ReceiptNotFound => StatusCodes.Status404NotFound,
 

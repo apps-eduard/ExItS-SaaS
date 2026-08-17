@@ -13719,6 +13719,277 @@ html:has(.pos-denom-sheet) .pos-denom-sheet {
     color: var(--exits-text-muted);
 }
 
+.pos-personal-row__body--button {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+    flex: 1 1 auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.pos-personal-row__shop {
+    flex: 0 0 auto;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid var(--exits-border);
+    border-radius: var(--exits-radius-sm, 0.375rem);
+    background: var(--exits-surface-raised, var(--exits-surface));
+    color: var(--exits-text);
+    font-size: var(--exits-text-xs, 0.75rem);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.pos-personal-row__chevron-btn {
+    flex: 0 0 auto;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+
+.pos-personal-shop,
+.pos-personal-shop-review {
+    padding-bottom: 5.5rem;
+}
+
+.pos-personal-shop__header,
+.pos-personal-shop-review__header {
+    margin-bottom: var(--exits-space-3);
+}
+
+.pos-personal-shop__title {
+    margin: 0;
+    font-size: var(--exits-text-lg);
+    font-weight: 700;
+}
+
+.pos-personal-shop__subtitle,
+.pos-personal-shop__product-meta,
+.pos-personal-shop__unavailable {
+    color: var(--exits-text-muted);
+    font-size: var(--exits-text-sm);
+}
+
+.pos-personal-shop__loading {
+    display: flex;
+    align-items: center;
+    gap: var(--exits-space-2);
+}
+
+.pos-personal-shop__search {
+    margin-bottom: var(--exits-space-2);
+}
+
+.pos-personal-shop__search-input,
+.pos-personal-shop-review__field input,
+.pos-personal-shop-review__field select {
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--exits-border);
+    border-radius: var(--exits-radius-sm, 0.375rem);
+    background: var(--exits-surface);
+    color: var(--exits-text);
+}
+
+.pos-personal-shop__chips {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    overflow-x: auto;
+    margin-bottom: var(--exits-space-3);
+    padding-bottom: 0.25rem;
+}
+
+.pos-personal-shop__chip {
+    flex: 0 0 auto;
+    min-height: 2.5rem;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--exits-border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--exits-text);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.pos-personal-shop__chip--active {
+    border-color: var(--exits-accent, var(--exits-text));
+    font-weight: 600;
+}
+
+.pos-personal-shop__products {
+    display: flex;
+    flex-direction: column;
+}
+
+.pos-personal-shop__product {
+    display: flex;
+    align-items: center;
+    gap: var(--exits-space-2);
+    min-height: 3.25rem;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--exits-border);
+}
+
+.pos-personal-shop__product-body {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.pos-personal-shop__product-name {
+    font-weight: 600;
+    font-size: var(--exits-text-sm);
+}
+
+.pos-personal-shop__qty {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.pos-personal-shop__qty-btn {
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 1px solid var(--exits-border);
+    border-radius: var(--exits-radius-sm, 0.375rem);
+    background: var(--exits-surface);
+    color: var(--exits-text);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.pos-personal-shop__qty-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.pos-personal-shop__qty-value {
+    min-width: 1.75rem;
+    text-align: center;
+    font-weight: 600;
+}
+
+.pos-personal-shop__cart-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--exits-space-2);
+    padding: 0.75rem;
+    border-top: 1px solid var(--exits-border);
+    background: var(--exits-surface);
+}
+
+.pos-personal-shop__cart-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.pos-personal-shop-review__section {
+    margin-bottom: var(--exits-space-4);
+}
+
+.pos-personal-shop-review__section h2 {
+    margin: 0 0 var(--exits-space-2);
+    font-size: var(--exits-text-md);
+}
+
+.pos-personal-shop-review__line {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--exits-space-2);
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--exits-border);
+}
+
+.pos-personal-shop-review__line-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+}
+
+.pos-personal-shop-review__remove {
+    border: 0;
+    background: transparent;
+    color: var(--exits-danger, #b42318);
+    cursor: pointer;
+    font-size: var(--exits-text-xs, 0.75rem);
+}
+
+.pos-personal-shop-review__fulfillment {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: var(--exits-space-3);
+}
+
+.pos-personal-shop-review__mode {
+    flex: 1 1 0;
+    min-height: 2.75rem;
+    border: 1px solid var(--exits-border);
+    border-radius: var(--exits-radius-sm, 0.375rem);
+    background: transparent;
+    color: var(--exits-text);
+    cursor: pointer;
+}
+
+.pos-personal-shop-review__mode--active {
+    font-weight: 700;
+    border-color: var(--exits-accent, var(--exits-text));
+}
+
+.pos-personal-shop-review__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: var(--exits-space-2);
+}
+
+.pos-personal-shop-review__coords {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--exits-space-2);
+}
+
+.pos-personal-shop-review__totals {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin: var(--exits-space-3) 0;
+}
+
+.pos-personal-shop-review__totals > div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--exits-space-2);
+}
+
+.pos-personal-shop-review__total {
+    font-weight: 700;
+}
+
+.pos-personal-shop-review__actions {
+    margin-top: var(--exits-space-3);
+}
+
 .pos-personal-create-toggle {
     margin: var(--exits-space-2) 0 var(--exits-space-3);
 }

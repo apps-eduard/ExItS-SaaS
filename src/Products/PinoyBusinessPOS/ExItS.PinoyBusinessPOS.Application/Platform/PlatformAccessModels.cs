@@ -778,7 +778,16 @@ public sealed record LinkedMerchantDto(
     string OrganizationDisplayName,
     string CustomerDisplayName,
     string LinkStatus,
-    DateTimeOffset LinkedAtUtc);
+    DateTimeOffset LinkedAtUtc,
+    bool CanCustomerOrder = false,
+    bool CanCustomerDelivery = false);
+
+/// <summary>Authoritative seller ordering flags for a Personal linked merchant.</summary>
+public sealed record LinkedMerchantOrderingCapabilityDto(
+    Guid OrganizationId,
+    bool CanCustomerOrder,
+    bool CanCustomerDelivery,
+    string OrganizationDisplayName = "");
 
 /// <summary>Platform BusinessCustomer (org-owned customer record used for Personal link consent).</summary>
 public sealed record PlatformBusinessCustomerDto(
@@ -1262,6 +1271,10 @@ public interface IPlatformAccessClient
     Task<ApiResult<PlatformPagedResult<LinkedMerchantDto>>> GetLinkedMerchantsAsync(
         int page = 1,
         int pageSize = 20,
+        CancellationToken ct = default);
+
+    Task<ApiResult<LinkedMerchantOrderingCapabilityDto>> GetLinkedMerchantOrderingCapabilityAsync(
+        Guid organizationId,
         CancellationToken ct = default);
 
     Task<ApiResult<CreateBusinessCustomerWithPersonalLinkResultDto>> CreateBusinessCustomerWithPersonalLinkAsync(
