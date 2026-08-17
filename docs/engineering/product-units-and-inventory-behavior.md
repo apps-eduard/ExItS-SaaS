@@ -37,6 +37,8 @@ Plain UI wording:
 
 All stock balances, movements, transfers, stock counts, returns, and lot quantities are in this base unit.
 
+Personal storefront available quantity for **tracked** products is the existing orderable value `OnHand − Reserved` (`InventoryAccount.AvailableQuantity`), not raw OnHand. Untracked products stay orderable and display as `Available` with no quantity. See [product images and storefront availability](product-images-and-storefront-availability.md).
+
 Examples:
 
 - Receive 10 × 50 kg bags → movement **+500 kg**

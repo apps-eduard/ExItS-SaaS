@@ -44,6 +44,7 @@
 - [Organization branches and fulfillment locations](engineering/organization-branches-and-fulfillment-locations.md)
 - [Branch delivery pricing](engineering/branch-delivery-pricing.md)
 - [Customer ordering, pickup and delivery](engineering/customer-ordering-pickup-and-delivery.md)
+- [Product images and storefront availability](engineering/product-images-and-storefront-availability.md)
 - [P28-WP01 branch fulfillment location foundation](reports/P28-WP01-branch-fulfillment-location-foundation.md)
 - [P28 Stage B customer ordering slice](reports/P28-WP02-customer-ordering-stage-b-slice.md)
 - [Connected ExItS suppliers design](engineering/connected-exits-suppliers.md)

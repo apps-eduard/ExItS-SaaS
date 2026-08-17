@@ -34,7 +34,7 @@ Implement Personal/Organization `CustomerOrder` with pickup and delivery fulfill
 
 ## Explicit exclusions / residuals
 
-- ~~Full customer catalog/cart/checkout MAUI storefront~~ — **later delivered** for authenticated Personal linked merchants (`f689e863`; quote/link harden `87b0acc2`); see [Phase 28](../phases/phase-28-customer-ordering-pickup-and-delivery.md) WP03/WP04.
+- ~~Full customer catalog/cart/checkout MAUI storefront~~ — **later delivered** for authenticated Personal linked merchants (`f689e863`; quote/link harden `87b0acc2`); product images + customer-facing available stock (`5083076f` / `95276a8e`) documented in [product images and storefront availability](../engineering/product-images-and-storefront-availability.md).
 - ~~CustomerOrder payment-method design/integration~~ — **later delivered** (`75b12599` / `0e3825aa`) as manual V1 Cash / GCash (`ManualGCash`) / Utang; `PaymentStatus` remains Unpaid at submit; no gateway/`PaymentAttempt` and no automatic Utang ledger posting. Automated settlement/payment rails remain residual.
 - Personal inbox notifications (org new-order notification present)
 - Organization-buyer membership verification hardening
@@ -60,4 +60,4 @@ Seller org scope, customer party scope, entitlement gates, idempotent lifecycle.
 
 ## Exact next
 
-P28-WP10 E2E validation and residual closeout (personal notifications, per-product storefront exposure flag, automated settlement/payment rails, migration apply evidence). Personal linked-merchant storefront/cart and manual CustomerOrder payment method are already delivered (`f689e863` / `87b0acc2` / `75b12599` / `0e3825aa`). Phase 27 remains Open.
+P28-WP10 E2E validation and residual closeout (personal notifications, per-product storefront exposure flag, automated settlement/payment rails, production object storage/CDN, device/browser evidence). Personal linked-merchant storefront/cart, manual CustomerOrder payment, product images, and customer-facing available stock are already delivered as Code Complete / Validation Pending. Phase 27 remains Open.

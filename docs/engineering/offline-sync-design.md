@@ -180,4 +180,6 @@ LocalStore schema **v9** adds product usage flags, offline sell units (`local_ca
 
 LocalStore remains **v9**. Identity QR work does not change the SQLite schema: each organization (and Personal) already uses a separate LocalStore file, and org switch closes the prior context before opening the next. In-memory SaleCart clears on `OrganizationId` change; SellingMode and BranchId/PosDeviceId clear on auth org switch. No LocalStore version bump is required unless a future identity feature stores new offline tables.
 
+Product-image thumbnails are **not** SQLite rows. They are disposable files under app-private `media/product-image-cache`, keyed by seller + product + `ImageVersion`, LRU-bounded, and must never participate in Sale / inventory / Goods Receipt / PurchaseOrder / CustomerOrder transactions. See [product images and storefront availability](product-images-and-storefront-availability.md).
+
 Connected purchase-order drafts may be saved locally with `PendingCreate` state. They are not queued or described as submitted. Reconnect requires explicit online price/availability revalidation before normal purchase-order creation; supplier submission remains online-required.

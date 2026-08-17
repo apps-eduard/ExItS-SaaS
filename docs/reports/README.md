@@ -172,6 +172,8 @@ The dashboard links to the latest accepted report.
 | [phase-29-data-integrity-query-performance-and-database-hardening.md](../phases/phase-29-data-integrity-query-performance-and-database-hardening.md) | Phase 29 | Open / Partial Closeout |
 | [phase-28-customer-ordering-pickup-and-delivery.md](../phases/phase-28-customer-ordering-pickup-and-delivery.md) | Phase 28 Customer Ordering, Pickup & Delivery | Open / In Progress |
 
+Related engineering: [product-images-and-storefront-availability.md](../engineering/product-images-and-storefront-availability.md) — one primary product image V1 + Personal storefront available stock.
+
 Related engineering (not a WP closeout): [platform-controlled-organization-tax-configuration.md](../engineering/platform-controlled-organization-tax-configuration.md) — Platform `TaxConfigurationEnabled` gate for Operational Setup tax settings (default off; Approved eligibility required; not certification).
 
 Aliases (stable old paths): [personal-organization-identity-isolation.md](personal-organization-identity-isolation.md) · [sales-buyer-party-isolation.md](sales-buyer-party-isolation.md) · [organization-profile-independence.md](organization-profile-independence.md) · [organization-ownership-transfer.md](organization-ownership-transfer.md)

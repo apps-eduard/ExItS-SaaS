@@ -40,10 +40,11 @@ Flow:
 | Who can shop | Authenticated Personal actor + **ACTIVE** Personal↔seller link for that `sellerOrganizationId` |
 | Seller entitlement | Enterable POS + feature `store-customer-ordering` (delivery also needs `store-delivery-orders`) |
 | Catalog | Seller-org products that are `Active` + `CanBeSold` + `SellingPrice > 0` |
-| Stock | Soft availability from inventory; reserve still happens on seller Accept |
+| Stock | Soft availability from `OnHand − Reserved` (`AvailableQuantity`); untracked shows `Available` with no quantity; reserve still happens on seller Accept. See [product images and storefront availability](product-images-and-storefront-availability.md) |
+| Images | One primary image V1; catalog/storefront DTOs carry `HasImage`/`ImageVersion` only; authorized WebP thumb/medium delivery; MAUI private file cache |
 | Per-product storefront flag | **Not implemented** (reported residual; no schema migration) |
 | Cart | In-memory MAUI session cart (cleared after successful place / leaving merchant) |
-| Quantity UX | Connected PO stepper: unadded `[+]` only (no qty 0); first `+` ⇒ qty 1 then `[−][+] ` + Added · Qty; `−` at qty 1 removes; same `ProductId` never duplicates; unavailable = disabled `[+]`; retail `SellingPrice` |
+| Quantity UX | Connected PO stepper: unadded `[+]` only (no qty 0); first `+` ⇒ qty 1 then `[−][+] ` + Added · Qty; `−` at qty 1 removes; same `ProductId` never duplicates; out-of-stock / at-cap tracked `+` disabled; untracked has no fake max; retail `SellingPrice` |
 | Fulfillment | Auto-select first eligible Active branch. One eligible branch ⇒ read-only branch text, never a blank dropdown. Selector only when more than one eligible branch. Pickup-only / Delivery-only ⇒ read-only mode; both ⇒ Pickup/Delivery toggle (default Pickup) |
 | Payment | Manual V1 only: Cash (default), GCash → `ManualGCash`, Utang. `PaymentStatus` stays Unpaid on submit. No gateway/`PaymentAttempt`. No automatic Utang debt/ledger posting |
 | Quote / place | Server-authoritative price, delivery quote, and revalidation on place |
