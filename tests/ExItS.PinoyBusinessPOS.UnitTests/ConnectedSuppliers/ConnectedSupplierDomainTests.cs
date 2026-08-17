@@ -53,7 +53,7 @@ public sealed class ConnectedSupplierDomainTests
     }
 
     [Fact]
-    public void Accept_only_changes_connected_order_status_and_timestamps()
+    public void Accept_confirms_requested_quantities_without_changing_original_request()
     {
         var relationship=ConnectedSupplierRelationship.Request(Buyer,Supplier,Now);
         relationship.Approve(Now.AddMinutes(1));
@@ -63,7 +63,12 @@ public sealed class ConnectedSupplierDomainTests
         order.Accept(Now.AddMinutes(3));
         Assert.Equal(ConnectedPurchaseOrderStatus.Accepted,order.Status);
         Assert.Equal(10m,order.TotalAmount);
-        Assert.Equal(line,Assert.Single(order.Lines));
+        var accepted=Assert.Single(order.Lines);
+        Assert.Equal(line.ProductId,accepted.ProductId);
+        Assert.Equal(2m,accepted.Qty);
+        Assert.Equal(2m,accepted.ConfirmedQty);
+        Assert.Equal(5m,accepted.UnitPriceSnapshot);
+        Assert.Equal(ConnectedPoLineAvailability.Available,accepted.Availability);
         Assert.Null(order.DeclinedAtUtc);
     }
 

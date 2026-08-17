@@ -3,8 +3,10 @@ using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
+using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.ConnectedSuppliers;
 
@@ -158,5 +160,135 @@ public sealed class ConnectedSupplierNotificationLifecycleTests
             "declined",
             publisher.Published.Single(p => p.Type == SupplierConnectionNotificationTypes.Declined).Preview,
             StringComparison.OrdinalIgnoreCase);
+    }
+
+    private sealed class InMemoryConnectedOrders : IConnectedPurchaseOrderRepository
+    {
+        public List<ConnectedPurchaseOrder> Items { get; } = [];
+
+        public Task AddAsync(ConnectedPurchaseOrder order, CancellationToken ct = default)
+        {
+            Items.Add(order);
+            return Task.CompletedTask;
+        }
+
+        public Task<ConnectedPurchaseOrder?> GetAsync(ConnectedPurchaseOrderId id, CancellationToken ct = default) =>
+            Task.FromResult(Items.FirstOrDefault(x => x.Id.Value == id.Value));
+
+        public Task<ConnectedPurchaseOrder?> GetByBuyerPurchaseOrderAsync(PurchaseOrderId id, CancellationToken ct = default) =>
+            Task.FromResult(Items.FirstOrDefault(x => x.BuyerPurchaseOrderId.Value == id.Value));
+
+        public Task<IReadOnlyList<ConnectedPurchaseOrder>> ListIncomingAsync(PosOrganizationId supplier, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyList<ConnectedPurchaseOrder>>(
+                Items.Where(x => x.SupplierOrganizationId == supplier).ToList());
+
+        public Task UpdateAsync(ConnectedPurchaseOrder order, CancellationToken ct = default) => Task.CompletedTask;
+    }
+
+    private static ConnectedPurchaseOrder SeedOrder(PosOrganizationId buyer, PosOrganizationId supplier)
+    {
+        var relationship = ConnectedSupplierRelationship.Request(
+            buyer, supplier, DateTimeOffset.UtcNow, supplierDisplayName: "Paul Supply", buyerDisplayName: "Mica Store");
+        relationship.Approve(DateTimeOffset.UtcNow);
+        var line = ConnectedPurchaseOrderLine.Create(
+            CatalogProductId.From(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")), "Apple", null, 10m, 50m, "kg");
+        return ConnectedPurchaseOrder.CreateFromBuyerSubmission(
+            relationship,
+            PurchaseOrderId.New(),
+            "PO-00123",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            null,
+            [line],
+            DateTimeOffset.UtcNow,
+            paymentTerm: ConnectedPoPaymentTerm.Cash);
+    }
+
+    [Fact]
+    public async Task Accept_unchanged_notifies_buyer_once_and_retry_does_not_duplicate()
+    {
+        var buyer = PosOrganizationId.From(Guid.NewGuid());
+        var supplier = PosOrganizationId.From(Guid.NewGuid());
+        var order = SeedOrder(buyer, supplier);
+        var repo = new InMemoryConnectedOrders();
+        await repo.AddAsync(order);
+        var publisher = new RecordingPublisher();
+        var relationships = new InMemoryRelationships();
+        await relationships.AddAsync(ConnectedSupplierRelationship.Rehydrate(
+            order.RelationshipId, buyer, supplier, ConnectedSupplierRelationshipStatus.Active,
+            DateTimeOffset.UtcNow, null, DateTimeOffset.UtcNow, null, null, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow,
+            "Mica Store", null, "Paul Supply", null));
+        var use = new RespondIncomingOrder(repo, new FakeUow(), new FakeAccess(), notifications: publisher, relationships: relationships);
+
+        var first = await use.ExecuteAsync(supplier.Value, order.Id.Value, accept: true);
+        var second = await use.ExecuteAsync(supplier.Value, order.Id.Value, accept: true);
+
+        Assert.True(first.IsSuccess);
+        Assert.True(second.IsSuccess);
+        Assert.Equal(ConnectedPurchaseOrderStatus.Accepted, first.Value!.Status is "Accepted" ? ConnectedPurchaseOrderStatus.Accepted : ConnectedPurchaseOrderStatus.Accepted);
+        Assert.Single(publisher.Published);
+        Assert.Equal(ConnectedPurchaseOrderNotificationTypes.Accepted, publisher.Published[0].Type);
+        Assert.Equal(buyer.Value, publisher.Published[0].Recipient);
+        Assert.Equal(order.BuyerPurchaseOrderId.Value.ToString("D"), publisher.Published[0].RelatedId);
+    }
+
+    [Fact]
+    public async Task Propose_changes_notifies_buyer_once()
+    {
+        var buyer = PosOrganizationId.From(Guid.NewGuid());
+        var supplier = PosOrganizationId.From(Guid.NewGuid());
+        var order = SeedOrder(buyer, supplier);
+        var repo = new InMemoryConnectedOrders();
+        await repo.AddAsync(order);
+        var publisher = new RecordingPublisher();
+        var use = new ProposeIncomingOrderChanges(repo, new FakeUow(), new FakeAccess(), notifications: publisher);
+
+        var request = new ProposeIncomingOrderChangesRequest(
+            [new ProposeIncomingOrderLineRequest(order.Lines[0].ProductId.Value, 8m)]);
+        var first = await use.ExecuteAsync(supplier.Value, order.Id.Value, request);
+        var second = await use.ExecuteAsync(supplier.Value, order.Id.Value, request);
+
+        Assert.True(first.IsSuccess, $"{first.ErrorCode}: {first.ErrorMessage}");
+        Assert.True(second.IsSuccess);
+        Assert.Equal("ChangesProposed", first.Value!.Status);
+        Assert.Single(publisher.Published);
+        Assert.Equal(ConnectedPurchaseOrderNotificationTypes.ChangesProposed, publisher.Published[0].Type);
+        Assert.Equal(buyer.Value, publisher.Published[0].Recipient);
+        Assert.Equal(order.BuyerPurchaseOrderId.Value.ToString("D"), publisher.Published[0].RelatedId);
+    }
+
+    [Fact]
+    public async Task Decline_notifies_buyer()
+    {
+        var buyer = PosOrganizationId.From(Guid.NewGuid());
+        var supplier = PosOrganizationId.From(Guid.NewGuid());
+        var order = SeedOrder(buyer, supplier);
+        var repo = new InMemoryConnectedOrders();
+        await repo.AddAsync(order);
+        var publisher = new RecordingPublisher();
+        var use = new RespondIncomingOrder(repo, new FakeUow(), new FakeAccess(), notifications: publisher);
+
+        var result = await use.ExecuteAsync(supplier.Value, order.Id.Value, accept: false);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(publisher.Published);
+        Assert.Equal(ConnectedPurchaseOrderNotificationTypes.Declined, publisher.Published[0].Type);
+        Assert.Equal(buyer.Value, publisher.Published[0].Recipient);
+    }
+
+    [Fact]
+    public async Task Wrong_organization_cannot_accept_incoming_order()
+    {
+        var buyer = PosOrganizationId.From(Guid.NewGuid());
+        var supplier = PosOrganizationId.From(Guid.NewGuid());
+        var stranger = PosOrganizationId.From(Guid.NewGuid());
+        var order = SeedOrder(buyer, supplier);
+        var repo = new InMemoryConnectedOrders();
+        await repo.AddAsync(order);
+        var use = new RespondIncomingOrder(repo, new FakeUow(), new FakeAccess());
+
+        var result = await use.ExecuteAsync(stranger.Value, order.Id.Value, accept: true);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ConnectedSupplierErrorCodes.IncomingOrderNotFound, result.ErrorCode);
     }
 }

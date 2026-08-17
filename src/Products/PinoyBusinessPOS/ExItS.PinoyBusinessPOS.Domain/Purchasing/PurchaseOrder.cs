@@ -1,4 +1,5 @@
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
@@ -30,6 +31,8 @@ public sealed class PurchaseOrder
     public Guid? OrderedBy { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
+    /// <summary>Connected-PO settlement term. Cash default. Not proof of payment.</summary>
+    public ConnectedPoPaymentTerm PaymentTerm { get; private set; }
 
     public IReadOnlyList<PurchaseOrderLine> Lines => _lines;
 
@@ -47,7 +50,8 @@ public sealed class PurchaseOrder
         Guid? orderedBy,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
-        List<PurchaseOrderLine> lines)
+        List<PurchaseOrderLine> lines,
+        ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -62,6 +66,7 @@ public sealed class PurchaseOrder
         OrderedBy = orderedBy;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
+        PaymentTerm = paymentTerm;
         _lines = lines;
     }
 
@@ -74,7 +79,8 @@ public sealed class PurchaseOrder
         DateOnly? expectedDeliveryDate = null,
         string? supplierReference = null,
         string? notes = null,
-        PurchaseOrderId? id = null)
+        PurchaseOrderId? id = null,
+        ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureLines(lines);
@@ -97,7 +103,8 @@ public sealed class PurchaseOrder
             orderedBy: null,
             utcNow,
             utcNow,
-            poLines);
+            poLines,
+            paymentTerm);
     }
 
     public void UpdateDraft(
@@ -107,7 +114,8 @@ public sealed class PurchaseOrder
         DateTimeOffset utcNow,
         DateOnly? expectedDeliveryDate = null,
         string? supplierReference = null,
-        string? notes = null)
+        string? notes = null,
+        ConnectedPoPaymentTerm? paymentTerm = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureDraft();
@@ -119,6 +127,11 @@ public sealed class PurchaseOrder
         ExpectedDeliveryDate = expectedDeliveryDate;
         SupplierReference = NormalizeSupplierReference(supplierReference);
         Notes = NormalizeNotes(notes);
+        if (paymentTerm is { } term)
+        {
+            PaymentTerm = term;
+        }
+
         ReplaceDraftLines(lines);
         UpdatedAtUtc = utcNow;
     }
@@ -243,6 +256,52 @@ public sealed class PurchaseOrder
         UpdatedAtUtc = utcNow;
     }
 
+    /// <summary>
+    /// Caps remaining outstanding to supplier-confirmed quantities without changing OrderedQty.
+    /// Reduced/unavailable remainder is short-closed so goods receipt cannot exceed confirmation.
+    /// </summary>
+    public void AlignOutstandingToConfirmedQuantities(
+        IReadOnlyDictionary<Guid, decimal> confirmedQtyByBuyerProductId,
+        DateTimeOffset utcNow)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+        if (Status is not (PurchaseOrderStatus.Ordered or PurchaseOrderStatus.PartiallyReceived))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseOrderStatusTransition,
+                "Only ordered purchase orders can align to confirmed quantities.");
+        }
+
+        foreach (var line in _lines)
+        {
+            if (!confirmedQtyByBuyerProductId.TryGetValue(line.ProductId.Value, out var confirmed))
+            {
+                continue;
+            }
+
+            if (confirmed < 0m || confirmed > line.OrderedQty)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidPurchaseReceiveQuantity,
+                    "Confirmed quantity must be between zero and the original ordered quantity.");
+            }
+
+            var allowedRemaining = Math.Max(0m, confirmed - line.ReceivedQty);
+            var excess = line.OutstandingQty - allowedRemaining;
+            if (excess > 0m)
+            {
+                line.ApplyShortClose(excess);
+            }
+        }
+
+        Status = _lines.All(l => l.OutstandingQty <= 0m)
+            ? PurchaseOrderStatus.Received
+            : _lines.Any(l => l.ReceivedQty > 0m)
+                ? PurchaseOrderStatus.PartiallyReceived
+                : PurchaseOrderStatus.Ordered;
+        UpdatedAtUtc = utcNow;
+    }
+
     /// <summary>True when any line has buyer-closed shortages (Received With Issues signal).</summary>
     public bool HasReceivingIssues => _lines.Any(l => l.HasReceivingIssues);
 
@@ -260,7 +319,8 @@ public sealed class PurchaseOrder
         Guid? orderedBy,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
-        IReadOnlyList<PurchaseOrderLine> lines) =>
+        IReadOnlyList<PurchaseOrderLine> lines,
+        ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash) =>
         new(
             id,
             organizationId,
@@ -275,7 +335,8 @@ public sealed class PurchaseOrder
             orderedBy,
             createdAtUtc,
             updatedAtUtc,
-            lines.ToList());
+            lines.ToList(),
+            paymentTerm);
 
     private void EnsureDraft()
     {

@@ -66,12 +66,20 @@ internal sealed class ConnectedPurchaseOrderRecord
     public DateTimeOffset? WithdrawnAtUtc { get; set; }
     public int? DeclineReason { get; set; }
     public string? DeclineNote { get; set; }
+    public int PaymentTerm { get; set; }
+    public DateTimeOffset? ChangesProposedAtUtc { get; set; }
+    public Guid? ChangesProposedByUserId { get; set; }
+    public DateTimeOffset? BuyerRespondedAtUtc { get; set; }
+    public Guid? BuyerRespondedByUserId { get; set; }
     public List<ConnectedPurchaseOrderLineRecord> Lines { get; set; }=[]; public uint Xmin { get; set; }
 }
 internal sealed class ConnectedPurchaseOrderLineRecord
 {
     public Guid ConnectedPurchaseOrderId { get; set; } public int LineNumber { get; set; } public Guid ProductId { get; set; }
-    public string NameSnapshot { get; set; }=string.Empty; public string? SkuSnapshot { get; set; } public decimal Qty { get; set; }
+    public string NameSnapshot { get; set; }=string.Empty; public string? SkuSnapshot { get; set; }     public decimal Qty { get; set; }
+    public decimal? ProposedQty { get; set; }
+    public decimal? ConfirmedQty { get; set; }
+    public int Availability { get; set; }
     public decimal UnitPriceSnapshot { get; set; } public decimal LineTotal { get; set; } public string UnitOfMeasureCode { get; set; }=string.Empty;
 }
 
@@ -146,26 +154,94 @@ internal static class ConnectedSupplierEntityMapper
      r.LastKnownOrderPrice=x.LastKnownOrderPrice;r.BuyerPurchaseUnitId=x.BuyerPurchaseUnitId;r.MultiplierToBase=x.MultiplierToBase;
      r.PackageLabel=x.PackageLabel;r.IsActive=x.IsActive;r.SyncVersion=x.SyncVersion;r.UpdatedAtUtc=x.UpdatedAtUtc;}
 
-    public static ConnectedPurchaseOrder ToDomain(ConnectedPurchaseOrderRecord r)=>ConnectedPurchaseOrder.Rehydrate(
-        ConnectedPurchaseOrderId.From(r.Id),ConnectedSupplierRelationshipId.From(r.RelationshipId),PosOrganizationId.From(r.BuyerOrganizationId),
-        PosOrganizationId.From(r.SupplierOrganizationId),PurchaseOrderId.From(r.BuyerPurchaseOrderId),r.BuyerPoNumber,r.OrderDate,r.Notes,
-        (ConnectedPurchaseOrderStatus)r.Status,r.TotalAmount,r.CreatedAtUtc,r.UpdatedAtUtc,r.AcceptedAtUtc,r.DeclinedAtUtc,
-        r.Lines.OrderBy(x=>x.LineNumber).Select(x=>new ConnectedPurchaseOrderLine(CatalogProductId.From(x.ProductId),x.NameSnapshot,
-            x.SkuSnapshot,x.Qty,x.UnitPriceSnapshot,x.LineTotal,x.UnitOfMeasureCode)).ToList(),
-        r.PreparingAtUtc,r.FulfilledAtUtc,r.WithdrawnAtUtc,
-        r.DeclineReason is int reason ? (ConnectedPoDeclineReason)reason : null,
-        r.DeclineNote);
+    public static ConnectedPurchaseOrder ToDomain(ConnectedPurchaseOrderRecord r)
+    {
+        var status = (ConnectedPurchaseOrderStatus)r.Status;
+        var lines = r.Lines.OrderBy(x => x.LineNumber).Select(x =>
+        {
+            var availability = (ConnectedPoLineAvailability)x.Availability;
+            var confirmed = x.ConfirmedQty;
+            if (confirmed is null
+                && status is ConnectedPurchaseOrderStatus.Accepted
+                    or ConnectedPurchaseOrderStatus.Preparing
+                    or ConnectedPurchaseOrderStatus.Fulfilled)
+            {
+                confirmed = x.Qty;
+                if (availability == ConnectedPoLineAvailability.Pending)
+                {
+                    availability = ConnectedPoLineAvailability.Available;
+                }
+            }
+
+            return new ConnectedPurchaseOrderLine(
+                CatalogProductId.From(x.ProductId),
+                x.NameSnapshot,
+                x.SkuSnapshot,
+                x.Qty,
+                x.UnitPriceSnapshot,
+                x.LineTotal,
+                x.UnitOfMeasureCode,
+                x.ProposedQty,
+                confirmed,
+                availability);
+        }).ToList();
+
+        return ConnectedPurchaseOrder.Rehydrate(
+            ConnectedPurchaseOrderId.From(r.Id),
+            ConnectedSupplierRelationshipId.From(r.RelationshipId),
+            PosOrganizationId.From(r.BuyerOrganizationId),
+            PosOrganizationId.From(r.SupplierOrganizationId),
+            PurchaseOrderId.From(r.BuyerPurchaseOrderId),
+            r.BuyerPoNumber,
+            r.OrderDate,
+            r.Notes,
+            status,
+            r.TotalAmount,
+            r.CreatedAtUtc,
+            r.UpdatedAtUtc,
+            r.AcceptedAtUtc,
+            r.DeclinedAtUtc,
+            lines,
+            r.PreparingAtUtc,
+            r.FulfilledAtUtc,
+            r.WithdrawnAtUtc,
+            r.DeclineReason is int reason ? (ConnectedPoDeclineReason)reason : null,
+            r.DeclineNote,
+            (ConnectedPoPaymentTerm)r.PaymentTerm,
+            r.ChangesProposedAtUtc,
+            r.ChangesProposedByUserId,
+            r.BuyerRespondedAtUtc,
+            r.BuyerRespondedByUserId);
+    }
+
     public static ConnectedPurchaseOrderRecord ToRecord(ConnectedPurchaseOrder x)=>new(){Id=x.Id.Value,RelationshipId=x.RelationshipId.Value,
         BuyerOrganizationId=x.BuyerOrganizationId.Value,SupplierOrganizationId=x.SupplierOrganizationId.Value,BuyerPurchaseOrderId=x.BuyerPurchaseOrderId.Value,
         BuyerPoNumber=x.BuyerPoNumber,OrderDate=x.OrderDate,Notes=x.Notes,Status=(int)x.Status,TotalAmount=x.TotalAmount,
         CreatedAtUtc=x.CreatedAtUtc,UpdatedAtUtc=x.UpdatedAtUtc,AcceptedAtUtc=x.AcceptedAtUtc,DeclinedAtUtc=x.DeclinedAtUtc,
         PreparingAtUtc=x.PreparingAtUtc,FulfilledAtUtc=x.FulfilledAtUtc,WithdrawnAtUtc=x.WithdrawnAtUtc,
         DeclineReason=x.DeclineReason is null ? null : (int)x.DeclineReason.Value,DeclineNote=x.DeclineNote,
+        PaymentTerm=(int)x.PaymentTerm,ChangesProposedAtUtc=x.ChangesProposedAtUtc,ChangesProposedByUserId=x.ChangesProposedByUserId,
+        BuyerRespondedAtUtc=x.BuyerRespondedAtUtc,BuyerRespondedByUserId=x.BuyerRespondedByUserId,
         Lines=x.Lines.Select((l,i)=>new ConnectedPurchaseOrderLineRecord{ConnectedPurchaseOrderId=x.Id.Value,LineNumber=i+1,ProductId=l.ProductId.Value,
-            NameSnapshot=l.NameSnapshot,SkuSnapshot=l.SkuSnapshot,Qty=l.Qty,UnitPriceSnapshot=l.UnitPriceSnapshot,LineTotal=l.LineTotal,
+            NameSnapshot=l.NameSnapshot,SkuSnapshot=l.SkuSnapshot,Qty=l.Qty,ProposedQty=l.ProposedQty,ConfirmedQty=l.ConfirmedQty,
+            Availability=(int)l.Availability,UnitPriceSnapshot=l.UnitPriceSnapshot,LineTotal=l.LineTotal,
             UnitOfMeasureCode=l.UnitOfMeasureCode}).ToList()};
     public static void Apply(ConnectedPurchaseOrder x,ConnectedPurchaseOrderRecord r)
-    {r.Status=(int)x.Status;r.UpdatedAtUtc=x.UpdatedAtUtc;r.AcceptedAtUtc=x.AcceptedAtUtc;r.DeclinedAtUtc=x.DeclinedAtUtc;
-     r.PreparingAtUtc=x.PreparingAtUtc;r.FulfilledAtUtc=x.FulfilledAtUtc;r.WithdrawnAtUtc=x.WithdrawnAtUtc;
-     r.DeclineReason=x.DeclineReason is null ? null : (int)x.DeclineReason.Value;r.DeclineNote=x.DeclineNote;}
+    {
+        r.Status=(int)x.Status;r.UpdatedAtUtc=x.UpdatedAtUtc;r.AcceptedAtUtc=x.AcceptedAtUtc;r.DeclinedAtUtc=x.DeclinedAtUtc;
+        r.PreparingAtUtc=x.PreparingAtUtc;r.FulfilledAtUtc=x.FulfilledAtUtc;r.WithdrawnAtUtc=x.WithdrawnAtUtc;
+        r.DeclineReason=x.DeclineReason is null ? null : (int)x.DeclineReason.Value;r.DeclineNote=x.DeclineNote;
+        r.PaymentTerm=(int)x.PaymentTerm;r.ChangesProposedAtUtc=x.ChangesProposedAtUtc;r.ChangesProposedByUserId=x.ChangesProposedByUserId;
+        r.BuyerRespondedAtUtc=x.BuyerRespondedAtUtc;r.BuyerRespondedByUserId=x.BuyerRespondedByUserId;
+        var domainLines=x.Lines.ToList();
+        foreach(var lineRecord in r.Lines)
+        {
+            var index=lineRecord.LineNumber-1;
+            if(index<0||index>=domainLines.Count) continue;
+            var line=domainLines[index];
+            lineRecord.ProposedQty=line.ProposedQty;
+            lineRecord.ConfirmedQty=line.ConfirmedQty;
+            lineRecord.Availability=(int)line.Availability;
+        }
+    }
 }

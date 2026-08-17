@@ -34,5 +34,6 @@ public interface IPosConnectedSupplierClient
     Task<ApiResult<ConnectedPurchaseOrderDto>> DeclineIncomingAsync(Guid orderId,DeclineIncomingOrderRequest? request=null,CancellationToken ct=default);
     Task<ApiResult<ConnectedPurchaseOrderDto>> PrepareIncomingAsync(Guid orderId,CancellationToken ct=default);
     Task<ApiResult<ConnectedPurchaseOrderDto>> FulfillIncomingAsync(Guid orderId,CancellationToken ct=default);
+    Task<ApiResult<ConnectedPurchaseOrderDto>> ProposeIncomingChangesAsync(Guid orderId,ProposeIncomingOrderChangesRequest request,CancellationToken ct=default);
     Task<ApiResult<ConnectedPoDraftReviewDto>> RevalidateDraftAsync(Guid relationshipId,RevalidateConnectedPoDraftRequest request,CancellationToken ct=default);
 }

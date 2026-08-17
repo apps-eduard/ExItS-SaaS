@@ -15,7 +15,27 @@ public enum ConnectedPurchaseOrderStatus
     Declined = 2,
     Preparing = 3,
     Fulfilled = 4,
-    Withdrawn = 5
+    Withdrawn = 5,
+    ChangesProposed = 6
+}
+
+/// <summary>
+/// Buyer-selected settlement term for a connected purchase order.
+/// GCash is persisted as <see cref="ManualGCash"/> — there is no payment-gateway verification.
+/// Utang is a B2B payable term only; this package does not post customer-credit debt.
+/// </summary>
+public enum ConnectedPoPaymentTerm
+{
+    Cash = 0,
+    ManualGCash = 1,
+    Utang = 2
+}
+
+public enum ConnectedPoLineAvailability
+{
+    Pending = 0,
+    Available = 1,
+    Unavailable = 2
 }
 
 public enum ConnectedPoDeclineReason
@@ -535,15 +555,145 @@ public sealed class BuyerSupplierProductLink
     }
 }
 
-public sealed record ConnectedPurchaseOrderLine(CatalogProductId ProductId, string NameSnapshot, string? SkuSnapshot,
-    decimal Qty, decimal UnitPriceSnapshot, decimal LineTotal, string UnitOfMeasureCode)
+public sealed record ConnectedPoLineProposal(CatalogProductId ProductId, decimal ProposedQty, bool Unavailable);
+
+public static class ConnectedPoPaymentTerms
 {
+    public static ConnectedPoPaymentTerm Parse(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return ConnectedPoPaymentTerm.Cash;
+        }
+
+        var trimmed = value.Trim();
+        if (trimmed.Equals("Cash", StringComparison.OrdinalIgnoreCase))
+        {
+            return ConnectedPoPaymentTerm.Cash;
+        }
+
+        if (trimmed.Equals("GCash", StringComparison.OrdinalIgnoreCase)
+            || trimmed.Equals("ManualGCash", StringComparison.OrdinalIgnoreCase))
+        {
+            return ConnectedPoPaymentTerm.ManualGCash;
+        }
+
+        if (trimmed.Equals("Utang", StringComparison.OrdinalIgnoreCase))
+        {
+            return ConnectedPoPaymentTerm.Utang;
+        }
+
+        throw new DomainException(
+            ConnectedSupplierDomainErrorCodes.InvalidOrder,
+            "Payment term must be Cash, GCash, or Utang.");
+    }
+
+    public static string ToApi(ConnectedPoPaymentTerm term) => term.ToString();
+
+    /// <summary>Merchant-facing label. GCash is never implied to be gateway-verified.</summary>
+    public static string ToUiLabel(ConnectedPoPaymentTerm term) =>
+        term == ConnectedPoPaymentTerm.ManualGCash ? "GCash" : term.ToString();
+}
+
+public sealed record ConnectedPurchaseOrderLine(
+    CatalogProductId ProductId,
+    string NameSnapshot,
+    string? SkuSnapshot,
+    decimal Qty,
+    decimal UnitPriceSnapshot,
+    decimal LineTotal,
+    string UnitOfMeasureCode,
+    decimal? ProposedQty = null,
+    decimal? ConfirmedQty = null,
+    ConnectedPoLineAvailability Availability = ConnectedPoLineAvailability.Pending)
+{
+    public decimal RequestedQty => Qty;
+    public decimal EffectiveProposedQty => ProposedQty ?? Qty;
+    public decimal ProposedLineTotal => SaleMoney.RoundMoney(EffectiveProposedQty * UnitPriceSnapshot);
+    public decimal ConfirmedLineTotal => SaleMoney.RoundMoney((ConfirmedQty ?? 0m) * UnitPriceSnapshot);
+    public decimal FulfillmentQty => ConfirmedQty ?? 0m;
+    public bool HasSupplierChange =>
+        Availability == ConnectedPoLineAvailability.Unavailable
+        || (ProposedQty is decimal proposed && proposed != Qty);
+
     public static ConnectedPurchaseOrderLine Create(CatalogProductId productId,string name,string? sku,decimal qty,decimal unitPrice,string uom)
     {
         if (qty<=0) throw new DomainException(ConnectedSupplierDomainErrorCodes.InvalidOrder,"Order quantity must be positive.");
         var price=SupplierProductExposure.Money(unitPrice);
         return new(productId,SupplierProductExposure.Required(name,200),SupplierProductExposure.Clean(sku),qty,price,
             SaleMoney.RoundMoney(qty*price),SupplierProductExposure.Required(uom,32));
+    }
+
+    public ConnectedPurchaseOrderLine ConfirmRequested() =>
+        this with
+        {
+            ProposedQty = Qty,
+            ConfirmedQty = Qty,
+            Availability = ConnectedPoLineAvailability.Available
+        };
+
+    public ConnectedPurchaseOrderLine ApplyProposal(decimal proposedQty, bool unavailable)
+    {
+        if (unavailable)
+        {
+            if (proposedQty < 0m)
+            {
+                throw new DomainException(
+                    ConnectedSupplierDomainErrorCodes.InvalidOrder,
+                    "Unavailable lines cannot have a negative quantity.");
+            }
+
+            return this with
+            {
+                ProposedQty = 0m,
+                ConfirmedQty = null,
+                Availability = ConnectedPoLineAvailability.Unavailable
+            };
+        }
+
+        if (proposedQty < 0m)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidOrder,
+                "Proposed quantity cannot be negative.");
+        }
+
+        if (proposedQty > Qty)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidOrder,
+                "Supplier cannot increase quantity above the buyer's original request.");
+        }
+
+        if (proposedQty == 0m)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidOrder,
+                "Mark the line unavailable instead of proposing zero.");
+        }
+
+        return this with
+        {
+            ProposedQty = proposedQty,
+            ConfirmedQty = null,
+            Availability = ConnectedPoLineAvailability.Available
+        };
+    }
+
+    public ConnectedPurchaseOrderLine ConfirmProposal()
+    {
+        if (Availability == ConnectedPoLineAvailability.Unavailable)
+        {
+            return this with { ConfirmedQty = 0m, ProposedQty = ProposedQty ?? 0m };
+        }
+
+        var qty = ProposedQty ?? Qty;
+        return this with
+        {
+            ConfirmedQty = qty,
+            ProposedQty = qty,
+            Availability = ConnectedPoLineAvailability.Available
+        };
     }
 }
 
@@ -561,7 +711,9 @@ public sealed class ConnectedPurchaseOrder
     public DateOnly OrderDate { get; }
     public string? Notes { get; }
     public ConnectedPurchaseOrderStatus Status { get; private set; }
+    /// <summary>Original requested total. Never overwritten by supplier proposals.</summary>
     public decimal TotalAmount { get; }
+    public ConnectedPoPaymentTerm PaymentTerm { get; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
     public DateTimeOffset? AcceptedAtUtc { get; private set; }
@@ -569,9 +721,16 @@ public sealed class ConnectedPurchaseOrder
     public DateTimeOffset? PreparingAtUtc { get; private set; }
     public DateTimeOffset? FulfilledAtUtc { get; private set; }
     public DateTimeOffset? WithdrawnAtUtc { get; private set; }
+    public DateTimeOffset? ChangesProposedAtUtc { get; private set; }
+    public Guid? ChangesProposedByUserId { get; private set; }
+    public DateTimeOffset? BuyerRespondedAtUtc { get; private set; }
+    public Guid? BuyerRespondedByUserId { get; private set; }
     public ConnectedPoDeclineReason? DeclineReason { get; private set; }
     public string? DeclineNote { get; private set; }
     public IReadOnlyList<ConnectedPurchaseOrderLine> Lines => _lines;
+    public decimal ProposedTotalAmount => SaleMoney.RoundMoney(_lines.Sum(x => x.ProposedLineTotal));
+    public decimal ConfirmedTotalAmount => SaleMoney.RoundMoney(_lines.Sum(x => x.ConfirmedLineTotal));
+    public bool HasProposedLineChanges => _lines.Any(x => x.HasSupplierChange);
 
     private ConnectedPurchaseOrder(
         ConnectedPurchaseOrderId id,
@@ -593,7 +752,12 @@ public sealed class ConnectedPurchaseOrder
         DateTimeOffset? withdrawn,
         ConnectedPoDeclineReason? declineReason,
         string? declineNote,
-        List<ConnectedPurchaseOrderLine> lines)
+        List<ConnectedPurchaseOrderLine> lines,
+        ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash,
+        DateTimeOffset? changesProposedAtUtc = null,
+        Guid? changesProposedByUserId = null,
+        DateTimeOffset? buyerRespondedAtUtc = null,
+        Guid? buyerRespondedByUserId = null)
     {
         Id = id;
         RelationshipId = relationshipId;
@@ -605,6 +769,7 @@ public sealed class ConnectedPurchaseOrder
         Notes = notes;
         Status = status;
         TotalAmount = total;
+        PaymentTerm = paymentTerm;
         CreatedAtUtc = created;
         UpdatedAtUtc = updated;
         AcceptedAtUtc = accepted;
@@ -614,6 +779,10 @@ public sealed class ConnectedPurchaseOrder
         WithdrawnAtUtc = withdrawn;
         DeclineReason = declineReason;
         DeclineNote = declineNote;
+        ChangesProposedAtUtc = changesProposedAtUtc;
+        ChangesProposedByUserId = changesProposedByUserId;
+        BuyerRespondedAtUtc = buyerRespondedAtUtc;
+        BuyerRespondedByUserId = buyerRespondedByUserId;
         _lines = lines;
     }
 
@@ -625,7 +794,8 @@ public sealed class ConnectedPurchaseOrder
         string? notes,
         IReadOnlyList<ConnectedPurchaseOrderLine> lines,
         DateTimeOffset utcNow,
-        ConnectedPurchaseOrderId? id = null)
+        ConnectedPurchaseOrderId? id = null,
+        ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash)
     {
         if (relationship.Status != ConnectedSupplierRelationshipStatus.Active || lines.Count == 0)
         {
@@ -655,15 +825,122 @@ public sealed class ConnectedPurchaseOrder
             null,
             null,
             null,
-            lines.ToList());
+            lines.ToList(),
+            paymentTerm);
     }
 
     public void Accept(DateTimeOffset utcNow)
     {
         ConnectedSupplierRelationship.EnsureUtc(utcNow);
         EnsureNew();
+        ReplaceLines(_lines.Select(x => x.ConfirmRequested()).ToList());
         Status = ConnectedPurchaseOrderStatus.Accepted;
         AcceptedAtUtc = utcNow;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void ProposeLineChanges(
+        IReadOnlyList<ConnectedPoLineProposal> proposals,
+        DateTimeOffset utcNow,
+        Guid? actorId = null)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        EnsureNew();
+        if (proposals is null || proposals.Count == 0)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidOrder,
+                "A proposal is required for every order line.");
+        }
+
+        var byProduct = new Dictionary<Guid, ConnectedPoLineProposal>();
+        foreach (var proposal in proposals)
+        {
+            if (!byProduct.TryAdd(proposal.ProductId.Value, proposal))
+            {
+                throw new DomainException(
+                    ConnectedSupplierDomainErrorCodes.InvalidOrder,
+                    "Duplicate product in supplier proposal.");
+            }
+        }
+
+        if (byProduct.Count != _lines.Count || _lines.Any(line => !byProduct.ContainsKey(line.ProductId.Value)))
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidOrder,
+                "Supplier proposal must include every original order line.");
+        }
+
+        var updated = new List<ConnectedPurchaseOrderLine>(_lines.Count);
+        foreach (var line in _lines)
+        {
+            var proposal = byProduct[line.ProductId.Value];
+            updated.Add(line.ApplyProposal(proposal.ProposedQty, proposal.Unavailable));
+        }
+
+        if (!updated.Any(x => x.HasSupplierChange))
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidOrder,
+                "No quantity changes to propose. Confirm the order instead.");
+        }
+
+        if (!updated.Any(x =>
+                x.Availability != ConnectedPoLineAvailability.Unavailable
+                && x.EffectiveProposedQty > 0m))
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidOrder,
+                "At least one line must remain fulfillable. Decline the order if nothing can be supplied.");
+        }
+
+        ReplaceLines(updated);
+        Status = ConnectedPurchaseOrderStatus.ChangesProposed;
+        ChangesProposedAtUtc = utcNow;
+        ChangesProposedByUserId = actorId;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void AcceptProposedChanges(DateTimeOffset utcNow, Guid? actorId = null)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        if (Status != ConnectedPurchaseOrderStatus.ChangesProposed)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidTransition,
+                "Only a proposed revision can be accepted by the buyer.");
+        }
+
+        var confirmed = _lines.Select(x => x.ConfirmProposal()).ToList();
+        if (!confirmed.Any(x => x.FulfillmentQty > 0m))
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidOrder,
+                "A revised order must contain at least one fulfillable line.");
+        }
+
+        ReplaceLines(confirmed);
+        Status = ConnectedPurchaseOrderStatus.Accepted;
+        AcceptedAtUtc = utcNow;
+        BuyerRespondedAtUtc = utcNow;
+        BuyerRespondedByUserId = actorId;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void RejectProposedChanges(DateTimeOffset utcNow, Guid? actorId = null)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        if (Status != ConnectedPurchaseOrderStatus.ChangesProposed)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidTransition,
+                "Only a proposed revision can be rejected by the buyer.");
+        }
+
+        Status = ConnectedPurchaseOrderStatus.Withdrawn;
+        WithdrawnAtUtc = utcNow;
+        BuyerRespondedAtUtc = utcNow;
+        BuyerRespondedByUserId = actorId;
         UpdatedAtUtc = utcNow;
     }
 
@@ -713,20 +990,33 @@ public sealed class ConnectedPurchaseOrder
         UpdatedAtUtc = utcNow;
     }
 
-    /// <summary>Buyer withdraw while supplier has not yet accepted (New only).</summary>
+    /// <summary>Buyer withdraw while supplier has not yet accepted (New or awaiting buyer approval).</summary>
     public void WithdrawByBuyer(DateTimeOffset utcNow)
     {
         ConnectedSupplierRelationship.EnsureUtc(utcNow);
-        EnsureNew();
+        if (Status is not (ConnectedPurchaseOrderStatus.New or ConnectedPurchaseOrderStatus.ChangesProposed))
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidTransition,
+                "Incoming order has already been answered.");
+        }
+
         Status = ConnectedPurchaseOrderStatus.Withdrawn;
         WithdrawnAtUtc = utcNow;
         UpdatedAtUtc = utcNow;
     }
 
-    public bool CanBuyerWithdraw => Status == ConnectedPurchaseOrderStatus.New;
+    public bool CanBuyerWithdraw => Status is ConnectedPurchaseOrderStatus.New
+        or ConnectedPurchaseOrderStatus.ChangesProposed;
     public bool CanBuyerReceive => Status is ConnectedPurchaseOrderStatus.Accepted
         or ConnectedPurchaseOrderStatus.Preparing
         or ConnectedPurchaseOrderStatus.Fulfilled;
+
+    private void ReplaceLines(List<ConnectedPurchaseOrderLine> lines)
+    {
+        _lines.Clear();
+        _lines.AddRange(lines);
+    }
 
     private void EnsureNew()
     {
@@ -776,7 +1066,12 @@ public sealed class ConnectedPurchaseOrder
         DateTimeOffset? fulfilled = null,
         DateTimeOffset? withdrawn = null,
         ConnectedPoDeclineReason? declineReason = null,
-        string? declineNote = null) =>
+        string? declineNote = null,
+        ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash,
+        DateTimeOffset? changesProposedAtUtc = null,
+        Guid? changesProposedByUserId = null,
+        DateTimeOffset? buyerRespondedAtUtc = null,
+        Guid? buyerRespondedByUserId = null) =>
         new(
             id,
             relationshipId,
@@ -797,5 +1092,10 @@ public sealed class ConnectedPurchaseOrder
             withdrawn,
             declineReason,
             declineNote,
-            lines.ToList());
+            lines.ToList(),
+            paymentTerm,
+            changesProposedAtUtc,
+            changesProposedByUserId,
+            buyerRespondedAtUtc,
+            buyerRespondedByUserId);
 }

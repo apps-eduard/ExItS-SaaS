@@ -21,6 +21,7 @@ public static class ConnectedPoDisplayStatus
     public const string ReceivedWithIssues = "ReceivedWithIssues";
     public const string Withdrawn = "Withdrawn";
     public const string Cancelled = "Cancelled";
+    public const string ChangesNeedApproval = "ChangesNeedApproval";
 
     public static string ForBuyer(PurchaseOrder po, ConnectedPurchaseOrder? connected)
     {
@@ -55,6 +56,11 @@ public static class ConnectedPoDisplayStatus
             return Withdrawn;
         }
 
+        if (connected.Status == ConnectedPurchaseOrderStatus.ChangesProposed)
+        {
+            return ChangesNeedApproval;
+        }
+
         if (po.Status == PurchaseOrderStatus.PartiallyReceived)
         {
             return PartiallyReceived;
@@ -68,6 +74,7 @@ public static class ConnectedPoDisplayStatus
         return connected.Status switch
         {
             ConnectedPurchaseOrderStatus.New => WaitingForSupplier,
+            ConnectedPurchaseOrderStatus.ChangesProposed => ChangesNeedApproval,
             ConnectedPurchaseOrderStatus.Accepted => SupplierAccepted,
             ConnectedPurchaseOrderStatus.Preparing => Preparing,
             ConnectedPurchaseOrderStatus.Fulfilled => Ready,
@@ -103,6 +110,7 @@ public static class ConnectedPoDisplayStatus
         return connected.Status switch
         {
             ConnectedPurchaseOrderStatus.New => "New",
+            ConnectedPurchaseOrderStatus.ChangesProposed => "ChangesProposed",
             ConnectedPurchaseOrderStatus.Accepted => "Accepted",
             ConnectedPurchaseOrderStatus.Preparing => Preparing,
             ConnectedPurchaseOrderStatus.Fulfilled => "Fulfilled",
@@ -124,6 +132,9 @@ public static class ConnectedPoDisplayStatus
             (ConnectedPurchaseOrderStatus.New, ConnectedPurchaseOrderStatus.Accepted) => true,
             (ConnectedPurchaseOrderStatus.New, ConnectedPurchaseOrderStatus.Declined) => true,
             (ConnectedPurchaseOrderStatus.New, ConnectedPurchaseOrderStatus.Withdrawn) => true,
+            (ConnectedPurchaseOrderStatus.New, ConnectedPurchaseOrderStatus.ChangesProposed) => true,
+            (ConnectedPurchaseOrderStatus.ChangesProposed, ConnectedPurchaseOrderStatus.Accepted) => true,
+            (ConnectedPurchaseOrderStatus.ChangesProposed, ConnectedPurchaseOrderStatus.Withdrawn) => true,
             (ConnectedPurchaseOrderStatus.Accepted, ConnectedPurchaseOrderStatus.Preparing) => true,
             (ConnectedPurchaseOrderStatus.Accepted, ConnectedPurchaseOrderStatus.Fulfilled) => true,
             (ConnectedPurchaseOrderStatus.Preparing, ConnectedPurchaseOrderStatus.Fulfilled) => true,
@@ -141,5 +152,39 @@ public static class ConnectedPurchaseOrderNotificationTypes
     public const string Fulfilled = "ConnectedPurchaseOrderFulfilled";
     public const string Withdrawn = "ConnectedPurchaseOrderWithdrawn";
     public const string Received = "ConnectedPurchaseOrderReceived";
+    public const string PartiallyReceived = "ConnectedPurchaseOrderPartiallyReceived";
     public const string ReceivingIssue = "ConnectedPurchaseOrderReceivingIssue";
+    public const string ChangesProposed = "ConnectedPurchaseOrderChangesProposed";
+    public const string ChangesAccepted = "ConnectedPurchaseOrderChangesAccepted";
+    public const string ChangesRejected = "ConnectedPurchaseOrderChangesRejected";
+
+    public static bool IsKnown(string? relatedType) =>
+        string.Equals(relatedType, Submitted, StringComparison.Ordinal)
+        || string.Equals(relatedType, Accepted, StringComparison.Ordinal)
+        || string.Equals(relatedType, Declined, StringComparison.Ordinal)
+        || string.Equals(relatedType, Preparing, StringComparison.Ordinal)
+        || string.Equals(relatedType, Fulfilled, StringComparison.Ordinal)
+        || string.Equals(relatedType, Withdrawn, StringComparison.Ordinal)
+        || string.Equals(relatedType, Received, StringComparison.Ordinal)
+        || string.Equals(relatedType, PartiallyReceived, StringComparison.Ordinal)
+        || string.Equals(relatedType, ReceivingIssue, StringComparison.Ordinal)
+        || string.Equals(relatedType, ChangesProposed, StringComparison.Ordinal)
+        || string.Equals(relatedType, ChangesAccepted, StringComparison.Ordinal)
+        || string.Equals(relatedType, ChangesRejected, StringComparison.Ordinal);
+
+    public static bool IsBuyerFacing(string? relatedType) =>
+        string.Equals(relatedType, Accepted, StringComparison.Ordinal)
+        || string.Equals(relatedType, Declined, StringComparison.Ordinal)
+        || string.Equals(relatedType, Preparing, StringComparison.Ordinal)
+        || string.Equals(relatedType, Fulfilled, StringComparison.Ordinal)
+        || string.Equals(relatedType, ChangesProposed, StringComparison.Ordinal);
+
+    public static bool IsSupplierFacing(string? relatedType) =>
+        string.Equals(relatedType, Submitted, StringComparison.Ordinal)
+        || string.Equals(relatedType, Withdrawn, StringComparison.Ordinal)
+        || string.Equals(relatedType, Received, StringComparison.Ordinal)
+        || string.Equals(relatedType, PartiallyReceived, StringComparison.Ordinal)
+        || string.Equals(relatedType, ReceivingIssue, StringComparison.Ordinal)
+        || string.Equals(relatedType, ChangesAccepted, StringComparison.Ordinal)
+        || string.Equals(relatedType, ChangesRejected, StringComparison.Ordinal);
 }

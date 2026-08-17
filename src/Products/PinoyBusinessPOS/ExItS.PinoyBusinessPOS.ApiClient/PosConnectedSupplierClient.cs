@@ -43,6 +43,7 @@ public sealed class PosConnectedSupplierClient(HttpClient http,IConnectivityServ
     public Task<ApiResult<ConnectedPurchaseOrderDto>> DeclineIncomingAsync(Guid id,DeclineIncomingOrderRequest? request=null,CancellationToken ct=default)=>Send<ConnectedPurchaseOrderDto>(HttpMethod.Post,$"{Path}/incoming-orders/{id:D}/decline",request??new(),ct);
     public Task<ApiResult<ConnectedPurchaseOrderDto>> PrepareIncomingAsync(Guid id,CancellationToken ct=default)=>Send<ConnectedPurchaseOrderDto>(HttpMethod.Post,$"{Path}/incoming-orders/{id:D}/prepare",null,ct);
     public Task<ApiResult<ConnectedPurchaseOrderDto>> FulfillIncomingAsync(Guid id,CancellationToken ct=default)=>Send<ConnectedPurchaseOrderDto>(HttpMethod.Post,$"{Path}/incoming-orders/{id:D}/fulfill",null,ct);
+    public Task<ApiResult<ConnectedPurchaseOrderDto>> ProposeIncomingChangesAsync(Guid id,ProposeIncomingOrderChangesRequest request,CancellationToken ct=default)=>Send<ConnectedPurchaseOrderDto>(HttpMethod.Post,$"{Path}/incoming-orders/{id:D}/propose-changes",request,ct);
     public Task<ApiResult<ConnectedPoDraftReviewDto>> RevalidateDraftAsync(Guid id,RevalidateConnectedPoDraftRequest r,CancellationToken ct=default)=>Send<ConnectedPoDraftReviewDto>(HttpMethod.Post,$"{Path}/relationships/{id:D}/revalidate-draft",r,ct);
     private async Task<ApiResult<T>> Send<T>(HttpMethod method,string path,object? body,CancellationToken ct)
     {

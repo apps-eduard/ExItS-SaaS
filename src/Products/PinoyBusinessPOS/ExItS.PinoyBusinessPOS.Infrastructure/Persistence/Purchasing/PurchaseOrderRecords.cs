@@ -29,6 +29,7 @@ internal sealed class PurchaseOrderRecord
     public Guid? OrderedBy { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
+    public int PaymentTerm { get; set; }
     public uint Xmin { get; set; }
 }
 

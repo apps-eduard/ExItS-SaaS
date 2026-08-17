@@ -193,7 +193,8 @@ public static class OrganizationBusinessNotificationTypes
 {
     public static bool IsPublishable(string? relatedType) =>
         SupplierConnectionNotificationTypes.IsKnown(relatedType)
-        || CustomerOrderNotificationTypes.IsKnown(relatedType);
+        || CustomerOrderNotificationTypes.IsKnown(relatedType)
+        || ConnectedPurchaseOrderNotificationTypes.IsKnown(relatedType);
 }
 
 /// <summary>RelatedType values for customer-order lifecycle organization inbox events.</summary>
@@ -219,4 +220,51 @@ public static class CustomerOrderNotificationTypes
         || string.Equals(relatedType, Delivered, StringComparison.Ordinal)
         || string.Equals(relatedType, Collected, StringComparison.Ordinal)
         || string.Equals(relatedType, Completed, StringComparison.Ordinal);
+}
+
+/// <summary>RelatedType values for connected purchase-order lifecycle organization inbox events.</summary>
+public static class ConnectedPurchaseOrderNotificationTypes
+{
+    public const string Submitted = "ConnectedPurchaseOrderSubmitted";
+    public const string Accepted = "ConnectedPurchaseOrderAccepted";
+    public const string Declined = "ConnectedPurchaseOrderDeclined";
+    public const string Preparing = "ConnectedPurchaseOrderPreparing";
+    public const string Fulfilled = "ConnectedPurchaseOrderFulfilled";
+    public const string Withdrawn = "ConnectedPurchaseOrderWithdrawn";
+    public const string Received = "ConnectedPurchaseOrderReceived";
+    public const string PartiallyReceived = "ConnectedPurchaseOrderPartiallyReceived";
+    public const string ReceivingIssue = "ConnectedPurchaseOrderReceivingIssue";
+    public const string ChangesProposed = "ConnectedPurchaseOrderChangesProposed";
+    public const string ChangesAccepted = "ConnectedPurchaseOrderChangesAccepted";
+    public const string ChangesRejected = "ConnectedPurchaseOrderChangesRejected";
+
+    public static bool IsKnown(string? relatedType) =>
+        string.Equals(relatedType, Submitted, StringComparison.Ordinal)
+        || string.Equals(relatedType, Accepted, StringComparison.Ordinal)
+        || string.Equals(relatedType, Declined, StringComparison.Ordinal)
+        || string.Equals(relatedType, Preparing, StringComparison.Ordinal)
+        || string.Equals(relatedType, Fulfilled, StringComparison.Ordinal)
+        || string.Equals(relatedType, Withdrawn, StringComparison.Ordinal)
+        || string.Equals(relatedType, Received, StringComparison.Ordinal)
+        || string.Equals(relatedType, PartiallyReceived, StringComparison.Ordinal)
+        || string.Equals(relatedType, ReceivingIssue, StringComparison.Ordinal)
+        || string.Equals(relatedType, ChangesProposed, StringComparison.Ordinal)
+        || string.Equals(relatedType, ChangesAccepted, StringComparison.Ordinal)
+        || string.Equals(relatedType, ChangesRejected, StringComparison.Ordinal);
+
+    public static bool IsBuyerFacing(string? relatedType) =>
+        string.Equals(relatedType, Accepted, StringComparison.Ordinal)
+        || string.Equals(relatedType, Declined, StringComparison.Ordinal)
+        || string.Equals(relatedType, Preparing, StringComparison.Ordinal)
+        || string.Equals(relatedType, Fulfilled, StringComparison.Ordinal)
+        || string.Equals(relatedType, ChangesProposed, StringComparison.Ordinal);
+
+    public static bool IsSupplierFacing(string? relatedType) =>
+        string.Equals(relatedType, Submitted, StringComparison.Ordinal)
+        || string.Equals(relatedType, Withdrawn, StringComparison.Ordinal)
+        || string.Equals(relatedType, Received, StringComparison.Ordinal)
+        || string.Equals(relatedType, PartiallyReceived, StringComparison.Ordinal)
+        || string.Equals(relatedType, ReceivingIssue, StringComparison.Ordinal)
+        || string.Equals(relatedType, ChangesAccepted, StringComparison.Ordinal)
+        || string.Equals(relatedType, ChangesRejected, StringComparison.Ordinal);
 }

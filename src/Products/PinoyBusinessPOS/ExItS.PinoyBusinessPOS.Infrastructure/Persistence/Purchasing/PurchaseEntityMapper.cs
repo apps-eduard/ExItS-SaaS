@@ -47,7 +47,8 @@ internal static class PurchaseEntityMapper
             record.OrderedBy,
             record.CreatedAtUtc,
             record.UpdatedAtUtc,
-            lines);
+            lines,
+            (ConnectedPoPaymentTerm)record.PaymentTerm);
     }
 
     public static PurchaseOrderRecord ToRecord(PurchaseOrder po) =>
@@ -65,7 +66,8 @@ internal static class PurchaseEntityMapper
             OrderedAtUtc = po.OrderedAtUtc,
             OrderedBy = po.OrderedBy,
             CreatedAtUtc = po.CreatedAtUtc,
-            UpdatedAtUtc = po.UpdatedAtUtc
+            UpdatedAtUtc = po.UpdatedAtUtc,
+            PaymentTerm = (int)po.PaymentTerm
         };
 
     public static void ApplyToRecord(PurchaseOrder po, PurchaseOrderRecord record)
@@ -80,6 +82,7 @@ internal static class PurchaseEntityMapper
         record.OrderedAtUtc = po.OrderedAtUtc;
         record.OrderedBy = po.OrderedBy;
         record.UpdatedAtUtc = po.UpdatedAtUtc;
+        record.PaymentTerm = (int)po.PaymentTerm;
     }
 
     public static PurchaseOrderLineRecord ToRecord(PurchaseOrderLine line) =>

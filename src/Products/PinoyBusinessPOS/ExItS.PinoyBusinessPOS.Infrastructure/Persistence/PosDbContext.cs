@@ -2405,6 +2405,7 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_purchase_orders_status",
                     "status IN ('Draft', 'Ordered', 'PartiallyReceived', 'Received', 'Cancelled')");
+                tb.HasCheckConstraint("ck_purchase_orders_payment_term", "payment_term BETWEEN 0 AND 2");
             });
 
             entity.HasKey(e => e.Id);
@@ -2423,6 +2424,7 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.OrderedBy).HasColumnName("ordered_by");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.PaymentTerm).HasColumnName("payment_term").IsRequired().HasDefaultValue(0);
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
                 .HasColumnType("xid")
@@ -3118,7 +3120,11 @@ public sealed class PosDbContext : DbContext
         });
         modelBuilder.Entity<ConnectedPurchaseOrderRecord>(entity =>
         {
-            entity.ToTable("connected_purchase_orders",tb=>tb.HasCheckConstraint("ck_connected_purchase_orders_status","status BETWEEN 0 AND 5"));
+            entity.ToTable("connected_purchase_orders", tb =>
+            {
+                tb.HasCheckConstraint("ck_connected_purchase_orders_status", "status BETWEEN 0 AND 6");
+                tb.HasCheckConstraint("ck_connected_purchase_orders_payment_term", "payment_term BETWEEN 0 AND 2");
+            });
             entity.HasKey(x=>x.Id);entity.Property(x=>x.Id).HasColumnName("id");entity.Property(x=>x.RelationshipId).HasColumnName("relationship_id");
             entity.Property(x=>x.BuyerOrganizationId).HasColumnName("buyer_organization_id");entity.Property(x=>x.SupplierOrganizationId).HasColumnName("supplier_organization_id");
             entity.Property(x=>x.BuyerPurchaseOrderId).HasColumnName("buyer_purchase_order_id");entity.Property(x=>x.BuyerPoNumber).HasColumnName("buyer_po_number").HasMaxLength(64);
@@ -3130,6 +3136,11 @@ public sealed class PosDbContext : DbContext
             entity.Property(x=>x.WithdrawnAtUtc).HasColumnName("withdrawn_at_utc");
             entity.Property(x=>x.DeclineReason).HasColumnName("decline_reason");
             entity.Property(x=>x.DeclineNote).HasColumnName("decline_note").HasMaxLength(280);
+            entity.Property(x=>x.PaymentTerm).HasColumnName("payment_term").IsRequired().HasDefaultValue(0);
+            entity.Property(x=>x.ChangesProposedAtUtc).HasColumnName("changes_proposed_at_utc");
+            entity.Property(x=>x.ChangesProposedByUserId).HasColumnName("changes_proposed_by_user_id");
+            entity.Property(x=>x.BuyerRespondedAtUtc).HasColumnName("buyer_responded_at_utc");
+            entity.Property(x=>x.BuyerRespondedByUserId).HasColumnName("buyer_responded_by_user_id");
             entity.Property(x=>x.Xmin).HasColumnName("xmin").HasColumnType("xid").ValueGeneratedOnAddOrUpdate().IsConcurrencyToken();
             entity.HasIndex(x=>x.BuyerPurchaseOrderId).IsUnique().HasDatabaseName("ux_connected_purchase_orders_buyer_po");
             entity.HasIndex(x=>new{x.SupplierOrganizationId,x.Status}).HasDatabaseName("ix_connected_purchase_orders_supplier_status");
@@ -3137,10 +3148,23 @@ public sealed class PosDbContext : DbContext
         });
         modelBuilder.Entity<ConnectedPurchaseOrderLineRecord>(entity =>
         {
-            entity.ToTable("connected_purchase_order_lines");entity.HasKey(x=>new{x.ConnectedPurchaseOrderId,x.LineNumber});
+            entity.ToTable("connected_purchase_order_lines", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_connected_po_lines_proposed_qty",
+                    "proposed_qty IS NULL OR (proposed_qty >= 0 AND proposed_qty <= qty)");
+                tb.HasCheckConstraint(
+                    "ck_connected_po_lines_confirmed_qty",
+                    "confirmed_qty IS NULL OR (confirmed_qty >= 0 AND confirmed_qty <= qty)");
+                tb.HasCheckConstraint("ck_connected_po_lines_availability", "availability BETWEEN 0 AND 2");
+            });
+            entity.HasKey(x=>new{x.ConnectedPurchaseOrderId,x.LineNumber});
             entity.Property(x=>x.ConnectedPurchaseOrderId).HasColumnName("connected_purchase_order_id");entity.Property(x=>x.LineNumber).HasColumnName("line_number");
             entity.Property(x=>x.ProductId).HasColumnName("product_id");entity.Property(x=>x.NameSnapshot).HasColumnName("name_snapshot").HasMaxLength(200);
             entity.Property(x=>x.SkuSnapshot).HasColumnName("sku_snapshot").HasMaxLength(64);entity.Property(x=>x.Qty).HasColumnName("qty").HasPrecision(18,3);
+            entity.Property(x=>x.ProposedQty).HasColumnName("proposed_qty").HasPrecision(18,3);
+            entity.Property(x=>x.ConfirmedQty).HasColumnName("confirmed_qty").HasPrecision(18,3);
+            entity.Property(x=>x.Availability).HasColumnName("availability").IsRequired().HasDefaultValue(0);
             entity.Property(x=>x.UnitPriceSnapshot).HasColumnName("unit_price_snapshot").HasPrecision(18,2);entity.Property(x=>x.LineTotal).HasColumnName("line_total").HasPrecision(18,2);
             entity.Property(x=>x.UnitOfMeasureCode).HasColumnName("unit_of_measure_code").HasMaxLength(32);
         });

@@ -230,6 +230,46 @@ public sealed class OrganizationBusinessNotificationTests
     }
 
     [Fact]
+    public async Task Connected_purchase_order_types_are_publishable_and_idempotent()
+    {
+        var source = PlatformOrganizationId.From(Guid.NewGuid());
+        var recipient = PlatformOrganizationId.From(Guid.NewGuid());
+        var owner = PlatformUserId.From(Guid.NewGuid());
+        var now = DateTimeOffset.UtcNow;
+        var memberships = new InMemoryOrganizationMembershipRepository();
+        await memberships.AddAsync(OrganizationMembership.Create(recipient, owner, OrganizationRole.OrganizationOwner, now));
+        var notifications = new CustomerLinkCompletenessTests.InMemoryOrganizationInAppNotificationRepository();
+        var uow = new FakeUow();
+        var useCase = new PublishOrganizationBusinessNotification(memberships, notifications, uow, new FixedClock(now));
+        var relatedId = Guid.NewGuid().ToString("D");
+
+        var first = await useCase.ExecuteAsync(
+            source,
+            new PublishOrganizationBusinessNotificationRequest(
+                recipient.Value,
+                ConnectedPurchaseOrderNotificationTypes.Submitted,
+                relatedId,
+                "New purchase order",
+                "Mica Store submitted PO PO-00123."));
+        var retry = await useCase.ExecuteAsync(
+            source,
+            new PublishOrganizationBusinessNotificationRequest(
+                recipient.Value,
+                ConnectedPurchaseOrderNotificationTypes.Submitted,
+                relatedId,
+                "New purchase order",
+                "Mica Store submitted PO PO-00123."));
+
+        Assert.True(first.IsSuccess, first.ErrorMessage);
+        Assert.True(retry.IsSuccess);
+        Assert.Equal(1, first.Value!.CreatedCount);
+        Assert.Equal(0, retry.Value!.CreatedCount);
+        Assert.Equal(1, retry.Value.SkippedExistingCount);
+        Assert.Single(notifications.Items);
+        Assert.Equal(recipient, notifications.Items[0].OrganizationId);
+    }
+
+    [Fact]
     public async Task Local_activity_confirmation_may_publish_to_same_organization()
     {
         var org = PlatformOrganizationId.From(Guid.NewGuid());

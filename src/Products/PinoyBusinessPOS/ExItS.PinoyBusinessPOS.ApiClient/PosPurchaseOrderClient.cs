@@ -80,6 +80,9 @@ public sealed class PosPurchaseOrderClient(HttpClient httpClient, IConnectivityS
     public Task<ApiResult<PosPurchaseOrderDto>> CancelAsync(Guid purchaseOrderId, CancellationToken ct = default) =>
         SendAsync<PosPurchaseOrderDto>(HttpMethod.Post, $"{PurchaseOrdersPath}/{purchaseOrderId:D}/cancel", null, null, ct);
 
+    public Task<ApiResult<PosPurchaseOrderDto>> AcceptConnectedChangesAsync(Guid purchaseOrderId, CancellationToken ct = default) =>
+        SendAsync<PosPurchaseOrderDto>(HttpMethod.Post, $"{PurchaseOrdersPath}/{purchaseOrderId:D}/accept-changes", null, null, ct);
+
     public Task<ApiResult<PosGoodsReceiptDto>> ReceiveAsync(
         Guid purchaseOrderId,
         ReceivePurchaseOrderRequest request,

@@ -133,10 +133,154 @@ public sealed class ConnectedPoLifecycleDomainTests
             ConnectedPurchaseOrderStatus.New, ConnectedPurchaseOrderStatus.Accepted));
         Assert.True(ConnectedPoDisplayStatus.IsValidConnectedStatusTransition(
             ConnectedPurchaseOrderStatus.New, ConnectedPurchaseOrderStatus.Withdrawn));
+        Assert.True(ConnectedPoDisplayStatus.IsValidConnectedStatusTransition(
+            ConnectedPurchaseOrderStatus.New, ConnectedPurchaseOrderStatus.ChangesProposed));
+        Assert.True(ConnectedPoDisplayStatus.IsValidConnectedStatusTransition(
+            ConnectedPurchaseOrderStatus.ChangesProposed, ConnectedPurchaseOrderStatus.Accepted));
         Assert.False(ConnectedPoDisplayStatus.IsValidConnectedStatusTransition(
             ConnectedPurchaseOrderStatus.Accepted, ConnectedPurchaseOrderStatus.Withdrawn));
         Assert.False(ConnectedPoDisplayStatus.IsValidConnectedStatusTransition(
             ConnectedPurchaseOrderStatus.Withdrawn, ConnectedPurchaseOrderStatus.Accepted));
+    }
+
+    [Fact]
+    public void Accept_unchanged_confirms_requested_quantities()
+    {
+        var order = NewOrder();
+        order.Accept(Now.AddMinutes(3));
+        Assert.Equal(ConnectedPurchaseOrderStatus.Accepted, order.Status);
+        Assert.Equal(10m, order.Lines[0].Qty);
+        Assert.Equal(10m, order.Lines[0].ConfirmedQty);
+        Assert.Equal(order.TotalAmount, order.ConfirmedTotalAmount);
+        Assert.False(order.HasProposedLineChanges);
+    }
+
+    [Fact]
+    public void Supplier_can_reduce_qty_and_buyer_must_approve()
+    {
+        var order = NewOrder();
+        order.ProposeLineChanges(
+            [new ConnectedPoLineProposal(CatalogProductId.From(ProductA), 8m, Unavailable: false)],
+            Now.AddMinutes(3));
+        Assert.Equal(ConnectedPurchaseOrderStatus.ChangesProposed, order.Status);
+        Assert.Equal(10m, order.Lines[0].Qty);
+        Assert.Equal(8m, order.Lines[0].ProposedQty);
+        Assert.Null(order.Lines[0].ConfirmedQty);
+        Assert.Equal(400m, order.ProposedTotalAmount);
+        Assert.Equal(500m, order.TotalAmount);
+
+        order.AcceptProposedChanges(Now.AddMinutes(4));
+        Assert.Equal(ConnectedPurchaseOrderStatus.Accepted, order.Status);
+        Assert.Equal(8m, order.Lines[0].ConfirmedQty);
+        Assert.Equal(10m, order.Lines[0].Qty);
+    }
+
+    [Fact]
+    public void Supplier_can_mark_line_unavailable()
+    {
+        var order = TwoLineOrder();
+        order.ProposeLineChanges(
+            [
+                new ConnectedPoLineProposal(CatalogProductId.From(ProductA), 10m, false),
+                new ConnectedPoLineProposal(CatalogProductId.From(ProductB), 0m, true)
+            ],
+            Now.AddMinutes(3));
+        Assert.Equal(ConnectedPoLineAvailability.Unavailable, order.Lines[1].Availability);
+        Assert.Equal(0m, order.Lines[1].ProposedQty);
+        Assert.Equal(5m, order.Lines[1].Qty);
+    }
+
+    [Fact]
+    public void Supplier_cannot_increase_requested_qty_or_change_price()
+    {
+        var order = NewOrder();
+        var ex = Assert.Throws<DomainException>(() => order.ProposeLineChanges(
+            [new ConnectedPoLineProposal(CatalogProductId.From(ProductA), 11m, false)],
+            Now.AddMinutes(3)));
+        Assert.Equal(ConnectedSupplierDomainErrorCodes.InvalidOrder, ex.ErrorCode);
+        Assert.Equal(10m, order.Lines[0].Qty);
+        Assert.Equal(50m, order.Lines[0].UnitPriceSnapshot);
+    }
+
+    [Fact]
+    public void All_unavailable_cannot_be_proposed_as_fulfillment()
+    {
+        var order = NewOrder();
+        var ex = Assert.Throws<DomainException>(() => order.ProposeLineChanges(
+            [new ConnectedPoLineProposal(CatalogProductId.From(ProductA), 0m, true)],
+            Now.AddMinutes(3)));
+        Assert.Equal(ConnectedSupplierDomainErrorCodes.InvalidOrder, ex.ErrorCode);
+        Assert.Equal(ConnectedPurchaseOrderStatus.New, order.Status);
+    }
+
+    [Fact]
+    public void Buyer_rejection_closes_proposed_changes()
+    {
+        var order = NewOrder();
+        order.ProposeLineChanges(
+            [new ConnectedPoLineProposal(CatalogProductId.From(ProductA), 8m, false)],
+            Now.AddMinutes(3));
+        order.RejectProposedChanges(Now.AddMinutes(4));
+        Assert.Equal(ConnectedPurchaseOrderStatus.Withdrawn, order.Status);
+        Assert.Equal(10m, order.Lines[0].Qty);
+        Assert.False(order.CanBuyerWithdraw);
+    }
+
+    [Fact]
+    public void Align_outstanding_short_closes_unconfirmed_qty_without_changing_ordered()
+    {
+        var po = BuyerPo(10);
+        po.AlignOutstandingToConfirmedQuantities(
+            new Dictionary<Guid, decimal> { [ProductA] = 8m },
+            Now.AddMinutes(5));
+        Assert.Equal(10m, po.Lines[0].OrderedQty);
+        Assert.Equal(8m, po.Lines[0].OutstandingQty);
+        Assert.Equal(2m, po.Lines[0].ClosedShortQty);
+        Assert.Equal(0m, po.Lines[0].ReceivedQty);
+        Assert.Equal(PurchaseOrderStatus.Ordered, po.Status);
+    }
+
+    [Fact]
+    public void Payment_terms_parse_gcash_as_manual()
+    {
+        Assert.Equal(ConnectedPoPaymentTerm.Cash, ConnectedPoPaymentTerms.Parse("Cash"));
+        Assert.Equal(ConnectedPoPaymentTerm.ManualGCash, ConnectedPoPaymentTerms.Parse("GCash"));
+        Assert.Equal(ConnectedPoPaymentTerm.ManualGCash, ConnectedPoPaymentTerms.Parse("ManualGCash"));
+        Assert.Equal(ConnectedPoPaymentTerm.Utang, ConnectedPoPaymentTerms.Parse("Utang"));
+        Assert.Equal("GCash", ConnectedPoPaymentTerms.ToUiLabel(ConnectedPoPaymentTerm.ManualGCash));
+        Assert.Equal("ManualGCash", ConnectedPoPaymentTerms.ToApi(ConnectedPoPaymentTerm.ManualGCash));
+    }
+
+    [Fact]
+    public void Display_status_maps_proposed_changes_for_buyer()
+    {
+        var order = NewOrder();
+        var po = BuyerPo();
+        order.ProposeLineChanges(
+            [new ConnectedPoLineProposal(CatalogProductId.From(ProductA), 8m, false)],
+            Now.AddMinutes(3));
+        Assert.Equal(ConnectedPoDisplayStatus.ChangesNeedApproval, ConnectedPoDisplayStatus.ForBuyer(po, order));
+        Assert.Equal("ChangesProposed", ConnectedPoDisplayStatus.ForSupplier(order));
+    }
+
+    private static readonly Guid ProductB = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+
+    private static ConnectedPurchaseOrder TwoLineOrder()
+    {
+        var relationship = ConnectedSupplierRelationship.Request(Buyer, Supplier, Now);
+        relationship.Approve(Now.AddMinutes(1));
+        return ConnectedPurchaseOrder.CreateFromBuyerSubmission(
+            relationship,
+            PurchaseOrderId.New(),
+            "PO-1043",
+            DateOnly.FromDateTime(Now.UtcDateTime),
+            null,
+            [
+                ConnectedPurchaseOrderLine.Create(CatalogProductId.From(ProductA), "Apple", null, 10m, 50m, "kg"),
+                ConnectedPurchaseOrderLine.Create(CatalogProductId.From(ProductB), "Banana", null, 5m, 40m, "kg")
+            ],
+            Now.AddMinutes(2),
+            paymentTerm: ConnectedPoPaymentTerm.Utang);
     }
 
     [Fact]

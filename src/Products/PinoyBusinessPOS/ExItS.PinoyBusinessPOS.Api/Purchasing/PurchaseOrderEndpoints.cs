@@ -160,6 +160,28 @@ internal static class PurchaseOrderEndpoints
             return PosApiResults.FromResult(result, Results.Ok);
         });
 
+        group.MapPost("/{purchaseOrderId:guid}/accept-changes", async (
+            HttpRequest request,
+            Guid purchaseOrderId,
+            AcceptConnectedPoChanges useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ManagePurchasing, out var organizationId, out var problem)
+                || !DenyInventoryStaffPoMutation(out problem))
+            {
+                return problem!;
+            }
+
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase.ExecuteAsync(organizationId, purchaseOrderId, actorId, ct).ConfigureAwait(false);
+            return PosApiResults.FromResult(result, Results.Ok);
+        });
+
         group.MapPost("/{purchaseOrderId:guid}/receive", async (
             HttpRequest request,
             Guid purchaseOrderId,

@@ -1104,6 +1104,22 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(18,3)")
                         .HasColumnName("qty");
 
+                    b.Property<decimal?>("ProposedQty")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("proposed_qty");
+
+                    b.Property<decimal?>("ConfirmedQty")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("confirmed_qty");
+
+                    b.Property<int>("Availability")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("availability");
+
                     b.Property<string>("SkuSnapshot")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
@@ -1122,7 +1138,12 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.HasKey("ConnectedPurchaseOrderId", "LineNumber");
 
-                    b.ToTable("connected_purchase_order_lines", "pos");
+                    b.ToTable("connected_purchase_order_lines", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_connected_po_lines_availability", "availability BETWEEN 0 AND 2");
+                            t.HasCheckConstraint("ck_connected_po_lines_confirmed_qty", "confirmed_qty IS NULL OR (confirmed_qty >= 0 AND confirmed_qty <= qty)");
+                            t.HasCheckConstraint("ck_connected_po_lines_proposed_qty", "proposed_qty IS NULL OR (proposed_qty >= 0 AND proposed_qty <= qty)");
+                        });
                 });
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.ConnectedPurchaseOrderRecord", b =>
@@ -1148,6 +1169,22 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("BuyerPurchaseOrderId")
                         .HasColumnType("uuid")
                         .HasColumnName("buyer_purchase_order_id");
+
+                    b.Property<DateTimeOffset?>("BuyerRespondedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("buyer_responded_at_utc");
+
+                    b.Property<Guid?>("BuyerRespondedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("buyer_responded_by_user_id");
+
+                    b.Property<DateTimeOffset?>("ChangesProposedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("changes_proposed_at_utc");
+
+                    b.Property<Guid?>("ChangesProposedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("changes_proposed_by_user_id");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -1178,6 +1215,12 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.Property<DateOnly>("OrderDate")
                         .HasColumnType("date")
                         .HasColumnName("order_date");
+
+                    b.Property<int>("PaymentTerm")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("payment_term");
 
                     b.Property<DateTimeOffset?>("PreparingAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -1225,7 +1268,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.ToTable("connected_purchase_orders", "pos", t =>
                         {
-                            t.HasCheckConstraint("ck_connected_purchase_orders_status", "status BETWEEN 0 AND 5");
+                            t.HasCheckConstraint("ck_connected_purchase_orders_payment_term", "payment_term BETWEEN 0 AND 2");
+                            t.HasCheckConstraint("ck_connected_purchase_orders_status", "status BETWEEN 0 AND 6");
                         });
                 });
 
@@ -4265,6 +4309,12 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("organization_id");
 
+                    b.Property<int>("PaymentTerm")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("payment_term");
+
                     b.Property<string>("PoNumber")
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
@@ -4315,6 +4365,7 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.ToTable("purchase_orders", "pos", t =>
                         {
+                            t.HasCheckConstraint("ck_purchase_orders_payment_term", "payment_term BETWEEN 0 AND 2");
                             t.HasCheckConstraint("ck_purchase_orders_status", "status IN ('Draft', 'Ordered', 'PartiallyReceived', 'Received', 'Cancelled')");
                         });
                 });

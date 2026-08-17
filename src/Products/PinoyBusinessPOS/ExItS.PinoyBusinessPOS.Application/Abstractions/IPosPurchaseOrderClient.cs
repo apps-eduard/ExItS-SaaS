@@ -29,6 +29,8 @@ public interface IPosPurchaseOrderClient
 
     Task<ApiResult<PosPurchaseOrderDto>> CancelAsync(Guid purchaseOrderId, CancellationToken ct = default);
 
+    Task<ApiResult<PosPurchaseOrderDto>> AcceptConnectedChangesAsync(Guid purchaseOrderId, CancellationToken ct = default);
+
     Task<ApiResult<PosGoodsReceiptDto>> ReceiveAsync(
         Guid purchaseOrderId,
         ReceivePurchaseOrderRequest request,
