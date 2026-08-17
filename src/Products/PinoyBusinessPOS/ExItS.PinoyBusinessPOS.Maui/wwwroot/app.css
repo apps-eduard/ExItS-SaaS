@@ -8584,6 +8584,7 @@ html.pos-keyboard-open .pos-content {
 
 .pos-purchasing-create__hit--ready {
     align-items: center;
+    cursor: default;
     flex-direction: row;
     gap: 0.45rem;
     padding: 0.4rem 0.45rem 0.4rem 0.7rem;
@@ -8594,7 +8595,7 @@ html.pos-keyboard-open .pos-content {
     background: transparent;
     border: 0;
     color: inherit;
-    cursor: pointer;
+    cursor: default;
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
@@ -8602,6 +8603,13 @@ html.pos-keyboard-open .pos-content {
     min-width: 0;
     padding: 0.15rem 0;
     text-align: left;
+}
+
+.pos-purchasing-create__qty {
+    align-items: center;
+    display: flex;
+    flex: 0 0 auto;
+    gap: 0.35rem;
 }
 
 .pos-purchasing-create__hit-add {
@@ -8672,6 +8680,10 @@ html.pos-keyboard-open .pos-content {
     display: block;
     font-size: var(--exits-text-xs, 0.75rem);
     line-height: 1.35;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .pos-purchasing-create__hit-cta {

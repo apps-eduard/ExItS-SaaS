@@ -31,6 +31,7 @@ else
     var eligibleConnected = EligibleConnectedProducts;
     var categoryChips = CategoryChips;
     var isEditing = _editingProductId is not null;
+    var productListRole = IsConnectedSupplier ? "list" : "listbox";
 <div class="pos-purchasing-create">
 <StoreHeaderBack Href="/purchasing" />
 <Page>
@@ -261,20 +262,15 @@ else
                     }
                     else
                     {
-                        <div class="pos-purchasing-create__product-list" role="listbox" aria-label="@L["Purchasing_Field_Product"]">
+                        <div class="pos-purchasing-create__product-list" role="@productListRole" aria-label="@L["Purchasing_Field_Product"]">
                             @if (IsConnectedSupplier)
                             {
                             @foreach (var product in eligibleConnected)
                             {
                                 var added = _lines.FirstOrDefault(l => l.ProductId == product.BuyerProductId);
-                                var selected = string.Equals(_selectedProductId, product.BuyerProductId.ToString("D"), StringComparison.Ordinal);
-                                <div class="@($"pos-purchasing-create__hit pos-purchasing-create__hit--ready{(selected ? " pos-purchasing-create__hit--selected" : string.Empty)}{(added is not null ? " pos-purchasing-create__hit--added" : string.Empty)}")"
-                                     role="option"
-                                     aria-selected="@selected">
-                                    <button type="button"
-                                            class="pos-purchasing-create__hit-main"
-                                            disabled="@(blocked || _saving)"
-                                            @onclick="() => OnConnectedProductActivated(product)">
+                                <div class="@($"pos-purchasing-create__hit pos-purchasing-create__hit--ready{(added is not null ? " pos-purchasing-create__hit--added" : string.Empty)}")"
+                                     role="listitem">
+                                    <div class="pos-purchasing-create__hit-main">
                                         <span class="pos-purchasing-create__hit-name">@product.ProductName</span>
                                         <span class="pos-purchasing-create__hit-meta pos-muted">
                                             @product.UnitOfMeasure
@@ -287,18 +283,30 @@ else
                                                 ✓ @L["Purchasing_AddedQty", FormatQty(added.OrderedQty)]
                                             </span>
                                         }
-                                    </button>
-                                    @if (added is null)
-                                    {
+                                    </div>
+                                    <div class="pos-purchasing-create__qty" role="group" aria-label="@product.ProductName">
+                                        @if (added is not null)
+                                        {
+                                            <button type="button"
+                                                    class="pos-purchasing-create__hit-add"
+                                                    disabled="@(blocked || _saving || _qtyBusy)"
+                                                    title="@L["Purchasing_DecreaseQtyNamed", product.ProductName]"
+                                                    aria-label="@L["Purchasing_DecreaseQtyNamed", product.ProductName]"
+                                                    @onclick:stopPropagation="true"
+                                                    @onclick="() => AdjustConnectedQty(product, -1)">
+                                                <span aria-hidden="true">−</span>
+                                            </button>
+                                        }
                                         <button type="button"
                                                 class="pos-purchasing-create__hit-add"
-                                                disabled="@(blocked || _saving)"
-                                                title="@L["Purchasing_AddProductNamed", product.ProductName]"
-                                                aria-label="@L["Purchasing_AddProductNamed", product.ProductName]"
-                                                @onclick="() => QuickAddConnectedProduct(product)">
+                                                disabled="@(blocked || _saving || _qtyBusy)"
+                                                title="@L["Purchasing_IncreaseQtyNamed", product.ProductName]"
+                                                aria-label="@L["Purchasing_IncreaseQtyNamed", product.ProductName]"
+                                                @onclick:stopPropagation="true"
+                                                @onclick="() => AdjustConnectedQty(product, 1)">
                                             <span aria-hidden="true">+</span>
                                         </button>
-                                    }
+                                    </div>
                                 </div>
                             }
                             }
@@ -326,6 +334,8 @@ else
                     }
                 </div>
 
+                @if (!IsConnectedSupplier)
+                {
                 <TextInput Label="@L["Purchasing_Field_OrderedQty"]"
                            Value="@_draftQtyText"
                            ValueChanged="v => _draftQtyText = v"
@@ -333,26 +343,6 @@ else
                            IsInvalid="@(!string.IsNullOrEmpty(_draftQtyError))"
                            ErrorText="@_draftQtyError"
                            Disabled="@(blocked || _saving || string.IsNullOrEmpty(_selectedProductId))" />
-                @if (IsConnectedSupplier)
-                {
-                    <div class="pos-purchasing-create__po-price" aria-live="polite">
-                        <span class="pos-purchasing-create__po-price-label">@L["Purchasing_PoPriceLabel"]</span>
-                        @if (_draftUnitCost is { } poPrice)
-                        {
-                            <MoneyDisplay Amount="@poPrice" CurrencyCode="PHP" />
-                        }
-                        else
-                        {
-                            <span class="pos-muted">—</span>
-                        }
-                    </div>
-                    @if (!string.IsNullOrEmpty(_draftCostError))
-                    {
-                        <InlineMessage Tone="InlineMessageTone.Danger">@_draftCostError</InlineMessage>
-                    }
-                }
-                else
-                {
                 <CurrencyInput Label="@L["Purchasing_Field_UnitCost"]"
                                Value="@_draftUnitCost"
                                ValueChanged="v => _draftUnitCost = v"
@@ -362,7 +352,6 @@ else
                                IsInvalid="@(!string.IsNullOrEmpty(_draftCostError))"
                                ErrorText="@_draftCostError"
                                Disabled="@(blocked || _saving || string.IsNullOrEmpty(_selectedProductId))" />
-                }
                 <div class="@($"pos-action-grid {(isEditing ? "pos-action-grid--two" : "pos-action-grid--single")} pos-purchasing-create__line-actions")" role="group">
                     @if (isEditing)
                     {
@@ -391,6 +380,7 @@ else
                         </button>
                     }
                 </div>
+                }
                 }
 
                 @if (!string.IsNullOrEmpty(_linesError))
@@ -425,6 +415,8 @@ else
                                     <div class="pos-po-line__header">
                                         <div class="pos-po-line__title">@line.Name</div>
                                         <div class="pos-po-line__actions">
+                                            @if (!IsConnectedSupplier)
+                                            {
                                             <button type="button"
                                                     class="pos-po-line__action"
                                                     disabled="@(blocked || _saving)"
@@ -433,9 +425,10 @@ else
                                                     @onclick="() => BeginEditLine(line)">
                                                 <span aria-hidden="true">@IconGlyphs.Get("edit")</span>
                                             </button>
+                                            }
                                             <button type="button"
                                                     class="pos-po-line__action pos-po-line__action--danger"
-                                                    disabled="@(blocked || _saving)"
+                                                    disabled="@(blocked || _saving || _qtyBusy)"
                                                     aria-label="@($"{L["Purchasing_DeleteLine"]} {line.Name}")"
                                                     title="@($"{L["Purchasing_DeleteLine"]} {line.Name}")"
                                                     @onclick="() => RequestDeleteLine(line.ProductId)">
@@ -530,6 +523,7 @@ else
 
     private bool _ready;
     private bool _saving;
+    private bool _qtyBusy;
     private bool _isOffline;
     private bool _loadingLookups;
     private bool _loadingReadiness;
@@ -1070,38 +1064,56 @@ else
         _linesError = null;
     }
 
-    private void SelectConnectedProduct(LocalLinkedSupplierProduct product)
+    private void AdjustConnectedQty(LocalLinkedSupplierProduct product, int delta)
     {
-        _selectedProductId = product.BuyerProductId.ToString("D");
-        _draftUnitCost = product.LastKnownOrderPrice;
-        _draftCostError = null;
-        _draftQtyError = null;
-        _linesError = null;
-    }
-
-    private void OnConnectedProductActivated(LocalLinkedSupplierProduct product)
-    {
-        var existing = _lines.FirstOrDefault(l => l.ProductId == product.BuyerProductId);
-        if (existing is not null)
+        if (_qtyBusy || _saving)
         {
-            BeginEditLine(existing);
             return;
         }
 
-        SelectConnectedProduct(product);
-    }
-
-    private void QuickAddConnectedProduct(LocalLinkedSupplierProduct product)
-    {
-        if (_lines.Any(l => l.ProductId == product.BuyerProductId))
+        if (!Capabilities.IsAllowed(UtangCapability.ManagePurchasing))
         {
-            OnConnectedProductActivated(product);
             return;
         }
 
-        SelectConnectedProduct(product);
-        _draftQtyText = "1";
-        AddLine();
+        _qtyBusy = true;
+        try
+        {
+            if (!HasSupplierSelected)
+            {
+                _linesError = L["Purchasing_SelectSupplierFirst"];
+                return;
+            }
+
+            if (delta > 0
+                && !_lines.Any(l => l.ProductId == product.BuyerProductId)
+                && product.LastKnownOrderPrice <= 0m)
+            {
+                _linesError = L["Purchasing_UnitCostRequired"];
+                return;
+            }
+
+            var unitCost = PosSaleOptions.RoundMoney(product.LastKnownOrderPrice);
+            _lines = PurchaseOrderCreateUi.ApplyConnectedQuantityDelta(
+                _lines,
+                l => l.ProductId,
+                l => l.OrderedQty,
+                (l, qty) => l with { OrderedQty = qty },
+                () => new LineEntry(
+                    product.BuyerProductId,
+                    product.ProductName,
+                    1m,
+                    unitCost,
+                    product.SupplierProductId),
+                product.BuyerProductId,
+                delta).ToList();
+            _linesError = null;
+            _draftCostError = null;
+        }
+        finally
+        {
+            _qtyBusy = false;
+        }
     }
 
     private bool TryValidateDraft(out Guid productId, out decimal qty, out decimal unitCost)
@@ -1256,8 +1268,25 @@ else
 
     private void RequestDeleteLine(Guid productId)
     {
+        if (IsConnectedSupplier)
+        {
+            RemoveConnectedLine(productId);
+            return;
+        }
+
         _pendingDeleteProductId = productId;
         _confirmDelete = true;
+    }
+
+    private void RemoveConnectedLine(Guid productId)
+    {
+        if (_qtyBusy || _saving)
+        {
+            return;
+        }
+
+        _lines = PurchaseOrderCreateUi.RemoveLine(_lines, l => l.ProductId, productId).ToList();
+        _linesError = null;
     }
 
     private void CancelDeleteLine()

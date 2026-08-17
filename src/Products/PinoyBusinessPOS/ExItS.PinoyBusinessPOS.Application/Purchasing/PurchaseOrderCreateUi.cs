@@ -256,6 +256,41 @@ public static class PurchaseOrderCreateUi
         return next;
     }
 
+    /// <summary>
+    /// Connected Create PO stepper: +1 adds or increments one BuyerProductId line;
+    /// −1 decrements; Qty 0 removes the line. Never duplicates the buyer product.
+    /// </summary>
+    public static IReadOnlyList<TLine> ApplyConnectedQuantityDelta<TLine>(
+        IReadOnlyList<TLine> lines,
+        Func<TLine, Guid> buyerProductId,
+        Func<TLine, decimal> qty,
+        Func<TLine, decimal, TLine> withQty,
+        Func<TLine> createQtyOne,
+        Guid buyerId,
+        int delta)
+    {
+        if (delta == 0 || buyerId == Guid.Empty)
+        {
+            return lines;
+        }
+
+        var existing = lines.Where(l => buyerProductId(l) == buyerId).Take(1).ToList();
+        if (existing.Count == 0)
+        {
+            return delta > 0
+                ? UpsertLine(lines, buyerProductId, createQtyOne(), replaceExisting: false)
+                : lines;
+        }
+
+        var nextQty = qty(existing[0]) + delta;
+        if (nextQty <= 0m)
+        {
+            return RemoveLine(lines, buyerProductId, buyerId);
+        }
+
+        return UpsertLine(lines, buyerProductId, withQty(existing[0], nextQty), replaceExisting: true);
+    }
+
     public static IReadOnlyList<TLine> RemoveLine<TLine>(
         IReadOnlyList<TLine> lines,
         Func<TLine, Guid> productId,

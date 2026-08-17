@@ -5128,6 +5128,12 @@
   <data name="Purchasing_AddProductNamed" xml:space="preserve">
     <value>Add {0}</value>
   </data>
+  <data name="Purchasing_IncreaseQtyNamed" xml:space="preserve">
+    <value>Increase {0} quantity</value>
+  </data>
+  <data name="Purchasing_DecreaseQtyNamed" xml:space="preserve">
+    <value>Decrease {0} quantity</value>
+  </data>
   <data name="Purchasing_LinesTotal" xml:space="preserve">
     <value>Total</value>
   </data>

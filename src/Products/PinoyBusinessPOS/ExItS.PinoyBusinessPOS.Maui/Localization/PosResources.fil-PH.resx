@@ -5128,6 +5128,12 @@
   <data name="Purchasing_AddProductNamed" xml:space="preserve">
     <value>Idagdag ang {0}</value>
   </data>
+  <data name="Purchasing_IncreaseQtyNamed" xml:space="preserve">
+    <value>Dagdagan ang dami ng {0}</value>
+  </data>
+  <data name="Purchasing_DecreaseQtyNamed" xml:space="preserve">
+    <value>Bawasan ang dami ng {0}</value>
+  </data>
   <data name="Purchasing_LinesTotal" xml:space="preserve">
     <value>Kabuuan</value>
   </data>

@@ -360,6 +360,107 @@ public sealed class PurchaseOrderCreateUiTests
     }
 
     [Fact]
+    public void Connected_plus_on_unadded_product_creates_qty_one()
+    {
+        var buyerId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var supplierProductId = Guid.Parse("99999999-9999-9999-9999-999999999999");
+        IReadOnlyList<ConnectedLine> lines = [];
+
+        var added = Step(lines, buyerId, supplierProductId, 10.80m, 1);
+
+        Assert.Single(added);
+        Assert.Equal(1m, added[0].Qty);
+        Assert.Equal(buyerId, added[0].BuyerProductId);
+        Assert.Equal(supplierProductId, added[0].SupplierProductId);
+        Assert.Equal(10.80m, added[0].Price);
+    }
+
+    [Fact]
+    public void Connected_repeated_plus_increments_same_line_without_duplicate()
+    {
+        var buyerId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var supplierProductId = Guid.Parse("99999999-9999-9999-9999-999999999999");
+        IReadOnlyList<ConnectedLine> lines = [];
+
+        var once = Step(lines, buyerId, supplierProductId, 10.80m, 1);
+        var twice = Step(once, buyerId, supplierProductId, 99m, 1);
+        var thrice = Step(twice, buyerId, supplierProductId, 99m, 1);
+
+        Assert.Single(thrice);
+        Assert.Equal(3m, thrice[0].Qty);
+        Assert.Equal(10.80m, thrice[0].Price);
+        Assert.Equal(supplierProductId, thrice[0].SupplierProductId);
+        Assert.Equal(32.40m, PurchaseOrderCreateUi.OrderTotal(thrice.Select(l => (l.Qty, l.Price))));
+    }
+
+    [Fact]
+    public void Connected_minus_decrements_and_qty_one_removes_line()
+    {
+        var buyerId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var supplierProductId = Guid.Parse("99999999-9999-9999-9999-999999999999");
+        IReadOnlyList<ConnectedLine> lines = [];
+
+        var qtyTwo = Step(Step(lines, buyerId, supplierProductId, 10.80m, 1), buyerId, supplierProductId, 10.80m, 1);
+        var qtyOne = Step(qtyTwo, buyerId, supplierProductId, 10.80m, -1);
+        Assert.Single(qtyOne);
+        Assert.Equal(1m, qtyOne[0].Qty);
+
+        var removed = Step(qtyOne, buyerId, supplierProductId, 10.80m, -1);
+        Assert.Empty(removed);
+
+        var stillEmpty = Step(removed, buyerId, supplierProductId, 10.80m, -1);
+        Assert.Empty(stillEmpty);
+    }
+
+    [Fact]
+    public void Connected_trash_removes_whole_line_and_recalculates_totals()
+    {
+        var water = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var soy = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+        IReadOnlyList<ConnectedLine> lines =
+        [
+            new(water, Guid.Parse("11111111-1111-1111-1111-111111111111"), 10.80m, 2m),
+            new(soy, Guid.Parse("22222222-2222-2222-2222-222222222222"), 25.20m, 1m)
+        ];
+
+        Assert.Equal(2, lines.Count);
+        Assert.Equal("Purchasing_DraftSummaryMany", PurchaseOrderCreateUi.DraftProductSummaryKey(lines.Count));
+        Assert.Equal(46.80m, PurchaseOrderCreateUi.OrderTotal(lines.Select(l => (l.Qty, l.Price))));
+
+        var afterTrash = PurchaseOrderCreateUi.RemoveLine(lines, l => l.BuyerProductId, water);
+        Assert.Single(afterTrash);
+        Assert.Equal(soy, afterTrash[0].BuyerProductId);
+        Assert.Equal("Purchasing_DraftSummaryOne", PurchaseOrderCreateUi.DraftProductSummaryKey(afterTrash.Count));
+        Assert.Equal(25.20m, PurchaseOrderCreateUi.OrderTotal(afterTrash.Select(l => (l.Qty, l.Price))));
+        Assert.Empty(PurchaseOrderCreateUi.RemoveLine(afterTrash, l => l.BuyerProductId, soy));
+    }
+
+    [Fact]
+    public void External_upsert_does_not_auto_increment_or_change_purchase_cost()
+    {
+        var productId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        IReadOnlyList<Line> lines = [new(productId, "Cola Pack", 1m, 12.50m)];
+
+        var duplicateAdd = PurchaseOrderCreateUi.UpsertLine(
+            lines,
+            l => l.ProductId,
+            new Line(productId, "Cola Pack", 1m, 99m),
+            replaceExisting: false);
+        Assert.Same(lines, duplicateAdd);
+        Assert.Equal(1m, duplicateAdd[0].OrderedQty);
+        Assert.Equal(12.50m, duplicateAdd[0].UnitPurchaseCost);
+
+        var edited = PurchaseOrderCreateUi.UpsertLine(
+            lines,
+            l => l.ProductId,
+            new Line(productId, "Cola Pack", 4m, 12.50m),
+            replaceExisting: true);
+        Assert.Equal(4m, edited[0].OrderedQty);
+        Assert.Equal(12.50m, edited[0].UnitPurchaseCost);
+        Assert.Equal(50.00m, PurchaseOrderCreateUi.OrderTotal(edited.Select(l => (l.OrderedQty, l.UnitPurchaseCost))));
+    }
+
+    [Fact]
     public void Draft_summary_uses_singular_and_plural_product_keys()
     {
         Assert.Equal("Purchasing_DraftSummaryOne", PurchaseOrderCreateUi.DraftProductSummaryKey(1));
@@ -414,4 +515,19 @@ public sealed class PurchaseOrderCreateUiTests
         categoryId == Guid.Parse("11111111-1111-1111-1111-111111111111")
             ? "Frozen"
             : "Drinks";
+
+    private static IReadOnlyList<ConnectedLine> Step(
+        IReadOnlyList<ConnectedLine> lines,
+        Guid buyerId,
+        Guid supplierProductId,
+        decimal catalogPrice,
+        int delta) =>
+        PurchaseOrderCreateUi.ApplyConnectedQuantityDelta(
+            lines,
+            l => l.BuyerProductId,
+            l => l.Qty,
+            (l, qty) => l with { Qty = qty },
+            () => new ConnectedLine(buyerId, supplierProductId, catalogPrice, 1m),
+            buyerId,
+            delta);
 }

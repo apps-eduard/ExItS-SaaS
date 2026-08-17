@@ -32,7 +32,7 @@ public sealed class PurchasingCreateUiGuardTests
         Assert.Contains("Purchasing_AllCategories", create, StringComparison.Ordinal);
         Assert.Contains("pos-category-chip", create, StringComparison.Ordinal);
         Assert.Contains("@if (HasSupplierSelected)", create, StringComparison.Ordinal);
-        Assert.DoesNotContain("@if (!IsConnectedSupplier)", create, StringComparison.Ordinal);
+        Assert.Contains("IsConnectedSupplier ? _connectedReadyAll.Count == 0 : _products.Count == 0", create, StringComparison.Ordinal);
         Assert.Contains("pos-sell-categories", create, StringComparison.Ordinal);
         Assert.Contains("pos-purchasing-create__product-list", create, StringComparison.Ordinal);
         Assert.Contains("PurchaseOrderCreateUi.FilterEligibleProducts", create, StringComparison.Ordinal);
@@ -125,6 +125,15 @@ public sealed class PurchasingCreateUiGuardTests
         Assert.Contains("ApplyBuyerCatalog", create, StringComparison.Ordinal);
         Assert.Contains("Purchasing_AddedQty", create, StringComparison.Ordinal);
         Assert.Contains("pos-purchasing-create__hit-add", create, StringComparison.Ordinal);
+        Assert.Contains("pos-purchasing-create__qty", create, StringComparison.Ordinal);
+        Assert.Contains("ApplyConnectedQuantityDelta", create, StringComparison.Ordinal);
+        Assert.Contains("AdjustConnectedQty", create, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_IncreaseQtyNamed", create, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_DecreaseQtyNamed", create, StringComparison.Ordinal);
+        Assert.Contains("RemoveConnectedLine", create, StringComparison.Ordinal);
+        Assert.Contains("@if (!IsConnectedSupplier)", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("QuickAddConnectedProduct", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("OnConnectedProductActivated", create, StringComparison.Ordinal);
         Assert.DoesNotContain("SearchLocalAsync", create, StringComparison.Ordinal);
         Assert.DoesNotContain("BeginLinkProduct", create, StringComparison.Ordinal);
         Assert.DoesNotContain("_supplierCatalogProducts", create, StringComparison.Ordinal);
@@ -172,6 +181,8 @@ public sealed class PurchasingCreateUiGuardTests
                      "Purchasing_DraftSummaryMany",
                      "Purchasing_AddedQty",
                      "Purchasing_AddProductNamed",
+                     "Purchasing_IncreaseQtyNamed",
+                     "Purchasing_DecreaseQtyNamed",
                      "Purchasing_DeleteLineTitle",
                      "Purchasing_DeleteLineMessage",
                      "ConnectedSuppliers_ManageSupplierProducts",
@@ -193,6 +204,7 @@ public sealed class PurchasingCreateUiGuardTests
                      ".pos-purchasing-create__readiness-chips",
                      ".pos-purchasing-create__hit--ready",
                      ".pos-purchasing-create__hit-add",
+                     ".pos-purchasing-create__qty",
                      ".pos-connected-catalog__chips",
                      ".pos-po-line__actions",
                      ".pos-po-line__action--danger",
