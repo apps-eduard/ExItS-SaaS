@@ -40,7 +40,15 @@
         {
             @if (!string.IsNullOrWhiteSpace(_error))
             {
-                <Alert Tone="AlertTone.Danger" Title="@L["Personal_ShopPlaceErrorTitle"]" Message="@_error" />
+                <Alert Tone="AlertTone.Danger" Title="@(_stockChanged ? L["Personal_ShopStockChanged"] : L["Personal_ShopPlaceErrorTitle"])" Message="@_error" />
+                @if (_stockChanged)
+                {
+                    <div class="pos-personal-shop-review__stock-changed" role="status">
+                        <strong>@_stockProductName</strong>
+                        <span>@L["Personal_ShopRequestedQty", _stockRequested]</span>
+                        <span>@L["Personal_ShopAvailableQtyValue", _stockAvailable]</span>
+                    </div>
+                }
             }
 
             <div class="pos-sell-payment">
@@ -222,6 +230,10 @@
     private bool _quoting;
     private bool _paymentMethodExpanded;
     private string? _error;
+    private bool _stockChanged;
+    private string? _stockProductName;
+    private string _stockRequested = string.Empty;
+    private string _stockAvailable = string.Empty;
     private string? _organizationName;
     private bool _canDelivery;
     private string _fulfillment = PersonalMerchantCheckoutUi.Pickup;
@@ -388,6 +400,7 @@
 
         _placing = true;
         _error = null;
+        _stockChanged = false;
         try
         {
             var actorId = CurrentUser.Session?.UserId ?? Guid.Empty;
@@ -424,7 +437,7 @@
             var result = await Orders.PlaceAsCustomerAsync(OrganizationId, request);
             if (!result.IsSuccess || result.Data is null)
             {
-                _error = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+                ApplyPlaceError(result.Error, result.Status);
                 return;
             }
 
@@ -435,6 +448,26 @@
         {
             _placing = false;
         }
+    }
+
+    private void ApplyPlaceError(ApiError? error, ApiCallStatus status)
+    {
+        _stockChanged = string.Equals(error?.ErrorCode, ApplicationErrorCodes.InsufficientStock, StringComparison.Ordinal);
+        if (_stockChanged && error?.Details is not null)
+        {
+            error.Details.TryGetValue("productName", out _stockProductName);
+            error.Details.TryGetValue("requestedQuantity", out var requested);
+            error.Details.TryGetValue("availableQuantity", out var available);
+            _stockRequested = requested ?? string.Empty;
+            _stockAvailable = available ?? string.Empty;
+            _error = L["Personal_ShopStockChangedMessage"];
+            return;
+        }
+
+        _stockProductName = null;
+        _stockRequested = string.Empty;
+        _stockAvailable = string.Empty;
+        _error = error?.Detail ?? ApiLocalizer.Describe(status, error).Message;
     }
 
     private Task GoShopAsync() =>

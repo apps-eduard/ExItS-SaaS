@@ -63,6 +63,45 @@ public sealed class PersonalMerchantCartTests
         Assert.Equal(OrgB, cart.SellerOrganizationId);
     }
 
+    [Fact]
+    public void Tracked_cart_stops_at_available_qty_untracked_has_no_max()
+    {
+        var cart = new PersonalMerchantCart();
+        cart.EnsureMerchant(OrgA, "Corner Store");
+        var tracked = new CustomerStorefrontProductDto(
+            Product1, "Soft Drink", "SKU", "Bottle", null, 55m, true, true, 2m, CustomerStorefrontAvailability.LowStock);
+        cart.Increment(tracked);
+        cart.Increment(tracked);
+        cart.Increment(tracked);
+        Assert.Equal(2m, cart.GetQuantity(Product1));
+        Assert.False(cart.CanIncrement(tracked));
+
+        var untracked = new CustomerStorefrontProductDto(
+            Product2, "Bread", "B", "Piece", null, 25m, true, false, null, CustomerStorefrontAvailability.Untracked);
+        for (var i = 0; i < 6; i++)
+        {
+            cart.Increment(untracked);
+        }
+
+        Assert.Equal(6m, cart.GetQuantity(Product2));
+        Assert.True(cart.CanIncrement(untracked));
+
+        var oos = new CustomerStorefrontProductDto(
+            Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+            "Biscuit",
+            "C",
+            "Pack",
+            null,
+            12m,
+            false,
+            true,
+            0m,
+            CustomerStorefrontAvailability.OutOfStock);
+        cart.Increment(oos);
+        Assert.Equal(0m, cart.GetQuantity(oos.ProductId));
+        Assert.False(cart.CanIncrement(oos));
+    }
+
     private static CustomerStorefrontProductDto Product(
         Guid id,
         string name,

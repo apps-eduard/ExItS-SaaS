@@ -1,0 +1,42 @@
+@inject IStringLocalizer<PosResources> L
+
+<section class="pos-product-image" aria-labelledby="@_headingId">
+    <h2 class="pos-product-form__group-title" id="@_headingId">@L["Catalog_Image_Section"]</h2>
+    <div class="pos-product-image__row">
+        <div class="pos-product-image__preview" aria-hidden="true">
+            @if (!string.IsNullOrWhiteSpace(PreviewDataUrl))
+            {
+                <img src="@PreviewDataUrl" alt="" width="96" height="96" />
+            }
+            else
+            {
+                <div class="pos-product-image__placeholder">@L["Catalog_Image_None"]</div>
+            }
+        </div>
+        <div class="pos-product-image__actions">
+            <Button Variant="ButtonVariant.Secondary" Disabled="@Disabled" OnClick="OnChoose">@L["Catalog_Image_Choose"]</Button>
+            <Button Variant="ButtonVariant.Secondary" Disabled="@Disabled" OnClick="OnCapture">@L["Catalog_Image_TakePhoto"]</Button>
+            @if (!string.IsNullOrWhiteSpace(PreviewDataUrl) || HasServerImage)
+            {
+                <Button Variant="ButtonVariant.Ghost" Disabled="@Disabled" OnClick="OnRemove">@L["Catalog_Image_Remove"]</Button>
+            }
+        </div>
+    </div>
+    <p class="pos-product-form__note">@L["Catalog_Image_Hint"]</p>
+    @if (!string.IsNullOrWhiteSpace(Error))
+    {
+        <p class="pos-product-image__error">@Error</p>
+    }
+</section>
+
+@code {
+    private readonly string _headingId = $"pos-product-image-{Guid.NewGuid():N}";
+
+    [Parameter] public string? PreviewDataUrl { get; set; }
+    [Parameter] public bool HasServerImage { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public EventCallback OnChoose { get; set; }
+    [Parameter] public EventCallback OnCapture { get; set; }
+    [Parameter] public EventCallback OnRemove { get; set; }
+}

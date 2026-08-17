@@ -7,6 +7,7 @@
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
+@inject IProductImagePicker ProductImages
 @inject IStringLocalizer<PosResources> L
 
 <StoreHeaderBack Href="@($"/catalog/products/{ProductId:D}")" />
@@ -55,6 +56,13 @@ else
 
     <section class="pos-catalog-product-edit__panel" aria-label="@L["Catalog_Product_EditTitle"]">
         <div class="pos-catalog-product-edit__form">
+            <CatalogProductImageEditor PreviewDataUrl="@_imagePreviewUrl"
+                                       HasServerImage="@_hasServerImage"
+                                       Disabled="@(!canManage || _isOffline || _saving)"
+                                       Error="@_imageError"
+                                       OnChoose="() => PickImageAsync(false)"
+                                       OnCapture="() => PickImageAsync(true)"
+                                       OnRemove="MarkImageRemoved" />
             <CatalogProductForm Name="@_name"
                                 NameChanged="v => _name = v"
                                 Description="@_description"
@@ -158,6 +166,12 @@ else
     private string? _barcodeError;
     private string? _priceError;
     private string? _formError;
+    private string? _imageError;
+    private byte[]? _pendingImageBytes;
+    private string? _pendingImageFileName;
+    private string? _imagePreviewUrl;
+    private bool _hasServerImage;
+    private bool _removeImage;
     private string? _errorTitle;
     private string? _errorMessage;
 
@@ -239,6 +253,21 @@ else
                 if (current.IsSuccess && current.Data is not null)
                 {
                     _categories = _categories.Append(current.Data).ToList();
+                }
+            }
+
+            _hasServerImage = _product.HasImage;
+            _removeImage = false;
+            _pendingImageBytes = null;
+            _pendingImageFileName = null;
+            _imageError = null;
+            _imagePreviewUrl = null;
+            if (_product.HasImage)
+            {
+                var image = await Catalog.GetProductImageAsync(ProductId, ProductImageVariants.Medium);
+                if (image.IsSuccess && image.Data is not null && image.Data.Content.Length > 0)
+                {
+                    _imagePreviewUrl = ProductImagePreview.ToDataUrl(image.Data.Content);
                 }
             }
         }
@@ -390,12 +419,79 @@ else
                 }
             }
 
+            if (!await PersistImageAsync())
+            {
+                return;
+            }
+
             Nav.NavigateTo($"/catalog/products/{ProductId:D}", replace: true);
         }
         finally
         {
             _saving = false;
         }
+    }
+
+    private async Task<bool> PersistImageAsync()
+    {
+        if (_removeImage && _pendingImageBytes is null)
+        {
+            var removed = await Catalog.RemoveProductImageAsync(ProductId);
+            if (!removed.IsSuccess)
+            {
+                _formError = removed.Error?.Detail
+                    ?? ApiLocalizer.Describe(removed.Status, removed.Error).Message
+                    ?? L["Catalog_Image_SaveFailed"];
+                return false;
+            }
+        }
+        else if (_pendingImageBytes is { Length: > 0 })
+        {
+            var uploaded = await Catalog.UploadProductImageAsync(
+                ProductId,
+                _pendingImageBytes,
+                _pendingImageFileName ?? "image.jpg");
+            if (!uploaded.IsSuccess)
+            {
+                _formError = uploaded.Error?.Detail
+                    ?? ApiLocalizer.Describe(uploaded.Status, uploaded.Error).Message
+                    ?? L["Catalog_Image_SaveFailed"];
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private async Task PickImageAsync(bool capture)
+    {
+        _imageError = null;
+        var picked = capture
+            ? await ProductImages.CaptureAsync()
+            : await ProductImages.PickAsync();
+        if (!picked.Succeeded)
+        {
+            if (!string.IsNullOrWhiteSpace(picked.ErrorKey) && picked.ErrorKey != "Catalog_Image_Cancelled")
+            {
+                _imageError = L[picked.ErrorKey];
+            }
+
+            return;
+        }
+
+        _pendingImageBytes = picked.Bytes;
+        _pendingImageFileName = picked.FileName;
+        _removeImage = false;
+        _imagePreviewUrl = picked.Bytes is null ? null : ProductImagePreview.ToDataUrl(picked.Bytes);
+    }
+
+    private void MarkImageRemoved()
+    {
+        _pendingImageBytes = null;
+        _pendingImageFileName = null;
+        _imagePreviewUrl = null;
+        _removeImage = _hasServerImage;
+        _imageError = null;
     }
 
     private void GoDetail() => Nav.NavigateTo($"/catalog/products/{ProductId:D}");

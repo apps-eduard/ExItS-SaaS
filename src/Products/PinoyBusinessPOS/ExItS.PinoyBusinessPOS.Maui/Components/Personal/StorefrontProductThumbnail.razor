@@ -1,0 +1,86 @@
+@using ExItS.PinoyBusinessPOS.Application.Catalog
+@using ExItS.PinoyBusinessPOS.Application.CustomerOrdering
+@implements IDisposable
+@inject ProductImageThumbnailCache Cache
+@inject IPosCustomerOrderClient Orders
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-personal-shop__thumb" aria-hidden="true">
+    @if (!string.IsNullOrWhiteSpace(_dataUrl))
+    {
+        <img src="@_dataUrl" alt="" width="56" height="56" />
+    }
+    else
+    {
+        <div class="pos-personal-shop__thumb-placeholder"></div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid SellerOrganizationId { get; set; }
+    [Parameter] public CustomerStorefrontProductDto Product { get; set; } = default!;
+
+    private CancellationTokenSource? _cts;
+    private string? _dataUrl;
+    private string? _loadedKey;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Product is null || !Product.HasImage || Product.ImageVersion is not int version)
+        {
+            _dataUrl = null;
+            _loadedKey = null;
+            return;
+        }
+
+        var key = $"{SellerOrganizationId:N}:{Product.ProductId:N}:{version}";
+        if (string.Equals(_loadedKey, key, StringComparison.Ordinal) && !string.IsNullOrWhiteSpace(_dataUrl))
+        {
+            return;
+        }
+
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = new CancellationTokenSource();
+        var token = _cts.Token;
+        _dataUrl = null;
+        _loadedKey = key;
+
+        try
+        {
+            if (Cache.TryGetExisting(SellerOrganizationId, Product.ProductId, version, out var path))
+            {
+                _dataUrl = ToDataUrl(await File.ReadAllBytesAsync(path, token));
+                return;
+            }
+
+            var result = await Orders
+                .GetStorefrontProductImageAsync(SellerOrganizationId, Product.ProductId, ProductImageVariants.Thumb, token);
+            if (!result.IsSuccess || result.Data is null || result.Data.Content.Length == 0)
+            {
+                return;
+            }
+
+            await Cache.PutAsync(SellerOrganizationId, Product.ProductId, version, result.Data.Content, token);
+            if (!token.IsCancellationRequested)
+            {
+                _dataUrl = ToDataUrl(result.Data.Content);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (IOException)
+        {
+        }
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
+
+    private static string ToDataUrl(byte[] bytes) =>
+        "data:image/webp;base64," + Convert.ToBase64String(bytes);
+}

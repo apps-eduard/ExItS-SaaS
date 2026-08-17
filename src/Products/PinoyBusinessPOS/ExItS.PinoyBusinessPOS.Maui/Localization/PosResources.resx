@@ -2395,6 +2395,39 @@
   <data name="Catalog_Product_DetailsSection" xml:space="preserve">
     <value>Product details</value>
   </data>
+  <data name="Catalog_Image_Section" xml:space="preserve">
+    <value>Product image</value>
+  </data>
+  <data name="Catalog_Image_None" xml:space="preserve">
+    <value>No image</value>
+  </data>
+  <data name="Catalog_Image_Choose" xml:space="preserve">
+    <value>Choose image</value>
+  </data>
+  <data name="Catalog_Image_TakePhoto" xml:space="preserve">
+    <value>Take photo</value>
+  </data>
+  <data name="Catalog_Image_Remove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Catalog_Image_Hint" xml:space="preserve">
+    <value>One photo per product. The app optimizes it for the shop.</value>
+  </data>
+  <data name="Catalog_Image_CameraDenied" xml:space="preserve">
+    <value>Camera permission is required to take a product photo.</value>
+  </data>
+  <data name="Catalog_Image_CameraUnavailable" xml:space="preserve">
+    <value>Camera is not available on this device.</value>
+  </data>
+  <data name="Catalog_Image_GalleryUnavailable" xml:space="preserve">
+    <value>Photo library is not available on this device.</value>
+  </data>
+  <data name="Catalog_Image_Cancelled" xml:space="preserve">
+    <value>No photo was selected.</value>
+  </data>
+  <data name="Catalog_Image_SaveFailed" xml:space="preserve">
+    <value>The product was saved, but the image could not be uploaded.</value>
+  </data>
   <data name="Catalog_Product_CodesSection" xml:space="preserve">
     <value>Codes</value>
   </data>
@@ -6360,6 +6393,30 @@
   </data>
   <data name="Personal_ShopUnavailable" xml:space="preserve">
     <value>Unavailable</value>
+  </data>
+  <data name="Personal_ShopAvailable" xml:space="preserve">
+    <value>Available</value>
+  </data>
+  <data name="Personal_ShopAvailableQty" xml:space="preserve">
+    <value>{0} available</value>
+  </data>
+  <data name="Personal_ShopOnlyLeft" xml:space="preserve">
+    <value>Only {0} left</value>
+  </data>
+  <data name="Personal_ShopOutOfStock" xml:space="preserve">
+    <value>Out of stock</value>
+  </data>
+  <data name="Personal_ShopStockChanged" xml:space="preserve">
+    <value>Stock changed</value>
+  </data>
+  <data name="Personal_ShopStockChangedMessage" xml:space="preserve">
+    <value>Available stock changed. Adjust the quantity and try again.</value>
+  </data>
+  <data name="Personal_ShopRequestedQty" xml:space="preserve">
+    <value>Requested: {0}</value>
+  </data>
+  <data name="Personal_ShopAvailableQtyValue" xml:space="preserve">
+    <value>Available: {0}</value>
   </data>
   <data name="Personal_ShopQtyLabel" xml:space="preserve">
     <value>Quantity for {0}</value>

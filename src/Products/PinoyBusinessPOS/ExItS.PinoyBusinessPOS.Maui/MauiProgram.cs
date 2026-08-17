@@ -4,6 +4,7 @@ using ExItS.DesignSystem.Abstractions;
 using ExItS.PinoyBusinessPOS.ApiClient;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Auth;
+using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
@@ -196,6 +197,9 @@ public static class MauiProgram
         // sign-out or organization switch; it is never persisted or queued.
         services.AddSingleton<SaleCartService>();
         services.AddSingleton<PersonalMerchantCart>();
+        services.AddSingleton<IProductImageCacheRoot, MauiProductImageCacheRoot>();
+        services.AddSingleton<ProductImageThumbnailCache>();
+        services.AddSingleton<IProductImagePicker, MauiProductImagePicker>();
         services.AddSingleton<MauiPendingPaymentStore>();
         // Phase marker: P8-WP02-simple-sales
     }

@@ -93,6 +93,65 @@ public sealed class CustomerOrderUiGuardTests
         }
     }
 
+    [Fact]
+    public void Personal_shop_uses_thumbnail_availability_and_cart_cap()
+    {
+        var maui = MauiProject();
+        var shop = File.ReadAllText(Path.Combine(maui, "Components", "Pages", "Personal", "PersonalMerchantShop.razor"));
+        var review = File.ReadAllText(Path.Combine(maui, "Components", "Pages", "Personal", "PersonalMerchantShopReview.razor"));
+        var create = File.ReadAllText(Path.Combine(maui, "Components", "Pages", "Catalog", "CatalogProductCreate.razor"));
+        var edit = File.ReadAllText(Path.Combine(maui, "Components", "Pages", "Catalog", "CatalogProductEdit.razor"));
+        var cache = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Application",
+            "Catalog",
+            "ProductImageCache.cs"));
+        var en = File.ReadAllText(Path.Combine(maui, "Localization", "PosResources.resx"));
+        var fil = File.ReadAllText(Path.Combine(maui, "Localization", "PosResources.fil-PH.resx"));
+
+        Assert.Contains("StorefrontProductThumbnail", shop, StringComparison.Ordinal);
+        Assert.Contains("Cart.CanIncrement", shop, StringComparison.Ordinal);
+        Assert.Contains("Personal_ShopOutOfStock", shop, StringComparison.Ordinal);
+        Assert.Contains("Personal_ShopAvailable", shop, StringComparison.Ordinal);
+        Assert.Contains("Personal_ShopStockChanged", review, StringComparison.Ordinal);
+        Assert.Contains("CatalogProductImageEditor", create, StringComparison.Ordinal);
+        Assert.Contains("CatalogProductImageEditor", edit, StringComparison.Ordinal);
+        Assert.Contains("product-image-cache", cache, StringComparison.Ordinal);
+        Assert.Contains("Never Pictures/DCIM/Downloads", cache, StringComparison.Ordinal);
+        foreach (var key in new[]
+                 {
+                     "Catalog_Image_Section",
+                     "Personal_ShopAvailable",
+                     "Personal_ShopAvailableQty",
+                     "Personal_ShopOnlyLeft",
+                     "Personal_ShopOutOfStock",
+                     "Personal_ShopStockChanged"
+                 })
+        {
+            Assert.Contains($"<data name=\"{key}\"", en, StringComparison.Ordinal);
+            Assert.Contains($"<data name=\"{key}\"", fil, StringComparison.Ordinal);
+        }
+    }
+
+    private static string FindRepoRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null)
+        {
+            if (File.Exists(Path.Combine(dir.FullName, "ExItS.slnx")))
+            {
+                return dir.FullName;
+            }
+
+            dir = dir.Parent;
+        }
+
+        throw new InvalidOperationException("Repository root not found.");
+    }
+
     private static string MauiProject()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);

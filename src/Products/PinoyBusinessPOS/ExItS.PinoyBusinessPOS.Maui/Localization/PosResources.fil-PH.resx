@@ -2395,6 +2395,39 @@
   <data name="Catalog_Product_DetailsSection" xml:space="preserve">
     <value>Detalye ng produkto</value>
   </data>
+  <data name="Catalog_Image_Section" xml:space="preserve">
+    <value>Larawan ng produkto</value>
+  </data>
+  <data name="Catalog_Image_None" xml:space="preserve">
+    <value>Walang larawan</value>
+  </data>
+  <data name="Catalog_Image_Choose" xml:space="preserve">
+    <value>Pumili ng larawan</value>
+  </data>
+  <data name="Catalog_Image_TakePhoto" xml:space="preserve">
+    <value>Kumuha ng litrato</value>
+  </data>
+  <data name="Catalog_Image_Remove" xml:space="preserve">
+    <value>Alisin</value>
+  </data>
+  <data name="Catalog_Image_Hint" xml:space="preserve">
+    <value>Isang larawan bawat produkto. Io-optimize ito para sa tindahan.</value>
+  </data>
+  <data name="Catalog_Image_CameraDenied" xml:space="preserve">
+    <value>Kailangan ang pahintulot sa camera para kumuha ng litrato.</value>
+  </data>
+  <data name="Catalog_Image_CameraUnavailable" xml:space="preserve">
+    <value>Walang camera sa device na ito.</value>
+  </data>
+  <data name="Catalog_Image_GalleryUnavailable" xml:space="preserve">
+    <value>Hindi available ang photo library sa device na ito.</value>
+  </data>
+  <data name="Catalog_Image_Cancelled" xml:space="preserve">
+    <value>Walang napiling larawan.</value>
+  </data>
+  <data name="Catalog_Image_SaveFailed" xml:space="preserve">
+    <value>Na-save ang produkto, pero hindi na-upload ang larawan.</value>
+  </data>
   <data name="Catalog_Product_CodesSection" xml:space="preserve">
     <value>Mga code</value>
   </data>
@@ -6360,6 +6393,30 @@
   </data>
   <data name="Personal_ShopUnavailable" xml:space="preserve">
     <value>Hindi available</value>
+  </data>
+  <data name="Personal_ShopAvailable" xml:space="preserve">
+    <value>Available</value>
+  </data>
+  <data name="Personal_ShopAvailableQty" xml:space="preserve">
+    <value>{0} available</value>
+  </data>
+  <data name="Personal_ShopOnlyLeft" xml:space="preserve">
+    <value>{0} na lang ang natitira</value>
+  </data>
+  <data name="Personal_ShopOutOfStock" xml:space="preserve">
+    <value>Wala nang stock</value>
+  </data>
+  <data name="Personal_ShopStockChanged" xml:space="preserve">
+    <value>Nagbago ang stock</value>
+  </data>
+  <data name="Personal_ShopStockChangedMessage" xml:space="preserve">
+    <value>Nagbago ang available na stock. Ayusin ang dami at subukan ulit.</value>
+  </data>
+  <data name="Personal_ShopRequestedQty" xml:space="preserve">
+    <value>Hiniling: {0}</value>
+  </data>
+  <data name="Personal_ShopAvailableQtyValue" xml:space="preserve">
+    <value>Available: {0}</value>
   </data>
   <data name="Personal_ShopQtyLabel" xml:space="preserve">
     <value>Dami para sa {0}</value>

@@ -7,6 +7,7 @@
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
+@inject IProductImagePicker ProductImages
 @inject IStringLocalizer<PosResources> L
 
 <StoreHeaderBack Href="/catalog" />
@@ -49,6 +50,13 @@ else
         }
         else
         {
+            <CatalogProductImageEditor PreviewDataUrl="@_imagePreviewUrl"
+                                       HasServerImage="false"
+                                       Disabled="@(!canManage || _isOffline || _saving)"
+                                       Error="@_imageError"
+                                       OnChoose="() => PickImageAsync(false)"
+                                       OnCapture="() => PickImageAsync(true)"
+                                       OnRemove="ClearPendingImage" />
             <CatalogProductForm Name="@_name"
                                 NameChanged="v => _name = v"
                                 Description="@_description"
@@ -152,6 +160,10 @@ else
     private string? _barcodeError;
     private string? _priceError;
     private string? _formError;
+    private string? _imageError;
+    private byte[]? _pendingImageBytes;
+    private string? _pendingImageFileName;
+    private string? _imagePreviewUrl;
 
     private bool ShowAdvancedUnits =>
         string.Equals(_usagePreset, "Bulk", StringComparison.Ordinal) || _setPackages;
@@ -259,6 +271,22 @@ else
             }
 
             var productId = result.Data.ProductId;
+            if (_pendingImageBytes is { Length: > 0 })
+            {
+                var uploaded = await Catalog.UploadProductImageAsync(
+                    productId,
+                    _pendingImageBytes,
+                    _pendingImageFileName ?? "image.jpg");
+                if (!uploaded.IsSuccess)
+                {
+                    _createdProductId = productId;
+                    _formError = uploaded.Error?.Detail
+                        ?? ApiLocalizer.Describe(uploaded.Status, uploaded.Error).Message
+                        ?? L["Catalog_Image_SaveFailed"];
+                    return;
+                }
+            }
+
             if (_trackStock
                 && Capabilities.IsAllowed(UtangCapability.ManageInventory)
                 && !await EnableStockTrackingAsync(productId))
@@ -294,6 +322,35 @@ else
         }
 
         GoProduct(productId);
+    }
+
+    private async Task PickImageAsync(bool capture)
+    {
+        _imageError = null;
+        var picked = capture
+            ? await ProductImages.CaptureAsync()
+            : await ProductImages.PickAsync();
+        if (!picked.Succeeded)
+        {
+            if (!string.IsNullOrWhiteSpace(picked.ErrorKey) && picked.ErrorKey != "Catalog_Image_Cancelled")
+            {
+                _imageError = L[picked.ErrorKey];
+            }
+
+            return;
+        }
+
+        _pendingImageBytes = picked.Bytes;
+        _pendingImageFileName = picked.FileName;
+        _imagePreviewUrl = picked.Bytes is null ? null : ProductImagePreview.ToDataUrl(picked.Bytes);
+    }
+
+    private void ClearPendingImage()
+    {
+        _pendingImageBytes = null;
+        _pendingImageFileName = null;
+        _imagePreviewUrl = null;
+        _imageError = null;
     }
 
     private static bool TryBuildReturnNavigation(string? returnUrl, Guid productId, out string target)

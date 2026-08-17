@@ -75,49 +75,47 @@
                     {
                         var qty = Cart.GetQuantity(product.ProductId);
                         var added = qty > 0m;
-                        <div class="@($"pos-purchasing-create__hit pos-purchasing-create__hit--ready{(added ? " pos-purchasing-create__hit--added" : string.Empty)}")"
-                             role="listitem">
-                            <div class="pos-purchasing-create__hit-main">
-                                <span class="pos-purchasing-create__hit-name">@product.Name</span>
-                                <span class="pos-purchasing-create__hit-meta pos-muted">
-                                    @product.UnitOfMeasure
-                                    <text> · </text>
-                                    <MoneyDisplay Amount="@product.UnitPrice" CurrencyCode="PHP" />
-                                    @if (!product.IsAvailable)
-                                    {
-                                        <text> · </text>@L["Personal_ShopUnavailable"]
-                                    }
-                                </span>
-                                @if (added)
-                                {
-                                    <span class="pos-purchasing-create__hit-added">
-                                        ✓ @L["Purchasing_AddedQty", FormatQty(qty)]
-                                    </span>
-                                }
-                            </div>
-                            <div class="pos-purchasing-create__qty" role="group" aria-label="@L["Personal_ShopQtyLabel", product.Name]">
-                                @if (added)
-                                {
-                                    <button type="button"
-                                            class="pos-purchasing-create__hit-add"
-                                            title="@L["Purchasing_DecreaseQtyNamed", product.Name]"
-                                            aria-label="@L["Purchasing_DecreaseQtyNamed", product.Name]"
-                                            @onclick:stopPropagation="true"
-                                            @onclick="() => Decrement(product.ProductId)">
-                                        <span aria-hidden="true">−</span>
-                                    </button>
-                                }
-                                <button type="button"
-                                        class="pos-purchasing-create__hit-add"
-                                        disabled="@(!product.IsAvailable)"
-                                        title="@L["Purchasing_IncreaseQtyNamed", product.Name]"
-                                        aria-label="@L["Purchasing_IncreaseQtyNamed", product.Name]"
-                                        @onclick:stopPropagation="true"
-                                        @onclick="() => Increment(product)">
-                                    <span aria-hidden="true">+</span>
-                                </button>
-                            </div>
-                        </div>
+                <div class="@($"pos-personal-shop__row{(added ? " pos-personal-shop__row--added" : string.Empty)}")"
+                     role="listitem">
+                    <StorefrontProductThumbnail SellerOrganizationId="OrganizationId" Product="product" />
+                    <div class="pos-personal-shop__body">
+                        <span class="pos-personal-shop__name">@product.Name</span>
+                        <span class="pos-personal-shop__meta pos-muted">
+                            @product.UnitOfMeasure
+                            <text> · </text>
+                            <MoneyDisplay Amount="@product.UnitPrice" CurrencyCode="PHP" />
+                        </span>
+                        <span class="@AvailabilityClass(product)">@AvailabilityText(product)</span>
+                        @if (added)
+                        {
+                            <span class="pos-purchasing-create__hit-added">
+                                ✓ @L["Purchasing_AddedQty", FormatQty(qty)]
+                            </span>
+                        }
+                    </div>
+                    <div class="pos-personal-shop__qty" role="group" aria-label="@L["Personal_ShopQtyLabel", product.Name]">
+                        @if (added)
+                        {
+                            <button type="button"
+                                    class="pos-personal-shop__qty-btn"
+                                    title="@L["Purchasing_DecreaseQtyNamed", product.Name]"
+                                    aria-label="@L["Purchasing_DecreaseQtyNamed", product.Name]"
+                                    @onclick:stopPropagation="true"
+                                    @onclick="() => Decrement(product.ProductId)">
+                                <span aria-hidden="true">−</span>
+                            </button>
+                        }
+                        <button type="button"
+                                class="pos-personal-shop__qty-btn"
+                                disabled="@(!Cart.CanIncrement(product))"
+                                title="@L["Purchasing_IncreaseQtyNamed", product.Name]"
+                                aria-label="@L["Purchasing_IncreaseQtyNamed", product.Name]"
+                                @onclick:stopPropagation="true"
+                                @onclick="() => Increment(product)">
+                            <span aria-hidden="true">+</span>
+                        </button>
+                    </div>
+                </div>
                     }
                 </div>
             }
@@ -234,6 +232,23 @@
 
     private void Increment(CustomerStorefrontProductDto product) => Cart.Increment(product);
     private void Decrement(Guid productId) => Cart.Decrement(productId);
+
+    private string AvailabilityText(CustomerStorefrontProductDto product) =>
+        product.AvailabilityStatus switch
+        {
+            CustomerStorefrontAvailability.OutOfStock => L["Personal_ShopOutOfStock"],
+            CustomerStorefrontAvailability.LowStock => L["Personal_ShopOnlyLeft", FormatQty(product.AvailableQuantity ?? 0m)],
+            CustomerStorefrontAvailability.InStock => L["Personal_ShopAvailableQty", FormatQty(product.AvailableQuantity ?? 0m)],
+            _ => L["Personal_ShopAvailable"]
+        };
+
+    private static string AvailabilityClass(CustomerStorefrontProductDto product) =>
+        product.AvailabilityStatus switch
+        {
+            CustomerStorefrontAvailability.OutOfStock => "pos-personal-shop__availability pos-personal-shop__availability--oos",
+            CustomerStorefrontAvailability.LowStock => "pos-personal-shop__availability pos-personal-shop__availability--low",
+            _ => "pos-personal-shop__availability"
+        };
 
     private static string FormatQty(decimal qty) =>
         qty.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);

@@ -6,13 +6,14 @@ public sealed class PersonalMerchantStorefrontUiGuardTests
     public void Shop_rows_match_connected_po_stepper()
     {
         var shop = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "Personal", "PersonalMerchantShop.razor"));
-        Assert.Contains("pos-purchasing-create__hit pos-purchasing-create__hit--ready", shop, StringComparison.Ordinal);
-        Assert.Contains("pos-purchasing-create__hit-add", shop, StringComparison.Ordinal);
+        Assert.Contains("pos-personal-shop__row", shop, StringComparison.Ordinal);
+        Assert.Contains("pos-personal-shop__qty-btn", shop, StringComparison.Ordinal);
+        Assert.Contains("StorefrontProductThumbnail", shop, StringComparison.Ordinal);
         Assert.Contains("Purchasing_AddedQty", shop, StringComparison.Ordinal);
         Assert.Contains("@if (added)", shop, StringComparison.Ordinal);
         Assert.DoesNotContain("pos-personal-shop__qty-value", shop, StringComparison.Ordinal);
         Assert.DoesNotContain("disabled=\"@(qty <= 0)\"", shop, StringComparison.Ordinal);
-        Assert.Contains("disabled=\"@(!product.IsAvailable)\"", shop, StringComparison.Ordinal);
+        Assert.Contains("disabled=\"@(!Cart.CanIncrement(product))\"", shop, StringComparison.Ordinal);
         Assert.Contains("Cart.Increment", shop, StringComparison.Ordinal);
         Assert.Contains("Cart.Decrement", shop, StringComparison.Ordinal);
     }
