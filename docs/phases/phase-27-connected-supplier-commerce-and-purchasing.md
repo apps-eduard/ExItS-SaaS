@@ -33,7 +33,7 @@ This phase builds on Phase 1 connected-supplier foundations ([connected-exits-su
 ## Invariants
 
 - **EXPOSABLE ≠ SHARED.** Product-level availability to connected buyers does not grant catalog visibility; per-relationship sharing is required.
-- Effective connected PO price = buyer-specific override → Default PO Price. Retail `SellingPrice` is never a runtime fallback.
+- Effective connected PO price = buyer-specific override → Default PO Price. Product create defaults Default PO to retail `SellingPrice`; later retail edits do not rewrite a custom Default PO. Live retail is never a runtime fallback.
 - Accepting a connection does not silently share products; post-accept confirmation (Share all / Review products / Not now) is required.
 - Newly exposable products are not auto-shared to existing buyers.
 - Per-buyer product management is a **mobile-first bulk** experience (search, filters, category sheet, multi-select, bulk share/unshare/price with preview) — not one-by-one save-all editing.

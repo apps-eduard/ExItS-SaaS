@@ -116,7 +116,7 @@ Schema **v9** adds `multiplier_to_base` / `package_label` on linked products so 
 | **Browse products** | Online only. Returns products that are **not globally blocked**, **explicitly shared to this relationship**, orderable, and have a valid effective PO price. Empty = this supplier has not shared products with your business yet. Search optional (Enter or short debounce). **Use product** opens an explicit match sheet: link an existing buyer catalog product, or **Create & link** a new buyer-owned product. Suggestions (SKU/name/UOM) never auto-link. |
 | **Create & link** | Single transactional API (`POST …/links/create-and-link`) requiring `ManageCatalog` + `ManagePurchasing`. Creates buyer `CatalogProduct` + `BuyerSupplierProductLink` in one save. Buyer SellingPrice is independent of supplier PO price. Does **not** change inventory, create a PO/GR, or set `CanExposeToConnectedBuyers`. Duplicate retries return the existing active link for that supplier product. |
 | **Linked products** | Device cache of **explicitly linked** items only. Never downloads the full supplier catalog. |
-| **Product create/edit** | Default eligible (not blocked). Optional “Block from connected buyers”. Default PO always optional (required only on first share). |
+| **Product create/edit** | Default eligible (not blocked). Optional “Block from connected buyers”. **Default PO defaults to retail selling price** on create (and on the product form until the operator sets a custom value). Later retail edits do not rewrite a custom Default PO. Runtime orders never fall back to live retail. |
 | **Catalog → Connected Buyer Availability** | Global Allow / Block + optional Default PO admin. Does **not** create buyer shares. Allowed ≠ shared. |
 | **Accept connection** | Activates relationship only, then opens share prompt with eligible (active, not blocked) products. Confirm persists shares; products missing Default PO open Manage / first-share pricing. Not now shares nothing. |
 | **Connected buyer → Manage products** | Lists all active products; blocked rows disabled; first-share Default PO sheet when needed; bulk share/unshare/price. |
@@ -127,7 +127,7 @@ See [buyer-specific sharing report](../reports/connected-supplier-buyer-specific
 
 ### Effective PO price
 
-Buyer-specific PO price → Default PO Price (`SupplierProductExposure.SupplierOrderPrice`). Retail `SellingPrice` is never a runtime fallback.
+Buyer-specific PO price → Default PO Price (`SupplierProductExposure.SupplierOrderPrice`). Retail `SellingPrice` is the **create-time default** for Default PO, never a runtime fallback.
 
 ### Connected PO submission
 

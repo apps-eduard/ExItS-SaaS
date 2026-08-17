@@ -967,24 +967,17 @@ internal static class CatalogProductCreateCore
         if (canExposeToConnectedBuyers)
         {
             product.EnableConnectedBuyerAvailability(now);
-            if (defaultConnectedPoPrice is not null)
-            {
-                product.SetDefaultConnectedPoPrice(defaultConnectedPoPrice.Value, now);
-            }
-
-            await products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
         }
         else
         {
             // Explicit false: global-block (Create defaults to eligible).
             product.DisableConnectedBuyerAvailability(now);
-            if (defaultConnectedPoPrice is not null)
-            {
-                product.SetDefaultConnectedPoPrice(defaultConnectedPoPrice.Value, now);
-            }
-
-            await products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
         }
+
+        // Product create defaults Default PO to retail. An explicit value wins.
+        // Later retail edits do not rewrite a stored Default PO (update path).
+        product.SetDefaultConnectedPoPrice(defaultConnectedPoPrice ?? product.SellingPrice, now);
+        await products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
 
         foreach (var seed in seedUnits)
         {

@@ -57,6 +57,8 @@ public sealed class CreateBuyerProductAndLinkTests
         var product = Assert.Single(harness.Products.Items);
         Assert.False(product.CanExposeToConnectedBuyers);
         Assert.Equal(79.50m, product.SellingPrice);
+        Assert.Equal(79.50m, product.DefaultConnectedPoPrice);
+        Assert.NotEqual(41m, product.DefaultConnectedPoPrice);
         var link = Assert.Single(harness.Links.Items);
         Assert.Equal(37m, link.LastKnownOrderPrice);
         Assert.NotEqual(link.LastKnownOrderPrice, product.SellingPrice);

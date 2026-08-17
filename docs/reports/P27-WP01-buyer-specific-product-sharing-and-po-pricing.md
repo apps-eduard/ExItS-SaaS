@@ -161,6 +161,15 @@ Device Verified: **No**. Browser Verified: **No**. Production Ready: **No**.
 - Owner must validate Catalog → Connected Buyer Availability → Accept → share prompt → Browse/pricing on device
 - Remaining connected-PO delivery/sync gaps tracked under P27-WP02+
 
+## Follow-up — Default PO defaults to retail on product create (2026-08-17)
+
+Live product-form rule (does not change runtime pricing):
+
+- Product create (API / MAUI / Org Web) stores `DefaultConnectedPoPrice` = retail `SellingPrice` unless the operator sets a different value.
+- MAUI create/edit keep Default PO matched to retail until the operator customizes it. Later retail edits do not rewrite a custom Default PO.
+- Runtime connected PO price remains buyer-specific override → Default PO. Live retail is never a runtime fallback.
+- Existing products created before this change may still have a null Default PO; first share still requires `EstablishDefaultPoPrice`.
+
 ## Exact next
 
 **P27-WP02 — Connected PO Delivery & Atomic Submission** when explicitly authorized. Do not begin WP03–WP07 as part of WP02 unless authorized.

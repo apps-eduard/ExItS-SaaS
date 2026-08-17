@@ -28,16 +28,17 @@ This file retains engineering-detail Q&A and migration notes. Status and roadmap
 
 - Active catalog products are **eligible by default** (`IsBlockedFromConnectedBuyers = false`, `CanExposeToConnectedBuyers = true`).
 - Optional **global block** hides a product from all connected-buyer Level-2 sharing without deleting share rows.
-- `CatalogProduct.DefaultConnectedPoPrice` is optional until first share; it is **never** silently copied from retail `SellingPrice`.
+- `CatalogProduct.DefaultConnectedPoPrice` **defaults to retail `SellingPrice` on product create** (API, MAUI, and Org Web). Operators may override it on the product form. Later retail edits do not rewrite a custom Default PO.
+- Runtime order pricing never falls back to live `SellingPrice`.
 - Synced to `SupplierProductExposure` only when allowed **and** Default PO is set (`IsExposed` + `SupplierOrderPrice` = Default PO Price).
 - Primary MAUI path: **Catalog → Connected Buyer Availability** (bulk Allow / Block / Default PO Price).
-- Product create/edit: default allowed; optional “Block from connected buyers”; Default PO always optional.
+- Product create/edit: default allowed; optional “Block from connected buyers”; Default PO prefilled from retail.
 
 **GLOBALLY ALLOWED ≠ SHARED.** Eligibility alone does not make a product visible to any buyer. Bulk Level-1 Allow does **not** create `ConnectedBuyerProductShare` rows.
 
 ### Default PO Price (first share)
 
-Default PO may be staged anytime (including while blocked). The first time a product is shared to a buyer without a Default PO, the supplier must confirm `EstablishDefaultPoPrice` in the same save as the share (exposure + share atomic). Runtime order pricing never falls back to `SellingPrice`.
+Product create stores Default PO as retail unless the operator sets a different value. Existing products that still have no Default PO must confirm `EstablishDefaultPoPrice` on first share (exposure + share atomic). Runtime order pricing never falls back to live `SellingPrice`.
 
 ### Level 2 — per-buyer sharing
 
@@ -105,7 +106,7 @@ Global block deactivates supplier-wide exposure; buyer browse/revalidate fail cl
 ## MAUI
 
 - Catalog hub tile → `/catalog/connected-buyer-availability` (global Allow/Block + optional Default PO)
-- Catalog create/edit/detail: default allowed; optional block; Default PO optional
+- Catalog create/edit/detail: default allowed; optional block; Default PO defaults to retail on create and follows retail on the form until customized
 - Accept → `/share-products` (Confirm / Review / Not now); missing Default PO collected before share
 - Manage: `/shared-products` lists all active products; first-share / bulk Default PO sheets when needed
 - Browse: only products explicitly shared to that buyer

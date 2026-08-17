@@ -74,7 +74,7 @@ else
                                 SellingMode="@_sellingMode"
                                 SellingModeChanged="v => _sellingMode = v"
                                 SellingPrice="@_sellingPrice"
-                                SellingPriceChanged="v => _sellingPrice = v"
+                                SellingPriceChanged="OnSellingPriceChanged"
                                 Categories="@_categories"
                                 NameError="@_nameError"
                                 SkuError="@_skuError"
@@ -105,7 +105,7 @@ else
                 <div class="pos-catalog-connected__price">
                     <CurrencyInput Label="@L["Catalog_ConnectedBuyers_DefaultPoPrice"]"
                                    Value="@_defaultConnectedPoPrice"
-                                   ValueChanged="v => _defaultConnectedPoPrice = v"
+                                   ValueChanged="OnDefaultPoPriceChanged"
                                    CurrencyCode="PHP"
                                    Hint="@L["Catalog_ConnectedBuyers_DefaultPoHelp"]"
                                    Disabled="@(!canManage || _isOffline || _saving)" />
@@ -141,6 +141,7 @@ else
     private decimal? _sellingPrice;
     private bool _isBlockedFromConnectedBuyers;
     private decimal? _defaultConnectedPoPrice;
+    private bool _defaultPoFollowsRetail = true;
     private bool _trackStock;
     private bool _tracksExpiration;
     private string? _warningDaysText = "7";
@@ -210,7 +211,7 @@ else
 
         if (ShowAdvancedUnits && _sellUnits.Count > 0 && _sellUnits[0].SellingPrice is decimal sellPrice)
         {
-            _sellingPrice = sellPrice;
+            OnSellingPriceChanged(sellPrice);
         }
 
         if (_sellingPrice is null || _sellingPrice < 0m)
@@ -243,7 +244,7 @@ else
                 UsagePreset: ResolveUsagePresetForSave(),
                 Units: units,
                 CanExposeToConnectedBuyers: !_isBlockedFromConnectedBuyers,
-                DefaultConnectedPoPrice: _defaultConnectedPoPrice));
+                DefaultConnectedPoPrice: _defaultConnectedPoPrice ?? _sellingPrice));
 
             if (!result.IsSuccess || result.Data is null)
             {
@@ -333,6 +334,22 @@ else
         }
 
         Nav.NavigateTo("/catalog");
+    }
+
+    private void OnSellingPriceChanged(decimal? value)
+    {
+        _sellingPrice = value;
+        if (_defaultPoFollowsRetail)
+        {
+            _defaultConnectedPoPrice = value;
+        }
+    }
+
+    private void OnDefaultPoPriceChanged(decimal? value)
+    {
+        _defaultConnectedPoPrice = value;
+        _defaultPoFollowsRetail = value is null
+            || (_sellingPrice is decimal retail && value == retail);
     }
 
     private void OnBlockedFromConnectedBuyersChanged(ChangeEventArgs args)

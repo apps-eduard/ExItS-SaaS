@@ -9044,7 +9044,7 @@
     <value>Default na Presyo ng PO</value>
   </data>
   <data name="Catalog_ConnectedBuyers_DefaultPoHelp" xml:space="preserve">
-    <value>Opsyonal na default PO price para sa connected buyers. Kailangan sa unang pag-share. Hindi kailanman kinokopya nang tahimik mula sa retail.</value>
+    <value>Default ay tumutugma sa retail selling price. Maaari itong palitan. Ang susunod na pagbabago sa retail ay hindi magre-rewrite ng custom Default PO. Ang order ay gumagamit ng Default PO, hindi ng live retail.</value>
   </data>
   <data name="Catalog_ConnectedBuyers_VisibilityHelp" xml:space="preserve">
     <value>Ang pagiging pinapayagan ay hindi nangangahulugang shared. Bawat connected buyer ay hiwalay na pinamamahalaan. Ang pag-block ay nagtatago ng produkto sa lahat ng connected-buyer sharing.</value>
@@ -9819,6 +9819,18 @@
   </data>
   <data name="ConnectedBuyers_ConfirmShareWithDefaultPo" xml:space="preserve">
     <value>Kumpirmahin at i-share</value>
+  </data>
+  <data name="ConnectedBuyers_ConfirmDefaultPoAndContinue" xml:space="preserve">
+    <value>I-save ang Default PO at magpatuloy</value>
+  </data>
+  <data name="ConnectedBuyers_DiscountPercentInvalid" xml:space="preserve">
+    <value>Maglagay ng diskwento mula 0 hanggang 100.</value>
+  </data>
+  <data name="ConnectedBuyers_AdjustmentAmountInvalid" xml:space="preserve">
+    <value>Maglagay ng wastong PHP adjustment amount.</value>
+  </data>
+  <data name="ConnectedBuyers_NoProductsToPrice" xml:space="preserve">
+    <value>Walang produktong handa para sa price. Magtakda muna ng Default PO prices.</value>
   </data>
   <data name="ConnectedBuyers_MissingDefaultPoRequired" xml:space="preserve">
     <value>Maglagay ng Default PO price para sa bawat produkto.</value>

@@ -35,6 +35,8 @@ public sealed class CatalogPageGuardTests
         Assert.Contains("OnCancel=\"GoBack\"", create, StringComparison.Ordinal);
         Assert.Contains("CanExposeToConnectedBuyers", create, StringComparison.Ordinal);
         Assert.Contains("DefaultConnectedPoPrice", create, StringComparison.Ordinal);
+        Assert.Contains("OnSellingPriceChanged", create, StringComparison.Ordinal);
+        Assert.Contains("_defaultPoFollowsRetail", create, StringComparison.Ordinal);
 
         var detail = File.ReadAllText(Path.Combine(catalog, "CatalogProductDetail.razor"));
         Assert.Contains("@page \"/catalog/products/{ProductId:guid}\"", detail, StringComparison.Ordinal);
@@ -63,6 +65,8 @@ public sealed class CatalogPageGuardTests
         Assert.Contains("pos-catalog-product-edit__panel", edit, StringComparison.Ordinal);
         Assert.Contains("CanExposeToConnectedBuyers", edit, StringComparison.Ordinal);
         Assert.Contains("DefaultConnectedPoPrice", edit, StringComparison.Ordinal);
+        Assert.Contains("OnSellingPriceChanged", edit, StringComparison.Ordinal);
+        Assert.Contains("_defaultPoFollowsRetail", edit, StringComparison.Ordinal);
         Assert.Contains("Catalog_ConnectedBuyers_VisibilityHelp", edit, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", edit, StringComparison.Ordinal);
         Assert.DoesNotContain("Catalog_BackToList", edit, StringComparison.Ordinal);

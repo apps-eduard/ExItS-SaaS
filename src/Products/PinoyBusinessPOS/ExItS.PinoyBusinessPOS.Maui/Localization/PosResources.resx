@@ -9044,7 +9044,7 @@
     <value>Default PO Price</value>
   </data>
   <data name="Catalog_ConnectedBuyers_DefaultPoHelp" xml:space="preserve">
-    <value>Optional default purchase-order price for connected buyers. Required the first time you share a product. Never copied silently from retail.</value>
+    <value>Defaults to the retail selling price. You can change it. Later retail edits do not rewrite a custom Default PO. Orders use Default PO, never live retail.</value>
   </data>
   <data name="Catalog_ConnectedBuyers_VisibilityHelp" xml:space="preserve">
     <value>Allowed does not mean shared. Each connected buyer is managed separately. Blocking hides the product from all connected-buyer sharing.</value>
@@ -9819,6 +9819,18 @@
   </data>
   <data name="ConnectedBuyers_ConfirmShareWithDefaultPo" xml:space="preserve">
     <value>Confirm &amp; share</value>
+  </data>
+  <data name="ConnectedBuyers_ConfirmDefaultPoAndContinue" xml:space="preserve">
+    <value>Save Default PO &amp; continue</value>
+  </data>
+  <data name="ConnectedBuyers_DiscountPercentInvalid" xml:space="preserve">
+    <value>Enter a discount between 0 and 100.</value>
+  </data>
+  <data name="ConnectedBuyers_AdjustmentAmountInvalid" xml:space="preserve">
+    <value>Enter a valid PHP adjustment amount.</value>
+  </data>
+  <data name="ConnectedBuyers_NoProductsToPrice" xml:space="preserve">
+    <value>No products are ready to price. Set Default PO prices first.</value>
   </data>
   <data name="ConnectedBuyers_MissingDefaultPoRequired" xml:space="preserve">
     <value>Enter a Default PO price for each product.</value>
