@@ -17,7 +17,7 @@ public sealed class BuyerProductShareFirstShareTests
     private static readonly DateTimeOffset Now = new(2026, 8, 16, 20, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public void New_product_is_eligible_not_shared_and_has_no_default_po()
+    public void New_product_domain_create_is_eligible_not_shared_and_has_no_default_po()
     {
         var product = CatalogProduct.Create(Supplier, "Coke", UnitOfMeasure.Piece, 65m, Now);
         Assert.True(product.CanExposeToConnectedBuyers);
@@ -188,6 +188,59 @@ public sealed class BuyerProductShareFirstShareTests
         Assert.True(ConnectedPoPricing.TryResolveEffectivePrice(exposure, share, out var price));
         Assert.Equal(40m, price);
         Assert.NotEqual(65m, price);
+    }
+
+    [Fact]
+    public async Task Pricing_preview_returns_NeedsDefaultPo_list_instead_of_hard_fail()
+    {
+        var harness = CreateHarness();
+        var withPo = CatalogProduct.Create(Supplier, "Apple", UnitOfMeasure.Piece, 220m, Now);
+        withPo.SetDefaultConnectedPoPrice(200m, Now.AddMinutes(1));
+        var missingPo = CatalogProduct.Create(Supplier, "Banana", UnitOfMeasure.Piece, 90m, Now);
+        harness.Products.Seed(withPo);
+        harness.Products.Seed(missingPo);
+
+        var preview = new PreviewBuyerProductPricing(
+            harness.Relationships, harness.Shares, harness.Products, harness.Access);
+        var result = await preview.ExecuteAsync(
+            Supplier.Value,
+            harness.Relationship.Id.Value,
+            new BulkBuyerPricingRequest(
+                "DiscountPercent",
+                ProductIds: [withPo.Id.Value, missingPo.Id.Value],
+                Percent: 10m));
+
+        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
+        Assert.Equal(0, result.Value!.AffectedCount);
+        Assert.Empty(result.Value.Items);
+        var missing = Assert.Single(result.Value.NeedsDefaultPo!);
+        Assert.Equal(missingPo.Id.Value, missing.ProductId);
+        Assert.Equal("Banana", missing.Name);
+    }
+
+    [Fact]
+    public async Task Pricing_preview_discount_succeeds_when_all_have_default_po()
+    {
+        var harness = CreateHarness();
+        var apple = CatalogProduct.Create(Supplier, "Apple", UnitOfMeasure.Piece, 220m, Now);
+        apple.SetDefaultConnectedPoPrice(200m, Now.AddMinutes(1));
+        harness.Products.Seed(apple);
+
+        var preview = new PreviewBuyerProductPricing(
+            harness.Relationships, harness.Shares, harness.Products, harness.Access);
+        var result = await preview.ExecuteAsync(
+            Supplier.Value,
+            harness.Relationship.Id.Value,
+            new BulkBuyerPricingRequest(
+                "DiscountPercent",
+                ProductIds: [apple.Id.Value],
+                Percent: 10m));
+
+        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
+        Assert.Equal(1, result.Value!.AffectedCount);
+        Assert.Null(result.Value.NeedsDefaultPo);
+        var item = Assert.Single(result.Value.Items);
+        Assert.Equal(180m, item.ProposedBuyerPrice);
     }
 
     private static Harness CreateHarness()

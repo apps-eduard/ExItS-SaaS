@@ -58,7 +58,8 @@ public sealed record BuyerPricePreviewItemDto(
 public sealed record BulkBuyerPricingPreviewDto(
     int AffectedCount,
     bool Truncated,
-    IReadOnlyList<BuyerPricePreviewItemDto> Items);
+    IReadOnlyList<BuyerPricePreviewItemDto> Items,
+    IReadOnlyList<MissingDefaultPoProductDto>? NeedsDefaultPo = null);
 
 public sealed class QueryBuyerProductShares
 {
@@ -426,22 +427,51 @@ public sealed class PreviewBuyerProductPricing
             }
         }
 
-        var previewItems = new List<BuyerPricePreviewItemDto>();
+        var products = new List<CatalogProduct>(productIds.Count);
+        var needsDefaultPo = new List<MissingDefaultPoProductDto>();
         foreach (var productId in productIds)
         {
             var product = await _products.GetByIdAsync(supplier, CatalogProductId.From(productId), ct)
                 .ConfigureAwait(false);
             if (product is null
                 || product.OrganizationId != supplier
-                || product.Status != CatalogProductStatus.Active
-                || product.DefaultConnectedPoPrice is null)
+                || product.Status != CatalogProductStatus.Active)
             {
                 return ConnectedSupplierUseCaseGuard.Failure<BulkBuyerPricingPreviewDto>(
-                    ConnectedSupplierErrorCodes.MissingDefaultPo,
-                    "A Default PO price is required before buyer pricing can be set.");
+                    ConnectedSupplierErrorCodes.BulkValidation,
+                    "One or more selected products were not found or are not active.");
             }
 
-            var baseline = product.DefaultConnectedPoPrice.Value;
+            if (product.DefaultConnectedPoPrice is null)
+            {
+                needsDefaultPo.Add(new(product.Id.Value, product.Name, product.SellingPrice));
+                continue;
+            }
+
+            products.Add(product);
+        }
+
+        if (needsDefaultPo.Count > 0)
+        {
+            // Preview stays non-mutating: return the missing list so UI can collect Default PO prices.
+            if (!apply)
+            {
+                return ApplicationResult<BulkBuyerPricingPreviewDto>.Success(new(
+                    0,
+                    false,
+                    Array.Empty<BuyerPricePreviewItemDto>(),
+                    needsDefaultPo));
+            }
+
+            return ConnectedSupplierUseCaseGuard.Failure<BulkBuyerPricingPreviewDto>(
+                ConnectedSupplierErrorCodes.MissingDefaultPo,
+                "A Default PO price is required before buyer pricing can be set.");
+        }
+
+        var previewItems = new List<BuyerPricePreviewItemDto>();
+        foreach (var product in products)
+        {
+            var baseline = product.DefaultConnectedPoPrice!.Value;
             if (!BuyerProductShareBulkPricing.TryComputeBuyerPrice(
                     mode, baseline, request.Percent, request.Amount, request.FixedPrice,
                     out var proposed, out var error))
@@ -467,8 +497,8 @@ public sealed class PreviewBuyerProductPricing
         }
 
         return ApplicationResult<BulkBuyerPricingPreviewDto>.Success(new(
-            productIds.Count,
-            productIds.Count > BuyerProductShareBulkPricing.PreviewItemLimit,
+            products.Count,
+            products.Count > BuyerProductShareBulkPricing.PreviewItemLimit,
             previewItems));
     }
 }

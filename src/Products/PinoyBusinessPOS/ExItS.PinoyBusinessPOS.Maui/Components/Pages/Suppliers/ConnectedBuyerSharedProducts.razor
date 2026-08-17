@@ -1,4 +1,5 @@
 @page "/suppliers/connected/buyers/{RelationshipId:guid}/shared-products"
+@using System.Globalization
 @using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers
 @using ExItS.PinoyBusinessPOS.Maui.Services
 @using ExItS.DesignSystem.Components.Internal
@@ -302,7 +303,8 @@
                                    step="0.01"
                                    inputmode="decimal"
                                    aria-label="@L["ConnectedBuyers_DiscountLabel"]"
-                                   @bind="_percentText" />
+                                   @bind="_percentText"
+                                   @bind:event="oninput" />
                             <span class="pos-manage-share__unit" aria-hidden="true">%</span>
                         </span>
                     </label>
@@ -325,7 +327,8 @@
                                    step="0.01"
                                    inputmode="decimal"
                                    aria-label="@L["ConnectedBuyers_AdjustmentLabel"]"
-                                   @bind="_amountText" />
+                                   @bind="_amountText"
+                                   @bind:event="oninput" />
                         </span>
                     </label>
                 }
@@ -550,7 +553,11 @@
                     <span class="pos-action-tile__label">@L["Common_Cancel"]</span>
                 </button>
                 <button type="button" class="pos-action-tile pos-action-tile--primary" disabled="@_busy" @onclick="ConfirmMissingPoShareAsync">
-                    <span class="pos-action-tile__label">@L["ConnectedBuyers_ConfirmShareWithDefaultPo"]</span>
+                    <span class="pos-action-tile__label">
+                        @(_missingPoForPricing
+                            ? L["ConnectedBuyers_ConfirmDefaultPoAndContinue"]
+                            : L["ConnectedBuyers_ConfirmShareWithDefaultPo"])
+                    </span>
                 </button>
             </div>
         </div>
@@ -767,6 +774,7 @@
     private List<MissingPoDraft>? _missingPoSheet;
     private string? _missingPoError;
     private BulkBuyerProductShareMutationRequest? _pendingShareRequest;
+    private bool _missingPoForPricing;
 
     private bool CanManage => Capabilities.IsAllowed(UtangCapability.ManageSuppliers);
     private bool PageAllSelected => _items.Count > 0 && _items.All(x => _pageSelected.Contains(x.SupplierProductId));
@@ -1064,14 +1072,20 @@
 
     private void CloseMissingPoSheet()
     {
+        var returnToPriceSheet = _missingPoForPricing;
         _missingPoSheet = null;
         _missingPoError = null;
         _pendingShareRequest = null;
+        _missingPoForPricing = false;
+        if (returnToPriceSheet)
+        {
+            _priceSheetOpen = true;
+        }
     }
 
     private async Task ConfirmMissingPoShareAsync()
     {
-        if (_busy || !CanManage || _missingPoSheet is null || _pendingShareRequest is null) return;
+        if (_busy || !CanManage || _missingPoSheet is null) return;
         if (_missingPoSheet.Any(x => x.EstablishDefaultPoPrice is null or <= 0m))
         {
             _missingPoError = L["ConnectedBuyers_MissingDefaultPoRequired"];
@@ -1083,6 +1097,14 @@
             _missingPoError = L["Suppliers_OfflineMessage"];
             return;
         }
+
+        if (_missingPoForPricing)
+        {
+            await ConfirmMissingPoForPricingAsync();
+            return;
+        }
+
+        if (_pendingShareRequest is null) return;
 
         _busy = true;
         _missingPoError = null;
@@ -1114,6 +1136,44 @@
         }
     }
 
+    private async Task ConfirmMissingPoForPricingAsync()
+    {
+        if (_missingPoSheet is null) return;
+
+        _busy = true;
+        _missingPoError = null;
+        try
+        {
+            var prices = _missingPoSheet.ToDictionary(x => x.ProductId, x => x.EstablishDefaultPoPrice!.Value);
+            var establish = new BulkBuyerProductShareMutationRequest(
+                "Share",
+                ProductIds: _missingPoSheet.Select(x => x.ProductId).ToList(),
+                EstablishDefaultPoPrices: prices);
+            var result = await ConnectedSuppliers.BulkMutateBuyerProductSharesAsync(RelationshipId, establish);
+            if (!result.IsSuccess)
+            {
+                _missingPoError = result.Error?.Detail ?? L["ConnectedBuyers_SaveSharingFailed"];
+                return;
+            }
+
+            if (result.Data?.NeedsDefaultPo is { Count: > 0 })
+            {
+                _missingPoError = L["ConnectedBuyers_MissingDefaultPoRequired"];
+                return;
+            }
+
+            _missingPoSheet = null;
+            _missingPoError = null;
+            _missingPoForPricing = false;
+            _busy = false;
+            await PreviewPriceAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
     private BulkBuyerProductShareMutationRequest BuildMutationRequest(string operation) =>
         _selectAllMatching
             ? new(operation, SelectAllMatching: true, Query: _query, Category: CategoryOrNull(), ShareFilter: ShareFilterOrNull())
@@ -1123,8 +1183,17 @@
     {
         decimal? percent = null;
         decimal? amount = null;
-        if (_priceMode == "DiscountPercent" && decimal.TryParse(_percentText, out var p)) percent = p;
-        if (_priceMode == "AdjustAmount" && decimal.TryParse(_amountText, out var a)) amount = a;
+        if (_priceMode == "DiscountPercent"
+            && decimal.TryParse(_percentText, NumberStyles.Number, CultureInfo.InvariantCulture, out var p))
+        {
+            percent = p;
+        }
+
+        if (_priceMode == "AdjustAmount"
+            && decimal.TryParse(_amountText, NumberStyles.Number, CultureInfo.InvariantCulture, out var a))
+        {
+            amount = a;
+        }
 
         return _selectAllMatching
             ? new(_priceMode, SelectAllMatching: true, Query: _query, Category: CategoryOrNull(), ShareFilter: ShareFilterOrNull(), Percent: percent, Amount: amount)
@@ -1157,6 +1226,25 @@
         if (!await Connectivity.IsConnectedAsync())
         {
             _priceError = L["Suppliers_OfflineMessage"];
+            _priceSheetOpen = true;
+            return;
+        }
+
+        if (_priceMode == "DiscountPercent"
+            && (!decimal.TryParse(_percentText, NumberStyles.Number, CultureInfo.InvariantCulture, out var percent)
+                || percent < 0m
+                || percent > 100m))
+        {
+            _priceError = L["ConnectedBuyers_DiscountPercentInvalid"];
+            _priceSheetOpen = true;
+            return;
+        }
+
+        if (_priceMode == "AdjustAmount"
+            && !decimal.TryParse(_amountText, NumberStyles.Number, CultureInfo.InvariantCulture, out _))
+        {
+            _priceError = L["ConnectedBuyers_AdjustmentAmountInvalid"];
+            _priceSheetOpen = true;
             return;
         }
 
@@ -1169,6 +1257,27 @@
             if (!result.IsSuccess || result.Data is null)
             {
                 _priceError = result.Error?.Detail ?? L["ConnectedBuyers_SaveSharingFailed"];
+                _priceSheetOpen = true;
+                return;
+            }
+
+            if (result.Data.NeedsDefaultPo is { Count: > 0 } missing)
+            {
+                _pendingPriceRequest = request;
+                _pendingShareRequest = null;
+                _missingPoForPricing = true;
+                _missingPoError = null;
+                _missingPoSheet = missing
+                    .Select(x => new MissingPoDraft(x.ProductId, x.Name, x.SellingPrice))
+                    .ToList();
+                _priceSheetOpen = false;
+                return;
+            }
+
+            if (result.Data.AffectedCount == 0)
+            {
+                _priceError = L["ConnectedBuyers_NoProductsToPrice"];
+                _priceSheetOpen = true;
                 return;
             }
 
