@@ -3,7 +3,6 @@
 @attribute [AllowAnonymous]
 @inject IStringLocalizer<OrgWebResources> L
 @inject Microsoft.Extensions.Options.IOptions<ExItSWebHostOptions> Hosts
-@inject NavigationManager Nav
 
 <PageTitle>Sign in — Organization Admin</PageTitle>
 
@@ -22,7 +21,7 @@
             {
                 <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" Style="margin-bottom:1rem;" />
             }
-            <Button Type="@ButtonType.Primary" Block OnClick="GoCanonical">Sign in</Button>
+            <a class="ant-btn ant-btn-primary ant-btn-block" href="@SignInUrl">Sign in</a>
         </Body>
     </Card>
 </div>
@@ -30,9 +29,7 @@
 @code {
     [SupplyParameterFromQuery] public string? Error { get; set; }
     private string? _error;
+    private string SignInUrl => Hosts.Value.CanonicalLoginUrl(WebApps.Organization, "/overview");
 
     protected override void OnParametersSet() => _error = Error;
-
-    private void GoCanonical() =>
-        Nav.NavigateTo(Hosts.Value.CanonicalLoginUrl(WebApps.Organization, "/overview"), forceLoad: true);
 }

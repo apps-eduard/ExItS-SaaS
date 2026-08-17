@@ -1,10 +1,15 @@
 @inject NavigationManager Nav
 @inject IOptions<ExItSWebHostOptions> Hosts
 
+<p class="exits-login-shell" style="padding:2rem;text-align:center;">
+    <a class="ant-btn ant-btn-primary" href="@LoginUrl">Sign in</a>
+</p>
+
 @code {
-    protected override void OnInitialized()
-    {
-        var path = "/" + Nav.ToBaseRelativePath(Nav.Uri);
-        Nav.NavigateTo(Hosts.Value.CanonicalLoginUrl(WebApps.Personal, SafeReturnPath.Sanitize(path, "/home")), forceLoad: true);
-    }
+    private string LoginUrl => Hosts.Value.CanonicalLoginUrl(
+        WebApps.Personal,
+        SafeReturnPath.Sanitize("/" + Nav.ToBaseRelativePath(Nav.Uri), "/home"));
+
+    protected override void OnInitialized() =>
+        Nav.NavigateTo(LoginUrl, forceLoad: true);
 }

@@ -3,9 +3,7 @@
 @using AntDesign
 @using Microsoft.AspNetCore.Authorization
 @attribute [AllowAnonymous]
-@inject IPlatformApiClient Api
 @inject IStringLocalizer<AdminResources> L
-@inject NavigationManager Nav
 
 <PageTitle>@L["Brand_Name"] — Register</PageTitle>
 
@@ -20,21 +18,14 @@
         <Body>
             <Paragraph Type="@TextElementType.Secondary">@L["Register_Hint"]</Paragraph>
 
-            @if (!string.IsNullOrWhiteSpace(_error))
+            @if (!string.IsNullOrWhiteSpace(Error))
             {
-                <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" Closable="true" OnClose="() => _error = null" Style="margin-bottom: 1rem;" />
+                <Alert Type="@AlertType.Error" Message="@Error" ShowIcon="true" Style="margin-bottom: 1rem;" />
             }
 
-            @if (_done)
+            @if (Done)
             {
-                <Alert Type="@AlertType.Success" Message="@L["Register_Success"]" Description="@_message" ShowIcon="true" Style="margin-bottom: 1rem;" />
-                @if (!string.IsNullOrWhiteSpace(_debugToken))
-                {
-                    <Paragraph Type="@TextElementType.Secondary" Style="font-size:12px;">
-                        Debug token (non-Production only): <code>@_debugToken</code>
-                        — <a href="@($"/admin/activate-account?token={Uri.EscapeDataString(_debugToken)}")">Activate now</a>
-                    </Paragraph>
-                }
+                <Alert Type="@AlertType.Success" Message="@L["Register_Success"]" ShowIcon="true" Style="margin-bottom: 1rem;" />
                 <Paragraph>
                     <a href="http://localhost:8025" target="_blank" rel="noopener">Open Mailpit</a>
                     · <a href="/admin/login">@L["Login_SignIn"]</a>
@@ -42,73 +33,60 @@
             }
             else
             {
-                <div class="exits-login-form">
+                @* Native form POST — Interactive Server OnClick is not available without a circuit (Mailpit / Docker). *@
+                <form method="post" action="/admin/register/submit" class="exits-login-form">
                     <div class="ant-form-item">
                         <label class="ant-form-item-label" for="reg-displayname">@L["Common_DisplayName"]</label>
-                        <Input Id="reg-displayname" @bind-Value="_displayName" Disabled="_busy" />
+                        <input id="reg-displayname"
+                               name="DisplayName"
+                               type="text"
+                               class="ant-input"
+                               autocomplete="name"
+                               required
+                               value="@DisplayName" />
                     </div>
                     <div class="ant-form-item">
                         <label class="ant-form-item-label" for="reg-email">@L["Common_Email"]</label>
-                        <Input Id="reg-email" @bind-Value="_email" Disabled="_busy" />
+                        <input id="reg-email"
+                               name="Email"
+                               type="email"
+                               class="ant-input"
+                               autocomplete="email"
+                               required
+                               value="@Email" />
                     </div>
                     <div class="ant-form-item">
-                        <Checkbox @bind-Checked="_acceptTerms" Disabled="_busy">@L["Register_AcceptTerms"]</Checkbox>
+                        <label>
+                            <input type="checkbox" name="AcceptTerms" value="true" />
+                            @L["Register_AcceptTerms"]
+                        </label>
                     </div>
-                    <Button Type="@ButtonType.Primary" Block Size="@ButtonSize.Small" Loading="_busy" Disabled="_busy" OnClick="SubmitAsync">
+                    <button type="submit" class="ant-btn ant-btn-primary ant-btn-block ant-btn-sm">
                         @L["Register_Submit"]
-                    </Button>
+                    </button>
                     <div class="exits-login-links">
                         <a href="/admin/login">@L["Login_SignIn"]</a>
                     </div>
-                </div>
+                </form>
             }
         </Body>
     </Card>
 </div>
 
 @code {
-    private string _displayName = "";
-    private string _email = "";
-    private bool _acceptTerms;
-    private string? _error;
-    private string? _message;
-    private string? _debugToken;
-    private bool _busy;
-    private bool _done;
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? Error { get; set; }
 
-    private async Task SubmitAsync()
-    {
-        _error = null;
-        if (!_acceptTerms)
-        {
-            _error = L["Register_TermsRequired"];
-            return;
-        }
+    [SupplyParameterFromQuery(Name = "done")]
+    public string? DoneQuery { get; set; }
 
-        if (string.IsNullOrWhiteSpace(_displayName) || string.IsNullOrWhiteSpace(_email))
-        {
-            _error = L["Common_ActionFailed"];
-            return;
-        }
+    [SupplyParameterFromQuery(Name = "displayName")]
+    public string? DisplayName { get; set; }
 
-        _busy = true;
-        try
-        {
-            var result = await Api.RegisterPersonalAccountAsync(
-                new RegisterPersonalAccountRequest(_displayName.Trim(), _email.Trim()));
-            if (!result.IsSuccess)
-            {
-                _error = result.Error?.Detail ?? L["Common_ActionFailed"];
-                return;
-            }
+    [SupplyParameterFromQuery(Name = "email")]
+    public string? Email { get; set; }
 
-            _message = result.Data?.Message ?? L["Register_Success"];
-            _debugToken = result.Data?.DebugToken;
-            _done = true;
-        }
-        finally
-        {
-            _busy = false;
-        }
-    }
+    private bool Done =>
+        string.Equals(DoneQuery, "1", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(DoneQuery, "true", StringComparison.OrdinalIgnoreCase);
 }

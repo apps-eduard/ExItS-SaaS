@@ -56,15 +56,18 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
 
 var isLocalTestHost = builder.Environment.IsDevelopment()
     || builder.Environment.IsEnvironment("Testing");
+var allowHttpAuthCookies = ExItSLocalValidationCookies.AllowHttpAuthCookies(
+    builder.Environment,
+    builder.Configuration);
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.Cookie.Name = ".ExItS.OrgWeb.Auth";
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = isLocalTestHost
-            ? CookieSecurePolicy.SameAsRequest
-            : CookieSecurePolicy.Always;
+        options.Cookie.SecurePolicy = ExItSLocalValidationCookies.AuthCookieSecurePolicy(
+            builder.Environment,
+            builder.Configuration);
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.LoginPath = "/login";
         options.LogoutPath = "/logout";
@@ -130,10 +133,13 @@ if (isLocalTestHost)
 else
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    app.UseHsts();
+    if (!allowHttpAuthCookies)
+    {
+        app.UseHsts();
+    }
 }
 
-if (!isLocalTestHost)
+if (!allowHttpAuthCookies)
 {
     app.UseHttpsRedirection();
 }

@@ -1,12 +1,13 @@
 @using AntDesign
 @using ExItS.Platform.Admin.Services
 @inject LocalValidationSignInService LocalValidationSignIn
+@inject NavigationManager Nav
 @inject IStringLocalizer<AdminResources> L
 
 @if (_show)
 {
     <div class="ant-form-item exits-lv-identity" style="margin-bottom: 1rem;">
-        <label class="ant-form-item-label">@L["Login_TestUserSelect"]</label>
+        <label class="ant-form-item-label" for="login-test-user">@L["Login_TestUserSelect"]</label>
 
         @if (_loading)
         {
@@ -14,18 +15,18 @@
         }
         else if (_identities.Count > 0)
         {
-            <div class="exits-lv-identity__list" role="list">
+            <select id="login-test-user"
+                    class="exits-lv-identity__select"
+                    autocomplete="off"
+                    aria-describedby="login-test-user-hint"
+                    onchange="window.exitsFillTestUserLogin && window.exitsFillTestUserLogin(this.value)">
+                <option value="">@L["Login_TestUserSelect"]</option>
                 @foreach (var identity in _identities)
                 {
-                    <button type="button"
-                            role="listitem"
-                            class="ant-btn ant-btn-default ant-btn-block ant-btn-sm exits-lv-identity__item"
-                            @onclick="() => OnTestUserSelectedAsync(identity)">
-                        @FormatLabel(identity)
-                    </button>
+                    <option value="@LoginId(identity)" title="@identity.DisplayName">@FormatLabel(identity)</option>
                 }
-            </div>
-            <Paragraph Type="@TextElementType.Secondary" Style="margin:.35rem 0 0; font-size:12px;">
+            </select>
+            <Paragraph id="login-test-user-hint" Type="@TextElementType.Secondary" Style="margin:.35rem 0 0; font-size:12px;">
                 @L["Login_TestUserHint"]
             </Paragraph>
         }
@@ -45,9 +46,7 @@
             {
                 <span></span>
             }
-            <Button Type="@ButtonType.Link" Size="@ButtonSize.Small" Disabled="_loading" OnClick="ReloadAsync">
-                Refresh
-            </Button>
+            <a class="ant-btn ant-btn-link ant-btn-sm" href="@Nav.Uri">Refresh</a>
         </div>
     </div>
 }
@@ -57,12 +56,6 @@
     private bool _loading;
     private string? _loadNote;
     private IReadOnlyList<LocalValidationIdentityOption> _identities = [];
-
-    /// <summary>
-    /// Fills the login username field only. Parent owns form state (JS fill was unreliable under Interactive Server).
-    /// </summary>
-    [Parameter]
-    public EventCallback<string> OnIdentitySelected { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -90,32 +83,34 @@
         finally
         {
             _loading = false;
-            await InvokeAsync(StateHasChanged);
         }
+    }
+
+    /// <summary>
+    /// Login id only (email or org staff username). Never password. Used as native select values
+    /// so Docker/Tailscale login can fill the field without an Interactive Server circuit.
+    /// </summary>
+    private static string LoginId(LocalValidationIdentityOption identity)
+    {
+        var loginId = !string.IsNullOrWhiteSpace(identity.Email)
+            ? identity.Email
+            : identity.Username;
+        return loginId ?? string.Empty;
     }
 
     private static string FormatLabel(LocalValidationIdentityOption identity)
     {
-        var name = string.IsNullOrWhiteSpace(identity.DisplayName)
+        var raw = string.IsNullOrWhiteSpace(identity.DisplayName)
             ? identity.Username
             : identity.DisplayName;
-        if (!string.IsNullOrWhiteSpace(identity.ScopeLabel))
+        var dash = raw.IndexOf(" — ", StringComparison.Ordinal);
+        var name = dash > 0 ? raw[..dash] : raw;
+        if (!string.IsNullOrWhiteSpace(identity.ScopeLabel)
+            && name.IndexOf(identity.ScopeLabel, StringComparison.OrdinalIgnoreCase) < 0)
         {
             return $"{name} — {identity.ScopeLabel}";
         }
 
         return name;
-    }
-
-    private async Task OnTestUserSelectedAsync(LocalValidationIdentityOption identity)
-    {
-        // Email carries loginDisplay from API (real email or org staff <local>@ORG######).
-        var loginId = !string.IsNullOrWhiteSpace(identity.Email)
-            ? identity.Email
-            : identity.Username;
-        if (OnIdentitySelected.HasDelegate)
-        {
-            await OnIdentitySelected.InvokeAsync(loginId ?? string.Empty);
-        }
     }
 }

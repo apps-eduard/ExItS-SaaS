@@ -339,6 +339,11 @@ html, body {
     border-color: #d48806;
     color: #ffe7ba;
 }
+[data-theme="dark"] .exits-lv-identity__select {
+    background: #141414;
+    color: #ffffffd9;
+    border-color: #303030;
+}
 
 /* Login SSR */
 .exits-login-shell {
@@ -367,17 +372,28 @@ html, body {
     font-weight: 600;
     font-size: 12px;
 }
-.exits-lv-identity__list {
-    display: flex;
-    flex-direction: column;
-    gap: .35rem;
+.exits-lv-identity {
+    max-width: 100%;
 }
-.exits-lv-identity__item {
-    text-align: left !important;
-    height: auto !important;
-    white-space: normal;
-    line-height: 1.35;
-    padding: .45rem .75rem;
+.exits-lv-identity__select {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-height: 32px;
+    box-sizing: border-box;
+    padding: 4px 11px;
+    border: 1px solid var(--exits-border);
+    border-radius: 6px;
+    background: var(--exits-surface);
+    color: var(--exits-text);
+    font: inherit;
+    cursor: pointer;
+    color-scheme: light;
+}
+.exits-lv-identity__select option,
+.exits-lv-identity__select optgroup {
+    color: #141414;
+    background-color: #ffffff;
 }
 .exits-login-links { margin-top: .75rem; }
 .exits-field-error {

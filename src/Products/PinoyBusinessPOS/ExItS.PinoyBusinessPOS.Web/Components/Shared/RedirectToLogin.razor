@@ -1,7 +1,15 @@
 @inject NavigationManager Nav
 @inject Microsoft.Extensions.Options.IOptions<ExItSWebHostOptions> Hosts
 
+<p class="exits-login-shell" style="padding:2rem;text-align:center;">
+    <a class="ant-btn ant-btn-primary" href="@LoginUrl">Sign in</a>
+</p>
+
 @code {
+    private string LoginUrl => Hosts.Value.CanonicalLoginUrl(
+        WebApps.Organization,
+        SafeReturnPath.Sanitize("/" + Nav.ToBaseRelativePath(Nav.Uri), "/overview"));
+
     protected override void OnInitialized()
     {
         var path = "/" + Nav.ToBaseRelativePath(Nav.Uri);
@@ -11,6 +19,6 @@
             return;
         }
 
-        Nav.NavigateTo(Hosts.Value.CanonicalLoginUrl(WebApps.Organization, SafeReturnPath.Sanitize(path, "/overview")), forceLoad: true);
+        Nav.NavigateTo(LoginUrl, forceLoad: true);
     }
 }

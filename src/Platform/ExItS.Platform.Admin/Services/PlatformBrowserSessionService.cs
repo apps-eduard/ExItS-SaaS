@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Json;
+using ExItS.Web.UI;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
@@ -170,7 +171,7 @@ public sealed class PlatformBrowserSessionService(
                 HttpOnly = true,
                 IsEssential = true,
                 SameSite = SameSiteMode.Lax,
-                Secure = !(environment.IsDevelopment() || environment.IsEnvironment("Testing")),
+                Secure = ExItSLocalValidationCookies.SessionTokenSecure(http.Request),
                 Expires = expiresAtUtc
             });
     }

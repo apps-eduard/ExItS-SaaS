@@ -332,6 +332,7 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("AddAntDesign()", program, StringComparison.Ordinal);
         Assert.Contains("MapStaticAssets().AllowAnonymous()", program, StringComparison.Ordinal);
         Assert.Contains("/admin/login/credentials", program, StringComparison.Ordinal);
+        Assert.Contains("MapAdminPublicAuthForms", program, StringComparison.Ordinal);
         Assert.DoesNotContain("/admin/login/local-validation", program, StringComparison.Ordinal);
         Assert.DoesNotContain("StaticWebAssetMaterializer", program, StringComparison.Ordinal);
         Assert.DoesNotContain("LivePreview", program, StringComparison.Ordinal);
@@ -517,12 +518,13 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("exits-lv-identity", picker, StringComparison.Ordinal);
         Assert.Contains("DisplayName", picker, StringComparison.Ordinal);
         Assert.Contains("exitsFillTestUserLogin", picker, StringComparison.Ordinal);
-        Assert.Contains("OnTestUserSelectedAsync", picker, StringComparison.Ordinal);
+        Assert.Contains("<select", picker, StringComparison.Ordinal);
+        Assert.Contains("login-test-user", picker, StringComparison.Ordinal);
         Assert.DoesNotContain("/admin/login/as/", picker, StringComparison.Ordinal);
         Assert.DoesNotContain("BuildLoginAsHref", picker, StringComparison.Ordinal);
         Assert.DoesNotContain("ContinueQuickLoginNavigationAsync", picker, StringComparison.Ordinal);
         Assert.DoesNotContain("SharedPassword", picker, StringComparison.Ordinal);
-        Assert.DoesNotContain("<select", picker, StringComparison.Ordinal);
+        Assert.DoesNotContain("@onclick", picker, StringComparison.Ordinal);
         Assert.DoesNotContain("/local-validation/sessions", picker, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("live-preview", picker, StringComparison.OrdinalIgnoreCase);
 
@@ -535,6 +537,7 @@ public sealed class AdminArchitectureGuardTests
         var program = File.ReadAllText(Path.Combine(adminRoot, "Program.cs"));
         Assert.Contains("/admin/login/as/{key}", program, StringComparison.Ordinal);
         Assert.Contains("LocalValidationSignInService", program, StringComparison.Ordinal);
+        Assert.Contains("MapAdminPublicAuthForms", program, StringComparison.Ordinal);
 
         var a11y = File.ReadAllText(Path.Combine(adminRoot, "wwwroot", "admin-a11y.js"));
         Assert.Contains("exitsFillTestUserLogin", a11y, StringComparison.Ordinal);
@@ -560,6 +563,41 @@ public sealed class AdminArchitectureGuardTests
 
         var launch = File.ReadAllText(Path.Combine(adminRoot, "Properties", "launchSettings.json"));
         Assert.DoesNotContain("LocalValidation", launch, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Public_register_activate_and_reset_use_native_form_posts()
+    {
+        var root = FindRepositoryRoot();
+        var pages = Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages");
+        var register = File.ReadAllText(Path.Combine(pages, "Register.razor"));
+        var activate = File.ReadAllText(Path.Combine(pages, "ActivateAccount.razor"));
+        var reset = File.ReadAllText(Path.Combine(pages, "ResetPassword.razor"));
+        var forgot = File.ReadAllText(Path.Combine(pages, "ForgotPassword.razor"));
+        var endpoints = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Services", "AdminPublicAuthFormEndpoints.cs"));
+
+        Assert.Contains("method=\"post\"", register, StringComparison.Ordinal);
+        Assert.Contains("/admin/register/submit", register, StringComparison.Ordinal);
+        Assert.Contains("name=\"AcceptTerms\"", register, StringComparison.Ordinal);
+        Assert.DoesNotContain("OnClick=\"SubmitAsync\"", register, StringComparison.Ordinal);
+
+        Assert.Contains("method=\"post\"", activate, StringComparison.Ordinal);
+        Assert.Contains("/admin/activate-account/complete", activate, StringComparison.Ordinal);
+        Assert.Contains("name=\"Token\"", activate, StringComparison.Ordinal);
+        Assert.DoesNotContain("OnClick=\"SubmitAsync\"", activate, StringComparison.Ordinal);
+
+        Assert.Contains("method=\"post\"", reset, StringComparison.Ordinal);
+        Assert.Contains("/admin/reset-password/complete", reset, StringComparison.Ordinal);
+        Assert.DoesNotContain("OnClick=\"SubmitAsync\"", reset, StringComparison.Ordinal);
+
+        Assert.Contains("method=\"post\"", forgot, StringComparison.Ordinal);
+        Assert.Contains("/admin/forgot-password/submit", forgot, StringComparison.Ordinal);
+
+        Assert.Contains("/api/v1/platform/auth/register", endpoints, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/platform/auth/activate-account", endpoints, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/platform/auth/reset-password", endpoints, StringComparison.Ordinal);
+        Assert.Contains("DisableAntiforgery", endpoints, StringComparison.Ordinal);
     }
 
     [Fact]

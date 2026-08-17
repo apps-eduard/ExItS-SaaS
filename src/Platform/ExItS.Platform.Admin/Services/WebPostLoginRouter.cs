@@ -100,7 +100,7 @@ public sealed class WebPostLoginRouter(
 
         if (string.Equals(target.App, WebApps.Platform, StringComparison.OrdinalIgnoreCase))
         {
-            return SafeReturnPath.Sanitize(returnPath, "/admin");
+            return ResolveReturnPath(target.App, requested, returnPath);
         }
 
         var created = await WebHandoffHttp.CreateAsync(
@@ -108,7 +108,7 @@ public sealed class WebPostLoginRouter(
             token,
             target.App,
             target.OrganizationId,
-            SafeReturnPath.Sanitize(returnPath, WebHandoffAppsDefault(target.App)),
+            ResolveReturnPath(target.App, requested, returnPath),
             ct).ConfigureAwait(false);
         if (created is null)
         {
@@ -116,6 +116,34 @@ public sealed class WebPostLoginRouter(
         }
 
         return WebHandoffHttp.EstablishUrl(hosts.Value.GetOrigin(target.App), created.Ticket, created.ReturnPath);
+    }
+
+    public static string ResolveReturnPath(string targetApp, string? requestedApp, string? returnPath)
+    {
+        var requested = string.IsNullOrWhiteSpace(requestedApp) ? null : WebApps.Normalize(requestedApp);
+        var target = WebApps.Normalize(targetApp);
+        var fallback = WebHandoffAppsDefault(target);
+
+        if (string.Equals(target, WebApps.Platform, StringComparison.OrdinalIgnoreCase))
+        {
+            if (requested is null || string.Equals(requested, WebApps.Platform, StringComparison.OrdinalIgnoreCase))
+            {
+                var sanitized = SafeReturnPath.Sanitize(returnPath, "/admin");
+                if (sanitized.StartsWith("/admin", StringComparison.OrdinalIgnoreCase))
+                {
+                    return sanitized;
+                }
+            }
+
+            return "/admin";
+        }
+
+        if (requested is null || string.Equals(requested, target, StringComparison.OrdinalIgnoreCase))
+        {
+            return SafeReturnPath.Sanitize(returnPath, fallback);
+        }
+
+        return fallback;
     }
 
     private static string WebHandoffAppsDefault(string app) => app switch

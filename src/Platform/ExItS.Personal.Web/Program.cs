@@ -42,12 +42,17 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
 });
 
 var isLocalTestHost = builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing");
+var allowHttpAuthCookies = ExItSLocalValidationCookies.AllowHttpAuthCookies(
+    builder.Environment,
+    builder.Configuration);
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.Cookie.Name = ".ExItS.PersonalWeb.Auth";
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = isLocalTestHost ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
+        options.Cookie.SecurePolicy = ExItSLocalValidationCookies.AuthCookieSecurePolicy(
+            builder.Environment,
+            builder.Configuration);
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.LoginPath = "/login";
         options.LogoutPath = "/logout";
@@ -75,8 +80,12 @@ builder.Services.AddHttpClient("PlatformApi", (services, client) =>
 
 var app = builder.Build();
 if (isLocalTestHost) { app.UseDeveloperExceptionPage(); }
-else { app.UseExceptionHandler("/Error", createScopeForErrors: true); app.UseHsts(); }
-if (!isLocalTestHost) { app.UseHttpsRedirection(); }
+else
+{
+    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    if (!allowHttpAuthCookies) { app.UseHsts(); }
+}
+if (!allowHttpAuthCookies) { app.UseHttpsRedirection(); }
 
 app.UseRequestLocalization();
 app.UseAuthentication();

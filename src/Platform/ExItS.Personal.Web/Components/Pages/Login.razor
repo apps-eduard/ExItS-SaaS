@@ -2,7 +2,6 @@
 @layout EmptyLayout
 @attribute [AllowAnonymous]
 @inject IOptions<ExItSWebHostOptions> Hosts
-@inject NavigationManager Nav
 
 <PageTitle>Sign in — Personal</PageTitle>
 <div class="exits-login-shell">
@@ -14,14 +13,12 @@
             {
                 <Alert Type="@AlertType.Error" Message="@Error" ShowIcon="true" />
             }
-            <Button Type="@ButtonType.Primary" Block OnClick="Go">Sign in</Button>
+            <a class="ant-btn ant-btn-primary ant-btn-block" href="@SignInUrl">Sign in</a>
         </Body>
     </Card>
 </div>
 
 @code {
     [SupplyParameterFromQuery] public string? Error { get; set; }
-
-    private void Go() =>
-        Nav.NavigateTo(Hosts.Value.CanonicalLoginUrl(WebApps.Personal, "/home"), forceLoad: true);
+    private string SignInUrl => Hosts.Value.CanonicalLoginUrl(WebApps.Personal, "/home");
 }

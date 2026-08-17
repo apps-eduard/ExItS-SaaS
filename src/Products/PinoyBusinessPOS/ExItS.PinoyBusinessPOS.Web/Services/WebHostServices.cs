@@ -297,8 +297,7 @@ public sealed class OrgWebSessionCircuitHandler(
 
 public sealed class OrgWebBrowserSessionService(
     IHttpClientFactory httpClientFactory,
-    IHttpContextAccessor httpContextAccessor,
-    IHostEnvironment environment)
+    IHttpContextAccessor httpContextAccessor)
 {
     public const string SessionTokenClaimType = "exits_session_token";
     public const string SessionTokenCookieName = ".ExItS.OrgWeb.Session";
@@ -461,7 +460,7 @@ public sealed class OrgWebBrowserSessionService(
                 HttpOnly = true,
                 IsEssential = true,
                 SameSite = SameSiteMode.Lax,
-                Secure = !(environment.IsDevelopment() || environment.IsEnvironment("Testing")),
+                Secure = ExItSLocalValidationCookies.SessionTokenSecure(http.Request),
                 Expires = expiresAtUtc
             });
     }

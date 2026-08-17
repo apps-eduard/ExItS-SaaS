@@ -72,6 +72,9 @@ builder.Services.Configure<DevelopmentOperatorOptions>(options =>
 
 var isLocalTestHost = builder.Environment.IsDevelopment()
     || builder.Environment.IsEnvironment("Testing");
+var allowHttpAuthCookies = ExItSLocalValidationCookies.AllowHttpAuthCookies(
+    builder.Environment,
+    builder.Configuration);
 
 if (!isLocalTestHost)
 {
@@ -91,9 +94,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     {
         options.Cookie.Name = ".ExItS.Admin.Auth";
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = isLocalTestHost
-            ? CookieSecurePolicy.SameAsRequest
-            : CookieSecurePolicy.Always;
+        options.Cookie.SecurePolicy = ExItSLocalValidationCookies.AuthCookieSecurePolicy(
+            builder.Environment,
+            builder.Configuration);
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.LoginPath = "/admin/login";
         options.LogoutPath = "/admin/logout";
@@ -161,11 +164,14 @@ if (isLocalTestHost)
 else
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    app.UseHsts();
+    if (!allowHttpAuthCookies)
+    {
+        app.UseHsts();
+    }
 }
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-if (!isLocalTestHost)
+if (!allowHttpAuthCookies)
 {
     app.UseHttpsRedirection();
 }
@@ -214,6 +220,8 @@ app.MapPost("/admin/login/credentials", async (
     var next = await router.ResolveAsync(http, returnApp, returnPath, sessionToken: sessionToken).ConfigureAwait(false);
     return Results.Redirect(next);
 }).AllowAnonymous().DisableAntiforgery();
+
+app.MapAdminPublicAuthForms();
 
 // Local Validation only: full HTTP round-trip so auth cookies are set (Interactive Server cannot).
 app.MapGet("/admin/login/as/{key}", async (

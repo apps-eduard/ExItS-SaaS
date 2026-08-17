@@ -87,6 +87,7 @@ public sealed class WebHostArchitectureTests
         var root = FindRepositoryRoot();
         var adminProgram = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Program.cs"));
         Assert.Contains("/admin/login/credentials", adminProgram, StringComparison.Ordinal);
+        Assert.Contains("MapAdminPublicAuthForms", adminProgram, StringComparison.Ordinal);
         Assert.Contains("/admin/login/as/{key}", adminProgram, StringComparison.Ordinal);
         Assert.Contains("env.IsProduction()", adminProgram, StringComparison.Ordinal);
         Assert.Contains("Results.NotFound()", adminProgram, StringComparison.Ordinal);
@@ -99,6 +100,9 @@ public sealed class WebHostArchitectureTests
         var personalProgram = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Personal.Web", "Program.cs"));
         Assert.Contains("CanonicalLoginUrl", orgProgram, StringComparison.Ordinal);
         Assert.Contains("CanonicalLoginUrl", personalProgram, StringComparison.Ordinal);
+        Assert.Contains("AllowHttpAuthCookies", adminProgram, StringComparison.Ordinal);
+        Assert.Contains("AllowHttpAuthCookies", orgProgram, StringComparison.Ordinal);
+        Assert.Contains("AllowHttpAuthCookies", personalProgram, StringComparison.Ordinal);
         Assert.DoesNotContain("/admin/login/as/", orgProgram, StringComparison.Ordinal);
         Assert.DoesNotContain("/admin/login/as/", personalProgram, StringComparison.Ordinal);
     }
@@ -199,6 +203,10 @@ public sealed class WebHostArchitectureTests
         Assert.DoesNotContain("LocalValidationIdentityPicker", personalLogin, StringComparison.Ordinal);
         Assert.Contains("CanonicalLoginUrl", orgLogin, StringComparison.Ordinal);
         Assert.Contains("CanonicalLoginUrl", personalLogin, StringComparison.Ordinal);
+        Assert.Contains("href=\"@SignInUrl\"", orgLogin, StringComparison.Ordinal);
+        Assert.Contains("href=\"@SignInUrl\"", personalLogin, StringComparison.Ordinal);
+        Assert.DoesNotContain("OnClick", orgLogin, StringComparison.Ordinal);
+        Assert.DoesNotContain("OnClick", personalLogin, StringComparison.Ordinal);
     }
 
     [Fact]

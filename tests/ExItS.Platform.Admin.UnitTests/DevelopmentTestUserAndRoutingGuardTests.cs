@@ -16,7 +16,8 @@ public sealed class DevelopmentTestUserAndRoutingGuardTests
             root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "Login.razor"));
 
         Assert.Contains("exitsFillTestUserLogin", picker, StringComparison.Ordinal);
-        Assert.Contains("OnTestUserSelectedAsync", picker, StringComparison.Ordinal);
+        Assert.Contains("<select", picker, StringComparison.Ordinal);
+        Assert.Contains("login-test-user", picker, StringComparison.Ordinal);
         Assert.DoesNotContain("/admin/login/as/", picker, StringComparison.Ordinal);
         Assert.DoesNotContain("SignInAsKeyAsync", picker, StringComparison.Ordinal);
         Assert.DoesNotContain("SharedPassword", picker, StringComparison.OrdinalIgnoreCase);
@@ -41,6 +42,7 @@ public sealed class DevelopmentTestUserAndRoutingGuardTests
         Assert.Contains("orgWorkspaces.Count == 1", router, StringComparison.Ordinal);
         Assert.Contains("orgWorkspaces.Count > 1", router, StringComparison.Ordinal);
         Assert.Contains("/admin/workspaces", router, StringComparison.Ordinal);
+        Assert.Contains("ResolveReturnPath", router, StringComparison.Ordinal);
 
         var platformIdx = router.IndexOf("WebApps.Platform", StringComparison.Ordinal);
         var orgIdx = router.IndexOf("orgWorkspaces.Count == 1", StringComparison.Ordinal);

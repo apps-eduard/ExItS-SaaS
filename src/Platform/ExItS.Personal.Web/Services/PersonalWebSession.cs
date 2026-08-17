@@ -38,8 +38,7 @@ public sealed class PersonalSessionCircuitHandler(
 
 public sealed class PersonalWebSessionService(
     IHttpClientFactory httpClientFactory,
-    IHttpContextAccessor httpContextAccessor,
-    IHostEnvironment environment)
+    IHttpContextAccessor httpContextAccessor)
 {
     public const string SessionTokenClaimType = "exits_session_token";
     public const string SessionTokenCookieName = ".ExItS.PersonalWeb.Session";
@@ -152,7 +151,7 @@ public sealed class PersonalWebSessionService(
                 HttpOnly = true,
                 IsEssential = true,
                 SameSite = SameSiteMode.Lax,
-                Secure = !(environment.IsDevelopment() || environment.IsEnvironment("Testing")),
+                Secure = ExItSLocalValidationCookies.SessionTokenSecure(http.Request),
                 Expires = expiresAtUtc
             });
     }
