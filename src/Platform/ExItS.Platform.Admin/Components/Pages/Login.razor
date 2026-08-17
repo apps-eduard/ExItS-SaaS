@@ -31,7 +31,7 @@
                 <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" Closable="true" OnClose="() => _error = null" Style="margin-bottom: 1rem;" />
             }
 
-            <LocalValidationIdentityPicker />
+            <LocalValidationIdentityPicker OnIdentitySelected="OnTestUserSelected" />
 
             @* Native form POST — Interactive Server cannot set auth cookies from a Blazor event. *@
             <form method="post" action="/admin/login/credentials" class="exits-login-form">
@@ -41,10 +41,12 @@
                     <label class="ant-form-item-label" for="login-email">@L["Login_Email"]</label>
                     <input id="login-email"
                            name="Email"
-                           type="email"
+                           type="text"
                            class="ant-input"
                            autocomplete="username"
                            required
+                           value="@_email"
+                           @oninput="OnEmailInput"
                            placeholder="@L["Login_Email"]" />
                 </div>
                 <div class="ant-form-item">
@@ -55,6 +57,8 @@
                            class="ant-input"
                            autocomplete="current-password"
                            required
+                           value="@_password"
+                           @oninput="OnPasswordInput"
                            placeholder="@L["Login_Password"]" />
                 </div>
                 <button type="submit" class="ant-btn ant-btn-primary ant-btn-block ant-btn-sm">
@@ -85,6 +89,8 @@
 @code {
     private string? _error;
     private string? _notice;
+    private string _email = string.Empty;
+    private string _password = string.Empty;
 
     [Inject] private IOptions<PlatformApiOptions> PlatformApi { get; set; } = default!;
 
@@ -115,6 +121,19 @@
         {
             _notice = string.IsNullOrWhiteSpace(NoticeQuery) ? null : NoticeQuery;
         }
+    }
+
+    private void OnEmailInput(ChangeEventArgs args) =>
+        _email = args.Value?.ToString() ?? string.Empty;
+
+    private void OnPasswordInput(ChangeEventArgs args) =>
+        _password = args.Value?.ToString() ?? string.Empty;
+
+    private void OnTestUserSelected(string loginId)
+    {
+        // Username convenience only — never fill password, never authenticate.
+        _email = loginId ?? string.Empty;
+        _password = string.Empty;
     }
 
     private string BuildChallengeUrl(string provider)

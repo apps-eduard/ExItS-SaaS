@@ -1,7 +1,6 @@
 @using AntDesign
 @using ExItS.Platform.Admin.Services
 @inject LocalValidationSignInService LocalValidationSignIn
-@inject IJSRuntime Js
 @inject IStringLocalizer<AdminResources> L
 
 @if (_show)
@@ -59,6 +58,12 @@
     private string? _loadNote;
     private IReadOnlyList<LocalValidationIdentityOption> _identities = [];
 
+    /// <summary>
+    /// Fills the login username field only. Parent owns form state (JS fill was unreliable under Interactive Server).
+    /// </summary>
+    [Parameter]
+    public EventCallback<string> OnIdentitySelected { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
         _show = LocalValidationSignIn.IsAvailable;
@@ -104,10 +109,13 @@
 
     private async Task OnTestUserSelectedAsync(LocalValidationIdentityOption identity)
     {
-        // Username convenience only — never authenticate or navigate from this control.
+        // Email carries loginDisplay from API (real email or org staff <local>@ORG######).
         var loginId = !string.IsNullOrWhiteSpace(identity.Email)
             ? identity.Email
             : identity.Username;
-        await Js.InvokeVoidAsync("exitsFillTestUserLogin", loginId ?? string.Empty);
+        if (OnIdentitySelected.HasDelegate)
+        {
+            await OnIdentitySelected.InvokeAsync(loginId ?? string.Empty);
+        }
     }
 }

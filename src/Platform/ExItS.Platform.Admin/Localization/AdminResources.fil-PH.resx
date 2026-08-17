@@ -2653,6 +2653,30 @@
   <data name="Activate_PasswordMismatch" xml:space="preserve">
     <value>Hindi tugma ang mga password.</value>
   </data>
+  <data name="Activate_PasswordRequired" xml:space="preserve">
+    <value>Maglagay ng password sa parehong field.</value>
+  </data>
+  <data name="ResetPassword_Title" xml:space="preserve">
+    <value>I-reset ang password</value>
+  </data>
+  <data name="ResetPassword_Hint" xml:space="preserve">
+    <value>Pumili ng bagong password. Ilagay ang parehong value sa dalawang field. Mala-sign-out ang ibang sessions.</value>
+  </data>
+  <data name="ResetPassword_NewPassword" xml:space="preserve">
+    <value>Bagong password</value>
+  </data>
+  <data name="ResetPassword_Submit" xml:space="preserve">
+    <value>I-reset ang password</value>
+  </data>
+  <data name="ResetPassword_Success" xml:space="preserve">
+    <value>Na-update ang password. Mag-sign in gamit ang bagong password.</value>
+  </data>
+  <data name="ResetPassword_TokenMissing" xml:space="preserve">
+    <value>Walang reset token. Buksan muli ang link mula sa email.</value>
+  </data>
+  <data name="ResetPassword_PasswordRequired" xml:space="preserve">
+    <value>Maglagay ng password sa parehong field.</value>
+  </data>
   <data name="Status_PendingVerification" xml:space="preserve">
     <value>Pending Verification</value>
   </data>

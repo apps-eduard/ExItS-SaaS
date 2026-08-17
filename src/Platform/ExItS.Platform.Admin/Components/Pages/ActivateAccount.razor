@@ -82,6 +82,12 @@
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(_password))
+        {
+            _error = L["Activate_PasswordRequired"];
+            return;
+        }
+
         if (!string.Equals(_password, _confirm, StringComparison.Ordinal))
         {
             _error = L["Activate_PasswordMismatch"];

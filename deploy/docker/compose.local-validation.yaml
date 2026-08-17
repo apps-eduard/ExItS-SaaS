@@ -163,8 +163,9 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Staging
       AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api;org-web;personal-web}
-      # Browser-visible Platform API (OAuth / absolute links). Prefer public host URL from launcher.
-      PlatformApi__BaseUrl: ${LOCAL_VALIDATION_PLATFORM_API_PUBLIC_URL:-http://localhost:8091}
+      # Server-side Blazor HttpClient must use the Docker network hostname.
+      # Browser-facing links still use LOCAL_VALIDATION_ADMIN_ORIGIN / public API ports.
+      PlatformApi__BaseUrl: ${LOCAL_VALIDATION_PLATFORM_API_INTERNAL_URL:-http://platform-api:8080}
       PlatformApi__TimeoutSeconds: "30"
       LocalValidation__Enabled: "true"
       LocalValidation__SharedPassword: ${LOCAL_VALIDATION_SHARED_PASSWORD}
