@@ -6,6 +6,7 @@
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
+@inject ShellNotificationUnreadState UnreadState
 @inject IStringLocalizer<PosResources> L
 
 @if (!_ready)
@@ -31,21 +32,38 @@ else
     else
     {
         var canManage = Capabilities.IsAllowed(UtangCapability.ManagePurchasing);
+        var needsApproval = string.Equals(DisplayStatus(_po), "ChangesNeedApproval", StringComparison.Ordinal);
         var canSubmit = canManage && !_isOffline && _po.Status == "Draft";
         var canCancel = canManage && !_isOffline && (_po.Status == "Draft" || _po.CanWithdrawConnected);
         var canReceive = canManage && !_isOffline && _po.CanReceiveConnected
             && (_po.Status == "Ordered" || _po.Status == "PartiallyReceived")
-            && _po.Lines.Any(line => line.OutstandingQty > 0m);
-        var actionCount = (canSubmit ? 1 : 0) + (canReceive ? 1 : 0) + (canCancel ? 1 : 0);
+            && _po.Lines.Any(line => line.OutstandingQty > 0m)
+            && !needsApproval;
+        var canAcceptChanges = canManage && !_isOffline && needsApproval;
+        var actionCount = (canSubmit ? 1 : 0) + (canReceive ? 1 : 0) + (canAcceptChanges ? 1 : 0) + (canCancel ? 1 : 0);
 <div class="pos-purchasing-detail">
         <Page>
             <header class="pos-purchasing-detail__header">
                 <h1 class="pos-purchasing-detail__title">@(_po.PoNumber ?? L["Purchasing_DetailTitle"])</h1>
-                <p class="pos-purchasing-detail__subtitle">@L["Purchasing_DetailSubtitle"]</p>
+                <p class="pos-purchasing-detail__subtitle">@StatusHeadline(_po)</p>
                 <div class="pos-purchasing-detail__status-row">
                     <Badge Tone="@StatusTone(DisplayStatus(_po))">@StatusLabel(DisplayStatus(_po))</Badge>
+                    <span class="pos-purchasing-detail__pay">@L["Purchasing_PaymentTerm"]: @PaymentTermLabel(_po.PaymentTermLabel)</span>
                 </div>
+                <p class="pos-purchasing-detail__summary">
+                    <MoneyDisplay Amount="@DisplayTotal(_po)" CurrencyCode="PHP" />
+                    · @L["Purchasing_ProductCount", _po.Lines.Count]
+                </p>
             </header>
+
+            @if (needsApproval)
+            {
+                <p class="pos-purchasing-detail__next" role="status">@L["Purchasing_ChangesNeedApproval"]</p>
+            }
+            else if (canReceive && string.Equals(DisplayStatus(_po), "Ready", StringComparison.Ordinal))
+            {
+                <p class="pos-purchasing-detail__next pos-purchasing-detail__next--ready" role="status">@L["Purchasing_ReadyToReceive"]</p>
+            }
 
             @if (_isOffline)
             {
@@ -76,15 +94,9 @@ else
                     <ol class="pos-purchasing-detail__timeline">
                         @foreach (var step in Timeline(_po))
                         {
-                            <li class="pos-purchasing-detail__timeline-step @(step.Completed ? "pos-purchasing-detail__timeline-step--done" : null)">
-                                <span class="pos-purchasing-detail__timeline-marker" aria-hidden="true">@(step.Completed ? "✓" : "○")</span>
-                                <span>
-                                    <strong>@step.Label</strong>
-                                    @if (step.AtUtc is { } at)
-                                    {
-                                        <small>@at.ToLocalTime().ToString("g")</small>
-                                    }
-                                </span>
+                            <li class="pos-purchasing-detail__timeline-step @(step.Completed ? "pos-purchasing-detail__timeline-step--done" : null) @(step.Current ? "pos-purchasing-detail__timeline-step--current" : null)">
+                                <span class="pos-purchasing-detail__timeline-marker" aria-hidden="true">@(step.Completed ? "✓" : step.Current ? "●" : "○")</span>
+                                <span>@step.Label</span>
                             </li>
                         }
                     </ol>
@@ -129,6 +141,26 @@ else
                     }
                 </dl>
             </section>
+
+            @if (needsApproval && _po.ConnectedLines is { Count: > 0 })
+            {
+                <section class="pos-purchasing-detail__panel" aria-labelledby="purchasing-changes-heading">
+                    <h2 id="purchasing-changes-heading" class="pos-purchasing-detail__section-title">@L["Purchasing_ProposedChanges"]</h2>
+                    <div class="pos-purchasing-detail__list" role="list">
+                        @foreach (var line in _po.ConnectedLines)
+                        {
+                            <div class="pos-purchasing-detail__entry" role="listitem">
+                                <span class="pos-purchasing-detail__entry-name">@line.NameSnapshot</span>
+                                <p class="pos-purchasing-detail__entry-meta">@ChangeSummary(line)</p>
+                            </div>
+                        }
+                    </div>
+                    <p class="pos-purchasing-detail__totals">
+                        <span>@L["ConnectedSuppliers_RequestedTotal"] <MoneyDisplay Amount="@_po.Lines.Sum(l => l.LineTotal)" CurrencyCode="PHP" /></span>
+                        <span>@L["ConnectedSuppliers_ProposedTotal"] <MoneyDisplay Amount="@(_po.ProposedTotalAmount ?? 0m)" CurrencyCode="PHP" /></span>
+                    </p>
+                </section>
+            }
 
             <section class="pos-purchasing-detail__panel" aria-labelledby="purchasing-lines-heading">
                 <h2 id="purchasing-lines-heading" class="pos-purchasing-detail__section-title">@L["Purchasing_LinesSection"]</h2>
@@ -175,7 +207,17 @@ else
                                 disabled="@_busy"
                                 @onclick="GoReceive">
                             <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
-                            <span class="pos-action-tile__label">@L["Purchasing_Receive"]</span>
+                            <span class="pos-action-tile__label">@L["Purchasing_ReceiveGoods"]</span>
+                        </button>
+                    }
+                    @if (canAcceptChanges)
+                    {
+                        <button type="button"
+                                class="pos-action-tile pos-action-tile--primary"
+                                disabled="@_busy"
+                                @onclick="AcceptChangesAsync">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                            <span class="pos-action-tile__label">@L["Purchasing_AcceptChanges"]</span>
                         </button>
                     }
                     @if (canCancel)
@@ -185,7 +227,7 @@ else
                                 disabled="@_busy"
                                 @onclick="CancelAsync">
                             <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("close")</span>
-                            <span class="pos-action-tile__label">@(_po.Status == "Draft" ? L["Purchasing_Cancel"] : L["Purchasing_Withdraw"])</span>
+                                <span class="pos-action-tile__label">@(_po.Status == "Draft" ? L["Purchasing_Cancel"] : needsApproval ? L["Purchasing_CancelOrder"] : L["Purchasing_Withdraw"])</span>
                         </button>
                     }
                 </div>
@@ -235,11 +277,50 @@ else
         status switch
         {
             "WaitingForSupplier" or "SupplierAccepted" => BadgeTone.Info,
-            "Preparing" or "Ready" or "PartiallyReceived" => BadgeTone.Warning,
+            "ChangesNeedApproval" or "Preparing" or "Ready" or "PartiallyReceived" => BadgeTone.Warning,
             "Received" => BadgeTone.Success,
             "SupplierDeclined" or "ReceivedWithIssues" => BadgeTone.Danger,
             _ => BadgeTone.Neutral
         };
+
+    private string StatusHeadline(PosPurchaseOrderDto po) =>
+        DisplayStatus(po) switch
+        {
+            "ChangesNeedApproval" => L["Purchasing_ChangesNeedApprovalHelp"],
+            "Preparing" => L["Purchasing_PreparingHelp"],
+            "Ready" => L["Purchasing_ReadyToReceiveHelp"],
+            "WaitingForSupplier" => L["Purchasing_WaitingForSupplierHelp"],
+            "SupplierAccepted" => L["Purchasing_SupplierAcceptedHelp"],
+            _ => L["Purchasing_DetailSubtitle"]
+        };
+
+    private string PaymentTermLabel(string? label) =>
+        string.IsNullOrWhiteSpace(label)
+            ? L["Purchasing_Payment_Cash"]
+            : L[$"Purchasing_Payment_{label.Replace(" ", string.Empty, StringComparison.Ordinal)}"];
+
+    private static decimal DisplayTotal(PosPurchaseOrderDto po) =>
+        string.Equals(po.ConnectedStatus, "ChangesProposed", StringComparison.OrdinalIgnoreCase)
+            ? po.ProposedTotalAmount ?? po.Lines.Sum(l => l.LineTotal)
+            : po.ConfirmedTotalAmount is > 0m
+                ? po.ConfirmedTotalAmount.Value
+                : po.Lines.Sum(l => l.LineTotal);
+
+    private string ChangeSummary(ConnectedPurchaseOrderLineDto line)
+    {
+        if (string.Equals(line.Availability, "Unavailable", StringComparison.OrdinalIgnoreCase)
+            || line.ProposedQty is 0m)
+        {
+            return L["Purchasing_ChangeUnavailable", FormatQty(line.Qty)];
+        }
+
+        return L["Purchasing_ChangeReduced", FormatQty(line.Qty), FormatQty(line.ProposedQty ?? line.Qty)];
+    }
+
+    private static string FormatQty(decimal qty) =>
+        qty == decimal.Truncate(qty)
+            ? qty.ToString("0", System.Globalization.CultureInfo.CurrentCulture)
+            : qty.ToString("0.###", System.Globalization.CultureInfo.CurrentCulture);
 
     private string DeclineMessage(PosPurchaseOrderDto po)
     {
@@ -252,25 +333,25 @@ else
     private IReadOnlyList<TimelineStep> Timeline(PosPurchaseOrderDto po)
     {
         var declined = string.Equals(po.ConnectedStatus, "Declined", StringComparison.OrdinalIgnoreCase);
-        var received = po.Lines.Any(line => line.ReceivedQty > 0m || line.ClosedShortQty > 0m);
+        var display = DisplayStatus(po);
+        var received = po.Status is "PartiallyReceived" or "Received";
         var steps = new List<TimelineStep>
         {
-            new(L["Purchasing_TimelineCreated"].Value, po.CreatedAtUtc, true),
-            new(L["Purchasing_TimelineSent"].Value, po.OrderedAtUtc, po.OrderedAtUtc is not null),
+            new(L["Purchasing_TimelineSent"].Value, po.OrderedAtUtc is not null, display == "WaitingForSupplier"),
             new(declined ? L["Purchasing_TimelineDeclined"].Value : L["Purchasing_TimelineAccepted"].Value,
-                declined ? po.SupplierDeclinedAtUtc : po.SupplierAcceptedAtUtc,
-                declined ? po.SupplierDeclinedAtUtc is not null : po.SupplierAcceptedAtUtc is not null)
+                declined ? po.SupplierDeclinedAtUtc is not null : po.SupplierAcceptedAtUtc is not null,
+                display is "SupplierAccepted" or "ChangesNeedApproval"),
         };
         if (!declined)
         {
-            steps.Add(new(L["Purchasing_TimelinePreparing"].Value, po.SupplierPreparingAtUtc, po.SupplierPreparingAtUtc is not null));
-            steps.Add(new(L["Purchasing_TimelineReady"].Value, po.SupplierFulfilledAtUtc, po.SupplierFulfilledAtUtc is not null));
-            steps.Add(new(L["Purchasing_TimelineReceiving"].Value, received ? po.UpdatedAtUtc : null, received));
+            steps.Add(new(L["Purchasing_TimelinePreparing"].Value, po.SupplierPreparingAtUtc is not null, display == "Preparing"));
+            steps.Add(new(L["Purchasing_TimelineReady"].Value, po.SupplierFulfilledAtUtc is not null, display == "Ready"));
+            steps.Add(new(L["Purchasing_TimelineReceiving"].Value, received, display is "PartiallyReceived" or "Received" or "ReceivedWithIssues"));
         }
         return steps;
     }
 
-    private sealed record TimelineStep(string Label, DateTimeOffset? AtUtc, bool Completed);
+    private sealed record TimelineStep(string Label, bool Completed, bool Current);
 
     private async Task LoadAsync()
     {
@@ -315,6 +396,7 @@ else
         {
             _po = result.Data;
             _banner = L["Purchasing_SubmitSuccess"];
+            UnreadState.NotifyChanged();
         }
         else
         {
@@ -340,6 +422,33 @@ else
         {
             _po = result.Data;
             _banner = L["Purchasing_CancelSuccess"];
+            UnreadState.NotifyChanged();
+        }
+        else
+        {
+            _errorTitle = L["Purchasing_ErrorTitle"];
+            _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        }
+
+        _busy = false;
+    }
+
+    private async Task AcceptChangesAsync()
+    {
+        if (_po is null || _isOffline || _busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        _banner = null;
+        _errorMessage = null;
+        var result = await Purchasing.AcceptConnectedChangesAsync(_po.PurchaseOrderId);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _po = result.Data;
+            _banner = L["Purchasing_AcceptChangesSuccess"];
+            UnreadState.NotifyChanged();
         }
         else
         {

@@ -9952,4 +9952,109 @@
   <data name="ConnectedSuppliers_AutoLinkedBanner" xml:space="preserve">
     <value>{0} products were matched automatically.</value>
   </data>
+  <data name="Purchasing_PaymentTerm" xml:space="preserve">
+    <value>Payment</value>
+  </data>
+  <data name="Purchasing_Payment_Cash" xml:space="preserve">
+    <value>Cash</value>
+  </data>
+  <data name="Purchasing_Payment_GCash" xml:space="preserve">
+    <value>GCash</value>
+  </data>
+  <data name="Purchasing_Payment_Utang" xml:space="preserve">
+    <value>Utang</value>
+  </data>
+  <data name="Purchasing_Payment_GCashManualHelp" xml:space="preserve">
+    <value>GCash is recorded as a payment term. Settlement is confirmed manually — this is not a GCash gateway receipt.</value>
+  </data>
+  <data name="Purchasing_Payment_UtangHelp" xml:space="preserve">
+    <value>Utang here is business payable after goods are received. Submitting or accepting this order does not create debt yet.</value>
+  </data>
+  <data name="Purchasing_Status_ChangesNeedApproval" xml:space="preserve">
+    <value>Changes need your approval</value>
+  </data>
+  <data name="Purchasing_ChangesNeedApproval" xml:space="preserve">
+    <value>CHANGES NEED YOUR APPROVAL</value>
+  </data>
+  <data name="Purchasing_ChangesNeedApprovalHelp" xml:space="preserve">
+    <value>Your supplier proposed quantity changes. Review and accept, or cancel the order.</value>
+  </data>
+  <data name="Purchasing_PreparingHelp" xml:space="preserve">
+    <value>Your supplier is preparing your order.</value>
+  </data>
+  <data name="Purchasing_ReadyToReceive" xml:space="preserve">
+    <value>READY TO RECEIVE</value>
+  </data>
+  <data name="Purchasing_ReadyToReceiveHelp" xml:space="preserve">
+    <value>Your order is ready. Receive goods to add stock.</value>
+  </data>
+  <data name="Purchasing_WaitingForSupplierHelp" xml:space="preserve">
+    <value>Waiting for your supplier to confirm this order.</value>
+  </data>
+  <data name="Purchasing_SupplierAcceptedHelp" xml:space="preserve">
+    <value>Your supplier accepted this order.</value>
+  </data>
+  <data name="Purchasing_ProposedChanges" xml:space="preserve">
+    <value>Proposed changes</value>
+  </data>
+  <data name="Purchasing_ChangeUnavailable" xml:space="preserve">
+    <value>{0} requested → Unavailable</value>
+  </data>
+  <data name="Purchasing_ChangeReduced" xml:space="preserve">
+    <value>{0} requested → {1} available</value>
+  </data>
+  <data name="Purchasing_AcceptChanges" xml:space="preserve">
+    <value>Accept changes</value>
+  </data>
+  <data name="Purchasing_AcceptChangesSuccess" xml:space="preserve">
+    <value>Revised quantities were accepted.</value>
+  </data>
+  <data name="Purchasing_CancelOrder" xml:space="preserve">
+    <value>Cancel order</value>
+  </data>
+  <data name="Purchasing_ReceiveGoods" xml:space="preserve">
+    <value>Receive goods</value>
+  </data>
+  <data name="Purchasing_ProductCount" xml:space="preserve">
+    <value>{0} products</value>
+  </data>
+  <data name="ConnectedSuppliers_ConfirmOrder" xml:space="preserve">
+    <value>Confirm order</value>
+  </data>
+  <data name="ConnectedSuppliers_SendChanges" xml:space="preserve">
+    <value>Send changes</value>
+  </data>
+  <data name="ConnectedSuppliers_CancelChanges" xml:space="preserve">
+    <value>Cancel changes</value>
+  </data>
+  <data name="ConnectedSuppliers_CanSupply" xml:space="preserve">
+    <value>Can supply</value>
+  </data>
+  <data name="ConnectedSuppliers_CanSupplyAria" xml:space="preserve">
+    <value>Quantity you can supply for {0}</value>
+  </data>
+  <data name="ConnectedSuppliers_MarkUnavailable" xml:space="preserve">
+    <value>Unavailable</value>
+  </data>
+  <data name="ConnectedSuppliers_MarkUnavailableAria" xml:space="preserve">
+    <value>Mark {0} unavailable</value>
+  </data>
+  <data name="ConnectedSuppliers_RequestedQty" xml:space="preserve">
+    <value>Requested {0} {1}</value>
+  </data>
+  <data name="ConnectedSuppliers_RequestedConfirmed" xml:space="preserve">
+    <value>{0} requested · {1} confirmed</value>
+  </data>
+  <data name="ConnectedSuppliers_RequestedTotal" xml:space="preserve">
+    <value>Requested</value>
+  </data>
+  <data name="ConnectedSuppliers_ProposedTotal" xml:space="preserve">
+    <value>Proposed</value>
+  </data>
+  <data name="ConnectedSuppliers_MarkReady" xml:space="preserve">
+    <value>Mark ready</value>
+  </data>
+  <data name="ConnectedSuppliers_OrderStatus_ChangesProposed" xml:space="preserve">
+    <value>Waiting for buyer</value>
+  </data>
 </root>

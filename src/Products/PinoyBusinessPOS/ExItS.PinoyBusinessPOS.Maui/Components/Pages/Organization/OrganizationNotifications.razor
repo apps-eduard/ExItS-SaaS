@@ -326,6 +326,20 @@ else
             return;
         }
 
+        if (ConnectedPurchaseOrderNotificationTypes.IsBuyerFacing(item.RelatedType)
+            && Guid.TryParse(item.RelatedId, out var buyerPoId))
+        {
+            Nav.NavigateTo($"/purchasing/{buyerPoId:D}");
+            return;
+        }
+
+        if (ConnectedPurchaseOrderNotificationTypes.IsSupplierFacing(item.RelatedType)
+            && Guid.TryParse(item.RelatedId, out var connectedPoId))
+        {
+            Nav.NavigateTo($"/connected-suppliers/incoming/{connectedPoId:D}");
+            return;
+        }
+
         if (item.RelatedType.Contains("CustomerLink", StringComparison.OrdinalIgnoreCase))
         {
             Nav.NavigateTo("/customers");

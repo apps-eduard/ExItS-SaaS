@@ -105,6 +105,31 @@ else
                            Value="@_notes"
                            ValueChanged="v => _notes = v"
                            Disabled="@(blocked || _saving)" />
+                @if (IsConnectedSupplier)
+                {
+                    <div class="pos-purchasing-create__terms" role="group" aria-label="@L["Purchasing_PaymentTerm"]">
+                        <span class="pos-purchasing-create__terms-label">@L["Purchasing_PaymentTerm"]</span>
+                        <div class="pos-purchasing-create__term-chips">
+                            @foreach (var term in PaymentTerms)
+                            {
+                                <button type="button"
+                                        class="pos-purchasing-create__term @(_paymentTerm == term.Value ? "is-on" : null)"
+                                        disabled="@(blocked || _saving)"
+                                        @onclick="() => _paymentTerm = term.Value">
+                                    @L[term.LabelKey]
+                                </button>
+                            }
+                        </div>
+                        @if (_paymentTerm == "ManualGCash")
+                        {
+                            <p class="pos-muted">@L["Purchasing_Payment_GCashManualHelp"]</p>
+                        }
+                        @if (_paymentTerm == "Utang")
+                        {
+                            <p class="pos-muted">@L["Purchasing_Payment_UtangHelp"]</p>
+                        }
+                    </div>
+                }
         </div>
     </section>
 
@@ -521,6 +546,7 @@ else
     private DateOnly? _expectedDeliveryDate;
     private string? _supplierReference;
     private string? _notes;
+    private string _paymentTerm = "Cash";
     private string _selectedProductId = string.Empty;
     private string _draftQtyText = "1";
     private decimal? _draftUnitCost;
@@ -545,6 +571,13 @@ else
     private int _readinessNew;
     private int _readinessReview;
     private int _readinessConflict;
+
+    private static IReadOnlyList<(string Value, string LabelKey)> PaymentTerms =>
+    [
+        ("Cash", "Purchasing_Payment_Cash"),
+        ("ManualGCash", "Purchasing_Payment_GCash"),
+        ("Utang", "Purchasing_Payment_Utang")
+    ];
 
     private PosSupplierDto? SelectedSupplier =>
         Guid.TryParse(_supplierId, out var id) ? _suppliers.FirstOrDefault(s => s.SupplierId == id) : null;
@@ -1273,6 +1306,7 @@ else
         _expectedDeliveryDate = null;
         _supplierReference = null;
         _notes = null;
+        _paymentTerm = "Cash";
         _productSearch = string.Empty;
         _categoryFilterId = null;
         ClearDraftEditor();
@@ -1377,7 +1411,8 @@ else
             _lines.Select(l => new CreatePurchaseOrderLineRequest(l.ProductId, l.OrderedQty, l.UnitPurchaseCost)).ToList(),
             ExpectedDeliveryDate: _expectedDeliveryDate,
             SupplierReference: string.IsNullOrWhiteSpace(_supplierReference) ? null : _supplierReference.Trim(),
-            Notes: string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim());
+            Notes: string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim(),
+            PaymentTerm: IsConnectedSupplier ? _paymentTerm : null);
 
         var result = await Purchasing.CreateAsync(request);
         _saving = false;

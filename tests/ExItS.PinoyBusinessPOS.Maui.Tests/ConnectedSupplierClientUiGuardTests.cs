@@ -52,6 +52,12 @@ public sealed class ConnectedSupplierClientUiGuardTests
             File.ReadAllText(Path.Combine(purchasing, "ConnectedSupplierIncomingOrderDetail.razor")), StringComparison.Ordinal);
         Assert.Contains("FulfillIncomingAsync",
             File.ReadAllText(Path.Combine(purchasing, "ConnectedSupplierIncomingOrderDetail.razor")), StringComparison.Ordinal);
+        Assert.Contains("ProposeIncomingChangesAsync",
+            File.ReadAllText(Path.Combine(purchasing, "ConnectedSupplierIncomingOrderDetail.razor")), StringComparison.Ordinal);
+        Assert.Contains("AcceptConnectedChangesAsync",
+            File.ReadAllText(Path.Combine(purchasing, "PurchasingDetail.razor")), StringComparison.Ordinal);
+        Assert.Contains("Purchasing_PaymentTerm",
+            File.ReadAllText(Path.Combine(purchasing, "PurchasingCreate.razor")), StringComparison.Ordinal);
         Assert.Contains("DisplayStatus",
             File.ReadAllText(Path.Combine(purchasing, "PurchasingDetail.razor")), StringComparison.Ordinal);
         var receive = File.ReadAllText(Path.Combine(purchasing, "PurchasingReceive.razor"));
@@ -79,7 +85,11 @@ public sealed class ConnectedSupplierClientUiGuardTests
                      "Purchasing_ConfirmGoodsReceipt",
                      "Purchasing_ReviewReceipt",
                      "ConnectedSuppliers_StartPreparing",
-                     "ConnectedSuppliers_MarkFulfilled"
+                     "ConnectedSuppliers_MarkFulfilled",
+                     "Purchasing_PaymentTerm",
+                     "Purchasing_Status_ChangesNeedApproval",
+                     "ConnectedSuppliers_ConfirmOrder",
+                     "ConnectedSuppliers_SendChanges"
                  })
         {
             Assert.Contains($"<data name=\"{key}\"", en, StringComparison.Ordinal);

@@ -9916,6 +9916,51 @@ html.pos-keyboard-open .pos-content {
 .pos-incoming-order-detail__header h1 { font-size: 1.25rem; margin: 0; }
 .pos-incoming-orders__header p,
 .pos-incoming-order-detail__header p { margin: 0.2rem 0 0.45rem; }
+.pos-incoming-order-detail__meta { color: var(--exits-text-muted, #5b6b62); font-size: var(--exits-text-sm, 0.875rem); }
+.pos-incoming-order-detail__chips { align-items: center; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.pos-incoming-order-detail__pay,
+.pos-purchasing-detail__pay { color: var(--exits-text-muted, #5b6b62); font-size: var(--exits-text-xs, 0.75rem); }
+.pos-incoming-order-detail__receiving { color: var(--exits-text-muted, #5b6b62); font-size: var(--exits-text-xs, 0.75rem); margin: 0 0 0.5rem; }
+.pos-incoming-order-detail__row { display: grid; gap: 0.35rem; padding: 0.5rem 0.65rem; }
+.pos-incoming-order-detail__row + .pos-incoming-order-detail__row { border-top: 1px solid var(--exits-border, #c9d5ce); }
+.pos-incoming-order-detail__row-main { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.pos-incoming-order-detail__row-main strong { font-size: var(--exits-text-sm, 0.875rem); }
+.pos-incoming-order-detail__row-main span,
+.pos-incoming-order-detail__confirmed { color: var(--exits-text-muted, #5b6b62); font-size: var(--exits-text-xs, 0.75rem); margin: 0; }
+.pos-incoming-order-detail__row-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.pos-incoming-order-detail__qty { align-items: center; display: flex; gap: 0.35rem; font-size: var(--exits-text-xs, 0.75rem); font-weight: 650; }
+.pos-incoming-order-detail__qty input { border: 1px solid var(--exits-border, #c9d5ce); border-radius: 0.4rem; font: inherit; max-width: 4.5rem; min-height: 2.5rem; padding: 0.25rem 0.4rem; }
+.pos-incoming-order-detail__unavail { background: transparent; border: 1px solid var(--exits-border, #c9d5ce); border-radius: 999px; color: var(--exits-text, #15201a); font-size: var(--exits-text-xs, 0.75rem); min-height: 2.5rem; padding: 0.25rem 0.65rem; }
+.pos-incoming-order-detail__unavail.is-on { background: var(--exits-danger-soft, #fde8e8); border-color: var(--exits-danger, #b42318); }
+.pos-incoming-order-detail__totals { display: flex; flex-direction: column; font-size: var(--exits-text-sm, 0.875rem); gap: 0.2rem; margin: 0.55rem 0; }
+.pos-incoming-order-detail--actions { padding-bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px)); }
+.pos-incoming-order-detail__sticky,
+.pos-purchasing-detail__sticky {
+    background: var(--exits-surface, #fff);
+    border: 1px solid var(--exits-border, #c9d5ce);
+    border-radius: var(--exits-radius-md, 0.5rem);
+    bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+    box-shadow: var(--exits-shadow-md, 0 8px 24px rgba(21, 32, 26, 0.12));
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+    left: var(--exits-space-3, 0.75rem);
+    padding: 0.55rem;
+    position: fixed;
+    right: var(--exits-space-3, 0.75rem);
+    z-index: var(--exits-z-sticky, 20);
+}
+.pos-incoming-order-detail__decline { margin-bottom: 0.5rem; }
+.pos-purchasing-detail__summary { color: var(--exits-text-muted, #5b6b62); font-size: var(--exits-text-sm, 0.875rem); margin: 0.35rem 0 0; }
+.pos-purchasing-detail__next { background: var(--exits-warning-soft, #fff6d9); border-radius: 0.4rem; font-size: var(--exits-text-xs, 0.75rem); font-weight: 750; letter-spacing: 0.02em; margin: 0 0 0.65rem; padding: 0.4rem 0.55rem; }
+.pos-purchasing-detail__next--ready { background: var(--exits-success-soft, #e7f6ec); }
+.pos-purchasing-detail__totals { display: flex; flex-direction: column; font-size: var(--exits-text-sm, 0.875rem); gap: 0.2rem; margin: 0.5rem 0 0; }
+.pos-purchasing-detail__timeline-step--current { color: var(--exits-text, #15201a); font-weight: 650; }
+.pos-purchasing-create__terms { display: flex; flex-direction: column; gap: 0.35rem; }
+.pos-purchasing-create__terms-label { font-size: var(--exits-text-sm, 0.875rem); font-weight: 650; }
+.pos-purchasing-create__term-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.pos-purchasing-create__term { background: var(--exits-surface, #fff); border: 1px solid var(--exits-border, #c9d5ce); border-radius: 999px; font-size: var(--exits-text-xs, 0.75rem); min-height: 2.5rem; padding: 0.25rem 0.7rem; }
+.pos-purchasing-create__term.is-on { background: var(--exits-primary-soft, #e7f3ea); border-color: var(--exits-primary, #1b7a3d); font-weight: 650; }
 .pos-incoming-orders__card {
     background: var(--exits-surface, #fff);
     border: 1px solid var(--exits-border, #c9d5ce);

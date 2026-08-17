@@ -9952,4 +9952,109 @@
   <data name="ConnectedSuppliers_AutoLinkedBanner" xml:space="preserve">
     <value>{0} produkto ang awtomatikong naitugma.</value>
   </data>
+  <data name="Purchasing_PaymentTerm" xml:space="preserve">
+    <value>Bayad</value>
+  </data>
+  <data name="Purchasing_Payment_Cash" xml:space="preserve">
+    <value>Cash</value>
+  </data>
+  <data name="Purchasing_Payment_GCash" xml:space="preserve">
+    <value>GCash</value>
+  </data>
+  <data name="Purchasing_Payment_Utang" xml:space="preserve">
+    <value>Utang</value>
+  </data>
+  <data name="Purchasing_Payment_GCashManualHelp" xml:space="preserve">
+    <value>Ang GCash ay termino ng bayad. Kinukumpirma ang settlement nang manual — hindi ito GCash gateway receipt.</value>
+  </data>
+  <data name="Purchasing_Payment_UtangHelp" xml:space="preserve">
+    <value>Ang Utang dito ay bayarin ng negosyo pagkatapos matanggap ang goods. Ang pag-submit o pag-accept ng order ay hindi pa lumilikha ng utang.</value>
+  </data>
+  <data name="Purchasing_Status_ChangesNeedApproval" xml:space="preserve">
+    <value>Kailangan mong aprubahan ang changes</value>
+  </data>
+  <data name="Purchasing_ChangesNeedApproval" xml:space="preserve">
+    <value>KAILANGAN MONG APRUBAHAN ANG CHANGES</value>
+  </data>
+  <data name="Purchasing_ChangesNeedApprovalHelp" xml:space="preserve">
+    <value>May iminungkahing pagbabago sa dami ang supplier. I-review at i-accept, o kanselahin ang order.</value>
+  </data>
+  <data name="Purchasing_PreparingHelp" xml:space="preserve">
+    <value>Inihanda na ng supplier ang inyong order.</value>
+  </data>
+  <data name="Purchasing_ReadyToReceive" xml:space="preserve">
+    <value>HANDA NANG TANGGAPIN</value>
+  </data>
+  <data name="Purchasing_ReadyToReceiveHelp" xml:space="preserve">
+    <value>Handa na ang order. Tanggapin ang goods para madagdagan ang stock.</value>
+  </data>
+  <data name="Purchasing_WaitingForSupplierHelp" xml:space="preserve">
+    <value>Hinihintay ang supplier na kumpirmahin ang order.</value>
+  </data>
+  <data name="Purchasing_SupplierAcceptedHelp" xml:space="preserve">
+    <value>Tinanggap na ng supplier ang order.</value>
+  </data>
+  <data name="Purchasing_ProposedChanges" xml:space="preserve">
+    <value>Iminungkahing pagbabago</value>
+  </data>
+  <data name="Purchasing_ChangeUnavailable" xml:space="preserve">
+    <value>{0} hiniling → Wala</value>
+  </data>
+  <data name="Purchasing_ChangeReduced" xml:space="preserve">
+    <value>{0} hiniling → {1} available</value>
+  </data>
+  <data name="Purchasing_AcceptChanges" xml:space="preserve">
+    <value>Tanggapin ang changes</value>
+  </data>
+  <data name="Purchasing_AcceptChangesSuccess" xml:space="preserve">
+    <value>Tinanggap na ang binagong dami.</value>
+  </data>
+  <data name="Purchasing_CancelOrder" xml:space="preserve">
+    <value>Kanselahin ang order</value>
+  </data>
+  <data name="Purchasing_ReceiveGoods" xml:space="preserve">
+    <value>Tanggapin ang goods</value>
+  </data>
+  <data name="Purchasing_ProductCount" xml:space="preserve">
+    <value>{0} produkto</value>
+  </data>
+  <data name="ConnectedSuppliers_ConfirmOrder" xml:space="preserve">
+    <value>Kumpirmahin ang order</value>
+  </data>
+  <data name="ConnectedSuppliers_SendChanges" xml:space="preserve">
+    <value>Ipadala ang changes</value>
+  </data>
+  <data name="ConnectedSuppliers_CancelChanges" xml:space="preserve">
+    <value>I-cancel ang changes</value>
+  </data>
+  <data name="ConnectedSuppliers_CanSupply" xml:space="preserve">
+    <value>Maibibigay</value>
+  </data>
+  <data name="ConnectedSuppliers_CanSupplyAria" xml:space="preserve">
+    <value>Dami na maibibigay para sa {0}</value>
+  </data>
+  <data name="ConnectedSuppliers_MarkUnavailable" xml:space="preserve">
+    <value>Wala</value>
+  </data>
+  <data name="ConnectedSuppliers_MarkUnavailableAria" xml:space="preserve">
+    <value>Markahan na wala ang {0}</value>
+  </data>
+  <data name="ConnectedSuppliers_RequestedQty" xml:space="preserve">
+    <value>Hiniling {0} {1}</value>
+  </data>
+  <data name="ConnectedSuppliers_RequestedConfirmed" xml:space="preserve">
+    <value>{0} hiniling · {1} confirmed</value>
+  </data>
+  <data name="ConnectedSuppliers_RequestedTotal" xml:space="preserve">
+    <value>Hiniling</value>
+  </data>
+  <data name="ConnectedSuppliers_ProposedTotal" xml:space="preserve">
+    <value>Iminungkahi</value>
+  </data>
+  <data name="ConnectedSuppliers_MarkReady" xml:space="preserve">
+    <value>Markahan na ready</value>
+  </data>
+  <data name="ConnectedSuppliers_OrderStatus_ChangesProposed" xml:space="preserve">
+    <value>Hinihintay ang buyer</value>
+  </data>
 </root>

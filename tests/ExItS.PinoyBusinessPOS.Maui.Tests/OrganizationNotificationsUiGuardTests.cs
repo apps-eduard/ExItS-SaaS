@@ -40,6 +40,9 @@ public sealed class OrganizationNotificationsUiGuardTests
         Assert.Contains("/suppliers/connected/requests", page, StringComparison.Ordinal);
         Assert.Contains("/suppliers/connected/buyers", page, StringComparison.Ordinal);
         Assert.Contains("Nav.NavigateTo(\"/suppliers\")", page, StringComparison.Ordinal);
+        Assert.Contains("/purchasing/", page, StringComparison.Ordinal);
+        Assert.Contains("/connected-suppliers/incoming/", page, StringComparison.Ordinal);
+        Assert.Contains("ConnectedPurchaseOrderNotificationTypes", page, StringComparison.Ordinal);
         Assert.Contains("Pending", page, StringComparison.Ordinal);
     }
 

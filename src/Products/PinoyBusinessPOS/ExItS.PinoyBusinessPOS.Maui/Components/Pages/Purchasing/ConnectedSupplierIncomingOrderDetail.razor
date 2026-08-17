@@ -5,10 +5,11 @@
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
+@inject ShellNotificationUnreadState UnreadState
 @inject IStringLocalizer<PosResources> L
 
 <StoreHeaderBack Href="/connected-suppliers/incoming" />
-<div class="pos-incoming-order-detail">
+<div class="pos-incoming-order-detail @(HasStickyActions ? "pos-incoming-order-detail--actions" : null)">
 <Page>
     @if (_loading)
     {
@@ -24,10 +25,18 @@
     else
     {
         var canManage = Capabilities.IsAllowed(UtangCapability.ManagePurchasing) && !_offline;
+        var isNew = string.Equals(_order.Status, "New", StringComparison.OrdinalIgnoreCase);
+        var hasChanges = isNew && HasLocalChanges;
         <header class="pos-incoming-order-detail__header">
             <h1>@(_order.BuyerPoNumber ?? L["ConnectedSuppliers_PurchaseOrder"])</h1>
-            <p class="pos-muted">@(string.IsNullOrWhiteSpace(_order.BuyerDisplayName) ? L["ConnectedSuppliers_Buyer"] : _order.BuyerDisplayName)</p>
-            <Badge Tone="@StatusTone(_order.Status)">@StatusLabel(_order)</Badge>
+            <p class="pos-incoming-order-detail__meta">
+                @(string.IsNullOrWhiteSpace(_order.BuyerDisplayName) ? L["ConnectedSuppliers_Buyer"] : _order.BuyerDisplayName)
+                · <MoneyDisplay Amount="@_order.TotalAmount" CurrencyCode="PHP" />
+            </p>
+            <div class="pos-incoming-order-detail__chips">
+                <Badge Tone="@StatusTone(_order.Status)">@StatusLabel(_order)</Badge>
+                <span class="pos-incoming-order-detail__pay">@L["Purchasing_PaymentTerm"]: @PaymentTermLabel(_order.PaymentTermLabel)</span>
+            </div>
         </header>
 
         @if (!string.IsNullOrWhiteSpace(_error))
@@ -35,47 +44,71 @@
             <Alert Tone="AlertTone.Danger" Title="@L["ConnectedSuppliers_Error"]" Message="@_error" />
         }
 
-        @if (!string.IsNullOrWhiteSpace(_order.BuyerReceivingStatus))
+        @if (!string.IsNullOrWhiteSpace(_order.BuyerReceivingStatus)
+             && !string.Equals(_order.Status, "New", StringComparison.OrdinalIgnoreCase))
         {
-            <Alert Tone="AlertTone.Info"
-                   Title="@L["ConnectedSuppliers_BuyerReceivingStatus"]"
-                   Message="@BuyerReceivingLabel(_order.BuyerReceivingStatus)" />
+            <p class="pos-incoming-order-detail__receiving">@BuyerReceivingLabel(_order.BuyerReceivingStatus)</p>
         }
 
-        <section class="pos-incoming-order-detail__panel">
-            <div class="pos-incoming-order-detail__facts">
-                <span>@L["Purchasing_Field_OrderDate"]</span><strong>@_order.OrderDate.ToString("d")</strong>
-                <span>@L["Purchasing_LinesTotal"]</span><strong><MoneyDisplay Amount="@_order.TotalAmount" CurrencyCode="PHP" /></strong>
-            </div>
-            @if (!string.IsNullOrWhiteSpace(_order.Notes))
+        <section class="pos-incoming-order-detail__lines" role="list" aria-label="@L["Purchasing_LinesSection"]">
+            @foreach (var line in _order.Lines)
             {
-                <p class="pos-muted">@_order.Notes</p>
+                var edit = GetEdit(line.ProductId);
+                <article class="pos-incoming-order-detail__row" role="listitem">
+                    <div class="pos-incoming-order-detail__row-main">
+                        <strong>@line.NameSnapshot</strong>
+                        <span>@L["ConnectedSuppliers_RequestedQty", FormatQty(line.Qty), line.UnitOfMeasureCode]</span>
+                    </div>
+                    @if (isNew && canManage)
+                    {
+                        <div class="pos-incoming-order-detail__row-actions">
+                            <label class="pos-incoming-order-detail__qty">
+                                <span>@L["ConnectedSuppliers_CanSupply"]</span>
+                                <input type="number"
+                                       inputmode="decimal"
+                                       min="0"
+                                       max="@line.Qty.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                       step="any"
+                                       disabled="@(edit.Unavailable || _busy)"
+                                       value="@FormatQty(edit.CanSupply)"
+                                       aria-label="@L["ConnectedSuppliers_CanSupplyAria", line.NameSnapshot]"
+                                       @onchange="e => SetCanSupply(line, e.Value?.ToString())" />
+                            </label>
+                            <button type="button"
+                                    class="pos-incoming-order-detail__unavail @(edit.Unavailable ? "is-on" : null)"
+                                    disabled="@_busy"
+                                    title="@L["ConnectedSuppliers_MarkUnavailable"]"
+                                    aria-label="@L["ConnectedSuppliers_MarkUnavailableAria", line.NameSnapshot]"
+                                    aria-pressed="@edit.Unavailable"
+                                    @onclick="() => ToggleUnavailable(line)">
+                                @L["ConnectedSuppliers_Unavailable"]
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="pos-incoming-order-detail__confirmed">
+                            @ConfirmedSummary(line)
+                        </p>
+                    }
+                </article>
             }
         </section>
 
-        <section class="pos-incoming-order-detail__panel" aria-labelledby="incoming-lines-heading">
-            <h2 id="incoming-lines-heading">@L["Purchasing_LinesSection"]</h2>
-            <div class="pos-incoming-order-detail__lines" role="list">
-                @foreach (var line in _order.Lines)
+        @if (isNew)
+        {
+            <div class="pos-incoming-order-detail__totals">
+                <span>@L["ConnectedSuppliers_RequestedTotal"] <MoneyDisplay Amount="@_order.TotalAmount" CurrencyCode="PHP" /></span>
+                @if (hasChanges)
                 {
-                    <article class="pos-incoming-order-detail__line" role="listitem">
-                        <div>
-                            <strong>@line.NameSnapshot</strong>
-                            @if (!string.IsNullOrWhiteSpace(line.SkuSnapshot))
-                            {
-                                <small>@line.SkuSnapshot</small>
-                            }
-                        </div>
-                        <span>@line.Qty @line.UnitOfMeasureCode × <MoneyDisplay Amount="@line.UnitPriceSnapshot" CurrencyCode="PHP" /></span>
-                        <strong><MoneyDisplay Amount="@line.LineTotal" CurrencyCode="PHP" /></strong>
-                    </article>
+                    <span>@L["ConnectedSuppliers_ProposedTotal"] <MoneyDisplay Amount="@ProposedTotal" CurrencyCode="PHP" /></span>
                 }
             </div>
-        </section>
+        }
 
-        @if (string.Equals(_order.Status, "New", StringComparison.OrdinalIgnoreCase) && _showDecline)
+        @if (isNew && _showDecline)
         {
-            <section class="pos-incoming-order-detail__panel">
+            <section class="pos-incoming-order-detail__decline">
                 <label class="pos-incoming-order-detail__field">
                     <span>@L["ConnectedSuppliers_DeclineReason"]</span>
                     <select value="@_declineReason" @onchange="e => _declineReason = e.Value?.ToString() ?? string.Empty">
@@ -87,24 +120,35 @@
                     </select>
                 </label>
                 <TextInput Label="@L["ConnectedSuppliers_DeclineNote"]" Value="@_declineNote" ValueChanged="v => _declineNote = v" />
-                <FormActions>
+            </section>
+        }
+
+        @if (isNew
+             || string.Equals(_order.Status, "Accepted", StringComparison.OrdinalIgnoreCase)
+             || string.Equals(_order.Status, "Preparing", StringComparison.OrdinalIgnoreCase))
+        {
+            <div class="pos-incoming-order-detail__sticky" role="group">
+                @if (isNew && _showDecline)
+                {
                     <Button Disabled="@_busy" OnClick="() => _showDecline = false">@L["Purchasing_CancelEdit"]</Button>
                     <Button Variant="ButtonVariant.Danger" Disabled="@(_busy || !canManage)" IsLoading="@_busy" OnClick="DeclineAsync">
                         @L["ConnectedSuppliers_Decline"]
                     </Button>
-                </FormActions>
-            </section>
-        }
-        else
-        {
-            <FormActions>
-                @if (string.Equals(_order.Status, "New", StringComparison.OrdinalIgnoreCase))
+                }
+                else if (isNew && hasChanges)
                 {
-                    <Button Variant="ButtonVariant.Primary" Disabled="@(_busy || !canManage)" IsLoading="@_busy" OnClick="AcceptAsync">
-                        @L["ConnectedSuppliers_Accept"]
+                    <Button Disabled="@(_busy || !canManage)" OnClick="ResetEdits">@L["ConnectedSuppliers_CancelChanges"]</Button>
+                    <Button Variant="ButtonVariant.Primary" Disabled="@(_busy || !canManage)" IsLoading="@_busy" OnClick="SendChangesAsync">
+                        @L["ConnectedSuppliers_SendChanges"]
                     </Button>
+                }
+                else if (isNew)
+                {
                     <Button Variant="ButtonVariant.Danger" Disabled="@(_busy || !canManage)" OnClick="() => _showDecline = true">
                         @L["ConnectedSuppliers_Decline"]
+                    </Button>
+                    <Button Variant="ButtonVariant.Primary" Disabled="@(_busy || !canManage)" IsLoading="@_busy" OnClick="AcceptAsync">
+                        @L["ConnectedSuppliers_ConfirmOrder"]
                     </Button>
                 }
                 else if (string.Equals(_order.Status, "Accepted", StringComparison.OrdinalIgnoreCase))
@@ -116,10 +160,10 @@
                 else if (string.Equals(_order.Status, "Preparing", StringComparison.OrdinalIgnoreCase))
                 {
                     <Button Variant="ButtonVariant.Primary" Disabled="@(_busy || !canManage)" IsLoading="@_busy" OnClick="FulfillAsync">
-                        @L["ConnectedSuppliers_MarkFulfilled"]
+                        @L["ConnectedSuppliers_MarkReady"]
                     </Button>
                 }
-            </FormActions>
+            </div>
         }
     }
 </Page>
@@ -129,6 +173,7 @@
     [Parameter] public Guid OrderId { get; set; }
 
     private ConnectedPurchaseOrderDto? _order;
+    private readonly Dictionary<Guid, LineEdit> _edits = [];
     private bool _loading = true;
     private bool _busy;
     private bool _offline;
@@ -145,6 +190,30 @@
         new("UnableToFulfill", "Purchasing_DeclineReason_UnableToFulfill"),
         new("Other", "Purchasing_DeclineReason_Other")
     ];
+
+    private bool HasLocalChanges =>
+        _order is not null
+        && _order.Lines.Any(line =>
+        {
+            var edit = GetEdit(line.ProductId);
+            return edit.Unavailable || edit.CanSupply != line.Qty;
+        });
+
+    private bool HasStickyActions =>
+        _order is not null
+        && (string.Equals(_order.Status, "New", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(_order.Status, "Accepted", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(_order.Status, "Preparing", StringComparison.OrdinalIgnoreCase));
+
+    private decimal ProposedTotal =>
+        _order is null
+            ? 0m
+            : _order.Lines.Sum(line =>
+            {
+                var edit = GetEdit(line.ProductId);
+                var qty = edit.Unavailable ? 0m : edit.CanSupply;
+                return decimal.Round(qty * line.UnitPriceSnapshot, 2, MidpointRounding.AwayFromZero);
+            });
 
     protected override async Task OnInitializedAsync()
     {
@@ -176,7 +245,63 @@
         var result = await ConnectedSuppliers.GetIncomingOrderAsync(OrderId);
         _order = result.IsSuccess ? result.Data : null;
         _error = result.IsSuccess ? null : result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        ResetEdits();
         _loading = false;
+    }
+
+    private LineEdit GetEdit(Guid productId)
+    {
+        if (!_edits.TryGetValue(productId, out var edit))
+        {
+            var qty = _order?.Lines.FirstOrDefault(x => x.ProductId == productId)?.Qty ?? 0m;
+            edit = new LineEdit(qty, false);
+            _edits[productId] = edit;
+        }
+
+        return edit;
+    }
+
+    private void ResetEdits()
+    {
+        _edits.Clear();
+        if (_order is null)
+        {
+            return;
+        }
+
+        foreach (var line in _order.Lines)
+        {
+            _edits[line.ProductId] = new LineEdit(line.Qty, false);
+        }
+    }
+
+    private void SetCanSupply(ConnectedPurchaseOrderLineDto line, string? raw)
+    {
+        if (!decimal.TryParse(raw, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.CurrentCulture, out var qty)
+            && !decimal.TryParse(raw, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out qty))
+        {
+            return;
+        }
+
+        if (qty < 0m)
+        {
+            qty = 0m;
+        }
+
+        if (qty > line.Qty)
+        {
+            qty = line.Qty;
+        }
+
+        _edits[line.ProductId] = new LineEdit(qty, false);
+    }
+
+    private void ToggleUnavailable(ConnectedPurchaseOrderLineDto line)
+    {
+        var current = GetEdit(line.ProductId);
+        _edits[line.ProductId] = current.Unavailable
+            ? new LineEdit(line.Qty, false)
+            : new LineEdit(0m, true);
     }
 
     private Task AcceptAsync() => MutateAsync(() => ConnectedSuppliers.AcceptIncomingAsync(OrderId));
@@ -188,6 +313,22 @@
             string.IsNullOrWhiteSpace(_declineReason) ? null : _declineReason,
             string.IsNullOrWhiteSpace(_declineNote) ? null : _declineNote.Trim())));
 
+    private Task SendChangesAsync()
+    {
+        if (_order is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        var request = new ProposeIncomingOrderChangesRequest(
+            _order.Lines.Select(line =>
+            {
+                var edit = GetEdit(line.ProductId);
+                return new ProposeIncomingOrderLineRequest(line.ProductId, edit.CanSupply, edit.Unavailable);
+            }).ToList());
+        return MutateAsync(() => ConnectedSuppliers.ProposeIncomingChangesAsync(OrderId, request));
+    }
+
     private async Task MutateAsync(Func<Task<ApiResult<ConnectedPurchaseOrderDto>>> mutation)
     {
         if (_busy || _offline || !Capabilities.IsAllowed(UtangCapability.ManagePurchasing)) return;
@@ -198,6 +339,8 @@
         {
             _order = result.Data;
             _showDecline = false;
+            ResetEdits();
+            UnreadState.NotifyChanged();
         }
         else
         {
@@ -215,10 +358,31 @@
     private string BuyerReceivingLabel(string status) =>
         L[$"Purchasing_Status_{status.Replace(" ", string.Empty, StringComparison.Ordinal)}"];
 
+    private string PaymentTermLabel(string? label) =>
+        string.IsNullOrWhiteSpace(label) ? L["Purchasing_Payment_Cash"] : L[$"Purchasing_Payment_{label.Replace(" ", string.Empty, StringComparison.Ordinal)}"];
+
+    private string ConfirmedSummary(ConnectedPurchaseOrderLineDto line)
+    {
+        if (string.Equals(line.Availability, "Unavailable", StringComparison.OrdinalIgnoreCase)
+            || (line.ConfirmedQty is 0m or null && line.ProposedQty is 0m))
+        {
+            return L["ConnectedSuppliers_Unavailable"];
+        }
+
+        var confirmed = line.ConfirmedQty ?? line.ProposedQty ?? line.Qty;
+        return L["ConnectedSuppliers_RequestedConfirmed", FormatQty(line.Qty), FormatQty(confirmed)];
+    }
+
+    private static string FormatQty(decimal qty) =>
+        qty == decimal.Truncate(qty)
+            ? qty.ToString("0", System.Globalization.CultureInfo.CurrentCulture)
+            : qty.ToString("0.###", System.Globalization.CultureInfo.CurrentCulture);
+
     private static BadgeTone StatusTone(string status) =>
         status switch
         {
             "New" => BadgeTone.Primary,
+            "ChangesProposed" => BadgeTone.Warning,
             "Accepted" => BadgeTone.Info,
             "Preparing" => BadgeTone.Warning,
             "Fulfilled" => BadgeTone.Success,
@@ -227,4 +391,5 @@
         };
 
     private sealed record DeclineReasonOption(string Value, string LabelKey);
+    private sealed record LineEdit(decimal CanSupply, bool Unavailable);
 }
