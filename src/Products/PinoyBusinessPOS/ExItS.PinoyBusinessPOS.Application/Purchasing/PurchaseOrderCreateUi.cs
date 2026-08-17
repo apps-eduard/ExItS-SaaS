@@ -44,15 +44,132 @@ public static class PurchaseOrderCreateUi
     public static decimal OrderTotal(IEnumerable<(decimal OrderedQuantity, decimal UnitPurchaseCost)> lines) =>
         lines.Sum(line => LineTotal(line.OrderedQuantity, line.UnitPurchaseCost));
 
-    public static bool MatchesSearch(string productName, string? searchText)
+    /// <summary>
+    /// One linked/orderable product the Create PO browser can show.
+    /// Identity is the buyer's catalog product; supplier product id is retained for connected PO lines.
+    /// </summary>
+    public sealed record LinkedReadyProduct(
+        Guid LinkId,
+        Guid BuyerProductId,
+        Guid SupplierProductId,
+        string ProductName,
+        string UnitOfMeasure,
+        decimal LastKnownOrderPrice,
+        bool IsOrderable,
+        bool IsActive,
+        string? SupplierSku);
+
+    public static bool MatchesSearch(string productName, string? searchText) =>
+        MatchesSearch(productName, searchText, extraTokens: null);
+
+    public static bool MatchesSearch(string productName, string? searchText, IEnumerable<string?>? extraTokens)
     {
         if (string.IsNullOrWhiteSpace(searchText))
         {
             return true;
         }
 
-        return productName.Contains(searchText.Trim(), StringComparison.OrdinalIgnoreCase);
+        var query = searchText.Trim();
+        if (productName.Contains(query, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (extraTokens is null)
+        {
+            return false;
+        }
+
+        foreach (var token in extraTokens)
+        {
+            if (!string.IsNullOrWhiteSpace(token)
+                && token.Contains(query, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
+
+    /// <summary>
+    /// Online Create PO: server active links are authoritative. Local SQLite only enriches
+    /// display fields. A partial local cache must not hide valid server products.
+    /// When the server list is empty (or unavailable), fall back to the local cache.
+    /// </summary>
+    public static IReadOnlyList<LinkedReadyProduct> ReconcileOnlineReadyProducts(
+        IReadOnlyList<LinkedReadyProduct> serverLinks,
+        IReadOnlyList<LinkedReadyProduct> localCache)
+    {
+        if (serverLinks.Count == 0)
+        {
+            return localCache
+                .Where(IsOrderableReady)
+                .OrderBy(p => p.ProductName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        var localByBuyer = localCache
+            .GroupBy(p => p.BuyerProductId)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        return serverLinks
+            .Where(s => s.IsActive && s.BuyerProductId != Guid.Empty && s.LastKnownOrderPrice > 0m)
+            .Select(s =>
+            {
+                if (!localByBuyer.TryGetValue(s.BuyerProductId, out var local))
+                {
+                    return s with { IsOrderable = true };
+                }
+
+                var name = string.IsNullOrWhiteSpace(local.ProductName) ? s.ProductName : local.ProductName;
+                var unit = string.IsNullOrWhiteSpace(local.UnitOfMeasure) ? s.UnitOfMeasure : local.UnitOfMeasure;
+                var sku = string.IsNullOrWhiteSpace(local.SupplierSku) ? s.SupplierSku : local.SupplierSku;
+                var price = s.LastKnownOrderPrice > 0m ? s.LastKnownOrderPrice : local.LastKnownOrderPrice;
+                return s with
+                {
+                    ProductName = name,
+                    UnitOfMeasure = unit,
+                    SupplierSku = sku,
+                    LastKnownOrderPrice = price,
+                    IsOrderable = true
+                };
+            })
+            .Where(IsOrderableReady)
+            .OrderBy(p => p.ProductName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    public static IReadOnlyList<LinkedReadyProduct> FilterOfflineReadyProducts(
+        IReadOnlyList<LinkedReadyProduct> localCache) =>
+        localCache
+            .Where(IsOrderableReady)
+            .OrderBy(p => p.ProductName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+    public static IReadOnlyList<T> FilterConnectedReadyProducts<T>(
+        IEnumerable<T> products,
+        Func<T, string> name,
+        Func<T, IEnumerable<string?>> searchTokens,
+        Func<T, Guid?> categoryId,
+        string? searchText,
+        Guid? selectedCategoryId)
+    {
+        return products
+            .Where(p => MatchesSearch(name(p), searchText, searchTokens(p))
+                        && MatchesCategory(categoryId(p), selectedCategoryId))
+            .OrderBy(p => name(p), StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    public static string DraftProductSummaryKey(int count) =>
+        count == 1 ? "Purchasing_DraftSummaryOne" : "Purchasing_DraftSummaryMany";
+
+    private static bool IsOrderableReady(LinkedReadyProduct product) =>
+        product.IsActive
+        && product.IsOrderable
+        && product.BuyerProductId != Guid.Empty
+        && product.LastKnownOrderPrice > 0m;
 
     public static bool MatchesCategory(Guid? productCategoryId, Guid? selectedCategoryId)
     {

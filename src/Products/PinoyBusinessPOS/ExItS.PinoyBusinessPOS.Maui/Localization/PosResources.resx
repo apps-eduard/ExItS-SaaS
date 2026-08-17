@@ -5116,6 +5116,18 @@
   <data name="Purchasing_LinesCount" xml:space="preserve">
     <value>{0} line(s)</value>
   </data>
+  <data name="Purchasing_DraftSummaryOne" xml:space="preserve">
+    <value>{0} product</value>
+  </data>
+  <data name="Purchasing_DraftSummaryMany" xml:space="preserve">
+    <value>{0} products</value>
+  </data>
+  <data name="Purchasing_AddedQty" xml:space="preserve">
+    <value>Added · Qty {0}</value>
+  </data>
+  <data name="Purchasing_AddProductNamed" xml:space="preserve">
+    <value>Add {0}</value>
+  </data>
   <data name="Purchasing_LinesTotal" xml:space="preserve">
     <value>Total</value>
   </data>

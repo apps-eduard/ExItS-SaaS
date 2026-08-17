@@ -6,6 +6,7 @@ public sealed class PurchaseOrderCreateUiTests
 {
     private sealed record Product(Guid ProductId, string Name, Guid? CategoryId);
     private sealed record Line(Guid ProductId, string Name, decimal OrderedQty, decimal UnitPurchaseCost);
+    private sealed record ConnectedLine(Guid BuyerProductId, Guid SupplierProductId, decimal Price, decimal Qty);
 
     [Fact]
     public void Supplier_selection_gates_product_picker()
@@ -202,6 +203,199 @@ public sealed class PurchaseOrderCreateUiTests
         Assert.Equal(cola, remaining[0].ProductId);
         Assert.Equal(200.00m, PurchaseOrderCreateUi.OrderTotal(remaining.Select(l => (l.OrderedQty, l.UnitPurchaseCost))));
     }
+
+    [Fact]
+    public void Online_reconcile_keeps_all_server_ready_products_when_local_cache_is_partial()
+    {
+        var server = NineReadyProducts();
+        var local = new List<PurchaseOrderCreateUi.LinkedReadyProduct> { server[0] };
+
+        var ready = PurchaseOrderCreateUi.ReconcileOnlineReadyProducts(server, local);
+
+        Assert.Equal(9, ready.Count);
+        Assert.Equal(server.Select(p => p.BuyerProductId).OrderBy(id => id), ready.Select(p => p.BuyerProductId).OrderBy(id => id));
+    }
+
+    [Fact]
+    public void Online_reconcile_does_not_let_partial_local_cache_hide_valid_server_products()
+    {
+        var server = NineReadyProducts();
+        var stale = server[0] with { ProductName = "Cached Apple", LastKnownOrderPrice = 175m };
+        var unrelatedLocal = SampleReadyProduct(Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"), "Ghost");
+
+        var ready = PurchaseOrderCreateUi.ReconcileOnlineReadyProducts(server, [stale, unrelatedLocal]);
+
+        Assert.Equal(9, ready.Count);
+        Assert.DoesNotContain(ready, p => p.BuyerProductId == unrelatedLocal.BuyerProductId);
+        Assert.Equal("Cached Apple", ready.Single(p => p.BuyerProductId == stale.BuyerProductId).ProductName);
+        Assert.Equal(80m, ready.Single(p => p.BuyerProductId == stale.BuyerProductId).LastKnownOrderPrice);
+    }
+
+    [Fact]
+    public void Offline_ready_list_uses_local_cache_only()
+    {
+        var local = NineReadyProducts().Take(2).ToList();
+        local[1] = local[1] with { IsOrderable = false };
+
+        var ready = PurchaseOrderCreateUi.FilterOfflineReadyProducts(local);
+
+        Assert.Single(ready);
+        Assert.Equal(local[0].BuyerProductId, ready[0].BuyerProductId);
+    }
+
+    [Fact]
+    public void Connected_all_category_shows_every_ready_product()
+    {
+        var ready = NineReadyProducts();
+
+        var filtered = PurchaseOrderCreateUi.FilterConnectedReadyProducts(
+            ready,
+            p => p.ProductName,
+            p => new[] { p.SupplierSku },
+            _ => (Guid?)null,
+            searchText: null,
+            selectedCategoryId: null);
+
+        Assert.Equal(9, filtered.Count);
+    }
+
+    [Fact]
+    public void Connected_category_and_search_combine_and_keep_added_products_visible()
+    {
+        var fruits = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var drinks = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var products = new[]
+        {
+            SampleReadyProduct(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "Apple", "APL-1"),
+            SampleReadyProduct(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"), "Banana Lakatan", "BAN-1"),
+            SampleReadyProduct(Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"), "Cola Pack", "COLA-1")
+        };
+        Guid? Category(PurchaseOrderCreateUi.LinkedReadyProduct p) =>
+            p.ProductName.Contains("Cola", StringComparison.Ordinal) ? drinks : fruits;
+
+        var chips = PurchaseOrderCreateUi.RelevantCategories(
+            products.Select(p => (
+                (Guid?)Category(p),
+                (string?)(Category(p) == fruits ? "Fruits" : "Beverages"))),
+            uncategorizedLabel: "No category");
+
+        Assert.Equal(2, chips.Count);
+        Assert.Contains(chips, c => c.Name == "Fruits");
+        Assert.Contains(chips, c => c.Name == "Beverages");
+        Assert.DoesNotContain(chips, c => c.CategoryId == PurchaseOrderCreateUi.UncategorizedFilterId);
+
+        var filtered = PurchaseOrderCreateUi.FilterConnectedReadyProducts(
+            products,
+            p => p.ProductName,
+            p => new[] { p.SupplierSku },
+            Category,
+            searchText: "ban",
+            selectedCategoryId: fruits);
+
+        Assert.Single(filtered);
+        Assert.Equal("Banana Lakatan", filtered[0].ProductName);
+    }
+
+    [Fact]
+    public void Connected_search_matches_sku_and_uncategorized_uses_existing_sentinel()
+    {
+        var products = new[]
+        {
+            SampleReadyProduct(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "Apple", "APL-99"),
+            SampleReadyProduct(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"), "Loose Candy", null)
+        };
+
+        var bySku = PurchaseOrderCreateUi.FilterConnectedReadyProducts(
+            products,
+            p => p.ProductName,
+            p => new[] { p.SupplierSku },
+            p => p.ProductName == "Loose Candy" ? null : Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            searchText: "apl-99",
+            selectedCategoryId: null);
+        Assert.Single(bySku);
+        Assert.Equal("Apple", bySku[0].ProductName);
+
+        var chips = PurchaseOrderCreateUi.RelevantCategories(
+            products.Select(p => (
+                p.ProductName == "Loose Candy" ? (Guid?)null : Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                p.ProductName == "Loose Candy" ? null : "Fruits")),
+            uncategorizedLabel: "No category");
+        Assert.Contains(chips, c => c.CategoryId == PurchaseOrderCreateUi.UncategorizedFilterId);
+
+        var uncategorized = PurchaseOrderCreateUi.FilterConnectedReadyProducts(
+            products,
+            p => p.ProductName,
+            p => new[] { p.SupplierSku },
+            p => p.ProductName == "Loose Candy" ? null : Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            searchText: null,
+            selectedCategoryId: PurchaseOrderCreateUi.UncategorizedFilterId);
+        Assert.Single(uncategorized);
+        Assert.Equal("Loose Candy", uncategorized[0].ProductName);
+    }
+
+    [Fact]
+    public void Connected_upsert_retains_buyer_and_supplier_product_ids_and_po_price()
+    {
+        var buyerId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var supplierProductId = Guid.Parse("99999999-9999-9999-9999-999999999999");
+        IReadOnlyList<ConnectedLine> lines = [];
+
+        var added = PurchaseOrderCreateUi.UpsertLine(
+            lines,
+            l => l.BuyerProductId,
+            new ConnectedLine(buyerId, supplierProductId, 10.80m, 3m),
+            replaceExisting: false);
+        var duplicate = PurchaseOrderCreateUi.UpsertLine(
+            added,
+            l => l.BuyerProductId,
+            new ConnectedLine(buyerId, supplierProductId, 99m, 1m),
+            replaceExisting: false);
+
+        Assert.Same(added, duplicate);
+        Assert.Single(added);
+        Assert.Equal(buyerId, added[0].BuyerProductId);
+        Assert.Equal(supplierProductId, added[0].SupplierProductId);
+        Assert.Equal(10.80m, added[0].Price);
+        Assert.Equal(3m, added[0].Qty);
+    }
+
+    [Fact]
+    public void Draft_summary_uses_singular_and_plural_product_keys()
+    {
+        Assert.Equal("Purchasing_DraftSummaryOne", PurchaseOrderCreateUi.DraftProductSummaryKey(1));
+        Assert.Equal("Purchasing_DraftSummaryMany", PurchaseOrderCreateUi.DraftProductSummaryKey(3));
+        Assert.Equal("Purchasing_DraftSummaryMany", PurchaseOrderCreateUi.DraftProductSummaryKey(0));
+    }
+
+    private static List<PurchaseOrderCreateUi.LinkedReadyProduct> NineReadyProducts()
+    {
+        var products = new List<PurchaseOrderCreateUi.LinkedReadyProduct>(9);
+        for (var i = 1; i <= 9; i++)
+        {
+            var n = i.ToString("D2");
+            products.Add(SampleReadyProduct(
+                Guid.Parse($"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa{n}"),
+                $"Ready {n}",
+                $"SKU-{n}"));
+        }
+
+        return products;
+    }
+
+    private static PurchaseOrderCreateUi.LinkedReadyProduct SampleReadyProduct(
+        Guid buyerProductId,
+        string name,
+        string? sku = null) =>
+        new(
+            Guid.NewGuid(),
+            buyerProductId,
+            Guid.NewGuid(),
+            name,
+            "Kilogram",
+            80.00m,
+            IsOrderable: true,
+            IsActive: true,
+            sku);
 
     private static List<Product> SampleProducts()
     {

@@ -5116,6 +5116,18 @@
   <data name="Purchasing_LinesCount" xml:space="preserve">
     <value>{0} (na) linya</value>
   </data>
+  <data name="Purchasing_DraftSummaryOne" xml:space="preserve">
+    <value>{0} produkto</value>
+  </data>
+  <data name="Purchasing_DraftSummaryMany" xml:space="preserve">
+    <value>{0} (na) produkto</value>
+  </data>
+  <data name="Purchasing_AddedQty" xml:space="preserve">
+    <value>Naidagdag · Dami {0}</value>
+  </data>
+  <data name="Purchasing_AddProductNamed" xml:space="preserve">
+    <value>Idagdag ang {0}</value>
+  </data>
   <data name="Purchasing_LinesTotal" xml:space="preserve">
     <value>Kabuuan</value>
   </data>

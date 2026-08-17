@@ -97,7 +97,9 @@ public sealed class ConnectedSupplierClientUiGuardTests
         Assert.Contains("Purchasing_AllCategories", page, StringComparison.Ordinal);
         Assert.Contains("ClassifyCatalogReadinessAsync", page, StringComparison.Ordinal);
         Assert.Contains("ListLinksAsync", page, StringComparison.Ordinal);
-        Assert.Contains("SearchLocalAsync", page, StringComparison.Ordinal);
+        Assert.Contains("ListByRelationshipAsync", page, StringComparison.Ordinal);
+        Assert.Contains("ReconcileOnlineReadyProducts", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("SearchLocalAsync", page, StringComparison.Ordinal);
         Assert.Contains("RevalidateDraftAsync", page, StringComparison.Ordinal);
         Assert.Contains("ConnectedDrafts.SaveAsync", page, StringComparison.Ordinal);
         Assert.Contains("ConnectedSuppliers_ManageSupplierProducts", page, StringComparison.Ordinal);
