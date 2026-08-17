@@ -18,6 +18,8 @@ public sealed class ConnectedSupplierClientUiGuardTests
         var moreHub = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "MoreHub.razor"));
         Assert.Contains("/suppliers/connected/requests", moreHub, StringComparison.Ordinal);
         Assert.Contains("ConnectedSuppliers_ReviewIncoming", moreHub, StringComparison.Ordinal);
+        Assert.Contains("/connected-suppliers/incoming", moreHub, StringComparison.Ordinal);
+        Assert.Contains("ConnectedSuppliers_IncomingOrders", moreHub, StringComparison.Ordinal);
         Assert.Contains("@page \"/suppliers/{SupplierId:guid}/connected-catalog\"",
             File.ReadAllText(Path.Combine(suppliers, "ConnectedSupplierCatalog.razor")), StringComparison.Ordinal);
         var catalogPage = File.ReadAllText(Path.Combine(suppliers, "ConnectedSupplierCatalog.razor"));
@@ -119,6 +121,15 @@ public sealed class ConnectedSupplierClientUiGuardTests
         Assert.DoesNotContain("_supplierCatalogProducts", page, StringComparison.Ordinal);
         Assert.DoesNotContain("SearchCatalogAsync", page, StringComparison.Ordinal);
         Assert.DoesNotContain("ConnectedSuppliers_UseProduct", page, StringComparison.Ordinal);
+        var client = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.ApiClient",
+            "PosConnectedSupplierClient.cs"));
+        Assert.Contains("catch(JsonException)", client, StringComparison.Ordinal);
+        Assert.Contains("catch(TaskCanceledException", client, StringComparison.Ordinal);
     }
 
     [Fact]

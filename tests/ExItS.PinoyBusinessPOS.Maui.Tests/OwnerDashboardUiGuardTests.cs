@@ -34,6 +34,9 @@ public sealed class OwnerDashboardUiGuardTests
         Assert.Contains("pos-dash__header", owner, StringComparison.Ordinal);
         Assert.Contains("pos-dash__title", owner, StringComparison.Ordinal);
         Assert.Contains("LoadIncomingSupplierCountAsync", owner, StringComparison.Ordinal);
+        Assert.Contains("LoadIncomingOrderCountAsync", owner, StringComparison.Ordinal);
+        Assert.Contains("GoIncomingOrders", owner, StringComparison.Ordinal);
+        Assert.Contains("/connected-suppliers/incoming", owner, StringComparison.Ordinal);
         Assert.Contains("finally", owner, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", owner, StringComparison.Ordinal);
         Assert.DoesNotContain("InlineMessage", owner, StringComparison.Ordinal);

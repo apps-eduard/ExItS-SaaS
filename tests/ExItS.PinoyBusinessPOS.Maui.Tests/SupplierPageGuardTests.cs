@@ -11,7 +11,23 @@ public sealed class SupplierPageGuardTests
         Assert.Contains("@page \"/suppliers\"", list, StringComparison.Ordinal);
         Assert.Contains("pos-suppliers__header", list, StringComparison.Ordinal);
         Assert.Contains("pos-suppliers__row", list, StringComparison.Ordinal);
+        Assert.Contains("pos-suppliers__new-po", list, StringComparison.Ordinal);
+        Assert.Contains("/purchasing/new?supplierId=", list, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_Add", list, StringComparison.Ordinal);
+        Assert.Contains("UtangCapability.ManagePurchasing", list, StringComparison.Ordinal);
+        Assert.Contains("ConnectedSuppliers_IncomingOrders", list, StringComparison.Ordinal);
+        Assert.Contains("/connected-suppliers/incoming", list, StringComparison.Ordinal);
         Assert.Contains("pos-suppliers__list", list, StringComparison.Ordinal);
+
+        var css = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui",
+            "wwwroot",
+            "app.css"));
+        Assert.Contains(".pos-suppliers__new-po", css, StringComparison.Ordinal);
         Assert.Contains("IPosSupplierClient", list, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"plus\")", list, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"qr\")", list, StringComparison.Ordinal);

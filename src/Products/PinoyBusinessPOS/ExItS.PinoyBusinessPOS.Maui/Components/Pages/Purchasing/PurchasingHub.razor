@@ -40,6 +40,13 @@ else
                         <span class="pos-action-tile__meta">@L["Purchasing_OrdersHint"]</span>
                     </span>
                 </button>
+                <button type="button" class="pos-action-tile" @onclick="GoIncomingOrders">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("receipt")</span>
+                    <span class="pos-action-tile__body">
+                        <span class="pos-action-tile__label">@L["ConnectedSuppliers_IncomingOrders"]</span>
+                        <span class="pos-action-tile__meta">@L["ConnectedSuppliers_IncomingOrdersHelp"]</span>
+                    </span>
+                </button>
                 <button type="button" class="pos-action-tile" @onclick="GoReceipts">
                     <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
                     <span class="pos-action-tile__body">
@@ -104,6 +111,7 @@ else
 
     private void GoReceiveStock() => Nav.NavigateTo("/purchasing/receive-stock");
     private void GoOrders() => Nav.NavigateTo("/purchasing/orders");
+    private void GoIncomingOrders() => Nav.NavigateTo("/connected-suppliers/incoming");
     private void GoReceipts() => Nav.NavigateTo("/purchasing/receipts");
     private void GoDirectPurchases() => Nav.NavigateTo("/purchasing/direct-purchases");
     private void GoSuppliers() => Nav.NavigateTo("/suppliers");

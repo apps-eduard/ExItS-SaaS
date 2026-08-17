@@ -53,6 +53,17 @@ else
                 </div>
             }
 
+            @if (_incomingOrderCount > 0)
+            {
+                <Alert Tone="AlertTone.Info"
+                       Title="@L["ConnectedSuppliers_IncomingOrdersCompact", _incomingOrderCount]" />
+                <div class="pos-action-grid pos-action-grid--single" role="group">
+                    <button type="button" class="pos-action-tile pos-action-tile--primary" @onclick="GoIncomingOrders">
+                        <span class="pos-action-tile__label">@L["ConnectedSuppliers_ReviewIncomingOrders"]</span>
+                    </button>
+                </div>
+            }
+
             <Section Title="@L["Owner_QuickActionsSection"]">
                 <div class="pos-action-grid" role="group" aria-label="@L["Owner_QuickActionsSection"]">
                     <button type="button" class="pos-action-tile pos-action-tile--primary" @onclick="StartSelling">
@@ -154,6 +165,7 @@ else
     private bool _setupCompleted;
     private bool _privacyNeedsAttention;
     private int _incomingPendingCount;
+    private int _incomingOrderCount;
 
     protected override async Task OnInitializedAsync()
     {
@@ -221,6 +233,7 @@ else
             // Optional privacy attention + supplier inbox must not block first paint.
             _ = LoadPrivacyAttentionAsync();
             _ = LoadIncomingSupplierCountAsync();
+            _ = LoadIncomingOrderCountAsync();
         }
         finally
         {
@@ -277,6 +290,29 @@ else
         }
     }
 
+    private async Task LoadIncomingOrderCountAsync()
+    {
+        try
+        {
+            if (!Capabilities.IsAllowed(UtangCapability.ViewPurchasing)
+                || !await Connectivity.IsConnectedAsync())
+            {
+                return;
+            }
+
+            var incoming = await ConnectedSuppliers.ListIncomingOrdersAsync("ActionNeeded");
+            if (incoming.IsSuccess && incoming.Data is not null)
+            {
+                _incomingOrderCount = incoming.Data.Count;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch
+        {
+            // Optional badge — never keep the owner on an empty spinner.
+        }
+    }
+
     private void StartSelling()
     {
         SellingMode.Enter(RoleHomeResolver.OwnerHome);
@@ -299,4 +335,5 @@ else
     private void GoSettings() => Nav.NavigateTo("/settings");
     private void GoSuppliers() => Nav.NavigateTo("/suppliers");
     private void GoIncomingRequests() => Nav.NavigateTo("/suppliers/connected/requests");
+    private void GoIncomingOrders() => Nav.NavigateTo("/connected-suppliers/incoming");
 }

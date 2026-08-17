@@ -30,6 +30,18 @@
             </div>
         }
 
+        @if (_incomingOrderCount > 0)
+        {
+            <Alert Tone="AlertTone.Info"
+                   Title="@L["ConnectedSuppliers_IncomingOrdersCompact", _incomingOrderCount]" />
+            <div class="pos-action-grid pos-action-grid--single" role="group">
+                <button type="button" class="pos-action-tile pos-action-tile--primary" @onclick="GoIncomingOrders">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("receipt")</span>
+                    <span class="pos-action-tile__label">@L["ConnectedSuppliers_ReviewIncomingOrders"]</span>
+                </button>
+            </div>
+        }
+
         <Section Title="@L["More_WorkspaceSection"]">
             <div class="pos-action-grid" role="group" aria-label="@L["More_WorkspaceSection"]">
                 @if (CurrentUser.HasPosAccess)
@@ -128,6 +140,18 @@
 
                     @if (Capabilities.IsAllowed(UtangCapability.ViewPurchasing))
                     {
+                        <button type="button"
+                                class="pos-action-tile @(_incomingOrderCount > 0 ? "pos-action-tile--primary" : null)"
+                                @onclick="GoIncomingOrders">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("receipt")</span>
+                            <span class="pos-action-tile__label">
+                                @L["ConnectedSuppliers_IncomingOrders"]
+                                @if (_incomingOrderCount > 0)
+                                {
+                                    <text> · @_incomingOrderCount</text>
+                                }
+                            </span>
+                        </button>
                         <button type="button" class="pos-action-tile" @onclick="GoPurchasing">
                             <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
                             <span class="pos-action-tile__label">@L["Nav_Purchasing"]</span>
@@ -193,6 +217,7 @@
 @code {
     private bool _isOrganizationOwner;
     private int _incomingPendingCount;
+    private int _incomingOrderCount;
 
     protected override async Task OnInitializedAsync()
     {
@@ -232,6 +257,16 @@
                     string.Equals(x.Status, "Pending", StringComparison.OrdinalIgnoreCase));
             }
         }
+
+        if (Capabilities.IsAllowed(UtangCapability.ViewPurchasing)
+            && await Connectivity.IsConnectedAsync())
+        {
+            var incomingOrders = await ConnectedSuppliers.ListIncomingOrdersAsync("ActionNeeded");
+            if (incomingOrders.IsSuccess && incomingOrders.Data is not null)
+            {
+                _incomingOrderCount = incomingOrders.Data.Count;
+            }
+        }
     }
 
     private async Task GoRoleHome() => Nav.NavigateTo(await RoleHome.ResolvePosHomeAsync());
@@ -246,6 +281,7 @@
     private Task GoSuppliers() => OfflineNav.NavigateAsync("/suppliers");
     private Task GoConnectedBuyers() => OfflineNav.NavigateAsync("/suppliers/connected/buyers");
     private Task GoIncomingRequests() => OfflineNav.NavigateAsync("/suppliers/connected/requests");
+    private Task GoIncomingOrders() => OfflineNav.NavigateAsync("/connected-suppliers/incoming");
     private Task GoPurchasing() => OfflineNav.NavigateAsync("/purchasing");
     private Task GoRegisters() => OfflineNav.NavigateAsync("/registers");
     private async Task GoSetup() =>

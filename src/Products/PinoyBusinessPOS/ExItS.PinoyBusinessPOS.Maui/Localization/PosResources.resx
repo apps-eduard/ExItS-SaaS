@@ -4960,6 +4960,9 @@
   <data name="Purchasing_ErrorTitle" xml:space="preserve">
     <value>Purchasing error</value>
   </data>
+  <data name="Purchasing_CreateFailed" xml:space="preserve">
+    <value>Could not create the purchase order.</value>
+  </data>
   <data name="Purchasing_SuccessTitle" xml:space="preserve">
     <value>Saved</value>
   </data>
@@ -4986,6 +4989,9 @@
   </data>
   <data name="Purchasing_Field_Supplier" xml:space="preserve">
     <value>Supplier</value>
+  </data>
+  <data name="Purchasing_Field_CreatedBy" xml:space="preserve">
+    <value>Created by</value>
   </data>
   <data name="Purchasing_Field_SupplierReference" xml:space="preserve">
     <value>Supplier reference</value>
@@ -5157,6 +5163,15 @@
   </data>
   <data name="Purchasing_LineSummary" xml:space="preserve">
     <value>Ordered {0} · Received {1} · Outstanding {2} · Cost {3}</value>
+  </data>
+  <data name="Purchasing_LineReceivedShort" xml:space="preserve">
+    <value>Received {0} · Left {1}</value>
+  </data>
+  <data name="Purchasing_UnknownProduct" xml:space="preserve">
+    <value>Unknown product</value>
+  </data>
+  <data name="Purchasing_UnknownSupplier" xml:space="preserve">
+    <value>Unknown supplier</value>
   </data>
   <data name="Purchasing_Outstanding" xml:space="preserve">
     <value>Outstanding {0} {1}</value>
@@ -9633,6 +9648,12 @@
   </data>
   <data name="ConnectedSuppliers_IncomingOrdersHelp" xml:space="preserve">
     <value>Review and fulfill purchase orders from connected buyers.</value>
+  </data>
+  <data name="ConnectedSuppliers_IncomingOrdersCompact" xml:space="preserve">
+    <value>{0} incoming purchase orders need a response</value>
+  </data>
+  <data name="ConnectedSuppliers_ReviewIncomingOrders" xml:space="preserve">
+    <value>Review incoming orders</value>
   </data>
   <data name="ConnectedSuppliers_Buyer" xml:space="preserve">
     <value>Connected buyer</value>

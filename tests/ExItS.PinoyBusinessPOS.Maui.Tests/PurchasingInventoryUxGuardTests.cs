@@ -21,10 +21,12 @@ public sealed class PurchasingInventoryUxGuardTests
         Assert.Contains("Purchasing_Orders", hub, StringComparison.Ordinal);
         Assert.Contains("Purchasing_GoodsReceipts", hub, StringComparison.Ordinal);
         Assert.Contains("Purchasing_Suppliers", hub, StringComparison.Ordinal);
+        Assert.Contains("ConnectedSuppliers_IncomingOrders", hub, StringComparison.Ordinal);
         Assert.Contains("/purchasing/receive-stock", hub, StringComparison.Ordinal);
         Assert.Contains("/purchasing/orders", hub, StringComparison.Ordinal);
         Assert.Contains("/purchasing/receipts", hub, StringComparison.Ordinal);
         Assert.Contains("/suppliers", hub, StringComparison.Ordinal);
+        Assert.Contains("/connected-suppliers/incoming", hub, StringComparison.Ordinal);
         Assert.Contains("Purchasing_ChoiceReceive", hub, StringComparison.Ordinal);
         Assert.Contains("Purchasing_ChoiceOrder", hub, StringComparison.Ordinal);
         Assert.DoesNotContain("Direct Stock In", hub, StringComparison.Ordinal);

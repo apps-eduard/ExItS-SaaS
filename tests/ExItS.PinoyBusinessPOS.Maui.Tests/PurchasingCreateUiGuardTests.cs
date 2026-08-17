@@ -10,6 +10,8 @@ public sealed class PurchasingCreateUiGuardTests
         Assert.Contains("Purchasing_SelectSupplierFirst", create, StringComparison.Ordinal);
         Assert.Contains("Purchasing_SelectSupplierFirstHelp", create, StringComparison.Ordinal);
         Assert.Contains("HasSupplierSelected", create, StringComparison.Ordinal);
+        Assert.Contains("SupplyParameterFromQuery(Name = \"supplierId\")", create, StringComparison.Ordinal);
+        Assert.Contains("ApplyPrefillSupplier", create, StringComparison.Ordinal);
         Assert.Contains("RequiresSupplierChangeConfirmation", create, StringComparison.Ordinal);
         Assert.Contains("ClearSupplierDependentDraftState", create, StringComparison.Ordinal);
         Assert.Contains("Purchasing_ChangeSupplierTitle", create, StringComparison.Ordinal);
@@ -142,6 +144,22 @@ public sealed class PurchasingCreateUiGuardTests
     }
 
     [Fact]
+    public void Create_page_surfaces_create_failures_next_to_the_footer()
+    {
+        var create = CreatePage();
+
+        Assert.Contains("pos-purchasing-create__footer", create, StringComparison.Ordinal);
+        Assert.Contains("@onclick=\"SaveAsync\"", create, StringComparison.Ordinal);
+        Assert.Contains("catch (Exception)", create, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_CreateFailed", create, StringComparison.Ordinal);
+        Assert.Contains("_saving = false", create, StringComparison.Ordinal);
+        Assert.Contains("StateHasChanged();", create, StringComparison.Ordinal);
+        Assert.Contains("ConnectedSuppliers_ReviewChangesHelp", create, StringComparison.Ordinal);
+        Assert.Contains("pos-purchasing-create__review", create, StringComparison.Ordinal);
+        Assert.Contains("_errorMessage ?? _linesError ?? _supplierError ?? _orderDateError", create, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Create_page_keys_and_styles_exist()
     {
         var en = File.ReadAllText(Path.Combine(LocalizationDirectory(), "PosResources.resx"));
@@ -185,9 +203,12 @@ public sealed class PurchasingCreateUiGuardTests
                      "Purchasing_DecreaseQtyNamed",
                      "Purchasing_DeleteLineTitle",
                      "Purchasing_DeleteLineMessage",
+                     "Purchasing_CreateFailed",
                      "ConnectedSuppliers_ManageSupplierProducts",
                      "ConnectedSuppliers_ReadinessSummary",
-                     "ConnectedSuppliers_NoReadyProducts"
+                     "ConnectedSuppliers_NoReadyProducts",
+                     "ConnectedSuppliers_ReviewChanges",
+                     "ConnectedSuppliers_ReviewChangesHelp"
                  })
         {
             Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);
@@ -205,6 +226,7 @@ public sealed class PurchasingCreateUiGuardTests
                      ".pos-purchasing-create__hit--ready",
                      ".pos-purchasing-create__hit-add",
                      ".pos-purchasing-create__qty",
+                     ".pos-purchasing-create__review",
                      ".pos-connected-catalog__chips",
                      ".pos-po-line__actions",
                      ".pos-po-line__action--danger",
@@ -213,6 +235,9 @@ public sealed class PurchasingCreateUiGuardTests
         {
             Assert.Contains(selector, css, StringComparison.Ordinal);
         }
+
+        Assert.Contains(".pos-purchasing-create .pos-po-line", css, StringComparison.Ordinal);
+        Assert.Contains("padding: 0.75rem 1rem;", css, StringComparison.Ordinal);
     }
 
     private static string CreatePage() => File.ReadAllText(Path.Combine(

@@ -12,6 +12,8 @@ public sealed class PurchasingPageGuardTests
         Assert.Contains("Purchasing_ReceiveStock", hub, StringComparison.Ordinal);
         Assert.Contains("Purchasing_Orders", hub, StringComparison.Ordinal);
         Assert.Contains("Purchasing_GoodsReceipts", hub, StringComparison.Ordinal);
+        Assert.Contains("ConnectedSuppliers_IncomingOrders", hub, StringComparison.Ordinal);
+        Assert.Contains("/connected-suppliers/incoming", hub, StringComparison.Ordinal);
 
         var list = File.ReadAllText(Path.Combine(pages, "PurchasingList.razor"));
         Assert.Contains("@page \"/purchasing/orders\"", list, StringComparison.Ordinal);
@@ -59,6 +61,16 @@ public sealed class PurchasingPageGuardTests
         Assert.Contains("CancelAsync", detail, StringComparison.Ordinal);
         Assert.Contains("pos-purchasing-detail__header", detail, StringComparison.Ordinal);
         Assert.Contains("pos-purchasing-detail__facts", detail, StringComparison.Ordinal);
+        Assert.Contains("SupplierName", detail, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_UnknownSupplier", detail, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_UnknownProduct", detail, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_Field_CreatedBy", detail, StringComparison.Ordinal);
+        Assert.Contains("HydrateDisplayNamesAsync", detail, StringComparison.Ordinal);
+        Assert.Contains("IPosSupplierClient", detail, StringComparison.Ordinal);
+        Assert.Contains("IPosCatalogClient", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-purchasing-detail__entry-total", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("line.ProductId.ToString", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("@_po.SupplierId", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("Purchasing_BackToList", detail, StringComparison.Ordinal);
 
@@ -138,7 +150,14 @@ public sealed class PurchasingPageGuardTests
                      "Purchasing_ReceiveStock",
                      "Purchasing_Orders",
                      "Purchasing_GoodsReceipts",
-                     "Purchasing_HubSubtitle"
+                     "Purchasing_HubSubtitle",
+                     "Purchasing_Field_CreatedBy",
+                     "Purchasing_UnknownSupplier",
+                     "Purchasing_UnknownProduct",
+                     "ConnectedSuppliers_IncomingOrders",
+                     "ConnectedSuppliers_IncomingOrdersHelp",
+                     "ConnectedSuppliers_IncomingOrdersCompact",
+                     "ConnectedSuppliers_ReviewIncomingOrders"
                  })
         {
             Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);

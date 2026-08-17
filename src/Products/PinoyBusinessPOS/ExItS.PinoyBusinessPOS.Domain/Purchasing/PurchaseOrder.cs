@@ -80,11 +80,20 @@ public sealed class PurchaseOrder
         string? supplierReference = null,
         string? notes = null,
         PurchaseOrderId? id = null,
-        ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash)
+        ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash,
+        Guid? createdBy = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureLines(lines);
         ValidateExpectedDelivery(orderDate, expectedDeliveryDate);
+        if (createdBy is { } actor && actor != Guid.Empty)
+        {
+            SaleMoney.EnsureActor(actor);
+        }
+        else
+        {
+            createdBy = null;
+        }
 
         var poId = id ?? PurchaseOrderId.New();
         var poLines = BuildDraftLines(poId, organizationId, lines);
@@ -100,7 +109,7 @@ public sealed class PurchaseOrder
             NormalizeSupplierReference(supplierReference),
             NormalizeNotes(notes),
             orderedAtUtc: null,
-            orderedBy: null,
+            orderedBy: createdBy,
             utcNow,
             utcNow,
             poLines,

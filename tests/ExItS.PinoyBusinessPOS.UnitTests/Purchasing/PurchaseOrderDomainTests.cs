@@ -48,6 +48,24 @@ public sealed class PurchaseOrderDomainTests
     }
 
     [Fact]
+    public void Draft_records_created_by_actor()
+    {
+        var org = PosOrganizationId.From(OrgA);
+        var actor = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+        var po = PurchaseOrder.CreateDraft(
+            org,
+            SupplierId.From(SupplierA),
+            DateOnly.FromDateTime(Now.Date),
+            [new PurchaseOrderLineDraft(CatalogProductId.From(ProductA), 1m, 10m)],
+            Now,
+            createdBy: actor);
+
+        Assert.Equal(actor, po.OrderedBy);
+        Assert.Null(po.OrderedAtUtc);
+        Assert.Equal(PurchaseOrderStatus.Draft, po.Status);
+    }
+
+    [Fact]
     public void Submit_freezes_snapshots_and_allocates_ordered_state()
     {
         var org = PosOrganizationId.From(OrgA);

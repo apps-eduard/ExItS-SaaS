@@ -13,6 +13,17 @@ public sealed class ConnectedSupplierDomainTests
     private static readonly DateTimeOffset Now=new(2026,8,14,18,0,0,TimeSpan.Zero);
 
     [Fact]
+    public void Relationship_ids_with_the_same_guid_are_equal_across_instances()
+    {
+        var guid = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+        var left = ConnectedSupplierRelationshipId.From(guid);
+        var right = ConnectedSupplierRelationshipId.From(guid);
+        Assert.Equal(left, right);
+        Assert.True(left == right);
+        Assert.False(left != right);
+    }
+
+    [Fact]
     public void Self_connection_is_denied()
     {
         var ex=Assert.Throws<DomainException>(()=>ConnectedSupplierRelationship.Request(Buyer,Buyer,Now));

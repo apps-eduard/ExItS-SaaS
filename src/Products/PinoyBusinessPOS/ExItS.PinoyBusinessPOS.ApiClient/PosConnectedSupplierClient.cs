@@ -52,8 +52,10 @@ public sealed class PosConnectedSupplierClient(HttpClient http,IConnectivityServ
             using var response=await http.SendAsync(req,ct);var text=await response.Content.ReadAsStringAsync(ct);
             if(!response.IsSuccessStatusCode)return new(){Status=Classify(response.StatusCode),Error=Problem(text,(int)response.StatusCode)};
             var value=JsonSerializer.Deserialize<T>(text,Json);return value is null?new(){Status=ApiCallStatus.Failed,Error=new("Invalid response","The API returned no content.",null,null,null)}:ApiResult<T>.Success(value);}
+        catch(TaskCanceledException ex)when(!ct.IsCancellationRequested){return new(){Status=ApiCallStatus.Timeout,Error=new("Request timed out",ex.Message,null,null,null)};}
         catch(OperationCanceledException)when(ct.IsCancellationRequested){return new(){Status=ApiCallStatus.Cancelled};}
         catch(HttpRequestException ex){return new(){Status=ApiCallStatus.Offline,Error=new("Network unavailable",ex.Message,null,null,null)};}
+        catch(JsonException){return new(){Status=ApiCallStatus.Failed,Error=new("Invalid response","The API returned an unexpected payload.",null,null,null)};}
     }
     private static ApiError Problem(string text,int status){try{using var d=JsonDocument.Parse(text);var r=d.RootElement;
         return new(r.TryGetProperty("title",out var t)?t.GetString():null,r.TryGetProperty("detail",out var x)?x.GetString():null,

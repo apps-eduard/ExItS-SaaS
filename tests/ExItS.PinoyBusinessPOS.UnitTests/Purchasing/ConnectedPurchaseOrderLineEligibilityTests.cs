@@ -205,6 +205,8 @@ public sealed class ConnectedPurchaseOrderLineEligibilityTests
 
         Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
         Assert.Equal(180m, Assert.Single(result.Value!.Lines).UnitPurchaseCost);
+        Assert.Equal("Apple", result.Value.Lines[0].NameSnapshot);
+        Assert.Equal("Paul Supply", result.Value.SupplierName);
         Assert.Single(fixture.Orders.Items);
     }
 
@@ -322,7 +324,9 @@ public sealed class ConnectedPurchaseOrderLineEligibilityTests
         relationships.Seed(relationship);
 
         var supplier = Supplier.Create(Buyer, "SUP-100001", "Paul Supply", Now);
-        supplier.AttachConnectedRelationship(relationship.Id, Now.AddMinutes(2));
+        supplier.AttachConnectedRelationship(
+            ConnectedSupplierRelationshipId.From(relationship.Id.Value),
+            Now.AddMinutes(2));
         var suppliers = new InMemorySuppliers();
         suppliers.Seed(supplier);
 

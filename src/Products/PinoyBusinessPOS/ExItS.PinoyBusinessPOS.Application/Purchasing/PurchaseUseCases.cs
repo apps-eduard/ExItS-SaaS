@@ -61,7 +61,8 @@ public sealed record PosPurchaseOrderDto(
     decimal? ProposedTotalAmount = null,
     decimal? ConfirmedTotalAmount = null,
     IReadOnlyList<ConnectedPurchaseOrderLineDto>? ConnectedLines = null,
-    DateTimeOffset? ChangesProposedAtUtc = null);
+    DateTimeOffset? ChangesProposedAtUtc = null,
+    string? SupplierName = null);
 
 public sealed record PosGoodsReceiptLineDto(
     Guid LineId,
@@ -141,7 +142,11 @@ public sealed record ReceivePurchaseOrderRequest(
 
 public static class PurchaseMapper
 {
-    public static PosPurchaseOrderDto Map(PurchaseOrder po, ConnectedPurchaseOrder? connected = null)
+    public static PosPurchaseOrderDto Map(
+        PurchaseOrder po,
+        ConnectedPurchaseOrder? connected = null,
+        string? supplierName = null,
+        IReadOnlyDictionary<Guid, CatalogProduct>? products = null)
     {
         var display = string.IsNullOrEmpty(ConnectedPoDisplayStatus.ForBuyer(po, connected))
             ? po.Status.ToString()
@@ -160,7 +165,7 @@ public static class PurchaseMapper
             po.OrderedBy,
             po.CreatedAtUtc,
             po.UpdatedAtUtc,
-            po.Lines.Select(MapLine).ToList(),
+            po.Lines.Select(line => MapLine(line, products)).ToList(),
             DisplayStatus: display,
             ConnectedStatus: connected?.Status.ToString(),
             ConnectedPurchaseOrderId: connected?.Id.Value,
@@ -179,16 +184,44 @@ public static class PurchaseMapper
             ProposedTotalAmount: connected?.ProposedTotalAmount,
             ConfirmedTotalAmount: connected is null ? null : connected.ConfirmedTotalAmount,
             ConnectedLines: connected?.Lines.Select(ConnectedSupplierMapper.MapLine).ToList(),
-            ChangesProposedAtUtc: connected?.ChangesProposedAtUtc);
+            ChangesProposedAtUtc: connected?.ChangesProposedAtUtc,
+            SupplierName: supplierName);
     }
 
-    public static PosPurchaseOrderLineDto MapLine(PurchaseOrderLine line) =>
-        new(
+    public static async Task<PosPurchaseOrderDto> MapWithNamesAsync(
+        PurchaseOrder po,
+        ConnectedPurchaseOrder? connected,
+        ISupplierRepository suppliers,
+        ICatalogProductRepository products,
+        CancellationToken cancellationToken)
+    {
+        var supplier = await suppliers
+            .GetByIdAsync(po.OrganizationId, po.SupplierId, cancellationToken)
+            .ConfigureAwait(false);
+        var productIds = po.Lines.Select(l => l.ProductId).Distinct().ToList();
+        var catalog = productIds.Count == 0
+            ? Array.Empty<CatalogProduct>()
+            : await products.ListByIdsAsync(po.OrganizationId, productIds, cancellationToken).ConfigureAwait(false);
+        return Map(po, connected, supplier?.Name, catalog.ToDictionary(p => p.Id.Value));
+    }
+
+    public static PosPurchaseOrderLineDto MapLine(
+        PurchaseOrderLine line,
+        IReadOnlyDictionary<Guid, CatalogProduct>? products = null)
+    {
+        var product = products is not null && products.TryGetValue(line.ProductId.Value, out var found)
+            ? found
+            : null;
+        var name = string.IsNullOrWhiteSpace(line.NameSnapshot) ? product?.Name : line.NameSnapshot;
+        var uom = line.UomSnapshot?.ToString()
+            ?? (string.IsNullOrWhiteSpace(line.PurchaseUnitNameSnapshot) ? null : line.PurchaseUnitNameSnapshot)
+            ?? product?.UnitOfMeasure.ToString();
+        return new(
             line.Id.Value,
             line.ProductId.Value,
             line.LineNumber,
-            line.NameSnapshot,
-            line.UomSnapshot?.ToString(),
+            name,
+            uom,
             line.OrderedQty,
             line.UnitPurchaseCost,
             line.LineTotal,
@@ -196,6 +229,7 @@ public static class PurchaseMapper
             line.OutstandingQty,
             line.LineNotes,
             line.ClosedShortQty);
+    }
 
     public static PosGoodsReceiptDto Map(GoodsReceipt receipt) =>
         new(
@@ -231,13 +265,19 @@ public sealed class PurchaseOrderQueryService
 {
     private readonly IPurchaseOrderRepository _orders;
     private readonly IConnectedPurchaseOrderRepository _connectedOrders;
+    private readonly ISupplierRepository _suppliers;
+    private readonly ICatalogProductRepository _products;
 
     public PurchaseOrderQueryService(
         IPurchaseOrderRepository orders,
-        IConnectedPurchaseOrderRepository connectedOrders)
+        IConnectedPurchaseOrderRepository connectedOrders,
+        ISupplierRepository suppliers,
+        ICatalogProductRepository products)
     {
         _orders = orders;
         _connectedOrders = connectedOrders;
+        _suppliers = suppliers;
+        _products = products;
     }
 
     public async Task<PosPurchaseOrderDto?> GetByIdAsync(
@@ -262,7 +302,9 @@ public sealed class PurchaseOrderQueryService
             connected = null;
         }
 
-        return PurchaseMapper.Map(po, connected);
+        return await PurchaseMapper
+            .MapWithNamesAsync(po, connected, _suppliers, _products, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     public async Task<PagedResult<PosPurchaseOrderDto>> ListAsync(
@@ -273,8 +315,9 @@ public sealed class PurchaseOrderQueryService
         CancellationToken cancellationToken = default)
     {
         var (skip, take) = PosPagination.Normalize(page, pageSize);
+        var org = PosOrganizationId.From(organizationId);
         var (items, total) = await _orders
-            .ListAsync(PosOrganizationId.From(organizationId), filter, skip, take, cancellationToken)
+            .ListAsync(org, filter, skip, take, cancellationToken)
             .ConfigureAwait(false);
 
         var mapped = new List<PosPurchaseOrderDto>(items.Count);
@@ -284,12 +327,14 @@ public sealed class PurchaseOrderQueryService
                 .GetByBuyerPurchaseOrderAsync(po.Id, cancellationToken)
                 .ConfigureAwait(false);
             if (connected is not null
-                && connected.BuyerOrganizationId != PosOrganizationId.From(organizationId))
+                && connected.BuyerOrganizationId != org)
             {
                 connected = null;
             }
 
-            mapped.Add(PurchaseMapper.Map(po, connected));
+            mapped.Add(await PurchaseMapper
+                .MapWithNamesAsync(po, connected, _suppliers, _products, cancellationToken)
+                .ConfigureAwait(false));
         }
 
         return new PagedResult<PosPurchaseOrderDto>(
@@ -445,7 +490,8 @@ public static class ConnectedPurchaseOrderLineEligibility
                 "The connected supplier relationship is not active.");
         }
 
-        if (supplier.ConnectedRelationshipId != relationship.Id)
+        if (supplier.ConnectedRelationshipId is null
+            || supplier.ConnectedRelationshipId.Value != relationship.Id.Value)
         {
             return ApplicationResult<Outcome>.Failure(
                 ConnectedSupplierErrorCodes.RelationshipInactive,
@@ -469,7 +515,7 @@ public static class ConnectedPurchaseOrderLineEligibility
                     "Every connected purchase-order line must have an active supplier product link for this supplier.");
             }
 
-            if (link.RelationshipId != relationship.Id
+            if (link.RelationshipId.Value != relationship.Id.Value
                 || link.BuyerOrganizationId != buyerOrganizationId
                 || link.SupplierOrganizationId != relationship.SupplierOrganizationId)
             {
@@ -542,7 +588,8 @@ public sealed class CreatePurchaseOrder
     public async Task<ApplicationResult<PosPurchaseOrderDto>> ExecuteAsync(
         Guid organizationId,
         CreatePurchaseOrderRequest request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Guid actorId = default)
     {
         var gate = CommercialAccessGuard.Require(_access, UtangCapability.ManagePurchasing);
         if (!gate.IsSuccess)
@@ -571,7 +618,7 @@ public sealed class CreatePurchaseOrder
             }
 
             var productIds = request.Lines.Select(l => l.ProductId).ToList();
-            var (productError, _) = await PurchaseProductGuard
+            var (productError, products) = await PurchaseProductGuard
                 .ResolveProductsAsync(_products, org, productIds, cancellationToken)
                 .ConfigureAwait(false);
             if (productError is not null)
@@ -649,11 +696,13 @@ public sealed class CreatePurchaseOrder
                 request.ExpectedDeliveryDate,
                 request.SupplierReference,
                 request.Notes,
-                paymentTerm: ConnectedPoPaymentTerms.Parse(request.PaymentTerm));
+                paymentTerm: ConnectedPoPaymentTerms.Parse(request.PaymentTerm),
+                createdBy: actorId == Guid.Empty ? null : actorId);
 
             await _orders.AddAsync(po, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<PosPurchaseOrderDto>.Success(PurchaseMapper.Map(po));
+            return ApplicationResult<PosPurchaseOrderDto>.Success(
+                PurchaseMapper.Map(po, supplierName: supplier.Name, products: products));
         }
         catch (DomainException ex)
         {
@@ -755,7 +804,7 @@ public sealed class UpdatePurchaseOrder
             }
 
             var productIds = request.Lines.Select(l => l.ProductId).ToList();
-            var (productError, _) = await PurchaseProductGuard
+            var (productError, products) = await PurchaseProductGuard
                 .ResolveProductsAsync(_products, org, productIds, cancellationToken)
                 .ConfigureAwait(false);
             if (productError is not null)
@@ -835,7 +884,8 @@ public sealed class UpdatePurchaseOrder
 
             await _orders.UpdateAsync(existing, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<PosPurchaseOrderDto>.Success(PurchaseMapper.Map(existing));
+            return ApplicationResult<PosPurchaseOrderDto>.Success(
+                PurchaseMapper.Map(existing, supplierName: supplier.Name, products: products));
         }
         catch (DomainException ex)
         {
@@ -1073,7 +1123,13 @@ public sealed class SubmitPurchaseOrder
                     cancellationToken).ConfigureAwait(false);
             }
 
-            return ApplicationResult<PosPurchaseOrderDto>.Success(PurchaseMapper.Map(submitted, createdConnected));
+            return ApplicationResult<PosPurchaseOrderDto>.Success(
+                await PurchaseMapper.MapWithNamesAsync(
+                    submitted,
+                    createdConnected,
+                    _suppliers,
+                    _products,
+                    cancellationToken).ConfigureAwait(false));
         }
         catch (DomainException ex)
         {

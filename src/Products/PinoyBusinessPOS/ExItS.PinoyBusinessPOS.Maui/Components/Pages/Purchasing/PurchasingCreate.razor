@@ -460,17 +460,41 @@ else
 
     @if (_draftReview is not null && _draftReview.OverallStatus != ConnectedPoDraftReviewStatus.Unchanged)
     {
-        <section class="pos-purchasing-create__panel">
-            <h2>@L["ConnectedSuppliers_ReviewChanges"]</h2>
-            <p>@L["ConnectedSuppliers_ReviewChangesHelp"]</p>
+        <section class="pos-purchasing-create__review" aria-labelledby="purchasing-review-heading">
+            <Alert Tone="AlertTone.Warning"
+                   Title="@L["ConnectedSuppliers_ReviewChanges"]"
+                   Message="@L["ConnectedSuppliers_ReviewChangesHelp"]" />
             @foreach (var item in _draftReview.Items.Where(x => x.Status != ConnectedPoDraftReviewStatus.Unchanged))
             {
-                <div>@item.Status · @item.SubmittedPrice → @(item.CurrentPrice?.ToString("C") ?? L["ConnectedSuppliers_Unavailable"])</div>
+                <div class="pos-purchasing-create__review-item">
+                    @item.Status · @item.SubmittedPrice → @(item.CurrentPrice?.ToString("C") ?? L["ConnectedSuppliers_Unavailable"])
+                </div>
             }
-            <button type="button" @onclick="UpdateAndContinueAsync">@L["ConnectedSuppliers_UpdateAndContinue"]</button>
-            <button type="button" @onclick="() => _draftReview = null">@L["ConnectedSuppliers_ReviewOrder"]</button>
-            <button type="button" @onclick="RemoveUnavailableItems">@L["ConnectedSuppliers_RemoveItem"]</button>
+            <div class="pos-action-grid pos-action-grid--single" role="group">
+                <button type="button"
+                        class="pos-action-tile pos-action-tile--primary"
+                        disabled="@(_saving)"
+                        @onclick="UpdateAndContinueAsync">
+                    <span class="pos-action-tile__label">@L["ConnectedSuppliers_UpdateAndContinue"]</span>
+                </button>
+                @if (_draftReview.Items.Any(x => x.Status is ConnectedPoDraftReviewStatus.Unavailable or ConnectedPoDraftReviewStatus.RelationshipInactive))
+                {
+                    <button type="button"
+                            class="pos-action-tile"
+                            disabled="@(_saving)"
+                            @onclick="RemoveUnavailableItems">
+                        <span class="pos-action-tile__label">@L["ConnectedSuppliers_RemoveItem"]</span>
+                    </button>
+                }
+            </div>
         </section>
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage) || !string.IsNullOrEmpty(_linesError) || !string.IsNullOrEmpty(_supplierError) || !string.IsNullOrEmpty(_orderDateError))
+    {
+        <Alert Tone="@(_draftReview is not null ? AlertTone.Warning : AlertTone.Danger)"
+               Title="@(_errorTitle ?? L["Purchasing_ErrorTitle"])"
+               Message="@(_errorMessage ?? _linesError ?? _supplierError ?? _orderDateError)" />
     }
 
     <div class="pos-action-grid pos-action-grid--two pos-purchasing-create__footer" role="group" aria-label="@L["Purchasing_Create"]">
@@ -519,6 +543,9 @@ else
 }
 
 @code {
+    [SupplyParameterFromQuery(Name = "supplierId")]
+    public Guid? PrefillSupplierId { get; set; }
+
     private sealed record LineEntry(Guid ProductId, string Name, decimal OrderedQty, decimal UnitPurchaseCost, Guid? SupplierProductId = null);
 
     private bool _ready;
@@ -678,6 +705,7 @@ else
 
         _isOffline = !await Connectivity.IsConnectedAsync();
         RestoreDraftSession();
+        ApplyPrefillSupplier();
         _ready = true;
 
         if (!_isOffline && Capabilities.IsAllowed(UtangCapability.ManagePurchasing))
@@ -719,6 +747,23 @@ else
         _draftQtyText = string.IsNullOrWhiteSpace(draft.DraftQtyText) ? "1" : draft.DraftQtyText;
         _draftUnitCost = draft.DraftUnitCost;
         _selectedProductId = draft.SelectedProductId ?? string.Empty;
+    }
+
+    private void ApplyPrefillSupplier()
+    {
+        if (PrefillSupplierId is not Guid supplierId || supplierId == Guid.Empty)
+        {
+            return;
+        }
+
+        var next = supplierId.ToString("D");
+        if (string.Equals(_supplierId, next, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        ClearSupplierDependentDraftState();
+        _supplierId = next;
     }
 
     private void PersistDraftSession()
@@ -1346,6 +1391,8 @@ else
         _pendingDeleteProductId = null;
         _errorTitle = null;
         _errorMessage = null;
+        _draftReview = null;
+        _revalidationAccepted = false;
     }
 
     private async Task SaveAsync()
@@ -1355,107 +1402,141 @@ else
             return;
         }
 
+        if (_draftReview is not null && _draftReview.OverallStatus != ConnectedPoDraftReviewStatus.Unchanged)
+        {
+            if (_draftReview.OverallStatus == ConnectedPoDraftReviewStatus.PriceChanged)
+            {
+                await UpdateAndContinueAsync();
+                return;
+            }
+
+            _errorTitle = L["ConnectedSuppliers_ReviewChanges"];
+            _errorMessage = L["ConnectedSuppliers_ReviewChangesHelp"];
+            return;
+        }
+
+        _saving = true;
         _supplierError = null;
         _orderDateError = null;
         _linesError = null;
         _errorTitle = null;
         _errorMessage = null;
-
-        var valid = true;
-        if (!Guid.TryParse(_supplierId, out var supplierId))
+        StateHasChanged();
+        try
         {
-            _supplierError = L["Purchasing_SupplierRequired"];
-            valid = false;
-        }
-
-        if (_orderDate is null)
-        {
-            _orderDateError = L["Purchasing_OrderDateRequired"];
-            valid = false;
-        }
-
-        if (_lines.Count == 0)
-        {
-            _linesError = L["Purchasing_LinesRequired"];
-            valid = false;
-        }
-        else if (_lines.Any(l => l.UnitPurchaseCost <= 0m))
-        {
-            _linesError = L["Purchasing_UnitCostRequired"];
-            valid = false;
-        }
-
-        if (!valid)
-        {
-            return;
-        }
-
-        if (_isOffline)
-        {
-            if (!IsConnectedSupplier || SelectedSupplier?.ConnectedRelationshipId is not Guid offlineRelationshipId) return;
-            var payload = JsonSerializer.Serialize(new
+            var valid = true;
+            if (!Guid.TryParse(_supplierId, out var supplierId))
             {
-                SupplierId = supplierId,
-                OrderDate = _orderDate,
-                ExpectedDeliveryDate = _expectedDeliveryDate,
-                SupplierReference = _supplierReference,
-                Notes = _notes,
-                Lines = _lines
-            });
-            await ConnectedDrafts.SaveAsync(new(
-                _localDraftId,
-                offlineRelationshipId,
+                _supplierError = L["Purchasing_SupplierRequired"];
+                valid = false;
+            }
+
+            if (_orderDate is null)
+            {
+                _orderDateError = L["Purchasing_OrderDateRequired"];
+                valid = false;
+            }
+
+            if (_lines.Count == 0)
+            {
+                _linesError = L["Purchasing_LinesRequired"];
+                valid = false;
+            }
+            else if (_lines.Any(l => l.UnitPurchaseCost <= 0m))
+            {
+                _linesError = L["Purchasing_UnitCostRequired"];
+                valid = false;
+            }
+
+            if (!valid)
+            {
+                _errorTitle = L["Purchasing_ErrorTitle"];
+                _errorMessage = _supplierError ?? _orderDateError ?? _linesError;
+                return;
+            }
+
+            if (_isOffline)
+            {
+                if (!IsConnectedSupplier || SelectedSupplier?.ConnectedRelationshipId is not Guid offlineRelationshipId)
+                {
+                    _errorTitle = L["Purchasing_ErrorTitle"];
+                    _errorMessage = L["Purchasing_CreateFailed"];
+                    return;
+                }
+
+                var payload = JsonSerializer.Serialize(new
+                {
+                    SupplierId = supplierId,
+                    OrderDate = _orderDate,
+                    ExpectedDeliveryDate = _expectedDeliveryDate,
+                    SupplierReference = _supplierReference,
+                    Notes = _notes,
+                    Lines = _lines
+                });
+                await ConnectedDrafts.SaveAsync(new(
+                    _localDraftId,
+                    offlineRelationshipId,
+                    supplierId,
+                    payload,
+                    LocalEntitySyncState.PendingCreate,
+                    DateTimeOffset.UtcNow));
+                _errorTitle = L["ConnectedSuppliers_SavedOnDevice"];
+                _errorMessage = L["ConnectedSuppliers_WaitingToSync"];
+                return;
+            }
+
+            if (IsConnectedSupplier && !_revalidationAccepted && SelectedSupplier?.ConnectedRelationshipId is Guid relationshipId)
+            {
+                var review = await ConnectedSuppliers.RevalidateDraftAsync(
+                    relationshipId,
+                    new(_lines.Where(x => x.SupplierProductId is not null)
+                        .Select(x => new DraftReviewLineRequest(x.SupplierProductId!.Value, x.UnitPurchaseCost)).ToList()));
+                if (!review.IsSuccess || review.Data is null)
+                {
+                    _errorTitle = L["ConnectedSuppliers_ReviewChanges"];
+                    _errorMessage = review.Error?.Detail ?? L["ConnectedSuppliers_RevalidateFailed"];
+                    return;
+                }
+
+                if (review.Data.OverallStatus != ConnectedPoDraftReviewStatus.Unchanged)
+                {
+                    _draftReview = review.Data;
+                    _errorTitle = L["ConnectedSuppliers_ReviewChanges"];
+                    _errorMessage = L["ConnectedSuppliers_ReviewChangesHelp"];
+                    return;
+                }
+            }
+
+            var request = new CreatePurchaseOrderRequest(
                 supplierId,
-                payload,
-                LocalEntitySyncState.PendingCreate,
-                DateTimeOffset.UtcNow));
-            _errorTitle = L["ConnectedSuppliers_SavedOnDevice"];
-            _errorMessage = L["ConnectedSuppliers_WaitingToSync"];
-            return;
-        }
+                _orderDate!.Value,
+                _lines.Select(l => new CreatePurchaseOrderLineRequest(l.ProductId, l.OrderedQty, l.UnitPurchaseCost)).ToList(),
+                ExpectedDeliveryDate: _expectedDeliveryDate,
+                SupplierReference: string.IsNullOrWhiteSpace(_supplierReference) ? null : _supplierReference.Trim(),
+                Notes: string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim(),
+                PaymentTerm: IsConnectedSupplier ? _paymentTerm : null);
 
-        if (IsConnectedSupplier && !_revalidationAccepted && SelectedSupplier?.ConnectedRelationshipId is Guid relationshipId)
-        {
-            var review = await ConnectedSuppliers.RevalidateDraftAsync(
-                relationshipId,
-                new(_lines.Where(x => x.SupplierProductId is not null)
-                    .Select(x => new DraftReviewLineRequest(x.SupplierProductId!.Value, x.UnitPurchaseCost)).ToList()));
-            if (!review.IsSuccess || review.Data is null)
+            var result = await Purchasing.CreateAsync(request);
+            if (result.IsSuccess && result.Data is not null)
             {
-                _errorTitle = L["ConnectedSuppliers_ReviewChanges"];
-                _errorMessage = review.Error?.Detail ?? L["ConnectedSuppliers_RevalidateFailed"];
+                DraftSession.Clear();
+                Nav.NavigateTo($"/purchasing/{result.Data.PurchaseOrderId:D}", replace: true);
                 return;
             }
-            if (review.Data.OverallStatus != ConnectedPoDraftReviewStatus.Unchanged)
-            {
-                _draftReview = review.Data;
-                return;
-            }
+
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = L["Purchasing_ErrorTitle"];
+            _errorMessage = result.Error?.Detail ?? described.Message;
         }
-
-        _saving = true;
-        var request = new CreatePurchaseOrderRequest(
-            supplierId,
-            _orderDate!.Value,
-            _lines.Select(l => new CreatePurchaseOrderLineRequest(l.ProductId, l.OrderedQty, l.UnitPurchaseCost)).ToList(),
-            ExpectedDeliveryDate: _expectedDeliveryDate,
-            SupplierReference: string.IsNullOrWhiteSpace(_supplierReference) ? null : _supplierReference.Trim(),
-            Notes: string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim(),
-            PaymentTerm: IsConnectedSupplier ? _paymentTerm : null);
-
-        var result = await Purchasing.CreateAsync(request);
-        _saving = false;
-
-        if (result.IsSuccess && result.Data is not null)
+        catch (Exception)
         {
-            DraftSession.Clear();
-            Nav.NavigateTo($"/purchasing/{result.Data.PurchaseOrderId:D}", replace: true);
-            return;
+            _errorTitle = L["Purchasing_ErrorTitle"];
+            _errorMessage = L["Purchasing_CreateFailed"];
         }
-
-        var described = ApiLocalizer.Describe(result.Status, result.Error);
-        _errorTitle = L["Purchasing_ErrorTitle"];
-        _errorMessage = result.Error?.Detail ?? described.Message;
+        finally
+        {
+            _saving = false;
+        }
     }
 
     private async Task UpdateAndContinueAsync()

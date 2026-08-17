@@ -4960,6 +4960,9 @@
   <data name="Purchasing_ErrorTitle" xml:space="preserve">
     <value>Error sa pagbili</value>
   </data>
+  <data name="Purchasing_CreateFailed" xml:space="preserve">
+    <value>Hindi nagawa ang purchase order.</value>
+  </data>
   <data name="Purchasing_SuccessTitle" xml:space="preserve">
     <value>Nai-save</value>
   </data>
@@ -4986,6 +4989,9 @@
   </data>
   <data name="Purchasing_Field_Supplier" xml:space="preserve">
     <value>Supplier</value>
+  </data>
+  <data name="Purchasing_Field_CreatedBy" xml:space="preserve">
+    <value>Ginawa ni</value>
   </data>
   <data name="Purchasing_Field_SupplierReference" xml:space="preserve">
     <value>Reference ng supplier</value>
@@ -5157,6 +5163,15 @@
   </data>
   <data name="Purchasing_LineSummary" xml:space="preserve">
     <value>Inorder {0} · Natanggap {1} · Natitira {2} · Presyo {3}</value>
+  </data>
+  <data name="Purchasing_LineReceivedShort" xml:space="preserve">
+    <value>Natanggap {0} · Natitira {1}</value>
+  </data>
+  <data name="Purchasing_UnknownProduct" xml:space="preserve">
+    <value>Hindi kilalang produkto</value>
+  </data>
+  <data name="Purchasing_UnknownSupplier" xml:space="preserve">
+    <value>Hindi kilalang supplier</value>
   </data>
   <data name="Purchasing_Outstanding" xml:space="preserve">
     <value>Natitira {0} {1}</value>
@@ -9633,6 +9648,12 @@
   </data>
   <data name="ConnectedSuppliers_IncomingOrdersHelp" xml:space="preserve">
     <value>Suriin at kumpletuhin ang mga purchase order mula sa connected buyers.</value>
+  </data>
+  <data name="ConnectedSuppliers_IncomingOrdersCompact" xml:space="preserve">
+    <value>{0} papasok na purchase order ang kailangan ng sagot</value>
+  </data>
+  <data name="ConnectedSuppliers_ReviewIncomingOrders" xml:space="preserve">
+    <value>Suriin ang papasok na order</value>
   </data>
   <data name="ConnectedSuppliers_Buyer" xml:space="preserve">
     <value>Connected buyer</value>

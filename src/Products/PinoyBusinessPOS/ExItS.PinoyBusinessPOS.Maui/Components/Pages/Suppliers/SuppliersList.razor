@@ -47,6 +47,20 @@ else
             </div>
         }
 
+        @if (!_isOffline && _incomingOrderCount > 0)
+        {
+            <Alert Tone="AlertTone.Info"
+                   Title="@L["ConnectedSuppliers_IncomingOrdersCompact", _incomingOrderCount]" />
+            <div class="pos-action-grid pos-action-grid--single pos-suppliers__actions" role="group">
+                <button type="button"
+                        class="pos-action-tile pos-action-tile--primary"
+                        @onclick="GoIncomingOrders">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("receipt")</span>
+                    <span class="pos-action-tile__label">@L["ConnectedSuppliers_ReviewIncomingOrders"]</span>
+                </button>
+            </div>
+        }
+
         <div class="pos-action-grid pos-action-grid--two pos-suppliers__actions" role="group" aria-label="@L["Suppliers_Title"]">
             <button type="button"
                     class="pos-action-tile pos-action-tile--primary"
@@ -75,6 +89,22 @@ else
                     }
                 </span>
             </button>
+            @if (Capabilities.IsAllowed(UtangCapability.ViewPurchasing))
+            {
+                <button type="button"
+                        class="pos-action-tile @(_incomingOrderCount > 0 ? "pos-action-tile--primary" : null)"
+                        disabled="@(_loading || _isOffline)"
+                        @onclick="GoIncomingOrders">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("receipt")</span>
+                    <span class="pos-action-tile__label">
+                        @L["ConnectedSuppliers_IncomingOrders"]
+                        @if (_incomingOrderCount > 0)
+                        {
+                            <text> · @_incomingOrderCount</text>
+                        }
+                    </span>
+                </button>
+            }
             <button type="button"
                     class="pos-action-tile"
                     disabled="@(_loading || _isOffline)"
@@ -150,18 +180,13 @@ else
                 <div class="pos-suppliers__list" role="list" aria-label="@L["Suppliers_Title"]">
                     @foreach (var item in _items)
                     {
-                        <a class="pos-suppliers__row"
-                           role="listitem"
-                           href="@($"/suppliers/{item.SupplierId:D}")">
-                            <div class="pos-suppliers__row-main">
-                                <div class="pos-suppliers__row-top">
-                                    <span class="pos-suppliers__row-name">@item.Name</span>
-                                    <div class="pos-suppliers__row-side">
-                                        <Badge Tone="@(item.Status == SupplierUiOptions.ActiveStatus ? BadgeTone.Success : BadgeTone.Neutral)">
-                                            @SupplierUiOptions.StatusLabel(L, item.Status)
-                                        </Badge>
-                                    </div>
-                                </div>
+                        var canCreatePo = Capabilities.IsAllowed(UtangCapability.ManagePurchasing)
+                            && !_isOffline
+                            && item.Status == SupplierUiOptions.ActiveStatus;
+                        <div class="pos-suppliers__row" role="listitem">
+                            <a class="pos-suppliers__row-main"
+                               href="@($"/suppliers/{item.SupplierId:D}")">
+                                <span class="pos-suppliers__row-name">@item.Name</span>
                                 <span class="pos-suppliers__row-meta">
                                     @L[string.Equals(item.ConnectionType, "ConnectedOrganization", StringComparison.OrdinalIgnoreCase)
                                         ? "ConnectedSuppliers_ConnectedViaExits"
@@ -195,8 +220,21 @@ else
                                         <text> · @item.MobileNumber</text>
                                     }
                                 </span>
+                            </a>
+                            <div class="pos-suppliers__row-side">
+                                <Badge Tone="@(item.Status == SupplierUiOptions.ActiveStatus ? BadgeTone.Success : BadgeTone.Neutral)">
+                                    @SupplierUiOptions.StatusLabel(L, item.Status)
+                                </Badge>
+                                @if (canCreatePo)
+                                {
+                                    <button type="button"
+                                            class="pos-suppliers__new-po"
+                                            @onclick="() => GoCreatePo(item.SupplierId)">
+                                        @L["Purchasing_Add"]
+                                    </button>
+                                }
                             </div>
-                        </a>
+                        </div>
                     }
                 </div>
             }
@@ -226,6 +264,7 @@ else
     private CancellationTokenSource? _searchCts;
     private Dictionary<Guid, string> _relationshipStatuses = [];
     private int _incomingPendingCount;
+    private int _incomingOrderCount;
 
     protected override async Task OnInitializedAsync()
     {
@@ -319,6 +358,15 @@ else
             _incomingPendingCount = incoming.IsSuccess && incoming.Data is not null
                 ? incoming.Data.Count(x => string.Equals(x.Status, "Pending", StringComparison.OrdinalIgnoreCase))
                 : 0;
+
+            _incomingOrderCount = 0;
+            if (Capabilities.IsAllowed(UtangCapability.ViewPurchasing))
+            {
+                var incomingOrders = await ConnectedSuppliers.ListIncomingOrdersAsync("ActionNeeded");
+                _incomingOrderCount = incomingOrders.IsSuccess && incomingOrders.Data is not null
+                    ? incomingOrders.Data.Count
+                    : 0;
+            }
         }
         else
         {
@@ -352,8 +400,10 @@ else
     }
 
     private void GoNew() => Nav.NavigateTo("/suppliers/new");
+    private void GoCreatePo(Guid supplierId) => Nav.NavigateTo($"/purchasing/new?supplierId={supplierId:D}");
     private void GoConnect() => Nav.NavigateTo("/suppliers/connected/request");
     private void GoIncomingRequests() => Nav.NavigateTo("/suppliers/connected/requests");
+    private void GoIncomingOrders() => Nav.NavigateTo("/connected-suppliers/incoming");
     private void GoConnectedBuyers() => Nav.NavigateTo("/suppliers/connected/buyers");
     private string RelationshipStatusLabel(string status) => status switch
     {

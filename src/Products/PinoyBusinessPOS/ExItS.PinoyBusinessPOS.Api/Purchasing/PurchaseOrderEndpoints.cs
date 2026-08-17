@@ -67,7 +67,8 @@ internal static class PurchaseOrderEndpoints
                 return problem!;
             }
 
-            var result = await useCase.ExecuteAsync(organizationId, body, ct).ConfigureAwait(false);
+            PosOrganizationScope.TryGetActorId(request, out var actorId, out _);
+            var result = await useCase.ExecuteAsync(organizationId, body, ct, actorId).ConfigureAwait(false);
             return PosApiResults.FromResult(
                 result,
                 dto => Results.Created($"/api/v1/pos/purchase-orders/{dto.PurchaseOrderId:D}", dto));

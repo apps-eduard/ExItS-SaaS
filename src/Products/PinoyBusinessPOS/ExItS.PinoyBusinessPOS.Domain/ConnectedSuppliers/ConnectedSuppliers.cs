@@ -70,6 +70,8 @@ public abstract class ConnectedSupplierGuidId<T> : IEquatable<T> where T : Conne
     public override bool Equals(object? obj) => obj is T other && Equals(other);
     public override int GetHashCode() => Value.GetHashCode();
     public override string ToString() => Value.ToString("D");
+    public static bool operator ==(ConnectedSupplierGuidId<T>? left, ConnectedSupplierGuidId<T>? right) => Equals(left, right);
+    public static bool operator !=(ConnectedSupplierGuidId<T>? left, ConnectedSupplierGuidId<T>? right) => !Equals(left, right);
 }
 
 public sealed class ConnectedSupplierRelationshipId : ConnectedSupplierGuidId<ConnectedSupplierRelationshipId>

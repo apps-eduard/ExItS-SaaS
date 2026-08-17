@@ -3,6 +3,10 @@
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosPurchaseOrderClient Purchasing
+@inject IPosSupplierClient Suppliers
+@inject IPosCatalogClient Catalog
+@inject IPlatformAccessClient Platform
+@inject ICurrentUserContext CurrentUser
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
@@ -116,8 +120,15 @@ else
                     </div>
                     <div class="pos-purchasing-detail__fact">
                         <dt>@L["Purchasing_Field_Supplier"]</dt>
-                        <dd class="pos-wrap">@_po.SupplierId</dd>
+                        <dd class="pos-wrap">@(string.IsNullOrWhiteSpace(_po.SupplierName) ? L["Purchasing_UnknownSupplier"] : _po.SupplierName)</dd>
                     </div>
+                    @if (!string.IsNullOrWhiteSpace(_createdByName))
+                    {
+                        <div class="pos-purchasing-detail__fact">
+                            <dt>@L["Purchasing_Field_CreatedBy"]</dt>
+                            <dd class="pos-wrap">@_createdByName</dd>
+                        </div>
+                    }
                     @if (_po.ExpectedDeliveryDate is { } expected)
                     {
                         <div class="pos-purchasing-detail__fact">
@@ -175,10 +186,25 @@ else
                         {
                             <div class="pos-purchasing-detail__entry" role="listitem">
                                 <div class="pos-purchasing-detail__entry-top">
-                                    <span class="pos-purchasing-detail__entry-name">@(line.NameSnapshot ?? line.ProductId.ToString("D"))</span>
+                                    <span class="pos-purchasing-detail__entry-name">@LineName(line)</span>
+                                    <span class="pos-purchasing-detail__entry-total">
+                                        <MoneyDisplay Amount="@line.LineTotal" CurrencyCode="PHP" />
+                                    </span>
                                 </div>
+                                @if (!string.IsNullOrWhiteSpace(line.UomSnapshot))
+                                {
+                                    <div class="pos-purchasing-detail__entry-uom pos-muted">@line.UomSnapshot</div>
+                                }
                                 <p class="pos-purchasing-detail__entry-meta">
-                                    @L["Purchasing_LineSummary", line.OrderedQty, line.ReceivedQty, line.OutstandingQty, line.UnitPurchaseCost]
+                                    <span>
+                                        @L["Purchasing_LineQtyPrefix", FormatQty(line.OrderedQty)]
+                                        <span aria-hidden="true"> × </span>
+                                        <MoneyDisplay Amount="@line.UnitPurchaseCost" CurrencyCode="PHP" />
+                                    </span>
+                                    @if (_po.Status != "Draft")
+                                    {
+                                        <span>@L["Purchasing_LineReceivedShort", FormatQty(line.ReceivedQty), FormatQty(line.OutstandingQty)]</span>
+                                    }
                                 </p>
                             </div>
                         }
@@ -245,6 +271,7 @@ else
     private bool _busy;
     private bool _isOffline;
     private PosPurchaseOrderDto? _po;
+    private string? _createdByName;
     private string? _banner;
     private string? _errorTitle;
     private string? _errorMessage;
@@ -367,13 +394,16 @@ else
         }
 
         var result = await Purchasing.GetAsync(PurchaseOrderId);
-        if (result.IsSuccess)
+        if (result.IsSuccess && result.Data is not null)
         {
             _po = result.Data;
+            await HydrateDisplayNamesAsync();
+            await LoadCreatedByNameAsync();
         }
         else
         {
             _po = null;
+            _createdByName = null;
             _errorTitle = L["Purchasing_ErrorTitle"];
             _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
         }
@@ -394,7 +424,8 @@ else
         var result = await Purchasing.SubmitAsync(_po.PurchaseOrderId);
         if (result.IsSuccess && result.Data is not null)
         {
-            _po = result.Data;
+            _po = PreserveDisplayNames(result.Data, _po);
+            await LoadCreatedByNameAsync();
             _banner = L["Purchasing_SubmitSuccess"];
             UnreadState.NotifyChanged();
         }
@@ -420,7 +451,8 @@ else
         var result = await Purchasing.CancelAsync(_po.PurchaseOrderId);
         if (result.IsSuccess && result.Data is not null)
         {
-            _po = result.Data;
+            _po = PreserveDisplayNames(result.Data, _po);
+            await LoadCreatedByNameAsync();
             _banner = L["Purchasing_CancelSuccess"];
             UnreadState.NotifyChanged();
         }
@@ -446,7 +478,8 @@ else
         var result = await Purchasing.AcceptConnectedChangesAsync(_po.PurchaseOrderId);
         if (result.IsSuccess && result.Data is not null)
         {
-            _po = result.Data;
+            _po = PreserveDisplayNames(result.Data, _po);
+            await LoadCreatedByNameAsync();
             _banner = L["Purchasing_AcceptChangesSuccess"];
             UnreadState.NotifyChanged();
         }
@@ -460,4 +493,173 @@ else
     }
 
     private void GoReceive() => Nav.NavigateTo($"/purchasing/{PurchaseOrderId:D}/receive");
+
+    private string LineName(PosPurchaseOrderLineDto line) =>
+        string.IsNullOrWhiteSpace(line.NameSnapshot) ? L["Purchasing_UnknownProduct"] : line.NameSnapshot;
+
+    private async Task HydrateDisplayNamesAsync()
+    {
+        if (_po is null)
+        {
+            return;
+        }
+
+        var supplierName = _po.SupplierName;
+        if (string.IsNullOrWhiteSpace(supplierName))
+        {
+            try
+            {
+                var supplier = await Suppliers.GetAsync(_po.SupplierId);
+                if (supplier.IsSuccess && supplier.Data is not null)
+                {
+                    supplierName = supplier.Data.Name;
+                }
+            }
+            catch
+            {
+                // Best-effort overlay when Get-by-id names are missing.
+            }
+        }
+
+        var missingProductIds = _po.Lines
+            .Where(line => string.IsNullOrWhiteSpace(line.NameSnapshot) || string.IsNullOrWhiteSpace(line.UomSnapshot))
+            .Select(line => line.ProductId)
+            .Distinct()
+            .ToList();
+        var productNames = new Dictionary<Guid, PosCatalogProductDto>();
+        if (missingProductIds.Count > 0)
+        {
+            var lookups = missingProductIds.Select(async productId =>
+            {
+                try
+                {
+                    var result = await Catalog.GetProductAsync(productId);
+                    return (productId, product: result.IsSuccess ? result.Data : null);
+                }
+                catch
+                {
+                    return (productId, product: (PosCatalogProductDto?)null);
+                }
+            });
+            foreach (var (productId, product) in await Task.WhenAll(lookups))
+            {
+                if (product is not null)
+                {
+                    productNames[productId] = product;
+                }
+            }
+        }
+
+        var lines = _po.Lines.Select(line =>
+        {
+            if (!productNames.TryGetValue(line.ProductId, out var product))
+            {
+                return line;
+            }
+
+            return line with
+            {
+                NameSnapshot = string.IsNullOrWhiteSpace(line.NameSnapshot) ? product.Name : line.NameSnapshot,
+                UomSnapshot = string.IsNullOrWhiteSpace(line.UomSnapshot) ? product.UnitOfMeasure : line.UomSnapshot
+            };
+        }).ToList();
+
+        _po = _po with { SupplierName = supplierName, Lines = lines };
+    }
+
+    private async Task LoadCreatedByNameAsync()
+    {
+        _createdByName = null;
+        if (_po?.OrderedBy is not Guid orderedBy || orderedBy == Guid.Empty)
+        {
+            return;
+        }
+
+        var session = CurrentUser.Session;
+        if (session is not null && session.UserId == orderedBy)
+        {
+            _createdByName = FirstMeaningful(session.DisplayName, session.Username, session.Email);
+            if (!string.IsNullOrWhiteSpace(_createdByName))
+            {
+                return;
+            }
+        }
+
+        var orgId = session?.OrganizationId ?? _po.OrganizationId;
+        if (orgId != Guid.Empty)
+        {
+            try
+            {
+                var members = await Platform.GetOrganizationMembersAsync(orgId, page: 1, pageSize: 100);
+                if (members.IsSuccess && members.Data is not null)
+                {
+                    var member = members.Data.Items.FirstOrDefault(m => m.UserId == orderedBy);
+                    _createdByName = FirstMeaningful(member?.DisplayName, member?.Username, member?.Email);
+                    if (!string.IsNullOrWhiteSpace(_createdByName))
+                    {
+                        return;
+                    }
+                }
+            }
+            catch
+            {
+                // Best-effort directory lookup; never show the GUID.
+            }
+        }
+
+        try
+        {
+            var userResult = await Platform.GetUserAsync(orderedBy);
+            if (userResult.IsSuccess && userResult.Data is not null)
+            {
+                _createdByName = FirstMeaningful(
+                    userResult.Data.DisplayName,
+                    userResult.Data.Username,
+                    userResult.Data.Email);
+            }
+        }
+        catch
+        {
+            _createdByName = null;
+        }
+    }
+
+    private static string? FirstMeaningful(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return null;
+    }
+
+    private static PosPurchaseOrderDto PreserveDisplayNames(PosPurchaseOrderDto next, PosPurchaseOrderDto? previous)
+    {
+        if (previous is null)
+        {
+            return next;
+        }
+
+        var supplierName = string.IsNullOrWhiteSpace(next.SupplierName) ? previous.SupplierName : next.SupplierName;
+        var previousByLine = previous.Lines.ToDictionary(l => l.LineId);
+        var lines = next.Lines.Select(line =>
+        {
+            if (!previousByLine.TryGetValue(line.LineId, out var prior))
+            {
+                return line;
+            }
+
+            return line with
+            {
+                NameSnapshot = string.IsNullOrWhiteSpace(line.NameSnapshot) ? prior.NameSnapshot : line.NameSnapshot,
+                UomSnapshot = string.IsNullOrWhiteSpace(line.UomSnapshot) ? prior.UomSnapshot : line.UomSnapshot
+            };
+        }).ToList();
+
+        return next with { SupplierName = supplierName, Lines = lines };
+    }
 }
