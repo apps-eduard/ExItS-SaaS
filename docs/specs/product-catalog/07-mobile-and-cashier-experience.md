@@ -41,6 +41,8 @@ Rules:
 - Lazy-load images.
 - Show a stable placeholder when no image exists.
 - Never block selling because an image fails.
+- Do not download the entire Platform template catalog.
+- Explicit template adoption may best-effort cache that template's thumbnail in private app storage.
 - Use responsive tile count based on device width.
 
 ---
@@ -135,6 +137,8 @@ After import:
 
 Do not duplicate inventory adjustment logic inside the product form.
 
+Imported products display the shared Platform template image unless the merchant uploaded an override. Removing the override reveals the current Platform image; it does not copy or delete the Platform asset.
+
 ---
 
 ## 7. Role Experience
@@ -174,6 +178,8 @@ Every screen must include:
 - import completed with warnings
 
 Existing local selling remains available when Platform catalog search is unavailable.
+
+Offline org-created products (`/catalog/products/new` Queueable): enqueue metadata only; keep pending photos in private app files; never SQLite image bytes. Sync product identity first, then upload the custom image. Catalog list, import, and edit remain OnlineRequired. Do not eagerly download the Platform template catalog.
 
 ---
 

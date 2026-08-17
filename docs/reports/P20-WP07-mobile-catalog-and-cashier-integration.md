@@ -66,7 +66,7 @@ Deliver ManageCatalog-gated MAUI onboarding and global catalog discovery/import 
 
 - Template preview resolves sample products one-by-one (acceptable for small first-batch previews).
 - Job polling is client-side every 2s while the progress page is open.
-- Image URLs from Platform are not fetched yet; placeholders avoid blocking sell/import UX.
+- Image URLs from Platform were not fetched in P20-WP07 (placeholders). Later catalog work added shared Platform template WebP images + org overrides; see [product images](../engineering/product-images-and-storefront-availability.md).
 
 ## 8. Files / docs changed
 

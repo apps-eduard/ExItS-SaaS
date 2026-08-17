@@ -88,7 +88,7 @@ PhysicalDevice signed APK path (rebuild in WP08):
 ## Known limitations / deferred
 
 - Multi-instance `SKIP LOCKED` job claiming not implemented
-- Remote product images not fetched (placeholders)
+- Remote product images not fetched in P20 (placeholders). Later work added shared Platform template WebP images; see [product images](../engineering/product-images-and-storefront-availability.md).
 - Sari-Sari seed not auto-created in LocalValidation (create via Admin)
 - Entitlement-aware merchant discovery filtering partial
 - Camera QR scan still deferred (Phase 19 QR manual entry)

@@ -19,9 +19,10 @@
 | Branch-scoped POS operations | POS | uses Platform OrganizationBranchId | POS inventory/orders/transfers | — | POS | POS | POS |
 | Customer | POS | POSCustomerId | POS; optional UserId later | — | POS | POS | POS |
 | CustomerCredit / entries / payments | POS | CreditId / EntryId / CreditPaymentId | POS | — | POS | POS | POS |
-| Catalog product / barcode | POS | ProductId (POS) | POS | — | POS | POS | POS |
-| Catalog product image metadata | POS | `product_images` row (org+product) | POS storefront/catalog | version/dimensions only | POS | POS | POS |
-| Catalog product image files | POS object store (local/dev filesystem V1) | server `storage_key` + versioned WebP paths | authorized image GET | not in PostgreSQL / not in catalog JSON | POS | POS | POS |
+| Catalog product / barcode | POS | ProductId (POS) | POS | Platform GTIN snapshot as `PlatformBarcode` only | POS (org SKU/barcode); Platform template is reference | POS | POS |
+| Platform shared product image | Platform | `global_product_images` + server storage key | POS/storefront by `PlatformGlobalProductId` | version/reference only; **one file reused by all orgs** | Platform | Platform | Platform |
+| Catalog product image metadata (merchant override) | POS | `product_images` row (org+product) | POS storefront/catalog | version/dimensions only | POS | POS | POS |
+| Catalog product image files (merchant override) | POS object store (local/dev filesystem V1) | server `storage_key` + versioned WebP paths | authorized image GET | not in PostgreSQL / not in catalog JSON | POS | POS | POS |
 | Sale | POS | SaleId | POS | — | POS | POS | POS |
 | POS payment attempt (Card/GCash simulated / manual transfer) | POS | PaymentAttemptId | POS sale | Provider/external refs, safe card metadata; **no** PAN/CVV/wallet secrets | POS (webhook/simulation authoritative for Paid) | POS | POS |
 | Inventory balance | POS | org+product `InventoryAccount` (sellable on-hand) | POS | — | POS | POS | POS |

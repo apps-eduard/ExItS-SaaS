@@ -153,6 +153,7 @@ The dashboard links to the latest accepted report.
 | [phase-27-connected-supplier-commerce-and-purchasing.md](../phases/phase-27-connected-supplier-commerce-and-purchasing.md) | Phase 27 Connected Supplier Commerce & Purchasing | Open / In Progress |
 | [P28-WP01-branch-fulfillment-location-foundation.md](P28-WP01-branch-fulfillment-location-foundation.md) | P28-WP01 Branch & Fulfillment Location Foundation | Code Complete |
 | [P28-WP02-customer-ordering-stage-b-slice.md](P28-WP02-customer-ordering-stage-b-slice.md) | P28-WP02–WP09 Customer Ordering Stage B Slice | Code Complete / Validation Pending |
+| [P28-WP03-shared-platform-template-images.md](P28-WP03-shared-platform-template-images.md) | Shared Platform template images + org-safe adoption/overrides | Code Complete / Validation Pending |
 | [P29-WP01-data-authority-and-schema-consistency.md](P29-WP01-data-authority-and-schema-consistency.md) | P29-WP01 Data Authority & Schema Consistency | Code Complete / Validation Pending |
 | [P29-WP02-tenant-isolation-and-relational-integrity.md](P29-WP02-tenant-isolation-and-relational-integrity.md) | P29-WP02 Tenant Isolation & Relational Integrity | Code Complete / Validation Pending |
 | [P29-WP03-financial-and-transaction-integrity.md](P29-WP03-financial-and-transaction-integrity.md) | P29-WP03 Financial & Transaction Integrity | Partial |
@@ -172,7 +173,7 @@ The dashboard links to the latest accepted report.
 | [phase-29-data-integrity-query-performance-and-database-hardening.md](../phases/phase-29-data-integrity-query-performance-and-database-hardening.md) | Phase 29 | Open / Partial Closeout |
 | [phase-28-customer-ordering-pickup-and-delivery.md](../phases/phase-28-customer-ordering-pickup-and-delivery.md) | Phase 28 Customer Ordering, Pickup & Delivery | Open / In Progress |
 
-Related engineering: [product-images-and-storefront-availability.md](../engineering/product-images-and-storefront-availability.md) — one primary product image V1 + Personal storefront available stock.
+Related engineering: [product-images-and-storefront-availability.md](../engineering/product-images-and-storefront-availability.md) — shared Platform template image + org merchant override + Personal storefront available stock. No CDN/object storage deployed.
 
 Related engineering (not a WP closeout): [platform-controlled-organization-tax-configuration.md](../engineering/platform-controlled-organization-tax-configuration.md) — Platform `TaxConfigurationEnabled` gate for Operational Setup tax settings (default off; Approved eligibility required; not certification).
 

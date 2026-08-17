@@ -116,7 +116,7 @@ GlobalCategoryId UUID?
 Unit ProductUnit
 SuggestedPrice decimal(18,2)?
 SuggestedCost decimal(18,2)?
-ImageReference text?
+ImageReference text?  (legacy; V1 shared image is catalog.global_product_images)
 SearchTags text[] or normalized child table
 Status GlobalProductStatus
 RowVersion or concurrency token
@@ -192,12 +192,15 @@ PlatformTemplateId UUID?
 CatalogSource Manual/Template/GlobalSearch/BulkImport
 CatalogImportedAt timestamp?
 CatalogSnapshotVersion integer?
-ImageReference text?
+PlatformBarcode text?  (template/manufacturer GTIN snapshot; historical null)
+PlatformImageVersion int?  (hint; live ImageVersion may be newer)
+ImageReference text?  (legacy; do not copy Platform image files here)
 ```
 
 Rules:
 
 - These fields are informational/external references.
+- Shared Platform images are referenced, not copied per org.
 - No cross-database FK.
 - Existing product price fields remain authoritative.
 - Existing inventory entities remain authoritative for stock.

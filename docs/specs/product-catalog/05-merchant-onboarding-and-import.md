@@ -102,7 +102,8 @@ Recommended defaults:
 ```text
 Initial stock: 0
 Suggested price: copied as editable starting value
-Product status: Active, unless validation requires review
+SKU/barcode: prefill on new products only; later template updates do not overwrite org identifiers
+Shared Platform image: referenced, not copied
 ```
 
 Do not write stock directly if existing POS inventory requires an opening-stock transaction. Use the existing inventory workflow.
@@ -140,8 +141,8 @@ The merchant may leave the screen; the job continues.
 After import, direct the merchant to a review screen:
 
 - product name
-- image
-- barcode/SKU
+- image (merchant override → shared Platform template image → placeholder)
+- barcode/SKU (org-owned after import; Platform GTIN stays on `PlatformBarcode`)
 - category
 - selling price
 - opening stock action

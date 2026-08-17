@@ -74,9 +74,11 @@ Platform GlobalProduct
 POS Product snapshot
 - PlatformGlobalProductId
 - imported name
-- imported barcode/SKU
+- imported default SKU/barcode (org-owned after create)
+- PlatformBarcode (template/manufacturer GTIN snapshot; not overwritten by org edits)
 - imported unit
-- imported image reference
+- shared Platform image **reference** (not a copied file)
+- optional merchant image override
 - initial selling price
 - source metadata
         |

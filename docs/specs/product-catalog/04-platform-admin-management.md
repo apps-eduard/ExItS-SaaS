@@ -122,7 +122,7 @@ Required fields:
 - unit
 - suggested selling price
 - suggested cost, optional/internal
-- image
+- image (one shared WebP; preview, upload, replace, remove; server-controlled processing)
 - tags/search aliases
 - business types
 - status
@@ -131,6 +131,8 @@ Rules:
 
 - Validate normalized barcode and SKU.
 - Do not require barcode.
+- Image upload is Platform-owned; merchants cannot mutate it from POS.
+- Crop/rotate UI is not in V1; server AutoOrient + Strip.
 - Require at least one business type only when product policy says so.
 - Display concurrency conflict clearly.
 - Never expose sensitive/internal price fields to merchant APIs unless approved.

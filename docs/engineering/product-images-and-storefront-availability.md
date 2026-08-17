@@ -1,68 +1,121 @@
 # Product images and Personal storefront availability
 
-[Phase 28](../phases/phase-28-customer-ordering-pickup-and-delivery.md) | [Customer ordering](customer-ordering-pickup-and-delivery.md) | [Product units / inventory](product-units-and-inventory-behavior.md)
+[Phase 28](../phases/phase-28-customer-ordering-pickup-and-delivery.md) | [Customer ordering](customer-ordering-pickup-and-delivery.md) | [Product units / inventory](product-units-and-inventory-behavior.md) | [Product catalog specs](../specs/product-catalog/01-architecture-and-boundaries.md)
 
-Status: **Code Complete / Validation Pending** (`5083076f`, `95276a8e`). Not Device Verified, Browser Verified, or Production Ready. CDN and production object storage are **not** deployed.
+Status: **Code Complete / Validation Pending**. Not Device Verified, Browser Verified, or Production Ready. CDN and production object storage are **not** deployed. Generic content-hash dedup is **not** implemented.
 
-## One primary image (V1)
+## Display resolution (V1)
 
-Each `CatalogProduct` may have **one** primary image. There is no gallery, no per-variant merchandising image, and no HEIC pipeline.
+One primary image per product, chosen in this order:
 
-Accepted uploads (magic bytes, not filename):
+1. Organization merchant override (`pos.product_images`)
+2. Shared Platform template image on the referenced `GlobalProduct` (`catalog.global_product_images`)
+3. Bundled/local placeholder
 
-- JPEG/JPG
-- PNG
-- WebP
+10,000 organizations adopting the same Platform template reference the **same** storage object. Import/adoption must **not** copy image files or create a `product_images` row per organization.
 
-HEIC/AVIF are rejected. Magick.NET is not used as a fragile HEIC converter.
+Templates and global products with no image remain valid and show a placeholder.
 
-Merchant UI (organization product create/edit): compact Product Image section with choose image, take photo (existing MAUI `MediaPicker`), preview, replace, remove, and save with the product. Compression/format controls are not exposed. Crop/rotate editors are not in V1; the server `AutoOrient`s and strips EXIF.
+## Platform template image
 
-MAUI may downscale very large phone photos (longest side ~1600px on Android) before upload. That is traffic optimization only. **The server remains authoritative.**
+V1 allows **one** default/shared image per Platform `GlobalProduct` (the template product identity). It is Platform-owned, not copied into each organization.
 
-## Server processing
+Platform Admin product create/edit (`/admin/global-catalog/products`): preview, choose/upload, replace, remove, save. Compression/type are not merchant-selectable. Crop/rotate editors are not in V1; the server `AutoOrient`s and strips EXIF.
 
-Never trust the upload as-is.
+Accepted uploads (magic bytes, not filename): JPEG/JPG, PNG, WebP. HEIC/AVIF are rejected. Magick.NET is not used as a fragile HEIC converter.
 
-Pipeline: validate size/type/dimensions → reject malformed/extreme/decompression-bomb-like input → AutoOrient → strip metadata → fit while preserving aspect ratio (never stretch) → WebP variants.
+### Server processing (authoritative)
+
+Never trust the upload as-is. Same pipeline for Platform shared images and org overrides:
+
+validate size/type/dimensions → reject malformed/extreme/decompression-bomb-like input → AutoOrient → strip metadata → fit while preserving aspect ratio (never stretch) → WebP variants.
 
 | Variant | Target | Quality | Role |
 |---|---|---|---|
-| `thumb` | max edge ~200px | ~78 | lists, cart, review |
-| `medium` | max edge ~800px | ~80 | merchant preview / larger product presentation |
+| `thumb` | max edge ~200px | ~78 | lists, cart, review, explicit-adopt cache |
+| `medium` | max edge ~800px | ~80 | merchant/admin preview |
 
-Upload max **10 MB**. Targets are practical, not a reason to destroy quality.
+Upload max **10 MB**.
 
-**Library:** `Magick.NET-Q8-AnyCPU` (Apache-2.0) in POS Infrastructure only. MAUI/UI projects do not reference Magick, EF, or Npgsql.
+**Libraries:** `Magick.NET-Q8-AnyCPU` in Platform Infrastructure **and** POS Infrastructure (no shared media project; no Magick in MAUI/UI).
 
-## Metadata vs files
+### Storage
 
-PostgreSQL stores **metadata only** (`pos.product_images`): image id, organization, product, server-generated `storage_key`, version, variant dimensions, content type, timestamps. No image BLOBs. No base64 in catalog/storefront JSON. No user filenames as storage paths.
+PostgreSQL stores **metadata/version/reference only**. No image BLOBs. No base64 in catalog/storefront/template JSON. No user filenames as storage paths.
 
-Files live behind `IProductImageObjectStore`. V1 provider is a local filesystem rooted at `PosMedia:RootPath` or `{ContentRoot}/App_Data/product-images` (gitignored). The interface is shaped for a future S3/Azure provider. **Do not treat this as production object storage or a CDN.**
+| Kind | Table | Files | Keys |
+|---|---|---|---|
+| Shared Platform | `catalog.global_product_images` | `IGlobalProductImageObjectStore` | `global-products/{storageKey}/thumb-v{N}.webp` |
+| Org override | `pos.product_images` | `IProductImageObjectStore` | `products/{storageKey}/thumb-v{N}.webp` |
 
-Keys are server-generated and versioned:
+V1 providers are local filesystems: `PlatformMedia:RootPath` or `{ContentRoot}/App_Data/platform-product-images`; `PosMedia:RootPath` or `{ContentRoot}/App_Data/product-images` (gitignored). Interfaces are shaped for a future S3/Azure/CDN provider. **Do not treat this as production object storage or a CDN.**
 
-`products/{storageKey}/thumb-v{N}.webp`  
-`products/{storageKey}/medium-v{N}.webp`
+Replace: write new version files → persist metadata → delete old files. Failed processing must not change the active image.
 
-Path traversal and rooted/user paths are rejected.
+Physical-byte content-hash dedup is a documented future optimization. Shared template-image reuse is mandatory and is **reference reuse**, not hash-based sharing. Hash dedup must never imply authorization sharing.
 
-Replace: write new version files → persist metadata → delete old files. Failed processing must not change the active image. Remove: delete metadata first, then files; storefront uses a local placeholder.
+## Template → organization product
 
-## Authorization
+When an org downloads/adopts a Platform template:
 
-Product-image mutation uses the same organization + `ManageCatalog` gate as product management. Organization reads use `ViewCatalog`. Personal storefront image GET uses the same seller capability / active-link gate as the storefront catalog. Opaque URLs are not authorization. Images are **not** public anonymous content in V1.
+- Snapshot name, default SKU/barcode, unit, suggested price, Platform ids.
+- Set `PlatformGlobalProductId` (and optional `PlatformTemplateId`).
+- Set `PlatformBarcode` from the template/manufacturer GTIN at import (nullable on historical rows; **not** backfilled from org `Barcode`).
+- **Do not** duplicate the shared image file or insert `pos.product_images`.
 
-## MAUI private thumbnail cache
+Duplicate `PlatformGlobalProductId` in the same org is skipped. Names matching is not a merge key.
 
-Downloaded thumbnails are **files** under app-private storage (`FileSystem.AppDataDirectory/media/product-image-cache`). Never Pictures/DCIM/Downloads. Never SQLite bytes.
+## SKU / barcode ownership
 
-Cache metadata is the filename key: seller + product + version. If local version equals server `ImageVersion`, use the file (no network). A new version replaces and expires the old file. Cache is disposable and is never business truth. LRU cleanup is bounded (~300 MB) and must never touch Sale, inventory, Goods Receipt, PurchaseOrder, or CustomerOrder data.
+Platform template data is reference/default data. Organization operational identifiers stay organization-owned.
 
-Catalog/storefront DTOs carry `HasImage` + `ImageVersion` only. Do **not** download all images during product sync. Lazy-load visible row thumbnails. Failed download must not block shopping. List/cart/review use **thumb** only.
+| Field | Owner | Behavior |
+|---|---|---|
+| Org `Sku` | Organization | Prefill on **new** import only; later template updates must not overwrite |
+| Org `Barcode` | Organization (scan code) | Prefill on **new** import only; later template updates must not overwrite |
+| `PlatformBarcode` | Platform snapshot at import | Canonical/template GTIN; org edits must not mutate it |
+| Platform `GlobalProduct` barcode/SKU | Platform | Org edits never write back |
+
+`UpdateDetails` changes org name/SKU/barcode/price only. It does not clear Platform provenance, `PlatformBarcode`, or `PlatformImageVersion`.
+
+## Org custom image override
+
+Org product create/edit:
+
+- Use standard/template image (clears/deactivates only the org override; never deletes the Platform asset)
+- Upload / replace custom image (server WebP pipeline)
+- Remove custom image → fall back to shared Platform image if present, else placeholder
+
+An org upload must never replace the Platform shared image. Platform image mutation requires Platform `ManageGlobalProducts`. Org image mutation requires organization `ManageCatalog`. No cross-tenant mutation or private-file leak.
+
+Org-created products with no Platform template: custom image is primary; placeholder if none.
+
+## Offline / MAUI
+
+DTOs carry `HasImage`, `ImageVersion`, and (POS) `ImageSource` / `HasMerchantImageOverride` / `PlatformBarcode`. Never image bytes.
+
+Thumbnails are **files** under app-private storage (`FileSystem.AppDataDirectory/media/product-image-cache`). Never Pictures/DCIM/Downloads. Never SQLite bytes.
+
+Cache keys:
+
+- Org/storefront: `{sellerOrg}_{productId}_v{version}_thumb.webp`
+- Explicit adopted Platform template: `platform_{globalProductId}_v{version}_thumb.webp`
+
+If local version equals server `ImageVersion`, use the file (zero network). A new Platform version expires the old file; orgs using the standard image need no new `product_images` row.
+
+Do **not** eagerly download the entire Platform catalog. Fetch/cache only visible/near-visible rows, or templates the merchant **explicitly** imported/adopted (best-effort; cache failure must not block import or product create).
+
+### Offline org-created product + photo
+
+`/catalog/products/new` is Queueable. Metadata is encrypted outbox JSON (`catalog.product.create`). Pending originals stay in private `media/pending-product-images`. Sync: product metadata first (client `ProductId` is idempotent) → upload optimized custom image → server reprocesses to WebP → update local cache metadata. The large camera original is not kept as a permanent server original in V1.
+
+Catalog list/import/edit remain OnlineRequired. Inventory tracking stays online-only.
 
 Image file/download/processing operations must never join Sale, inventory, Goods Receipt, PurchaseOrder, or CustomerOrder database transactions.
+
+## Personal storefront
+
+Same resolution order. Storefront GET is the existing seller-capability / active-link gate; POS may proxy the shared Platform thumb. Shared template images must not share selling price, SKU, org barcode, inventory, Reserved/OnHand, category, availability, or merchant permissions.
 
 ## Customer-facing stock
 
@@ -99,6 +152,7 @@ Place revalidates on the server. Stale MAUI cart quantity cannot bypass availabi
 ## Future work
 
 - Production object storage / CDN
+- Generic SHA-256 content-hash physical dedup (authorization remains separate)
 - HEIC decode, crop UI, multi-image gallery
 - Per-product storefront exposure flag
 - Real-device / browser / production validation

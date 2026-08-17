@@ -85,6 +85,8 @@ GET /api/v1/catalog/templates
 GET /api/v1/catalog/templates/{id}
 GET /api/v1/catalog/templates/{id}/products
 GET /api/v1/catalog/products/search
+GET /api/v1/catalog/products/image-meta?ids=
+GET /api/v1/catalog/products/{id}/image/{variant}
 GET /api/v1/catalog/categories
 ```
 
