@@ -6460,6 +6460,27 @@
   <data name="Personal_ShopPlaceFailed" xml:space="preserve">
     <value>Could not place this order.</value>
   </data>
+  <data name="Personal_ShopPayment_Cash" xml:space="preserve">
+    <value>Cash</value>
+  </data>
+  <data name="Personal_ShopPayment_GCash" xml:space="preserve">
+    <value>GCash</value>
+  </data>
+  <data name="Personal_ShopPayment_Utang" xml:space="preserve">
+    <value>Utang</value>
+  </data>
+  <data name="Personal_ShopPayment_GCashHelp" xml:space="preserve">
+    <value>GCash is a manual, unverified settlement choice. This order stays Unpaid until the seller records payment.</value>
+  </data>
+  <data name="Personal_ShopPayment_UtangHelp" xml:space="preserve">
+    <value>Utang is a requested manual settlement. This does not post customer debt automatically.</value>
+  </data>
+  <data name="Personal_ShopFulfillmentUnavailableTitle" xml:space="preserve">
+    <value>Fulfillment unavailable</value>
+  </data>
+  <data name="Personal_ShopFulfillmentUnavailable" xml:space="preserve">
+    <value>No branch can fulfill this order the way you selected.</value>
+  </data>
   <data name="Personal_MerchantStatementTitle" xml:space="preserve">
     <value>Merchant statement</value>
   </data>
@@ -9940,6 +9961,11 @@
   <data name="Orders_Status_Completed" xml:space="preserve"><value>Completed</value></data>
   <data name="Orders_Status_Cancelled" xml:space="preserve"><value>Cancelled</value></data>
   <data name="Orders_Status_Rejected" xml:space="preserve"><value>Rejected</value></data>
+  <data name="Orders_PaymentMethod" xml:space="preserve"><value>Payment method</value></data>
+  <data name="Orders_PaymentStatus" xml:space="preserve"><value>Payment status</value></data>
+  <data name="Orders_Payment_Unpaid" xml:space="preserve"><value>Unpaid</value></data>
+  <data name="Orders_Payment_Pending" xml:space="preserve"><value>Pending</value></data>
+  <data name="Orders_Payment_Paid" xml:space="preserve"><value>Paid</value></data>
   <data name="Orders_MinOrderHelper" xml:space="preserve"><value>Order total must meet the branch minimum.</value></data>
   <data name="Orders_OutsideDeliveryArea" xml:space="preserve"><value>Outside delivery area</value></data>
   <data name="Orders_ChooseBranch" xml:space="preserve"><value>Choose branch</value></data>

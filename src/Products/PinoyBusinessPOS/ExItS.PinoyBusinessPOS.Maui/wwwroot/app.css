@@ -13831,9 +13831,10 @@ html:has(.pos-denom-sheet) .pos-denom-sheet {
     font-weight: 600;
 }
 
-.pos-personal-shop__products {
-    display: flex;
-    flex-direction: column;
+.pos-personal-shop__products.pos-purchasing-create__product-list {
+    max-height: none;
+    overflow: visible;
+    gap: 0.45rem;
 }
 
 .pos-personal-shop__product {
@@ -13935,10 +13936,26 @@ html:has(.pos-denom-sheet) .pos-denom-sheet {
     font-size: var(--exits-text-xs, 0.75rem);
 }
 
-.pos-personal-shop-review__fulfillment {
+.pos-personal-shop-review__readonly {
     display: flex;
-    gap: 0.5rem;
-    margin-bottom: var(--exits-space-3);
+    flex-direction: column;
+    gap: 0.15rem;
+    margin-bottom: var(--exits-space-2);
+}
+
+.pos-personal-shop-review__readonly span {
+    color: var(--exits-text-muted);
+    font-size: var(--exits-text-sm);
+}
+
+.pos-personal-shop-review .pos-sell-payment,
+.pos-personal-shop-review .pos-sell-payment__methods {
+    min-width: 0;
+    overflow-x: hidden;
+}
+
+.pos-personal-shop-review .pos-payment-method-grid--checkout {
+    margin-top: 0.5rem;
 }
 
 .pos-personal-shop-review__mode {

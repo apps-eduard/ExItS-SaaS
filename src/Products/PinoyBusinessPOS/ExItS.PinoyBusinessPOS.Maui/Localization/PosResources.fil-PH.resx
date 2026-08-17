@@ -6460,6 +6460,27 @@
   <data name="Personal_ShopPlaceFailed" xml:space="preserve">
     <value>Hindi ma-place ang order na ito.</value>
   </data>
+  <data name="Personal_ShopPayment_Cash" xml:space="preserve">
+    <value>Cash</value>
+  </data>
+  <data name="Personal_ShopPayment_GCash" xml:space="preserve">
+    <value>GCash</value>
+  </data>
+  <data name="Personal_ShopPayment_Utang" xml:space="preserve">
+    <value>Utang</value>
+  </data>
+  <data name="Personal_ShopPayment_GCashHelp" xml:space="preserve">
+    <value>Ang GCash ay manual at hindi verified. Mananatiling Unpaid ang order hanggang i-record ng seller ang bayad.</value>
+  </data>
+  <data name="Personal_ShopPayment_UtangHelp" xml:space="preserve">
+    <value>Ang Utang ay hiniling na manual na settlement. Hindi ito automatic na nagpo-post ng utang.</value>
+  </data>
+  <data name="Personal_ShopFulfillmentUnavailableTitle" xml:space="preserve">
+    <value>Hindi available ang fulfillment</value>
+  </data>
+  <data name="Personal_ShopFulfillmentUnavailable" xml:space="preserve">
+    <value>Walang branch na makakaganap ng order sa napili mong paraan.</value>
+  </data>
   <data name="Personal_MerchantStatementTitle" xml:space="preserve">
     <value>Statement ng merchant</value>
   </data>
@@ -9940,6 +9961,11 @@
   <data name="Orders_Status_Completed" xml:space="preserve"><value>Tapos na</value></data>
   <data name="Orders_Status_Cancelled" xml:space="preserve"><value>Kinansela</value></data>
   <data name="Orders_Status_Rejected" xml:space="preserve"><value>Tinanggihan</value></data>
+  <data name="Orders_PaymentMethod" xml:space="preserve"><value>Paraan ng bayad</value></data>
+  <data name="Orders_PaymentStatus" xml:space="preserve"><value>Status ng bayad</value></data>
+  <data name="Orders_Payment_Unpaid" xml:space="preserve"><value>Hindi pa bayad</value></data>
+  <data name="Orders_Payment_Pending" xml:space="preserve"><value>Pending</value></data>
+  <data name="Orders_Payment_Paid" xml:space="preserve"><value>Bayad na</value></data>
   <data name="Orders_MinOrderHelper" xml:space="preserve"><value>Dapat maabot ng order ang minimum ng branch.</value></data>
   <data name="Orders_OutsideDeliveryArea" xml:space="preserve"><value>Labas sa delivery area</value></data>
   <data name="Orders_ChooseBranch" xml:space="preserve"><value>Pumili ng branch</value></data>

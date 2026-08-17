@@ -80,6 +80,9 @@ public sealed class CustomerOrderUiGuardTests
                      "Orders_Status_Collected",
                      "Orders_Status_Completed",
                      "Orders_Status_Cancelled",
+                     "Orders_PaymentMethod",
+                     "Orders_PaymentStatus",
+                     "Orders_Payment_Unpaid",
                      "Orders_MinOrderHelper",
                      "Orders_OutsideDeliveryArea",
                      "Orders_ChooseBranch"

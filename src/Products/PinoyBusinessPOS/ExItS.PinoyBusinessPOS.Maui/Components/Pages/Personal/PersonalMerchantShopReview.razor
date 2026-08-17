@@ -2,6 +2,7 @@
 @layout Layout.PersonalShell
 @using ExItS.DesignSystem.Components.Internal
 @using ExItS.PinoyBusinessPOS.Application.CustomerOrdering
+@using ExItS.PinoyBusinessPOS.Domain.CustomerOrdering
 @implements IDisposable
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
@@ -42,54 +43,79 @@
                 <Alert Tone="AlertTone.Danger" Title="@L["Personal_ShopPlaceErrorTitle"]" Message="@_error" />
             }
 
-            <section class="pos-personal-shop-review__section" aria-label="@L["Personal_ShopCartSection"]">
-                @foreach (var line in Cart.Lines)
+            <div class="pos-sell-payment">
+                <section class="pos-sell-payment__summary" aria-label="@L["Personal_ShopCartSection"]">
+                    @foreach (var line in Cart.Lines)
+                    {
+                        <div class="pos-sell-payment__line">
+                            <span class="pos-sell-payment__line-name">@line.Name</span>
+                            <span class="pos-sell-payment__line-qty pos-tabular">@FormatQty(line.Quantity) @line.UnitOfMeasure</span>
+                            <span class="pos-sell-payment__line-total"><MoneyDisplay Amount="@line.LineTotal" CurrencyCode="PHP" /></span>
+                        </div>
+                    }
+                    @if (_fulfillment == PersonalMerchantCheckoutUi.Delivery && _quote?.Available == true)
+                    {
+                        <div class="pos-sell-payment__line">
+                            <span class="pos-sell-payment__line-name">@L["Personal_ShopDeliveryFee"]</span>
+                            <span class="pos-sell-payment__line-qty"></span>
+                            <span class="pos-sell-payment__line-total"><MoneyDisplay Amount="@_quote.DeliveryFee" CurrencyCode="PHP" /></span>
+                        </div>
+                    }
+                    <div class="pos-sell-payment__total">
+                        <span>@L["Sales_Field_Total"]</span>
+                        <MoneyDisplay Amount="@PayableTotal" CurrencyCode="PHP" Emphasized="true" />
+                    </div>
+                </section>
+            </div>
+
+            <section class="pos-personal-shop-review__section" aria-label="@L["Personal_ShopFulfillment"]">
+                <h2>@L["Personal_ShopFulfillment"]</h2>
+                @if (_selection.ShowFulfillmentToggle)
                 {
-                    <div class="pos-personal-shop-review__line">
-                        <div>
-                            <strong>@line.Name</strong>
-                            <div class="pos-muted">
-                                @line.Quantity.ToString("0.##") ×
-                                <MoneyDisplay Amount="@line.UnitPrice" CurrencyCode="PHP" />
-                            </div>
-                        </div>
-                        <div class="pos-personal-shop-review__line-actions">
-                            <MoneyDisplay Amount="@line.LineTotal" CurrencyCode="PHP" />
-                            <button type="button" class="pos-personal-shop-review__remove" @onclick="() => Cart.Remove(line.ProductId)">@L["Personal_ShopRemove"]</button>
-                        </div>
+                    <div class="pos-personal-shop-review__fulfillment" role="group" aria-label="@L["Personal_ShopFulfillment"]">
+                        <button type="button"
+                                class="@FulfillmentModeClass(PersonalMerchantCheckoutUi.Pickup)"
+                                @onclick="@(() => SelectFulfillment(PersonalMerchantCheckoutUi.Pickup))">@L["Orders_Pickup"]</button>
+                        <button type="button"
+                                class="@FulfillmentModeClass(PersonalMerchantCheckoutUi.Delivery)"
+                                @onclick="@(() => SelectFulfillment(PersonalMerchantCheckoutUi.Delivery))">@L["Orders_Delivery"]</button>
+                    </div>
+                }
+                else
+                {
+                    <div class="pos-personal-shop-review__readonly">
+                        <strong>@FulfillmentLabel(_fulfillment)</strong>
+                    </div>
+                }
+
+                @if (!_selection.CanPlace)
+                {
+                    <Alert Tone="AlertTone.Warning"
+                           Title="@L["Personal_ShopFulfillmentUnavailableTitle"]"
+                           Message="@L["Personal_ShopFulfillmentUnavailable"]" />
+                }
+                else if (_selection.ShowBranchSelector)
+                {
+                    <label class="pos-personal-shop-review__field">
+                        <span>@L["Personal_ShopBranch"]</span>
+                        <select value="@_branchIdText" @onchange="OnBranchChanged">
+                            @foreach (var branch in EligibleBranches)
+                            {
+                                <option value="@branch.BranchId.ToString("D")">@branch.Name</option>
+                            }
+                        </select>
+                    </label>
+                }
+                else
+                {
+                    <div class="pos-personal-shop-review__readonly">
+                        <span>@L["Personal_ShopBranch"]</span>
+                        <strong>@(_selection.BranchName ?? EligibleBranches.FirstOrDefault()?.Name)</strong>
                     </div>
                 }
             </section>
 
-            <section class="pos-personal-shop-review__section">
-                <h2>@L["Personal_ShopFulfillment"]</h2>
-                <div class="pos-personal-shop-review__fulfillment">
-                    @if (_pickupBranches.Count > 0)
-                    {
-                        <button type="button"
-                                class="@FulfillmentModeClass("Pickup")"
-                                @onclick="@(() => SelectFulfillment("Pickup"))">@L["Orders_Pickup"]</button>
-                    }
-                    @if (_canDelivery && _deliveryBranches.Count > 0)
-                    {
-                        <button type="button"
-                                class="@FulfillmentModeClass("Delivery")"
-                                @onclick="@(() => SelectFulfillment("Delivery"))">@L["Orders_Delivery"]</button>
-                    }
-                </div>
-
-                <label class="pos-personal-shop-review__field">
-                    <span>@L["Personal_ShopBranch"]</span>
-                    <select @bind="_branchIdText">
-                        @foreach (var branch in EligibleBranches)
-                        {
-                            <option value="@branch.BranchId.ToString("D")">@branch.Name</option>
-                        }
-                    </select>
-                </label>
-            </section>
-
-            @if (_fulfillment == "Delivery")
+            @if (_fulfillment == PersonalMerchantCheckoutUi.Delivery && _selection.CanPlace)
             {
                 <section class="pos-personal-shop-review__section">
                     <h2>@L["Personal_ShopDeliveryDetails"]</h2>
@@ -145,18 +171,40 @@
                 </section>
             }
 
-            <section class="pos-personal-shop-review__totals">
-                <div><span>@L["Personal_ShopSubtotal"]</span><MoneyDisplay Amount="@Cart.MerchandiseSubtotal" CurrencyCode="PHP" /></div>
-                @if (_fulfillment == "Delivery" && _quote?.Available == true)
-                {
-                    <div><span>@L["Personal_ShopDeliveryFee"]</span><MoneyDisplay Amount="@_quote.DeliveryFee" CurrencyCode="PHP" /></div>
-                    <div class="pos-personal-shop-review__total"><span>@L["Personal_ShopTotal"]</span><MoneyDisplay Amount="@(Cart.MerchandiseSubtotal + _quote.DeliveryFee)" CurrencyCode="PHP" /></div>
-                }
-                else
-                {
-                    <div class="pos-personal-shop-review__total"><span>@L["Personal_ShopTotal"]</span><MoneyDisplay Amount="@Cart.MerchandiseSubtotal" CurrencyCode="PHP" /></div>
-                }
-            </section>
+            <div class="pos-sell-payment__methods">
+                <div class="pos-sell-payment-method">
+                    <button type="button"
+                            class="pos-sell-payment-method__toggle"
+                            aria-expanded="@_paymentMethodExpanded"
+                            @onclick="() => _paymentMethodExpanded = !_paymentMethodExpanded">
+                        <span>@L["Sales_Field_PaymentMethod"] · @PaymentMethodLabel(_paymentMethod)</span>
+                        <span aria-hidden="true">@(_paymentMethodExpanded ? "−" : "+")</span>
+                    </button>
+                    @if (_paymentMethodExpanded)
+                    {
+                        <div class="pos-payment-method-grid pos-payment-method-grid--checkout">
+                            @foreach (var methodCode in PersonalMerchantCheckoutUi.PaymentMethodCodes)
+                            {
+                                var selected = string.Equals(_paymentMethod, methodCode, StringComparison.Ordinal);
+                                <button type="button"
+                                        class="@($"pos-payment-method-tile{(selected ? " pos-payment-method-tile--selected" : string.Empty)}")"
+                                        aria-pressed="@selected"
+                                        @onclick="() => _paymentMethod = methodCode">
+                                    @PaymentMethodLabel(methodCode)
+                                </button>
+                            }
+                        </div>
+                        @if (string.Equals(_paymentMethod, nameof(CustomerOrderPaymentMethod.ManualGCash), StringComparison.Ordinal))
+                        {
+                            <p class="pos-muted">@L["Personal_ShopPayment_GCashHelp"]</p>
+                        }
+                        @if (string.Equals(_paymentMethod, nameof(CustomerOrderPaymentMethod.Utang), StringComparison.Ordinal))
+                        {
+                            <p class="pos-muted">@L["Personal_ShopPayment_UtangHelp"]</p>
+                        }
+                    }
+                </div>
+            </div>
 
             <div class="pos-personal-shop-review__actions">
                 <Button Variant="ButtonVariant.Primary" IsLoading="_placing" Disabled="_placing || !CanSubmit" OnClick="PlaceAsync">@L["Personal_ShopPlaceOrder"]</Button>
@@ -172,14 +220,17 @@
     private bool _authenticated;
     private bool _placing;
     private bool _quoting;
+    private bool _paymentMethodExpanded;
     private string? _error;
     private string? _organizationName;
     private bool _canDelivery;
-    private string _fulfillment = "Pickup";
+    private string _fulfillment = PersonalMerchantCheckoutUi.Pickup;
     private string _branchIdText = string.Empty;
-    private IReadOnlyList<CustomerStorefrontBranchDto> _pickupBranches = [];
-    private IReadOnlyList<CustomerStorefrontBranchDto> _deliveryBranches = [];
+    private string _paymentMethod = nameof(CustomerOrderPaymentMethod.Cash);
+    private IReadOnlyList<CustomerStorefrontBranchDto> _branches = [];
     private QuoteCustomerOrderDeliveryDto? _quote;
+    private PersonalMerchantFulfillmentSelection _selection =
+        new(PersonalMerchantCheckoutUi.Pickup, null, null, false, false, false);
 
     private string _recipientName = string.Empty;
     private string? _recipientPhone;
@@ -190,12 +241,18 @@
     private decimal _latitude = 14.5995m;
     private decimal _longitude = 120.9842m;
 
-    private IEnumerable<CustomerStorefrontBranchDto> EligibleBranches =>
-        _fulfillment == "Delivery" ? _deliveryBranches : _pickupBranches;
+    private IReadOnlyList<CustomerStorefrontBranchDto> EligibleBranches =>
+        PersonalMerchantCheckoutUi.EligibleBranches(_branches, _canDelivery, _fulfillment);
+
+    private decimal PayableTotal =>
+        _fulfillment == PersonalMerchantCheckoutUi.Delivery && _quote?.Available == true
+            ? Cart.MerchandiseSubtotal + _quote.DeliveryFee
+            : Cart.MerchandiseSubtotal;
 
     private bool CanSubmit =>
-        Guid.TryParse(_branchIdText, out _)
-        && (_fulfillment != "Delivery"
+        _selection.CanPlace
+        && Guid.TryParse(_branchIdText, out _)
+        && (_fulfillment != PersonalMerchantCheckoutUi.Delivery
             || (!string.IsNullOrWhiteSpace(_recipientName)
                 && !string.IsNullOrWhiteSpace(_address1)
                 && _quote?.Available == true));
@@ -238,20 +295,9 @@
 
             _organizationName = result.Data.OrganizationDisplayName;
             _canDelivery = result.Data.CanCustomerDelivery;
-            _pickupBranches = result.Data.Branches.Where(b => b.PickupEnabled).ToList();
-            _deliveryBranches = result.Data.Branches.Where(b => b.DeliveryEnabled).ToList();
+            _branches = result.Data.Branches;
             Cart.EnsureMerchant(OrganizationId, _organizationName);
-
-            if (_pickupBranches.Count > 0)
-            {
-                _fulfillment = "Pickup";
-                _branchIdText = _pickupBranches[0].BranchId.ToString("D");
-            }
-            else if (_canDelivery && _deliveryBranches.Count > 0)
-            {
-                _fulfillment = "Delivery";
-                _branchIdText = _deliveryBranches[0].BranchId.ToString("D");
-            }
+            ApplySelection(PersonalMerchantCheckoutUi.DefaultFulfillment(_branches, _canDelivery), currentBranchId: null);
         }
         finally
         {
@@ -261,19 +307,42 @@
 
     private void SelectFulfillment(string fulfillment)
     {
-        _fulfillment = fulfillment;
+        Guid? keep = Guid.TryParse(_branchIdText, out var id) ? id : null;
+        ApplySelection(fulfillment, keep);
         _quote = null;
-        var branches = EligibleBranches.ToList();
-        if (branches.Count > 0)
-        {
-            _branchIdText = branches[0].BranchId.ToString("D");
-        }
+    }
+
+    private void OnBranchChanged(ChangeEventArgs e)
+    {
+        _branchIdText = e.Value?.ToString() ?? string.Empty;
+        Guid? keep = Guid.TryParse(_branchIdText, out var id) ? id : null;
+        ApplySelection(_fulfillment, keep);
+        _quote = null;
+    }
+
+    private void ApplySelection(string requestedFulfillment, Guid? currentBranchId)
+    {
+        _selection = PersonalMerchantCheckoutUi.Resolve(_branches, _canDelivery, requestedFulfillment, currentBranchId);
+        _fulfillment = _selection.FulfillmentType;
+        _branchIdText = _selection.BranchId?.ToString("D") ?? string.Empty;
     }
 
     private string FulfillmentModeClass(string mode) =>
         _fulfillment == mode
             ? "pos-personal-shop-review__mode pos-personal-shop-review__mode--active"
             : "pos-personal-shop-review__mode";
+
+    private string FulfillmentLabel(string type) =>
+        string.Equals(type, PersonalMerchantCheckoutUi.Delivery, StringComparison.Ordinal)
+            ? L["Orders_Delivery"]
+            : L["Orders_Pickup"];
+
+    private string PaymentMethodLabel(string methodCode) =>
+        string.Equals(methodCode, nameof(CustomerOrderPaymentMethod.ManualGCash), StringComparison.Ordinal)
+            ? L["Personal_ShopPayment_GCash"]
+            : string.Equals(methodCode, nameof(CustomerOrderPaymentMethod.Utang), StringComparison.Ordinal)
+                ? L["Personal_ShopPayment_Utang"]
+                : L["Personal_ShopPayment_Cash"];
 
     private async Task QuoteAsync()
     {
@@ -325,7 +394,7 @@
             var displayName = CurrentUser.Session?.DisplayName ?? "Customer";
             var clientOrderId = Guid.NewGuid();
             PlaceCustomerOrderDeliveryRequest? delivery = null;
-            if (_fulfillment == "Delivery")
+            if (_fulfillment == PersonalMerchantCheckoutUi.Delivery)
             {
                 delivery = new PlaceCustomerOrderDeliveryRequest(
                     _recipientName.Trim(),
@@ -349,7 +418,8 @@
                 Cart.Lines.Select(l => new PlaceCustomerOrderLineRequest(l.ProductId, l.Quantity, 0m)).ToList(),
                 delivery,
                 clientOrderId,
-                clientOrderId.ToString("D"));
+                clientOrderId.ToString("D"),
+                _paymentMethod);
 
             var result = await Orders.PlaceAsCustomerAsync(OrganizationId, request);
             if (!result.IsSuccess || result.Data is null)
@@ -398,4 +468,7 @@
     }
 
     private void GoSignIn() => Nav.NavigateTo("/signin");
+
+    private static string FormatQty(decimal qty) =>
+        qty.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
 }

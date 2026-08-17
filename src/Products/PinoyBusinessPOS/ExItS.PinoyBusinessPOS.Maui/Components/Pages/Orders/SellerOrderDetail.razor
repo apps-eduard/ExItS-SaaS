@@ -44,6 +44,8 @@
                     <span>@L["Orders_Branch"]</span><strong>@_order.BranchNameSnapshot</strong>
                     <span>@L["Orders_Party"]</span><strong>@_order.CustomerDisplayName</strong>
                     <span>@L["Orders_Status"]</span><strong>@DisplayStatus(_order)</strong>
+                    <span>@L["Orders_PaymentMethod"]</span><strong>@PaymentMethodLabel(_order.PaymentMethod)</strong>
+                    <span>@L["Orders_PaymentStatus"]</span><strong>@PaymentStatusLabel(_order.PaymentStatus)</strong>
                 </div>
                 @if (_order.Delivery is not null)
                 {
@@ -375,6 +377,20 @@
 
     private string FulfillmentLabel(string type) =>
         Is(type, "Delivery") ? L["Orders_Delivery"] : L["Orders_Pickup"];
+
+    private string PaymentMethodLabel(string? method) =>
+        Is(method, "ManualGCash") || Is(method, "GCash")
+            ? L["Personal_ShopPayment_GCash"]
+            : Is(method, "Utang")
+                ? L["Personal_ShopPayment_Utang"]
+                : L["Personal_ShopPayment_Cash"];
+
+    private string PaymentStatusLabel(string? status) =>
+        Is(status, "Paid")
+            ? L["Orders_Payment_Paid"]
+            : Is(status, "Pending")
+                ? L["Orders_Payment_Pending"]
+                : L["Orders_Payment_Unpaid"];
 
     private static BadgeTone StatusTone(CustomerOrderDto order)
     {
