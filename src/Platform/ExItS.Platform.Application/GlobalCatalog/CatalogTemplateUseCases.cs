@@ -12,17 +12,20 @@ public sealed class CatalogTemplateQueryService
     private readonly IGlobalProductRepository _products;
     private readonly IGlobalCategoryRepository _categories;
     private readonly IBusinessTypeRepository _businessTypes;
+    private readonly IGlobalProductImageRepository _images;
 
     public CatalogTemplateQueryService(
         ICatalogTemplateRepository templates,
         IGlobalProductRepository products,
         IGlobalCategoryRepository categories,
-        IBusinessTypeRepository businessTypes)
+        IBusinessTypeRepository businessTypes,
+        IGlobalProductImageRepository images)
     {
         _templates = templates;
         _products = products;
         _categories = categories;
         _businessTypes = businessTypes;
+        _images = images;
     }
 
     public async Task<CatalogTemplateDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -221,6 +224,12 @@ public sealed class CatalogTemplateQueryService
         var productIds = dto.Products.Select(p => p.GlobalProductId).Distinct().ToArray();
         var products = await _products.GetByIdsAsync(productIds, cancellationToken).ConfigureAwait(false);
         var productById = products.ToDictionary(p => p.Id.Value);
+        var images = productIds.Length == 0
+            ? []
+            : await _images
+                .ListByProductIdsAsync(products.Select(p => p.Id).ToList(), cancellationToken)
+                .ConfigureAwait(false);
+        var imageByProduct = images.ToDictionary(i => i.GlobalProductId.Value);
 
         var categoryIds = products
             .Where(p => p.GlobalCategoryId is not null)
@@ -256,7 +265,9 @@ public sealed class CatalogTemplateQueryService
                 Unit = product.Unit.ToString(),
                 SellingMode = product.SellingMode.ToString(),
                 CostPrice = product.CostPrice,
-                SellingPrice = product.SellingPrice
+                SellingPrice = product.SellingPrice,
+                HasImage = imageByProduct.ContainsKey(product.Id.Value),
+                ImageVersion = imageByProduct.TryGetValue(product.Id.Value, out var image) ? image.Version : null
             };
         }).ToList();
 

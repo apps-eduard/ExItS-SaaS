@@ -570,6 +570,106 @@ internal static class GlobalCatalogEndpoints
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
 
+        products.MapPut("/{id:guid}/image", async (
+            HttpRequest request,
+            Guid id,
+            SetGlobalProductImage useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageGlobalProducts,
+                PlatformAuditActions.GlobalProductUpdated,
+                nameof(GlobalProduct),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var bytes = await ReadImageUploadAsync(request, ct).ConfigureAwait(false);
+            if (!bytes.IsSuccess)
+            {
+                return PlatformApiResults.Problem(
+                    bytes.ErrorCode!,
+                    bytes.ErrorMessage!,
+                    PlatformApiResults.MapStatusCode(bytes.ErrorCode!));
+            }
+
+            var result = await useCase.ExecuteAsync(id, bytes.Value!, ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.GlobalProductUpdated,
+                    nameof(GlobalProduct),
+                    id.ToString("D"),
+                    summary: "Updated global product image.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        products.MapDelete("/{id:guid}/image", async (
+            Guid id,
+            RemoveGlobalProductImage useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageGlobalProducts,
+                PlatformAuditActions.GlobalProductUpdated,
+                nameof(GlobalProduct),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase.ExecuteAsync(id, ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.GlobalProductUpdated,
+                    nameof(GlobalProduct),
+                    id.ToString("D"),
+                    summary: "Removed global product image.",
+                    cancellationToken: ct).ConfigureAwait(false);
+                return Results.NoContent();
+            }
+
+            return PlatformApiResults.Problem(
+                result.ErrorCode!,
+                result.ErrorMessage!,
+                PlatformApiResults.MapStatusCode(result.ErrorCode!));
+        });
+
+        products.MapGet("/{id:guid}/image/{variant}", async (
+            Guid id,
+            string variant,
+            HttpContext http,
+            GetGlobalProductImage useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ViewGlobalCatalog,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(GlobalProduct),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            return PlatformApiResults.FromResult(
+                await useCase.ExecuteAsync(id, variant, activeOnly: false, ct).ConfigureAwait(false),
+                image => PlatformApiResults.ImageFile(http.Response, image));
+        });
+
         products.MapPatch("/{id:guid}/status", async (
             Guid id,
             SetGlobalProductStatusRequest body,
@@ -1320,5 +1420,36 @@ internal static class GlobalCatalogEndpoints
 
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
+    }
+
+    private static async Task<ApplicationResult<byte[]>> ReadImageUploadAsync(HttpRequest request, CancellationToken ct)
+    {
+        if (!request.HasFormContentType)
+        {
+            return ApplicationResult<byte[]>.Failure(
+                DomainErrorCodes.InvalidGlobalProductImage,
+                "Upload a JPEG, PNG, or WebP image file.");
+        }
+
+        var form = await request.ReadFormAsync(ct).ConfigureAwait(false);
+        var file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
+        if (file is null || file.Length == 0)
+        {
+            return ApplicationResult<byte[]>.Failure(
+                DomainErrorCodes.InvalidGlobalProductImage,
+                "An image file is required.");
+        }
+
+        if (file.Length > GlobalProductImageUploadLimits.MaxBytes)
+        {
+            return ApplicationResult<byte[]>.Failure(
+                DomainErrorCodes.GlobalProductImageTooLarge,
+                "Image is too large. Use a file of 10 MB or less.");
+        }
+
+        await using var stream = file.OpenReadStream();
+        using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer, ct).ConfigureAwait(false);
+        return ApplicationResult<byte[]>.Success(buffer.ToArray());
     }
 }

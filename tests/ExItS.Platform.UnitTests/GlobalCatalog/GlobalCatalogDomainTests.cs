@@ -334,7 +334,13 @@ public sealed class GlobalCatalogConcurrencyTests
         Assert.True(created.IsSuccess);
 
         clock.Advance(TimeSpan.FromMinutes(1));
-        var update = new UpdateGlobalProduct(products, categories, new FakeBusinessTypeRepository(), uow, clock);
+        var update = new UpdateGlobalProduct(
+            products,
+            categories,
+            new FakeBusinessTypeRepository(),
+            new EmptyGlobalProductImageRepository(),
+            uow,
+            clock);
         var stale = await update.ExecuteAsync(
             created.Value!.Id,
             new UpdateGlobalProductRequest(

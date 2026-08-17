@@ -70,7 +70,9 @@ public sealed record GlobalProductDto(
     IReadOnlyList<string> BusinessTypes,
     IReadOnlyList<Guid> BusinessTypeIds,
     DateTimeOffset CreatedAtUtc,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    bool HasImage = false,
+    int? ImageVersion = null);
 
 public sealed record CreateGlobalCategoryRequest(
     string Name,
@@ -146,7 +148,9 @@ public sealed record CatalogTemplateProductDto(
     string? Unit = null,
     string? SellingMode = null,
     decimal? CostPrice = null,
-    decimal? SellingPrice = null);
+    decimal? SellingPrice = null,
+    bool HasImage = false,
+    int? ImageVersion = null);
 
 public sealed record CatalogTemplateDto(
     Guid Id,
@@ -350,7 +354,8 @@ internal static class GlobalCatalogDtoMaps
 
     public static GlobalProductDto Map(
         GlobalProduct product,
-        IReadOnlyDictionary<Guid, string>? codeLookup = null) =>
+        IReadOnlyDictionary<Guid, string>? codeLookup = null,
+        GlobalProductImage? image = null) =>
         new(
             product.Id.Value,
             product.Name,
@@ -369,7 +374,9 @@ internal static class GlobalCatalogDtoMaps
             MapCodes(product.BusinessTypeIds, codeLookup),
             product.BusinessTypeIds.Select(i => i.Value).ToList(),
             product.CreatedAtUtc,
-            product.UpdatedAtUtc);
+            product.UpdatedAtUtc,
+            image is not null,
+            image?.Version);
 
     public static CatalogTemplateProductDto Map(CatalogTemplateProduct product) =>
         new(

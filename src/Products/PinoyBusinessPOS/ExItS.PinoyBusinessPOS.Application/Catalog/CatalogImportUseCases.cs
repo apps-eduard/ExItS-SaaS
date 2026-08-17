@@ -971,6 +971,8 @@ public sealed class ProcessPosCatalogImportChunk
                 job.PlatformTemplateId,
                 item.SourceGlobalCategoryId,
                 sellingMode: sellingMode);
+            // Shared Platform template images are referenced by PlatformGlobalProductId.
+            // Import must not copy image files or create pos.product_images rows.
 
             await _products.AddAsync(product, cancellationToken).ConfigureAwait(false);
             item.MarkImported(product.Id, now);

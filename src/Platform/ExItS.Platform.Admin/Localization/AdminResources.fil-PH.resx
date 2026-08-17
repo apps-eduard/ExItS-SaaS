@@ -3055,6 +3055,24 @@
   <data name="GlobalProducts_ImageReference" xml:space="preserve">
     <value>Image reference</value>
   </data>
+  <data name="GlobalProducts_Image" xml:space="preserve">
+    <value>Larawan ng produkto</value>
+  </data>
+  <data name="GlobalProducts_ImageHint" xml:space="preserve">
+    <value>JPEG, PNG, o WebP. Ang server ang mag-aayos, mag-aalis ng metadata, at magtatago ng WebP thumb at medium. Hindi pinipili ang compression.</value>
+  </data>
+  <data name="GlobalProducts_ImageNone" xml:space="preserve">
+    <value>Walang larawan</value>
+  </data>
+  <data name="GlobalProducts_ImageSave" xml:space="preserve">
+    <value>I-save ang larawan</value>
+  </data>
+  <data name="GlobalProducts_ImageRemove" xml:space="preserve">
+    <value>Alisin</value>
+  </data>
+  <data name="GlobalProducts_ImageInvalid" xml:space="preserve">
+    <value>Gumamit ng JPEG, PNG, o WebP na 10 MB o mas mababa.</value>
+  </data>
   <data name="GlobalProducts_SearchTags" xml:space="preserve">
     <value>Mga search tag</value>
   </data>

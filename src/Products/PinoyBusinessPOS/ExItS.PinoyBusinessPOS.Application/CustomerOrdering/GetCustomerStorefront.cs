@@ -14,6 +14,7 @@ public sealed class GetCustomerStorefront
     private readonly IInventoryRepository _inventory;
     private readonly ICustomerOrderBranchDirectory _branches;
     private readonly ICatalogProductImageRepository _images;
+    private readonly IPlatformMerchantCatalogClient? _platform;
 
     public GetCustomerStorefront(
         ISellerCustomerOrderingCapability capability,
@@ -21,7 +22,8 @@ public sealed class GetCustomerStorefront
         IProductCategoryRepository categories,
         IInventoryRepository inventory,
         ICustomerOrderBranchDirectory branches,
-        ICatalogProductImageRepository images)
+        ICatalogProductImageRepository images,
+        IPlatformMerchantCatalogClient? platform = null)
     {
         _capability = capability;
         _products = products;
@@ -29,6 +31,7 @@ public sealed class GetCustomerStorefront
         _inventory = inventory;
         _branches = branches;
         _images = images;
+        _platform = platform;
     }
 
     public async Task<ApplicationResult<CustomerStorefrontDto>> ExecuteAsync(
@@ -88,12 +91,17 @@ public sealed class GetCustomerStorefront
             ? []
             : await _images.ListByProductIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false);
         var imageByProduct = imageRows.ToDictionary(i => i.ProductId.Value);
+        var liveVersions = await CatalogPlatformImageMeta
+            .TryGetVersionsAsync(_platform, pageItems, imageByProduct, cancellationToken)
+            .ConfigureAwait(false);
 
         var products = pageItems.Select(p =>
         {
             accountByProduct.TryGetValue(p.Id.Value, out var account);
             var availability = CustomerStorefrontAvailability.FromAccount(account);
             imageByProduct.TryGetValue(p.Id.Value, out var image);
+            liveVersions.TryGetValue(p.Id.Value, out var liveVersion);
+            var resolved = CatalogProductImageResolution.Resolve(p, image, liveVersion);
 
             return new CustomerStorefrontProductDto(
                 p.Id.Value,
@@ -106,8 +114,9 @@ public sealed class GetCustomerStorefront
                 availability.TracksInventory,
                 availability.AvailableQuantity,
                 availability.Status,
-                image is not null,
-                image?.Version);
+                resolved.HasImage,
+                resolved.ImageVersion,
+                resolved.Source);
         }).ToList();
 
         var (categoryRows, _) = await _categories

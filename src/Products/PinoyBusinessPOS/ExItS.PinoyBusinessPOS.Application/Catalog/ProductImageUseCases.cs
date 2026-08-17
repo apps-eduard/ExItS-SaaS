@@ -155,15 +155,18 @@ public sealed class GetCatalogProductImage
     private readonly ICatalogProductRepository _products;
     private readonly ICatalogProductImageRepository _images;
     private readonly IProductImageObjectStore _store;
+    private readonly IPlatformMerchantCatalogClient? _platform;
 
     public GetCatalogProductImage(
         ICatalogProductRepository products,
         ICatalogProductImageRepository images,
-        IProductImageObjectStore store)
+        IProductImageObjectStore store,
+        IPlatformMerchantCatalogClient? platform = null)
     {
         _products = products;
         _images = images;
         _store = store;
+        _platform = platform;
     }
 
     public async Task<ApplicationResult<ProductImageBytes>> ExecuteAsync(
@@ -200,26 +203,83 @@ public sealed class GetCatalogProductImage
         }
 
         var image = await _images.GetByProductIdAsync(organizationId, productId, cancellationToken).ConfigureAwait(false);
-        if (image is null)
+        if (image is not null)
         {
-            return ApplicationResult<ProductImageBytes>.Failure(
-                ApplicationErrorCodes.ProductImageNotFound,
-                "This product has no image.");
+            var relative = string.Equals(variant, ProductImageVariants.Medium, StringComparison.OrdinalIgnoreCase)
+                ? ProductImageStoragePaths.Medium(image.StorageKey, image.Version)
+                : ProductImageStoragePaths.Thumb(image.StorageKey, image.Version);
+            var bytes = await _store.ReadAsync(relative, cancellationToken).ConfigureAwait(false);
+            if (bytes is null || bytes.Length == 0)
+            {
+                return ApplicationResult<ProductImageBytes>.Failure(
+                    ApplicationErrorCodes.ProductImageNotFound,
+                    "This product has no image.");
+            }
+
+            return ApplicationResult<ProductImageBytes>.Success(
+                new ProductImageBytes(bytes, CatalogProductImage.WebpContentType, image.Version));
         }
 
-        var relative = string.Equals(variant, ProductImageVariants.Medium, StringComparison.OrdinalIgnoreCase)
-            ? ProductImageStoragePaths.Medium(image.StorageKey, image.Version)
-            : ProductImageStoragePaths.Thumb(image.StorageKey, image.Version);
-        var bytes = await _store.ReadAsync(relative, cancellationToken).ConfigureAwait(false);
-        if (bytes is null || bytes.Length == 0)
+        var product = await _products.GetByIdAsync(organizationId, productId, cancellationToken).ConfigureAwait(false);
+        if (product?.PlatformGlobalProductId is Guid globalId && _platform is not null)
         {
-            return ApplicationResult<ProductImageBytes>.Failure(
-                ApplicationErrorCodes.ProductImageNotFound,
-                "This product has no image.");
+            try
+            {
+                var shared = await _platform
+                    .GetProductImageAsync(globalId, variant, platformSessionToken: null, cancellationToken)
+                    .ConfigureAwait(false);
+                if (shared is not null)
+                {
+                    return ApplicationResult<ProductImageBytes>.Success(shared);
+                }
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+            }
         }
 
-        return ApplicationResult<ProductImageBytes>.Success(
-            new ProductImageBytes(bytes, CatalogProductImage.WebpContentType, image.Version));
+        return ApplicationResult<ProductImageBytes>.Failure(
+            ApplicationErrorCodes.ProductImageNotFound,
+            "This product has no image.");
+    }
+}
+
+public sealed class GetPlatformCatalogProductImage
+{
+    private readonly IPlatformMerchantCatalogClient _platform;
+
+    public GetPlatformCatalogProductImage(IPlatformMerchantCatalogClient platform) => _platform = platform;
+
+    public async Task<ApplicationResult<ProductImageBytes>> ExecuteAsync(
+        Guid globalProductId,
+        string variant,
+        CancellationToken cancellationToken = default)
+    {
+        if (!string.Equals(variant, ProductImageVariants.Thumb, StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(variant, ProductImageVariants.Medium, StringComparison.OrdinalIgnoreCase))
+        {
+            return ApplicationResult<ProductImageBytes>.Failure(
+                ApplicationErrorCodes.ProductImageInvalid,
+                "Image variant must be thumb or medium.");
+        }
+
+        try
+        {
+            var shared = await _platform
+                .GetProductImageAsync(globalProductId, variant, platformSessionToken: null, cancellationToken)
+                .ConfigureAwait(false);
+            if (shared is not null)
+            {
+                return ApplicationResult<ProductImageBytes>.Success(shared);
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+        }
+
+        return ApplicationResult<ProductImageBytes>.Failure(
+            ApplicationErrorCodes.ProductImageNotFound,
+            "This product has no image.");
     }
 }
 

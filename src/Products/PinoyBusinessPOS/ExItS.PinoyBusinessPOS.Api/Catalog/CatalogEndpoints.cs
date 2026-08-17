@@ -534,7 +534,25 @@ internal static class CatalogEndpoints
 
             return PosApiResults.FromResult(
                 await useCase.ExecuteAsync(organizationId, productId, variant, ct).ConfigureAwait(false),
-                image => Results.File(image.Content, image.ContentType));
+                image => PosApiResults.ImageFile(request.HttpContext.Response, image));
+        });
+
+        group.MapGet("/platform-products/{globalProductId:guid}/image/{variant}", async (
+            HttpRequest request,
+            Guid globalProductId,
+            string variant,
+            GetPlatformCatalogProductImage useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ViewCatalog, out _, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(
+                await useCase.ExecuteAsync(globalProductId, variant, ct).ConfigureAwait(false),
+                image => PosApiResults.ImageFile(request.HttpContext.Response, image));
         });
     }
 

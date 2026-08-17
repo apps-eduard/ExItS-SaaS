@@ -17,17 +17,20 @@ public sealed class CatalogProductQueryService
     private readonly ICatalogProductUnitRepository _units;
     private readonly IInventoryRepository _inventory;
     private readonly ICatalogProductImageRepository _images;
+    private readonly IPlatformMerchantCatalogClient? _platform;
 
     public CatalogProductQueryService(
         ICatalogProductRepository products,
         ICatalogProductUnitRepository units,
         IInventoryRepository inventory,
-        ICatalogProductImageRepository images)
+        ICatalogProductImageRepository images,
+        IPlatformMerchantCatalogClient? platform = null)
     {
         _products = products;
         _units = units;
         _inventory = inventory;
         _images = images;
+        _platform = platform;
     }
 
     public async Task<PosCatalogProductDto?> GetByIdAsync(
@@ -49,7 +52,10 @@ public sealed class CatalogProductQueryService
             .ConfigureAwait(false);
         var units = await _units.ListByProductAsync(orgId, product.Id, cancellationToken).ConfigureAwait(false);
         var image = await _images.GetByProductIdAsync(orgId, product.Id, cancellationToken).ConfigureAwait(false);
-        return Map(product, account, units, image);
+        var liveVersion = await CatalogPlatformImageMeta
+            .TryGetVersionAsync(_platform, product, image, cancellationToken)
+            .ConfigureAwait(false);
+        return Map(product, account, units, image, liveVersion);
     }
 
     public async Task<PagedResult<PosCatalogProductDto>> ListAsync(
@@ -76,13 +82,17 @@ public sealed class CatalogProductQueryService
             .ListByProductIdsAsync(orgId, items.Select(p => p.Id).ToList(), cancellationToken)
             .ConfigureAwait(false);
         var imagesByProduct = images.ToDictionary(i => i.ProductId.Value);
+        var liveVersions = await CatalogPlatformImageMeta
+            .TryGetVersionsAsync(_platform, items, imagesByProduct, cancellationToken)
+            .ConfigureAwait(false);
 
         return new PagedResult<PosCatalogProductDto>(
             items.Select(p => Map(
                     p,
                     accountsByProduct.GetValueOrDefault(p.Id.Value),
                     unitsByProduct.GetValueOrDefault(p.Id.Value),
-                    imagesByProduct.GetValueOrDefault(p.Id.Value)))
+                    imagesByProduct.GetValueOrDefault(p.Id.Value),
+                    liveVersions.GetValueOrDefault(p.Id.Value)))
                 .ToList(),
             total,
             Math.Max(page ?? 1, 1),
@@ -171,20 +181,25 @@ public sealed class CatalogProductQueryService
             .ConfigureAwait(false);
         var units = await _units.ListByProductAsync(organizationId, product.Id, cancellationToken).ConfigureAwait(false);
         var image = await _images.GetByProductIdAsync(organizationId, product.Id, cancellationToken).ConfigureAwait(false);
-        return ApplicationResult<PosCatalogProductDto>.Success(Map(product, account, units, image));
+        var liveVersion = await CatalogPlatformImageMeta
+            .TryGetVersionAsync(_platform, product, image, cancellationToken)
+            .ConfigureAwait(false);
+        return ApplicationResult<PosCatalogProductDto>.Success(Map(product, account, units, image, liveVersion));
     }
 
     public static PosCatalogProductDto Map(
         CatalogProduct product,
         InventoryAccount? account = null,
         IReadOnlyList<CatalogProductUnit>? units = null,
-        CatalogProductImage? image = null)
+        CatalogProductImage? image = null,
+        int? livePlatformImageVersion = null)
     {
         var isTracked = account?.IsTracked ?? false;
         var onHand = account?.OnHandQuantity ?? 0m;
         var stockStatus = isTracked && account is not null
             ? InventoryStockStatuses.ToCode(account.StockStatus)
             : InventoryStockStatuses.ToCode(InventoryStockStatus.InStock);
+        var resolved = CatalogProductImageResolution.Resolve(product, image, livePlatformImageVersion);
 
         return new(
             product.Id.Value,
@@ -219,8 +234,11 @@ public sealed class CatalogProductQueryService
             units?.Select(CatalogProductUnitHelpers.MapUnit).ToList(),
             product.CanExposeToConnectedBuyers,
             product.DefaultConnectedPoPrice,
-            image is not null,
-            image?.Version);
+            resolved.HasImage,
+            resolved.ImageVersion,
+            resolved.Source,
+            resolved.HasMerchantOverride,
+            product.PlatformBarcode);
     }
 }
 

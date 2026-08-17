@@ -31,6 +31,15 @@ public sealed class CatalogProduct
     public CatalogProductStatus Status { get; private set; }
     public Guid? PlatformGlobalProductId { get; private set; }
     public Guid? PlatformTemplateId { get; private set; }
+    /// <summary>
+    /// Snapshot of the Platform template/manufacturer GS1 barcode at import.
+    /// Independent of the organization-owned <see cref="Barcode"/> scan code. Historical rows stay null.
+    /// </summary>
+    public string? PlatformBarcode { get; private set; }
+    /// <summary>
+    /// Snapshot of the shared Platform image version at import. Live serving may be newer.
+    /// </summary>
+    public int? PlatformImageVersion { get; private set; }
     public CatalogSource CatalogSource { get; private set; }
     public DateTimeOffset? CatalogImportedAt { get; private set; }
     public int? CatalogSnapshotVersion { get; private set; }
@@ -92,7 +101,9 @@ public sealed class CatalogProduct
         string? usagePreset = null,
         bool isBlockedFromConnectedBuyers = false,
         bool canExposeToConnectedBuyers = true,
-        decimal? defaultConnectedPoPrice = null)
+        decimal? defaultConnectedPoPrice = null,
+        string? platformBarcode = null,
+        int? platformImageVersion = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -108,6 +119,8 @@ public sealed class CatalogProduct
         Status = status;
         PlatformGlobalProductId = platformGlobalProductId;
         PlatformTemplateId = platformTemplateId;
+        PlatformBarcode = string.IsNullOrWhiteSpace(platformBarcode) ? null : platformBarcode.Trim();
+        PlatformImageVersion = platformImageVersion is > 0 ? platformImageVersion : null;
         CatalogSource = catalogSource;
         CatalogImportedAt = catalogImportedAt;
         CatalogSnapshotVersion = catalogSnapshotVersion;
@@ -205,7 +218,9 @@ public sealed class CatalogProduct
         int snapshotVersion = CatalogImportRules.SnapshotVersion,
         CatalogProductId? id = null,
         SellingMode sellingMode = SellingMode.PerItem,
-        ProductUsageCapabilities? usage = null)
+        ProductUsageCapabilities? usage = null,
+        string? platformBarcode = null,
+        int? platformImageVersion = null)
     {
         CatalogGuards.EnsureUtc(utcNow);
         SellingModes.EnsureCompatible(sellingMode, unitOfMeasure);
@@ -252,7 +267,9 @@ public sealed class CatalogProduct
             canBeSold: resolvedUsage.CanBeSold,
             canBeUsedAsIngredient: resolvedUsage.CanBeUsedAsIngredient,
             isProduced: resolvedUsage.IsProduced,
-            usagePreset: resolvedUsage.PresetCode ?? ProductUsageCapabilities.BuyAndSellCode);
+            usagePreset: resolvedUsage.PresetCode ?? ProductUsageCapabilities.BuyAndSellCode,
+            platformBarcode: platformBarcode ?? barcode,
+            platformImageVersion: platformImageVersion);
     }
 
     public static CatalogProduct Rehydrate(
@@ -285,7 +302,9 @@ public sealed class CatalogProduct
         string? usagePreset = null,
         bool isBlockedFromConnectedBuyers = false,
         bool canExposeToConnectedBuyers = true,
-        decimal? defaultConnectedPoPrice = null) =>
+        decimal? defaultConnectedPoPrice = null,
+        string? platformBarcode = null,
+        int? platformImageVersion = null) =>
         new(
             id,
             organizationId,
@@ -316,7 +335,9 @@ public sealed class CatalogProduct
             usagePreset,
             isBlockedFromConnectedBuyers,
             canExposeToConnectedBuyers,
-            defaultConnectedPoPrice);
+            defaultConnectedPoPrice,
+            platformBarcode,
+            platformImageVersion);
 
     /// <summary>Updates how the product participates in buy / sell / ingredient / production flows.</summary>
     public void UpdateUsage(ProductUsageCapabilities usage, DateTimeOffset utcNow)

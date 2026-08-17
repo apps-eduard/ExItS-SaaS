@@ -364,7 +364,7 @@ internal static class CustomerOrderEndpoints
 
             return PosApiResults.FromResult(
                 await useCase.ExecuteAsync(sellerOrganizationId, productId, variant, ct).ConfigureAwait(false),
-                image => Results.File(image.Content, image.ContentType));
+                image => PosApiResults.ImageFile(request.HttpContext.Response, image));
         });
 
         group.MapPost("/organizations/{sellerOrganizationId:guid}", async (

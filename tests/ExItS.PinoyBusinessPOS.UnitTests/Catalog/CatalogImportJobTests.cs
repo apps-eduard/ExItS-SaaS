@@ -101,10 +101,15 @@ public sealed class CatalogImportJobTests
             GlobalProductA,
             CatalogSource.Template,
             now,
+            sku: "TMP-SKU",
+            barcode: "4006381333931",
             platformTemplateId: TemplateId,
             sourceGlobalCategoryId: Guid.Parse("44444444-4444-4444-4444-444444444444"));
 
         Assert.Equal(GlobalProductA, imported.PlatformGlobalProductId);
+        Assert.Equal("TMP-SKU", imported.Sku);
+        Assert.Equal("4006381333931", imported.Barcode);
+        Assert.Equal("4006381333931", imported.PlatformBarcode);
         Assert.Equal(TemplateId, imported.PlatformTemplateId);
         Assert.Equal(CatalogSource.Template, imported.CatalogSource);
         Assert.Equal(now, imported.CatalogImportedAt);
@@ -152,11 +157,24 @@ public sealed class CatalogImportJobTests
             25.5m,
             GlobalProductA,
             CatalogSource.GlobalSearch,
-            now);
+            now,
+            sku: "TMP-SKU",
+            barcode: "4006381333931");
 
-        product.UpdateDetails("Local name", null, null, null, null, UnitOfMeasure.Piece, 30m, now.AddMinutes(1));
+        product.UpdateDetails(
+            "Local name",
+            null,
+            "ORG-SKU",
+            "036000291452",
+            null,
+            UnitOfMeasure.Piece,
+            30m,
+            now.AddMinutes(1));
 
         Assert.Equal("Local name", product.Name);
+        Assert.Equal("ORG-SKU", product.Sku);
+        Assert.Equal("036000291452", product.Barcode);
+        Assert.Equal("4006381333931", product.PlatformBarcode);
         Assert.Equal(30m, product.SellingPrice);
         Assert.Equal(GlobalProductA, product.PlatformGlobalProductId);
         Assert.Equal(CatalogSource.GlobalSearch, product.CatalogSource);

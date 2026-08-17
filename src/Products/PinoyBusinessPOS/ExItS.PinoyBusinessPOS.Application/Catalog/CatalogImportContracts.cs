@@ -77,6 +77,17 @@ public interface IPlatformMerchantCatalogClient
         int? pageSize,
         string? platformSessionToken,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PlatformGlobalProductImageMetaDto>> ListProductImageMetaAsync(
+        IReadOnlyList<Guid> productIds,
+        string? platformSessionToken,
+        CancellationToken cancellationToken = default);
+
+    Task<ProductImageBytes?> GetProductImageAsync(
+        Guid productId,
+        string variant,
+        string? platformSessionToken,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed record PlatformMerchantCatalogTemplateProductDto(
@@ -95,7 +106,9 @@ public sealed record PlatformMerchantCatalogTemplateProductDto(
     string? Unit = null,
     string? SellingMode = null,
     decimal? CostPrice = null,
-    decimal? SellingPrice = null);
+    decimal? SellingPrice = null,
+    bool HasImage = false,
+    int? ImageVersion = null);
 
 public sealed record PlatformMerchantCatalogTemplateSummaryDto(
     Guid Id,
@@ -147,7 +160,14 @@ public sealed record PlatformMerchantGlobalProductDto(
     string? ImageReference = null,
     string Status = "Active",
     DateTimeOffset CreatedAtUtc = default,
-    DateTimeOffset UpdatedAtUtc = default);
+    DateTimeOffset UpdatedAtUtc = default,
+    bool HasImage = false,
+    int? ImageVersion = null);
+
+public sealed record PlatformGlobalProductImageMetaDto(
+    Guid GlobalProductId,
+    bool HasImage,
+    int? ImageVersion);
 
 public sealed record PlatformMerchantGlobalCategoryDto(
     Guid Id,

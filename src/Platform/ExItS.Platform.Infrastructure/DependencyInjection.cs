@@ -17,6 +17,7 @@ using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Infrastructure.Authorization;
 using ExItS.Platform.Infrastructure.GlobalCatalog;
 using ExItS.Platform.Infrastructure.Identity;
+using ExItS.Platform.Infrastructure.Media;
 using ExItS.Platform.Infrastructure.LocalValidation;
 using ExItS.Platform.Infrastructure.Organizations;
 using ExItS.Platform.Infrastructure.Persistence;
@@ -50,6 +51,11 @@ public static class DependencyInjection
         services.AddScoped<IBusinessTypeRepository, BusinessTypeRepository>();
         services.AddScoped<IGlobalCategoryRepository, GlobalCategoryRepository>();
         services.AddScoped<IGlobalProductRepository, GlobalProductRepository>();
+        services.AddScoped<IGlobalProductImageRepository, GlobalProductImageRepository>();
+        services.Configure<PlatformProductImageStorageOptions>(
+            config.GetSection(PlatformProductImageStorageOptions.SectionName));
+        services.AddSingleton<IGlobalProductImageProcessor, MagickProductImageProcessor>();
+        services.AddSingleton<IGlobalProductImageObjectStore, LocalFileProductImageStore>();
         services.AddScoped<ICatalogTemplateRepository, CatalogTemplateRepository>();
         services.AddScoped<ICatalogImportJobRepository, CatalogImportJobRepository>();
         services.AddScoped<ICatalogImportFileParser, CatalogImportFileParser>();

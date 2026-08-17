@@ -254,6 +254,10 @@ public static class DomainErrorCodes
     public const string InvalidGlobalProductDescription =
         "platform.global_catalog.product.description.invalid";
     public const string InvalidGlobalProductImage = "platform.global_catalog.product.image.invalid";
+    public const string GlobalProductImageTooLarge = "platform.global_catalog.product.image.too_large";
+    public const string GlobalProductImageUnsupportedType =
+        "platform.global_catalog.product.image.unsupported_type";
+    public const string GlobalProductImageNotFound = "platform.global_catalog.product.image.not_found";
     public const string InvalidGlobalProductMoney = "platform.global_catalog.product.money.invalid";
     public const string InvalidGlobalProductPriceRelationship =
         "platform.global_catalog.product.price.relationship.invalid";

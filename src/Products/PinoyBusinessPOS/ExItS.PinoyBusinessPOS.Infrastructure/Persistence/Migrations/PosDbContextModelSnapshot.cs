@@ -709,6 +709,15 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("platform_global_product_id");
 
+                    b.Property<string>("PlatformBarcode")
+                        .HasMaxLength(14)
+                        .HasColumnType("character varying(14)")
+                        .HasColumnName("platform_barcode");
+
+                    b.Property<int?>("PlatformImageVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("platform_image_version");
+
                     b.Property<Guid?>("PlatformTemplateId")
                         .HasColumnType("uuid")
                         .HasColumnName("platform_template_id");

@@ -575,6 +575,8 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
             entity.Property(e => e.PlatformGlobalProductId).HasColumnName("platform_global_product_id");
             entity.Property(e => e.PlatformTemplateId).HasColumnName("platform_template_id");
+            entity.Property(e => e.PlatformBarcode).HasColumnName("platform_barcode").HasMaxLength(14);
+            entity.Property(e => e.PlatformImageVersion).HasColumnName("platform_image_version");
             entity.Property(e => e.CatalogSource)
                 .HasColumnName("catalog_source")
                 .HasMaxLength(32)

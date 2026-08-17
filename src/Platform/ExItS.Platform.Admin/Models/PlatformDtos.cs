@@ -1237,7 +1237,17 @@ public sealed record GlobalProductDto(
     IReadOnlyList<string> BusinessTypes,
     IReadOnlyList<Guid> BusinessTypeIds,
     DateTimeOffset CreatedAtUtc,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    bool HasImage = false,
+    int? ImageVersion = null);
+
+public sealed record GlobalProductImageDto(
+    Guid GlobalProductId,
+    int Version,
+    int ThumbWidth,
+    int ThumbHeight,
+    int MediumWidth,
+    int MediumHeight);
 
 public sealed record CreateGlobalCategoryRequest(
     string Name,
@@ -1313,7 +1323,9 @@ public sealed record CatalogTemplateProductDto(
     string? Unit = null,
     string? SellingMode = null,
     decimal? CostPrice = null,
-    decimal? SellingPrice = null);
+    decimal? SellingPrice = null,
+    bool HasImage = false,
+    int? ImageVersion = null);
 
 public sealed record CatalogTemplateSummaryDto(
     Guid Id,

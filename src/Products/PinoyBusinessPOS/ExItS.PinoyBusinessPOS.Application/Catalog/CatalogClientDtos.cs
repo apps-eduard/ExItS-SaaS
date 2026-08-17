@@ -52,7 +52,7 @@ public sealed record PosCatalogProductDto(
     Guid? SourceGlobalCategoryId = null,
     /// <summary>
     /// Mirrors <c>InventoryAccount.IsTracked</c>. When false, on-hand is not authoritative and
-    /// checkout must not create stock movements for the product.
+    /// selling must not create stock movements for the product.
     /// </summary>
     bool IsTracked = false,
     decimal OnHandQuantity = 0m,
@@ -72,7 +72,10 @@ public sealed record PosCatalogProductDto(
     bool CanExposeToConnectedBuyers = false,
     decimal? DefaultConnectedPoPrice = null,
     bool HasImage = false,
-    int? ImageVersion = null);
+    int? ImageVersion = null,
+    string ImageSource = CatalogProductImageSources.None,
+    bool HasMerchantImageOverride = false,
+    string? PlatformBarcode = null);
 
 public sealed record CreatePosProductCategoryRequest(string Name, Guid? CategoryId = null);
 

@@ -201,6 +201,67 @@ public sealed class PlatformMerchantCatalogClient(
         return result ?? new PagedResult<PlatformMerchantGlobalCategoryDto>([], 0, page ?? 1, pageSize ?? 20);
     }
 
+    public async Task<IReadOnlyList<PlatformGlobalProductImageMetaDto>> ListProductImageMetaAsync(
+        IReadOnlyList<Guid> productIds,
+        string? platformSessionToken,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = productIds.Where(id => id != Guid.Empty).Distinct().Take(50).ToArray();
+        if (ids.Length == 0)
+        {
+            return [];
+        }
+
+        EnsureBaseAddress();
+        var path = "api/v1/catalog/products/image-meta?ids=" + string.Join(",", ids.Select(id => id.ToString("D")));
+        using var request = CreateRequest(HttpMethod.Get, path, platformSessionToken);
+        using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Forbidden)
+        {
+            return [];
+        }
+
+        await EnsureMerchantCatalogSuccessAsync(response, cancellationToken).ConfigureAwait(false);
+        var result = await response.Content
+            .ReadFromJsonAsync<List<PlatformGlobalProductImageMetaDto>>(JsonOptions, cancellationToken)
+            .ConfigureAwait(false);
+        return result ?? [];
+    }
+
+    public async Task<ProductImageBytes?> GetProductImageAsync(
+        Guid productId,
+        string variant,
+        string? platformSessionToken,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureBaseAddress();
+        using var request = CreateRequest(
+            HttpMethod.Get,
+            $"api/v1/catalog/products/{productId:D}/image/{Uri.EscapeDataString(variant)}",
+            platformSessionToken);
+        using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Forbidden)
+        {
+            return null;
+        }
+
+        await EnsureMerchantCatalogSuccessAsync(response, cancellationToken).ConfigureAwait(false);
+        var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+        if (bytes.Length == 0)
+        {
+            return null;
+        }
+
+        var version = 0;
+        if (response.Headers.TryGetValues("X-ExItS-Image-Version", out var values)
+            && int.TryParse(values.FirstOrDefault(), out var parsed))
+        {
+            version = parsed;
+        }
+
+        return new ProductImageBytes(bytes, "image/webp", version);
+    }
+
     private void EnsureBaseAddress()
     {
         if (httpClient.BaseAddress is not null)

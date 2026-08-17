@@ -286,6 +286,45 @@ internal static class MerchantCatalogDiscoveryEndpoints
             return Results.Ok(product);
         });
 
+        root.MapGet("/products/image-meta", async (
+            HttpContext http,
+            string? ids,
+            ListGlobalProductImageMeta useCase,
+            CancellationToken ct) =>
+        {
+            var denied = EnsureAuthenticated(http);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var parsed = (ids ?? string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(value => Guid.TryParse(value, out var id) ? id : Guid.Empty)
+                .Where(id => id != Guid.Empty)
+                .ToList();
+            var items = await useCase.ExecuteAsync(parsed, activeOnly: true, ct).ConfigureAwait(false);
+            return Results.Ok(items);
+        });
+
+        root.MapGet("/products/{id:guid}/image/{variant}", async (
+            Guid id,
+            string variant,
+            HttpContext http,
+            GetGlobalProductImage useCase,
+            CancellationToken ct) =>
+        {
+            var denied = EnsureAuthenticated(http);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            return PlatformApiResults.FromResult(
+                await useCase.ExecuteAsync(id, variant, activeOnly: true, ct).ConfigureAwait(false),
+                image => PlatformApiResults.ImageFile(http.Response, image));
+        });
+
         root.MapGet("/categories", async (
             HttpContext http,
             GlobalCategoryQueryService queries,

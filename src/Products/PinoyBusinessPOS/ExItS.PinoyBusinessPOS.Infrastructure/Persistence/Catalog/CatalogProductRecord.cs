@@ -16,6 +16,8 @@ internal sealed class CatalogProductRecord
     public string Status { get; set; } = string.Empty;
     public Guid? PlatformGlobalProductId { get; set; }
     public Guid? PlatformTemplateId { get; set; }
+    public string? PlatformBarcode { get; set; }
+    public int? PlatformImageVersion { get; set; }
     public string CatalogSource { get; set; } = "Manual";
     public DateTimeOffset? CatalogImportedAt { get; set; }
     public int? CatalogSnapshotVersion { get; set; }

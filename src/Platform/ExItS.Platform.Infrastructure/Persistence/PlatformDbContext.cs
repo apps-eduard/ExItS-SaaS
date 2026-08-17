@@ -46,6 +46,7 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<GlobalCategoryBusinessTypeRecord> GlobalCategoryBusinessTypes => Set<GlobalCategoryBusinessTypeRecord>();
     internal DbSet<GlobalProductRecord> GlobalProducts => Set<GlobalProductRecord>();
     internal DbSet<GlobalProductBusinessTypeRecord> GlobalProductBusinessTypes => Set<GlobalProductBusinessTypeRecord>();
+    internal DbSet<GlobalProductImageRecord> GlobalProductImages => Set<GlobalProductImageRecord>();
     internal DbSet<CatalogTemplateRecord> CatalogTemplates => Set<CatalogTemplateRecord>();
     internal DbSet<CatalogTemplateProductRecord> CatalogTemplateProducts => Set<CatalogTemplateProductRecord>();
     internal DbSet<CatalogImportJobRecord> CatalogImportJobs => Set<CatalogImportJobRecord>();
@@ -2336,6 +2337,43 @@ public sealed class PlatformDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.BusinessTypeId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<GlobalProductImageRecord>(entity =>
+        {
+            entity.ToTable("global_product_images", CatalogSchemaName, tb =>
+            {
+                tb.HasCheckConstraint("ck_global_product_images_version_positive", "version >= 1");
+                tb.HasCheckConstraint(
+                    "ck_global_product_images_dimensions_positive",
+                    "thumb_width > 0 AND thumb_height > 0 AND medium_width > 0 AND medium_height > 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.GlobalProductId).HasColumnName("global_product_id").IsRequired();
+            entity.Property(e => e.StorageKey).HasColumnName("storage_key").IsRequired();
+            entity.Property(e => e.Version).HasColumnName("version").IsRequired();
+            entity.Property(e => e.ThumbWidth).HasColumnName("thumb_width").IsRequired();
+            entity.Property(e => e.ThumbHeight).HasColumnName("thumb_height").IsRequired();
+            entity.Property(e => e.MediumWidth).HasColumnName("medium_width").IsRequired();
+            entity.Property(e => e.MediumHeight).HasColumnName("medium_height").IsRequired();
+            entity.Property(e => e.ContentType)
+                .HasColumnName("content_type")
+                .HasMaxLength(64)
+                .IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+
+            entity.HasIndex(e => e.GlobalProductId)
+                .IsUnique()
+                .HasDatabaseName("ux_global_product_images_product");
+
+            entity.HasOne<GlobalProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.GlobalProductId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_global_product_images_global_products");
         });
 
         modelBuilder.Entity<CatalogTemplateRecord>(entity =>

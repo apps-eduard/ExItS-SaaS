@@ -292,6 +292,14 @@ public sealed class PosCatalogClient(HttpClient httpClient, IConnectivityService
         CancellationToken ct = default) =>
         GetImageBytesAsync($"{ProductsPath}/{productId:D}/image/{Uri.EscapeDataString(variant)}", ct);
 
+    public Task<ApiResult<ProductImageBytes>> GetPlatformProductImageAsync(
+        Guid globalProductId,
+        string variant,
+        CancellationToken ct = default) =>
+        GetImageBytesAsync(
+            $"{ProductsPath}/platform-products/{globalProductId:D}/image/{Uri.EscapeDataString(variant)}",
+            ct);
+
     private async Task<ApiResult<ProductImageBytes>> GetImageBytesAsync(string path, CancellationToken ct)
     {
         if (connectivityService is not null && !await connectivityService.IsConnectedAsync(ct).ConfigureAwait(false))

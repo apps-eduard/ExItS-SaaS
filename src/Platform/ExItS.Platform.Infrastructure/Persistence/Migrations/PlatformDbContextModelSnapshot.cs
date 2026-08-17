@@ -1981,6 +1981,69 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.GlobalCatalog.GlobalProductImageRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("GlobalProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("global_product_id");
+
+                    b.Property<int>("MediumHeight")
+                        .HasColumnType("integer")
+                        .HasColumnName("medium_height");
+
+                    b.Property<int>("MediumWidth")
+                        .HasColumnType("integer")
+                        .HasColumnName("medium_width");
+
+                    b.Property<Guid>("StorageKey")
+                        .HasColumnType("uuid")
+                        .HasColumnName("storage_key");
+
+                    b.Property<int>("ThumbHeight")
+                        .HasColumnType("integer")
+                        .HasColumnName("thumb_height");
+
+                    b.Property<int>("ThumbWidth")
+                        .HasColumnType("integer")
+                        .HasColumnName("thumb_width");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GlobalProductId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_global_product_images_product");
+
+                    b.ToTable("global_product_images", "catalog", t =>
+                        {
+                            t.HasCheckConstraint("ck_global_product_images_dimensions_positive", "thumb_width > 0 AND thumb_height > 0 AND medium_width > 0 AND medium_height > 0");
+
+                            t.HasCheckConstraint("ck_global_product_images_version_positive", "version >= 1");
+                        });
+                });
+
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Identity.AccountProfileRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5715,6 +5778,16 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("GlobalCategoryId")
                         .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.GlobalCatalog.GlobalProductImageRecord", b =>
+                {
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.GlobalCatalog.GlobalProductRecord", null)
+                        .WithMany()
+                        .HasForeignKey("GlobalProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_global_product_images_global_products");
                 });
 
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Identity.AccountProfileRecord", b =>

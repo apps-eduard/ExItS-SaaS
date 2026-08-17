@@ -102,4 +102,9 @@ public interface IPosCatalogClient
         Guid productId,
         string variant,
         CancellationToken ct = default);
+
+    Task<ApiResult<ProductImageBytes>> GetPlatformProductImageAsync(
+        Guid globalProductId,
+        string variant,
+        CancellationToken ct = default);
 }

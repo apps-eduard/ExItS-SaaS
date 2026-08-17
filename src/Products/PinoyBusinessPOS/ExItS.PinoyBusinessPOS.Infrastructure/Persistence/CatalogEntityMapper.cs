@@ -72,7 +72,9 @@ internal static class CatalogEntityMapper
             usagePreset: record.UsagePreset,
             isBlockedFromConnectedBuyers: record.IsBlockedFromConnectedBuyers,
             canExposeToConnectedBuyers: record.CanExposeToConnectedBuyers,
-            defaultConnectedPoPrice: record.DefaultConnectedPoPrice);
+            defaultConnectedPoPrice: record.DefaultConnectedPoPrice,
+            platformBarcode: record.PlatformBarcode,
+            platformImageVersion: record.PlatformImageVersion);
 
     public static CatalogProductRecord ToRecord(CatalogProduct product) =>
         new()
@@ -91,6 +93,8 @@ internal static class CatalogEntityMapper
             Status = product.Status.ToString(),
             PlatformGlobalProductId = product.PlatformGlobalProductId,
             PlatformTemplateId = product.PlatformTemplateId,
+            PlatformBarcode = product.PlatformBarcode,
+            PlatformImageVersion = product.PlatformImageVersion,
             CatalogSource = product.CatalogSource.ToString(),
             CatalogImportedAt = product.CatalogImportedAt,
             CatalogSnapshotVersion = product.CatalogSnapshotVersion,
@@ -123,6 +127,8 @@ internal static class CatalogEntityMapper
         record.Status = product.Status.ToString();
         record.PlatformGlobalProductId = product.PlatformGlobalProductId;
         record.PlatformTemplateId = product.PlatformTemplateId;
+        record.PlatformBarcode = product.PlatformBarcode;
+        record.PlatformImageVersion = product.PlatformImageVersion;
         record.CatalogSource = product.CatalogSource.ToString();
         record.CatalogImportedAt = product.CatalogImportedAt;
         record.CatalogSnapshotVersion = product.CatalogSnapshotVersion;

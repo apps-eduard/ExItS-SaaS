@@ -311,6 +311,9 @@ public interface IPlatformApiClient
     Task<ApiCallResult<GlobalProductDto>> CreateGlobalProductAsync(CreateGlobalProductRequest request, CancellationToken ct = default);
     Task<ApiCallResult<GlobalProductDto>> UpdateGlobalProductAsync(Guid id, UpdateGlobalProductRequest request, CancellationToken ct = default);
     Task<ApiCallResult<GlobalProductDto>> SetGlobalProductStatusAsync(Guid id, SetGlobalProductStatusRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<GlobalProductImageDto>> UploadGlobalProductImageAsync(Guid id, Stream content, string fileName, string? contentType, CancellationToken ct = default);
+    Task<ApiCallResult<object>> RemoveGlobalProductImageAsync(Guid id, CancellationToken ct = default);
+    Task<ApiCallResult<byte[]>> GetGlobalProductImageAsync(Guid id, string variant = "medium", CancellationToken ct = default);
 
     Task<ApiCallResult<PagedResult<CatalogTemplateSummaryDto>>> GetCatalogTemplatesAsync(
         int page = 1,

@@ -312,13 +312,18 @@ public sealed class CatalogDtoHasNoImageBytesTests
     {
         var catalog = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Application", "Catalog", "CatalogClientDtos.cs"));
         var storefront = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Application", "CustomerOrdering", "CustomerStorefrontDtos.cs"));
+        var platform = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Platform", "ExItS.Platform.Application", "GlobalCatalog", "GlobalCatalogDtos.cs"));
         Assert.Contains("HasImage", catalog, StringComparison.Ordinal);
         Assert.Contains("ImageVersion", catalog, StringComparison.Ordinal);
+        Assert.Contains("ImageSource", catalog, StringComparison.Ordinal);
         Assert.DoesNotContain("base64", catalog, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("byte[]", catalog, StringComparison.Ordinal);
         Assert.Contains("HasImage", storefront, StringComparison.Ordinal);
         Assert.DoesNotContain("base64", storefront, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("byte[]", storefront, StringComparison.Ordinal);
+        Assert.Contains("HasImage", platform, StringComparison.Ordinal);
+        Assert.DoesNotContain("base64", platform, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("byte[]", platform, StringComparison.Ordinal);
     }
 
     private static string FindRepoRoot()

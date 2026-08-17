@@ -22,9 +22,26 @@ public sealed class ProductImageThumbnailCache(IProductImageCacheRoot root, long
             DirectoryPath(),
             $"{sellerOrganizationId:N}_{productId:N}_v{version}_thumb.webp");
 
+    public string PlatformFilePath(Guid globalProductId, int version) =>
+        Path.Combine(
+            DirectoryPath(),
+            $"platform_{globalProductId:N}_v{version}_thumb.webp");
+
     public bool TryGetExisting(Guid sellerOrganizationId, Guid productId, int version, out string path)
     {
         path = FilePath(sellerOrganizationId, productId, version);
+        if (!File.Exists(path))
+        {
+            return false;
+        }
+
+        Touch(path);
+        return true;
+    }
+
+    public bool TryGetPlatformExisting(Guid globalProductId, int version, out string path)
+    {
+        path = PlatformFilePath(globalProductId, version);
         if (!File.Exists(path))
         {
             return false;
@@ -52,6 +69,27 @@ public sealed class ProductImageThumbnailCache(IProductImageCacheRoot root, long
         await File.WriteAllBytesAsync(temp, bytes, cancellationToken).ConfigureAwait(false);
         File.Move(temp, path, overwrite: true);
         ExpireOtherVersions(sellerOrganizationId, productId, version);
+        CleanupIfNeeded();
+        return path;
+    }
+
+    public async Task<string?> PutPlatformAsync(
+        Guid globalProductId,
+        int version,
+        byte[] bytes,
+        CancellationToken cancellationToken = default)
+    {
+        if (bytes.Length == 0)
+        {
+            return null;
+        }
+
+        Directory.CreateDirectory(DirectoryPath());
+        var path = PlatformFilePath(globalProductId, version);
+        var temp = path + ".tmp";
+        await File.WriteAllBytesAsync(temp, bytes, cancellationToken).ConfigureAwait(false);
+        File.Move(temp, path, overwrite: true);
+        ExpireOtherPlatformVersions(globalProductId, version);
         CleanupIfNeeded();
         return path;
     }
@@ -95,6 +133,31 @@ public sealed class ProductImageThumbnailCache(IProductImageCacheRoot root, long
         }
 
         var prefix = $"{sellerOrganizationId:N}_{productId:N}_v";
+        var keep = $"{prefix}{keepVersion}_thumb.webp";
+        foreach (var file in Directory.EnumerateFiles(dir, prefix + "*_thumb.webp"))
+        {
+            if (!string.Equals(Path.GetFileName(file), keep, StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    File.Delete(file);
+                }
+                catch (IOException)
+                {
+                }
+            }
+        }
+    }
+
+    private void ExpireOtherPlatformVersions(Guid globalProductId, int keepVersion)
+    {
+        var dir = DirectoryPath();
+        if (!Directory.Exists(dir))
+        {
+            return;
+        }
+
+        var prefix = $"platform_{globalProductId:N}_v";
         var keep = $"{prefix}{keepVersion}_thumb.webp";
         foreach (var file in Directory.EnumerateFiles(dir, prefix + "*_thumb.webp"))
         {

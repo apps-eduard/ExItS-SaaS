@@ -3055,6 +3055,24 @@
   <data name="GlobalProducts_ImageReference" xml:space="preserve">
     <value>Image reference</value>
   </data>
+  <data name="GlobalProducts_Image" xml:space="preserve">
+    <value>Product image</value>
+  </data>
+  <data name="GlobalProducts_ImageHint" xml:space="preserve">
+    <value>JPEG, PNG, or WebP. The server crops/fits, strips metadata, and stores WebP thumb and medium variants. Compression is not selectable.</value>
+  </data>
+  <data name="GlobalProducts_ImageNone" xml:space="preserve">
+    <value>No image</value>
+  </data>
+  <data name="GlobalProducts_ImageSave" xml:space="preserve">
+    <value>Save image</value>
+  </data>
+  <data name="GlobalProducts_ImageRemove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="GlobalProducts_ImageInvalid" xml:space="preserve">
+    <value>Use a JPEG, PNG, or WebP image of 10 MB or less.</value>
+  </data>
   <data name="GlobalProducts_SearchTags" xml:space="preserve">
     <value>Search tags</value>
   </data>

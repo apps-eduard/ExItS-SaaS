@@ -205,6 +205,56 @@ public sealed class CatalogImportProcessTests
         Assert.Equal(1, products.Count);
     }
 
+    [Fact]
+    public async Task Process_Prefills_org_sku_and_barcode_without_copying_an_image_row()
+    {
+        var clock = new FixedClock(DateTimeOffset.Parse("2026-08-05T00:00:00Z"));
+        var products = new FakeProductRepository();
+        var categories = new FakeCategoryRepository();
+        var imports = new FakeImportRepository();
+        var uow = new FakeUnitOfWork();
+
+        var item = CatalogImportItemResult.CreatePending(
+            GlobalId,
+            0,
+            "Coke",
+            "Piece",
+            15m,
+            sku: "BEV-000184",
+            barcode: "4006381333931");
+        var job = CatalogImportJob.CreateQueued(
+            OrgA,
+            PosCatalogImportJobKind.SelectedProducts,
+            CatalogSource.GlobalSearch,
+            "actor",
+            [item],
+            clock.UtcNow);
+        await imports.AddAsync(job);
+
+        var processor = new ProcessPosCatalogImportChunk(imports, products, categories, uow, clock);
+        await processor.ExecuteOnceAsync();
+
+        var local = await products.FindByPlatformGlobalProductIdAsync(OrgA, GlobalId);
+        Assert.NotNull(local);
+        Assert.Equal("BEV-000184", local!.Sku);
+        Assert.Equal("4006381333931", local.Barcode);
+        Assert.Equal("4006381333931", local.PlatformBarcode);
+        Assert.Null(local.PlatformImageVersion);
+
+        local.UpdateDetails(
+            local.Name,
+            local.Description,
+            "ORG-SKU",
+            "036000291452",
+            local.CategoryId,
+            local.UnitOfMeasure,
+            local.SellingPrice,
+            clock.UtcNow.AddMinutes(1));
+        Assert.Equal("ORG-SKU", local.Sku);
+        Assert.Equal("036000291452", local.Barcode);
+        Assert.Equal("4006381333931", local.PlatformBarcode);
+    }
+
     private sealed class FixedClock(DateTimeOffset utcNow) : IClock
     {
         public DateTimeOffset UtcNow { get; } = utcNow;

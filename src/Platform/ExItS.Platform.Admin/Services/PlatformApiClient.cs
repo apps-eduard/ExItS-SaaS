@@ -641,6 +641,111 @@ public sealed class PlatformApiClient(
     public Task<ApiCallResult<GlobalProductDto>> SetGlobalProductStatusAsync(Guid id, SetGlobalProductStatusRequest request, CancellationToken ct = default) =>
         SendAsync<GlobalProductDto>(HttpMethod.Patch, $"/api/v1/platform/global-catalog/products/{id}/status", request, ct);
 
+    public async Task<ApiCallResult<GlobalProductImageDto>> UploadGlobalProductImageAsync(
+        Guid id,
+        Stream content,
+        string fileName,
+        string? contentType,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(
+                HttpMethod.Put,
+                $"/api/v1/platform/global-catalog/products/{id}/image");
+            var form = new MultipartFormDataContent();
+            var streamContent = new StreamContent(content);
+            if (!string.IsNullOrWhiteSpace(contentType))
+            {
+                streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+            }
+
+            form.Add(streamContent, "file", fileName);
+            request.Content = form;
+            var sessionToken = await ResolveSessionTokenAsync();
+            if (!string.IsNullOrWhiteSpace(sessionToken) && !request.Headers.Contains(SessionTokenHeader))
+            {
+                request.Headers.TryAddWithoutValidation(SessionTokenHeader, sessionToken);
+            }
+
+            using var response = await httpClient.SendAsync(request, ct);
+            if (response.IsSuccessStatusCode)
+            {
+                var data = await response.Content.ReadFromJsonAsync<GlobalProductImageDto>(JsonOptions, ct);
+                return data is null
+                    ? ApiCallResult<GlobalProductImageDto>.Failed(new PlatformApiException(response.StatusCode, "Invalid API response", "The API returned no content."))
+                    : ApiCallResult<GlobalProductImageDto>.Success(data);
+            }
+
+            NotifySessionExpiredIfUnauthorized(response.StatusCode, sessionToken);
+            var error = await ToExceptionAsync(response, ct);
+            return response.StatusCode switch
+            {
+                HttpStatusCode.NotFound => ApiCallResult<GlobalProductImageDto>.NotFound(error),
+                HttpStatusCode.BadRequest or HttpStatusCode.UnprocessableEntity => ApiCallResult<GlobalProductImageDto>.Validation(error),
+                _ => ApiCallResult<GlobalProductImageDto>.Failed(error)
+            };
+        }
+        catch (HttpRequestException ex)
+        {
+            return ApiCallResult<GlobalProductImageDto>.Unavailable(new PlatformApiException(null, "Platform API unavailable", ex.Message, innerException: ex));
+        }
+        catch (TaskCanceledException ex) when (!ct.IsCancellationRequested)
+        {
+            return ApiCallResult<GlobalProductImageDto>.Unavailable(new PlatformApiException(null, "Platform API timed out", ex.Message, innerException: ex));
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+    }
+
+    public Task<ApiCallResult<object>> RemoveGlobalProductImageAsync(Guid id, CancellationToken ct = default) =>
+        SendAsync<object>(HttpMethod.Delete, $"/api/v1/platform/global-catalog/products/{id}/image", null, ct);
+
+    public async Task<ApiCallResult<byte[]>> GetGlobalProductImageAsync(Guid id, string variant = "medium", CancellationToken ct = default)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(
+                HttpMethod.Get,
+                $"/api/v1/platform/global-catalog/products/{id}/image/{Uri.EscapeDataString(variant)}");
+            var sessionToken = await ResolveSessionTokenAsync();
+            if (!string.IsNullOrWhiteSpace(sessionToken) && !request.Headers.Contains(SessionTokenHeader))
+            {
+                request.Headers.TryAddWithoutValidation(SessionTokenHeader, sessionToken);
+            }
+
+            using var response = await httpClient.SendAsync(request, ct);
+            if (response.IsSuccessStatusCode)
+            {
+                var bytes = await response.Content.ReadAsByteArrayAsync(ct);
+                return ApiCallResult<byte[]>.Success(bytes);
+            }
+
+            NotifySessionExpiredIfUnauthorized(response.StatusCode, sessionToken);
+            var error = await ToExceptionAsync(response, ct);
+            return response.StatusCode switch
+            {
+                HttpStatusCode.NotFound => ApiCallResult<byte[]>.NotFound(error),
+                HttpStatusCode.BadRequest or HttpStatusCode.UnprocessableEntity => ApiCallResult<byte[]>.Validation(error),
+                _ => ApiCallResult<byte[]>.Failed(error)
+            };
+        }
+        catch (HttpRequestException ex)
+        {
+            return ApiCallResult<byte[]>.Unavailable(new PlatformApiException(null, "Platform API unavailable", ex.Message, innerException: ex));
+        }
+        catch (TaskCanceledException ex) when (!ct.IsCancellationRequested)
+        {
+            return ApiCallResult<byte[]>.Unavailable(new PlatformApiException(null, "Platform API timed out", ex.Message, innerException: ex));
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+    }
+
     public Task<ApiCallResult<PagedResult<CatalogTemplateSummaryDto>>> GetCatalogTemplatesAsync(
         int page = 1,
         int pageSize = 20,

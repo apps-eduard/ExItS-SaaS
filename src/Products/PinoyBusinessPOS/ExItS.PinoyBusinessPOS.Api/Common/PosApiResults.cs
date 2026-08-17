@@ -1,3 +1,5 @@
+using System.Globalization;
+using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 
@@ -13,6 +15,12 @@ internal static class PosApiResults
         }
 
         return Problem(result.ErrorCode!, result.ErrorMessage!, MapStatusCode(result.ErrorCode!), result.ErrorDetails);
+    }
+
+    public static IResult ImageFile(HttpResponse response, ProductImageBytes image)
+    {
+        response.Headers["X-ExItS-Image-Version"] = image.Version.ToString(CultureInfo.InvariantCulture);
+        return Results.File(image.Content, image.ContentType);
     }
 
     public static IResult FromResult(ApplicationResult result, Func<IResult> onSuccess)

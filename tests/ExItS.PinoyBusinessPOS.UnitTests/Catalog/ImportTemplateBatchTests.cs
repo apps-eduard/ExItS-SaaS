@@ -329,6 +329,19 @@ public sealed class ImportTemplateBatchTests
             string? platformSessionToken,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(new PagedResult<PlatformMerchantGlobalCategoryDto>([], 0, 1, 50));
+
+        public Task<IReadOnlyList<PlatformGlobalProductImageMetaDto>> ListProductImageMetaAsync(
+            IReadOnlyList<Guid> productIds,
+            string? platformSessionToken,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<PlatformGlobalProductImageMetaDto>>([]);
+
+        public Task<ProductImageBytes?> GetProductImageAsync(
+            Guid productId,
+            string variant,
+            string? platformSessionToken,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<ProductImageBytes?>(null);
     }
 
     private sealed class TimingOutPlatform : IPlatformMerchantCatalogClient
@@ -372,6 +385,19 @@ public sealed class ImportTemplateBatchTests
             string? platformSessionToken,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(new PagedResult<PlatformMerchantGlobalCategoryDto>([], 0, 1, 50));
+
+        public Task<IReadOnlyList<PlatformGlobalProductImageMetaDto>> ListProductImageMetaAsync(
+            IReadOnlyList<Guid> productIds,
+            string? platformSessionToken,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<PlatformGlobalProductImageMetaDto>>([]);
+
+        public Task<ProductImageBytes?> GetProductImageAsync(
+            Guid productId,
+            string variant,
+            string? platformSessionToken,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<ProductImageBytes?>(null);
     }
 
     private sealed class UnauthorizedPlatform : IPlatformMerchantCatalogClient
@@ -417,6 +443,19 @@ public sealed class ImportTemplateBatchTests
             string? platformSessionToken,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(new PagedResult<PlatformMerchantGlobalCategoryDto>([], 0, 1, 50));
+
+        public Task<IReadOnlyList<PlatformGlobalProductImageMetaDto>> ListProductImageMetaAsync(
+            IReadOnlyList<Guid> productIds,
+            string? platformSessionToken,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<PlatformGlobalProductImageMetaDto>>([]);
+
+        public Task<ProductImageBytes?> GetProductImageAsync(
+            Guid productId,
+            string variant,
+            string? platformSessionToken,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<ProductImageBytes?>(null);
     }
 
     private sealed class MemoryImports : ICatalogImportJobRepository

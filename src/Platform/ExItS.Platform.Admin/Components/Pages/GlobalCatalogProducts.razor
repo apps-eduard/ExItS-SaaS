@@ -3,6 +3,7 @@
 @using AntDesign
 @using AntDesign.TableModels
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Forms
 @attribute [Authorize]
 @implements IDisposable
 @inject IPlatformApiClient Api
@@ -180,8 +181,15 @@ else if (Id is null)
                     </div>
                 </Space>
                 <div>
-                    <label class="ant-form-item-label" for="gc-prod-image">@L["GlobalProducts_ImageReference"]</label>
-                    <Input Id="gc-prod-image" @bind-Value="_newImage" Size="@InputSize.Small" Disabled="_busy" />
+                    <label class="ant-form-item-label">@L["GlobalProducts_Image"]</label>
+                    <InputFile OnChange="OnCreateImageSelected" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" disabled="@_busy" />
+                    @if (!string.IsNullOrWhiteSpace(_createPreviewUrl))
+                    {
+                        <div style="margin-top:8px;">
+                            <img src="@_createPreviewUrl" alt="" width="96" height="96" style="object-fit:contain;border:1px solid #d9d9d9;border-radius:4px;" />
+                        </div>
+                    }
+                    <div class="ant-form-item-explain" style="color:#8c8c8c;">@L["GlobalProducts_ImageHint"]</div>
                 </div>
                 <div>
                     <label class="ant-form-item-label" for="gc-prod-tags">@L["GlobalProducts_SearchTags"]</label>
@@ -426,8 +434,31 @@ else
                         </div>
                     </Space>
                     <div>
-                        <label class="ant-form-item-label" for="gc-prod-edit-image">@L["GlobalProducts_ImageReference"]</label>
-                        <Input Id="gc-prod-edit-image" @bind-Value="_editImage" Size="@InputSize.Small" Disabled="_busy" />
+                        <label class="ant-form-item-label">@L["GlobalProducts_Image"]</label>
+                        <div style="display:flex;gap:12px;align-items:flex-start;">
+                            <div style="width:96px;height:96px;border:1px solid #d9d9d9;border-radius:4px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fafafa;">
+                                @if (!string.IsNullOrWhiteSpace(_editPreviewUrl))
+                                {
+                                    <img src="@_editPreviewUrl" alt="" width="96" height="96" style="object-fit:contain;" />
+                                }
+                                else
+                                {
+                                    <span style="color:#8c8c8c;font-size:12px;">@L["GlobalProducts_ImageNone"]</span>
+                                }
+                            </div>
+                            <Space Direction="SpaceDirection.Vertical">
+                                <InputFile OnChange="OnEditImageSelected" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" disabled="@(_busy || _imageBusy)" />
+                                <Space>
+                                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_imageBusy" Disabled="@(_pendingEditImage is null)" OnClick="SaveImageAsync">@L["GlobalProducts_ImageSave"]</Button>
+                                    <Button Size="@ButtonSize.Small" Danger Disabled="@(!_hasServerImage || _imageBusy)" OnClick="RemoveImageAsync">@L["GlobalProducts_ImageRemove"]</Button>
+                                </Space>
+                                <div class="ant-form-item-explain" style="color:#8c8c8c;">@L["GlobalProducts_ImageHint"]</div>
+                                @if (!string.IsNullOrWhiteSpace(_imageError))
+                                {
+                                    <div class="ant-form-item-explain ant-form-item-explain-error">@_imageError</div>
+                                }
+                            </Space>
+                        </div>
                     </div>
                     <div>
                         <label class="ant-form-item-label" for="gc-prod-edit-tags">@L["GlobalProducts_SearchTags"]</label>
@@ -453,7 +484,16 @@ else
                 <DescriptionsItem Title="@L["GlobalProducts_CostPrice"]">@AdminCurrency.FormatPhp(p.CostPrice)</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalProducts_SellingPrice"]">@AdminCurrency.FormatPhp(p.SellingPrice)</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalProducts_FieldDescription"]">@(p.Description ?? "—")</DescriptionsItem>
-                <DescriptionsItem Title="@L["GlobalProducts_ImageReference"]">@(p.ImageReference ?? "—")</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalProducts_Image"]">
+                    @if (!string.IsNullOrWhiteSpace(_editPreviewUrl))
+                    {
+                        <img src="@_editPreviewUrl" alt="" width="96" height="96" style="object-fit:contain;" />
+                    }
+                    else
+                    {
+                        @L["GlobalProducts_ImageNone"]
+                    }
+                </DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalProducts_SearchTags"]">@(p.SearchTags.Count == 0 ? "—" : string.Join(", ", p.SearchTags))</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalCatalog_BusinessTypes"]">
                     @(p.BusinessTypes.Count == 0 ? "—" : string.Join(", ", p.BusinessTypes))
@@ -500,6 +540,8 @@ else
     private decimal? _newPrice;
     private decimal? _newCost;
     private string _newImage = "";
+    private byte[]? _pendingCreateImage;
+    private string? _createPreviewUrl;
     private string _newTags = "";
     private string[] _newBusinessTypeIds = [];
     private string _editName = "";
@@ -513,6 +555,11 @@ else
     private decimal? _editPrice;
     private decimal? _editCost;
     private string _editImage = "";
+    private byte[]? _pendingEditImage;
+    private string? _editPreviewUrl;
+    private bool _hasServerImage;
+    private bool _imageBusy;
+    private string? _imageError;
     private string _editTags = "";
     private string[] _editBusinessTypeIds = [];
     private DateTimeOffset? _expectedUpdatedAt;
@@ -697,6 +744,10 @@ else
         _editPrice = p.SellingPrice;
         _editCost = p.CostPrice;
         _editImage = p.ImageReference ?? "";
+        _pendingEditImage = null;
+        _imageError = null;
+        _hasServerImage = p.HasImage;
+        _ = LoadEditPreviewAsync(p);
         _editTags = string.Join(", ", p.SearchTags);
         _editBusinessTypeIds = p.BusinessTypeIds.Select(id => id.ToString("D")).ToArray();
         _expectedUpdatedAt = p.UpdatedAtUtc;
@@ -892,6 +943,122 @@ else
         return ok;
     }
 
+    private async Task OnCreateImageSelected(InputFileChangeEventArgs e)
+    {
+        _pendingCreateImage = await ReadImageFileAsync(e.File);
+        _createPreviewUrl = _pendingCreateImage is null ? null : ToDataUrl(_pendingCreateImage);
+    }
+
+    private async Task OnEditImageSelected(InputFileChangeEventArgs e)
+    {
+        _imageError = null;
+        _pendingEditImage = await ReadImageFileAsync(e.File);
+        if (_pendingEditImage is null)
+        {
+            _imageError = L["GlobalProducts_ImageInvalid"];
+            return;
+        }
+
+        _editPreviewUrl = ToDataUrl(_pendingEditImage);
+    }
+
+    private async Task SaveImageAsync()
+    {
+        if (Id is null || _pendingEditImage is null || !CanManage || _imageBusy)
+        {
+            return;
+        }
+
+        _imageBusy = true;
+        _imageError = null;
+        try
+        {
+            using var stream = new MemoryStream(_pendingEditImage);
+            var result = await Api.UploadGlobalProductImageAsync(Id.Value, stream, "product.webp", "image/webp");
+            if (!result.IsSuccess)
+            {
+                _imageError = result.Error?.Detail ?? L["GlobalProducts_ImageInvalid"];
+                return;
+            }
+
+            _pendingEditImage = null;
+            _hasServerImage = true;
+            await LoadDetailAsync();
+        }
+        finally
+        {
+            _imageBusy = false;
+        }
+    }
+
+    private async Task RemoveImageAsync()
+    {
+        if (Id is null || !CanManage || _imageBusy)
+        {
+            return;
+        }
+
+        _imageBusy = true;
+        _imageError = null;
+        try
+        {
+            var result = await Api.RemoveGlobalProductImageAsync(Id.Value);
+            if (!result.IsSuccess)
+            {
+                _imageError = result.Error?.Detail ?? L["Common_Error"];
+                return;
+            }
+
+            _pendingEditImage = null;
+            _hasServerImage = false;
+            _editPreviewUrl = null;
+            await LoadDetailAsync();
+        }
+        finally
+        {
+            _imageBusy = false;
+        }
+    }
+
+    private async Task LoadEditPreviewAsync(GlobalProductDto product)
+    {
+        if (!product.HasImage)
+        {
+            _editPreviewUrl = null;
+            return;
+        }
+
+        var result = await Api.GetGlobalProductImageAsync(product.Id, "medium");
+        if (result.IsSuccess && result.Data is { Length: > 0 })
+        {
+            _editPreviewUrl = ToDataUrl(result.Data);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private static async Task<byte[]?> ReadImageFileAsync(IBrowserFile file)
+    {
+        if (file.Size <= 0 || file.Size > 10 * 1024 * 1024)
+        {
+            return null;
+        }
+
+        await using var stream = file.OpenReadStream(10 * 1024 * 1024);
+        using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer);
+        return buffer.ToArray();
+    }
+
+    private static string ToDataUrl(byte[] bytes)
+    {
+        var mime = bytes.Length >= 3 && bytes[0] == 0xFF && bytes[1] == 0xD8
+            ? "image/jpeg"
+            : bytes.Length >= 8 && bytes[0] == 0x89 && bytes[1] == 0x50
+                ? "image/png"
+                : "image/webp";
+        return $"data:{mime};base64,{Convert.ToBase64String(bytes)}";
+    }
+
     private async Task CreateAsync()
     {
         if (!CanManage || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
@@ -925,6 +1092,12 @@ else
                 _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
                 _formError = AdminFormErrorMapper.MapPageError(result);
                 return;
+            }
+
+            if (_pendingCreateImage is { Length: > 0 })
+            {
+                using var stream = new MemoryStream(_pendingCreateImage);
+                await Api.UploadGlobalProductImageAsync(result.Data!.Id, stream, "product.webp", "image/webp");
             }
 
             Nav.NavigateTo($"/admin/global-catalog/products/{result.Data!.Id}?alert=created");

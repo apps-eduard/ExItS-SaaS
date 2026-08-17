@@ -1,4 +1,6 @@
+using System.Globalization;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.GlobalCatalog;
 using ExItS.Platform.Domain.Common;
 
 namespace ExItS.Platform.Api.Common;
@@ -14,6 +16,12 @@ internal static class PlatformApiResults
         }
 
         return Problem(result.ErrorCode!, result.ErrorMessage!, MapStatusCode(result.ErrorCode!));
+    }
+
+    public static IResult ImageFile(HttpResponse response, GlobalProductImageBytes image)
+    {
+        response.Headers["X-ExItS-Image-Version"] = image.Version.ToString(CultureInfo.InvariantCulture);
+        return Results.File(image.Content, image.ContentType);
     }
 
     public static IResult Problem(string errorCode, string detail, int statusCode) =>

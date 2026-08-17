@@ -126,6 +126,7 @@ builder.Services.AddScoped<ReactivateCatalogProduct>();
 builder.Services.AddScoped<SetCatalogProductImage>();
 builder.Services.AddScoped<RemoveCatalogProductImage>();
 builder.Services.AddScoped<GetCatalogProductImage>();
+builder.Services.AddScoped<GetPlatformCatalogProductImage>();
 builder.Services.AddScoped<GetStorefrontProductImage>();
 builder.Services.AddScoped<QueryConnectedBuyerAvailability>();
 builder.Services.AddScoped<BulkMutateConnectedBuyerAvailability>();

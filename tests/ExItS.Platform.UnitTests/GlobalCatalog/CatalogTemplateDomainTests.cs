@@ -321,7 +321,12 @@ public sealed class CatalogTemplateUseCaseTests
         template.AssignProduct(product.Id, T0.AddMinutes(1), isFirstBatch: true);
         await templates.AddAsync(template);
 
-        var service = new CatalogTemplateQueryService(templates, products, categories, new FakeBusinessTypeRepository());
+        var service = new CatalogTemplateQueryService(
+            templates,
+            products,
+            categories,
+            new FakeBusinessTypeRepository(),
+            new EmptyGlobalProductImageRepository());
         var enriched = await service.GetByIdAsync(template.Id.Value);
         Assert.NotNull(enriched);
         var row = Assert.Single(enriched!.Products);

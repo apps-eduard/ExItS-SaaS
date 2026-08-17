@@ -14,7 +14,8 @@ public sealed record CustomerStorefrontProductDto(
     decimal? AvailableQuantity = null,
     string AvailabilityStatus = CustomerStorefrontAvailability.Untracked,
     bool HasImage = false,
-    int? ImageVersion = null);
+    int? ImageVersion = null,
+    string ImageSource = "None");
 
 public sealed record CustomerStorefrontBranchDto(
     Guid BranchId,

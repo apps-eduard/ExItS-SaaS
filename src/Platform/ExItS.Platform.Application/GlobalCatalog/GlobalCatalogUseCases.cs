@@ -78,13 +78,16 @@ public sealed class GlobalProductQueryService
 {
     private readonly IGlobalProductRepository _products;
     private readonly IBusinessTypeRepository _businessTypes;
+    private readonly IGlobalProductImageRepository _images;
 
     public GlobalProductQueryService(
         IGlobalProductRepository products,
-        IBusinessTypeRepository businessTypes)
+        IBusinessTypeRepository businessTypes,
+        IGlobalProductImageRepository images)
     {
         _products = products;
         _businessTypes = businessTypes;
+        _images = images;
     }
 
     public async Task<GlobalProductDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -99,7 +102,8 @@ public sealed class GlobalProductQueryService
         var codes = await BusinessTypeResolver
             .LoadCodeLookupAsync(_businessTypes, product.BusinessTypeIds, cancellationToken)
             .ConfigureAwait(false);
-        return GlobalCatalogDtoMaps.Map(product, codes);
+        var image = await _images.GetByProductIdAsync(product.Id, cancellationToken).ConfigureAwait(false);
+        return GlobalCatalogDtoMaps.Map(product, codes, image);
     }
 
     public async Task<PagedResult<GlobalProductDto>> ListAsync(
@@ -138,8 +142,17 @@ public sealed class GlobalProductQueryService
         var codes = await BusinessTypeResolver
             .LoadCodeLookupAsync(_businessTypes, items.SelectMany(i => i.BusinessTypeIds), cancellationToken)
             .ConfigureAwait(false);
+        var images = items.Count == 0
+            ? []
+            : await _images.ListByProductIdsAsync(items.Select(i => i.Id).ToList(), cancellationToken)
+                .ConfigureAwait(false);
+        var imageByProduct = images.ToDictionary(i => i.GlobalProductId.Value);
         return new PagedResult<GlobalProductDto>(
-            items.Select(i => GlobalCatalogDtoMaps.Map(i, codes)).ToList(),
+            items.Select(i =>
+            {
+                imageByProduct.TryGetValue(i.Id.Value, out var image);
+                return GlobalCatalogDtoMaps.Map(i, codes, image);
+            }).ToList(),
             total,
             Math.Max(page ?? 1, 1),
             take);
@@ -507,6 +520,7 @@ public sealed class UpdateGlobalProduct
     private readonly IGlobalProductRepository _products;
     private readonly IGlobalCategoryRepository _categories;
     private readonly IBusinessTypeRepository _businessTypes;
+    private readonly IGlobalProductImageRepository _images;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -514,12 +528,14 @@ public sealed class UpdateGlobalProduct
         IGlobalProductRepository products,
         IGlobalCategoryRepository categories,
         IBusinessTypeRepository businessTypes,
+        IGlobalProductImageRepository images,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _products = products;
         _categories = categories;
         _businessTypes = businessTypes;
+        _images = images;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -630,7 +646,8 @@ public sealed class UpdateGlobalProduct
             var codes = await BusinessTypeResolver
                 .LoadCodeLookupAsync(_businessTypes, product.BusinessTypeIds, cancellationToken)
                 .ConfigureAwait(false);
-            return ApplicationResult<GlobalProductDto>.Success(GlobalCatalogDtoMaps.Map(product, codes));
+            var image = await _images.GetByProductIdAsync(product.Id, cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<GlobalProductDto>.Success(GlobalCatalogDtoMaps.Map(product, codes, image));
         }
         catch (DomainException ex)
         {
@@ -650,15 +667,18 @@ public sealed class UpdateGlobalProduct
 public sealed class SetGlobalProductStatus
 {
     private readonly IGlobalProductRepository _products;
+    private readonly IGlobalProductImageRepository _images;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public SetGlobalProductStatus(
         IGlobalProductRepository products,
+        IGlobalProductImageRepository images,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _products = products;
+        _images = images;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -696,7 +716,8 @@ public sealed class SetGlobalProductStatus
             product.SetStatus(status, _clock.UtcNow);
             await _products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<GlobalProductDto>.Success(GlobalCatalogDtoMaps.Map(product));
+            var image = await _images.GetByProductIdAsync(product.Id, cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<GlobalProductDto>.Success(GlobalCatalogDtoMaps.Map(product, image: image));
         }
         catch (DomainException ex)
         {

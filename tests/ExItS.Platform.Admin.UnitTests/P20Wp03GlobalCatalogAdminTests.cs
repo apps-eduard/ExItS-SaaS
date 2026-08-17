@@ -48,6 +48,11 @@ public sealed class P20Wp03GlobalCatalogAdminTests
         Assert.Contains("CostPrice", products, StringComparison.Ordinal);
         Assert.Contains("SellingPrice", products, StringComparison.Ordinal);
         Assert.Contains("@implements IDisposable", products, StringComparison.Ordinal);
+        Assert.Contains("InputFile", products, StringComparison.Ordinal);
+        Assert.Contains("UploadGlobalProductImageAsync", products, StringComparison.Ordinal);
+        Assert.Contains("GlobalProducts_ImageSave", products, StringComparison.Ordinal);
+        Assert.Contains("GlobalProducts_ImageRemove", products, StringComparison.Ordinal);
+        Assert.Contains("CanManage", products, StringComparison.Ordinal);
         Assert.DoesNotContain("/api/v1/platform/catalog/", products, StringComparison.Ordinal);
 
         Assert.Contains("Resizable", categories, StringComparison.Ordinal);

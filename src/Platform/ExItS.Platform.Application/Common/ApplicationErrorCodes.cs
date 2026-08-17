@@ -212,6 +212,8 @@ public static class ApplicationErrorCodes
 
     public const string GlobalCategoryNotFound = "application.global_catalog.category.not_found";
     public const string GlobalProductNotFound = "application.global_catalog.product.not_found";
+    public const string GlobalProductImageNotFound = "application.global_catalog.product.image.not_found";
+    public const string GlobalProductImageInvalid = "application.global_catalog.product.image.invalid";
     public const string BusinessTypeNotFound = "application.global_catalog.business_type.not_found";
     public const string DuplicateBusinessTypeCode = "application.global_catalog.business_type.code_conflict";
     public const string DuplicateBusinessTypeName = "application.global_catalog.business_type.name_conflict";
