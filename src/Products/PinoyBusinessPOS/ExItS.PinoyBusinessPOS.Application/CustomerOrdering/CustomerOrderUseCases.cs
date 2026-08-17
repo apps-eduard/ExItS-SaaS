@@ -401,8 +401,15 @@ public sealed class PlaceCustomerOrder
 public sealed class QuoteCustomerOrderDelivery
 {
     private readonly ICustomerOrderBranchDirectory _branches;
+    private readonly ISellerCustomerOrderingCapability _sellerCapability;
 
-    public QuoteCustomerOrderDelivery(ICustomerOrderBranchDirectory branches) => _branches = branches;
+    public QuoteCustomerOrderDelivery(
+        ICustomerOrderBranchDirectory branches,
+        ISellerCustomerOrderingCapability? sellerCapability = null)
+    {
+        _branches = branches;
+        _sellerCapability = sellerCapability ?? new AllowAllSellerCustomerOrderingCapability();
+    }
 
     public async Task<ApplicationResult<QuoteCustomerOrderDeliveryDto>> ExecuteAsync(
         Guid sellerOrganizationId,
@@ -411,6 +418,23 @@ public sealed class QuoteCustomerOrderDelivery
     {
         try
         {
+            var sellerCapability = await _sellerCapability
+                .ResolveAsync(sellerOrganizationId, cancellationToken)
+                .ConfigureAwait(false);
+            if (!sellerCapability.CanCustomerOrder)
+            {
+                return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Failure(
+                    ApplicationErrorCodes.CustomerOrderOrderingUnavailable,
+                    "This merchant is not accepting customer orders.");
+            }
+
+            if (!sellerCapability.CanCustomerDelivery)
+            {
+                return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Failure(
+                    ApplicationErrorCodes.CustomerOrderOrderingUnavailable,
+                    "This merchant is not accepting delivery orders.");
+            }
+
             var branch = await _branches
                 .GetBranchAsync(sellerOrganizationId, request.FulfillmentBranchId, cancellationToken)
                 .ConfigureAwait(false);

@@ -266,6 +266,40 @@ public sealed class CustomerLinkCompletenessTests
         Assert.NotEqual(accepted.Value.LinkedCustomerAppUserId, relinked.Value!.LinkedCustomerAppUserId);
     }
 
+    [Fact]
+    public async Task Ordering_capability_requires_active_personal_link()
+    {
+        var harness = await Harness.CreateAsync();
+        var unlinked = await harness.OrderingCapability.ExecuteAsync(
+            harness.Personal.Id,
+            harness.Org.Id.Value);
+        Assert.False(unlinked.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.LinkedCustomerAppUserNotFound, unlinked.ErrorCode);
+
+        var accepted = await harness.Accept.ExecuteAsync(
+            harness.AcceptToken,
+            harness.Personal.Id,
+            AccountClass.Personal);
+        Assert.True(accepted.IsSuccess, accepted.ErrorMessage);
+
+        var linked = await harness.OrderingCapability.ExecuteAsync(
+            harness.Personal.Id,
+            harness.Org.Id.Value);
+        Assert.True(linked.IsSuccess, linked.ErrorMessage);
+        Assert.Equal(harness.Org.Id.Value, linked.Value!.OrganizationId);
+        Assert.Equal("Corner Store", linked.Value.OrganizationDisplayName);
+
+        Assert.True((await harness.Unlink.ExecuteForOwnerAsync(
+            LinkedCustomerAppUserId.From(accepted.Value!.LinkedCustomerAppUserId),
+            harness.Personal.Id)).IsSuccess);
+
+        var revoked = await harness.OrderingCapability.ExecuteAsync(
+            harness.Personal.Id,
+            harness.Org.Id.Value);
+        Assert.False(revoked.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.LinkedCustomerAppUserNotFound, revoked.ErrorCode);
+    }
+
     internal sealed class Harness
     {
         private Harness(
@@ -286,7 +320,8 @@ public sealed class CustomerLinkCompletenessTests
             RevokeCustomerLinkRequest revokePending,
             CreateCustomerLinkRequest createRequest,
             DeclineCustomerLinkRequest decline,
-            AuthorizeLinkedCustomerAccess authorize)
+            AuthorizeLinkedCustomerAccess authorize,
+            GetLinkedMerchantOrderingCapability orderingCapability)
         {
             Org = org;
             Personal = personal;
@@ -306,6 +341,7 @@ public sealed class CustomerLinkCompletenessTests
             CreateRequest = createRequest;
             Decline = decline;
             Authorize = authorize;
+            OrderingCapability = orderingCapability;
         }
 
         public PlatformOrganization Org { get; }
@@ -326,6 +362,7 @@ public sealed class CustomerLinkCompletenessTests
         public CreateCustomerLinkRequest CreateRequest { get; }
         public DeclineCustomerLinkRequest Decline { get; }
         public AuthorizeLinkedCustomerAccess Authorize { get; }
+        public GetLinkedMerchantOrderingCapability OrderingCapability { get; }
 
         public static async Task<Harness> CreateAsync()
         {
@@ -340,6 +377,7 @@ public sealed class CustomerLinkCompletenessTests
             var personalSettings = new InMemoryPersonalAccountSettingsRepository();
             var personalNotifications = new InMemoryPersonalInAppNotificationRepository();
             var orgNotifications = new InMemoryOrganizationInAppNotificationRepository();
+            var entitlements = new InMemoryEntitlementSnapshotRepository();
 
             var org = PlatformOrganization.Create("Corner Store", "corner-store", T0);
             await orgs.AddAsync(org);
@@ -364,7 +402,7 @@ public sealed class CustomerLinkCompletenessTests
                 orgs,
                 new AcceptCustomerLinkRequest(requests, customers, links, memberships, users, uow, clock, orgNotifications),
                 new UnlinkAcceptedCustomerLink(links, customers, uow, clock),
-                new ListLinkedMerchantsForPersonalUser(links, customers, orgs, new InMemoryEntitlementSnapshotRepository()),
+                new ListLinkedMerchantsForPersonalUser(links, customers, orgs, entitlements),
                 new RevokeCustomerLinkRequest(requests, uow, clock),
                 new CreateCustomerLinkRequest(
                     customers,
@@ -376,7 +414,8 @@ public sealed class CustomerLinkCompletenessTests
                     personalSettings,
                     personalNotifications),
                 new DeclineCustomerLinkRequest(requests, uow, clock, orgNotifications, users),
-                new AuthorizeLinkedCustomerAccess(users, links, customers));
+                new AuthorizeLinkedCustomerAccess(users, links, customers),
+                new GetLinkedMerchantOrderingCapability(links, entitlements, orgs));
         }
     }
 
