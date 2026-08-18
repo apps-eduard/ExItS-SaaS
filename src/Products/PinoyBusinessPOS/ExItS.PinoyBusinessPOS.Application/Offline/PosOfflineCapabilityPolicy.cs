@@ -13,6 +13,7 @@ public sealed class PosOfflineCapabilityPolicy : IPosOfflineCapabilityPolicy
             ["/"] = PosConnectivityRequirement.OfflineCapable,
             ["/offline-pin"] = PosConnectivityRequirement.OfflineCapable,
             ["/offline-pin-setup"] = PosConnectivityRequirement.OfflineCapable,
+            ["/setup-pin"] = PosConnectivityRequirement.OfflineCapable,
             ["/signin"] = PosConnectivityRequirement.OfflineCapable,
             ["/welcome"] = PosConnectivityRequirement.OfflineCapable,
             ["/onboarding/language"] = PosConnectivityRequirement.OfflineCapable,

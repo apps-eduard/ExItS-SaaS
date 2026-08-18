@@ -66,6 +66,13 @@ public interface IOfflineOperatingGrantService
 
     Task<OfflineColdStartOffer> EvaluateColdStartOfferAsync(CancellationToken ct = default);
 
+    /// <summary>
+    /// Complete offline-PIN readiness for one persisted user: enrolled identity, valid
+    /// device-bound grant, matching device, unexpired/non-revoked, and PIN verifier.
+    /// Orphan verifiers without a grant are not eligible.
+    /// </summary>
+    Task<OfflineColdStartOffer> EvaluateUserReadinessAsync(Guid userId, CancellationToken ct = default);
+
     /// <summary>Unlock when exactly one unlockable enrolled user exists; otherwise requires userId.</summary>
     Task<OfflinePinUnlockResult> UnlockWithPinAsync(string pin, CancellationToken ct = default);
 

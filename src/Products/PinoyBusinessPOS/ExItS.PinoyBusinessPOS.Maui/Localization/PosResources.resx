@@ -560,7 +560,7 @@
     <value>Continue offline</value>
   </data>
   <data name="SignIn_OfflineNoPinMessage" xml:space="preserve">
-    <value>You're offline and offline unlock isn't available on this device yet. Connect once to sign in and set up your PIN, then you can use limited offline features later.</value>
+    <value>Offline sign-in isn't set up on this device yet. Connect to the internet, sign in once, and set up your PIN.</value>
   </data>
   <data name="SignIn_OnlineRequiresInternet" xml:space="preserve">
     <value>Online sign-in requires an internet connection.</value>
@@ -590,7 +590,7 @@
     <value>Set up your offline PIN</value>
   </data>
   <data name="Offline_PinEnrollMessage" xml:space="preserve">
-    <value>Create a PIN so you can continue using important ExItS features when your internet connection is unavailable. Your offline work will be saved on this device and synced when you're back online.</value>
+    <value>Use this PIN to access the app when internet is unavailable on this device.</value>
   </data>
   <data name="Offline_PinConfirmLabel" xml:space="preserve">
     <value>Confirm PIN</value>
@@ -600,6 +600,15 @@
   </data>
   <data name="Offline_PinConfirmMismatch" xml:space="preserve">
     <value>PIN and confirmation do not match.</value>
+  </data>
+  <data name="Offline_PinSetupIncomplete" xml:space="preserve">
+    <value>Offline PIN setup didn't finish. Stay on this screen and try again. Your PIN was not saved.</value>
+  </data>
+  <data name="Offline_PinForgotAction" xml:space="preserve">
+    <value>Forgot PIN?</value>
+  </data>
+  <data name="Offline_PinForgotOfflineMessage" xml:space="preserve">
+    <value>Reconnect to the internet and sign in normally to reset or change your PIN. PIN cannot be reset while offline.</value>
   </data>
   <data name="Offline_PinChangeTitle" xml:space="preserve">
     <value>Change offline PIN</value>

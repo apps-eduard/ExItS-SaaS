@@ -202,6 +202,80 @@ public sealed class OfflineOperatingGrantServiceTests
             .EvaluateColdStartOfferAsync();
         Assert.False(expired.CanOfferPinUnlock);
         Assert.Equal(OfflinePinEligibilityReason.Expired, expired.EligibilityReason);
+        Assert.False(expired.RequiresPinEnrollment);
+    }
+
+    [Fact]
+    public async Task User_readiness_rejects_orphan_verifier_and_missing_pin()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
+        var options = CreateOptions(720);
+        var store = new MemoryOfflineGrantStore();
+        var device = new FakeDevice("device-a");
+        var sut = new OfflineOperatingGrantService(store, device, options, clock);
+        var userId = OnlineSession().UserId;
+
+        var empty = await sut.EvaluateUserReadinessAsync(userId);
+        Assert.False(empty.CanOfferPinUnlock);
+        Assert.Equal(OfflinePinEligibilityReason.NoStoredIdentity, empty.EligibilityReason);
+        Assert.True(empty.RequiresPinEnrollment);
+
+        await store.SavePinVerifierAsync(userId, OfflinePinHasher.Create("123456", 10_000, userId));
+        var orphanPin = await sut.EvaluateUserReadinessAsync(userId);
+        Assert.False(orphanPin.CanOfferPinUnlock);
+        Assert.Equal(OfflinePinEligibilityReason.NoGrant, orphanPin.EligibilityReason);
+        Assert.True(orphanPin.RequiresPinEnrollment);
+        Assert.False((await sut.EvaluateColdStartOfferAsync()).CanOfferPinUnlock);
+
+        await store.ClearPinVerifierAsync(userId);
+        await sut.EstablishFromOnlineSessionAsync(OnlineSession(), device.DeviceId, "Cashier");
+        var missingPin = await sut.EvaluateUserReadinessAsync(userId);
+        Assert.False(missingPin.CanOfferPinUnlock);
+        Assert.Equal(OfflinePinEligibilityReason.NoPinVerifier, missingPin.EligibilityReason);
+        Assert.True(missingPin.RequiresPinEnrollment);
+
+        Assert.True((await sut.SetPinAsync("123456")).Succeeded);
+        var ready = await sut.EvaluateUserReadinessAsync(userId);
+        Assert.True(ready.CanOfferPinUnlock);
+        Assert.False(ready.RequiresPinEnrollment);
+        Assert.Equal(OfflinePinEligibilityReason.Eligible, ready.EligibilityReason);
+    }
+
+    [Fact]
+    public async Task Pin_save_failure_does_not_complete_setup()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
+        var options = CreateOptions(720);
+        var store = new ThrowingPinStore();
+        var device = new FakeDevice("device-a");
+        var sut = new OfflineOperatingGrantService(store, device, options, clock);
+        await sut.EstablishFromOnlineSessionAsync(OnlineSession(), device.DeviceId, "Cashier");
+
+        store.ThrowOnSave = true;
+        var result = await sut.SetPinAsync("123456");
+        Assert.False(result.Succeeded);
+        Assert.Equal("Auth_SecureStorageFailure", result.SafeMessageKey);
+        Assert.False(await sut.HasPinConfiguredAsync(TestUserId));
+        Assert.False((await sut.EvaluateUserReadinessAsync(TestUserId)).CanOfferPinUnlock);
+    }
+
+    [Fact]
+    public async Task Ineligible_unlock_is_not_wrong_pin()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
+        var options = CreateOptions(720);
+        var store = new MemoryOfflineGrantStore();
+        var device = new FakeDevice("device-a");
+        var sut = new OfflineOperatingGrantService(store, device, options, clock);
+
+        var firstTime = await sut.UnlockWithPinAsync("123456");
+        Assert.NotEqual(OfflinePinUnlockStatus.WrongPin, firstTime.Status);
+        Assert.NotEqual("Offline_PinWrong", firstTime.SafeMessageKey);
+
+        await sut.EstablishFromOnlineSessionAsync(OnlineSession(), device.DeviceId, "Cashier");
+        var missingPin = await sut.UnlockWithPinAsync(TestUserId, "123456");
+        Assert.Equal(OfflinePinUnlockStatus.PinNotConfigured, missingPin.Status);
+        Assert.Equal("Offline_PinNotConfigured", missingPin.SafeMessageKey);
     }
 
     [Fact]
@@ -302,6 +376,45 @@ public sealed class OfflineOperatingGrantServiceTests
     {
         Assert.Equal(720, new OfflineOperatingGrantOptions().DurationHours);
         Assert.Equal(8760, new OfflineOperatingGrantOptions().MaxDurationHours);
+    }
+
+    private sealed class ThrowingPinStore : IOfflineOperatingGrantStore
+    {
+        private readonly MemoryOfflineGrantStore _inner = new();
+        public bool ThrowOnSave { get; set; }
+
+        public Task EnsureMigratedAsync(CancellationToken ct = default) => _inner.EnsureMigratedAsync(ct);
+
+        public Task<IReadOnlyList<OfflineEnrolledUserSummary>> GetEnrolledUsersAsync(CancellationToken ct = default) =>
+            _inner.GetEnrolledUsersAsync(ct);
+
+        public Task<OfflineOperatingGrant?> LoadGrantAsync(Guid userId, CancellationToken ct = default) =>
+            _inner.LoadGrantAsync(userId, ct);
+
+        public Task SaveGrantAsync(OfflineOperatingGrant grant, CancellationToken ct = default) =>
+            _inner.SaveGrantAsync(grant, ct);
+
+        public Task ClearGrantAsync(Guid userId, CancellationToken ct = default) =>
+            _inner.ClearGrantAsync(userId, ct);
+
+        public Task<OfflinePinVerifier?> LoadPinVerifierAsync(Guid userId, CancellationToken ct = default) =>
+            _inner.LoadPinVerifierAsync(userId, ct);
+
+        public Task SavePinVerifierAsync(Guid userId, OfflinePinVerifier verifier, CancellationToken ct = default)
+        {
+            if (ThrowOnSave)
+            {
+                throw new InvalidOperationException("secure storage unavailable");
+            }
+
+            return _inner.SavePinVerifierAsync(userId, verifier, ct);
+        }
+
+        public Task ClearPinVerifierAsync(Guid userId, CancellationToken ct = default) =>
+            _inner.ClearPinVerifierAsync(userId, ct);
+
+        public Task RemoveUserAsync(Guid userId, CancellationToken ct = default) =>
+            _inner.RemoveUserAsync(userId, ct);
     }
 
     private static async Task<Harness> SeedAsync(FakeClock clock, int durationHours = 720)

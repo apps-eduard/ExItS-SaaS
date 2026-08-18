@@ -422,6 +422,8 @@ public sealed class SupportDiagnosticsTests
             Task.FromResult(new OfflinePinSetupResult(true));
         public Task<OfflineColdStartOffer> EvaluateColdStartOfferAsync(CancellationToken ct = default) =>
             Task.FromResult(new OfflineColdStartOffer(true, ActiveUnlockedGrant, null));
+        public Task<OfflineColdStartOffer> EvaluateUserReadinessAsync(Guid readinessUserId, CancellationToken ct = default) =>
+            EvaluateColdStartOfferAsync(ct);
         public Task<OfflinePinUnlockResult> UnlockWithPinAsync(string pin, CancellationToken ct = default) =>
             Task.FromResult(new OfflinePinUnlockResult(OfflinePinUnlockStatus.Succeeded, ActiveUnlockedGrant));
         public Task<OfflinePinUnlockResult> UnlockWithPinAsync(Guid unlockUserId, string pin, CancellationToken ct = default) =>

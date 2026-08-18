@@ -560,7 +560,7 @@
     <value>Magpatuloy offline</value>
   </data>
   <data name="SignIn_OfflineNoPinMessage" xml:space="preserve">
-    <value>Offline ka at hindi pa available ang offline unlock sa device na ito. Kumonekta muna para mag-sign in at mag-set ng PIN, saka mo magagamit ang limited offline features.</value>
+    <value>Hindi pa naka-set up ang offline sign-in sa device na ito. Kumonekta sa internet, mag-sign in nang isang beses, at i-set up ang iyong PIN.</value>
   </data>
   <data name="SignIn_OnlineRequiresInternet" xml:space="preserve">
     <value>Kailangan ng internet ang online sign-in.</value>
@@ -590,7 +590,7 @@
     <value>I-set up ang offline PIN</value>
   </data>
   <data name="Offline_PinEnrollMessage" xml:space="preserve">
-    <value>Gumawa ng PIN para makapagpatuloy sa mahahalagang ExItS features kapag walang internet. Mase-save ang offline work sa device na ito at magsi-sync kapag online na ulit.</value>
+    <value>Gamitin ang PIN na ito para ma-access ang app kapag walang internet sa device na ito.</value>
   </data>
   <data name="Offline_PinConfirmLabel" xml:space="preserve">
     <value>Kumpirmahin ang PIN</value>
@@ -600,6 +600,15 @@
   </data>
   <data name="Offline_PinConfirmMismatch" xml:space="preserve">
     <value>Hindi tugma ang PIN at confirmation.</value>
+  </data>
+  <data name="Offline_PinSetupIncomplete" xml:space="preserve">
+    <value>Hindi natapos ang pag-set up ng offline PIN. Manatili sa screen na ito at subukan ulit. Hindi na-save ang PIN.</value>
+  </data>
+  <data name="Offline_PinForgotAction" xml:space="preserve">
+    <value>Nakalimutan ang PIN?</value>
+  </data>
+  <data name="Offline_PinForgotOfflineMessage" xml:space="preserve">
+    <value>Kumonekta ulit sa internet at mag-sign in nang normal para i-reset o palitan ang PIN. Hindi puwedeng i-reset ang PIN habang offline.</value>
   </data>
   <data name="Offline_PinChangeTitle" xml:space="preserve">
     <value>Palitan ang offline PIN</value>

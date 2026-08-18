@@ -150,16 +150,12 @@
                 return;
             }
 
-            // Defense: deep-link/sign-in shortcuts to /personal must still enroll offline PIN.
-            if (!await Auth.HasOfflinePinConfiguredAsync())
+            // Defense: deep-link/sign-in shortcuts to /personal must still complete offline PIN setup.
+            var readiness = await Auth.EvaluateCurrentUserOfflinePinReadinessAsync();
+            if (readiness.RequiresPinEnrollment)
             {
-                var offer = await Auth.EvaluateOfflineColdStartOfferAsync();
-                if (offer.Grant is not null
-                    || string.Equals(offer.DenialReasonCode, "offline_pin_not_configured", StringComparison.Ordinal))
-                {
-                    Nav.NavigateTo("/offline-pin-setup", replace: true);
-                    return;
-                }
+                Nav.NavigateTo("/offline-pin-setup", replace: true);
+                return;
             }
 
             await LocalStore.EnsurePersonalContextAsync();

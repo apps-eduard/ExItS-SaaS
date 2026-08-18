@@ -171,7 +171,7 @@
 
         if (_authenticated)
         {
-            _hasOfflinePin = await Auth.HasOfflinePinConfiguredAsync();
+            _hasOfflinePin = (await Auth.EvaluateCurrentUserOfflinePinReadinessAsync()).CanOfferPinUnlock;
         }
 
         _ready = true;

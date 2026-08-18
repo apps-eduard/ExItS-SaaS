@@ -543,8 +543,24 @@
     private async Task NavigateAfterSignInAsync(AuthSession session)
     {
         var pending = ReturnRoute.Take();
+        var start = await Gate.ResolveStartRouteAsync();
+
+        if (NavigationGate.IsOfflinePinSetupRoute(start))
+        {
+            Nav.NavigateTo(AppendReturnRoute(start, pending), replace: true);
+            return;
+        }
+
         if (!string.IsNullOrWhiteSpace(pending))
         {
+            if (NavigationGate.IsOrgFirstTimeSetupRoute(start)
+                && !string.Equals(start, pending, StringComparison.OrdinalIgnoreCase))
+            {
+                ReturnRoute.Capture(pending);
+                Nav.NavigateTo(start, replace: true);
+                return;
+            }
+
             Nav.NavigateTo(pending, replace: true);
             return;
         }
@@ -555,7 +571,7 @@
         // Personal default sessions also clear any stale device org preference on sign-in/restore.
         if (orgs.Count == 0)
         {
-            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            Nav.NavigateTo(start, replace: true);
             return;
         }
 
@@ -582,6 +598,17 @@
         }
 
         Nav.NavigateTo("/organization-select", replace: true);
+    }
+
+    private static string AppendReturnRoute(string setupRoute, string? pending)
+    {
+        if (string.IsNullOrWhiteSpace(pending) || !PostSignInReturnRoute.IsSafeInternalRoute(pending))
+        {
+            return setupRoute;
+        }
+
+        var separator = setupRoute.Contains('?', StringComparison.Ordinal) ? "&" : "?";
+        return $"{setupRoute}{separator}return={Uri.EscapeDataString(pending)}";
     }
 
     private void GoForgotPassword()

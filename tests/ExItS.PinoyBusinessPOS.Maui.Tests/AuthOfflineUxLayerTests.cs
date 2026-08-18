@@ -222,6 +222,10 @@ public sealed class AuthOfflineUxLayerTests
         Assert.Contains("Offline_PinChangeAction", page, StringComparison.Ordinal);
         Assert.Contains("Offline_PinConfirmLabel", page, StringComparison.Ordinal);
         Assert.Contains("mode", page, StringComparison.Ordinal);
+        Assert.Contains("AuthExperience", page, StringComparison.Ordinal);
+        Assert.Contains("@page \"/setup-pin\"", page, StringComparison.Ordinal);
+        Assert.Contains("EvaluateCurrentUserOfflinePinReadinessAsync", page, StringComparison.Ordinal);
+        Assert.Contains("Offline_PinSetupIncomplete", page, StringComparison.Ordinal);
         Assert.DoesNotContain("Maybe later", page, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Offline_PinEnrollSkip", page, StringComparison.Ordinal);
         Assert.DoesNotContain("OnClick=\"Skip", page, StringComparison.OrdinalIgnoreCase);
@@ -309,6 +313,11 @@ public sealed class AuthOfflineUxLayerTests
         Assert.Contains("pos-offline-pin__accounts", unlock, StringComparison.Ordinal);
         Assert.Contains("pos-offline-pin__account-meta", unlock, StringComparison.Ordinal);
         Assert.Contains("user.OrganizationDisplayName", unlock, StringComparison.Ordinal);
+        Assert.Contains("CanOfferPinUnlock", unlock, StringComparison.Ordinal);
+        Assert.Contains("Nav.NavigateTo(\"/signin\"", unlock, StringComparison.Ordinal);
+        Assert.Contains("Offline_PinForgotAction", unlock, StringComparison.Ordinal);
+        Assert.Contains("Offline_PinForgotOfflineMessage", unlock, StringComparison.Ordinal);
+        Assert.DoesNotContain("GetEnrolledOfflineUsersAsync", unlock, StringComparison.Ordinal);
         Assert.DoesNotContain("InlineMessageTone.Warning", unlock, StringComparison.Ordinal);
 
         Assert.Contains(".pos-offline-pin__actions", css, StringComparison.Ordinal);
@@ -353,6 +362,8 @@ public sealed class AuthOfflineUxLayerTests
         Assert.Contains("RefreshOfflineStateAsync", signIn, StringComparison.Ordinal);
         Assert.Contains("EvaluateOfflineColdStartOfferAsync", signIn, StringComparison.Ordinal);
         Assert.Contains("SignIn_InternetRequired", signIn, StringComparison.Ordinal);
+        Assert.Contains("IsOfflinePinSetupRoute", signIn, StringComparison.Ordinal);
+        Assert.Contains("AppendReturnRoute", signIn, StringComparison.Ordinal);
         Assert.DoesNotContain("WebAuthenticator", signIn, StringComparison.Ordinal);
         Assert.DoesNotContain("external/google/challenge", signIn, StringComparison.Ordinal);
     }
@@ -362,8 +373,8 @@ public sealed class AuthOfflineUxLayerTests
     {
         var gate = File.ReadAllText(Path.Combine(MauiProject(), "Services", "NavigationGate.cs"));
         Assert.Contains("/offline-pin-setup", gate, StringComparison.Ordinal);
-        Assert.Contains("HasOfflinePinConfiguredAsync", gate, StringComparison.Ordinal);
-        Assert.Contains("offline_pin_not_configured", gate, StringComparison.Ordinal);
+        Assert.Contains("EvaluateCurrentUserOfflinePinReadinessAsync", gate, StringComparison.Ordinal);
+        Assert.Contains("RequiresPinEnrollment", gate, StringComparison.Ordinal);
         Assert.Contains("RequiresOfflinePinSetupAsync", gate, StringComparison.Ordinal);
         // Personal path must enroll PIN before PersonalHome (not only Organization POS).
         var personalBranch = gate.IndexOf("OrganizationId is null", StringComparison.Ordinal);
@@ -373,14 +384,14 @@ public sealed class AuthOfflineUxLayerTests
 
         // Org POS: device registration before PIN, optional template, then sell-critical setup.
         var deviceRoute = gate.IndexOf("/devices/register", personalHome, StringComparison.Ordinal);
-        var orgPosPin = gate.IndexOf("HasOfflinePinConfiguredAsync", deviceRoute, StringComparison.Ordinal);
+        var orgPosPin = gate.IndexOf("RequiresOfflinePinSetupAsync", deviceRoute, StringComparison.Ordinal);
         var templateRoute = gate.IndexOf("/catalog/import?onboarding=1", orgPosPin, StringComparison.Ordinal);
         var setupRoute = gate.IndexOf("return \"/setup\"", templateRoute, StringComparison.Ordinal);
         Assert.InRange(deviceRoute, personalHome, orgPosPin);
         Assert.InRange(orgPosPin, deviceRoute, templateRoute);
         Assert.InRange(templateRoute, orgPosPin, setupRoute);
         Assert.Contains("GetBusinessTemplatePromptPendingAsync", gate, StringComparison.Ordinal);
-        Assert.Contains("EnsureOfflineOperateGrantAsync", gate, StringComparison.Ordinal);
+        Assert.Contains("EvaluateCurrentUserOfflinePinReadinessAsync", gate, StringComparison.Ordinal);
         // Template prompt must not require ManageCatalog (trial feature hydration lag).
         var templateBlock = gate.Substring(templateRoute - 200, Math.Min(400, gate.Length - (templateRoute - 200)));
         Assert.DoesNotContain("ManageCatalog", templateBlock, StringComparison.Ordinal);

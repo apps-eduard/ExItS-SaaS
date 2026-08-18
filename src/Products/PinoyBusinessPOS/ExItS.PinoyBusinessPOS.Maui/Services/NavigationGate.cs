@@ -126,8 +126,7 @@ public sealed class NavigationGate(
 
         // PIN before template / sell-critical setup so offline unlock is ready immediately after
         // Start Business, trial, or first POS-role entry on this device.
-        await auth.EnsureOfflineOperateGrantAsync(ct).ConfigureAwait(false);
-        if (!await auth.HasOfflinePinConfiguredAsync(ct).ConfigureAwait(false))
+        if (await RequiresOfflinePinSetupAsync(ct).ConfigureAwait(false))
         {
             return "/offline-pin-setup";
         }
@@ -218,8 +217,7 @@ public sealed class NavigationGate(
             return true;
         }
 
-        await auth.EnsureOfflineOperateGrantAsync(ct).ConfigureAwait(false);
-        if (!await auth.HasOfflinePinConfiguredAsync(ct).ConfigureAwait(false))
+        if (await RequiresOfflinePinSetupAsync(ct).ConfigureAwait(false))
         {
             return true;
         }
@@ -317,6 +315,7 @@ public sealed class NavigationGate(
 
         if (path.Equals("/devices/register", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/offline-pin-setup", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/setup-pin", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/offline-pin", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/setup", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/sales-document-education", StringComparison.OrdinalIgnoreCase)
@@ -362,30 +361,74 @@ public sealed class NavigationGate(
         return false;
     }
 
-    /// <summary>
-    /// Mandatory offline PIN enrollment after online auth (Personal Utang and Organization POS).
-    /// Without a PIN, cold-start cannot unlock the offline grant and the app is forced online.
-    /// </summary>
-    private async Task<bool> RequiresOfflinePinSetupAsync(CancellationToken ct)
+    /// <summary>Dedicated post-login PIN enrollment routes (canonical + alias).</summary>
+    public static bool IsOfflinePinSetupRoute(string? absoluteOrRelativeUri)
     {
-        await auth.EnsureOfflineOperateGrantAsync(ct).ConfigureAwait(false);
-        if (await auth.HasOfflinePinConfiguredAsync(ct).ConfigureAwait(false))
+        if (string.IsNullOrWhiteSpace(absoluteOrRelativeUri))
         {
             return false;
         }
 
-        // Online Personal/POS operate: always enroll when missing (do not depend only on cold-start offer).
-        if (currentUser.Session is not null
-            && (currentUser.HasPosAccess
-                || AuthSessionWorkspace.IsPersonalDefault(currentUser.Session)
-                || currentUser.Session.OrganizationId is null))
+        var path = ExtractRoutePath(absoluteOrRelativeUri);
+        return path.Equals("/offline-pin-setup", StringComparison.OrdinalIgnoreCase)
+               || path.Equals("/setup-pin", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Mandatory offline PIN enrollment after online auth (Personal Utang and Organization POS).
+    /// Complete setup is identity + valid device-bound grant + matching device + PIN verifier.
+    /// Verifier-only or grant-only orphans are not treated as configured.
+    /// </summary>
+    private async Task<bool> RequiresOfflinePinSetupAsync(CancellationToken ct)
+    {
+        var session = currentUser.Session;
+        if (session is null)
         {
-            return true;
+            return false;
         }
 
-        var offer = await auth.EvaluateOfflineColdStartOfferAsync(ct).ConfigureAwait(false);
-        return offer.Grant is not null
-               || string.Equals(offer.DenialReasonCode, "offline_pin_not_configured", StringComparison.Ordinal);
+        var canEnroll = currentUser.HasPosAccess
+                        || AuthSessionWorkspace.IsPersonalDefault(session)
+                        || session.OrganizationId is null;
+        if (!canEnroll)
+        {
+            return false;
+        }
+
+        if (currentUser.HasPosAccess && (session.PosDeviceId is null || session.BranchId is null))
+        {
+            return false;
+        }
+
+        var readiness = await auth.EvaluateCurrentUserOfflinePinReadinessAsync(ct).ConfigureAwait(false);
+        if (readiness.CanOfferPinUnlock)
+        {
+            return false;
+        }
+
+        return readiness.RequiresPinEnrollment;
+    }
+
+    private static string ExtractRoutePath(string absoluteOrRelativeUri)
+    {
+        string path;
+        if (Uri.TryCreate(absoluteOrRelativeUri, UriKind.Absolute, out var absolute))
+        {
+            path = absolute.AbsolutePath;
+        }
+        else
+        {
+            var trimmed = absoluteOrRelativeUri.Trim();
+            var queryIndex = trimmed.IndexOf('?', StringComparison.Ordinal);
+            path = queryIndex >= 0 ? trimmed[..queryIndex] : trimmed.Split('#', 2)[0];
+            if (!path.StartsWith('/'))
+            {
+                path = "/" + path;
+            }
+        }
+
+        path = path.TrimEnd('/');
+        return string.IsNullOrEmpty(path) ? "/" : path;
     }
 
     public bool CanEnterProtectedShell => accessPolicy.CanEnterProtectedShell;

@@ -53,7 +53,9 @@ public sealed class PostSignInReturnRoute
             || lower.StartsWith("/register", StringComparison.Ordinal)
             || lower.StartsWith("/forgot-password", StringComparison.Ordinal)
             || lower.StartsWith("/welcome", StringComparison.Ordinal)
-            || lower.StartsWith("/onboarding", StringComparison.Ordinal))
+            || lower.StartsWith("/onboarding", StringComparison.Ordinal)
+            || lower.StartsWith("/offline-pin", StringComparison.Ordinal)
+            || lower.StartsWith("/setup-pin", StringComparison.Ordinal))
         {
             return false;
         }

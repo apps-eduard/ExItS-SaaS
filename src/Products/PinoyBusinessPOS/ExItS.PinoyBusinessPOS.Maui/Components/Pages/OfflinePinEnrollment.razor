@@ -1,83 +1,85 @@
 @page "/offline-pin-setup"
+@page "/setup-pin"
 @layout Layout.AuthShell
-@using ExItS.DesignSystem.Components.Internal
+@using ExItS.DesignSystem.Components.Primitives
 @inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
 @inject NavigationGate Gate
 @inject NavigationManager Nav
+@inject PostSignInReturnRoute ReturnRoute
 @inject IStringLocalizer<PosResources> L
 
-<div class="pos-offline-pin">
-    <Page>
-        <header class="pos-offline-pin__header">
-            <div class="pos-offline-pin__badge" aria-hidden="true">@IconGlyphs.Get("lock")</div>
-            <h1 class="pos-offline-pin__title">@(_isChange ? L["Offline_PinChangeTitle"] : L["Offline_PinEnrollTitle"])</h1>
-            <p class="pos-offline-pin__subtitle">@(_isChange ? L["Offline_PinChangeMessage"] : L["Offline_PinEnrollMessage"])</p>
-        </header>
+<AuthExperience Title="@(_isChange ? L["Offline_PinChangeTitle"] : L["Offline_PinEnrollTitle"])"
+                Lede="@(_isChange ? L["Offline_PinChangeMessage"] : L["Offline_PinEnrollMessage"])">
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
+    }
 
-        @if (!string.IsNullOrEmpty(_error))
-        {
-            <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
-        }
-
-        <div class="pos-offline-pin__field">
-            <label class="pos-offline-pin__label" for="offline-pin-enroll">@L["Offline_PinLabel"]</label>
-            <div class="pos-offline-pin__input-wrap">
-                <input id="offline-pin-enroll"
-                       type="@(_showPin ? "text" : "password")"
+    <div class="pos-signin__form">
+        <div class="pos-signin__password">
+            <TextInput Label="@L["Offline_PinLabel"]"
+                       @bind-Value="_pin"
+                       Type="@(_showPin ? "text" : "password")"
+                       IsInvalid="@(!string.IsNullOrEmpty(_error))"
+                       Disabled="_busy"
                        inputmode="numeric"
                        pattern="[0-9]*"
-                       autocomplete="new-password"
                        maxlength="12"
-                       class="pos-offline-pin__input"
-                       disabled="@_busy"
-                       aria-invalid="@(!string.IsNullOrEmpty(_error))"
-                       @bind="_pin"
-                       @bind:event="oninput" />
-                <button type="button"
-                        class="pos-offline-pin__toggle"
-                        disabled="@_busy"
-                        aria-pressed="@_showPin"
-                        aria-label="@(_showPin ? L["Offline_PinHide"] : L["Offline_PinShow"])"
-                        @onclick="TogglePinVisibility">
-                    @(_showPin ? L["Offline_PinHide"] : L["Offline_PinShow"])
-                </button>
-            </div>
+                       autocomplete="new-password" />
+            <button type="button"
+                    class="pos-signin__password-toggle"
+                    disabled="@_busy"
+                    aria-pressed="@_showPin"
+                    aria-label="@(_showPin ? L["Offline_PinHide"].Value : L["Offline_PinShow"].Value)"
+                    @onclick="TogglePinVisibility">
+                @if (_showPin)
+                {
+                    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75">
+                        <path d="M3 3l18 18"/>
+                        <path d="M10.6 10.6a2 2 0 002.8 2.8"/>
+                        <path d="M9.9 5.1A9.8 9.8 0 0112 5c5 0 8.5 3.5 10 7-0.5 1.2-1.3 2.4-2.3 3.4"/>
+                        <path d="M6.1 6.1C4.2 7.5 2.8 9.4 2 12c1.5 3.5 5 7 10 7 1.4 0 2.7-.3 3.9-.8"/>
+                    </svg>
+                }
+                else
+                {
+                    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75">
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                }
+            </button>
         </div>
 
-        <div class="pos-offline-pin__field">
-            <label class="pos-offline-pin__label" for="offline-pin-confirm">@L["Offline_PinConfirmLabel"]</label>
-            <div class="pos-offline-pin__input-wrap">
-                <input id="offline-pin-confirm"
-                       type="@(_showPin ? "text" : "password")"
-                       inputmode="numeric"
-                       pattern="[0-9]*"
-                       autocomplete="new-password"
-                       maxlength="12"
-                       class="pos-offline-pin__input"
-                       disabled="@_busy"
-                       @bind="_confirm"
-                       @bind:event="oninput"
-                       @onkeydown="OnConfirmKeyDownAsync" />
-            </div>
-        </div>
+        <TextInput Label="@L["Offline_PinConfirmLabel"]"
+                   @bind-Value="_confirm"
+                   Type="@(_showPin ? "text" : "password")"
+                   Disabled="_busy"
+                   inputmode="numeric"
+                   pattern="[0-9]*"
+                   maxlength="12"
+                   autocomplete="new-password" />
 
-        <div class="pos-offline-pin__actions" role="group">
+        <div class="pos-signin__submit">
             <Button Variant="ButtonVariant.Primary" IsLoading="_busy" Disabled="_busy" OnClick="SaveAsync">
                 @(_isChange ? L["Offline_PinChangeAction"] : L["Offline_PinEnrollAction"])
             </Button>
-            @if (_isChange)
-            {
-                <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="GoBack">
-                    @L["Common_Cancel"]
-                </Button>
-            }
         </div>
-    </Page>
-</div>
+        @if (_isChange)
+        {
+            <p class="pos-signin__create">
+                <button type="button" class="pos-signin__link" disabled="@_busy" @onclick="GoBack">
+                    @L["Common_Cancel"]
+                </button>
+            </p>
+        }
+    </div>
+</AuthExperience>
 
 @code {
-    private string _pin = string.Empty;
-    private string _confirm = string.Empty;
+    private string? _pin;
+    private string? _confirm;
     private string? _error;
     private bool _busy;
     private bool _isChange;
@@ -91,13 +93,22 @@
         var uri = Nav.ToAbsoluteUri(Nav.Uri);
         _isChange = TryGetQueryValue(uri, "mode", out var mode)
                     && string.Equals(mode, "change", StringComparison.OrdinalIgnoreCase);
-        if (TryGetQueryValue(uri, "return", out var ret) && !string.IsNullOrWhiteSpace(ret) && ret.StartsWith("/", StringComparison.Ordinal))
+        if (TryGetQueryValue(uri, "return", out var ret)
+            && PostSignInReturnRoute.IsSafeInternalRoute(ret)
+            && !NavigationGate.IsOfflinePinSetupRoute(ret))
         {
             _returnPath = ret;
         }
 
-        var hasPin = await Auth.HasOfflinePinConfiguredAsync();
-        if (!hasPin)
+        if (!CurrentUser.IsAuthenticated)
+        {
+            var offer = await Auth.EvaluateOfflineColdStartOfferAsync();
+            Nav.NavigateTo(offer.CanOfferPinUnlock ? "/offline-pin" : "/signin", replace: true);
+            return;
+        }
+
+        var readiness = await Auth.EvaluateCurrentUserOfflinePinReadinessAsync();
+        if (!readiness.CanOfferPinUnlock)
         {
             // Mandatory enrollment: never auto-dismiss. A leftover device PIN from another
             // account is cleared on grant establish and must be set again here.
@@ -108,15 +119,7 @@
         if (!_isChange)
         {
             // Deep-link to setup when this user already enrolled — continue first-time flow.
-            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
-        }
-    }
-
-    private async Task OnConfirmKeyDownAsync(KeyboardEventArgs e)
-    {
-        if (e.Key is "Enter" or "NumpadEnter")
-        {
-            await SaveAsync();
+            await ContinueAfterSetupAsync();
         }
     }
 
@@ -137,25 +140,52 @@
         _busy = true;
         try
         {
-            var result = await Auth.SetOfflinePinAsync(_pin);
+            var result = await Auth.SetOfflinePinAsync(_pin ?? string.Empty);
             if (!result.Succeeded)
             {
                 _error = L[result.SafeMessageKey ?? "Offline_PinInvalidFormat"];
                 return;
             }
 
-            if (!string.IsNullOrWhiteSpace(_returnPath))
+            var readiness = await Auth.EvaluateCurrentUserOfflinePinReadinessAsync();
+            if (!readiness.CanOfferPinUnlock)
             {
-                Nav.NavigateTo(_returnPath!, replace: true);
+                _error = L["Offline_PinSetupIncomplete"];
                 return;
             }
 
-            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            await ContinueAfterSetupAsync();
+        }
+        catch
+        {
+            _error = L["Auth_SecureStorageFailure"];
         }
         finally
         {
             _busy = false;
         }
+    }
+
+    private async Task ContinueAfterSetupAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(_returnPath)
+            && PostSignInReturnRoute.IsSafeInternalRoute(_returnPath)
+            && !NavigationGate.IsOfflinePinSetupRoute(_returnPath))
+        {
+            Nav.NavigateTo(_returnPath!, replace: true);
+            return;
+        }
+
+        var pending = ReturnRoute.Take();
+        if (!string.IsNullOrWhiteSpace(pending)
+            && PostSignInReturnRoute.IsSafeInternalRoute(pending)
+            && !NavigationGate.IsOfflinePinSetupRoute(pending))
+        {
+            Nav.NavigateTo(pending, replace: true);
+            return;
+        }
+
+        Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
     }
 
     private void GoBack()
@@ -166,7 +196,7 @@
             return;
         }
 
-        Nav.NavigateTo("/personal/settings", replace: true);
+        Nav.NavigateTo(CurrentUser.Session?.OrganizationId is null ? "/personal/settings" : "/settings", replace: true);
     }
 
     private static bool TryGetQueryValue(Uri uri, string key, out string value)

@@ -210,14 +210,89 @@ public sealed class OfflineOperatingGrantService(
             pin,
             Math.Max(10_000, _options.PinHashIterations),
             grant.UserId);
-        await store.SavePinVerifierAsync(grant.UserId, verifier, ct).ConfigureAwait(false);
+        try
+        {
+            await store.SavePinVerifierAsync(grant.UserId, verifier, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            return new OfflinePinSetupResult(false, "Auth_SecureStorageFailure");
+        }
+
         return new OfflinePinSetupResult(true);
+    }
+
+    public async Task<OfflineColdStartOffer> EvaluateUserReadinessAsync(
+        Guid userId,
+        CancellationToken ct = default)
+    {
+        if (userId == Guid.Empty)
+        {
+            return OfflineColdStartOffer.Denied("offline_grant_missing") with
+            {
+                EligibilityReason = OfflinePinEligibilityReason.NoStoredIdentity
+            };
+        }
+
+        var enrolled = await store.GetEnrolledUsersAsync(ct).ConfigureAwait(false);
+        var summary = enrolled.FirstOrDefault(u => u.UserId == userId);
+        var grant = await LoadNormalizedGrantAsync(userId, ct).ConfigureAwait(false);
+        var hasPin = await HasPinConfiguredAsync(userId, ct).ConfigureAwait(false);
+
+        if (grant is null)
+        {
+            if (hasPin)
+            {
+                return OfflineColdStartOffer.Denied("offline_grant_missing");
+            }
+
+            if (summary is null)
+            {
+                return OfflineColdStartOffer.Denied("offline_grant_missing") with
+                {
+                    EligibilityReason = OfflinePinEligibilityReason.NoStoredIdentity
+                };
+            }
+
+            return OfflineColdStartOffer.Denied("offline_grant_missing");
+        }
+
+        if (!grant.IsOrganizationScope && !grant.IsPersonalScope)
+        {
+            return OfflineColdStartOffer.Denied("offline_grant_invalid_scope");
+        }
+
+        var now = _clock.GetUtcNow();
+        if (grant.IsExpired(now))
+        {
+            return OfflineColdStartOffer.Denied("offline_grant_expired");
+        }
+
+        var deviceId = await deviceIdentity.GetOrCreateDeviceIdAsync(ct).ConfigureAwait(false);
+        if (!string.Equals(grant.DeviceId, deviceId, StringComparison.Ordinal))
+        {
+            return OfflineColdStartOffer.Denied("offline_device_mismatch");
+        }
+
+        if (!hasPin)
+        {
+            return OfflineColdStartOffer.Denied("offline_pin_not_configured");
+        }
+
+        var candidate = (summary ?? new OfflineEnrolledUserSummary(
+            grant.UserId,
+            grant.DisplayName ?? grant.Username ?? string.Empty,
+            grant.Username,
+            grant.ScopeKind,
+            grant.OrganizationDisplayName,
+            grant.ExpiresAtUtc,
+            HasPinConfigured: true)) with { HasPinConfigured = true };
+
+        return OfflineColdStartOffer.Allowed(grant, [candidate]);
     }
 
     public async Task<OfflineColdStartOffer> EvaluateColdStartOfferAsync(CancellationToken ct = default)
     {
-        var deviceId = await deviceIdentity.GetOrCreateDeviceIdAsync(ct).ConfigureAwait(false);
-        var now = _clock.GetUtcNow();
         var enrolled = await store.GetEnrolledUsersAsync(ct).ConfigureAwait(false);
         if (enrolled.Count == 0)
         {
@@ -233,39 +308,23 @@ public sealed class OfflineOperatingGrantService(
 
         foreach (var summary in enrolled)
         {
-            var grant = await LoadNormalizedGrantAsync(summary.UserId, ct).ConfigureAwait(false);
-            if (grant is null)
+            var readiness = await EvaluateUserReadinessAsync(summary.UserId, ct).ConfigureAwait(false);
+            if (!readiness.CanOfferPinUnlock)
             {
-                lastDenial = "offline_grant_missing";
+                lastDenial = readiness.DenialReasonCode ?? lastDenial;
                 continue;
             }
 
-            if (!grant.IsOrganizationScope && !grant.IsPersonalScope)
+            if (readiness.UnlockCandidates is { Count: > 0 } ready)
             {
-                lastDenial = "offline_grant_invalid_scope";
-                continue;
+                candidates.AddRange(ready);
+            }
+            else if (readiness.Grant is not null)
+            {
+                candidates.Add(summary with { HasPinConfigured = true });
             }
 
-            if (grant.IsExpired(now))
-            {
-                lastDenial = "offline_grant_expired";
-                continue;
-            }
-
-            if (!string.Equals(grant.DeviceId, deviceId, StringComparison.Ordinal))
-            {
-                lastDenial = "offline_device_mismatch";
-                continue;
-            }
-
-            if (!await HasPinConfiguredAsync(summary.UserId, ct).ConfigureAwait(false))
-            {
-                lastDenial = "offline_pin_not_configured";
-                continue;
-            }
-
-            candidates.Add(summary with { HasPinConfigured = true });
-            singleGrant = grant;
+            singleGrant = readiness.Grant;
         }
 
         if (candidates.Count == 0)

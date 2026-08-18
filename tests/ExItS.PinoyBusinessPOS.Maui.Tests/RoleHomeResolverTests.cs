@@ -428,6 +428,9 @@ public sealed class RoleHomeResolverTests
         public Task<OfflineColdStartOffer> EvaluateColdStartOfferAsync(CancellationToken ct = default) =>
             Task.FromResult(new OfflineColdStartOffer(true, ActiveUnlockedGrant, null));
 
+        public Task<OfflineColdStartOffer> EvaluateUserReadinessAsync(Guid userId, CancellationToken ct = default) =>
+            EvaluateColdStartOfferAsync(ct);
+
         public Task<OfflinePinUnlockResult> UnlockWithPinAsync(string pin, CancellationToken ct = default) =>
             Task.FromResult(new OfflinePinUnlockResult(OfflinePinUnlockStatus.Succeeded, ActiveUnlockedGrant));
 

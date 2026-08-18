@@ -758,10 +758,24 @@ public sealed class AuthenticationService(
             : await _offlineGrant.UnlockWithPinAsync(pin, ct).ConfigureAwait(false);
         if (unlock.Status != OfflinePinUnlockStatus.Succeeded || unlock.Grant is null)
         {
+            var failureKey = unlock.Status switch
+            {
+                OfflinePinUnlockStatus.WrongPin => unlock.SafeMessageKey ?? "Offline_PinWrong",
+                OfflinePinUnlockStatus.Locked => unlock.SafeMessageKey ?? "Offline_PinLocked",
+                OfflinePinUnlockStatus.InvalidPinFormat => unlock.SafeMessageKey ?? "Offline_PinInvalidFormat",
+                OfflinePinUnlockStatus.PinNotConfigured => "Offline_PinNotConfigured",
+                OfflinePinUnlockStatus.GrantExpired => "Offline_GrantExpired",
+                OfflinePinUnlockStatus.DeviceMismatch => "Offline_DeviceMismatch",
+                _ => unlock.SafeMessageKey is { Length: > 0 } key &&
+                     !string.Equals(key, "Offline_PinWrong", StringComparison.Ordinal)
+                    ? key
+                    : "Offline_GrantMissing"
+            };
+
             return new AuthResult(
                 false,
                 AuthFailureReason.AccessDenied,
-                SafeMessageKey: unlock.SafeMessageKey ?? "Offline_PinWrong");
+                SafeMessageKey: failureKey);
         }
 
         var grant = unlock.Grant;
@@ -845,7 +859,35 @@ public sealed class AuthenticationService(
     private async Task<OfflinePinSetupResult> SetOfflinePinCoreAsync(string pin, CancellationToken ct)
     {
         await EnsureOfflineOperateGrantAsync(ct).ConfigureAwait(false);
-        return await _offlineGrant!.SetPinAsync(pin, ct).ConfigureAwait(false);
+        OfflinePinSetupResult result;
+        try
+        {
+            result = await _offlineGrant!.SetPinAsync(pin, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            events.Record("secure_storage_failure", Dict(("operation", "offline_pin_save")));
+            return new OfflinePinSetupResult(false, "Auth_SecureStorageFailure");
+        }
+
+        if (!result.Succeeded)
+        {
+            return result;
+        }
+
+        var userId = currentUser.Session?.UserId;
+        if (userId is not Guid id || id == Guid.Empty)
+        {
+            return new OfflinePinSetupResult(false, "Offline_PinSetupIncomplete");
+        }
+
+        var readiness = await _offlineGrant.EvaluateUserReadinessAsync(id, ct).ConfigureAwait(false);
+        if (!readiness.CanOfferPinUnlock)
+        {
+            return new OfflinePinSetupResult(false, "Offline_PinSetupIncomplete");
+        }
+
+        return result;
     }
 
     public Task<bool> HasOfflinePinConfiguredAsync(CancellationToken ct = default)
@@ -877,6 +919,36 @@ public sealed class AuthenticationService(
         }
 
         var offer = await _offlineGrant.EvaluateColdStartOfferAsync(ct).ConfigureAwait(false);
+        RecordOfflinePinEligibility(offer);
+        return offer;
+    }
+
+    public async Task<OfflineColdStartOffer> EvaluateCurrentUserOfflinePinReadinessAsync(
+        CancellationToken ct = default)
+    {
+        if (_offlineGrant is null)
+        {
+            var missing = OfflineColdStartOffer.Denied("offline_grant_missing") with
+            {
+                EligibilityReason = OfflinePinEligibilityReason.NoStoredIdentity
+            };
+            RecordOfflinePinEligibility(missing);
+            return missing;
+        }
+
+        var userId = currentUser.Session?.UserId;
+        if (userId is not Guid id || id == Guid.Empty)
+        {
+            var missing = OfflineColdStartOffer.Denied("offline_grant_missing") with
+            {
+                EligibilityReason = OfflinePinEligibilityReason.NoStoredIdentity
+            };
+            RecordOfflinePinEligibility(missing);
+            return missing;
+        }
+
+        await EnsureOfflineOperateGrantAsync(ct).ConfigureAwait(false);
+        var offer = await _offlineGrant.EvaluateUserReadinessAsync(id, ct).ConfigureAwait(false);
         RecordOfflinePinEligibility(offer);
         return offer;
     }

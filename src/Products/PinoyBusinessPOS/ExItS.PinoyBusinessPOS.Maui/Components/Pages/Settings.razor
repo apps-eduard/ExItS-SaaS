@@ -57,31 +57,14 @@
             {
                 <Section Title="@L["Offline_PinSetupTitle"]">
                     <div class="pos-settings__panel">
-                        <p class="pos-muted">@L["Offline_PinSetupHint"]</p>
-                        @if (_pinConfigured)
-                        {
-                            <p class="pos-muted">@L["Offline_PinSetupSaved"]</p>
-                        }
-                        <input type="password"
-                               inputmode="numeric"
-                               maxlength="12"
-                               class="pos-offline-pin__input"
-                               disabled="@_pinBusy"
-                               @bind="_offlinePin"
-                               @bind:event="oninput"
-                               aria-label="@L["Offline_PinLabel"]" />
-                        <div class="pos-settings__actions">
-                            <Button Variant="ButtonVariant.Secondary"
-                                    IsLoading="_pinBusy"
-                                    Disabled="_pinBusy"
-                                    OnClick="SaveOfflinePinAsync">
-                                @L["Offline_PinSetupSave"]
-                            </Button>
-                        </div>
-                        @if (!string.IsNullOrEmpty(_pinMessage))
-                        {
-                            <Alert Tone="@(_pinSucceeded ? AlertTone.Success : AlertTone.Danger)" Message="@_pinMessage" />
-                        }
+                        <button type="button" class="pos-settings__nav pos-settings__nav--block" @onclick="GoOfflinePin">
+                            <span class="pos-settings__nav-icon" aria-hidden="true">@IconGlyphs.Get("lock")</span>
+                            <span class="pos-settings__nav-body">
+                                <span class="pos-settings__nav-label">@(_pinConfigured ? L["Offline_PinChangeAction"] : L["Offline_PinEnrollAction"])</span>
+                                <span class="pos-settings__nav-meta">@(_pinConfigured ? L["Offline_PinChangeHint"] : L["Offline_PinSetupHint"])</span>
+                            </span>
+                            <span class="pos-settings__chevron" aria-hidden="true">›</span>
+                        </button>
                     </div>
                 </Section>
             }
@@ -187,11 +170,7 @@
     private bool _testSucceeded;
     private string? _testResultMessage;
     private string? _preferenceError;
-    private string _offlinePin = string.Empty;
-    private bool _pinBusy;
     private bool _pinConfigured;
-    private bool _pinSucceeded;
-    private string? _pinMessage;
     private bool _canViewSupportDiagnostics;
 
     private IReadOnlyList<SelectOption> ThemeOptions =>
@@ -259,39 +238,17 @@
             }
         }
 
-        _pinConfigured = await Auth.HasOfflinePinConfiguredAsync();
+        _pinConfigured = (await Auth.EvaluateCurrentUserOfflinePinReadinessAsync()).CanOfferPinUnlock;
         _canViewSupportDiagnostics = await SupportDiagnostics.EvaluateAccessForCurrentSessionAsync()
             == SupportDiagnosticsAccessKind.Allowed;
     }
 
     private void GoSupportDiagnostics() => Nav.NavigateTo("/settings/support/diagnostics");
 
-    private async Task SaveOfflinePinAsync()
+    private void GoOfflinePin()
     {
-        if (_pinBusy)
-        {
-            return;
-        }
-
-        _pinBusy = true;
-        _pinMessage = null;
-        try
-        {
-            var result = await Auth.SetOfflinePinAsync(_offlinePin);
-            _pinSucceeded = result.Succeeded;
-            _pinMessage = result.Succeeded
-                ? L["Offline_PinSetupSaved"]
-                : L[result.SafeMessageKey ?? "Offline_PinInvalidFormat"];
-            if (result.Succeeded)
-            {
-                _pinConfigured = true;
-                _offlinePin = string.Empty;
-            }
-        }
-        finally
-        {
-            _pinBusy = false;
-        }
+        var mode = _pinConfigured ? "change" : "enroll";
+        Nav.NavigateTo($"/offline-pin-setup?mode={mode}&return=/settings");
     }
 
     private async Task GoSwitchOrg()

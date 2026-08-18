@@ -9,6 +9,11 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
+@if (_ineligible)
+{
+}
+else
+{
 <div class="pos-offline-pin">
     <Page>
         <header class="pos-offline-pin__header">
@@ -23,6 +28,10 @@
         @if (!string.IsNullOrEmpty(_error))
         {
             <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
+        }
+        @if (!string.IsNullOrEmpty(_forgotHint))
+        {
+            <InlineMessage Tone="InlineMessageTone.Info">@_forgotHint</InlineMessage>
         }
 
         @if (_needsAccountPick)
@@ -102,6 +111,12 @@
                 <button type="button"
                         class="pos-offline-pin__signout"
                         disabled="@_busy"
+                        @onclick="ShowForgotPin">
+                    @L["Offline_PinForgotAction"]
+                </button>
+                <button type="button"
+                        class="pos-offline-pin__signout"
+                        disabled="@_busy"
                         @onclick="SignOutAsync">
                     @L["Auth_Logout"]
                 </button>
@@ -109,12 +124,15 @@
         }
     </Page>
 </div>
+}
 
 @code {
     private string _pin = string.Empty;
     private string? _error;
+    private string? _forgotHint;
     private bool _busy;
     private bool _showPin;
+    private bool _ineligible;
     private IReadOnlyList<OfflineEnrolledUserSummary> _candidates = Array.Empty<OfflineEnrolledUserSummary>();
     private OfflineEnrolledUserSummary? _selected;
 
@@ -125,6 +143,14 @@
     protected override async Task OnInitializedAsync()
     {
         var offer = await Auth.EvaluateOfflineColdStartOfferAsync();
+        if (!offer.CanOfferPinUnlock)
+        {
+            // First-time / incomplete setup: never show a PIN field or "Invalid PIN".
+            _ineligible = true;
+            Nav.NavigateTo("/signin", replace: true);
+            return;
+        }
+
         _candidates = offer.UnlockCandidates?
             .Where(c => c.HasPinConfigured)
             .ToArray()
@@ -132,8 +158,9 @@
 
         if (_candidates.Count == 0)
         {
-            var enrolled = await Auth.GetEnrolledOfflineUsersAsync();
-            _candidates = enrolled.Where(c => c.HasPinConfigured).ToArray();
+            _ineligible = true;
+            Nav.NavigateTo("/signin", replace: true);
+            return;
         }
 
         if (_candidates.Count == 1)
@@ -146,6 +173,7 @@
     {
         _selected = user;
         _error = null;
+        _forgotHint = null;
         _pin = string.Empty;
         return Task.CompletedTask;
     }
@@ -160,6 +188,7 @@
         _selected = null;
         _pin = string.Empty;
         _error = null;
+        _forgotHint = null;
     }
 
     private async Task OnPinKeyDownAsync(KeyboardEventArgs e)
@@ -179,6 +208,7 @@
 
         _busy = true;
         _error = null;
+        _forgotHint = null;
         try
         {
             var result = await Auth.UnlockOfflineWithPinAsync(_selected.UserId, _pin);
@@ -198,6 +228,12 @@
         {
             _busy = false;
         }
+    }
+
+    private void ShowForgotPin()
+    {
+        _error = null;
+        _forgotHint = L["Offline_PinForgotOfflineMessage"];
     }
 
     private void GoReconnectAsync() => Nav.NavigateTo("/reconnect", replace: true);

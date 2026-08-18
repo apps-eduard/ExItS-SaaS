@@ -141,6 +141,12 @@ public interface IAuthenticationService
     Task<OfflineColdStartOffer> EvaluateOfflineColdStartOfferAsync(CancellationToken ct = default);
 
     /// <summary>
+    /// After online auth, ensure the current session's device/grant then evaluate complete
+    /// offline PIN setup (identity + grant + matching device + verifier). Not a cold-start offer.
+    /// </summary>
+    Task<OfflineColdStartOffer> EvaluateCurrentUserOfflinePinReadinessAsync(CancellationToken ct = default);
+
+    /// <summary>
     /// Ensures a durable offline operate grant exists for the current online session
     /// (Organization POS or Personal) so mandatory PIN enrollment can succeed.
     /// </summary>

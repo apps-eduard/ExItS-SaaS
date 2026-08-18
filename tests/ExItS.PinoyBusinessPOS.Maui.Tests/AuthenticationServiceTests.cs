@@ -1357,7 +1357,10 @@ public sealed class AuthenticationServiceTests
 
         Assert.True((await auth.SignInAsync(new SignInRequest(null, null, userId))).Succeeded);
         Assert.Equal("Personal", current.Session!.AccountClass);
+        var pending = await auth.EvaluateCurrentUserOfflinePinReadinessAsync();
+        Assert.True(pending.RequiresPinEnrollment);
         Assert.True((await auth.SetOfflinePinAsync("123456")).Succeeded);
+        Assert.True((await auth.EvaluateCurrentUserOfflinePinReadinessAsync()).CanOfferPinUnlock);
         await auth.LogoutAsync();
         Assert.True((await auth.EvaluateOfflineColdStartOfferAsync()).CanOfferPinUnlock);
         Assert.Equal(
@@ -1381,6 +1384,154 @@ public sealed class AuthenticationServiceTests
         Assert.True(
             missingGrant.EligibilityReason is OfflinePinEligibilityReason.NoGrant
             or OfflinePinEligibilityReason.NoStoredIdentity);
+    }
+
+    [Fact]
+    public async Task Current_user_readiness_requires_complete_setup_then_skips_when_ready()
+    {
+        var harness = await SeedOfflineGrantHarnessAsync();
+        await harness.GrantStore.ClearPinVerifierAsync(harness.UserId);
+        harness.Access.IntrospectResult = ApiResult<PlatformAccessTokenIntrospectionDto>.Success(
+            new PlatformAccessTokenIntrospectionDto(
+                Active: true,
+                TokenId: Guid.NewGuid(),
+                UserId: harness.UserId,
+                Username: "cashier1",
+                DisplayName: "Cashier",
+                OrganizationId: harness.OrgId,
+                OrganizationDisplayName: "Store",
+                ProductCode: PosProductCodes.PinoyBusinessPos,
+                ExpiresAtUtc: DateTimeOffset.UtcNow.AddHours(1),
+                ProductAccessAllowed: true,
+                ProductAccessReasonCode: null,
+                SubscriptionStatus: "Active",
+                EnabledFeatureCodes: ["pos.sell"]));
+        Assert.True((await harness.Auth.RestoreSessionAsync()).Succeeded);
+
+        var missing = await harness.Auth.EvaluateCurrentUserOfflinePinReadinessAsync();
+        Assert.False(missing.CanOfferPinUnlock);
+        Assert.True(missing.RequiresPinEnrollment);
+        Assert.Equal(OfflinePinEligibilityReason.NoPinVerifier, missing.EligibilityReason);
+
+        Assert.True((await harness.Auth.SetOfflinePinAsync("123456")).Succeeded);
+        var ready = await harness.Auth.EvaluateCurrentUserOfflinePinReadinessAsync();
+        Assert.True(ready.CanOfferPinUnlock);
+        Assert.False(ready.RequiresPinEnrollment);
+
+        await harness.Auth.LogoutAsync();
+        var now = DateTimeOffset.UtcNow;
+        harness.Current.Set(new AuthSession(
+            harness.UserId,
+            "Cashier",
+            "cashier1",
+            "c@example.com",
+            harness.OrgId,
+            "Store",
+            now,
+            now.AddHours(8),
+            HasPosAccess: true,
+            AccessReasonCode: "allowed",
+            SubscriptionStatus: "Active",
+            EnabledFeatureCodes: ["pos.sell"],
+            AccessToken: "opaque-token-2",
+            BranchId: Guid.Parse("55555555-5555-5555-5555-555555555555"),
+            PosDeviceId: Guid.Parse("66666666-6666-6666-6666-666666666666")));
+        await harness.Auth.EnsureOfflineOperateGrantAsync();
+        var again = await harness.Auth.EvaluateCurrentUserOfflinePinReadinessAsync();
+        Assert.True(again.CanOfferPinUnlock);
+        Assert.False(again.RequiresPinEnrollment);
+    }
+
+    [Fact]
+    public async Task Personal_current_user_readiness_matches_organization_lifecycle()
+    {
+        var harness = await SeedPersonalOfflineGrantHarnessAsync();
+        await harness.GrantStore.ClearPinVerifierAsync(harness.UserId);
+        harness.Access.IntrospectResult = ApiResult<PlatformAccessTokenIntrospectionDto>.Success(
+            new PlatformAccessTokenIntrospectionDto(
+                Active: true,
+                TokenId: Guid.NewGuid(),
+                UserId: harness.UserId,
+                Username: "personal1",
+                DisplayName: "Personal",
+                OrganizationId: null,
+                OrganizationDisplayName: null,
+                ProductCode: null,
+                ExpiresAtUtc: DateTimeOffset.UtcNow.AddHours(1),
+                ProductAccessAllowed: null,
+                ProductAccessReasonCode: null,
+                SubscriptionStatus: null,
+                EnabledFeatureCodes: null));
+        Assert.True((await harness.Auth.RestoreSessionAsync()).Succeeded);
+
+        var missing = await harness.Auth.EvaluateCurrentUserOfflinePinReadinessAsync();
+        Assert.True(missing.RequiresPinEnrollment);
+        Assert.True((await harness.Auth.SetOfflinePinAsync("123456")).Succeeded);
+        Assert.True((await harness.Auth.EvaluateCurrentUserOfflinePinReadinessAsync()).CanOfferPinUnlock);
+    }
+
+    [Fact]
+    public async Task First_time_offline_unlock_is_not_invalid_pin()
+    {
+        var tokens = new MemorySecureTokenStore();
+        var current = new CurrentUserContext();
+        var grantStore = new MemoryOfflineGrantStore();
+        var device = new FakeDeviceIdentity("device-a");
+        var grantOptions = Options.Create(new OfflineOperatingGrantOptions
+        {
+            DurationHours = 720,
+            PinMinLength = 6,
+            MaxFailedPinAttempts = 5,
+            PinLockoutMinutes = 15,
+            PinHashIterations = 10_000
+        });
+        var auth = new AuthenticationService(
+            new StubAppInfo("Development"),
+            new SecureSessionStore(tokens),
+            current,
+            new MemoryOnboardingStore(),
+            new FakeAccessClient(),
+            new LoggingAuthEventSink(NullLogger<LoggingAuthEventSink>.Instance),
+            offlineGrant: new OfflineOperatingGrantService(grantStore, device, grantOptions),
+            deviceIdentity: device);
+
+        var offer = await auth.EvaluateOfflineColdStartOfferAsync();
+        Assert.False(offer.CanOfferPinUnlock);
+        Assert.True(offer.RequiresPinEnrollment);
+
+        var unlock = await auth.UnlockOfflineWithPinAsync("123456");
+        Assert.False(unlock.Succeeded);
+        Assert.NotEqual("Offline_PinWrong", unlock.SafeMessageKey);
+        Assert.DoesNotContain("Invalid PIN", unlock.SafeMessageKey ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Online_pin_change_replaces_verifier_for_same_user()
+    {
+        var harness = await SeedOfflineGrantHarnessAsync();
+        harness.Access.IntrospectResult = ApiResult<PlatformAccessTokenIntrospectionDto>.Success(
+            new PlatformAccessTokenIntrospectionDto(
+                Active: true,
+                TokenId: Guid.NewGuid(),
+                UserId: harness.UserId,
+                Username: "cashier1",
+                DisplayName: "Cashier",
+                OrganizationId: harness.OrgId,
+                OrganizationDisplayName: "Store",
+                ProductCode: PosProductCodes.PinoyBusinessPos,
+                ExpiresAtUtc: DateTimeOffset.UtcNow.AddHours(1),
+                ProductAccessAllowed: true,
+                ProductAccessReasonCode: null,
+                SubscriptionStatus: "Active",
+                EnabledFeatureCodes: ["pos.sell"]));
+        Assert.True((await harness.Auth.RestoreSessionAsync()).Succeeded);
+        var before = (await harness.GrantStore.LoadPinVerifierAsync(harness.UserId))!.HashBase64;
+
+        Assert.True((await harness.Auth.SetOfflinePinAsync("654321")).Succeeded);
+        var after = await harness.GrantStore.LoadPinVerifierAsync(harness.UserId);
+        Assert.NotNull(after);
+        Assert.NotEqual(before, after!.HashBase64);
+        Assert.True((await harness.Auth.EvaluateCurrentUserOfflinePinReadinessAsync()).CanOfferPinUnlock);
     }
 
     [Fact]

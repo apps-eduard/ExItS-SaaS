@@ -157,6 +157,16 @@ public sealed record OfflineColdStartOffer(
             "offline_grant_corrupt" => OfflinePinEligibilityReason.CorruptState,
             _ => OfflinePinEligibilityReason.NoStoredIdentity
         };
+
+    /// <summary>
+    /// Online post-login enrollment is required only when PIN setup was never completed.
+    /// Expired, revoked, and device-mismatch grants fail closed instead.
+    /// </summary>
+    public bool RequiresPinEnrollment =>
+        !CanOfferPinUnlock
+        && EligibilityReason is OfflinePinEligibilityReason.NoPinVerifier
+            or OfflinePinEligibilityReason.NoGrant
+            or OfflinePinEligibilityReason.NoStoredIdentity;
 }
 
 /// <summary>Directory document persisted in SecureStorage (no secrets).</summary>

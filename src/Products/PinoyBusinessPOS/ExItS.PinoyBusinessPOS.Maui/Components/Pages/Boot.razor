@@ -77,13 +77,10 @@
         var connected = await Connectivity.IsConnectedAsync();
         if (!connected)
         {
-            // No network: never wait on online restore.
+            // No network: never wait on online restore. Ineligible devices go to Sign In
+            // without a PIN field or "Invalid PIN" message.
             _deviceOffline = true;
-            if (_canUsePin)
-            {
-                Nav.NavigateTo("/offline-pin", replace: true);
-            }
-
+            Nav.NavigateTo(_canUsePin ? "/offline-pin" : "/signin", replace: true);
             return;
         }
 

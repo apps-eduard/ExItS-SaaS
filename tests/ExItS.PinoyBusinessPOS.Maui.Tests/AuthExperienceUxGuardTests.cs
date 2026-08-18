@@ -47,6 +47,9 @@ public sealed class AuthExperienceUxGuardTests
         Assert.Contains("RegisterPersonalAccountAsync",
             File.ReadAllText(Path.Combine(maui, "Components", "Pages", "Register.razor")),
             StringComparison.Ordinal);
+        Assert.Contains("<AuthExperience Title=",
+            File.ReadAllText(Path.Combine(maui, "Components", "Pages", "OfflinePinEnrollment.razor")),
+            StringComparison.Ordinal);
         Assert.DoesNotContain("FormGroup",
             File.ReadAllText(Path.Combine(maui, "Components", "Pages", "Register.razor")),
             StringComparison.Ordinal);
@@ -121,7 +124,9 @@ public sealed class AuthExperienceUxGuardTests
         foreach (var key in new[]
                  {
                      "SignIn_BrandTitle", "SignIn_BrandSubtitle", "SignIn_TabSignIn", "SignIn_TabSignUp",
-                     "SignIn_AuthTabsLabel", "SignIn_QuickLoginPlaceholder", "SignIn_UsePin"
+                     "SignIn_AuthTabsLabel", "SignIn_QuickLoginPlaceholder", "SignIn_UsePin",
+                     "Offline_PinSetupIncomplete", "Offline_PinForgotAction", "Offline_PinForgotOfflineMessage",
+                     "SignIn_OfflineNoPinMessage"
                  })
         {
             Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);
