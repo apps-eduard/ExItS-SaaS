@@ -6,7 +6,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Plan status | Draft — planning buckets plus agreed operating-model direction; not product-owner approved |
+| Plan status | Draft — planning buckets plus operating-model, financial-lifecycle, and operational-control direction; not product-owner approved |
 | Implementation present | No |
 
 ## Delivery approach
@@ -20,7 +20,7 @@
 
 | Phase | Objective | Exit criteria |
 |---|---|---|
-| PLM-00 Foundation & Product Decisions | Documentation, identity, isolation, operating-model direction, financial-lifecycle planning, and owner-decision register | Canonical docs exist; open decisions listed; no implementation claimed |
+| PLM-00 Foundation & Product Decisions | Documentation, identity, isolation, operating-model, financial-lifecycle, operational-control planning, and owner-decision register | Canonical docs exist; open decisions listed; no implementation claimed |
 | PLM-01 Product Scaffold & Isolation | Authorized source/test/deploy skeleton and isolation guards | Projects exist without Loan domain; solution isolation proven |
 | PLM-02 Identity / Organization / Product Access | Consume Platform actor/org/product access without Platform table reads | Access intersection entry gates exist; D-P12-03 not invented |
 | PLM-03 Loan Product Authorization | Product-local roles/grants | Matrix implemented only after PLM-D-00-06 |
@@ -49,7 +49,7 @@ Report template: `docs/Product-Foundation/Templates/work-package-report.md` → 
 Stop when any of these are missing without an approved decision:
 
 - [ ] Product definition approved (draft plus operating-model direction exists; owner approval open — PLM-D-00-10)
-- [ ] Roles/grants matrix draft (presets recorded; grants open — PLM-D-00-06)
+- [ ] Roles/grants matrix draft (presets and grant **intent** recorded; identifiers open — PLM-D-00-06)
 - [ ] Operational-money definition (boundary and ledger-vs-cash direction — PLM-D-00-07)
 - [ ] DB name/schema (name proposed; schema open — PLM-D-00-02)
 - [x] Privacy classification (PHI default none) — recorded
@@ -97,6 +97,6 @@ Never weaken tests to pass a WP.
 ## Explicit exclusions from this plan
 
 - Implementing Loan capability in PLM-00
-- Finalizing calculation, penalty amounts, rounding mode, or regulatory rules
+- Finalizing calculation, penalty amounts, rounding mode, grant identifiers, or regulatory rules
 - Creating .NET projects, migrations, APIs, UI, Docker, or `ExItS.slnx` entries in this WP
 - Copying POS phases or grant sets

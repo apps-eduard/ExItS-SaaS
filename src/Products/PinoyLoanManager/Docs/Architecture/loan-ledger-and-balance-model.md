@@ -6,7 +6,7 @@
 
 Conceptual operational Loan **subledger** and multi-component balances. Not a database schema, class design, or organization General Ledger.
 
-Related: [../Product/financial-calculation-baseline.md](../Product/financial-calculation-baseline.md), [../Product/payment-and-allocation-model.md](../Product/payment-and-allocation-model.md), [../Product/collector-cash-and-reconciliation.md](../Product/collector-cash-and-reconciliation.md), [../Product/lending-operating-model.md](../Product/lending-operating-model.md).
+Related: [../Product/financial-calculation-baseline.md](../Product/financial-calculation-baseline.md), [../Product/payment-and-allocation-model.md](../Product/payment-and-allocation-model.md), [../Product/collector-cash-and-reconciliation.md](../Product/collector-cash-and-reconciliation.md), [../Product/cashier-and-collector-control-model.md](../Product/cashier-and-collector-control-model.md), [../Product/lending-operating-model.md](../Product/lending-operating-model.md).
 
 ---
 
@@ -82,7 +82,7 @@ Collector receives PHP 100.
 
 Same business event / correlation, **different** ledgers / balances.
 
-Never derive collector physical cash solely from Loan balance. Detail: [../Product/collector-cash-and-reconciliation.md](../Product/collector-cash-and-reconciliation.md).
+Never derive collector physical cash solely from Loan balance. Cashier Session and collector daily accountability: [../Product/cashier-and-collector-control-model.md](../Product/cashier-and-collector-control-model.md). Detail: [../Product/collector-cash-and-reconciliation.md](../Product/collector-cash-and-reconciliation.md).
 
 ---
 

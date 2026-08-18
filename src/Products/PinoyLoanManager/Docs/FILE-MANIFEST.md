@@ -2,7 +2,7 @@
 
 **Status:** Foundation / planning only
 **Implementation present:** No
-**Current work package:** PLM-00-WP04 — Financial Calculation & Loan Lifecycle Baseline
+**Current work package:** PLM-00-WP05 — Authorization, Cash Control & Operational Workflow Baseline
 
 This file is the navigation map for future Cursor work. Load this product’s `Docs/` after the shared Product Foundation reference. Do not scan PinoyBusinessPOS implementation by default.
 
@@ -21,7 +21,7 @@ Shared contracts to load with this product:
 | `Docs/product-definition.md` | Product identity, ownership, boundaries, exclusions | Foundation / Planning Only | No |
 | `Docs/architecture.md` | Technical and data boundaries; Personal/Borrower intent | Foundation / Planning Only | No |
 | `Docs/security.md` | Security, privacy, consent | Foundation / Planning Only | No |
-| `Docs/authorization-matrix.md` | Access intersection; role presets; grants open | Foundation / Planning Only | No |
+| `Docs/authorization-matrix.md` | Access intersection; role presets; grant intent; identifiers open | Foundation / Planning Only | No |
 | `Docs/development-plan.md` | Delivery buckets PLM-00–PLM-14 | Foundation / Planning Only | No |
 | `Docs/roadmap.md` | Current phase and work-package sequence | Foundation / Planning Only | No |
 | `Docs/risks-and-decisions.md` | Open risks and decisions | Foundation / Planning Only | No |
@@ -46,7 +46,17 @@ Shared contracts to load with this product:
 | `Docs/Product/loan-lifecycle-model.md` | Origination vs lifecycle vs delinquency | Planning baseline / not a spec | No |
 | `Docs/Architecture/loan-ledger-and-balance-model.md` | Operational subledger and balances | Planning baseline / not a spec | No |
 
-## Workspace indexes (PLM-00-WP01, updated in WP02–WP04)
+## Authorization / cash / operational workflow (PLM-00-WP05)
+
+| Path | Purpose | Status | Implementation present |
+|---|---|---|---|
+| `Docs/Security/role-and-grant-baseline.md` | Presets, grant catalog intent, scope, SoD | Planning baseline / not a spec | No |
+| `Docs/Product/daily-operational-workflow.md` | Common operating day, assignments, offline boundary | Planning baseline / not a spec | No |
+| `Docs/Product/cashier-and-collector-control-model.md` | Cashier Session, float, remittance, cash availability | Planning baseline / not a spec | No |
+| `Docs/Product/disbursement-and-payment-controls.md` | Office/field disbursement and cash payment | Planning baseline / not a spec | No |
+| `Docs/Product/exception-reversal-and-variance-workflow.md` | Exceptions, waivers, reversals vs cash refund, variance | Planning baseline / not a spec | No |
+
+## Workspace indexes (PLM-00-WP01, updated in WP02–WP05)
 
 | Path | Purpose | Status | Implementation present |
 |---|---|---|---|
@@ -76,6 +86,8 @@ Shared contracts to load with this product:
 | `ExItS.slnx` entries | Not authorized |
 | `Docs/deployment-notes.md` | Optional until packaging |
 | `Docs/Reports/<WP-id>.md` | In-tree WP report not required for this docs-only WP |
+| Exact grant identifiers / custom roles | Open (PLM-D-00-06) |
+| Small-org vs two-person high-risk approval | Open (PLM-D-00-13) |
 | Exact rounding mode | Open (PLM-D-00-12) |
 | Final calculation algorithms / peso or percent rates | Owner decision (PLM-D-00-08) |
 | Legal/compliance validation | Open (PLM-D-00-11) |

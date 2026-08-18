@@ -11,7 +11,7 @@ Always load with:
 5. The active work-package prompt/report
 6. Files required for the task only
 
-**Status:** Draft — PLM-00 documentation baseline plus operating-model and financial-lifecycle planning
+**Status:** Draft — PLM-00 documentation baseline plus operating-model, financial-lifecycle, and operational-control planning
 **Implementation present:** No
 **Documentation root:** `src/Products/PinoyLoanManager/Docs/` (D-P12-02)
 
@@ -26,7 +26,7 @@ Pinoy Loan Manager is a **separate first-class ExItS SaaS product**, a sibling o
 | [product-definition.md](product-definition.md) | Purpose, ownership, boundaries, exclusions |
 | [architecture.md](architecture.md) | System, data, Personal/Borrower, and client boundaries |
 | [security.md](security.md) | Security, privacy, consent |
-| [authorization-matrix.md](authorization-matrix.md) | Access layers; role presets recorded; grants open |
+| [authorization-matrix.md](authorization-matrix.md) | Access layers; role presets and grant **intent**; identifiers open |
 | [development-plan.md](development-plan.md) | Delivery buckets and testing expectations |
 | [roadmap.md](roadmap.md) | Phases and work packages |
 | [risks-and-decisions.md](risks-and-decisions.md) | Open risks and decisions |
@@ -46,6 +46,11 @@ Agreed operating-model direction (not implementation specs):
 | [Product/schedule-maturity-and-settlement.md](Product/schedule-maturity-and-settlement.md) | Schedule, calendar, maturity, settlement |
 | [Product/loan-lifecycle-model.md](Product/loan-lifecycle-model.md) | Origination vs lifecycle vs delinquency |
 | [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md) | Operational subledger and balance components |
+| [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md) | Owner/Manager/Cashier/Collector presets; grant catalog intent |
+| [Product/daily-operational-workflow.md](Product/daily-operational-workflow.md) | Common operating day, assignments, offline boundary |
+| [Product/cashier-and-collector-control-model.md](Product/cashier-and-collector-control-model.md) | Cashier Session, float, remittance, cash availability |
+| [Product/disbursement-and-payment-controls.md](Product/disbursement-and-payment-controls.md) | Office/field disbursement and cash payment |
+| [Product/exception-reversal-and-variance-workflow.md](Product/exception-reversal-and-variance-workflow.md) | Exceptions, waivers, reversals vs cash refund, variance |
 
 Category folders below are indexes only. They must not become a second source of truth.
 
@@ -57,7 +62,7 @@ Category folders below are indexes only. They must not become a second source of
 |---|---|
 | [Product/](Product/README.md) | **WHAT** — points to [product-definition.md](product-definition.md) and operating-model docs |
 | [Architecture/](Architecture/README.md) | **HOW** — points to [architecture.md](architecture.md), surfaces, and ledger/balance model |
-| [Security/](Security/README.md) | Access and privacy — points to [security.md](security.md) and [authorization-matrix.md](authorization-matrix.md) |
+| [Security/](Security/README.md) | Access and privacy — points to [security.md](security.md), [authorization-matrix.md](authorization-matrix.md), and [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md) |
 | [Decisions/](Decisions/README.md) | Future ADRs — register is [risks-and-decisions.md](risks-and-decisions.md) |
 | [Phases/](Phases/README.md) | Sequencing — points to [roadmap.md](roadmap.md) and [development-plan.md](development-plan.md) |
 | [Reports/](Reports/README.md) | Completed work-package evidence |
@@ -105,4 +110,4 @@ Organization Web: Blazor Web (full operations). MAUI Blazor Hybrid: limited fiel
 
 ## Explicit exclusions
 
-No implementation exists. Exact loan calculation algorithms and peso/percent rates are not defined (PLM-D-00-08). Do not copy PinoyBusinessPOS grants or money models. No recorded workflow is claimed legally compliant (PLM-D-00-11).
+No implementation exists. Exact loan calculation algorithms and peso/percent rates are not defined (PLM-D-00-08). Grant identifiers remain open (PLM-D-00-06). Do not copy PinoyBusinessPOS grants or money models. No recorded workflow is claimed legally compliant (PLM-D-00-11).

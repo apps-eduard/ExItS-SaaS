@@ -6,19 +6,28 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager / `pinoy-loan-manager` (proposed) |
-| Status | Draft — role presets recorded; grants **Open / Product Owner Decision Required** (PLM-D-00-06) |
+| Status | Draft — role presets and grant **intent** recorded; identifiers **Open** (PLM-D-00-06) |
 | Implementation present | No |
+
+Planning catalog: [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md).
 
 ## Layers
 
 ```text
-Trusted actor → org context → Platform product access → commercial state → entitlements
-  → product-local role → product-local grant → resource / workflow rules
+Authenticated Actor
++ Trusted Organization Context
++ Platform Product Access
++ Allowed Commercial State
++ Required Entitlement
++ Active PLM Product Role
++ Required PLM Grant
++ Resource / Branch / Workflow Scope
+= Authorized Operational Action
 ```
 
-**DECISION D-P12-03:** how commercial state reaches the product is unresolved — document provisional approach here without inventing a final Platform transport.
+No client-only authorization. No `if Role == "Manager" then allow everything`. Roles are **default presets** backed by **explicit grants**. No implicit role hierarchy.
 
-Provisional commercial approach for this product: **none chosen**. Do not copy PinoyBusinessPOS Dev/Testing commercial headers as the Pinoy Loan Manager production design. Until D-P12-03 is closed, any later Dev/Testing gate must be labeled provisional and must fail closed outside approved environments.
+**DECISION D-P12-03:** commercial-state transport remains unresolved. Provisional approach: **none chosen**. Do not copy PinoyBusinessPOS Dev/Testing commercial headers as production design. Any later Dev/Testing gate must fail closed outside approved environments.
 
 ## Platform vs product
 
@@ -27,58 +36,98 @@ Provisional commercial approach for this product: **none chosen**. Do not copy P
 | System / org admin roles | Yes | Do not grant product ops by implication |
 | Product access assignment | Yes | Consumed only |
 | Subscription / entitlement | Yes | Enforced |
-| Operational roles / grants | No | **Yes — authoritative** when defined |
+| Operational roles / grants | No | **Yes — authoritative** |
+
+Platform Owner / Platform Admin do **not** automatically receive PLM operational grants.
 
 ## Product roles
 
-Default **presets** recorded as product direction. They must eventually be backed by granular product-local grants. Do **not** hard-code authorization directly to role names. Do **not** copy PinoyBusinessPOS grant sets even where display names overlap.
-
-Detail: [Product/lending-operating-model.md](Product/lending-operating-model.md).
+Organization-scoped PLM **presets**. Role **codes** are not assigned. Custom roles are future work.
 
 | Role code | Display name | Purpose |
 |---|---|---|
-| *open* | Owner | Full organization-level Loan Manager administration |
+| *open* | Owner | Organization-level PLM administration |
 | *open* | Manager | Lending operations and supervision |
-| *open* | Cashier | Cash custody, float, remittance, office cash operations |
-| *open* | Collector | Field collections, assigned borrowers, remittance |
-
-Role **codes** are not assigned. Final grant matrix remains **Open / Product Owner Decision Required**.
+| *open* | Cashier | Cash custody, float, remittance, office cash |
+| *open* | Collector | Assigned field collections and remittance |
 
 ## Grants / permissions
 
-**Status: Open / Product Owner Decision Required.** Presets do not substitute for grants.
+Planning **categories**, not final identifiers. Full catalog: [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md).
 
-| Grant code | Description |
+## Planning matrix legend
+
+| Mark | Meaning |
 |---|---|
-| — | Not defined |
+| **Allow** | Allowed by default preset (still requires the corresponding grant + scope at runtime) |
+| **Deny** | Not allowed by default preset |
+| **Scope** | Allowed only with assignment / branch / session scope |
+| **Open** | Future decision |
 
-## Matrix
+## Default preset intent (planning)
 
-| Role | Grant | Resource | Action | Org scope | Concealment | Commercial state required | Special rules |
-|---|---|---|---|---|---|---|---|
-| Owner / Manager / Cashier / Collector | Not defined | Not defined | Not defined | own-org (required intent) | 404 (Product Foundation default) | **Status: Open / Product Owner Decision Required** | No implemented matrix until PLM-D-00-06 grants are decided |
+| Capability | Owner | Manager | Cashier | Collector |
+|---|---|---|---|---|
+| Staff / PLM role management | Allow | Deny | Deny | Deny |
+| Configuration manage | Allow | Deny | Deny | Deny |
+| Configuration view | Allow | Allow | Scope | Deny |
+| Quick Loan template manage / publish | Allow | Deny | Deny | Deny |
+| Quick Loan template view | Allow | Allow | Deny | Deny |
+| Borrower create / update | Allow | Allow | Deny | Deny |
+| Borrower view | Allow | Allow | Scope | Scope |
+| Application / request review | Allow | Allow | Deny | Deny |
+| Loan approve / reject | Allow | Allow | Deny | Deny |
+| Loan view financials | Allow | Allow | Scope | Scope |
+| Office disbursement | Allow | Deny | Allow | Deny |
+| Field disbursement execute | Allow | Deny | Deny | Scope |
+| Disbursement authorize (create approval) | Allow | Allow | Deny | Deny |
+| Office payment post | Allow | Deny | Allow | Deny |
+| Field payment post | Allow | Deny | Deny | Scope |
+| Collection assignments manage | Allow | Allow | Deny | Deny |
+| Collection attempt record | Allow | Allow | Deny | Scope |
+| Collection exception request | Allow | Allow | Deny | Scope |
+| Collection exception approve | Allow | Allow | Deny | Deny |
+| Organization-wide exception declare | Allow | Allow | Deny | Deny |
+| Penalty waiver request | Allow | Allow | Deny | Scope |
+| Penalty waiver approve | Allow | Allow | Deny | Deny |
+| Cash session open / close | Allow | Deny | Allow | Deny |
+| Collector float issue | Allow | Deny | Allow | Deny |
+| Collector float receive | Allow | Deny | Deny | Scope |
+| Remittance submit | Allow | Deny | Deny | Scope |
+| Remittance receive / reconcile | Allow | Deny | Allow | Deny |
+| Cash variance view | Allow | Allow | Allow | Scope |
+| Cash variance resolve | Allow | Allow | Deny | Deny |
+| Payment / disbursement reverse request | Allow | Allow | Allow | Scope |
+| Reverse approve | Allow | Allow | Deny | Deny |
+| Reports operational | Allow | Allow | Scope | Scope |
+| Reports financial | Allow | Allow | Deny | Deny |
+| Audit view | Allow | Allow | Scope | Deny |
+| Unrestricted org-wide financial browse | Allow | Allow | Deny | Deny |
+| Platform administration | Deny | Deny | Deny | Deny |
+| Silent edit / delete of posted history | Deny | Deny | Deny | Deny |
+| Self-approve own Loan | Deny | Open | Deny | Deny |
+| Self-approve own waiver | Deny | Open | Deny | Deny |
+| Self-resolve own cash variance | Deny | Open | Deny | Deny |
+
+**Open** on Owner/Manager self-approval: whether two distinct humans are required for **all** organization sizes remains a product-owner decision. High-risk self-approval restrictions may still apply where explicitly required. Do **not** fake separation of duties with screen labels.
+
+Collector **Scope** = assigned borrowers / loans / disbursement tasks / own cash accountability only.
+
+Cashier **Scope** = assigned branch / own cash session unless a broader grant is given.
 
 ## Continuity / denied commercial states
 
 | Commercial state | Operational effect |
 |---|---|
-| Any denied / unknown state | Fail closed. Specific view-only or continuity behavior **Status: Open / Product Owner Decision Required**. Do not invent. |
+| Any denied / unknown state | Fail closed. Specific view-only or continuity behavior **Open**. |
 
 ## Ownership and workflow rules
 
-- Resource/workflow authorization is a required layer. Exact traditional-loan workflow, formulas, and component allocation order remain open (PLM-D-00-08). Lifecycle vs delinquency: [Product/loan-lifecycle-model.md](Product/loan-lifecycle-model.md).
-- Last-owner / bootstrap rules: **Status: Open / Product Owner Decision Required**.
+- Last-owner / bootstrap rules: **Open**.
 - POS Customer status never grants Loan operational permission.
-- Platform Administrator does not automatically receive Loan operational access.
 - Platform Admin Web is not the normal UI for managing borrower loans.
-
-Separation-of-duty baseline (intent, not implemented):
-
-- Collector must not approve their own waiver.
-- Collector must not approve their own cash variance.
-- Collector must not approve their own loan/disbursement authorization.
-- Cashier should not normally be the loan approver.
-- Owner/Manager may approve according to grants.
+- Approval and disbursement are separate authorities.
+- Small organizations may assign multiple presets to one person; each action remains individually authorized and audited.
 
 ## Explicit non-grants
 
@@ -86,3 +135,4 @@ Separation-of-duty baseline (intent, not implemented):
 - PinoyBusinessPOS roles do **not** grant Pinoy Loan Manager operations
 - A PinoyBusinessPOS subscription does **not** unlock Pinoy Loan Manager
 - EX ID / QR resolution does **not** grant a Personal-to-Borrower relationship
+- Role name alone does **not** authorize an action without the corresponding grant and scope

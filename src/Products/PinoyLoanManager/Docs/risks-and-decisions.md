@@ -25,13 +25,14 @@
 | PLM-D-00-03 | Decision | Physical source/test/deploy layout beside `Docs/` | Open / Product Owner Decision Required | PLM-01 scaffold | Architecture WP | Convention observation only (`ExItS.PinoyLoanManager.<Layer>` is not approved) | Layout ADR or authorized scaffold WP |
 | PLM-D-00-04 | Decision | Generic Platform cross-product relationship model | Open / Product Owner Decision Required | Personal as POS Customer, Loan Borrower, and future BNPL Customer | Platform architecture WP — do not design in PLM | Conceptual diagram only | Approved Platform contract/schema, not invented here |
 | PLM-D-00-05 | Decision | Personal-to-Borrower linking mechanism | Open / Product Owner Decision Required | Optional link, consent, no auto-link from EX ID / QR | PLM-04 + Platform | Intent recorded in architecture.md | Approved linking/consent design |
-| PLM-D-00-06 | Decision | Loan roles and grants | Open / Product Owner Decision Required | PLM-03 and all operational WPs | Product owner | Owner/Manager/Cashier/Collector **presets** and separation-of-duty baseline recorded; grant codes not defined | Owner-approved role/grant matrix; do not hard-code auth to role names; do not copy POS grants |
-| PLM-D-00-07 | Decision | Operational financial model | Open / Product Owner Decision Required | Origination, payments, collections, cash | Product owner | Loan vs collector cash; append-only subledger *principles*; billable event DISBURSED; schema not designed | Owner-approved money/ledger schema in this product |
+| PLM-D-00-06 | Decision | Loan roles and grants | Open / Product Owner Decision Required | PLM-03 and all operational WPs | Product owner | Presets, grant **catalog intent**, scope, SoD recorded; **identifiers** not final | Owner-approved identifiers; no role-name hard-coding; no implicit hierarchy |
+| PLM-D-00-07 | Decision | Operational financial model | Open / Product Owner Decision Required | Origination, payments, collections, cash | Product owner | Loan vs collector cash; Cashier Session *concept*; billable event DISBURSED; schema not designed | Owner-approved money/ledger schema in this product |
 | PLM-D-00-08 | Decision | Loan business/calculation rules | Open / Product Owner Decision Required | PLM-05 through PLM-10 | Product owner | Treatment *modes*, partial payments, oldest-due *schedule* baseline recorded; **no** rates/formulas/component order | Owner-approved policy for each remaining rule area |
 | PLM-D-00-09 | Decision | Web/MAUI component-sharing strategy | Open / Product Owner Decision Required | Client scaffold and PLM-13 | Architecture WP | Surface split recorded (full Org Web vs limited MAUI vs Personal presentation) | Approved sharing/isolation approach; no client project until authorized |
-| PLM-D-00-10 | Decision | Product documentation baseline completion / owner approval | Open / Product Owner Decision Required | Closing PLM-00 | Product owner | Canonical docs from WP01–WP04 | Owner accepts baseline or lists required changes |
+| PLM-D-00-10 | Decision | Product documentation baseline completion / owner approval | Open / Product Owner Decision Required | Closing PLM-00 | Product owner | Canonical docs from WP01–WP05 | Owner accepts baseline or lists required changes |
 | PLM-D-00-11 | Decision | External legal/compliance validation | Open / Product Owner Decision Required | Production use | Product owner + external counsel | No rates/workflows claimed compliant | Written legal/compliance validation before Production |
 | PLM-D-00-12 | Decision | Exact money rounding mode | Open / Product Owner Decision Required | Calculation engine | Product owner + accounting | Decimal money; boundaries recorded; midpoint algorithm **not** chosen | Explicit rounding-mode decision before engine implementation |
+| PLM-D-00-13 | Decision | Small-org vs two-person high-risk approval | Open / Product Owner Decision Required | Operational SoD | Product owner | Multiple presets on one person allowed; high-risk self-approval still restricted where required | Explicit policy for which actions may never be self-approved |
 
 ## Accepted engineering / planning baselines (WP04)
 
@@ -53,10 +54,52 @@ These are **planning baselines**, not legal approval and not implementation. The
 - decimal money arithmetic; no binary float for authoritative money
 - Principal, Net Proceeds, and Total Repayment are not assumed identical
 
-## Operating-model and calculation open areas (do not invent)
+## Accepted engineering / planning baselines (WP05)
 
-Direction in WP03/WP04 docs does **not** close these. Tracked primarily under PLM-D-00-06, PLM-D-00-07, PLM-D-00-08, PLM-D-00-11, PLM-D-00-12, and D-P12-03:
+These are **planning baselines**, not legal approval and not implementation. They do **not** close grant identifiers, custom roles, Cashier close-with-variance policy, cash-refund workflow, or offline posting design.
 
+- default roles = Owner, Manager, Cashier, Collector
+- role presets backed by explicit grants
+- no implicit role hierarchy
+- server-authoritative authorization
+- multi-branch / resource scope supported
+- approval and disbursement separate
+- Collector cannot approve own Loan
+- Collector cannot approve own waiver
+- Collector cannot resolve own cash variance
+- Cashier does not normally approve Loans
+- Cashier Session concept
+- Collector daily cash accountability
+- opening / additional float recorded separately
+- collected-funds reuse configurable, default OFF
+- office and field disbursement supported
+- office and field cash payment supported
+- partial remittance supported
+- end-of-day reconciliation required
+- unresolved cash variance must remain visible
+- Loan reversal separate from physical cash refund
+- financial events are not silently deleted
+- server remains authoritative for future offline financial posting
+
+## Operating-model, calculation, and operational open areas (do not invent)
+
+Direction in WP03–WP05 docs does **not** close these. Tracked primarily under PLM-D-00-06, PLM-D-00-07, PLM-D-00-08, PLM-D-00-11, PLM-D-00-12, PLM-D-00-13, and D-P12-03:
+
+- exact grant identifiers
+- custom-role support / version
+- whether high-risk actions require two distinct human users for all organization sizes (PLM-D-00-13)
+- exact Cashier Session closing rules with unresolved variance
+- exact collector acknowledgement mechanism for float
+- cash vault / branch treasury architecture
+- exact cash refund workflow
+- exact payment reversal approval threshold
+- exact disbursement cancellation / reversal workflow
+- mobile offline financial behavior
+- route planning / GPS requirements
+- collector device security
+- receipt numbering / format
+- accounting / GL integration
+- exact financial calculation decisions remaining from WP04
 - exact traditional loan workflow
 - exact interest formula(s) supported for MVP
 - exact rate / rate precision
@@ -68,10 +111,7 @@ Direction in WP03/WP04 docs does **not** close these. Tracked primarily under PL
 - exact future-interest treatment on early settlement
 - restructuring calculations
 - write-off accounting treatment
-- full accounting / GL integration
 - due-date generation details
-- detailed role / grant matrix
-- collector offline behavior
 - Personal / Loan API shape
 - Platform usage-charge transport (D-P12-03)
 - regulatory / legal validation (PLM-D-00-11)
@@ -106,5 +146,5 @@ Do **not** close remaining items by guessing. Do **not** claim legal compliance.
 - Prefer stable IDs (`R-…`, `D-…`, `PLM-D-…`).
 - “Closed” requires repository or operator evidence plus explicit approval.
 - Unresolved policy in approved docs must appear here as open decisions.
-- Do not close PLM-D-00-01 through PLM-D-00-12, D-P12-03, R-091, or D-P12-05 without explicit approval.
+- Do not close PLM-D-00-01 through PLM-D-00-13, D-P12-03, R-091, or D-P12-05 without explicit approval.
 - Category indexes under `Docs/*/README.md` are not ADRs; ADRs belong in `Docs/Decisions/` when later authorized.

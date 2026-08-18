@@ -12,6 +12,6 @@ Do not treat this folder as a second architecture document.
 | [application-surface-model.md](application-surface-model.md) | Platform Admin, Organization Web, MAUI field app, ExItS Personal |
 | [loan-ledger-and-balance-model.md](loan-ledger-and-balance-model.md) | Operational Loan subledger and multi-component balances |
 
-Future ADRs for irreversible structure belong in [../Decisions/](../Decisions/README.md). Open layout, linking, and client-sharing questions: [../risks-and-decisions.md](../risks-and-decisions.md) (PLM-D-00-03, PLM-D-00-04, PLM-D-00-05, PLM-D-00-09).
+Future ADRs for irreversible structure belong in [../Decisions/](../Decisions/README.md). Open layout, linking, and client-sharing questions: [../risks-and-decisions.md](../risks-and-decisions.md) (PLM-D-00-03, PLM-D-00-04, PLM-D-00-05, PLM-D-00-09). Authorization and cash-control planning: [../Security/role-and-grant-baseline.md](../Security/role-and-grant-baseline.md), [../Product/cashier-and-collector-control-model.md](../Product/cashier-and-collector-control-model.md).
 
 Physical source/test/deploy layout is not decided. No .NET projects are authorized in PLM-00.

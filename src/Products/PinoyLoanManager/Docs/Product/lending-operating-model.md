@@ -14,6 +14,12 @@ Canonical companions:
 - [financial-calculation-baseline.md](financial-calculation-baseline.md)
 - [loan-lifecycle-model.md](loan-lifecycle-model.md)
 - [../Architecture/application-surface-model.md](../Architecture/application-surface-model.md)
+- [../Security/role-and-grant-baseline.md](../Security/role-and-grant-baseline.md)
+- [../authorization-matrix.md](../authorization-matrix.md)
+- [daily-operational-workflow.md](daily-operational-workflow.md)
+- [cashier-and-collector-control-model.md](cashier-and-collector-control-model.md)
+- [disbursement-and-payment-controls.md](disbursement-and-payment-controls.md)
+- [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md)
 - [../Architecture/loan-ledger-and-balance-model.md](../Architecture/loan-ledger-and-balance-model.md)
 - [../product-definition.md](../product-definition.md)
 - [../risks-and-decisions.md](../risks-and-decisions.md)
@@ -101,7 +107,7 @@ Recorded presets (not implemented; not a grant matrix):
 | **Cashier** | Cash custody; collector opening float; additional collector float; office disbursement; receive collector remittance; cash reconciliation; authorized office payment operations |
 | **Collector** | Assigned borrowers; field collections; record payments; record collection attempts; record missed-payment reason; approved field disbursement; cash accountability; remittance |
 
-These presets must eventually be backed by **granular product-local grants**. Do **not** hard-code authorization directly to role names. Do **not** copy PinoyBusinessPOS grant sets even where display names overlap.
+These presets must eventually be backed by **granular product-local grants**. Do **not** hard-code authorization directly to role names. Do **not** implement implicit role hierarchy. Do **not** copy PinoyBusinessPOS grant sets even where display names overlap.
 
 Separation-of-duty baseline (intent):
 
@@ -111,7 +117,7 @@ Separation-of-duty baseline (intent):
 - Cashier should not normally be the loan approver.
 - Owner/Manager may approve according to grants.
 
-Exact grants remain future detailed authorization work (PLM-D-00-06). Matrix: [../authorization-matrix.md](../authorization-matrix.md).
+Grant catalog **intent** and scope: [../Security/role-and-grant-baseline.md](../Security/role-and-grant-baseline.md). Planning matrix: [../authorization-matrix.md](../authorization-matrix.md). Identifiers remain **Open** (PLM-D-00-06).
 
 ---
 

@@ -6,7 +6,7 @@
 
 Payment posting, allocation, missed-installment carry-forward, and reversal/idempotency requirements. Not a posting-engine specification.
 
-Related: [financial-calculation-baseline.md](financial-calculation-baseline.md), [schedule-maturity-and-settlement.md](schedule-maturity-and-settlement.md), [../Architecture/loan-ledger-and-balance-model.md](../Architecture/loan-ledger-and-balance-model.md), [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md).
+Related: [financial-calculation-baseline.md](financial-calculation-baseline.md), [schedule-maturity-and-settlement.md](schedule-maturity-and-settlement.md), [../Architecture/loan-ledger-and-balance-model.md](../Architecture/loan-ledger-and-balance-model.md), [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md), [disbursement-and-payment-controls.md](disbursement-and-payment-controls.md), [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md).
 
 ---
 

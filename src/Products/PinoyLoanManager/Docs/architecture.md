@@ -7,7 +7,7 @@
 |---|---|
 | Product | Pinoy Loan Manager / `pinoy-loan-manager` (proposed, PLM-D-00-01) |
 | Database | `ExItS_PinoyLoanManager` (proposed) / schema **Status: Open / Product Owner Decision Required** (PLM-D-00-02) |
-| Status | Draft — documentation baseline plus operating-model and financial-lifecycle planning; not product-owner approved |
+| Status | Draft — documentation baseline plus operating-model, financial-lifecycle, and operational-control planning; not product-owner approved |
 | Implementation present | No |
 
 ## System context
@@ -35,7 +35,7 @@ Pinoy Loan Manager must never take a project or database dependency on PinoyBusi
 | Borrower operational records | No | Yes (future) |
 | Loan-domain state and workflows | No | Yes (future) — Traditional and Quick origination; one core Loan after disbursement |
 | Loan operational financial state | No | Yes (future) — loan ledger separate from collector cash |
-| Product-local authorization | No | Yes (future; presets recorded, grants open) |
+| Product-local authorization | No | Yes (future; presets + grant intent recorded; identifiers open) |
 | Product DB / migrations | No | Yes (future) |
 | Product API / Web UI / MAUI UI / reports / product audit | No | Yes (future) |
 
@@ -75,24 +75,24 @@ Do **not** design the final generic Platform relationship schema here (**Status:
 
 ## Product modules
 
-Planning modules only. None are designed or implemented. Exact formulas remain open (PLM-D-00-08). Origination: [Product/lending-operating-model.md](Product/lending-operating-model.md). Financial planning: [Product/financial-calculation-baseline.md](Product/financial-calculation-baseline.md), [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md).
+Planning modules only. None are designed or implemented. Exact formulas remain open (PLM-D-00-08). Origination: [Product/lending-operating-model.md](Product/lending-operating-model.md). Authorization: [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md). Cash / daily ops: [Product/cashier-and-collector-control-model.md](Product/cashier-and-collector-control-model.md), [Product/daily-operational-workflow.md](Product/daily-operational-workflow.md). Financial planning: [Product/financial-calculation-baseline.md](Product/financial-calculation-baseline.md), [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md).
 
 | Module | Responsibility | Notes |
 |---|---|---|
 | Product access / isolation | Independent subscription, org isolation, commercial gate | Depends on D-P12-03; no Platform table reads |
-| Product-local authorization | Loan presets + future grants | Presets recorded; grants open (PLM-D-00-06) |
+| Product-local authorization | Loan presets + explicit grants | Intent recorded; identifiers open (PLM-D-00-06); no role-name hard-coding |
 | Borrower foundation | Product-local borrower records | Optional Personal link; PLM-D-00-04 / PLM-D-00-05 open |
 | Loan product configuration | Traditional products and Quick Loan Templates | Templates are organization-configured, not built-in types |
 | Application / approval | Traditional application and Quick Loan Request | Manual approval default; no auto-approval |
-| Origination / disbursement | Starting a loan and releasing funds | Approved ≠ Disbursed; office or collector |
+| Origination / disbursement | Starting a loan and releasing funds | Approved ≠ Disbursed; office or collector; cash availability check |
 | Shared Loan core | Ledger, balances, schedule, payments, penalties, collections, settlement, audit | One engine after disbursement |
 | Schedule / calculation engine | Schedules and calculations | Modes recorded; formula, rounding (PLM-D-00-12), amortization open |
 | Payment posting | Applying receipts | Partial/multiple payments; oldest-due schedule baseline; component order open |
-| Collector cash / reconciliation | Float, collections cash, remittance, variance | Separate from loan ledger |
+| Collector cash / reconciliation | Float, Cashier Session, remittance, variance | Separate from loan ledger; unresolved variance remains visible |
 | Collections / delinquency | Arrears, exceptions, waivers, reversals | Separate from lifecycle; no hard-coded rate |
 | Reporting / documents | Product reports and documents | Contents open |
 | Security / audit / privacy | Product audit, consent, classification | See [security.md](security.md) |
-| Offline / MAUI field capabilities | Later native/offline support | Not authorized |
+| Offline / MAUI field capabilities | Later native/offline support | Server remains authoritative; not authorized |
 
 ## Data ownership
 
@@ -181,3 +181,5 @@ Detail: `deployment-notes.md` when packaging begins. Not created in this package
 - Treating Dev/Testing commercial shortcuts as the production design
 - Using Platform Admin as the borrower-loan operations UI
 - Duplicate Traditional vs Quick financial engines
+- Implicit role hierarchy or client-only authorization
+- Silent deletion of posted financial events or unexplained cash-balance edits

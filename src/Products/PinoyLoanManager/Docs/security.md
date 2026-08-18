@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Status | Draft — documentation baseline plus operating-model and financial-lifecycle planning; not product-owner approved |
+| Status | Draft — documentation baseline plus operating-model, financial-lifecycle, and operational-control planning; not product-owner approved |
 | Implementation present | No |
 
 ## Authentication boundary
@@ -19,21 +19,24 @@
 ## Product authorization
 
 - Platform product access / commercial state / entitlements: **entry gate only**
-- Product-local roles and grants: **operational authority** ([authorization-matrix.md](authorization-matrix.md)) — presets recorded; granular grants **Open / Product Owner Decision Required** (PLM-D-00-06)
+- Product-local roles and grants: **operational authority** ([authorization-matrix.md](authorization-matrix.md), [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md)) — presets and grant **intent** recorded; identifiers **Open** (PLM-D-00-06)
+- No implicit role hierarchy; no client-only authorization
+- Resource / branch / assignment / session **scope** is a required layer
 - Both layers must allow the action; neither bypasses the other
 - Platform entitlement does not replace Loan product-local authorization
 
 Access intersection (required intent):
 
 ```text
-trusted actor
-+ trusted organization context
-+ Platform product access
-+ valid commercial state
-+ required entitlement
-+ active Loan product-local role
-+ required Loan product-local grant
-+ resource/workflow authorization
+Authenticated Actor
++ Trusted Organization Context
++ Platform Product Access
++ Allowed Commercial State
++ Required Entitlement
++ Active PLM Product Role
++ Required PLM Grant
++ Resource / Branch / Workflow Scope
+= Authorized Operational Action
 ```
 
 ## Organization isolation
@@ -72,7 +75,7 @@ Optional Personal-to-Borrower linking, if implemented later:
 | Concern | Approach |
 |---|---|
 | Application logs | **Status: Open / Product Owner Decision Required** — no secrets/card/PHI dumps |
-| Product audit / immutable history | Intended product-owned append-only operational history. Posted disbursement, payment, penalty, waiver, reversal, collector cash movement, and remittance must not be silently edited or deleted. Subledger principles: [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md). Schema **Open**. |
+| Product audit / immutable history | Intended product-owned append-only operational history. Posted disbursement, payment, penalty, waiver, reversal, collector cash movement, remittance, and cash-variance records must not be silently edited or deleted. High-risk audit fields: [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md). Subledger principles: [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md). Schema **Open**. |
 | Platform audit | Platform-owned; do not push operational payloads that violate boundary |
 
 ## Encryption
@@ -94,7 +97,7 @@ Optional Personal-to-Borrower linking, if implemented later:
 
 | Operation class | Strategy |
 |---|---|
-| All Loan mutating operations | **Requirement recorded:** protect financial commands against duplicate submission (collector double-tap, mobile retry, API retry) via future idempotency / correlation. Implementation **not** designed. Detail: [Product/payment-and-allocation-model.md](Product/payment-and-allocation-model.md). |
+| All Loan mutating operations | **Requirement recorded:** protect financial commands against duplicate submission (collector double-tap, mobile retry, API retry) via future idempotency / correlation. Especially: Disbursement, Payment, Float Transfer, Remittance, Penalty Waiver, Reversal. Implementation **not** designed. Detail: [Product/payment-and-allocation-model.md](Product/payment-and-allocation-model.md), [Product/disbursement-and-payment-controls.md](Product/disbursement-and-payment-controls.md). |
 
 ## Backup / restore
 
@@ -110,7 +113,7 @@ Optional Personal-to-Borrower linking, if implemented later:
 | R-091 | Production authentication | Open |
 | D-P12-03 | Commercial-state transport; risk of inventing Platform table reads or copying POS Dev headers as production design | Open |
 | D-P12-05 | Dishonest Dev/Testing vs Production language | Open |
-| PLM-D-00-06 | Missing product-local grant matrix (presets recorded) | Open |
+| PLM-D-00-06 | Missing product-local grant identifiers (presets and intent recorded) | Open |
 | PLM-D-00-05 | Undesigned consent/linking mechanism | Open |
 | PLM-D-00-11 | Legal/compliance validation not performed | Open |
 | PLM-D-00-12 | Exact money rounding mode unset | Open |

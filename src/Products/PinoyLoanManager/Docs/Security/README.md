@@ -5,4 +5,10 @@
 **Status:** Foundation / planning only
 **Implementation present:** No
 
-Do not treat this folder as a second security specification. Owner / Manager / Cashier / Collector **presets** are recorded; granular grants remain **Open / Product Owner Decision Required** (PLM-D-00-06). Do not hard-code authorization to role names. Do not copy PinoyBusinessPOS grant sets.
+Do not treat this folder as a second security specification.
+
+| Doc | Subject |
+|---|---|
+| [role-and-grant-baseline.md](role-and-grant-baseline.md) | Owner / Manager / Cashier / Collector presets; grant catalog **intent**; scope; SoD |
+
+Grant **identifiers** remain **Open / Product Owner Decision Required** (PLM-D-00-06). Do not hard-code authorization to role names. Do not implement implicit role hierarchy. Do not copy PinoyBusinessPOS grant sets.
