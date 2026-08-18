@@ -21,4 +21,4 @@ Do not rewrite historical signed-off reports merely to erase history.
 
 ## Reports in this package
 
-PLM-00-WP01 through PLM-00-WP07 do not add a separate report file. Completion evidence for these documentation-only packages is the git commit on `docs/plm-foundation` plus the chat completion report. A copied Product Foundation work-package report template may be added in a later authorized package if the owner wants a durable in-tree report.
+PLM-00-WP01 through PLM-00-WP08 do not add a separate report file. Completion evidence for these documentation-only packages is the git commit on `docs/plm-foundation` plus the chat completion report. A copied Product Foundation work-package report template may be added in a later authorized package if the owner wants a durable in-tree report.

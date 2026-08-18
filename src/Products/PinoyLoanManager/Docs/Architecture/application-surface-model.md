@@ -97,6 +97,8 @@ This is the **customer / borrower** experience.
 
 Do **not** create a separate borrower application.
 
+Loan area intent: [../Product/personal-loan-experience.md](../Product/personal-loan-experience.md). Keep Personal peer-to-peer “I Lent / I Borrowed” separate from organizational PLM Loans.
+
 Personal may eventually show:
 
 - My Lenders

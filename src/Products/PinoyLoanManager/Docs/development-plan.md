@@ -6,7 +6,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Plan status | Draft — planning buckets plus operating-model through Traditional origination direction; not product-owner approved |
+| Plan status | Draft — planning buckets plus operating-model through reporting / customer-visibility direction; not product-owner approved |
 | Implementation present | No |
 
 ## Delivery approach

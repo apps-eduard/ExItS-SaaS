@@ -7,7 +7,7 @@
 |---|---|
 | Product | Pinoy Loan Manager / `pinoy-loan-manager` (proposed, PLM-D-00-01) |
 | Database | `ExItS_PinoyLoanManager` (proposed) / schema **Status: Open / Product Owner Decision Required** (PLM-D-00-02) |
-| Status | Draft — documentation baseline through Traditional origination planning; not product-owner approved |
+| Status | Draft — documentation baseline through reporting / customer-visibility planning; not product-owner approved |
 | Implementation present | No |
 
 ## System context
@@ -92,7 +92,7 @@ Planning modules only. None are designed or implemented. Exact formulas remain o
 | Payment posting | Applying receipts | Partial/multiple payments; oldest-due schedule baseline; component order open |
 | Collector cash / reconciliation | Float, Cashier Session, remittance, variance | Separate from loan ledger; unresolved variance remains visible |
 | Collections / delinquency | Arrears, exceptions, waivers, reversals | Separate from lifecycle; no hard-coded rate |
-| Reporting / documents | Product reports and documents | Contents open |
+| Reporting / documents | Product reports and documents | Contents: [Product/reporting-baseline.md](Product/reporting-baseline.md); KPI formulas open |
 | Security / audit / privacy | Product audit, consent, classification | See [security.md](security.md) |
 | Offline / MAUI field capabilities | Later native/offline support | Server remains authoritative; not authorized |
 

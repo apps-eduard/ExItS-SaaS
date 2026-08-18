@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Status | Draft — documentation baseline through Traditional origination planning; not product-owner approved |
+| Status | Draft — documentation baseline through reporting / customer-visibility planning; not product-owner approved |
 | Implementation present | No |
 
 ## Authentication boundary
@@ -77,7 +77,7 @@ Lifecycle intent: [Product/personal-borrower-linking.md](Product/personal-borrow
 | Concern | Approach |
 |---|---|
 | Application logs | **Status: Open / Product Owner Decision Required** — no secrets/card/PHI dumps |
-| Product audit / immutable history | Intended product-owned append-only operational history. Posted disbursement, payment, penalty, waiver, reversal, collector cash movement, remittance, and cash-variance records must not be silently edited or deleted. High-risk audit fields: [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md). Subledger principles: [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md). Schema **Open**. |
+| Product audit / immutable history | Intended product-owned append-only operational history. Posted disbursement, payment, penalty, waiver, reversal, collector cash movement, remittance, and cash-variance records must not be silently edited or deleted. High-risk fields: [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md), [Security/audit-and-history-baseline.md](Security/audit-and-history-baseline.md). Subledger principles: [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md). Schema **Open**. |
 | Platform audit | Platform-owned; do not push operational payloads that violate boundary |
 
 ## Encryption

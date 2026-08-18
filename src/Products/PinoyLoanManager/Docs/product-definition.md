@@ -8,7 +8,7 @@
 | Product name | Pinoy Loan Manager |
 | Platform product code | `pinoy-loan-manager` (proposed — **Status: Open / Product Owner Decision Required**, PLM-D-00-01) |
 | Docs root | `src/Products/PinoyLoanManager/Docs/` |
-| Status | Draft — documentation baseline through Traditional origination planning; not product-owner approved |
+| Status | Draft — documentation baseline through reporting / customer-visibility planning; not product-owner approved |
 | Last updated | 2026-08-19 |
 | Implementation present | No |
 
@@ -125,7 +125,8 @@ This package records:
 - financial calculation and loan lifecycle baseline (PLM-00-WP04, completed)
 - authorization, cash control, and operational workflow baseline (PLM-00-WP05, completed)
 - borrower, Personal linking, and Quick Loan publishing baseline (PLM-00-WP06, completed)
-- traditional loan and origination workflow baseline (PLM-00-WP07, this package)
+- traditional loan and origination workflow baseline (PLM-00-WP07, completed)
+- reporting, documents, notifications, and customer-visibility baseline (PLM-00-WP08, this package)
 
 No loan MVP **implementation** is approved. Calculation algorithms, peso/percent rates, rounding mode, and legal validation remain open.
 
@@ -199,6 +200,11 @@ No loan MVP **implementation** is approved. Calculation algorithms, peso/percent
 | Application / approval | [Product/loan-application-and-approval.md](Product/loan-application-and-approval.md) |
 | Loan Product configuration | [Product/loan-product-configuration.md](Product/loan-product-configuration.md) |
 | Disbursement readiness | [Product/disbursement-readiness-model.md](Product/disbursement-readiness-model.md) |
+| Reporting | [Product/reporting-baseline.md](Product/reporting-baseline.md) |
+| Documents / receipts | [Product/loan-documents-and-receipts.md](Product/loan-documents-and-receipts.md) |
+| Notifications | [Product/notification-model.md](Product/notification-model.md) |
+| Personal Loan experience | [Product/personal-loan-experience.md](Product/personal-loan-experience.md) |
+| Audit / history | [Security/audit-and-history-baseline.md](Security/audit-and-history-baseline.md) |
 | Security | [security.md](security.md) |
 | Authorization | [authorization-matrix.md](authorization-matrix.md) |
 | Development plan | [development-plan.md](development-plan.md) |

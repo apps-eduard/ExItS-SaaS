@@ -11,7 +11,7 @@ Always load with:
 5. The active work-package prompt/report
 6. Files required for the task only
 
-**Status:** Draft — PLM-00 documentation baseline through Traditional origination planning
+**Status:** Draft — PLM-00 documentation baseline through reporting / customer-visibility planning
 **Implementation present:** No
 **Documentation root:** `src/Products/PinoyLoanManager/Docs/` (D-P12-02)
 
@@ -60,6 +60,11 @@ Agreed operating-model direction (not implementation specs):
 | [Product/loan-application-and-approval.md](Product/loan-application-and-approval.md) | Application, approval snapshot, rejection |
 | [Product/loan-product-configuration.md](Product/loan-product-configuration.md) | Reusable Loan Product configuration |
 | [Product/disbursement-readiness-model.md](Product/disbursement-readiness-model.md) | Pre-release checks; approval ≠ disbursement |
+| [Product/reporting-baseline.md](Product/reporting-baseline.md) | Dashboard and operational reporting |
+| [Product/loan-documents-and-receipts.md](Product/loan-documents-and-receipts.md) | Documents, snapshot, durable receipts |
+| [Product/notification-model.md](Product/notification-model.md) | Personal and staff notifications |
+| [Product/personal-loan-experience.md](Product/personal-loan-experience.md) | Personal Loan area; distinct from P2P |
+| [Security/audit-and-history-baseline.md](Security/audit-and-history-baseline.md) | High-risk history |
 
 Category folders below are indexes only. They must not become a second source of truth.
 

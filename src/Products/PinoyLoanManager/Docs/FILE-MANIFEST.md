@@ -2,7 +2,7 @@
 
 **Status:** Foundation / planning only
 **Implementation present:** No
-**Current work package:** PLM-00-WP07 — Traditional Loan & Origination Workflow Baseline
+**Current work package:** PLM-00-WP08 — Reporting, Notifications, Documents & Customer Visibility Baseline
 
 This file is the navigation map for future Cursor work. Load this product’s `Docs/` after the shared Product Foundation reference. Do not scan PinoyBusinessPOS implementation by default.
 
@@ -75,7 +75,17 @@ Shared contracts to load with this product:
 | `Docs/Product/loan-product-configuration.md` | Reusable Loan Product (not a Loan) | Planning baseline / not a spec | No |
 | `Docs/Product/disbursement-readiness-model.md` | Pre-release checks; approval ≠ disbursement | Planning baseline / not a spec | No |
 
-## Workspace indexes (PLM-00-WP01, updated in WP02–WP07)
+## Reporting / documents / notifications (PLM-00-WP08)
+
+| Path | Purpose | Status | Implementation present |
+|---|---|---|---|
+| `Docs/Product/reporting-baseline.md` | Dashboard and operational reporting areas | Planning baseline / not a spec | No |
+| `Docs/Product/loan-documents-and-receipts.md` | Documents, snapshot, durable receipts | Planning baseline / not a spec | No |
+| `Docs/Product/notification-model.md` | Personal and staff notification intent | Planning baseline / not a spec | No |
+| `Docs/Product/personal-loan-experience.md` | Personal Loan area; distinct from P2P | Planning baseline / not a spec | No |
+| `Docs/Security/audit-and-history-baseline.md` | High-risk history; not editable notes | Planning baseline / not a spec | No |
+
+## Workspace indexes (PLM-00-WP01, updated in WP02–WP08)
 
 | Path | Purpose | Status | Implementation present |
 |---|---|---|---|
