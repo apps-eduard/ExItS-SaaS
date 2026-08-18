@@ -116,9 +116,17 @@
                                 <label><input type="checkbox" @bind="day.IsOpen24Hours" disabled="@_busy" /> @L["Branches_Open24h"]</label>
                                 @if (!day.IsOpen24Hours)
                                 {
-                                    <input type="time" @bind="day.OpenTime" disabled="@_busy" class="pos-branches__time" />
+                                    <input type="time"
+                                           class="pos-branches__time"
+                                           disabled="@_busy"
+                                           value="@FormatTime(day.OpenTime)"
+                                           @onchange="e => day.OpenTime = ParseChangedTime(e.Value, day.OpenTime)" />
                                     <span>–</span>
-                                    <input type="time" @bind="day.CloseTime" disabled="@_busy" class="pos-branches__time" />
+                                    <input type="time"
+                                           class="pos-branches__time"
+                                           disabled="@_busy"
+                                           value="@FormatTime(day.CloseTime)"
+                                           @onchange="e => day.CloseTime = ParseChangedTime(e.Value, day.CloseTime)" />
                                 }
                             }
                         </div>
@@ -235,8 +243,8 @@
                     DayOfWeek = day.DayOfWeek,
                     IsClosed = day.IsClosed,
                     IsOpen24Hours = day.IsOpen24Hours,
-                    OpenTime = day.OpenTime ?? "08:00",
-                    CloseTime = day.CloseTime ?? "21:00"
+                    OpenTime = ParseTime(day.OpenTime),
+                    CloseTime = ParseTime(day.CloseTime, new TimeOnly(21, 0))
                 });
             }
         }
@@ -296,8 +304,8 @@
         _busy = true; _error = _success = null;
         var days = _hours.Select(h => new BranchOperatingHoursDayDto(
             h.DayOfWeek, h.IsClosed, h.IsOpen24Hours,
-            h.IsClosed || h.IsOpen24Hours ? null : h.OpenTime,
-            h.IsClosed || h.IsOpen24Hours ? null : h.CloseTime)).ToList();
+            h.IsClosed || h.IsOpen24Hours ? null : FormatTime(h.OpenTime),
+            h.IsClosed || h.IsOpen24Hours ? null : FormatTime(h.CloseTime))).ToList();
         var result = await Platform.UpsertBranchOperatingHoursAsync(orgId, BranchId, new UpsertBranchOperatingHoursRequest(days));
         if (!result.IsSuccess) { _error = result.Error?.Detail ?? L["Branches_SaveFailed"]; }
         else { _readiness = result.Data; _success = L["Branches_HoursSaved"]; }
@@ -449,12 +457,29 @@
     private string DayLabel(string day) =>
         Enum.TryParse<DayOfWeek>(day, true, out var parsed) ? L[$"Branches_Day_{parsed}"] : day;
 
+    private static string FormatTime(TimeOnly value) =>
+        value.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture);
+
+    private static TimeOnly ParseTime(string? value, TimeOnly? fallback = null) =>
+        TimeOnly.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var parsed)
+            ? parsed
+            : fallback ?? new TimeOnly(8, 0);
+
+    private static TimeOnly ParseChangedTime(object? value, TimeOnly fallback) =>
+        value switch
+        {
+            TimeOnly time => time,
+            DateTime dateTime => TimeOnly.FromDateTime(dateTime),
+            string text => ParseTime(text, fallback),
+            _ => fallback
+        };
+
     private sealed class DayHoursModel
     {
-        public string DayOfWeek { get; set; } = DayOfWeek.Monday.ToString();
+        public string DayOfWeek { get; set; } = "Monday";
         public bool IsClosed { get; set; }
         public bool IsOpen24Hours { get; set; }
-        public string OpenTime { get; set; } = "08:00";
-        public string CloseTime { get; set; } = "21:00";
+        public TimeOnly OpenTime { get; set; } = new(8, 0);
+        public TimeOnly CloseTime { get; set; } = new(21, 0);
     }
 }
