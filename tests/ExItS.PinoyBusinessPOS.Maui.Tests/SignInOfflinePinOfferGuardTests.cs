@@ -27,6 +27,14 @@ public sealed class SignInOfflinePinOfferGuardTests
         Assert.Contains("EvaluateOfflineColdStartOfferAsync", signIn, StringComparison.Ordinal);
         Assert.Contains("_canUsePin = offer.CanOfferPinUnlock", signIn, StringComparison.Ordinal);
         Assert.DoesNotContain("_canUsePin = true", signIn, StringComparison.Ordinal);
+        Assert.Contains("offline_pin_eligibility", File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Application",
+            "Auth",
+            "AuthenticationService.cs")), StringComparison.Ordinal);
         Assert.Contains("_canUsePin && (_isOffline || _offerPinBecauseUnreachable)", signIn, StringComparison.Ordinal);
         Assert.DoesNotContain("else if (_canUsePin)", signIn, StringComparison.Ordinal);
     }

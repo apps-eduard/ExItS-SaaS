@@ -216,7 +216,8 @@ public sealed class AuthenticationService(
 
                 currentUser.Set(personalSession);
                 events.Record("signin_success", Dict(("userId", personalSession.UserId.ToString("D")), ("grant", "platform_session")));
-                return new AuthResult(true, AuthFailureReason.None, personalSession);
+                await EnsureOfflineOperateGrantAsync(ct).ConfigureAwait(false);
+                return new AuthResult(true, AuthFailureReason.None, currentUser.Session ?? personalSession);
             }
 
             var failure = MapTransport(tokenResult.Status);
@@ -262,7 +263,8 @@ public sealed class AuthenticationService(
 
         currentUser.Set(session);
         events.Record("signin_success", Dict(("userId", session.UserId.ToString("D")), ("grant", "password")));
-        return new AuthResult(true, AuthFailureReason.None, session);
+        await EnsureOfflineOperateGrantAsync(ct).ConfigureAwait(false);
+        return new AuthResult(true, AuthFailureReason.None, currentUser.Session ?? session);
     }
 
     public async Task<AuthResult> SignInWithPlatformSessionTokenAsync(string sessionToken, CancellationToken ct = default)
@@ -342,7 +344,8 @@ public sealed class AuthenticationService(
 
             currentUser.Set(personalSession);
             events.Record("signin_success", Dict(("userId", personalSession.UserId.ToString("D")), ("grant", "external_platform_session")));
-            return new AuthResult(true, AuthFailureReason.None, personalSession);
+            await EnsureOfflineOperateGrantAsync(ct).ConfigureAwait(false);
+            return new AuthResult(true, AuthFailureReason.None, currentUser.Session ?? personalSession);
         }
 
         var issued = tokenResult.Data;
@@ -377,7 +380,8 @@ public sealed class AuthenticationService(
 
         currentUser.Set(session);
         events.Record("signin_success", Dict(("userId", session.UserId.ToString("D")), ("grant", "external_session")));
-        return new AuthResult(true, AuthFailureReason.None, session);
+        await EnsureOfflineOperateGrantAsync(ct).ConfigureAwait(false);
+        return new AuthResult(true, AuthFailureReason.None, currentUser.Session ?? session);
     }
 
     private async Task<AuthResult> SignInWithDevUserIdAsync(Guid platformUserId, CancellationToken ct)
@@ -414,7 +418,8 @@ public sealed class AuthenticationService(
             IssuedAtUtc: now,
             ExpiresAtUtc: now.Add(SessionLifetime),
             HasPosAccess: false,
-            AccessReasonCode: null);
+            AccessReasonCode: null,
+            AccountClass: "Personal");
 
         try
         {
@@ -428,7 +433,8 @@ public sealed class AuthenticationService(
 
         currentUser.Set(session);
         events.Record("signin_success", Dict(("userId", session.UserId.ToString("D")), ("grant", "dev_user_id")));
-        return new AuthResult(true, AuthFailureReason.None, session);
+        await EnsureOfflineOperateGrantAsync(ct).ConfigureAwait(false);
+        return new AuthResult(true, AuthFailureReason.None, currentUser.Session ?? session);
     }
 
     public async Task<AuthResult> RestoreSessionAsync(CancellationToken ct = default)
@@ -512,7 +518,7 @@ public sealed class AuthenticationService(
                 Guid? orgId;
                 if (AuthSessionWorkspace.IsPersonalDefault(shell))
                 {
-                    orgId = active.OrganizationId;
+                    orgId = null;
                     await preferences.ClearOrganizationPreferenceAsync(ct).ConfigureAwait(false);
                 }
                 else
@@ -567,7 +573,12 @@ public sealed class AuthenticationService(
                 }
 
                 currentUser.Set(restored);
-                if (orgId is Guid restoredOrg && !AuthSessionWorkspace.IsPersonalDefault(restored))
+                if (AuthSessionWorkspace.IsPersonalDefault(shell))
+                {
+                    restored = await NormalizePersonalDefaultSessionAsync(restored, ct).ConfigureAwait(false);
+                    currentUser.Set(restored);
+                }
+                else if (orgId is Guid restoredOrg)
                 {
                     await AlignPlatformOrganizationContextAsync(restored, restoredOrg, ct).ConfigureAwait(false);
                 }
@@ -591,8 +602,11 @@ public sealed class AuthenticationService(
                 else
                 {
                     await CloseLocalContextAsync(ct).ConfigureAwait(false);
-                    // Explicit server denial of product access — do not keep a stale offline grant.
-                    if (_offlineGrant is not null && !hasAccess)
+                    // Only wipe a durable grant on explicit server revocation. Personal accounts
+                    // never have POS product access; Local Validation introspect often omits
+                    // ProductAccessAllowed. Clearing on !hasAccess destroyed PIN eligibility.
+                    if (_offlineGrant is not null
+                        && ShouldRevokeOfflineGrantOnRestore(restored, active, hasAccess))
                     {
                         await ClearOfflineGrantForCurrentUserAsync(restored.UserId, ct)
                             .ConfigureAwait(false);
@@ -818,10 +832,21 @@ public sealed class AuthenticationService(
         return new AuthResult(true, AuthFailureReason.None, restored);
     }
 
-    public Task<OfflinePinSetupResult> SetOfflinePinAsync(string pin, CancellationToken ct = default) =>
-        _offlineGrant is null
-            ? Task.FromResult(new OfflinePinSetupResult(false, "Offline_GrantMissing"))
-            : _offlineGrant.SetPinAsync(pin, ct);
+    public Task<OfflinePinSetupResult> SetOfflinePinAsync(string pin, CancellationToken ct = default)
+    {
+        if (_offlineGrant is null)
+        {
+            return Task.FromResult(new OfflinePinSetupResult(false, "Offline_GrantMissing"));
+        }
+
+        return SetOfflinePinCoreAsync(pin, ct);
+    }
+
+    private async Task<OfflinePinSetupResult> SetOfflinePinCoreAsync(string pin, CancellationToken ct)
+    {
+        await EnsureOfflineOperateGrantAsync(ct).ConfigureAwait(false);
+        return await _offlineGrant!.SetPinAsync(pin, ct).ConfigureAwait(false);
+    }
 
     public Task<bool> HasOfflinePinConfiguredAsync(CancellationToken ct = default)
     {
@@ -839,10 +864,22 @@ public sealed class AuthenticationService(
         return _offlineGrant.HasPinConfiguredAsync(ct);
     }
 
-    public Task<OfflineColdStartOffer> EvaluateOfflineColdStartOfferAsync(CancellationToken ct = default) =>
-        _offlineGrant is null
-            ? Task.FromResult(new OfflineColdStartOffer(false, null, "offline_grant_missing"))
-            : _offlineGrant.EvaluateColdStartOfferAsync(ct);
+    public async Task<OfflineColdStartOffer> EvaluateOfflineColdStartOfferAsync(CancellationToken ct = default)
+    {
+        if (_offlineGrant is null)
+        {
+            var missing = OfflineColdStartOffer.Denied("offline_grant_missing") with
+            {
+                EligibilityReason = OfflinePinEligibilityReason.NoStoredIdentity
+            };
+            RecordOfflinePinEligibility(missing);
+            return missing;
+        }
+
+        var offer = await _offlineGrant.EvaluateColdStartOfferAsync(ct).ConfigureAwait(false);
+        RecordOfflinePinEligibility(offer);
+        return offer;
+    }
 
     public async Task EnsureOfflineOperateGrantAsync(CancellationToken ct = default)
     {
@@ -854,6 +891,7 @@ public sealed class AuthenticationService(
 
         if (session.HasPosAccess && session.OrganizationId is not null)
         {
+            session = await EnsurePosDeviceBindingAsync(session, ct).ConfigureAwait(false);
             var deviceId = _deviceIdentity is null
                 ? string.Empty
                 : await _deviceIdentity.GetOrCreateDeviceIdAsync(ct).ConfigureAwait(false);
@@ -868,6 +906,31 @@ public sealed class AuthenticationService(
         {
             await EstablishPersonalOfflineGrantAsync(session, ct).ConfigureAwait(false);
         }
+    }
+
+    private void RecordOfflinePinEligibility(OfflineColdStartOffer offer)
+    {
+        var pinConfigured = offer.UnlockCandidates?.Any(c => c.HasPinConfigured) == true
+                            || offer.CanOfferPinUnlock;
+        events.Record("offline_pin_eligibility", Dict(
+            ("canOfferPinUnlock", offer.CanOfferPinUnlock ? "true" : "false"),
+            ("eligibilityReason", offer.EligibilityReason.ToString()),
+            ("denialReasonCode", offer.DenialReasonCode),
+            ("hasGrant", offer.Grant is not null ? "true" : "false"),
+            ("hasStoredIdentity", (offer.UnlockCandidates?.Count ?? 0) > 0 || offer.Grant is not null
+                ? "true"
+                : "false"),
+            ("hasPinVerifier", pinConfigured ? "true" : "false"),
+            ("deviceMatches", offer.EligibilityReason is OfflinePinEligibilityReason.DeviceMismatch
+                ? "false"
+                : offer.CanOfferPinUnlock ? "true" : null),
+            ("grantExpired", offer.EligibilityReason is OfflinePinEligibilityReason.Expired
+                ? "true"
+                : "false"),
+            ("grantRevoked", offer.EligibilityReason is OfflinePinEligibilityReason.Revoked
+                ? "true"
+                : "false"),
+            ("candidateCount", (offer.UnlockCandidates?.Count ?? 0).ToString("D"))));
     }
 
     public async Task<AuthResult> RefreshSessionAsync(CancellationToken ct = default)
@@ -1850,15 +1913,9 @@ public sealed class AuthenticationService(
         await OpenLocalContextAsync(updated.UserId, organizationId, ct).ConfigureAwait(false);
         // SelectOrganization clears process validation first; re-arm once POS access is bound.
         _accessPolicy?.NotifySessionAccessChanged();
-        if (updated.HasPosAccess && _offlineGrant is not null)
+        if (updated.HasPosAccess)
         {
-            var deviceId = _deviceIdentity is null
-                ? string.Empty
-                : await _deviceIdentity.GetOrCreateDeviceIdAsync(ct).ConfigureAwait(false);
-            await _offlineGrant
-                .EstablishFromOnlineSessionAsync(updated, deviceId, roleCode: null, ct)
-                .ConfigureAwait(false);
-            _offlineSessionUx?.ResetSession();
+            await EnsureOfflineOperateGrantAsync(ct).ConfigureAwait(false);
         }
 
         events.Record("organization_selected", Dict(
@@ -2427,6 +2484,49 @@ public sealed class AuthenticationService(
             // The server rejection remains authoritative; secure-storage failure is handled by the
             // normal next-session path and must not be treated as a network fallback.
         }
+    }
+
+    private static bool ShouldRevokeOfflineGrantOnRestore(
+        AuthSession restored,
+        PlatformAccessTokenIntrospectionDto active,
+        bool hasAccess)
+    {
+        if (hasAccess)
+        {
+            return false;
+        }
+
+        if (AuthSessionWorkspace.IsPersonalDefault(restored) || restored.OrganizationId is null)
+        {
+            return false;
+        }
+
+        if (active.ProductAccessAllowed is not false)
+        {
+            // Null/omitted ProductAccessAllowed is a partial snapshot, not a revocation.
+            return false;
+        }
+
+        return IsExplicitProductAccessRevocation(active.ProductAccessReasonCode)
+               || IsExplicitOfflineGrantRevocation(active.ProductAccessReasonCode);
+    }
+
+    private static bool IsExplicitProductAccessRevocation(string? reasonCode)
+    {
+        if (string.IsNullOrWhiteSpace(reasonCode))
+        {
+            return false;
+        }
+
+        return reasonCode.Equals("product_assignment_inactive", StringComparison.OrdinalIgnoreCase)
+               || reasonCode.Equals("product_assignment_missing", StringComparison.OrdinalIgnoreCase)
+               || reasonCode.Equals("entitlement_denied", StringComparison.OrdinalIgnoreCase)
+               || reasonCode.Equals("entitlement_missing", StringComparison.OrdinalIgnoreCase)
+               || reasonCode.Equals("membership_inactive", StringComparison.OrdinalIgnoreCase)
+               || reasonCode.Equals("membership_missing", StringComparison.OrdinalIgnoreCase)
+               || reasonCode.Equals("user_inactive", StringComparison.OrdinalIgnoreCase)
+               || reasonCode.Equals("organization_inactive", StringComparison.OrdinalIgnoreCase)
+               || reasonCode.Equals("product_inactive", StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task ClearOfflineGrantForCurrentUserAsync(Guid userId, CancellationToken ct)

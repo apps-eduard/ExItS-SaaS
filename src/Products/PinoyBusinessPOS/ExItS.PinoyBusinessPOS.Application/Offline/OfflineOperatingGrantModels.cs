@@ -112,12 +112,52 @@ public sealed record OfflineEnrolledUserSummary(
     DateTimeOffset ExpiresAtUtc,
     bool HasPinConfigured);
 
+/// <summary>
+/// Safe, non-secret reason <see cref="OfflineColdStartOffer.CanOfferPinUnlock"/> is true or false.
+/// Never includes PIN, verifier, or token material.
+/// </summary>
+public enum OfflinePinEligibilityReason
+{
+    Eligible = 0,
+    NoStoredIdentity = 1,
+    NoGrant = 2,
+    NoPinVerifier = 3,
+    DeviceMismatch = 4,
+    Expired = 5,
+    Revoked = 6,
+    InvalidScope = 7,
+    CorruptState = 8
+}
+
 /// <summary>Result of evaluating whether cold-start offline unlock can be offered.</summary>
 public sealed record OfflineColdStartOffer(
     bool CanOfferPinUnlock,
     OfflineOperatingGrant? Grant,
     string? DenialReasonCode,
-    IReadOnlyList<OfflineEnrolledUserSummary>? UnlockCandidates = null);
+    IReadOnlyList<OfflineEnrolledUserSummary>? UnlockCandidates = null,
+    OfflinePinEligibilityReason EligibilityReason = OfflinePinEligibilityReason.NoStoredIdentity)
+{
+    public static OfflineColdStartOffer Denied(string denialReasonCode) =>
+        new(false, null, denialReasonCode, EligibilityReason: MapDenial(denialReasonCode));
+
+    public static OfflineColdStartOffer Allowed(
+        OfflineOperatingGrant? grant,
+        IReadOnlyList<OfflineEnrolledUserSummary> candidates) =>
+        new(true, grant, null, candidates, OfflinePinEligibilityReason.Eligible);
+
+    public static OfflinePinEligibilityReason MapDenial(string? denialReasonCode) =>
+        denialReasonCode switch
+        {
+            "offline_grant_missing" => OfflinePinEligibilityReason.NoGrant,
+            "offline_pin_not_configured" => OfflinePinEligibilityReason.NoPinVerifier,
+            "offline_device_mismatch" => OfflinePinEligibilityReason.DeviceMismatch,
+            "offline_grant_expired" => OfflinePinEligibilityReason.Expired,
+            "offline_grant_revoked" => OfflinePinEligibilityReason.Revoked,
+            "offline_grant_invalid_scope" => OfflinePinEligibilityReason.InvalidScope,
+            "offline_grant_corrupt" => OfflinePinEligibilityReason.CorruptState,
+            _ => OfflinePinEligibilityReason.NoStoredIdentity
+        };
+}
 
 /// <summary>Directory document persisted in SecureStorage (no secrets).</summary>
 public sealed record OfflineEnrolledUsersDirectory(

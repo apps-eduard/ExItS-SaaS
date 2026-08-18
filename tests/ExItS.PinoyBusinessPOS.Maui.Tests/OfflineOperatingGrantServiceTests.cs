@@ -161,6 +161,50 @@ public sealed class OfflineOperatingGrantServiceTests
     }
 
     [Fact]
+    public async Task Unspecified_account_class_without_org_can_establish_personal_grant()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
+        var options = CreateOptions(720);
+        var store = new MemoryOfflineGrantStore();
+        var device = new FakeDevice("device-a");
+        var sut = new OfflineOperatingGrantService(store, device, options, clock);
+
+        var session = PersonalSession() with { AccountClass = null };
+        await sut.EstablishFromOnlineSessionAsync(session, device.DeviceId, roleCode: null);
+        Assert.NotNull(await store.LoadGrantAsync(TestUserId));
+        Assert.True((await sut.SetPinAsync("123456")).Succeeded);
+        Assert.True((await sut.EvaluateColdStartOfferAsync()).CanOfferPinUnlock);
+        Assert.Equal(OfflinePinEligibilityReason.Eligible, (await sut.EvaluateColdStartOfferAsync()).EligibilityReason);
+    }
+
+    [Fact]
+    public async Task Cold_start_reasons_cover_missing_pin_device_and_expiry()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
+        var options = CreateOptions(1);
+        var store = new MemoryOfflineGrantStore();
+        var device = new FakeDevice("device-a");
+        var sut = new OfflineOperatingGrantService(store, device, options, clock);
+        await sut.EstablishFromOnlineSessionAsync(OnlineSession(), device.DeviceId, "Cashier");
+
+        var missingPin = await sut.EvaluateColdStartOfferAsync();
+        Assert.False(missingPin.CanOfferPinUnlock);
+        Assert.Equal(OfflinePinEligibilityReason.NoPinVerifier, missingPin.EligibilityReason);
+
+        Assert.True((await sut.SetPinAsync("123456")).Succeeded);
+        var mismatch = new OfflineOperatingGrantService(store, new FakeDevice("other-device"), options, clock);
+        var deviceOffer = await mismatch.EvaluateColdStartOfferAsync();
+        Assert.False(deviceOffer.CanOfferPinUnlock);
+        Assert.Equal(OfflinePinEligibilityReason.DeviceMismatch, deviceOffer.EligibilityReason);
+
+        clock.UtcNow = clock.UtcNow.AddHours(2);
+        var expired = await new OfflineOperatingGrantService(store, device, options, clock)
+            .EvaluateColdStartOfferAsync();
+        Assert.False(expired.CanOfferPinUnlock);
+        Assert.Equal(OfflinePinEligibilityReason.Expired, expired.EligibilityReason);
+    }
+
+    [Fact]
     public async Task Organization_grant_still_requires_org_and_pos_access()
     {
         var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));

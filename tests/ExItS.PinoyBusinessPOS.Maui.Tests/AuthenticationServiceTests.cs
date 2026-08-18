@@ -1177,6 +1177,213 @@ public sealed class AuthenticationServiceTests
     }
 
     [Fact]
+    public async Task Personal_online_pin_survives_logout_and_cold_start()
+    {
+        var harness = await SeedPersonalOfflineGrantHarnessAsync();
+        Assert.True((await harness.Auth.EvaluateOfflineColdStartOfferAsync()).CanOfferPinUnlock);
+
+        await harness.Auth.LogoutAsync();
+        var cold = new OfflineOperatingGrantService(harness.GrantStore, harness.Device, harness.GrantOptions);
+        var offer = await cold.EvaluateColdStartOfferAsync();
+        Assert.True(offer.CanOfferPinUnlock);
+        Assert.Equal(OfflinePinEligibilityReason.Eligible, offer.EligibilityReason);
+        Assert.True((await harness.Auth.EvaluateOfflineColdStartOfferAsync()).CanOfferPinUnlock);
+    }
+
+    [Fact]
+    public async Task Personal_restore_without_pos_access_keeps_offline_grant()
+    {
+        var harness = await SeedPersonalOfflineGrantHarnessAsync();
+        harness.Access.IntrospectResult = ApiResult<PlatformAccessTokenIntrospectionDto>.Success(
+            new PlatformAccessTokenIntrospectionDto(
+                Active: true,
+                TokenId: Guid.NewGuid(),
+                UserId: harness.UserId,
+                Username: "personal1",
+                DisplayName: "Personal",
+                OrganizationId: null,
+                OrganizationDisplayName: null,
+                ProductCode: null,
+                ExpiresAtUtc: DateTimeOffset.UtcNow.AddHours(1),
+                ProductAccessAllowed: false,
+                ProductAccessReasonCode: null,
+                SubscriptionStatus: null,
+                EnabledFeatureCodes: null));
+
+        Assert.True((await harness.Auth.RestoreSessionAsync()).Succeeded);
+        Assert.NotNull(await harness.GrantStore.LoadGrantAsync(harness.UserId));
+        Assert.NotNull(await harness.GrantStore.LoadPinVerifierAsync(harness.UserId));
+        Assert.True((await harness.Auth.EvaluateOfflineColdStartOfferAsync()).CanOfferPinUnlock);
+    }
+
+    [Fact]
+    public async Task Org_restore_with_partial_introspect_keeps_offline_grant()
+    {
+        var harness = await SeedOfflineGrantHarnessAsync();
+        harness.Access.IntrospectResult = ApiResult<PlatformAccessTokenIntrospectionDto>.Success(
+            new PlatformAccessTokenIntrospectionDto(
+                Active: true,
+                TokenId: Guid.NewGuid(),
+                UserId: harness.UserId,
+                Username: "cashier1",
+                DisplayName: "Cashier",
+                OrganizationId: harness.OrgId,
+                OrganizationDisplayName: "Store",
+                ProductCode: PosProductCodes.PinoyBusinessPos,
+                ExpiresAtUtc: DateTimeOffset.UtcNow.AddHours(1),
+                ProductAccessAllowed: null,
+                ProductAccessReasonCode: null,
+                SubscriptionStatus: null,
+                EnabledFeatureCodes: null));
+
+        Assert.True((await harness.Auth.RestoreSessionAsync()).Succeeded);
+        Assert.NotNull(await harness.GrantStore.LoadGrantAsync(harness.UserId));
+        Assert.True((await harness.Auth.EvaluateOfflineColdStartOfferAsync()).CanOfferPinUnlock);
+    }
+
+    [Fact]
+    public async Task Password_login_binds_existing_pos_device_then_pin_survives_cold_start()
+    {
+        var userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var orgId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var branchId = Guid.Parse("55555555-5555-5555-5555-555555555555");
+        var posDeviceId = Guid.Parse("66666666-6666-6666-6666-666666666666");
+        var tokens = new MemorySecureTokenStore();
+        var prefs = new MemoryOnboardingStore();
+        var current = new CurrentUserContext();
+        var grantStore = new MemoryOfflineGrantStore();
+        var device = new FakeDeviceIdentity("device-a");
+        var grantOptions = Options.Create(new OfflineOperatingGrantOptions
+        {
+            DurationHours = 720,
+            PinMinLength = 6,
+            MaxFailedPinAttempts = 5,
+            PinLockoutMinutes = 15,
+            PinHashIterations = 10_000
+        });
+        var grantService = new OfflineOperatingGrantService(grantStore, device, grantOptions);
+        var access = new FakeAccessClient
+        {
+            LoginResult = ApiResult<PlatformLoginResultDto>.Success(new PlatformLoginResultDto(
+                "platform-session",
+                Guid.NewGuid(),
+                userId,
+                "cashier1",
+                "Cashier",
+                "c@example.com",
+                DateTimeOffset.UtcNow.AddHours(8),
+                DateTimeOffset.UtcNow.AddHours(24),
+                orgId,
+                "Store",
+                "Single",
+                1,
+                AccountProfileId: Guid.NewGuid(),
+                AccountClass: "Organization",
+                AllowedScope: "Organization",
+                OrganizationContextLocked: false)),
+            IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Success(new PlatformAccessTokenIssueDto(
+                "opaque-token",
+                "Bearer",
+                Guid.NewGuid(),
+                userId,
+                "cashier1",
+                "Cashier",
+                "c@example.com",
+                DateTimeOffset.UtcNow.AddHours(8),
+                orgId,
+                "Store",
+                PosProductCodes.PinoyBusinessPos,
+                "Single",
+                1,
+                true,
+                "allowed")),
+            AuthorizePosDeviceResult = ApiResult<PosDeviceAuthorizationDto>.Success(
+                new PosDeviceAuthorizationDto(posDeviceId, branchId, "device-a"))
+        };
+
+        var auth = new AuthenticationService(
+            new StubAppInfo("Development"),
+            new SecureSessionStore(tokens),
+            current,
+            prefs,
+            access,
+            new LoggingAuthEventSink(NullLogger<LoggingAuthEventSink>.Instance),
+            offlineGrant: grantService,
+            deviceIdentity: device);
+
+        Assert.True((await auth.SignInAsync(new SignInRequest("c@example.com", "secret"))).Succeeded);
+        Assert.Equal(branchId, current.Session!.BranchId);
+        Assert.Equal(posDeviceId, current.Session.PosDeviceId);
+        Assert.True((await auth.SetOfflinePinAsync("123456")).Succeeded);
+
+        await auth.LogoutAsync();
+        var cold = new OfflineOperatingGrantService(grantStore, device, grantOptions);
+        var offer = await cold.EvaluateColdStartOfferAsync();
+        Assert.True(offer.CanOfferPinUnlock);
+        Assert.Equal(OfflinePinEligibilityReason.Eligible, offer.EligibilityReason);
+        Assert.True((await auth.EvaluateOfflineColdStartOfferAsync()).CanOfferPinUnlock);
+    }
+
+    [Fact]
+    public async Task Development_guid_login_can_enroll_personal_pin_for_cold_start()
+    {
+        var userId = Guid.NewGuid();
+        var tokens = new MemorySecureTokenStore();
+        var current = new CurrentUserContext();
+        var grantStore = new MemoryOfflineGrantStore();
+        var device = new FakeDeviceIdentity("device-a");
+        var grantOptions = Options.Create(new OfflineOperatingGrantOptions
+        {
+            DurationHours = 720,
+            PinMinLength = 6,
+            MaxFailedPinAttempts = 5,
+            PinLockoutMinutes = 15,
+            PinHashIterations = 10_000
+        });
+        var grantService = new OfflineOperatingGrantService(grantStore, device, grantOptions);
+        var access = new FakeAccessClient
+        {
+            UserResult = ApiResult<PlatformUserDto>.Success(User(userId, "Active"))
+        };
+        var auth = new AuthenticationService(
+            new StubAppInfo("Development"),
+            new SecureSessionStore(tokens),
+            current,
+            new MemoryOnboardingStore(),
+            access,
+            new LoggingAuthEventSink(NullLogger<LoggingAuthEventSink>.Instance),
+            offlineGrant: grantService,
+            deviceIdentity: device);
+
+        Assert.True((await auth.SignInAsync(new SignInRequest(null, null, userId))).Succeeded);
+        Assert.Equal("Personal", current.Session!.AccountClass);
+        Assert.True((await auth.SetOfflinePinAsync("123456")).Succeeded);
+        await auth.LogoutAsync();
+        Assert.True((await auth.EvaluateOfflineColdStartOfferAsync()).CanOfferPinUnlock);
+        Assert.Equal(
+            OfflinePinEligibilityReason.Eligible,
+            (await auth.EvaluateOfflineColdStartOfferAsync()).EligibilityReason);
+    }
+
+    [Fact]
+    public async Task Missing_grant_or_verifier_does_not_offer_pin()
+    {
+        var harness = await SeedOfflineGrantHarnessAsync();
+        await harness.GrantStore.ClearPinVerifierAsync(harness.UserId);
+        var missingPin = await harness.Auth.EvaluateOfflineColdStartOfferAsync();
+        Assert.False(missingPin.CanOfferPinUnlock);
+        Assert.Equal(OfflinePinEligibilityReason.NoPinVerifier, missingPin.EligibilityReason);
+
+        var empty = await SeedOfflineGrantHarnessAsync();
+        await empty.GrantStore.ClearGrantAsync(empty.UserId);
+        var missingGrant = await empty.Auth.EvaluateOfflineColdStartOfferAsync();
+        Assert.False(missingGrant.CanOfferPinUnlock);
+        Assert.True(
+            missingGrant.EligibilityReason is OfflinePinEligibilityReason.NoGrant
+            or OfflinePinEligibilityReason.NoStoredIdentity);
+    }
+
+    [Fact]
     public async Task Offline_pin_unlock_restores_permission_snapshot()
     {
         var harness = await SeedOfflineGrantHarnessAsync();
@@ -1267,7 +1474,66 @@ public sealed class AuthenticationServiceTests
             offlineGrant: grantService,
             deviceIdentity: device);
 
-        return new OfflineGrantHarness(auth, access, current, accessPolicy, grantStore, userId, orgId);
+        return new OfflineGrantHarness(
+            auth, access, current, accessPolicy, grantStore, userId, orgId, device, grantOptions);
+    }
+
+    private static async Task<OfflineGrantHarness> SeedPersonalOfflineGrantHarnessAsync()
+    {
+        var userId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1");
+        var tokens = new MemorySecureTokenStore();
+        var prefs = new MemoryOnboardingStore();
+        var sessionStore = new SecureSessionStore(tokens);
+        var now = DateTimeOffset.UtcNow;
+        var shell = new AuthSession(
+            userId,
+            "Personal",
+            "personal1",
+            "p@example.com",
+            OrganizationId: null,
+            OrganizationDisplayName: null,
+            IssuedAtUtc: now,
+            ExpiresAtUtc: now.AddHours(8),
+            HasPosAccess: false,
+            AccessReasonCode: null,
+            AccessToken: "opaque-token",
+            AccountClass: "Personal");
+        await sessionStore.SaveAsync(shell, Guid.NewGuid().ToString("N"));
+
+        var grantStore = new MemoryOfflineGrantStore();
+        var device = new FakeDeviceIdentity("device-a");
+        var grantOptions = Options.Create(new OfflineOperatingGrantOptions
+        {
+            DurationHours = 720,
+            PinMinLength = 6,
+            MaxFailedPinAttempts = 5,
+            PinLockoutMinutes = 15,
+            PinHashIterations = 10_000
+        });
+        var grantService = new OfflineOperatingGrantService(grantStore, device, grantOptions);
+        await grantService.EstablishFromOnlineSessionAsync(shell, device.DeviceId, roleCode: null);
+        Assert.True((await grantService.SetPinAsync("123456")).Succeeded);
+        grantService = new OfflineOperatingGrantService(grantStore, device, grantOptions);
+
+        var current = new CurrentUserContext();
+        var connectivity = new FakeConnectivity(online: false);
+        var accessPolicy = new ProtectedShellAccessPolicy(current, connectivity);
+        await accessPolicy.InitializeAsync();
+        var access = new FakeAccessClient();
+        var auth = new AuthenticationService(
+            new StubAppInfo("Development"),
+            sessionStore,
+            current,
+            prefs,
+            access,
+            new LoggingAuthEventSink(NullLogger<LoggingAuthEventSink>.Instance),
+            localContext: null,
+            accessPolicy: accessPolicy,
+            offlineGrant: grantService,
+            deviceIdentity: device);
+
+        return new OfflineGrantHarness(
+            auth, access, current, accessPolicy, grantStore, userId, Guid.Empty, device, grantOptions);
     }
 
     private sealed record OfflineGrantHarness(
@@ -1277,7 +1543,9 @@ public sealed class AuthenticationServiceTests
         ProtectedShellAccessPolicy AccessPolicy,
         MemoryOfflineGrantStore GrantStore,
         Guid UserId,
-        Guid OrgId);
+        Guid OrgId,
+        FakeDeviceIdentity Device,
+        IOptions<OfflineOperatingGrantOptions> GrantOptions);
 
     private sealed class FakeDeviceIdentity(string deviceId) : IDeviceIdentityProvider
     {
@@ -1390,8 +1658,14 @@ public sealed class AuthenticationServiceTests
         public Task<ApiResult<PosDeviceDto>> RevokePosDeviceAsync(Guid organizationId, Guid deviceId, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<PosDeviceDto>.Unavailable());
 
-        public Task<ApiResult<PosDeviceAuthorizationDto>> AuthorizePosDeviceAsync(Guid organizationId, AuthorizePosDeviceRequest request, CancellationToken ct = default) =>
-            Task.FromResult(ApiResult<PosDeviceAuthorizationDto>.Unavailable());
+        public ApiResult<PosDeviceAuthorizationDto> AuthorizePosDeviceResult { get; set; } =
+            ApiResult<PosDeviceAuthorizationDto>.Unavailable();
+
+        public Task<ApiResult<PosDeviceAuthorizationDto>> AuthorizePosDeviceAsync(
+            Guid organizationId,
+            AuthorizePosDeviceRequest request,
+            CancellationToken ct = default) =>
+            Task.FromResult(AuthorizePosDeviceResult);
 
         public Task<ApiResult<PlatformPagedResult<PlatformMembershipDto>>> GetUserMembershipsAsync(Guid userId, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<PlatformPagedResult<PlatformMembershipDto>>.Success(

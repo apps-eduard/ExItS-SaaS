@@ -11,7 +11,8 @@ public sealed class LoggingAuthEventSink(ILogger<LoggingAuthEventSink> logger) :
 {
     private static readonly HashSet<string> ForbiddenKeys = new(StringComparer.OrdinalIgnoreCase)
     {
-        "password", "token", "authorization", "credential", "secret", "marker"
+        "password", "token", "authorization", "credential", "secret", "marker",
+        "pin", "hash", "verifier", "salt"
     };
 
     public void Record(string eventName, IReadOnlyDictionary<string, string?> safeProperties)

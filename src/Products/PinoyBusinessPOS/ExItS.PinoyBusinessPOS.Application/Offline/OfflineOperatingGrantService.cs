@@ -221,7 +221,10 @@ public sealed class OfflineOperatingGrantService(
         var enrolled = await store.GetEnrolledUsersAsync(ct).ConfigureAwait(false);
         if (enrolled.Count == 0)
         {
-            return new OfflineColdStartOffer(false, null, "offline_grant_missing");
+            return OfflineColdStartOffer.Denied("offline_grant_missing") with
+            {
+                EligibilityReason = OfflinePinEligibilityReason.NoStoredIdentity
+            };
         }
 
         var candidates = new List<OfflineEnrolledUserSummary>();
@@ -267,15 +270,15 @@ public sealed class OfflineOperatingGrantService(
 
         if (candidates.Count == 0)
         {
-            return new OfflineColdStartOffer(false, null, lastDenial);
+            return OfflineColdStartOffer.Denied(lastDenial);
         }
 
         if (candidates.Count == 1)
         {
-            return new OfflineColdStartOffer(true, singleGrant, null, candidates);
+            return OfflineColdStartOffer.Allowed(singleGrant, candidates);
         }
 
-        return new OfflineColdStartOffer(true, null, null, candidates);
+        return OfflineColdStartOffer.Allowed(null, candidates);
     }
 
     public async Task<OfflinePinUnlockResult> UnlockWithPinAsync(string pin, CancellationToken ct = default)
@@ -521,6 +524,13 @@ public sealed class OfflineOperatingGrantService(
             return false;
         }
 
-        return string.Equals(session.AccountClass, "Personal", StringComparison.OrdinalIgnoreCase);
+        if (string.Equals(session.AccountClass, "Organization", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        // Personal class, or Local Validation / GUID login with no org context yet.
+        return string.IsNullOrWhiteSpace(session.AccountClass)
+               || string.Equals(session.AccountClass, "Personal", StringComparison.OrdinalIgnoreCase);
     }
 }
