@@ -3,8 +3,9 @@
 | Field | Value |
 |---|---|
 | Status | **Code Complete / Validation Pending** |
-| Starting SHA | `e4fb3bb2d3294a385c54751017abab2423113839` |
+| Starting SHA | `3027cb5f206f35916e915d589dbdc9f117bd3063` |
 | Feature commit | `c198de7078b18e8728ba7d729dc69986dfa1ac1b` |
+| Hours editor follow-up | `ab608c36` |
 | Migration | **No** |
 | Device Verified | **No** |
 | Browser Verified | **No** |
