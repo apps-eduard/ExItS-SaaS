@@ -32,6 +32,11 @@ public sealed class OrganizationBranch
     public decimal? Longitude { get; private set; }
     public bool PickupEnabled { get; private set; }
     public bool DeliveryEnabled { get; private set; }
+    public bool CustomerOrderingEnabled { get; private set; }
+    public string? ContactPhone { get; private set; }
+    public string? TimeZoneId { get; private set; }
+    public bool OnlineOrdersPaused { get; private set; }
+    public OnlineOrdersPauseReason? PauseReason { get; private set; }
     public bool IsPrimary { get; }
     public OrganizationBranchStatus Status { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
@@ -41,10 +46,21 @@ public sealed class OrganizationBranch
         Latitude is not null && Longitude is not null
         && IsValidLatitude(Latitude.Value) && IsValidLongitude(Longitude.Value);
 
-    public bool CanOfferPickup => Status == OrganizationBranchStatus.Active && PickupEnabled;
+    public bool HasCompleteStructuredAddress =>
+        !string.IsNullOrWhiteSpace(AddressLine1)
+        && !string.IsNullOrWhiteSpace(City)
+        && !string.IsNullOrWhiteSpace(CountryCode);
+
+    public bool CanOfferPickup =>
+        Status == OrganizationBranchStatus.Active
+        && CustomerOrderingEnabled
+        && PickupEnabled;
 
     public bool CanOfferDeliveryLocation =>
-        Status == OrganizationBranchStatus.Active && DeliveryEnabled && HasValidFulfillmentCoordinates;
+        Status == OrganizationBranchStatus.Active
+        && CustomerOrderingEnabled
+        && DeliveryEnabled
+        && HasValidFulfillmentCoordinates;
 
     private OrganizationBranch(
         OrganizationBranchId id,
@@ -61,6 +77,11 @@ public sealed class OrganizationBranch
         decimal? longitude,
         bool pickupEnabled,
         bool deliveryEnabled,
+        bool customerOrderingEnabled,
+        string? contactPhone,
+        string? timeZoneId,
+        bool onlineOrdersPaused,
+        OnlineOrdersPauseReason? onlineOrdersPauseReason,
         bool isPrimary,
         OrganizationBranchStatus status,
         DateTimeOffset createdAtUtc,
@@ -80,6 +101,11 @@ public sealed class OrganizationBranch
         Longitude = longitude;
         PickupEnabled = pickupEnabled;
         DeliveryEnabled = deliveryEnabled;
+        CustomerOrderingEnabled = customerOrderingEnabled;
+        ContactPhone = contactPhone;
+        TimeZoneId = timeZoneId;
+        OnlineOrdersPaused = onlineOrdersPaused;
+        PauseReason = onlineOrdersPauseReason;
         IsPrimary = isPrimary;
         Status = status;
         CreatedAtUtc = createdAtUtc;
@@ -91,7 +117,8 @@ public sealed class OrganizationBranch
             organizationId, "MAIN", "Main Branch",
             null, null, null, null, null, null,
             latitude: null, longitude: null,
-            pickupEnabled: true, deliveryEnabled: false,
+            pickupEnabled: false, deliveryEnabled: false, customerOrderingEnabled: false,
+            contactPhone: null, timeZoneId: null, onlineOrdersPaused: false, onlineOrdersPauseReason: null,
             isPrimary: true, OrganizationBranchStatus.Active, utcNow, id: null);
 
     public static OrganizationBranch Create(
@@ -107,13 +134,15 @@ public sealed class OrganizationBranch
         string? countryCode = null,
         decimal? latitude = null,
         decimal? longitude = null,
-        bool pickupEnabled = true,
+        bool pickupEnabled = false,
         bool deliveryEnabled = false,
+        bool customerOrderingEnabled = false,
         OrganizationBranchId? id = null) =>
         CreateInternal(
             organizationId, code, name,
             addressLine1, addressLine2, city, region, postalCode, countryCode,
-            latitude, longitude, pickupEnabled, deliveryEnabled,
+            latitude, longitude, pickupEnabled, deliveryEnabled, customerOrderingEnabled,
+            contactPhone: null, timeZoneId: null, onlineOrdersPaused: false, onlineOrdersPauseReason: null,
             isPrimary: false, OrganizationBranchStatus.Active, utcNow, id);
 
     internal static OrganizationBranch Rehydrate(
@@ -133,8 +162,13 @@ public sealed class OrganizationBranch
         DateTimeOffset updatedAtUtc,
         decimal? latitude = null,
         decimal? longitude = null,
-        bool pickupEnabled = true,
-        bool deliveryEnabled = false) =>
+        bool pickupEnabled = false,
+        bool deliveryEnabled = false,
+        bool customerOrderingEnabled = false,
+        string? contactPhone = null,
+        string? timeZoneId = null,
+        bool onlineOrdersPaused = false,
+        OnlineOrdersPauseReason? onlineOrdersPauseReason = null) =>
         new(
             id,
             organizationId,
@@ -150,6 +184,11 @@ public sealed class OrganizationBranch
             longitude,
             pickupEnabled,
             deliveryEnabled,
+            customerOrderingEnabled,
+            NormalizeContactPhone(contactPhone),
+            NormalizeTimeZone(timeZoneId),
+            onlineOrdersPaused,
+            onlineOrdersPauseReason,
             isPrimary,
             status,
             createdAtUtc,
@@ -233,6 +272,41 @@ public sealed class OrganizationBranch
         UpdatedAtUtc = utcNow;
     }
 
+    public void SetCustomerOrderingEnabled(bool enabled, DateTimeOffset utcNow)
+    {
+        EnsureMutable(utcNow);
+        CustomerOrderingEnabled = enabled;
+        if (!enabled)
+        {
+            PickupEnabled = false;
+            DeliveryEnabled = false;
+        }
+
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void UpdateContactPhone(string? contactPhone, DateTimeOffset utcNow)
+    {
+        EnsureMutable(utcNow);
+        ContactPhone = NormalizeContactPhone(contactPhone);
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void UpdateTimeZone(string? timeZoneId, DateTimeOffset utcNow)
+    {
+        EnsureMutable(utcNow);
+        TimeZoneId = NormalizeTimeZone(timeZoneId);
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void SetOnlineOrdersPaused(bool paused, OnlineOrdersPauseReason? reason, DateTimeOffset utcNow)
+    {
+        EnsureMutable(utcNow);
+        OnlineOrdersPaused = paused;
+        PauseReason = paused ? reason ?? OnlineOrdersPauseReason.Other : null;
+        UpdatedAtUtc = utcNow;
+    }
+
     public void Activate(DateTimeOffset utcNow) => TransitionTo(OrganizationBranchStatus.Active, utcNow);
     public void Deactivate(DateTimeOffset utcNow) => TransitionTo(OrganizationBranchStatus.Inactive, utcNow);
     public void Archive(DateTimeOffset utcNow) => TransitionTo(OrganizationBranchStatus.Archived, utcNow);
@@ -287,6 +361,11 @@ public sealed class OrganizationBranch
         decimal? longitude,
         bool pickupEnabled,
         bool deliveryEnabled,
+        bool customerOrderingEnabled,
+        string? contactPhone,
+        string? timeZoneId,
+        bool onlineOrdersPaused,
+        OnlineOrdersPauseReason? onlineOrdersPauseReason,
         bool isPrimary,
         OrganizationBranchStatus status,
         DateTimeOffset utcNow,
@@ -333,6 +412,11 @@ public sealed class OrganizationBranch
             lng,
             pickupEnabled,
             deliveryEnabled,
+            customerOrderingEnabled,
+            NormalizeContactPhone(contactPhone),
+            NormalizeTimeZone(timeZoneId),
+            onlineOrdersPaused,
+            onlineOrdersPauseReason,
             isPrimary,
             status,
             utcNow,
@@ -375,6 +459,42 @@ public sealed class OrganizationBranch
                 : throw new DomainException(
                     DomainErrorCodes.InvalidOrganizationBranchCode,
                     "Country code must be a two-letter ISO code.");
+
+    private static string? NormalizeContactPhone(string? phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone))
+        {
+            return null;
+        }
+
+        var trimmed = phone.Trim();
+        if (trimmed.Length is < 7 or > 32)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidOrganizationProfile,
+                "Contact phone format is invalid.");
+        }
+
+        return trimmed;
+    }
+
+    private static string? NormalizeTimeZone(string? timeZoneId)
+    {
+        if (string.IsNullOrWhiteSpace(timeZoneId))
+        {
+            return null;
+        }
+
+        var trimmed = timeZoneId.Trim();
+        if (!TimeZoneInfo.TryFindSystemTimeZoneById(trimmed, out _))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidOrganizationProfile,
+                "Time zone is not recognized.");
+        }
+
+        return trimmed;
+    }
 
     private static decimal RoundCoordinate(decimal value) =>
         Math.Round(value, 7, MidpointRounding.AwayFromZero);

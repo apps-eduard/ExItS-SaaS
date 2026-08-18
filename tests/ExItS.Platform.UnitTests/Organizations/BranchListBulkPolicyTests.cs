@@ -1,5 +1,8 @@
+using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.Organizations;
+using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.UnitTests.Support;
 
 namespace ExItS.Platform.UnitTests.Organizations;
 
@@ -19,7 +22,16 @@ public sealed class BranchListBulkPolicyTests
 
         var branches = new FakeBranchRepository([branchA, branchB]);
         var policies = new FakePolicyRepository([policyA, policyB]);
-        var useCase = new ListBranches(branches, policies);
+        var orgRepo = new InMemoryPlatformOrganizationRepository();
+        await orgRepo.AddAsync(PlatformOrganization.Create("Test Org", "test-org", T0));
+        var useCase = new ListBranches(
+            branches,
+            policies,
+            new FakeHoursRepository(),
+            orgRepo,
+            new EntitlementQueryService(new InMemoryEntitlementSnapshotRepository()),
+            new BranchFulfillmentReadinessEvaluator(new BranchOperatingHoursEvaluator()),
+            new FixedClock(T0));
 
         var result = await useCase.ExecuteAsync(Org);
 
@@ -84,5 +96,19 @@ public sealed class BranchListBulkPolicyTests
 
         public Task UpdateAsync(BranchDeliveryPolicy policy, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
+    }
+
+    private sealed class FakeHoursRepository : IBranchOperatingHoursRepository
+    {
+        public Task<BranchOperatingHoursSchedule?> GetByBranchIdAsync(
+            OrganizationBranchId branchId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<BranchOperatingHoursSchedule?>(null);
+
+        public Task UpsertAsync(
+            BranchOperatingHoursSchedule schedule,
+            PlatformOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 }

@@ -1,7 +1,9 @@
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Abstractions;
+using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Products;
@@ -39,8 +41,18 @@ public sealed record OrganizationBranchDto(
     decimal? Longitude = null,
     bool PickupEnabled = true,
     bool DeliveryEnabled = false,
+    bool CustomerOrderingEnabled = false,
+    bool OnlineOrdersPaused = false,
+    string? OnlineOrdersPauseReason = null,
+    string? ContactPhone = null,
+    string? TimeZoneId = null,
     bool CanOfferPickup = false,
     bool CanOfferDeliveryLocation = false,
+    bool CustomerOrderingReady = false,
+    bool CustomerOrderingOperational = false,
+    bool PickupOperational = false,
+    bool DeliveryOperational = false,
+    string? StoreStatusMessage = null,
     BranchDeliveryPolicyDto? DeliveryPolicy = null);
 
 public sealed record BranchCapacityDto(int Used, int Allowed);
@@ -56,8 +68,9 @@ public sealed record CreateBranchCommand(
     string? CountryCode = null,
     decimal? Latitude = null,
     decimal? Longitude = null,
-    bool PickupEnabled = true,
-    bool DeliveryEnabled = false);
+    bool PickupEnabled = false,
+    bool DeliveryEnabled = false,
+    bool CustomerOrderingEnabled = false);
 
 public sealed record UpdateBranchCommand(
     string Name,
@@ -71,8 +84,8 @@ public sealed record UpdateBranchCommand(
     decimal? Latitude = null,
     decimal? Longitude = null,
     bool? ClearCoordinates = null,
-    bool? PickupEnabled = null,
-    bool? DeliveryEnabled = null);
+    string? ContactPhone = null,
+    string? TimeZoneId = null);
 
 public sealed record UpsertBranchDeliveryPolicyCommand(
     decimal MinimumOrderAmount,
@@ -95,7 +108,14 @@ public sealed record DeliveryFeePreviewDto(
     bool Available,
     string? UnavailableReason = null);
 
-public sealed class ListBranches(IOrganizationBranchRepository branches, IBranchDeliveryPolicyRepository policies)
+public sealed class ListBranches(
+    IOrganizationBranchRepository branches,
+    IBranchDeliveryPolicyRepository policies,
+    IBranchOperatingHoursRepository hours,
+    IPlatformOrganizationRepository organizations,
+    EntitlementQueryService entitlements,
+    IBranchFulfillmentReadinessEvaluator readinessEvaluator,
+    IClock clock)
 {
     public async Task<IReadOnlyList<OrganizationBranchDto>> ExecuteAsync(
         PlatformOrganizationId organizationId,
@@ -104,14 +124,47 @@ public sealed class ListBranches(IOrganizationBranchRepository branches, IBranch
         var list = await branches.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false);
         var policyList = await policies.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false);
         var policiesByBranchId = policyList.ToDictionary(p => p.BranchId.Value);
+        var org = await organizations.GetByIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        var caps = await ResolveCapabilitiesAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        var utcNow = clock.UtcNow;
         var result = new List<OrganizationBranchDto>(list.Count);
         foreach (var branch in list)
         {
             policiesByBranchId.TryGetValue(branch.Id.Value, out var policy);
-            result.Add(BranchMapper.ToDto(branch, policy));
+            var schedule = await hours.GetByBranchIdAsync(branch.Id, cancellationToken).ConfigureAwait(false);
+            var readiness = readinessEvaluator.Evaluate(new BranchFulfillmentReadinessInput(
+                branch,
+                schedule,
+                policy,
+                org?.Profile.TimeZoneId,
+                org?.Profile.ContactPhone,
+                caps,
+                utcNow));
+            result.Add(BranchMapper.ToDto(branch, policy, readiness));
         }
 
         return result;
+    }
+
+    private async Task<BranchEntitlementCapabilities> ResolveCapabilitiesAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken)
+    {
+        var snapshot = await entitlements
+            .GetLatestAsync(organizationId.Value, ProductCode.PinoyBusinessPos, cancellationToken)
+            .ConfigureAwait(false);
+        if (snapshot is null)
+        {
+            return new BranchEntitlementCapabilities(false, false);
+        }
+
+        var canOrder = snapshot.Grants.Any(g =>
+            g.Enabled
+            && string.Equals(g.FeatureCode, FeatureCode.StoreCustomerOrdering, StringComparison.Ordinal));
+        var canDelivery = canOrder && snapshot.Grants.Any(g =>
+            g.Enabled
+            && string.Equals(g.FeatureCode, FeatureCode.StoreDeliveryOrders, StringComparison.Ordinal));
+        return new BranchEntitlementCapabilities(canOrder, canDelivery);
     }
 }
 
@@ -169,7 +222,8 @@ public sealed class CreateBranch(
                 command.Latitude,
                 command.Longitude,
                 command.PickupEnabled,
-                command.DeliveryEnabled);
+                command.DeliveryEnabled,
+                command.CustomerOrderingEnabled);
             policy = BranchDeliveryPolicy.CreateDefault(branch.Id, organizationId, clock.UtcNow);
         }
         catch (DomainException ex)
@@ -223,12 +277,14 @@ public sealed class UpdateBranch(
                 branch.UpdateCoordinates(command.Latitude, command.Longitude, clock.UtcNow);
             }
 
-            if (command.PickupEnabled is not null || command.DeliveryEnabled is not null)
+            if (command.ContactPhone is not null)
             {
-                branch.SetFulfillmentCapabilities(
-                    command.PickupEnabled ?? branch.PickupEnabled,
-                    command.DeliveryEnabled ?? branch.DeliveryEnabled,
-                    clock.UtcNow);
+                branch.UpdateContactPhone(command.ContactPhone, clock.UtcNow);
+            }
+
+            if (command.TimeZoneId is not null)
+            {
+                branch.UpdateTimeZone(command.TimeZoneId, clock.UtcNow);
             }
 
             if (command.Status == OrganizationBranchStatus.Active)
@@ -488,7 +544,10 @@ internal static class PosOrganizationPlanLimits
 
 internal static class BranchMapper
 {
-    public static OrganizationBranchDto ToDto(OrganizationBranch x, BranchDeliveryPolicy? policy = null) =>
+    public static OrganizationBranchDto ToDto(
+        OrganizationBranch x,
+        BranchDeliveryPolicy? policy = null,
+        BranchFulfillmentReadinessResult? readiness = null) =>
         new(
             x.Id.Value,
             x.OrganizationId.Value,
@@ -508,8 +567,18 @@ internal static class BranchMapper
             x.Longitude,
             x.PickupEnabled,
             x.DeliveryEnabled,
+            x.CustomerOrderingEnabled,
+            x.OnlineOrdersPaused,
+            x.PauseReason?.ToString(),
+            x.ContactPhone,
+            x.TimeZoneId,
             x.CanOfferPickup,
             x.CanOfferDeliveryLocation,
+            readiness?.CustomerOrderingReady ?? false,
+            readiness?.CustomerOrderingOperational ?? false,
+            readiness?.PickupOperational ?? false,
+            readiness?.DeliveryOperational ?? false,
+            GetBranchFulfillmentReadiness.BuildStoreStatusMessage(readiness?.StoreOpenState),
             policy is null ? null : ToDto(policy));
 
     public static BranchDeliveryPolicyDto ToDto(BranchDeliveryPolicy x) =>

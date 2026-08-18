@@ -22,6 +22,8 @@
                 <h2>@L["Branches_Details"]</h2>
                 <div class="pos-branches__grid">
                     <TextInput Label="@L["Branches_FieldName"]" @bind-Value="_name" Required />
+                    <TextInput Label="@L["Branches_ContactPhone"]" @bind-Value="_contactPhone" />
+                    <TextInput Label="@L["Branches_TimeZone"]" @bind-Value="_timeZoneId" />
                     <label class="pos-branches__field">@L["Branches_ColStatus"]
                         <select @bind="_status" disabled="@_busy"><option>Active</option><option>Inactive</option></select>
                     </label>
@@ -50,34 +52,73 @@
             </section>
 
             <section class="pos-branches__section">
-                <h2>@L["Branches_Fulfillment"]</h2>
-                <label class="pos-branches__toggle"><input type="checkbox" @bind="_pickupEnabled" /> @L["Branches_PickupEnabled"]</label>
-                <label class="pos-branches__toggle"><input type="checkbox" @bind="_deliveryEnabled" /> @L["Branches_DeliveryEnabled"]</label>
+                <h2>@L["Branches_OperatingHours"]</h2>
+                <div class="pos-branches__hours">
+                    @foreach (var day in _hours)
+                    {
+                        <div class="pos-branches__hours-row">
+                            <span class="pos-branches__hours-day">@DayLabel(day.DayOfWeek)</span>
+                            <label><input type="checkbox" @bind="day.IsClosed" disabled="@_busy" /> @L["Branches_Closed"]</label>
+                            @if (!day.IsClosed)
+                            {
+                                <label><input type="checkbox" @bind="day.IsOpen24Hours" disabled="@_busy" /> @L["Branches_Open24h"]</label>
+                                @if (!day.IsOpen24Hours)
+                                {
+                                    <input type="time" @bind="day.OpenTime" disabled="@_busy" class="pos-branches__time" />
+                                    <span>–</span>
+                                    <input type="time" @bind="day.CloseTime" disabled="@_busy" class="pos-branches__time" />
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+                <Button Size="ButtonSize.Sm" Disabled="_busy" OnClick="SaveHoursAsync">@L["Branches_SaveHours"]</Button>
             </section>
 
-            @if (_deliveryEnabled)
+            @if (_readiness is not null)
             {
                 <section class="pos-branches__section">
-                    <h2>@L["Branches_DeliverySettings"]</h2>
-                    <div class="pos-branches__grid">
-                        <TextInput Label="@L["Branches_MinimumOrder"]" @bind-Value="_minimumOrder" Type="number" />
-                        <TextInput Label="@L["Branches_BaseFee"]" @bind-Value="_baseFee" Type="number" />
-                        <TextInput Label="@L["Branches_IncludedKm"]" @bind-Value="_includedKm" Type="number" />
-                        <TextInput Label="@L["Branches_AdditionalPerKm"]" @bind-Value="_additionalPerKm" Type="number" />
-                        <TextInput Label="@L["Branches_MaximumKm"]" @bind-Value="_maximumKm" Type="number" />
-                        <TextInput Label="@L["Branches_FreeThreshold"]" @bind-Value="_freeThreshold" Type="number" />
+                    <h2>@L["Branches_Fulfillment"]</h2>
+                    @if (!string.IsNullOrWhiteSpace(_readiness.StoreStatusMessage))
+                    {
+                        <p class="pos-muted">@_readiness.StoreStatusMessage</p>
+                    }
+                    <div class="pos-branches__fulfillment-rows">
+                        @FulfillmentRow(L["Branches_OnlineOrders"], OnlineOrdersStatus(), _readiness.CustomerOrderingEnabled,
+                            _readiness.CanUseCustomerOrdering, _readiness.CustomerOrderingReady,
+                            () => ToggleFulfillmentAsync(ordering: !_readiness.CustomerOrderingEnabled))
+                        @FulfillmentRow(L["Branches_Pickup"], PickupStatus(), _readiness.PickupEnabled,
+                            _readiness.CanUseCustomerOrdering && _readiness.CustomerOrderingEnabled, _readiness.PickupReady,
+                            () => ToggleFulfillmentAsync(pickup: !_readiness.PickupEnabled))
+                        @DeliveryRow()
                     </div>
-                    <div class="pos-branches__estimates">
-                        <strong>@L["Branches_FeeExamples"]</strong>
-                        @foreach (var distance in new[] { 1m, 3m, 5m })
-                        {
-                            <span>@distance.ToString("0.#") km: <MoneyDisplay Amount="@Estimate(distance)" CurrencyCode="PHP" /></span>
-                        }
-                    </div>
+                    @if (_readiness.OnlineOrdersPaused)
+                    {
+                        <Button Size="ButtonSize.Sm" Disabled="_busy" OnClick="() => PauseOrdersAsync(false)">@L["Branches_ResumeOrders"]</Button>
+                    }
+                    else if (_readiness.CustomerOrderingEnabled)
+                    {
+                        <Button Size="ButtonSize.Sm" Disabled="_busy" OnClick="() => PauseOrdersAsync(true)">@L["Branches_PauseOrders"]</Button>
+                    }
                 </section>
             }
 
-            <Button Variant="ButtonVariant.Primary" Disabled="_busy" OnClick="SaveAsync">@L["Common_Save"]</Button>
+            <section class="pos-branches__section">
+                <h2>@L["Branches_DeliverySettings"]</h2>
+                <p class="pos-muted">@L["Branches_DeliverySettingsHint"]</p>
+                <div class="pos-branches__grid">
+                    <TextInput Label="@L["Branches_MinimumOrder"]" @bind-Value="_minimumOrder" Type="number" />
+                    <TextInput Label="@L["Branches_BaseFee"]" @bind-Value="_baseFee" Type="number" />
+                    <TextInput Label="@L["Branches_IncludedKm"]" @bind-Value="_includedKm" Type="number" />
+                    <TextInput Label="@L["Branches_AdditionalPerKm"]" @bind-Value="_additionalPerKm" Type="number" />
+                    <TextInput Label="@L["Branches_MaximumKm"]" @bind-Value="_maximumKm" Type="number" />
+                    <TextInput Label="@L["Branches_FreeThreshold"]" @bind-Value="_freeThreshold" Type="number" />
+                </div>
+            </section>
+
+            <div class="pos-branches__sticky-actions">
+                <Button Variant="ButtonVariant.Primary" Disabled="_busy" OnClick="SaveAsync">@L["Common_Save"]</Button>
+            </div>
         }
     </Page>
 </div>
@@ -85,14 +126,16 @@
 @code {
     [Parameter] public Guid BranchId { get; set; }
     private OrganizationBranchDto? _branch;
+    private BranchFulfillmentReadinessDto? _readiness;
+    private readonly List<DayHoursModel> _hours = [];
     private bool _loading = true;
     private bool _busy;
-    private bool _pickupEnabled;
-    private bool _deliveryEnabled;
     private string? _error;
     private string? _success;
     private string? _code;
     private string? _name;
+    private string? _contactPhone;
+    private string? _timeZoneId;
     private string? _status;
     private string? _address1;
     private string? _address2;
@@ -116,16 +159,48 @@
         _branch = result.Data?.FirstOrDefault(x => x.Id == BranchId);
         if (_branch is null) { _error = result.Error?.Detail ?? L["Branches_NotFound"]; _loading = false; return; }
         Map(_branch);
+        await LoadFulfillmentAsync(orgId);
         _loading = false;
+    }
+
+    private async Task LoadFulfillmentAsync(Guid orgId)
+    {
+        var readiness = await Platform.GetBranchFulfillmentReadinessAsync(orgId, BranchId);
+        if (readiness.IsSuccess) _readiness = readiness.Data;
+
+        var hours = await Platform.GetBranchOperatingHoursAsync(orgId, BranchId);
+        if (hours.IsSuccess && hours.Data is not null)
+        {
+            _hours.Clear();
+            foreach (var day in hours.Data.OrderBy(d => DayOrder(d.DayOfWeek)))
+            {
+                _hours.Add(new DayHoursModel
+                {
+                    DayOfWeek = day.DayOfWeek,
+                    IsClosed = day.IsClosed,
+                    IsOpen24Hours = day.IsOpen24Hours,
+                    OpenTime = day.OpenTime ?? "08:00",
+                    CloseTime = day.CloseTime ?? "21:00"
+                });
+            }
+        }
+        else if (_hours.Count == 0)
+        {
+            foreach (var day in Enum.GetValues<DayOfWeek>().OrderBy(DayOrder))
+            {
+                _hours.Add(new DayHoursModel { DayOfWeek = day.ToString(), IsClosed = true });
+            }
+        }
     }
 
     private void Map(OrganizationBranchDto b)
     {
-        _code = b.Code; _name = b.Name; _status = b.Status; _address1 = b.AddressLine1; _address2 = b.AddressLine2;
+        _code = b.Code; _name = b.Name; _status = b.Status;
+        _contactPhone = b.ContactPhone; _timeZoneId = b.TimeZoneId;
+        _address1 = b.AddressLine1; _address2 = b.AddressLine2;
         _city = b.City; _region = b.Region; _postalCode = b.PostalCode; _countryCode = b.CountryCode;
         _latitude = b.Latitude?.ToString(System.Globalization.CultureInfo.InvariantCulture);
         _longitude = b.Longitude?.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        _pickupEnabled = b.PickupEnabled; _deliveryEnabled = b.DeliveryEnabled;
         if (b.DeliveryPolicy is { } p)
         {
             _minimumOrder = F(p.MinimumOrderAmount); _baseFee = F(p.BaseDeliveryFee); _includedKm = F(p.IncludedDistanceKm);
@@ -137,7 +212,6 @@
     private static string F(decimal value) => value.ToString(System.Globalization.CultureInfo.InvariantCulture);
     private static decimal D(string? value) => decimal.TryParse(value, System.Globalization.NumberStyles.Number,
         System.Globalization.CultureInfo.InvariantCulture, out var parsed) ? parsed : 0m;
-    private decimal Estimate(decimal distance) => Math.Max(0m, D(_baseFee) + Math.Max(0m, distance - D(_includedKm)) * D(_additionalPerKm));
 
     private async Task SaveAsync()
     {
@@ -147,16 +221,176 @@
         decimal? longitude = string.IsNullOrWhiteSpace(_longitude) ? null : D(_longitude);
         var updated = await Platform.UpdateBranchAsync(orgId, BranchId, new UpdateBranchRequest(
             _name.Trim(), _address1?.Trim(), _address2?.Trim(), _city?.Trim(), _region?.Trim(), _postalCode?.Trim(),
-            _countryCode?.Trim(), _status, latitude, longitude, latitude is null && longitude is null, _pickupEnabled, _deliveryEnabled));
+            _countryCode?.Trim(), _status, latitude, longitude, latitude is null && longitude is null,
+            _contactPhone?.Trim(), _timeZoneId?.Trim()));
         if (!updated.IsSuccess) { _error = updated.Error?.Detail ?? L["Branches_SaveFailed"]; _busy = false; return; }
 
-        if (_deliveryEnabled)
-        {
-            var policy = await Platform.UpsertBranchDeliveryPolicyAsync(orgId, BranchId, new UpsertBranchDeliveryPolicyRequest(
-                D(_minimumOrder), D(_baseFee), D(_includedKm), D(_additionalPerKm), D(_maximumKm),
-                string.IsNullOrWhiteSpace(_freeThreshold) ? null : D(_freeThreshold)));
-            if (!policy.IsSuccess) { _error = policy.Error?.Detail ?? L["Branches_PolicySaveFailed"]; _busy = false; return; }
-        }
+        var policy = await Platform.UpsertBranchDeliveryPolicyAsync(orgId, BranchId, new UpsertBranchDeliveryPolicyRequest(
+            D(_minimumOrder), D(_baseFee), D(_includedKm), D(_additionalPerKm), D(_maximumKm),
+            string.IsNullOrWhiteSpace(_freeThreshold) ? null : D(_freeThreshold)));
+        if (!policy.IsSuccess) { _error = policy.Error?.Detail ?? L["Branches_PolicySaveFailed"]; _busy = false; return; }
+
+        await LoadFulfillmentAsync(orgId);
         _success = L["Branches_Saved"]; _busy = false;
+    }
+
+    private async Task SaveHoursAsync()
+    {
+        if (CurrentUser.Session?.OrganizationId is not Guid orgId) return;
+        _busy = true; _error = _success = null;
+        var days = _hours.Select(h => new BranchOperatingHoursDayDto(
+            h.DayOfWeek, h.IsClosed, h.IsOpen24Hours,
+            h.IsClosed || h.IsOpen24Hours ? null : h.OpenTime,
+            h.IsClosed || h.IsOpen24Hours ? null : h.CloseTime)).ToList();
+        var result = await Platform.UpsertBranchOperatingHoursAsync(orgId, BranchId, new UpsertBranchOperatingHoursRequest(days));
+        if (!result.IsSuccess) { _error = result.Error?.Detail ?? L["Branches_SaveFailed"]; }
+        else { _readiness = result.Data; _success = L["Branches_HoursSaved"]; }
+        _busy = false;
+    }
+
+    private async Task ToggleFulfillmentAsync(bool? ordering = null, bool? pickup = null, bool? delivery = null)
+    {
+        if (CurrentUser.Session?.OrganizationId is not Guid orgId) return;
+        _busy = true; _error = null;
+        var result = await Platform.UpdateBranchFulfillmentSettingsAsync(
+            orgId, BranchId, new UpdateBranchFulfillmentSettingsRequest(ordering, pickup, delivery));
+        if (!result.IsSuccess) _error = result.Error?.Detail ?? L["Branches_FulfillmentFailed"];
+        else { _readiness = result.Data; _success = L["Branches_Saved"]; }
+        _busy = false;
+    }
+
+    private async Task PauseOrdersAsync(bool paused)
+    {
+        if (CurrentUser.Session?.OrganizationId is not Guid orgId) return;
+        _busy = true; _error = null;
+        var result = await Platform.SetBranchOnlineOrdersPausedAsync(
+            orgId, BranchId, new SetBranchOnlineOrdersPausedRequest(paused, paused ? "TooBusy" : null));
+        if (!result.IsSuccess) _error = result.Error?.Detail ?? L["Branches_FulfillmentFailed"];
+        else { _readiness = result.Data; _success = L["Branches_Saved"]; }
+        _busy = false;
+    }
+
+    private string OnlineOrdersStatus() => _readiness switch
+    {
+        { OnlineOrdersPaused: true } => L["Branches_StatusPaused"],
+        { CustomerOrderingEnabled: true, CustomerOrderingOperational: true } => L["Branches_StatusReady"],
+        { CustomerOrderingEnabled: true } => L["Branches_StatusOffHours"],
+        { CustomerOrderingReady: true } => L["Branches_StatusSetupReady"],
+        _ => L["Branches_StatusSetupRequired"]
+    };
+
+    private string PickupStatus() => _readiness switch
+    {
+        { PickupEnabled: true, PickupOperational: true } => L["Branches_StatusEnabled"],
+        { PickupEnabled: true } => L["Branches_StatusOffHours"],
+        { PickupReady: true } => L["Branches_StatusDisabled"],
+        _ => L["Branches_StatusDisabled"]
+    };
+
+    private RenderFragment FulfillmentRow(string label, string status, bool enabled, bool canUse, bool ready, Func<Task> onEnable) => builder =>
+    {
+        var seq = 0;
+        builder.OpenElement(seq++, "div");
+        builder.AddAttribute(seq++, "class", "pos-branches__fulfillment-row");
+        builder.OpenElement(seq++, "span"); builder.AddContent(seq++, label); builder.CloseElement();
+        builder.OpenElement(seq++, "span"); builder.AddContent(seq++, status); builder.CloseElement();
+        if (canUse && !enabled && ready)
+        {
+            builder.OpenComponent<Button>(seq++);
+            builder.AddAttribute(seq++, "Size", ButtonSize.Sm);
+            builder.AddAttribute(seq++, "Disabled", _busy);
+            builder.AddAttribute(seq++, "OnClick", EventCallback.Factory.Create(this, onEnable));
+            builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(b => b.AddContent(0, L["Branches_Enable"])));
+            builder.CloseComponent();
+        }
+        builder.CloseElement();
+    };
+
+    private RenderFragment DeliveryRow() => builder =>
+    {
+        if (_readiness is null) return;
+        var seq = 0;
+        builder.OpenElement(seq++, "div");
+        builder.AddAttribute(seq++, "class", "pos-branches__fulfillment-row");
+        builder.OpenElement(seq++, "span"); builder.AddContent(seq++, L["Branches_Delivery"]); builder.CloseElement();
+        builder.OpenElement(seq++, "span");
+        builder.AddContent(seq++, _readiness.DeliveryEnabled
+            ? (_readiness.DeliveryOperational ? L["Branches_StatusEnabled"] : L["Branches_StatusOffHours"])
+            : _readiness.CanUseDelivery
+                ? (_readiness.DeliveryReady ? L["Branches_StatusSetupReady"] : L["Branches_StatusSetupRequired"])
+                : L["Branches_StatusNotInPlan"]);
+        builder.CloseElement();
+        if (_readiness.CanUseDelivery && !_readiness.DeliveryEnabled && _readiness.DeliveryReady)
+        {
+            builder.OpenComponent<Button>(seq++);
+            builder.AddAttribute(seq++, "Size", ButtonSize.Sm);
+            builder.AddAttribute(seq++, "Disabled", _busy);
+            builder.AddAttribute(seq++, "OnClick", EventCallback.Factory.Create(this, () => ToggleFulfillmentAsync(delivery: true)));
+            builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(b => b.AddContent(0, L["Branches_EnableDelivery"])));
+            builder.CloseComponent();
+        }
+        if (_readiness.DeliveryEnabled)
+        {
+            builder.OpenComponent<Button>(seq++);
+            builder.AddAttribute(seq++, "Size", ButtonSize.Sm);
+            builder.AddAttribute(seq++, "Disabled", _busy);
+            builder.AddAttribute(seq++, "OnClick", EventCallback.Factory.Create(this, () => ToggleFulfillmentAsync(delivery: false)));
+            builder.AddAttribute(seq++, "ChildContent", (RenderFragment)(b => b.AddContent(0, L["Branches_DisableDelivery"])));
+            builder.CloseComponent();
+        }
+        builder.CloseElement();
+        if (_readiness.CanUseDelivery && !_readiness.DeliveryReady)
+        {
+            builder.OpenElement(seq++, "ul");
+            builder.AddAttribute(seq++, "class", "pos-branches__checklist");
+            foreach (var item in DeliveryChecklist())
+            {
+                builder.OpenElement(seq++, "li");
+                builder.AddContent(seq++, item);
+                builder.CloseElement();
+            }
+            builder.CloseElement();
+        }
+    };
+
+    private IEnumerable<string> DeliveryChecklist()
+    {
+        if (_readiness is null) yield break;
+        var codes = _readiness.ReasonCodes.ToHashSet(StringComparer.Ordinal);
+        yield return ChecklistItem(codes, "branch_address_incomplete", L["Branches_CheckAddress"]);
+        yield return ChecklistItem(codes, "map_location_missing", L["Branches_CheckLocation"]);
+        yield return ChecklistItem(codes, "store_hours_missing", L["Branches_CheckHours"]);
+        yield return ChecklistItem(codes, "store_contact_missing", L["Branches_CheckPhone"]);
+        yield return ChecklistItem(codes, "delivery_policy_missing", L["Branches_CheckPricing"]);
+        yield return ChecklistItem(codes, "delivery_policy_incomplete", L["Branches_CheckDistance"]);
+    }
+
+    private static string ChecklistItem(HashSet<string> codes, string code, string label) =>
+        (codes.Contains(code) ? "✗ " : "✓ ") + label;
+
+    private static int DayOrder(DayOfWeek day) => day switch
+    {
+        DayOfWeek.Monday => 0,
+        DayOfWeek.Tuesday => 1,
+        DayOfWeek.Wednesday => 2,
+        DayOfWeek.Thursday => 3,
+        DayOfWeek.Friday => 4,
+        DayOfWeek.Saturday => 5,
+        _ => 6
+    };
+
+    private static int DayOrder(string day) =>
+        Enum.TryParse<DayOfWeek>(day, true, out var parsed) ? DayOrder(parsed) : 99;
+
+    private string DayLabel(string day) =>
+        Enum.TryParse<DayOfWeek>(day, true, out var parsed) ? L[$"Branches_Day_{parsed}"] : day;
+
+    private sealed class DayHoursModel
+    {
+        public string DayOfWeek { get; set; } = DayOfWeek.Monday.ToString();
+        public bool IsClosed { get; set; }
+        public bool IsOpen24Hours { get; set; }
+        public string OpenTime { get; set; } = "08:00";
+        public string CloseTime { get; set; } = "21:00";
     }
 }

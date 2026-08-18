@@ -67,6 +67,7 @@
                             </div>
                         </div>
                         <div class="pos-branches__chips">
+                            @FulfillmentBadge(branch)
                             @if (branch.PickupEnabled) { <Badge Tone="BadgeTone.Info">@L["Branches_Pickup"]</Badge> }
                             @if (branch.DeliveryEnabled) { <Badge Tone="BadgeTone.Success">@L["Branches_Delivery"]</Badge> }
                         </div>
@@ -112,6 +113,21 @@
     private void Edit(Guid id) => Nav.NavigateTo($"/organization/branches/{id:D}");
     private static bool IsActive(OrganizationBranchDto branch) =>
         string.Equals(branch.Status, "Active", StringComparison.OrdinalIgnoreCase);
+
+    private RenderFragment FulfillmentBadge(OrganizationBranchDto branch) => builder =>
+    {
+        var (label, tone) = branch.OnlineOrdersPaused
+            ? (L["Branches_StatusPaused"].Value, BadgeTone.Warning)
+            : branch.CustomerOrderingEnabled
+                ? (L["Branches_StatusEnabled"].Value, BadgeTone.Success)
+                : branch.CustomerOrderingReady
+                    ? (L["Branches_StatusSetupReady"].Value, BadgeTone.Info)
+                    : (L["Branches_StatusSetupRequired"].Value, BadgeTone.Neutral);
+        builder.OpenComponent<Badge>(0);
+        builder.AddAttribute(1, "Tone", tone);
+        builder.AddAttribute(2, "ChildContent", (RenderFragment)(b => b.AddContent(0, label)));
+        builder.CloseComponent();
+    };
 
     private async Task CreateAsync()
     {

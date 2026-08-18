@@ -59,10 +59,19 @@ public sealed record OrganizationBranchDto(
     string? CountryCode = null,
     decimal? Latitude = null,
     decimal? Longitude = null,
-    bool PickupEnabled = true,
+    bool PickupEnabled = false,
     bool DeliveryEnabled = false,
+    bool CustomerOrderingEnabled = false,
+    bool OnlineOrdersPaused = false,
+    string? ContactPhone = null,
+    string? TimeZoneId = null,
     bool CanOfferPickup = false,
     bool CanOfferDeliveryLocation = false,
+    bool CustomerOrderingReady = false,
+    bool CustomerOrderingOperational = false,
+    bool PickupOperational = false,
+    bool DeliveryOperational = false,
+    string? StoreStatusMessage = null,
     BranchDeliveryPolicyDto? DeliveryPolicy = null);
 public sealed record BranchDeliveryPolicyDto(
     Guid BranchId,
@@ -126,8 +135,45 @@ public sealed record UpdateBranchRequest(
     decimal? Latitude = null,
     decimal? Longitude = null,
     bool? ClearCoordinates = null,
+    string? ContactPhone = null,
+    string? TimeZoneId = null);
+
+public sealed record BranchOperatingHoursDayDto(
+    string DayOfWeek,
+    bool IsClosed,
+    bool IsOpen24Hours,
+    string? OpenTime,
+    string? CloseTime);
+
+public sealed record BranchFulfillmentReadinessDto(
+    Guid BranchId,
+    bool CanUseCustomerOrdering,
+    bool CanUseDelivery,
+    bool CustomerOrderingEnabled,
+    bool PickupEnabled,
+    bool DeliveryEnabled,
+    bool OnlineOrdersPaused,
+    string? OnlineOrdersPauseReason,
+    bool CustomerOrderingReady,
+    bool PickupReady,
+    bool DeliveryReady,
+    bool CustomerOrderingOperational,
+    bool PickupOperational,
+    bool DeliveryOperational,
+    IReadOnlyList<string> MissingRequirements,
+    IReadOnlyList<string> ReasonCodes,
+    string? StoreOpenStatus,
+    bool StoreIsOpenNow,
+    string? StoreStatusMessage);
+
+public sealed record UpsertBranchOperatingHoursRequest(IReadOnlyList<BranchOperatingHoursDayDto> Days);
+
+public sealed record UpdateBranchFulfillmentSettingsRequest(
+    bool? CustomerOrderingEnabled = null,
     bool? PickupEnabled = null,
     bool? DeliveryEnabled = null);
+
+public sealed record SetBranchOnlineOrdersPausedRequest(bool Paused, string? Reason = null);
 
 public sealed record UpsertBranchDeliveryPolicyRequest(
     decimal MinimumOrderAmount,
@@ -1500,6 +1546,39 @@ public interface IPlatformAccessClient
         DeliveryFeePreviewRequest request,
         CancellationToken ct = default) =>
         Task.FromResult(ApiResult<DeliveryFeePreviewDto>.Unavailable());
+
+    Task<ApiResult<BranchFulfillmentReadinessDto>> GetBranchFulfillmentReadinessAsync(
+        Guid organizationId,
+        Guid branchId,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<BranchFulfillmentReadinessDto>.Unavailable());
+
+    Task<ApiResult<IReadOnlyList<BranchOperatingHoursDayDto>>> GetBranchOperatingHoursAsync(
+        Guid organizationId,
+        Guid branchId,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<IReadOnlyList<BranchOperatingHoursDayDto>>.Unavailable());
+
+    Task<ApiResult<BranchFulfillmentReadinessDto>> UpsertBranchOperatingHoursAsync(
+        Guid organizationId,
+        Guid branchId,
+        UpsertBranchOperatingHoursRequest request,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<BranchFulfillmentReadinessDto>.Unavailable());
+
+    Task<ApiResult<BranchFulfillmentReadinessDto>> UpdateBranchFulfillmentSettingsAsync(
+        Guid organizationId,
+        Guid branchId,
+        UpdateBranchFulfillmentSettingsRequest request,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<BranchFulfillmentReadinessDto>.Unavailable());
+
+    Task<ApiResult<BranchFulfillmentReadinessDto>> SetBranchOnlineOrdersPausedAsync(
+        Guid organizationId,
+        Guid branchId,
+        SetBranchOnlineOrdersPausedRequest request,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<BranchFulfillmentReadinessDto>.Unavailable());
 
     Task<ApiResult<PlatformPagedResult<OrganizationInvitationDto>>> GetOrganizationInvitationsAsync(
         Guid organizationId,

@@ -10046,6 +10046,42 @@
   <data name="Branches_FreeThreshold" xml:space="preserve"><value>Halaga para sa libreng delivery</value></data>
   <data name="Branches_FeeExamples" xml:space="preserve"><value>Halimbawa ng delivery fee</value></data>
   <data name="Branches_ColStatus" xml:space="preserve"><value>Status</value></data>
+  <data name="Branches_ContactPhone" xml:space="preserve"><value>Telepono ng tindahan</value></data>
+  <data name="Branches_TimeZone" xml:space="preserve"><value>Timezone (opsyonal na override)</value></data>
+  <data name="Branches_OperatingHours" xml:space="preserve"><value>Oras ng operasyon</value></data>
+  <data name="Branches_Closed" xml:space="preserve"><value>Sarado</value></data>
+  <data name="Branches_Open24h" xml:space="preserve"><value>24 oras</value></data>
+  <data name="Branches_SaveHours" xml:space="preserve"><value>I-save ang oras</value></data>
+  <data name="Branches_HoursSaved" xml:space="preserve"><value>Na-save ang oras ng operasyon.</value></data>
+  <data name="Branches_OnlineOrders" xml:space="preserve"><value>Online orders</value></data>
+  <data name="Branches_Enable" xml:space="preserve"><value>Paganahin</value></data>
+  <data name="Branches_EnableDelivery" xml:space="preserve"><value>Paganahin ang delivery</value></data>
+  <data name="Branches_DisableDelivery" xml:space="preserve"><value>Huwag paganahin ang delivery</value></data>
+  <data name="Branches_PauseOrders" xml:space="preserve"><value>I-pause ang online orders</value></data>
+  <data name="Branches_ResumeOrders" xml:space="preserve"><value>Ituloy ang online orders</value></data>
+  <data name="Branches_FulfillmentFailed" xml:space="preserve"><value>Hindi ma-update ang fulfillment settings.</value></data>
+  <data name="Branches_DeliverySettingsHint" xml:space="preserve"><value>I-set up muna ang presyo bago paganahin ang delivery.</value></data>
+  <data name="Branches_StatusReady" xml:space="preserve"><value>Handa</value></data>
+  <data name="Branches_StatusSetupRequired" xml:space="preserve"><value>Kailangan ng setup</value></data>
+  <data name="Branches_StatusSetupReady" xml:space="preserve"><value>Handa nang paganahin</value></data>
+  <data name="Branches_StatusEnabled" xml:space="preserve"><value>Pinagana</value></data>
+  <data name="Branches_StatusDisabled" xml:space="preserve"><value>Hindi pinagana</value></data>
+  <data name="Branches_StatusPaused" xml:space="preserve"><value>Naka-pause</value></data>
+  <data name="Branches_StatusOffHours" xml:space="preserve"><value>Sarado ang oras</value></data>
+  <data name="Branches_StatusNotInPlan" xml:space="preserve"><value>Wala sa plano</value></data>
+  <data name="Branches_CheckAddress" xml:space="preserve"><value>Address ng branch</value></data>
+  <data name="Branches_CheckLocation" xml:space="preserve"><value>Lokasyon sa mapa</value></data>
+  <data name="Branches_CheckHours" xml:space="preserve"><value>Oras ng tindahan</value></data>
+  <data name="Branches_CheckPhone" xml:space="preserve"><value>Telepono ng tindahan</value></data>
+  <data name="Branches_CheckPricing" xml:space="preserve"><value>Presyo ng delivery</value></data>
+  <data name="Branches_CheckDistance" xml:space="preserve"><value>Layong serbisyo</value></data>
+  <data name="Branches_Day_Monday" xml:space="preserve"><value>Lun</value></data>
+  <data name="Branches_Day_Tuesday" xml:space="preserve"><value>Mar</value></data>
+  <data name="Branches_Day_Wednesday" xml:space="preserve"><value>Miy</value></data>
+  <data name="Branches_Day_Thursday" xml:space="preserve"><value>Huw</value></data>
+  <data name="Branches_Day_Friday" xml:space="preserve"><value>Biy</value></data>
+  <data name="Branches_Day_Saturday" xml:space="preserve"><value>Sab</value></data>
+  <data name="Branches_Day_Sunday" xml:space="preserve"><value>Lin</value></data>
   <data name="Orders_Title" xml:space="preserve"><value>Mga order</value></data>
   <data name="Orders_SellerSubtitle" xml:space="preserve"><value>Suriin at tuparin ang pickup at delivery orders ng customer.</value></data>
   <data name="Orders_PersonalSubtitle" xml:space="preserve"><value>Subaybayan ang mga order na inilagay mo sa mga merchant.</value></data>

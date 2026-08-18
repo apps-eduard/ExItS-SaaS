@@ -51,8 +51,14 @@ internal sealed class PosCustomerOrderBranchDirectory(
                 new CustomerOrderBranchSnapshot(
                     Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
                     "Test Branch",
+                    CustomerOrderingEnabled: true,
                     PickupEnabled: true,
                     DeliveryEnabled: true,
+                    CustomerOrderingOperational: true,
+                    PickupOperational: true,
+                    DeliveryOperational: true,
+                    OnlineOrdersPaused: false,
+                    StoreStatusMessage: "Open",
                     Latitude: 14.5995m,
                     Longitude: 120.9842m,
                     new CustomerOrderBranchDeliveryPolicySnapshot(
@@ -151,8 +157,14 @@ internal sealed class PosCustomerOrderBranchDirectory(
         return new CustomerOrderBranchSnapshot(
             branch.Id,
             string.IsNullOrWhiteSpace(branch.Name) ? branch.Code : branch.Name,
+            branch.CustomerOrderingEnabled,
             branch.PickupEnabled,
             branch.DeliveryEnabled,
+            branch.CustomerOrderingOperational,
+            branch.PickupOperational,
+            branch.DeliveryOperational,
+            branch.OnlineOrdersPaused,
+            branch.StoreStatusMessage,
             branch.Latitude,
             branch.Longitude,
             policy);

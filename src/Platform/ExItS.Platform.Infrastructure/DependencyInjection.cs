@@ -68,6 +68,9 @@ public static class DependencyInjection
         services.AddScoped<IOrganizationSalesDocumentAcknowledgmentRepository, OrganizationSalesDocumentAcknowledgmentRepository>();
         services.AddScoped<IOrganizationBusinessTypeActivationRepository, OrganizationBusinessTypeActivationRepository>();
         services.AddScoped<IOrganizationBranchRepository, OrganizationBranchRepository>();
+        services.AddScoped<IBranchOperatingHoursRepository, BranchOperatingHoursRepository>();
+        services.AddSingleton<IBranchOperatingHoursEvaluator, BranchOperatingHoursEvaluator>();
+        services.AddSingleton<IBranchFulfillmentReadinessEvaluator, BranchFulfillmentReadinessEvaluator>();
         services.AddScoped<IBranchDeliveryPolicyRepository, BranchDeliveryPolicyRepository>();
         services.AddSingleton<IDeliveryDistanceCalculator, HaversineDeliveryDistanceCalculator>();
         services.AddScoped<IPosDeviceRepository, PosDeviceRepository>();

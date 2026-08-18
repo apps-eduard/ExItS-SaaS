@@ -37,8 +37,9 @@ internal static class BranchAndDeviceEndpoints
                     body.CountryCode,
                     body.Latitude,
                     body.Longitude,
-                    body.PickupEnabled ?? true,
-                    body.DeliveryEnabled ?? false), ct).ConfigureAwait(false);
+                    body.PickupEnabled ?? false,
+                    body.DeliveryEnabled ?? false,
+                    body.CustomerOrderingEnabled ?? false), ct).ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, x => Results.Created($"/api/v1/platform/organizations/{organizationId}/branches/{x.Id}", x));
         });
         root.MapPut("/branches/{branchId:guid}", async (Guid organizationId, Guid branchId, UpdateBranchRequest body, UpdateBranch useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
@@ -60,8 +61,8 @@ internal static class BranchAndDeviceEndpoints
                     body.Latitude,
                     body.Longitude,
                     body.ClearCoordinates,
-                    body.PickupEnabled,
-                    body.DeliveryEnabled), ct).ConfigureAwait(false), Results.Ok);
+                    body.ContactPhone,
+                    body.TimeZoneId), ct).ConfigureAwait(false), Results.Ok);
         });
         root.MapPost("/branches/{branchId:guid}/archive", async (Guid organizationId, Guid branchId, ArchiveBranch useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
         {
@@ -94,6 +95,100 @@ internal static class BranchAndDeviceEndpoints
                 OrganizationBranchId.From(branchId),
                 body,
                 ct).ConfigureAwait(false), Results.Ok);
+        });
+
+        root.MapGet("/branches/{branchId:guid}/fulfillment-readiness", async (
+            Guid organizationId,
+            Guid branchId,
+            GetBranchFulfillmentReadiness useCase,
+            PlatformOrganizationAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
+            if (denied is not null) return denied;
+            return PlatformApiResults.FromResult(
+                await useCase.ExecuteAsync(
+                    PlatformOrganizationId.From(organizationId),
+                    OrganizationBranchId.From(branchId),
+                    ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+
+        root.MapGet("/branches/{branchId:guid}/operating-hours", async (
+            Guid organizationId,
+            Guid branchId,
+            GetBranchOperatingHours useCase,
+            PlatformOrganizationAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
+            if (denied is not null) return denied;
+            return PlatformApiResults.FromResult(
+                await useCase.ExecuteAsync(
+                    PlatformOrganizationId.From(organizationId),
+                    OrganizationBranchId.From(branchId),
+                    ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+
+        root.MapPut("/branches/{branchId:guid}/operating-hours", async (
+            Guid organizationId,
+            Guid branchId,
+            UpsertBranchOperatingHoursRequest body,
+            UpsertBranchOperatingHours useCase,
+            PlatformOrganizationAuthz authz,
+            CancellationToken ct) =>
+        {
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, "platform.organization.branch_hours_updated", ct).ConfigureAwait(false);
+            if (denied is not null) return denied;
+            return PlatformApiResults.FromResult(
+                await useCase.ExecuteAsync(
+                    PlatformOrganizationId.From(organizationId),
+                    OrganizationBranchId.From(branchId),
+                    new UpsertBranchOperatingHoursCommand(body.Days ?? []),
+                    ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+
+        root.MapPut("/branches/{branchId:guid}/fulfillment-settings", async (
+            Guid organizationId,
+            Guid branchId,
+            UpdateBranchFulfillmentSettingsRequest body,
+            UpdateBranchFulfillmentSettings useCase,
+            PlatformOrganizationAuthz authz,
+            CancellationToken ct) =>
+        {
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, "platform.organization.branch_fulfillment_updated", ct).ConfigureAwait(false);
+            if (denied is not null) return denied;
+            return PlatformApiResults.FromResult(
+                await useCase.ExecuteAsync(
+                    PlatformOrganizationId.From(organizationId),
+                    OrganizationBranchId.From(branchId),
+                    new UpdateBranchFulfillmentSettingsCommand(
+                        body.CustomerOrderingEnabled,
+                        body.PickupEnabled,
+                        body.DeliveryEnabled),
+                    ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+
+        root.MapPost("/branches/{branchId:guid}/online-orders-pause", async (
+            Guid organizationId,
+            Guid branchId,
+            SetBranchOnlineOrdersPausedRequest body,
+            SetBranchOnlineOrdersPaused useCase,
+            PlatformOrganizationAuthz authz,
+            CancellationToken ct) =>
+        {
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, "platform.organization.branch_orders_paused", ct).ConfigureAwait(false);
+            if (denied is not null) return denied;
+            return PlatformApiResults.FromResult(
+                await useCase.ExecuteAsync(
+                    PlatformOrganizationId.From(organizationId),
+                    OrganizationBranchId.From(branchId),
+                    new SetBranchOnlineOrdersPausedCommand(body.Paused, body.Reason),
+                    ct).ConfigureAwait(false),
+                Results.Ok);
         });
 
         root.MapGet("/pos-devices", async (Guid organizationId, ListDevices useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
@@ -226,7 +321,8 @@ internal sealed record CreateBranchRequest(
     decimal? Latitude = null,
     decimal? Longitude = null,
     bool? PickupEnabled = null,
-    bool? DeliveryEnabled = null);
+    bool? DeliveryEnabled = null,
+    bool? CustomerOrderingEnabled = null);
 internal sealed record UpdateBranchRequest(
     string? Name,
     string? AddressLine1 = null,
@@ -239,8 +335,8 @@ internal sealed record UpdateBranchRequest(
     decimal? Latitude = null,
     decimal? Longitude = null,
     bool? ClearCoordinates = null,
-    bool? PickupEnabled = null,
-    bool? DeliveryEnabled = null);
+    string? ContactPhone = null,
+    string? TimeZoneId = null);
 internal sealed record UpsertBranchDeliveryPolicyRequest(
     decimal MinimumOrderAmount,
     decimal BaseDeliveryFee,
@@ -259,3 +355,12 @@ internal sealed record RedeemPosDeviceRegistrationTokenRequest(
     string? AppVersion = null);
 internal sealed record RenamePosDeviceRequest(string? FriendlyName);
 internal sealed record AuthorizePosDeviceRequest(string? InstallationDeviceId, Guid? BranchId = null);
+
+internal sealed record UpsertBranchOperatingHoursRequest(IReadOnlyList<BranchOperatingHoursDayDto>? Days);
+
+internal sealed record UpdateBranchFulfillmentSettingsRequest(
+    bool? CustomerOrderingEnabled = null,
+    bool? PickupEnabled = null,
+    bool? DeliveryEnabled = null);
+
+internal sealed record SetBranchOnlineOrdersPausedRequest(bool Paused, string? Reason = null);

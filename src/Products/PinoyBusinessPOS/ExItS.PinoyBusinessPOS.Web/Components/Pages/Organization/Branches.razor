@@ -3,6 +3,7 @@
 @inject OrgWebShellState Shell
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
 @inject IStringLocalizer<OrgWebResources> L
 
 <PageTitle>@L["Branches_Title"]</PageTitle>
@@ -68,13 +69,13 @@ else
                                 <div class="org-note">@string.Join(", ", new[] { b.AddressLine2, b.City, b.Region, b.PostalCode, b.CountryCode }.Where(s => !string.IsNullOrWhiteSpace(s)))</div>
                             </td>
                             <td>
-                                @if (b.PickupEnabled) { <span class="org-badge">Pickup</span> }
-                                @if (b.DeliveryEnabled) { <span class="org-badge">Delivery</span> }
+                                <div class="org-note">Online: @FulfillmentOnline(b)</div>
+                                <div class="org-note">Pickup: @(b.PickupEnabled ? "Enabled" : "Disabled") · Delivery: @FulfillmentDelivery(b)</div>
                             </td>
                             <td>@(b.Latitude is null ? "—" : $"{b.Latitude:0.######}, {b.Longitude:0.######}")</td>
                             <td><OrgStatusBadge Text="@OrgWebUi.Badge(b.Status)" Tone="@b.Status" /></td>
                             <td class="org-actions">
-                                <Button Size="@ButtonSize.Small" Disabled="_busy" OnClick="() => OpenEditAsync(b)">@L["Common_Edit"]</Button>
+                                <Button Size="@ButtonSize.Small" Disabled="_busy" OnClick="() => Nav.NavigateTo($\"/organization/branches/{b.Id:D}\")">@L["Common_Edit"]</Button>
                                 @if (!b.IsPrimary && !string.Equals(b.Status, "Archived", StringComparison.OrdinalIgnoreCase))
                                 {
                                     <Button Size="@ButtonSize.Small" Danger Disabled="_busy" OnClick="() => ArchiveAsync(b)">@L["Branches_Archive"]</Button>
@@ -87,7 +88,7 @@ else
         </div>
     }
 
-    <Modal Title="@(_editing is null ? L["Branches_Add"].Value : L["Branches_Edit"].Value)"
+    <Modal Title="@L["Branches_Add"].Value"
            Visible="_formOpen"
            ConfirmLoading="_busy"
            OnOk="SaveFormAsync"
@@ -95,38 +96,15 @@ else
            OkText="@L["Common_Save"].Value"
            CancelText="@L["Common_Cancel"].Value"
            DestroyOnClose>
-        <ExitsField Label="@L["Branches_FieldCode"]">
-            <Input @bind-Value="_formCode" Disabled="_editing is not null || _busy" Placeholder="@L["Branches_FieldCode"]" />
-        </ExitsField>
-        <ExitsField Label="@L["Branches_FieldName"]">
-            <Input @bind-Value="_formName" Disabled="_busy" Placeholder="@L["Branches_FieldName"]" />
-        </ExitsField>
         <div class="org-form-grid">
-            <ExitsField Label="Address line 1"><Input @bind-Value="_address1" Disabled="_busy" /></ExitsField>
-            <ExitsField Label="Address line 2"><Input @bind-Value="_address2" Disabled="_busy" /></ExitsField>
+            <ExitsField Label="@L["Branches_FieldCode"]">
+                <Input @bind-Value="_formCode" Disabled="_busy" Placeholder="@L["Branches_FieldCode"]" />
+            </ExitsField>
+            <ExitsField Label="@L["Branches_FieldName"]">
+                <Input @bind-Value="_formName" Disabled="_busy" Placeholder="@L["Branches_FieldName"]" />
+            </ExitsField>
             <ExitsField Label="City / municipality"><Input @bind-Value="_city" Disabled="_busy" /></ExitsField>
-            <ExitsField Label="Province / region"><Input @bind-Value="_region" Disabled="_busy" /></ExitsField>
-            <ExitsField Label="Postal code"><Input @bind-Value="_postalCode" Disabled="_busy" /></ExitsField>
-            <ExitsField Label="Country code"><Input @bind-Value="_countryCode" Disabled="_busy" /></ExitsField>
-            <ExitsField Label="Latitude"><Input @bind-Value="_latitude" Disabled="_busy" /></ExitsField>
-            <ExitsField Label="Longitude"><Input @bind-Value="_longitude" Disabled="_busy" /></ExitsField>
         </div>
-        <div class="org-form-grid">
-            <label><input type="checkbox" @bind="_pickupEnabled" disabled="@_busy" /> Pickup enabled</label>
-            <label><input type="checkbox" @bind="_deliveryEnabled" disabled="@_busy" /> Delivery enabled</label>
-        </div>
-        @if (_deliveryEnabled)
-        {
-            <h4>Delivery policy</h4>
-            <div class="org-form-grid">
-                <ExitsField Label="Minimum order"><Input @bind-Value="_minimumOrder" Disabled="_busy" /></ExitsField>
-                <ExitsField Label="Base fee"><Input @bind-Value="_baseFee" Disabled="_busy" /></ExitsField>
-                <ExitsField Label="Included km"><Input @bind-Value="_includedKm" Disabled="_busy" /></ExitsField>
-                <ExitsField Label="Additional fee / km"><Input @bind-Value="_additionalPerKm" Disabled="_busy" /></ExitsField>
-                <ExitsField Label="Maximum km"><Input @bind-Value="_maximumKm" Disabled="_busy" /></ExitsField>
-                <ExitsField Label="Free delivery threshold"><Input @bind-Value="_freeThreshold" Disabled="_busy" /></ExitsField>
-            </div>
-        }
     </Modal>
     </div>
 }
@@ -140,23 +118,7 @@ else
     private string? _success;
     private string? _formCode;
     private string? _formName;
-    private string? _address1;
-    private string? _address2;
     private string? _city;
-    private string? _region;
-    private string? _postalCode;
-    private string? _countryCode;
-    private string? _latitude;
-    private string? _longitude;
-    private bool _pickupEnabled = true;
-    private bool _deliveryEnabled;
-    private string _minimumOrder = "0";
-    private string _baseFee = "0";
-    private string _includedKm = "0";
-    private string _additionalPerKm = "0";
-    private string _maximumKm = "0";
-    private string? _freeThreshold;
-    private OrganizationBranchDto? _editing;
     private BranchCapacityDto? _capacity;
     private List<OrganizationBranchDto> _items = [];
 
@@ -195,33 +157,16 @@ else
 
     private Task OpenCreateAsync()
     {
-        _editing = null;
-        _formCode = _formName = _address1 = _address2 = _city = _region = _postalCode = _countryCode = _latitude = _longitude = null;
-        _pickupEnabled = true;
-        _deliveryEnabled = false;
+        _formCode = _formName = _city = null;
         _formOpen = true;
         return Task.CompletedTask;
     }
 
-    private Task OpenEditAsync(OrganizationBranchDto branch)
-    {
-        _editing = branch;
-        _formCode = branch.Code;
-        _formName = branch.Name;
-        _address1 = branch.AddressLine1; _address2 = branch.AddressLine2; _city = branch.City; _region = branch.Region;
-        _postalCode = branch.PostalCode; _countryCode = branch.CountryCode;
-        _latitude = branch.Latitude?.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        _longitude = branch.Longitude?.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        _pickupEnabled = branch.PickupEnabled; _deliveryEnabled = branch.DeliveryEnabled;
-        if (branch.DeliveryPolicy is { } policy)
-        {
-            _minimumOrder = F(policy.MinimumOrderAmount); _baseFee = F(policy.BaseDeliveryFee); _includedKm = F(policy.IncludedDistanceKm);
-            _additionalPerKm = F(policy.AdditionalFeePerKm); _maximumKm = F(policy.MaximumDeliveryDistanceKm);
-            _freeThreshold = policy.FreeDeliveryThreshold is null ? null : F(policy.FreeDeliveryThreshold.Value);
-        }
-        _formOpen = true;
-        return Task.CompletedTask;
-    }
+    private static string FulfillmentOnline(OrganizationBranchDto b) =>
+        b.OnlineOrdersPaused ? "Paused" : b.CustomerOrderingEnabled ? "Enabled" : b.CustomerOrderingReady ? "Ready" : "Setup required";
+
+    private static string FulfillmentDelivery(OrganizationBranchDto b) =>
+        b.DeliveryEnabled ? "Enabled" : "Setup required";
 
     private void CloseForm()
     {
@@ -231,7 +176,6 @@ else
         }
 
         _formOpen = false;
-        _editing = null;
     }
 
     private async Task SaveFormAsync()
@@ -243,7 +187,7 @@ else
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(_formName) || (_editing is null && string.IsNullOrWhiteSpace(_formCode)))
+        if (string.IsNullOrWhiteSpace(_formName) || string.IsNullOrWhiteSpace(_formCode))
         {
             _error = L["Branches_ValidationRequired"];
             return;
@@ -252,49 +196,16 @@ else
         _busy = true;
         try
         {
-            Guid? savedBranchId = _editing?.Id;
-            if (_editing is null)
+            var result = await Platform.CreateBranchAsync(
+                orgId.Value,
+                new CreateBranchRequest(_formCode!.Trim(), _formName.Trim(), City: _city?.Trim()));
+            if (!result.IsSuccess)
             {
-                var result = await Platform.CreateBranchAsync(
-                    orgId.Value,
-                    new CreateBranchRequest(_formCode!.Trim(), _formName.Trim(), _address1, _address2, _city, _region,
-                        _postalCode, _countryCode, NullableD(_latitude), NullableD(_longitude), _pickupEnabled, _deliveryEnabled));
-                if (!result.IsSuccess)
-                {
-                    _error = OrgWebUi.Error(result.Error, L["Error_GenericLoad"]);
-                    return;
-                }
-                savedBranchId = result.Data?.Id;
-            }
-            else
-            {
-                var result = await Platform.UpdateBranchAsync(
-                    orgId.Value,
-                    _editing.Id,
-                    new UpdateBranchRequest(_formName.Trim(), _address1, _address2, _city, _region, _postalCode,
-                        _countryCode, null, NullableD(_latitude), NullableD(_longitude),
-                        string.IsNullOrWhiteSpace(_latitude) && string.IsNullOrWhiteSpace(_longitude), _pickupEnabled, _deliveryEnabled));
-                if (!result.IsSuccess)
-                {
-                    _error = OrgWebUi.Error(result.Error, L["Error_GenericLoad"]);
-                    return;
-                }
-            }
-
-            if (_deliveryEnabled && savedBranchId is Guid branchId)
-            {
-                var policy = await Platform.UpsertBranchDeliveryPolicyAsync(orgId.Value, branchId,
-                    new UpsertBranchDeliveryPolicyRequest(D(_minimumOrder), D(_baseFee), D(_includedKm),
-                        D(_additionalPerKm), D(_maximumKm), NullableD(_freeThreshold)));
-                if (!policy.IsSuccess)
-                {
-                    _error = OrgWebUi.Error(policy.Error, L["Error_GenericLoad"]);
-                    return;
-                }
+                _error = OrgWebUi.Error(result.Error, L["Error_GenericLoad"]);
+                return;
             }
 
             _formOpen = false;
-            _editing = null;
             _error = null;
             _success = L["Branches_Saved"];
             await LoadAsync();
@@ -304,11 +215,6 @@ else
             _busy = false;
         }
     }
-
-    private static string F(decimal value) => value.ToString(System.Globalization.CultureInfo.InvariantCulture);
-    private static decimal D(string? value) => decimal.TryParse(value, System.Globalization.NumberStyles.Number,
-        System.Globalization.CultureInfo.InvariantCulture, out var parsed) ? parsed : 0m;
-    private static decimal? NullableD(string? value) => string.IsNullOrWhiteSpace(value) ? null : D(value);
 
     private async Task ArchiveAsync(OrganizationBranchDto branch)
     {

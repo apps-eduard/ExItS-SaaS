@@ -10046,6 +10046,42 @@
   <data name="Branches_FreeThreshold" xml:space="preserve"><value>Free delivery threshold</value></data>
   <data name="Branches_FeeExamples" xml:space="preserve"><value>Example delivery fees</value></data>
   <data name="Branches_ColStatus" xml:space="preserve"><value>Status</value></data>
+  <data name="Branches_ContactPhone" xml:space="preserve"><value>Store phone</value></data>
+  <data name="Branches_TimeZone" xml:space="preserve"><value>Timezone (optional override)</value></data>
+  <data name="Branches_OperatingHours" xml:space="preserve"><value>Operating hours</value></data>
+  <data name="Branches_Closed" xml:space="preserve"><value>Closed</value></data>
+  <data name="Branches_Open24h" xml:space="preserve"><value>24h</value></data>
+  <data name="Branches_SaveHours" xml:space="preserve"><value>Save hours</value></data>
+  <data name="Branches_HoursSaved" xml:space="preserve"><value>Operating hours saved.</value></data>
+  <data name="Branches_OnlineOrders" xml:space="preserve"><value>Online orders</value></data>
+  <data name="Branches_Enable" xml:space="preserve"><value>Enable</value></data>
+  <data name="Branches_EnableDelivery" xml:space="preserve"><value>Enable delivery</value></data>
+  <data name="Branches_DisableDelivery" xml:space="preserve"><value>Disable delivery</value></data>
+  <data name="Branches_PauseOrders" xml:space="preserve"><value>Pause online orders</value></data>
+  <data name="Branches_ResumeOrders" xml:space="preserve"><value>Resume online orders</value></data>
+  <data name="Branches_FulfillmentFailed" xml:space="preserve"><value>Fulfillment settings could not be updated.</value></data>
+  <data name="Branches_DeliverySettingsHint" xml:space="preserve"><value>Configure pricing before enabling delivery.</value></data>
+  <data name="Branches_StatusReady" xml:space="preserve"><value>Ready</value></data>
+  <data name="Branches_StatusSetupRequired" xml:space="preserve"><value>Setup required</value></data>
+  <data name="Branches_StatusSetupReady" xml:space="preserve"><value>Ready to enable</value></data>
+  <data name="Branches_StatusEnabled" xml:space="preserve"><value>Enabled</value></data>
+  <data name="Branches_StatusDisabled" xml:space="preserve"><value>Disabled</value></data>
+  <data name="Branches_StatusPaused" xml:space="preserve"><value>Paused</value></data>
+  <data name="Branches_StatusOffHours" xml:space="preserve"><value>Off hours</value></data>
+  <data name="Branches_StatusNotInPlan" xml:space="preserve"><value>Not in plan</value></data>
+  <data name="Branches_CheckAddress" xml:space="preserve"><value>Branch address</value></data>
+  <data name="Branches_CheckLocation" xml:space="preserve"><value>Map location</value></data>
+  <data name="Branches_CheckHours" xml:space="preserve"><value>Store hours</value></data>
+  <data name="Branches_CheckPhone" xml:space="preserve"><value>Store phone</value></data>
+  <data name="Branches_CheckPricing" xml:space="preserve"><value>Delivery pricing</value></data>
+  <data name="Branches_CheckDistance" xml:space="preserve"><value>Service distance</value></data>
+  <data name="Branches_Day_Monday" xml:space="preserve"><value>Mon</value></data>
+  <data name="Branches_Day_Tuesday" xml:space="preserve"><value>Tue</value></data>
+  <data name="Branches_Day_Wednesday" xml:space="preserve"><value>Wed</value></data>
+  <data name="Branches_Day_Thursday" xml:space="preserve"><value>Thu</value></data>
+  <data name="Branches_Day_Friday" xml:space="preserve"><value>Fri</value></data>
+  <data name="Branches_Day_Saturday" xml:space="preserve"><value>Sat</value></data>
+  <data name="Branches_Day_Sunday" xml:space="preserve"><value>Sun</value></data>
   <data name="Orders_Title" xml:space="preserve"><value>Orders</value></data>
   <data name="Orders_SellerSubtitle" xml:space="preserve"><value>Review and fulfill customer pickup and delivery orders.</value></data>
   <data name="Orders_PersonalSubtitle" xml:space="preserve"><value>Track orders you placed with merchants.</value></data>

@@ -55,6 +55,7 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<OrganizationBusinessTypeActivationRecord> OrganizationBusinessTypeActivations =>
         Set<OrganizationBusinessTypeActivationRecord>();
     internal DbSet<OrganizationBranchRecord> OrganizationBranches => Set<OrganizationBranchRecord>();
+    internal DbSet<BranchOperatingHoursRecord> BranchOperatingHours => Set<BranchOperatingHoursRecord>();
     internal DbSet<BranchDeliveryPolicyRecord> BranchDeliveryPolicies => Set<BranchDeliveryPolicyRecord>();
     internal DbSet<PosDeviceRecord> PosDevices => Set<PosDeviceRecord>();
     internal DbSet<PosDeviceRegistrationTokenRecord> PosDeviceRegistrationTokens => Set<PosDeviceRegistrationTokenRecord>();
@@ -530,8 +531,13 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2);
             entity.Property(e => e.Latitude).HasColumnName("latitude").HasPrecision(10, 7);
             entity.Property(e => e.Longitude).HasColumnName("longitude").HasPrecision(10, 7);
-            entity.Property(e => e.PickupEnabled).HasColumnName("pickup_enabled").HasDefaultValue(true);
+            entity.Property(e => e.PickupEnabled).HasColumnName("pickup_enabled").HasDefaultValue(false);
             entity.Property(e => e.DeliveryEnabled).HasColumnName("delivery_enabled").HasDefaultValue(false);
+            entity.Property(e => e.CustomerOrderingEnabled).HasColumnName("customer_ordering_enabled").HasDefaultValue(false);
+            entity.Property(e => e.ContactPhone).HasColumnName("contact_phone").HasMaxLength(32);
+            entity.Property(e => e.TimeZoneId).HasColumnName("time_zone_id").HasMaxLength(64);
+            entity.Property(e => e.OnlineOrdersPaused).HasColumnName("online_orders_paused").HasDefaultValue(false);
+            entity.Property(e => e.OnlineOrdersPauseReason).HasColumnName("online_orders_pause_reason").HasMaxLength(32);
             entity.Property(e => e.IsPrimary).HasColumnName("is_primary");
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(16).IsRequired();
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
@@ -542,6 +548,25 @@ public sealed class PlatformDbContext : DbContext
                 .HasName("AK_organization_branches_id_organization_id");
             entity.HasIndex(e => e.Status);
             entity.HasOne<PlatformOrganizationRecord>().WithMany().HasForeignKey(e => e.OrganizationId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<BranchOperatingHoursRecord>(entity =>
+        {
+            entity.ToTable("branch_operating_hours");
+            entity.HasKey(e => new { e.BranchId, e.DayOfWeek });
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.DayOfWeek).HasColumnName("day_of_week");
+            entity.Property(e => e.IsClosed).HasColumnName("is_closed");
+            entity.Property(e => e.IsOpen24Hours).HasColumnName("is_open_24_hours");
+            entity.Property(e => e.OpenTime).HasColumnName("open_time");
+            entity.Property(e => e.CloseTime).HasColumnName("close_time");
+            entity.HasIndex(e => e.OrganizationId);
+            entity.HasOne<OrganizationBranchRecord>()
+                .WithMany()
+                .HasForeignKey(e => new { e.BranchId, e.OrganizationId })
+                .HasPrincipalKey(b => new { b.Id, b.OrganizationId })
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<BranchDeliveryPolicyRecord>(entity =>

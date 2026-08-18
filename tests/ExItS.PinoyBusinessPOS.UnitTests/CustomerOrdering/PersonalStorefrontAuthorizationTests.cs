@@ -254,24 +254,29 @@ public sealed class PersonalStorefrontAuthorizationTests
             CancellationToken cancellationToken = default)
         {
             GetBranchCallCount++;
-            return Task.FromResult<CustomerOrderBranchSnapshot?>(new CustomerOrderBranchSnapshot(
-                Branch,
-                "Main",
-                PickupEnabled: true,
-                DeliveryEnabled: true,
-                14.5995m,
-                120.9842m,
-                new CustomerOrderBranchDeliveryPolicySnapshot(0m, 49m, 2m, 10m, 15m, 500m)));
+            return Task.FromResult<CustomerOrderBranchSnapshot?>(OperationalBranch());
         }
 
         public Task<IReadOnlyList<CustomerOrderBranchSnapshot>> ListBranchesAsync(
             Guid sellerOrganizationId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<CustomerOrderBranchSnapshot>>([
-                new CustomerOrderBranchSnapshot(
-                    Branch, "Main", true, true, 14.5995m, 120.9842m,
-                    new CustomerOrderBranchDeliveryPolicySnapshot(0m, 49m, 2m, 10m, 15m, 500m))
-            ]);
+            Task.FromResult<IReadOnlyList<CustomerOrderBranchSnapshot>>([OperationalBranch()]);
+
+        private CustomerOrderBranchSnapshot OperationalBranch() =>
+            new(
+                Branch,
+                "Main",
+                CustomerOrderingEnabled: true,
+                PickupEnabled: true,
+                DeliveryEnabled: true,
+                CustomerOrderingOperational: true,
+                PickupOperational: true,
+                DeliveryOperational: true,
+                OnlineOrdersPaused: false,
+                StoreStatusMessage: "Open",
+                14.5995m,
+                120.9842m,
+                new CustomerOrderBranchDeliveryPolicySnapshot(0m, 49m, 2m, 10m, 15m, 500m));
     }
 
     private sealed class CountingStock : ICustomerOrderStockService

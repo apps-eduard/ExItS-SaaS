@@ -131,12 +131,17 @@ public sealed class GetCustomerStorefront
             .ListBranchesAsync(sellerOrganizationId, cancellationToken)
             .ConfigureAwait(false);
         var branchDtos = branches
-            .Where(b => b.PickupEnabled || b.DeliveryEnabled)
+            .Where(b => b.CustomerOrderingEnabled && (b.PickupEnabled || b.DeliveryEnabled))
             .Select(b => new CustomerStorefrontBranchDto(
                 b.BranchId,
                 b.Name,
                 b.PickupEnabled,
-                b.DeliveryEnabled && capability.CanCustomerDelivery))
+                b.DeliveryEnabled && capability.CanCustomerDelivery,
+                b.CustomerOrderingOperational,
+                b.PickupOperational,
+                b.DeliveryOperational && capability.CanCustomerDelivery,
+                b.OnlineOrdersPaused,
+                b.StoreStatusMessage))
             .ToList();
 
         return ApplicationResult<CustomerStorefrontDto>.Success(new CustomerStorefrontDto(

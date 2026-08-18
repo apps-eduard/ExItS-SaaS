@@ -21,7 +21,12 @@ public sealed record CustomerStorefrontBranchDto(
     Guid BranchId,
     string Name,
     bool PickupEnabled,
-    bool DeliveryEnabled);
+    bool DeliveryEnabled,
+    bool CustomerOrderingOperational,
+    bool PickupOperational,
+    bool DeliveryOperational,
+    bool OnlineOrdersPaused,
+    string? StoreStatusMessage);
 
 public sealed record CustomerStorefrontDto(
     Guid OrganizationId,

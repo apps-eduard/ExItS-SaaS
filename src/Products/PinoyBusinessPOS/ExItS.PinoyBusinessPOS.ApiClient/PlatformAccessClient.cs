@@ -58,6 +58,55 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
             request,
             ct);
 
+    public Task<ApiResult<BranchFulfillmentReadinessDto>> GetBranchFulfillmentReadinessAsync(
+        Guid organizationId,
+        Guid branchId,
+        CancellationToken ct = default) =>
+        api.GetAsync<BranchFulfillmentReadinessDto>(
+            $"/api/v1/platform/organizations/{organizationId:D}/branches/{branchId:D}/fulfillment-readiness",
+            ct);
+
+    public Task<ApiResult<IReadOnlyList<BranchOperatingHoursDayDto>>> GetBranchOperatingHoursAsync(
+        Guid organizationId,
+        Guid branchId,
+        CancellationToken ct = default) =>
+        api.GetAsync<IReadOnlyList<BranchOperatingHoursDayDto>>(
+            $"/api/v1/platform/organizations/{organizationId:D}/branches/{branchId:D}/operating-hours",
+            ct);
+
+    public Task<ApiResult<BranchFulfillmentReadinessDto>> UpsertBranchOperatingHoursAsync(
+        Guid organizationId,
+        Guid branchId,
+        UpsertBranchOperatingHoursRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<BranchFulfillmentReadinessDto>(
+            HttpMethod.Put,
+            $"/api/v1/platform/organizations/{organizationId:D}/branches/{branchId:D}/operating-hours",
+            request,
+            ct);
+
+    public Task<ApiResult<BranchFulfillmentReadinessDto>> UpdateBranchFulfillmentSettingsAsync(
+        Guid organizationId,
+        Guid branchId,
+        UpdateBranchFulfillmentSettingsRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<BranchFulfillmentReadinessDto>(
+            HttpMethod.Put,
+            $"/api/v1/platform/organizations/{organizationId:D}/branches/{branchId:D}/fulfillment-settings",
+            request,
+            ct);
+
+    public Task<ApiResult<BranchFulfillmentReadinessDto>> SetBranchOnlineOrdersPausedAsync(
+        Guid organizationId,
+        Guid branchId,
+        SetBranchOnlineOrdersPausedRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<BranchFulfillmentReadinessDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{organizationId:D}/branches/{branchId:D}/online-orders-pause",
+            request,
+            ct);
+
     public Task<ApiResult<DeliveryFeePreviewDto>> PreviewBranchDeliveryFeeAsync(
         Guid organizationId,
         Guid branchId,

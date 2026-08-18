@@ -25,7 +25,14 @@ internal static class OrganizationBranchDeviceEntityMapper
             record.Latitude,
             record.Longitude,
             record.PickupEnabled,
-            record.DeliveryEnabled);
+            record.DeliveryEnabled,
+            record.CustomerOrderingEnabled,
+            record.ContactPhone,
+            record.TimeZoneId,
+            record.OnlineOrdersPaused,
+            string.IsNullOrWhiteSpace(record.OnlineOrdersPauseReason)
+                ? null
+                : Enum.Parse<OnlineOrdersPauseReason>(record.OnlineOrdersPauseReason));
 
     public static OrganizationBranchRecord ToRecord(OrganizationBranch branch) => new()
     {
@@ -43,6 +50,11 @@ internal static class OrganizationBranchDeviceEntityMapper
         Longitude = branch.Longitude,
         PickupEnabled = branch.PickupEnabled,
         DeliveryEnabled = branch.DeliveryEnabled,
+        CustomerOrderingEnabled = branch.CustomerOrderingEnabled,
+        ContactPhone = branch.ContactPhone,
+        TimeZoneId = branch.TimeZoneId,
+        OnlineOrdersPaused = branch.OnlineOrdersPaused,
+        OnlineOrdersPauseReason = branch.PauseReason?.ToString(),
         IsPrimary = branch.IsPrimary,
         Status = branch.Status.ToString(),
         CreatedAtUtc = branch.CreatedAtUtc,
@@ -62,6 +74,11 @@ internal static class OrganizationBranchDeviceEntityMapper
         record.Longitude = branch.Longitude;
         record.PickupEnabled = branch.PickupEnabled;
         record.DeliveryEnabled = branch.DeliveryEnabled;
+        record.CustomerOrderingEnabled = branch.CustomerOrderingEnabled;
+        record.ContactPhone = branch.ContactPhone;
+        record.TimeZoneId = branch.TimeZoneId;
+        record.OnlineOrdersPaused = branch.OnlineOrdersPaused;
+        record.OnlineOrdersPauseReason = branch.PauseReason?.ToString();
         record.Status = branch.Status.ToString();
         record.UpdatedAtUtc = branch.UpdatedAtUtc;
     }

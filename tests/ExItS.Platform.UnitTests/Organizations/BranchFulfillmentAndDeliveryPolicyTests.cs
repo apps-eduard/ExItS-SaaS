@@ -25,7 +25,8 @@ public sealed class BranchFulfillmentAndDeliveryPolicyTests
         Assert.Equal(DomainErrorCodes.OrganizationBranchDeliveryLocationRequired, ex.ErrorCode);
 
         branch.UpdateCoordinates(14.5547m, 121.0244m, T0.AddMinutes(2));
-        branch.SetFulfillmentCapabilities(true, true, T0.AddMinutes(3));
+        branch.SetCustomerOrderingEnabled(true, T0.AddMinutes(3));
+        branch.SetFulfillmentCapabilities(true, true, T0.AddMinutes(4));
         Assert.True(branch.CanOfferDeliveryLocation);
         Assert.True(branch.CanOfferPickup);
     }
@@ -93,12 +94,13 @@ public sealed class BranchFulfillmentAndDeliveryPolicyTests
     }
 
     [Fact]
-    public void Main_branch_defaults_pickup_enabled_delivery_disabled()
+    public void Main_branch_defaults_ordering_off_pickup_off_delivery_off()
     {
         var main = OrganizationBranch.CreateMainBranch(Org, T0);
-        Assert.True(main.PickupEnabled);
+        Assert.False(main.CustomerOrderingEnabled);
+        Assert.False(main.PickupEnabled);
         Assert.False(main.DeliveryEnabled);
-        Assert.True(main.CanOfferPickup);
+        Assert.False(main.CanOfferPickup);
         Assert.False(main.CanOfferDeliveryLocation);
     }
 }

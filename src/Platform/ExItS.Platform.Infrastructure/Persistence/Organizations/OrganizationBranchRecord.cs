@@ -16,6 +16,11 @@ internal sealed class OrganizationBranchRecord
     public decimal? Longitude { get; set; }
     public bool PickupEnabled { get; set; } = true;
     public bool DeliveryEnabled { get; set; }
+    public bool CustomerOrderingEnabled { get; set; }
+    public string? ContactPhone { get; set; }
+    public string? TimeZoneId { get; set; }
+    public bool OnlineOrdersPaused { get; set; }
+    public string? OnlineOrdersPauseReason { get; set; }
     public bool IsPrimary { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTimeOffset CreatedAtUtc { get; set; }

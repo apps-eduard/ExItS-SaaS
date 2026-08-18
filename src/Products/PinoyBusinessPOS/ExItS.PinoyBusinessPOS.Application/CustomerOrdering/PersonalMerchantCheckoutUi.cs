@@ -101,6 +101,8 @@ public static class PersonalMerchantCheckoutUi
             selected.Name,
             ShowFulfillmentToggle: pickupOk && deliveryOk,
             ShowBranchSelector: eligible.Count > 1,
-            CanPlace: true);
+            CanPlace: string.Equals(fulfillment, Delivery, StringComparison.OrdinalIgnoreCase)
+                ? selected.DeliveryOperational
+                : selected.PickupOperational);
     }
 }

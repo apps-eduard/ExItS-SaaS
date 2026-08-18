@@ -4,14 +4,22 @@ namespace ExItS.PinoyBusinessPOS.UnitTests.CustomerOrdering;
 
 public sealed class PersonalMerchantCheckoutUiTests
 {
+    private static CustomerStorefrontBranchDto Branch(
+        Guid id,
+        string name,
+        bool pickup,
+        bool delivery,
+        bool operational = true) =>
+        new(id, name, pickup, delivery, operational, operational && pickup, operational && delivery, false, operational ? "Open" : "Closed");
+
     private static readonly CustomerStorefrontBranchDto PickupOnly =
-        new(Guid.Parse("11111111-1111-1111-1111-111111111111"), "Main Branch", true, false);
+        Branch(Guid.Parse("11111111-1111-1111-1111-111111111111"), "Main Branch", true, false);
     private static readonly CustomerStorefrontBranchDto BothModes =
-        new(Guid.Parse("22222222-2222-2222-2222-222222222222"), "Both Branch", true, true);
+        Branch(Guid.Parse("22222222-2222-2222-2222-222222222222"), "Both Branch", true, true);
     private static readonly CustomerStorefrontBranchDto DeliveryOnly =
-        new(Guid.Parse("33333333-3333-3333-3333-333333333333"), "Delivery Branch", false, true);
+        Branch(Guid.Parse("33333333-3333-3333-3333-333333333333"), "Delivery Branch", false, true);
     private static readonly CustomerStorefrontBranchDto SecondPickup =
-        new(Guid.Parse("44444444-4444-4444-4444-444444444444"), "Second Branch", true, false);
+        Branch(Guid.Parse("44444444-4444-4444-4444-444444444444"), "Second Branch", true, false);
 
     [Fact]
     public void One_pickup_branch_auto_selects_and_hides_selector()

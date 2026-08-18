@@ -186,18 +186,35 @@ public sealed class PlaceCustomerOrder
                     "Fulfillment branch was not found for this organization.");
             }
 
-            if (fulfillmentType == CustomerOrderFulfillmentType.Pickup && !branch.PickupEnabled)
+            if (fulfillmentType == CustomerOrderFulfillmentType.Pickup && !branch.PickupOperational)
             {
                 return ApplicationResult<CustomerOrderDto>.Failure(
                     ApplicationErrorCodes.CustomerOrderBranchCapability,
-                    "Pickup is not enabled for this branch.");
+                    branch.OnlineOrdersPaused
+                        ? "This store is temporarily not accepting online orders."
+                        : branch.CustomerOrderingEnabled
+                            ? "Pickup is not available at this time."
+                            : "Pickup is not enabled for this branch.");
             }
 
-            if (fulfillmentType == CustomerOrderFulfillmentType.Delivery && !branch.DeliveryEnabled)
+            if (fulfillmentType == CustomerOrderFulfillmentType.Delivery && !branch.DeliveryOperational)
             {
                 return ApplicationResult<CustomerOrderDto>.Failure(
                     ApplicationErrorCodes.CustomerOrderBranchCapability,
-                    "Delivery is not enabled for this branch.");
+                    branch.OnlineOrdersPaused
+                        ? "This store is temporarily not accepting online orders."
+                        : branch.DeliveryEnabled
+                            ? "Delivery is not available at this time."
+                            : "Delivery is not enabled for this branch.");
+            }
+
+            if (!branch.CustomerOrderingOperational)
+            {
+                return ApplicationResult<CustomerOrderDto>.Failure(
+                    ApplicationErrorCodes.CustomerOrderOrderingUnavailable,
+                    branch.OnlineOrdersPaused
+                        ? "This store is temporarily not accepting online orders."
+                        : "This store is not accepting online orders right now.");
             }
 
             if (request.Lines is null || request.Lines.Count == 0)
@@ -448,6 +465,40 @@ public sealed class QuoteCustomerOrderDelivery
                 return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Failure(
                     ApplicationErrorCodes.CustomerOrderBranchNotFound,
                     "Fulfillment branch was not found for this organization.");
+            }
+
+            if (!branch.CustomerOrderingOperational)
+            {
+                return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Success(
+                    new QuoteCustomerOrderDeliveryDto(
+                        Available: false,
+                        UnavailableReason: branch.OnlineOrdersPaused
+                            ? "This store is temporarily not accepting online orders."
+                            : "This store is not accepting online orders right now.",
+                        DistanceKm: 0m,
+                        ExtraDistanceKm: 0m,
+                        DistanceCharge: 0m,
+                        DeliveryFee: 0m,
+                        FreeDeliveryApplied: false,
+                        MinimumOrderAmount: branch.DeliveryPolicy?.MinimumOrderAmount ?? 0m,
+                        MaximumDeliveryDistanceKm: branch.DeliveryPolicy?.MaximumDeliveryDistanceKm ?? 0m));
+            }
+
+            if (!branch.DeliveryOperational)
+            {
+                return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Success(
+                    new QuoteCustomerOrderDeliveryDto(
+                        Available: false,
+                        UnavailableReason: branch.DeliveryEnabled
+                            ? "Delivery is not available at this time."
+                            : "Delivery is not enabled for this branch.",
+                        DistanceKm: 0m,
+                        ExtraDistanceKm: 0m,
+                        DistanceCharge: 0m,
+                        DeliveryFee: 0m,
+                        FreeDeliveryApplied: false,
+                        MinimumOrderAmount: branch.DeliveryPolicy?.MinimumOrderAmount ?? 0m,
+                        MaximumDeliveryDistanceKm: branch.DeliveryPolicy?.MaximumDeliveryDistanceKm ?? 0m));
             }
 
             if (!branch.DeliveryEnabled || branch.DeliveryPolicy is null
