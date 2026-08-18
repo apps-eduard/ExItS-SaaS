@@ -81,3 +81,16 @@ Filipino (`fil-PH`) equivalents live in `PosResources.fil-PH.resx`.
 ## LocalStore
 
 No LocalStore version bump for connectivity state. Session secrets remain in secure storage only.
+
+## PIN sign-in recovery
+
+PIN verifies a previously enrolled identity on this device. When the Platform is reachable, MAUI reissues an AccessToken with `GrantType: session` using that **same user's** stored Platform session handle (`pos.pin.recovery.session.{userId}`). Results are classified:
+
+| Outcome | Behavior |
+|---|---|
+| ValidatedOnline | Replace local-only state; existing reconnect auto-sync may run |
+| TransientUnavailable | Keep LocalOffline grant; do not revoke; retry later |
+| ExplicitlyRevoked | Invalidate that user's grant/handle per existing policy; no session continues |
+| LocalOffline | Server unreachable, or no recoverable handle for this user |
+
+Wrong PIN never calls Platform. User B never receives User A's AccessToken. Logout revokes the bearer and clears the active session slot; it does **not** destroy the per-user Platform session handle, so PIN can recover online until the server session is expired/revoked. PIN itself is never sent to the server and is not a password replacement.

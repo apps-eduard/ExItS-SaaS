@@ -29,19 +29,43 @@ Tab switching navigates between `/signin` and `/register`. Deep links and naviga
 
 Sign Up does **not** invent phone/password registration. Personal registration remains display name + email, then activation.
 
-## Offline PIN on Sign In
+## PIN on Sign In
 
-- No large offline information panel
-- No full-width **Use PIN** / **Continue offline** button in the auth card
-- Compact **Use PIN** text link in the Remember / Forgot row when a persisted offline grant+PIN is eligible **and** the OS reports no network interface (or a sign-in attempt just failed as unreachable)
-- Debug Local Validation may still treat `NetworkAccess.None` as connected for password/API attempts; PIN offer uses `HasNoNetworkInterfaceAsync` so airplane mode still shows **Use PIN**
-- Online with a working interface: PIN link hidden
-- Slow-login prompt still offers **Use PIN instead** when eligible
-- Tapping PIN still navigates to `/offline-pin`
-- Failed/unreachable login uses existing error copy only after a real Sign in attempt (`SignIn_ServerUnreachablePinHint` / `SignIn_OfflineNoPinMessage`)
-- First-time / incomplete offline setup never shows a PIN field, never navigates to PIN unlock, and never says **Invalid PIN** / **Incorrect PIN**. That copy is only after an enrolled verifier exists and the entered PIN is wrong.
-- `SignIn_OfflineNoPinMessage`: internet is required to sign in once and set up offline access
-- Eligibility is persisted grant + PIN verifier + matching device id (see [P19 offline PIN](../reports/P19-offline-operability-foundation.md)). Local Validation uses that same architecture; it does not fake authorization.
+PIN is a **trusted device-local sign-in method** for previously enrolled users, online and offline. It is not a second PIN system. Do not call it “offline PIN” in normal online UX; the accessible name is **Sign in with PIN**.
+
+- Facebook and Google stay circular placeholders (unchanged).
+- When this device has ≥1 **complete** eligible PIN identity (enrolled user + PIN verifier + valid matching device-bound grant, unexpired/non-revoked), a matching round **keypad** button appears immediately beside Google.
+- If no eligible identity exists, the keypad is hidden. Visibility does not depend on typed/remembered username or online/offline state.
+- Helper copy when the keypad is shown: **Tap the keypad button beside Google to sign in with your PIN.** (`SignIn_PinKeypadHint`, EN + fil-PH)
+- One eligible identity → `/offline-pin` PIN entry. Multiple → existing account chooser, then PIN.
+- Slow-login still offers **Use PIN instead** when eligible. The compact Remember-row **Use PIN** text link was removed so the keypad is the primary action.
+- First-time / incomplete setup never shows a PIN field and never says **Invalid PIN** / **Incorrect PIN**. That copy is only after an enrolled verifier exists and the entered PIN is wrong.
+- `SignIn_OfflineNoPinMessage`: internet is required to sign in once and set up PIN when no eligible identity exists.
+
+## Canonical PIN meaning
+
+| Concept | Meaning |
+|---|---|
+| PIN | Fast device-local identity verification |
+| Server | Authoritative revalidation when reachable |
+| Offline grant | Bounded permission when the server is unavailable |
+| Sync | Resumes after successful online recovery (`IOfflineReconnectAutoSync`) |
+| Lock | Switch local identities without logout; sessions are not reused across users |
+
+## PIN then server recovery
+
+After a correct PIN:
+
+1. Local PIN + device + grant are verified (wrong PIN never contacts the server; existing lockout applies).
+2. If the server is unreachable, or no recoverable Platform session handle exists for **that** user → **LocalOffline** (existing offline restrictions; no fabricated server credentials).
+3. If the server is reachable, a short **Revalidating** state (`pin_revalidating`) runs before privileged online UI:
+   - **ValidatedOnline** — replace local-only state with a normal online session for the **same** selected user; existing sync/recovery runs.
+   - **TransientUnavailable** — timeout / DNS / 5xx / transport; keep the local/offline session; **do not** revoke the grant; retry later through existing restore/reconnect.
+   - **ExplicitlyRevoked** — only existing authoritative reasons (user/device/product/org assignment revoked); invalidate that user's local authorization; return to sign-in. Generic network failure is never revocation.
+
+Online recovery uses `GrantType: session` with a per-user Platform session handle (`pos.pin.recovery.session.{userId}`). PIN and passwords are never stored or sent to the server. Logout clears the active app session and bearer; it does **not** call Platform session logout, so PIN on this device can reissue an AccessToken until the server session expires or is explicitly revoked.
+
+Lock keeps User A's tokens in the active slot. Unlocking User B never copies A's AccessToken / PlatformSessionToken. Pending outbox rows keep the original `user_id`; switching users does not rewrite creator/audit ownership.
 
 ## Online login → PIN onboarding
 
@@ -76,7 +100,7 @@ Check persisted eligibility
  Use PIN    Internet required
    │
  Verify PIN
-   ├─ correct → offline app
+   ├─ correct → recover online if reachable, else LocalOffline
    └─ wrong   → Incorrect PIN / lockout
 ```
 
@@ -95,7 +119,7 @@ When `IsDevelopmentAuthenticationEnabled` **and** Local Validation quick-login i
 
 ## Social providers
 
-Circular Facebook / Google actions remain **placeholders**. Accessible names: “Continue with Facebook”, “Continue with Google”. Real OAuth is not implied and is not implemented.
+Circular Facebook / Google actions remain **placeholders**. Accessible names: “Continue with Facebook”, “Continue with Google”. Real OAuth is not implied and is not implemented. When PIN is eligible, a matching round keypad (**Sign in with PIN**) sits immediately beside Google.
 
 ## Honesty
 
