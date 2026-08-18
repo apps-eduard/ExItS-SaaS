@@ -120,13 +120,15 @@ public interface IAuthenticationService
         CancellationToken ct = default);
 
     /// <summary>
-    /// Unlocks a previously established offline operate grant with the local PIN after cold-start
-    /// when the server is unreachable. Never creates or extends authorization.
+    /// Verifies the local PIN for an enrolled identity, then revalidates an online session
+    /// when the server is reachable. Wrong PIN never contacts the server.
+    /// <see cref="AuthResult.ServerOutcome"/> distinguishes ValidatedOnline, LocalOffline,
+    /// TransientUnavailable, and ExplicitlyRevoked.
     /// When multiple cashiers are enrolled, use <see cref="UnlockOfflineWithPinAsync(Guid, string, CancellationToken)"/>.
     /// </summary>
     Task<AuthResult> UnlockOfflineWithPinAsync(string pin, CancellationToken ct = default);
 
-    /// <summary>Unlocks offline operate for a specific enrolled user on this device.</summary>
+    /// <summary>PIN sign-in for a specific enrolled user on this device. Never reuses another user's tokens.</summary>
     Task<AuthResult> UnlockOfflineWithPinAsync(Guid userId, string pin, CancellationToken ct = default);
 
     /// <summary>Safe list of cashiers enrolled for offline unlock on this device (no secrets).</summary>
@@ -154,6 +156,19 @@ public interface IAuthenticationService
 
     /// <summary>Removes one enrolled offline cashier from this device (grant + PIN).</summary>
     Task RemoveEnrolledOfflineUserAsync(Guid userId, CancellationToken ct = default);
+}
+
+/// <summary>
+/// Per-user Platform session handle used to recover an online AccessToken after PIN
+/// (GrantType=session). Never stores passwords, PINs, or AccessTokens.
+/// </summary>
+public interface IPinRecoverySessionStore
+{
+    Task SaveAsync(Guid userId, string platformSessionToken, CancellationToken ct = default);
+
+    Task<string?> LoadAsync(Guid userId, CancellationToken ct = default);
+
+    Task ClearAsync(Guid userId, CancellationToken ct = default);
 }
 
 /// <summary>Local security-event sink. Does not replace Platform audit authority.</summary>

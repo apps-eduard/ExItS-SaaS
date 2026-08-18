@@ -547,6 +547,21 @@
   <data name="SignIn_UsePin" xml:space="preserve">
     <value>Use PIN</value>
   </data>
+  <data name="SignIn_WithPin" xml:space="preserve">
+    <value>Sign in with PIN</value>
+  </data>
+  <data name="SignIn_PinKeypadHint" xml:space="preserve">
+    <value>Tap the keypad button beside Google to sign in with your PIN.</value>
+  </data>
+  <data name="SignIn_PinEntrySubtitle" xml:space="preserve">
+    <value>Enter your PIN to continue.</value>
+  </data>
+  <data name="SignIn_PinLabel" xml:space="preserve">
+    <value>PIN</value>
+  </data>
+  <data name="SignIn_SigningYouIn" xml:space="preserve">
+    <value>Signing you in...</value>
+  </data>
   <data name="SignIn_OfflineTitle" xml:space="preserve">
     <value>You're offline</value>
   </data>

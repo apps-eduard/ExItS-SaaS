@@ -310,6 +310,10 @@ public sealed class AuthOfflineUxLayerTests
         Assert.Contains("pos-offline-pin__signout", unlock, StringComparison.Ordinal);
         Assert.Contains("Offline_PinShow", unlock, StringComparison.Ordinal);
         Assert.Contains("NotifyApiReachability(false)", unlock, StringComparison.Ordinal);
+        Assert.Contains("NotifyApiReachability(true)", unlock, StringComparison.Ordinal);
+        Assert.Contains("PinSignInServerOutcome.ValidatedOnline", unlock, StringComparison.Ordinal);
+        Assert.Contains("SignIn_WithPin", unlock, StringComparison.Ordinal);
+        Assert.Contains("SignIn_SigningYouIn", unlock, StringComparison.Ordinal);
         Assert.Contains("pos-offline-pin__accounts", unlock, StringComparison.Ordinal);
         Assert.Contains("pos-offline-pin__account-meta", unlock, StringComparison.Ordinal);
         Assert.Contains("user.OrganizationDisplayName", unlock, StringComparison.Ordinal);
@@ -351,10 +355,12 @@ public sealed class AuthOfflineUxLayerTests
         Assert.Contains("SignIn_ContinueFacebook", signIn, StringComparison.Ordinal);
         Assert.Contains("ContinueWithGooglePlaceholderAsync", signIn, StringComparison.Ordinal);
         Assert.Contains("ContinueWithFacebookPlaceholderAsync", signIn, StringComparison.Ordinal);
-        Assert.Contains("SignIn_UsePin", signIn, StringComparison.Ordinal);
-        Assert.Contains("ShowOfflinePinAction", signIn, StringComparison.Ordinal);
-        Assert.Contains("HasNoNetworkInterfaceAsync", signIn, StringComparison.Ordinal);
-        Assert.Contains("_canUsePin && (_isOffline || _offerPinBecauseUnreachable)", signIn, StringComparison.Ordinal);
+        Assert.Contains("SignIn_UsePinInstead", signIn, StringComparison.Ordinal);
+        Assert.Contains("pos-auth-page__social-btn--pin", signIn, StringComparison.Ordinal);
+        Assert.Contains("SignIn_WithPin", signIn, StringComparison.Ordinal);
+        Assert.Contains("SignIn_PinKeypadHint", signIn, StringComparison.Ordinal);
+        Assert.DoesNotContain("ShowOfflinePinAction", signIn, StringComparison.Ordinal);
+        Assert.DoesNotContain("_canUsePin && (_isOffline || _offerPinBecauseUnreachable)", signIn, StringComparison.Ordinal);
         Assert.Contains("SignIn_OfflineNoPinMessage", signIn, StringComparison.Ordinal);
         Assert.DoesNotContain("SignIn_OfflineLimitedHint", signIn, StringComparison.Ordinal);
         Assert.DoesNotContain("SignIn_ContinueOffline", signIn, StringComparison.Ordinal);

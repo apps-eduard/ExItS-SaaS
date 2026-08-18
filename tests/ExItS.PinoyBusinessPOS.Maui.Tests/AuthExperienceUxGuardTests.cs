@@ -57,22 +57,27 @@ public sealed class AuthExperienceUxGuardTests
     }
 
     [Fact]
-    public void SignIn_pin_is_a_compact_offline_only_link()
+    public void SignIn_pin_keypad_appears_when_eligible_online_or_offline()
     {
         var signIn = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "SignIn.razor"));
-        Assert.Contains("ShowOfflinePinAction", signIn, StringComparison.Ordinal);
+        Assert.Contains("pos-auth-page__social-btn--pin", signIn, StringComparison.Ordinal);
+        Assert.Contains("SignIn_WithPin", signIn, StringComparison.Ordinal);
+        Assert.Contains("SignIn_PinKeypadHint", signIn, StringComparison.Ordinal);
+        Assert.Contains("aria-label=\"@L[\"SignIn_WithPin\"]\"", signIn, StringComparison.Ordinal);
         Assert.Contains("HasNoNetworkInterfaceAsync", signIn, StringComparison.Ordinal);
-        Assert.Contains("_canUsePin && (_isOffline || _offerPinBecauseUnreachable)", signIn, StringComparison.Ordinal);
-        Assert.Contains("SignIn_UsePin", signIn, StringComparison.Ordinal);
         Assert.Contains("SignIn_RememberMe", signIn, StringComparison.Ordinal);
         Assert.Contains("SignIn_ForgotPassword", signIn, StringComparison.Ordinal);
         Assert.Contains("/offline-pin", signIn, StringComparison.Ordinal);
         Assert.Contains("EvaluateOfflineColdStartOfferAsync", signIn, StringComparison.Ordinal);
+        Assert.Contains("@if (_canUsePin)", signIn, StringComparison.Ordinal);
+        Assert.DoesNotContain("ShowOfflinePinAction", signIn, StringComparison.Ordinal);
+        Assert.DoesNotContain("_canUsePin && (_isOffline || _offerPinBecauseUnreachable)", signIn, StringComparison.Ordinal);
         Assert.DoesNotContain("pos-signin__offline-panel", signIn, StringComparison.Ordinal);
         Assert.DoesNotContain("SignIn_OfflineLimitedHint", signIn, StringComparison.Ordinal);
         Assert.DoesNotContain("SignIn_ContinueOffline", signIn, StringComparison.Ordinal);
         Assert.DoesNotContain("else if (_canUsePin)", signIn, StringComparison.Ordinal);
         Assert.DoesNotContain("_canUsePin = true;", signIn, StringComparison.Ordinal);
+        Assert.DoesNotContain("fingerprint", signIn, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -94,6 +99,13 @@ public sealed class AuthExperienceUxGuardTests
         Assert.Contains("SignIn_ContinueFacebook", signIn, StringComparison.Ordinal);
         Assert.Contains("ContinueWithGooglePlaceholderAsync", signIn, StringComparison.Ordinal);
         Assert.Contains("ContinueWithFacebookPlaceholderAsync", signIn, StringComparison.Ordinal);
+        Assert.Contains("pos-auth-page__social-btn--facebook", signIn, StringComparison.Ordinal);
+        Assert.Contains("pos-auth-page__social-btn--google", signIn, StringComparison.Ordinal);
+        Assert.Contains("pos-auth-page__social-btn--pin", signIn, StringComparison.Ordinal);
+        var css = File.ReadAllText(Path.Combine(maui, "wwwroot", "app.css"));
+        Assert.Contains(".pos-auth-page__social-btn--pin", css, StringComparison.Ordinal);
+        Assert.Contains("width: 3rem", css, StringComparison.Ordinal);
+        Assert.Contains("border-radius: 50%", css, StringComparison.Ordinal);
         Assert.Contains("PreferenceKeys.RememberMe", signIn, StringComparison.Ordinal);
         Assert.Contains("BelowCard", signIn, StringComparison.Ordinal);
         Assert.Contains("pos-auth-page__below", shell, StringComparison.Ordinal);
@@ -125,6 +137,7 @@ public sealed class AuthExperienceUxGuardTests
                  {
                      "SignIn_BrandTitle", "SignIn_BrandSubtitle", "SignIn_TabSignIn", "SignIn_TabSignUp",
                      "SignIn_AuthTabsLabel", "SignIn_QuickLoginPlaceholder", "SignIn_UsePin",
+                     "SignIn_WithPin", "SignIn_PinKeypadHint", "SignIn_SigningYouIn",
                      "Offline_PinSetupIncomplete", "Offline_PinForgotAction", "Offline_PinForgotOfflineMessage",
                      "SignIn_OfflineNoPinMessage"
                  })

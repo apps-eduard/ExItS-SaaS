@@ -82,13 +82,6 @@
                     <span>@L["SignIn_RememberMe"]</span>
                 </label>
                 <div class="pos-signin__meta-links">
-                    @if (ShowOfflinePinAction)
-                    {
-                        <button type="button" class="pos-signin__forgot" disabled="@_busy" @onclick="UsePinInsteadAsync">
-                            @L["SignIn_UsePin"]
-                        </button>
-                        <span class="pos-signin__meta-sep" aria-hidden="true">·</span>
-                    }
                     <button type="button" class="pos-signin__forgot" disabled="@_busy" @onclick="GoForgotPassword">
                         @L["SignIn_ForgotPassword"]
                     </button>
@@ -135,7 +128,37 @@
                 </span>
                 <span class="pos-auth-page__social-text">@L["SignIn_ContinueGoogle"]</span>
             </button>
+
+            @if (_canUsePin)
+            {
+                <button type="button"
+                        class="pos-auth-page__social-btn pos-auth-page__social-btn--pin"
+                        disabled="@_busy"
+                        title="@L["SignIn_WithPin"]"
+                        aria-label="@L["SignIn_WithPin"]"
+                        @onclick="UsePinInsteadAsync">
+                    <span class="pos-auth-page__social-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="20" height="20" focusable="false" fill="currentColor">
+                            <circle cx="6" cy="6" r="1.7"/>
+                            <circle cx="12" cy="6" r="1.7"/>
+                            <circle cx="18" cy="6" r="1.7"/>
+                            <circle cx="6" cy="12" r="1.7"/>
+                            <circle cx="12" cy="12" r="1.7"/>
+                            <circle cx="18" cy="12" r="1.7"/>
+                            <circle cx="6" cy="18" r="1.7"/>
+                            <circle cx="12" cy="18" r="1.7"/>
+                            <circle cx="18" cy="18" r="1.7"/>
+                        </svg>
+                    </span>
+                    <span class="pos-auth-page__social-text">@L["SignIn_WithPin"]</span>
+                </button>
+            }
         </div>
+
+        @if (_canUsePin)
+        {
+            <p class="pos-auth-page__pin-hint">@L["SignIn_PinKeypadHint"]</p>
+        }
     </ChildContent>
     <BelowCard>
         @if (_quickLoginAvailable)
@@ -188,10 +211,6 @@
     private List<LocalValidationQuickLoginIdentityDto> _quickLoginIdentities = [];
     private Dictionary<string, LocalValidationQuickLoginIdentityDto> _quickLoginByKey = new(StringComparer.Ordinal);
 
-    private bool _offerPinBecauseUnreachable;
-
-    private bool ShowOfflinePinAction => _canUsePin && (_isOffline || _offerPinBecauseUnreachable);
-
     protected override async Task OnInitializedAsync()
     {
         Connectivity.ConnectivityChanged += OnConnectivityChanged;
@@ -225,10 +244,6 @@
         // Debug Local Validation treats NetworkAccess.None as connected for API attempts.
         // PIN offer must still appear when the OS reports no interface (airplane / radios off).
         _isOffline = !apiReachableHint || noRadio;
-        if (!_isOffline)
-        {
-            _offerPinBecauseUnreachable = false;
-        }
 
         var offer = await Auth.EvaluateOfflineColdStartOfferAsync();
         _canUsePin = offer.CanOfferPinUnlock;
@@ -411,7 +426,6 @@
         // page loaded offline; only after a real sign-in attempt.
         if (_canUsePin)
         {
-            _offerPinBecauseUnreachable = true;
             _errors = [L["SignIn_ServerUnreachablePinHint"].Value];
             return;
         }

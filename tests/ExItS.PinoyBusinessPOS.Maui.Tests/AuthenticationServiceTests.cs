@@ -1560,6 +1560,207 @@ public sealed class AuthenticationServiceTests
         var unlock = await harness.Auth.UnlockOfflineWithPinAsync("000000");
         Assert.False(unlock.Succeeded);
         Assert.False(harness.Current.HasPosAccess);
+        Assert.Equal(PinSignInServerOutcome.NotAttempted, unlock.ServerOutcome);
+    }
+
+    [Fact]
+    public async Task Wrong_pin_never_contacts_the_server()
+    {
+        var harness = await SeedOfflineGrantHarnessAsync();
+        var issueBefore = harness.Access.IssueTokenCalls;
+        var introspectBefore = harness.Access.IntrospectCalls;
+
+        var unlock = await harness.Auth.UnlockOfflineWithPinAsync("000000");
+
+        Assert.False(unlock.Succeeded);
+        Assert.Equal(PinSignInServerOutcome.NotAttempted, unlock.ServerOutcome);
+        Assert.Equal(issueBefore, harness.Access.IssueTokenCalls);
+        Assert.Equal(introspectBefore, harness.Access.IntrospectCalls);
+    }
+
+    [Fact]
+    public async Task Offline_correct_pin_stays_local_offline_when_unreachable()
+    {
+        var harness = await SeedOfflineGrantHarnessAsync();
+        var unlock = await harness.Auth.UnlockOfflineWithPinAsync("123456");
+        Assert.True(unlock.Succeeded);
+        Assert.Equal(PinSignInServerOutcome.LocalOffline, unlock.ServerOutcome);
+        Assert.Null(unlock.Session!.AccessToken);
+        Assert.Equal("offline_grant", unlock.Session.AccessReasonCode);
+        Assert.NotNull(await harness.GrantStore.LoadGrantAsync(harness.UserId));
+    }
+
+    [Fact]
+    public async Task Online_pin_recovers_session_for_same_user_after_logout()
+    {
+        var harness = await SeedOnlinePinHarnessAsync();
+        harness.Current.Set((await new SecureSessionStore(harness.Tokens!).LoadAsync()).Session);
+        await harness.Auth.LogoutAsync();
+        Assert.False(harness.Current.IsAuthenticated);
+        Assert.Equal("platform-session-a", await harness.Recovery!.LoadAsync(harness.UserId));
+
+        ConfigureOnlineRecovery(harness, harness.UserId, "token-online-a");
+        var issueBefore = harness.Access.IssueTokenCalls;
+        var unlock = await harness.Auth.UnlockOfflineWithPinAsync(harness.UserId, "123456");
+
+        Assert.True(unlock.Succeeded);
+        Assert.Equal(PinSignInServerOutcome.ValidatedOnline, unlock.ServerOutcome);
+        Assert.Equal(harness.UserId, unlock.Session!.UserId);
+        Assert.Equal("token-online-a", unlock.Session.AccessToken);
+        Assert.True(unlock.Session.HasPosAccess);
+        Assert.True(harness.Access.IssueTokenCalls > issueBefore);
+    }
+
+    [Fact]
+    public async Task Transient_server_failure_after_valid_pin_keeps_grant()
+    {
+        var harness = await SeedOnlinePinHarnessAsync();
+        harness.Current.Set((await new SecureSessionStore(harness.Tokens!).LoadAsync()).Session);
+        await harness.Auth.LogoutAsync();
+        harness.Access.IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Timeout();
+
+        var unlock = await harness.Auth.UnlockOfflineWithPinAsync(harness.UserId, "123456");
+        Assert.True(unlock.Succeeded);
+        Assert.Equal(PinSignInServerOutcome.TransientUnavailable, unlock.ServerOutcome);
+        Assert.Null(unlock.Session!.AccessToken);
+        Assert.Equal("offline_grant", unlock.Session.AccessReasonCode);
+        Assert.NotNull(await harness.GrantStore.LoadGrantAsync(harness.UserId));
+        Assert.Equal("platform-session-a", await harness.Recovery!.LoadAsync(harness.UserId));
+    }
+
+    [Fact]
+    public async Task Explicit_server_denial_after_valid_pin_invalidates_grant()
+    {
+        var harness = await SeedOnlinePinHarnessAsync();
+        harness.Current.Set((await new SecureSessionStore(harness.Tokens!).LoadAsync()).Session);
+        await harness.Auth.LogoutAsync();
+        harness.Access.IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Unauthorized(
+            new ApiError("denied", "revoked", "application.pos_device.revoked", null, 401));
+
+        var unlock = await harness.Auth.UnlockOfflineWithPinAsync(harness.UserId, "123456");
+        Assert.False(unlock.Succeeded);
+        Assert.Equal(PinSignInServerOutcome.ExplicitlyRevoked, unlock.ServerOutcome);
+        Assert.False(harness.Current.IsAuthenticated);
+        Assert.Null(await harness.GrantStore.LoadGrantAsync(harness.UserId));
+        Assert.Null(await harness.Recovery!.LoadAsync(harness.UserId));
+    }
+
+    [Fact]
+    public async Task Lock_then_other_user_pin_does_not_reuse_prior_access_token()
+    {
+        var userB = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+        var harness = await SeedOnlinePinHarnessAsync();
+        var sessionStore = new SecureSessionStore(harness.Tokens!);
+        var loaded = await sessionStore.LoadAsync();
+        harness.Current.Set(loaded.Session!);
+        ConfigureOnlineRecovery(harness, harness.UserId, "token-a");
+        Assert.True((await harness.Auth.RestoreSessionAsync()).Succeeded);
+        Assert.Equal("opaque-token", harness.Current.Session!.AccessToken);
+
+        var now = DateTimeOffset.UtcNow;
+        var sessionB = new AuthSession(
+            userB,
+            "Cashier B",
+            "cashier2",
+            "b@example.com",
+            harness.OrgId,
+            "Store",
+            now,
+            now.AddHours(8),
+            HasPosAccess: true,
+            AccessReasonCode: "allowed",
+            SubscriptionStatus: "Active",
+            EnabledFeatureCodes: ["pos.sell"],
+            AccessToken: "token-b-old",
+            PlatformSessionToken: "platform-session-b",
+            BranchId: Guid.Parse("55555555-5555-5555-5555-555555555555"),
+            PosDeviceId: Guid.Parse("66666666-6666-6666-6666-666666666666"));
+        var grantService = new OfflineOperatingGrantService(
+            harness.GrantStore,
+            harness.Device,
+            harness.GrantOptions);
+        await grantService.EstablishFromOnlineSessionAsync(sessionB, harness.Device.DeviceId, "Cashier");
+        Assert.True((await grantService.SetPinAsync("222222")).Succeeded);
+        await harness.Recovery!.SaveAsync(userB, "platform-session-b");
+
+        await harness.Auth.LockAsync();
+        ConfigureOnlineRecovery(harness, userB, "token-b-online");
+        var unlock = await harness.Auth.UnlockOfflineWithPinAsync(userB, "222222");
+
+        Assert.True(unlock.Succeeded);
+        Assert.Equal(PinSignInServerOutcome.ValidatedOnline, unlock.ServerOutcome);
+        Assert.Equal(userB, unlock.Session!.UserId);
+        Assert.Equal("token-b-online", unlock.Session.AccessToken);
+        Assert.NotEqual("opaque-token", unlock.Session.AccessToken);
+        Assert.NotEqual("token-a", unlock.Session.AccessToken);
+        Assert.NotNull(await harness.GrantStore.LoadGrantAsync(harness.UserId));
+        Assert.NotNull(await harness.GrantStore.LoadPinVerifierAsync(harness.UserId));
+    }
+
+    [Fact]
+    public void Offline_queue_binds_creator_to_active_identity_and_pin_switch_does_not_rewrite_it()
+    {
+        var queue = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.LocalStore",
+            "OfflineOperationQueue.cs"));
+        var auth = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Application",
+            "Auth",
+            "AuthenticationService.cs"));
+
+        Assert.Contains("$user_id", queue, StringComparison.Ordinal);
+        Assert.Contains("active.Identity.UserId", queue, StringComparison.Ordinal);
+        Assert.DoesNotContain("UPDATE offline_operations", auth, StringComparison.Ordinal);
+        Assert.DoesNotContain("SET user_id", auth, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("SelectSameUserLeftover", auth, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Configured_user_is_not_prompted_for_pin_setup_again()
+    {
+        var harness = await SeedOfflineGrantHarnessAsync();
+        harness.Access.IntrospectResult = ApiResult<PlatformAccessTokenIntrospectionDto>.Success(
+            new PlatformAccessTokenIntrospectionDto(
+                Active: true,
+                TokenId: Guid.NewGuid(),
+                UserId: harness.UserId,
+                Username: "cashier1",
+                DisplayName: "Cashier",
+                OrganizationId: harness.OrgId,
+                OrganizationDisplayName: "Store",
+                ProductCode: PosProductCodes.PinoyBusinessPos,
+                ExpiresAtUtc: DateTimeOffset.UtcNow.AddHours(1),
+                ProductAccessAllowed: true,
+                ProductAccessReasonCode: null,
+                SubscriptionStatus: "Active",
+                EnabledFeatureCodes: ["pos.sell"]));
+        Assert.True((await harness.Auth.RestoreSessionAsync()).Succeeded);
+        Assert.True((await harness.Auth.EvaluateCurrentUserOfflinePinReadinessAsync()).CanOfferPinUnlock);
+        Assert.False((await harness.Auth.EvaluateCurrentUserOfflinePinReadinessAsync()).RequiresPinEnrollment);
+    }
+
+    private static string FindRepoRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null)
+        {
+            if (File.Exists(Path.Combine(dir.FullName, "ExItS.slnx")))
+            {
+                return dir.FullName;
+            }
+
+            dir = dir.Parent;
+        }
+
+        throw new InvalidOperationException("Repository root not found.");
     }
 
     private static async Task<OfflineGrantHarness> SeedOfflineGrantHarnessAsync()
@@ -1623,7 +1824,8 @@ public sealed class AuthenticationServiceTests
             accessPolicy: accessPolicy,
             timeProvider: null,
             offlineGrant: grantService,
-            deviceIdentity: device);
+            deviceIdentity: device,
+            connectivity: connectivity);
 
         return new OfflineGrantHarness(
             auth, access, current, accessPolicy, grantStore, userId, orgId, device, grantOptions);
@@ -1681,7 +1883,8 @@ public sealed class AuthenticationServiceTests
             localContext: null,
             accessPolicy: accessPolicy,
             offlineGrant: grantService,
-            deviceIdentity: device);
+            deviceIdentity: device,
+            connectivity: connectivity);
 
         return new OfflineGrantHarness(
             auth, access, current, accessPolicy, grantStore, userId, Guid.Empty, device, grantOptions);
@@ -1696,7 +1899,118 @@ public sealed class AuthenticationServiceTests
         Guid UserId,
         Guid OrgId,
         FakeDeviceIdentity Device,
-        IOptions<OfflineOperatingGrantOptions> GrantOptions);
+        IOptions<OfflineOperatingGrantOptions> GrantOptions,
+        ISecureTokenStore? Tokens = null,
+        IPinRecoverySessionStore? Recovery = null);
+
+    private static async Task<OfflineGrantHarness> SeedOnlinePinHarnessAsync()
+    {
+        var userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var orgId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var tokens = new SessionScopedMemoryTokenStore();
+        var recovery = new PinRecoverySessionStore(tokens);
+        var prefs = new MemoryOnboardingStore();
+        await prefs.SetSelectedOrganizationIdAsync(orgId);
+
+        var sessionStore = new SecureSessionStore(tokens);
+        var now = DateTimeOffset.UtcNow;
+        var shell = new AuthSession(
+            userId,
+            "Cashier",
+            "cashier1",
+            "c@example.com",
+            orgId,
+            "Store",
+            now,
+            now.AddHours(8),
+            HasPosAccess: true,
+            AccessReasonCode: "allowed",
+            SubscriptionStatus: "Active",
+            EnabledFeatureCodes: ["pos.sell"],
+            AccessToken: "opaque-token",
+            PlatformSessionToken: "platform-session-a",
+            BranchId: Guid.Parse("55555555-5555-5555-5555-555555555555"),
+            PosDeviceId: Guid.Parse("66666666-6666-6666-6666-666666666666"));
+        await sessionStore.SaveAsync(shell, Guid.NewGuid().ToString("N"));
+
+        var grantStore = new MemoryOfflineGrantStore();
+        var device = new FakeDeviceIdentity("device-a");
+        var grantOptions = Options.Create(new OfflineOperatingGrantOptions
+        {
+            DurationHours = 720,
+            PinMinLength = 6,
+            MaxFailedPinAttempts = 5,
+            PinLockoutMinutes = 15,
+            PinHashIterations = 10_000
+        });
+        var grantService = new OfflineOperatingGrantService(grantStore, device, grantOptions);
+        await grantService.EstablishFromOnlineSessionAsync(shell, device.DeviceId, "Cashier");
+        Assert.True((await grantService.SetPinAsync("123456")).Succeeded);
+        grantService = new OfflineOperatingGrantService(grantStore, device, grantOptions);
+
+        var current = new CurrentUserContext();
+        var connectivity = new FakeConnectivity(online: true);
+        var accessPolicy = new ProtectedShellAccessPolicy(current, connectivity);
+        await accessPolicy.InitializeAsync();
+        var access = new FakeAccessClient();
+        var auth = new AuthenticationService(
+            new StubAppInfo("Development"),
+            sessionStore,
+            current,
+            prefs,
+            access,
+            new LoggingAuthEventSink(NullLogger<LoggingAuthEventSink>.Instance),
+            localContext: null,
+            accessPolicy: accessPolicy,
+            offlineGrant: grantService,
+            deviceIdentity: device,
+            connectivity: connectivity,
+            pinRecovery: recovery);
+
+        return new OfflineGrantHarness(
+            auth, access, current, accessPolicy, grantStore, userId, orgId, device, grantOptions, tokens, recovery);
+    }
+
+    private static void ConfigureOnlineRecovery(OfflineGrantHarness harness, Guid userId, string accessToken)
+    {
+        var now = DateTimeOffset.UtcNow;
+        harness.Access.IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Success(new PlatformAccessTokenIssueDto(
+            AccessToken: accessToken,
+            TokenType: "Bearer",
+            TokenId: Guid.NewGuid(),
+            UserId: userId,
+            Username: "cashier1",
+            DisplayName: "Cashier",
+            Email: "c@example.com",
+            ExpiresAtUtc: now.AddHours(8),
+            OrganizationId: harness.OrgId,
+            OrganizationDisplayName: "Store",
+            ProductCode: PosProductCodes.PinoyBusinessPos,
+            OrganizationSelectionState: "Single",
+            ActiveOrganizationCount: 1,
+            ProductAccessAllowed: true,
+            ProductAccessReasonCode: null));
+        harness.Access.IntrospectResult = ApiResult<PlatformAccessTokenIntrospectionDto>.Success(
+            new PlatformAccessTokenIntrospectionDto(
+                Active: true,
+                TokenId: Guid.NewGuid(),
+                UserId: userId,
+                Username: "cashier1",
+                DisplayName: "Cashier",
+                OrganizationId: harness.OrgId,
+                OrganizationDisplayName: "Store",
+                ProductCode: PosProductCodes.PinoyBusinessPos,
+                ExpiresAtUtc: now.AddHours(1),
+                ProductAccessAllowed: true,
+                ProductAccessReasonCode: null,
+                SubscriptionStatus: "Active",
+                EnabledFeatureCodes: ["pos.sell"]));
+        harness.Access.AuthorizePosDeviceResult = ApiResult<PosDeviceAuthorizationDto>.Success(
+            new PosDeviceAuthorizationDto(
+                Guid.Parse("66666666-6666-6666-6666-666666666666"),
+                Guid.Parse("55555555-5555-5555-5555-555555555555"),
+                "device-a"));
+    }
 
     private sealed class FakeDeviceIdentity(string deviceId) : IDeviceIdentityProvider
     {
@@ -1825,14 +2139,23 @@ public sealed class AuthenticationServiceTests
         public Task<ApiResult<EffectiveAccessDto>> EvaluateAccessAsync(Guid userId, Guid organizationId, string productCode, CancellationToken ct = default) =>
             Task.FromResult(EvaluateResult);
 
-        public Task<ApiResult<PlatformAccessTokenIssueDto>> IssueTokenAsync(IssuePlatformAccessTokenRequest request, CancellationToken ct = default) =>
-            Task.FromResult(IssueTokenResult);
+        public int IssueTokenCalls { get; private set; }
+        public int IntrospectCalls { get; private set; }
+        public string? LastIntrospectedToken { get; private set; }
+
+        public Task<ApiResult<PlatformAccessTokenIssueDto>> IssueTokenAsync(IssuePlatformAccessTokenRequest request, CancellationToken ct = default)
+        {
+            IssueTokenCalls++;
+            return Task.FromResult(IssueTokenResult);
+        }
 
         public Task<ApiResult<PlatformAccessTokenIssueDto>> BindTokenAsync(BindPlatformAccessTokenRequest request, CancellationToken ct = default) =>
             Task.FromResult(BindTokenResult);
 
         public Task<ApiResult<PlatformAccessTokenIntrospectionDto>> IntrospectTokenAsync(string? token = null, CancellationToken ct = default)
         {
+            IntrospectCalls++;
+            LastIntrospectedToken = token;
             if (IntrospectThrows)
             {
                 throw new HttpRequestException("unreachable");
@@ -2174,6 +2497,53 @@ public sealed class AuthenticationServiceTests
             CancellationToken ct = default) =>
             Task.FromResult(ApiResult<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>.Success(
                 Array.Empty<LocalValidationQuickLoginIdentityDto>()));
+    }
+
+    private sealed class SessionScopedMemoryTokenStore : ISecureTokenStore
+    {
+        private static readonly string[] SessionKeys =
+        [
+            SecureTokenKeys.UserId,
+            SecureTokenKeys.SessionMarker,
+            SecureTokenKeys.IssuedAtUtc,
+            SecureTokenKeys.ExpiresAtUtc,
+            SecureTokenKeys.SubscriptionStatus,
+            SecureTokenKeys.FeatureGrants,
+            SecureTokenKeys.AccessToken,
+            SecureTokenKeys.PlatformSessionToken,
+            SecureTokenKeys.AccountClass,
+            SecureTokenKeys.AccountProfileId,
+            SecureTokenKeys.OrganizationContextLocked,
+            SecureTokenKeys.BranchId,
+            SecureTokenKeys.PosDeviceId
+        ];
+
+        private readonly Dictionary<string, string> _values = new(StringComparer.Ordinal);
+
+        public Task<string?> GetAsync(string key, CancellationToken ct = default) =>
+            Task.FromResult(_values.TryGetValue(key, out var value) ? value : null);
+
+        public Task SetAsync(string key, string value, CancellationToken ct = default)
+        {
+            _values[key] = value;
+            return Task.CompletedTask;
+        }
+
+        public Task ClearAsync(string key, CancellationToken ct = default)
+        {
+            _values.Remove(key);
+            return Task.CompletedTask;
+        }
+
+        public Task ClearAllSessionKeysAsync(CancellationToken ct = default)
+        {
+            foreach (var key in SessionKeys)
+            {
+                _values.Remove(key);
+            }
+
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class MemorySecureTokenStore : ISecureTokenStore

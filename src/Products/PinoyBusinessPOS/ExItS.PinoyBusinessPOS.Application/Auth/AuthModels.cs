@@ -52,6 +52,13 @@ public static class SecureTokenKeys
 
     public static string OfflinePinVerifierFor(Guid userId) =>
         $"pos.offline.pin.{userId:D}";
+
+    /// <summary>
+    /// Per-user Platform session handle for PIN sign-in recovery. Not an AccessToken, password, or PIN.
+    /// Survives MAUI session-key clear on logout (not a session slot).
+    /// </summary>
+    public static string PinRecoveryPlatformSessionFor(Guid userId) =>
+        $"pos.pin.recovery.session.{userId:D}";
 }
 
 public static class PreferenceKeys
@@ -176,8 +183,31 @@ public sealed record SignInRequest(
     Guid? PlatformUserId = null,
     Guid? AccountProfileId = null);
 
+/// <summary>
+/// Server follow-up after a locally verified PIN. Never collapse this to a boolean
+/// "server accepted" — transient failure is not revocation.
+/// </summary>
+public enum PinSignInServerOutcome
+{
+    /// <summary>PIN failed locally, or recovery was not attempted.</summary>
+    NotAttempted = 0,
+
+    /// <summary>PIN valid; device is offline or no recoverable Platform session exists.</summary>
+    LocalOffline = 1,
+
+    /// <summary>PIN valid; Platform session revalidated for the same user.</summary>
+    ValidatedOnline = 2,
+
+    /// <summary>PIN valid; server unreachable/timeout/5xx. Local grant retained.</summary>
+    TransientUnavailable = 3,
+
+    /// <summary>PIN valid; server explicitly denied this identity/device/assignment.</summary>
+    ExplicitlyRevoked = 4
+}
+
 public sealed record AuthResult(
     bool Succeeded,
     AuthFailureReason FailureReason,
     AuthSession? Session = null,
-    string? SafeMessageKey = null);
+    string? SafeMessageKey = null,
+    PinSignInServerOutcome ServerOutcome = PinSignInServerOutcome.NotAttempted);

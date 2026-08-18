@@ -3,7 +3,7 @@
 @using ExItS.DesignSystem.Components.Internal
 @using ExItS.PinoyBusinessPOS.Application.Offline
 @inject IAuthenticationService Auth
-@inject ICurrentUserContext CurrentUser
+@inject IConnectivityService Connectivity
 @inject RoleHomeResolver RoleHome
 @inject IPosSyncStatusService SyncStatus
 @inject NavigationManager Nav
@@ -18,11 +18,14 @@ else
     <Page>
         <header class="pos-offline-pin__header">
             <div class="pos-offline-pin__badge" aria-hidden="true">@IconGlyphs.Get("lock")</div>
-            <h1 class="pos-offline-pin__title">@L["Offline_PinTitle"]</h1>
+            <h1 class="pos-offline-pin__title">@L["SignIn_WithPin"]</h1>
             <p class="pos-offline-pin__subtitle">
-                @(_needsAccountPick ? L["Offline_SelectAccountSubtitle"] : L["Offline_PinSubtitle"])
+                @(_needsAccountPick ? L["Offline_SelectAccountSubtitle"] : L["SignIn_PinEntrySubtitle"])
             </p>
-            <p class="pos-offline-pin__status" role="status">@L["Offline_Banner"]</p>
+            @if (_showOfflineBanner)
+            {
+                <p class="pos-offline-pin__status" role="status">@L["Offline_Banner"]</p>
+            }
         </header>
 
         @if (!string.IsNullOrEmpty(_error))
@@ -32,6 +35,10 @@ else
         @if (!string.IsNullOrEmpty(_forgotHint))
         {
             <InlineMessage Tone="InlineMessageTone.Info">@_forgotHint</InlineMessage>
+        }
+        @if (_busy)
+        {
+            <p class="pos-offline-pin__status" role="status">@L["SignIn_SigningYouIn"]</p>
         }
 
         @if (_needsAccountPick)
@@ -73,7 +80,7 @@ else
             }
 
             <div class="pos-offline-pin__field">
-                <label class="pos-offline-pin__label" for="offline-pin">@L["Offline_PinLabel"]</label>
+                <label class="pos-offline-pin__label" for="offline-pin">@L["SignIn_PinLabel"]</label>
                 <div class="pos-offline-pin__input-wrap">
                     <input id="offline-pin"
                            type="@(_showPin ? "text" : "password")"
@@ -98,12 +105,12 @@ else
                 </div>
             </div>
 
-            <div class="pos-offline-pin__actions" role="group" aria-label="@L["Offline_PinTitle"]">
+            <div class="pos-offline-pin__actions" role="group" aria-label="@L["SignIn_WithPin"]">
                 <Button Variant="ButtonVariant.Primary"
                         IsLoading="_busy"
                         Disabled="_busy || string.IsNullOrWhiteSpace(_pin) || _selected is null"
                         OnClick="UnlockAsync">
-                    @L["Offline_PinUnlock"]
+                    @L["SignIn_WithPin"]
                 </Button>
                 <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="GoReconnectAsync">
                     @L["SyncStatus_ReconnectShort"]
@@ -133,6 +140,7 @@ else
     private bool _busy;
     private bool _showPin;
     private bool _ineligible;
+    private bool _showOfflineBanner;
     private IReadOnlyList<OfflineEnrolledUserSummary> _candidates = Array.Empty<OfflineEnrolledUserSummary>();
     private OfflineEnrolledUserSummary? _selected;
 
@@ -166,6 +174,15 @@ else
         if (_candidates.Count == 1)
         {
             _selected = _candidates[0];
+        }
+
+        try
+        {
+            _showOfflineBanner = !await Connectivity.IsConnectedAsync();
+        }
+        catch
+        {
+            _showOfflineBanner = false;
         }
     }
 
@@ -212,14 +229,35 @@ else
         try
         {
             var result = await Auth.UnlockOfflineWithPinAsync(_selected.UserId, _pin);
-            if (!result.Succeeded)
+            if (!result.Succeeded
+                || result.ServerOutcome == PinSignInServerOutcome.ExplicitlyRevoked)
             {
                 _error = L[result.SafeMessageKey ?? "Offline_PinWrong"];
+                _pin = string.Empty;
+                if (result.ServerOutcome == PinSignInServerOutcome.ExplicitlyRevoked)
+                {
+                    Nav.NavigateTo("/signin", replace: true);
+                }
+
+                return;
+            }
+
+            if (result.Session is not null && result.Session.UserId != _selected.UserId)
+            {
+                _error = L["Access_Denied"];
                 _pin = string.Empty;
                 return;
             }
 
             SyncStatus.SetReconnectRequired(false);
+            if (result.ServerOutcome == PinSignInServerOutcome.ValidatedOnline)
+            {
+                SyncStatus.NotifyApiReachability(true);
+                SyncStatus.Refresh();
+                Nav.NavigateTo(await RoleHome.ResolvePosHomeAsync(), replace: true);
+                return;
+            }
+
             SyncStatus.NotifyApiReachability(false);
             SyncStatus.Refresh();
             Nav.NavigateTo(RoleHome.ResolveFromOfflineGrantSnapshot(), replace: true);

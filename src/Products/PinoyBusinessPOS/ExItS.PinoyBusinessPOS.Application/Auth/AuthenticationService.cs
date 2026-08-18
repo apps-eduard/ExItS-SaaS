@@ -25,7 +25,8 @@ public sealed class AuthenticationService(
     IDeviceIdentityProvider? deviceIdentity = null,
     OfflineSessionUxState? offlineSessionUx = null,
     SellingModeService? sellingMode = null,
-    IConnectivityService? connectivity = null) : IAuthenticationService, IPlatformAccessTokenRecovery
+    IConnectivityService? connectivity = null,
+    IPinRecoverySessionStore? pinRecovery = null) : IAuthenticationService, IPlatformAccessTokenRecovery
 {
     private static readonly TimeSpan SessionLifetime = TimeSpan.FromHours(12);
     private readonly TimeProvider _clock = timeProvider ?? TimeProvider.System;
@@ -36,6 +37,7 @@ public sealed class AuthenticationService(
     private readonly OfflineSessionUxState? _offlineSessionUx = offlineSessionUx;
     private readonly SellingModeService? _sellingMode = sellingMode;
     private readonly IConnectivityService? _connectivity = connectivity;
+    private readonly IPinRecoverySessionStore? _pinRecovery = pinRecovery;
     private readonly SemaphoreSlim _reissueGate = new(1, 1);
 
     public bool IsDevelopmentAuthenticationEnabled =>
@@ -613,6 +615,7 @@ public sealed class AuthenticationService(
                     }
                 }
 
+                await RememberPinRecoveryHandleAsync(restored, ct).ConfigureAwait(false);
                 return new AuthResult(true, AuthFailureReason.None, restored);
             }
 
@@ -738,10 +741,27 @@ public sealed class AuthenticationService(
                 Array.Empty<OfflineEnrolledUserSummary>())
             : _offlineGrant.GetEnrolledUsersAsync(ct);
 
-    public Task RemoveEnrolledOfflineUserAsync(Guid userId, CancellationToken ct = default) =>
-        _offlineGrant is null
-            ? Task.CompletedTask
-            : _offlineGrant.RemoveEnrolledUserAsync(userId, ct);
+    public async Task RemoveEnrolledOfflineUserAsync(Guid userId, CancellationToken ct = default)
+    {
+        if (_pinRecovery is not null && userId != Guid.Empty)
+        {
+            try
+            {
+                await _pinRecovery.ClearAsync(userId, ct).ConfigureAwait(false);
+            }
+            catch
+            {
+                // Best-effort handle clear.
+            }
+        }
+
+        if (_offlineGrant is null)
+        {
+            return;
+        }
+
+        await _offlineGrant.RemoveEnrolledUserAsync(userId, ct).ConfigureAwait(false);
+    }
 
     private async Task<AuthResult> UnlockOfflineWithPinCoreAsync(
         Guid? userId,
@@ -772,10 +792,12 @@ public sealed class AuthenticationService(
                     : "Offline_GrantMissing"
             };
 
+            // Wrong PIN / lockout never contacts the server.
             return new AuthResult(
                 false,
                 AuthFailureReason.AccessDenied,
-                SafeMessageKey: failureKey);
+                SafeMessageKey: failureKey,
+                ServerOutcome: PinSignInServerOutcome.NotAttempted);
         }
 
         var grant = unlock.Grant;
@@ -784,66 +806,465 @@ public sealed class AuthenticationService(
             return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "Offline_GrantMissing");
         }
 
-        var shell = currentUser.Session;
-        AuthSession? markerSession = null;
+        AuthSession? leftoverSameUser = null;
         string? marker = null;
         try
         {
-            (markerSession, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
+            var (stored, storedMarker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
+            marker = storedMarker;
+            leftoverSameUser = SelectSameUserLeftover(grant.UserId, currentUser.Session, stored);
         }
         catch
         {
-            // Fall through with in-memory / grant-built shell.
+            leftoverSameUser = SelectSameUserLeftover(grant.UserId, currentUser.Session, stored: null);
         }
 
-        var baseSession = shell ?? markerSession;
-        // Multi-cashier: after logout/lock, rebuild from the unlocked grant when session is missing
-        // or belongs to a different enrolled user.
-        if (baseSession is null || baseSession.UserId != grant.UserId)
-        {
-            baseSession = BuildShellFromGrant(grant);
-        }
-
-        // Reject cross-use: personal grant must not unlock while the shell is org-bound.
+        var local = BuildSessionFromGrant(BuildShellFromGrant(grant), grant);
         if (grant.IsPersonalScope
-            && baseSession.OrganizationId is not null
-            && string.Equals(baseSession.AccountClass, "Organization", StringComparison.OrdinalIgnoreCase))
+            && leftoverSameUser is not null
+            && leftoverSameUser.OrganizationId is not null
+            && string.Equals(leftoverSameUser.AccountClass, "Organization", StringComparison.OrdinalIgnoreCase))
         {
             return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "Offline_GrantMissing");
         }
 
-        var restored = BuildSessionFromGrant(baseSession, grant);
+        string? platformSession = leftoverSameUser?.PlatformSessionToken;
+        var accessToken = leftoverSameUser?.AccessToken;
+        if (_pinRecovery is not null)
+        {
+            try
+            {
+                var handle = await _pinRecovery.LoadAsync(grant.UserId, ct).ConfigureAwait(false);
+                if (!string.IsNullOrWhiteSpace(handle))
+                {
+                    platformSession = handle;
+                }
+            }
+            catch
+            {
+                events.Record("secure_storage_failure", Dict(("operation", "pin_recovery_load")));
+            }
+        }
+
+        marker ??= Guid.NewGuid().ToString("N");
+        var applied = await ApplyLocalGrantSessionAsync(local, grant, marker, ct).ConfigureAwait(false);
+        if (!applied.Succeeded)
+        {
+            return applied;
+        }
+
+        local = applied.Session ?? local;
+        var reachable = await IsDeviceOnlineAsync(ct).ConfigureAwait(false);
+        if (!reachable
+            || (string.IsNullOrWhiteSpace(platformSession) && string.IsNullOrWhiteSpace(accessToken)))
+        {
+            events.Record("pin_signin_local_offline", Dict(
+                ("userId", grant.UserId.ToString("D")),
+                ("reachable", reachable ? "true" : "false"),
+                ("hasRecoverableSession",
+                    string.IsNullOrWhiteSpace(platformSession) && string.IsNullOrWhiteSpace(accessToken)
+                        ? "false"
+                        : "true")));
+            return LocalOfflinePinResult(local, grant);
+        }
+
+        var revalidating = local with
+        {
+            AccessToken = string.IsNullOrWhiteSpace(accessToken) ? null : accessToken,
+            PlatformSessionToken = string.IsNullOrWhiteSpace(platformSession) ? null : platformSession,
+            HasPosAccess = false,
+            AccessReasonCode = "pin_revalidating"
+        };
 
         try
         {
-            marker ??= Guid.NewGuid().ToString("N");
-            await sessionStore.SaveAsync(restored, marker, ct).ConfigureAwait(false);
+            await sessionStore.SaveAsync(revalidating, marker, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            events.Record("secure_storage_failure", Dict(("operation", "pin_revalidate_save")));
+            return LocalOfflinePinResult(local, grant) with
+            {
+                ServerOutcome = PinSignInServerOutcome.TransientUnavailable
+            };
+        }
+
+        currentUser.Set(revalidating);
+        var recovered = await RecoverOnlineSessionAfterPinAsync(grant.UserId, revalidating, ct)
+            .ConfigureAwait(false);
+        if (recovered.Outcome == PinSignInServerOutcome.ValidatedOnline
+            && recovered.Session is { } online
+            && online.UserId == grant.UserId)
+        {
+            await RememberPinRecoveryHandleAsync(online, ct).ConfigureAwait(false);
+            _offlineSessionUx?.ResetSession();
+            events.Record("pin_signin_validated_online", Dict(
+                ("userId", online.UserId.ToString("D")),
+                ("organizationId", online.OrganizationId?.ToString("D") ?? string.Empty)));
+            return new AuthResult(
+                true,
+                AuthFailureReason.None,
+                online,
+                ServerOutcome: PinSignInServerOutcome.ValidatedOnline);
+        }
+
+        if (recovered.Outcome == PinSignInServerOutcome.ExplicitlyRevoked)
+        {
+            await InvalidatePinUserAuthorizationAsync(grant.UserId, ct).ConfigureAwait(false);
+            events.Record("pin_signin_explicitly_revoked", Dict(
+                ("userId", grant.UserId.ToString("D")),
+                ("reason", recovered.ReasonCode)));
+            return new AuthResult(
+                false,
+                AuthFailureReason.AccessDenied,
+                SafeMessageKey: recovered.SafeMessageKey ?? "Access_Denied",
+                ServerOutcome: PinSignInServerOutcome.ExplicitlyRevoked);
+        }
+
+        var offline = await ApplyLocalGrantSessionAsync(local, grant, marker, ct).ConfigureAwait(false);
+        var offlineSession = offline.Session ?? local;
+        events.Record("pin_signin_transient_unavailable", Dict(
+            ("userId", grant.UserId.ToString("D")),
+            ("reason", recovered.ReasonCode)));
+        return LocalOfflinePinResult(offlineSession, grant) with
+        {
+            ServerOutcome = PinSignInServerOutcome.TransientUnavailable
+        };
+    }
+
+    private static AuthSession? SelectSameUserLeftover(
+        Guid userId,
+        AuthSession? inMemory,
+        AuthSession? stored)
+    {
+        if (inMemory is not null && inMemory.UserId == userId)
+        {
+            return inMemory;
+        }
+
+        if (stored is not null && stored.UserId == userId)
+        {
+            return stored;
+        }
+
+        return null;
+    }
+
+    private async Task<AuthResult> ApplyLocalGrantSessionAsync(
+        AuthSession local,
+        OfflineOperatingGrant grant,
+        string marker,
+        CancellationToken ct)
+    {
+        try
+        {
+            await sessionStore.SaveAsync(local, marker, ct).ConfigureAwait(false);
         }
         catch
         {
             events.Record("secure_storage_failure", Dict(("operation", "offline_unlock_save")));
-            return new AuthResult(false, AuthFailureReason.SecureStorageFailure, SafeMessageKey: "Auth_SecureStorageFailure");
+            return new AuthResult(
+                false,
+                AuthFailureReason.SecureStorageFailure,
+                SafeMessageKey: "Auth_SecureStorageFailure");
         }
 
-        currentUser.Set(restored);
+        currentUser.Set(local);
         if (grant.IsOrganizationScope && grant.OrganizationId is Guid orgId)
         {
             await preferences.SetSelectedOrganizationIdAsync(orgId, ct).ConfigureAwait(false);
-            await OpenLocalContextAsync(restored.UserId, orgId, ct).ConfigureAwait(false);
-            _accessPolicy?.NotifyOfflineUnlock(restored.UserId, orgId);
+            await OpenLocalContextAsync(local.UserId, orgId, ct).ConfigureAwait(false);
+            _accessPolicy?.NotifyOfflineUnlock(local.UserId, orgId);
         }
         else
         {
             await preferences.SetSelectedOrganizationIdAsync(null, ct).ConfigureAwait(false);
-            await OpenPersonalLocalContextAsync(restored.UserId, ct).ConfigureAwait(false);
+            await OpenPersonalLocalContextAsync(local.UserId, ct).ConfigureAwait(false);
         }
 
+        return new AuthResult(true, AuthFailureReason.None, local);
+    }
+
+    private AuthResult LocalOfflinePinResult(AuthSession session, OfflineOperatingGrant grant)
+    {
         _offlineSessionUx?.NotifyOfflinePinUnlocked();
         events.Record("offline_pin_unlock_succeeded", Dict(
-            ("userId", restored.UserId.ToString("D")),
+            ("userId", session.UserId.ToString("D")),
             ("organizationId", grant.OrganizationId?.ToString("D") ?? string.Empty),
             ("scopeKind", grant.ScopeKind.ToString())));
-        return new AuthResult(true, AuthFailureReason.None, restored);
+        return new AuthResult(
+            true,
+            AuthFailureReason.None,
+            session,
+            ServerOutcome: PinSignInServerOutcome.LocalOffline);
+    }
+
+    private sealed record PinRecoveryAttempt(
+        PinSignInServerOutcome Outcome,
+        AuthSession? Session = null,
+        string? ReasonCode = null,
+        string? SafeMessageKey = null);
+
+    private async Task<PinRecoveryAttempt> RecoverOnlineSessionAfterPinAsync(
+        Guid expectedUserId,
+        AuthSession shell,
+        CancellationToken ct)
+    {
+        if (!string.IsNullOrWhiteSpace(shell.AccessToken))
+        {
+            var fromAccess = await TryRestoreBearerForPinAsync(expectedUserId, shell, ct)
+                .ConfigureAwait(false);
+            if (fromAccess.Outcome is PinSignInServerOutcome.ValidatedOnline
+                or PinSignInServerOutcome.ExplicitlyRevoked)
+            {
+                return fromAccess;
+            }
+
+            if (fromAccess.Outcome == PinSignInServerOutcome.TransientUnavailable
+                && string.IsNullOrWhiteSpace(shell.PlatformSessionToken))
+            {
+                return fromAccess;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(shell.PlatformSessionToken))
+        {
+            return new PinRecoveryAttempt(
+                PinSignInServerOutcome.LocalOffline,
+                ReasonCode: "missing_platform_session");
+        }
+
+        var reissue = await IssueSessionAccessTokenForPinAsync(ct).ConfigureAwait(false);
+        if (reissue.Outcome != PinSignInServerOutcome.ValidatedOnline || reissue.Session is null)
+        {
+            return reissue;
+        }
+
+        return await TryRestoreBearerForPinAsync(expectedUserId, reissue.Session, ct).ConfigureAwait(false);
+    }
+
+    private async Task<PinRecoveryAttempt> IssueSessionAccessTokenForPinAsync(CancellationToken ct)
+    {
+        try
+        {
+            var reissue = await accessClient
+                .IssueTokenAsync(
+                    new IssuePlatformAccessTokenRequest(
+                        GrantType: "session",
+                        UsernameOrEmail: null,
+                        Password: null,
+                        OrganizationId: null,
+                        ProductCode: null),
+                    ct)
+                .ConfigureAwait(false);
+
+            if (reissue.IsSuccess
+                && reissue.Data is not null
+                && !string.IsNullOrWhiteSpace(reissue.Data.AccessToken)
+                && currentUser.Session is { } session)
+            {
+                var updated = session with
+                {
+                    AccessToken = reissue.Data.AccessToken,
+                    ExpiresAtUtc = reissue.Data.ExpiresAtUtc == default
+                        ? _clock.GetUtcNow().Add(SessionLifetime)
+                        : reissue.Data.ExpiresAtUtc
+                };
+                currentUser.Set(updated);
+                events.Record("pin_signin_token_reissue", Dict(("userId", updated.UserId.ToString("D"))));
+                return new PinRecoveryAttempt(PinSignInServerOutcome.ValidatedOnline, updated);
+            }
+
+            events.Record("pin_signin_token_reissue_result", Dict(
+                ("status", reissue.Status.ToString()),
+                ("errorCode", reissue.Error?.ErrorCode)));
+
+            if (IsTransientApiStatus(reissue.Status))
+            {
+                return new PinRecoveryAttempt(
+                    PinSignInServerOutcome.TransientUnavailable,
+                    ReasonCode: reissue.Status.ToString());
+            }
+
+            if (IsExplicitPinRecoveryDenial(reissue.Status, reissue.Error?.ErrorCode))
+            {
+                return new PinRecoveryAttempt(
+                    PinSignInServerOutcome.ExplicitlyRevoked,
+                    ReasonCode: reissue.Error?.ErrorCode ?? reissue.Status.ToString(),
+                    SafeMessageKey: "Access_Denied");
+            }
+
+            return new PinRecoveryAttempt(
+                PinSignInServerOutcome.TransientUnavailable,
+                ReasonCode: reissue.Status.ToString());
+        }
+        catch
+        {
+            return new PinRecoveryAttempt(
+                PinSignInServerOutcome.TransientUnavailable,
+                ReasonCode: "transport_failure");
+        }
+    }
+
+    private async Task<PinRecoveryAttempt> TryRestoreBearerForPinAsync(
+        Guid expectedUserId,
+        AuthSession shell,
+        CancellationToken ct)
+    {
+        currentUser.Set(shell);
+        try
+        {
+            var introspect = await accessClient.IntrospectTokenAsync(shell.AccessToken, ct)
+                .ConfigureAwait(false);
+            if (introspect.IsSuccess && introspect.Data is { Active: false })
+            {
+                return new PinRecoveryAttempt(
+                    PinSignInServerOutcome.ExplicitlyRevoked,
+                    ReasonCode: "token_inactive",
+                    SafeMessageKey: "Auth_SessionExpired");
+            }
+
+            if (introspect.IsSuccess && introspect.Data is { Active: true } active)
+            {
+                var restoredUserId = active.UserId ?? shell.UserId;
+                if (restoredUserId != expectedUserId)
+                {
+                    events.Record("pin_signin_user_mismatch", Dict(
+                        ("expectedUserId", expectedUserId.ToString("D")),
+                        ("restoredUserId", restoredUserId.ToString("D"))));
+                    return new PinRecoveryAttempt(
+                        PinSignInServerOutcome.ExplicitlyRevoked,
+                        ReasonCode: "user_mismatch",
+                        SafeMessageKey: "Access_Denied");
+                }
+
+                var restored = await RestoreBearerSessionAsync(shell, ct).ConfigureAwait(false);
+                if (restored.Succeeded
+                    && restored.Session is { } online
+                    && online.UserId == expectedUserId
+                    && !string.IsNullOrWhiteSpace(online.AccessToken))
+                {
+                    if (IsExplicitProductAccessRevocation(online.AccessReasonCode)
+                        || IsExplicitOfflineGrantRevocation(online.AccessReasonCode))
+                    {
+                        return new PinRecoveryAttempt(
+                            PinSignInServerOutcome.ExplicitlyRevoked,
+                            ReasonCode: online.AccessReasonCode,
+                            SafeMessageKey: "Access_Denied");
+                    }
+
+                    return new PinRecoveryAttempt(PinSignInServerOutcome.ValidatedOnline, online);
+                }
+
+                if (restored.FailureReason is AuthFailureReason.Offline
+                    or AuthFailureReason.Timeout
+                    or AuthFailureReason.ApiUnavailable)
+                {
+                    return new PinRecoveryAttempt(
+                        PinSignInServerOutcome.TransientUnavailable,
+                        ReasonCode: restored.FailureReason.ToString());
+                }
+
+                return new PinRecoveryAttempt(
+                    PinSignInServerOutcome.TransientUnavailable,
+                    ReasonCode: restored.FailureReason.ToString());
+            }
+
+            if (IsExplicitOfflineGrantRevocation(introspect.Error?.ErrorCode)
+                || IsExplicitPinRecoveryDenial(introspect.Status, introspect.Error?.ErrorCode))
+            {
+                return new PinRecoveryAttempt(
+                    PinSignInServerOutcome.ExplicitlyRevoked,
+                    ReasonCode: introspect.Error?.ErrorCode ?? introspect.Status.ToString(),
+                    SafeMessageKey: "Access_Denied");
+            }
+
+            if (IsTransientApiStatus(introspect.Status))
+            {
+                return new PinRecoveryAttempt(
+                    PinSignInServerOutcome.TransientUnavailable,
+                    ReasonCode: introspect.Status.ToString());
+            }
+
+            return new PinRecoveryAttempt(
+                PinSignInServerOutcome.TransientUnavailable,
+                ReasonCode: introspect.Status.ToString());
+        }
+        catch
+        {
+            return new PinRecoveryAttempt(
+                PinSignInServerOutcome.TransientUnavailable,
+                ReasonCode: "transport_failure");
+        }
+    }
+
+    private static bool IsTransientApiStatus(ApiCallStatus status) =>
+        status is ApiCallStatus.Timeout
+            or ApiCallStatus.Offline
+            or ApiCallStatus.Unavailable
+            or ApiCallStatus.Failed
+            or ApiCallStatus.RateLimited
+            or ApiCallStatus.Cancelled;
+
+    private static bool IsExplicitPinRecoveryDenial(ApiCallStatus status, string? errorCode)
+    {
+        if (status is ApiCallStatus.Unauthorized or ApiCallStatus.Forbidden)
+        {
+            return true;
+        }
+
+        return IsExplicitOfflineGrantRevocation(errorCode)
+               || IsExplicitProductAccessRevocation(errorCode);
+    }
+
+    private async Task InvalidatePinUserAuthorizationAsync(Guid userId, CancellationToken ct)
+    {
+        if (_pinRecovery is not null)
+        {
+            try
+            {
+                await _pinRecovery.ClearAsync(userId, ct).ConfigureAwait(false);
+            }
+            catch
+            {
+                // Best-effort.
+            }
+        }
+
+        await ClearOfflineGrantForCurrentUserAsync(userId, ct).ConfigureAwait(false);
+        await CloseLocalContextAsync(ct).ConfigureAwait(false);
+        _accessPolicy?.ClearProcessValidation();
+        _offlineSessionUx?.ResetSession();
+        try
+        {
+            await sessionStore.ClearAsync(ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            events.Record("secure_storage_failure", Dict(("operation", "pin_revoke_clear")));
+        }
+
+        currentUser.Clear();
+    }
+
+    private async Task RememberPinRecoveryHandleAsync(AuthSession session, CancellationToken ct)
+    {
+        if (_pinRecovery is null
+            || session.UserId == Guid.Empty
+            || string.IsNullOrWhiteSpace(session.PlatformSessionToken))
+        {
+            return;
+        }
+
+        try
+        {
+            await _pinRecovery.SaveAsync(session.UserId, session.PlatformSessionToken, ct)
+                .ConfigureAwait(false);
+        }
+        catch
+        {
+            events.Record("secure_storage_failure", Dict(("operation", "pin_recovery_save")));
+        }
     }
 
     public Task<OfflinePinSetupResult> SetOfflinePinAsync(string pin, CancellationToken ct = default)
@@ -971,12 +1392,14 @@ public sealed class AuthenticationService(
                 .EstablishFromOnlineSessionAsync(session, deviceId, roleCode: null, ct)
                 .ConfigureAwait(false);
             _offlineSessionUx?.ResetSession();
+            await RememberPinRecoveryHandleAsync(session, ct).ConfigureAwait(false);
             return;
         }
 
         if (AuthSessionWorkspace.IsPersonalDefault(session) || session.OrganizationId is null)
         {
             await EstablishPersonalOfflineGrantAsync(session, ct).ConfigureAwait(false);
+            await RememberPinRecoveryHandleAsync(currentUser.Session ?? session, ct).ConfigureAwait(false);
         }
     }
 
@@ -1144,6 +1567,7 @@ public sealed class AuthenticationService(
 
             currentUser.Set(updated);
             events.Record("token_reissue_success", Dict(("userId", updated.UserId.ToString("D"))));
+            await RememberPinRecoveryHandleAsync(updated, ct).ConfigureAwait(false);
             return true;
         }
         finally
@@ -1169,6 +1593,7 @@ public sealed class AuthenticationService(
         var session = currentUser.Session;
         if (session is not null)
         {
+            await RememberPinRecoveryHandleAsync(session, ct).ConfigureAwait(false);
             try
             {
                 if (!string.IsNullOrWhiteSpace(session.AccessToken))
@@ -1181,21 +1606,13 @@ public sealed class AuthenticationService(
                 // Best-effort remote revoke; local clear still proceeds.
             }
 
-            try
-            {
-                if (!string.IsNullOrWhiteSpace(session.PlatformSessionToken))
-                {
-                    await accessClient.LogoutSessionAsync(ct).ConfigureAwait(false);
-                }
-            }
-            catch
-            {
-                // Best-effort remote logout; local clear still proceeds.
-            }
+            // Do not call LogoutSessionAsync. PIN on this device recovers online via GrantType=session
+            // using the stored Platform session handle. Server remains authoritative if that session
+            // is later expired or revoked.
         }
 
-        // Sign out clears cloud/session trust but keeps durable offline grant + PIN so the same
-        // device can reopen limited offline work without internet.
+        // Sign out clears the active app session and bearer but keeps durable offline grant + PIN
+        // and the per-user Platform session handle for PIN recovery.
         await ClearLocalSessionAsync(clearOfflineGrant: false, ct).ConfigureAwait(false);
     }
 

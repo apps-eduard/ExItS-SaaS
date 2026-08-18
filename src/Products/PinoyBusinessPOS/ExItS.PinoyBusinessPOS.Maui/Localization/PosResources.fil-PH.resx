@@ -547,6 +547,21 @@
   <data name="SignIn_UsePin" xml:space="preserve">
     <value>Gamitin ang PIN</value>
   </data>
+  <data name="SignIn_WithPin" xml:space="preserve">
+    <value>Mag-sign in gamit ang PIN</value>
+  </data>
+  <data name="SignIn_PinKeypadHint" xml:space="preserve">
+    <value>I-tap ang keypad button sa tabi ng Google para mag-sign in gamit ang iyong PIN.</value>
+  </data>
+  <data name="SignIn_PinEntrySubtitle" xml:space="preserve">
+    <value>Ilagay ang iyong PIN para magpatuloy.</value>
+  </data>
+  <data name="SignIn_PinLabel" xml:space="preserve">
+    <value>PIN</value>
+  </data>
+  <data name="SignIn_SigningYouIn" xml:space="preserve">
+    <value>Sini-sign in ka...</value>
+  </data>
   <data name="SignIn_OfflineTitle" xml:space="preserve">
     <value>Offline ka</value>
   </data>

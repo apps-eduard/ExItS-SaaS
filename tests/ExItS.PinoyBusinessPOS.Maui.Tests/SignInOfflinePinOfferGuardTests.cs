@@ -35,7 +35,10 @@ public sealed class SignInOfflinePinOfferGuardTests
             "ExItS.PinoyBusinessPOS.Application",
             "Auth",
             "AuthenticationService.cs")), StringComparison.Ordinal);
-        Assert.Contains("_canUsePin && (_isOffline || _offerPinBecauseUnreachable)", signIn, StringComparison.Ordinal);
+        Assert.Contains("pos-auth-page__social-btn--pin", signIn, StringComparison.Ordinal);
+        Assert.Contains("@if (_canUsePin)", signIn, StringComparison.Ordinal);
+        Assert.DoesNotContain("ShowOfflinePinAction", signIn, StringComparison.Ordinal);
+        Assert.DoesNotContain("_canUsePin && (_isOffline || _offerPinBecauseUnreachable)", signIn, StringComparison.Ordinal);
         Assert.DoesNotContain("else if (_canUsePin)", signIn, StringComparison.Ordinal);
     }
 
@@ -58,12 +61,10 @@ public sealed class SignInOfflinePinOfferGuardTests
     }
 
     [Fact]
-    public void SignIn_hides_pin_when_radio_returns_and_keeps_existing_unlock_path()
+    public void SignIn_keeps_pin_keypad_when_radio_returns_and_keeps_existing_unlock_path()
     {
         var signIn = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "SignIn.razor"));
         Assert.Contains("OnConnectivityChanged", signIn, StringComparison.Ordinal);
-        Assert.Contains("if (!_isOffline)", signIn, StringComparison.Ordinal);
-        Assert.Contains("_offerPinBecauseUnreachable = false", signIn, StringComparison.Ordinal);
         Assert.Contains("Nav.NavigateTo(\"/offline-pin\"", signIn, StringComparison.Ordinal);
         Assert.Contains("ChoosePinInstead", signIn, StringComparison.Ordinal);
         Assert.Contains("IsDevelopmentAuthenticationEnabled", signIn, StringComparison.Ordinal);
