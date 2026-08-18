@@ -92,6 +92,20 @@ UI: Settings (online) for optional PIN change; `/offline-pin-setup` for **mandat
 
 PIN remains per **user on this device**, not per organization. Offline grant/context still determines org, role, permissions, and expiry.
 
+### Device PIN-offline eligibility (required persisted state)
+
+`EvaluateOfflineColdStartOfferAsync` / `CanOfferPinUnlock` is true only when **all** of the following are persisted on this device (not from the typed Sign In username):
+
+1. Enrolled-user directory entry (`pos.offline.enrolledUsers`)
+2. Device-bound offline operate grant (`pos.offline.grant.{userId}`) that is unexpired, matching installation `pos.device.id`, and valid Personal **or** Organization (v3 org grants require BranchId + PosDeviceId)
+3. Salted PIN verifier (`pos.offline.pin.{userId}`) for that same user
+
+Online provisioning: successful auth → `EnsureOfflineOperateGrantAsync` (POS device authorize/bind when needed, then grant) → `/offline-pin-setup` or Settings PIN save → verifier. Local Validation / Development GUID login uses this same grant+verifier path; it does not invent a PIN or skip enrollment.
+
+Restore/boot must **not** clear a grant merely because introspect omits POS product access (normal for Personal, and a common Local Validation partial snapshot). Grant is cleared only on explicit server revocation (e.g. `product_assignment_inactive`). Sign out keeps grant + PIN. Cold start reconstructs eligibility from SecureStorage without an in-memory session.
+
+Safe diagnostics record booleans/reason codes only (`OfflinePinEligibilityReason`: Eligible, NoStoredIdentity, NoGrant, NoPinVerifier, DeviceMismatch, Expired, Revoked, InvalidScope, CorruptState). Never log PIN, password, verifier secrets, or tokens.
+
 Physical Android validation of this progressive login UX: **not completed** in this change (Device Verified remains **No**).
 
 ## 7. Device / org / permission binding

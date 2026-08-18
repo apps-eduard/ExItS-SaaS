@@ -38,6 +38,7 @@ Sign Up does **not** invent phone/password registration. Personal registration r
 - Slow-login prompt still offers **Use PIN instead** when eligible
 - Tapping PIN still navigates to `/offline-pin`
 - Failed/unreachable login uses existing error copy only after a real Sign in attempt (`SignIn_ServerUnreachablePinHint` / `SignIn_OfflineNoPinMessage`)
+- Eligibility is persisted grant + PIN verifier + matching device id (see [P19 offline PIN](../reports/P19-offline-operability-foundation.md)). Local Validation uses that same architecture; it does not fake authorization.
 
 ## Development test user
 
