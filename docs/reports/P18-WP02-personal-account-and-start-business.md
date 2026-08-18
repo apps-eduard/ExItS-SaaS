@@ -39,6 +39,7 @@ Personal Account on Mobile only (MVP). Full Org Admin remains Web.
 - Sign-in with no organization navigates to Personal home
 - Continuation after Start a Business stays in Mobile (`/org` and POS gate)
 - AuthShell layout without POS bottom-nav padding (phone-friendly)
+- Personal registration (`/register`) shares the rounded Sign In / Sign Up auth card; fields remain display name + email (no invented phone/password registration). See [maui-auth-experience.md](../engineering/maui-auth-experience.md).
 
 ## 6. Files / components changed (representative)
 

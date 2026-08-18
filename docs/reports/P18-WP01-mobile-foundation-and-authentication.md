@@ -87,3 +87,15 @@ Implemented · Tested · Build Verified · Agent emulator evidence recorded · P
 ## 14. Commit reference
 
 Implementation: `4b8b727`. Context-switcher / session-org fixes: tip of `main` after this update.
+
+## 15. Follow-up — rounded mobile auth card (UX only)
+
+Later MAUI work unified Sign In / Sign Up / Forgot password / Activate into one branded green-hero + overlapping rounded card (`AuthExperience`). **Authentication, activation, offline PIN eligibility, and development quick-login guards are unchanged.** Presentation notes:
+
+- `/signin` opens Sign In; `/register` opens the same shell with Sign Up active
+- Offline PIN is a compact link, shown only while connectivity is offline and PIN can be offered
+- Development test-user `<select>` sits below the card, Development/Testing only
+- Google/Facebook remain placeholders
+- **Not Device Verified**
+
+See [maui-auth-experience.md](../engineering/maui-auth-experience.md). Implementation: `d2d59b08`.

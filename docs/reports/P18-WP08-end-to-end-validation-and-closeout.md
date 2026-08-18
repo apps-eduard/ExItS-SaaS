@@ -153,7 +153,7 @@ Fixes also recorded earlier / adjacent in this pass:
 - Soft-input AdjustResize + keyboard inset for address/setup fields
 - Catalog/expense category add: loading stuck after save (try/finally + quiet reload)
 - Owner org entry shows Owner / Manager / Cashier working-as buttons
-- Local Validation Quick Login dropdown on MAUI Sign-in (excludes Platform identities; uses SharedPassword)
+- Local Validation Quick Login compact dropdown **below** the MAUI Sign-in card (excludes Platform identities; fills username only; uses SharedPassword)
 - PhysicalDevice Local Validation profile for Tailscale (`9022d95`)
 
 ## 11. Known limitations

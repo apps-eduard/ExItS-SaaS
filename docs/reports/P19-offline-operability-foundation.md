@@ -67,7 +67,7 @@ Durable grant (`OfflineOperatingGrant`) in secure storage:
 | Lockout | Temporary `LockedUntilUtc`; does **not** delete or extend the operate grant |
 | Success | Resets attempt counter; unlock is process-scoped (`IsUnlockedThisProcess`) |
 
-UI: Settings (online) for optional PIN change; `/offline-pin-setup` for **mandatory** enrollment after online auth + setup when no PIN exists; `/offline-pin` for unlock; Sign-in surfaces **Use PIN** when eligible; Reconnect surfaces PIN offer when grant is valid.
+UI: Settings (online) for optional PIN change; `/offline-pin-setup` for **mandatory** enrollment after online auth + setup when no PIN exists; `/offline-pin` for unlock; Sign-in surfaces a compact **Use PIN** link when the device is offline and PIN is eligible; Reconnect surfaces PIN offer when grant is valid.
 
 ## 6b. Auth UX layer (mandatory PIN + login readiness)
 
@@ -78,8 +78,8 @@ UI: Settings (online) for optional PIN change; `/offline-pin-setup` for **mandat
 | Shared POS multi-cashier | Per-user grant + PIN on one device. Enrolling another cashier does **not** wipe others. Offline picker when multiple enrolled. Default grant **720h / 30 days**. See [P19-multi-user-offline-cashier-pin](P19-multi-user-offline-cashier-pin.md). |
 | Account switch on one device | ~~One SecureStorage PIN verifier~~ **Superseded:** each user has an independent verifier/grant slot. |
 | Existing-user migration | Existing users who never enrolled a PIN are gated the same way on next online POS entry |
-| Use PIN on Sign-in | Shown only when enrolled PIN + usable offline operate grant/session identity exist on this device |
-| Offline Sign-in | Use PIN is primary; username/password and Google/Facebook placeholders show Internet-required messaging (do not fake auth) |
+| Use PIN on Sign-in | Compact text link, shown only when the device reports **offline** and enrolled PIN + usable offline operate grant/session identity exist. Not shown merely because a PIN exists while online. No large offline info panel on the login card. See [maui-auth-experience.md](../engineering/maui-auth-experience.md). |
+| Offline Sign-in | Use PIN is the compact offline action; username/password and Google/Facebook placeholders show Internet-required messaging (do not fake auth) |
 | Progressive online boot/login | Device reports **no network** → never wait on online restore; offer PIN immediately when eligible. Device reports network → start online restore/login with normal loading; after **~3s** without response show **Still connecting…** + **Continue waiting** + **Use PIN instead** (PIN only if eligible). Hard timeout uses `PosApi:TimeoutSeconds` (typically **15s**). Choosing PIN cancels/ignores the pending online attempt (no race). Soft prompt does **not** declare the device offline. |
 | Unreachable vs denied | Transport/timeout/unavailable → PIN fallback when eligible. Explicit auth/access denial / invalid credentials → normal error path; do **not** auto offline unlock. |
 | Offline warning | Once per unlocked offline session: “You're working offline” + device-data warning → Continue offline |
