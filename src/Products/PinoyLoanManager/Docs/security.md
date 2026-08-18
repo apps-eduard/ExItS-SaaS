@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Status | Draft — documentation baseline through reporting / customer-visibility planning; not product-owner approved |
+| Status | Draft — documentation baseline through technical layout / integration planning; not product-owner approved |
 | Implementation present | No |
 
 ## Authentication boundary
@@ -86,7 +86,7 @@ Lifecycle intent: [Product/personal-borrower-linking.md](Product/personal-borrow
 |---|---|
 | TLS | Production TLS remains a portfolio risk until closed. Product-specific TLS design **Status: Open / Product Owner Decision Required**. |
 | Data at rest | **Status: Open / Product Owner Decision Required** (no database yet) |
-| Local/offline stores | Possible later MAUI/SQLite capability. Crypto approach **Status: Open / Product Owner Decision Required**. Not authorized. |
+| Local/offline stores | Possible later MAUI/SQLite capability. Crypto approach **Status: Open / Product Owner Decision Required**. Not authorized. See [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md). |
 
 ## Input / output controls
 

@@ -2,7 +2,7 @@
 
 **Status:** Foundation / planning only
 **Implementation present:** No
-**Current work package:** PLM-00-WP08 — Reporting, Notifications, Documents & Customer Visibility Baseline
+**Current work package:** PLM-00-WP09 — Technical Product Layout & Integration Boundary
 
 This file is the navigation map for future Cursor work. Load this product’s `Docs/` after the shared Product Foundation reference. Do not scan PinoyBusinessPOS implementation by default.
 
@@ -85,7 +85,17 @@ Shared contracts to load with this product:
 | `Docs/Product/personal-loan-experience.md` | Personal Loan area; distinct from P2P | Planning baseline / not a spec | No |
 | `Docs/Security/audit-and-history-baseline.md` | High-risk history; not editable notes | Planning baseline / not a spec | No |
 
-## Workspace indexes (PLM-00-WP01, updated in WP02–WP08)
+## Technical layout / integration (PLM-00-WP09)
+
+| Path | Purpose | Status | Implementation present |
+|---|---|---|---|
+| `Docs/Architecture/source-and-project-layout.md` | Future project tree; not created | Planning target / not a spec | No |
+| `Docs/Architecture/api-and-contract-boundary.md` | API consumers; Personal contracts | Planning target / not a spec | No |
+| `Docs/Architecture/persistence-and-database-boundary.md` | Separate DB isolation | Planning target / not a spec | No |
+| `Docs/Architecture/mobile-offline-boundary.md` | Online-first MAUI; offline not authorized | Planning target / not a spec | No |
+| `Docs/Architecture/platform-commercial-integration.md` | Platform contracts; D-P12-03 open | Planning target / not a spec | No |
+
+## Workspace indexes (PLM-00-WP01, updated in WP02–WP09)
 
 | Path | Purpose | Status | Implementation present |
 |---|---|---|---|

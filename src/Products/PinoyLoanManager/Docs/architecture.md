@@ -7,7 +7,7 @@
 |---|---|
 | Product | Pinoy Loan Manager / `pinoy-loan-manager` (proposed, PLM-D-00-01) |
 | Database | `ExItS_PinoyLoanManager` (proposed) / schema **Status: Open / Product Owner Decision Required** (PLM-D-00-02) |
-| Status | Draft — documentation baseline through reporting / customer-visibility planning; not product-owner approved |
+| Status | Draft — documentation baseline through technical layout / integration planning; not product-owner approved |
 | Implementation present | No |
 
 ## System context
@@ -143,7 +143,7 @@ Possible later native MAUI capabilities (not designed):
 - notifications
 - SQLite / offline support
 
-Web / MAUI component-sharing strategy is **Status: Open / Product Owner Decision Required** (PLM-D-00-09). No client project is authorized.
+Web / MAUI component-sharing strategy is **Status: Open / Product Owner Decision Required** (PLM-D-00-09). No client project is authorized. Future project names: [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md). Offline: [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md). Contracts: [Architecture/api-and-contract-boundary.md](Architecture/api-and-contract-boundary.md). Persistence: [Architecture/persistence-and-database-boundary.md](Architecture/persistence-and-database-boundary.md). Commercial: [Architecture/platform-commercial-integration.md](Architecture/platform-commercial-integration.md).
 
 ## External integrations
 
@@ -161,7 +161,7 @@ Web / MAUI component-sharing strategy is **Status: Open / Product Owner Decision
 | Platform images | Separate — do not fork per customer |
 | Persistent DB | `ExItS_PinoyLoanManager` (proposed, PLM-D-00-02) |
 | Config | Environment / secrets — not source forks |
-| Physical layout | **Status: Open / Product Owner Decision Required** (PLM-D-00-03) |
+| Physical layout | **Planning target recorded** — [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md); projects not created (PLM-D-00-03) |
 
 Detail: `deployment-notes.md` when packaging begins. Not created in this package.
 

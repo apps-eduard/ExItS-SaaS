@@ -11,7 +11,7 @@ Always load with:
 5. The active work-package prompt/report
 6. Files required for the task only
 
-**Status:** Draft — PLM-00 documentation baseline through reporting / customer-visibility planning
+**Status:** Draft — PLM-00 documentation baseline through technical layout / integration planning
 **Implementation present:** No
 **Documentation root:** `src/Products/PinoyLoanManager/Docs/` (D-P12-02)
 
@@ -65,6 +65,11 @@ Agreed operating-model direction (not implementation specs):
 | [Product/notification-model.md](Product/notification-model.md) | Personal and staff notifications |
 | [Product/personal-loan-experience.md](Product/personal-loan-experience.md) | Personal Loan area; distinct from P2P |
 | [Security/audit-and-history-baseline.md](Security/audit-and-history-baseline.md) | High-risk history |
+| [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md) | Future project tree; not created |
+| [Architecture/api-and-contract-boundary.md](Architecture/api-and-contract-boundary.md) | API / Personal / Platform contracts |
+| [Architecture/persistence-and-database-boundary.md](Architecture/persistence-and-database-boundary.md) | Separate database isolation |
+| [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md) | Online-first MAUI |
+| [Architecture/platform-commercial-integration.md](Architecture/platform-commercial-integration.md) | Commercial/identity contracts; D-P12-03 open |
 
 Category folders below are indexes only. They must not become a second source of truth.
 

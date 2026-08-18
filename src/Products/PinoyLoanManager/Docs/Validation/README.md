@@ -10,7 +10,7 @@ This directory will hold proof that authorized Pinoy Loan Manager behavior was v
 
 ## This work package
 
-PLM-00-WP08 is documentation-only.
+PLM-00-WP09 is documentation-only.
 
 | Validation type | Result |
 |---|---|

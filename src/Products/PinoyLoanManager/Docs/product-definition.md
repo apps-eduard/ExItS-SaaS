@@ -8,7 +8,7 @@
 | Product name | Pinoy Loan Manager |
 | Platform product code | `pinoy-loan-manager` (proposed — **Status: Open / Product Owner Decision Required**, PLM-D-00-01) |
 | Docs root | `src/Products/PinoyLoanManager/Docs/` |
-| Status | Draft — documentation baseline through reporting / customer-visibility planning; not product-owner approved |
+| Status | Draft — documentation baseline through technical layout / integration planning; not product-owner approved |
 | Last updated | 2026-08-19 |
 | Implementation present | No |
 
@@ -126,7 +126,8 @@ This package records:
 - authorization, cash control, and operational workflow baseline (PLM-00-WP05, completed)
 - borrower, Personal linking, and Quick Loan publishing baseline (PLM-00-WP06, completed)
 - traditional loan and origination workflow baseline (PLM-00-WP07, completed)
-- reporting, documents, notifications, and customer-visibility baseline (PLM-00-WP08, this package)
+- reporting, documents, notifications, and customer-visibility baseline (PLM-00-WP08, completed)
+- technical product layout and integration boundary (PLM-00-WP09, this package)
 
 No loan MVP **implementation** is approved. Calculation algorithms, peso/percent rates, rounding mode, and legal validation remain open.
 
@@ -148,7 +149,7 @@ No loan MVP **implementation** is approved. Calculation algorithms, peso/percent
 - ExItS remains one Platform plus independently subscribed products.
 - Pinoy Loan Manager remains operationally isolated from PinoyBusinessPOS.
 - Documentation in this `Docs/` root is the product documentation authority (D-P12-02).
-- Physical source/test/deploy layout beside `Docs/` is not decided (PLM-D-00-03).
+- Physical source/test/deploy layout beside `Docs/` has a recorded **planning target**; projects are not created (PLM-D-00-03).
 
 ## Unresolved decisions
 
@@ -156,7 +157,7 @@ No loan MVP **implementation** is approved. Calculation algorithms, peso/percent
 |---|---|---|
 | PLM-D-00-01 | Final product code / slug registration | Platform catalog, subscription bootstrap |
 | PLM-D-00-02 | Final database name / schema | Persistence, migrations |
-| PLM-D-00-03 | Physical source / test / deploy layout | Scaffold (PLM-01) |
+| PLM-D-00-03 | Physical source / test / deploy layout (planning target recorded; projects not created) | Scaffold (PLM-01) |
 | PLM-D-00-04 | Generic Platform cross-product relationship model | Personal multi-product participation |
 | PLM-D-00-05 | Personal-to-Borrower linking mechanism (lifecycle intent recorded; schema open) | Borrower identity design (PLM-04) |
 | PLM-D-00-06 | Loan roles and grants (presets + grant intent recorded; identifiers open) | Authorization (PLM-03) |
@@ -205,6 +206,11 @@ No loan MVP **implementation** is approved. Calculation algorithms, peso/percent
 | Notifications | [Product/notification-model.md](Product/notification-model.md) |
 | Personal Loan experience | [Product/personal-loan-experience.md](Product/personal-loan-experience.md) |
 | Audit / history | [Security/audit-and-history-baseline.md](Security/audit-and-history-baseline.md) |
+| Source / project layout | [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md) |
+| API / contract boundary | [Architecture/api-and-contract-boundary.md](Architecture/api-and-contract-boundary.md) |
+| Persistence / database boundary | [Architecture/persistence-and-database-boundary.md](Architecture/persistence-and-database-boundary.md) |
+| Mobile / offline boundary | [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md) |
+| Platform commercial integration | [Architecture/platform-commercial-integration.md](Architecture/platform-commercial-integration.md) |
 | Security | [security.md](security.md) |
 | Authorization | [authorization-matrix.md](authorization-matrix.md) |
 | Development plan | [development-plan.md](development-plan.md) |

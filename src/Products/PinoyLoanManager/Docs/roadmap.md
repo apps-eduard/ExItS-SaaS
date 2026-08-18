@@ -7,7 +7,7 @@
 |---|---|
 | Product | Pinoy Loan Manager |
 | Current phase | PLM-00 Foundation & Product Decisions |
-| Current work package | PLM-00-WP08 Reporting, Notifications, Documents & Customer Visibility Baseline |
+| Current work package | PLM-00-WP09 Technical Product Layout & Integration Boundary |
 | Status | Draft — planning only |
 
 ## Phase objective
@@ -26,6 +26,7 @@ Establish product documentation, architecture boundaries, Personal/Borrower inte
 - Borrower model, Personal linking/consent lifecycle, Quick Loan publishing/eligibility, borrower groups (WP06)
 - Traditional application, Loan Product, approval snapshot, disbursement readiness (WP07)
 - Reporting, documents/receipts, notifications, Personal Loan experience, audit/history (WP08)
+- Future source/project layout, API/persistence/offline/commercial boundaries (WP09)
 - Planning buckets PLM-00 through PLM-14
 
 ### Excluded
@@ -48,10 +49,11 @@ Establish product documentation, architecture boundaries, Personal/Borrower inte
 | PLM-00-WP05 | Authorization, Cash Control & Operational Workflow Baseline | Completed | PLM-00-WP04 |
 | PLM-00-WP06 | Borrower, Personal Linking & Quick Loan Publishing Baseline | Completed | PLM-00-WP05 |
 | PLM-00-WP07 | Traditional Loan & Origination Workflow Baseline | Completed | PLM-00-WP06 |
-| PLM-00-WP08 | Reporting, Notifications, Documents & Customer Visibility Baseline | Current | PLM-00-WP07 |
-| PLM-00-WP09 | Technical Product Layout & Integration Boundary | Next proposed | PLM-00-WP08 |
+| PLM-00-WP08 | Reporting, Notifications, Documents & Customer Visibility Baseline | Completed | PLM-00-WP07 |
+| PLM-00-WP09 | Technical Product Layout & Integration Boundary | Current | PLM-00-WP08 |
+| PLM-00-WP10 | Foundation Closeout & Implementation Readiness | Next proposed | PLM-00-WP09 |
 
-Later phases (PLM-01 … PLM-14) have no authorized work packages yet. No implementation phase is authorized yet. WP09 remains documentation / product planning.
+Later phases (PLM-01 … PLM-14) have no authorized work packages yet. No implementation phase is authorized yet. WP10 remains documentation / product planning.
 
 ## Planning buckets (later phases)
 
@@ -89,7 +91,8 @@ Later phases (PLM-01 … PLM-14) have no authorized work packages yet. No implem
 - [x] Authorization, cash control, and operational workflow baseline recorded (WP05)
 - [x] Borrower, Personal linking, and Quick Loan publishing baseline recorded (WP06)
 - [x] Traditional loan and origination workflow baseline recorded (WP07)
-- [x] Reporting, documents, notifications, and customer-visibility baseline recorded (this WP)
+- [x] Reporting, documents, notifications, and customer-visibility baseline recorded (WP08)
+- [x] Technical product layout and integration boundary recorded (this WP)
 - [ ] Product-owner approval of documentation baseline (PLM-D-00-10)
 - [ ] Isolation contract preserved in any later implementation (separate DB; no Platform table reads; product-local roles)
 - [ ] Docs match implementation (no implementation yet)
@@ -108,9 +111,9 @@ Later phases (PLM-01 … PLM-14) have no authorized work packages yet. No implem
 
 ## Exact next package
 
-**PLM-00-WP09 — Technical Product Layout & Integration Boundary**
+**PLM-00-WP10 — Foundation Closeout & Implementation Readiness**
 
-Documentation / product planning only. Record future source/project layout, API/persistence boundaries, mobile-offline boundary, and Platform commercial integration without creating projects.
+Documentation only. Coherent product review, implementation gates, and recommended PLM-01 scaffold. Do not start PLM-01.
 
 ## Phase closeout requirements
 
