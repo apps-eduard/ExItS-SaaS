@@ -80,7 +80,13 @@ public sealed class PosSyncStatusService : IPosSyncStatusService, IDisposable
 
     private async Task RefreshAsync()
     {
+        var previous = Current;
         await RecomputeAsync(CancellationToken.None).ConfigureAwait(false);
+        if (previous == Current)
+        {
+            return;
+        }
+
         await NotifyAsync().ConfigureAwait(false);
     }
 

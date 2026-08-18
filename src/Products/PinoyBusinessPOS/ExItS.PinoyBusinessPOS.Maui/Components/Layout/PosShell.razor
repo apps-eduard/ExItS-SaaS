@@ -70,6 +70,7 @@
     private bool _hasPosAccess = true;
     private bool _showBottomNav = true;
     private bool _setupChromeReady;
+    private bool? _firstTimeSetupIncomplete;
     private StoreHeader? _storeHeader;
 
     private bool IsCatalogActive
@@ -134,8 +135,15 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task RefreshFirstTimeSetupChromeAsync()
+    private async Task RefreshFirstTimeSetupChromeAsync(bool force = false)
     {
+        if (!force && _firstTimeSetupIncomplete == false)
+        {
+            _showBottomNav = true;
+            _setupChromeReady = true;
+            return;
+        }
+
         var incomplete = false;
         try
         {
@@ -146,6 +154,7 @@
             incomplete = false;
         }
 
+        _firstTimeSetupIncomplete = incomplete;
         _showBottomNav = !incomplete;
         _setupChromeReady = true;
 
@@ -167,8 +176,9 @@
 
     private async Task OnAccessChangedAsync()
     {
+        _firstTimeSetupIncomplete = null;
         await RefreshHomeDestinationAsync();
-        await RefreshFirstTimeSetupChromeAsync();
+        await RefreshFirstTimeSetupChromeAsync(force: true);
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)

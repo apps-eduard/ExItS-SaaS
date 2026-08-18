@@ -355,23 +355,24 @@ else
             return;
         }
 
-        await LoadCategoriesAsync();
-
         Guid? categoryId = Guid.TryParse(_categoryFilter, out var parsedCategory) ? parsedCategory : null;
-        var result = await Catalog.ListProductsAsync(
+        var categoriesTask = LoadCategoriesAsync();
+        var productsTask = Catalog.ListProductsAsync(
             _search,
             string.IsNullOrWhiteSpace(_statusFilter) ? null : _statusFilter,
             categoryId,
             string.IsNullOrWhiteSpace(_unitFilter) ? null : _unitFilter,
             _page,
             _pageSize);
+        await Task.WhenAll(categoriesTask, productsTask);
+        var result = await productsTask;
 
         if (result.IsSuccess && result.Data is not null)
         {
             _items = result.Data.Items;
             _totalCount = result.Data.TotalCount;
         }
-        else if (result.Status is ApiCallStatus.Offline or ApiCallStatus.Timeout or ApiCallStatus.Unavailable)
+        else if (result.Status is ApiCallStatus.Offline or ApiCallStatus.Timeout or ApiCallStatus.Unavailable or ApiCallStatus.RateLimited)
         {
             _items = Array.Empty<PosCatalogProductDto>();
             _totalCount = 0;

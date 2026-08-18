@@ -35,6 +35,9 @@
     [Parameter] public EventCallback OnOpened { get; set; }
 
     private int _unreadCount;
+    private bool _hasLoadedUnread;
+    private bool _loadedPersonal;
+    private Guid? _loadedOrgId;
     private CancellationTokenSource? _loadCts;
 
     private string? BadgeText => ShellNotificationUnread.FormatBadge(_unreadCount);
@@ -54,15 +57,18 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        await RefreshUnreadAsync();
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
+        var orgId = OrganizationIdOverride ?? CurrentUser.Session?.OrganizationId;
+        if (_hasLoadedUnread
+            && _loadedPersonal == UsePersonalNotifications
+            && _loadedOrgId == orgId)
         {
-            await RefreshUnreadAsync();
+            return;
         }
+
+        _loadedPersonal = UsePersonalNotifications;
+        _loadedOrgId = orgId;
+        _hasLoadedUnread = true;
+        await RefreshUnreadAsync();
     }
 
     private async Task OpenNotificationsAsync()
@@ -149,15 +155,36 @@
         }
     }
 
-    private Task OnContextChangedAsync() => RefreshUnreadAsync();
+    private Task OnContextChangedAsync()
+    {
+        var orgId = OrganizationIdOverride ?? CurrentUser.Session?.OrganizationId;
+        if (_hasLoadedUnread
+            && _loadedPersonal == UsePersonalNotifications
+            && _loadedOrgId == orgId)
+        {
+            return Task.CompletedTask;
+        }
+
+        return RefreshUnreadAsync();
+    }
 
     private Task OnUnreadStateChangedAsync() => RefreshUnreadAsync();
 
     private void OnConnectivityChanged(object? sender, ConnectivityStatus status) =>
         _ = InvokeAsync(RefreshUnreadAsync);
 
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) =>
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        var orgId = OrganizationIdOverride ?? CurrentUser.Session?.OrganizationId;
+        if (_hasLoadedUnread
+            && _loadedPersonal == UsePersonalNotifications
+            && _loadedOrgId == orgId)
+        {
+            return;
+        }
+
         _ = InvokeAsync(RefreshUnreadAsync);
+    }
 
     public void Dispose()
     {

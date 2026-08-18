@@ -454,6 +454,7 @@ public sealed class PosCatalogClient(HttpClient httpClient, IConnectivityService
         HttpStatusCode.Unauthorized => ApiCallStatus.Unauthorized,
         HttpStatusCode.Forbidden => ApiCallStatus.Forbidden,
         HttpStatusCode.RequestTimeout or HttpStatusCode.GatewayTimeout => ApiCallStatus.Timeout,
+        HttpStatusCode.TooManyRequests => ApiCallStatus.RateLimited,
         _ when (int)statusCode >= 500 => ApiCallStatus.Unavailable,
         _ => ApiCallStatus.Failed
     };

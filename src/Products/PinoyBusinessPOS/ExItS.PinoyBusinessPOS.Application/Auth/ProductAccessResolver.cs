@@ -1,5 +1,4 @@
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
-using ExItS.PinoyBusinessPOS.Application.Auth;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Platform;
 
@@ -7,6 +6,13 @@ namespace ExItS.PinoyBusinessPOS.Application.Auth;
 
 public sealed class ProductAccessResolver(IPlatformAccessClient accessClient) : IProductAccessResolver
 {
+    private static readonly TimeSpan EligibleListCacheTtl = TimeSpan.FromSeconds(45);
+    private readonly SemaphoreSlim _listGate = new(1, 1);
+    private readonly TimeProvider _clock = TimeProvider.System;
+    private Guid? _cachedUserId;
+    private IReadOnlyList<EligibleOrganization>? _cachedOrgs;
+    private DateTimeOffset _cachedAt;
+
     public async Task<AuthResult> EvaluateAsync(Guid userId, Guid organizationId, CancellationToken ct = default)
     {
         var result = await accessClient
@@ -28,8 +34,43 @@ public sealed class ProductAccessResolver(IPlatformAccessClient accessClient) : 
 
     public async Task<IReadOnlyList<EligibleOrganization>> ListEligibleOrganizationsAsync(Guid userId, CancellationToken ct = default)
     {
+        await _listGate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            if (_cachedOrgs is not null
+                && _cachedUserId == userId
+                && _clock.GetUtcNow() - _cachedAt < EligibleListCacheTtl)
+            {
+                return _cachedOrgs;
+            }
+
+            var list = await FetchEligibleOrganizationsAsync(userId, ct).ConfigureAwait(false);
+            if (list is null)
+            {
+                return Array.Empty<EligibleOrganization>();
+            }
+
+            _cachedUserId = userId;
+            _cachedOrgs = list;
+            _cachedAt = _clock.GetUtcNow();
+            return list;
+        }
+        finally
+        {
+            _listGate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Returns null when both listing paths failed (do not cache a transport miss).
+    /// Empty success (no memberships) is cached so login/org-select/header share one round-trip.
+    /// </summary>
+    private async Task<IReadOnlyList<EligibleOrganization>?> FetchEligibleOrganizationsAsync(
+        Guid userId,
+        CancellationToken ct)
+    {
         var authOrgs = await accessClient.GetAuthEligibleOrganizationsAsync(ct).ConfigureAwait(false);
-        if (authOrgs.IsSuccess && authOrgs.Data is not null && authOrgs.Data.Count > 0)
+        if (authOrgs.IsSuccess && authOrgs.Data is not null)
         {
             // Membership eligibility only. POS entitlement is confirmed on SelectOrganization/bind.
             return authOrgs.Data
@@ -47,7 +88,7 @@ public sealed class ProductAccessResolver(IPlatformAccessClient accessClient) : 
         var memberships = await accessClient.GetUserMembershipsAsync(userId, ct).ConfigureAwait(false);
         if (!memberships.IsSuccess || memberships.Data is null)
         {
-            return Array.Empty<EligibleOrganization>();
+            return null;
         }
 
         var list = new List<EligibleOrganization>();

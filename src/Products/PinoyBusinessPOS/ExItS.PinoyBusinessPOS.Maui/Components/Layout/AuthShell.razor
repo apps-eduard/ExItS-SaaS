@@ -6,17 +6,20 @@
 @inject CultureController CultureCtl
 @inject ICurrentUserContext CurrentUser
 @inject AuthShellIdentityState IdentityState
+@inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
 <div class="exds-root pos-shell pos-shell--auth" data-layout="phone" @key="_cultureEpoch">
     @if (CurrentUser.IsAuthenticated)
     {
         var usePersonalIdentity = !HasOrganizationIdentity;
+        var quietHeaderNetwork = QuietHeaderNetwork;
         <StoreHeader Identity="@(usePersonalIdentity ? StoreHeaderIdentity.Personal : StoreHeaderIdentity.Organization)"
-                     ShowSync="true"
+                     ShowSync="@(!quietHeaderNetwork)"
+                     ShowNotifications="@(quietHeaderNetwork ? false : (bool?)null)"
                      ShowPersonalHome="@(!usePersonalIdentity)"
                      ShowSwitchOrganization="true"
-                     OrganizationIdOverride="@EffectiveOrgId"
+                     OrganizationIdOverride="@(IdentityState.UseOrgSelectChrome ? null : EffectiveOrgId)"
                      OrganizationNameOverride="@EffectiveOrgName" />
     }
     <main class="pos-content" id="pos-main">
@@ -43,6 +46,31 @@
         EffectiveOrgId is not null
         || !string.IsNullOrWhiteSpace(EffectiveOrgName);
 
+    /// <summary>
+    /// Sign-in and organization-select must not load unread/sync/logo HTTP while password
+    /// login or org bind is in flight — those GETs share the 15s client and starve bind.
+    /// </summary>
+    private bool QuietHeaderNetwork
+    {
+        get
+        {
+            if (IdentityState.UseOrgSelectChrome)
+            {
+                return true;
+            }
+
+            var path = Nav.ToBaseRelativePath(Nav.Uri);
+            var query = path.IndexOf('?', StringComparison.Ordinal);
+            if (query >= 0)
+            {
+                path = path[..query];
+            }
+
+            return path.Equals("signin", StringComparison.OrdinalIgnoreCase)
+                   || path.Equals("organization-select", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     protected override void OnInitialized()
     {
         ThemeCtl.Changed += OnChangedAsync;
@@ -50,6 +78,7 @@
         CultureCtl.Changed += OnChangedAsync;
         CurrentUser.Changed += OnSessionChangedAsync;
         IdentityState.Changed += OnSessionChangedAsync;
+        Nav.LocationChanged += OnLocationChanged;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -64,6 +93,9 @@
 
     private Task OnSessionChangedAsync() => InvokeAsync(StateHasChanged);
 
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs args) =>
+        _ = InvokeAsync(StateHasChanged);
+
     private async Task OnChangedAsync()
     {
         _cultureEpoch = CultureCtl.Epoch;
@@ -77,5 +109,6 @@
         CultureCtl.Changed -= OnChangedAsync;
         CurrentUser.Changed -= OnSessionChangedAsync;
         IdentityState.Changed -= OnSessionChangedAsync;
+        Nav.LocationChanged -= OnLocationChanged;
     }
 }

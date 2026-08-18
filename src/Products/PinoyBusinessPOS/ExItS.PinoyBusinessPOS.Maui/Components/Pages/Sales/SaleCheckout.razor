@@ -846,16 +846,8 @@ else
                 }
 
                 await LoadOperationalSetupAsync();
-                await LoadCategoriesAsync();
-                await LoadBrowseProductsAsync();
-                try
-                {
-                    await CatalogSync.RefreshFromServerAsync();
-                }
-                catch
-                {
-                    // Cache refresh is best-effort; checkout remains online-capable.
-                }
+                await Task.WhenAll(LoadCategoriesAsync(), LoadBrowseProductsAsync());
+                ScheduleSellingCatalogCacheRefresh();
 
                 await TryRestorePendingPaymentAsync();
                 await TryApplyCheckoutResumeAsync();
@@ -868,8 +860,21 @@ else
     private async Task LoadOfflineCheckoutStateAsync()
     {
         _openShift = await LocalCatalog.LoadOpenShiftSnapshotAsync();
-        await LoadCategoriesAsync();
-        await LoadBrowseProductsAsync();
+        await Task.WhenAll(LoadCategoriesAsync(), LoadBrowseProductsAsync());
+    }
+
+    private void ScheduleSellingCatalogCacheRefresh() => _ = RefreshSellingCatalogCacheAsync();
+
+    private async Task RefreshSellingCatalogCacheAsync()
+    {
+        try
+        {
+            await CatalogSync.RefreshFromServerAsync();
+        }
+        catch
+        {
+            // Cache refresh is best-effort; checkout remains online-capable.
+        }
     }
 
     private static bool IsUnreachable(ApiCallStatus status) =>

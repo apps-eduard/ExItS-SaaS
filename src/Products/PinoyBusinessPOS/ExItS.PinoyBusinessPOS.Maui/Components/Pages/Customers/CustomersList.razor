@@ -44,7 +44,7 @@ else
             <button type="button"
                     class="pos-action-tile"
                     disabled="@_loading"
-                    @onclick="ReloadAsync">
+                    @onclick="RefreshAsync">
                 <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
                 <span class="pos-action-tile__label">@L["Customers_Refresh"]</span>
             </button>
@@ -159,7 +159,7 @@ else
         }
 
         _ready = true;
-        await ReloadAsync();
+        await LoadCustomersAsync(syncOfflineCache: true);
     }
 
     private async Task OnSearchInputAsync(string? value)
@@ -187,7 +187,11 @@ else
         await ReloadAsync();
     }
 
-    private async Task ReloadAsync()
+    private Task RefreshAsync() => LoadCustomersAsync(syncOfflineCache: true);
+
+    private Task ReloadAsync() => LoadCustomersAsync(syncOfflineCache: false);
+
+    private async Task LoadCustomersAsync(bool syncOfflineCache)
     {
         _loading = true;
         _errorTitle = null;
@@ -199,13 +203,9 @@ else
         var online = await Connectivity.IsConnectedAsync();
         if (online)
         {
-            try
+            if (syncOfflineCache)
             {
-                await Sync.DownloadIncrementalAsync();
-            }
-            catch
-            {
-                // Best effort incremental download.
+                ScheduleOfflineCacheDownload();
             }
 
             var result = await Customers.ListAsync(_search, page: _page, pageSize: _pageSize);
@@ -259,6 +259,20 @@ else
         _fromLocal = true;
         _errorTitle = null;
         _errorMessage = null;
+    }
+
+    private void ScheduleOfflineCacheDownload() => _ = DownloadOfflineCacheAsync();
+
+    private async Task DownloadOfflineCacheAsync()
+    {
+        try
+        {
+            await Sync.DownloadIncrementalAsync();
+        }
+        catch
+        {
+            // Best-effort offline cache; the visible list comes from ListAsync.
+        }
     }
 
     private void GoNew() => Nav.NavigateTo("/customers/new");

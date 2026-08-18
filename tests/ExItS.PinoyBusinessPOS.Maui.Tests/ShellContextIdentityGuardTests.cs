@@ -53,6 +53,7 @@ public sealed class ShellContextIdentityGuardTests
 
         var posShell = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Layout", "PosShell.razor"));
         Assert.DoesNotContain("HeaderState.Reset()", posShell, StringComparison.Ordinal);
+        Assert.Contains("_firstTimeSetupIncomplete == false", posShell, StringComparison.Ordinal);
 
         var personalShell = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Layout", "PersonalShell.razor"));
         Assert.DoesNotContain("HeaderState.Reset()", personalShell, StringComparison.Ordinal);
@@ -81,6 +82,9 @@ public sealed class ShellContextIdentityGuardTests
 
         var orgIdentity = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Shared", "ShellOrganizationIdentity.razor"));
         var userIdentity = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Shared", "ShellUserIdentity.razor"));
+        Assert.Contains("_logoInFlight", identity, StringComparison.Ordinal);
+        Assert.Contains("_logoInFlight", orgIdentity, StringComparison.Ordinal);
+        Assert.Contains("_roleResolved", userIdentity, StringComparison.Ordinal);
         Assert.Contains("AvatarShape.SoftSquare", orgIdentity, StringComparison.Ordinal);
         Assert.Contains("AvatarShape.Circle", userIdentity, StringComparison.Ordinal);
         Assert.Contains("OrgSelect_EnterOwner", userIdentity, StringComparison.Ordinal);

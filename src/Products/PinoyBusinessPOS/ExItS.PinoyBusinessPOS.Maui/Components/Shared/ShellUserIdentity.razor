@@ -24,6 +24,9 @@
     [Parameter] public string? MembershipRoleHint { get; set; }
 
     private string? _roleLabel;
+    private string? _roleCacheKey;
+    private bool _roleInFlight;
+    private bool _roleResolved;
     private CancellationTokenSource? _roleCts;
 
     private AuthSession? Session => CurrentUser.Session;
@@ -70,14 +73,25 @@
 
     private async Task RefreshRoleLabelAsync()
     {
+        var key = $"{Session?.UserId:D}|{Session?.OrganizationId:D}|{SellingMode.PreferredHomeRoute}|{MembershipRoleHint}";
+        if (_roleCacheKey == key && (_roleInFlight || _roleResolved))
+        {
+            return;
+        }
+
         _roleCts?.Cancel();
         _roleCts?.Dispose();
         _roleCts = new CancellationTokenSource();
-        var ct = _roleCts.Token;
+        var captured = _roleCts;
+        var ct = captured.Token;
+        _roleCacheKey = key;
+        _roleInFlight = true;
+        _roleResolved = false;
 
+        string? nextLabel;
         try
         {
-            _roleLabel = await ResolveFriendlyRoleAsync(ct);
+            nextLabel = await ResolveFriendlyRoleAsync(ct);
         }
         catch (OperationCanceledException)
         {
@@ -85,11 +99,25 @@
         }
         catch
         {
-            _roleLabel = FriendlyFromMembership(MembershipRoleHint);
+            nextLabel = FriendlyFromMembership(MembershipRoleHint);
+        }
+        finally
+        {
+            if (ReferenceEquals(_roleCts, captured))
+            {
+                _roleInFlight = false;
+            }
         }
 
-        if (!ct.IsCancellationRequested)
+        if (ct.IsCancellationRequested || !ReferenceEquals(_roleCts, captured))
         {
+            return;
+        }
+
+        _roleResolved = true;
+        if (_roleLabel != nextLabel)
+        {
+            _roleLabel = nextLabel;
             await InvokeAsync(StateHasChanged);
         }
     }

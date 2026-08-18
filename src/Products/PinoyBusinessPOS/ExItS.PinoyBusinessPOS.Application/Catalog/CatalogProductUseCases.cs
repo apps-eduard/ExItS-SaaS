@@ -82,9 +82,6 @@ public sealed class CatalogProductQueryService
             .ListByProductIdsAsync(orgId, items.Select(p => p.Id).ToList(), cancellationToken)
             .ConfigureAwait(false);
         var imagesByProduct = images.ToDictionary(i => i.ProductId.Value);
-        var liveVersions = await CatalogPlatformImageMeta
-            .TryGetVersionsAsync(_platform, items, imagesByProduct, cancellationToken)
-            .ConfigureAwait(false);
 
         return new PagedResult<PosCatalogProductDto>(
             items.Select(p => Map(
@@ -92,7 +89,7 @@ public sealed class CatalogProductQueryService
                     accountsByProduct.GetValueOrDefault(p.Id.Value),
                     unitsByProduct.GetValueOrDefault(p.Id.Value),
                     imagesByProduct.GetValueOrDefault(p.Id.Value),
-                    liveVersions.GetValueOrDefault(p.Id.Value)))
+                    livePlatformImageVersion: null))
                 .ToList(),
             total,
             Math.Max(page ?? 1, 1),

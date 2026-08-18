@@ -557,61 +557,59 @@
     private async Task NavigateAfterSignInAsync(AuthSession session)
     {
         var pending = ReturnRoute.Take();
-        var start = await Gate.ResolveStartRouteAsync();
 
-        if (NavigationGate.IsOfflinePinSetupRoute(start))
+        // Do not call the post-boot start-route resolver here — it re-runs session restore
+        // (introspect + org context + grants) and eligible-org listing while the login spinner
+        // is still up. That repeats GET /auth/organizations (memberships + org) and looks like
+        // a request loop.
+        if (await RequiresOfflinePinEnrollmentAsync(session).ConfigureAwait(false))
         {
-            Nav.NavigateTo(AppendReturnRoute(start, pending), replace: true);
+            const string pinSetup = "/offline-pin-setup";
+            Nav.NavigateTo(
+                NavigationGate.IsOfflinePinSetupRoute(pinSetup)
+                    ? AppendReturnRoute(pinSetup, pending)
+                    : pinSetup,
+                replace: true);
             return;
         }
 
         if (!string.IsNullOrWhiteSpace(pending))
         {
-            if (NavigationGate.IsOrgFirstTimeSetupRoute(start)
-                && !string.Equals(start, pending, StringComparison.OrdinalIgnoreCase))
-            {
-                ReturnRoute.Capture(pending);
-                Nav.NavigateTo(start, replace: true);
-                return;
-            }
-
             Nav.NavigateTo(pending, replace: true);
             return;
         }
 
         var orgs = await Access.ListEligibleOrganizationsAsync(session.UserId);
 
-        // No org membership → Personal workspace (may force offline PIN enrollment first).
-        // Personal default sessions also clear any stale device org preference on sign-in/restore.
+        // No org membership → Personal workspace (PIN enrollment already handled above).
         if (orgs.Count == 0)
         {
-            Nav.NavigateTo(start, replace: true);
+            Nav.NavigateTo(RoleHomeResolver.PersonalHome, replace: true);
             return;
         }
 
-        // Own org + other memberships (or any multi-org set) → choose workspace.
-        if (orgs.Count > 1)
-        {
-            Nav.NavigateTo("/organization-select", replace: true);
-            return;
-        }
-
-        // Exactly one org (owned or assigned staff membership) → enter it directly.
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
-        try
-        {
-            var selected = await Auth.SelectOrganizationAsync(orgs[0].OrganizationId, cts.Token);
-            if (selected.Succeeded)
-            {
-                Nav.NavigateTo("/", replace: true);
-                return;
-            }
-        }
-        catch (OperationCanceledException)
-        {
-        }
-
+        // One or more memberships → organization-select. Single-org auto-enter happens there
+        // once; the eligible-org list is cached so this page and org-select share one HTTP call.
         Nav.NavigateTo("/organization-select", replace: true);
+    }
+
+    private async Task<bool> RequiresOfflinePinEnrollmentAsync(AuthSession session)
+    {
+        var canEnroll = session.HasPosAccess
+                        || AuthSessionWorkspace.IsPersonalDefault(session)
+                        || session.OrganizationId is null;
+        if (!canEnroll)
+        {
+            return false;
+        }
+
+        if (session.HasPosAccess && (session.PosDeviceId is null || session.BranchId is null))
+        {
+            return false;
+        }
+
+        var readiness = await Auth.EvaluateCurrentUserOfflinePinReadinessAsync();
+        return readiness.RequiresPinEnrollment && !readiness.CanOfferPinUnlock;
     }
 
     private static string AppendReturnRoute(string setupRoute, string? pending)

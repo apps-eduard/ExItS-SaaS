@@ -152,6 +152,14 @@
                 }
             </Section>
 
+            @if (_busy)
+            {
+                <Stack Align="StackAlign.Center" Gap="2">
+                    <Spinner />
+                    <span>@L["Common_Loading"]</span>
+                </Stack>
+            }
+
             @if (!string.IsNullOrEmpty(_error))
             {
                 <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
@@ -185,6 +193,13 @@
                 </button>
             }
         </Stack>
+        @if (_busy)
+        {
+            <Stack Align="StackAlign.Center" Gap="2">
+                <Spinner />
+                <span>@L["Common_Loading"]</span>
+            </Stack>
+        }
         @if (!string.IsNullOrEmpty(_error))
         {
             <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
@@ -198,7 +213,6 @@
     private bool _loading = true;
     private bool _busy;
     private bool _authenticated;
-    private bool _isOwner;
     private bool _teamLoading;
     private string? _error;
     private IReadOnlyList<EligibleOrganization> _organizations = [];
@@ -304,31 +318,39 @@
                 }
             }
 
-            _isOwner = OrganizationMembershipRoles.HasOrganizationOwner(_organizations);
-            await LoadOrganizationLogosAsync();
             ResolveFocusOrganization();
             PublishTopBarPreview();
-
-            // Exactly one org (owned or assigned) and not already bound: enter it directly.
-            // Multi-org users stay on this chooser (including Personal → Organization switches).
-            if (_organizations.Count == 1 && CurrentUser.Session.OrganizationId is null)
-            {
-                var only = _organizations[0];
-                var preferred = OrganizationMembershipRoles.IsOwnerRole(only.MembershipRole)
-                    ? RoleHomeResolver.OwnerHome
-                    : null;
-                await SelectAsAsync(only.OrganizationId, preferred);
-                return;
-            }
-
-            if (_focusOrg is not null && OrganizationMembershipRoles.IsOwnerRole(_focusOrg.MembershipRole))
-            {
-                await LoadTeamAsync(_focusOrg.OrganizationId);
-            }
         }
         finally
         {
             _loading = false;
+        }
+
+        // Paint the chooser before bind/logos/team. Holding _loading through SelectOrganization
+        // stacked a second 15s timeout on the login spinner and showed only "Loading...".
+        await InvokeAsync(StateHasChanged);
+
+        if (!_authenticated || CurrentUser.Session is null)
+        {
+            return;
+        }
+
+        // Exactly one org (owned or assigned) and not already bound: enter it directly.
+        // Multi-org users stay on this chooser (including Personal → Organization switches).
+        if (_organizations.Count == 1 && CurrentUser.Session.OrganizationId is null)
+        {
+            var only = _organizations[0];
+            var preferred = OrganizationMembershipRoles.IsOwnerRole(only.MembershipRole)
+                ? RoleHomeResolver.OwnerHome
+                : null;
+            await SelectAsAsync(only.OrganizationId, preferred);
+            return;
+        }
+
+        _ = LoadOrganizationLogosAsync();
+        if (_focusOrg is not null && OrganizationMembershipRoles.IsOwnerRole(_focusOrg.MembershipRole))
+        {
+            await LoadTeamAsync(_focusOrg.OrganizationId);
         }
     }
 
@@ -385,6 +407,8 @@
                 _orgLogos[org.OrganizationId] = null;
             }
         }
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task LoadTeamAsync(Guid organizationId)
@@ -516,6 +540,7 @@
     {
         _busy = true;
         _error = null;
+        await InvokeAsync(StateHasChanged);
         try
         {
             var org = _organizations.FirstOrDefault(o => o.OrganizationId == organizationId);

@@ -97,7 +97,12 @@ public sealed class GetCustomerStorefront
             : await _images.ListByProductIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false);
         var imageByProduct = imageRows.ToDictionary(i => i.ProductId.Value);
         var liveVersions = await CatalogPlatformImageMeta
-            .TryGetVersionsAsync(_platform, pageItems, imageByProduct, cancellationToken)
+            .TryGetVersionsBestEffortAsync(
+                _platform,
+                pageItems,
+                imageByProduct,
+                TimeSpan.FromSeconds(2),
+                cancellationToken)
             .ConfigureAwait(false);
 
         var branches = await _branches

@@ -46,6 +46,12 @@ public sealed class ShellNotificationBellGuardTests
         Assert.Contains("ShellNotificationUnread.FormatBadge", bell, StringComparison.Ordinal);
         Assert.Contains("Shell_NotificationsAria", bell, StringComparison.Ordinal);
         Assert.Contains("UnreadState.Changed", bell, StringComparison.Ordinal);
+        Assert.Contains("_hasLoadedUnread", bell, StringComparison.Ordinal);
+        Assert.DoesNotContain("OnAfterRenderAsync", bell, StringComparison.Ordinal);
+        Assert.Contains("OnLocationChanged", bell, StringComparison.Ordinal);
+        Assert.True(
+            CountOccurrences(bell, "_loadedOrgId == orgId") >= 3,
+            "Unread reload on parameter/session/location change must skip when org context is unchanged.");
         Assert.Contains("ShellNotificationUnreadState", File.ReadAllText(Path.Combine(MauiProject(),
             "MauiProgram.cs")), StringComparison.Ordinal);
         Assert.Contains("MarkRelatedNotificationsReadAsync", File.ReadAllText(Path.Combine(MauiProject(),
@@ -105,5 +111,18 @@ public sealed class ShellNotificationBellGuardTests
         }
 
         throw new InvalidOperationException("Repository root not found.");
+    }
+
+    private static int CountOccurrences(string source, string value)
+    {
+        var count = 0;
+        var index = 0;
+        while ((index = source.IndexOf(value, index, StringComparison.Ordinal)) >= 0)
+        {
+            count++;
+            index += value.Length;
+        }
+
+        return count;
     }
 }

@@ -75,4 +75,28 @@ internal static class CatalogPlatformImageMeta
 
         return result;
     }
+
+    /// <summary>
+    /// Same as <see cref="TryGetVersionsAsync"/> but abandons a slow Platform round-trip
+    /// so product lists can render from local image metadata.
+    /// </summary>
+    public static async Task<Dictionary<Guid, int?>> TryGetVersionsBestEffortAsync(
+        IPlatformMerchantCatalogClient? platform,
+        IReadOnlyList<CatalogProduct> products,
+        IReadOnlyDictionary<Guid, CatalogProductImage> merchantOverrides,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cts.CancelAfter(timeout);
+        try
+        {
+            return await TryGetVersionsAsync(platform, products, merchantOverrides, cts.Token)
+                .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return new Dictionary<Guid, int?>();
+        }
+    }
 }

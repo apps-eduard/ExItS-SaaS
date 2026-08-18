@@ -24,6 +24,7 @@
     private Guid? _logoOrgId;
     private string? _organizationLogoUrl;
     private bool _logoResolved;
+    private bool _logoInFlight;
     private CancellationTokenSource? _logoCts;
 
     private AuthSession? Session => CurrentUser.Session;
@@ -102,23 +103,25 @@
             return;
         }
 
-        if (_logoOrgId == orgId && _logoResolved)
+        if (_logoOrgId == orgId && (_logoResolved || _logoInFlight))
         {
             return;
         }
 
-        // Clear immediately on org switch so the previous logo never sticks.
         if (_logoOrgId != orgId)
         {
+            _logoCts?.Cancel();
+            _logoCts?.Dispose();
             _organizationLogoUrl = null;
             _logoResolved = false;
             _logoOrgId = orgId;
         }
 
-        _logoCts?.Cancel();
         _logoCts?.Dispose();
         _logoCts = new CancellationTokenSource();
-        var ct = _logoCts.Token;
+        var captured = _logoCts;
+        var ct = captured.Token;
+        _logoInFlight = true;
 
         try
         {
@@ -149,6 +152,13 @@
             _organizationLogoUrl = null;
             _logoResolved = true;
         }
+        finally
+        {
+            if (ReferenceEquals(_logoCts, captured))
+            {
+                _logoInFlight = false;
+            }
+        }
 
         await InvokeAsync(StateHasChanged);
     }
@@ -158,6 +168,7 @@
         _logoOrgId = null;
         _organizationLogoUrl = null;
         _logoResolved = false;
+        _logoInFlight = false;
         _logoCts?.Cancel();
         _logoCts?.Dispose();
         _logoCts = null;

@@ -238,12 +238,13 @@ public sealed class HomeDestinationRoutingGuardTests
         var switcher = File.ReadAllText(Path.Combine(
             MauiProject(), "Components", "Shared", "AccountContextSwitcher.razor"));
 
-        // Login: 0 → personal, >1 → select, 1 → auto-enter. Owners with a single org no longer
-        // always land on the role chooser.
+        // Login: 0 → personal, >=1 → organization-select. Single-org auto-enter is on
+        // organization-select only — sign-in must not await bind under the login spinner.
         Assert.Contains("NavigateAfterSignInAsync", signIn, StringComparison.Ordinal);
         Assert.Contains("if (orgs.Count == 0)", signIn, StringComparison.Ordinal);
-        Assert.Contains("if (orgs.Count > 1)", signIn, StringComparison.Ordinal);
-        Assert.Contains("SelectOrganizationAsync(orgs[0].OrganizationId", signIn, StringComparison.Ordinal);
+        Assert.Contains("Nav.NavigateTo(\"/organization-select\", replace: true)", signIn, StringComparison.Ordinal);
+        Assert.DoesNotContain("SelectOrganizationAsync(orgs[0].OrganizationId", signIn, StringComparison.Ordinal);
+        Assert.DoesNotContain("if (orgs.Count > 1)", signIn, StringComparison.Ordinal);
         Assert.DoesNotContain(
             "if (OrganizationMembershipRoles.HasOrganizationOwner(orgs))",
             signIn,
@@ -252,6 +253,11 @@ public sealed class HomeDestinationRoutingGuardTests
         // Organization-select auto-enters any unbound single-org user (owner or staff).
         Assert.Contains("_organizations.Count == 1 && CurrentUser.Session.OrganizationId is null", orgSelect, StringComparison.Ordinal);
         Assert.DoesNotContain("!_isOwner\n                && _organizations.Count == 1", orgSelect, StringComparison.Ordinal);
+        var loadingFalse = orgSelect.IndexOf("_loading = false;", StringComparison.Ordinal);
+        var autoEnter = orgSelect.IndexOf(
+            "_organizations.Count == 1 && CurrentUser.Session.OrganizationId is null",
+            StringComparison.Ordinal);
+        Assert.InRange(loadingFalse, 0, autoEnter);
 
         Assert.Contains("EnsureOrganizationAccountProfileAsync", orgSelect, StringComparison.Ordinal);
         Assert.Contains("ListEligibleOrganizationsAsync", orgSelect, StringComparison.Ordinal);

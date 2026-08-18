@@ -34,6 +34,7 @@ public sealed class CustomerCreditOfflineSyncService(
     };
 
     private readonly TimeProvider _clock = timeProvider ?? TimeProvider.System;
+    private readonly SemaphoreSlim _downloadGate = new(1, 1);
 
     public bool CanMutateOffline =>
         accessPolicy.AllowsOfflineMutation
@@ -52,10 +53,22 @@ public sealed class CustomerCreditOfflineSyncService(
             return;
         }
 
-        await DownloadCustomersAsync(ct).ConfigureAwait(false);
-        await DownloadCreditsAsync(ct).ConfigureAwait(false);
-        await DownloadRepaymentsAsync(ct).ConfigureAwait(false);
-        syncStatus.Refresh();
+        if (!await _downloadGate.WaitAsync(0, ct).ConfigureAwait(false))
+        {
+            return;
+        }
+
+        try
+        {
+            await DownloadCustomersAsync(ct).ConfigureAwait(false);
+            await DownloadCreditsAsync(ct).ConfigureAwait(false);
+            await DownloadRepaymentsAsync(ct).ConfigureAwait(false);
+            syncStatus.Refresh();
+        }
+        finally
+        {
+            _downloadGate.Release();
+        }
     }
 
     public async Task ReconcileOnReconnectAsync(CancellationToken ct = default)
@@ -989,6 +1002,7 @@ public sealed class CustomerCreditOfflineSyncService(
         var since = await store.GetDownloadCheckpointAsync("credit-entries", ct).ConfigureAwait(false);
         var page = 1;
         DateTimeOffset? maxUtc = since;
+        var customerIds = new HashSet<Guid>();
         while (true)
         {
             var result = await api.SyncCreditEntriesAsync(since, page, 100, ct).ConfigureAwait(false);
@@ -997,7 +1011,6 @@ public sealed class CustomerCreditOfflineSyncService(
                 break;
             }
 
-            var customerIds = new HashSet<Guid>();
             foreach (var item in result.Data.Items)
             {
                 await store.UpsertServerCreditAsync(MapCredit(item, LocalEntitySyncState.ServerConfirmed), ct)
@@ -1010,11 +1023,6 @@ public sealed class CustomerCreditOfflineSyncService(
                 }
             }
 
-            foreach (var customerId in customerIds)
-            {
-                await RefreshCustomerFinancialsFromServerAsync(customerId, ct).ConfigureAwait(false);
-            }
-
             if (result.Data.Items.Count < result.Data.PageSize || result.Data.Items.Count == 0)
             {
                 break;
@@ -1022,6 +1030,8 @@ public sealed class CustomerCreditOfflineSyncService(
 
             page++;
         }
+
+        await RebuildLocalBalancesAsync(customerIds, ct).ConfigureAwait(false);
 
         if (maxUtc is not null)
         {
@@ -1083,6 +1093,7 @@ public sealed class CustomerCreditOfflineSyncService(
         var since = await store.GetDownloadCheckpointAsync("repayments", ct).ConfigureAwait(false);
         var page = 1;
         DateTimeOffset? maxUtc = since;
+        var customerIds = new HashSet<Guid>();
         while (true)
         {
             var result = await api.SyncRepaymentsAsync(since, page, 100, ct).ConfigureAwait(false);
@@ -1091,7 +1102,6 @@ public sealed class CustomerCreditOfflineSyncService(
                 break;
             }
 
-            var customerIds = new HashSet<Guid>();
             foreach (var item in result.Data.Items)
             {
                 await store.UpsertServerRepaymentAsync(MapRepayment(item, LocalEntitySyncState.ServerConfirmed), ct)
@@ -1104,11 +1114,6 @@ public sealed class CustomerCreditOfflineSyncService(
                 }
             }
 
-            foreach (var customerId in customerIds)
-            {
-                await RefreshCustomerFinancialsFromServerAsync(customerId, ct).ConfigureAwait(false);
-            }
-
             if (result.Data.Items.Count < result.Data.PageSize || result.Data.Items.Count == 0)
             {
                 break;
@@ -1117,9 +1122,19 @@ public sealed class CustomerCreditOfflineSyncService(
             page++;
         }
 
+        await RebuildLocalBalancesAsync(customerIds, ct).ConfigureAwait(false);
+
         if (maxUtc is not null)
         {
             await store.SetDownloadCheckpointAsync("repayments", maxUtc.Value, ct).ConfigureAwait(false);
+        }
+    }
+
+    private async Task RebuildLocalBalancesAsync(IEnumerable<Guid> customerIds, CancellationToken ct)
+    {
+        foreach (var customerId in customerIds)
+        {
+            await store.RebuildOptimisticBalancesAsync(customerId, ct).ConfigureAwait(false);
         }
     }
 
