@@ -140,6 +140,8 @@ Initial languages: **English (`en`)** and **Filipino (`fil` / `fil-PH`)**.
 
 **P5-WP01:** PinoyBusinessPOS ships `PosResources` + DesignSystem `DesignSystemResources` (`en` + `fil-PH`); see [localization.md](localization.md) and [pos-terminology-guide.md](pos-terminology-guide.md).
 
+**Global search UI:** All compatible POS MAUI list surfaces use shared `SearchBar` (`Components/Data/SearchBar.razor`). See [global-search-filter-pattern.md](global-search-filter-pattern.md) for the presentation vs business-logic split, migration inventory, and exceptions.
+
 ---
 
 ## Motion

@@ -49,6 +49,7 @@ Phase labels:
 | NumberField | Utang MVP | Step, min/max | Yes | Localized numbers | Yes |
 | CurrencyField | Utang MVP | PHP formatting | Yes | Culture currency | Yes |
 | SearchField | MVP foundation | Debounce optional | Yes | Placeholder | Yes |
+| SearchBar | MVP foundation | Canonical global search + optional filter trigger/chips; see [global search pattern](global-search-filter-pattern.md) | Yes | Generic DS strings + page placeholder | Yes |
 | TextArea | Utang MVP | Rows, max length | Yes | Yes | Yes |
 | SelectField | MVP foundation | Single select; clear; loading; empty | Listbox/combobox pattern | Yes | Yes |
 | CheckboxField | Utang MVP | Indeterminate later | Yes | Yes | Yes |
