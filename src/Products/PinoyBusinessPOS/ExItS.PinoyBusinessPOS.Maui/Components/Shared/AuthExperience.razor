@@ -1,0 +1,95 @@
+@inject IStringLocalizer<PosResources> L
+@inject NavigationManager Nav
+
+<div class="pos-auth-page">
+    <header class="pos-auth-page__hero">
+        <div class="pos-auth-page__hero-decor" aria-hidden="true">
+            <span class="pos-auth-page__hero-circle pos-auth-page__hero-circle--1"></span>
+            <span class="pos-auth-page__hero-circle pos-auth-page__hero-circle--2"></span>
+            <span class="pos-auth-page__hero-circle pos-auth-page__hero-circle--3"></span>
+        </div>
+        <div class="pos-auth-page__brand">
+            <h1 class="pos-auth-page__brand-title">@L["SignIn_BrandTitle"]</h1>
+            <p class="pos-auth-page__brand-subtitle">@L["SignIn_BrandSubtitle"]</p>
+        </div>
+    </header>
+
+    <div class="pos-auth-page__body">
+        <div class="pos-auth-page__card">
+            @if (ShowTabs)
+            {
+                <nav class="pos-auth-page__tabs" aria-label="@L["SignIn_AuthTabsLabel"]">
+                    <button type="button"
+                            class="@TabClass(AuthExperienceTab.SignIn)"
+                            aria-current="@(ActiveTab == AuthExperienceTab.SignIn ? "page" : null)"
+                            @onclick="GoSignIn">
+                        @L["SignIn_TabSignIn"]
+                    </button>
+                    <button type="button"
+                            class="@TabClass(AuthExperienceTab.SignUp)"
+                            aria-current="@(ActiveTab == AuthExperienceTab.SignUp ? "page" : null)"
+                            @onclick="GoSignUp">
+                        @L["SignIn_TabSignUp"]
+                    </button>
+                </nav>
+            }
+            else if (!string.IsNullOrWhiteSpace(Title))
+            {
+                <header class="pos-auth-page__heading">
+                    <h2 class="pos-auth-page__heading-title">@Title</h2>
+                    @if (!string.IsNullOrWhiteSpace(Lede))
+                    {
+                        <p class="pos-auth-page__heading-lede">@Lede</p>
+                    }
+                </header>
+            }
+
+            <div class="pos-auth-page__content">
+                @ChildContent
+            </div>
+        </div>
+
+        @if (BelowCard is not null)
+        {
+            <div class="pos-auth-page__below">
+                @BelowCard
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public AuthExperienceTab ActiveTab { get; set; } = AuthExperienceTab.None;
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Lede { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? BelowCard { get; set; }
+
+    private bool ShowTabs =>
+        ActiveTab is AuthExperienceTab.SignIn or AuthExperienceTab.SignUp;
+
+    private string TabClass(AuthExperienceTab tab) =>
+        tab == ActiveTab
+            ? "pos-auth-page__tab pos-auth-page__tab--active"
+            : "pos-auth-page__tab";
+
+    private void GoSignIn()
+    {
+        if (ActiveTab == AuthExperienceTab.SignIn)
+        {
+            return;
+        }
+
+        Nav.NavigateTo("/signin");
+    }
+
+    private void GoSignUp()
+    {
+        if (ActiveTab == AuthExperienceTab.SignUp)
+        {
+            return;
+        }
+
+        Nav.NavigateTo("/register");
+    }
+}

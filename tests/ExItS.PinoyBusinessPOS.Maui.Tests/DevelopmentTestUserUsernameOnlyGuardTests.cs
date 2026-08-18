@@ -26,6 +26,10 @@ public sealed class DevelopmentTestUserUsernameOnlyGuardTests
         Assert.DoesNotContain("SignInWithCredentialsAsync(loginId, sharedPassword", signIn, StringComparison.Ordinal);
         Assert.Contains("SignInPasswordAsync", signIn, StringComparison.Ordinal);
         Assert.Contains("SignIn_TestUserTitle", signIn, StringComparison.Ordinal);
+        Assert.Contains("BelowCard", signIn, StringComparison.Ordinal);
+        Assert.Contains("pos-auth-page__quick-select", signIn, StringComparison.Ordinal);
+        Assert.DoesNotContain("SignIn_TestUserHint", signIn, StringComparison.Ordinal);
+        Assert.DoesNotContain("SignIn_DevelopmentAccess", signIn, StringComparison.Ordinal);
         Assert.Contains("IsDevelopmentAuthenticationEnabled", signIn, StringComparison.Ordinal);
     }
 

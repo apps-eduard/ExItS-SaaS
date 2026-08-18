@@ -517,6 +517,21 @@
   <data name="SignIn_WelcomeSubtitle" xml:space="preserve">
     <value>Mag-sign in upang magpatuloy sa ExItS POS.</value>
   </data>
+  <data name="SignIn_BrandTitle" xml:space="preserve">
+    <value>EXPERT IT SOLUTIONS</value>
+  </data>
+  <data name="SignIn_BrandSubtitle" xml:space="preserve">
+    <value>Pinoy Business POS</value>
+  </data>
+  <data name="SignIn_TabSignIn" xml:space="preserve">
+    <value>Mag-sign in</value>
+  </data>
+  <data name="SignIn_TabSignUp" xml:space="preserve">
+    <value>Mag-sign up</value>
+  </data>
+  <data name="SignIn_AuthTabsLabel" xml:space="preserve">
+    <value>Mag-sign in o mag-sign up</value>
+  </data>
   <data name="SignIn_ContinueGoogle" xml:space="preserve">
     <value>Magpatuloy sa Google</value>
   </data>

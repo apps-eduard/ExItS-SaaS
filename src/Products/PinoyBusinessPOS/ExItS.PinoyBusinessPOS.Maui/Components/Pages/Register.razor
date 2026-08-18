@@ -4,33 +4,38 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
-<div class="pos-register">
-<Page>
-    <header class="pos-register__header">
-        <h1 class="pos-register__title">@L["Register_Title"]</h1>
-        <p class="pos-register__subtitle">@L["Register_Subtitle"]</p>
-    </header>
-
+<AuthExperience ActiveTab="AuthExperienceTab.SignUp">
     <FormValidationSummary Messages="_errors" />
-    <FormGroup Title="@L["Register_FormTitle"]">
-        <TextInput Label="@L["Register_DisplayName"]" @bind-Value="_displayName" Disabled="_busy" IsInvalid="@_invalid" />
-        <TextInput Label="@L["Register_Email"]" @bind-Value="_email" Type="email" Disabled="_busy" IsInvalid="@_invalid" />
-    </FormGroup>
-    <FormActions>
-        <Button IsLoading="_busy" Disabled="_busy" OnClick="RegisterAsync">@L["Register_Submit"]</Button>
-        <Button Variant="ButtonVariant.Ghost" Disabled="_busy" OnClick="GoSignIn">@L["SignIn_Submit"]</Button>
-    </FormActions>
+
+    <div class="pos-signin__form">
+        <TextInput Label="@L["Register_DisplayName"]"
+                   @bind-Value="_displayName"
+                   Disabled="_busy"
+                   IsInvalid="@_invalid"
+                   autocomplete="name" />
+        <TextInput Label="@L["Register_Email"]"
+                   @bind-Value="_email"
+                   Type="email"
+                   Disabled="_busy"
+                   IsInvalid="@_invalid"
+                   autocomplete="email" />
+
+        <div class="pos-signin__submit">
+            <Button IsLoading="_busy" Disabled="_busy" OnClick="RegisterAsync">
+                @L["Register_Submit"]
+            </Button>
+        </div>
+    </div>
 
     @if (!string.IsNullOrWhiteSpace(_debugToken))
     {
         <Alert Tone="AlertTone.Info" Title="@L["Register_ActivationReadyTitle"]" Message="@L["Register_ActivationReadyMessage"]" />
         <InlineMessage Tone="InlineMessageTone.Info">@_ackMessage</InlineMessage>
-        <FormActions>
+        <div class="pos-signin__submit">
             <Button Variant="ButtonVariant.Primary" OnClick="GoActivate">@L["Activate_Continue"]</Button>
-        </FormActions>
+        </div>
     }
-</Page>
-</div>
+</AuthExperience>
 
 @code {
     private string? _displayName;
@@ -81,6 +86,4 @@
 
     private void GoActivate() =>
         Nav.NavigateTo($"/activate?token={Uri.EscapeDataString(_debugToken ?? string.Empty)}");
-
-    private void GoSignIn() => Nav.NavigateTo("/signin");
 }

@@ -291,7 +291,8 @@ public sealed class MauiFoundationGuardTests
 
         var signIn = File.ReadAllText(Path.Combine(pages, "SignIn.razor"));
         Assert.Contains("SignIn_ContinueGoogle", signIn, StringComparison.Ordinal);
-        Assert.Contains("SignIn_DevelopmentAccess", signIn, StringComparison.Ordinal);
+        Assert.Contains("SignIn_QuickLoginPlaceholder", signIn, StringComparison.Ordinal);
+        Assert.Contains("IsDevelopmentAuthenticationEnabled", signIn, StringComparison.Ordinal);
         Assert.Contains("ContinueWithGooglePlaceholderAsync", signIn, StringComparison.Ordinal);
         Assert.Contains("SignInPasswordAsync", signIn, StringComparison.Ordinal);
         Assert.DoesNotContain("Continue with Gmail", signIn, StringComparison.Ordinal);

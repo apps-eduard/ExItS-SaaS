@@ -37,7 +37,8 @@ public sealed class ShellNotificationBellGuardTests
         Assert.Contains("StoreHeaderIdentity.Organization", pos, StringComparison.Ordinal);
         Assert.DoesNotContain("ShowNotifications=\"false\"", personal, StringComparison.Ordinal);
         Assert.DoesNotContain("ShowNotifications=\"false\"", pos, StringComparison.Ordinal);
-        Assert.Contains("ShowNotifications=\"false\"", auth, StringComparison.Ordinal);
+        Assert.DoesNotContain("StoreHeaderIdentity.Brand", auth, StringComparison.Ordinal);
+        Assert.Contains("CurrentUser.IsAuthenticated", auth, StringComparison.Ordinal);
         Assert.Contains("GetPersonalNotificationsAsync", bell, StringComparison.Ordinal);
         Assert.Contains("GetOrganizationNotificationsAsync", bell, StringComparison.Ordinal);
         Assert.Contains("!n.IsRead", bell, StringComparison.Ordinal);
