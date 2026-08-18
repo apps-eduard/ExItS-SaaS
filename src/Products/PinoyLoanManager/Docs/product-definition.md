@@ -8,7 +8,7 @@
 | Product name | Pinoy Loan Manager |
 | Platform product code | `pinoy-loan-manager` (proposed — **Status: Open / Product Owner Decision Required**, PLM-D-00-01) |
 | Docs root | `src/Products/PinoyLoanManager/Docs/` |
-| Status | Draft — documentation baseline through borrower/Personal/publishing planning; not product-owner approved |
+| Status | Draft — documentation baseline through Traditional origination planning; not product-owner approved |
 | Last updated | 2026-08-19 |
 | Implementation present | No |
 
@@ -124,7 +124,8 @@ This package records:
 - lending operating model and Quick Loan baseline (PLM-00-WP03, completed)
 - financial calculation and loan lifecycle baseline (PLM-00-WP04, completed)
 - authorization, cash control, and operational workflow baseline (PLM-00-WP05, completed)
-- borrower, Personal linking, and Quick Loan publishing baseline (PLM-00-WP06, this package)
+- borrower, Personal linking, and Quick Loan publishing baseline (PLM-00-WP06, completed)
+- traditional loan and origination workflow baseline (PLM-00-WP07, this package)
 
 No loan MVP **implementation** is approved. Calculation algorithms, peso/percent rates, rounding mode, and legal validation remain open.
 
@@ -194,6 +195,10 @@ No loan MVP **implementation** is approved. Calculation algorithms, peso/percent
 | Quick Loan publishing / eligibility | [Product/quick-loan-publishing-and-eligibility.md](Product/quick-loan-publishing-and-eligibility.md) |
 | Borrower groups | [Product/borrower-groups-and-targeting.md](Product/borrower-groups-and-targeting.md) |
 | Personal integration boundary | [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md) |
+| Traditional Loan | [Product/traditional-loan-model.md](Product/traditional-loan-model.md) |
+| Application / approval | [Product/loan-application-and-approval.md](Product/loan-application-and-approval.md) |
+| Loan Product configuration | [Product/loan-product-configuration.md](Product/loan-product-configuration.md) |
+| Disbursement readiness | [Product/disbursement-readiness-model.md](Product/disbursement-readiness-model.md) |
 | Security | [security.md](security.md) |
 | Authorization | [authorization-matrix.md](authorization-matrix.md) |
 | Development plan | [development-plan.md](development-plan.md) |

@@ -25,6 +25,10 @@ Do not treat this folder as a second product definition. Detailed agreed **direc
 | [personal-borrower-linking.md](personal-borrower-linking.md) | Optional consent-based linking |
 | [quick-loan-publishing-and-eligibility.md](quick-loan-publishing-and-eligibility.md) | Publishing audiences; eligibility ≠ approval |
 | [borrower-groups-and-targeting.md](borrower-groups-and-targeting.md) | Organization-owned groups |
+| [traditional-loan-model.md](traditional-loan-model.md) | Traditional origination path |
+| [loan-application-and-approval.md](loan-application-and-approval.md) | Application, approval, rejection |
+| [loan-product-configuration.md](loan-product-configuration.md) | Reusable Loan Product configuration |
+| [disbursement-readiness-model.md](disbursement-readiness-model.md) | Pre-release checks |
 
 Remaining formulas, rates, rounding mode, component allocation order, grant identifiers, and legal validation stay open in [../product-definition.md](../product-definition.md) and [../risks-and-decisions.md](../risks-and-decisions.md) (PLM-D-00-06, PLM-D-00-08, PLM-D-00-12, PLM-D-00-11, PLM-D-00-13). Do not invent:
 

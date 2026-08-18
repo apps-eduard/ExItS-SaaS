@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Status | Draft — documentation baseline through borrower/Personal/publishing planning; not product-owner approved |
+| Status | Draft — documentation baseline through Traditional origination planning; not product-owner approved |
 | Implementation present | No |
 
 ## Authentication boundary

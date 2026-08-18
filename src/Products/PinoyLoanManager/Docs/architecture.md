@@ -7,7 +7,7 @@
 |---|---|
 | Product | Pinoy Loan Manager / `pinoy-loan-manager` (proposed, PLM-D-00-01) |
 | Database | `ExItS_PinoyLoanManager` (proposed) / schema **Status: Open / Product Owner Decision Required** (PLM-D-00-02) |
-| Status | Draft — documentation baseline through borrower/Personal/publishing planning; not product-owner approved |
+| Status | Draft — documentation baseline through Traditional origination planning; not product-owner approved |
 | Implementation present | No |
 
 ## System context
@@ -84,9 +84,9 @@ Planning modules only. None are designed or implemented. Exact formulas remain o
 | Product access / isolation | Independent subscription, org isolation, commercial gate | Depends on D-P12-03; no Platform table reads |
 | Product-local authorization | Loan presets + explicit grants | Intent recorded; identifiers open (PLM-D-00-06); no role-name hard-coding |
 | Borrower foundation | Product-local borrower records | Optional Personal link; PLM-D-00-04 / PLM-D-00-05 open; [Product/borrower-model.md](Product/borrower-model.md) |
-| Loan product configuration | Traditional products and Quick Loan Templates | Templates are organization-configured, not built-in types |
+| Loan product configuration | Traditional products and Quick Loan Templates | Templates are organization-configured, not built-in types. Traditional: [Product/loan-product-configuration.md](Product/loan-product-configuration.md) |
 | Application / approval | Traditional application and Quick Loan Request | Manual approval default; no auto-approval |
-| Origination / disbursement | Starting a loan and releasing funds | Approved ≠ Disbursed; office or collector; cash availability check |
+| Origination / disbursement | Starting a loan and releasing funds | Approved ≠ Disbursed; office or collector; cash availability and readiness checks |
 | Shared Loan core | Ledger, balances, schedule, payments, penalties, collections, settlement, audit | One engine after disbursement |
 | Schedule / calculation engine | Schedules and calculations | Modes recorded; formula, rounding (PLM-D-00-12), amortization open |
 | Payment posting | Applying receipts | Partial/multiple payments; oldest-due schedule baseline; component order open |

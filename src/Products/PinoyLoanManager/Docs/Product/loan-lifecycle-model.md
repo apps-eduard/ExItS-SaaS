@@ -37,7 +37,7 @@ Traditional application or Quick Loan request may have concepts such as:
 
 These describe the **request / application**, not the operational Loan after disbursement.
 
-Exact Traditional Loan workflow remains **OPEN**. Quick Loan request flow: [quick-loan-model.md](quick-loan-model.md).
+Exact Traditional Loan workflow remains **OPEN** for assessment criteria and approval limits. Direction: [traditional-loan-model.md](traditional-loan-model.md), [loan-application-and-approval.md](loan-application-and-approval.md). Quick Loan request flow: [quick-loan-model.md](quick-loan-model.md).
 
 ---
 

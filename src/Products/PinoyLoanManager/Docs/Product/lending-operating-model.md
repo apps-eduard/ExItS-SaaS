@@ -48,7 +48,7 @@ Borrower
   → Active Loan
 ```
 
-Exact traditional-loan workflow, assessment criteria, agreement artifacts, and approval limits remain **Open / Product Owner Decision Required**. This path exists as a distinct origination flow; it is not specified here.
+Exact traditional-loan workflow, assessment criteria, agreement artifacts, and approval limits remain **Open / Product Owner Decision Required**. Conceptual flow: [traditional-loan-model.md](traditional-loan-model.md). This path exists as a distinct origination flow.
 
 ### B. Quick Loan
 

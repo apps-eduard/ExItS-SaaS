@@ -11,7 +11,7 @@ Always load with:
 5. The active work-package prompt/report
 6. Files required for the task only
 
-**Status:** Draft — PLM-00 documentation baseline through borrower / Personal / publishing planning
+**Status:** Draft — PLM-00 documentation baseline through Traditional origination planning
 **Implementation present:** No
 **Documentation root:** `src/Products/PinoyLoanManager/Docs/` (D-P12-02)
 
@@ -56,6 +56,10 @@ Agreed operating-model direction (not implementation specs):
 | [Product/quick-loan-publishing-and-eligibility.md](Product/quick-loan-publishing-and-eligibility.md) | Publishing audiences; eligibility ≠ approval |
 | [Product/borrower-groups-and-targeting.md](Product/borrower-groups-and-targeting.md) | Organization-owned groups; no built-in mandatory groups |
 | [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md) | Personal vs PLM authority; no table access |
+| [Product/traditional-loan-model.md](Product/traditional-loan-model.md) | Traditional origination; same engine after disbursement |
+| [Product/loan-application-and-approval.md](Product/loan-application-and-approval.md) | Application, approval snapshot, rejection |
+| [Product/loan-product-configuration.md](Product/loan-product-configuration.md) | Reusable Loan Product configuration |
+| [Product/disbursement-readiness-model.md](Product/disbursement-readiness-model.md) | Pre-release checks; approval ≠ disbursement |
 
 Category folders below are indexes only. They must not become a second source of truth.
 

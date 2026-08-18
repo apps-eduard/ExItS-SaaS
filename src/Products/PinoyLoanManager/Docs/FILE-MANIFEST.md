@@ -2,7 +2,7 @@
 
 **Status:** Foundation / planning only
 **Implementation present:** No
-**Current work package:** PLM-00-WP06 — Borrower, Personal Linking & Quick Loan Publishing Baseline
+**Current work package:** PLM-00-WP07 — Traditional Loan & Origination Workflow Baseline
 
 This file is the navigation map for future Cursor work. Load this product’s `Docs/` after the shared Product Foundation reference. Do not scan PinoyBusinessPOS implementation by default.
 
@@ -66,7 +66,16 @@ Shared contracts to load with this product:
 | `Docs/Product/borrower-groups-and-targeting.md` | Organization-owned groups | Planning baseline / not a spec | No |
 | `Docs/Architecture/personal-integration-boundary.md` | Personal vs PLM authority | Planning baseline / not a spec | No |
 
-## Workspace indexes (PLM-00-WP01, updated in WP02–WP06)
+## Traditional origination (PLM-00-WP07)
+
+| Path | Purpose | Status | Implementation present |
+|---|---|---|---|
+| `Docs/Product/traditional-loan-model.md` | Traditional origination path; converges after disbursement | Planning baseline / not a spec | No |
+| `Docs/Product/loan-application-and-approval.md` | Application capture, approval, rejection, term changes | Planning baseline / not a spec | No |
+| `Docs/Product/loan-product-configuration.md` | Reusable Loan Product (not a Loan) | Planning baseline / not a spec | No |
+| `Docs/Product/disbursement-readiness-model.md` | Pre-release checks; approval ≠ disbursement | Planning baseline / not a spec | No |
+
+## Workspace indexes (PLM-00-WP01, updated in WP02–WP07)
 
 | Path | Purpose | Status | Implementation present |
 |---|---|---|---|

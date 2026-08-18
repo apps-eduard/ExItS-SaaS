@@ -29,7 +29,7 @@
 | PLM-D-00-07 | Decision | Operational financial model | Open / Product Owner Decision Required | Origination, payments, collections, cash | Product owner | Loan vs collector cash; Cashier Session *concept*; billable event DISBURSED; schema not designed | Owner-approved money/ledger schema in this product |
 | PLM-D-00-08 | Decision | Loan business/calculation rules | Open / Product Owner Decision Required | PLM-05 through PLM-10 | Product owner | Treatment *modes*, partial payments, oldest-due *schedule* baseline recorded; **no** rates/formulas/component order | Owner-approved policy for each remaining rule area |
 | PLM-D-00-09 | Decision | Web/MAUI component-sharing strategy | Open / Product Owner Decision Required | Client scaffold and PLM-13 | Architecture WP | Surface split recorded (full Org Web vs limited MAUI vs Personal presentation) | Approved sharing/isolation approach; no client project until authorized |
-| PLM-D-00-10 | Decision | Product documentation baseline completion / owner approval | Open / Product Owner Decision Required | Closing PLM-00 | Product owner | Canonical docs from WP01–WP06 | Owner accepts baseline or lists required changes |
+| PLM-D-00-10 | Decision | Product documentation baseline completion / owner approval | Open / Product Owner Decision Required | Closing PLM-00 | Product owner | Canonical docs from WP01–WP07 | Owner accepts baseline or lists required changes |
 | PLM-D-00-11 | Decision | External legal/compliance validation | Open / Product Owner Decision Required | Production use | Product owner + external counsel | No rates/workflows claimed compliant | Written legal/compliance validation before Production |
 | PLM-D-00-12 | Decision | Exact money rounding mode | Open / Product Owner Decision Required | Calculation engine | Product owner + accounting | Decimal money; boundaries recorded; midpoint algorithm **not** chosen | Explicit rounding-mode decision before engine implementation |
 | PLM-D-00-13 | Decision | Small-org vs two-person high-risk approval | Open / Product Owner Decision Required | Operational SoD | Product owner | Multiple presets on one person allowed; high-risk self-approval still restricted where required | Explicit policy for which actions may never be self-approved |
@@ -100,9 +100,25 @@ These are **planning baselines**, not legal approval, KYC sufficiency, or implem
 - manual approval remains default; no auto-approval
 - borrower groups are organization-owned; no built-in mandatory groups
 
+## Accepted engineering / planning baselines (WP07)
+
+These are **planning baselines**, not legal approval and not implementation.
+
+- Traditional and Quick Loan remain separate origination experiences
+- both converge into one financial core after disbursement
+- Traditional flow conceptually Draft → Submitted → Under Review → Approved/Rejected → Awaiting Disbursement → Disbursed → Active
+- cancellation/expiry concepts supported; not deletion
+- Loan Product is configuration, not a Loan
+- manual approval baseline; applicant cannot self-approve; Collector cannot approve; Cashier does not normally approve
+- approval snapshots terms; no silent post-approval edits
+- material term change before disbursement requires revision/reapproval or cancellation/new approval
+- rejected applications remain historically visible with a reason
+- disbursement readiness checks are required conceptually before release
+- approval ≠ disbursement
+
 ## Operating-model, calculation, and operational open areas (do not invent)
 
-Direction in WP03–WP06 docs does **not** close these. Tracked primarily under PLM-D-00-04, PLM-D-00-05, PLM-D-00-06, PLM-D-00-07, PLM-D-00-08, PLM-D-00-11, PLM-D-00-12, PLM-D-00-13, and D-P12-03:
+Direction in WP03–WP07 docs does **not** close these. Tracked primarily under PLM-D-00-04, PLM-D-00-05, PLM-D-00-06, PLM-D-00-07, PLM-D-00-08, PLM-D-00-11, PLM-D-00-12, PLM-D-00-13, and D-P12-03:
 
 - exact grant identifiers
 - custom-role support / version
@@ -119,7 +135,10 @@ Direction in WP03–WP06 docs does **not** close these. Tracked primarily under 
 - receipt numbering / format
 - accounting / GL integration
 - exact financial calculation decisions remaining from WP04
-- exact traditional loan workflow
+- exact traditional loan assessment criteria / approval limits
+- exact Traditional mandatory application fields
+- exact revision/reapproval workflow before disbursement
+- exact Traditional document/condition checklist for disbursement
 - exact interest formula(s) supported for MVP
 - exact rate / rate precision
 - exact rounding mode (PLM-D-00-12)

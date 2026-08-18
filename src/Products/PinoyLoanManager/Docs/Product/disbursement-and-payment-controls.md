@@ -6,7 +6,7 @@
 
 Office and field disbursement / payment workflows, receipts, failed collection attempts, and disbursement assignment safety.
 
-Related: [loan-lifecycle-model.md](loan-lifecycle-model.md), [payment-and-allocation-model.md](payment-and-allocation-model.md), [cashier-and-collector-control-model.md](cashier-and-collector-control-model.md), [../Security/role-and-grant-baseline.md](../Security/role-and-grant-baseline.md).
+Related: [loan-lifecycle-model.md](loan-lifecycle-model.md), [payment-and-allocation-model.md](payment-and-allocation-model.md), [cashier-and-collector-control-model.md](cashier-and-collector-control-model.md), [disbursement-readiness-model.md](disbursement-readiness-model.md), [../Security/role-and-grant-baseline.md](../Security/role-and-grant-baseline.md).
 
 ---
 
