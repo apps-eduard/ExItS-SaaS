@@ -28,6 +28,7 @@ Deliver customer ordering with explicit branch pickup and local-delivery fulfill
 | **P28-WP07** | Merchant order acceptance and fulfillment operations | **Code Complete** (MAUI seller UX) |
 | **P28-WP08** | Customer order tracking and notifications | **Partial** — customer timeline UX; org new-order notify; personal inbox residual |
 | **P28-WP09** | Cancellation, exceptions, audit, entitlement gating | **Code Complete** (conservative cancel + feature codes) |
+| **P28-WP11** | Organization setup + branch fulfillment readiness | **Code Complete / Validation Pending** — see [report](../reports/P28-WP11-organization-setup-and-branch-fulfillment-readiness.md) |
 | P28-WP10 | E2E validation and Phase 28 closeout | **Not Started** |
 
 ## Personal → Linked Merchant Shop (delivered)

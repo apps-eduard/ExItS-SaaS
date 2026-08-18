@@ -6,16 +6,25 @@ An `OrganizationBranch` is an organization-owned operating location. It remains 
 
 - Structured postal address: two address lines, city/municipality, region, postal code, and country code.
 - Optional WGS84 latitude and longitude.
-- `PickupEnabled` indicates that customers may collect orders at the branch.
-- `DeliveryEnabled` indicates operator intent to offer local delivery.
-- Effective pickup additionally requires an Active branch.
-- Effective delivery additionally requires an Active branch, valid coordinates, and a delivery policy.
+- `PickupEnabled` indicates operator intent to offer customer pickup (requires `CustomerOrderingEnabled`).
+- `DeliveryEnabled` indicates operator intent to offer local delivery (default **off**; requires readiness + explicit enablement).
+- `CustomerOrderingEnabled` is opt-in online ordering for the branch.
+- `OnlineOrdersPaused` is a merchant override that blocks new online orders without affecting walk-in POS or in-flight orders.
+- Branch operating hours (Mon–Sun) and optional branch timezone override support server-authoritative open/closed evaluation.
+
+Effective pickup requires Active branch, customer ordering enabled, readiness, and operational hours (when configured).
+
+Effective delivery requires Active branch, customer ordering enabled, delivery enabled, readiness (address, hours, phone, coordinates, complete delivery policy, delivery entitlement), and operational hours.
 
 Coordinates identify the fulfillment origin. They are not a customer address and must not be inferred from free-form address text.
 
+## Fulfillment readiness (P28-WP11)
+
+Server evaluator separates entitlement (`CanUse*`), merchant intent (`*Enabled`), setup completeness (`*Ready`), and live operability (`*Operational`). Enablement APIs reject incomplete setup. See [P28-WP11 report](../reports/P28-WP11-organization-setup-and-branch-fulfillment-readiness.md).
+
 ## Management surfaces
 
-MAUI provides a dense branch list and a progressive editor for details, address, coordinates, fulfillment modes, and delivery settings. Organization Web exposes the same core fields in a responsive, desktop-dense layout.
+MAUI provides a dense branch list and a progressive editor for details, address, coordinates, operating hours, fulfillment activation (readiness-gated), and delivery settings. Organization Web exposes the same core fields in a responsive, desktop-dense layout with a dedicated branch edit page.
 
 Branch capacity remains entitlement-controlled. Primary branches cannot be treated as disposable, and archived branches cannot fulfill new orders.
 

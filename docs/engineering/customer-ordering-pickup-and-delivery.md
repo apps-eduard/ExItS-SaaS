@@ -64,7 +64,20 @@ Each order stores:
 - `FulfillmentType` (`Pickup` | `Delivery`)
 - Branch name snapshot
 
-Branch must belong to the seller org, be Active (not Archived), and support the selected capability (`PickupEnabled` / `DeliveryEnabled` + valid delivery location/policy for delivery).
+Branch must belong to the seller org, be Active (not Archived), and be **operationally** available for the selected capability (readiness + enabled + open + not paused). Pickup and delivery require explicit merchant enablement after setup.
+
+## Fulfillment readiness and operability (P28-WP11)
+
+| Layer | Pickup | Delivery |
+|---|---|---|
+| Entitlement | `store-customer-ordering` | + `store-delivery-orders` |
+| Merchant intent | `PickupEnabled` | `DeliveryEnabled` (default off) |
+| Setup | `CustomerOrderingReady` | + coordinates, policy, hours, phone |
+| Live | `PickupOperational` | `DeliveryOperational` (includes open hours, not paused) |
+
+Storefront status is advisory; quote and place revalidate operational state. Customers may browse while closed/paused but cannot place new orders. Existing Submitted/Accepted orders continue after close/pause.
+
+Report: [P28-WP11](../reports/P28-WP11-organization-setup-and-branch-fulfillment-readiness.md).
 
 ## Status model
 
