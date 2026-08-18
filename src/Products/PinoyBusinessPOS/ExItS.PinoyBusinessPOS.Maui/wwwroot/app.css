@@ -14936,10 +14936,28 @@ html:has(.pos-denom-sheet) .pos-denom-sheet {
 
 /* Phase 28: compact branch and fulfillment-location management. */
 .pos-branches__header {
-    align-items: stretch;
+    display: grid;
+    gap: .4rem;
+    margin-bottom: .35rem;
+}
+
+.pos-branches__title-row {
+    align-items: center;
     display: flex;
-    flex-direction: column;
-    gap: .65rem;
+    gap: .75rem;
+    justify-content: space-between;
+}
+
+.pos-branches__title-row h1 {
+    flex: 1 1 auto;
+    margin: 0;
+    min-width: 0;
+}
+
+.pos-branches__title-row .exds-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    width: auto;
 }
 
 .pos-branches__heading h1,
@@ -14952,25 +14970,23 @@ html:has(.pos-denom-sheet) .pos-denom-sheet {
     margin-bottom: .2rem;
 }
 
-.pos-branches__heading .pos-muted {
+.pos-branches__heading .pos-muted,
+.pos-branches__header .pos-muted {
     margin-bottom: 0;
 }
 
-.pos-branches__header .exds-btn {
-    width: 100%;
-}
-
 .pos-branches__actions {
-    align-items: center;
-    display: flex;
-    flex-wrap: wrap;
+    align-items: stretch;
+    display: grid;
     gap: .65rem;
+    grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .pos-branches__capacity {
-    display: grid;
-    gap: .35rem;
-    font-size: .82rem;
+    align-items: center;
+    display: flex;
+    gap: .65rem;
+    font-size: .75rem;
     font-weight: 650;
 }
 
@@ -14982,7 +14998,9 @@ html:has(.pos-denom-sheet) .pos-denom-sheet {
     background: var(--exits-surface-2, #eef3f0);
     border-radius: 999px;
     display: block;
-    height: .4rem;
+    flex: 1 1 auto;
+    height: .35rem;
+    min-width: 3.5rem;
     overflow: hidden;
 }
 
@@ -14994,12 +15012,48 @@ html:has(.pos-denom-sheet) .pos-denom-sheet {
     min-width: 0;
 }
 
+.pos-branches__capacity-fill--full {
+    background: var(--exits-warning, #92400e);
+}
+
+.pos-branches__create {
+    background: var(--exits-surface, #fff);
+    border: 1px solid var(--exits-border, #dce5df);
+    border-radius: .75rem;
+    display: grid;
+    gap: .75rem;
+    padding: .9rem;
+}
+
+.pos-branches__create h2 {
+    font-size: var(--exits-text-sm, .875rem);
+    font-weight: 700;
+    margin: 0;
+}
+
+.pos-branches__hint {
+    color: var(--exits-text-muted, #5b6b62);
+    font-size: var(--exits-text-xs, .75rem);
+    font-weight: 500;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.pos-branches__list-title {
+    color: var(--exits-text-muted, #5b6b62);
+    font-size: var(--exits-text-xs, .75rem);
+    font-weight: 700;
+    letter-spacing: .04em;
+    margin: .35rem 0 0;
+    text-transform: uppercase;
+}
+
 .pos-branches__list,
 .pos-branches__section,
 .pos-branches__grid,
 .pos-branches__estimates {
     display: grid;
-    gap: .65rem;
+    gap: .75rem;
 }
 
 .pos-branches__item {
@@ -15103,14 +15157,13 @@ button.pos-branches__card:focus-visible {
 }
 
 @media (min-width: 720px) {
-    .pos-branches__header {
-        align-items: flex-start;
-        flex-direction: row;
-        justify-content: space-between;
+    .pos-branches__actions {
+        justify-content: flex-start;
+        width: auto;
     }
 
-    .pos-branches__header .exds-btn {
-        width: auto;
+    .pos-branches__actions .exds-btn--primary {
+        min-width: 8rem;
     }
 }
 
@@ -15223,31 +15276,173 @@ button.pos-branches__card:focus-visible {
 }
 
 .pos-branches__hours {
+    border: 1px solid var(--exits-border, #dce5df);
+    border-radius: .75rem;
     display: grid;
-    gap: .25rem;
+    overflow: hidden;
 }
 
 .pos-branches__hours-row {
     align-items: center;
-    display: flex;
-    flex-wrap: wrap;
-    gap: .35rem;
-    min-height: 2.75rem;
+    appearance: none;
+    background: var(--exits-surface, #fff);
+    border: 0;
+    border-bottom: 1px solid var(--exits-border, #e6eee9);
+    color: inherit;
+    cursor: pointer;
+    display: grid;
+    font: inherit;
+    gap: .65rem;
+    grid-template-columns: 2.6rem minmax(0, 1fr) 1rem;
+    min-height: 3.15rem;
+    padding: 0 .75rem;
+    text-align: start;
+    width: 100%;
+}
+
+.pos-branches__hours-row:last-child {
+    border-bottom: 0;
+}
+
+.pos-branches__hours-row:disabled {
+    opacity: .65;
+}
+
+.pos-branches__hours-row:focus-visible {
+    outline: 2px solid var(--exits-primary, #1b7a3d);
+    outline-offset: -2px;
 }
 
 .pos-branches__hours-day {
-    flex: 0 0 2.4rem;
     font-size: .82rem;
     font-weight: 700;
 }
 
-.pos-branches__hours-mode {
-    flex: 1 1 6.5rem;
+.pos-branches__hours-summary {
+    color: var(--exits-text-muted, #5b6b62);
+    font-size: .82rem;
+    font-weight: 600;
+    justify-self: end;
+    text-align: end;
 }
 
-.pos-branches__time {
-    flex: 1 1 5rem;
-    max-width: 7rem;
+.pos-branches__hours-chevron {
+    color: var(--exits-text-muted, #5b6b62);
+    display: inline-flex;
+    height: 1rem;
+    justify-self: end;
+    transform: scaleX(-1);
+    width: 1rem;
+}
+
+.pos-branches__hours-chevron svg {
+    display: block;
+    height: 100%;
+    width: 100%;
+}
+
+.pos-branches__hours-copy {
+    min-height: 2.75rem;
+    padding: .25rem 0;
+    text-align: start;
+}
+
+.pos-branches__copy {
+    display: grid;
+    gap: .5rem;
+}
+
+.pos-branches__copy-title {
+    font-size: .75rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.pos-branches__copy-days {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem .75rem;
+}
+
+.pos-branches__copy-days .exds-checkbox {
+    min-height: 2.75rem;
+}
+
+.pos-hours-sheet {
+    --pos-hours-nav-clearance: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+    align-items: flex-end;
+    background: rgba(12, 18, 16, 0.45);
+    bottom: var(--pos-hours-nav-clearance);
+    display: flex;
+    justify-content: center;
+    left: 0;
+    position: fixed;
+    right: 0;
+    top: 0;
+    z-index: var(--exits-z-dialog, 1200);
+}
+
+html:has(.pos-hours-sheet) .pos-bottom-nav {
+    pointer-events: none;
+    visibility: hidden;
+}
+
+html:has(.pos-hours-sheet) .pos-hours-sheet {
+    --pos-hours-nav-clearance: 0px;
+}
+
+.pos-hours-sheet__panel {
+    background: var(--exits-surface, #fff);
+    border-radius: 16px 16px 0 0;
+    display: grid;
+    gap: .75rem;
+    max-height: min(100%, 34rem);
+    overflow: auto;
+    padding: .9rem .9rem calc(.9rem + env(safe-area-inset-bottom, 0px));
+    width: min(100%, 32rem);
+}
+
+.pos-hours-sheet__header {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    gap: .5rem;
+}
+
+.pos-hours-sheet__title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.pos-hours-sheet__modes {
+    display: grid;
+    gap: .35rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pos-hours-sheet__mode {
+    background: var(--exits-surface-2, #eef3f0);
+    border: 1px solid transparent;
+    border-radius: .6rem;
+    color: inherit;
+    font: inherit;
+    font-size: .78rem;
+    font-weight: 700;
+    min-height: 2.75rem;
+    padding: .35rem .4rem;
+}
+
+.pos-hours-sheet__mode--on {
+    background: var(--exits-primary, #1b7a3d);
+    color: #fff;
+}
+
+.pos-hours-sheet__field {
+    display: grid;
+    font-size: .82rem;
+    font-weight: 700;
+    gap: .3rem;
 }
 
 .pos-branches__hours-mode,
@@ -15259,14 +15454,7 @@ button.pos-branches__card:focus-visible {
     font: inherit;
     min-height: 2.75rem;
     padding: .35rem .5rem;
-}
-
-.pos-branches__hours-actions {
-    align-items: center;
-    display: flex;
-    flex-wrap: wrap;
-    gap: .5rem;
-    justify-content: space-between;
+    width: 100%;
 }
 
 .pos-branches__subhead {

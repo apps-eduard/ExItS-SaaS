@@ -95,28 +95,41 @@ else
 
             <details class="org-fold" open>
                 <summary>@L["Branches_OperatingHours"]</summary>
-                <div class="org-hours">
+                <div class="org-hours" role="list">
                     @foreach (var day in _hours)
                     {
-                        <div class="org-hours-row">
+                        <button type="button"
+                                class="org-hours-row"
+                                role="listitem"
+                                disabled="@_busy"
+                                aria-label="@($"{DayFullLabel(day.DayOfWeek)}, {DaySummary(day)}")"
+                                @onclick="() => OpenDayEditor(day)">
                             <strong>@DayLabel(day.DayOfWeek)</strong>
-                            <select class="org-select" disabled="@_busy" @bind="day.Mode" aria-label="@DayLabel(day.DayOfWeek)">
-                                <option value="Closed">@L["Branches_Closed"]</option>
-                                <option value="Open24">@L["Branches_Open24h"]</option>
-                                <option value="Open">@L["Branches_HoursOpen"]</option>
-                            </select>
-                            @if (day.Mode == "Open")
-                            {
-                                <Input @bind-Value="day.OpenTime" Disabled="_busy" Placeholder="08:00" />
-                                <Input @bind-Value="day.CloseTime" Disabled="_busy" Placeholder="21:00" />
-                            }
-                        </div>
+                            <span>@DaySummary(day)</span>
+                            <span aria-hidden="true">›</span>
+                        </button>
                     }
                 </div>
-                <div class="org-hours-actions">
-                    <Button Size="@ButtonSize.Small" Disabled="_busy" OnClick="CopyMondayToWeekdays">@L["Branches_CopyWeekdays"]</Button>
-                    <Button Size="@ButtonSize.Small" Loading="_busy" OnClick="SaveHoursAsync">@L["Branches_SaveHours"]</Button>
-                </div>
+                @if (_showCopyPanel)
+                {
+                    <div class="org-hours-copy">
+                        <p class="org-note">@L["Branches_CopyHoursTo"]</p>
+                        <div class="org-hours-copy__days">
+                            @foreach (var day in _hours.Where(d => !string.Equals(d.DayOfWeek, nameof(DayOfWeek.Monday), StringComparison.OrdinalIgnoreCase)))
+                            {
+                                <Checkbox Checked="@_copyTargets.Contains(day.DayOfWeek)"
+                                          CheckedChanged="@((bool value) => ToggleCopyTarget(day.DayOfWeek, value))">
+                                    @DayLabel(day.DayOfWeek)
+                                </Checkbox>
+                            }
+                        </div>
+                        <Button Size="@ButtonSize.Small" Disabled="_busy" OnClick="ApplyCopyHours">@L["Branches_ApplyCopy"]</Button>
+                    </div>
+                }
+                else
+                {
+                    <Button Size="@ButtonSize.Small" Disabled="_busy" OnClick="OpenCopyPanel">@L["Branches_CopyHours"]</Button>
+                }
             </details>
 
             @if (_readiness is not null)
@@ -208,6 +221,54 @@ else
                 <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveAsync">@L["Common_Save"]</Button>
             </div>
         }
+
+        <Modal Title="@(_dayDraft is null ? L["Branches_OperatingHours"].Value : DayFullLabel(_dayDraft.DayOfWeek))"
+               Visible="_dayDraft is not null"
+               OnOk="DoneDayEditor"
+               OnCancel="CloseDayEditor"
+               OkText="@L["Branches_HoursDone"].Value"
+               CancelText="@L["Common_Cancel"].Value"
+               DestroyOnClose>
+            @if (_dayDraft is not null)
+            {
+                <div class="org-hours-editor">
+                    <div class="org-hours-editor__modes" role="radiogroup" aria-label="@L["Branches_OperatingHours"]">
+                        <Button Size="@ButtonSize.Small" Type="@(_dayDraft.Mode == BranchHoursScheduleUi.ModeOpen ? ButtonType.Primary : ButtonType.Default)" OnClick='() => SetDraftMode(BranchHoursScheduleUi.ModeOpen)'>@L["Branches_HoursOpen"]</Button>
+                        <Button Size="@ButtonSize.Small" Type="@(_dayDraft.Mode == BranchHoursScheduleUi.ModeOpen24 ? ButtonType.Primary : ButtonType.Default)" OnClick='() => SetDraftMode(BranchHoursScheduleUi.ModeOpen24)'>@L["Branches_Open24h"]</Button>
+                        <Button Size="@ButtonSize.Small" Type="@(_dayDraft.Mode == BranchHoursScheduleUi.ModeClosed ? ButtonType.Primary : ButtonType.Default)" OnClick='() => SetDraftMode(BranchHoursScheduleUi.ModeClosed)'>@L["Branches_Closed"]</Button>
+                    </div>
+                    @if (BranchHoursScheduleUi.ShowsTimes(_dayDraft.IsClosed, _dayDraft.IsOpen24Hours))
+                    {
+                        <ExitsField Label="@L["Branches_HoursStart"]">
+                            <input class="org-select"
+                                   type="time"
+                                   aria-label="@L["Branches_HoursStart"]"
+                                   value="@BranchHoursScheduleUi.FormatStoredTime(_dayDraft.OpenTime)"
+                                   @onchange="e => _dayDraft.OpenTime = ParseChangedTime(e.Value, _dayDraft.OpenTime)" />
+                        </ExitsField>
+                        <ExitsField Label="@L["Branches_HoursEnd"]">
+                            <input class="org-select"
+                                   type="time"
+                                   aria-label="@L["Branches_HoursEnd"]"
+                                   value="@BranchHoursScheduleUi.FormatStoredTime(_dayDraft.CloseTime)"
+                                   @onchange="e => _dayDraft.CloseTime = ParseChangedTime(e.Value, _dayDraft.CloseTime)" />
+                        </ExitsField>
+                    }
+                    <div class="org-hours-copy">
+                        <p class="org-note">@L["Branches_ApplyToOtherDays"]</p>
+                        <div class="org-hours-copy__days">
+                            @foreach (var day in _hours.Where(d => !string.Equals(d.DayOfWeek, _dayDraft.DayOfWeek, StringComparison.OrdinalIgnoreCase)))
+                            {
+                                <Checkbox Checked="@_applyTargets.Contains(day.DayOfWeek)"
+                                          CheckedChanged="@((bool value) => ToggleApplyTarget(day.DayOfWeek, value))">
+                                    @DayLabel(day.DayOfWeek)
+                                </Checkbox>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </Modal>
     </div>
 }
 
@@ -215,7 +276,12 @@ else
     [Parameter] public Guid BranchId { get; set; }
     private OrganizationBranchDto? _branch;
     private BranchFulfillmentReadinessDto? _readiness;
-    private readonly List<DayHoursModel> _hours = [];
+    private readonly List<BranchHoursDayDraft> _hours = [];
+    private BranchHoursDayDraft? _editingDay;
+    private BranchHoursDayDraft? _dayDraft;
+    private bool _showCopyPanel;
+    private HashSet<string> _copyTargets = new(StringComparer.OrdinalIgnoreCase);
+    private HashSet<string> _applyTargets = new(StringComparer.OrdinalIgnoreCase);
     private bool _loading = true;
     private bool _busy;
     private bool _showInventoryActions;
@@ -275,11 +341,24 @@ else
         _hours.Clear();
         if (hours.IsSuccess && hours.Data is not null)
         {
-            foreach (var day in hours.Data.OrderBy(d => DayOrder(d.DayOfWeek))) _hours.Add(new DayHoursModel(day));
+            foreach (var day in hours.Data.OrderBy(d => DayOrder(d.DayOfWeek)))
+            {
+                _hours.Add(new BranchHoursDayDraft
+                {
+                    DayOfWeek = day.DayOfWeek,
+                    IsClosed = day.IsClosed,
+                    IsOpen24Hours = day.IsOpen24Hours,
+                    OpenTime = BranchHoursScheduleUi.ParseTime(day.OpenTime, new TimeOnly(8, 0)),
+                    CloseTime = BranchHoursScheduleUi.ParseTime(day.CloseTime, new TimeOnly(21, 0))
+                });
+            }
         }
         else
         {
-            foreach (var day in Enum.GetValues<DayOfWeek>().OrderBy(DayOrder)) _hours.Add(new DayHoursModel(day.ToString(), true));
+            foreach (var day in BranchHoursScheduleUi.OrderedDays)
+            {
+                _hours.Add(new BranchHoursDayDraft { DayOfWeek = day, IsClosed = true });
+            }
         }
     }
 
@@ -316,41 +395,77 @@ else
         _success = L["Branches_Saved"]; _busy = false;
     }
 
-    private async Task SaveHoursAsync()
-    {
-        var orgId = CurrentUser.Session?.OrganizationId;
-        if (orgId is null) return;
-        _busy = true;
-        if (await SaveHoursCoreAsync(orgId.Value)) _success = L["Branches_Saved"];
-        _busy = false;
-    }
-
     private async Task<bool> SaveHoursCoreAsync(Guid orgId)
     {
-        var days = _hours.Select(h => new BranchOperatingHoursDayDto(h.DayOfWeek, h.IsClosed, h.IsOpen24Hours,
-            h.IsClosed || h.IsOpen24Hours ? null : h.OpenTime, h.IsClosed || h.IsOpen24Hours ? null : h.CloseTime)).ToList();
+        var days = _hours.Select(BranchHoursScheduleUi.ToDto).ToList();
         var result = await Platform.UpsertBranchOperatingHoursAsync(orgId, BranchId, new UpsertBranchOperatingHoursRequest(days));
         if (!result.IsSuccess) { _error = OrgWebUi.Error(result.Error, L["Error_GenericLoad"]); return false; }
         _readiness = result.Data;
         return true;
     }
 
-    private void CopyMondayToWeekdays()
+    private void OpenDayEditor(BranchHoursDayDraft day)
     {
-        var monday = _hours.FirstOrDefault(h => string.Equals(h.DayOfWeek, nameof(DayOfWeek.Monday), StringComparison.OrdinalIgnoreCase));
-        if (monday is null) return;
-        foreach (var day in _hours)
-        {
-            if (!IsWeekday(day.DayOfWeek) || string.Equals(day.DayOfWeek, nameof(DayOfWeek.Monday), StringComparison.OrdinalIgnoreCase)) continue;
-            day.IsClosed = monday.IsClosed;
-            day.IsOpen24Hours = monday.IsOpen24Hours;
-            day.OpenTime = monday.OpenTime;
-            day.CloseTime = monday.CloseTime;
-        }
+        if (_busy) return;
+        _editingDay = day;
+        _dayDraft = day.Clone();
+        _applyTargets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     }
 
-    private static bool IsWeekday(string day) =>
-        Enum.TryParse<DayOfWeek>(day, true, out var parsed) && parsed is >= DayOfWeek.Monday and <= DayOfWeek.Friday;
+    private void CloseDayEditor()
+    {
+        _editingDay = null;
+        _dayDraft = null;
+    }
+
+    private void DoneDayEditor()
+    {
+        if (_editingDay is null || _dayDraft is null) return;
+        _editingDay.ApplyFrom(_dayDraft);
+        if (_applyTargets.Count > 0)
+        {
+            BranchHoursScheduleUi.CopyToSelected(_hours, _dayDraft.DayOfWeek, _applyTargets);
+        }
+        CloseDayEditor();
+    }
+
+    private void SetDraftMode(string mode)
+    {
+        if (_dayDraft is null) return;
+        _dayDraft.Mode = mode;
+    }
+
+    private void OpenCopyPanel()
+    {
+        _copyTargets = BranchHoursScheduleUi.DefaultCopyTargets(nameof(DayOfWeek.Monday));
+        _showCopyPanel = true;
+    }
+
+    private void ToggleCopyTarget(string day, bool selected)
+    {
+        if (selected) _copyTargets.Add(day);
+        else _copyTargets.Remove(day);
+    }
+
+    private void ToggleApplyTarget(string day, bool selected)
+    {
+        if (selected) _applyTargets.Add(day);
+        else _applyTargets.Remove(day);
+    }
+
+    private void ApplyCopyHours()
+    {
+        BranchHoursScheduleUi.CopyToSelected(_hours, nameof(DayOfWeek.Monday), _copyTargets);
+        _showCopyPanel = false;
+    }
+
+    private void CopyMondayToWeekdays()
+    {
+        BranchHoursScheduleUi.CopyToSelected(
+            _hours,
+            nameof(DayOfWeek.Monday),
+            BranchHoursScheduleUi.DefaultCopyTargets(nameof(DayOfWeek.Monday)));
+    }
 
     private async Task ToggleFulfillmentAsync(bool? ordering = null, bool? pickup = null, bool? delivery = null)
     {
@@ -413,6 +528,18 @@ else
     private string DayLabel(string day) =>
         Enum.TryParse<DayOfWeek>(day, true, out var parsed) ? L[$"Branches_Day_{parsed}"] : day;
 
+    private string DayFullLabel(string day) =>
+        Enum.TryParse<DayOfWeek>(day, true, out var parsed) ? L[$"Branches_DayFull_{parsed}"] : day;
+
+    private string DaySummary(BranchHoursDayDraft day) =>
+        BranchHoursScheduleUi.FormatSummary(
+            day.IsClosed,
+            day.IsOpen24Hours,
+            day.OpenTime,
+            day.CloseTime,
+            L["Branches_Closed"],
+            L["Branches_Open24h"]);
+
     private static int DayOrder(DayOfWeek day) => day switch
     {
         DayOfWeek.Monday => 0,
@@ -427,43 +554,18 @@ else
     private static int DayOrder(string day) =>
         Enum.TryParse<DayOfWeek>(day, true, out var parsed) ? DayOrder(parsed) : 99;
 
+    private static TimeOnly ParseChangedTime(object? value, TimeOnly fallback) =>
+        value switch
+        {
+            TimeOnly time => time,
+            DateTime dateTime => TimeOnly.FromDateTime(dateTime),
+            string text => BranchHoursScheduleUi.ParseTime(text, fallback),
+            _ => fallback
+        };
+
     private static string F(decimal v) => v.ToString(System.Globalization.CultureInfo.InvariantCulture);
     private static decimal D(string? v) => decimal.TryParse(v, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var p) ? p : 0m;
     private static decimal? NullableD(string? v) => string.IsNullOrWhiteSpace(v) ? null : D(v);
 
     private readonly record struct CheckItem(bool Missing, string Label);
-
-    private sealed class DayHoursModel
-    {
-        public DayHoursModel(BranchOperatingHoursDayDto dto)
-        {
-            DayOfWeek = dto.DayOfWeek;
-            IsClosed = dto.IsClosed;
-            IsOpen24Hours = dto.IsOpen24Hours;
-            OpenTime = dto.OpenTime ?? "08:00";
-            CloseTime = dto.CloseTime ?? "21:00";
-        }
-
-        public DayHoursModel(string day, bool closed)
-        {
-            DayOfWeek = day;
-            IsClosed = closed;
-        }
-
-        public string DayOfWeek { get; }
-        public bool IsClosed { get; set; }
-        public bool IsOpen24Hours { get; set; }
-        public string OpenTime { get; set; } = "08:00";
-        public string CloseTime { get; set; } = "21:00";
-
-        public string Mode
-        {
-            get => IsClosed ? "Closed" : IsOpen24Hours ? "Open24" : "Open";
-            set
-            {
-                IsClosed = value == "Closed";
-                IsOpen24Hours = value == "Open24";
-            }
-        }
-    }
 }

@@ -9,38 +9,37 @@
     <StoreHeaderBack Href="/more" />
     <Page>
         <header class="pos-branches__header">
-            <div class="pos-branches__heading">
+            <div class="pos-branches__title-row">
                 <h1>@L["Branches_Title"]</h1>
-                <p class="pos-muted">@L["Branches_Subtitle"]</p>
+                @if (!_showCreate && CanAddBranch)
+                {
+                    <Button Variant="ButtonVariant.Primary"
+                            Size="ButtonSize.Sm"
+                            Disabled="_busy"
+                            OnClick="OpenCreate">@L["Branches_Add"]</Button>
+                }
             </div>
-            @if (_showCreate)
+            <p class="pos-muted">@L["Branches_Subtitle"]</p>
+            @if (_capacity is not null)
             {
-                <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="ToggleCreate">@L["Common_Cancel"]</Button>
+                <div class="pos-branches__capacity"
+                     role="meter"
+                     aria-valuemin="0"
+                     aria-valuenow="@_capacity.Used"
+                     aria-valuemax="@_capacity.Allowed"
+                     aria-label="@L["Branches_Capacity", _capacity.Used, _capacity.Allowed]">
+                    <span>@L["Branches_Capacity", _capacity.Used, _capacity.Allowed]</span>
+                    <span class="pos-branches__capacity-track" aria-hidden="true">
+                        <span class="pos-branches__capacity-fill @(CanAddBranch ? null : "pos-branches__capacity-fill--full")"
+                              style="@CapacityFillStyle"></span>
+                    </span>
+                </div>
             }
-            else
-            {
-                <Button Variant="ButtonVariant.Primary" Disabled="@(_busy || !CanAddBranch)" OnClick="ToggleCreate">@L["Branches_Add"]</Button>
-            }
-        </header>
-
-        @if (_capacity is not null)
-        {
-            <div class="pos-branches__capacity"
-                 role="meter"
-                 aria-valuemin="0"
-                 aria-valuenow="@_capacity.Used"
-                 aria-valuemax="@_capacity.Allowed"
-                 aria-label="@L["Branches_Capacity", _capacity.Used, _capacity.Allowed]">
-                <span>@L["Branches_Capacity", _capacity.Used, _capacity.Allowed]</span>
-                <span class="pos-branches__capacity-track" aria-hidden="true">
-                    <span class="pos-branches__capacity-fill" style="@CapacityFillStyle"></span>
-                </span>
-            </div>
             @if (!CanAddBranch)
             {
                 <p class="pos-muted pos-branches__capacity-note">@L["Branches_CapacityFull"]</p>
             }
-        }
+        </header>
 
         @if (!string.IsNullOrWhiteSpace(_error))
         {
@@ -49,17 +48,20 @@
 
         @if (_showCreate)
         {
-            <section class="pos-branches__section">
-                <h2>@L["Branches_Add"]</h2>
+            <section class="pos-branches__create" aria-labelledby="branch-create-heading">
+                <h2 id="branch-create-heading">@L["Branches_Add"]</h2>
+                <p class="pos-branches__hint">@L["Branches_CreateHint"]</p>
                 <div class="pos-branches__grid">
-                    <TextInput Label="@L["Branches_FieldCode"]" @bind-Value="_newCode" Required />
+                    <TextInput Label="@L["Branches_FieldCode"]" @bind-Value="_newCode" Required autofocus />
                     <TextInput Label="@L["Branches_FieldName"]" @bind-Value="_newName" Required />
                     <TextInput Label="@L["Branches_FieldCity"]" @bind-Value="_newCity" />
                 </div>
-                <p class="pos-muted">@L["Branches_CreateHint"]</p>
                 <div class="pos-branches__actions">
-                    <Button Variant="ButtonVariant.Primary" Disabled="_busy" OnClick="CreateAsync">@L["Common_Save"]</Button>
-                    <Button Variant="ButtonVariant.Ghost" Disabled="_busy" OnClick="ToggleCreate">@L["Common_Cancel"]</Button>
+                    <Button Variant="ButtonVariant.Primary"
+                            Disabled="_busy"
+                            IsLoading="_busy"
+                            OnClick="CreateAsync">@L["Common_Save"]</Button>
+                    <Button Variant="ButtonVariant.Ghost" Disabled="_busy" OnClick="CloseCreate">@L["Common_Cancel"]</Button>
                 </div>
             </section>
         }
@@ -70,17 +72,21 @@
         }
         else if (_branches.Count == 0)
         {
-            <EmptyState IconName="home" Title="@L["Branches_EmptyTitle"]" Message="@L["Branches_EmptyMessage"]">
-                <Actions>
-                    @if (CanAddBranch && !_showCreate)
-                    {
-                        <Button Variant="ButtonVariant.Primary" Disabled="_busy" OnClick="ToggleCreate">@L["Branches_Add"]</Button>
-                    }
-                </Actions>
-            </EmptyState>
+            @if (!_showCreate)
+            {
+                <EmptyState IconName="home" Title="@L["Branches_EmptyTitle"]" Message="@L["Branches_EmptyMessage"]">
+                    <Actions>
+                        @if (CanAddBranch)
+                        {
+                            <Button Variant="ButtonVariant.Primary" Disabled="_busy" OnClick="OpenCreate">@L["Branches_Add"]</Button>
+                        }
+                    </Actions>
+                </EmptyState>
+            }
         }
         else
         {
+            <h2 class="pos-branches__list-title">@L["Branches_ListSection"]</h2>
             <div class="pos-branches__list" role="list">
                 @foreach (var branch in _branches)
                 {
@@ -163,7 +169,28 @@
         _loading = false;
     }
 
-    private void ToggleCreate() => _showCreate = !_showCreate;
+    private void OpenCreate()
+    {
+        if (_busy || !CanAddBranch)
+        {
+            return;
+        }
+
+        _error = null;
+        _showCreate = true;
+    }
+
+    private void CloseCreate()
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _showCreate = false;
+        _newCode = _newName = _newCity = null;
+    }
+
     private void Edit(Guid id) => Nav.NavigateTo($"/organization/branches/{id:D}");
     private static bool IsActive(OrganizationBranchDto branch) =>
         string.Equals(branch.Status, "Active", StringComparison.OrdinalIgnoreCase);

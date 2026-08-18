@@ -10,6 +10,9 @@ public sealed class BranchFulfillmentUiGuardTests
         var edit = File.ReadAllText(Path.Combine(maui, "Components", "Pages", "Organization", "BranchEdit.razor"));
         Assert.Contains("@page \"/organization/branches\"", list, StringComparison.Ordinal);
         Assert.Contains("pos-branches__card", list, StringComparison.Ordinal);
+        Assert.Contains("pos-branches__title-row", list, StringComparison.Ordinal);
+        Assert.Contains("OpenCreate", list, StringComparison.Ordinal);
+        Assert.DoesNotContain("ToggleCreate", list, StringComparison.Ordinal);
         Assert.Contains("<button type=\"button\"", list, StringComparison.Ordinal);
         Assert.Contains("Branches_AddAddress", list, StringComparison.Ordinal);
         Assert.DoesNotContain("L[\"Common_Edit\"]", list, StringComparison.Ordinal);
@@ -19,11 +22,17 @@ public sealed class BranchFulfillmentUiGuardTests
         Assert.Contains("DeliveryEnabled", edit, StringComparison.Ordinal);
         Assert.Contains("pos-branches__setup-row", edit, StringComparison.Ordinal);
         Assert.Contains("pos-branches__hours-row", edit, StringComparison.Ordinal);
+        Assert.Contains("pos-hours-sheet", edit, StringComparison.Ordinal);
+        Assert.Contains("OpenDayEditor", edit, StringComparison.Ordinal);
+        Assert.Contains("BranchHoursScheduleUi.ToDto", edit, StringComparison.Ordinal);
+        Assert.DoesNotContain("pos-branches__hours-mode", edit, StringComparison.Ordinal);
         Assert.Contains("pos-branches__kv-label", edit, StringComparison.Ordinal);
         Assert.Contains("pos-branches__sticky-actions", edit, StringComparison.Ordinal);
-        Assert.Contains("SaveHoursAsync", edit, StringComparison.Ordinal);
+        Assert.Contains("SaveHoursCoreAsync", edit, StringComparison.Ordinal);
         Assert.Contains("ToggleFulfillmentAsync", edit, StringComparison.Ordinal);
         Assert.Contains("CopyMondayToWeekdays", edit, StringComparison.Ordinal);
+        Assert.Contains("Branches_CopyHours", edit, StringComparison.Ordinal);
+        Assert.Contains("BranchHoursScheduleUi.ShowsTimes", edit, StringComparison.Ordinal);
         Assert.Contains("Branches_OrgCatalog", edit, StringComparison.Ordinal);
         Assert.Contains("Branches_AddressLocation", edit, StringComparison.Ordinal);
         Assert.Contains("env(safe-area-inset-bottom", File.ReadAllText(Path.Combine(maui, "wwwroot", "app.css")), StringComparison.Ordinal);
@@ -40,6 +49,7 @@ public sealed class BranchFulfillmentUiGuardTests
         foreach (var key in new[]
                  {
                      "Branches_Title",
+                     "Branches_ListSection",
                      "Branches_Pickup",
                      "Branches_Delivery",
                      "Branches_DeliverySettings",
@@ -60,6 +70,12 @@ public sealed class BranchFulfillmentUiGuardTests
                      "Branches_TimeZoneHint",
                      "Branches_AddressLocation",
                      "Branches_CopyWeekdays",
+                     "Branches_CopyHours",
+                     "Branches_ApplyToOtherDays",
+                     "Branches_HoursDone",
+                     "Branches_HoursStart",
+                     "Branches_HoursEnd",
+                     "Branches_DayFull_Monday",
                      "Branches_Configure",
                      "Branches_StatusOff",
                      "Branches_SaveActions",

@@ -10007,7 +10007,8 @@
     <value>Mark fulfilled</value>
   </data>
   <data name="Branches_Title" xml:space="preserve"><value>Branches</value></data>
-  <data name="Branches_Subtitle" xml:space="preserve"><value>Manage store locations and pickup or delivery availability.</value></data>
+  <data name="Branches_Subtitle" xml:space="preserve"><value>Pickup and delivery locations for this store.</value></data>
+  <data name="Branches_ListSection" xml:space="preserve"><value>Locations</value></data>
   <data name="Branches_Add" xml:space="preserve"><value>Add branch</value></data>
   <data name="Branches_Edit" xml:space="preserve"><value>Edit branch</value></data>
   <data name="Branches_Capacity" xml:space="preserve"><value>{0} of {1} branch slots used</value></data>
@@ -10055,7 +10056,7 @@
   <data name="Branches_TimeZone" xml:space="preserve"><value>Timezone (optional override)</value></data>
   <data name="Branches_OperatingHours" xml:space="preserve"><value>Operating hours</value></data>
   <data name="Branches_Closed" xml:space="preserve"><value>Closed</value></data>
-  <data name="Branches_Open24h" xml:space="preserve"><value>24h</value></data>
+  <data name="Branches_Open24h" xml:space="preserve"><value>24 hours</value></data>
   <data name="Branches_SaveHours" xml:space="preserve"><value>Save hours</value></data>
   <data name="Branches_HoursSaved" xml:space="preserve"><value>Operating hours saved.</value></data>
   <data name="Branches_OnlineOrders" xml:space="preserve"><value>Online orders</value></data>
@@ -10112,6 +10113,20 @@
   <data name="Branches_AddressLocation" xml:space="preserve"><value>Address &amp; location</value></data>
   <data name="Branches_MapLocation" xml:space="preserve"><value>Map location</value></data>
   <data name="Branches_CopyWeekdays" xml:space="preserve"><value>Copy Monday to weekdays</value></data>
+  <data name="Branches_CopyHours" xml:space="preserve"><value>Copy hours</value></data>
+  <data name="Branches_CopyHoursTo" xml:space="preserve"><value>Copy Monday hours to:</value></data>
+  <data name="Branches_ApplyToOtherDays" xml:space="preserve"><value>Apply to other days</value></data>
+  <data name="Branches_ApplyCopy" xml:space="preserve"><value>Apply</value></data>
+  <data name="Branches_HoursDone" xml:space="preserve"><value>Done</value></data>
+  <data name="Branches_HoursStart" xml:space="preserve"><value>Open</value></data>
+  <data name="Branches_HoursEnd" xml:space="preserve"><value>Close</value></data>
+  <data name="Branches_DayFull_Monday" xml:space="preserve"><value>Monday</value></data>
+  <data name="Branches_DayFull_Tuesday" xml:space="preserve"><value>Tuesday</value></data>
+  <data name="Branches_DayFull_Wednesday" xml:space="preserve"><value>Wednesday</value></data>
+  <data name="Branches_DayFull_Thursday" xml:space="preserve"><value>Thursday</value></data>
+  <data name="Branches_DayFull_Friday" xml:space="preserve"><value>Friday</value></data>
+  <data name="Branches_DayFull_Saturday" xml:space="preserve"><value>Saturday</value></data>
+  <data name="Branches_DayFull_Sunday" xml:space="preserve"><value>Sunday</value></data>
   <data name="Branches_HoursOpen" xml:space="preserve"><value>Hours</value></data>
   <data name="Branches_Configure" xml:space="preserve"><value>Configure</value></data>
   <data name="Branches_MissingCount" xml:space="preserve"><value>{0} items missing</value></data>

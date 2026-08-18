@@ -10007,7 +10007,8 @@
     <value>Markahang natupad</value>
   </data>
   <data name="Branches_Title" xml:space="preserve"><value>Mga branch</value></data>
-  <data name="Branches_Subtitle" xml:space="preserve"><value>Pamahalaan ang mga lokasyon at pickup o delivery.</value></data>
+  <data name="Branches_Subtitle" xml:space="preserve"><value>Mga lokasyon para sa pickup at delivery ng tindahan.</value></data>
+  <data name="Branches_ListSection" xml:space="preserve"><value>Mga lokasyon</value></data>
   <data name="Branches_Add" xml:space="preserve"><value>Magdagdag ng branch</value></data>
   <data name="Branches_Edit" xml:space="preserve"><value>I-edit ang branch</value></data>
   <data name="Branches_Capacity" xml:space="preserve"><value>{0} sa {1} branch slot ang gamit</value></data>
@@ -10112,6 +10113,20 @@
   <data name="Branches_AddressLocation" xml:space="preserve"><value>Address at lokasyon</value></data>
   <data name="Branches_MapLocation" xml:space="preserve"><value>Lokasyon sa mapa</value></data>
   <data name="Branches_CopyWeekdays" xml:space="preserve"><value>Kopyahin ang Lunes sa weekdays</value></data>
+  <data name="Branches_CopyHours" xml:space="preserve"><value>Kopyahin ang oras</value></data>
+  <data name="Branches_CopyHoursTo" xml:space="preserve"><value>Kopyahin ang oras ng Lunes sa:</value></data>
+  <data name="Branches_ApplyToOtherDays" xml:space="preserve"><value>Ilapat sa ibang araw</value></data>
+  <data name="Branches_ApplyCopy" xml:space="preserve"><value>Ilapat</value></data>
+  <data name="Branches_HoursDone" xml:space="preserve"><value>Tapos</value></data>
+  <data name="Branches_HoursStart" xml:space="preserve"><value>Bukas</value></data>
+  <data name="Branches_HoursEnd" xml:space="preserve"><value>Sara</value></data>
+  <data name="Branches_DayFull_Monday" xml:space="preserve"><value>Lunes</value></data>
+  <data name="Branches_DayFull_Tuesday" xml:space="preserve"><value>Martes</value></data>
+  <data name="Branches_DayFull_Wednesday" xml:space="preserve"><value>Miyerkules</value></data>
+  <data name="Branches_DayFull_Thursday" xml:space="preserve"><value>Huwebes</value></data>
+  <data name="Branches_DayFull_Friday" xml:space="preserve"><value>Biyernes</value></data>
+  <data name="Branches_DayFull_Saturday" xml:space="preserve"><value>Sabado</value></data>
+  <data name="Branches_DayFull_Sunday" xml:space="preserve"><value>Linggo</value></data>
   <data name="Branches_HoursOpen" xml:space="preserve"><value>Oras</value></data>
   <data name="Branches_Configure" xml:space="preserve"><value>I-set up</value></data>
   <data name="Branches_MissingCount" xml:space="preserve"><value>{0} item ang kulang</value></data>
