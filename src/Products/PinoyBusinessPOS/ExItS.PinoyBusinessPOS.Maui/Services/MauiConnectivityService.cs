@@ -23,6 +23,13 @@ public sealed class MauiConnectivityService : IConnectivityService, IDisposable
         return Task.FromResult(IsUsablyConnected(Connectivity.Current.NetworkAccess));
     }
 
+    public Task<bool> HasNoNetworkInterfaceAsync(CancellationToken ct = default)
+    {
+        // Raw OS radio-off. Do not use IsUsablyConnected — Debug Local Validation treats
+        // NetworkAccess.None as connected so Tailscale/LAN API attempts still run.
+        return Task.FromResult(Connectivity.Current.NetworkAccess is NetworkAccess.None);
+    }
+
     private void OnPlatformConnectivityChanged(object? sender, ConnectivityChangedEventArgs e)
     {
         var status = IsUsablyConnected(e.NetworkAccess)

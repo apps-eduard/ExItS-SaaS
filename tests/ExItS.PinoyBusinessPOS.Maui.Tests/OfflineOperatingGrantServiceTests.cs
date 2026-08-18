@@ -113,6 +113,25 @@ public sealed class OfflineOperatingGrantServiceTests
     }
 
     [Fact]
+    public async Task Process_lock_and_new_service_instance_still_offer_persisted_pin()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
+        var harness = await SeedAsync(clock);
+        Assert.True((await harness.OnlineService.EvaluateColdStartOfferAsync()).CanOfferPinUnlock);
+
+        harness.OnlineService.LockThisProcess();
+        Assert.False(harness.OnlineService.IsUnlockedThisProcess);
+        Assert.Null(harness.OnlineService.ActiveUnlockedGrant);
+        Assert.True((await harness.OnlineService.EvaluateColdStartOfferAsync()).CanOfferPinUnlock);
+
+        var cold = harness.CreateColdStartService();
+        Assert.True((await cold.EvaluateColdStartOfferAsync()).CanOfferPinUnlock);
+        Assert.Equal(
+            OfflinePinUnlockStatus.Succeeded,
+            (await cold.UnlockWithPinAsync(TestUserId, "123456")).Status);
+    }
+
+    [Fact]
     public async Task Clear_drops_grant_but_keeps_pin_verifier()
     {
         var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));

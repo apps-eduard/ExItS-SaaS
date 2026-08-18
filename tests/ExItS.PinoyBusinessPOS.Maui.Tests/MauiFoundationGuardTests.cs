@@ -270,6 +270,9 @@ public sealed class MauiFoundationGuardTests
         Assert.True(File.Exists(Path.Combine(services, "MauiOnboardingPreferenceStore.cs")));
         Assert.False(File.Exists(Path.Combine(services, "NullSecureTokenStore.cs")));
         Assert.True(File.Exists(Path.Combine(services, "MauiConnectivityService.cs")));
+        var connectivity = File.ReadAllText(Path.Combine(services, "MauiConnectivityService.cs"));
+        Assert.Contains("HasNoNetworkInterfaceAsync", connectivity, StringComparison.Ordinal);
+        Assert.Contains("NetworkAccess.None", connectivity, StringComparison.Ordinal);
         Assert.True(File.Exists(Path.Combine(services, "MauiAppInfoService.cs")));
         Assert.True(File.Exists(Path.Combine(services, "DensityController.cs")));
         Assert.True(File.Exists(Path.Combine(services, "ThemeController.cs")));

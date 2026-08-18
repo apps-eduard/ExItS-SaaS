@@ -58,7 +58,8 @@ public sealed class AuthExperienceUxGuardTests
     {
         var signIn = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "SignIn.razor"));
         Assert.Contains("ShowOfflinePinAction", signIn, StringComparison.Ordinal);
-        Assert.Contains("_isOffline && _canUsePin", signIn, StringComparison.Ordinal);
+        Assert.Contains("HasNoNetworkInterfaceAsync", signIn, StringComparison.Ordinal);
+        Assert.Contains("_canUsePin && (_isOffline || _offerPinBecauseUnreachable)", signIn, StringComparison.Ordinal);
         Assert.Contains("SignIn_UsePin", signIn, StringComparison.Ordinal);
         Assert.Contains("SignIn_RememberMe", signIn, StringComparison.Ordinal);
         Assert.Contains("SignIn_ForgotPassword", signIn, StringComparison.Ordinal);
@@ -68,6 +69,7 @@ public sealed class AuthExperienceUxGuardTests
         Assert.DoesNotContain("SignIn_OfflineLimitedHint", signIn, StringComparison.Ordinal);
         Assert.DoesNotContain("SignIn_ContinueOffline", signIn, StringComparison.Ordinal);
         Assert.DoesNotContain("else if (_canUsePin)", signIn, StringComparison.Ordinal);
+        Assert.DoesNotContain("_canUsePin = true;", signIn, StringComparison.Ordinal);
     }
 
     [Fact]

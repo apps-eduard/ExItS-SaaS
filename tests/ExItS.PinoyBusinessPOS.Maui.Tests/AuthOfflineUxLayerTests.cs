@@ -344,7 +344,8 @@ public sealed class AuthOfflineUxLayerTests
         Assert.Contains("ContinueWithFacebookPlaceholderAsync", signIn, StringComparison.Ordinal);
         Assert.Contains("SignIn_UsePin", signIn, StringComparison.Ordinal);
         Assert.Contains("ShowOfflinePinAction", signIn, StringComparison.Ordinal);
-        Assert.Contains("_isOffline && _canUsePin", signIn, StringComparison.Ordinal);
+        Assert.Contains("HasNoNetworkInterfaceAsync", signIn, StringComparison.Ordinal);
+        Assert.Contains("_canUsePin && (_isOffline || _offerPinBecauseUnreachable)", signIn, StringComparison.Ordinal);
         Assert.Contains("SignIn_OfflineNoPinMessage", signIn, StringComparison.Ordinal);
         Assert.DoesNotContain("SignIn_OfflineLimitedHint", signIn, StringComparison.Ordinal);
         Assert.DoesNotContain("SignIn_ContinueOffline", signIn, StringComparison.Ordinal);

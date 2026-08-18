@@ -188,7 +188,9 @@
     private List<LocalValidationQuickLoginIdentityDto> _quickLoginIdentities = [];
     private Dictionary<string, LocalValidationQuickLoginIdentityDto> _quickLoginByKey = new(StringComparer.Ordinal);
 
-    private bool ShowOfflinePinAction => _isOffline && _canUsePin;
+    private bool _offerPinBecauseUnreachable;
+
+    private bool ShowOfflinePinAction => _canUsePin && (_isOffline || _offerPinBecauseUnreachable);
 
     protected override async Task OnInitializedAsync()
     {
@@ -218,7 +220,16 @@
 
     private async Task RefreshOfflineStateAsync()
     {
-        _isOffline = !await Connectivity.IsConnectedAsync();
+        var apiReachableHint = await Connectivity.IsConnectedAsync();
+        var noRadio = await Connectivity.HasNoNetworkInterfaceAsync();
+        // Debug Local Validation treats NetworkAccess.None as connected for API attempts.
+        // PIN offer must still appear when the OS reports no interface (airplane / radios off).
+        _isOffline = !apiReachableHint || noRadio;
+        if (!_isOffline)
+        {
+            _offerPinBecauseUnreachable = false;
+        }
+
         var offer = await Auth.EvaluateOfflineColdStartOfferAsync();
         _canUsePin = offer.CanOfferPinUnlock;
     }
@@ -394,6 +405,20 @@
         return Task.CompletedTask;
     }
 
+    private void RecordUnreachableSignInOutcome()
+    {
+        // Unreachable / timeout — not an access denial. Do not surface this merely because the
+        // page loaded offline; only after a real sign-in attempt.
+        if (_canUsePin)
+        {
+            _offerPinBecauseUnreachable = true;
+            _errors = [L["SignIn_ServerUnreachablePinHint"].Value];
+            return;
+        }
+
+        _errors = [L["SignIn_OfflineNoPinMessage"].Value];
+    }
+
     private void ContinueWaitingAsync() => _progress.ContinueWaiting();
 
     private void UsePinInsteadAsync()
@@ -460,10 +485,7 @@
             {
                 _showSlowPrompt = false;
                 await RefreshOfflineStateAsync();
-                // Unreachable / timeout — not an access denial.
-                _errors = _canUsePin
-                    ? [L["SignIn_ServerUnreachablePinHint"].Value]
-                    : [L["SignIn_OfflineNoPinMessage"].Value];
+                RecordUnreachableSignInOutcome();
                 return;
             }
 
@@ -485,9 +507,7 @@
                     or AuthFailureReason.Cancelled)
                 {
                     await RefreshOfflineStateAsync();
-                    _errors = _canUsePin
-                        ? [L["SignIn_ServerUnreachablePinHint"].Value]
-                        : [L["SignIn_OfflineNoPinMessage"].Value];
+                    RecordUnreachableSignInOutcome();
                     return;
                 }
 
