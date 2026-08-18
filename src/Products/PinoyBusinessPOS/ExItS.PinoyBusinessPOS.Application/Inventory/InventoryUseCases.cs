@@ -691,25 +691,29 @@ public interface ISaleStockService
     Task EnsureAvailableForSaleAsync(
         PosOrganizationId organizationId,
         Sale sale,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        Guid? branchId = null);
 
     Task ReserveForAwaitingPaymentAsync(
         Sale sale,
         Guid actorId,
         DateTimeOffset utcNow,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        Guid? branchId = null);
 
     Task ReleaseIfReservedAsync(
         Sale sale,
         DateTimeOffset utcNow,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        Guid? branchId = null);
 
     Task ConsumeReservedForPaidAsync(
         Sale sale,
         IReadOnlyDictionary<Guid, CatalogProduct> productsById,
         Guid actorId,
         DateTimeOffset utcNow,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        Guid? branchId = null);
 
     Task DeductForSaleAsync(
         PosOrganizationId organizationId,
@@ -717,7 +721,8 @@ public interface ISaleStockService
         IReadOnlyDictionary<Guid, CatalogProduct> productsById,
         Guid actorId,
         DateTimeOffset utcNow,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        Guid? branchId = null);
 
     Task RestoreForSaleVoidAsync(
         PosOrganizationId organizationId,
@@ -725,30 +730,42 @@ public interface ISaleStockService
         Guid actorId,
         string reason,
         DateTimeOffset utcNow,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        Guid? branchId = null);
 }
 
 public sealed class SaleStockService : ISaleStockService
 {
     private readonly IInventoryRepository _inventory;
     private readonly InventoryLotStockService _lots;
+    private readonly IInventoryBranchBalanceRepository? _branchBalances;
+    private readonly IOrganizationBranchDirectory? _branches;
 
-    public SaleStockService(IInventoryRepository inventory, InventoryLotStockService lots)
+    public SaleStockService(
+        IInventoryRepository inventory,
+        InventoryLotStockService lots,
+        IInventoryBranchBalanceRepository? branchBalances = null,
+        IOrganizationBranchDirectory? branches = null)
     {
         _inventory = inventory;
         _lots = lots;
+        _branchBalances = branchBalances;
+        _branches = branches;
     }
 
     public async Task EnsureAvailableForSaleAsync(
         PosOrganizationId organizationId,
         Sale sale,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Guid? branchId = null)
     {
         var productIds = sale.Lines.Select(l => l.ProductId).Distinct().ToList();
         var accounts = await _inventory
             .ListByProductIdsAsync(organizationId, productIds, cancellationToken)
             .ConfigureAwait(false);
         var byProduct = accounts.ToDictionary(a => a.ProductId.Value);
+        var balances = await LoadBalancesAsync(organizationId, productIds, cancellationToken).ConfigureAwait(false);
+        var primaryId = await ResolvePrimaryAsync(organizationId.Value, cancellationToken).ConfigureAwait(false);
 
         foreach (var group in sale.Lines.GroupBy(l => l.ProductId.Value))
         {
@@ -758,7 +775,19 @@ public sealed class SaleStockService : ISaleStockService
             }
 
             var needed = group.Sum(l => l.Quantity);
-            if (account.AvailableQuantity < needed)
+            var available = account.AvailableQuantity;
+            if (branchId is Guid location && location != Guid.Empty)
+            {
+                var onHand = BranchStockResolver.ResolveOnHand(
+                    PosBranchId.From(location),
+                    primaryId,
+                    account.OnHandQuantity,
+                    balances,
+                    CatalogProductId.From(group.Key));
+                available = BranchStockResolver.ResolveAvailable(onHand, account.AvailableQuantity);
+            }
+
+            if (available < needed)
             {
                 throw new DomainException(
                     ApplicationErrorCodes.InsufficientStock,
@@ -771,7 +800,8 @@ public sealed class SaleStockService : ISaleStockService
         Sale sale,
         Guid actorId,
         DateTimeOffset utcNow,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Guid? branchId = null)
     {
         _ = actorId;
         if (sale.StockReservationState == SaleStockReservationState.Reserved)
@@ -794,6 +824,10 @@ public sealed class SaleStockService : ISaleStockService
                 async (accounts, ct) =>
                 {
                     var byProduct = accounts.ToDictionary(a => a.ProductId.Value);
+                    var balances = branchId is Guid
+                        ? (await LoadBalancesAsync(sale.OrganizationId, productIds, ct).ConfigureAwait(false)).ToList()
+                        : [];
+                    var primaryId = await ResolvePrimaryAsync(sale.OrganizationId.Value, ct).ConfigureAwait(false);
                     foreach (var line in sale.Lines.OrderBy(l => l.LineNumber))
                     {
                         if (!byProduct.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
@@ -801,9 +835,34 @@ public sealed class SaleStockService : ISaleStockService
                             continue;
                         }
 
+                        if (branchId is Guid location && location != Guid.Empty)
+                        {
+                            var onHand = BranchStockResolver.ResolveOnHand(
+                                PosBranchId.From(location),
+                                primaryId,
+                                account.OnHandQuantity,
+                                balances,
+                                line.ProductId);
+                            if (BranchStockResolver.ResolveAvailable(onHand, account.AvailableQuantity) < line.Quantity)
+                            {
+                                throw new DomainException(
+                                    ApplicationErrorCodes.InsufficientStock,
+                                    "Insufficient available stock for one or more sale lines.");
+                            }
+                        }
+
                         account.Reserve(line.Quantity);
                         account.Touch(utcNow);
                         await _inventory.UpdateAccountAsync(account, ct).ConfigureAwait(false);
+                        await ApplyBranchDeltaAsync(
+                                sale.OrganizationId,
+                                branchId,
+                                line.ProductId,
+                                account.OnHandQuantity,
+                                -line.Quantity,
+                                utcNow,
+                                ct)
+                            .ConfigureAwait(false);
                     }
                 },
                 cancellationToken)
@@ -815,7 +874,8 @@ public sealed class SaleStockService : ISaleStockService
     public async Task ReleaseIfReservedAsync(
         Sale sale,
         DateTimeOffset utcNow,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Guid? branchId = null)
     {
         if (sale.StockReservationState != SaleStockReservationState.Reserved)
         {
@@ -840,6 +900,15 @@ public sealed class SaleStockService : ISaleStockService
                         account.Release(line.Quantity);
                         account.Touch(utcNow);
                         await _inventory.UpdateAccountAsync(account, ct).ConfigureAwait(false);
+                        await ApplyBranchDeltaAsync(
+                                sale.OrganizationId,
+                                branchId,
+                                line.ProductId,
+                                account.OnHandQuantity,
+                                line.Quantity,
+                                utcNow,
+                                ct)
+                            .ConfigureAwait(false);
                     }
                 },
                 cancellationToken)
@@ -853,7 +922,8 @@ public sealed class SaleStockService : ISaleStockService
         IReadOnlyDictionary<Guid, CatalogProduct> productsById,
         Guid actorId,
         DateTimeOffset utcNow,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Guid? branchId = null)
     {
         if (sale.StockReservationState == SaleStockReservationState.Consumed)
         {
@@ -909,7 +979,9 @@ public sealed class SaleStockService : ISaleStockService
                                     account,
                                     actorId,
                                     utcNow,
-                                    ct)
+                                    ct,
+                                    branchId,
+                                    applyBranchOverlay: false)
                                 .ConfigureAwait(false);
                             continue;
                         }
@@ -926,7 +998,7 @@ public sealed class SaleStockService : ISaleStockService
                             actorId,
                             utcNow,
                             sellingMode: line.SellingModeSnapshot);
-                        // ConsumeReservation already applied on-hand effect — do not ApplyMovementEffect again.
+                        // Overlay was taken at reserve; ConsumeReservation applies org on-hand only.
                         await _inventory.UpdateAccountAsync(account, ct).ConfigureAwait(false);
                         await _inventory.AddMovementAsync(movement, ct).ConfigureAwait(false);
                     }
@@ -943,7 +1015,8 @@ public sealed class SaleStockService : ISaleStockService
         IReadOnlyDictionary<Guid, CatalogProduct> productsById,
         Guid actorId,
         DateTimeOffset utcNow,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Guid? branchId = null)
     {
         var productIds = sale.Lines.Select(l => l.ProductId).Distinct().ToList();
         var accounts = await _inventory
@@ -980,7 +1053,8 @@ public sealed class SaleStockService : ISaleStockService
                     account,
                     actorId,
                     utcNow,
-                    cancellationToken)
+                    cancellationToken,
+                    branchId)
                 .ConfigureAwait(false);
         }
     }
@@ -993,7 +1067,9 @@ public sealed class SaleStockService : ISaleStockService
         InventoryAccount account,
         Guid actorId,
         DateTimeOffset utcNow,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Guid? branchId = null,
+        bool applyBranchOverlay = true)
     {
         if (product.TracksExpiration)
         {
@@ -1010,6 +1086,9 @@ public sealed class SaleStockService : ISaleStockService
                         utcNow,
                         StockMovementType.SaleDeduction,
                         StockMovementSourceType.Sale,
+                        branchId: branchId is Guid location && location != Guid.Empty
+                            ? PosBranchId.From(location)
+                            : null,
                         sourceId: sale.Id.Value,
                         cancellationToken: cancellationToken)
                     .ConfigureAwait(false);
@@ -1042,6 +1121,18 @@ public sealed class SaleStockService : ISaleStockService
         account.Touch(utcNow);
         await _inventory.UpdateAccountAsync(account, cancellationToken).ConfigureAwait(false);
         await _inventory.AddMovementAsync(movement, cancellationToken).ConfigureAwait(false);
+        if (applyBranchOverlay)
+        {
+            await ApplyBranchDeltaAsync(
+                    organizationId,
+                    branchId,
+                    line.ProductId,
+                    account.OnHandQuantity - movement.QuantityEffect,
+                    movement.QuantityEffect,
+                    utcNow,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
     }
 
     public async Task RestoreForSaleVoidAsync(
@@ -1050,7 +1141,8 @@ public sealed class SaleStockService : ISaleStockService
         Guid actorId,
         string reason,
         DateTimeOffset utcNow,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Guid? branchId = null)
     {
         var deductions = await _inventory
             .ListSaleDeductionsAsync(organizationId, sale.Id, cancellationToken)
@@ -1116,6 +1208,79 @@ public sealed class SaleStockService : ISaleStockService
                 .ConfigureAwait(false);
             await _inventory.UpdateAccountAsync(account, cancellationToken).ConfigureAwait(false);
             await _inventory.AddMovementAsync(restoration, cancellationToken).ConfigureAwait(false);
+            await ApplyBranchDeltaAsync(
+                    organizationId,
+                    branchId,
+                    deduction.ProductId,
+                    account.OnHandQuantity - restoration.QuantityEffect,
+                    restoration.QuantityEffect,
+                    utcNow,
+                    cancellationToken)
+                .ConfigureAwait(false);
         }
+    }
+
+    private async Task<IReadOnlyList<InventoryBranchBalance>> LoadBalancesAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyList<CatalogProductId> productIds,
+        CancellationToken cancellationToken)
+    {
+        if (_branchBalances is null || productIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await _branchBalances
+            .ListByProductIdsAsync(organizationId, productIds, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    private async Task<Guid?> ResolvePrimaryAsync(Guid organizationId, CancellationToken cancellationToken)
+    {
+        if (_branches is null)
+        {
+            return null;
+        }
+
+        return await _branches.GetPrimaryBranchIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task ApplyBranchDeltaAsync(
+        PosOrganizationId organizationId,
+        Guid? branchId,
+        CatalogProductId productId,
+        decimal organizationOnHandBeforeDelta,
+        decimal signedQuantity,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken)
+    {
+        if (_branchBalances is null || branchId is not Guid location || location == Guid.Empty || signedQuantity == 0m)
+        {
+            return;
+        }
+
+        var primaryId = await ResolvePrimaryAsync(organizationId.Value, cancellationToken).ConfigureAwait(false);
+        var existing = await _branchBalances
+            .GetAsync(organizationId, PosBranchId.From(location), productId, cancellationToken)
+            .ConfigureAwait(false);
+        var balances = existing is null ? new List<InventoryBranchBalance>() : [existing];
+        if (existing is null)
+        {
+            var related = await _branchBalances
+                .ListByProductIdsAsync(organizationId, [productId], cancellationToken)
+                .ConfigureAwait(false);
+            balances = related.ToList();
+        }
+
+        var balance = BranchStockResolver.EnsureBalance(
+            organizationId,
+            PosBranchId.From(location),
+            productId,
+            organizationOnHandBeforeDelta,
+            primaryId,
+            balances,
+            utcNow);
+        balance.Apply(signedQuantity, utcNow);
+        await _branchBalances.UpsertAsync(balance, cancellationToken).ConfigureAwait(false);
     }
 }

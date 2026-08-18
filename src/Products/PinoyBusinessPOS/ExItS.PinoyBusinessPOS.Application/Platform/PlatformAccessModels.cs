@@ -96,7 +96,7 @@ public sealed record CreateBranchRequest(
     string? CountryCode = null,
     decimal? Latitude = null,
     decimal? Longitude = null,
-    bool PickupEnabled = true,
+    bool PickupEnabled = false,
     bool DeliveryEnabled = false);
 public sealed record PosDeviceDto(Guid Id, Guid OrganizationId, Guid BranchId, string InstallationDeviceId, string FriendlyName,
     string? Platform, string? Model, string? AppVersion, string Status, DateTimeOffset RegisteredAtUtc, DateTimeOffset LastSeenAtUtc,

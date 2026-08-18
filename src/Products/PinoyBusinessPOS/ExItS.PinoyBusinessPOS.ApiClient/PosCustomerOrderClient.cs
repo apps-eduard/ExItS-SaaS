@@ -210,7 +210,8 @@ public sealed class PosCustomerOrderClient(HttpClient httpClient, IConnectivityS
         Guid? categoryId = null,
         int page = 1,
         int pageSize = 40,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        Guid? fulfillmentBranchId = null)
     {
         var query = new StringBuilder(
             $"/api/v1/pos/customer-orders/organizations/{sellerOrganizationId:D}/storefront?");
@@ -220,6 +221,11 @@ public sealed class PosCustomerOrderClient(HttpClient httpClient, IConnectivityS
         if (categoryId is Guid id)
         {
             query.Append("&categoryId=").Append(id.ToString("D"));
+        }
+
+        if (fulfillmentBranchId is Guid branchId && branchId != Guid.Empty)
+        {
+            query.Append("&fulfillmentBranchId=").Append(branchId.ToString("D"));
         }
 
         return SendAsync<CustomerStorefrontDto>(HttpMethod.Get, query.ToString(), null, null, ct);

@@ -54,6 +54,11 @@ public interface IOrganizationBranchDirectory
         Guid organizationId,
         IReadOnlyCollection<Guid> branchIds,
         CancellationToken cancellationToken = default);
+
+    Task<Guid?> GetPrimaryBranchIdAsync(
+        Guid organizationId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<Guid?>(null);
 }
 
 public interface IInventoryTransferAlertSink

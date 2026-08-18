@@ -17,7 +17,8 @@ public sealed record CustomerOrderBranchSnapshot(
     string? StoreStatusMessage,
     decimal? Latitude,
     decimal? Longitude,
-    CustomerOrderBranchDeliveryPolicySnapshot? DeliveryPolicy);
+    CustomerOrderBranchDeliveryPolicySnapshot? DeliveryPolicy,
+    bool IsPrimary = false);
 
 public sealed record CustomerOrderBranchDeliveryPolicySnapshot(
     decimal MinimumOrderAmount,

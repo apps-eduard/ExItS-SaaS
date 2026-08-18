@@ -96,7 +96,8 @@ public interface IPosCustomerOrderClient
         Guid? categoryId = null,
         int page = 1,
         int pageSize = 40,
-        CancellationToken ct = default);
+        CancellationToken ct = default,
+        Guid? fulfillmentBranchId = null);
 
     Task<ApiResult<ProductImageBytes>> GetStorefrontProductImageAsync(
         Guid sellerOrganizationId,

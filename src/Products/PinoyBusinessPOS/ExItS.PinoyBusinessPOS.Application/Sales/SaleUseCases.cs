@@ -294,6 +294,7 @@ public sealed class CheckoutSale
         string? buyerPersonalPublicUserId = null,
         Guid? buyerOrganizationId = null,
         string? buyerPublicOrganizationId = null,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
@@ -676,16 +677,19 @@ public sealed class CheckoutSale
                         if (isElectronic)
                         {
                             await _saleStock
-                                .EnsureAvailableForSaleAsync(orgId, createdSale, ct)
+                                .EnsureAvailableForSaleAsync(orgId, createdSale, ct, branchId)
                                 .ConfigureAwait(false);
                             await _saleStock
-                                .ReserveForAwaitingPaymentAsync(createdSale, capturedActorId, utcNow, ct)
+                                .ReserveForAwaitingPaymentAsync(createdSale, capturedActorId, utcNow, ct, branchId)
                                 .ConfigureAwait(false);
                             return;
                         }
 
                         await _saleStock
-                            .DeductForSaleAsync(orgId, createdSale, productsById, capturedActorId, utcNow, ct)
+                            .EnsureAvailableForSaleAsync(orgId, createdSale, ct, branchId)
+                            .ConfigureAwait(false);
+                        await _saleStock
+                            .DeductForSaleAsync(orgId, createdSale, productsById, capturedActorId, utcNow, ct, branchId)
                             .ConfigureAwait(false);
 
                         if (!isUtang)
@@ -799,6 +803,7 @@ public sealed class VoidSale
         Guid saleId,
         string reason,
         Guid actorId,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
@@ -902,7 +907,7 @@ public sealed class VoidSale
                     }
 
                     await _saleStock
-                        .RestoreForSaleVoidAsync(orgId, current, actorId, reason, _clock.UtcNow, ct)
+                        .RestoreForSaleVoidAsync(orgId, current, actorId, reason, _clock.UtcNow, ct, branchId)
                         .ConfigureAwait(false);
 
                     await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);

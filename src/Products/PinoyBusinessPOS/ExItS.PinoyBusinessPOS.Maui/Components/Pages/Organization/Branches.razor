@@ -35,6 +35,7 @@
                     <TextInput Label="@L["Branches_FieldName"]" @bind-Value="_newName" Required />
                     <TextInput Label="@L["Branches_FieldCity"]" @bind-Value="_newCity" />
                 </div>
+                <p class="pos-muted">@L["Branches_CreateHint"]</p>
                 <div class="pos-branches__actions">
                     <Button Variant="ButtonVariant.Primary" Disabled="_busy" OnClick="CreateAsync">@L["Common_Save"]</Button>
                     <Button Disabled="_busy" OnClick="ToggleCreate">@L["Common_Cancel"]</Button>

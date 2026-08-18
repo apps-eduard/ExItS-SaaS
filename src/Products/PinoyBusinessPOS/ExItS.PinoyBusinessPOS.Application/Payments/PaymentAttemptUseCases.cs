@@ -51,7 +51,8 @@ public sealed class CreatePaymentAttempt
         Guid saleId,
         CreatePaymentAttemptRequest request,
         Guid actorId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Guid? branchId = null)
     {
         try
         {
@@ -148,10 +149,10 @@ public sealed class CreatePaymentAttempt
             if (sale.StockReservationState == SaleStockReservationState.Released)
             {
                 await _saleStock
-                    .EnsureAvailableForSaleAsync(orgId, sale, cancellationToken)
+                    .EnsureAvailableForSaleAsync(orgId, sale, cancellationToken, branchId)
                     .ConfigureAwait(false);
                 await _saleStock
-                    .ReserveForAwaitingPaymentAsync(sale, actorId, now, cancellationToken)
+                    .ReserveForAwaitingPaymentAsync(sale, actorId, now, cancellationToken, branchId)
                     .ConfigureAwait(false);
                 await _sales.UpdateAsync(sale, cancellationToken).ConfigureAwait(false);
                 await _uow.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

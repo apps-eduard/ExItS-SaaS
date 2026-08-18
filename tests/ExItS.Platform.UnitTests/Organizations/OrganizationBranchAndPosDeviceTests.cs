@@ -48,6 +48,82 @@ public sealed class OrganizationBranchAndPosDeviceTests
     }
 
     [Fact]
+    public void Additional_branch_does_not_enable_fulfillment_or_clone_primary()
+    {
+        var org = PlatformOrganizationId.New();
+        var branch = OrganizationBranch.Create(org, "north-1", "North Branch", T0);
+
+        Assert.False(branch.IsPrimary);
+        Assert.False(branch.PickupEnabled);
+        Assert.False(branch.DeliveryEnabled);
+        Assert.False(branch.CustomerOrderingEnabled);
+        Assert.Null(typeof(OrganizationBranch).GetProperty("CatalogProductId"));
+    }
+
+    [Fact]
+    public void Customer_link_is_organization_scoped_not_branch_owned()
+    {
+        Assert.Null(typeof(CustomerLinkRequest).GetProperty("BranchId"));
+        Assert.Null(typeof(LinkedCustomerAppUser).GetProperty("BranchId"));
+        Assert.NotNull(typeof(CustomerLinkRequest).GetProperty("OrganizationId"));
+        Assert.NotNull(typeof(LinkedCustomerAppUser).GetProperty("OrganizationId"));
+    }
+
+    [Fact]
+    public void Subscription_upgrade_source_does_not_create_branches_or_enable_fulfillment()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "ExItS.slnx")))
+        {
+            dir = dir.Parent;
+        }
+
+        Assert.NotNull(dir);
+        var path = Path.Combine(
+            dir!.FullName,
+            "src",
+            "Platform",
+            "ExItS.Platform.Application",
+            "Subscriptions",
+            "PlanChangeUseCases.cs");
+        var source = File.ReadAllText(path);
+        Assert.Contains("class UpgradeOrganizationSubscription", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("IOrganizationBranchRepository", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("CreateBranch", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("SetFulfillmentCapabilities", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("PickupEnabled = true", source, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Create_branch_source_does_not_clone_catalog_customers_staff_or_devices()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "ExItS.slnx")))
+        {
+            dir = dir.Parent;
+        }
+
+        Assert.NotNull(dir);
+        var path = Path.Combine(
+            dir!.FullName,
+            "src",
+            "Platform",
+            "ExItS.Platform.Application",
+            "Organizations",
+            "BranchUseCases.cs");
+        var source = File.ReadAllText(path);
+        var start = source.IndexOf("public sealed class CreateBranch", StringComparison.Ordinal);
+        var end = source.IndexOf("public sealed class UpdateBranch", StringComparison.Ordinal);
+        Assert.True(start >= 0 && end > start);
+        var create = source[start..end];
+        Assert.DoesNotContain("CatalogProduct", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("BusinessCustomer", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("PosDevice", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("OrganizationMember", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("Inventory", create, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Organization_primary_business_type_is_immutable()
     {
         var organization = PlatformOrganization.Create("Store", "store", T0);

@@ -334,6 +334,7 @@ internal static class CustomerOrderEndpoints
             Guid? categoryId,
             int? page,
             int? pageSize,
+            Guid? fulfillmentBranchId,
             GetCustomerStorefront useCase,
             CancellationToken ct) =>
         {
@@ -344,7 +345,7 @@ internal static class CustomerOrderEndpoints
 
             return PosApiResults.FromResult(
                 await useCase
-                    .ExecuteAsync(sellerOrganizationId, search, categoryId, page, pageSize, ct)
+                    .ExecuteAsync(sellerOrganizationId, search, categoryId, page, pageSize, ct, fulfillmentBranchId)
                     .ConfigureAwait(false),
                 Results.Ok);
         });

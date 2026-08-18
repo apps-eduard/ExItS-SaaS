@@ -256,7 +256,9 @@ public sealed class PlaceCustomerOrder
                     line.Discount));
             }
 
-            var availability = await _stock.EnsureAvailableAsync(orgId, drafts, cancellationToken).ConfigureAwait(false);
+            var availability = await _stock
+                .EnsureAvailableAsync(orgId, drafts, request.FulfillmentBranchId, cancellationToken)
+                .ConfigureAwait(false);
             if (!availability.IsSuccess)
             {
                 return ApplicationResult<CustomerOrderDto>.Failure(availability);

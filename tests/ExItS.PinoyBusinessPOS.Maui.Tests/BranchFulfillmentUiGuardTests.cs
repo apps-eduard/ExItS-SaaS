@@ -14,7 +14,10 @@ public sealed class BranchFulfillmentUiGuardTests
         Assert.Contains("@page \"/organization/branches/{BranchId:guid}\"", edit, StringComparison.Ordinal);
         Assert.Contains("PickupEnabled", edit, StringComparison.Ordinal);
         Assert.Contains("DeliveryEnabled", edit, StringComparison.Ordinal);
-        Assert.Contains("UpsertBranchDeliveryPolicyAsync", edit, StringComparison.Ordinal);
+        Assert.Contains("pos-branches__setup-row", edit, StringComparison.Ordinal);
+        Assert.Contains("Branches_OrgCatalog", edit, StringComparison.Ordinal);
+        Assert.DoesNotContain("Copy products from Main", edit, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("PickupEnabled = true", File.ReadAllText(Path.Combine(maui, "..", "ExItS.PinoyBusinessPOS.Application", "Platform", "PlatformAccessModels.cs")), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -33,7 +36,12 @@ public sealed class BranchFulfillmentUiGuardTests
                      "Branches_BaseFee",
                      "Branches_IncludedKm",
                      "Branches_AdditionalPerKm",
-                     "Branches_MaximumKm"
+                     "Branches_MaximumKm",
+                     "Branches_Setup",
+                     "Branches_OrgCatalog",
+                     "Branches_OrgCustomers",
+                     "Branches_CreateHint",
+                     "Branches_InventoryNotCopied"
                  })
         {
             Assert.Contains($"<data name=\"{key}\"", en, StringComparison.Ordinal);

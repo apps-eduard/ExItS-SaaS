@@ -14,7 +14,7 @@ internal sealed class OrganizationBranchRecord
     public string? CountryCode { get; set; }
     public decimal? Latitude { get; set; }
     public decimal? Longitude { get; set; }
-    public bool PickupEnabled { get; set; } = true;
+    public bool PickupEnabled { get; set; }
     public bool DeliveryEnabled { get; set; }
     public bool CustomerOrderingEnabled { get; set; }
     public string? ContactPhone { get; set; }

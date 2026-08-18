@@ -3,6 +3,7 @@ using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 
 namespace ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
 
@@ -15,6 +16,7 @@ public sealed class GetCustomerStorefront
     private readonly ICustomerOrderBranchDirectory _branches;
     private readonly ICatalogProductImageRepository _images;
     private readonly IPlatformMerchantCatalogClient? _platform;
+    private readonly IInventoryBranchBalanceRepository? _branchBalances;
 
     public GetCustomerStorefront(
         ISellerCustomerOrderingCapability capability,
@@ -23,7 +25,8 @@ public sealed class GetCustomerStorefront
         IInventoryRepository inventory,
         ICustomerOrderBranchDirectory branches,
         ICatalogProductImageRepository images,
-        IPlatformMerchantCatalogClient? platform = null)
+        IPlatformMerchantCatalogClient? platform = null,
+        IInventoryBranchBalanceRepository? branchBalances = null)
     {
         _capability = capability;
         _products = products;
@@ -32,6 +35,7 @@ public sealed class GetCustomerStorefront
         _branches = branches;
         _images = images;
         _platform = platform;
+        _branchBalances = branchBalances;
     }
 
     public async Task<ApplicationResult<CustomerStorefrontDto>> ExecuteAsync(
@@ -40,7 +44,8 @@ public sealed class GetCustomerStorefront
         Guid? categoryId,
         int? page,
         int? pageSize,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Guid? fulfillmentBranchId = null)
     {
         if (sellerOrganizationId == Guid.Empty)
         {
@@ -95,10 +100,32 @@ public sealed class GetCustomerStorefront
             .TryGetVersionsAsync(_platform, pageItems, imageByProduct, cancellationToken)
             .ConfigureAwait(false);
 
+        var branches = await _branches
+            .ListBranchesAsync(sellerOrganizationId, cancellationToken)
+            .ConfigureAwait(false);
+        var selectedBranchId = ResolveStorefrontBranchId(branches, fulfillmentBranchId);
+        if (fulfillmentBranchId is Guid requested
+            && requested != Guid.Empty
+            && selectedBranchId is null)
+        {
+            return ApplicationResult<CustomerStorefrontDto>.Failure(
+                ApplicationErrorCodes.CustomerOrderBranchNotFound,
+                "The selected fulfillment branch was not found for this merchant.");
+        }
+
+        IReadOnlyList<InventoryBranchBalance> balances = [];
+        if (_branchBalances is not null && productIds.Count > 0 && selectedBranchId is not null)
+        {
+            balances = await _branchBalances
+                .ListByProductIdsAsync(orgId, productIds, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        var primaryBranchId = branches.FirstOrDefault(b => b.IsPrimary)?.BranchId;
         var products = pageItems.Select(p =>
         {
             accountByProduct.TryGetValue(p.Id.Value, out var account);
-            var availability = CustomerStorefrontAvailability.FromAccount(account);
+            var availability = ResolveAvailability(account, selectedBranchId, primaryBranchId, balances, p.Id);
             imageByProduct.TryGetValue(p.Id.Value, out var image);
             liveVersions.TryGetValue(p.Id.Value, out var liveVersion);
             var resolved = CatalogProductImageResolution.Resolve(p, image, liveVersion);
@@ -127,9 +154,6 @@ public sealed class GetCustomerStorefront
             .Select(c => new CustomerStorefrontCategoryDto(c.Id.Value, c.Name))
             .ToList();
 
-        var branches = await _branches
-            .ListBranchesAsync(sellerOrganizationId, cancellationToken)
-            .ConfigureAwait(false);
         var branchDtos = branches
             .Where(b => b.CustomerOrderingEnabled && (b.PickupEnabled || b.DeliveryEnabled))
             .Select(b => new CustomerStorefrontBranchDto(
@@ -157,5 +181,48 @@ public sealed class GetCustomerStorefront
             page ?? 1,
             take,
             branchDtos));
+    }
+
+    private static Guid? ResolveStorefrontBranchId(
+        IReadOnlyList<CustomerOrderBranchSnapshot> branches,
+        Guid? requested)
+    {
+        if (requested is Guid id && id != Guid.Empty)
+        {
+            return branches.Any(b => b.BranchId == id) ? id : null;
+        }
+
+        var eligible = branches
+            .Where(b => b.CustomerOrderingEnabled && (b.PickupEnabled || b.DeliveryEnabled))
+            .ToList();
+        if (eligible.Count == 1)
+        {
+            return eligible[0].BranchId;
+        }
+
+        return branches.FirstOrDefault(b => b.IsPrimary)?.BranchId
+            ?? eligible.FirstOrDefault()?.BranchId;
+    }
+
+    private static StorefrontAvailabilitySnapshot ResolveAvailability(
+        InventoryAccount? account,
+        Guid? selectedBranchId,
+        Guid? primaryBranchId,
+        IReadOnlyList<InventoryBranchBalance> balances,
+        CatalogProductId productId)
+    {
+        if (account is null || !account.IsTracked || selectedBranchId is not Guid branchId)
+        {
+            return CustomerStorefrontAvailability.FromAccount(account);
+        }
+
+        var onHand = BranchStockResolver.ResolveOnHand(
+            PosBranchId.From(branchId),
+            primaryBranchId,
+            account.OnHandQuantity,
+            balances,
+            productId);
+        var available = BranchStockResolver.ResolveAvailable(onHand, account.AvailableQuantity);
+        return CustomerStorefrontAvailability.FromTrackedQuantity(available);
     }
 }

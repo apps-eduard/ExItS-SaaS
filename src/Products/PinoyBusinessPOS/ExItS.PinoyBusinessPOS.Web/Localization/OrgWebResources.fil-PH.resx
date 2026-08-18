@@ -168,6 +168,96 @@
   <data name="Branches_Archived" xml:space="preserve">
     <value>Na-archive ang sangay.</value>
   </data>
+  <data name="Branches_Details" xml:space="preserve">
+    <value>Detalye</value>
+  </data>
+  <data name="Branches_Setup" xml:space="preserve">
+    <value>Setup ng branch</value>
+  </data>
+  <data name="Branches_Staff" xml:space="preserve">
+    <value>Staff</value>
+  </data>
+  <data name="Branches_StaffNotAuto" xml:space="preserve">
+    <value>Hindi auto-assign</value>
+  </data>
+  <data name="Branches_Devices" xml:space="preserve">
+    <value>Mga device</value>
+  </data>
+  <data name="Branches_DevicesNone" xml:space="preserve">
+    <value>Wala</value>
+  </data>
+  <data name="Branches_DevicesCount" xml:space="preserve">
+    <value>{0} nakarehistro</value>
+  </data>
+  <data name="Branches_RegisterDevice" xml:space="preserve">
+    <value>Magrehistro ng device</value>
+  </data>
+  <data name="Branches_Inventory" xml:space="preserve">
+    <value>Imbentaryo</value>
+  </data>
+  <data name="Branches_InventoryNotCopied" xml:space="preserve">
+    <value>Walang kinopyang stock</value>
+  </data>
+  <data name="Branches_AddOpeningStock" xml:space="preserve">
+    <value>Magdagdag ng opening stock</value>
+  </data>
+  <data name="Branches_TransferStock" xml:space="preserve">
+    <value>Mag-transfer mula sa ibang branch</value>
+  </data>
+  <data name="Branches_OrgCatalog" xml:space="preserve">
+    <value>Catalog ng organisasyon</value>
+  </data>
+  <data name="Branches_OrgCatalogHint" xml:space="preserve">
+    <value>Parehong produkto. Nagsisimula sa 0 ang stock ng branch.</value>
+  </data>
+  <data name="Branches_ViewCatalog" xml:space="preserve">
+    <value>Tingnan ang catalog</value>
+  </data>
+  <data name="Branches_OrgCustomers" xml:space="preserve">
+    <value>Mga customer ng organisasyon</value>
+  </data>
+  <data name="Branches_OrgCustomersHint" xml:space="preserve">
+    <value>Ang naka-link na customer ay sa organisasyon, hindi sa isang branch.</value>
+  </data>
+  <data name="Branches_ViewCustomers" xml:space="preserve">
+    <value>Tingnan ang mga customer</value>
+  </data>
+  <data name="Branches_CreateHint" xml:space="preserve">
+    <value>Lokasyon lang ang nalilikha. Catalog at customer ay sa organisasyon. Hindi kinokopya ang stock, staff, device, at pickup/delivery.</value>
+  </data>
+  <data name="Branches_OnlineOrders" xml:space="preserve">
+    <value>Online orders</value>
+  </data>
+  <data name="Branches_Pickup" xml:space="preserve">
+    <value>Pickup</value>
+  </data>
+  <data name="Branches_Delivery" xml:space="preserve">
+    <value>Delivery</value>
+  </data>
+  <data name="Branches_StatusReady" xml:space="preserve">
+    <value>Handa</value>
+  </data>
+  <data name="Branches_StatusSetupRequired" xml:space="preserve">
+    <value>Kailangan ng setup</value>
+  </data>
+  <data name="Branches_StatusSetupReady" xml:space="preserve">
+    <value>Handa nang paganahin</value>
+  </data>
+  <data name="Branches_StatusEnabled" xml:space="preserve">
+    <value>Pinagana</value>
+  </data>
+  <data name="Branches_StatusDisabled" xml:space="preserve">
+    <value>Naka-off</value>
+  </data>
+  <data name="Branches_StatusPaused" xml:space="preserve">
+    <value>Naka-pause</value>
+  </data>
+  <data name="Branches_StatusNotInPlan" xml:space="preserve">
+    <value>Wala sa plano</value>
+  </data>
+  <data name="Common_Back" xml:space="preserve">
+    <value>Bumalik</value>
+  </data>
   <data name="Common_Edit" xml:space="preserve">
     <value>I-edit</value>
   </data>

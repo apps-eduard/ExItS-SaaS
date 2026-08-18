@@ -168,6 +168,96 @@
   <data name="Branches_Archived" xml:space="preserve">
     <value>Branch archived.</value>
   </data>
+  <data name="Branches_Details" xml:space="preserve">
+    <value>Details</value>
+  </data>
+  <data name="Branches_Setup" xml:space="preserve">
+    <value>Branch setup</value>
+  </data>
+  <data name="Branches_Staff" xml:space="preserve">
+    <value>Staff</value>
+  </data>
+  <data name="Branches_StaffNotAuto" xml:space="preserve">
+    <value>Not auto-assigned</value>
+  </data>
+  <data name="Branches_Devices" xml:space="preserve">
+    <value>Devices</value>
+  </data>
+  <data name="Branches_DevicesNone" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="Branches_DevicesCount" xml:space="preserve">
+    <value>{0} registered</value>
+  </data>
+  <data name="Branches_RegisterDevice" xml:space="preserve">
+    <value>Register device</value>
+  </data>
+  <data name="Branches_Inventory" xml:space="preserve">
+    <value>Inventory</value>
+  </data>
+  <data name="Branches_InventoryNotCopied" xml:space="preserve">
+    <value>No stock copied</value>
+  </data>
+  <data name="Branches_AddOpeningStock" xml:space="preserve">
+    <value>Add opening stock</value>
+  </data>
+  <data name="Branches_TransferStock" xml:space="preserve">
+    <value>Transfer from another branch</value>
+  </data>
+  <data name="Branches_OrgCatalog" xml:space="preserve">
+    <value>Organization catalog</value>
+  </data>
+  <data name="Branches_OrgCatalogHint" xml:space="preserve">
+    <value>Same products. Branch stock starts at 0.</value>
+  </data>
+  <data name="Branches_ViewCatalog" xml:space="preserve">
+    <value>View catalog</value>
+  </data>
+  <data name="Branches_OrgCustomers" xml:space="preserve">
+    <value>Organization customers</value>
+  </data>
+  <data name="Branches_OrgCustomersHint" xml:space="preserve">
+    <value>Linked customers belong to the organization, not a branch.</value>
+  </data>
+  <data name="Branches_ViewCustomers" xml:space="preserve">
+    <value>View customers</value>
+  </data>
+  <data name="Branches_CreateHint" xml:space="preserve">
+    <value>Creates a location only. Catalog and customers stay organization-wide. Stock, staff, devices, and pickup/delivery are not copied.</value>
+  </data>
+  <data name="Branches_OnlineOrders" xml:space="preserve">
+    <value>Online orders</value>
+  </data>
+  <data name="Branches_Pickup" xml:space="preserve">
+    <value>Pickup</value>
+  </data>
+  <data name="Branches_Delivery" xml:space="preserve">
+    <value>Delivery</value>
+  </data>
+  <data name="Branches_StatusReady" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="Branches_StatusSetupRequired" xml:space="preserve">
+    <value>Setup required</value>
+  </data>
+  <data name="Branches_StatusSetupReady" xml:space="preserve">
+    <value>Ready to enable</value>
+  </data>
+  <data name="Branches_StatusEnabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="Branches_StatusDisabled" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Branches_StatusPaused" xml:space="preserve">
+    <value>Paused</value>
+  </data>
+  <data name="Branches_StatusNotInPlan" xml:space="preserve">
+    <value>Not in plan</value>
+  </data>
+  <data name="Common_Back" xml:space="preserve">
+    <value>Back</value>
+  </data>
   <data name="Common_Edit" xml:space="preserve">
     <value>Edit</value>
   </data>

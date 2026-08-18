@@ -10082,6 +10082,24 @@
   <data name="Branches_Day_Friday" xml:space="preserve"><value>Fri</value></data>
   <data name="Branches_Day_Saturday" xml:space="preserve"><value>Sat</value></data>
   <data name="Branches_Day_Sunday" xml:space="preserve"><value>Sun</value></data>
+  <data name="Branches_Setup" xml:space="preserve"><value>Branch setup</value></data>
+  <data name="Branches_Staff" xml:space="preserve"><value>Staff</value></data>
+  <data name="Branches_StaffNotAuto" xml:space="preserve"><value>Not auto-assigned</value></data>
+  <data name="Branches_Devices" xml:space="preserve"><value>Devices</value></data>
+  <data name="Branches_DevicesNone" xml:space="preserve"><value>None</value></data>
+  <data name="Branches_DevicesCount" xml:space="preserve"><value>{0} registered</value></data>
+  <data name="Branches_RegisterDevice" xml:space="preserve"><value>Register device</value></data>
+  <data name="Branches_Inventory" xml:space="preserve"><value>Inventory</value></data>
+  <data name="Branches_InventoryNotCopied" xml:space="preserve"><value>No stock copied</value></data>
+  <data name="Branches_AddOpeningStock" xml:space="preserve"><value>Add opening stock</value></data>
+  <data name="Branches_TransferStock" xml:space="preserve"><value>Transfer from another branch</value></data>
+  <data name="Branches_OrgCatalog" xml:space="preserve"><value>Organization catalog</value></data>
+  <data name="Branches_OrgCatalogHint" xml:space="preserve"><value>Same products. Branch stock starts at 0.</value></data>
+  <data name="Branches_ViewCatalog" xml:space="preserve"><value>View catalog</value></data>
+  <data name="Branches_OrgCustomers" xml:space="preserve"><value>Organization customers</value></data>
+  <data name="Branches_OrgCustomersHint" xml:space="preserve"><value>Linked customers belong to the organization, not a branch.</value></data>
+  <data name="Branches_ViewCustomers" xml:space="preserve"><value>View customers</value></data>
+  <data name="Branches_CreateHint" xml:space="preserve"><value>Creates a location only. Catalog and customers stay organization-wide. Stock, staff, devices, and pickup/delivery are not copied.</value></data>
   <data name="Orders_Title" xml:space="preserve"><value>Orders</value></data>
   <data name="Orders_SellerSubtitle" xml:space="preserve"><value>Review and fulfill customer pickup and delivery orders.</value></data>
   <data name="Orders_PersonalSubtitle" xml:space="preserve"><value>Track orders you placed with merchants.</value></data>

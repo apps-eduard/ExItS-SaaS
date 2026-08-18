@@ -54,6 +54,26 @@ public sealed class OrgWebAuthErrorAndBranchesGuardTests
     }
 
     [Fact]
+    public void Branch_edit_setup_panel_does_not_copy_catalog_or_stock()
+    {
+        var root = FindRepoRoot();
+        var edit = File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Web",
+            "Components",
+            "Pages",
+            "Organization",
+            "BranchEdit.razor"));
+        Assert.Contains("Branches_Setup", edit, StringComparison.Ordinal);
+        Assert.Contains("Branches_OrgCatalog", edit, StringComparison.Ordinal);
+        Assert.Contains("Branches_InventoryNotCopied", edit, StringComparison.Ordinal);
+        Assert.DoesNotContain("Copy products from Main", edit, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Dev_platform_handler_preserves_platform_session()
     {
         var root = FindRepoRoot();

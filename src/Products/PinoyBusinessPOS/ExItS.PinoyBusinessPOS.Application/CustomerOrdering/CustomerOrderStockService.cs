@@ -17,6 +17,13 @@ public interface ICustomerOrderStockService
         IReadOnlyList<CustomerOrderLineDraft> lines,
         CancellationToken cancellationToken = default);
 
+    Task<ApplicationResult> EnsureAvailableAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyList<CustomerOrderLineDraft> lines,
+        Guid fulfillmentBranchId,
+        CancellationToken cancellationToken = default) =>
+        EnsureAvailableAsync(organizationId, lines, cancellationToken);
+
     Task ReserveForAcceptAsync(
         CustomerOrder order,
         Guid actorId,
@@ -39,12 +46,29 @@ public interface ICustomerOrderStockService
 public sealed class CustomerOrderStockService : ICustomerOrderStockService
 {
     private readonly IInventoryRepository _inventory;
+    private readonly IInventoryBranchBalanceRepository? _branchBalances;
+    private readonly IOrganizationBranchDirectory? _branches;
 
-    public CustomerOrderStockService(IInventoryRepository inventory) => _inventory = inventory;
+    public CustomerOrderStockService(
+        IInventoryRepository inventory,
+        IInventoryBranchBalanceRepository? branchBalances = null,
+        IOrganizationBranchDirectory? branches = null)
+    {
+        _inventory = inventory;
+        _branchBalances = branchBalances;
+        _branches = branches;
+    }
+
+    public Task<ApplicationResult> EnsureAvailableAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyList<CustomerOrderLineDraft> lines,
+        CancellationToken cancellationToken = default) =>
+        EnsureAvailableAsync(organizationId, lines, fulfillmentBranchId: Guid.Empty, cancellationToken);
 
     public async Task<ApplicationResult> EnsureAvailableAsync(
         PosOrganizationId organizationId,
         IReadOnlyList<CustomerOrderLineDraft> lines,
+        Guid fulfillmentBranchId,
         CancellationToken cancellationToken = default)
     {
         var productIds = lines.Select(l => l.ProductId).Distinct().ToList();
@@ -52,6 +76,9 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
             .ListByProductIdsAsync(organizationId, productIds, cancellationToken)
             .ConfigureAwait(false);
         var byProduct = accounts.ToDictionary(a => a.ProductId.Value);
+        var balances = await LoadBalancesAsync(organizationId, productIds, cancellationToken).ConfigureAwait(false);
+        var primaryId = await ResolvePrimaryAsync(organizationId.Value, cancellationToken).ConfigureAwait(false);
+        var branchId = fulfillmentBranchId == Guid.Empty ? (PosBranchId?)null : PosBranchId.From(fulfillmentBranchId);
 
         foreach (var group in lines.GroupBy(l => l.ProductId.Value))
         {
@@ -61,7 +88,19 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
             }
 
             var needed = group.Sum(l => l.Quantity);
-            if (account.AvailableQuantity < needed)
+            var available = account.AvailableQuantity;
+            if (branchId is not null)
+            {
+                var onHand = BranchStockResolver.ResolveOnHand(
+                    branchId,
+                    primaryId,
+                    account.OnHandQuantity,
+                    balances,
+                    CatalogProductId.From(group.Key));
+                available = BranchStockResolver.ResolveAvailable(onHand, account.AvailableQuantity);
+            }
+
+            if (available < needed)
             {
                 var first = group.First();
                 return ApplicationResult.Failure(
@@ -72,7 +111,7 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                         ["productId"] = group.Key.ToString("D"),
                         ["productName"] = first.NameSnapshot,
                         ["requestedQuantity"] = needed.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                        ["availableQuantity"] = account.AvailableQuantity.ToString(
+                        ["availableQuantity"] = available.ToString(
                             System.Globalization.CultureInfo.InvariantCulture)
                     });
             }
@@ -101,6 +140,11 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                 async (accounts, ct) =>
                 {
                     var byProduct = accounts.ToDictionary(a => a.ProductId.Value);
+                    var balances = await LoadBalanceListAsync(order.SellerOrganizationId, productIds, ct)
+                        .ConfigureAwait(false);
+                    var primaryId = await ResolvePrimaryAsync(order.SellerOrganizationId.Value, ct)
+                        .ConfigureAwait(false);
+                    var branchId = PosBranchId.From(order.FulfillmentBranchId);
                     foreach (var line in order.Lines.OrderBy(l => l.LineNumber))
                     {
                         if (!byProduct.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
@@ -108,9 +152,33 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                             continue;
                         }
 
+                        var onHand = BranchStockResolver.ResolveOnHand(
+                            branchId,
+                            primaryId,
+                            account.OnHandQuantity,
+                            balances,
+                            line.ProductId);
+                        if (BranchStockResolver.ResolveAvailable(onHand, account.AvailableQuantity) < line.Quantity)
+                        {
+                            throw new DomainException(
+                                ApplicationErrorCodes.InsufficientStock,
+                                "Insufficient available stock for this fulfillment branch.");
+                        }
+
                         account.Reserve(line.Quantity);
                         account.Touch(utcNow);
                         await _inventory.UpdateAccountAsync(account, ct).ConfigureAwait(false);
+                        await ApplyBranchDeltaAsync(
+                                order.SellerOrganizationId,
+                                branchId,
+                                line.ProductId,
+                                account.OnHandQuantity,
+                                primaryId,
+                                balances,
+                                -line.Quantity,
+                                utcNow,
+                                ct)
+                            .ConfigureAwait(false);
                     }
                 },
                 cancellationToken)
@@ -137,6 +205,11 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                 async (accounts, ct) =>
                 {
                     var byProduct = accounts.ToDictionary(a => a.ProductId.Value);
+                    var balances = await LoadBalanceListAsync(order.SellerOrganizationId, productIds, ct)
+                        .ConfigureAwait(false);
+                    var primaryId = await ResolvePrimaryAsync(order.SellerOrganizationId.Value, ct)
+                        .ConfigureAwait(false);
+                    var branchId = PosBranchId.From(order.FulfillmentBranchId);
                     foreach (var line in order.Lines.OrderBy(l => l.LineNumber))
                     {
                         if (!byProduct.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
@@ -147,6 +220,17 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                         account.Release(line.Quantity);
                         account.Touch(utcNow);
                         await _inventory.UpdateAccountAsync(account, ct).ConfigureAwait(false);
+                        await ApplyBranchDeltaAsync(
+                                order.SellerOrganizationId,
+                                branchId,
+                                line.ProductId,
+                                account.OnHandQuantity,
+                                primaryId,
+                                balances,
+                                line.Quantity,
+                                utcNow,
+                                ct)
+                            .ConfigureAwait(false);
                     }
                 },
                 cancellationToken)
@@ -225,5 +309,67 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
             .ConfigureAwait(false);
 
         order.MarkStockConsumed(utcNow);
+    }
+
+    private async Task<IReadOnlyList<InventoryBranchBalance>> LoadBalancesAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyList<CatalogProductId> productIds,
+        CancellationToken cancellationToken)
+    {
+        if (_branchBalances is null || productIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await _branchBalances
+            .ListByProductIdsAsync(organizationId, productIds, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    private async Task<List<InventoryBranchBalance>> LoadBalanceListAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyList<CatalogProductId> productIds,
+        CancellationToken cancellationToken)
+    {
+        var loaded = await LoadBalancesAsync(organizationId, productIds, cancellationToken).ConfigureAwait(false);
+        return loaded.ToList();
+    }
+
+    private async Task<Guid?> ResolvePrimaryAsync(Guid organizationId, CancellationToken cancellationToken)
+    {
+        if (_branches is null)
+        {
+            return null;
+        }
+
+        return await _branches.GetPrimaryBranchIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task ApplyBranchDeltaAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        CatalogProductId productId,
+        decimal organizationOnHand,
+        Guid? primaryId,
+        List<InventoryBranchBalance> balances,
+        decimal signedQuantity,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken)
+    {
+        if (_branchBalances is null || signedQuantity == 0m)
+        {
+            return;
+        }
+
+        var balance = BranchStockResolver.EnsureBalance(
+            organizationId,
+            branchId,
+            productId,
+            organizationOnHand,
+            primaryId,
+            balances,
+            utcNow);
+        balance.Apply(signedQuantity, utcNow);
+        await _branchBalances.UpsertAsync(balance, cancellationToken).ConfigureAwait(false);
     }
 }

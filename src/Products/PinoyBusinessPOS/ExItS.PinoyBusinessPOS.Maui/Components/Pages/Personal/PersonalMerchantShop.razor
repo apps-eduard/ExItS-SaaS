@@ -45,6 +45,18 @@
                        Placeholder="@L["Personal_ShopSearchPlaceholder"]"
                        AriaLabel="@L["Personal_ShopSearchPlaceholder"]" />
 
+            @if (_storefront.Branches.Count > 1)
+            {
+                <div class="pos-personal-shop__chips" role="list">
+                    @foreach (var branch in _storefront.Branches)
+                    {
+                        <button type="button"
+                                class="pos-personal-shop__chip @(_fulfillmentBranchId == branch.BranchId ? "pos-personal-shop__chip--active" : null)"
+                                @onclick="() => SelectBranchAsync(branch.BranchId)">@branch.Name</button>
+                    }
+                </div>
+            }
+
             @if (_storefront.Categories.Count > 0)
             {
                 <div class="pos-personal-shop__chips" role="list">
@@ -138,6 +150,7 @@
     private string? _error;
     private string _search = string.Empty;
     private Guid? _categoryId;
+    private Guid? _fulfillmentBranchId;
     private CustomerStorefrontDto? _storefront;
     private CancellationTokenSource? _searchCts;
 
@@ -186,7 +199,8 @@
                 string.IsNullOrWhiteSpace(_search) ? null : _search,
                 _categoryId,
                 page: 1,
-                pageSize: 40);
+                pageSize: 40,
+                fulfillmentBranchId: _fulfillmentBranchId);
             if (!result.IsSuccess || result.Data is null)
             {
                 _storefront = null;
@@ -195,6 +209,10 @@
             }
 
             _storefront = result.Data;
+            if (_fulfillmentBranchId is null && result.Data.Branches.Count == 1)
+            {
+                _fulfillmentBranchId = result.Data.Branches[0].BranchId;
+            }
             Cart.EnsureMerchant(OrganizationId, result.Data.OrganizationDisplayName);
         }
         finally
@@ -206,6 +224,12 @@
     private async Task SelectCategoryAsync(Guid? categoryId)
     {
         _categoryId = categoryId;
+        await LoadAsync();
+    }
+
+    private async Task SelectBranchAsync(Guid branchId)
+    {
+        _fulfillmentBranchId = branchId;
         await LoadAsync();
     }
 

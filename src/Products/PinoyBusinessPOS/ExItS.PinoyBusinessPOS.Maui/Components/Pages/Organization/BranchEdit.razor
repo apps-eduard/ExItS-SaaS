@@ -19,6 +19,58 @@
         else if (_branch is not null)
         {
             <section class="pos-branches__section">
+                <h2>@L["Branches_Setup"]</h2>
+                <div class="pos-branches__setup-rows">
+                    <div class="pos-branches__setup-row">
+                        <span>@L["Branches_Details"]</span>
+                        <span class="pos-branches__chip">@L["Branches_StatusReady"]</span>
+                    </div>
+                    <div class="pos-branches__setup-row">
+                        <span>@L["Branches_Staff"]</span>
+                        <span class="pos-branches__chip">@L["Branches_StaffNotAuto"]</span>
+                    </div>
+                    <div class="pos-branches__setup-row">
+                        <span>@L["Branches_Devices"]</span>
+                        <span class="pos-branches__chip">@(_deviceCount == 0 ? L["Branches_DevicesNone"] : L["Branches_DevicesCount", _deviceCount])</span>
+                        <Button Size="ButtonSize.Sm" OnClick='() => Nav.NavigateTo("/organization/devices")'>@L["Branches_RegisterDevice"]</Button>
+                    </div>
+                    <div class="pos-branches__setup-row">
+                        <span>@L["Branches_Inventory"]</span>
+                        <span class="pos-branches__chip">@L["Branches_InventoryNotCopied"]</span>
+                    </div>
+                    <div class="pos-branches__setup-actions">
+                        <Button Size="ButtonSize.Sm" OnClick='() => Nav.NavigateTo("/inventory")'>@L["Branches_AddOpeningStock"]</Button>
+                        <Button Size="ButtonSize.Sm" OnClick='() => Nav.NavigateTo("/inventory/transfers/new")'>@L["Branches_TransferStock"]</Button>
+                    </div>
+                    <div class="pos-branches__setup-row">
+                        <span>@L["Branches_OrgCatalog"]</span>
+                        <span class="pos-muted">@L["Branches_OrgCatalogHint"]</span>
+                        <Button Size="ButtonSize.Sm" OnClick='() => Nav.NavigateTo("/catalog")'>@L["Branches_ViewCatalog"]</Button>
+                    </div>
+                    <div class="pos-branches__setup-row">
+                        <span>@L["Branches_OrgCustomers"]</span>
+                        <span class="pos-muted">@L["Branches_OrgCustomersHint"]</span>
+                        <Button Size="ButtonSize.Sm" OnClick='() => Nav.NavigateTo("/customers")'>@L["Branches_ViewCustomers"]</Button>
+                    </div>
+                    @if (_readiness is not null)
+                    {
+                        <div class="pos-branches__setup-row">
+                            <span>@L["Branches_OnlineOrders"]</span>
+                            <span class="pos-branches__chip">@OnlineOrdersStatus()</span>
+                        </div>
+                        <div class="pos-branches__setup-row">
+                            <span>@L["Branches_Pickup"]</span>
+                            <span class="pos-branches__chip">@PickupStatus()</span>
+                        </div>
+                        <div class="pos-branches__setup-row">
+                            <span>@L["Branches_Delivery"]</span>
+                            <span class="pos-branches__chip">@DeliveryStatus()</span>
+                        </div>
+                    }
+                </div>
+            </section>
+
+            <section class="pos-branches__section">
                 <h2>@L["Branches_Details"]</h2>
                 <div class="pos-branches__grid">
                     <TextInput Label="@L["Branches_FieldName"]" @bind-Value="_name" Required />
@@ -152,6 +204,8 @@
     private string _maximumKm = "0";
     private string? _freeThreshold;
 
+    private int _deviceCount;
+
     protected override async Task OnInitializedAsync()
     {
         if (CurrentUser.Session?.OrganizationId is not Guid orgId) { Nav.NavigateTo("/organization-select", true); return; }
@@ -160,6 +214,8 @@
         if (_branch is null) { _error = result.Error?.Detail ?? L["Branches_NotFound"]; _loading = false; return; }
         Map(_branch);
         await LoadFulfillmentAsync(orgId);
+        var devices = await Platform.GetPosDevicesAsync(orgId);
+        _deviceCount = devices.Data?.Count(d => d.BranchId == BranchId) ?? 0;
         _loading = false;
     }
 
@@ -284,6 +340,14 @@
         { PickupEnabled: true, PickupOperational: true } => L["Branches_StatusEnabled"],
         { PickupEnabled: true } => L["Branches_StatusOffHours"],
         { PickupReady: true } => L["Branches_StatusDisabled"],
+        _ => L["Branches_StatusDisabled"]
+    };
+
+    private string DeliveryStatus() => _readiness switch
+    {
+        { CanUseDelivery: false } => L["Branches_StatusNotInPlan"],
+        { DeliveryEnabled: true, DeliveryOperational: true } => L["Branches_StatusEnabled"],
+        { DeliveryEnabled: true } => L["Branches_StatusOffHours"],
         _ => L["Branches_StatusDisabled"]
     };
 

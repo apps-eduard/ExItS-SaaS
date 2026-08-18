@@ -39,7 +39,7 @@ public sealed record OrganizationBranchDto(
     DateTimeOffset UpdatedAtUtc,
     decimal? Latitude = null,
     decimal? Longitude = null,
-    bool PickupEnabled = true,
+    bool PickupEnabled = false,
     bool DeliveryEnabled = false,
     bool CustomerOrderingEnabled = false,
     bool OnlineOrdersPaused = false,

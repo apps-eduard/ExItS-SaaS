@@ -167,6 +167,7 @@ internal sealed class PosCustomerOrderBranchDirectory(
             branch.StoreStatusMessage,
             branch.Latitude,
             branch.Longitude,
-            policy);
+            policy,
+            branch.IsPrimary);
     }
 }

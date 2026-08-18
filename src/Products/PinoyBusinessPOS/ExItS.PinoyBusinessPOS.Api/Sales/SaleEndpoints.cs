@@ -85,6 +85,7 @@ internal static class SaleEndpoints
 
                 var deviceDenied = await deviceAuthorization.EnsureAuthorizedAsync(request, organizationId, ct).ConfigureAwait(false);
                 if (deviceDenied is not null) return deviceDenied;
+                PosOrganizationScope.TryGetOptionalBranchId(request, out var branchId);
 
                 return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                         request,
@@ -108,6 +109,7 @@ internal static class SaleEndpoints
                             body.BuyerPersonalPublicUserId,
                             body.BuyerOrganizationId,
                             body.BuyerPublicOrganizationId,
+                            branchId,
                             ct2),
                         SaleQueryService.Map,
                         dto => Results.Created($"/api/v1/pos/sales/{dto.SaleId:D}", dto),
@@ -127,6 +129,7 @@ internal static class SaleEndpoints
 
             var cashDeviceDenied = await deviceAuthorization.EnsureAuthorizedAsync(request, cashOrgId, ct).ConfigureAwait(false);
             if (cashDeviceDenied is not null) return cashDeviceDenied;
+            PosOrganizationScope.TryGetOptionalBranchId(request, out var cashBranchId);
 
             return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                     request,
@@ -150,6 +153,7 @@ internal static class SaleEndpoints
                         body.BuyerPersonalPublicUserId,
                         body.BuyerOrganizationId,
                         body.BuyerPublicOrganizationId,
+                        cashBranchId,
                         ct2),
                     SaleQueryService.Map,
                     dto => Results.Created($"/api/v1/pos/sales/{dto.SaleId:D}", dto),
@@ -210,8 +214,9 @@ internal static class SaleEndpoints
                 return problem!;
             }
 
+            PosOrganizationScope.TryGetOptionalBranchId(request, out var branchId);
             var result = await useCase
-                .ExecuteAsync(organizationId, saleId, body.Reason, actorId, ct)
+                .ExecuteAsync(organizationId, saleId, body.Reason, actorId, branchId, ct)
                 .ConfigureAwait(false);
             return PosApiResults.FromResult(result, s => Results.Ok(SaleQueryService.Map(s)));
         });

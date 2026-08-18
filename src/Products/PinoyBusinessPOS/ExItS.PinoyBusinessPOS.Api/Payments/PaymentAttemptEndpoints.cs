@@ -37,9 +37,10 @@ internal static class PaymentAttemptEndpoints
 
             var deviceDenied = await deviceAuthorization.EnsureAuthorizedAsync(request, organizationId, ct).ConfigureAwait(false);
             if (deviceDenied is not null) return deviceDenied;
+            PosOrganizationScope.TryGetOptionalBranchId(request, out var branchId);
 
             var result = await useCase
-                .ExecuteAsync(organizationId, saleId, body, actorId, ct)
+                .ExecuteAsync(organizationId, saleId, body, actorId, ct, branchId)
                 .ConfigureAwait(false);
             return PosApiResults.FromResult(
                 result,

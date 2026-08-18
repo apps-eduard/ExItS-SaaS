@@ -75,7 +75,7 @@ else
                             <td>@(b.Latitude is null ? "—" : $"{b.Latitude:0.######}, {b.Longitude:0.######}")</td>
                             <td><OrgStatusBadge Text="@OrgWebUi.Badge(b.Status)" Tone="@b.Status" /></td>
                             <td class="org-actions">
-                                <Button Size="@ButtonSize.Small" Disabled="_busy" OnClick="() => Nav.NavigateTo($\"/organization/branches/{b.Id:D}\")">@L["Common_Edit"]</Button>
+                                <Button Size="@ButtonSize.Small" Disabled="_busy" OnClick="@(() => Nav.NavigateTo($"/organization/branches/{b.Id:D}"))">@L["Common_Edit"]</Button>
                                 @if (!b.IsPrimary && !string.Equals(b.Status, "Archived", StringComparison.OrdinalIgnoreCase))
                                 {
                                     <Button Size="@ButtonSize.Small" Danger Disabled="_busy" OnClick="() => ArchiveAsync(b)">@L["Branches_Archive"]</Button>
@@ -105,6 +105,7 @@ else
             </ExitsField>
             <ExitsField Label="City / municipality"><Input @bind-Value="_city" Disabled="_busy" /></ExitsField>
         </div>
+        <p class="org-note">@L["Branches_CreateHint"]</p>
     </Modal>
     </div>
 }

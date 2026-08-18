@@ -10082,6 +10082,24 @@
   <data name="Branches_Day_Friday" xml:space="preserve"><value>Biy</value></data>
   <data name="Branches_Day_Saturday" xml:space="preserve"><value>Sab</value></data>
   <data name="Branches_Day_Sunday" xml:space="preserve"><value>Lin</value></data>
+  <data name="Branches_Setup" xml:space="preserve"><value>Setup ng branch</value></data>
+  <data name="Branches_Staff" xml:space="preserve"><value>Staff</value></data>
+  <data name="Branches_StaffNotAuto" xml:space="preserve"><value>Hindi auto-assign</value></data>
+  <data name="Branches_Devices" xml:space="preserve"><value>Mga device</value></data>
+  <data name="Branches_DevicesNone" xml:space="preserve"><value>Wala</value></data>
+  <data name="Branches_DevicesCount" xml:space="preserve"><value>{0} nakarehistro</value></data>
+  <data name="Branches_RegisterDevice" xml:space="preserve"><value>Magrehistro ng device</value></data>
+  <data name="Branches_Inventory" xml:space="preserve"><value>Imbentaryo</value></data>
+  <data name="Branches_InventoryNotCopied" xml:space="preserve"><value>Walang kinopyang stock</value></data>
+  <data name="Branches_AddOpeningStock" xml:space="preserve"><value>Magdagdag ng opening stock</value></data>
+  <data name="Branches_TransferStock" xml:space="preserve"><value>Mag-transfer mula sa ibang branch</value></data>
+  <data name="Branches_OrgCatalog" xml:space="preserve"><value>Catalog ng organisasyon</value></data>
+  <data name="Branches_OrgCatalogHint" xml:space="preserve"><value>Parehong produkto. Nagsisimula sa 0 ang stock ng branch.</value></data>
+  <data name="Branches_ViewCatalog" xml:space="preserve"><value>Tingnan ang catalog</value></data>
+  <data name="Branches_OrgCustomers" xml:space="preserve"><value>Mga customer ng organisasyon</value></data>
+  <data name="Branches_OrgCustomersHint" xml:space="preserve"><value>Ang naka-link na customer ay sa organisasyon, hindi sa isang branch.</value></data>
+  <data name="Branches_ViewCustomers" xml:space="preserve"><value>Tingnan ang mga customer</value></data>
+  <data name="Branches_CreateHint" xml:space="preserve"><value>Lokasyon lang ang nalilikha. Catalog at customer ay sa organisasyon. Hindi kinokopya ang stock, staff, device, at pickup/delivery.</value></data>
   <data name="Orders_Title" xml:space="preserve"><value>Mga order</value></data>
   <data name="Orders_SellerSubtitle" xml:space="preserve"><value>Suriin at tuparin ang pickup at delivery orders ng customer.</value></data>
   <data name="Orders_PersonalSubtitle" xml:space="preserve"><value>Subaybayan ang mga order na inilagay mo sa mga merchant.</value></data>

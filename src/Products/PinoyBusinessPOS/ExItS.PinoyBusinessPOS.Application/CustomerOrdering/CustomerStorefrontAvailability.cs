@@ -28,6 +28,11 @@ public static class CustomerStorefrontAvailability
         }
 
         var qty = account.AvailableQuantity;
+        return FromTrackedQuantity(qty);
+    }
+
+    public static StorefrontAvailabilitySnapshot FromTrackedQuantity(decimal qty)
+    {
         if (qty <= 0m)
         {
             return new StorefrontAvailabilitySnapshot(false, true, qty, OutOfStock);

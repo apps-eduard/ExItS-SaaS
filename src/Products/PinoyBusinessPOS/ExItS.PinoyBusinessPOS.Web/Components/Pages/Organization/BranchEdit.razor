@@ -23,6 +23,40 @@ else
 
         @if (!_loading && _branch is not null)
         {
+            <section class="org-panel org-setup">
+                <h3>@L["Branches_Setup"]</h3>
+                <div class="org-setup-rows">
+                    <div class="org-setup-row"><span>@L["Branches_Details"]</span><span class="org-badge">@L["Branches_StatusReady"]</span></div>
+                    <div class="org-setup-row"><span>@L["Branches_Staff"]</span><span class="org-badge">@L["Branches_StaffNotAuto"]</span></div>
+                    <div class="org-setup-row">
+                        <span>@L["Branches_Devices"]</span>
+                        <span class="org-badge">@(_deviceCount == 0 ? L["Branches_DevicesNone"] : string.Format(L["Branches_DevicesCount"].Value, _deviceCount))</span>
+                        <Button Size="@ButtonSize.Small" OnClick='() => Nav.NavigateTo("/operations/devices")'>@L["Branches_RegisterDevice"]</Button>
+                    </div>
+                    <div class="org-setup-row"><span>@L["Branches_Inventory"]</span><span class="org-badge">@L["Branches_InventoryNotCopied"]</span></div>
+                    <div class="org-setup-actions">
+                        <Button Size="@ButtonSize.Small" OnClick='() => Nav.NavigateTo("/inventory")'>@L["Branches_AddOpeningStock"]</Button>
+                        <Button Size="@ButtonSize.Small" OnClick='() => Nav.NavigateTo("/inventory/transfers")'>@L["Branches_TransferStock"]</Button>
+                    </div>
+                    <div class="org-setup-row">
+                        <span>@L["Branches_OrgCatalog"]</span>
+                        <span class="org-note">@L["Branches_OrgCatalogHint"]</span>
+                        <Button Size="@ButtonSize.Small" OnClick='() => Nav.NavigateTo("/products")'>@L["Branches_ViewCatalog"]</Button>
+                    </div>
+                    <div class="org-setup-row">
+                        <span>@L["Branches_OrgCustomers"]</span>
+                        <span class="org-note">@L["Branches_OrgCustomersHint"]</span>
+                        <Button Size="@ButtonSize.Small" OnClick='() => Nav.NavigateTo("/customers")'>@L["Branches_ViewCustomers"]</Button>
+                    </div>
+                    @if (_readiness is not null)
+                    {
+                        <div class="org-setup-row"><span>@L["Branches_OnlineOrders"]</span><span class="org-badge">@OnlineOrdersStatus()</span></div>
+                        <div class="org-setup-row"><span>@L["Branches_Pickup"]</span><span class="org-badge">@PickupStatus()</span></div>
+                        <div class="org-setup-row"><span>@L["Branches_Delivery"]</span><span class="org-badge">@DeliveryStatus()</span></div>
+                    }
+                </div>
+            </section>
+
             <section class="org-panel">
                 <h3>@L["Branches_Details"]</h3>
                 <div class="org-form-grid">
@@ -75,10 +109,10 @@ else
                     {
                         <p class="org-note">@_readiness.StoreStatusMessage</p>
                     }
-                    <div class="org-form-grid">
-                        <div>Online orders <span class="org-badge">@OnlineOrdersStatus()</span></div>
-                        <div>Pickup <span class="org-badge">@PickupStatus()</span></div>
-                        <div>Delivery <span class="org-badge">@DeliveryStatus()</span></div>
+                    <div class="org-setup-rows">
+                        <div class="org-setup-row"><span>@L["Branches_OnlineOrders"]</span><span class="org-badge">@OnlineOrdersStatus()</span></div>
+                        <div class="org-setup-row"><span>@L["Branches_Pickup"]</span><span class="org-badge">@PickupStatus()</span></div>
+                        <div class="org-setup-row"><span>@L["Branches_Delivery"]</span><span class="org-badge">@DeliveryStatus()</span></div>
                     </div>
                     <div class="org-actions">
                         @if (_readiness.CanUseCustomerOrdering && !_readiness.CustomerOrderingEnabled && _readiness.CustomerOrderingReady)
@@ -143,6 +177,7 @@ else
     private string? _countryCode;
     private string? _latitude;
     private string? _longitude;
+    private int _deviceCount;
     private string _minimumOrder = "0";
     private string _baseFee = "0";
     private string _includedKm = "0";
@@ -162,6 +197,8 @@ else
         if (_branch is null) { _error = L["Error_GenericLoad"]; _loading = false; return; }
         Map(_branch);
         await LoadFulfillmentAsync(orgId.Value);
+        var devices = await Platform.GetPosDevicesAsync(orgId.Value);
+        _deviceCount = devices.Data?.Count(d => d.BranchId == BranchId) ?? 0;
         _loading = false;
     }
 
@@ -249,11 +286,14 @@ else
         _busy = false;
     }
 
-    private string OnlineOrdersStatus() => _readiness?.OnlineOrdersPaused == true ? "Paused"
-        : _readiness?.CustomerOrderingEnabled == true ? "Enabled" : _readiness?.CustomerOrderingReady == true ? "Ready" : "Setup required";
-    private string PickupStatus() => _readiness?.PickupEnabled == true ? "Enabled" : "Disabled";
-    private string DeliveryStatus() => _readiness?.DeliveryEnabled == true ? "Enabled"
-        : _readiness?.CanUseDelivery == true ? (_readiness.DeliveryReady ? "Ready" : "Setup required") : "Not in plan";
+    private string OnlineOrdersStatus() => _readiness?.OnlineOrdersPaused == true ? L["Branches_StatusPaused"]
+        : _readiness?.CustomerOrderingEnabled == true ? L["Branches_StatusEnabled"]
+        : _readiness?.CustomerOrderingReady == true ? L["Branches_StatusSetupReady"]
+        : L["Branches_StatusSetupRequired"];
+    private string PickupStatus() => _readiness?.PickupEnabled == true ? L["Branches_StatusEnabled"] : L["Branches_StatusDisabled"];
+    private string DeliveryStatus() => _readiness?.DeliveryEnabled == true ? L["Branches_StatusEnabled"]
+        : _readiness?.CanUseDelivery == true ? (_readiness.DeliveryReady ? L["Branches_StatusSetupReady"] : L["Branches_StatusSetupRequired"])
+        : L["Branches_StatusNotInPlan"];
 
     private static string F(decimal v) => v.ToString(System.Globalization.CultureInfo.InvariantCulture);
     private static decimal D(string? v) => decimal.TryParse(v, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var p) ? p : 0m;

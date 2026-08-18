@@ -298,7 +298,11 @@
                 return;
             }
 
-            var result = await Orders.GetStorefrontAsync(OrganizationId, page: 1, pageSize: 1);
+            var result = await Orders.GetStorefrontAsync(
+                OrganizationId,
+                page: 1,
+                pageSize: 1,
+                fulfillmentBranchId: Guid.TryParse(_branchIdText, out var keep) ? keep : null);
             if (!result.IsSuccess || result.Data is null)
             {
                 _error = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;

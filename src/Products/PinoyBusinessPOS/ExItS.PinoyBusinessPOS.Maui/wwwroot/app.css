@@ -15005,6 +15005,34 @@ html:has(.pos-denom-sheet) .pos-denom-sheet {
     gap: .5rem;
 }
 
+.pos-branches__setup-rows {
+    display: grid;
+    gap: .35rem;
+}
+
+.pos-branches__setup-row,
+.pos-branches__setup-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem .6rem;
+    min-height: 2.75rem;
+}
+
+.pos-branches__setup-row span:first-child {
+    flex: 0 0 7.5rem;
+    font-size: .82rem;
+    font-weight: 650;
+}
+
+.pos-branches__chip {
+    background: var(--exits-surface-2, #eef3f0);
+    border-radius: 999px;
+    font-size: .75rem;
+    font-weight: 650;
+    padding: .15rem .55rem;
+}
+
 @media (min-width: 720px) {
     .pos-branches__grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
