@@ -90,10 +90,11 @@ Implementation: `4b8b727`. Context-switcher / session-org fixes: tip of `main` a
 
 ## 15. Follow-up — rounded mobile auth card (UX only)
 
-Later MAUI work unified Sign In / Sign Up / Forgot password / Activate into one branded green-hero + overlapping rounded card (`AuthExperience`). **Authentication, activation, offline PIN eligibility, and development quick-login guards are unchanged.** Presentation notes:
+Later MAUI work unified Sign In / Sign Up / Forgot password / Activate / offline PIN setup into one branded green-hero + overlapping rounded card (`AuthExperience`). **Authentication, activation, offline PIN eligibility, and development quick-login guards are unchanged in server semantics.** Presentation notes:
 
 - `/signin` opens Sign In; `/register` opens the same shell with Sign Up active
 - Offline PIN is a compact link, shown when PIN can be offered **and** the OS reports no network interface (or a sign-in attempt failed as unreachable). Debug Local Validation may still treat `NetworkAccess.None` as connected for API attempts.
+- First successful online login checks complete PIN readiness and routes to `/offline-pin-setup` when missing; first-time offline is internet-required (not invalid PIN)
 - Development test-user `<select>` sits below the card, Development/Testing only
 - Google/Facebook remain placeholders
 - **Not Device Verified**

@@ -6,7 +6,7 @@
 
 ## Visual shell
 
-Unauthenticated MAUI auth screens (`/signin`, `/register`, `/forgot-password`, `/activate`) share `AuthExperience`:
+Unauthenticated MAUI auth screens (`/signin`, `/register`, `/forgot-password`, `/activate`) and post-login PIN enrollment (`/offline-pin-setup`, `/setup-pin`) share `AuthExperience`:
 
 - Green hero using current POS `--exits-brand` (`#1f6b45`)
 - Centered brand copy: **EXPERT IT SOLUTIONS** / **Pinoy Business POS** (localized keys `SignIn_BrandTitle` / `SignIn_BrandSubtitle`)
@@ -23,6 +23,7 @@ Unauthenticated MAUI auth screens (`/signin`, `/register`, `/forgot-password`, `
 | `/register` | Sign Up | Existing personal display-name + email registration and activation handoff |
 | `/forgot-password` | none | Same visual shell; existing reset request |
 | `/activate` | none | Same visual shell; existing token + password activation |
+| `/offline-pin-setup` (`/setup-pin` alias) | none | Mandatory rounded PIN enrollment after online login when setup is incomplete |
 
 Tab switching navigates between `/signin` and `/register`. Deep links and navigation guards are unchanged.
 
@@ -38,7 +39,50 @@ Sign Up does **not** invent phone/password registration. Personal registration r
 - Slow-login prompt still offers **Use PIN instead** when eligible
 - Tapping PIN still navigates to `/offline-pin`
 - Failed/unreachable login uses existing error copy only after a real Sign in attempt (`SignIn_ServerUnreachablePinHint` / `SignIn_OfflineNoPinMessage`)
+- First-time / incomplete offline setup never shows a PIN field, never navigates to PIN unlock, and never says **Invalid PIN** / **Incorrect PIN**. That copy is only after an enrolled verifier exists and the entered PIN is wrong.
+- `SignIn_OfflineNoPinMessage`: internet is required to sign in once and set up offline access
 - Eligibility is persisted grant + PIN verifier + matching device id (see [P19 offline PIN](../reports/P19-offline-operability-foundation.md)). Local Validation uses that same architecture; it does not fake authorization.
+
+## Online login → PIN onboarding
+
+After any successful MAUI online auth (password, Platform session/profile, Development/Local Validation GUID where allowed):
+
+1. Existing device bind + `EnsureOfflineOperateGrantAsync` runs
+2. `EvaluateCurrentUserOfflinePinReadinessAsync` checks **this signed-in user** (not remembered username / typed email / in-memory session alone)
+3. **Ready** (enrolled identity + valid device-bound grant + matching `pos.device.id` + unexpired/non-revoked + PIN verifier) → existing destination / return route
+4. **Missing setup** (no verifier, no grant, or no stored identity) → `/offline-pin-setup` before dashboard/home
+5. Setup save ensures bind + grant + verifier, re-evaluates, and continues only when complete. Persistence failure stays on setup with a safe error. No plaintext PIN.
+
+Already-configured users are not prompted again. Return routes wait until setup completes. Organization POS still registers the device before PIN. Organization essentials without POS are not forced through PIN.
+
+```
+ONLINE LOGIN SUCCESS
+        ↓
+Check complete PIN setup
+   ┌────┴────┐
+ Ready      Missing
+   │          │
+ Home      Setup PIN
+              │
+              ↓
+             Home
+
+OFFLINE APP START / SIGN IN
+        ↓
+Check persisted eligibility
+   ┌────┴────┐
+ Eligible   Not eligible
+   │           │
+ Use PIN    Internet required
+   │
+ Verify PIN
+   ├─ correct → offline app
+   └─ wrong   → Incorrect PIN / lockout
+```
+
+Forgot PIN while offline cannot be reset locally. Reconnect and authenticate to change PIN in Settings (`/offline-pin-setup?mode=change`). Personal and Organization POS use the same grant/verifier lifecycle. Orphan grant-without-PIN requires setup when online and does not offer PIN offline. Orphan PIN-without-grant is not eligible. Expired / revoked / device mismatch fail closed.
+
+Device Verified remains **No** unless physically tested.
 
 ## Development test user
 

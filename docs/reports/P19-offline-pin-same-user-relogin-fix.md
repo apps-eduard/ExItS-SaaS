@@ -31,6 +31,8 @@ After Personal/POS online login, user set an offline PIN, signed out, then signe
 
 > **Update (2026-08-13):** Shared POS terminals now use **per-user** grant/PIN slots. See [P19-multi-user-offline-cashier-pin](P19-multi-user-offline-cashier-pin.md). Enrolling Paul must not delete Mica.
 
+> **Update (2026-08-18):** Post-login routing uses **complete** current-user readiness (`EvaluateCurrentUserOfflinePinReadinessAsync`): identity + valid device-bound grant + matching device + PIN verifier. Verifier-only `HasOfflinePinConfiguredAsync` is not enough to skip setup. Already-complete users are still not re-prompted. First-time offline is internet-required, not invalid PIN.
+
 ## Validation
 
 | Check | Result |
