@@ -23,62 +23,90 @@
         {
             <section class="pos-branches__section" aria-labelledby="branch-setup-heading">
                 <h2 id="branch-setup-heading">@L["Branches_Setup"]</h2>
-                <div class="pos-branches__setup-rows">
-                    <div class="pos-branches__setup-row">
-                        <span>@L["Branches_Details"]</span>
+                <div class="pos-branches__setup-rows" role="list">
+                    <button type="button" class="pos-branches__nav-row" role="listitem"
+                            aria-label="@($"{L["Branches_Details"]}, {L["Branches_StatusReady"]}")"
+                            @onclick="FocusDetails">
+                        <span class="pos-branches__nav-label">@L["Branches_Details"]</span>
                         <span class="pos-branches__chip">@L["Branches_StatusReady"]</span>
-                    </div>
-                    <div class="pos-branches__setup-row">
-                        <span>@L["Branches_Staff"]</span>
+                        <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                    </button>
+                    <button type="button" class="pos-branches__nav-row" role="listitem"
+                            aria-label="@($"{L["Branches_Staff"]}, {L["Branches_StaffNotAuto"]}")"
+                            @onclick='() => Nav.NavigateTo("/org/staff")'>
+                        <span class="pos-branches__nav-label">@L["Branches_Staff"]</span>
                         <span class="pos-branches__chip">@L["Branches_StaffNotAuto"]</span>
-                    </div>
-                    <div class="pos-branches__setup-row">
-                        <span>@L["Branches_Devices"]</span>
-                        <span class="pos-branches__chip">@(_deviceCount == 0 ? L["Branches_DevicesNone"] : L["Branches_DevicesCount", _deviceCount])</span>
-                        <button type="button" class="pos-link pos-branches__text-action" @onclick='() => Nav.NavigateTo("/organization/devices")'>@L["Branches_Manage"]</button>
-                    </div>
-                    <div class="pos-branches__setup-row">
-                        <span>@L["Branches_Inventory"]</span>
+                        <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                    </button>
+                    <button type="button" class="pos-branches__nav-row" role="listitem"
+                            aria-label="@($"{L["Branches_Devices"]}, {DeviceStatusLabel()}")"
+                            @onclick='() => Nav.NavigateTo("/organization/devices")'>
+                        <span class="pos-branches__nav-label">@L["Branches_Devices"]</span>
+                        <span class="pos-branches__chip">@DeviceStatusLabel()</span>
+                        <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                    </button>
+                    <button type="button" class="pos-branches__nav-row" role="listitem"
+                            aria-label="@($"{L["Branches_Inventory"]}, {L["Branches_InventoryNotCopied"]}")"
+                            @onclick="() => _showInventoryActions = !_showInventoryActions">
+                        <span class="pos-branches__nav-label">@L["Branches_Inventory"]</span>
                         <span class="pos-branches__chip">@L["Branches_InventoryNotCopied"]</span>
-                        <button type="button" class="pos-link pos-branches__text-action" @onclick="() => _showInventoryActions = !_showInventoryActions">@L["Branches_InventorySetUp"]</button>
-                    </div>
+                        <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                    </button>
                     @if (_showInventoryActions)
                     {
-                        <div class="pos-branches__setup-sub">
-                            <button type="button" class="pos-link" @onclick='() => Nav.NavigateTo("/inventory")'>@L["Branches_AddOpeningStock"]</button>
-                            <button type="button" class="pos-link" @onclick='() => Nav.NavigateTo("/inventory/transfers/new")'>@L["Branches_TransferStock"]</button>
-                        </div>
+                        <button type="button" class="pos-branches__nav-row pos-branches__nav-row--sub" role="listitem"
+                                @onclick='() => Nav.NavigateTo("/inventory")'>
+                            <span class="pos-branches__nav-label">@L["Branches_AddOpeningStock"]</span>
+                            <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                        </button>
+                        <button type="button" class="pos-branches__nav-row pos-branches__nav-row--sub" role="listitem"
+                                @onclick='() => Nav.NavigateTo("/inventory/transfers/new")'>
+                            <span class="pos-branches__nav-label">@L["Branches_TransferStock"]</span>
+                            <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                        </button>
                     }
-                    <div class="pos-branches__setup-row">
-                        <span>@L["Branches_OrgCatalog"]</span>
+                    <button type="button" class="pos-branches__nav-row" role="listitem"
+                            aria-label="@($"{L["Branches_OperatingHours"]}, {HoursStatusLabel()}")"
+                            @onclick="FocusHours">
+                        <span class="pos-branches__nav-label">@L["Branches_OperatingHours"]</span>
+                        <span class="pos-branches__chip" title="@HoursStatusLabel()">@CompactStatus(HoursStatusLabel())</span>
+                        <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                    </button>
+                    <button type="button" class="pos-branches__nav-row" role="listitem"
+                            title="@L["Branches_OrgCatalogHint"]"
+                            aria-label="@($"{L["Branches_OrgCatalog"]}, {L["Branches_OrgWide"]}")"
+                            @onclick='() => Nav.NavigateTo("/catalog")'>
+                        <span class="pos-branches__nav-label">@L["Branches_Catalog"]</span>
                         <span class="pos-branches__chip">@L["Branches_OrgWide"]</span>
-                        <button type="button" class="pos-link pos-branches__text-action" title="@L["Branches_OrgCatalogHint"]" @onclick='() => Nav.NavigateTo("/catalog")'>@L["Branches_ViewCatalog"]</button>
-                    </div>
-                    <div class="pos-branches__setup-row">
-                        <span>@L["Branches_OrgCustomers"]</span>
+                        <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                    </button>
+                    <button type="button" class="pos-branches__nav-row" role="listitem"
+                            title="@L["Branches_OrgCustomersHint"]"
+                            aria-label="@($"{L["Branches_OrgCustomers"]}, {L["Branches_OrgWide"]}")"
+                            @onclick='() => Nav.NavigateTo("/customers")'>
+                        <span class="pos-branches__nav-label">@L["Branches_Customers"]</span>
                         <span class="pos-branches__chip">@L["Branches_OrgWide"]</span>
-                        <button type="button" class="pos-link pos-branches__text-action" title="@L["Branches_OrgCustomersHint"]" @onclick='() => Nav.NavigateTo("/customers")'>@L["Branches_ViewCustomers"]</button>
-                    </div>
+                        <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                    </button>
                     @if (_readiness is not null)
                     {
-                        <div class="pos-branches__setup-row">
-                            <span>@L["Branches_OnlineOrders"]</span>
-                            <span class="pos-branches__chip">@OnlineOrdersStatus()</span>
-                        </div>
-                        <div class="pos-branches__setup-row">
-                            <span>@L["Branches_Pickup"]</span>
-                            <span class="pos-branches__chip">@PickupStatus()</span>
-                        </div>
-                        <div class="pos-branches__setup-row">
-                            <span>@L["Branches_Delivery"]</span>
-                            <span class="pos-branches__chip">@DeliveryStatus()</span>
-                        </div>
+                        <button type="button" class="pos-branches__nav-row" role="listitem"
+                                aria-label="@($"{L["Branches_Fulfillment"]}, {FulfillmentRowStatus()}")"
+                                @onclick="FocusFulfillment">
+                            <span class="pos-branches__nav-label">@L["Branches_Fulfillment"]</span>
+                            <span class="pos-branches__chip" title="@FulfillmentRowStatus()">@FulfillmentRowStatus()</span>
+                            <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                        </button>
                     }
                 </div>
             </section>
 
-            <details class="exds-accordion pos-branches__fold" open>
-                <summary class="exds-accordion__summary pos-branches__fold-summary">@L["Branches_Details"]</summary>
+            <details id="branch-details" class="exds-accordion pos-branches__fold" @key="_detailsTick" open="@_detailsOpen">
+                <summary class="exds-accordion__summary pos-branches__fold-summary">
+                    <span>@L["Branches_Details"]</span>
+                    <span class="pos-branches__chip">@L["Branches_StatusReady"]</span>
+                    <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                </summary>
                 <div class="exds-accordion__body pos-branches__fold-body">
                     <div class="pos-branches__grid">
                         <TextInput Label="@L["Branches_FieldName"]" @bind-Value="_name" Required />
@@ -94,34 +122,65 @@
                 </div>
             </details>
 
-            <details class="exds-accordion pos-branches__fold" open="@AddressIncomplete">
+            <details id="branch-address" class="exds-accordion pos-branches__fold" open="@_addressOpen">
                 <summary class="exds-accordion__summary pos-branches__fold-summary">
                     <span>@L["Branches_AddressLocation"]</span>
-                    @if (MapIncomplete) { <span class="pos-branches__chip">@L["Branches_LocationHint"]</span> }
+                    <span class="pos-branches__chip">@(AddressIncomplete || MapIncomplete ? L["Branches_Required"] : L["Branches_StatusReady"])</span>
+                    <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
                 </summary>
                 <div class="exds-accordion__body pos-branches__fold-body">
-                    <div class="pos-branches__grid">
-                        <TextInput Label="@L["Branches_AddressLine1"]" @bind-Value="_address1" />
+                    <TextInput Label="@L["Branches_AddressLine1"]" @bind-Value="_address1" />
+                    @if (_showAddressLine2 || !string.IsNullOrWhiteSpace(_address2))
+                    {
                         <TextInput Label="@L["Branches_AddressLine2"]" @bind-Value="_address2" />
-                    </div>
-                    <div class="pos-branches__pair">
-                        <TextInput Label="@L["Branches_FieldCity"]" @bind-Value="_city" />
-                        <TextInput Label="@L["Branches_Region"]" @bind-Value="_region" />
-                    </div>
+                    }
+                    else
+                    {
+                        <button type="button" class="pos-branches__disclose" @onclick="() => _showAddressLine2 = true">
+                            @L["Branches_AddAddressLine2"]
+                        </button>
+                    }
+                    <TextInput Label="@L["Branches_FieldCity"]" @bind-Value="_city" />
+                    <TextInput Label="@L["Branches_Region"]" @bind-Value="_region" />
                     <div class="pos-branches__pair">
                         <TextInput Label="@L["Branches_PostalCode"]" @bind-Value="_postalCode" />
-                        <TextInput Label="@L["Branches_CountryCode"]" @bind-Value="_countryCode" />
+                        <label class="pos-branches__field">@L["Branches_Country"]
+                            <select @bind="_countryCode" disabled="@_busy" aria-label="@L["Branches_Country"]">
+                                <option value="">@L["Branches_None"]</option>
+                                @foreach (var country in BranchLocationUi.CodesFor(_countryCode))
+                                {
+                                    <option value="@country">@CountryName(country)</option>
+                                }
+                            </select>
+                        </label>
                     </div>
-                    <p class="pos-muted pos-branches__hint">@L["Branches_MapLocation"] · @L["Branches_LocationHint"]</p>
-                    <div class="pos-branches__pair">
-                        <TextInput Label="@L["Branches_Latitude"]" @bind-Value="_latitude" Type="number" />
-                        <TextInput Label="@L["Branches_Longitude"]" @bind-Value="_longitude" Type="number" />
-                    </div>
+                    <button type="button" class="pos-branches__nav-row pos-branches__nav-row--nested"
+                            aria-expanded="@_mapOpen"
+                            aria-label="@($"{L["Branches_MapLocation"]}, {L["Branches_LocationHint"]}")"
+                            @onclick="() => _mapOpen = !_mapOpen">
+                        <span class="pos-branches__nav-stack">
+                            <span class="pos-branches__nav-label">@L["Branches_MapLocation"]</span>
+                            <span class="pos-muted">@(MapIncomplete ? L["Branches_NotConfigured"] : L["Branches_StatusReady"])</span>
+                        </span>
+                        <span class="pos-branches__chip">@L["Branches_LocationHint"]</span>
+                        <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                    </button>
+                    @if (_mapOpen)
+                    {
+                        <div class="pos-branches__pair">
+                            <TextInput Label="@L["Branches_Latitude"]" @bind-Value="_latitude" Type="number" />
+                            <TextInput Label="@L["Branches_Longitude"]" @bind-Value="_longitude" Type="number" />
+                        </div>
+                    }
                 </div>
             </details>
 
-            <details class="exds-accordion pos-branches__fold" open>
-                <summary class="exds-accordion__summary pos-branches__fold-summary">@L["Branches_OperatingHours"]</summary>
+            <details id="branch-hours" class="exds-accordion pos-branches__fold" @key="_hoursTick" open="@_hoursOpen">
+                <summary class="exds-accordion__summary pos-branches__fold-summary">
+                    <span>@L["Branches_OperatingHours"]</span>
+                    <span class="pos-branches__chip" title="@HoursStatusLabel()">@CompactStatus(HoursStatusLabel())</span>
+                    <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                </summary>
                 <div class="exds-accordion__body pos-branches__fold-body">
                     <div class="pos-branches__hours" role="list">
                         @foreach (var day in _hours)
@@ -169,76 +228,117 @@
 
             @if (_readiness is not null)
             {
-                <details class="exds-accordion pos-branches__fold" open>
-                    <summary class="exds-accordion__summary pos-branches__fold-summary">@L["Branches_Fulfillment"]</summary>
+                <details id="branch-fulfillment" class="exds-accordion pos-branches__fold" @key="_fulfillmentTick" open="@_fulfillmentOpen">
+                    <summary class="exds-accordion__summary pos-branches__fold-summary">
+                        <span>@L["Branches_Fulfillment"]</span>
+                        <span class="pos-branches__chip" title="@FulfillmentRowStatus()">@FulfillmentRowStatus()</span>
+                        <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                    </summary>
                     <div class="exds-accordion__body pos-branches__fold-body">
                         @if (!string.IsNullOrWhiteSpace(_readiness.StoreStatusMessage))
                         {
                             <p class="pos-muted pos-branches__hint">@_readiness.StoreStatusMessage</p>
                         }
-                        <div class="pos-branches__kv-list">
-                            <div class="pos-branches__kv">
-                                <span class="pos-branches__kv-label">@L["Branches_OnlineOrders"]</span>
-                                <span class="pos-branches__chip">@OnlineOrdersStatus()</span>
-                                @if (_readiness.CanUseCustomerOrdering && !_readiness.CustomerOrderingEnabled && _readiness.CustomerOrderingReady)
-                                {
-                                    <button type="button" class="pos-link pos-branches__text-action" disabled="@_busy" @onclick="() => ToggleFulfillmentAsync(ordering: true)">@L["Branches_Enable"]</button>
-                                }
-                            </div>
-                            <div class="pos-branches__kv">
-                                <span class="pos-branches__kv-label">@L["Branches_Pickup"]</span>
+                        <div class="pos-branches__status-list">
+                            <button type="button" class="pos-branches__nav-row" aria-expanded="@_onlineOpen"
+                                    aria-label="@($"{L["Branches_OnlineOrders"]}, {OnlineOrdersStatus()}")"
+                                    @onclick="() => _onlineOpen = !_onlineOpen">
+                                <span class="pos-branches__nav-label">@L["Branches_OnlineOrders"]</span>
+                                <span class="pos-branches__chip" title="@OnlineOrdersStatus()">@CompactStatus(OnlineOrdersStatus())</span>
+                                <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                            </button>
+                            @if (_onlineOpen)
+                            {
+                                <div class="pos-branches__fold-actions">
+                                    @if (_readiness.CanUseCustomerOrdering && !_readiness.CustomerOrderingEnabled && _readiness.CustomerOrderingReady)
+                                    {
+                                        <Button Size="ButtonSize.Sm" Disabled="_busy" OnClick="() => ToggleFulfillmentAsync(ordering: true)">@L["Branches_Enable"]</Button>
+                                    }
+                                    @if (_readiness.OnlineOrdersPaused)
+                                    {
+                                        <Button Size="ButtonSize.Sm" Disabled="_busy" OnClick="() => PauseOrdersAsync(false)">@L["Branches_ResumeOrders"]</Button>
+                                    }
+                                    else if (_readiness.CustomerOrderingEnabled)
+                                    {
+                                        <Button Size="ButtonSize.Sm" Variant="ButtonVariant.Ghost" Disabled="_busy" OnClick="() => PauseOrdersAsync(true)">@L["Branches_PauseOrders"]</Button>
+                                    }
+                                </div>
+                            }
+                            <button type="button" class="pos-branches__nav-row" aria-expanded="@_pickupOpen"
+                                    aria-label="@($"{L["Branches_Pickup"]}, {PickupStatus()}")"
+                                    @onclick="() => _pickupOpen = !_pickupOpen">
+                                <span class="pos-branches__nav-label">@L["Branches_Pickup"]</span>
                                 <span class="pos-branches__chip">@PickupStatus()</span>
-                                @if (_readiness.CanUseCustomerOrdering && _readiness.CustomerOrderingEnabled && _readiness.PickupReady && !_readiness.PickupEnabled)
-                                {
-                                    <button type="button" class="pos-link pos-branches__text-action" disabled="@_busy" @onclick="() => ToggleFulfillmentAsync(pickup: true)">@L["Branches_Enable"]</button>
-                                }
-                            </div>
-                            <div class="pos-branches__kv">
-                                <span class="pos-branches__kv-label">@L["Branches_Delivery"]</span>
-                                <span class="pos-branches__chip">@DeliveryStatus()</span>
+                                <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                            </button>
+                            @if (_pickupOpen)
+                            {
+                                <div class="pos-branches__fold-actions">
+                                    @if (_readiness.CanUseCustomerOrdering && _readiness.CustomerOrderingEnabled && _readiness.PickupReady && !_readiness.PickupEnabled)
+                                    {
+                                        <Button Size="ButtonSize.Sm" Disabled="_busy" OnClick="() => ToggleFulfillmentAsync(pickup: true)">@L["Branches_Enable"]</Button>
+                                    }
+                                </div>
+                            }
+                            <button type="button" class="pos-branches__nav-row" aria-expanded="@_deliveryOpen"
+                                    aria-label="@($"{L["Branches_Delivery"]}, {DeliveryRowStatus()}")"
+                                    @onclick="() => _deliveryOpen = !_deliveryOpen">
+                                <span class="pos-branches__nav-label">@L["Branches_Delivery"]</span>
+                                <span class="pos-branches__chip" title="@DeliveryRowStatus()">@DeliveryRowStatus()</span>
+                                <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                            </button>
+                        </div>
+                        @if (_deliveryOpen)
+                        {
+                            <div class="pos-branches__delivery">
+                                <h3 class="pos-branches__subhead">@L["Branches_DeliverySetup"]</h3>
                                 @if (DeliveryMissingCount > 0 && _readiness.CanUseDelivery)
                                 {
-                                    <span class="pos-muted">@L["Branches_MissingCount", DeliveryMissingCount]</span>
+                                    <p class="pos-muted pos-branches__hint">@L["Branches_MissingCount", DeliveryMissingCount]</p>
                                 }
-                                @if (_readiness.CanUseDelivery && !_readiness.DeliveryEnabled && _readiness.DeliveryReady)
-                                {
-                                    <button type="button" class="pos-link pos-branches__text-action" disabled="@_busy" @onclick="() => ToggleFulfillmentAsync(delivery: true)">@L["Branches_EnableDelivery"]</button>
-                                }
-                                else if (_readiness.DeliveryEnabled)
-                                {
-                                    <button type="button" class="pos-link pos-branches__text-action" disabled="@_busy" @onclick="() => ToggleFulfillmentAsync(delivery: false)">@L["Branches_DisableDelivery"]</button>
-                                }
-                                else if (_readiness.CanUseDelivery && !_readiness.DeliveryReady)
-                                {
-                                    <button type="button" class="pos-link pos-branches__text-action" @onclick="() => _showDeliverySettings = true">@L["Branches_Configure"]</button>
-                                }
+                                <div class="pos-branches__ready-grid">
+                                    <div>
+                                        <p class="pos-branches__list-label">@L["Branches_CheckMissing"]</p>
+                                        <ul class="pos-branches__pills">
+                                            @foreach (var item in DeliveryChecks().Where(c => c.Missing))
+                                            {
+                                                <li class="pos-branches__pill pos-branches__pill--missing">
+                                                    @item.Label
+                                                    <span class="exds-sr-only">@L["Branches_CheckMissing"]</span>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <p class="pos-branches__list-label">@L["Branches_ReadyList"]</p>
+                                        <ul class="pos-branches__pills">
+                                            @foreach (var item in DeliveryChecks().Where(c => !c.Missing))
+                                            {
+                                                <li class="pos-branches__pill pos-branches__pill--ok">
+                                                    @item.Label
+                                                    <span class="exds-sr-only">@L["Branches_CheckOk"]</span>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="pos-branches__fold-actions">
+                                    @if (_readiness.CanUseDelivery && !_readiness.DeliveryEnabled && _readiness.DeliveryReady)
+                                    {
+                                        <Button Size="ButtonSize.Sm" Disabled="_busy" OnClick="() => ToggleFulfillmentAsync(delivery: true)">@L["Branches_EnableDelivery"]</Button>
+                                    }
+                                    else if (_readiness.DeliveryEnabled)
+                                    {
+                                        <Button Size="ButtonSize.Sm" Variant="ButtonVariant.Ghost" Disabled="_busy" OnClick="() => ToggleFulfillmentAsync(delivery: false)">@L["Branches_DisableDelivery"]</Button>
+                                    }
+                                    else if (_readiness.CanUseDelivery && !_readiness.DeliveryReady)
+                                    {
+                                        <Button Size="ButtonSize.Sm" Variant="ButtonVariant.Secondary" OnClick="() => _showDeliverySettings = true">@L["Branches_Configure"]</Button>
+                                    }
+                                </div>
                             </div>
-                        </div>
-                        @if (_readiness.CanUseDelivery && !_readiness.DeliveryReady)
-                        {
-                            <ul class="pos-branches__checklist">
-                                @foreach (var item in DeliveryChecks())
-                                {
-                                    <li class="pos-branches__check">
-                                        <span class="pos-branches__check-icon @(item.Missing ? "pos-branches__check-icon--missing" : "pos-branches__check-icon--ok")" aria-hidden="true">
-                                            @IconGlyphs.Get(item.Missing ? "close" : "check")
-                                        </span>
-                                        <span>@item.Label</span>
-                                        <span class="exds-sr-only">@(item.Missing ? L["Branches_CheckMissing"] : L["Branches_CheckOk"])</span>
-                                    </li>
-                                }
-                            </ul>
                         }
-                        @if (_readiness.OnlineOrdersPaused)
-                        {
-                            <button type="button" class="pos-link pos-branches__text-action" disabled="@_busy" @onclick="() => PauseOrdersAsync(false)">@L["Branches_ResumeOrders"]</button>
-                        }
-                        else if (_readiness.CustomerOrderingEnabled)
-                        {
-                            <button type="button" class="pos-link pos-branches__text-action" disabled="@_busy" @onclick="() => PauseOrdersAsync(true)">@L["Branches_PauseOrders"]</button>
-                        }
-
-                        @if (_showDeliverySettings || DeliveryPricingIncomplete)
+                        @if (_showDeliverySettings)
                         {
                             <h3 class="pos-branches__subhead">@L["Branches_DeliverySettings"]</h3>
                             <div class="pos-branches__pair">
@@ -350,6 +450,18 @@
     private bool _busy;
     private bool _showInventoryActions;
     private bool _showDeliverySettings;
+    private bool _showAddressLine2;
+    private bool _mapOpen;
+    private bool _detailsOpen;
+    private bool _addressOpen;
+    private bool _hoursOpen;
+    private bool _fulfillmentOpen;
+    private bool _onlineOpen;
+    private bool _pickupOpen;
+    private bool _deliveryOpen;
+    private int _detailsTick;
+    private int _hoursTick;
+    private int _fulfillmentTick;
     private string? _error;
     private string? _success;
     private string? _code;
@@ -377,9 +489,6 @@
         string.IsNullOrWhiteSpace(_address1) || string.IsNullOrWhiteSpace(_city);
     private bool MapIncomplete =>
         string.IsNullOrWhiteSpace(_latitude) || string.IsNullOrWhiteSpace(_longitude);
-    private bool DeliveryPricingIncomplete =>
-        _readiness is { CanUseDelivery: true, DeliveryReady: false } &&
-        _readiness.ReasonCodes.Any(c => c is "delivery_policy_missing" or "delivery_policy_incomplete");
     private int DeliveryMissingCount => DeliveryChecks().Count(c => c.Missing);
 
     protected override async Task OnInitializedAsync()
@@ -392,7 +501,13 @@
         await LoadFulfillmentAsync(orgId);
         var devices = await Platform.GetPosDevicesAsync(orgId);
         _deviceCount = devices.Data?.Count(d => d.BranchId == BranchId) ?? 0;
-        _showDeliverySettings = DeliveryPricingIncomplete;
+        _showDeliverySettings = false;
+        _showAddressLine2 = !string.IsNullOrWhiteSpace(_address2);
+        _mapOpen = false;
+        _detailsOpen = false;
+        _addressOpen = AddressIncomplete;
+        _hoursOpen = !BranchHoursScheduleUi.HasConfiguredHours(_hours);
+        _fulfillmentOpen = false;
         _loading = false;
     }
 
@@ -571,6 +686,62 @@
         else { _readiness = result.Data; _success = L["Branches_Saved"]; }
         _busy = false;
     }
+
+    private void FocusDetails()
+    {
+        _detailsOpen = true;
+        _detailsTick++;
+    }
+
+    private void FocusHours()
+    {
+        _hoursOpen = true;
+        _hoursTick++;
+    }
+
+    private void FocusFulfillment()
+    {
+        _fulfillmentOpen = true;
+        _fulfillmentTick++;
+    }
+
+    private string DeviceStatusLabel() =>
+        _deviceCount == 0 ? L["Branches_DevicesNone"] : L["Branches_DevicesCount", _deviceCount];
+
+    private string CompactStatus(string label) =>
+        string.Equals(label, L["Branches_StatusSetupRequired"].Value, StringComparison.Ordinal)
+            ? L["Branches_ChipSetupRequired"].Value
+            : label;
+
+    private string FulfillmentRowStatus() =>
+        DeliveryMissingCount > 0
+            ? string.Format(L["Branches_MissingShort"].Value, DeliveryMissingCount)
+            : CompactStatus(FulfillmentSetupStatus());
+
+    private string DeliveryRowStatus() =>
+        DeliveryMissingCount > 0 && _readiness?.CanUseDelivery == true
+            ? string.Format(L["Branches_MissingShort"].Value, DeliveryMissingCount)
+            : CompactStatus(DeliveryStatus());
+
+    private string CountryName(string code)
+    {
+        var localized = L[$"Branches_Country_{code}"];
+        return localized.ResourceNotFound ? code : localized.Value;
+    }
+
+    private string HoursStatusLabel() =>
+        BranchHoursScheduleUi.HasConfiguredHours(_hours)
+            ? L["Branches_StatusReady"]
+            : L["Branches_StatusSetupRequired"];
+
+    private string FulfillmentSetupStatus() => _readiness switch
+    {
+        { OnlineOrdersPaused: true } => L["Branches_StatusPaused"],
+        { CustomerOrderingOperational: true } => L["Branches_StatusReady"],
+        { CustomerOrderingEnabled: true } => L["Branches_StatusOffHours"],
+        { CustomerOrderingReady: true } => L["Branches_StatusSetupReady"],
+        _ => L["Branches_StatusSetupRequired"]
+    };
 
     private string OnlineOrdersStatus() => _readiness switch
     {

@@ -19,6 +19,15 @@ public sealed class BranchHoursScheduleUiTests
         Assert.False(BranchHoursScheduleUi.ShowsTimes(true, false));
         Assert.False(BranchHoursScheduleUi.ShowsTimes(false, true));
         Assert.True(BranchHoursScheduleUi.ShowsTimes(false, false));
+        Assert.False(BranchHoursScheduleUi.HasConfiguredHours([
+            new BranchHoursDayDraft { DayOfWeek = nameof(DayOfWeek.Monday), IsClosed = true }
+        ]));
+        Assert.True(BranchHoursScheduleUi.HasConfiguredHours([
+            new BranchHoursDayDraft { DayOfWeek = nameof(DayOfWeek.Monday), IsClosed = true },
+            new BranchHoursDayDraft { DayOfWeek = nameof(DayOfWeek.Tuesday), IsClosed = false }
+        ]));
+        Assert.Contains("PH", BranchLocationUi.CodesFor(null));
+        Assert.Contains("XX", BranchLocationUi.CodesFor("XX"));
     }
 
     [Fact]

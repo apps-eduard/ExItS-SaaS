@@ -345,6 +345,63 @@
   <data name="Branches_SaveActions" xml:space="preserve">
     <value>Branch save actions</value>
   </data>
+  <data name="Branches_Catalog" xml:space="preserve">
+    <value>Catalog</value>
+  </data>
+  <data name="Branches_Customers" xml:space="preserve">
+    <value>Customers</value>
+  </data>
+  <data name="Branches_Country" xml:space="preserve">
+    <value>Country</value>
+  </data>
+  <data name="Branches_AddAddressLine2" xml:space="preserve">
+    <value>Add address line 2</value>
+  </data>
+  <data name="Branches_NotConfigured" xml:space="preserve">
+    <value>Not configured</value>
+  </data>
+  <data name="Branches_Required" xml:space="preserve">
+    <value>Required</value>
+  </data>
+  <data name="Branches_MissingShort" xml:space="preserve">
+    <value>{0} missing</value>
+  </data>
+  <data name="Branches_DeliverySetup" xml:space="preserve">
+    <value>Delivery setup</value>
+  </data>
+  <data name="Branches_ReadyList" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="Branches_ChipSetupRequired" xml:space="preserve">
+    <value>Setup req.</value>
+  </data>
+  <data name="Branches_Country_PH" xml:space="preserve">
+    <value>Philippines</value>
+  </data>
+  <data name="Branches_Country_US" xml:space="preserve">
+    <value>United States</value>
+  </data>
+  <data name="Branches_Country_SG" xml:space="preserve">
+    <value>Singapore</value>
+  </data>
+  <data name="Branches_Country_MY" xml:space="preserve">
+    <value>Malaysia</value>
+  </data>
+  <data name="Branches_Country_ID" xml:space="preserve">
+    <value>Indonesia</value>
+  </data>
+  <data name="Branches_Country_TH" xml:space="preserve">
+    <value>Thailand</value>
+  </data>
+  <data name="Branches_Country_AU" xml:space="preserve">
+    <value>Australia</value>
+  </data>
+  <data name="Branches_Country_AE" xml:space="preserve">
+    <value>United Arab Emirates</value>
+  </data>
+  <data name="Branches_Country_GB" xml:space="preserve">
+    <value>United Kingdom</value>
+  </data>
   <data name="Branches_ContactPhone" xml:space="preserve">
     <value>Store phone</value>
   </data>

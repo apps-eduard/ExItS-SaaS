@@ -68,7 +68,14 @@ public sealed class OrgWebAuthErrorAndBranchesGuardTests
             "Pages",
             "Organization",
             "BranchEdit.razor"));
-        Assert.Contains("Branches_Setup", edit, StringComparison.Ordinal);
+        Assert.Contains("org-setup-nav", edit, StringComparison.Ordinal);
+        Assert.Contains("FocusHours", edit, StringComparison.Ordinal);
+        Assert.Contains("FocusDetails", edit, StringComparison.Ordinal);
+        Assert.Contains("FocusFulfillment", edit, StringComparison.Ordinal);
+        Assert.Contains("Branches_AddAddressLine2", edit, StringComparison.Ordinal);
+        Assert.Contains("BranchLocationUi.CodesFor", edit, StringComparison.Ordinal);
+        Assert.Contains("Branches_DeliverySetup", edit, StringComparison.Ordinal);
+        Assert.Contains("_deliveryOpen", edit, StringComparison.Ordinal);
         Assert.Contains("Branches_OrgCatalog", edit, StringComparison.Ordinal);
         Assert.Contains("Branches_InventoryNotCopied", edit, StringComparison.Ordinal);
         Assert.Contains("Branches_AddressLocation", edit, StringComparison.Ordinal);
@@ -89,7 +96,7 @@ public sealed class OrgWebAuthErrorAndBranchesGuardTests
         var loc = Path.Combine(root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Web", "Localization");
         var en = File.ReadAllText(Path.Combine(loc, "OrgWebResources.resx"));
         var fil = File.ReadAllText(Path.Combine(loc, "OrgWebResources.fil-PH.resx"));
-        foreach (var key in new[] { "Branches_AddressLocation", "Branches_CopyWeekdays", "Branches_CopyHours", "Branches_HoursDone", "Branches_DayFull_Monday", "Branches_TimeZoneHint", "Branches_SaveActions", "Branches_StatusOff", "Branches_InventorySetUp" })
+        foreach (var key in new[] { "Branches_AddressLocation", "Branches_CopyWeekdays", "Branches_CopyHours", "Branches_HoursDone", "Branches_DayFull_Monday", "Branches_TimeZoneHint", "Branches_SaveActions", "Branches_StatusOff", "Branches_InventorySetUp", "Branches_AddAddressLine2", "Branches_MissingShort", "Branches_Country", "Branches_Catalog" })
         {
             Assert.Contains($"<data name=\"{key}\"", en, StringComparison.Ordinal);
             Assert.Contains($"<data name=\"{key}\"", fil, StringComparison.Ordinal);

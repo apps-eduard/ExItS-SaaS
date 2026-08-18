@@ -25,47 +25,88 @@ else
         {
             <section class="org-panel org-setup">
                 <h3>@L["Branches_Setup"]</h3>
-                <div class="org-setup-rows">
-                    <div class="org-setup-row"><span>@L["Branches_Details"]</span><span class="org-badge">@L["Branches_StatusReady"]</span></div>
-                    <div class="org-setup-row"><span>@L["Branches_Staff"]</span><span class="org-badge">@L["Branches_StaffNotAuto"]</span></div>
-                    <div class="org-setup-row">
+                <div class="org-setup-rows" role="list">
+                    <button type="button" class="org-setup-nav" role="listitem"
+                            aria-label="@($"{L["Branches_Details"]}, {L["Branches_StatusReady"]}")"
+                            @onclick="FocusDetails">
+                        <span>@L["Branches_Details"]</span>
+                        <span class="org-badge">@L["Branches_StatusReady"]</span>
+                        <span aria-hidden="true">›</span>
+                    </button>
+                    <button type="button" class="org-setup-nav" role="listitem"
+                            aria-label="@($"{L["Branches_Staff"]}, {L["Branches_StaffNotAuto"]}")"
+                            @onclick='() => Nav.NavigateTo("/staff")'>
+                        <span>@L["Branches_Staff"]</span>
+                        <span class="org-badge">@L["Branches_StaffNotAuto"]</span>
+                        <span aria-hidden="true">›</span>
+                    </button>
+                    <button type="button" class="org-setup-nav" role="listitem"
+                            aria-label="@($"{L["Branches_Devices"]}, {DeviceStatusLabel()}")"
+                            @onclick='() => Nav.NavigateTo("/operations/devices")'>
                         <span>@L["Branches_Devices"]</span>
-                        <span class="org-badge">@(_deviceCount == 0 ? L["Branches_DevicesNone"] : string.Format(L["Branches_DevicesCount"].Value, _deviceCount))</span>
-                        <Button Size="@ButtonSize.Small" OnClick='() => Nav.NavigateTo("/operations/devices")'>@L["Branches_Manage"]</Button>
-                    </div>
-                    <div class="org-setup-row">
+                        <span class="org-badge">@DeviceStatusLabel()</span>
+                        <span aria-hidden="true">›</span>
+                    </button>
+                    <button type="button" class="org-setup-nav" role="listitem"
+                            aria-label="@($"{L["Branches_Inventory"]}, {L["Branches_InventoryNotCopied"]}")"
+                            @onclick="() => _showInventoryActions = !_showInventoryActions">
                         <span>@L["Branches_Inventory"]</span>
                         <span class="org-badge">@L["Branches_InventoryNotCopied"]</span>
-                        <Button Size="@ButtonSize.Small" OnClick="() => _showInventoryActions = !_showInventoryActions">@L["Branches_InventorySetUp"]</Button>
-                    </div>
+                        <span aria-hidden="true">›</span>
+                    </button>
                     @if (_showInventoryActions)
                     {
-                        <div class="org-setup-sub">
-                            <Button Size="@ButtonSize.Small" OnClick='() => Nav.NavigateTo("/inventory")'>@L["Branches_AddOpeningStock"]</Button>
-                            <Button Size="@ButtonSize.Small" OnClick='() => Nav.NavigateTo("/inventory/transfers")'>@L["Branches_TransferStock"]</Button>
-                        </div>
+                        <button type="button" class="org-setup-nav org-setup-nav--sub" role="listitem" @onclick='() => Nav.NavigateTo("/inventory")'>
+                            <span>@L["Branches_AddOpeningStock"]</span>
+                            <span aria-hidden="true">›</span>
+                        </button>
+                        <button type="button" class="org-setup-nav org-setup-nav--sub" role="listitem" @onclick='() => Nav.NavigateTo("/inventory/transfers")'>
+                            <span>@L["Branches_TransferStock"]</span>
+                            <span aria-hidden="true">›</span>
+                        </button>
                     }
-                    <div class="org-setup-row">
-                        <span>@L["Branches_OrgCatalog"]</span>
+                    <button type="button" class="org-setup-nav" role="listitem"
+                            aria-label="@($"{L["Branches_OperatingHours"]}, {HoursStatusLabel()}")"
+                            @onclick="FocusHours">
+                        <span>@L["Branches_OperatingHours"]</span>
+                        <span class="org-badge" title="@HoursStatusLabel()">@CompactStatus(HoursStatusLabel())</span>
+                        <span aria-hidden="true">›</span>
+                    </button>
+                    <button type="button" class="org-setup-nav" role="listitem"
+                            title="@L["Branches_OrgCatalogHint"]"
+                            aria-label="@($"{L["Branches_OrgCatalog"]}, {L["Branches_OrgWide"]}")"
+                            @onclick='() => Nav.NavigateTo("/products")'>
+                        <span>@L["Branches_Catalog"]</span>
                         <span class="org-badge">@L["Branches_OrgWide"]</span>
-                        <Button Size="@ButtonSize.Small" OnClick='() => Nav.NavigateTo("/products")'>@L["Branches_ViewCatalog"]</Button>
-                    </div>
-                    <div class="org-setup-row">
-                        <span>@L["Branches_OrgCustomers"]</span>
+                        <span aria-hidden="true">›</span>
+                    </button>
+                    <button type="button" class="org-setup-nav" role="listitem"
+                            title="@L["Branches_OrgCustomersHint"]"
+                            aria-label="@($"{L["Branches_OrgCustomers"]}, {L["Branches_OrgWide"]}")"
+                            @onclick='() => Nav.NavigateTo("/customers")'>
+                        <span>@L["Branches_Customers"]</span>
                         <span class="org-badge">@L["Branches_OrgWide"]</span>
-                        <Button Size="@ButtonSize.Small" OnClick='() => Nav.NavigateTo("/customers")'>@L["Branches_ViewCustomers"]</Button>
-                    </div>
+                        <span aria-hidden="true">›</span>
+                    </button>
                     @if (_readiness is not null)
                     {
-                        <div class="org-setup-row"><span>@L["Branches_OnlineOrders"]</span><span class="org-badge">@OnlineOrdersStatus()</span></div>
-                        <div class="org-setup-row"><span>@L["Branches_Pickup"]</span><span class="org-badge">@PickupStatus()</span></div>
-                        <div class="org-setup-row"><span>@L["Branches_Delivery"]</span><span class="org-badge">@DeliveryStatus()</span></div>
+                        <button type="button" class="org-setup-nav" role="listitem"
+                                aria-label="@($"{L["Branches_Fulfillment"]}, {FulfillmentRowStatus()}")"
+                                @onclick="FocusFulfillment">
+                            <span>@L["Branches_Fulfillment"]</span>
+                            <span class="org-badge" title="@FulfillmentRowStatus()">@FulfillmentRowStatus()</span>
+                            <span aria-hidden="true">›</span>
+                        </button>
                     }
                 </div>
             </section>
 
-            <details class="org-fold" open>
-                <summary>@L["Branches_Details"]</summary>
+            <details id="branch-details" class="org-fold" @key="_detailsTick" open="@_detailsOpen">
+                <summary>
+                    <span>@L["Branches_Details"]</span>
+                    <span class="org-badge">@L["Branches_StatusReady"]</span>
+                    <span aria-hidden="true">›</span>
+                </summary>
                 <div class="org-form-grid">
                     <ExitsField Label="@L["Branches_FieldName"]"><Input @bind-Value="_name" Disabled="_busy" /></ExitsField>
                     <ExitsField Label="@L["Branches_ContactPhone"]"><Input @bind-Value="_contactPhone" Disabled="_busy" /></ExitsField>
@@ -79,22 +120,61 @@ else
                 </div>
             </details>
 
-            <details class="org-fold" open="@AddressIncomplete">
-                <summary>@L["Branches_AddressLocation"]</summary>
-                <div class="org-form-grid">
+            <details id="branch-address" class="org-fold" open="@_addressOpen">
+                <summary>
+                    <span>@L["Branches_AddressLocation"]</span>
+                    <span class="org-badge">@(AddressIncomplete || MapIncomplete ? L["Branches_Required"] : L["Branches_StatusReady"])</span>
+                    <span aria-hidden="true">›</span>
+                </summary>
+                <div class="org-address-grid">
                     <ExitsField Label="@L["Branches_AddressLine1"]"><Input @bind-Value="_address1" Disabled="_busy" /></ExitsField>
-                    <ExitsField Label="@L["Branches_AddressLine2"]"><Input @bind-Value="_address2" Disabled="_busy" /></ExitsField>
+                    @if (_showAddressLine2 || !string.IsNullOrWhiteSpace(_address2))
+                    {
+                        <ExitsField Label="@L["Branches_AddressLine2"]"><Input @bind-Value="_address2" Disabled="_busy" /></ExitsField>
+                    }
+                    else
+                    {
+                        <button type="button" class="org-disclose" @onclick="() => _showAddressLine2 = true">@L["Branches_AddAddressLine2"]</button>
+                    }
                     <ExitsField Label="@L["Branches_FieldCity"]"><Input @bind-Value="_city" Disabled="_busy" /></ExitsField>
                     <ExitsField Label="@L["Branches_Region"]"><Input @bind-Value="_region" Disabled="_busy" /></ExitsField>
-                    <ExitsField Label="@L["Branches_PostalCode"]"><Input @bind-Value="_postalCode" Disabled="_busy" /></ExitsField>
-                    <ExitsField Label="@L["Branches_CountryCode"]"><Input @bind-Value="_countryCode" Disabled="_busy" /></ExitsField>
-                    <ExitsField Label="@L["Branches_Latitude"]"><Input @bind-Value="_latitude" Disabled="_busy" Placeholder="@L["Branches_LocationHint"]" /></ExitsField>
-                    <ExitsField Label="@L["Branches_Longitude"]"><Input @bind-Value="_longitude" Disabled="_busy" /></ExitsField>
+                    <div class="org-address-pair">
+                        <ExitsField Label="@L["Branches_PostalCode"]"><Input @bind-Value="_postalCode" Disabled="_busy" /></ExitsField>
+                        <ExitsField Label="@L["Branches_Country"]">
+                            <select class="org-select" @bind="_countryCode" disabled="@_busy" aria-label="@L["Branches_Country"]">
+                                <option value="">@L["Branches_None"]</option>
+                                @foreach (var country in BranchLocationUi.CodesFor(_countryCode))
+                                {
+                                    <option value="@country">@CountryName(country)</option>
+                                }
+                            </select>
+                        </ExitsField>
+                    </div>
+                    <button type="button" class="org-setup-nav org-setup-nav--nested"
+                            aria-expanded="@_mapOpen"
+                            aria-label="@($"{L["Branches_MapLocation"]}, {L["Branches_LocationHint"]}")"
+                            @onclick="() => _mapOpen = !_mapOpen">
+                        <span class="org-setup-nav__stack">
+                            <span>@L["Branches_MapLocation"]</span>
+                            <span class="org-note">@(MapIncomplete ? L["Branches_NotConfigured"] : L["Branches_StatusReady"])</span>
+                        </span>
+                        <span class="org-badge">@L["Branches_LocationHint"]</span>
+                        <span aria-hidden="true">›</span>
+                    </button>
+                    @if (_mapOpen)
+                    {
+                        <ExitsField Label="@L["Branches_Latitude"]"><Input @bind-Value="_latitude" Disabled="_busy" /></ExitsField>
+                        <ExitsField Label="@L["Branches_Longitude"]"><Input @bind-Value="_longitude" Disabled="_busy" /></ExitsField>
+                    }
                 </div>
             </details>
 
-            <details class="org-fold" open>
-                <summary>@L["Branches_OperatingHours"]</summary>
+            <details id="branch-hours" class="org-fold" @key="_hoursTick" open="@_hoursOpen">
+                <summary>
+                    <span>@L["Branches_OperatingHours"]</span>
+                    <span class="org-badge" title="@HoursStatusLabel()">@CompactStatus(HoursStatusLabel())</span>
+                    <span aria-hidden="true">›</span>
+                </summary>
                 <div class="org-hours" role="list">
                     @foreach (var day in _hours)
                     {
@@ -134,74 +214,116 @@ else
 
             @if (_readiness is not null)
             {
-                <details class="org-fold" open>
-                    <summary>@L["Branches_Fulfillment"]</summary>
+                <details id="branch-fulfillment" class="org-fold" @key="_fulfillmentTick" open="@_fulfillmentOpen">
+                    <summary>
+                        <span>@L["Branches_Fulfillment"]</span>
+                        <span class="org-badge" title="@FulfillmentRowStatus()">@FulfillmentRowStatus()</span>
+                        <span aria-hidden="true">›</span>
+                    </summary>
                     @if (!string.IsNullOrWhiteSpace(_readiness.StoreStatusMessage))
                     {
                         <p class="org-note">@_readiness.StoreStatusMessage</p>
                     }
-                    <div class="org-setup-rows">
-                        <div class="org-setup-row">
+                    <div class="org-fulfill-summary">
+                        <button type="button" class="org-setup-nav" aria-expanded="@_onlineOpen"
+                                aria-label="@($"{L["Branches_OnlineOrders"]}, {OnlineOrdersStatus()}")"
+                                @onclick="() => _onlineOpen = !_onlineOpen">
                             <span>@L["Branches_OnlineOrders"]</span>
-                            <span class="org-badge">@OnlineOrdersStatus()</span>
-                            @if (_readiness.CanUseCustomerOrdering && !_readiness.CustomerOrderingEnabled && _readiness.CustomerOrderingReady)
-                            {
-                                <Button Size="@ButtonSize.Small" Loading="_busy" OnClick="() => ToggleFulfillmentAsync(ordering: true)">@L["Branches_Enable"]</Button>
-                            }
-                        </div>
-                        <div class="org-setup-row">
+                            <span class="org-badge" title="@OnlineOrdersStatus()">@CompactStatus(OnlineOrdersStatus())</span>
+                            <span aria-hidden="true">›</span>
+                        </button>
+                        @if (_onlineOpen)
+                        {
+                            <div class="org-fold-actions">
+                                @if (_readiness.CanUseCustomerOrdering && !_readiness.CustomerOrderingEnabled && _readiness.CustomerOrderingReady)
+                                {
+                                    <Button Size="@ButtonSize.Small" Loading="_busy" OnClick="() => ToggleFulfillmentAsync(ordering: true)">@L["Branches_Enable"]</Button>
+                                }
+                                @if (_readiness.OnlineOrdersPaused)
+                                {
+                                    <Button Size="@ButtonSize.Small" Loading="_busy" OnClick="() => PauseOrdersAsync(false)">@L["Branches_ResumeOrders"]</Button>
+                                }
+                                else if (_readiness.CustomerOrderingEnabled)
+                                {
+                                    <Button Size="@ButtonSize.Small" Danger Loading="_busy" OnClick="() => PauseOrdersAsync(true)">@L["Branches_PauseOrders"]</Button>
+                                }
+                            </div>
+                        }
+                        <button type="button" class="org-setup-nav" aria-expanded="@_pickupOpen"
+                                aria-label="@($"{L["Branches_Pickup"]}, {PickupStatus()}")"
+                                @onclick="() => _pickupOpen = !_pickupOpen">
                             <span>@L["Branches_Pickup"]</span>
                             <span class="org-badge">@PickupStatus()</span>
-                            @if (_readiness.CustomerOrderingEnabled && _readiness.PickupReady && !_readiness.PickupEnabled)
-                            {
-                                <Button Size="@ButtonSize.Small" Loading="_busy" OnClick="() => ToggleFulfillmentAsync(pickup: true)">@L["Branches_Enable"]</Button>
-                            }
-                        </div>
-                        <div class="org-setup-row">
+                            <span aria-hidden="true">›</span>
+                        </button>
+                        @if (_pickupOpen)
+                        {
+                            <div class="org-fold-actions">
+                                @if (_readiness.CustomerOrderingEnabled && _readiness.PickupReady && !_readiness.PickupEnabled)
+                                {
+                                    <Button Size="@ButtonSize.Small" Loading="_busy" OnClick="() => ToggleFulfillmentAsync(pickup: true)">@L["Branches_Enable"]</Button>
+                                }
+                            </div>
+                        }
+                        <button type="button" class="org-setup-nav" aria-expanded="@_deliveryOpen"
+                                aria-label="@($"{L["Branches_Delivery"]}, {DeliveryRowStatus()}")"
+                                @onclick="() => _deliveryOpen = !_deliveryOpen">
                             <span>@L["Branches_Delivery"]</span>
-                            <span class="org-badge">@DeliveryStatus()</span>
+                            <span class="org-badge" title="@DeliveryRowStatus()">@DeliveryRowStatus()</span>
+                            <span aria-hidden="true">›</span>
+                        </button>
+                    </div>
+                    @if (_deliveryOpen)
+                    {
+                        <div class="org-delivery">
+                            <h4>@L["Branches_DeliverySetup"]</h4>
                             @if (DeliveryMissingCount > 0 && _readiness.CanUseDelivery)
                             {
-                                <span class="org-note">@string.Format(L["Branches_MissingCount"].Value, DeliveryMissingCount)</span>
+                                <p class="org-note">@string.Format(L["Branches_MissingCount"].Value, DeliveryMissingCount)</p>
                             }
-                            @if (_readiness.CanUseDelivery && _readiness.DeliveryReady && !_readiness.DeliveryEnabled)
-                            {
-                                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="() => ToggleFulfillmentAsync(delivery: true)">@L["Branches_EnableDelivery"]</Button>
-                            }
-                            else if (_readiness.DeliveryEnabled)
-                            {
-                                <Button Size="@ButtonSize.Small" Loading="_busy" OnClick="() => ToggleFulfillmentAsync(delivery: false)">@L["Branches_DisableDelivery"]</Button>
-                            }
-                            else if (_readiness.CanUseDelivery && !_readiness.DeliveryReady)
-                            {
-                                <Button Size="@ButtonSize.Small" OnClick="() => _showDeliverySettings = true">@L["Branches_Configure"]</Button>
-                            }
+                            <div class="org-ready-grid">
+                                <div>
+                                    <p class="org-list-label">@L["Branches_CheckMissing"]</p>
+                                    <ul class="org-pills">
+                                        @foreach (var item in DeliveryChecks().Where(c => c.Missing))
+                                        {
+                                            <li class="org-pill org-pill--missing">
+                                                @item.Label
+                                                <span class="org-sr-only">@L["Branches_CheckMissing"]</span>
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
+                                <div>
+                                    <p class="org-list-label">@L["Branches_ReadyList"]</p>
+                                    <ul class="org-pills">
+                                        @foreach (var item in DeliveryChecks().Where(c => !c.Missing))
+                                        {
+                                            <li class="org-pill org-pill--ok">
+                                                @item.Label
+                                                <span class="org-sr-only">@L["Branches_CheckOk"]</span>
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="org-fold-actions">
+                                @if (_readiness.CanUseDelivery && _readiness.DeliveryReady && !_readiness.DeliveryEnabled)
+                                {
+                                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="() => ToggleFulfillmentAsync(delivery: true)">@L["Branches_EnableDelivery"]</Button>
+                                }
+                                else if (_readiness.DeliveryEnabled)
+                                {
+                                    <Button Size="@ButtonSize.Small" Loading="_busy" OnClick="() => ToggleFulfillmentAsync(delivery: false)">@L["Branches_DisableDelivery"]</Button>
+                                }
+                                else if (_readiness.CanUseDelivery && !_readiness.DeliveryReady)
+                                {
+                                    <Button Size="@ButtonSize.Small" OnClick="() => _showDeliverySettings = true">@L["Branches_Configure"]</Button>
+                                }
+                            </div>
                         </div>
-                    </div>
-                    @if (_readiness.CanUseDelivery && !_readiness.DeliveryReady)
-                    {
-                        <ul class="org-checklist">
-                            @foreach (var item in DeliveryChecks())
-                            {
-                                <li class="@(item.Missing ? "org-checklist__missing" : "org-checklist__ok")">
-                                    <span>@(item.Missing ? "✕" : "✓")</span>
-                                    <span>@item.Label</span>
-                                    <span class="org-sr-only">@(item.Missing ? L["Branches_CheckMissing"] : L["Branches_CheckOk"])</span>
-                                </li>
-                            }
-                        </ul>
                     }
-                    <div class="org-actions">
-                        @if (_readiness.OnlineOrdersPaused)
-                        {
-                            <Button Size="@ButtonSize.Small" Loading="_busy" OnClick="() => PauseOrdersAsync(false)">@L["Branches_ResumeOrders"]</Button>
-                        }
-                        else if (_readiness.CustomerOrderingEnabled)
-                        {
-                            <Button Size="@ButtonSize.Small" Danger Loading="_busy" OnClick="() => PauseOrdersAsync(true)">@L["Branches_PauseOrders"]</Button>
-                        }
-                    </div>
-                    @if (_showDeliverySettings || DeliveryPricingIncomplete)
+                    @if (_showDeliverySettings)
                     {
                         <h4>@L["Branches_DeliverySettings"]</h4>
                         <div class="org-form-grid">
@@ -286,6 +408,18 @@ else
     private bool _busy;
     private bool _showInventoryActions;
     private bool _showDeliverySettings;
+    private bool _showAddressLine2;
+    private bool _mapOpen;
+    private bool _detailsOpen;
+    private bool _addressOpen;
+    private bool _hoursOpen;
+    private bool _fulfillmentOpen;
+    private bool _onlineOpen;
+    private bool _pickupOpen;
+    private bool _deliveryOpen;
+    private int _detailsTick;
+    private int _hoursTick;
+    private int _fulfillmentTick;
     private string? _error;
     private string? _success;
     private string? _code;
@@ -310,9 +444,7 @@ else
     private string? _freeThreshold;
 
     private bool AddressIncomplete => string.IsNullOrWhiteSpace(_address1) || string.IsNullOrWhiteSpace(_city);
-    private bool DeliveryPricingIncomplete =>
-        _readiness is { CanUseDelivery: true, DeliveryReady: false } &&
-        _readiness.ReasonCodes.Any(c => c is "delivery_policy_missing" or "delivery_policy_incomplete");
+    private bool MapIncomplete => string.IsNullOrWhiteSpace(_latitude) || string.IsNullOrWhiteSpace(_longitude);
     private int DeliveryMissingCount => DeliveryChecks().Count(c => c.Missing);
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
@@ -329,7 +461,13 @@ else
         await LoadFulfillmentAsync(orgId.Value);
         var devices = await Platform.GetPosDevicesAsync(orgId.Value);
         _deviceCount = devices.Data?.Count(d => d.BranchId == BranchId) ?? 0;
-        _showDeliverySettings = DeliveryPricingIncomplete;
+        _showDeliverySettings = false;
+        _showAddressLine2 = !string.IsNullOrWhiteSpace(_address2);
+        _mapOpen = false;
+        _detailsOpen = false;
+        _addressOpen = AddressIncomplete;
+        _hoursOpen = !BranchHoursScheduleUi.HasConfiguredHours(_hours);
+        _fulfillmentOpen = false;
         _loading = false;
     }
 
@@ -489,6 +627,61 @@ else
         else { _readiness = result.Data; _success = L["Branches_Saved"]; }
         _busy = false;
     }
+
+    private void FocusDetails()
+    {
+        _detailsOpen = true;
+        _detailsTick++;
+    }
+
+    private void FocusHours()
+    {
+        _hoursOpen = true;
+        _hoursTick++;
+    }
+
+    private void FocusFulfillment()
+    {
+        _fulfillmentOpen = true;
+        _fulfillmentTick++;
+    }
+
+    private string DeviceStatusLabel() =>
+        _deviceCount == 0 ? L["Branches_DevicesNone"] : string.Format(L["Branches_DevicesCount"].Value, _deviceCount);
+
+    private string CompactStatus(string label) =>
+        string.Equals(label, L["Branches_StatusSetupRequired"].Value, StringComparison.Ordinal)
+            ? L["Branches_ChipSetupRequired"].Value
+            : label;
+
+    private string FulfillmentRowStatus() =>
+        DeliveryMissingCount > 0
+            ? string.Format(L["Branches_MissingShort"].Value, DeliveryMissingCount)
+            : CompactStatus(FulfillmentSetupStatus());
+
+    private string DeliveryRowStatus() =>
+        DeliveryMissingCount > 0 && _readiness?.CanUseDelivery == true
+            ? string.Format(L["Branches_MissingShort"].Value, DeliveryMissingCount)
+            : CompactStatus(DeliveryStatus());
+
+    private string CountryName(string code)
+    {
+        var localized = L[$"Branches_Country_{code}"];
+        return localized.ResourceNotFound ? code : localized.Value;
+    }
+
+    private string HoursStatusLabel() =>
+        BranchHoursScheduleUi.HasConfiguredHours(_hours)
+            ? L["Branches_StatusReady"]
+            : L["Branches_StatusSetupRequired"];
+
+    private string FulfillmentSetupStatus() => _readiness switch
+    {
+        { OnlineOrdersPaused: true } => L["Branches_StatusPaused"],
+        { CustomerOrderingEnabled: true } => L["Branches_StatusEnabled"],
+        { CustomerOrderingReady: true } => L["Branches_StatusSetupReady"],
+        _ => L["Branches_StatusSetupRequired"]
+    };
 
     private string OnlineOrdersStatus() => _readiness switch
     {

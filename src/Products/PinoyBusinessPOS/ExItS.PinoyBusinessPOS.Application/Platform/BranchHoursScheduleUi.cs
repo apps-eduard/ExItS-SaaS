@@ -49,6 +49,9 @@ public static class BranchHoursScheduleUi
     public static bool ShowsTimes(bool isClosed, bool isOpen24Hours) =>
         !isClosed && !isOpen24Hours;
 
+    public static bool HasConfiguredHours(IEnumerable<BranchHoursDayDraft> days) =>
+        days.Any(d => !d.IsClosed);
+
     public static HashSet<string> DefaultCopyTargets(string sourceDay)
     {
         var targets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
