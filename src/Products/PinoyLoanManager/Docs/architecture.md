@@ -7,7 +7,7 @@
 |---|---|
 | Product | Pinoy Loan Manager / `pinoy-loan-manager` (proposed, PLM-D-00-01) |
 | Database | `ExItS_PinoyLoanManager` (proposed) / schema **Status: Open / Product Owner Decision Required** (PLM-D-00-02) |
-| Status | Draft — documentation baseline only; not product-owner approved |
+| Status | Draft — documentation baseline plus agreed operating-model direction; not product-owner approved |
 | Implementation present | No |
 
 ## System context
@@ -20,6 +20,8 @@
          ExItS_PinoyLoanManager (product only; not created)
 ```
 
+Surfaces (agreed direction, not implemented): Platform Admin (SaaS only) · Organization Web (full ops) · MAUI Hybrid (field subset) · ExItS Personal (borrower presentation). Detail: [Architecture/application-surface-model.md](Architecture/application-surface-model.md).
+
 Pinoy Loan Manager must never take a project or database dependency on PinoyBusinessPOS.
 
 ## Responsibility boundary
@@ -31,9 +33,9 @@ Pinoy Loan Manager must never take a project or database dependency on PinoyBusi
 | Product catalog / plans / subscriptions / entitlements | Yes | Enforce; no Platform table reads |
 | SaaS billing / Platform administration / Platform audit | Yes | No |
 | Borrower operational records | No | Yes (future) |
-| Loan-domain state and workflows | No | Yes (future) |
-| Loan operational financial state | No | Yes (future) |
-| Product-local authorization | No | Yes (future; roles open) |
+| Loan-domain state and workflows | No | Yes (future) — Traditional and Quick origination; one core Loan after disbursement |
+| Loan operational financial state | No | Yes (future) — loan ledger separate from collector cash |
+| Product-local authorization | No | Yes (future; presets recorded, grants open) |
 | Product DB / migrations | No | Yes (future) |
 | Product API / Web UI / MAUI UI / reports / product audit | No | Yes (future) |
 
@@ -73,19 +75,21 @@ Do **not** design the final generic Platform relationship schema here (**Status:
 
 ## Product modules
 
-Planning modules only. None are designed or implemented. Loan policy inside each module is open (PLM-D-00-08).
+Planning modules only. None are designed or implemented. Exact calculation policy inside each module remains open (PLM-D-00-08). Origination and cash direction: [Product/lending-operating-model.md](Product/lending-operating-model.md).
 
 | Module | Responsibility | Notes |
 |---|---|---|
 | Product access / isolation | Independent subscription, org isolation, commercial gate | Depends on D-P12-03; no Platform table reads |
-| Product-local authorization | Loan roles and grants | PLM-D-00-06 open; do not copy POS roles |
+| Product-local authorization | Loan presets + future grants | Presets recorded; grants open (PLM-D-00-06) |
 | Borrower foundation | Product-local borrower records | Optional Personal link; PLM-D-00-04 / PLM-D-00-05 open |
-| Loan product configuration | Configurable loan products | Rules not defined |
-| Application / approval | Intake and decisioning | Approval policy open |
-| Origination / disbursement | Starting a loan and releasing funds | Operational money model open (PLM-D-00-07) |
+| Loan product configuration | Traditional products and Quick Loan Templates | Templates are organization-configured, not built-in types |
+| Application / approval | Traditional application and Quick Loan Request | Manual approval default; no auto-approval |
+| Origination / disbursement | Starting a loan and releasing funds | Approved ≠ Disbursed; office or collector |
+| Shared Loan core | Ledger, balances, schedule, payments, penalties, collections, settlement, audit | One engine after disbursement |
 | Schedule / calculation engine | Schedules and calculations | Interest, amortization, rounding open |
 | Payment posting | Applying receipts | Allocation order open |
-| Collections / delinquency | Arrears handling | Penalties, delinquency, write-off open |
+| Collector cash / reconciliation | Float, collections cash, remittance, variance | Separate from loan ledger |
+| Collections / delinquency | Arrears, exceptions, waivers, reversals | Configurable; no hard-coded rate |
 | Reporting / documents | Product reports and documents | Contents open |
 | Security / audit / privacy | Product audit, consent, classification | See [security.md](security.md) |
 | Offline / MAUI field capabilities | Later native/offline support | Not authorized |
@@ -95,7 +99,7 @@ Planning modules only. None are designed or implemented. Loan policy inside each
 | Data | SoR | Cross-boundary |
 |---|---|---|
 | Platform Org / User / Personal ids | Platform | Guid / contract only — no FK |
-| Product operational entities (borrower, loan-domain, operational money, product audit) | Product DB | Never in Platform DB; never in POS DB |
+| Product operational entities (borrower, loan-domain, operational money, collector cash, product audit) | Product DB | Never in Platform DB; never in POS DB |
 | Commercial subscription state | Platform | Via approved contract only (D-P12-03 open) |
 | POS Customer / POS operational data | PinoyBusinessPOS | Pinoy Loan Manager must not read |
 
@@ -104,6 +108,8 @@ Planning modules only. None are designed or implemented. Loan policy inside each
 - Server will derive/validate org context; do not trust client org ids as authority alone.
 - Cross-org access: conceal using the Product Foundation default (404). This is isolation behavior, not a Loan business rule.
 - No shared operational DB with other products.
+- Multi-branch organizations are in-scope from the beginning; operational records may be branch-scoped later. Schema is not designed.
+- Initial operating currency: PHP. MVP may be PHP-only. Multi-currency implementation is not authorized.
 
 ## Isolation rules (non-negotiable)
 
@@ -117,10 +123,14 @@ Recorded as required intent. Not implemented.
 
 ## Client direction (proposed — not authorized)
 
+Agreed split (not implemented). Detail: [Architecture/application-surface-model.md](Architecture/application-surface-model.md).
+
 | Surface | Proposed direction |
 |---|---|
-| Web | Blazor Web |
-| Mobile / Desktop | .NET MAUI Blazor Hybrid |
+| Platform Admin Web | Existing unified Platform Admin — SaaS control plane only |
+| Organization Web | Blazor Web — full operational application |
+| Mobile / Desktop | .NET MAUI Blazor Hybrid — limited field / collector application |
+| ExItS Personal | Existing Personal — borrower presentation only |
 
 Possible later native MAUI capabilities (not designed):
 
@@ -164,8 +174,9 @@ Detail: `deployment-notes.md` when packaging begins. Not created in this package
 ## Explicit non-goals
 
 - Implementing code, projects, databases, migrations, APIs, UI, Docker, or solution entries in PLM-00
-- Inventing Loan calculation or collections policy
+- Finalizing Loan calculation algorithms or peso/percent rates
 - Designing the generic Platform relationship schema
-- Copying PinoyBusinessPOS architecture, roles, or money models
+- Copying PinoyBusinessPOS architecture, grants, or money models
 - Claiming production-secure authentication
 - Treating Dev/Testing commercial shortcuts as the production design
+- Using Platform Admin as the borrower-loan operations UI

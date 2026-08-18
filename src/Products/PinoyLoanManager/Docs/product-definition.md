@@ -8,15 +8,15 @@
 | Product name | Pinoy Loan Manager |
 | Platform product code | `pinoy-loan-manager` (proposed — **Status: Open / Product Owner Decision Required**, PLM-D-00-01) |
 | Docs root | `src/Products/PinoyLoanManager/Docs/` |
-| Status | Draft — documentation baseline only; not product-owner approved |
-| Last updated | 2026-08-18 |
+| Status | Draft — documentation baseline plus agreed operating-model direction; not product-owner approved |
+| Last updated | 2026-08-19 |
 | Implementation present | No |
 
 ## Purpose and users
 
-- Purpose: Independently subscribed ExItS product for **loan operations**. Exact product purpose, borrower types, loan products, and workflows are **not** defined. **Status: Open / Product Owner Decision Required** (PLM-D-00-08).
-- Target organizations: Independently subscribed ExItS organizations. Specific segments and operating models are **Status: Open / Product Owner Decision Required**.
-- Target users / jobs: **Status: Open / Product Owner Decision Required**. Do not copy PinoyBusinessPOS Owner / Manager / Cashier roles (PLM-D-00-06).
+- Purpose: Independently subscribed ExItS product for **lending operations**. Two origination paths are agreed: Traditional Loan and Quick Loan. After disbursement both converge into one core Loan model. Detail: [Product/lending-operating-model.md](Product/lending-operating-model.md). Exact calculation algorithms remain **Open / Product Owner Decision Required** (PLM-D-00-08).
+- Target organizations: Independently subscribed ExItS lending organizations. Multi-branch support is intended from the beginning; a single-branch organization may use one default branch.
+- Target users / jobs: Organization staff via Owner / Manager / Cashier / Collector **presets** (grants still open — PLM-D-00-06). Borrowers use ExItS Personal as a presentation surface only. Do not copy PinoyBusinessPOS grant sets even where display names overlap.
 
 Pinoy Loan Manager is a **separate first-class ExItS SaaS product**, a sibling of PinoyBusinessPOS. It is not a POS module, POS feature, or POS database extension.
 
@@ -36,7 +36,7 @@ ExItS Platform
 | Catalog / plans / subscription | Platform | **Required:** independent subscription for this product only. Catalog registration of `pinoy-loan-manager` is not done (PLM-D-00-01). |
 | Entitlements / commercial access | Platform facts | **DECISION:** D-P12-03 commercial-state transport — do not invent. Platform entitlement does not replace Loan product-local authorization. |
 | SaaS billing payments | Platform | Never store product operational money in Platform SaaS billing. |
-| Operational workflows / roles / money | **This product** | Not implemented. Roles and operational-money model remain open (PLM-D-00-06, PLM-D-00-07). |
+| Operational workflows / roles / money | **This product** | Not implemented. Role **presets** recorded; granular grants open (PLM-D-00-06). Ledger vs collector-cash direction recorded; schema open (PLM-D-00-07). |
 
 ## Boundaries (checklist)
 
@@ -45,8 +45,8 @@ Recorded as **required intent**. Nothing below is implemented.
 - [x] Independent product subscription (not shared with other products) — required intent
 - [ ] Separate database `ExItS_PinoyLoanManager` / schema **Status: Open / Product Owner Decision Required** (PLM-D-00-02) — proposed name only; not created
 - [x] No direct Platform table reads; no cross-product FKs — required intent
-- [ ] Product-local roles and grants defined — **Status: Open / Product Owner Decision Required** (PLM-D-00-06)
-- [ ] Operational money defined separately from SaaS billing — ownership boundary recorded; model open (PLM-D-00-07)
+- [ ] Product-local roles and grants defined — presets recorded; granular grants **Open / Product Owner Decision Required** (PLM-D-00-06)
+- [ ] Operational money defined separately from SaaS billing — ownership boundary and ledger-vs-cash direction recorded; schema open (PLM-D-00-07)
 - [x] Trusted org + product context enforced server-side — required intent; not implemented
 - [x] PHI / sensitive data: default **none** unless explicitly authorized below
 - [x] No customer-specific source forks (config only)
@@ -62,30 +62,41 @@ Additional isolation (required intent):
 
 | Surface | Ownership | Notes |
 |---|---|---|
-| API | Product | Intended. No API project authorized. |
-| Web UI | Product | Proposed: Blazor Web business / administration UI. No client project authorized (PLM-D-00-09). |
-| Mobile UI | Product | Proposed: .NET MAUI Blazor Hybrid. Possible later native capabilities: secure storage, camera/document capture, biometrics, connectivity, notifications, SQLite/offline support. None authorized. |
+| API | Product | Intended. No API project authorized. Personal/Loan API shape remains open. |
+| Platform Admin Web | Platform | Unified SaaS control plane. Must **not** become the normal borrower-loan operations UI. |
+| Organization Web UI | Product | Full operational lending application (proposed Blazor Web). No client project authorized (PLM-D-00-09). |
+| MAUI Hybrid UI | Product | Limited field / collector application. Not a duplicate of Organization Web. Native/offline capabilities not authorized. |
+| ExItS Personal | Platform (presentation) | Customer/borrower experience. Not a separate borrower app. Loan operational data remains this product’s authority. |
 | Reports | Product | Intended. Report contents **Status: Open / Product Owner Decision Required**. |
+
+Surface detail: [Architecture/application-surface-model.md](Architecture/application-surface-model.md).
 
 ## Operational money
 
-**Status: Open / Product Owner Decision Required** (PLM-D-00-07).
+**Status: Open / Product Owner Decision Required** for schema, posting rules, and calculation (PLM-D-00-07).
 
-Required boundary only:
+Required / agreed direction:
 
-- SaaS subscription / billing money remains Platform-owned.
-- Future Loan operational financial records remain Pinoy Loan Manager–owned and must never become Platform `SaaSPayment*` records.
-- Entities, ledgers, posting rules, and which money types exist are **not** defined. Do not copy PinoyBusinessPOS money models.
+- SaaS subscription / billing money remains Platform-owned (Organization → ExItS).
+- Borrower Loan Charges remain Pinoy Loan Manager–owned (Borrower → lending organization) and must never become Platform `SaaSPayment*` records.
+- Loan financial ledger and collector cash accountability are **separate facts**. See [Product/collector-cash-and-reconciliation.md](Product/collector-cash-and-reconciliation.md).
+- Preferred Platform usage billable event: **LOAN DISBURSED** (not Loan Approved). Transport remains D-P12-03.
+- Entities, posting algorithms, and journal entries are **not** defined. Do not copy PinoyBusinessPOS money models.
 
 ## Product-local roles and grants (summary)
 
-**Status: Open / Product Owner Decision Required** (PLM-D-00-06).
+Role **presets** recorded; granular grants **Open / Product Owner Decision Required** (PLM-D-00-06).
 
-No Loan roles or grants are defined. Do **not** copy POS Owner / Manager / Cashier.
+Do **not** hard-code authorization to role names. Do **not** copy PinoyBusinessPOS grant sets.
 
-| Role | Purpose | Key grants |
+| Preset | Purpose | Key grants |
 |---|---|---|
-| Not defined | Final Loan roles are not invented in this package | Not defined |
+| Owner | Organization-level Loan Manager administration | Not defined (future product-local grants) |
+| Manager | Lending operations and supervision | Not defined |
+| Cashier | Cash custody, float, remittance, office cash | Not defined |
+| Collector | Field collection, assigned borrowers, remittance | Not defined |
+
+Separation-of-duty baseline and full text: [Product/lending-operating-model.md](Product/lending-operating-model.md), [authorization-matrix.md](authorization-matrix.md).
 
 Access intersection (required, not implemented): trusted actor + trusted organization context + Platform product access + valid commercial state + required entitlement + active Loan product-local role + required Loan product-local grant + resource/workflow authorization.
 
@@ -104,21 +115,24 @@ Detail: [authorization-matrix.md](authorization-matrix.md).
 
 **Status: Open / Product Owner Decision Required.**
 
-This package records only:
+This package records:
 
 - documentation workspace (PLM-00-WP01, completed)
-- product definition and architecture baseline (this package)
+- product definition and architecture baseline (PLM-00-WP02, completed)
+- lending operating model and Quick Loan baseline (PLM-00-WP03, this package)
 
-No loan MVP capability is approved.
+No loan MVP **implementation** is approved. Calculation algorithms, peso/percent rates, and legal validation remain open.
 
 ## Explicit exclusions
 
 - Loan implementation, entities, calculations, workflows, and business rules
 - .NET projects, tests, solution entries, migrations, Docker, and deployment
-- Final Loan roles/grants
+- Final Loan grant matrix (presets only)
 - Generic Platform cross-product relationship schema
-- Copying PinoyBusinessPOS domain, roles, or financial models
-- Interest method/formula, amortization, loan types, payment allocation, rounding, grace periods, penalties, delinquency, approval limits, credit scoring, collateral, refinancing, restructuring, write-off, collections policy, and legal/regulatory operating rules (PLM-D-00-08)
+- Copying PinoyBusinessPOS domain, grants, or financial models
+- Exact interest/amortization algorithms, peso or percent rates, due-date generation, payment allocation, early settlement, penalty amounts, legal/regulatory operating rules (PLM-D-00-08 and related open areas)
+- Auto-approval of Quick Loans
+- Treating any recorded rate, fee, penalty, or workflow as legally compliant
 - Production authentication (R-091)
 - Final Platform→product commercial-state transport (D-P12-03)
 
@@ -138,11 +152,12 @@ No loan MVP capability is approved.
 | PLM-D-00-03 | Physical source / test / deploy layout | Scaffold (PLM-01) |
 | PLM-D-00-04 | Generic Platform cross-product relationship model | Personal multi-product participation |
 | PLM-D-00-05 | Personal-to-Borrower linking mechanism | Borrower identity design (PLM-04) |
-| PLM-D-00-06 | Loan roles and grants | Authorization (PLM-03) |
-| PLM-D-00-07 | Operational financial model | Origination, payments, collections |
+| PLM-D-00-06 | Loan roles and grants (presets recorded; grants open) | Authorization (PLM-03) |
+| PLM-D-00-07 | Operational financial model (ledger vs cash direction recorded; schema open) | Origination, payments, collections |
 | PLM-D-00-08 | Loan business / calculation rules | Product configuration through collections |
 | PLM-D-00-09 | Web / MAUI component-sharing strategy | Client scaffold |
 | PLM-D-00-10 | Product documentation baseline completion / owner approval | Closing PLM-00 |
+| PLM-D-00-11 | External legal/compliance validation before Production | Production use |
 | D-P12-03 | Commercial-state transport | Product access enforcement |
 | R-091 | Production authentication | Production readiness |
 | D-P12-05 | Honest Dev/Testing vs Production language | Tied to R-091 |
@@ -152,6 +167,11 @@ No loan MVP capability is approved.
 | Doc | Path |
 |---|---|
 | Architecture | [architecture.md](architecture.md) |
+| Application surfaces | [Architecture/application-surface-model.md](Architecture/application-surface-model.md) |
+| Lending operating model | [Product/lending-operating-model.md](Product/lending-operating-model.md) |
+| Quick Loan | [Product/quick-loan-model.md](Product/quick-loan-model.md) |
+| Collector cash | [Product/collector-cash-and-reconciliation.md](Product/collector-cash-and-reconciliation.md) |
+| Penalty / exception / waiver | [Product/penalty-exception-and-waiver-model.md](Product/penalty-exception-and-waiver-model.md) |
 | Security | [security.md](security.md) |
 | Authorization | [authorization-matrix.md](authorization-matrix.md) |
 | Development plan | [development-plan.md](development-plan.md) |

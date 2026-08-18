@@ -7,11 +7,12 @@
 |---|---|
 | Product | Pinoy Loan Manager |
 | Current phase | PLM-00 Foundation & Product Decisions |
+| Current work package | PLM-00-WP03 Lending Operating Model & Quick Loan Baseline |
 | Status | Draft — planning only |
 
 ## Phase objective
 
-Establish product documentation, architecture boundaries, Personal/Borrower intent, and an honest open-decision register. No Loan implementation.
+Establish product documentation, architecture boundaries, Personal/Borrower intent, agreed lending operating-model direction, and an honest open-decision register. No Loan implementation.
 
 ## Scope
 
@@ -19,12 +20,13 @@ Establish product documentation, architecture boundaries, Personal/Borrower inte
 
 - Canonical Product Foundation documents under `Docs/`
 - Isolation and Personal/Borrower planning rules
+- Agreed origination, surface, role-preset, Quick Loan, collector-cash, and penalty direction (WP03)
 - Planning buckets PLM-00 through PLM-14
 
 ### Excluded
 
 - Code, projects, database objects, migrations, APIs, UI, Docker, deployment, solution changes
-- Final Loan roles and calculation/collections policy
+- Final Loan grant matrix and calculation/penalty rates
 - Generic Platform relationship schema
 - Production authentication (R-091) unless a later phase explicitly delivers it
 - Final commercial-state transport (D-P12-03) unless explicitly authorized
@@ -33,9 +35,10 @@ Establish product documentation, architecture boundaries, Personal/Borrower inte
 
 | WP | Name | Status | Depends on |
 |---|---|---|---|
-| PLM-00-WP01 | Documentation Workspace | Completed | none |
-| PLM-00-WP02 | Product Definition & Architecture Baseline | Current | PLM-00-WP01 |
-| PLM-00-WP03 | Domain Decision Register / Loan Business Rule Discovery | Next proposed | PLM-00-WP02 |
+| PLM-00-WP01 | Product Documentation Workspace | Completed | none |
+| PLM-00-WP02 | Product Definition & Architecture Baseline | Completed | PLM-00-WP01 |
+| PLM-00-WP03 | Lending Operating Model & Quick Loan Baseline | Current | PLM-00-WP02 |
+| PLM-00-WP04 | Financial Calculation & Loan Lifecycle Decision Baseline | Next proposed | PLM-00-WP03 |
 
 Later phases (PLM-01 … PLM-14) have no authorized work packages yet.
 
@@ -69,7 +72,8 @@ Later phases (PLM-01 … PLM-14) have no authorized work packages yet.
 ## Acceptance criteria (phase)
 
 - [x] Documentation workspace exists (WP01)
-- [x] Canonical definition/architecture/security/plan docs exist (this WP)
+- [x] Canonical definition/architecture/security/plan docs exist (WP02)
+- [x] Lending operating model and Quick Loan baseline recorded (this WP)
 - [ ] Product-owner approval of documentation baseline (PLM-D-00-10)
 - [ ] Isolation contract preserved in any later implementation (separate DB; no Platform table reads; product-local roles)
 - [ ] Docs match implementation (no implementation yet)
@@ -86,9 +90,9 @@ Later phases (PLM-01 … PLM-14) have no authorized work packages yet.
 
 ## Exact next package
 
-**PLM-00-WP03 — Domain Decision Register / Loan Business Rule Discovery** (do not begin until authorized)
+**PLM-00-WP04 — Financial Calculation & Loan Lifecycle Decision Baseline** (do not begin until authorized)
 
-Planning/documentation only. Collect product-owner questions for loan policy without deciding formulas, roles, or schema. Do not implement.
+Documentation / product-rule planning only. Collect and structure remaining calculation and lifecycle decisions (interest methods, due dates, allocation, statuses) without implementing code, selecting peso/percent rates, or claiming legal compliance.
 
 ## Phase closeout requirements
 

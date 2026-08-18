@@ -11,7 +11,7 @@ Always load with:
 5. The active work-package prompt/report
 6. Files required for the task only
 
-**Status:** Draft — PLM-00 documentation baseline
+**Status:** Draft — PLM-00 documentation baseline plus agreed operating-model direction
 **Implementation present:** No
 **Documentation root:** `src/Products/PinoyLoanManager/Docs/` (D-P12-02)
 
@@ -26,11 +26,21 @@ Pinoy Loan Manager is a **separate first-class ExItS SaaS product**, a sibling o
 | [product-definition.md](product-definition.md) | Purpose, ownership, boundaries, exclusions |
 | [architecture.md](architecture.md) | System, data, Personal/Borrower, and client boundaries |
 | [security.md](security.md) | Security, privacy, consent |
-| [authorization-matrix.md](authorization-matrix.md) | Access layers; roles/grants remain open |
+| [authorization-matrix.md](authorization-matrix.md) | Access layers; role presets recorded; grants open |
 | [development-plan.md](development-plan.md) | Delivery buckets and testing expectations |
 | [roadmap.md](roadmap.md) | Phases and work packages |
 | [risks-and-decisions.md](risks-and-decisions.md) | Open risks and decisions |
 | [FILE-MANIFEST.md](FILE-MANIFEST.md) | Path inventory |
+
+Agreed operating-model direction (not implementation specs):
+
+| Doc | Description |
+|---|---|
+| [Product/lending-operating-model.md](Product/lending-operating-model.md) | Origination paths, shared Loan core, roles, branch, PHP, Platform usage |
+| [Product/quick-loan-model.md](Product/quick-loan-model.md) | Templates, snapshot, eligibility, Personal flow |
+| [Product/collector-cash-and-reconciliation.md](Product/collector-cash-and-reconciliation.md) | Loan ledger vs collector cash |
+| [Product/penalty-exception-and-waiver-model.md](Product/penalty-exception-and-waiver-model.md) | Penalty, exception, waiver, reversal, post-maturity |
+| [Architecture/application-surface-model.md](Architecture/application-surface-model.md) | Platform Admin, Org Web, MAUI, Personal |
 
 Category folders below are indexes only. They must not become a second source of truth.
 
@@ -40,8 +50,8 @@ Category folders below are indexes only. They must not become a second source of
 
 | Directory | Purpose |
 |---|---|
-| [Product/](Product/README.md) | **WHAT** — points to [product-definition.md](product-definition.md) |
-| [Architecture/](Architecture/README.md) | **HOW** — points to [architecture.md](architecture.md) |
+| [Product/](Product/README.md) | **WHAT** — points to [product-definition.md](product-definition.md) and operating-model docs |
+| [Architecture/](Architecture/README.md) | **HOW** — points to [architecture.md](architecture.md) and [Architecture/application-surface-model.md](Architecture/application-surface-model.md) |
 | [Security/](Security/README.md) | Access and privacy — points to [security.md](security.md) and [authorization-matrix.md](authorization-matrix.md) |
 | [Decisions/](Decisions/README.md) | Future ADRs — register is [risks-and-decisions.md](risks-and-decisions.md) |
 | [Phases/](Phases/README.md) | Sequencing — points to [roadmap.md](roadmap.md) and [development-plan.md](development-plan.md) |
@@ -78,16 +88,16 @@ Authoritative text: [product-definition.md](product-definition.md) and [architec
 
 ## Personal / Borrower
 
-ExItS Personal is Platform-owned and product-neutral. POS Customer ≠ Loan Borrower. Linking is optional, consent-required, and never auto-activated from EX ID / QR resolution. Authoritative text: [architecture.md](architecture.md).
+ExItS Personal is Platform-owned and product-neutral. POS Customer ≠ Loan Borrower. Linking is optional, consent-required, and never auto-activated from EX ID / QR resolution. Personal is a presentation surface; Loan operational data remains this product’s authority. Authoritative text: [architecture.md](architecture.md), [Architecture/application-surface-model.md](Architecture/application-surface-model.md).
 
 ---
 
 ## Client direction (proposed)
 
-Web: Blazor Web. Mobile/Desktop: .NET MAUI Blazor Hybrid. No client project is authorized.
+Organization Web: Blazor Web (full operations). MAUI Blazor Hybrid: limited field/collector application. Platform Admin: SaaS control plane only. No client project is authorized.
 
 ---
 
 ## Explicit exclusions
 
-No implementation exists. Loan calculation and collections policy are not defined (PLM-D-00-08). Do not copy PinoyBusinessPOS roles or money models.
+No implementation exists. Exact loan calculation algorithms and peso/percent rates are not defined (PLM-D-00-08). Do not copy PinoyBusinessPOS grants or money models. No recorded workflow is claimed legally compliant (PLM-D-00-11).

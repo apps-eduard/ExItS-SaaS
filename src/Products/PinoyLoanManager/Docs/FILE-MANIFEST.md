@@ -2,7 +2,7 @@
 
 **Status:** Foundation / planning only
 **Implementation present:** No
-**Current work package:** PLM-00-WP02 — Product Definition & Architecture Baseline
+**Current work package:** PLM-00-WP03 — Lending Operating Model & Quick Loan Baseline
 
 This file is the navigation map for future Cursor work. Load this product’s `Docs/` after the shared Product Foundation reference. Do not scan PinoyBusinessPOS implementation by default.
 
@@ -14,19 +14,29 @@ Shared contracts to load with this product:
 
 ---
 
-## Canonical documents (PLM-00-WP02)
+## Canonical documents
 
 | Path | Purpose | Status | Implementation present |
 |---|---|---|---|
 | `Docs/product-definition.md` | Product identity, ownership, boundaries, exclusions | Foundation / Planning Only | No |
 | `Docs/architecture.md` | Technical and data boundaries; Personal/Borrower intent | Foundation / Planning Only | No |
 | `Docs/security.md` | Security, privacy, consent | Foundation / Planning Only | No |
-| `Docs/authorization-matrix.md` | Access intersection; roles/grants open | Foundation / Planning Only | No |
+| `Docs/authorization-matrix.md` | Access intersection; role presets; grants open | Foundation / Planning Only | No |
 | `Docs/development-plan.md` | Delivery buckets PLM-00–PLM-14 | Foundation / Planning Only | No |
 | `Docs/roadmap.md` | Current phase and work-package sequence | Foundation / Planning Only | No |
 | `Docs/risks-and-decisions.md` | Open risks and decisions | Foundation / Planning Only | No |
 
-## Workspace indexes (PLM-00-WP01, updated in WP02)
+## Operating-model direction (PLM-00-WP03)
+
+| Path | Purpose | Status | Implementation present |
+|---|---|---|---|
+| `Docs/Product/lending-operating-model.md` | Origination paths, shared Loan core, roles, branch, PHP, Platform usage | Agreed direction / not a spec | No |
+| `Docs/Product/quick-loan-model.md` | Templates, snapshot, eligibility, Personal flow | Agreed direction / not a spec | No |
+| `Docs/Product/collector-cash-and-reconciliation.md` | Loan ledger vs collector cash | Agreed direction / not a spec | No |
+| `Docs/Product/penalty-exception-and-waiver-model.md` | Penalty, exception, waiver, reversal, post-maturity | Agreed direction / not a spec | No |
+| `Docs/Architecture/application-surface-model.md` | Platform Admin, Org Web, MAUI, Personal | Agreed direction / not a spec | No |
+
+## Workspace indexes (PLM-00-WP01, updated in WP02/WP03)
 
 | Path | Purpose | Status | Implementation present |
 |---|---|---|---|
@@ -56,4 +66,5 @@ Shared contracts to load with this product:
 | `ExItS.slnx` entries | Not authorized |
 | `Docs/deployment-notes.md` | Optional until packaging |
 | `Docs/Reports/<WP-id>.md` | In-tree WP report not required for this docs-only WP |
-| Filled Loan policy (interest, amortization, penalties, …) | Owner decision (PLM-D-00-08) |
+| Final calculation algorithms / peso or percent rates | Owner decision (PLM-D-00-08) |
+| Legal/compliance validation | Open (PLM-D-00-11) |

@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Status | Draft — documentation baseline only; not product-owner approved |
+| Status | Draft — documentation baseline plus agreed operating-model direction; not product-owner approved |
 | Implementation present | No |
 
 ## Authentication boundary
@@ -19,7 +19,7 @@
 ## Product authorization
 
 - Platform product access / commercial state / entitlements: **entry gate only**
-- Product-local roles and grants: **operational authority** ([authorization-matrix.md](authorization-matrix.md)) — **Status: Open / Product Owner Decision Required** (PLM-D-00-06)
+- Product-local roles and grants: **operational authority** ([authorization-matrix.md](authorization-matrix.md)) — presets recorded; granular grants **Open / Product Owner Decision Required** (PLM-D-00-06)
 - Both layers must allow the action; neither bypasses the other
 - Platform entitlement does not replace Loan product-local authorization
 
@@ -59,7 +59,7 @@ Optional Personal-to-Borrower linking, if implemented later:
 |---|---|---|
 | PHI | **No** (default) | Not authorized. Do not add unless explicitly designed later. |
 | PII | Expected later / not present | Handling, retention, and minimization **Status: Open / Product Owner Decision Required**. |
-| Operational financial | Intended later / not present | Remains in the Loan product database when defined (PLM-D-00-07). Never in Platform SaaS billing. |
+| Operational financial | Intended later / not present | Remains in the Loan product database when defined (PLM-D-00-07). Loan ledger and collector cash are separate facts. Never in Platform SaaS billing. |
 | Secrets / credentials | Never in git | No PLM secret store is implemented. |
 
 ## Secrets
@@ -72,7 +72,7 @@ Optional Personal-to-Borrower linking, if implemented later:
 | Concern | Approach |
 |---|---|
 | Application logs | **Status: Open / Product Owner Decision Required** — no secrets/card/PHI dumps |
-| Product audit / immutable history | Intended product-owned audit/history. Detail **Status: Open / Product Owner Decision Required**. |
+| Product audit / immutable history | Intended product-owned audit/history. Posted disbursement, payment, penalty, waiver, reversal, collector cash movement, and remittance must not be silently edited or deleted. Detail **Status: Open / Product Owner Decision Required**. |
 | Platform audit | Platform-owned; do not push operational payloads that violate boundary |
 
 ## Encryption
@@ -110,7 +110,8 @@ Optional Personal-to-Borrower linking, if implemented later:
 | R-091 | Production authentication | Open |
 | D-P12-03 | Commercial-state transport; risk of inventing Platform table reads or copying POS Dev headers as production design | Open |
 | D-P12-05 | Dishonest Dev/Testing vs Production language | Open |
-| PLM-D-00-06 | Missing product-local roles/grants | Open |
+| PLM-D-00-06 | Missing product-local grant matrix (presets recorded) | Open |
 | PLM-D-00-05 | Undesigned consent/linking mechanism | Open |
+| PLM-D-00-11 | Legal/compliance validation not performed | Open |
 
 Full register: [risks-and-decisions.md](risks-and-decisions.md).
