@@ -71,6 +71,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<OrganizationContextPreferenceRecord> OrganizationContextPreferences =>
         Set<OrganizationContextPreferenceRecord>();
     internal DbSet<PlatformAccessTokenRecord> PlatformAccessTokens => Set<PlatformAccessTokenRecord>();
+    internal DbSet<PlatformDeviceRecoveryCredentialRecord> PlatformDeviceRecoveryCredentials =>
+        Set<PlatformDeviceRecoveryCredentialRecord>();
     internal DbSet<PlatformCredentialTokenRecord> PlatformCredentialTokens => Set<PlatformCredentialTokenRecord>();
     internal DbSet<PlatformExternalLoginRecord> PlatformExternalLogins => Set<PlatformExternalLoginRecord>();
     internal DbSet<OrganizationMembershipRecord> OrganizationMemberships => Set<OrganizationMembershipRecord>();
@@ -1081,6 +1083,41 @@ public sealed class PlatformDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.OrganizationId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<PlatformDeviceRecoveryCredentialRecord>(entity =>
+        {
+            entity.ToTable("platform_device_recovery_credentials");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.InstallationDeviceId)
+                .HasColumnName("installation_device_id")
+                .HasMaxLength(128)
+                .IsRequired();
+            entity.Property(e => e.TokenHash).HasColumnName("token_hash").HasMaxLength(128).IsRequired();
+            entity.HasIndex(e => e.TokenHash).IsUnique();
+            entity.HasIndex(e => new { e.UserId, e.InstallationDeviceId, e.RevokedAtUtc });
+            entity.Property(e => e.SecurityStampAtIssue)
+                .HasColumnName("security_stamp_at_issue")
+                .HasMaxLength(64)
+                .IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.LastUsedAtUtc).HasColumnName("last_used_at_utc");
+            entity.Property(e => e.IdleExpiresAtUtc).HasColumnName("idle_expires_at_utc");
+            entity.Property(e => e.AbsoluteExpiresAtUtc).HasColumnName("absolute_expires_at_utc");
+            entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc");
+            entity.Property(e => e.RotationVersion).HasColumnName("rotation_version");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<PlatformCredentialTokenRecord>(entity =>

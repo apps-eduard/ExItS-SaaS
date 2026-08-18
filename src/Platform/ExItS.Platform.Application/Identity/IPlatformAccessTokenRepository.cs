@@ -36,10 +36,22 @@ public sealed class PlatformAccessTokenOptions
 {
     public const string SectionName = "PlatformAuthentication:AccessToken";
 
+    public int LifetimeMinutes { get; set; } = 60;
+
     public int LifetimeHours { get; set; } = 8;
 
     /// <summary>Upper bound applied when issuing tokens (Production validation forbids LifetimeHours above this).</summary>
     public int MaxLifetimeHours { get; set; } = 24;
+
+    public TimeSpan ResolveLifetime()
+    {
+        if (LifetimeMinutes > 0)
+        {
+            return TimeSpan.FromMinutes(LifetimeMinutes);
+        }
+
+        return TimeSpan.FromHours(ResolveLifetimeHours());
+    }
 
     public int ResolveLifetimeHours() =>
         Math.Clamp(LifetimeHours, 1, Math.Max(1, MaxLifetimeHours));

@@ -352,6 +352,74 @@ internal static class AuthEndpoints
         .RequireRateLimiting(PlatformSecurityPipeline.AuthTokenOpsRateLimitPolicy)
         .AllowAnonymous();
 
+        app.MapPost("/api/v1/platform/auth/recovery/enroll", async (
+            HttpContext http,
+            EnrollDeviceRecoveryCredential useCase,
+            IntrospectPlatformAccessToken introspectAccessToken,
+            CancellationToken ct) =>
+        {
+            var resolvedUserId = await TryResolveAuthenticatedUserIdAsync(http, introspectAccessToken, ct)
+                .ConfigureAwait(false);
+            if (resolvedUserId is not Guid userId)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Authentication is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var deviceId = ExtractInstallationDeviceId(http);
+            var result = await useCase.ExecuteAsync(userId, deviceId ?? string.Empty, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        })
+        .RequireRateLimiting(PlatformSecurityPipeline.AuthTokenOpsRateLimitPolicy)
+        .AllowAnonymous();
+
+        app.MapPost("/api/v1/platform/auth/recovery/exchange", async (
+            RecoveryExchangeRequest body,
+            HttpContext http,
+            ExchangeDeviceRecoveryCredential useCase,
+            CancellationToken ct) =>
+        {
+            var deviceId = ExtractInstallationDeviceId(http);
+            var result = await useCase
+                .ExecuteAsync(
+                    body.RecoveryCredential,
+                    deviceId ?? string.Empty,
+                    body.OrganizationId,
+                    body.ProductCode,
+                    ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        })
+        .RequireRateLimiting(PlatformSecurityPipeline.AuthLoginRateLimitPolicy)
+        .AllowAnonymous();
+
+        app.MapPost("/api/v1/platform/auth/recovery/revoke", async (
+            HttpContext http,
+            RevokeDeviceRecoveryCredential useCase,
+            IntrospectPlatformAccessToken introspectAccessToken,
+            CancellationToken ct) =>
+        {
+            var resolvedUserId = await TryResolveAuthenticatedUserIdAsync(http, introspectAccessToken, ct)
+                .ConfigureAwait(false);
+            if (resolvedUserId is not Guid userId)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Authentication is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var deviceId = ExtractInstallationDeviceId(http);
+            var result = await useCase
+                .ExecuteForUserAndDeviceAsync(userId, deviceId ?? string.Empty, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, _ => Results.NoContent());
+        })
+        .RequireRateLimiting(PlatformSecurityPipeline.AuthTokenOpsRateLimitPolicy)
+        .AllowAnonymous();
+
         app.MapGet("/api/v1/platform/auth/account-profiles", async (
             HttpContext http,
             ListAccountProfilesForUser useCase,
@@ -600,6 +668,45 @@ internal static class AuthEndpoints
         return null;
     }
 
+    private static async Task<Guid?> TryResolveAuthenticatedUserIdAsync(
+        HttpContext http,
+        IntrospectPlatformAccessToken introspectAccessToken,
+        CancellationToken cancellationToken)
+    {
+        if (TryGetAuthenticatedUserId(http, out var sessionUserId))
+        {
+            return sessionUserId;
+        }
+
+        var bearer = ExtractBearerToken(http);
+        if (string.IsNullOrWhiteSpace(bearer))
+        {
+            return null;
+        }
+
+        var introspection = await introspectAccessToken.ExecuteAsync(bearer, cancellationToken).ConfigureAwait(false);
+        if (!introspection.Active || introspection.UserId is not Guid bearerUserId || bearerUserId == Guid.Empty)
+        {
+            return null;
+        }
+
+        return bearerUserId;
+    }
+
+    private static string? ExtractInstallationDeviceId(HttpContext http)
+    {
+        if (http.Request.Headers.TryGetValue("X-Pos-Installation-Device-Id", out var values))
+        {
+            var deviceId = values.ToString();
+            if (!string.IsNullOrWhiteSpace(deviceId))
+            {
+                return deviceId.Trim();
+            }
+        }
+
+        return null;
+    }
+
     private static bool TryGetAuthenticatedUserId(HttpContext http, out Guid userId)
     {
         userId = Guid.Empty;
@@ -691,4 +798,8 @@ internal static class AuthEndpoints
         string? ProductCode);
     internal sealed record BindAccessTokenRequest(string? AccessToken, Guid OrganizationId, string? ProductCode);
     internal sealed record IntrospectAccessTokenRequest(string? Token);
+    internal sealed record RecoveryExchangeRequest(
+        string? RecoveryCredential,
+        Guid? OrganizationId,
+        string? ProductCode);
 }

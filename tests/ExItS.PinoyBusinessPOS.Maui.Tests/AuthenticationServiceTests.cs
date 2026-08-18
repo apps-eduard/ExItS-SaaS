@@ -217,31 +217,55 @@ public sealed class AuthenticationServiceTests
     }
 
     [Fact]
-    public async Task TryReissue_updates_access_token_from_session_grant()
+    public async Task TryReissue_updates_access_token_from_recovery_exchange()
     {
         var userId = Guid.NewGuid();
         var tokens = new MemorySecureTokenStore();
+        var recovery = new DeviceRecoveryCredentialStore(tokens);
+        var device = new FakeDeviceIdentity("device-reissue");
         var current = new CurrentUserContext();
         var now = DateTimeOffset.UtcNow;
+        var token = new PlatformAccessTokenIssueDto(
+            AccessToken: "new-access",
+            TokenType: "Bearer",
+            TokenId: Guid.NewGuid(),
+            UserId: userId,
+            Username: "owner",
+            DisplayName: "Owner",
+            Email: "o@example.com",
+            ExpiresAtUtc: now.AddHours(1),
+            OrganizationId: null,
+            OrganizationDisplayName: null,
+            ProductCode: null,
+            OrganizationSelectionState: "None",
+            ActiveOrganizationCount: 0,
+            ProductAccessAllowed: false,
+            ProductAccessReasonCode: null);
         var access = new FakeAccessClient
         {
-            IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Success(new PlatformAccessTokenIssueDto(
-                AccessToken: "new-access",
-                TokenType: "Bearer",
-                TokenId: Guid.NewGuid(),
-                UserId: userId,
-                Username: "owner",
-                DisplayName: "Owner",
-                Email: "o@example.com",
-                ExpiresAtUtc: now.AddHours(8),
-                OrganizationId: null,
-                OrganizationDisplayName: null,
-                ProductCode: null,
-                OrganizationSelectionState: "None",
-                ActiveOrganizationCount: 0,
-                ProductAccessAllowed: false,
-                ProductAccessReasonCode: null))
+            ExchangeRecoveryResult = ApiResult<DeviceRecoveryCredentialExchangeDto>.Success(
+                new DeviceRecoveryCredentialExchangeDto(
+                    token,
+                    "rotated-recovery",
+                    now.AddDays(30),
+                    now.AddDays(90))),
+            IntrospectResult = ApiResult<PlatformAccessTokenIntrospectionDto>.Success(
+                new PlatformAccessTokenIntrospectionDto(
+                    Active: true,
+                    TokenId: token.TokenId,
+                    UserId: userId,
+                    Username: "owner",
+                    DisplayName: "Owner",
+                    OrganizationId: null,
+                    OrganizationDisplayName: null,
+                    ProductCode: null,
+                    ExpiresAtUtc: now.AddHours(1),
+                    ProductAccessAllowed: false,
+                    ProductAccessReasonCode: null,
+                    SubscriptionStatus: null,
+                    EnabledFeatureCodes: []))
         };
+        await recovery.SaveAsync(userId, device.DeviceId, "recovery-secret", now.AddDays(30), now.AddDays(90));
         var session = new AuthSession(
             userId,
             "Owner",
@@ -258,10 +282,20 @@ public sealed class AuthenticationServiceTests
         current.Set(session);
         await new SecureSessionStore(tokens).SaveAsync(session, Guid.NewGuid().ToString("N"));
 
-        var sut = CreateSut("Development", access, tokens, currentUser: current, connectivity: new FakeConnectivity(true));
+        var sut = new AuthenticationService(
+            new StubAppInfo("Development"),
+            new SecureSessionStore(tokens),
+            current,
+            new MemoryOnboardingStore(),
+            access,
+            new LoggingAuthEventSink(NullLogger<LoggingAuthEventSink>.Instance),
+            deviceIdentity: device,
+            connectivity: new FakeConnectivity(true),
+            recoveryStore: recovery);
         Assert.True(await sut.TryReissueAccessTokenAsync());
         Assert.Equal("new-access", current.Session?.AccessToken);
         Assert.Equal("new-access", await tokens.GetAsync(SecureTokenKeys.AccessToken));
+        Assert.Equal(1, access.ExchangeRecoveryCalls);
     }
 
     [Fact]
@@ -1575,6 +1609,7 @@ public sealed class AuthenticationServiceTests
         Assert.False(unlock.Succeeded);
         Assert.Equal(PinSignInServerOutcome.NotAttempted, unlock.ServerOutcome);
         Assert.Equal(issueBefore, harness.Access.IssueTokenCalls);
+        Assert.Equal(0, harness.Access.ExchangeRecoveryCalls);
         Assert.Equal(introspectBefore, harness.Access.IntrospectCalls);
     }
 
@@ -1597,10 +1632,10 @@ public sealed class AuthenticationServiceTests
         harness.Current.Set((await new SecureSessionStore(harness.Tokens!).LoadAsync()).Session);
         await harness.Auth.LogoutAsync();
         Assert.False(harness.Current.IsAuthenticated);
-        Assert.Equal("platform-session-a", await harness.Recovery!.LoadAsync(harness.UserId));
+        Assert.NotNull(await harness.Recovery!.LoadAsync(harness.UserId));
 
         ConfigureOnlineRecovery(harness, harness.UserId, "token-online-a");
-        var issueBefore = harness.Access.IssueTokenCalls;
+        var exchangeBefore = harness.Access.ExchangeRecoveryCalls;
         var unlock = await harness.Auth.UnlockOfflineWithPinAsync(harness.UserId, "123456");
 
         Assert.True(unlock.Succeeded);
@@ -1608,7 +1643,7 @@ public sealed class AuthenticationServiceTests
         Assert.Equal(harness.UserId, unlock.Session!.UserId);
         Assert.Equal("token-online-a", unlock.Session.AccessToken);
         Assert.True(unlock.Session.HasPosAccess);
-        Assert.True(harness.Access.IssueTokenCalls > issueBefore);
+        Assert.True(harness.Access.ExchangeRecoveryCalls > exchangeBefore);
     }
 
     [Fact]
@@ -1617,7 +1652,7 @@ public sealed class AuthenticationServiceTests
         var harness = await SeedOnlinePinHarnessAsync();
         harness.Current.Set((await new SecureSessionStore(harness.Tokens!).LoadAsync()).Session);
         await harness.Auth.LogoutAsync();
-        harness.Access.IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Timeout();
+        harness.Access.ExchangeRecoveryResult = ApiResult<DeviceRecoveryCredentialExchangeDto>.Timeout();
 
         var unlock = await harness.Auth.UnlockOfflineWithPinAsync(harness.UserId, "123456");
         Assert.True(unlock.Succeeded);
@@ -1625,7 +1660,7 @@ public sealed class AuthenticationServiceTests
         Assert.Null(unlock.Session!.AccessToken);
         Assert.Equal("offline_grant", unlock.Session.AccessReasonCode);
         Assert.NotNull(await harness.GrantStore.LoadGrantAsync(harness.UserId));
-        Assert.Equal("platform-session-a", await harness.Recovery!.LoadAsync(harness.UserId));
+        Assert.NotNull(await harness.Recovery!.LoadAsync(harness.UserId));
     }
 
     [Fact]
@@ -1634,7 +1669,7 @@ public sealed class AuthenticationServiceTests
         var harness = await SeedOnlinePinHarnessAsync();
         harness.Current.Set((await new SecureSessionStore(harness.Tokens!).LoadAsync()).Session);
         await harness.Auth.LogoutAsync();
-        harness.Access.IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Unauthorized(
+        harness.Access.ExchangeRecoveryResult = ApiResult<DeviceRecoveryCredentialExchangeDto>.Unauthorized(
             new ApiError("denied", "revoked", "application.pos_device.revoked", null, 401));
 
         var unlock = await harness.Auth.UnlockOfflineWithPinAsync(harness.UserId, "123456");
@@ -1681,7 +1716,12 @@ public sealed class AuthenticationServiceTests
             harness.GrantOptions);
         await grantService.EstablishFromOnlineSessionAsync(sessionB, harness.Device.DeviceId, "Cashier");
         Assert.True((await grantService.SetPinAsync("222222")).Succeeded);
-        await harness.Recovery!.SaveAsync(userB, "platform-session-b");
+        await harness.Recovery!.SaveAsync(
+            userB,
+            harness.Device.DeviceId,
+            "recovery-secret-b",
+            now.AddDays(30),
+            now.AddDays(90));
 
         await harness.Auth.LockAsync();
         ConfigureOnlineRecovery(harness, userB, "token-b-online");
@@ -1901,14 +1941,14 @@ public sealed class AuthenticationServiceTests
         FakeDeviceIdentity Device,
         IOptions<OfflineOperatingGrantOptions> GrantOptions,
         ISecureTokenStore? Tokens = null,
-        IPinRecoverySessionStore? Recovery = null);
+        IDeviceRecoveryCredentialStore? Recovery = null);
 
     private static async Task<OfflineGrantHarness> SeedOnlinePinHarnessAsync()
     {
         var userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var orgId = Guid.Parse("22222222-2222-2222-2222-222222222222");
         var tokens = new SessionScopedMemoryTokenStore();
-        var recovery = new PinRecoverySessionStore(tokens);
+        var recovery = new DeviceRecoveryCredentialStore(tokens);
         var prefs = new MemoryOnboardingStore();
         await prefs.SetSelectedOrganizationIdAsync(orgId);
 
@@ -1947,6 +1987,12 @@ public sealed class AuthenticationServiceTests
         await grantService.EstablishFromOnlineSessionAsync(shell, device.DeviceId, "Cashier");
         Assert.True((await grantService.SetPinAsync("123456")).Succeeded);
         grantService = new OfflineOperatingGrantService(grantStore, device, grantOptions);
+        await recovery.SaveAsync(
+            userId,
+            device.DeviceId,
+            "recovery-secret-a",
+            now.AddDays(30),
+            now.AddDays(90));
 
         var current = new CurrentUserContext();
         var connectivity = new FakeConnectivity(online: true);
@@ -1965,7 +2011,7 @@ public sealed class AuthenticationServiceTests
             offlineGrant: grantService,
             deviceIdentity: device,
             connectivity: connectivity,
-            pinRecovery: recovery);
+            recoveryStore: recovery);
 
         return new OfflineGrantHarness(
             auth, access, current, accessPolicy, grantStore, userId, orgId, device, grantOptions, tokens, recovery);
@@ -1974,7 +2020,7 @@ public sealed class AuthenticationServiceTests
     private static void ConfigureOnlineRecovery(OfflineGrantHarness harness, Guid userId, string accessToken)
     {
         var now = DateTimeOffset.UtcNow;
-        harness.Access.IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Success(new PlatformAccessTokenIssueDto(
+        var token = new PlatformAccessTokenIssueDto(
             AccessToken: accessToken,
             TokenType: "Bearer",
             TokenId: Guid.NewGuid(),
@@ -1982,14 +2028,21 @@ public sealed class AuthenticationServiceTests
             Username: "cashier1",
             DisplayName: "Cashier",
             Email: "c@example.com",
-            ExpiresAtUtc: now.AddHours(8),
+            ExpiresAtUtc: now.AddHours(1),
             OrganizationId: harness.OrgId,
             OrganizationDisplayName: "Store",
             ProductCode: PosProductCodes.PinoyBusinessPos,
             OrganizationSelectionState: "Single",
             ActiveOrganizationCount: 1,
             ProductAccessAllowed: true,
-            ProductAccessReasonCode: null));
+            ProductAccessReasonCode: null);
+        harness.Access.ExchangeRecoveryResult = ApiResult<DeviceRecoveryCredentialExchangeDto>.Success(
+            new DeviceRecoveryCredentialExchangeDto(
+                token,
+                "rotated-recovery-credential",
+                now.AddDays(30),
+                now.AddDays(90)));
+        harness.Access.IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Success(token);
         harness.Access.IntrospectResult = ApiResult<PlatformAccessTokenIntrospectionDto>.Success(
             new PlatformAccessTokenIntrospectionDto(
                 Active: true,
@@ -2076,6 +2129,12 @@ public sealed class AuthenticationServiceTests
         public ApiResult<PlatformOrganizationDto> OrganizationResult { get; set; } = ApiResult<PlatformOrganizationDto>.Unavailable();
         public ApiResult<EffectiveAccessDto> EvaluateResult { get; set; } = ApiResult<EffectiveAccessDto>.Unavailable();
         public ApiResult<PlatformAccessTokenIssueDto> IssueTokenResult { get; set; } = ApiResult<PlatformAccessTokenIssueDto>.Unavailable();
+        public ApiResult<DeviceRecoveryCredentialEnrollDto> EnrollRecoveryResult { get; set; } =
+            ApiResult<DeviceRecoveryCredentialEnrollDto>.Unavailable();
+        public ApiResult<DeviceRecoveryCredentialExchangeDto> ExchangeRecoveryResult { get; set; } =
+            ApiResult<DeviceRecoveryCredentialExchangeDto>.Unavailable();
+        public int ExchangeRecoveryCalls { get; private set; }
+        public int EnrollRecoveryCalls { get; private set; }
         public ApiResult<PlatformAccessTokenIssueDto> BindTokenResult { get; set; } = ApiResult<PlatformAccessTokenIssueDto>.Unavailable();
         public ApiResult<PlatformAccessTokenIntrospectionDto> IntrospectResult { get; set; } =
             ApiResult<PlatformAccessTokenIntrospectionDto>.Unavailable();
@@ -2148,6 +2207,23 @@ public sealed class AuthenticationServiceTests
             IssueTokenCalls++;
             return Task.FromResult(IssueTokenResult);
         }
+
+        public Task<ApiResult<DeviceRecoveryCredentialEnrollDto>> EnrollDeviceRecoveryCredentialAsync(CancellationToken ct = default)
+        {
+            EnrollRecoveryCalls++;
+            return Task.FromResult(EnrollRecoveryResult);
+        }
+
+        public Task<ApiResult<DeviceRecoveryCredentialExchangeDto>> ExchangeDeviceRecoveryCredentialAsync(
+            DeviceRecoveryCredentialExchangeRequest request,
+            CancellationToken ct = default)
+        {
+            ExchangeRecoveryCalls++;
+            return Task.FromResult(ExchangeRecoveryResult);
+        }
+
+        public Task<ApiResult<object>> RevokeDeviceRecoveryCredentialAsync(CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<object>.Success(new object()));
 
         public Task<ApiResult<PlatformAccessTokenIssueDto>> BindTokenAsync(BindPlatformAccessTokenRequest request, CancellationToken ct = default) =>
             Task.FromResult(BindTokenResult);

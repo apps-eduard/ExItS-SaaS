@@ -149,6 +149,10 @@ public static class ApplicationErrorCodes
     public const string ExternalAuthProviderUnsupported = "application.auth.external_provider_unsupported";
     public const string RecoveryEmailConflict = "application.auth.recovery_email_conflict";
     public const string RecoveryEmailInvalid = "application.auth.recovery_email_invalid";
+    public const string RecoveryCredentialInvalid = "application.auth.recovery_credential_invalid";
+    public const string RecoveryCredentialExpired = "application.auth.recovery_credential_expired";
+    public const string RecoveryCredentialRevoked = "application.auth.recovery_credential_revoked";
+    public const string RecoveryCredentialDeviceMismatch = "application.auth.recovery_credential_device_mismatch";
 
     public const string LocalValidationUnavailable = "application.local_validation.unavailable";
     public const string LocalValidationNotInitialized = "application.local_validation.not_initialized";

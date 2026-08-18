@@ -56,6 +56,8 @@ public static class DomainErrorCodes
     public const string InvalidUtcTimestamp = "platform.timestamp.invalid";
 
     public const string InvalidAccountStatusTransition = "platform.user.status.invalid_transition";
+    public const string RecoveryCredentialInvalid = "platform.recovery_credential.invalid";
+    public const string RecoveryCredentialExpired = "platform.recovery_credential.expired";
     public const string InvalidOrganizationStatusTransition = "platform.organization.status.invalid_transition";
     public const string InvalidOrganizationBranchId = "platform.organization_branch.id.invalid";
     public const string InvalidOrganizationBranchCode = "platform.organization_branch.code.invalid";

@@ -137,6 +137,7 @@ public sealed class SetPlatformUserPassword
     private readonly IPlatformUserCredentialRepository _credentials;
     private readonly IPlatformAuthSessionRepository _sessions;
     private readonly IPlatformAccessTokenRepository _accessTokens;
+    private readonly IPlatformDeviceRecoveryCredentialRepository _recoveryCredentials;
     private readonly IPlatformPasswordHasher _hasher;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
@@ -148,6 +149,7 @@ public sealed class SetPlatformUserPassword
         IPlatformUserCredentialRepository credentials,
         IPlatformAuthSessionRepository sessions,
         IPlatformAccessTokenRepository accessTokens,
+        IPlatformDeviceRecoveryCredentialRepository recoveryCredentials,
         IPlatformPasswordHasher hasher,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
@@ -158,6 +160,7 @@ public sealed class SetPlatformUserPassword
         _credentials = credentials;
         _sessions = sessions;
         _accessTokens = accessTokens;
+        _recoveryCredentials = recoveryCredentials;
         _hasher = hasher;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
@@ -206,6 +209,7 @@ public sealed class SetPlatformUserPassword
             await CredentialSessionInvalidation.RevokeAllAsync(
                 _sessions,
                 _accessTokens,
+                _recoveryCredentials,
                 _auditWriter,
                 id,
                 utcNow,

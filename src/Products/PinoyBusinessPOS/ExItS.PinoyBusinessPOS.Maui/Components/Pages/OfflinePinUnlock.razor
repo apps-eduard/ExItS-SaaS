@@ -229,9 +229,16 @@ else
         try
         {
             var result = await Auth.UnlockOfflineWithPinAsync(_selected.UserId, _pin);
-            if (!result.Succeeded
-                || result.ServerOutcome == PinSignInServerOutcome.ExplicitlyRevoked)
+            if (!result.Succeeded)
             {
+                if (result.ServerOutcome == PinSignInServerOutcome.OnlineVerificationRequired)
+                {
+                    _error = L[result.SafeMessageKey ?? "Offline_PinOnlineVerificationRequired"];
+                    _pin = string.Empty;
+                    Nav.NavigateTo("/signin", replace: true);
+                    return;
+                }
+
                 _error = L[result.SafeMessageKey ?? "Offline_PinWrong"];
                 _pin = string.Empty;
                 if (result.ServerOutcome == PinSignInServerOutcome.ExplicitlyRevoked)

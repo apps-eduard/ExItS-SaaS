@@ -132,6 +132,32 @@ public sealed class IssuePlatformAccessToken
             .ConfigureAwait(false);
     }
 
+    public async Task<ApplicationResult<PlatformAccessTokenIssueDto>> IssueForActiveUserAsync(
+        Guid userId,
+        Guid? organizationId,
+        string? productCode,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await _users.GetByIdAsync(PlatformUserId.From(userId), cancellationToken).ConfigureAwait(false);
+        if (user is null || user.Status is not AccountStatus.Active)
+        {
+            return ApplicationResult<PlatformAccessTokenIssueDto>.Failure(
+                ApplicationErrorCodes.AccountNotEligibleForLogin,
+                "Account is not eligible for login.");
+        }
+
+        var credential = await _credentials.GetByUserIdAsync(user.Id, cancellationToken).ConfigureAwait(false);
+        if (credential is null)
+        {
+            return ApplicationResult<PlatformAccessTokenIssueDto>.Failure(
+                ApplicationErrorCodes.AccountNotEligibleForLogin,
+                "Account is not eligible for login.");
+        }
+
+        return await IssueForUserAsync(user, credential.SecurityStamp, organizationId, productCode, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     private async Task<ApplicationResult<PlatformAccessTokenIssueDto>> IssueFromCredentialsAsync(
         string? usernameOrEmail,
         string? password,
@@ -353,7 +379,7 @@ public sealed class IssuePlatformAccessToken
 
         var opaque = _tokenService.CreateOpaqueToken();
         var hash = _tokenService.HashToken(opaque);
-        var lifetime = TimeSpan.FromHours(_tokenOptions.ResolveLifetimeHours());
+        var lifetime = _tokenOptions.ResolveLifetime();
         var token = PlatformAccessToken.Create(
             user.Id,
             hash,

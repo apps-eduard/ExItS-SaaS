@@ -143,6 +143,26 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
         CancellationToken ct = default) =>
         api.SendAsync<PlatformAccessTokenIssueDto>(HttpMethod.Post, "/api/v1/platform/auth/token", request, ct);
 
+    public Task<ApiResult<DeviceRecoveryCredentialEnrollDto>> EnrollDeviceRecoveryCredentialAsync(
+        CancellationToken ct = default) =>
+        api.SendAsync<DeviceRecoveryCredentialEnrollDto>(
+            HttpMethod.Post,
+            "/api/v1/platform/auth/recovery/enroll",
+            null,
+            ct);
+
+    public Task<ApiResult<DeviceRecoveryCredentialExchangeDto>> ExchangeDeviceRecoveryCredentialAsync(
+        DeviceRecoveryCredentialExchangeRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<DeviceRecoveryCredentialExchangeDto>(
+            HttpMethod.Post,
+            "/api/v1/platform/auth/recovery/exchange",
+            request,
+            ct);
+
+    public Task<ApiResult<object>> RevokeDeviceRecoveryCredentialAsync(CancellationToken ct = default) =>
+        api.SendAsync<object>(HttpMethod.Post, "/api/v1/platform/auth/recovery/revoke", null, ct);
+
     public Task<ApiResult<PlatformAccessTokenIssueDto>> BindTokenAsync(
         BindPlatformAccessTokenRequest request,
         CancellationToken ct = default) =>

@@ -14,6 +14,7 @@ internal static class CredentialSessionInvalidation
     public static async Task RevokeAllAsync(
         IPlatformAuthSessionRepository sessions,
         IPlatformAccessTokenRepository accessTokens,
+        IPlatformDeviceRecoveryCredentialRepository recoveryCredentials,
         IAuditWriter auditWriter,
         PlatformUserId userId,
         DateTimeOffset utcNow,
@@ -22,7 +23,8 @@ internal static class CredentialSessionInvalidation
     {
         var sessionCount = await sessions.RevokeAllActiveForUserAsync(userId, utcNow, cancellationToken).ConfigureAwait(false);
         var tokenCount = await accessTokens.RevokeAllActiveForUserAsync(userId, utcNow, cancellationToken).ConfigureAwait(false);
-        if (sessionCount <= 0 && tokenCount <= 0)
+        var recoveryCount = await recoveryCredentials.RevokeActiveForUserAsync(userId, utcNow, cancellationToken).ConfigureAwait(false);
+        if (sessionCount <= 0 && tokenCount <= 0 && recoveryCount <= 0)
         {
             return;
         }
@@ -34,7 +36,7 @@ internal static class CredentialSessionInvalidation
             nameof(PlatformAuthSession),
             userId.Value.ToString("D"),
             AuditOutcome.Succeeded,
-            summary: $"{summary} (sessions={sessionCount}, accessTokens={tokenCount}).",
+            summary: $"{summary} (sessions={sessionCount}, accessTokens={tokenCount}, recoveryCredentials={recoveryCount}).",
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 }
@@ -45,6 +47,7 @@ public sealed class ChangePlatformUserPassword
     private readonly IPlatformUserCredentialRepository _credentials;
     private readonly IPlatformAuthSessionRepository _sessions;
     private readonly IPlatformAccessTokenRepository _accessTokens;
+    private readonly IPlatformDeviceRecoveryCredentialRepository _recoveryCredentials;
     private readonly IPlatformPasswordHasher _hasher;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
@@ -57,6 +60,7 @@ public sealed class ChangePlatformUserPassword
         IPlatformUserCredentialRepository credentials,
         IPlatformAuthSessionRepository sessions,
         IPlatformAccessTokenRepository accessTokens,
+        IPlatformDeviceRecoveryCredentialRepository recoveryCredentials,
         IPlatformPasswordHasher hasher,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
@@ -68,6 +72,7 @@ public sealed class ChangePlatformUserPassword
         _credentials = credentials;
         _sessions = sessions;
         _accessTokens = accessTokens;
+        _recoveryCredentials = recoveryCredentials;
         _hasher = hasher;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
@@ -131,10 +136,11 @@ public sealed class ChangePlatformUserPassword
 
         credential.ReplacePasswordHash(_hasher.HashPassword(newPassword!), _hasher.Algorithm, utcNow);
         await _credentials.UpdateAsync(credential, cancellationToken).ConfigureAwait(false);
-        await CredentialSessionInvalidation.RevokeAllAsync(
-            _sessions,
-            _accessTokens,
-            _auditWriter,
+            await CredentialSessionInvalidation.RevokeAllAsync(
+                _sessions,
+                _accessTokens,
+                _recoveryCredentials,
+                _auditWriter,
             id,
             utcNow,
             "All browser sessions revoked after password change.",
@@ -333,6 +339,7 @@ public sealed class ResetPasswordWithToken
     private readonly IPlatformCredentialTokenRepository _tokens;
     private readonly IPlatformAuthSessionRepository _sessions;
     private readonly IPlatformAccessTokenRepository _accessTokens;
+    private readonly IPlatformDeviceRecoveryCredentialRepository _recoveryCredentials;
     private readonly IPlatformSessionTokenService _tokenService;
     private readonly IPlatformPasswordHasher _hasher;
     private readonly IAuditWriter _auditWriter;
@@ -346,6 +353,7 @@ public sealed class ResetPasswordWithToken
         IPlatformCredentialTokenRepository tokens,
         IPlatformAuthSessionRepository sessions,
         IPlatformAccessTokenRepository accessTokens,
+        IPlatformDeviceRecoveryCredentialRepository recoveryCredentials,
         IPlatformSessionTokenService tokenService,
         IPlatformPasswordHasher hasher,
         IAuditWriter auditWriter,
@@ -358,6 +366,7 @@ public sealed class ResetPasswordWithToken
         _tokens = tokens;
         _sessions = sessions;
         _accessTokens = accessTokens;
+        _recoveryCredentials = recoveryCredentials;
         _tokenService = tokenService;
         _hasher = hasher;
         _auditWriter = auditWriter;
@@ -431,10 +440,11 @@ public sealed class ResetPasswordWithToken
         credential.ReplacePasswordHash(_hasher.HashPassword(newPassword!), _hasher.Algorithm, utcNow);
         await _tokens.UpdateAsync(token, cancellationToken).ConfigureAwait(false);
         await _credentials.UpdateAsync(credential, cancellationToken).ConfigureAwait(false);
-        await CredentialSessionInvalidation.RevokeAllAsync(
-            _sessions,
-            _accessTokens,
-            _auditWriter,
+            await CredentialSessionInvalidation.RevokeAllAsync(
+                _sessions,
+                _accessTokens,
+                _recoveryCredentials,
+                _auditWriter,
             user.Id,
             utcNow,
             "All browser sessions revoked after password reset.",

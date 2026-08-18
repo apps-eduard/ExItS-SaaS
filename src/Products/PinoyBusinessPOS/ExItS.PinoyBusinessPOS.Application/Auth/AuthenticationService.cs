@@ -26,7 +26,7 @@ public sealed class AuthenticationService(
     OfflineSessionUxState? offlineSessionUx = null,
     SellingModeService? sellingMode = null,
     IConnectivityService? connectivity = null,
-    IPinRecoverySessionStore? pinRecovery = null) : IAuthenticationService, IPlatformAccessTokenRecovery
+    IDeviceRecoveryCredentialStore? recoveryStore = null) : IAuthenticationService, IPlatformAccessTokenRecovery
 {
     private static readonly TimeSpan SessionLifetime = TimeSpan.FromHours(12);
     private readonly TimeProvider _clock = timeProvider ?? TimeProvider.System;
@@ -37,7 +37,7 @@ public sealed class AuthenticationService(
     private readonly OfflineSessionUxState? _offlineSessionUx = offlineSessionUx;
     private readonly SellingModeService? _sellingMode = sellingMode;
     private readonly IConnectivityService? _connectivity = connectivity;
-    private readonly IPinRecoverySessionStore? _pinRecovery = pinRecovery;
+    private readonly IDeviceRecoveryCredentialStore? _recoveryStore = recoveryStore;
     private readonly SemaphoreSlim _reissueGate = new(1, 1);
 
     public bool IsDevelopmentAuthenticationEnabled =>
@@ -615,7 +615,7 @@ public sealed class AuthenticationService(
                     }
                 }
 
-                await RememberPinRecoveryHandleAsync(restored, ct).ConfigureAwait(false);
+                await EnrollRecoveryCredentialAsync(restored, ct).ConfigureAwait(false);
                 return new AuthResult(true, AuthFailureReason.None, restored);
             }
 
@@ -743,11 +743,17 @@ public sealed class AuthenticationService(
 
     public async Task RemoveEnrolledOfflineUserAsync(Guid userId, CancellationToken ct = default)
     {
-        if (_pinRecovery is not null && userId != Guid.Empty)
+        if (_recoveryStore is not null && userId != Guid.Empty)
         {
             try
             {
-                await _pinRecovery.ClearAsync(userId, ct).ConfigureAwait(false);
+                if (await IsDeviceOnlineAsync(ct).ConfigureAwait(false))
+                {
+                    _ = await accessClient.RevokeDeviceRecoveryCredentialAsync(ct).ConfigureAwait(false);
+                }
+
+                await _recoveryStore.ClearAsync(userId, ct).ConfigureAwait(false);
+                await _recoveryStore.ClearLegacySessionHandleAsync(userId, ct).ConfigureAwait(false);
             }
             catch
             {
@@ -830,21 +836,6 @@ public sealed class AuthenticationService(
 
         string? platformSession = leftoverSameUser?.PlatformSessionToken;
         var accessToken = leftoverSameUser?.AccessToken;
-        if (_pinRecovery is not null)
-        {
-            try
-            {
-                var handle = await _pinRecovery.LoadAsync(grant.UserId, ct).ConfigureAwait(false);
-                if (!string.IsNullOrWhiteSpace(handle))
-                {
-                    platformSession = handle;
-                }
-            }
-            catch
-            {
-                events.Record("secure_storage_failure", Dict(("operation", "pin_recovery_load")));
-            }
-        }
 
         marker ??= Guid.NewGuid().ToString("N");
         var applied = await ApplyLocalGrantSessionAsync(local, grant, marker, ct).ConfigureAwait(false);
@@ -855,16 +846,12 @@ public sealed class AuthenticationService(
 
         local = applied.Session ?? local;
         var reachable = await IsDeviceOnlineAsync(ct).ConfigureAwait(false);
-        if (!reachable
-            || (string.IsNullOrWhiteSpace(platformSession) && string.IsNullOrWhiteSpace(accessToken)))
+        if (!reachable)
         {
             events.Record("pin_signin_local_offline", Dict(
                 ("userId", grant.UserId.ToString("D")),
-                ("reachable", reachable ? "true" : "false"),
-                ("hasRecoverableSession",
-                    string.IsNullOrWhiteSpace(platformSession) && string.IsNullOrWhiteSpace(accessToken)
-                        ? "false"
-                        : "true")));
+                ("reachable", "false"),
+                ("hasRecoverableSession", "false")));
             return LocalOfflinePinResult(local, grant);
         }
 
@@ -890,13 +877,13 @@ public sealed class AuthenticationService(
         }
 
         currentUser.Set(revalidating);
-        var recovered = await RecoverOnlineSessionAfterPinAsync(grant.UserId, revalidating, ct)
+        var recovered = await RecoverOnlineSessionAfterPinAsync(grant, revalidating, ct)
             .ConfigureAwait(false);
         if (recovered.Outcome == PinSignInServerOutcome.ValidatedOnline
             && recovered.Session is { } online
             && online.UserId == grant.UserId)
         {
-            await RememberPinRecoveryHandleAsync(online, ct).ConfigureAwait(false);
+            await EnrollRecoveryCredentialAsync(online, ct).ConfigureAwait(false);
             _offlineSessionUx?.ResetSession();
             events.Record("pin_signin_validated_online", Dict(
                 ("userId", online.UserId.ToString("D")),
@@ -906,6 +893,18 @@ public sealed class AuthenticationService(
                 AuthFailureReason.None,
                 online,
                 ServerOutcome: PinSignInServerOutcome.ValidatedOnline);
+        }
+
+        if (recovered.Outcome == PinSignInServerOutcome.OnlineVerificationRequired)
+        {
+            events.Record("pin_signin_online_verification_required", Dict(
+                ("userId", grant.UserId.ToString("D")),
+                ("reason", recovered.ReasonCode)));
+            return new AuthResult(
+                false,
+                AuthFailureReason.AccessDenied,
+                SafeMessageKey: recovered.SafeMessageKey ?? "Offline_PinOnlineVerificationRequired",
+                ServerOutcome: PinSignInServerOutcome.OnlineVerificationRequired);
         }
 
         if (recovered.Outcome == PinSignInServerOutcome.ExplicitlyRevoked)
@@ -1006,45 +1005,241 @@ public sealed class AuthenticationService(
         string? SafeMessageKey = null);
 
     private async Task<PinRecoveryAttempt> RecoverOnlineSessionAfterPinAsync(
-        Guid expectedUserId,
+        OfflineOperatingGrant grant,
         AuthSession shell,
         CancellationToken ct)
     {
         if (!string.IsNullOrWhiteSpace(shell.AccessToken))
         {
-            var fromAccess = await TryRestoreBearerForPinAsync(expectedUserId, shell, ct)
+            var fromAccess = await TryRestoreBearerForPinAsync(grant.UserId, shell, ct)
                 .ConfigureAwait(false);
             if (fromAccess.Outcome is PinSignInServerOutcome.ValidatedOnline
                 or PinSignInServerOutcome.ExplicitlyRevoked)
             {
                 return fromAccess;
             }
+        }
 
-            if (fromAccess.Outcome == PinSignInServerOutcome.TransientUnavailable
-                && string.IsNullOrWhiteSpace(shell.PlatformSessionToken))
+        var exchange = await ExchangeRecoveryCredentialForPinAsync(grant, shell, ct).ConfigureAwait(false);
+        if (exchange.Outcome is PinSignInServerOutcome.ValidatedOnline
+            or PinSignInServerOutcome.ExplicitlyRevoked
+            or PinSignInServerOutcome.TransientUnavailable)
+        {
+            return exchange;
+        }
+
+        if (exchange.Outcome == PinSignInServerOutcome.OnlineVerificationRequired)
+        {
+            var migrated = await TryMigrateLegacySessionRecoveryAsync(grant, shell, ct).ConfigureAwait(false);
+            if (migrated.Outcome is PinSignInServerOutcome.ValidatedOnline
+                or PinSignInServerOutcome.TransientUnavailable
+                or PinSignInServerOutcome.ExplicitlyRevoked)
             {
-                return fromAccess;
+                return migrated;
             }
+
+            return exchange;
         }
 
-        if (string.IsNullOrWhiteSpace(shell.PlatformSessionToken))
-        {
-            return new PinRecoveryAttempt(
-                PinSignInServerOutcome.LocalOffline,
-                ReasonCode: "missing_platform_session");
-        }
-
-        var reissue = await IssueSessionAccessTokenForPinAsync(ct).ConfigureAwait(false);
-        if (reissue.Outcome != PinSignInServerOutcome.ValidatedOnline || reissue.Session is null)
-        {
-            return reissue;
-        }
-
-        return await TryRestoreBearerForPinAsync(expectedUserId, reissue.Session, ct).ConfigureAwait(false);
+        var fallback = await TryMigrateLegacySessionRecoveryAsync(grant, shell, ct).ConfigureAwait(false);
+        return fallback.Outcome == PinSignInServerOutcome.LocalOffline
+            ? new PinRecoveryAttempt(
+                PinSignInServerOutcome.OnlineVerificationRequired,
+                ReasonCode: "missing_recovery_credential",
+                SafeMessageKey: "Offline_PinOnlineVerificationRequired")
+            : fallback;
     }
 
-    private async Task<PinRecoveryAttempt> IssueSessionAccessTokenForPinAsync(CancellationToken ct)
+    private Task<PinRecoveryAttempt> ExchangeRecoveryCredentialForPinAsync(
+        OfflineOperatingGrant grant,
+        AuthSession shell,
+        CancellationToken ct)
     {
+        var organizationId = grant.IsOrganizationScope ? grant.OrganizationId : shell.OrganizationId;
+        var productCode = grant.IsOrganizationScope ? PosProductCodes.PinoyBusinessPos : null;
+        return ExchangeRecoveryCredentialAsync(grant.UserId, shell, organizationId, productCode, ct);
+    }
+
+    private async Task<PinRecoveryAttempt> ExchangeRecoveryCredentialAsync(
+        Guid userId,
+        AuthSession shell,
+        Guid? organizationId,
+        string? productCode,
+        CancellationToken ct)
+    {
+        if (_recoveryStore is null || _deviceIdentity is null)
+        {
+            return new PinRecoveryAttempt(
+                PinSignInServerOutcome.OnlineVerificationRequired,
+                ReasonCode: "recovery_store_unavailable",
+                SafeMessageKey: "Offline_PinOnlineVerificationRequired");
+        }
+
+        StoredDeviceRecoveryCredential? stored;
+        try
+        {
+            stored = await _recoveryStore.LoadAsync(userId, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            events.Record("secure_storage_failure", Dict(("operation", "recovery_credential_load")));
+            return new PinRecoveryAttempt(
+                PinSignInServerOutcome.TransientUnavailable,
+                ReasonCode: "secure_storage_failure");
+        }
+
+        if (stored is null || string.IsNullOrWhiteSpace(stored.Credential))
+        {
+            return new PinRecoveryAttempt(
+                PinSignInServerOutcome.OnlineVerificationRequired,
+                ReasonCode: "missing_recovery_credential",
+                SafeMessageKey: "Offline_PinOnlineVerificationRequired");
+        }
+
+        var deviceId = await _deviceIdentity.GetOrCreateDeviceIdAsync(ct).ConfigureAwait(false);
+        if (!string.Equals(stored.DeviceId, deviceId, StringComparison.Ordinal))
+        {
+            return new PinRecoveryAttempt(
+                PinSignInServerOutcome.ExplicitlyRevoked,
+                ReasonCode: "recovery_device_mismatch",
+                SafeMessageKey: "Access_Denied");
+        }
+
+        var utcNow = _clock.GetUtcNow();
+        if (stored.AbsoluteExpiresAtUtc <= utcNow || stored.IdleExpiresAtUtc <= utcNow)
+        {
+            return new PinRecoveryAttempt(
+                PinSignInServerOutcome.OnlineVerificationRequired,
+                ReasonCode: "recovery_credential_expired",
+                SafeMessageKey: "Offline_PinOnlineVerificationRequired");
+        }
+
+        try
+        {
+            currentUser.Set(shell);
+            var exchange = await accessClient
+                .ExchangeDeviceRecoveryCredentialAsync(
+                    new DeviceRecoveryCredentialExchangeRequest(
+                        stored.Credential,
+                        organizationId,
+                        productCode),
+                    ct)
+                .ConfigureAwait(false);
+
+            events.Record("pin_signin_recovery_exchange_result", Dict(
+                ("status", exchange.Status.ToString()),
+                ("errorCode", exchange.Error?.ErrorCode),
+                ("userId", userId.ToString("D"))));
+
+            if (exchange.IsSuccess
+                && exchange.Data is not null
+                && !string.IsNullOrWhiteSpace(exchange.Data.AccessToken.AccessToken))
+            {
+                var token = exchange.Data.AccessToken;
+                if (token.UserId != userId)
+                {
+                    return new PinRecoveryAttempt(
+                        PinSignInServerOutcome.ExplicitlyRevoked,
+                        ReasonCode: "user_mismatch",
+                        SafeMessageKey: "Access_Denied");
+                }
+
+                var updatedShell = shell with
+                {
+                    AccessToken = token.AccessToken,
+                    ExpiresAtUtc = token.ExpiresAtUtc == default
+                        ? utcNow.Add(SessionLifetime)
+                        : token.ExpiresAtUtc,
+                    OrganizationId = token.OrganizationId ?? shell.OrganizationId,
+                    OrganizationDisplayName = token.OrganizationDisplayName ?? shell.OrganizationDisplayName,
+                    HasPosAccess = token.ProductAccessAllowed == true && token.OrganizationId is not null,
+                    AccessReasonCode = token.ProductAccessReasonCode
+                };
+                currentUser.Set(updatedShell);
+
+                await _recoveryStore
+                    .SaveAsync(
+                        userId,
+                        deviceId,
+                        exchange.Data.RecoveryCredential,
+                        exchange.Data.IdleExpiresAtUtc,
+                        exchange.Data.AbsoluteExpiresAtUtc,
+                        ct)
+                    .ConfigureAwait(false);
+
+                return await TryRestoreBearerForPinAsync(userId, updatedShell, ct).ConfigureAwait(false);
+            }
+
+            if (IsRecoveryCredentialExpiredError(exchange.Error?.ErrorCode))
+            {
+                return new PinRecoveryAttempt(
+                    PinSignInServerOutcome.OnlineVerificationRequired,
+                    ReasonCode: exchange.Error?.ErrorCode,
+                    SafeMessageKey: "Offline_PinOnlineVerificationRequired");
+            }
+
+            if (IsTransientApiStatus(exchange.Status))
+            {
+                return new PinRecoveryAttempt(
+                    PinSignInServerOutcome.TransientUnavailable,
+                    ReasonCode: exchange.Status.ToString());
+            }
+
+            if (IsExplicitPinRecoveryDenial(exchange.Status, exchange.Error?.ErrorCode))
+            {
+                return new PinRecoveryAttempt(
+                    PinSignInServerOutcome.ExplicitlyRevoked,
+                    ReasonCode: exchange.Error?.ErrorCode ?? exchange.Status.ToString(),
+                    SafeMessageKey: "Access_Denied");
+            }
+
+            return new PinRecoveryAttempt(
+                PinSignInServerOutcome.TransientUnavailable,
+                ReasonCode: exchange.Status.ToString());
+        }
+        catch
+        {
+            return new PinRecoveryAttempt(
+                PinSignInServerOutcome.TransientUnavailable,
+                ReasonCode: "transport_failure");
+        }
+    }
+
+    private async Task<PinRecoveryAttempt> TryMigrateLegacySessionRecoveryAsync(
+        OfflineOperatingGrant grant,
+        AuthSession shell,
+        CancellationToken ct)
+    {
+        if (_recoveryStore is null)
+        {
+            return new PinRecoveryAttempt(
+                PinSignInServerOutcome.OnlineVerificationRequired,
+                ReasonCode: "missing_recovery_credential",
+                SafeMessageKey: "Offline_PinOnlineVerificationRequired");
+        }
+
+        string? legacyHandle;
+        try
+        {
+            legacyHandle = await _recoveryStore.LoadLegacySessionHandleAsync(grant.UserId, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            return new PinRecoveryAttempt(
+                PinSignInServerOutcome.TransientUnavailable,
+                ReasonCode: "secure_storage_failure");
+        }
+
+        if (string.IsNullOrWhiteSpace(legacyHandle))
+        {
+            return new PinRecoveryAttempt(
+                PinSignInServerOutcome.OnlineVerificationRequired,
+                ReasonCode: "missing_recovery_credential",
+                SafeMessageKey: "Offline_PinOnlineVerificationRequired");
+        }
+
+        var migratedShell = shell with { PlatformSessionToken = legacyHandle.Trim() };
+        currentUser.Set(migratedShell);
         try
         {
             var reissue = await accessClient
@@ -1053,50 +1248,52 @@ public sealed class AuthenticationService(
                         GrantType: "session",
                         UsernameOrEmail: null,
                         Password: null,
-                        OrganizationId: null,
-                        ProductCode: null),
+                        OrganizationId: grant.IsOrganizationScope ? grant.OrganizationId : null,
+                        ProductCode: grant.IsOrganizationScope ? PosProductCodes.PinoyBusinessPos : null),
                     ct)
                 .ConfigureAwait(false);
 
-            if (reissue.IsSuccess
-                && reissue.Data is not null
-                && !string.IsNullOrWhiteSpace(reissue.Data.AccessToken)
-                && currentUser.Session is { } session)
+            if (!reissue.IsSuccess
+                || reissue.Data is null
+                || string.IsNullOrWhiteSpace(reissue.Data.AccessToken)
+                || reissue.Data.UserId != grant.UserId)
             {
-                var updated = session with
+                if (IsRecoveryCredentialExpiredError(reissue.Error?.ErrorCode)
+                    || reissue.Status is ApiCallStatus.Unauthorized or ApiCallStatus.Forbidden)
                 {
-                    AccessToken = reissue.Data.AccessToken,
-                    ExpiresAtUtc = reissue.Data.ExpiresAtUtc == default
-                        ? _clock.GetUtcNow().Add(SessionLifetime)
-                        : reissue.Data.ExpiresAtUtc
-                };
-                currentUser.Set(updated);
-                events.Record("pin_signin_token_reissue", Dict(("userId", updated.UserId.ToString("D"))));
-                return new PinRecoveryAttempt(PinSignInServerOutcome.ValidatedOnline, updated);
-            }
+                    await _recoveryStore.ClearLegacySessionHandleAsync(grant.UserId, ct).ConfigureAwait(false);
+                    return new PinRecoveryAttempt(
+                        PinSignInServerOutcome.OnlineVerificationRequired,
+                        ReasonCode: reissue.Error?.ErrorCode ?? reissue.Status.ToString(),
+                        SafeMessageKey: "Offline_PinOnlineVerificationRequired");
+                }
 
-            events.Record("pin_signin_token_reissue_result", Dict(
-                ("status", reissue.Status.ToString()),
-                ("errorCode", reissue.Error?.ErrorCode)));
+                if (IsTransientApiStatus(reissue.Status))
+                {
+                    return new PinRecoveryAttempt(
+                        PinSignInServerOutcome.TransientUnavailable,
+                        ReasonCode: reissue.Status.ToString());
+                }
 
-            if (IsTransientApiStatus(reissue.Status))
-            {
                 return new PinRecoveryAttempt(
-                    PinSignInServerOutcome.TransientUnavailable,
-                    ReasonCode: reissue.Status.ToString());
+                    PinSignInServerOutcome.OnlineVerificationRequired,
+                    ReasonCode: "legacy_session_unusable",
+                    SafeMessageKey: "Offline_PinOnlineVerificationRequired");
             }
 
-            if (IsExplicitPinRecoveryDenial(reissue.Status, reissue.Error?.ErrorCode))
+            var updatedShell = migratedShell with
             {
-                return new PinRecoveryAttempt(
-                    PinSignInServerOutcome.ExplicitlyRevoked,
-                    ReasonCode: reissue.Error?.ErrorCode ?? reissue.Status.ToString(),
-                    SafeMessageKey: "Access_Denied");
+                AccessToken = reissue.Data.AccessToken,
+                ExpiresAtUtc = reissue.Data.ExpiresAtUtc
+            };
+            currentUser.Set(updatedShell);
+            var restored = await TryRestoreBearerForPinAsync(grant.UserId, updatedShell, ct).ConfigureAwait(false);
+            if (restored.Outcome == PinSignInServerOutcome.ValidatedOnline && restored.Session is not null)
+            {
+                await EnrollRecoveryCredentialAsync(restored.Session, ct).ConfigureAwait(false);
             }
 
-            return new PinRecoveryAttempt(
-                PinSignInServerOutcome.TransientUnavailable,
-                ReasonCode: reissue.Status.ToString());
+            return restored;
         }
         catch
         {
@@ -1217,13 +1414,18 @@ public sealed class AuthenticationService(
                || IsExplicitProductAccessRevocation(errorCode);
     }
 
+    private static bool IsRecoveryCredentialExpiredError(string? errorCode) =>
+        !string.IsNullOrWhiteSpace(errorCode)
+        && errorCode.Contains("recovery_credential_expired", StringComparison.OrdinalIgnoreCase);
+
     private async Task InvalidatePinUserAuthorizationAsync(Guid userId, CancellationToken ct)
     {
-        if (_pinRecovery is not null)
+        if (_recoveryStore is not null)
         {
             try
             {
-                await _pinRecovery.ClearAsync(userId, ct).ConfigureAwait(false);
+                await _recoveryStore.ClearAsync(userId, ct).ConfigureAwait(false);
+                await _recoveryStore.ClearLegacySessionHandleAsync(userId, ct).ConfigureAwait(false);
             }
             catch
             {
@@ -1247,23 +1449,51 @@ public sealed class AuthenticationService(
         currentUser.Clear();
     }
 
-    private async Task RememberPinRecoveryHandleAsync(AuthSession session, CancellationToken ct)
+    private async Task EnrollRecoveryCredentialAsync(AuthSession session, CancellationToken ct)
     {
-        if (_pinRecovery is null
+        if (_recoveryStore is null
+            || _deviceIdentity is null
             || session.UserId == Guid.Empty
-            || string.IsNullOrWhiteSpace(session.PlatformSessionToken))
+            || string.IsNullOrWhiteSpace(session.AccessToken))
+        {
+            return;
+        }
+
+        if (!await IsDeviceOnlineAsync(ct).ConfigureAwait(false))
         {
             return;
         }
 
         try
         {
-            await _pinRecovery.SaveAsync(session.UserId, session.PlatformSessionToken, ct)
+            currentUser.Set(session);
+            var enroll = await accessClient.EnrollDeviceRecoveryCredentialAsync(ct).ConfigureAwait(false);
+            if (!enroll.IsSuccess
+                || enroll.Data is null
+                || string.IsNullOrWhiteSpace(enroll.Data.RecoveryCredential))
+            {
+                events.Record("recovery_credential_enroll_result", Dict(
+                    ("status", enroll.Status.ToString()),
+                    ("errorCode", enroll.Error?.ErrorCode),
+                    ("userId", session.UserId.ToString("D"))));
+                return;
+            }
+
+            var deviceId = await _deviceIdentity.GetOrCreateDeviceIdAsync(ct).ConfigureAwait(false);
+            await _recoveryStore
+                .SaveAsync(
+                    session.UserId,
+                    deviceId,
+                    enroll.Data.RecoveryCredential,
+                    enroll.Data.IdleExpiresAtUtc,
+                    enroll.Data.AbsoluteExpiresAtUtc,
+                    ct)
                 .ConfigureAwait(false);
+            events.Record("recovery_credential_enrolled", Dict(("userId", session.UserId.ToString("D"))));
         }
         catch
         {
-            events.Record("secure_storage_failure", Dict(("operation", "pin_recovery_save")));
+            events.Record("secure_storage_failure", Dict(("operation", "recovery_credential_enroll")));
         }
     }
 
@@ -1392,14 +1622,14 @@ public sealed class AuthenticationService(
                 .EstablishFromOnlineSessionAsync(session, deviceId, roleCode: null, ct)
                 .ConfigureAwait(false);
             _offlineSessionUx?.ResetSession();
-            await RememberPinRecoveryHandleAsync(session, ct).ConfigureAwait(false);
+            await EnrollRecoveryCredentialAsync(session, ct).ConfigureAwait(false);
             return;
         }
 
         if (AuthSessionWorkspace.IsPersonalDefault(session) || session.OrganizationId is null)
         {
             await EstablishPersonalOfflineGrantAsync(session, ct).ConfigureAwait(false);
-            await RememberPinRecoveryHandleAsync(currentUser.Session ?? session, ct).ConfigureAwait(false);
+            await EnrollRecoveryCredentialAsync(currentUser.Session ?? session, ct).ConfigureAwait(false);
         }
     }
 
@@ -1512,9 +1742,9 @@ public sealed class AuthenticationService(
         try
         {
             var session = currentUser.Session;
-            if (session is null || string.IsNullOrWhiteSpace(session.PlatformSessionToken))
+            if (session is null || session.UserId == Guid.Empty)
             {
-                events.Record("token_reissue_skipped", Dict(("reason", "missing_platform_session")));
+                events.Record("token_reissue_skipped", Dict(("reason", "missing_session")));
                 return false;
             }
 
@@ -1524,35 +1754,32 @@ public sealed class AuthenticationService(
                 return false;
             }
 
-            var reissue = await accessClient
-                .IssueTokenAsync(
-                    new IssuePlatformAccessTokenRequest(
-                        GrantType: "session",
-                        UsernameOrEmail: null,
-                        Password: null,
-                        OrganizationId: null,
-                        ProductCode: null),
-                    ct)
-                .ConfigureAwait(false);
-
-            if (!reissue.IsSuccess
-                || reissue.Data is null
-                || string.IsNullOrWhiteSpace(reissue.Data.AccessToken))
+            if (_recoveryStore is null || _deviceIdentity is null)
             {
-                events.Record("token_reissue_failure", Dict(
-                    ("status", reissue.Status.ToString()),
-                    ("errorCode", reissue.Error?.ErrorCode)));
+                events.Record("token_reissue_skipped", Dict(("reason", "recovery_unavailable")));
                 return false;
             }
 
-            var updated = session with
+            var organizationId = session.OrganizationId;
+            var productCode = session.HasPosAccess && organizationId is not null
+                ? PosProductCodes.PinoyBusinessPos
+                : null;
+            var exchange = await ExchangeRecoveryCredentialAsync(
+                    session.UserId,
+                    session,
+                    organizationId,
+                    productCode,
+                    ct)
+                .ConfigureAwait(false);
+            if (exchange.Outcome != PinSignInServerOutcome.ValidatedOnline || exchange.Session is null)
             {
-                AccessToken = reissue.Data.AccessToken,
-                ExpiresAtUtc = reissue.Data.ExpiresAtUtc == default
-                    ? _clock.GetUtcNow().Add(SessionLifetime)
-                    : reissue.Data.ExpiresAtUtc
-            };
+                events.Record("token_reissue_failure", Dict(
+                    ("outcome", exchange.Outcome.ToString()),
+                    ("reason", exchange.ReasonCode)));
+                return false;
+            }
 
+            var updated = exchange.Session;
             try
             {
                 var (_, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
@@ -1567,7 +1794,6 @@ public sealed class AuthenticationService(
 
             currentUser.Set(updated);
             events.Record("token_reissue_success", Dict(("userId", updated.UserId.ToString("D"))));
-            await RememberPinRecoveryHandleAsync(updated, ct).ConfigureAwait(false);
             return true;
         }
         finally
@@ -1593,7 +1819,7 @@ public sealed class AuthenticationService(
         var session = currentUser.Session;
         if (session is not null)
         {
-            await RememberPinRecoveryHandleAsync(session, ct).ConfigureAwait(false);
+            await EnrollRecoveryCredentialAsync(session, ct).ConfigureAwait(false);
             try
             {
                 if (!string.IsNullOrWhiteSpace(session.AccessToken))

@@ -195,6 +195,7 @@ public sealed class PlatformStaffIdentityFieldsTests
             credentials,
             sessions,
             accessTokens,
+            new InMemoryPlatformDeviceRecoveryCredentialRepository(),
             new StubPasswordHasher(),
             audit,
             uow,

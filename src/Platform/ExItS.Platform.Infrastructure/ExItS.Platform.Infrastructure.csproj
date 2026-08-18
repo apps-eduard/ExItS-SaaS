@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="ExItS.Platform.UnitTests" />
+    <InternalsVisibleTo Include="ExItS.Platform.IntegrationTests" />
   </ItemGroup>
 
   <ItemGroup>

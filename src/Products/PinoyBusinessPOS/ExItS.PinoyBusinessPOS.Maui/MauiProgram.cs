@@ -133,7 +133,7 @@ public static class MauiProgram
             configuration.GetSection(OfflineOperatingGrantOptions.SectionName));
         services.AddSingleton<IOfflineOperatingGrantStore, OfflineOperatingGrantStore>();
         services.AddSingleton<IOfflineOperatingGrantService, OfflineOperatingGrantService>();
-        services.AddSingleton<IPinRecoverySessionStore, PinRecoverySessionStore>();
+        services.AddSingleton<IDeviceRecoveryCredentialStore, DeviceRecoveryCredentialStore>();
         services.AddSingleton<OfflineSessionUxState>();
         services.AddSingleton<IPosOfflineCapabilityPolicy, PosOfflineCapabilityPolicy>();
         services.AddSingleton<OnlineRequiredGuard>();

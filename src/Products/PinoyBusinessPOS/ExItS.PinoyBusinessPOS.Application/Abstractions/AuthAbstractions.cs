@@ -159,9 +159,33 @@ public interface IAuthenticationService
 }
 
 /// <summary>
-/// Per-user Platform session handle used to recover an online AccessToken after PIN
-/// (GrantType=session). Never stores passwords, PINs, or AccessTokens.
+/// Per-user device recovery credential used to obtain a fresh access token after local PIN verification.
+/// Never stores passwords, PINs, or access tokens.
 /// </summary>
+public interface IDeviceRecoveryCredentialStore
+{
+    Task SaveAsync(
+        Guid userId,
+        string deviceId,
+        string recoveryCredential,
+        DateTimeOffset idleExpiresAtUtc,
+        DateTimeOffset absoluteExpiresAtUtc,
+        CancellationToken ct = default);
+
+    Task<StoredDeviceRecoveryCredential?> LoadAsync(Guid userId, CancellationToken ct = default);
+
+    Task ClearAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>Legacy Platform session handle for one-time migration while online.</summary>
+    Task<string?> LoadLegacySessionHandleAsync(Guid userId, CancellationToken ct = default);
+
+    Task ClearLegacySessionHandleAsync(Guid userId, CancellationToken ct = default);
+}
+
+/// <summary>
+/// Obsolete transitional store. Prefer <see cref="IDeviceRecoveryCredentialStore"/>.
+/// </summary>
+[Obsolete("Use IDeviceRecoveryCredentialStore.")]
 public interface IPinRecoverySessionStore
 {
     Task SaveAsync(Guid userId, string platformSessionToken, CancellationToken ct = default);

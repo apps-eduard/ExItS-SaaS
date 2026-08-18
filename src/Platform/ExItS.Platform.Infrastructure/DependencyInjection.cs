@@ -88,6 +88,7 @@ public static class DependencyInjection
         services.AddScoped<IAccountProfileRepository, AccountProfileRepository>();
         services.AddScoped<IOrganizationContextPreferenceRepository, OrganizationContextPreferenceRepository>();
         services.AddScoped<IPlatformAccessTokenRepository, PlatformAccessTokenRepository>();
+        services.AddScoped<IPlatformDeviceRecoveryCredentialRepository, PlatformDeviceRecoveryCredentialRepository>();
         services.AddScoped<IPlatformExternalLoginRepository, PlatformExternalLoginRepository>();
         services.AddScoped<IPlatformCredentialTokenRepository, PlatformCredentialTokenRepository>();
         services.AddSingleton<IPlatformPasswordHasher, AspNetCorePlatformPasswordHasher>();
@@ -152,6 +153,8 @@ public static class DependencyInjection
         services.Configure<PlatformAuthBootstrapOptions>(config.GetSection(PlatformAuthBootstrapOptions.SectionName));
         services.Configure<PlatformSessionOptions>(config.GetSection(PlatformSessionOptions.SectionName));
         services.Configure<PlatformAccessTokenOptions>(config.GetSection(PlatformAccessTokenOptions.SectionName));
+        services.Configure<PlatformDeviceRecoveryCredentialOptions>(
+            config.GetSection(PlatformDeviceRecoveryCredentialOptions.SectionName));
         services.Configure<PlatformCredentialLifecycleOptions>(config.GetSection(PlatformCredentialLifecycleOptions.SectionName));
         services.Configure<PlatformEmailDeliveryOptions>(config.GetSection(PlatformEmailDeliveryOptions.SectionName));
         services.Configure<PlatformMfaOptions>(config.GetSection(PlatformMfaOptions.SectionName));

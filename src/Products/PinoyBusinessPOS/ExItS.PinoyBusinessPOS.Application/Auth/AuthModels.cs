@@ -59,6 +59,13 @@ public static class SecureTokenKeys
     /// </summary>
     public static string PinRecoveryPlatformSessionFor(Guid userId) =>
         $"pos.pin.recovery.session.{userId:D}";
+
+    /// <summary>
+    /// Per-user rotating device recovery credential for online PIN re-entry.
+    /// Survives logout; never stores PINs or passwords.
+    /// </summary>
+    public static string DeviceRecoveryCredentialFor(Guid userId) =>
+        $"pos.pin.recovery.credential.{userId:D}";
 }
 
 public static class PreferenceKeys
@@ -202,7 +209,13 @@ public enum PinSignInServerOutcome
     TransientUnavailable = 3,
 
     /// <summary>PIN valid; server explicitly denied this identity/device/assignment.</summary>
-    ExplicitlyRevoked = 4
+    ExplicitlyRevoked = 4,
+
+    /// <summary>
+    /// PIN valid and server reachable, but the device recovery credential is missing or expired.
+    /// Requires a normal full sign-in once to re-enroll PIN quick sign-in.
+    /// </summary>
+    OnlineVerificationRequired = 5
 }
 
 public sealed record AuthResult(

@@ -363,6 +363,7 @@ public sealed class SuspendPlatformUser
     private readonly IPlatformRoleAssignmentRepository _roles;
     private readonly IPlatformAuthSessionRepository _sessions;
     private readonly IPlatformAccessTokenRepository _accessTokens;
+    private readonly IPlatformDeviceRecoveryCredentialRepository _recoveryCredentials;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -372,6 +373,7 @@ public sealed class SuspendPlatformUser
         IPlatformRoleAssignmentRepository roles,
         IPlatformAuthSessionRepository sessions,
         IPlatformAccessTokenRepository accessTokens,
+        IPlatformDeviceRecoveryCredentialRepository recoveryCredentials,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
@@ -380,6 +382,7 @@ public sealed class SuspendPlatformUser
         _roles = roles;
         _sessions = sessions;
         _accessTokens = accessTokens;
+        _recoveryCredentials = recoveryCredentials;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -423,6 +426,7 @@ public sealed class SuspendPlatformUser
             await CredentialSessionInvalidation.RevokeAllAsync(
                 _sessions,
                 _accessTokens,
+                _recoveryCredentials,
                 _auditWriter,
                 userId,
                 utcNow,
@@ -509,6 +513,7 @@ public sealed class DeactivatePlatformUser
     private readonly IPlatformRoleAssignmentRepository _roles;
     private readonly IPlatformAuthSessionRepository _sessions;
     private readonly IPlatformAccessTokenRepository _accessTokens;
+    private readonly IPlatformDeviceRecoveryCredentialRepository _recoveryCredentials;
     private readonly IAuditWriter _auditWriter;
     private readonly PlatformLifecycleStepUp _stepUp;
     private readonly IPlatformUnitOfWork _unitOfWork;
@@ -519,6 +524,7 @@ public sealed class DeactivatePlatformUser
         IPlatformRoleAssignmentRepository roles,
         IPlatformAuthSessionRepository sessions,
         IPlatformAccessTokenRepository accessTokens,
+        IPlatformDeviceRecoveryCredentialRepository recoveryCredentials,
         IAuditWriter auditWriter,
         PlatformLifecycleStepUp stepUp,
         IPlatformUnitOfWork unitOfWork,
@@ -528,6 +534,7 @@ public sealed class DeactivatePlatformUser
         _roles = roles;
         _sessions = sessions;
         _accessTokens = accessTokens;
+        _recoveryCredentials = recoveryCredentials;
         _auditWriter = auditWriter;
         _stepUp = stepUp;
         _unitOfWork = unitOfWork;
@@ -582,6 +589,7 @@ public sealed class DeactivatePlatformUser
             await CredentialSessionInvalidation.RevokeAllAsync(
                 _sessions,
                 _accessTokens,
+                _recoveryCredentials,
                 _auditWriter,
                 userId,
                 utcNow,

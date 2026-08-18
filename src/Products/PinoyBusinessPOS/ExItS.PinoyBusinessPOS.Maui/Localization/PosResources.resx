@@ -1819,6 +1819,9 @@
   <data name="Offline_PinWrong" xml:space="preserve">
     <value>Incorrect PIN.</value>
   </data>
+  <data name="Offline_PinOnlineVerificationRequired" xml:space="preserve">
+    <value>Online verification required. Sign in normally once to continue using PIN on this device.</value>
+  </data>
   <data name="Offline_PinLocked" xml:space="preserve">
     <value>Too many attempts. Try again later.</value>
   </data>

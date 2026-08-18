@@ -50,12 +50,13 @@ public sealed class UseCaseTests
         var users = new InMemoryPlatformUserRepository();
         var sessions = new InMemoryPlatformAuthSessionRepository();
         var accessTokens = new InMemoryPlatformAccessTokenRepository();
+        var recoveryCredentials = new InMemoryPlatformDeviceRecoveryCredentialRepository();
         var audit = new NoOpAuditWriter();
         var uow = new NoOpUnitOfWork();
         var clock = new FixedClock(T0);
         var create = new CreatePlatformUser(users, uow, clock, new SequentialPublicUserIdGenerator());
         var roles = new InMemoryPlatformRoleAssignmentRepository();
-        var suspend = new SuspendPlatformUser(users, roles, sessions, accessTokens, audit, uow, clock);
+        var suspend = new SuspendPlatformUser(users, roles, sessions, accessTokens, recoveryCredentials, audit, uow, clock);
 
         var missing = await suspend.ExecuteAsync(PlatformUserId.New());
         Assert.Equal(ApplicationErrorCodes.UserNotFound, missing.ErrorCode);
@@ -100,7 +101,8 @@ public sealed class UseCaseTests
 
         clock.UtcNow = T0.AddMinutes(1);
         var roles = new InMemoryPlatformRoleAssignmentRepository();
-        var suspend = new SuspendPlatformUser(users, roles, sessions, accessTokens, audit, uow, clock);
+        var recoveryCredentials = new InMemoryPlatformDeviceRecoveryCredentialRepository();
+        var suspend = new SuspendPlatformUser(users, roles, sessions, accessTokens, recoveryCredentials, audit, uow, clock);
         Assert.True((await suspend.ExecuteAsync(user.Id)).IsSuccess);
         Assert.False(session.IsActive(clock.UtcNow));
         Assert.False(token.IsActive(clock.UtcNow));

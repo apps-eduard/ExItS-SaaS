@@ -1819,6 +1819,9 @@
   <data name="Offline_PinWrong" xml:space="preserve">
     <value>Maling PIN.</value>
   </data>
+  <data name="Offline_PinOnlineVerificationRequired" xml:space="preserve">
+    <value>Kailangan ng online na beripikasyon. Mag-sign in nang normal minsan upang magpatuloy sa PIN sa device na ito.</value>
+  </data>
   <data name="Offline_PinLocked" xml:space="preserve">
     <value>Masyadong maraming attempts. Subukan ulit mamaya.</value>
   </data>

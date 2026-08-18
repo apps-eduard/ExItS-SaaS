@@ -182,6 +182,22 @@ public sealed record EffectiveAccessDto(
     string? SubscriptionStatus = null,
     IReadOnlyList<string>? EnabledFeatureCodes = null);
 
+public sealed record DeviceRecoveryCredentialEnrollDto(
+    string RecoveryCredential,
+    DateTimeOffset IdleExpiresAtUtc,
+    DateTimeOffset AbsoluteExpiresAtUtc);
+
+public sealed record DeviceRecoveryCredentialExchangeDto(
+    PlatformAccessTokenIssueDto AccessToken,
+    string RecoveryCredential,
+    DateTimeOffset IdleExpiresAtUtc,
+    DateTimeOffset AbsoluteExpiresAtUtc);
+
+public sealed record DeviceRecoveryCredentialExchangeRequest(
+    string RecoveryCredential,
+    Guid? OrganizationId,
+    string? ProductCode);
+
 public sealed record PlatformAccessTokenIssueDto(
     string AccessToken,
     string TokenType,
@@ -1078,6 +1094,15 @@ public interface IPlatformAccessClient
     Task<ApiResult<PlatformAccessTokenIssueDto>> IssueTokenAsync(
         IssuePlatformAccessTokenRequest request,
         CancellationToken ct = default);
+
+    Task<ApiResult<DeviceRecoveryCredentialEnrollDto>> EnrollDeviceRecoveryCredentialAsync(
+        CancellationToken ct = default);
+
+    Task<ApiResult<DeviceRecoveryCredentialExchangeDto>> ExchangeDeviceRecoveryCredentialAsync(
+        DeviceRecoveryCredentialExchangeRequest request,
+        CancellationToken ct = default);
+
+    Task<ApiResult<object>> RevokeDeviceRecoveryCredentialAsync(CancellationToken ct = default);
 
     Task<ApiResult<PlatformAccessTokenIssueDto>> BindTokenAsync(
         BindPlatformAccessTokenRequest request,
