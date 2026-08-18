@@ -1,30 +1,14 @@
 # Phases
 
 **Purpose:** Planned Pinoy Loan Manager development phases and work-package sequencing.
+**Canonical documents:** [../roadmap.md](../roadmap.md), [../development-plan.md](../development-plan.md)
 **Status:** Foundation / planning only
 **Implementation present:** No
 
-This directory will hold the product roadmap and phase pages. Do not copy PinoyBusinessPOS phase history into this product.
-
----
-
-## Current phase
-
-**PLM-00 — Documentation and planning foundation**
+Do not copy PinoyBusinessPOS phase history into this product.
 
 | Work package | Objective | Status |
 |---|---|---|
-| PLM-00-WP01 | Establish `Docs/` workspace and record architectural intent | This package (structure only) |
-| PLM-00-WP02 | Planning/documentation only — fill Product Foundation templates and record open owner decisions without implementation | Recommended next; not started |
-
-Later phases (architecture, persistence, API, UI, operations) are not scheduled in this package.
-
----
-
-## Sequencing principle
-
-1. Documentation and owner decisions
-2. Architecture planning
-3. Authorized implementation packages
-
-Do not start implementation until product definition, architecture, security, and authorization planning are authorized and the missing owner decisions are either resolved or explicitly deferred.
+| PLM-00-WP01 | Documentation workspace | Completed |
+| PLM-00-WP02 | Product definition and architecture baseline | Current |
+| PLM-00-WP03 | Domain decision register / loan business rule discovery | Next proposed |

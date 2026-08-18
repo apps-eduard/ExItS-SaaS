@@ -1,60 +1,20 @@
 # Product
 
 **Purpose:** Authoritative **WHAT** — loan-product behavior and business rules.
+**Canonical document:** [../product-definition.md](../product-definition.md)
 **Status:** Foundation / planning only
 **Implementation present:** No
 
-This directory will hold Pinoy Loan Manager product definition and operational policy once the product owner authorizes those decisions.
+Do not treat this folder as a second product definition. Future detailed policy files may live here after the product owner decides them.
 
-It does **not** hold technical structure (see [../Architecture/](../Architecture/README.md)) or security/authorization design (see [../Security/](../Security/README.md)).
+Open policy subjects remain listed in [../product-definition.md](../product-definition.md) and [../risks-and-decisions.md](../risks-and-decisions.md) (PLM-D-00-08). Do not invent:
 
----
-
-## Future subjects (not defined in this package)
-
-Recorded as planning placeholders only. Do **not** treat the list as approved policy.
-
-- borrower model
-- loan products
-- applications
-- loan lifecycle
-- interest methods
-- amortization
-- payment allocation
-- penalties
-- delinquency
-- collections
-- restructuring
-- write-off
-- credit scoring
-- lending limits
-- approval rules
-- collateral
-- regulatory / legal requirements
-
-None of the above has a formula, workflow, or rule in this work package.
-
----
-
-## Explicit non-decisions
-
-Do not invent or record as decided:
-
-- interest formula
-- flat vs reducing balance
+- interest method/formula
 - amortization method
-- rounding
+- loan types
 - payment allocation order
-- grace period
-- penalties
-- delinquency classification
-- loan approval logic
-- credit scoring
-- loan limits
-- restructuring
-- refinancing
-- write-off
-- collateral rules
-- regulatory/legal requirements
-
-These require explicit future product-owner decisions.
+- rounding, grace periods, penalties
+- delinquency, collections, write-off
+- approval limits, credit scoring, collateral
+- refinancing, restructuring
+- legal/regulatory operating rules
