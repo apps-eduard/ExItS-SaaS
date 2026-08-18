@@ -22,9 +22,29 @@ Coordinates identify the fulfillment origin. They are not a customer address and
 
 Server evaluator separates entitlement (`CanUse*`), merchant intent (`*Enabled`), setup completeness (`*Ready`), and live operability (`*Operational`). Enablement APIs reject incomplete setup. See [P28-WP11 report](../reports/P28-WP11-organization-setup-and-branch-fulfillment-readiness.md).
 
+## Ownership (P28-WP12)
+
+Organization owns master/shared data. Branch owns operational state. Creating a second branch never clones catalog, customers, inventory, staff, or devices.
+
+| Organization-owned | Branch-owned |
+|---|---|
+| Customers / Personal↔organization relationship | Inventory on-hand / reserved overlay |
+| Catalog products, categories, UOM, SKU/barcode, images | Lots/expiry location |
+| Current organization selling price | Stock movements and transfers |
+| Subscription / entitlements | Store hours, location, pickup/delivery, readiness |
+| Supplier/connected relationships (where currently org-owned) | POS devices, shifts/cash drawers, transaction origin |
+
+Subscription upgrade only unlocks `MaxBranches` capacity. It does not create branches or enable fulfillment. Downgrade retains existing branches and history; new creates that would exceed the limit are blocked.
+
+New branch inventory starts zero/unallocated to the primary. Stock arrives only through opening stock, receipt, transfer, or other existing movements. Storefront availability uses the selected fulfillment branch (`fulfillmentBranchId`). Customer orders reserve/consume that branch overlay; sales use `X-Pos-Branch-Id` when present. `CustomerOrder` keeps `SellerOrganizationId` + `FulfillmentBranchId`. Walk-in `Sale` has no branch column (no migration); overlay is session-branch.
+
+Staff are not auto-assigned to a new branch. Devices stay bound to the registration branch. Main readiness never satisfies Branch B.
+
+See [P28-WP12 report](../reports/P28-WP12-multi-branch-customer-commerce-hardening.md).
+
 ## Management surfaces
 
-MAUI provides a dense branch list and a progressive editor for details, address, coordinates, operating hours, fulfillment activation (readiness-gated), and delivery settings. Organization Web exposes the same core fields in a responsive, desktop-dense layout with a dedicated branch edit page.
+MAUI provides a dense branch list and a progressive editor: compact setup/readiness rows (details, staff, devices, inventory CTAs, organization catalog/customers, fulfillment chips), then details, address, coordinates, operating hours, fulfillment activation, and delivery settings. Organization Web exposes the same setup panel plus core fields in a responsive, desktop-dense layout.
 
 Branch capacity remains entitlement-controlled. Primary branches cannot be treated as disposable, and archived branches cannot fulfill new orders.
 

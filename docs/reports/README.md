@@ -155,6 +155,8 @@ The dashboard links to the latest accepted report.
 | [P28-WP01-branch-fulfillment-location-foundation.md](P28-WP01-branch-fulfillment-location-foundation.md) | P28-WP01 Branch & Fulfillment Location Foundation | Code Complete |
 | [P28-WP02-customer-ordering-stage-b-slice.md](P28-WP02-customer-ordering-stage-b-slice.md) | P28-WP02–WP09 Customer Ordering Stage B Slice | Code Complete / Validation Pending |
 | [P28-WP03-shared-platform-template-images.md](P28-WP03-shared-platform-template-images.md) | Shared Platform template images + org-safe adoption/overrides | Code Complete / Validation Pending |
+| [P28-WP11-organization-setup-and-branch-fulfillment-readiness.md](P28-WP11-organization-setup-and-branch-fulfillment-readiness.md) | P28-WP11 Organization setup + branch fulfillment readiness | Code Complete / Validation Pending |
+| [P28-WP12-multi-branch-customer-commerce-hardening.md](P28-WP12-multi-branch-customer-commerce-hardening.md) | P28-WP12 Multi-branch customer commerce hardening | Code Complete / Validation Pending |
 | [P29-WP01-data-authority-and-schema-consistency.md](P29-WP01-data-authority-and-schema-consistency.md) | P29-WP01 Data Authority & Schema Consistency | Code Complete / Validation Pending |
 | [P29-WP02-tenant-isolation-and-relational-integrity.md](P29-WP02-tenant-isolation-and-relational-integrity.md) | P29-WP02 Tenant Isolation & Relational Integrity | Code Complete / Validation Pending |
 | [P29-WP03-financial-and-transaction-integrity.md](P29-WP03-financial-and-transaction-integrity.md) | P29-WP03 Financial & Transaction Integrity | Partial |

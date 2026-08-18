@@ -40,7 +40,7 @@ Flow:
 | Who can shop | Authenticated Personal actor + **ACTIVE** Personal↔seller link for that `sellerOrganizationId` |
 | Seller entitlement | Enterable POS + feature `store-customer-ordering` (delivery also needs `store-delivery-orders`) |
 | Catalog | Seller-org products that are `Active` + `CanBeSold` + `SellingPrice > 0` |
-| Stock | Soft availability from `OnHand − Reserved` (`AvailableQuantity`); untracked shows `Available` with no quantity; reserve still happens on seller Accept. See [product images and storefront availability](product-images-and-storefront-availability.md) |
+| Stock | Soft availability from the **selected fulfillment branch** overlay, capped by org `AvailableQuantity` (`OnHand − Reserved`). Untracked shows `Available` with no quantity. New branches start at 0 and never inherit Main stock. Reserve still happens on seller Accept. See [product images and storefront availability](product-images-and-storefront-availability.md) and [P28-WP12](../reports/P28-WP12-multi-branch-customer-commerce-hardening.md) |
 | Images | Merchant override → shared Platform template image → placeholder. DTOs carry `HasImage`/`ImageVersion`/`ImageSource` only. Authorized WebP thumb/medium; MAUI private file cache. Shared template image does not share price/SKU/stock. |
 | Per-product storefront flag | **Not implemented** (reported residual; no schema migration) |
 | Cart | In-memory MAUI session cart (cleared after successful place / leaving merchant) |
@@ -77,7 +77,9 @@ Branch must belong to the seller org, be Active (not Archived), and be **operati
 
 Storefront status is advisory; quote and place revalidate operational state. Customers may browse while closed/paused but cannot place new orders. Existing Submitted/Accepted orders continue after close/pause.
 
-Report: [P28-WP11](../reports/P28-WP11-organization-setup-and-branch-fulfillment-readiness.md).
+Report: [P28-WP11](../reports/P28-WP11-organization-setup-and-branch-fulfillment-readiness.md). Multi-branch catalog/customer/inventory isolation: [P28-WP12](../reports/P28-WP12-multi-branch-customer-commerce-hardening.md).
+
+Customers belong to the seller **organization**. Branch B may serve the same linked Personal customer; it does not create a per-branch customer row. Staff visibility remains role/device scoped.
 
 ## Status model
 
