@@ -7,8 +7,8 @@
 |---|---|
 | Product | Pinoy Loan Manager |
 | Current phase | PLM-00 Foundation & Product Decisions |
-| Current work package | PLM-00-WP10 Foundation Closeout & Implementation Readiness |
-| Status | Draft — PLM-00 documentation complete; not product-owner approved; no implementation authorized |
+| Current work package | PLM-00-WP10 complete; PLM-01 authorized |
+| Status | PLM-00 documentation complete; **PLM-D-00-10 Closed / Product Owner Accepted**; PLM-01 authorized |
 
 ## Phase objective
 
@@ -31,7 +31,7 @@ Establish product documentation, architecture boundaries, Personal/Borrower inte
 - Generic Platform relationship schema
 - Production authentication (R-091) unless a later phase explicitly delivers it
 - Final commercial-state transport (D-P12-03) unless explicitly authorized
-- Starting PLM-01
+- Starting PLM-01 from this documentation WP (authorized separately after PLM-D-00-10)
 
 ## Work packages (current phase)
 
@@ -46,15 +46,15 @@ Establish product documentation, architecture boundaries, Personal/Borrower inte
 | PLM-00-WP07 | Traditional Loan & Origination Workflow Baseline | Completed | PLM-00-WP06 |
 | PLM-00-WP08 | Reporting, Notifications, Documents & Customer Visibility Baseline | Completed | PLM-00-WP07 |
 | PLM-00-WP09 | Technical Product Layout & Integration Boundary | Completed | PLM-00-WP08 |
-| PLM-00-WP10 | Foundation Closeout & Implementation Readiness | Current | PLM-00-WP09 |
+| PLM-00-WP10 | Foundation Closeout & Implementation Readiness | Completed | PLM-00-WP09 |
 
-No implementation phase is authorized yet.
+PLM-00 documentation phase is complete. PLM-01 is authorized.
 
 ## Planning buckets (later phases)
 
 | Phase | Status |
 |---|---|
-| PLM-01 Product Scaffold & Isolation | Not started — **recommended next** when authorized |
+| PLM-01 Product Scaffold & Isolation | **Authorized next** — do not start until this acceptance record is committed |
 | PLM-02 Identity / Organization / Product Access | Not started |
 | PLM-03 Loan Product Authorization | Not started |
 | PLM-04 Borrower Foundation | Not started |
@@ -88,8 +88,8 @@ No implementation phase is authorized yet.
 - [x] Traditional loan and origination workflow baseline recorded (WP07)
 - [x] Reporting, documents, notifications, and customer-visibility baseline recorded (WP08)
 - [x] Technical product layout and integration boundary recorded (WP09)
-- [x] Foundation closeout and readiness checklist recorded (this WP)
-- [ ] Product-owner approval of documentation baseline (PLM-D-00-10)
+- [x] Foundation closeout and readiness checklist recorded (WP10)
+- [x] Product-owner approval of documentation baseline (PLM-D-00-10 Closed / Product Owner Accepted)
 - [ ] Isolation contract preserved in any later implementation (separate DB; no Platform table reads; product-local roles)
 - [ ] Docs match implementation (no implementation yet)
 - [ ] Tests green; `main = origin/main` (not applicable until implementation and authorized push)
@@ -107,7 +107,7 @@ No implementation phase is authorized yet.
 
 ## Exact next package
 
-**PLM-01 Product Scaffold & Isolation** (do **not** begin until explicitly authorized)
+**PLM-01 Product Scaffold & Isolation** (authorized after PLM-D-00-10)
 
 Create authorized source/test/deploy skeleton and isolation guards **without** Loan domain implementation. Layout target: [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md).
 
@@ -118,4 +118,4 @@ Create authorized source/test/deploy skeleton and isolation guards **without** L
 - [x] No invented unresolved policy
 - [x] Closeout report filed ([Reports/PLM-00-foundation-closeout.md](Reports/PLM-00-foundation-closeout.md))
 - [ ] Portfolio / phase status updated (outside this product Docs tree; not done here)
-- [ ] Product-owner acceptance (PLM-D-00-10)
+- [x] Product-owner acceptance (PLM-D-00-10 Closed / Product Owner Accepted)

@@ -29,7 +29,7 @@
 | PLM-D-00-07 | Decision | Operational financial model | Open / Product Owner Decision Required | Origination, payments, collections, cash | Product owner | Loan vs collector cash; Cashier Session *concept*; billable event DISBURSED; schema not designed | Owner-approved money/ledger schema in this product |
 | PLM-D-00-08 | Decision | Loan business/calculation rules | Open / Product Owner Decision Required | PLM-05 through PLM-10 | Product owner | Treatment *modes*, partial payments, oldest-due *schedule* baseline recorded; **no** rates/formulas/component order | Owner-approved policy for each remaining rule area |
 | PLM-D-00-09 | Decision | Web/MAUI component-sharing strategy | Open / Product Owner Decision Required | Client scaffold and PLM-13 | Architecture WP | Surface split recorded (full Org Web vs limited MAUI vs Personal presentation) | Approved sharing/isolation approach; no client project until authorized |
-| PLM-D-00-10 | Decision | Product documentation baseline completion / owner approval | Open / Product Owner Decision Required | Closing PLM-00 | Product owner | Canonical docs from WP01–WP10; closeout: Docs/Reports/PLM-00-foundation-closeout.md | Owner accepts baseline or lists required changes |
+| PLM-D-00-10 | Decision | Product documentation baseline completion / owner approval | **Closed / Product Owner Accepted** | Closing PLM-00 | Product owner | PLM-00 WP01–WP10 completed; GitHub branch reviewed; Product Owner authorized progression to PLM-01 | Owner accepted documentation baseline. Financial, legal, and production decisions remain open. |
 | PLM-D-00-11 | Decision | External legal/compliance validation | Open / Product Owner Decision Required | Production use | Product owner + external counsel | No rates/workflows claimed compliant | Written legal/compliance validation before Production |
 | PLM-D-00-12 | Decision | Exact money rounding mode | Open / Product Owner Decision Required | Calculation engine | Product owner + accounting | Decimal money; boundaries recorded; midpoint algorithm **not** chosen | Explicit rounding-mode decision before engine implementation |
 | PLM-D-00-13 | Decision | Small-org vs two-person high-risk approval | Open / Product Owner Decision Required | Operational SoD | Product owner | Multiple presets on one person allowed; high-risk self-approval still restricted where required | Explicit policy for which actions may never be self-approved |
@@ -147,8 +147,9 @@ These are **planning targets**, not created projects.
 
 - PLM-00 documentation phase is complete as planning
 - implementation classified into gates A (scaffold), B (early domain), C (financial engine), D (production)
-- PLM-01 is the recommended next phase and is **not** started
-- product-owner approval of the documentation baseline remains **OPEN** (PLM-D-00-10)
+- **PLM-D-00-10 Closed / Product Owner Accepted** — documentation baseline accepted; progression to PLM-01 authorized
+- Product Owner acceptance does **not** approve unresolved rates, formulas, legal compliance, or production readiness
+- PLM-01 is the authorized next phase after this acceptance record
 
 ## Operating-model, calculation, and operational open areas (do not invent)
 
@@ -228,5 +229,6 @@ Do **not** close remaining items by guessing. Do **not** claim legal compliance.
 - Prefer stable IDs (`R-…`, `D-…`, `PLM-D-…`).
 - “Closed” requires repository or operator evidence plus explicit approval.
 - Unresolved policy in approved docs must appear here as open decisions.
-- Do not close PLM-D-00-01 through PLM-D-00-13, D-P12-03, R-091, or D-P12-05 without explicit approval.
+- Do not close PLM-D-00-01 through PLM-D-00-09, PLM-D-00-11 through PLM-D-00-13, D-P12-03, R-091, or D-P12-05 without explicit approval.
+- PLM-D-00-10 is **Closed / Product Owner Accepted** (documentation baseline only).
 - Category indexes under `Docs/*/README.md` are not ADRs; ADRs belong in `Docs/Decisions/` when later authorized.

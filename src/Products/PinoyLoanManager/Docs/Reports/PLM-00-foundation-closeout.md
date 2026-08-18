@@ -152,6 +152,23 @@ Then (refine later as needed):
 
 ---
 
+## Product Owner acceptance (PLM-D-00-10)
+
+**Closed / Product Owner Accepted.**
+
+Evidence:
+
+- PLM-00 WP01–WP10 completed
+- GitHub branch `docs/plm-foundation` reviewed
+- Product Owner authorized progression to PLM-01
+- financial, legal, and production decisions remain explicitly open
+
+This acceptance applies to the **documentation baseline** only. It does **not** approve unresolved interest formulas, rates, rounding, allocation order, legal/compliance sufficiency, production authentication, or commercial-state transport.
+
+PLM-01 Product Scaffold & Isolation is authorized as the next phase.
+
+---
+
 ## Exclusions (still true)
 
 - no application code

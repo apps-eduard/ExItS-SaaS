@@ -42,9 +42,9 @@ Authoritative closeout: [../Reports/PLM-00-foundation-closeout.md](../Reports/PL
 
 | Gate | Ready? |
 |---|---|
-| A. Scaffold (PLM-01) | **Yes, when authorized** — layout and isolation rules recorded |
+| A. Scaffold (PLM-01) | **Authorized** — Product Owner accepted PLM-00 documentation baseline (PLM-D-00-10); financial/legal/production decisions remain open |
 | B. Early domain (no rates) | **Yes, after scaffold + access** — concepts recorded |
 | C. Financial engine | **No** — formulas, rounding, allocation, fees, penalties, settlement still open |
 | D. Production | **No** — R-091, D-P12-03, PLM-D-00-11, ops/security still open |
 
-Do **not** start PLM-01 until explicitly authorized.
+PLM-01 Product Scaffold & Isolation is **authorized**. Do **not** treat this as approval of rates, formulas, or legal compliance.
