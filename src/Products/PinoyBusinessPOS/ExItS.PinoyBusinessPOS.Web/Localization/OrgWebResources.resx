@@ -178,7 +178,7 @@
     <value>Staff</value>
   </data>
   <data name="Branches_StaffNotAuto" xml:space="preserve">
-    <value>Not auto-assigned</value>
+    <value>Not assigned</value>
   </data>
   <data name="Branches_Devices" xml:space="preserve">
     <value>Devices</value>
@@ -196,7 +196,7 @@
     <value>Inventory</value>
   </data>
   <data name="Branches_InventoryNotCopied" xml:space="preserve">
-    <value>No stock copied</value>
+    <value>No stock</value>
   </data>
   <data name="Branches_AddOpeningStock" xml:space="preserve">
     <value>Add opening stock</value>
@@ -254,6 +254,183 @@
   </data>
   <data name="Branches_StatusNotInPlan" xml:space="preserve">
     <value>Not in plan</value>
+  </data>
+  <data name="Branches_OrgWide" xml:space="preserve">
+    <value>Organization-wide</value>
+  </data>
+  <data name="Branches_Manage" xml:space="preserve">
+    <value>Manage</value>
+  </data>
+  <data name="Branches_InventorySetUp" xml:space="preserve">
+    <value>Set up</value>
+  </data>
+  <data name="Branches_TimeZoneHint" xml:space="preserve">
+    <value>Inherits organization timezone when empty.</value>
+  </data>
+  <data name="Branches_AddressLocation" xml:space="preserve">
+    <value>Address &amp; location</value>
+  </data>
+  <data name="Branches_MapLocation" xml:space="preserve">
+    <value>Map location</value>
+  </data>
+  <data name="Branches_LocationHint" xml:space="preserve">
+    <value>Required for delivery.</value>
+  </data>
+  <data name="Branches_CopyWeekdays" xml:space="preserve">
+    <value>Copy Monday to weekdays</value>
+  </data>
+  <data name="Branches_HoursOpen" xml:space="preserve">
+    <value>Hours</value>
+  </data>
+  <data name="Branches_Closed" xml:space="preserve">
+    <value>Closed</value>
+  </data>
+  <data name="Branches_Open24h" xml:space="preserve">
+    <value>24 hours</value>
+  </data>
+  <data name="Branches_SaveHours" xml:space="preserve">
+    <value>Save hours</value>
+  </data>
+  <data name="Branches_Configure" xml:space="preserve">
+    <value>Configure</value>
+  </data>
+  <data name="Branches_MissingCount" xml:space="preserve">
+    <value>{0} items missing</value>
+  </data>
+  <data name="Branches_None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="Branches_StatusOff" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Branches_StatusOffHours" xml:space="preserve">
+    <value>Outside hours</value>
+  </data>
+  <data name="Branches_StatusActive" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="Branches_StatusInactive" xml:space="preserve">
+    <value>Inactive</value>
+  </data>
+  <data name="Branches_CheckOk" xml:space="preserve">
+    <value>Complete</value>
+  </data>
+  <data name="Branches_CheckMissing" xml:space="preserve">
+    <value>Missing</value>
+  </data>
+  <data name="Branches_SaveActions" xml:space="preserve">
+    <value>Branch save actions</value>
+  </data>
+  <data name="Branches_ContactPhone" xml:space="preserve">
+    <value>Store phone</value>
+  </data>
+  <data name="Branches_TimeZone" xml:space="preserve">
+    <value>Timezone override</value>
+  </data>
+  <data name="Branches_AddressLine1" xml:space="preserve">
+    <value>Address line 1</value>
+  </data>
+  <data name="Branches_AddressLine2" xml:space="preserve">
+    <value>Address line 2</value>
+  </data>
+  <data name="Branches_FieldCity" xml:space="preserve">
+    <value>City / municipality</value>
+  </data>
+  <data name="Branches_Region" xml:space="preserve">
+    <value>Province / region</value>
+  </data>
+  <data name="Branches_PostalCode" xml:space="preserve">
+    <value>Postal code</value>
+  </data>
+  <data name="Branches_CountryCode" xml:space="preserve">
+    <value>Country code</value>
+  </data>
+  <data name="Branches_Latitude" xml:space="preserve">
+    <value>Latitude</value>
+  </data>
+  <data name="Branches_Longitude" xml:space="preserve">
+    <value>Longitude</value>
+  </data>
+  <data name="Branches_OperatingHours" xml:space="preserve">
+    <value>Operating hours</value>
+  </data>
+  <data name="Branches_Fulfillment" xml:space="preserve">
+    <value>Fulfillment</value>
+  </data>
+  <data name="Branches_DeliverySettings" xml:space="preserve">
+    <value>Delivery pricing</value>
+  </data>
+  <data name="Branches_MinimumOrder" xml:space="preserve">
+    <value>Minimum order</value>
+  </data>
+  <data name="Branches_BaseFee" xml:space="preserve">
+    <value>Base fee</value>
+  </data>
+  <data name="Branches_IncludedKm" xml:space="preserve">
+    <value>Included distance (km)</value>
+  </data>
+  <data name="Branches_AdditionalPerKm" xml:space="preserve">
+    <value>Extra / km</value>
+  </data>
+  <data name="Branches_MaximumKm" xml:space="preserve">
+    <value>Max distance (km)</value>
+  </data>
+  <data name="Branches_FreeThreshold" xml:space="preserve">
+    <value>Free delivery</value>
+  </data>
+  <data name="Branches_Enable" xml:space="preserve">
+    <value>Enable</value>
+  </data>
+  <data name="Branches_EnableDelivery" xml:space="preserve">
+    <value>Enable delivery</value>
+  </data>
+  <data name="Branches_DisableDelivery" xml:space="preserve">
+    <value>Disable delivery</value>
+  </data>
+  <data name="Branches_PauseOrders" xml:space="preserve">
+    <value>Pause online orders</value>
+  </data>
+  <data name="Branches_ResumeOrders" xml:space="preserve">
+    <value>Resume online orders</value>
+  </data>
+  <data name="Branches_CheckAddress" xml:space="preserve">
+    <value>Address</value>
+  </data>
+  <data name="Branches_CheckLocation" xml:space="preserve">
+    <value>Map location</value>
+  </data>
+  <data name="Branches_CheckHours" xml:space="preserve">
+    <value>Store hours</value>
+  </data>
+  <data name="Branches_CheckPhone" xml:space="preserve">
+    <value>Store phone</value>
+  </data>
+  <data name="Branches_CheckPricing" xml:space="preserve">
+    <value>Delivery pricing</value>
+  </data>
+  <data name="Branches_CheckDistance" xml:space="preserve">
+    <value>Service distance</value>
+  </data>
+  <data name="Branches_Day_Monday" xml:space="preserve">
+    <value>Mon</value>
+  </data>
+  <data name="Branches_Day_Tuesday" xml:space="preserve">
+    <value>Tue</value>
+  </data>
+  <data name="Branches_Day_Wednesday" xml:space="preserve">
+    <value>Wed</value>
+  </data>
+  <data name="Branches_Day_Thursday" xml:space="preserve">
+    <value>Thu</value>
+  </data>
+  <data name="Branches_Day_Friday" xml:space="preserve">
+    <value>Fri</value>
+  </data>
+  <data name="Branches_Day_Saturday" xml:space="preserve">
+    <value>Sat</value>
+  </data>
+  <data name="Branches_Day_Sunday" xml:space="preserve">
+    <value>Sun</value>
   </data>
   <data name="Common_Back" xml:space="preserve">
     <value>Back</value>

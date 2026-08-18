@@ -14935,24 +14935,63 @@ html:has(.pos-denom-sheet) .pos-denom-sheet {
 }
 
 /* Phase 28: compact branch and fulfillment-location management. */
-.pos-branches__header,
-.pos-branches__card-top,
-.pos-branches__actions {
-    align-items: center;
+.pos-branches__header {
+    align-items: stretch;
     display: flex;
+    flex-direction: column;
     gap: .65rem;
-    justify-content: space-between;
 }
 
-.pos-branches h1,
+.pos-branches__heading h1,
 .pos-branches h2,
 .pos-branches p {
     margin-top: 0;
 }
 
+.pos-branches__heading h1 {
+    margin-bottom: .2rem;
+}
+
+.pos-branches__heading .pos-muted {
+    margin-bottom: 0;
+}
+
+.pos-branches__header .exds-btn {
+    width: 100%;
+}
+
+.pos-branches__actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .65rem;
+}
+
 .pos-branches__capacity {
-    font-size: .85rem;
+    display: grid;
+    gap: .35rem;
+    font-size: .82rem;
     font-weight: 650;
+}
+
+.pos-branches__capacity-note {
+    margin: 0;
+}
+
+.pos-branches__capacity-track {
+    background: var(--exits-surface-2, #eef3f0);
+    border-radius: 999px;
+    display: block;
+    height: .4rem;
+    overflow: hidden;
+}
+
+.pos-branches__capacity-fill {
+    background: var(--exits-primary, #1b7a3d);
+    border-radius: inherit;
+    display: block;
+    height: 100%;
+    min-width: 0;
 }
 
 .pos-branches__list,
@@ -14963,12 +15002,97 @@ html:has(.pos-denom-sheet) .pos-denom-sheet {
     gap: .65rem;
 }
 
+.pos-branches__item {
+    min-width: 0;
+}
+
 .pos-branches__card,
 .pos-branches__section {
     background: var(--exits-surface, #fff);
     border: 1px solid var(--exits-border, #dce5df);
     border-radius: .75rem;
-    padding: .8rem;
+    padding: .85rem;
+}
+
+button.pos-branches__card {
+    appearance: none;
+    align-items: flex-start;
+    color: inherit;
+    cursor: pointer;
+    display: flex;
+    font: inherit;
+    gap: .7rem;
+    min-height: var(--exits-touch-target-min, 3rem);
+    text-align: start;
+    width: 100%;
+}
+
+button.pos-branches__card:hover,
+button.pos-branches__card:focus-visible {
+    border-color: var(--exits-primary, #1b7a3d);
+}
+
+button.pos-branches__card:focus-visible {
+    outline: 2px solid var(--exits-primary, #1b7a3d);
+    outline-offset: 2px;
+}
+
+.pos-branches__card-icon {
+    color: var(--exits-primary, #1b7a3d);
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 1.35rem;
+    margin-top: .15rem;
+    width: 1.35rem;
+}
+
+.pos-branches__card-icon svg,
+.pos-branches__card-chevron svg {
+    display: block;
+    height: 100%;
+    width: 100%;
+}
+
+.pos-branches__card-body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: .35rem;
+    min-width: 0;
+}
+
+.pos-branches__card-top {
+    align-items: flex-start;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem .65rem;
+    justify-content: space-between;
+}
+
+.pos-branches__card-name {
+    font-size: var(--exits-text-sm, .875rem);
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.pos-branches__card-meta {
+    font-size: var(--exits-text-xs, .75rem);
+    line-height: 1.35;
+}
+
+.pos-branches__card-meta--hint {
+    color: var(--exits-primary, #1b7a3d);
+    font-weight: 650;
+}
+
+.pos-branches__card-chevron {
+    color: var(--exits-text-muted, #5b6b62);
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 1.15rem;
+    margin-top: .2rem;
+    transform: scaleX(-1);
+    width: 1.15rem;
 }
 
 .pos-branches__chips {
@@ -14976,6 +15100,18 @@ html:has(.pos-denom-sheet) .pos-denom-sheet {
     display: flex;
     flex-wrap: wrap;
     gap: .35rem;
+}
+
+@media (min-width: 720px) {
+    .pos-branches__header {
+        align-items: flex-start;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+    .pos-branches__header .exds-btn {
+        width: auto;
+    }
 }
 
 .pos-branches__field,
@@ -15007,19 +15143,21 @@ html:has(.pos-denom-sheet) .pos-denom-sheet {
 
 .pos-branches__setup-rows {
     display: grid;
-    gap: .35rem;
+    gap: .25rem;
 }
 
 .pos-branches__setup-row,
-.pos-branches__setup-actions {
+.pos-branches__setup-actions,
+.pos-branches__kv {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: .4rem .6rem;
+    gap: .35rem .5rem;
     min-height: 2.75rem;
 }
 
-.pos-branches__setup-row span:first-child {
+.pos-branches__setup-row span:first-child,
+.pos-branches__kv-label {
     flex: 0 0 7.5rem;
     font-size: .82rem;
     font-weight: 650;
@@ -15031,6 +15169,164 @@ html:has(.pos-denom-sheet) .pos-denom-sheet {
     font-size: .75rem;
     font-weight: 650;
     padding: .15rem .55rem;
+    white-space: nowrap;
+}
+
+.pos-branches--edit {
+    padding-bottom: calc(8.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+.pos-branches--edit .pos-branches__section,
+.pos-branches--edit .pos-branches__fold {
+    margin: 0;
+    padding: .75rem .85rem;
+}
+
+.pos-branches--edit .exds-accordion {
+    margin-bottom: .5rem;
+}
+
+.pos-branches__fold-summary {
+    gap: .5rem;
+    min-height: 2.75rem;
+}
+
+.pos-branches__fold-body {
+    color: inherit;
+    display: grid;
+    gap: .5rem;
+    padding-top: .35rem;
+}
+
+.pos-branches__hint,
+.pos-branches--edit .pos-muted {
+    font-size: .75rem;
+    margin: 0;
+}
+
+.pos-branches__pair,
+.pos-branches__kv-list {
+    display: grid;
+    gap: .5rem;
+}
+
+.pos-branches__setup-sub {
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+    padding: 0 0 .35rem 7.5rem;
+}
+
+.pos-branches__text-action {
+    min-height: 2.75rem;
+    padding: .25rem 0;
+}
+
+.pos-branches__hours {
+    display: grid;
+    gap: .25rem;
+}
+
+.pos-branches__hours-row {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem;
+    min-height: 2.75rem;
+}
+
+.pos-branches__hours-day {
+    flex: 0 0 2.4rem;
+    font-size: .82rem;
+    font-weight: 700;
+}
+
+.pos-branches__hours-mode {
+    flex: 1 1 6.5rem;
+}
+
+.pos-branches__time {
+    flex: 1 1 5rem;
+    max-width: 7rem;
+}
+
+.pos-branches__hours-mode,
+.pos-branches__time,
+.pos-branches--edit .exds-field__control,
+.pos-branches--edit select {
+    border: 1px solid var(--exits-border, #cbd8d0);
+    border-radius: .5rem;
+    font: inherit;
+    min-height: 2.75rem;
+    padding: .35rem .5rem;
+}
+
+.pos-branches__hours-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    justify-content: space-between;
+}
+
+.pos-branches__subhead {
+    font-size: .82rem;
+    font-weight: 700;
+    margin: .35rem 0 0;
+}
+
+.pos-branches__checklist {
+    display: grid;
+    gap: .2rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.pos-branches__check {
+    align-items: center;
+    display: flex;
+    gap: .4rem;
+    min-height: 2rem;
+}
+
+.pos-branches__check-icon {
+    display: inline-flex;
+    height: 1rem;
+    width: 1rem;
+}
+
+.pos-branches__check-icon--ok {
+    color: var(--exits-primary, #1b7a3d);
+}
+
+.pos-branches__check-icon--missing {
+    color: var(--exits-danger, #b42318);
+}
+
+.pos-branches__sticky-actions {
+    align-items: center;
+    background: var(--exits-bg, #f3f6f4);
+    border-top: 1px solid var(--exits-border, #dce5df);
+    bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    gap: .5rem;
+    justify-content: space-between;
+    left: 0;
+    padding: .5rem .85rem;
+    position: fixed;
+    right: 0;
+    z-index: var(--exits-z-sticky, 20);
+}
+
+.pos-branches__sticky-actions .exds-btn {
+    flex: 1 1 auto;
+}
+
+@media (min-width: 430px) {
+    .pos-branches__pair {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 @media (min-width: 720px) {

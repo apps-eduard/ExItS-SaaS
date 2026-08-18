@@ -70,7 +70,24 @@ public sealed class OrgWebAuthErrorAndBranchesGuardTests
         Assert.Contains("Branches_Setup", edit, StringComparison.Ordinal);
         Assert.Contains("Branches_OrgCatalog", edit, StringComparison.Ordinal);
         Assert.Contains("Branches_InventoryNotCopied", edit, StringComparison.Ordinal);
+        Assert.Contains("Branches_AddressLocation", edit, StringComparison.Ordinal);
+        Assert.Contains("org-hours-row", edit, StringComparison.Ordinal);
+        Assert.Contains("org-branch-edit__sticky", edit, StringComparison.Ordinal);
+        Assert.Contains("SaveHoursAsync", edit, StringComparison.Ordinal);
+        Assert.Contains("ToggleFulfillmentAsync", edit, StringComparison.Ordinal);
+        Assert.Contains("CopyMondayToWeekdays", edit, StringComparison.Ordinal);
+        Assert.Contains("PickupReady", edit, StringComparison.Ordinal);
+        Assert.Contains("DeliveryReady", edit, StringComparison.Ordinal);
         Assert.DoesNotContain("Copy products from Main", edit, StringComparison.OrdinalIgnoreCase);
+
+        var loc = Path.Combine(root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Web", "Localization");
+        var en = File.ReadAllText(Path.Combine(loc, "OrgWebResources.resx"));
+        var fil = File.ReadAllText(Path.Combine(loc, "OrgWebResources.fil-PH.resx"));
+        foreach (var key in new[] { "Branches_AddressLocation", "Branches_CopyWeekdays", "Branches_TimeZoneHint", "Branches_SaveActions", "Branches_StatusOff", "Branches_InventorySetUp" })
+        {
+            Assert.Contains($"<data name=\"{key}\"", en, StringComparison.Ordinal);
+            Assert.Contains($"<data name=\"{key}\"", fil, StringComparison.Ordinal);
+        }
     }
 
     [Fact]

@@ -9,16 +9,37 @@
     <StoreHeaderBack Href="/more" />
     <Page>
         <header class="pos-branches__header">
-            <div>
+            <div class="pos-branches__heading">
                 <h1>@L["Branches_Title"]</h1>
                 <p class="pos-muted">@L["Branches_Subtitle"]</p>
             </div>
-            <Button Variant="ButtonVariant.Primary" OnClick="ToggleCreate">@L["Branches_Add"]</Button>
+            @if (_showCreate)
+            {
+                <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="ToggleCreate">@L["Common_Cancel"]</Button>
+            }
+            else
+            {
+                <Button Variant="ButtonVariant.Primary" Disabled="@(_busy || !CanAddBranch)" OnClick="ToggleCreate">@L["Branches_Add"]</Button>
+            }
         </header>
 
         @if (_capacity is not null)
         {
-            <p class="pos-branches__capacity">@L["Branches_Capacity", _capacity.Used, _capacity.Allowed]</p>
+            <div class="pos-branches__capacity"
+                 role="meter"
+                 aria-valuemin="0"
+                 aria-valuenow="@_capacity.Used"
+                 aria-valuemax="@_capacity.Allowed"
+                 aria-label="@L["Branches_Capacity", _capacity.Used, _capacity.Allowed]">
+                <span>@L["Branches_Capacity", _capacity.Used, _capacity.Allowed]</span>
+                <span class="pos-branches__capacity-track" aria-hidden="true">
+                    <span class="pos-branches__capacity-fill" style="@CapacityFillStyle"></span>
+                </span>
+            </div>
+            @if (!CanAddBranch)
+            {
+                <p class="pos-muted pos-branches__capacity-note">@L["Branches_CapacityFull"]</p>
+            }
         }
 
         @if (!string.IsNullOrWhiteSpace(_error))
@@ -38,7 +59,7 @@
                 <p class="pos-muted">@L["Branches_CreateHint"]</p>
                 <div class="pos-branches__actions">
                     <Button Variant="ButtonVariant.Primary" Disabled="_busy" OnClick="CreateAsync">@L["Common_Save"]</Button>
-                    <Button Disabled="_busy" OnClick="ToggleCreate">@L["Common_Cancel"]</Button>
+                    <Button Variant="ButtonVariant.Ghost" Disabled="_busy" OnClick="ToggleCreate">@L["Common_Cancel"]</Button>
                 </div>
             </section>
         }
@@ -49,30 +70,46 @@
         }
         else if (_branches.Count == 0)
         {
-            <EmptyState IconName="home" Title="@L["Branches_EmptyTitle"]" Message="@L["Branches_EmptyMessage"]" />
+            <EmptyState IconName="home" Title="@L["Branches_EmptyTitle"]" Message="@L["Branches_EmptyMessage"]">
+                <Actions>
+                    @if (CanAddBranch && !_showCreate)
+                    {
+                        <Button Variant="ButtonVariant.Primary" Disabled="_busy" OnClick="ToggleCreate">@L["Branches_Add"]</Button>
+                    }
+                </Actions>
+            </EmptyState>
         }
         else
         {
             <div class="pos-branches__list" role="list">
                 @foreach (var branch in _branches)
                 {
-                    <article class="pos-branches__card" role="listitem">
-                        <div class="pos-branches__card-top">
-                            <div>
-                                <strong>@branch.Name</strong>
-                                <div class="pos-muted">@branch.Code · @(branch.City ?? L["Branches_NoCity"].Value)</div>
-                            </div>
-                            <div class="pos-branches__chips">
-                                @if (branch.IsPrimary) { <Badge Tone="BadgeTone.Info">@L["Branches_Primary"]</Badge> }
-                                <Badge Tone="@(IsActive(branch) ? BadgeTone.Success : BadgeTone.Neutral)">@branch.Status.ToUpperInvariant()</Badge>
-                            </div>
-                        </div>
-                        <div class="pos-branches__chips">
-                            @FulfillmentBadge(branch)
-                            @if (branch.PickupEnabled) { <Badge Tone="BadgeTone.Info">@L["Branches_Pickup"]</Badge> }
-                            @if (branch.DeliveryEnabled) { <Badge Tone="BadgeTone.Success">@L["Branches_Delivery"]</Badge> }
-                        </div>
-                        <Button Size="ButtonSize.Sm" OnClick="() => Edit(branch.Id)">@L["Common_Edit"]</Button>
+                    var locationMissing = !HasLocation(branch);
+                    <article class="pos-branches__item" role="listitem">
+                        <button type="button"
+                                class="pos-branches__card"
+                                aria-label="@($"{L["Branches_Edit"]}: {branch.Name}")"
+                                @onclick="() => Edit(branch.Id)">
+                            <span class="pos-branches__card-icon" aria-hidden="true">@IconGlyphs.Get("home")</span>
+                            <span class="pos-branches__card-body">
+                                <span class="pos-branches__card-top">
+                                    <strong class="pos-branches__card-name">@branch.Name</strong>
+                                    <span class="pos-branches__chips">
+                                        @if (branch.IsPrimary) { <Badge Tone="BadgeTone.Info">@L["Branches_Primary"]</Badge> }
+                                        <Badge Tone="@(IsActive(branch) ? BadgeTone.Success : BadgeTone.Neutral)">@StatusLabel(branch)</Badge>
+                                    </span>
+                                </span>
+                                <span class="pos-branches__card-meta @(locationMissing ? "pos-branches__card-meta--hint" : "pos-muted")">
+                                    @branch.Code · @LocationText(branch)
+                                </span>
+                                <span class="pos-branches__chips">
+                                    @FulfillmentBadge(branch)
+                                    @if (branch.PickupEnabled) { <Badge Tone="BadgeTone.Info">@L["Branches_Pickup"]</Badge> }
+                                    @if (branch.DeliveryEnabled) { <Badge Tone="BadgeTone.Success">@L["Branches_Delivery"]</Badge> }
+                                </span>
+                            </span>
+                            <span class="pos-branches__card-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                        </button>
                     </article>
                 }
             </div>
@@ -90,6 +127,22 @@
     private string? _newName;
     private string? _newCity;
     private string? _error;
+
+    private bool CanAddBranch => _capacity is null || _capacity.Used < _capacity.Allowed;
+
+    private string CapacityFillStyle
+    {
+        get
+        {
+            if (_capacity is null || _capacity.Allowed <= 0)
+            {
+                return "width:0%";
+            }
+
+            var percent = Math.Clamp(100.0 * _capacity.Used / _capacity.Allowed, 0, 100);
+            return $"width:{percent:0.##}%";
+        }
+    }
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -114,6 +167,24 @@
     private void Edit(Guid id) => Nav.NavigateTo($"/organization/branches/{id:D}");
     private static bool IsActive(OrganizationBranchDto branch) =>
         string.Equals(branch.Status, "Active", StringComparison.OrdinalIgnoreCase);
+
+    private string StatusLabel(OrganizationBranchDto branch) =>
+        string.IsNullOrWhiteSpace(branch.Status)
+            ? branch.Status
+            : char.ToUpperInvariant(branch.Status[0]) + branch.Status[1..].ToLowerInvariant();
+
+    private static bool HasLocation(OrganizationBranchDto branch) =>
+        !string.IsNullOrWhiteSpace(branch.AddressLine1)
+        || !string.IsNullOrWhiteSpace(branch.City)
+        || !string.IsNullOrWhiteSpace(branch.Region);
+
+    private string LocationText(OrganizationBranchDto branch)
+    {
+        var location = string.Join(
+            ", ",
+            new[] { branch.AddressLine1, branch.City, branch.Region }.Where(static s => !string.IsNullOrWhiteSpace(s)));
+        return string.IsNullOrWhiteSpace(location) ? L["Branches_AddAddress"].Value : location;
+    }
 
     private RenderFragment FulfillmentBadge(OrganizationBranchDto branch) => builder =>
     {

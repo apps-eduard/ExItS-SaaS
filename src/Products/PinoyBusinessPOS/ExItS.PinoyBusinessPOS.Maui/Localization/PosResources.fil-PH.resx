@@ -280,6 +280,9 @@
   <data name="Common_Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
+  <data name="Common_Edit" xml:space="preserve">
+    <value>I-edit</value>
+  </data>
   <data name="Common_Confirm" xml:space="preserve">
     <value>Kumpirmahin</value>
   </data>
@@ -10008,7 +10011,9 @@
   <data name="Branches_Add" xml:space="preserve"><value>Magdagdag ng branch</value></data>
   <data name="Branches_Edit" xml:space="preserve"><value>I-edit ang branch</value></data>
   <data name="Branches_Capacity" xml:space="preserve"><value>{0} sa {1} branch slot ang gamit</value></data>
-  <data name="Branches_Primary" xml:space="preserve"><value>PANGUNAHIN</value></data>
+  <data name="Branches_CapacityFull" xml:space="preserve"><value>Puno na ang mga branch slot.</value></data>
+  <data name="Branches_Primary" xml:space="preserve"><value>Pangunahin</value></data>
+  <data name="Branches_AddAddress" xml:space="preserve"><value>Magdagdag ng address</value></data>
   <data name="Branches_Pickup" xml:space="preserve"><value>Pickup</value></data>
   <data name="Branches_Delivery" xml:space="preserve"><value>Delivery</value></data>
   <data name="Branches_FieldCode" xml:space="preserve"><value>Code ng branch</value></data>
@@ -10031,7 +10036,7 @@
   <data name="Branches_PostalCode" xml:space="preserve"><value>Postal code</value></data>
   <data name="Branches_CountryCode" xml:space="preserve"><value>Country code</value></data>
   <data name="Branches_Location" xml:space="preserve"><value>Lokasyon</value></data>
-  <data name="Branches_LocationHint" xml:space="preserve"><value>Kailangan ang coordinates bago mag-alok ng delivery.</value></data>
+  <data name="Branches_LocationHint" xml:space="preserve"><value>Kailangan para sa delivery.</value></data>
   <data name="Branches_Latitude" xml:space="preserve"><value>Latitude</value></data>
   <data name="Branches_Longitude" xml:space="preserve"><value>Longitude</value></data>
   <data name="Branches_Fulfillment" xml:space="preserve"><value>Fulfillment</value></data>
@@ -10084,13 +10089,13 @@
   <data name="Branches_Day_Sunday" xml:space="preserve"><value>Lin</value></data>
   <data name="Branches_Setup" xml:space="preserve"><value>Setup ng branch</value></data>
   <data name="Branches_Staff" xml:space="preserve"><value>Staff</value></data>
-  <data name="Branches_StaffNotAuto" xml:space="preserve"><value>Hindi auto-assign</value></data>
+  <data name="Branches_StaffNotAuto" xml:space="preserve"><value>Hindi naka-assign</value></data>
   <data name="Branches_Devices" xml:space="preserve"><value>Mga device</value></data>
   <data name="Branches_DevicesNone" xml:space="preserve"><value>Wala</value></data>
   <data name="Branches_DevicesCount" xml:space="preserve"><value>{0} nakarehistro</value></data>
   <data name="Branches_RegisterDevice" xml:space="preserve"><value>Magrehistro ng device</value></data>
   <data name="Branches_Inventory" xml:space="preserve"><value>Imbentaryo</value></data>
-  <data name="Branches_InventoryNotCopied" xml:space="preserve"><value>Walang kinopyang stock</value></data>
+  <data name="Branches_InventoryNotCopied" xml:space="preserve"><value>Walang stock</value></data>
   <data name="Branches_AddOpeningStock" xml:space="preserve"><value>Magdagdag ng opening stock</value></data>
   <data name="Branches_TransferStock" xml:space="preserve"><value>Mag-transfer mula sa ibang branch</value></data>
   <data name="Branches_OrgCatalog" xml:space="preserve"><value>Catalog ng organisasyon</value></data>
@@ -10100,6 +10105,23 @@
   <data name="Branches_OrgCustomersHint" xml:space="preserve"><value>Ang naka-link na customer ay sa organisasyon, hindi sa isang branch.</value></data>
   <data name="Branches_ViewCustomers" xml:space="preserve"><value>Tingnan ang mga customer</value></data>
   <data name="Branches_CreateHint" xml:space="preserve"><value>Lokasyon lang ang nalilikha. Catalog at customer ay sa organisasyon. Hindi kinokopya ang stock, staff, device, at pickup/delivery.</value></data>
+  <data name="Branches_OrgWide" xml:space="preserve"><value>Buong organisasyon</value></data>
+  <data name="Branches_Manage" xml:space="preserve"><value>I-manage</value></data>
+  <data name="Branches_InventorySetUp" xml:space="preserve"><value>I-set up</value></data>
+  <data name="Branches_TimeZoneHint" xml:space="preserve"><value>Gagamitin ang timezone ng organisasyon kung walang laman.</value></data>
+  <data name="Branches_AddressLocation" xml:space="preserve"><value>Address at lokasyon</value></data>
+  <data name="Branches_MapLocation" xml:space="preserve"><value>Lokasyon sa mapa</value></data>
+  <data name="Branches_CopyWeekdays" xml:space="preserve"><value>Kopyahin ang Lunes sa weekdays</value></data>
+  <data name="Branches_HoursOpen" xml:space="preserve"><value>Oras</value></data>
+  <data name="Branches_Configure" xml:space="preserve"><value>I-set up</value></data>
+  <data name="Branches_MissingCount" xml:space="preserve"><value>{0} item ang kulang</value></data>
+  <data name="Branches_None" xml:space="preserve"><value>Wala</value></data>
+  <data name="Branches_StatusOff" xml:space="preserve"><value>Naka-off</value></data>
+  <data name="Branches_StatusActive" xml:space="preserve"><value>Active</value></data>
+  <data name="Branches_StatusInactive" xml:space="preserve"><value>Inactive</value></data>
+  <data name="Branches_CheckOk" xml:space="preserve"><value>Kumpleto</value></data>
+  <data name="Branches_CheckMissing" xml:space="preserve"><value>Kulang</value></data>
+  <data name="Branches_SaveActions" xml:space="preserve"><value>Mga aksyon sa pag-save ng branch</value></data>
   <data name="Orders_Title" xml:space="preserve"><value>Mga order</value></data>
   <data name="Orders_SellerSubtitle" xml:space="preserve"><value>Suriin at tuparin ang pickup at delivery orders ng customer.</value></data>
   <data name="Orders_PersonalSubtitle" xml:space="preserve"><value>Subaybayan ang mga order na inilagay mo sa mga merchant.</value></data>
