@@ -19,7 +19,11 @@ else
     <div class="org-page">
         <ExitsPageHeader Title="@L["Customers_Title"]" Subtitle="@L["Customers_Subtitle"]" />
         <div class="org-toolbar">
-            <ExitsField Label="@L["Common_Search"]"><Input @bind-Value="_search" /></ExitsField>
+            <SearchBar Value="@_search"
+                       ValueChanged="OnSearchChanged"
+                       Placeholder="@L["Common_Search"]"
+                       AriaLabel="@L["Common_Search"]"
+                       OnSearch="SearchAsync" />
             <Button OnClick="SearchAsync">@L["Common_Search"]</Button>
         </div>
         <OrgAlert Error="@_error" OnRetry="LoadAsync" RetryLabel="@L["Common_Retry"]" OnDismissError="() => _error = null" />
@@ -92,6 +96,12 @@ else
     {
         _page = 1;
         await LoadAsync();
+    }
+
+    private Task OnSearchChanged(string? value)
+    {
+        _search = value;
+        return Task.CompletedTask;
     }
 
     private async Task ChangePageAsync(int page)

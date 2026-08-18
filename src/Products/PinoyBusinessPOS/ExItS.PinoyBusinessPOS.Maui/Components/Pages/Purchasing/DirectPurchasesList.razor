@@ -50,17 +50,11 @@ else
         }
 
         <div class="pos-receive-stock__toolbar">
-            <div class="pos-receive-stock__search" role="search">
-                <span class="pos-receive-stock__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-                <label class="visually-hidden" for="direct-purchases-search">@L["Purchasing_DirectPurchasesSearch"]</label>
-                <input id="direct-purchases-search"
-                       class="pos-receive-stock__search-input"
-                       type="search"
-                       value="@_search"
-                       placeholder="@L["Purchasing_DirectPurchasesSearch"]"
-                       disabled="@(_loading || _isOffline)"
-                       @oninput="OnSearchInput" />
-            </div>
+            <SearchBar Value="@_search"
+                       ValueChanged="OnSearchInput"
+                       Placeholder="@L["Purchasing_DirectPurchasesSearch"]"
+                       InputId="direct-purchases-search"
+                       Disabled="@(_loading || _isOffline)" />
         </div>
 
         <section class="pos-purchasing__panel" aria-labelledby="direct-purchases-list-heading">
@@ -148,9 +142,9 @@ else
 
     private void GoReceive() => Nav.NavigateTo("/purchasing/receive-stock");
 
-    private async Task OnSearchInput(ChangeEventArgs e)
+    private async Task OnSearchInput(string? value)
     {
-        _search = e.Value?.ToString() ?? string.Empty;
+        _search = value ?? string.Empty;
         _searchCts?.Cancel();
         _searchCts = new CancellationTokenSource();
         var token = _searchCts.Token;

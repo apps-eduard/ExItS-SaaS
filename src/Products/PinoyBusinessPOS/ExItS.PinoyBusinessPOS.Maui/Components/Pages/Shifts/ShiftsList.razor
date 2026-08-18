@@ -80,26 +80,13 @@ else
         }
 
         <div class="pos-shifts__toolbar" role="search">
-            <div class="pos-shifts__search">
-                <span class="pos-shifts__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-                <input class="pos-shifts__search-input"
-                       type="search"
-                       value="@_search"
-                       placeholder="@L["Shifts_SearchPlaceholder"]"
-                       aria-label="@L["Shifts_SearchPlaceholder"]"
-                       disabled="@(_loading && string.IsNullOrWhiteSpace(_search))"
-                       @oninput="OnSearchInputAsync" />
-                @if (!string.IsNullOrWhiteSpace(_search))
-                {
-                    <button type="button"
-                            class="pos-shifts__search-clear"
-                            aria-label="@L["Shifts_ClearSearch"]"
-                            disabled="@_isOffline"
-                            @onclick="ClearSearchAsync">
-                        <span aria-hidden="true">@IconGlyphs.Get("close")</span>
-                    </button>
-                }
-            </div>
+            <SearchBar Value="@_search"
+                       ValueChanged="OnSearchInputAsync"
+                       Placeholder="@L["Shifts_SearchPlaceholder"]"
+                       AriaLabel="@L["Shifts_SearchPlaceholder"]"
+                       ClearLabel="@L["Shifts_ClearSearch"]"
+                       Disabled="@(_loading && string.IsNullOrWhiteSpace(_search))"
+                       OnClear="ClearSearchAsync" />
             <Select Value="@_statusFilter"
                     ValueChanged="OnStatusFilterChanged"
                     Options="@ShiftStatusFilters"
@@ -426,9 +413,9 @@ else
         return null;
     }
 
-    private async Task OnSearchInputAsync(ChangeEventArgs args)
+    private async Task OnSearchInputAsync(string? value)
     {
-        _search = args.Value?.ToString();
+        _search = value;
         _page = 1;
         _searchCts?.Cancel();
         _searchCts?.Dispose();

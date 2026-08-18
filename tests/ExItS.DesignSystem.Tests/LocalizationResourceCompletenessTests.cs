@@ -7,7 +7,8 @@ public sealed class LocalizationResourceCompletenessTests
     private static readonly string[] DesignSystemCritical =
     [
         "Empty_DefaultTitle", "Error_Retry", "Loading_Label", "Search_Placeholder",
-        "Action_Close", "Action_Dismiss", "Action_ClearSearch", "Action_Save",
+        "Action_Close", "Action_Dismiss", "Action_ClearSearch", "Search_Filters", "Search_ActiveFiltersCount",
+        "Action_ApplyFilters", "Action_ResetFilters", "Action_Save",
         "Action_Cancel", "Action_Confirm", "Empty_NoRecords", "Status_Success"
     ];
 
@@ -67,7 +68,7 @@ public sealed class LocalizationResourceCompletenessTests
         var root = FindRepoRoot();
         var files = new[]
         {
-            Path.Combine(root, "src", "Shared", "ExItS.DesignSystem", "Components", "Feedback", "SearchBox.razor"),
+            Path.Combine(root, "src", "Shared", "ExItS.DesignSystem", "Components", "Data", "SearchBar.razor"),
             Path.Combine(root, "src", "Shared", "ExItS.DesignSystem", "Components", "Overlay", "Dialog.razor"),
             Path.Combine(root, "src", "Shared", "ExItS.DesignSystem", "Components", "Overlay", "Drawer.razor"),
             Path.Combine(root, "src", "Shared", "ExItS.DesignSystem", "Components", "Overlay", "ToastHost.razor"),

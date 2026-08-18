@@ -16,7 +16,11 @@ else
     <div class="org-page">
     <ExitsPageHeader Title="@L["GlobalCatalog_Title"]" Subtitle="@L["GlobalCatalog_Subtitle"]" />
     <div class="org-toolbar">
-        <ExitsField Label="@L["Common_Search"]"><Input @bind-Value="_search" /></ExitsField>
+        <SearchBar Value="@_search"
+                   ValueChanged="OnSearchChanged"
+                   Placeholder="@L["Common_Search"]"
+                   AriaLabel="@L["Common_Search"]"
+                   OnSearch="SearchAsync" />
         <Button OnClick="SearchAsync">@L["Common_Search"]</Button>
         @if (Shell.Can(UtangCapability.ManageCatalog))
         {
@@ -101,6 +105,12 @@ else
     {
         _page = 1;
         await LoadAsync();
+    }
+
+    private Task OnSearchChanged(string? value)
+    {
+        _search = value;
+        return Task.CompletedTask;
     }
 
     private async Task ChangePageAsync(int page)

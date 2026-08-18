@@ -33,7 +33,11 @@ else
                 <option value="@b.Id">@b.Name</option>
             }
         </select>
-        <ExitsField Label="Search"><Input @bind-Value="_search" /></ExitsField>
+        <SearchBar Value="@_search"
+                   ValueChanged="OnSearchChanged"
+                   Placeholder="Search"
+                   AriaLabel="Search"
+                   OnSearch="SearchAsync" />
         <Button OnClick="SearchAsync">Filter</Button>
     </div>
     @if (_result is not null)
@@ -104,6 +108,12 @@ else
     {
         _page = 1;
         await LoadAsync();
+    }
+
+    private Task OnSearchChanged(string? value)
+    {
+        _search = value;
+        return Task.CompletedTask;
     }
 
     private async Task ChangePageAsync(int page)

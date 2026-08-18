@@ -18,7 +18,7 @@ public sealed class ReusableMvpComponentTests
             "Overlay/ConfirmDialog.razor",
             "Feedback/InlineMessage.razor", "Feedback/Progress.razor",
             "Data/ResponsiveDataList.razor", "Data/DataTable.razor", "Data/DataColumn.razor",
-            "Data/MobileRowCard.razor", "Data/SearchToolbar.razor", "Data/FilterBar.razor",
+            "Data/MobileRowCard.razor", "Data/SearchToolbar.razor", "Data/SearchBar.razor", "Data/FilterBar.razor",
             "Data/SortControl.razor", "Data/Pagination.razor", "Data/PaginationSummary.razor",
             "Data/StatusCell.razor", "Data/MoneyDisplay.razor", "Data/DataColumnDefinition.cs",
             "Layout/SectionHeader.razor", "Layout/ActionBar.razor", "Layout/Accordion.razor",

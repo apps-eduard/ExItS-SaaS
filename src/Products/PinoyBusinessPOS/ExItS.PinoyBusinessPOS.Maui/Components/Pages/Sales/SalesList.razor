@@ -43,35 +43,29 @@ else
         }
 
         <div class="pos-sales__toolbar">
-            <div class="pos-sales__search">
-                <span class="pos-sales__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-                <input class="pos-sales__search-input"
-                       type="search"
-                       value="@_saleNumber"
-                       placeholder="@L["Sales_SearchPlaceholder"]"
-                       disabled="@_loading"
-                       @oninput="OnSearchInputAsync" />
-            </div>
-            <button type="button"
-                    class="pos-sales__filter-toggle @(_filtersOpen ? "pos-sales__filter-toggle--open" : null)"
-                    aria-expanded="@_filtersOpen"
-                    aria-controls="sales-filters"
-                    title="@L["Sales_FiltersTitle"]"
-                    @onclick="ToggleFilters">
-                <span class="pos-sales__filter-icon" aria-hidden="true">@IconGlyphs.Get("menu")</span>
-                <span class="pos-sales__filter-label">@L["Sales_FiltersTitle"]</span>
-            </button>
+            <SearchBar Value="@_saleNumber"
+                       ValueChanged="OnSearchInputAsync"
+                       Placeholder="@L["Sales_SearchPlaceholder"]"
+                       Disabled="@_loading"
+                       ShowFilterButton="true"
+                       ActiveFilterCount="@ActiveFilterCount"
+                       FiltersExpanded="@_filtersOpen"
+                       FiltersControlsId="sales-filters"
+                       FilterLabel="@L["Sales_FiltersTitle"]"
+                       OnFilterClick="ToggleFilters">
+                <FilterChips>
+                    @if (HasAppliedFilters)
+                    {
+                        <div aria-label="@L["Sales_AppliedFilters"]">
+                            @foreach (var chip in AppliedFilterChips)
+                            {
+                                <span class="pos-sales__chip">@chip</span>
+                            }
+                        </div>
+                    }
+                </FilterChips>
+            </SearchBar>
         </div>
-
-        @if (HasAppliedFilters)
-        {
-            <div class="pos-sales__chips" aria-label="@L["Sales_AppliedFilters"]">
-                @foreach (var chip in AppliedFilterChips)
-                {
-                    <span class="pos-sales__chip">@chip</span>
-                }
-            </div>
-        }
 
         @if (_filtersOpen)
         {
@@ -226,11 +220,44 @@ else
         await ReloadAsync();
     }
 
-    private void ToggleFilters() => _filtersOpen = !_filtersOpen;
-
-    private async Task OnSearchInputAsync(ChangeEventArgs args)
+    private int ActiveFilterCount
     {
-        _saleNumber = args.Value?.ToString();
+        get
+        {
+            var count = 0;
+            if (!string.IsNullOrWhiteSpace(_statusFilter))
+            {
+                count++;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_paymentFilter))
+            {
+                count++;
+            }
+
+            if (_fromDate is not null)
+            {
+                count++;
+            }
+
+            if (_toDate is not null)
+            {
+                count++;
+            }
+
+            return count;
+        }
+    }
+
+    private Task ToggleFilters()
+    {
+        _filtersOpen = !_filtersOpen;
+        return Task.CompletedTask;
+    }
+
+    private async Task OnSearchInputAsync(string? value)
+    {
+        _saleNumber = value;
         _page = 1;
         _searchCts?.Cancel();
         _searchCts?.Dispose();

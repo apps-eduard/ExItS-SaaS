@@ -53,33 +53,16 @@ else
         }
         else
         {
-            <div class="pos-connected-catalog__search" role="search">
-                <label class="visually-hidden" for="connected-catalog-search">
-                    @L["ConnectedSuppliers_SearchPlaceholder"]
-                </label>
-                <div class="pos-connected-catalog__search-field">
-                    <span class="pos-connected-catalog__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-                    <input id="connected-catalog-search"
-                           class="pos-connected-catalog__search-input"
-                           type="search"
-                           value="@_query"
-                           placeholder="@L["ConnectedSuppliers_SearchPlaceholder"]"
-                           disabled="@_loading"
-                           autocomplete="off"
-                           enterkeyhint="search"
-                           @oninput="OnSearchInput"
-                           @onkeydown="OnSearchKeyDown" />
-                    @if (HasQuery)
-                    {
-                        <button type="button"
-                                class="pos-connected-catalog__clear"
-                                disabled="@_loading"
-                                aria-label="@L["Catalog_Global_ClearSearch"]"
-                                @onclick="ClearSearchAsync">
-                            ×
-                        </button>
-                    }
-                </div>
+            <div class="pos-connected-catalog__search">
+                <SearchBar Value="@_query"
+                           ValueChanged="OnSearchInput"
+                           InputId="connected-catalog-search"
+                           Placeholder="@L["ConnectedSuppliers_SearchPlaceholder"]"
+                           AriaLabel="@L["ConnectedSuppliers_SearchPlaceholder"]"
+                           ClearLabel="@L["Catalog_Global_ClearSearch"]"
+                           Autocomplete="off"
+                           Disabled="@_loading"
+                           OnClear="ClearSearchAsync" />
                 <p class="pos-connected-catalog__hint pos-muted">@L["ConnectedSuppliers_SetupHint"]</p>
             </div>
 
@@ -352,15 +335,11 @@ else
                     else
                     {
                         <p class="pos-connected-catalog__section-title">@L["ConnectedSuppliers_PossibleMatches"]</p>
-                        <label class="pos-connected-catalog__field">
-                            <span class="visually-hidden">@L["ConnectedSuppliers_SearchPlaceholder"]</span>
-                            <input class="pos-connected-catalog__input"
-                                   type="search"
-                                   value="@_chooseQuery"
-                                   placeholder="@L["ConnectedSuppliers_SearchPlaceholder"]"
-                                   disabled="@_busy"
-                                   @oninput="OnChooseSearchInput" />
-                        </label>
+                        <SearchBar Value="@_chooseQuery"
+                                   ValueChanged="OnChooseSearchInput"
+                                   Placeholder="@L["ConnectedSuppliers_SearchPlaceholder"]"
+                                   AriaLabel="@L["ConnectedSuppliers_SearchPlaceholder"]"
+                                   Disabled="@_busy" />
                         @foreach (var match in FilteredBuyerChoices)
                         {
                             <label class="pos-connected-catalog__radio">
@@ -660,9 +639,9 @@ else
         }
     }
 
-    private async Task OnSearchInput(ChangeEventArgs args)
+    private async Task OnSearchInput(string? value)
     {
-        _query = args.Value?.ToString();
+        _query = value;
         await InvokeAsync(StateHasChanged);
     }
 
@@ -672,10 +651,8 @@ else
         await InvokeAsync(StateHasChanged);
     }
 
-    private Task OnSearchKeyDown(KeyboardEventArgs args) => Task.CompletedTask;
-
-    private void OnChooseSearchInput(ChangeEventArgs args) =>
-        _chooseQuery = args.Value?.ToString();
+    private void OnChooseSearchInput(string? value) =>
+        _chooseQuery = value;
 
     private void SetFilter(string filter) => _filter = NormalizeFilter(filter);
 

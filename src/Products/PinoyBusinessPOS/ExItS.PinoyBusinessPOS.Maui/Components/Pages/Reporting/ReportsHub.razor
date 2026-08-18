@@ -25,14 +25,10 @@
 
         @if (_showOperationalMenu || _canViewReports)
         {
-            <div class="pos-reports__search">
-                <span class="pos-reports__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-                <input class="pos-reports__search-input"
-                       type="search"
-                       value="@_query"
-                       placeholder="@L["Reports_SearchPlaceholder"]"
-                       @oninput="OnSearchInput" />
-            </div>
+            <SearchBar Value="@_query"
+                       ValueChanged="OnSearchInput"
+                       Placeholder="@L["Reports_SearchPlaceholder"]"
+                       AriaLabel="@L["Reports_SearchPlaceholder"]" />
         }
 
         @if (_showOperationalMenu)
@@ -168,9 +164,9 @@
         }
     }
 
-    private void OnSearchInput(ChangeEventArgs args)
+    private void OnSearchInput(string? value)
     {
-        _query = args.Value?.ToString() ?? string.Empty;
+        _query = value ?? string.Empty;
     }
 
     private bool MatchesQuery(ReportLink item)

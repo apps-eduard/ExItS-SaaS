@@ -1,9 +1,18 @@
 ﻿@namespace ExItS.DesignSystem.Components.Data
-@using ExItS.DesignSystem.Components.Feedback
-@using ExItS.DesignSystem.Components.Layout
 
 <div class="exds-search-toolbar" @attributes="AdditionalAttributes">
-    <SearchBox Value="@SearchText" ValueChanged="OnSearchChanged" Placeholder="@Placeholder" Disabled="@Disabled" />
+    <SearchBar Value="@SearchText"
+               ValueChanged="OnSearchChanged"
+               Placeholder="@Placeholder"
+               Disabled="@Disabled"
+               ShowFilterButton="@ShowFilterButton"
+               ActiveFilterCount="@ActiveFilterCount"
+               FiltersExpanded="@FiltersExpanded"
+               FiltersControlsId="@FiltersControlsId"
+               FilterLabel="@FilterLabel"
+               OnFilterClick="OnFilterClick"
+               DebounceMilliseconds="@DebounceMilliseconds"
+               FilterChips="@FilterChips" />
     @if (Actions is not null)
     {
         <div class="exds-search-toolbar__actions">@Actions</div>
@@ -15,12 +24,23 @@
     [Parameter] public EventCallback<string?> SearchTextChanged { get; set; }
     [Parameter] public string? Placeholder { get; set; }
     [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ShowFilterButton { get; set; }
+    [Parameter] public int ActiveFilterCount { get; set; }
+    [Parameter] public bool FiltersExpanded { get; set; }
+    [Parameter] public string? FiltersControlsId { get; set; }
+    [Parameter] public string? FilterLabel { get; set; }
+    [Parameter] public EventCallback OnFilterClick { get; set; }
+    [Parameter] public int DebounceMilliseconds { get; set; }
+    [Parameter] public RenderFragment? FilterChips { get; set; }
     [Parameter] public RenderFragment? Actions { get; set; }
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
 
     private async Task OnSearchChanged(string? value)
     {
         SearchText = value;
-        if (SearchTextChanged.HasDelegate) await SearchTextChanged.InvokeAsync(value);
+        if (SearchTextChanged.HasDelegate)
+        {
+            await SearchTextChanged.InvokeAsync(value);
+        }
     }
 }

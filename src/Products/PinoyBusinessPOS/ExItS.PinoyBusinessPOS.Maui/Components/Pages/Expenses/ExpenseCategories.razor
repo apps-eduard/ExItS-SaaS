@@ -83,26 +83,13 @@ else
     }
 
     <div class="pos-expense-categories__toolbar" role="search">
-        <div class="pos-expense-categories__search">
-            <span class="pos-expense-categories__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-            <input class="pos-expense-categories__search-input"
-                   type="search"
-                   value="@_search"
-                   placeholder="@L["Expenses_Category_SearchPlaceholder"]"
-                   aria-label="@L["Expenses_Category_SearchPlaceholder"]"
-                   disabled="@(!canView || (_loading && string.IsNullOrWhiteSpace(_search)))"
-                   @oninput="OnSearchInputAsync" />
-            @if (!string.IsNullOrWhiteSpace(_search))
-            {
-                <button type="button"
-                        class="pos-expense-categories__search-clear"
-                        aria-label="@L["Expenses_Category_ClearSearch"]"
-                        disabled="@_isOffline"
-                        @onclick="ClearSearchAsync">
-                    <span aria-hidden="true">@IconGlyphs.Get("close")</span>
-                </button>
-            }
-        </div>
+        <SearchBar Value="@_search"
+                   ValueChanged="OnSearchInputAsync"
+                   Placeholder="@L["Expenses_Category_SearchPlaceholder"]"
+                   AriaLabel="@L["Expenses_Category_SearchPlaceholder"]"
+                   ClearLabel="@L["Expenses_Category_ClearSearch"]"
+                   Disabled="@(!canView || (_loading && string.IsNullOrWhiteSpace(_search)))"
+                   OnClear="ClearSearchAsync" />
         <label class="pos-expense-categories__status">
             <span class="visually-hidden">@L["Expenses_Filter_Status"]</span>
             <select class="pos-expense-categories__status-select"
@@ -308,9 +295,9 @@ else
 
     private Task ReloadWithLoadingAsync() => ReloadAsync(showLoading: true);
 
-    private async Task OnSearchInputAsync(ChangeEventArgs args)
+    private async Task OnSearchInputAsync(string? value)
     {
-        _search = args.Value?.ToString();
+        _search = value;
         _page = 1;
         _menuCategoryId = null;
         _searchCts?.Cancel();

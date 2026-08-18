@@ -96,6 +96,18 @@
   <data name="Action_ClearSearch" xml:space="preserve">
     <value>Clear search</value>
   </data>
+  <data name="Search_Filters" xml:space="preserve">
+    <value>Filters</value>
+  </data>
+  <data name="Search_ActiveFiltersCount" xml:space="preserve">
+    <value>{0} active filters</value>
+  </data>
+  <data name="Action_ApplyFilters" xml:space="preserve">
+    <value>Apply filters</value>
+  </data>
+  <data name="Action_ResetFilters" xml:space="preserve">
+    <value>Reset</value>
+  </data>
   <data name="Action_Save" xml:space="preserve">
     <value>Save</value>
   </data>

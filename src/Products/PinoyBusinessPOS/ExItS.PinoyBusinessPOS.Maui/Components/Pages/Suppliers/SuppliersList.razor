@@ -122,24 +122,16 @@ else
         </div>
 
         <div class="pos-suppliers__toolbar">
-            <div class="pos-suppliers__search">
-                <span class="pos-suppliers__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-                <input class="pos-suppliers__search-input"
-                       type="search"
-                       value="@_search"
-                       placeholder="@L["Suppliers_SearchPlaceholder"]"
-                       disabled="@(_loading || _isOffline)"
-                       @oninput="OnSearchInputAsync" />
-            </div>
-            <button type="button"
-                    class="pos-suppliers__filter-toggle @(_filtersOpen ? "pos-suppliers__filter-toggle--open" : null)"
-                    aria-expanded="@_filtersOpen"
-                    aria-controls="suppliers-filters"
-                    title="@L["Suppliers_FiltersTitle"]"
-                    @onclick="ToggleFilters">
-                <span class="pos-suppliers__filter-icon" aria-hidden="true">@IconGlyphs.Get("menu")</span>
-                <span class="pos-suppliers__filter-label">@L["Suppliers_FiltersTitle"]</span>
-            </button>
+            <SearchBar Value="@_search"
+                       ValueChanged="OnSearchInputAsync"
+                       Placeholder="@L["Suppliers_SearchPlaceholder"]"
+                       Disabled="@(_loading || _isOffline)"
+                       ShowFilterButton="true"
+                       ActiveFilterCount="@ActiveFilterCount"
+                       FiltersExpanded="@_filtersOpen"
+                       FiltersControlsId="suppliers-filters"
+                       FilterLabel="@L["Suppliers_FiltersTitle"]"
+                       OnFilterClick="ToggleFilters" />
         </div>
 
         @if (_filtersOpen)
@@ -284,11 +276,17 @@ else
         await ReloadAsync();
     }
 
-    private void ToggleFilters() => _filtersOpen = !_filtersOpen;
+    private int ActiveFilterCount => string.IsNullOrWhiteSpace(_statusFilter) ? 0 : 1;
 
-    private async Task OnSearchInputAsync(ChangeEventArgs e)
+    private Task ToggleFilters()
     {
-        _search = e.Value?.ToString();
+        _filtersOpen = !_filtersOpen;
+        return Task.CompletedTask;
+    }
+
+    private async Task OnSearchInputAsync(string? value)
+    {
+        _search = value;
         _page = 1;
         _searchCts?.Cancel();
         _searchCts?.Dispose();

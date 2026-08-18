@@ -80,38 +80,23 @@ else
             else
             {
                 <div class="pos-global__toolbar">
-                    <div class="pos-global__search">
-                        <span class="pos-global__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-                        <input class="pos-global__search-input"
-                               type="search"
-                               value="@_search"
-                               placeholder="@L["Catalog_Global_SearchPlaceholder"]"
-                               aria-label="@L["Catalog_Global_SearchPlaceholder"]"
-                               disabled="@(_loading || _busy)"
-                               @oninput="OnSearchInputAsync" />
-                        @if (!string.IsNullOrEmpty(_search))
-                        {
-                            <IconButton AriaLabel="@L["Catalog_Global_ClearSearch"]"
-                                        IconName="close"
-                                        Disabled="@(_loading || _busy)"
-                                        OnClick="ClearSearchAsync" />
-                        }
-                    </div>
+                    <SearchBar Value="@_search"
+                               ValueChanged="OnSearchInputAsync"
+                               Placeholder="@L["Catalog_Global_SearchPlaceholder"]"
+                               AriaLabel="@L["Catalog_Global_SearchPlaceholder"]"
+                               ClearLabel="@L["Catalog_Global_ClearSearch"]"
+                               Disabled="@(_loading || _busy)"
+                               ShowFilterButton="true"
+                               ActiveFilterCount="@ActiveFilterCount"
+                               FiltersExpanded="@_filtersOpen"
+                               FiltersControlsId="global-catalog-filters"
+                               FilterLabel="@FilterToggleLabel"
+                               OnFilterClick="ToggleFilters"
+                               OnClear="ClearSearchAsync" />
                     <IconButton AriaLabel="@L["Catalog_Refresh"]"
                                 IconName="refresh"
                                 Disabled="@(_loading || _busy || _isOffline)"
                                 OnClick="ReloadAsync" />
-                    <button type="button"
-                            class="pos-global__filter-toggle @(_filtersOpen ? "pos-global__filter-toggle--open" : null)"
-                            aria-expanded="@_filtersOpen"
-                            aria-controls="global-catalog-filters"
-                            aria-label="@FilterToggleLabel"
-                            title="@FilterToggleLabel"
-                            disabled="@(_busy)"
-                            @onclick="ToggleFilters">
-                        <span class="pos-global__filter-icon" aria-hidden="true">@IconGlyphs.Get("menu")</span>
-                        <span class="pos-global__filter-label">@FilterToggleLabel</span>
-                    </button>
                 </div>
 
                 @if (_filtersOpen)
@@ -365,9 +350,9 @@ else
         }
     }
 
-    private async Task OnSearchInputAsync(ChangeEventArgs args)
+    private async Task OnSearchInputAsync(string? value)
     {
-        _search = args.Value?.ToString();
+        _search = value;
         _page = 1;
         await DebouncedReloadAsync().ConfigureAwait(false);
     }
@@ -409,7 +394,11 @@ else
         await ReloadAsync().ConfigureAwait(false);
     }
 
-    private void ToggleFilters() => _filtersOpen = !_filtersOpen;
+    private Task ToggleFilters()
+    {
+        _filtersOpen = !_filtersOpen;
+        return Task.CompletedTask;
+    }
 
     private async Task ClearFiltersAsync()
     {

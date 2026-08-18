@@ -25,7 +25,11 @@ else
         <a href="/catalog">Global Catalog</a>
     </div>
     <div class="org-toolbar">
-        <ExitsField Label="@L["Common_Search"]"><Input @bind-Value="_search" Placeholder="Name, SKU, barcode" /></ExitsField>
+        <SearchBar Value="@_search"
+                   ValueChanged="OnSearchChanged"
+                   Placeholder="Name, SKU, barcode"
+                   AriaLabel="@L["Common_Search"]"
+                   OnSearch="SearchAsync" />
         <ExitsField Label="@L["Common_Status"]"><Input @bind-Value="_status" Placeholder="Active" /></ExitsField>
         <Button OnClick="SearchAsync">@L["Common_Search"]</Button>
     </div>
@@ -85,6 +89,12 @@ else
     {
         _page = 1;
         await LoadAsync();
+    }
+
+    private Task OnSearchChanged(string? value)
+    {
+        _search = value;
+        return Task.CompletedTask;
     }
 
     private async Task ChangePageAsync(int page)

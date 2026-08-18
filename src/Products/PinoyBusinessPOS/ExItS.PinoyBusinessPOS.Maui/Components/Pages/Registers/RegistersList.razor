@@ -45,26 +45,13 @@ else
         }
 
         <div class="pos-registers__toolbar" role="search">
-            <div class="pos-registers__search">
-                <span class="pos-registers__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-                <input class="pos-registers__search-input"
-                       type="search"
-                       value="@_search"
-                       placeholder="@L["Registers_SearchPlaceholder"]"
-                       aria-label="@L["Registers_SearchPlaceholder"]"
-                       disabled="@(_loading && string.IsNullOrWhiteSpace(_search))"
-                       @oninput="OnSearchInputAsync" />
-                @if (!string.IsNullOrWhiteSpace(_search))
-                {
-                    <button type="button"
-                            class="pos-registers__search-clear"
-                            aria-label="@L["Registers_ClearSearch"]"
-                            disabled="@_isOffline"
-                            @onclick="ClearSearchAsync">
-                        <span aria-hidden="true">@IconGlyphs.Get("close")</span>
-                    </button>
-                }
-            </div>
+            <SearchBar Value="@_search"
+                       ValueChanged="OnSearchInputAsync"
+                       Placeholder="@L["Registers_SearchPlaceholder"]"
+                       AriaLabel="@L["Registers_SearchPlaceholder"]"
+                       ClearLabel="@L["Registers_ClearSearch"]"
+                       Disabled="@(_loading && string.IsNullOrWhiteSpace(_search))"
+                       OnClear="ClearSearchAsync" />
             <button type="button"
                     class="pos-registers__refresh"
                     title="@L["Registers_Refresh"]"
@@ -250,9 +237,9 @@ else
 
     private Task ReloadWithLoadingAsync() => ReloadAsync(showLoading: true);
 
-    private async Task OnSearchInputAsync(ChangeEventArgs args)
+    private async Task OnSearchInputAsync(string? value)
     {
-        _search = args.Value?.ToString();
+        _search = value;
         _page = 1;
         _searchCts?.Cancel();
         _searchCts?.Dispose();

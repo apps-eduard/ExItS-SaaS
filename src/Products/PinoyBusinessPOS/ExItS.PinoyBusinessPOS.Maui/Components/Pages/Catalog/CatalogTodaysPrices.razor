@@ -51,15 +51,10 @@ else
         @if (canManage && !_isOffline)
         {
             <div class="pos-todays-prices__toolbar">
-                <div class="pos-catalog__search">
-                    <span class="pos-catalog__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-                    <input class="pos-catalog__search-input"
-                           type="search"
-                           value="@_search"
-                           placeholder="@L["Catalog_SearchShort"]"
-                           disabled="@(_loading || _saving)"
-                           @oninput="OnSearchInputAsync" />
-                </div>
+                <SearchBar Value="@_search"
+                           ValueChanged="OnSearchInputAsync"
+                           Placeholder="@L["Catalog_SearchShort"]"
+                           Disabled="@(_loading || _saving)" />
                 <Select Label="@L["Catalog_Filter_Category"]"
                         Value="@_categoryFilter"
                         ValueChanged="OnCategoryFilterChanged"
@@ -155,9 +150,9 @@ else
         await ReloadAsync();
     }
 
-    private async Task OnSearchInputAsync(ChangeEventArgs args)
+    private async Task OnSearchInputAsync(string? value)
     {
-        _search = args.Value?.ToString();
+        _search = value;
         _searchCts?.Cancel();
         _searchCts?.Dispose();
         _searchCts = new CancellationTokenSource();

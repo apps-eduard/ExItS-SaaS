@@ -36,6 +36,7 @@ public static class IconGlyphs
         ["check"] = "<path d=\"M20 6 9 17l-5-5\"/>",
         ["warning"] = "<path d=\"M12 3.5 2 20.5h20L12 3.5Z\"/><path d=\"M12 10v4\"/><path d=\"M12 17.2h.01\"/>",
         ["search"] = "<circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"m21 21-4.35-4.35\"/>",
+        ["sliders"] = "<path d=\"M4 21v-7\"/><path d=\"M4 10V3\"/><path d=\"M12 21v-9\"/><path d=\"M12 8V3\"/><path d=\"M20 21v-5\"/><path d=\"M20 12V3\"/><path d=\"M2 14h4\"/><path d=\"M10 8h4\"/><path d=\"M18 16h4\"/>",
         ["qr"] = "<path d=\"M4 4h6v6H4z\"/><path d=\"M14 4h6v6h-6z\"/><path d=\"M4 14h6v6H4z\"/><path d=\"M14 14h2v2h-2z\"/><path d=\"M18 14h2v2h-2z\"/><path d=\"M14 18h2v2h-2z\"/><path d=\"M18 18h2v2h-2z\"/>",
         ["image"] = "<rect x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"2\"/><circle cx=\"8.5\" cy=\"10.5\" r=\"1.5\"/><path d=\"m21 15-5-5-4 4-2-2-5 5\"/>",
         ["info"] = "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 11v6\"/><path d=\"M12 7.2h.01\"/>",

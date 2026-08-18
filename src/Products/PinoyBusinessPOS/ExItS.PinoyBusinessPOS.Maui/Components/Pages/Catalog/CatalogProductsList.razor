@@ -70,35 +70,29 @@ else
         </div>
 
         <div class="pos-catalog__toolbar">
-            <div class="pos-catalog__search">
-                <span class="pos-catalog__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-                <input class="pos-catalog__search-input"
-                       type="search"
-                       value="@_search"
-                       placeholder="@L["Catalog_SearchShort"]"
-                       disabled="@_loading"
-                       @oninput="OnSearchInputAsync" />
-            </div>
-            <button type="button"
-                    class="pos-catalog__filter-toggle @(_filtersOpen ? "pos-catalog__filter-toggle--open" : null)"
-                    aria-expanded="@_filtersOpen"
-                    aria-controls="catalog-filters"
-                    title="@L["Catalog_FiltersTitle"]"
-                    @onclick="ToggleFilters">
-                <span class="pos-catalog__filter-icon" aria-hidden="true">@IconGlyphs.Get("menu")</span>
-                <span class="pos-catalog__filter-label">@L["Catalog_FiltersTitle"]</span>
-            </button>
+            <SearchBar Value="@_search"
+                       ValueChanged="OnSearchInputAsync"
+                       Placeholder="@L["Catalog_SearchShort"]"
+                       Disabled="@_loading"
+                       ShowFilterButton="true"
+                       ActiveFilterCount="@ActiveFilterCount"
+                       FiltersExpanded="@_filtersOpen"
+                       FiltersControlsId="catalog-filters"
+                       FilterLabel="@L["Catalog_FiltersTitle"]"
+                       OnFilterClick="ToggleFilters">
+                <FilterChips>
+                    @if (HasAppliedFilters)
+                    {
+                        <div aria-label="@L["Catalog_AppliedFilters"]">
+                            @foreach (var chip in AppliedFilterChips)
+                            {
+                                <span class="pos-catalog__chip">@chip</span>
+                            }
+                        </div>
+                    }
+                </FilterChips>
+            </SearchBar>
         </div>
-
-        @if (HasAppliedFilters)
-        {
-            <div class="pos-catalog__chips" aria-label="@L["Catalog_AppliedFilters"]">
-                @foreach (var chip in AppliedFilterChips)
-                {
-                    <span class="pos-catalog__chip">@chip</span>
-                }
-            </div>
-        }
 
         @if (_filtersOpen)
         {
@@ -263,11 +257,43 @@ else
         await ReloadAsync();
     }
 
-    private void ToggleFilters() => _filtersOpen = !_filtersOpen;
-
-    private async Task OnSearchInputAsync(ChangeEventArgs args)
+    private int ActiveFilterCount
     {
-        _search = args.Value?.ToString();
+        get
+        {
+            var count = 0;
+            if (string.IsNullOrWhiteSpace(_statusFilter))
+            {
+                count++;
+            }
+            else if (_statusFilter != PosCatalogOptions.ActiveStatus)
+            {
+                count++;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_categoryFilter))
+            {
+                count++;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_unitFilter))
+            {
+                count++;
+            }
+
+            return count;
+        }
+    }
+
+    private Task ToggleFilters()
+    {
+        _filtersOpen = !_filtersOpen;
+        return Task.CompletedTask;
+    }
+
+    private async Task OnSearchInputAsync(string? value)
+    {
+        _search = value;
         _page = 1;
         _searchCts?.Cancel();
         _searchCts?.Dispose();

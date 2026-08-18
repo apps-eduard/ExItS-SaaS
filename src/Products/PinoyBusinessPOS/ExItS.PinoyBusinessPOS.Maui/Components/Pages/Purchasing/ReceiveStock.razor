@@ -175,18 +175,13 @@ else
             </div>
 
             <div class="pos-receive-stock__toolbar">
-                <div class="pos-receive-stock__search" role="search">
-                    <span class="pos-receive-stock__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-                    <label class="visually-hidden" for="receive-stock-search">@L["Purchasing_ReceiveStockSearchPlaceholder"]</label>
-                    <input id="receive-stock-search"
-                           class="pos-receive-stock__search-input"
-                           type="search"
-                           value="@_productSearch"
-                           placeholder="@L["Purchasing_ReceiveStockSearchPlaceholder"]"
-                           disabled="@(_loadingLookups || _isOffline || _saving)"
-                           autocomplete="off"
-                           @oninput="OnProductSearchInput" />
-                </div>
+                <SearchBar Value="@_productSearch"
+                           ValueChanged="OnProductSearchInput"
+                           InputId="receive-stock-search"
+                           Placeholder="@L["Purchasing_ReceiveStockSearchPlaceholder"]"
+                           AriaLabel="@L["Purchasing_ReceiveStockSearchPlaceholder"]"
+                           Autocomplete="off"
+                           Disabled="@(_loadingLookups || _isOffline || _saving)" />
             </div>
 
             <aside class="pos-sell-categories pos-receive-stock__categories" aria-label="@L["Purchasing_CategoryFilter"]">
@@ -600,8 +595,8 @@ else
 
     private void SetCategoryFilter(Guid? categoryId) => _categoryFilterId = categoryId;
 
-    private void OnProductSearchInput(ChangeEventArgs e) =>
-        _productSearch = e.Value?.ToString() ?? string.Empty;
+    private void OnProductSearchInput(string? value) =>
+        _productSearch = value ?? string.Empty;
 
     private void OnSourceInput(ChangeEventArgs e)
     {

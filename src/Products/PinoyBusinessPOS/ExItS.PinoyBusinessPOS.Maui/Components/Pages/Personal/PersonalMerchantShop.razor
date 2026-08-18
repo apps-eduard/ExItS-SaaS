@@ -40,14 +40,10 @@
         }
         else
         {
-            <div class="pos-personal-shop__search">
-                <input class="pos-personal-shop__search-input"
-                       type="search"
-                       value="@_search"
-                       placeholder="@L["Personal_ShopSearchPlaceholder"]"
-                       aria-label="@L["Personal_ShopSearchPlaceholder"]"
-                       @oninput="OnSearchInput" />
-            </div>
+            <SearchBar Value="@_search"
+                       ValueChanged="OnSearchInput"
+                       Placeholder="@L["Personal_ShopSearchPlaceholder"]"
+                       AriaLabel="@L["Personal_ShopSearchPlaceholder"]" />
 
             @if (_storefront.Categories.Count > 0)
             {
@@ -213,9 +209,9 @@
         await LoadAsync();
     }
 
-    private async Task OnSearchInput(ChangeEventArgs e)
+    private async Task OnSearchInput(string? value)
     {
-        _search = e.Value?.ToString() ?? string.Empty;
+        _search = value ?? string.Empty;
         _searchCts?.Cancel();
         _searchCts?.Dispose();
         _searchCts = new CancellationTokenSource();

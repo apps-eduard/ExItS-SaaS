@@ -23,7 +23,11 @@ else
     </div>
     <p class="org-note">Inventory is for viewing and controlling stock you already have. To buy or receive goods, use Purchasing on POS (Receive stock, Purchase orders, Goods receipts).</p>
     <div class="org-toolbar">
-        <ExitsField Label="Search"><Input @bind-Value="_search" /></ExitsField>
+        <SearchBar Value="@_search"
+                   ValueChanged="OnSearchChanged"
+                   Placeholder="Search"
+                   AriaLabel="Search"
+                   OnSearch="SearchAsync" />
         <label><input type="checkbox" @bind="_lowStock" /> Low stock</label>
         <Button OnClick="SearchAsync">Filter</Button>
     </div>
@@ -128,6 +132,12 @@ else
     {
         _page = 1;
         await LoadAsync();
+    }
+
+    private Task OnSearchChanged(string? value)
+    {
+        _search = value;
+        return Task.CompletedTask;
     }
 
     private async Task ChangePageAsync(int page)

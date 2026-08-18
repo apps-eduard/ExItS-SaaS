@@ -38,19 +38,11 @@
     }
     else
     {
-        <div class="pos-manage-share__search" role="search">
-            <span class="pos-manage-share__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-            <input class="pos-manage-share__search-input"
-                   type="search"
-                   value="@_query"
-                   placeholder="@L["ConnectedBuyers_SearchProducts"]"
-                   disabled="@_busy"
-                   @oninput="OnSearchInput" />
-            @if (!string.IsNullOrWhiteSpace(_query))
-            {
-                <button type="button" class="pos-manage-share__search-clear" @onclick="ClearSearch">@L["Common_Clear"]</button>
-            }
-        </div>
+        <SearchBar Value="@_query"
+                   ValueChanged="OnSearchInput"
+                   Placeholder="@L["ConnectedBuyers_SearchProducts"]"
+                   Disabled="@_busy"
+                   OnClear="ClearSearch" />
 
         <div class="pos-manage-share__filters" role="tablist" aria-label="@L["Catalog_ConnectedAvailability_Title"]">
             @foreach (var filter in AvailabilityFilters)
@@ -468,15 +460,6 @@
     .pos-manage-share__title { margin: 0; font-size: 1.2rem; font-weight: 700; line-height: 1.2; color: var(--exits-text, #15201a); }
     .pos-manage-share__intro { margin: 0.3rem 0 0; font-size: 0.8125rem; line-height: 1.35; }
     .pos-manage-share__summary { margin: 0.25rem 0 0; font-size: 0.8125rem; }
-    .pos-manage-share__search {
-        display: flex; align-items: center; gap: 0.45rem; margin: 0 0 0.55rem;
-        padding: 0.45rem 0.55rem; border: 1px solid var(--exits-border, #c9d4cd); border-radius: 0.55rem;
-        background: var(--exits-surface, #fff);
-    }
-    .pos-manage-share__search-input {
-        flex: 1; border: 0; outline: none; background: transparent; font: inherit; font-size: 0.95rem;
-    }
-    .pos-manage-share__search-clear { appearance: none; border: 0; background: transparent; font: inherit; font-size: 0.75rem; font-weight: 650; color: var(--exits-primary, #1b7a3d); }
     .pos-manage-share__filters {
         display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0 0 0.55rem;
     }
@@ -676,9 +659,9 @@
         await ReloadAsync(resetPage: true);
     }
 
-    private async Task OnSearchInput(ChangeEventArgs args)
+    private async Task OnSearchInput(string? value)
     {
-        _query = args.Value?.ToString() ?? "";
+        _query = value ?? "";
         _searchCts?.Cancel();
         _searchCts = new CancellationTokenSource();
         var token = _searchCts.Token;

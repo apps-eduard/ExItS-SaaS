@@ -94,15 +94,11 @@ else
         }
 
         <div class="pos-inventory__toolbar">
-            <div class="pos-inventory__search">
-                <span class="pos-inventory__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-                <input class="pos-inventory__search-input"
-                       type="search"
-                       value="@_search"
-                       placeholder="@L["Inventory_SearchPlaceholder"]"
-                       disabled="@(_loading || _isOffline)"
-                       @oninput="OnSearchInputAsync" />
-            </div>
+            <SearchBar Value="@_search"
+                       ValueChanged="OnSearchInputAsync"
+                       Placeholder="@L["Inventory_SearchPlaceholder"]"
+                       AriaLabel="@L["Inventory_SearchPlaceholder"]"
+                       Disabled="@(_loading || _isOffline)" />
         </div>
 
         <section class="pos-inventory__panel" aria-labelledby="inventory-list-heading">
@@ -247,9 +243,9 @@ else
         _loading = false;
     }
 
-    private async Task OnSearchInputAsync(ChangeEventArgs e)
+    private async Task OnSearchInputAsync(string? value)
     {
-        _search = e.Value?.ToString() ?? string.Empty;
+        _search = value ?? string.Empty;
         _page = 1;
         _searchCts?.Cancel();
         _searchCts?.Dispose();

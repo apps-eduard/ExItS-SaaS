@@ -50,15 +50,16 @@ else
         </div>
 
         <div class="pos-expenses__toolbar">
-            <div class="pos-expenses__search">
-                <span class="pos-expenses__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-                <input class="pos-expenses__search-input"
-                       type="search"
-                       value="@_expenseNumber"
-                       placeholder="@L["Expenses_SearchPlaceholder"]"
-                       disabled="@(_loading || _isOffline)"
-                       @oninput="OnSearchInputAsync" />
-            </div>
+            <SearchBar Value="@_expenseNumber"
+                       ValueChanged="OnSearchInputAsync"
+                       Placeholder="@L["Expenses_SearchPlaceholder"]"
+                       Disabled="@(_loading || _isOffline)"
+                       ShowFilterButton="true"
+                       ActiveFilterCount="@ActiveFilterCount"
+                       FiltersExpanded="@_filtersOpen"
+                       FiltersControlsId="expenses-filters"
+                       FilterLabel="@L["Expenses_FiltersTitle"]"
+                       OnFilterClick="ToggleFilters" />
             <button type="button"
                     class="pos-expenses__toolbar-btn"
                     disabled="@(_loading || _isOffline)"
@@ -66,15 +67,6 @@ else
                     @onclick="ReloadAsync">
                 <span class="pos-expenses__toolbar-icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
                 <span class="pos-expenses__toolbar-label">@L["Expenses_Refresh"]</span>
-            </button>
-            <button type="button"
-                    class="pos-expenses__toolbar-btn @(_filtersOpen ? "pos-expenses__toolbar-btn--open" : null)"
-                    aria-expanded="@_filtersOpen"
-                    aria-controls="expenses-filters"
-                    title="@L["Expenses_FiltersTitle"]"
-                    @onclick="ToggleFilters">
-                <span class="pos-expenses__toolbar-icon" aria-hidden="true">@IconGlyphs.Get("menu")</span>
-                <span class="pos-expenses__toolbar-label">@L["Expenses_FiltersTitle"]</span>
             </button>
         </div>
 
@@ -198,11 +190,44 @@ else
         await ReloadAsync();
     }
 
-    private void ToggleFilters() => _filtersOpen = !_filtersOpen;
-
-    private async Task OnSearchInputAsync(ChangeEventArgs e)
+    private int ActiveFilterCount
     {
-        _expenseNumber = e.Value?.ToString();
+        get
+        {
+            var count = 0;
+            if (!string.IsNullOrWhiteSpace(_statusFilter))
+            {
+                count++;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_paymentFilter))
+            {
+                count++;
+            }
+
+            if (_fromDate is not null)
+            {
+                count++;
+            }
+
+            if (_toDate is not null)
+            {
+                count++;
+            }
+
+            return count;
+        }
+    }
+
+    private Task ToggleFilters()
+    {
+        _filtersOpen = !_filtersOpen;
+        return Task.CompletedTask;
+    }
+
+    private async Task OnSearchInputAsync(string? value)
+    {
+        _expenseNumber = value;
         _page = 1;
         _searchCts?.Cancel();
         _searchCts?.Dispose();

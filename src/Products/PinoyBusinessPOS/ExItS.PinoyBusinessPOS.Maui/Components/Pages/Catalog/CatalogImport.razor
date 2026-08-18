@@ -107,15 +107,10 @@ else
         {
             <Section Title="@L["Catalog_Import_ChooseTitle"]">
                 <div class="pos-catalog-import__toolbar">
-                    <div class="pos-catalog-import__search">
-                        <span class="pos-catalog-import__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-                        <input class="pos-catalog-import__search-input"
-                               type="search"
-                               value="@_search"
-                               placeholder="@L["Catalog_Import_SearchTemplates"]"
-                               disabled="@(_loading || _isOffline || _busy)"
-                               @oninput="OnSearchInputAsync" />
-                    </div>
+                    <SearchBar Value="@_search"
+                               ValueChanged="OnSearchChanged"
+                               Placeholder="@L["Catalog_Import_SearchTemplates"]"
+                               Disabled="@(_loading || _isOffline || _busy)" />
                     <button type="button"
                             class="pos-action-tile pos-catalog-import__refresh"
                             disabled="@(_loading || _isOffline || _busy)"
@@ -249,14 +244,9 @@ else
                         else
                         {
                             <div class="pos-catalog-import__toolbar">
-                                <div class="pos-catalog-import__search">
-                                    <span class="pos-catalog-import__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-                                    <input class="pos-catalog-import__search-input"
-                                           type="search"
-                                           value="@_previewSearch"
-                                           placeholder="@L["Catalog_Import_PreviewSearch"]"
-                                           @oninput="OnPreviewSearchInputAsync" />
-                                </div>
+                                <SearchBar Value="@_previewSearch"
+                                           ValueChanged="OnPreviewSearchChanged"
+                                           Placeholder="@L["Catalog_Import_PreviewSearch"]" />
                             </div>
                             @if (FilteredPreviewProducts.Count == 0)
                             {
@@ -457,21 +447,11 @@ else
         return Task.CompletedTask;
     }
 
-    private Task OnSearchInputAsync(ChangeEventArgs e)
-    {
-        return OnSearchChanged(e.Value?.ToString());
-    }
-
     private Task OnPreviewSearchChanged(string? value)
     {
         _previewSearch = value;
         StateHasChanged();
         return Task.CompletedTask;
-    }
-
-    private Task OnPreviewSearchInputAsync(ChangeEventArgs e)
-    {
-        return OnPreviewSearchChanged(e.Value?.ToString());
     }
 
     private string? StepClass(WizardStep step)

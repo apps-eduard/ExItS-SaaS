@@ -62,15 +62,11 @@ else
         }
 
         <div class="pos-customers__toolbar">
-            <div class="pos-customers__search">
-                <span class="pos-customers__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-                <input class="pos-customers__search-input"
-                       type="search"
-                       value="@_search"
-                       placeholder="@L["Customers_SearchPlaceholder"]"
-                       disabled="@_loading"
-                       @oninput="OnSearchInputAsync" />
-            </div>
+            <SearchBar Value="@_search"
+                       ValueChanged="OnSearchInputAsync"
+                       Placeholder="@L["Customers_SearchPlaceholder"]"
+                       AriaLabel="@L["Customers_SearchPlaceholder"]"
+                       Disabled="@_loading" />
         </div>
 
         <section class="pos-customers__panel" aria-labelledby="customers-list-heading">
@@ -166,9 +162,9 @@ else
         await ReloadAsync();
     }
 
-    private async Task OnSearchInputAsync(ChangeEventArgs e)
+    private async Task OnSearchInputAsync(string? value)
     {
-        _search = e.Value?.ToString();
+        _search = value;
         _page = 1;
         _searchCts?.Cancel();
         _searchCts?.Dispose();

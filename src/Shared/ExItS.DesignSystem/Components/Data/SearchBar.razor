@@ -1,0 +1,170 @@
+@namespace ExItS.DesignSystem.Components.Data
+@using ExItS.DesignSystem.Components.Internal
+@using ExItS.DesignSystem.Components.Primitives
+@using ExItS.DesignSystem.Localization
+@inject IStringLocalizer<DesignSystemResources> L
+@implements IDisposable
+
+<div class="exds-search-bar @CssClass" role="search" @attributes="AdditionalAttributes">
+    <div class="exds-search-bar__row">
+        <div class="exds-search-bar__field">
+            <span class="exds-search-bar__icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+            <input type="search"
+                   id="@InputId"
+                   class="exds-search-bar__input exds-field__control"
+                   placeholder="@ResolvedPlaceholder"
+                   value="@_displayValue"
+                   aria-label="@ResolvedAriaLabel"
+                   disabled="@Disabled"
+                   autocomplete="@Autocomplete"
+                   @oninput="HandleInputAsync"
+                   @onkeydown="HandleKeyDownAsync" />
+            @if (!string.IsNullOrEmpty(_displayValue))
+            {
+                <span class="exds-search-bar__clear">
+                    <IconButton AriaLabel="@ResolvedClearLabel"
+                                IconName="close"
+                                Disabled="@Disabled"
+                                OnClick="ClearAsync" />
+                </span>
+            }
+        </div>
+        @if (ShowFilterButton)
+        {
+            <button type="button"
+                    class="exds-search-bar__filter @(FiltersExpanded ? "exds-search-bar__filter--open" : null)"
+                    aria-expanded="@FiltersExpanded"
+                    aria-controls="@FiltersControlsId"
+                    aria-label="@ResolvedFilterLabel"
+                    title="@ResolvedFilterLabel"
+                    disabled="@Disabled"
+                    @onclick="HandleFilterClickAsync">
+                <span class="exds-search-bar__filter-icon" aria-hidden="true">@IconGlyphs.Get("sliders")</span>
+                @if (ActiveFilterCount > 0)
+                {
+                    <span class="exds-search-bar__badge" aria-hidden="true">@ActiveFilterCount</span>
+                    <span class="exds-sr-only">@string.Format(L["Search_ActiveFiltersCount"], ActiveFilterCount)</span>
+                }
+            </button>
+        }
+    </div>
+    @if (FilterChips is not null)
+    {
+        <div class="exds-search-bar__chips">@FilterChips</div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public string? AriaLabel { get; set; }
+    [Parameter] public string? ClearLabel { get; set; }
+    [Parameter] public string? FilterLabel { get; set; }
+    [Parameter] public string? InputId { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string Autocomplete { get; set; } = "off";
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ShowFilterButton { get; set; }
+    [Parameter] public int ActiveFilterCount { get; set; }
+    [Parameter] public bool FiltersExpanded { get; set; }
+    [Parameter] public string? FiltersControlsId { get; set; }
+    [Parameter] public EventCallback OnFilterClick { get; set; }
+    [Parameter] public EventCallback OnSearch { get; set; }
+    [Parameter] public EventCallback OnClear { get; set; }
+    [Parameter] public int DebounceMilliseconds { get; set; }
+    [Parameter] public RenderFragment? FilterChips { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string? _displayValue;
+    private CancellationTokenSource? _debounceCts;
+
+    private string ResolvedPlaceholder => Placeholder ?? L["Search_Placeholder"];
+    private string ResolvedAriaLabel => AriaLabel ?? ResolvedPlaceholder;
+    private string ResolvedClearLabel => ClearLabel ?? L["Action_ClearSearch"];
+    private string ResolvedFilterLabel => FilterLabel ?? L["Search_Filters"];
+
+    protected override void OnParametersSet()
+    {
+        _displayValue = Value;
+    }
+
+    private async Task HandleInputAsync(ChangeEventArgs args)
+    {
+        _displayValue = args.Value?.ToString();
+
+        if (DebounceMilliseconds <= 0)
+        {
+            await EmitValueChangedAsync(_displayValue);
+            return;
+        }
+
+        _debounceCts?.Cancel();
+        _debounceCts?.Dispose();
+        _debounceCts = new CancellationTokenSource();
+        var token = _debounceCts.Token;
+
+        try
+        {
+            await Task.Delay(DebounceMilliseconds, token);
+            await EmitValueChangedAsync(_displayValue);
+        }
+        catch (OperationCanceledException)
+        {
+            // superseded by newer keystrokes
+        }
+    }
+
+    private async Task HandleKeyDownAsync(KeyboardEventArgs args)
+    {
+        if (!string.Equals(args.Key, "Enter", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _debounceCts?.Cancel();
+        await EmitValueChangedAsync(_displayValue);
+
+        if (OnSearch.HasDelegate)
+        {
+            await OnSearch.InvokeAsync();
+        }
+    }
+
+    private async Task ClearAsync()
+    {
+        _debounceCts?.Cancel();
+        _displayValue = null;
+        await EmitValueChangedAsync(null);
+
+        if (OnClear.HasDelegate)
+        {
+            await OnClear.InvokeAsync();
+        }
+    }
+
+    private async Task EmitValueChangedAsync(string? value)
+    {
+        Value = value;
+        if (ValueChanged.HasDelegate)
+        {
+            await ValueChanged.InvokeAsync(value);
+        }
+    }
+
+    private async Task HandleFilterClickAsync()
+    {
+        if (Disabled || !OnFilterClick.HasDelegate)
+        {
+            return;
+        }
+
+        await OnFilterClick.InvokeAsync();
+    }
+
+    public void Dispose()
+    {
+        _debounceCts?.Cancel();
+        _debounceCts?.Dispose();
+    }
+}

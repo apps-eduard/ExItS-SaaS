@@ -96,6 +96,18 @@
   <data name="Action_ClearSearch" xml:space="preserve">
     <value>I-clear ang paghahanap</value>
   </data>
+  <data name="Search_Filters" xml:space="preserve">
+    <value>Mga filter</value>
+  </data>
+  <data name="Search_ActiveFiltersCount" xml:space="preserve">
+    <value>{0} aktibong filter</value>
+  </data>
+  <data name="Action_ApplyFilters" xml:space="preserve">
+    <value>Ilapat ang mga filter</value>
+  </data>
+  <data name="Action_ResetFilters" xml:space="preserve">
+    <value>I-reset</value>
+  </data>
   <data name="Action_Save" xml:space="preserve">
     <value>I-save</value>
   </data>

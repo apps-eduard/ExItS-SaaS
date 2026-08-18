@@ -198,18 +198,13 @@ else
                 }
                 <div class="pos-purchasing-create__picker" role="search" aria-label="@L["Purchasing_Field_Product"]">
                     <label class="pos-purchasing-create__search-label" for="purchasing-product-search">@ProductSearchLabel</label>
-                    <div class="pos-purchasing-create__search">
-                        <span class="pos-purchasing-create__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-                        <input id="purchasing-product-search"
-                               class="pos-purchasing-create__search-input"
-                               type="search"
-                               value="@_productSearch"
-                               placeholder="@ProductSearchLabel"
-                               aria-label="@ProductSearchLabel"
-                               disabled="@(blocked || _saving || _loadingLookups || isEditing || (!IsConnectedSupplier && _products.Count == 0) || (IsConnectedSupplier && _connectedReadyAll.Count == 0))"
-                               autocomplete="off"
-                               @oninput="OnProductSearchInputAsync" />
-                    </div>
+                    <SearchBar Value="@_productSearch"
+                               ValueChanged="OnProductSearchInputAsync"
+                               InputId="purchasing-product-search"
+                               Placeholder="@ProductSearchLabel"
+                               AriaLabel="@ProductSearchLabel"
+                               Autocomplete="off"
+                               Disabled="@(blocked || _saving || _loadingLookups || isEditing || (!IsConnectedSupplier && _products.Count == 0) || (IsConnectedSupplier && _connectedReadyAll.Count == 0))" />
 
                     @if (HasSupplierSelected)
                     {
@@ -876,10 +871,8 @@ else
             .ToList();
     }
 
-    private void OnProductSearchInputAsync(ChangeEventArgs args)
-    {
-        _productSearch = args.Value?.ToString() ?? string.Empty;
-    }
+    private void OnProductSearchInputAsync(string? value) =>
+        _productSearch = value ?? string.Empty;
 
     private async Task OnSupplierChangedAsync(string? value)
     {

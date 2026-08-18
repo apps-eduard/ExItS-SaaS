@@ -65,10 +65,27 @@ else
                        OnCancel="CloseConfirm" />
 
         <SectionHeader Title="@L["DevShowcase_DataTitle"]" Subtitle="@L["DevShowcase_DataSubtitle"]" />
-        <SearchToolbar SearchText="_search" SearchTextChanged="OnSearchChanged" Placeholder="@L["Common_Search"]" />
-        <FilterBar AriaLabel="@L["DevShowcase_FiltersLabel"]">
-            <SortControl Value="_sort" ValueChanged="OnSortChanged" Options="SortOptions" />
-        </FilterBar>
+        <SearchToolbar SearchText="_search"
+                       SearchTextChanged="OnSearchChanged"
+                       Placeholder="@L["Common_Search"]"
+                       ShowFilterButton="true"
+                       ActiveFilterCount="@(_sort == "name" ? 0 : 1)"
+                       FiltersExpanded="_filtersOpen"
+                       FiltersControlsId="dev-showcase-filters"
+                       OnFilterClick="ToggleFilters">
+            <FilterChips>
+                @if (_sort != "name")
+                {
+                    <span class="pos-catalog__chip">@L["DevShowcase_SortLabel"]: @_sort</span>
+                }
+            </FilterChips>
+        </SearchToolbar>
+        @if (_filtersOpen)
+        {
+            <FilterBar AriaLabel="@L["DevShowcase_FiltersLabel"]" id="dev-showcase-filters">
+                <SortControl Value="_sort" ValueChanged="OnSortChanged" Options="SortOptions" />
+            </FilterBar>
+        }
         <ResponsiveDataList TItem="SampleRow"
                             Items="PagedRows"
                             Columns="Columns"
@@ -103,6 +120,7 @@ else
     private string? _confirmReason;
     private string? _search;
     private string? _sort = "name";
+    private bool _filtersOpen;
     private int _page = 1;
 
     private IReadOnlyList<RadioOption> RadioOptions =>
@@ -224,6 +242,8 @@ else
         _search = value;
         _page = 1;
     }
+
+    private void ToggleFilters() => _filtersOpen = !_filtersOpen;
 
     private void OnSortChanged(string? value)
     {

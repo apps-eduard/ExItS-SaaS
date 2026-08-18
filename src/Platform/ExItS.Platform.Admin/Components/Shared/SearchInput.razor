@@ -1,23 +1,23 @@
+@namespace ExItS.Platform.Admin.Components.Shared
+@using ExItS.DesignSystem.Components.Data
 @inject IStringLocalizer<AdminResources> L
 
-<label class="search-input">
-    <span class="sr-only">@(Label ?? L["Common_Search"])</span>
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-        <circle cx="11" cy="11" r="7" />
-        <path d="m20 20-3.5-3.5" />
-    </svg>
-    <input type="search" value="@Value" placeholder="@(Placeholder ?? L["Common_Search"])" @oninput="OnInput" />
-</label>
+<SearchBar Value="@Value"
+           ValueChanged="OnValueChanged"
+           Placeholder="@(Placeholder ?? L["Common_Search"])"
+           AriaLabel="@(Label ?? Placeholder ?? L["Common_Search"])"
+           Disabled="@Disabled" />
 
 @code {
     [Parameter] public string? Value { get; set; }
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
     [Parameter] public string? Placeholder { get; set; }
     [Parameter] public string? Label { get; set; }
+    [Parameter] public bool Disabled { get; set; }
 
-    private async Task OnInput(ChangeEventArgs e)
+    private async Task OnValueChanged(string? value)
     {
-        var text = e.Value?.ToString() ?? "";
+        var text = value ?? string.Empty;
         Value = text;
         await ValueChanged.InvokeAsync(text);
     }
