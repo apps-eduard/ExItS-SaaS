@@ -66,7 +66,7 @@ Role **codes** are not assigned. Final grant matrix remains **Open / Product Own
 
 ## Ownership and workflow rules
 
-- Resource/workflow authorization is a required layer. Exact traditional-loan workflow and remaining calculation rules are not defined (PLM-D-00-08).
+- Resource/workflow authorization is a required layer. Exact traditional-loan workflow, formulas, and component allocation order remain open (PLM-D-00-08). Lifecycle vs delinquency: [Product/loan-lifecycle-model.md](Product/loan-lifecycle-model.md).
 - Last-owner / bootstrap rules: **Status: Open / Product Owner Decision Required**.
 - POS Customer status never grants Loan operational permission.
 - Platform Administrator does not automatically receive Loan operational access.

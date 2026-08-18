@@ -11,7 +11,10 @@ Canonical companions:
 - [quick-loan-model.md](quick-loan-model.md)
 - [collector-cash-and-reconciliation.md](collector-cash-and-reconciliation.md)
 - [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md)
+- [financial-calculation-baseline.md](financial-calculation-baseline.md)
+- [loan-lifecycle-model.md](loan-lifecycle-model.md)
 - [../Architecture/application-surface-model.md](../Architecture/application-surface-model.md)
+- [../Architecture/loan-ledger-and-balance-model.md](../Architecture/loan-ledger-and-balance-model.md)
 - [../product-definition.md](../product-definition.md)
 - [../risks-and-decisions.md](../risks-and-decisions.md)
 
@@ -83,7 +86,7 @@ After approval/disbursement, Traditional Loan and Quick Loan use the **same** op
 
 Origination UX and template/application artifacts may differ. Posted loan financial facts must not.
 
-Exact ledger architecture, statuses, allocation order, and calculation algorithms remain open. See [../risks-and-decisions.md](../risks-and-decisions.md).
+Planning for that core: [financial-calculation-baseline.md](financial-calculation-baseline.md), [loan-lifecycle-model.md](loan-lifecycle-model.md), [../Architecture/loan-ledger-and-balance-model.md](../Architecture/loan-ledger-and-balance-model.md). Exact formulas, rates, rounding mode, and component allocation order remain open. See [../risks-and-decisions.md](../risks-and-decisions.md).
 
 ---
 

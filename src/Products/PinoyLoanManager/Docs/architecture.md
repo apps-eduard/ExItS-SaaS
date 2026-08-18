@@ -7,7 +7,7 @@
 |---|---|
 | Product | Pinoy Loan Manager / `pinoy-loan-manager` (proposed, PLM-D-00-01) |
 | Database | `ExItS_PinoyLoanManager` (proposed) / schema **Status: Open / Product Owner Decision Required** (PLM-D-00-02) |
-| Status | Draft — documentation baseline plus agreed operating-model direction; not product-owner approved |
+| Status | Draft — documentation baseline plus operating-model and financial-lifecycle planning; not product-owner approved |
 | Implementation present | No |
 
 ## System context
@@ -75,7 +75,7 @@ Do **not** design the final generic Platform relationship schema here (**Status:
 
 ## Product modules
 
-Planning modules only. None are designed or implemented. Exact calculation policy inside each module remains open (PLM-D-00-08). Origination and cash direction: [Product/lending-operating-model.md](Product/lending-operating-model.md).
+Planning modules only. None are designed or implemented. Exact formulas remain open (PLM-D-00-08). Origination: [Product/lending-operating-model.md](Product/lending-operating-model.md). Financial planning: [Product/financial-calculation-baseline.md](Product/financial-calculation-baseline.md), [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md).
 
 | Module | Responsibility | Notes |
 |---|---|---|
@@ -86,10 +86,10 @@ Planning modules only. None are designed or implemented. Exact calculation polic
 | Application / approval | Traditional application and Quick Loan Request | Manual approval default; no auto-approval |
 | Origination / disbursement | Starting a loan and releasing funds | Approved ≠ Disbursed; office or collector |
 | Shared Loan core | Ledger, balances, schedule, payments, penalties, collections, settlement, audit | One engine after disbursement |
-| Schedule / calculation engine | Schedules and calculations | Interest, amortization, rounding open |
-| Payment posting | Applying receipts | Allocation order open |
+| Schedule / calculation engine | Schedules and calculations | Modes recorded; formula, rounding (PLM-D-00-12), amortization open |
+| Payment posting | Applying receipts | Partial/multiple payments; oldest-due schedule baseline; component order open |
 | Collector cash / reconciliation | Float, collections cash, remittance, variance | Separate from loan ledger |
-| Collections / delinquency | Arrears, exceptions, waivers, reversals | Configurable; no hard-coded rate |
+| Collections / delinquency | Arrears, exceptions, waivers, reversals | Separate from lifecycle; no hard-coded rate |
 | Reporting / documents | Product reports and documents | Contents open |
 | Security / audit / privacy | Product audit, consent, classification | See [security.md](security.md) |
 | Offline / MAUI field capabilities | Later native/offline support | Not authorized |
@@ -174,9 +174,10 @@ Detail: `deployment-notes.md` when packaging begins. Not created in this package
 ## Explicit non-goals
 
 - Implementing code, projects, databases, migrations, APIs, UI, Docker, or solution entries in PLM-00
-- Finalizing Loan calculation algorithms or peso/percent rates
+- Finalizing Loan calculation algorithms, peso/percent rates, rounding mode, or component allocation order
 - Designing the generic Platform relationship schema
 - Copying PinoyBusinessPOS architecture, grants, or money models
 - Claiming production-secure authentication
 - Treating Dev/Testing commercial shortcuts as the production design
 - Using Platform Admin as the borrower-loan operations UI
+- Duplicate Traditional vs Quick financial engines

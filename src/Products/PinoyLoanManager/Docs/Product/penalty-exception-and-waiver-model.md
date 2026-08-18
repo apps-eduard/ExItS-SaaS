@@ -6,7 +6,7 @@
 
 Penalty policy is configurable per Loan Template / snapshotted Loan terms. Do **not** make one hard-coded global penalty. Do **not** choose an actual peso rate or percentage. This is not a legally validated collections policy.
 
-Related: [lending-operating-model.md](lending-operating-model.md), [quick-loan-model.md](quick-loan-model.md).
+Related: [lending-operating-model.md](lending-operating-model.md), [quick-loan-model.md](quick-loan-model.md), [payment-and-allocation-model.md](payment-and-allocation-model.md), [schedule-maturity-and-settlement.md](schedule-maturity-and-settlement.md).
 
 ---
 

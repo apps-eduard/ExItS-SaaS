@@ -8,13 +8,13 @@
 | Product name | Pinoy Loan Manager |
 | Platform product code | `pinoy-loan-manager` (proposed — **Status: Open / Product Owner Decision Required**, PLM-D-00-01) |
 | Docs root | `src/Products/PinoyLoanManager/Docs/` |
-| Status | Draft — documentation baseline plus agreed operating-model direction; not product-owner approved |
+| Status | Draft — documentation baseline plus operating-model and financial-lifecycle planning; not product-owner approved |
 | Last updated | 2026-08-19 |
 | Implementation present | No |
 
 ## Purpose and users
 
-- Purpose: Independently subscribed ExItS product for **lending operations**. Two origination paths are agreed: Traditional Loan and Quick Loan. After disbursement both converge into one core Loan model. Detail: [Product/lending-operating-model.md](Product/lending-operating-model.md). Exact calculation algorithms remain **Open / Product Owner Decision Required** (PLM-D-00-08).
+- Purpose: Independently subscribed ExItS product for **lending operations**. Two origination paths are agreed: Traditional Loan and Quick Loan. After disbursement both converge into one core Loan model. Detail: [Product/lending-operating-model.md](Product/lending-operating-model.md). Money terminology, interest-treatment *modes*, lifecycle vs delinquency, and ledger vs cash are recorded in WP04. Exact formulas, rates, rounding mode, and component allocation order remain **Open** (PLM-D-00-08, PLM-D-00-12).
 - Target organizations: Independently subscribed ExItS lending organizations. Multi-branch support is intended from the beginning; a single-branch organization may use one default branch.
 - Target users / jobs: Organization staff via Owner / Manager / Cashier / Collector **presets** (grants still open — PLM-D-00-06). Borrowers use ExItS Personal as a presentation surface only. Do not copy PinoyBusinessPOS grant sets even where display names overlap.
 
@@ -73,14 +73,16 @@ Surface detail: [Architecture/application-surface-model.md](Architecture/applica
 
 ## Operational money
 
-**Status: Open / Product Owner Decision Required** for schema, posting rules, and calculation (PLM-D-00-07).
+**Status: Open / Product Owner Decision Required** for schema, component allocation order, exact formulas, and GL integration (PLM-D-00-07, PLM-D-00-08).
 
 Required / agreed direction:
 
 - SaaS subscription / billing money remains Platform-owned (Organization → ExItS).
 - Borrower Loan Charges remain Pinoy Loan Manager–owned (Borrower → lending organization) and must never become Platform `SaaSPayment*` records.
-- Loan financial ledger and collector cash accountability are **separate facts**. See [Product/collector-cash-and-reconciliation.md](Product/collector-cash-and-reconciliation.md).
+- Loan financial ledger and collector cash accountability are **separate facts**. See [Product/collector-cash-and-reconciliation.md](Product/collector-cash-and-reconciliation.md) and [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md).
 - Preferred Platform usage billable event: **LOAN DISBURSED** (not Loan Approved). Transport remains D-P12-03.
+- Do not assume Principal = Net Proceeds = Total Repayment. Terminology: [Product/financial-calculation-baseline.md](Product/financial-calculation-baseline.md).
+- Authoritative money math: decimal, not binary floating-point; exact rounding mode open (PLM-D-00-12).
 - Entities, posting algorithms, and journal entries are **not** defined. Do not copy PinoyBusinessPOS money models.
 
 ## Product-local roles and grants (summary)
@@ -119,9 +121,10 @@ This package records:
 
 - documentation workspace (PLM-00-WP01, completed)
 - product definition and architecture baseline (PLM-00-WP02, completed)
-- lending operating model and Quick Loan baseline (PLM-00-WP03, this package)
+- lending operating model and Quick Loan baseline (PLM-00-WP03, completed)
+- financial calculation and loan lifecycle baseline (PLM-00-WP04, this package)
 
-No loan MVP **implementation** is approved. Calculation algorithms, peso/percent rates, and legal validation remain open.
+No loan MVP **implementation** is approved. Calculation algorithms, peso/percent rates, rounding mode, and legal validation remain open.
 
 ## Explicit exclusions
 
@@ -130,7 +133,7 @@ No loan MVP **implementation** is approved. Calculation algorithms, peso/percent
 - Final Loan grant matrix (presets only)
 - Generic Platform cross-product relationship schema
 - Copying PinoyBusinessPOS domain, grants, or financial models
-- Exact interest/amortization algorithms, peso or percent rates, due-date generation, payment allocation, early settlement, penalty amounts, legal/regulatory operating rules (PLM-D-00-08 and related open areas)
+- Exact interest/amortization algorithms, peso or percent rates, rounding mode, due-date generation, component payment allocation order, early-settlement unearned interest, penalty amounts, legal/regulatory operating rules (PLM-D-00-08, PLM-D-00-12, and related open areas)
 - Auto-approval of Quick Loans
 - Treating any recorded rate, fee, penalty, or workflow as legally compliant
 - Production authentication (R-091)
@@ -153,11 +156,12 @@ No loan MVP **implementation** is approved. Calculation algorithms, peso/percent
 | PLM-D-00-04 | Generic Platform cross-product relationship model | Personal multi-product participation |
 | PLM-D-00-05 | Personal-to-Borrower linking mechanism | Borrower identity design (PLM-04) |
 | PLM-D-00-06 | Loan roles and grants (presets recorded; grants open) | Authorization (PLM-03) |
-| PLM-D-00-07 | Operational financial model (ledger vs cash direction recorded; schema open) | Origination, payments, collections |
-| PLM-D-00-08 | Loan business / calculation rules | Product configuration through collections |
+| PLM-D-00-07 | Operational financial model (ledger vs cash; subledger principles recorded; schema open) | Origination, payments, collections |
+| PLM-D-00-08 | Loan business / calculation rules (modes recorded; formulas/rates open) | Product configuration through collections |
 | PLM-D-00-09 | Web / MAUI component-sharing strategy | Client scaffold |
 | PLM-D-00-10 | Product documentation baseline completion / owner approval | Closing PLM-00 |
 | PLM-D-00-11 | External legal/compliance validation before Production | Production use |
+| PLM-D-00-12 | Exact money rounding mode | Calculation engine |
 | D-P12-03 | Commercial-state transport | Product access enforcement |
 | R-091 | Production authentication | Production readiness |
 | D-P12-05 | Honest Dev/Testing vs Production language | Tied to R-091 |
@@ -172,6 +176,11 @@ No loan MVP **implementation** is approved. Calculation algorithms, peso/percent
 | Quick Loan | [Product/quick-loan-model.md](Product/quick-loan-model.md) |
 | Collector cash | [Product/collector-cash-and-reconciliation.md](Product/collector-cash-and-reconciliation.md) |
 | Penalty / exception / waiver | [Product/penalty-exception-and-waiver-model.md](Product/penalty-exception-and-waiver-model.md) |
+| Financial calculation | [Product/financial-calculation-baseline.md](Product/financial-calculation-baseline.md) |
+| Payment / allocation | [Product/payment-and-allocation-model.md](Product/payment-and-allocation-model.md) |
+| Schedule / maturity / settlement | [Product/schedule-maturity-and-settlement.md](Product/schedule-maturity-and-settlement.md) |
+| Loan lifecycle | [Product/loan-lifecycle-model.md](Product/loan-lifecycle-model.md) |
+| Loan ledger / balances | [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md) |
 | Security | [security.md](security.md) |
 | Authorization | [authorization-matrix.md](authorization-matrix.md) |
 | Development plan | [development-plan.md](development-plan.md) |

@@ -2,7 +2,7 @@
 
 **Status:** Foundation / planning only
 **Implementation present:** No
-**Current work package:** PLM-00-WP03 — Lending Operating Model & Quick Loan Baseline
+**Current work package:** PLM-00-WP04 — Financial Calculation & Loan Lifecycle Baseline
 
 This file is the navigation map for future Cursor work. Load this product’s `Docs/` after the shared Product Foundation reference. Do not scan PinoyBusinessPOS implementation by default.
 
@@ -36,7 +36,17 @@ Shared contracts to load with this product:
 | `Docs/Product/penalty-exception-and-waiver-model.md` | Penalty, exception, waiver, reversal, post-maturity | Agreed direction / not a spec | No |
 | `Docs/Architecture/application-surface-model.md` | Platform Admin, Org Web, MAUI, Personal | Agreed direction / not a spec | No |
 
-## Workspace indexes (PLM-00-WP01, updated in WP02/WP03)
+## Financial / lifecycle planning (PLM-00-WP04)
+
+| Path | Purpose | Status | Implementation present |
+|---|---|---|---|
+| `Docs/Product/financial-calculation-baseline.md` | Money terms, interest-treatment modes, precision | Planning baseline / not a spec | No |
+| `Docs/Product/payment-and-allocation-model.md` | Payments, allocation, reversals, idempotency | Planning baseline / not a spec | No |
+| `Docs/Product/schedule-maturity-and-settlement.md` | Schedule, calendar, maturity, settlement | Planning baseline / not a spec | No |
+| `Docs/Product/loan-lifecycle-model.md` | Origination vs lifecycle vs delinquency | Planning baseline / not a spec | No |
+| `Docs/Architecture/loan-ledger-and-balance-model.md` | Operational subledger and balances | Planning baseline / not a spec | No |
+
+## Workspace indexes (PLM-00-WP01, updated in WP02–WP04)
 
 | Path | Purpose | Status | Implementation present |
 |---|---|---|---|
@@ -66,5 +76,6 @@ Shared contracts to load with this product:
 | `ExItS.slnx` entries | Not authorized |
 | `Docs/deployment-notes.md` | Optional until packaging |
 | `Docs/Reports/<WP-id>.md` | In-tree WP report not required for this docs-only WP |
+| Exact rounding mode | Open (PLM-D-00-12) |
 | Final calculation algorithms / peso or percent rates | Owner decision (PLM-D-00-08) |
 | Legal/compliance validation | Open (PLM-D-00-11) |

@@ -63,7 +63,7 @@ Conceptual example only (not a rate or formula):
 
 Do **not** hard-code a specific rate or formula. Do **not** claim legal permissibility of any configuration.
 
-Exact methods, precision, and amortization remain **Open / Product Owner Decision Required**.
+Illustrative proceeds vs repayment examples and money terminology: [financial-calculation-baseline.md](financial-calculation-baseline.md). Exact methods, precision, and amortization remain **Open / Product Owner Decision Required**.
 
 ### Payment / schedule
 

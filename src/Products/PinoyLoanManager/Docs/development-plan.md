@@ -20,7 +20,7 @@
 
 | Phase | Objective | Exit criteria |
 |---|---|---|
-| PLM-00 Foundation & Product Decisions | Documentation, identity, isolation, operating-model direction, and owner-decision register | Canonical docs exist; open decisions listed; no implementation claimed |
+| PLM-00 Foundation & Product Decisions | Documentation, identity, isolation, operating-model direction, financial-lifecycle planning, and owner-decision register | Canonical docs exist; open decisions listed; no implementation claimed |
 | PLM-01 Product Scaffold & Isolation | Authorized source/test/deploy skeleton and isolation guards | Projects exist without Loan domain; solution isolation proven |
 | PLM-02 Identity / Organization / Product Access | Consume Platform actor/org/product access without Platform table reads | Access intersection entry gates exist; D-P12-03 not invented |
 | PLM-03 Loan Product Authorization | Product-local roles/grants | Matrix implemented only after PLM-D-00-06 |
@@ -97,6 +97,6 @@ Never weaken tests to pass a WP.
 ## Explicit exclusions from this plan
 
 - Implementing Loan capability in PLM-00
-- Finalizing calculation, penalty amounts, or regulatory rules
+- Finalizing calculation, penalty amounts, rounding mode, or regulatory rules
 - Creating .NET projects, migrations, APIs, UI, Docker, or `ExItS.slnx` entries in this WP
 - Copying POS phases or grant sets

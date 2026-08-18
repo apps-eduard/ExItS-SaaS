@@ -6,7 +6,7 @@
 
 This document records collector cash accountability as distinct from the loan financial ledger. It is not an accounting-journal or schema specification.
 
-Related: [lending-operating-model.md](lending-operating-model.md), [quick-loan-model.md](quick-loan-model.md).
+Related: [lending-operating-model.md](lending-operating-model.md), [quick-loan-model.md](quick-loan-model.md), [../Architecture/loan-ledger-and-balance-model.md](../Architecture/loan-ledger-and-balance-model.md).
 
 ---
 

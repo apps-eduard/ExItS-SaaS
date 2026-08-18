@@ -5,8 +5,8 @@
 **Status:** Foundation / planning only
 **Implementation present:** No
 
-No ADR is approved in this package. PLM-00-WP03 records agreed **product direction** in Product/Architecture docs; that is not an ADR close-out.
+No ADR is approved in this package. PLM-00-WP03/WP04 record agreed **product direction** in Product/Architecture docs; that is not an ADR close-out.
 
 Major irreversible or cross-product choices must eventually receive an ADR here.
 
-Do not close PLM-D-00-01 through PLM-D-00-11, D-P12-03, R-091, or D-P12-05 without explicit approval.
+Do not close PLM-D-00-01 through PLM-D-00-12, D-P12-03, R-091, or D-P12-05 without explicit approval.

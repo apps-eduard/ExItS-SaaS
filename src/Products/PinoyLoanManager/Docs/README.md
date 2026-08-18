@@ -11,7 +11,7 @@ Always load with:
 5. The active work-package prompt/report
 6. Files required for the task only
 
-**Status:** Draft — PLM-00 documentation baseline plus agreed operating-model direction
+**Status:** Draft — PLM-00 documentation baseline plus operating-model and financial-lifecycle planning
 **Implementation present:** No
 **Documentation root:** `src/Products/PinoyLoanManager/Docs/` (D-P12-02)
 
@@ -41,6 +41,11 @@ Agreed operating-model direction (not implementation specs):
 | [Product/collector-cash-and-reconciliation.md](Product/collector-cash-and-reconciliation.md) | Loan ledger vs collector cash |
 | [Product/penalty-exception-and-waiver-model.md](Product/penalty-exception-and-waiver-model.md) | Penalty, exception, waiver, reversal, post-maturity |
 | [Architecture/application-surface-model.md](Architecture/application-surface-model.md) | Platform Admin, Org Web, MAUI, Personal |
+| [Product/financial-calculation-baseline.md](Product/financial-calculation-baseline.md) | Money terms, interest-treatment modes, precision |
+| [Product/payment-and-allocation-model.md](Product/payment-and-allocation-model.md) | Partial payments, oldest-due, reversals, idempotency |
+| [Product/schedule-maturity-and-settlement.md](Product/schedule-maturity-and-settlement.md) | Schedule, calendar, maturity, settlement |
+| [Product/loan-lifecycle-model.md](Product/loan-lifecycle-model.md) | Origination vs lifecycle vs delinquency |
+| [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md) | Operational subledger and balance components |
 
 Category folders below are indexes only. They must not become a second source of truth.
 
@@ -51,7 +56,7 @@ Category folders below are indexes only. They must not become a second source of
 | Directory | Purpose |
 |---|---|
 | [Product/](Product/README.md) | **WHAT** — points to [product-definition.md](product-definition.md) and operating-model docs |
-| [Architecture/](Architecture/README.md) | **HOW** — points to [architecture.md](architecture.md) and [Architecture/application-surface-model.md](Architecture/application-surface-model.md) |
+| [Architecture/](Architecture/README.md) | **HOW** — points to [architecture.md](architecture.md), surfaces, and ledger/balance model |
 | [Security/](Security/README.md) | Access and privacy — points to [security.md](security.md) and [authorization-matrix.md](authorization-matrix.md) |
 | [Decisions/](Decisions/README.md) | Future ADRs — register is [risks-and-decisions.md](risks-and-decisions.md) |
 | [Phases/](Phases/README.md) | Sequencing — points to [roadmap.md](roadmap.md) and [development-plan.md](development-plan.md) |

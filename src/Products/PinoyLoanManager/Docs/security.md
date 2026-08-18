@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Status | Draft — documentation baseline plus agreed operating-model direction; not product-owner approved |
+| Status | Draft — documentation baseline plus operating-model and financial-lifecycle planning; not product-owner approved |
 | Implementation present | No |
 
 ## Authentication boundary
@@ -72,7 +72,7 @@ Optional Personal-to-Borrower linking, if implemented later:
 | Concern | Approach |
 |---|---|
 | Application logs | **Status: Open / Product Owner Decision Required** — no secrets/card/PHI dumps |
-| Product audit / immutable history | Intended product-owned audit/history. Posted disbursement, payment, penalty, waiver, reversal, collector cash movement, and remittance must not be silently edited or deleted. Detail **Status: Open / Product Owner Decision Required**. |
+| Product audit / immutable history | Intended product-owned append-only operational history. Posted disbursement, payment, penalty, waiver, reversal, collector cash movement, and remittance must not be silently edited or deleted. Subledger principles: [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md). Schema **Open**. |
 | Platform audit | Platform-owned; do not push operational payloads that violate boundary |
 
 ## Encryption
@@ -94,7 +94,7 @@ Optional Personal-to-Borrower linking, if implemented later:
 
 | Operation class | Strategy |
 |---|---|
-| All Loan mutating operations | **Status: Open / Product Owner Decision Required** — do not invent posting or disbursement idempotency rules yet |
+| All Loan mutating operations | **Requirement recorded:** protect financial commands against duplicate submission (collector double-tap, mobile retry, API retry) via future idempotency / correlation. Implementation **not** designed. Detail: [Product/payment-and-allocation-model.md](Product/payment-and-allocation-model.md). |
 
 ## Backup / restore
 
@@ -113,5 +113,6 @@ Optional Personal-to-Borrower linking, if implemented later:
 | PLM-D-00-06 | Missing product-local grant matrix (presets recorded) | Open |
 | PLM-D-00-05 | Undesigned consent/linking mechanism | Open |
 | PLM-D-00-11 | Legal/compliance validation not performed | Open |
+| PLM-D-00-12 | Exact money rounding mode unset | Open |
 
 Full register: [risks-and-decisions.md](risks-and-decisions.md).

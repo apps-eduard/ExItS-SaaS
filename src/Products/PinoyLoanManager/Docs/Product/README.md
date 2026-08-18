@@ -13,12 +13,15 @@ Do not treat this folder as a second product definition. Detailed agreed **direc
 | [quick-loan-model.md](quick-loan-model.md) | Quick Loan templates, snapshot, eligibility, Personal flow |
 | [collector-cash-and-reconciliation.md](collector-cash-and-reconciliation.md) | Loan ledger vs collector cash |
 | [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md) | Penalty, exception, waiver, reversal, post-maturity |
+| [financial-calculation-baseline.md](financial-calculation-baseline.md) | Money terminology, interest-treatment modes, precision |
+| [payment-and-allocation-model.md](payment-and-allocation-model.md) | Payments, oldest-due allocation, reversals |
+| [schedule-maturity-and-settlement.md](schedule-maturity-and-settlement.md) | Schedule, calendar, maturity, settlement |
+| [loan-lifecycle-model.md](loan-lifecycle-model.md) | Origination vs lifecycle vs delinquency |
 
-Remaining calculation algorithms, rates, and legal validation stay open in [../product-definition.md](../product-definition.md) and [../risks-and-decisions.md](../risks-and-decisions.md) (PLM-D-00-08, PLM-D-00-11). Do not invent:
+Remaining formulas, rates, rounding mode, component allocation order, and legal validation stay open in [../product-definition.md](../product-definition.md) and [../risks-and-decisions.md](../risks-and-decisions.md) (PLM-D-00-08, PLM-D-00-12, PLM-D-00-11). Do not invent:
 
-- interest method/formula or peso/percent rates
-- amortization algorithms
-- due-date generation
-- payment allocation order
+- interest method/formula or peso/percent rates as defaults
+- rounding mode
+- component allocation order
 - penalty amounts or legal limits
 - legal/regulatory operating rules

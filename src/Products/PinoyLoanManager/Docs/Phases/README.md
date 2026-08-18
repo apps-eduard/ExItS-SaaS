@@ -11,5 +11,6 @@ Do not copy PinoyBusinessPOS phase history into this product.
 |---|---|---|
 | PLM-00-WP01 | Product documentation workspace | Completed |
 | PLM-00-WP02 | Product definition and architecture baseline | Completed |
-| PLM-00-WP03 | Lending operating model and Quick Loan baseline | Current |
-| PLM-00-WP04 | Financial calculation and loan lifecycle decision baseline | Next proposed |
+| PLM-00-WP03 | Lending operating model and Quick Loan baseline | Completed |
+| PLM-00-WP04 | Financial calculation and loan lifecycle baseline | Current |
+| PLM-00-WP05 | Detailed authorization, cash control, and operational workflow baseline | Next proposed |
