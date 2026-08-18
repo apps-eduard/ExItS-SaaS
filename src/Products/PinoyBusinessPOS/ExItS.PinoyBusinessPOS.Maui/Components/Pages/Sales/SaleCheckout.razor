@@ -66,6 +66,11 @@ else
         </div>
     }
 
+    @if (!string.IsNullOrWhiteSpace(_sellBranchName))
+    {
+        <p class="pos-sell-branch" role="status">@L["BranchContext_SellingAt"] <strong>@_sellBranchName</strong></p>
+    }
+
     @if (_isOffline)
     {
         <Alert Tone="AlertTone.Warning"
@@ -646,6 +651,7 @@ else
     public string? ResumePaymentMethod { get; set; }
 
     private bool _ready;
+    private string? _sellBranchName;
     private bool _isOffline;
     private bool _lookingUp;
     private bool _loadingBrowse;
@@ -797,6 +803,40 @@ else
         }
     }
 
+    private async Task LoadSellBranchNameAsync()
+    {
+        _sellBranchName = L["BranchContext_Fallback"];
+        if (CurrentUser.Session?.OrganizationId is not Guid orgId)
+        {
+            return;
+        }
+
+        var selected = AuthSessionBranchContext.GetSelectedBranchId(CurrentUser.Session);
+        try
+        {
+            var result = await Platform.GetBranchesAsync(orgId);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                return;
+            }
+
+            if (selected is Guid sid)
+            {
+                _sellBranchName = result.Data.FirstOrDefault(b => b.Id == sid)?.Name ?? _sellBranchName;
+            }
+            else
+            {
+                _sellBranchName = result.Data.FirstOrDefault(b => b.IsPrimary)?.Name
+                    ?? result.Data.FirstOrDefault()?.Name
+                    ?? _sellBranchName;
+            }
+        }
+        catch
+        {
+            // Keep fallback label.
+        }
+    }
+
     protected override async Task OnInitializedAsync()
     {
         if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
@@ -807,6 +847,7 @@ else
 
         Cart.Changed += OnCartChanged;
         _isOffline = !await Connectivity.IsConnectedAsync();
+        await LoadSellBranchNameAsync();
         if (!string.IsNullOrWhiteSpace(ResolvedDisplayName))
         {
             _customerSearch = ResolvedDisplayName;

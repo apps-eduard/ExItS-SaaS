@@ -167,6 +167,17 @@ button.pos-link {
     flex: 1 1 auto;
 }
 
+.pos-topbar__brand--switch {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    min-height: 2.75rem;
+    text-align: start;
+    cursor: pointer;
+    color: inherit;
+}
+
 .pos-topbar__brand .exds-avatar {
     flex-shrink: 0;
 }
@@ -1745,6 +1756,13 @@ html.pos-keyboard-open .pos-content {
 .pos-sell-shift-cta .exds-btn {
     min-height: var(--exits-touch-target-min, 3rem);
     width: 100%;
+}
+
+.pos-sell-branch {
+    margin: 0 0 var(--exits-space-2, 0.5rem);
+    font-size: 0.8125rem;
+    line-height: 1.3;
+    color: var(--exits-text, #15201a);
 }
 
 .pos-weight-entry {
@@ -3741,6 +3759,91 @@ html.pos-keyboard-open .pos-content {
 
 .pos-topbar__subtitle--visible {
     display: block;
+}
+
+.pos-branch-sheet__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: var(--exits-z-drawer, 40);
+    background: rgba(15, 23, 20, 0.4);
+    display: flex;
+    align-items: flex-end;
+}
+
+.pos-branch-sheet {
+    width: 100%;
+    max-height: min(70dvh, 28rem);
+    overflow: auto;
+    background: var(--exits-surface, #fff);
+    border-radius: 0.75rem 0.75rem 0 0;
+    padding: 0.4rem 0.75rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+.pos-branch-sheet__handle {
+    width: 2.25rem;
+    height: 0.25rem;
+    border-radius: 999px;
+    background: var(--exits-border, #c9d4cd);
+    margin: 0.35rem auto 0.5rem;
+}
+
+.pos-branch-sheet__title {
+    margin: 0 0 0.45rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.pos-branch-sheet__error,
+.pos-branch-sheet__hint {
+    margin: 0 0 0.5rem;
+    font-size: 0.8125rem;
+}
+
+.pos-branch-sheet__error { color: #8f1f18; }
+
+.pos-branch-sheet__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.pos-branch-sheet__row {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.4rem 0.2rem;
+    border: 0;
+    border-top: 1px solid var(--exits-border, #c9d4cd);
+    background: transparent;
+    text-align: start;
+    color: inherit;
+    cursor: pointer;
+}
+
+.pos-branch-sheet__row:first-child { border-top: 0; }
+
+.pos-branch-sheet__row:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.pos-branch-sheet__check {
+    flex: 0 0 1.1rem;
+    font-weight: 700;
+    color: var(--exits-accent, #1f6b4a);
+}
+
+.pos-branch-sheet__name {
+    flex: 1 1 auto;
+    font-size: 0.9375rem;
+    font-weight: 600;
+}
+
+.pos-branch-sheet__status {
+    font-size: 0.75rem;
+    color: var(--exits-text-muted, #5b6b62);
 }
 
 .pos-topbar__overflow {
@@ -15209,7 +15312,35 @@ button.pos-branches__card:focus-visible {
     min-height: 2.75rem;
 }
 
-.pos-branches__setup-row span:first-child,
+.pos-branches__setup-row {
+    flex-wrap: nowrap;
+    min-height: 2.5rem;
+}
+
+.pos-branches__setup-row span:first-child {
+    flex: 1 1 auto;
+    font-size: .82rem;
+    font-weight: 650;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pos-branches__setup-row .pos-branches__chip {
+    flex: 0 1 auto;
+    max-width: 9.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pos-branches__setup-row .pos-branches__text-action {
+    flex: 0 0 auto;
+    margin-left: auto;
+    min-height: 2.5rem;
+    white-space: nowrap;
+}
+
 .pos-branches__kv-label {
     flex: 0 0 7.5rem;
     font-size: .82rem;
@@ -15229,10 +15360,15 @@ button.pos-branches__card:focus-visible {
     padding-bottom: calc(8.5rem + env(safe-area-inset-bottom, 0px));
 }
 
+.pos-branches--edit .pos-branches__heading h1 {
+    font-size: 1.35rem;
+    line-height: 1.15;
+}
+
 .pos-branches--edit .pos-branches__section,
 .pos-branches--edit .pos-branches__fold {
     margin: 0;
-    padding: .75rem .85rem;
+    padding: .55rem .85rem;
 }
 
 .pos-branches--edit .exds-accordion {
@@ -15242,6 +15378,10 @@ button.pos-branches__card:focus-visible {
 .pos-branches__fold-summary {
     gap: .5rem;
     min-height: 2.75rem;
+}
+
+.pos-branches__fold-summary .pos-branches__chip {
+    margin-left: auto;
 }
 
 .pos-branches__fold-body {
@@ -15267,7 +15407,7 @@ button.pos-branches__card:focus-visible {
     display: flex;
     flex-direction: column;
     gap: .25rem;
-    padding: 0 0 .35rem 7.5rem;
+    padding: 0 0 .35rem .25rem;
 }
 
 .pos-branches__text-action {

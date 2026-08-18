@@ -75,6 +75,7 @@ public static class DependencyInjection
         AddBusinessClient<IPosPurchaseOrderClient, PosPurchaseOrderClient>(services);
         AddBusinessClient<IPosDirectPurchaseReceiptClient, PosDirectPurchaseReceiptClient>(services);
         AddBusinessClient<IPosCashierShiftClient, PosCashierShiftClient>(services);
+        AddBusinessClient<IPosOperationalBranchClient, PosOperationalBranchClient>(services);
         AddBusinessClient<IPosSaleReturnClient, PosSaleReturnClient>(services);
         AddBusinessClient<IPosPermissionClient, PosPermissionClient>(services);
         AddBusinessClient<IPosReportingClient, PosReportingClient>(services);

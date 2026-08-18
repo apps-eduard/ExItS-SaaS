@@ -264,6 +264,9 @@
   <data name="Branches_InventorySetUp" xml:space="preserve">
     <value>Set up</value>
   </data>
+  <data name="Branches_SetHours" xml:space="preserve">
+    <value>Set hours</value>
+  </data>
   <data name="Branches_TimeZoneHint" xml:space="preserve">
     <value>Inherits organization timezone when empty.</value>
   </data>
@@ -1307,5 +1310,8 @@
   </data>
   <data name="TaxCompliance_Submitted" xml:space="preserve">
     <value>Readiness submitted for Platform review.</value>
+  </data>
+  <data name="Branches_PosContextNote" xml:space="preserve">
+    <value>Walk-in POS selling branch is selected on the mobile app. This page manages all organization locations.</value>
   </data>
 </root>

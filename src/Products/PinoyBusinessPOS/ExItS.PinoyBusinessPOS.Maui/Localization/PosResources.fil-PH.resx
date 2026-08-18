@@ -10109,6 +10109,7 @@
   <data name="Branches_OrgWide" xml:space="preserve"><value>Buong organisasyon</value></data>
   <data name="Branches_Manage" xml:space="preserve"><value>I-manage</value></data>
   <data name="Branches_InventorySetUp" xml:space="preserve"><value>I-set up</value></data>
+  <data name="Branches_SetHours" xml:space="preserve"><value>I-set ang oras</value></data>
   <data name="Branches_TimeZoneHint" xml:space="preserve"><value>Gagamitin ang timezone ng organisasyon kung walang laman.</value></data>
   <data name="Branches_AddressLocation" xml:space="preserve"><value>Address at lokasyon</value></data>
   <data name="Branches_MapLocation" xml:space="preserve"><value>Lokasyon sa mapa</value></data>
@@ -10455,5 +10456,56 @@
   </data>
   <data name="ConnectedSuppliers_OrderStatus_ChangesProposed" xml:space="preserve">
     <value>Hinihintay ang buyer</value>
+  </data>
+  <data name="BranchContext_SwitchTitle" xml:space="preserve">
+    <value>Palitan ang branch</value>
+  </data>
+  <data name="BranchContext_Switch" xml:space="preserve">
+    <value>Palitan</value>
+  </data>
+  <data name="BranchContext_Current" xml:space="preserve">
+    <value>Kasalukuyang branch</value>
+  </data>
+  <data name="BranchContext_Fallback" xml:space="preserve">
+    <value>Branch</value>
+  </data>
+  <data name="BranchContext_HeaderAria" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="BranchContext_Empty" xml:space="preserve">
+    <value>Walang available na branch.</value>
+  </data>
+  <data name="BranchContext_Unavailable" xml:space="preserve">
+    <value>Hindi available</value>
+  </data>
+  <data name="BranchContext_NotFound" xml:space="preserve">
+    <value>Wala ang branch na iyon sa organization na ito.</value>
+  </data>
+  <data name="BranchContext_Inactive" xml:space="preserve">
+    <value>Active na branch lang ang maaaring piliin.</value>
+  </data>
+  <data name="BranchContext_Denied" xml:space="preserve">
+    <value>Hindi mapili ang branch.</value>
+  </data>
+  <data name="BranchContext_Offline" xml:space="preserve">
+    <value>Kumonekta para palitan ang branch.</value>
+  </data>
+  <data name="BranchContext_ShiftOpen" xml:space="preserve">
+    <value>Isara muna ang bukas na cashier shift bago palitan ang POS branch.</value>
+  </data>
+  <data name="BranchContext_Invalid" xml:space="preserve">
+    <value>Pumili ng wastong branch.</value>
+  </data>
+  <data name="BranchContext_DeviceMismatch" xml:space="preserve">
+    <value>Naka-register ang device na ito sa {0}. Mag-register ng device para sa {1} bago pumasok sa POS.</value>
+  </data>
+  <data name="BranchContext_RegisterDevice" xml:space="preserve">
+    <value>I-register ang device na ito</value>
+  </data>
+  <data name="BranchContext_SellingAt" xml:space="preserve">
+    <value>Nagbebenta sa</value>
+  </data>
+  <data name="Org_EnterPosRoleRequired" xml:space="preserve">
+    <value>Hindi kasama ang POS selling sa organization management. Mag-assign ng cashier o owner POS selling role para pumasok sa POS.</value>
   </data>
 </root>

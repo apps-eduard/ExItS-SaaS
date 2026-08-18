@@ -59,6 +59,12 @@ public interface IOrganizationBranchDirectory
         Guid organizationId,
         CancellationToken cancellationToken = default) =>
         Task.FromResult<Guid?>(null);
+
+    Task<bool> IsActiveInOrganizationAsync(
+        Guid organizationId,
+        Guid branchId,
+        CancellationToken cancellationToken = default) =>
+        ExistsInOrganizationAsync(organizationId, branchId, cancellationToken);
 }
 
 public interface IInventoryTransferAlertSink

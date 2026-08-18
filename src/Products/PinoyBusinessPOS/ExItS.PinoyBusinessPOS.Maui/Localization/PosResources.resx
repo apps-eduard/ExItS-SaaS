@@ -10109,6 +10109,7 @@
   <data name="Branches_OrgWide" xml:space="preserve"><value>Organization-wide</value></data>
   <data name="Branches_Manage" xml:space="preserve"><value>Manage</value></data>
   <data name="Branches_InventorySetUp" xml:space="preserve"><value>Set up</value></data>
+  <data name="Branches_SetHours" xml:space="preserve"><value>Set hours</value></data>
   <data name="Branches_TimeZoneHint" xml:space="preserve"><value>Inherits organization timezone when empty.</value></data>
   <data name="Branches_AddressLocation" xml:space="preserve"><value>Address &amp; location</value></data>
   <data name="Branches_MapLocation" xml:space="preserve"><value>Map location</value></data>
@@ -10455,5 +10456,56 @@
   </data>
   <data name="ConnectedSuppliers_OrderStatus_ChangesProposed" xml:space="preserve">
     <value>Waiting for buyer</value>
+  </data>
+  <data name="BranchContext_SwitchTitle" xml:space="preserve">
+    <value>Switch branch</value>
+  </data>
+  <data name="BranchContext_Switch" xml:space="preserve">
+    <value>Switch</value>
+  </data>
+  <data name="BranchContext_Current" xml:space="preserve">
+    <value>Current branch</value>
+  </data>
+  <data name="BranchContext_Fallback" xml:space="preserve">
+    <value>Branch</value>
+  </data>
+  <data name="BranchContext_HeaderAria" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="BranchContext_Empty" xml:space="preserve">
+    <value>No branches available.</value>
+  </data>
+  <data name="BranchContext_Unavailable" xml:space="preserve">
+    <value>Unavailable</value>
+  </data>
+  <data name="BranchContext_NotFound" xml:space="preserve">
+    <value>That branch is not in this organization.</value>
+  </data>
+  <data name="BranchContext_Inactive" xml:space="preserve">
+    <value>Only an Active branch can be selected.</value>
+  </data>
+  <data name="BranchContext_Denied" xml:space="preserve">
+    <value>The branch could not be selected.</value>
+  </data>
+  <data name="BranchContext_Offline" xml:space="preserve">
+    <value>Connect to switch branch.</value>
+  </data>
+  <data name="BranchContext_ShiftOpen" xml:space="preserve">
+    <value>Close the open cashier shift before switching POS branch.</value>
+  </data>
+  <data name="BranchContext_Invalid" xml:space="preserve">
+    <value>Choose a valid branch.</value>
+  </data>
+  <data name="BranchContext_DeviceMismatch" xml:space="preserve">
+    <value>This device is registered to {0}. Register a device for {1} before entering POS.</value>
+  </data>
+  <data name="BranchContext_RegisterDevice" xml:space="preserve">
+    <value>Register this device</value>
+  </data>
+  <data name="BranchContext_SellingAt" xml:space="preserve">
+    <value>Selling at</value>
+  </data>
+  <data name="Org_EnterPosRoleRequired" xml:space="preserve">
+    <value>Organization management does not include POS selling. Assign a cashier or owner POS selling role to enter POS.</value>
   </data>
 </root>

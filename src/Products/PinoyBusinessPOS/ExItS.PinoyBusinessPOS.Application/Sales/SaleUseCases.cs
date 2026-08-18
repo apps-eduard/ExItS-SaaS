@@ -12,6 +12,7 @@ using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.OperationalSetup;
 using ExItS.PinoyBusinessPOS.Domain.Registers;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
@@ -124,7 +125,8 @@ public sealed class SaleQueryService
             BuyerPersonalPublicUserId: sale.BuyerParty.PersonalPublicUserId,
             BuyerOrganizationId: sale.BuyerParty.BuyerOrganizationId,
             BuyerPublicOrganizationId: sale.BuyerParty.BuyerPublicOrganizationId,
-            DocumentKind: SalesDocumentWording.TransactionSummary);
+            DocumentKind: SalesDocumentWording.TransactionSummary,
+            BranchId: sale.BranchId?.Value);
 
     private async Task<PosSaleDto> MapEnrichedAsync(Sale sale, CancellationToken cancellationToken)
     {
@@ -670,7 +672,8 @@ public sealed class CheckoutSale
                         linkedRegisterId,
                         capturedTaxAmount,
                         capturedTaxPricingMode,
-                        resolvedBuyerParty),
+                        resolvedBuyerParty,
+                        branchId is Guid saleBranch ? PosBranchId.From(saleBranch) : null),
                     async (createdSale, ct) =>
                     {
                         // Electronic Card/GCash sales await payment — reserve stock until Paid/Released.

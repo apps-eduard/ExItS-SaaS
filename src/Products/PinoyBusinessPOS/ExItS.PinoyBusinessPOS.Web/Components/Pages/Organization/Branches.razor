@@ -22,6 +22,8 @@ else
         }
     </ExitsPageHeader>
 
+    <p class="org-note">@L["Branches_PosContextNote"]</p>
+
     @if (_capacity is not null)
     {
         <p class="org-note">@string.Format(L["Branches_Capacity"].Value, _capacity.Used, _capacity.Allowed)</p>

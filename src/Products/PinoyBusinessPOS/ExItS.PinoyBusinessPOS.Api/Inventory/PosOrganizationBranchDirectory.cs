@@ -109,6 +109,81 @@ internal sealed class PosOrganizationBranchDirectory(
         }
     }
 
+    public async Task<bool> IsActiveInOrganizationAsync(
+        Guid organizationId,
+        Guid branchId,
+        CancellationToken cancellationToken = default)
+    {
+        if (branchId == Guid.Empty)
+        {
+            return false;
+        }
+
+        if (environment.IsEnvironment("Testing"))
+        {
+            return true;
+        }
+
+        var branch = await GetBranchAsync(organizationId, branchId, cancellationToken).ConfigureAwait(false);
+        return branch is not null
+            && string.Equals(branch.Status, "Active", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task<OrganizationBranchDto?> GetBranchAsync(
+        Guid organizationId,
+        Guid branchId,
+        CancellationToken cancellationToken)
+    {
+        if (client.BaseAddress is null)
+        {
+            var baseUrl = options.Value.BaseUrl;
+            if (string.IsNullOrWhiteSpace(baseUrl))
+            {
+                return null;
+            }
+
+            client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+        }
+
+        using var platformRequest = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"api/v1/platform/organizations/{organizationId:D}/branches");
+        var source = httpContextAccessor.HttpContext?.Request;
+        if (source is not null)
+        {
+            foreach (var name in new[] { "Authorization", "X-ExItS-Session-Token", "X-Dev-Platform-User-Id" })
+            {
+                if (source.Headers.TryGetValue(name, out var value))
+                {
+                    platformRequest.Headers.TryAddWithoutValidation(name, value.ToArray());
+                }
+            }
+        }
+
+        try
+        {
+            using var response = await client.SendAsync(platformRequest, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var branches = await response.Content
+                .ReadFromJsonAsync<IReadOnlyList<OrganizationBranchDto>>(JsonOptions, cancellationToken)
+                .ConfigureAwait(false)
+                ?? [];
+            return branches.FirstOrDefault(b => b.Id == branchId);
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
+    }
+
     public async Task<Guid?> GetPrimaryBranchIdAsync(
         Guid organizationId,
         CancellationToken cancellationToken = default)

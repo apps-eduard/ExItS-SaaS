@@ -23,6 +23,12 @@ public static class SecureTokenKeys
     public const string PosDeviceId = "pos.session.posDeviceId";
 
     /// <summary>
+    /// Owner/operator selected management/operational branch. Distinct from device-bound
+    /// <see cref="BranchId"/>. Survives restore; cleared on organization switch.
+    /// </summary>
+    public const string SelectedBranchId = "pos.session.selectedBranchId";
+
+    /// <summary>
     /// Durable installation DeviceId. Not a session key — must survive logout and ClearAllSessionKeysAsync.
     /// </summary>
     public const string DeviceId = "pos.device.id";
@@ -140,7 +146,8 @@ public sealed record AuthSession(
     Guid? AccountProfileId = null,
     bool OrganizationContextLocked = false,
     Guid? BranchId = null,
-    Guid? PosDeviceId = null);
+    Guid? PosDeviceId = null,
+    Guid? SelectedBranchId = null);
 
 public sealed record EligibleOrganization(
     Guid OrganizationId,
@@ -154,6 +161,44 @@ public sealed record EligibleOrganization(
 /// <summary>
 /// Workspace routing helpers for Mobile post-login / cold-start destinations.
 /// </summary>
+/// <summary>
+/// Selected management/operational branch vs device-bound POS branch.
+/// Header <c>X-Pos-Branch-Id</c> uses the selected branch; POS money ops still require the
+/// registered device to match that branch.
+/// </summary>
+public static class AuthSessionBranchContext
+{
+    public static Guid? GetSelectedBranchId(AuthSession? session)
+    {
+        if (session is null)
+        {
+            return null;
+        }
+
+        if (session.SelectedBranchId is Guid selected && selected != Guid.Empty)
+        {
+            return selected;
+        }
+
+        if (session.BranchId is Guid deviceBranch && deviceBranch != Guid.Empty)
+        {
+            return deviceBranch;
+        }
+
+        return null;
+    }
+
+    public static bool DeviceMatchesSelected(AuthSession? session)
+    {
+        var selected = GetSelectedBranchId(session);
+        return session?.PosDeviceId is Guid deviceId
+            && deviceId != Guid.Empty
+            && session.BranchId is Guid deviceBranch
+            && selected is Guid selectedBranch
+            && deviceBranch == selectedBranch;
+    }
+}
+
 public static class AuthSessionWorkspace
 {
     /// <summary>

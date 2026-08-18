@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Auth;
+using ExItS.PinoyBusinessPOS.Application.Branches;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Application.Platform;
@@ -41,6 +42,103 @@ public sealed class AuthenticationServiceTests
         Assert.Equal(branchId, loaded!.BranchId);
         Assert.Equal(posDeviceId, loaded.PosDeviceId);
         Assert.Equal(session.AccessToken, loaded.AccessToken);
+    }
+
+    [Fact]
+    public async Task SelectBranch_persists_server_validated_branch_and_rejects_foreign_org()
+    {
+        var org = Guid.NewGuid();
+        var deviceBranch = Guid.NewGuid();
+        var branchB = Guid.NewGuid();
+        var current = new CurrentUserContext();
+        var session = new AuthSession(
+            Guid.NewGuid(),
+            "Owner",
+            "owner",
+            "o@example.com",
+            org,
+            "Kizy Store",
+            DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow.AddHours(1),
+            true,
+            "allowed",
+            AccessToken: "token",
+            BranchId: deviceBranch,
+            PosDeviceId: Guid.NewGuid());
+        current.Set(session);
+        var tokens = new MemorySecureTokenStore();
+        await new SecureSessionStore(tokens).SaveAsync(session, Guid.NewGuid().ToString("N"));
+        var access = new FakeAccessClient
+        {
+            SelectBranchContextResult = ApiResult<OrganizationBranchContextDto>.Success(
+                new OrganizationBranchContextDto(org, branchB, "Branch B", "B", "Active", false))
+        };
+        var sut = CreateSut("Development", access, tokens, currentUser: current);
+
+        var ok = await sut.SelectBranchAsync(branchB);
+        Assert.True(ok.Succeeded);
+        Assert.Equal(branchB, current.Session?.SelectedBranchId);
+        Assert.Equal(deviceBranch, current.Session?.BranchId);
+        Assert.Equal(org, current.Session?.OrganizationId);
+        Assert.Equal(branchB, access.LastSelectedBranchId);
+
+        access.SelectBranchContextResult = ApiResult<OrganizationBranchContextDto>.NotFound(
+            new ApiError("Not found", "missing", "application.branch.not_found", null, 404));
+        var denied = await sut.SelectBranchAsync(Guid.NewGuid());
+        Assert.False(denied.Succeeded);
+        Assert.Equal("BranchContext_NotFound", denied.SafeMessageKey);
+        Assert.Equal(branchB, current.Session?.SelectedBranchId);
+    }
+
+    [Fact]
+    public async Task SelectBranch_blocks_when_open_shift_and_does_not_grant_selling()
+    {
+        var org = Guid.NewGuid();
+        var main = Guid.NewGuid();
+        var branchB = Guid.NewGuid();
+        var current = new CurrentUserContext();
+        var session = new AuthSession(
+            Guid.NewGuid(),
+            "Owner",
+            "owner",
+            "o@example.com",
+            org,
+            "Kizy Store",
+            DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow.AddHours(1),
+            true,
+            "allowed",
+            AccessToken: "token",
+            BranchId: main,
+            PosDeviceId: Guid.NewGuid(),
+            SelectedBranchId: main);
+        current.Set(session);
+        var tokens = new MemorySecureTokenStore();
+        await new SecureSessionStore(tokens).SaveAsync(session, Guid.NewGuid().ToString("N"));
+        var access = new FakeAccessClient
+        {
+            SelectBranchContextResult = ApiResult<OrganizationBranchContextDto>.Success(
+                new OrganizationBranchContextDto(org, branchB, "Branch B", "B", "Active", false))
+        };
+        var operational = new FakeOperationalBranch
+        {
+            Result = ApiResult<OperationalBranchContextDto>.Conflict(
+                new ApiError("Blocked", "shift open", ApplicationErrorCodes.OperationalBranchSwitchBlocked, null, 409))
+        };
+        var sut = new AuthenticationService(
+            new StubAppInfo("Development"),
+            new SecureSessionStore(tokens),
+            current,
+            new MemoryOnboardingStore(),
+            access,
+            new LoggingAuthEventSink(NullLogger<LoggingAuthEventSink>.Instance),
+            operationalBranch: operational);
+
+        var blocked = await sut.SelectBranchAsync(branchB);
+        Assert.False(blocked.Succeeded);
+        Assert.Equal("BranchContext_ShiftOpen", blocked.SafeMessageKey);
+        Assert.Equal(main, current.Session?.SelectedBranchId);
+        Assert.Equal(1, operational.Calls);
     }
 
     [Fact]
@@ -2159,7 +2257,23 @@ public sealed class AuthenticationServiceTests
             Task.FromResult(OrganizationResult);
 
         public Task<ApiResult<IReadOnlyList<OrganizationBranchDto>>> GetBranchesAsync(Guid organizationId, CancellationToken ct = default) =>
-            Task.FromResult(ApiResult<IReadOnlyList<OrganizationBranchDto>>.Success([]));
+            Task.FromResult(ApiResult<IReadOnlyList<OrganizationBranchDto>>.Success(Branches));
+
+        public List<OrganizationBranchDto> Branches { get; set; } = [];
+
+        public ApiResult<OrganizationBranchContextDto> SelectBranchContextResult { get; set; } =
+            ApiResult<OrganizationBranchContextDto>.Unavailable();
+
+        public Guid? LastSelectedBranchId { get; private set; }
+
+        public Task<ApiResult<OrganizationBranchContextDto>> SelectBranchContextAsync(
+            Guid organizationId,
+            SelectBranchContextRequest request,
+            CancellationToken ct = default)
+        {
+            LastSelectedBranchId = request.BranchId;
+            return Task.FromResult(SelectBranchContextResult);
+        }
 
         public Task<ApiResult<BranchCapacityDto>> GetBranchCapacityAsync(Guid organizationId, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<BranchCapacityDto>.Unavailable());
@@ -2575,6 +2689,22 @@ public sealed class AuthenticationServiceTests
                 Array.Empty<LocalValidationQuickLoginIdentityDto>()));
     }
 
+    private sealed class FakeOperationalBranch : IPosOperationalBranchClient
+    {
+        public ApiResult<OperationalBranchContextDto> Result { get; set; } =
+            ApiResult<OperationalBranchContextDto>.Unavailable();
+
+        public int Calls { get; private set; }
+
+        public Task<ApiResult<OperationalBranchContextDto>> SelectAsync(
+            SelectOperationalBranchRequest request,
+            CancellationToken ct = default)
+        {
+            Calls++;
+            return Task.FromResult(Result);
+        }
+    }
+
     private sealed class SessionScopedMemoryTokenStore : ISecureTokenStore
     {
         private static readonly string[] SessionKeys =
@@ -2591,7 +2721,8 @@ public sealed class AuthenticationServiceTests
             SecureTokenKeys.AccountProfileId,
             SecureTokenKeys.OrganizationContextLocked,
             SecureTokenKeys.BranchId,
-            SecureTokenKeys.PosDeviceId
+            SecureTokenKeys.PosDeviceId,
+            SecureTokenKeys.SelectedBranchId
         ];
 
         private readonly Dictionary<string, string> _values = new(StringComparer.Ordinal);

@@ -204,6 +204,7 @@ builder.Services.AddScoped<UpdateOrganizationProfile>();
 builder.Services.AddScoped<UpdateOrganizationPlatformFields>();
 builder.Services.AddScoped<UpdateOrganizationBranding>();
 builder.Services.AddScoped<ListBranches>();
+builder.Services.AddScoped<SelectOrganizationBranchContext>();
 builder.Services.AddScoped<CreateBranch>();
 builder.Services.AddScoped<UpdateBranch>();
 builder.Services.AddScoped<ArchiveBranch>();

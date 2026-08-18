@@ -58,7 +58,11 @@ internal sealed class PosDeviceTransactionAuthorizer(
             HttpMethod.Post,
             $"api/v1/platform/organizations/{organizationId:D}/pos-devices/authorize")
         {
-            Content = JsonContent.Create(new { installationDeviceId = deviceId })
+            Content = JsonContent.Create(new
+            {
+                installationDeviceId = deviceId,
+                branchId = ParseOptionalBranchId(request)
+            })
         };
         ForwardAuthenticationHeaders(platformRequest, httpContextAccessor.HttpContext?.Request);
 
@@ -91,6 +95,19 @@ internal sealed class PosDeviceTransactionAuthorizer(
         {
             return Unavailable();
         }
+    }
+
+    private static Guid? ParseOptionalBranchId(HttpRequest request)
+    {
+        if (!request.Headers.TryGetValue(PosOrganizationHeaders.BranchHeaderName, out var values)
+            || string.IsNullOrWhiteSpace(values.FirstOrDefault()))
+        {
+            return null;
+        }
+
+        return Guid.TryParse(values.First(), out var parsed) && parsed != Guid.Empty
+            ? parsed
+            : null;
     }
 
     private static void ForwardAuthenticationHeaders(HttpRequestMessage destination, HttpRequest? source)

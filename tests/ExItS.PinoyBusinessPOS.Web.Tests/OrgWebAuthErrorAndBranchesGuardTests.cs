@@ -49,6 +49,7 @@ public sealed class OrgWebAuthErrorAndBranchesGuardTests
         Assert.Contains("<Modal", page, StringComparison.Ordinal);
         Assert.Contains("OrgWebUi.Error", page, StringComparison.Ordinal);
         Assert.Contains("Branches_EmptyTitle", page, StringComparison.Ordinal);
+        Assert.Contains("Branches_PosContextNote", page, StringComparison.Ordinal);
         Assert.DoesNotContain("Location-specific operational state", page, StringComparison.Ordinal);
         Assert.DoesNotContain("view_portfolio", page, StringComparison.OrdinalIgnoreCase);
     }

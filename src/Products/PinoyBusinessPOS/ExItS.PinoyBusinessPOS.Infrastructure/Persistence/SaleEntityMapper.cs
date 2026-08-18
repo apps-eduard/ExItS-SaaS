@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Registers;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Sales;
@@ -66,7 +67,8 @@ internal static class SaleEntityMapper
                 record.BuyerPersonalPublicUserId,
                 record.BuyerOrganizationId,
                 record.BuyerPublicOrganizationId),
-            Enum.Parse<SaleStockReservationState>(record.StockReservationState, ignoreCase: true));
+            Enum.Parse<SaleStockReservationState>(record.StockReservationState, ignoreCase: true),
+            record.BranchId is null ? null : PosBranchId.From(record.BranchId.Value));
     }
 
     public static SaleRecord ToRecord(Sale sale) =>
@@ -92,6 +94,7 @@ internal static class SaleEntityMapper
             LinkedCreditEntryId = sale.LinkedCreditEntryId?.Value,
             CashierShiftId = sale.CashierShiftId?.Value,
             RegisterId = sale.RegisterId?.Value,
+            BranchId = sale.BranchId?.Value,
             StockReservationState = sale.StockReservationState.ToString(),
             RecordedAtUtc = sale.RecordedAtUtc,
             RecordedBy = sale.RecordedBy,

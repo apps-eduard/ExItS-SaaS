@@ -930,6 +930,7 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.LinkedCreditEntryId).HasColumnName("linked_credit_entry_id");
             entity.Property(e => e.CashierShiftId).HasColumnName("cashier_shift_id");
             entity.Property(e => e.RegisterId).HasColumnName("register_id");
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
             entity.Property(e => e.StockReservationState)
                 .HasColumnName("stock_reservation_state")
                 .HasMaxLength(32)
@@ -990,6 +991,10 @@ public sealed class PosDbContext : DbContext
 
             entity.HasIndex(e => e.RegisterId)
                 .HasDatabaseName("ix_sales_register_id");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.BranchId })
+                .HasDatabaseName("ix_sales_org_branch")
+                .HasFilter("branch_id IS NOT NULL");
 
             entity.HasOne<CashierShiftRecord>()
                 .WithMany()

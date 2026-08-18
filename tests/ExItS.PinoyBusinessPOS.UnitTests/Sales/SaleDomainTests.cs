@@ -3,6 +3,7 @@ using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Registers;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 
@@ -58,6 +59,27 @@ public sealed class SaleDomainTests
         Assert.Equal(new[] { 1, 2 }, sale.Lines.Select(l => l.LineNumber).ToArray());
         Assert.Equal(96.50m, sale.Subtotal);
         Assert.Equal(sale.Subtotal, sale.Total);
+        Assert.Null(sale.BranchId);
+    }
+
+    [Fact]
+    public void Checkout_persists_authoritative_branch_id()
+    {
+        var branch = PosBranchId.From(Guid.NewGuid());
+        var sale = Sale.Checkout(
+            Org,
+            SaleNumbers.Format(new DateOnly(2026, 7, 30), 1),
+            SalePaymentMethod.Cash,
+            [Draft(10m, 1m)],
+            Actor,
+            Now,
+            10m,
+            cashierShiftId: Shift,
+            registerId: Register,
+            branchId: branch);
+
+        Assert.Equal(branch, sale.BranchId);
+        Assert.Equal(Org, sale.OrganizationId);
     }
 
     [Fact]

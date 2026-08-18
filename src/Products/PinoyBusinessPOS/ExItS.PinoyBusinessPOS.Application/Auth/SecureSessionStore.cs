@@ -100,6 +100,15 @@ public sealed class SecureSessionStore(ISecureTokenStore tokens) : ISessionStore
         {
             await tokens.ClearAsync(SecureTokenKeys.PosDeviceId, ct).ConfigureAwait(false);
         }
+
+        if (session.SelectedBranchId is Guid selectedBranchId && selectedBranchId != Guid.Empty)
+        {
+            await tokens.SetAsync(SecureTokenKeys.SelectedBranchId, selectedBranchId.ToString("D"), ct).ConfigureAwait(false);
+        }
+        else
+        {
+            await tokens.ClearAsync(SecureTokenKeys.SelectedBranchId, ct).ConfigureAwait(false);
+        }
     }
 
     public async Task<(AuthSession? Session, string? Marker)> LoadAsync(CancellationToken ct = default)
@@ -158,6 +167,13 @@ public sealed class SecureSessionStore(ISecureTokenStore tokens) : ISessionStore
                 posDeviceId = parsedDevice;
             }
 
+            Guid? selectedBranchId = null;
+            var selectedBranchText = await tokens.GetAsync(SecureTokenKeys.SelectedBranchId, ct).ConfigureAwait(false);
+            if (Guid.TryParse(selectedBranchText, out var parsedSelected) && parsedSelected != Guid.Empty)
+            {
+                selectedBranchId = parsedSelected;
+            }
+
             // Partial session shell — display fields filled by AuthenticationService after restore.
             var shell = new AuthSession(
                 userId,
@@ -178,7 +194,8 @@ public sealed class SecureSessionStore(ISecureTokenStore tokens) : ISessionStore
                 AccountProfileId: accountProfileId,
                 OrganizationContextLocked: organizationContextLocked,
                 BranchId: branchId,
-                PosDeviceId: posDeviceId);
+                PosDeviceId: posDeviceId,
+                SelectedBranchId: selectedBranchId);
 
             return (shell, marker);
         }

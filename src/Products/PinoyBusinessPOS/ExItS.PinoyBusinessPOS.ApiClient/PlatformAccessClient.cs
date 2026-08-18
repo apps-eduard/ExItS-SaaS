@@ -20,6 +20,16 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
     public Task<ApiResult<IReadOnlyList<OrganizationBranchDto>>> GetBranchesAsync(Guid organizationId, CancellationToken ct = default) =>
         api.GetAsync<IReadOnlyList<OrganizationBranchDto>>($"/api/v1/platform/organizations/{organizationId:D}/branches", ct);
 
+    public Task<ApiResult<OrganizationBranchContextDto>> SelectBranchContextAsync(
+        Guid organizationId,
+        SelectBranchContextRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<OrganizationBranchContextDto>(
+            HttpMethod.Put,
+            $"/api/v1/platform/organizations/{organizationId:D}/branch-context",
+            request,
+            ct);
+
     public Task<ApiResult<BranchCapacityDto>> GetBranchCapacityAsync(Guid organizationId, CancellationToken ct = default) =>
         api.GetAsync<BranchCapacityDto>($"/api/v1/platform/organizations/{organizationId:D}/branches/capacity", ct);
 

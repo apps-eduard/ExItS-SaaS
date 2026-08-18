@@ -1,4 +1,5 @@
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
+using ExItS.PinoyBusinessPOS.Application.Auth;
 
 namespace ExItS.PinoyBusinessPOS.ApiClient;
 
@@ -19,7 +20,7 @@ public sealed class PosOrganizationHeaderHandler(ICurrentUserContext currentUser
             request.Headers.TryAddWithoutValidation(HeaderName, organizationId.ToString("D"));
         }
 
-        if (currentUser.Session?.BranchId is { } branchId && branchId != Guid.Empty)
+        if (AuthSessionBranchContext.GetSelectedBranchId(currentUser.Session) is { } branchId)
         {
             request.Headers.Remove(BranchHeaderName);
             request.Headers.TryAddWithoutValidation(BranchHeaderName, branchId.ToString("D"));

@@ -6,6 +6,7 @@
 @inject IPlatformAccessClient Platform
 @inject IProductAccessResolver Access
 @inject IPosPermissionClient Permissions
+@inject IUtangCapabilityEvaluator Capabilities
 @inject IConnectivityService Connectivity
 @inject NavigationGate Gate
 @inject NavigationManager Nav
@@ -100,6 +101,13 @@ else
                             </span>
                         </dd>
                     </div>
+                    <div class="pos-org__status-row">
+                        <dt>@L["BranchContext_Current"]</dt>
+                        <dd class="pos-org__branch-dd">
+                            <span class="pos-org__chip pos-org__chip--ok">@_currentBranchName</span>
+                            <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Sm" OnClick="OpenBranchSwitchAsync">@L["BranchContext_Switch"]</Button>
+                        </dd>
+                    </div>
                 </dl>
 
                 @if (!CurrentUser.HasPosAccess && !string.IsNullOrWhiteSpace(_posAccessHint))
@@ -112,6 +120,19 @@ else
                 @if (CurrentUser.HasPosAccess && _posRoleMissing)
                 {
                     <p class="pos-org__pos-blocked pos-muted" role="status">@L["Org_PosRoleRequired"]</p>
+                }
+                else if (CurrentUser.HasPosAccess && !_canEnterPos)
+                {
+                    <p class="pos-org__pos-blocked pos-muted" role="status">@L["Org_EnterPosRoleRequired"]</p>
+                }
+                else if (CurrentUser.HasPosAccess && _deviceBranchMismatch)
+                {
+                    <p class="pos-org__pos-blocked pos-muted" role="status">@string.Format(L["BranchContext_DeviceMismatch"].Value, _deviceBranchName, _currentBranchName)</p>
+                    <Button Variant="ButtonVariant.Secondary"
+                            Disabled="_enteringPos || _enablingPos"
+                            OnClick="GoDeviceRegister">
+                        @L["BranchContext_RegisterDevice"]
+                    </Button>
                 }
                 else if (CurrentUser.HasPosAccess)
                 {
@@ -190,6 +211,7 @@ else
 
             <p class="pos-org__footnote pos-muted">@L["Org_WebAdminReminder"]</p>
         </Page>
+        <ShellBranchSwitcher @ref="_branchSwitcher" OnChanged="OnBranchChangedAsync" />
     </div>
 }
 
@@ -226,6 +248,7 @@ else
         margin: 0; font-size: 0.875rem; font-weight: 600; color: var(--exits-text, #15201a);
     }
     .pos-org__status-row dd { margin: 0; }
+    .pos-org__branch-dd { display: flex; align-items: center; gap: 0.4rem; }
     .pos-org__chip {
         display: inline-flex; align-items: center; max-width: 100%;
         padding: 0.15rem 0.5rem; border-radius: 999px;
@@ -290,6 +313,11 @@ else
     private string? _error;
     private string? _posAccessHint;
     private bool _posRoleMissing;
+    private bool _canEnterPos;
+    private bool _deviceBranchMismatch;
+    private string _currentBranchName = "—";
+    private string _deviceBranchName = "—";
+    private ShellBranchSwitcher? _branchSwitcher;
     private PlatformOrganizationDto? _org;
     private PlatformSubscriptionDto? _subscription;
     private PlatformEntitlementSnapshotDto? _entitlement;
@@ -445,6 +473,7 @@ else
 
         _posAccessHint = ResolvePosAccessHint();
         await RefreshPosRoleStateAsync();
+        await RefreshBranchContextAsync();
     }
 
     /// <summary>
@@ -469,7 +498,67 @@ else
 
         _posRoleMissing = !string.Equals(effective.Data.Status, "Active", StringComparison.OrdinalIgnoreCase)
             || string.IsNullOrWhiteSpace(effective.Data.Role);
+        _canEnterPos = !_posRoleMissing
+            && Capabilities.IsAllowed(UtangCapability.EnterPos)
+            && Capabilities.IsAllowed(UtangCapability.CreateSale);
     }
+
+    private async Task RefreshBranchContextAsync()
+    {
+        _canEnterPos = !_posRoleMissing
+            && Capabilities.IsAllowed(UtangCapability.EnterPos)
+            && Capabilities.IsAllowed(UtangCapability.CreateSale);
+        _currentBranchName = L["BranchContext_Fallback"];
+        _deviceBranchName = L["BranchContext_Fallback"];
+        _deviceBranchMismatch = false;
+
+        if (CurrentUser.Session?.OrganizationId is not Guid orgId)
+        {
+            return;
+        }
+
+        var selected = AuthSessionBranchContext.GetSelectedBranchId(CurrentUser.Session);
+        var deviceBranch = CurrentUser.Session.BranchId;
+        _deviceBranchMismatch = CurrentUser.Session.PosDeviceId is not null
+            && deviceBranch is Guid bound
+            && selected is Guid selectedId
+            && bound != selectedId;
+
+        var result = await Platform.GetBranchesAsync(orgId);
+        if (!result.IsSuccess || result.Data is null)
+        {
+            return;
+        }
+
+        if (selected is Guid sid)
+        {
+            _currentBranchName = result.Data.FirstOrDefault(b => b.Id == sid)?.Name
+                ?? L["BranchContext_Fallback"];
+        }
+        else
+        {
+            var primary = result.Data.FirstOrDefault(b => b.IsPrimary);
+            _currentBranchName = primary?.Name ?? result.Data.FirstOrDefault()?.Name ?? L["BranchContext_Fallback"];
+        }
+
+        if (deviceBranch is Guid did)
+        {
+            _deviceBranchName = result.Data.FirstOrDefault(b => b.Id == did)?.Name
+                ?? L["BranchContext_Fallback"];
+        }
+    }
+
+    private async Task OpenBranchSwitchAsync()
+    {
+        if (_branchSwitcher is not null)
+        {
+            await _branchSwitcher.OpenAsync();
+        }
+    }
+
+    private Task OnBranchChangedAsync() => RefreshBranchContextAsync();
+
+    private void GoDeviceRegister() => Nav.NavigateTo("/devices/register");
 
     private async Task<bool> ResolveIsOrganizationOwnerAsync(Guid organizationId)
     {
@@ -519,7 +608,12 @@ else
 
     private async Task EnterPosAsync()
     {
-        if (_enteringPos || _enablingPos || !CurrentUser.HasPosAccess || _posRoleMissing)
+        if (_enteringPos || _enablingPos || !CurrentUser.HasPosAccess || _posRoleMissing || !_canEnterPos)
+        {
+            return;
+        }
+
+        if (_deviceBranchMismatch)
         {
             return;
         }

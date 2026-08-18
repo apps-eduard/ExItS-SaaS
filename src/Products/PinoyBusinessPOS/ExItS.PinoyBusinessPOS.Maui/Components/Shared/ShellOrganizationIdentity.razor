@@ -5,7 +5,11 @@
 
 @if (ShowOrganization)
 {
-    <div class="pos-topbar__brand" title="@OrgDisplayName">
+    <button type="button"
+            class="pos-topbar__brand pos-topbar__brand--switch"
+            title="@OrgDisplayName"
+            aria-label="@BranchAriaLabel"
+            @onclick="OpenBranchSheetAsync">
         <Avatar Name="@OrgDisplayName"
                 ImageUrl="@_organizationLogoUrl"
                 Size="AvatarSize.Sm"
@@ -13,8 +17,13 @@
                 AriaLabel="@OrgAriaLabel" />
         <div class="pos-topbar__titles">
             <span class="pos-topbar__title">@OrgDisplayName</span>
+            @if (!string.IsNullOrWhiteSpace(BranchDisplayName))
+            {
+                <span class="pos-topbar__subtitle pos-topbar__subtitle--visible">@BranchDisplayName ▼</span>
+            }
         </div>
-    </div>
+    </button>
+    <ShellBranchSwitcher @ref="_switcher" OnChanged="OnBranchChangedAsync" />
 }
 
 @code {
@@ -31,6 +40,9 @@
     private bool _logoResolved;
     private bool _logoInFlight;
     private CancellationTokenSource? _logoCts;
+    private ShellBranchSwitcher? _switcher;
+    private string? _branchName;
+    private Guid? _namedBranchId;
 
     private AuthSession? Session => CurrentUser.Session;
 
@@ -64,21 +76,101 @@
     private string OrgAriaLabel =>
         string.Format(L["Shell_OrganizationAria"].Value, OrgDisplayName);
 
+    private Guid? SelectedBranchId => AuthSessionBranchContext.GetSelectedBranchId(Session);
+
+    private string BranchDisplayName
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(_branchName) && _namedBranchId == SelectedBranchId)
+            {
+                return _branchName;
+            }
+
+            return SelectedBranchId is null ? string.Empty : L["BranchContext_Fallback"].Value;
+        }
+    }
+
+    private string BranchAriaLabel =>
+        string.IsNullOrWhiteSpace(BranchDisplayName)
+            ? OrgAriaLabel
+            : string.Format(L["BranchContext_HeaderAria"].Value, OrgDisplayName, BranchDisplayName);
+
     protected override void OnInitialized()
     {
         CurrentUser.Changed += OnSessionChangedAsync;
         _ = RefreshOrganizationLogoAsync();
+        _ = RefreshBranchNameAsync();
     }
 
     protected override void OnParametersSet()
     {
         _ = RefreshOrganizationLogoAsync();
+        _ = RefreshBranchNameAsync();
     }
 
     private Task OnSessionChangedAsync()
     {
         _ = RefreshOrganizationLogoAsync();
+        _ = RefreshBranchNameAsync();
         return InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OpenBranchSheetAsync()
+    {
+        if (_switcher is not null)
+        {
+            await _switcher.OpenAsync();
+        }
+    }
+
+    private Task OnBranchChangedAsync()
+    {
+        _namedBranchId = null;
+        _branchName = null;
+        return RefreshBranchNameAsync();
+    }
+
+    private async Task RefreshBranchNameAsync()
+    {
+        var orgId = EffectiveOrganizationId;
+        var branchId = SelectedBranchId;
+        if (orgId is null || branchId is null)
+        {
+            _branchName = null;
+            _namedBranchId = null;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        if (_namedBranchId == branchId && !string.IsNullOrWhiteSpace(_branchName))
+        {
+            return;
+        }
+
+        try
+        {
+            var result = await Platform.GetBranchesAsync(orgId.Value);
+            if (EffectiveOrganizationId != orgId || SelectedBranchId != branchId)
+            {
+                return;
+            }
+
+            var match = result.IsSuccess
+                ? result.Data?.FirstOrDefault(b => b.Id == branchId)
+                : null;
+            _namedBranchId = branchId;
+            _branchName = match is null
+                ? L["BranchContext_Fallback"].Value
+                : match.Name;
+        }
+        catch
+        {
+            _namedBranchId = branchId;
+            _branchName = L["BranchContext_Fallback"].Value;
+        }
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task RefreshOrganizationLogoAsync()

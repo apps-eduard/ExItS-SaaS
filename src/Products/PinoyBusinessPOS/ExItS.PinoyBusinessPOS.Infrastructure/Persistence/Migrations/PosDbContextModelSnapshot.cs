@@ -4963,6 +4963,10 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(9)")
                         .HasColumnName("buyer_public_organization_id");
 
+                    b.Property<Guid?>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
                     b.Property<Guid?>("CashierShiftId")
                         .HasColumnType("uuid")
                         .HasColumnName("cashier_shift_id");
@@ -5078,6 +5082,10 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("RegisterId")
                         .HasDatabaseName("ix_sales_register_id");
+
+                    b.HasIndex("OrganizationId", "BranchId")
+                        .HasDatabaseName("ix_sales_org_branch")
+                        .HasFilter("branch_id IS NOT NULL");
 
                     b.HasIndex("OrganizationId", "BuyerOrganizationId")
                         .HasDatabaseName("ix_sales_org_buyer_organization")

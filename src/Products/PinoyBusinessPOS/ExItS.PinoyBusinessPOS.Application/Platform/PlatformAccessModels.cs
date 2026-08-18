@@ -73,6 +73,14 @@ public sealed record OrganizationBranchDto(
     bool DeliveryOperational = false,
     string? StoreStatusMessage = null,
     BranchDeliveryPolicyDto? DeliveryPolicy = null);
+public sealed record OrganizationBranchContextDto(
+    Guid OrganizationId,
+    Guid BranchId,
+    string Name,
+    string Code,
+    string Status,
+    bool IsPrimary);
+public sealed record SelectBranchContextRequest(Guid BranchId);
 public sealed record BranchDeliveryPolicyDto(
     Guid BranchId,
     Guid OrganizationId,
@@ -1112,6 +1120,10 @@ public interface IPlatformAccessClient
         UpdatePlatformOrganizationRequest request,
         CancellationToken ct = default);
     Task<ApiResult<IReadOnlyList<OrganizationBranchDto>>> GetBranchesAsync(Guid organizationId, CancellationToken ct = default);
+    Task<ApiResult<OrganizationBranchContextDto>> SelectBranchContextAsync(
+        Guid organizationId,
+        SelectBranchContextRequest request,
+        CancellationToken ct = default);
     Task<ApiResult<BranchCapacityDto>> GetBranchCapacityAsync(Guid organizationId, CancellationToken ct = default);
     Task<ApiResult<OrganizationBranchDto>> CreateBranchAsync(Guid organizationId, CreateBranchRequest request, CancellationToken ct = default);
     Task<ApiResult<IReadOnlyList<PosDeviceDto>>> GetPosDevicesAsync(Guid organizationId, CancellationToken ct = default);

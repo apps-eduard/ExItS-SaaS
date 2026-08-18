@@ -15,6 +15,29 @@ internal static class BranchAndDeviceEndpoints
             var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
             return denied ?? Results.Ok(await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), ct).ConfigureAwait(false));
         });
+        root.MapPut("/branch-context", async (
+            Guid organizationId,
+            SelectBranchContextRequest body,
+            SelectOrganizationBranchContext useCase,
+            PlatformOrganizationAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
+            if (denied is not null) return denied;
+            if (body.BranchId == Guid.Empty)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.BranchNotFound,
+                    "BranchId cannot be an empty GUID.",
+                    StatusCodes.Status400BadRequest);
+            }
+            return PlatformApiResults.FromResult(
+                await useCase.ExecuteAsync(
+                    PlatformOrganizationId.From(organizationId),
+                    OrganizationBranchId.From(body.BranchId),
+                    ct).ConfigureAwait(false),
+                Results.Ok);
+        });
         root.MapGet("/branches/capacity", async (Guid organizationId, GetBranchCapacity useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
         {
             var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
@@ -355,6 +378,7 @@ internal sealed record RedeemPosDeviceRegistrationTokenRequest(
     string? AppVersion = null);
 internal sealed record RenamePosDeviceRequest(string? FriendlyName);
 internal sealed record AuthorizePosDeviceRequest(string? InstallationDeviceId, Guid? BranchId = null);
+internal sealed record SelectBranchContextRequest(Guid BranchId);
 
 internal sealed record UpsertBranchOperatingHoursRequest(IReadOnlyList<BranchOperatingHoursDayDto>? Days);
 

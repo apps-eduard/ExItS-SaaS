@@ -264,6 +264,9 @@
   <data name="Branches_InventorySetUp" xml:space="preserve">
     <value>I-set up</value>
   </data>
+  <data name="Branches_SetHours" xml:space="preserve">
+    <value>I-set ang oras</value>
+  </data>
   <data name="Branches_TimeZoneHint" xml:space="preserve">
     <value>Gagamitin ang timezone ng organisasyon kung walang laman.</value>
   </data>
@@ -1307,5 +1310,8 @@
   </data>
   <data name="TaxCompliance_Submitted" xml:space="preserve">
     <value>Naisumite ang readiness para sa Platform review.</value>
+  </data>
+  <data name="Branches_PosContextNote" xml:space="preserve">
+    <value>Ang walk-in POS selling branch ay pinipili sa mobile app. Ang page na ito ang nagmamaneho ng lahat ng lokasyon ng organization.</value>
   </data>
 </root>

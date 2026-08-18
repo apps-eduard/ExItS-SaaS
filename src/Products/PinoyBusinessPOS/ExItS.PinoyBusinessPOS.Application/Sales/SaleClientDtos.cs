@@ -54,7 +54,8 @@ public sealed record PosSaleDto(
     string? BuyerPersonalPublicUserId = null,
     Guid? BuyerOrganizationId = null,
     string? BuyerPublicOrganizationId = null,
-    string DocumentKind = "TransactionSummary");
+    string DocumentKind = "TransactionSummary",
+    Guid? BranchId = null);
 
 /// <summary>
 /// One requested checkout line.

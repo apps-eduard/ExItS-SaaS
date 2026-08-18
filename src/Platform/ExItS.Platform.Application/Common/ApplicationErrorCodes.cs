@@ -189,6 +189,7 @@ public static class ApplicationErrorCodes
     public const string ProductLocalRoleMissing = "application.product_local_role.missing";
     public const string StartBusinessOwnerRequired = "application.start_business.owner_required";
     public const string BranchNotFound = "application.branch.not_found";
+    public const string BranchNotSelectable = "application.branch.not_selectable";
     public const string BranchCapacityExceeded = "application.branch.capacity_exceeded";
     public const string BranchCodeConflict = "application.branch.code_conflict";
     public const string PosDeviceNotFound = "application.pos_device.not_found";

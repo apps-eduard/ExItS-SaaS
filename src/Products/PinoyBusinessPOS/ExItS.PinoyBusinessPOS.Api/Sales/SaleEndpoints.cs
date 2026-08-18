@@ -85,7 +85,10 @@ internal static class SaleEndpoints
 
                 var deviceDenied = await deviceAuthorization.EnsureAuthorizedAsync(request, organizationId, ct).ConfigureAwait(false);
                 if (deviceDenied is not null) return deviceDenied;
-                PosOrganizationScope.TryGetOptionalBranchId(request, out var branchId);
+                if (!TryResolveCheckoutBranch(request, out var branchId, out problem))
+                {
+                    return problem!;
+                }
 
                 return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                         request,
@@ -129,7 +132,10 @@ internal static class SaleEndpoints
 
             var cashDeviceDenied = await deviceAuthorization.EnsureAuthorizedAsync(request, cashOrgId, ct).ConfigureAwait(false);
             if (cashDeviceDenied is not null) return cashDeviceDenied;
-            PosOrganizationScope.TryGetOptionalBranchId(request, out var cashBranchId);
+            if (!TryResolveCheckoutBranch(request, out var cashBranchId, out cashProblem))
+            {
+                return cashProblem!;
+            }
 
             return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                     request,
@@ -237,6 +243,31 @@ internal static class SaleEndpoints
         }
 
         return PosCommercialScope.TryAuthorize(access, capability, out problem);
+    }
+
+    private static bool TryResolveCheckoutBranch(HttpRequest request, out Guid? branchId, out IResult? problem)
+    {
+        problem = null;
+        if (!PosOrganizationScope.TryGetOptionalBranchId(request, out branchId))
+        {
+            problem = PosApiResults.Problem(
+                DomainErrorCodes.InvalidBranchId,
+                $"Header '{PosOrganizationHeaders.BranchHeaderName}' must be a non-empty GUID.",
+                StatusCodes.Status400BadRequest);
+            return false;
+        }
+
+        var environment = request.HttpContext.RequestServices.GetRequiredService<IHostEnvironment>();
+        if (branchId is null && !environment.IsEnvironment("Testing"))
+        {
+            problem = PosApiResults.Problem(
+                ApplicationErrorCodes.SaleBranchRequired,
+                $"Header '{PosOrganizationHeaders.BranchHeaderName}' is required for checkout.",
+                StatusCodes.Status400BadRequest);
+            return false;
+        }
+
+        return true;
     }
 
     private static bool TryParseStatus(string? status, out SaleStatus? parsed, out IResult? problem)

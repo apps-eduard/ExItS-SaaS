@@ -142,7 +142,8 @@ internal static class PosApiResults
             or DomainErrorCodes.RegisterDeactivateBlockedByOpenShift
             or DomainErrorCodes.RegisterNotActive
             or DomainErrorCodes.CashierShiftRegisterConflict
-            or DomainErrorCodes.InvalidRegisterStatusTransition => StatusCodes.Status409Conflict,
+            or DomainErrorCodes.InvalidRegisterStatusTransition
+            or ApplicationErrorCodes.OperationalBranchSwitchBlocked => StatusCodes.Status409Conflict,
 
         ApplicationErrorCodes.SaleProductNotFound => StatusCodes.Status400BadRequest,
 

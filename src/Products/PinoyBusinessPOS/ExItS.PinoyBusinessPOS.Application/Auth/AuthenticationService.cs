@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Auth;
+using ExItS.PinoyBusinessPOS.Application.Branches;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Offline;
@@ -26,7 +27,8 @@ public sealed class AuthenticationService(
     OfflineSessionUxState? offlineSessionUx = null,
     SellingModeService? sellingMode = null,
     IConnectivityService? connectivity = null,
-    IDeviceRecoveryCredentialStore? recoveryStore = null) : IAuthenticationService, IPlatformAccessTokenRecovery
+    IDeviceRecoveryCredentialStore? recoveryStore = null,
+    IPosOperationalBranchClient? operationalBranch = null) : IAuthenticationService, IPlatformAccessTokenRecovery
 {
     private static readonly TimeSpan SessionLifetime = TimeSpan.FromHours(12);
     private readonly TimeProvider _clock = timeProvider ?? TimeProvider.System;
@@ -38,6 +40,7 @@ public sealed class AuthenticationService(
     private readonly SellingModeService? _sellingMode = sellingMode;
     private readonly IConnectivityService? _connectivity = connectivity;
     private readonly IDeviceRecoveryCredentialStore? _recoveryStore = recoveryStore;
+    private readonly IPosOperationalBranchClient? _operationalBranch = operationalBranch;
     private readonly SemaphoreSlim _reissueGate = new(1, 1);
 
     public bool IsDevelopmentAuthenticationEnabled =>
@@ -1913,6 +1916,7 @@ public sealed class AuthenticationService(
             EnabledFeatureCodes = null,
             BranchId = null,
             PosDeviceId = null,
+            SelectedBranchId = null,
             // Local Personal pages require AccountClass=Personal before opening SQLite context.
             // Clear AccountProfileId so EnsurePersonal rebinds the Platform Personal profile.
             AccountClass = "Personal",
@@ -2314,7 +2318,8 @@ public sealed class AuthenticationService(
             EnabledFeatureCodes = enabledFeatureCodes,
             // Never carry branch/device binding from Org A into Org B.
             BranchId = null,
-            PosDeviceId = null
+            PosDeviceId = null,
+            SelectedBranchId = null
         };
 
         return await PersistOrganizationSelectionAsync(session, updated, organizationId, ct).ConfigureAwait(false);
@@ -2424,7 +2429,8 @@ public sealed class AuthenticationService(
             SubscriptionStatus = subscriptionStatus,
             EnabledFeatureCodes = enabledFeatureCodes,
             BranchId = null,
-            PosDeviceId = null
+            PosDeviceId = null,
+            SelectedBranchId = null
         };
 
         if (issued.ProductAccessAllowed == false)
@@ -2550,7 +2556,8 @@ public sealed class AuthenticationService(
             HasPosAccess = false,
             AccessReasonCode = reasonCode ?? "product_local_role_missing",
             BranchId = null,
-            PosDeviceId = null
+            PosDeviceId = null,
+            SelectedBranchId = null
         };
 
         events.Record("organization_selected_without_pos", Dict(
@@ -2636,6 +2643,111 @@ public sealed class AuthenticationService(
         events.Record("organization_selected", Dict(
             ("userId", previous.UserId.ToString("D")),
             ("organizationId", organizationId.ToString("D"))));
+        return new AuthResult(true, AuthFailureReason.None, updated);
+    }
+
+    public async Task<AuthResult> SelectBranchAsync(Guid branchId, CancellationToken ct = default)
+    {
+        var session = currentUser.Session;
+        if (session is null)
+        {
+            return new AuthResult(false, AuthFailureReason.SessionExpired, SafeMessageKey: "Auth_SessionExpired");
+        }
+
+        if (session.OrganizationId is not Guid organizationId || organizationId == Guid.Empty)
+        {
+            return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "Org_MissingTitle");
+        }
+
+        if (branchId == Guid.Empty)
+        {
+            return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_Invalid");
+        }
+
+        var current = AuthSessionBranchContext.GetSelectedBranchId(session);
+        if (current == branchId)
+        {
+            var already = session.SelectedBranchId == branchId
+                ? session
+                : session with { SelectedBranchId = branchId };
+            if (!ReferenceEquals(already, session))
+            {
+                return await PersistSelectedBranchAsync(already, ct).ConfigureAwait(false);
+            }
+
+            return new AuthResult(true, AuthFailureReason.None, session);
+        }
+
+        var platform = await accessClient
+            .SelectBranchContextAsync(organizationId, new SelectBranchContextRequest(branchId), ct)
+            .ConfigureAwait(false);
+        if (!platform.IsSuccess || platform.Data is null)
+        {
+            if (platform.Status is ApiCallStatus.Offline or ApiCallStatus.Timeout or ApiCallStatus.Unavailable)
+            {
+                return new AuthResult(false, AuthFailureReason.Offline, SafeMessageKey: "BranchContext_Offline");
+            }
+
+            if (platform.Error?.ErrorCode is "application.branch.not_found")
+            {
+                return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_NotFound");
+            }
+
+            if (platform.Error?.ErrorCode is "application.branch.not_selectable")
+            {
+                return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_Inactive");
+            }
+
+            return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_Denied");
+        }
+
+        if (_operationalBranch is not null)
+        {
+            var operational = await _operationalBranch
+                .SelectAsync(new SelectOperationalBranchRequest(branchId), ct)
+                .ConfigureAwait(false);
+            if (!operational.IsSuccess)
+            {
+                if (operational.Status is ApiCallStatus.Offline or ApiCallStatus.Timeout or ApiCallStatus.Unavailable)
+                {
+                    return new AuthResult(false, AuthFailureReason.Offline, SafeMessageKey: "BranchContext_Offline");
+                }
+
+                if (string.Equals(
+                    operational.Error?.ErrorCode,
+                    ApplicationErrorCodes.OperationalBranchSwitchBlocked,
+                    StringComparison.Ordinal))
+                {
+                    return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_ShiftOpen");
+                }
+
+                return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_Denied");
+            }
+        }
+
+        var updated = session with { SelectedBranchId = branchId };
+        return await PersistSelectedBranchAsync(updated, ct).ConfigureAwait(false);
+    }
+
+    private async Task<AuthResult> PersistSelectedBranchAsync(AuthSession updated, CancellationToken ct)
+    {
+        try
+        {
+            var (_, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
+            marker ??= Guid.NewGuid().ToString("N");
+            await sessionStore.SaveAsync(updated, marker, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            events.Record("secure_storage_failure", Dict(("operation", "select_branch_save")));
+            return new AuthResult(false, AuthFailureReason.SecureStorageFailure, SafeMessageKey: "Auth_SecureStorageFailure");
+        }
+
+        currentUser.Set(updated);
+        events.Record("branch_selected", Dict(
+            ("userId", updated.UserId.ToString("D")),
+            ("organizationId", updated.OrganizationId?.ToString("D") ?? string.Empty),
+            ("branchId", updated.SelectedBranchId?.ToString("D") ?? string.Empty)));
         return new AuthResult(true, AuthFailureReason.None, updated);
     }
 
@@ -3004,7 +3116,8 @@ public sealed class AuthenticationService(
                 PlatformSessionToken = null,
                 AccountClass = "Personal",
                 BranchId = null,
-                PosDeviceId = null
+                PosDeviceId = null,
+                SelectedBranchId = null
             };
         }
 

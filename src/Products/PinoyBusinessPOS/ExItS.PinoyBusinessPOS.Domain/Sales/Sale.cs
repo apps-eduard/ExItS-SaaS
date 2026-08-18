@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.OperationalSetup;
 using ExItS.PinoyBusinessPOS.Domain.Registers;
 
@@ -71,6 +72,12 @@ public sealed class Sale
     /// <summary>Register inherited from the open shift; null for legacy pre-migration sales.</summary>
     public RegisterId? RegisterId { get; }
 
+    /// <summary>
+    /// Authoritative walk-in fulfillment/stock branch. Null only for legacy sales recorded before
+    /// P28-WP13. New checkouts persist the validated operational branch.
+    /// </summary>
+    public PosBranchId? BranchId { get; }
+
     public DateTimeOffset RecordedAtUtc { get; }
     public Guid RecordedBy { get; }
     public DateTimeOffset? VoidedAtUtc { get; private set; }
@@ -105,6 +112,7 @@ public sealed class Sale
         CreditEntryId? linkedCreditEntryId,
         CashierShiftId? cashierShiftId,
         RegisterId? registerId,
+        PosBranchId? branchId,
         DateTimeOffset recordedAtUtc,
         Guid recordedBy,
         DateTimeOffset? voidedAtUtc,
@@ -130,6 +138,7 @@ public sealed class Sale
         LinkedCreditEntryId = linkedCreditEntryId;
         CashierShiftId = cashierShiftId;
         RegisterId = registerId;
+        BranchId = branchId;
         RecordedAtUtc = recordedAtUtc;
         RecordedBy = recordedBy;
         VoidedAtUtc = voidedAtUtc;
@@ -160,7 +169,8 @@ public sealed class Sale
         RegisterId? registerId = null,
         decimal taxAmount = 0,
         TaxPricingMode? taxPricingMode = null,
-        SaleBuyerParty? buyerParty = null)
+        SaleBuyerParty? buyerParty = null,
+        PosBranchId? branchId = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(recordedBy);
@@ -254,6 +264,7 @@ public sealed class Sale
             linkedCreditEntryId,
             cashierShiftId,
             registerId,
+            branchId,
             utcNow,
             recordedBy,
             null,
@@ -337,7 +348,8 @@ public sealed class Sale
         CashierShiftId? cashierShiftId = null,
         RegisterId? registerId = null,
         SaleBuyerParty? buyerParty = null,
-        SaleStockReservationState stockReservationState = SaleStockReservationState.None) =>
+        SaleStockReservationState stockReservationState = SaleStockReservationState.None,
+        PosBranchId? branchId = null) =>
         new(
             id,
             organizationId,
@@ -355,6 +367,7 @@ public sealed class Sale
             linkedCreditEntryId,
             cashierShiftId,
             registerId,
+            branchId,
             recordedAtUtc,
             recordedBy,
             voidedAtUtc,

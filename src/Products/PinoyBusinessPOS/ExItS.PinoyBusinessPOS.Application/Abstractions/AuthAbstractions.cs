@@ -95,6 +95,12 @@ public interface IAuthenticationService
     Task<AuthResult> SelectOrganizationAsync(Guid organizationId, CancellationToken ct = default);
 
     /// <summary>
+    /// Selects the current organization branch for management/operational context.
+    /// Does not change <c>OrganizationId</c> or rebind the POS device. Server-validated.
+    /// </summary>
+    Task<AuthResult> SelectBranchAsync(Guid branchId, CancellationToken ct = default);
+
+    /// <summary>
     /// Leaves organization/POS context and returns to Personal without signing out.
     /// Clears organization-scoped local state and process validation; keeps the Platform session.
     /// </summary>
