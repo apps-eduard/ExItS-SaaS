@@ -17,7 +17,7 @@ Do not copy PinoyBusinessPOS phase history into this product.
 | PLM-00-WP06 | Borrower, Personal linking, and Quick Loan publishing baseline | Completed |
 | PLM-00-WP07 | Traditional loan and origination workflow baseline | Completed |
 | PLM-00-WP08 | Reporting, notifications, documents, and customer visibility baseline | Completed |
-| PLM-00-WP09 | Technical product layout and integration boundary | Current |
-| PLM-00-WP10 | Foundation closeout and implementation readiness | Next proposed |
+| PLM-00-WP09 | Technical product layout and integration boundary | Completed |
+| PLM-00-WP10 | Foundation closeout and implementation readiness | Current |
 
-WP10 remains documentation / product planning. Do not start PLM-01.
+Recommended next phase: **PLM-01 Product Scaffold & Isolation**. Do not start until explicitly authorized.

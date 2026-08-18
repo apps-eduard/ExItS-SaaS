@@ -21,4 +21,8 @@ Do not rewrite historical signed-off reports merely to erase history.
 
 ## Reports in this package
 
-PLM-00-WP01 through PLM-00-WP09 do not add a separate report file. Completion evidence for these documentation-only packages is the git commit on `docs/plm-foundation` plus the chat completion report. A copied Product Foundation work-package report template may be added in a later authorized package if the owner wants a durable in-tree report.
+| Report | Purpose |
+|---|---|
+| [PLM-00-foundation-closeout.md](PLM-00-foundation-closeout.md) | PLM-00 documentation closeout, implementation gates, recommended PLM-01 |
+
+PLM-00-WP01 through PLM-00-WP09 do not add a separate report file. Completion evidence for those documentation-only packages is the git commit on `docs/plm-foundation` plus the chat completion report.

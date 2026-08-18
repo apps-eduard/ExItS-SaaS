@@ -10,7 +10,7 @@ This directory will hold proof that authorized Pinoy Loan Manager behavior was v
 
 ## This work package
 
-PLM-00-WP09 is documentation-only.
+PLM-00-WP10 is documentation-only.
 
 | Validation type | Result |
 |---|---|
@@ -19,5 +19,7 @@ PLM-00-WP09 is documentation-only.
 | Device / MAUI | Not applicable |
 | Browser | Not applicable |
 | Financial calculation | Not applicable |
+
+Readiness gates: [PLM-00-readiness-checklist.md](PLM-00-readiness-checklist.md).
 
 No loan calculations exist to validate. Do not claim device or runtime validation for this package.

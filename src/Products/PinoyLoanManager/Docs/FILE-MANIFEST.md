@@ -2,7 +2,7 @@
 
 **Status:** Foundation / planning only
 **Implementation present:** No
-**Current work package:** PLM-00-WP09 — Technical Product Layout & Integration Boundary
+**Current work package:** PLM-00-WP10 — Foundation Closeout & Implementation Readiness
 
 This file is the navigation map for future Cursor work. Load this product’s `Docs/` after the shared Product Foundation reference. Do not scan PinoyBusinessPOS implementation by default.
 
@@ -95,7 +95,14 @@ Shared contracts to load with this product:
 | `Docs/Architecture/mobile-offline-boundary.md` | Online-first MAUI; offline not authorized | Planning target / not a spec | No |
 | `Docs/Architecture/platform-commercial-integration.md` | Platform contracts; D-P12-03 open | Planning target / not a spec | No |
 
-## Workspace indexes (PLM-00-WP01, updated in WP02–WP09)
+## Foundation closeout (PLM-00-WP10)
+
+| Path | Purpose | Status | Implementation present |
+|---|---|---|---|
+| `Docs/Reports/PLM-00-foundation-closeout.md` | PLM-00 vision, gates, next phase | Planning closeout | No |
+| `Docs/Validation/PLM-00-readiness-checklist.md` | Docs-only readiness gates | Planning closeout | No |
+
+## Workspace indexes (PLM-00-WP01, updated in WP02–WP10)
 
 | Path | Purpose | Status | Implementation present |
 |---|---|---|---|
@@ -124,7 +131,7 @@ Shared contracts to load with this product:
 | Docker / deploy implementation | Not authorized |
 | `ExItS.slnx` entries | Not authorized |
 | `Docs/deployment-notes.md` | Optional until packaging |
-| `Docs/Reports/<WP-id>.md` | In-tree WP report not required for this docs-only WP |
+| `Docs/Reports/<WP-id>.md` | In-tree WP report not required except PLM-00 closeout |
 | Exact grant identifiers / custom roles | Open (PLM-D-00-06) |
 | Small-org vs two-person high-risk approval | Open (PLM-D-00-13) |
 | Exact rounding mode | Open (PLM-D-00-12) |

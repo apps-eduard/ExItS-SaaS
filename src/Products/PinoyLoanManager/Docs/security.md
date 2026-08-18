@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Status | Draft — documentation baseline through technical layout / integration planning; not product-owner approved |
+| Status | Draft — PLM-00 documentation complete; not product-owner approved; no implementation |
 | Implementation present | No |
 
 ## Authentication boundary

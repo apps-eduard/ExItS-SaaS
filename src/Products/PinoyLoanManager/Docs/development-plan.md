@@ -6,7 +6,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Plan status | Draft — planning buckets plus operating-model through technical-boundary direction; not product-owner approved |
+| Plan status | Draft — PLM-00 documentation complete; not product-owner approved; PLM-01 not started |
 | Implementation present | No |
 
 ## Delivery approach
@@ -20,7 +20,7 @@
 
 | Phase | Objective | Exit criteria |
 |---|---|---|
-| PLM-00 Foundation & Product Decisions | Documentation, identity, isolation, operating-model, financial-lifecycle, operational-control, borrower/Personal/publishing planning, and owner-decision register | Canonical docs exist; open decisions listed; no implementation claimed |
+| PLM-00 Foundation & Product Decisions | Documentation, identity, isolation, operating-model through technical-boundary planning, closeout, and owner-decision register | Canonical docs exist; closeout filed; open decisions listed; no implementation claimed |
 | PLM-01 Product Scaffold & Isolation | Authorized source/test/deploy skeleton and isolation guards | Projects exist without Loan domain; solution isolation proven; layout: [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md) |
 | PLM-02 Identity / Organization / Product Access | Consume Platform actor/org/product access without Platform table reads | Access intersection entry gates exist; D-P12-03 not invented |
 | PLM-03 Loan Product Authorization | Product-local roles/grants | Matrix implemented only after PLM-D-00-06 |

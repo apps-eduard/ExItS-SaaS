@@ -7,7 +7,7 @@
 |---|---|
 | Product | Pinoy Loan Manager / `pinoy-loan-manager` (proposed, PLM-D-00-01) |
 | Database | `ExItS_PinoyLoanManager` (proposed) / schema **Status: Open / Product Owner Decision Required** (PLM-D-00-02) |
-| Status | Draft — documentation baseline through technical layout / integration planning; not product-owner approved |
+| Status | Draft — PLM-00 documentation complete; not product-owner approved; no implementation |
 | Implementation present | No |
 
 ## System context

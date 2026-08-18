@@ -8,7 +8,7 @@
 | Product name | Pinoy Loan Manager |
 | Platform product code | `pinoy-loan-manager` (proposed — **Status: Open / Product Owner Decision Required**, PLM-D-00-01) |
 | Docs root | `src/Products/PinoyLoanManager/Docs/` |
-| Status | Draft — documentation baseline through technical layout / integration planning; not product-owner approved |
+| Status | Draft — PLM-00 documentation complete; not product-owner approved; no implementation |
 | Last updated | 2026-08-19 |
 | Implementation present | No |
 
@@ -127,7 +127,8 @@ This package records:
 - borrower, Personal linking, and Quick Loan publishing baseline (PLM-00-WP06, completed)
 - traditional loan and origination workflow baseline (PLM-00-WP07, completed)
 - reporting, documents, notifications, and customer-visibility baseline (PLM-00-WP08, completed)
-- technical product layout and integration boundary (PLM-00-WP09, this package)
+- technical product layout and integration boundary (PLM-00-WP09, completed)
+- foundation closeout and implementation readiness (PLM-00-WP10, this package)
 
 No loan MVP **implementation** is approved. Calculation algorithms, peso/percent rates, rounding mode, and legal validation remain open.
 
@@ -211,6 +212,8 @@ No loan MVP **implementation** is approved. Calculation algorithms, peso/percent
 | Persistence / database boundary | [Architecture/persistence-and-database-boundary.md](Architecture/persistence-and-database-boundary.md) |
 | Mobile / offline boundary | [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md) |
 | Platform commercial integration | [Architecture/platform-commercial-integration.md](Architecture/platform-commercial-integration.md) |
+| Foundation closeout | [Reports/PLM-00-foundation-closeout.md](Reports/PLM-00-foundation-closeout.md) |
+| Readiness checklist | [Validation/PLM-00-readiness-checklist.md](Validation/PLM-00-readiness-checklist.md) |
 | Security | [security.md](security.md) |
 | Authorization | [authorization-matrix.md](authorization-matrix.md) |
 | Development plan | [development-plan.md](development-plan.md) |
