@@ -50,9 +50,13 @@ Session storage remains `MauiSecureTokenStore` → `SecureSessionStore` (`Access
 
 ## Session renewal
 
-**Supported:** `POST /api/v1/platform/auth/token` with `GrantType: "session"` when a live `PlatformSessionToken` exists (`AuthenticationService.TryReissueAccessTokenAsync`).
+**Supported (active online user):** `POST /api/v1/platform/auth/recovery/exchange` with the **same user's** valid device recovery credential (`AuthenticationService.TryReissueAccessTokenAsync`). Rotates the credential and issues a fresh 60-minute AccessToken.
 
-**Not supported:** inventing a refresh_token or extending local expiry without Platform acceptance. Revoked sessions must not be resurrected.
+**Supported (legacy, one-time migration):** `POST /api/v1/platform/auth/token` with `GrantType: "session"` when a live `PlatformSessionToken` exists and no recovery credential is enrolled yet.
+
+**Enrollment:** after full online authentication, `POST /api/v1/platform/auth/recovery/enroll` stores a per-user/per-device credential in secure storage (`pos.pin.recovery.credential.{userId}`). Only the hash is persisted server-side.
+
+**Not supported:** inventing a refresh_token, deriving recovery credentials from PIN, or extending local expiry without Platform acceptance. Revoked credentials must not be resurrected.
 
 Nominal local expiry while **offline** does not force immediate login; stored identity is kept for offline work. When connectivity returns, restore/refresh attempts renewal; failure then shows Session expired.
 
@@ -84,13 +88,16 @@ No LocalStore version bump for connectivity state. Session secrets remain in sec
 
 ## PIN sign-in recovery
 
-PIN verifies a previously enrolled identity on this device. When the Platform is reachable, MAUI reissues an AccessToken with `GrantType: session` using that **same user's** stored Platform session handle (`pos.pin.recovery.session.{userId}`). Results are classified:
+PIN verifies a previously enrolled identity on this device. When the Platform is reachable, MAUI exchanges that **same user's** device recovery credential for a fresh AccessToken (`pos.pin.recovery.credential.{userId}`). Results are classified:
 
 | Outcome | Behavior |
 |---|---|
-| ValidatedOnline | Replace local-only state; existing reconnect auto-sync may run |
-| TransientUnavailable | Keep LocalOffline grant; do not revoke; retry later |
-| ExplicitlyRevoked | Invalidate that user's grant/handle per existing policy; no session continues |
-| LocalOffline | Server unreachable, or no recoverable handle for this user |
+| ValidatedOnline | Fresh 60m token; recovery credential rotated; existing reconnect auto-sync may run |
+| TransientUnavailable | Keep LocalOffline grant + recovery credential; do not revoke; retry later |
+| OnlineVerificationRequired | Recovery missing/expired; require one normal sign-in to re-enroll; not wrong PIN |
+| ExplicitlyRevoked | Invalidate that user's grant/recovery per existing policy; no session continues |
+| LocalOffline | Server unreachable |
 
-Wrong PIN never calls Platform. User B never receives User A's AccessToken. Logout revokes the bearer and clears the active session slot; it does **not** destroy the per-user Platform session handle, so PIN can recover online until the server session is expired/revoked. PIN itself is never sent to the server and is not a password replacement.
+Wrong PIN never calls Platform. User B never receives User A's AccessToken or recovery credential. Logout revokes the bearer and clears the active session slot; it does **not** remove per-user recovery credentials. **Remove from this device** clears PIN, grant, and revokes that user's recovery credential server-side. PIN itself is never sent to the server and is not a password replacement.
+
+Server table: `platform_device_recovery_credentials` (migration `AddPlatformDeviceRecoveryCredentials`). Idle expiry refreshes on use; absolute expiry never slides beyond the original 90-day boundary.

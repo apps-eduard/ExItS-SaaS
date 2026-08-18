@@ -16,12 +16,13 @@
 
 | Concern | Behavior |
 |---|---|
-| Storage | Per-user SecureStorage slots: `pos.offline.grant.{userId}`, `pos.offline.pin.{userId}`, directory `pos.offline.enrolledUsers` (no secrets) |
+| Storage | Per-user SecureStorage slots: `pos.offline.grant.{userId}`, `pos.offline.pin.{userId}`, `pos.pin.recovery.credential.{userId}` (device-bound recovery secret), directory `pos.offline.enrolledUsers` (no secrets) |
 | PIN | Salted PBKDF2 verifier per user; never raw/reversible; same numeric PIN allowed across users (identity-scoped) |
 | Grant | Per-user offline operating grant; default lifetime **720 hours (30 days)** from last **online** validation |
 | PIN vs grant | PIN itself does **not** time-expire; offline **authorization** expires |
 | Offline unlock | Does **not** extend `IssuedAtUtc` / `LastOnlineValidatedAtUtc` / `ExpiresAtUtc` |
-| Online renew | Successful authoritative online establish renews **that** user's grant only |
+| Online renew | Successful authoritative online establish renews **that** user's grant only; enrolls/rotates **that** user's device recovery credential (30-day idle / 90-day absolute, server hash only) |
+| PIN online recovery | After correct PIN + connectivity: exchange **selected user's** recovery credential → fresh 60-minute AccessToken; rotate credential. Paul never uses Mica's credential or token. |
 | Logout | Clears active session; **preserves all** enrolled users' grants + PINs |
 | Account switch | Enrolling Paul does **not** delete Mica |
 | Remove offline access | `RemoveEnrolledUserAsync` / `RemoveEnrolledOfflineUserAsync` removes one user only |

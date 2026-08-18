@@ -57,15 +57,27 @@ PIN is a **trusted device-local sign-in method** for previously enrolled users, 
 After a correct PIN:
 
 1. Local PIN + device + grant are verified (wrong PIN never contacts the server; existing lockout applies).
-2. If the server is unreachable, or no recoverable Platform session handle exists for **that** user → **LocalOffline** (existing offline restrictions; no fabricated server credentials).
+2. If the server is unreachable → **LocalOffline** (existing offline restrictions; no fabricated server credentials).
 3. If the server is reachable, a short **Revalidating** state (`pin_revalidating`) runs before privileged online UI:
-   - **ValidatedOnline** — replace local-only state with a normal online session for the **same** selected user; existing sync/recovery runs.
-   - **TransientUnavailable** — timeout / DNS / 5xx / transport; keep the local/offline session; **do not** revoke the grant; retry later through existing restore/reconnect.
+   - **ValidatedOnline** — exchange the selected user's **device recovery credential** for a fresh 60-minute AccessToken; rotate the credential; replace local-only state with a normal online session for the **same** user; existing sync/recovery runs.
+   - **TransientUnavailable** — timeout / DNS / 5xx / transport; keep the local/offline session; **do not** revoke the grant or recovery credential; retry later through existing restore/reconnect.
+   - **OnlineVerificationRequired** — recovery credential missing or expired (30-day idle / 90-day absolute); show localized copy and require one normal full sign-in to re-enroll. **Not** wrong PIN, network failure, or generic Access Denied.
    - **ExplicitlyRevoked** — only existing authoritative reasons (user/device/product/org assignment revoked); invalidate that user's local authorization; return to sign-in. Generic network failure is never revocation.
 
-Online recovery uses `GrantType: session` with a per-user Platform session handle (`pos.pin.recovery.session.{userId}`). PIN and passwords are never stored or sent to the server. Logout clears the active app session and bearer; it does **not** call Platform session logout, so PIN on this device can reissue an AccessToken until the server session expires or is explicitly revoked.
+### Credential model (canonical)
 
-Lock keeps User A's tokens in the active slot. Unlocking User B never copies A's AccessToken / PlatformSessionToken. Pending outbox rows keep the original `user_id`; switching users does not rewrite creator/audit ownership.
+| Artifact | Role | Lifetime |
+|---|---|---|
+| PIN verifier | Local proof of selected user | Until removed from device |
+| Offline grant | Bounded offline authority | Existing 30-day policy; PIN unlock does **not** extend it |
+| Access token | Short-lived API credential | **60 minutes** |
+| Device recovery credential | Per-user + per-device rotating server credential | **30-day idle**, **90-day absolute**; rotates after every successful exchange |
+
+Online recovery uses `POST /api/v1/platform/auth/recovery/exchange` with the per-user credential stored at `pos.pin.recovery.credential.{userId}` (device id bound in secure payload). PIN and passwords are never stored or sent to the server. Logout clears the active app session and bearer; it does **not** remove enrolled recovery credentials, so PIN can recover online until the recovery credential expires or is explicitly revoked.
+
+**Legacy migration:** devices that still hold `pos.pin.recovery.session.{userId}` (Platform session handle) may perform a one-time online session-grant exchange while reachable, then enroll the new recovery credential and clear the legacy key.
+
+Lock keeps User A's tokens in the active slot. Unlocking User B never copies A's AccessToken or recovery credential. Pending outbox rows keep the original `user_id`; switching users does not rewrite creator/audit ownership.
 
 ## Online login → PIN onboarding
 
