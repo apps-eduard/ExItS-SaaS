@@ -53,6 +53,8 @@ Supplemental delivery (Card/GCash simulated payments): [P19-card-gcash-payment-u
 
 Supplemental delivery (offline operability foundation): [P19-offline-operability-foundation](../reports/P19-offline-operability-foundation.md) — **Code Complete**; physical Android A–S **incomplete** (pending sync confirmation + PIN lockout + user confirmation); **Not Device Verified**.
 
+Supplemental delivery (MAUI list-load performance): [P19-maui-list-load-performance](../reports/P19-maui-list-load-performance.md) — Customers / Sell / Catalog first paint; sign-in no longer double-binds org under the login spinner; feature `9287de75`; **Not Device Verified**.
+
 Supplemental delivery (connectivity / offline capability matrix): [P19-offline-connectivity-capability-matrix](../reports/P19-offline-connectivity-capability-matrix.md) — central `OfflineCapable` / `Queueable` / `OnlineRequired` policy + shared Internet-required dialog; physical validation **incomplete**.
 
 Supplemental delivery (Personal-scope offline): [P19-personal-scope-offline-operability](../reports/P19-personal-scope-offline-operability.md) — Personal Utang local-first grant/store/policy separate from Organization POS; sync recovery + email uniqueness tip `f3d87be`; physical validation **incomplete**.

@@ -90,6 +90,7 @@ The dashboard links to the latest accepted report.
 | [P12-WP05-product-bootstrap-prompt.md](P12-WP05-product-bootstrap-prompt.md) | P12-WP05 Product Bootstrap Prompt | Complete |
 | [P12-WP06-reference-product-dry-run.md](P12-WP06-reference-product-dry-run.md) | P12-WP06 Reference Product Dry Run | Complete |
 | [P19-offline-operability-foundation.md](P19-offline-operability-foundation.md) | P19 offline grant + cold-start PIN foundation | Code Complete (Device Verified No) |
+| [P19-maui-list-load-performance.md](P19-maui-list-load-performance.md) | P19 MAUI list-load performance (customers/catalog/sell + sign-in org bind) | Code Complete (Device Verified No) |
 | [maui-mobile-auth-ux-redesign.md](maui-mobile-auth-ux-redesign.md) | MAUI Sign In / Sign Up rounded auth card UX | Code Complete (Device Verified No) |
 | [P19-offline-pin-same-user-relogin-fix.md](P19-offline-pin-same-user-relogin-fix.md) | P19 fix — same-user logout/login keeps offline PIN | Code Complete (Device Verified No) |
 | [P19-multi-user-offline-cashier-pin.md](P19-multi-user-offline-cashier-pin.md) | P19 — multi-user offline cashier PIN + 30-day grants | Code Complete (Device Verified No) |

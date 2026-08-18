@@ -129,7 +129,7 @@ Local schema **v5** tables (LocalStore):
 - `local_open_shift_snapshot`
 - `local_cash_sale` (+ related line/inventory local records as implemented)
 
-`LocalSellingCatalogSyncService.RefreshFromServerAsync` runs while online (e.g. Sell checkout init) to replace the cached active catalog and capture the open-shift snapshot for offline continuity.
+`LocalSellingCatalogSyncService.RefreshFromServerAsync` runs while online to replace the cached active catalog and capture the open-shift snapshot for offline continuity. Sell checkout loads the first browse page first, then refreshes the local cache in the background so a full catalog download cannot block the selling floor. See [P19-maui-list-load-performance](P19-maui-list-load-performance.md).
 
 Offline Sell loads categories/products and open-shift snapshot from LocalStore when connectivity reports offline.
 

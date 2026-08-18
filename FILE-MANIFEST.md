@@ -148,6 +148,7 @@ docs/reports/P27-WP05-fulfillment-goods-receipt-and-discrepancies.md
 docs/reports/P28-WP01-branch-fulfillment-location-foundation.md
 docs/reports/P28-WP02-customer-ordering-stage-b-slice.md
 docs/reports/P28-branch-edit-ux-densification.md
+docs/reports/P19-maui-list-load-performance.md
 docs/reports/P29-WP01-data-authority-and-schema-consistency.md
 docs/reports/P29-WP02-tenant-isolation-and-relational-integrity.md
 docs/reports/P29-WP03-financial-and-transaction-integrity.md
