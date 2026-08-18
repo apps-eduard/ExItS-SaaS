@@ -217,6 +217,7 @@ Identity comes from authenticated Platform session + selected Organization + pro
 - POS **management** APIs via `OrganizationManagementAuthority` from Organization Owner/Administrator **membership** (commercial entitlement gates paid features separately) — **does not** require `platform.permission.view_portfolio`.
 - Org Web Blazor restores PlatformSession/Bearer ambient on every circuit inbound activity (`OrgWebCircuitSession`) so Local Validation Staging does not fall through to Development-stage headers or `view_portfolio`.
 - POS **checkout** (`CreateSale` / `EnterPos`) remains denied unless a separate product-local selling role is assigned.
+- Owner/Administrator may select any **Active** branch in the current organization as management context (`SelectedBranchId`). That switch does not rebind the POS device and does not grant checkout. See [P28-WP13](../reports/P28-WP13-branch-operational-context-and-owner-switching.md).
 - Ownership transfer recomputes authority per selected Organization (never cache Owner globally per UserId).
 
 **Organization Manager** — day-to-day management subset; Owner-only surfaces (ownership transfer, sales-document acknowledgment, Owner subscription controls) denied.

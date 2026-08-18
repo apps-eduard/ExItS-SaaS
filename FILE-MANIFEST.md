@@ -39,7 +39,7 @@ ops/deploy/ (pilot deploy orchestration, smoke, pre-deploy backup, env templates
 deploy/docker/ (packaging + local-validation + production compose, Dockerfiles, nginx; local-validation default = DBs only)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Domain/ (POSCustomer + CreditEntry + CreditDueDateChange + Repayment + CatalogProduct + ProductCategory + Supplier + **PurchaseOrder/GoodsReceipt** aggregates; connected PO lifecycle + receiving discrepancies; FIFO aging helpers)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ (+ Auth; Customers; Credit; due dates/overdue; Payments/ledger; Statements/receipts; Catalog; Suppliers; **Purchasing**; ConnectedSuppliers client contracts + `ConnectedPoDisplayStatus` + linked-product delta sync; Commercial/UtangCapabilityPolicy; Reporting batch lookups)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ (PosDbContext schema `pos`; migrations through **`20260817210000_AddProductPlatformBarcodeAndImageVersion`**; Magick.NET WebP merchant-override pipeline + local/dev filesystem object store; `Health/PosDatabaseReadyHealthCheck`)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ (PosDbContext schema `pos`; migrations through **`20260818223000_AddSaleBranchId`**; Magick.NET WebP merchant-override pipeline + local/dev filesystem object store; `Health/PosDatabaseReadyHealthCheck`)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ (`/health` + `/health/ready` + customers + credit + repayments/ledger + due dates/overdue + statements/receipts + catalog + sales + inventory + expenses + suppliers + purchase-orders/goods-receipts + cashier-shifts + sale-returns + permissions + registers + dashboard/reports; commercial header gates; Production security pipeline; phase marker `P10-WP08-phase-10-closeout`)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ (+ Platform access client incl. org public-identity, `/api/v1/qr/resolve`, POS device registration-token create/redeem; PosCommercialHeaderHandler; PosCustomerClient; PosSaleClient/PosExpenseClient/**PosPurchaseOrderClient** idempotency headers; PosCatalogClient online-only; PosSupplierClient online-only)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.LocalStore/ (Microsoft.Data.Sqlite schema v9 + generic encrypted offline_operations outbox + BlockedByAccess reclaim + encrypted customer/credit/repayment projections + selective connected-supplier linked products and local PO drafts + product usage/sell-unit offline cache; never a full supplier catalog; **not** part of server backup sets)
@@ -147,6 +147,9 @@ docs/reports/P27-WP04-connected-po-cancellation-and-withdrawal.md
 docs/reports/P27-WP05-fulfillment-goods-receipt-and-discrepancies.md
 docs/reports/P28-WP01-branch-fulfillment-location-foundation.md
 docs/reports/P28-WP02-customer-ordering-stage-b-slice.md
+docs/reports/P28-WP11-organization-setup-and-branch-fulfillment-readiness.md
+docs/reports/P28-WP12-multi-branch-customer-commerce-hardening.md
+docs/reports/P28-WP13-branch-operational-context-and-owner-switching.md
 docs/reports/P28-branch-edit-ux-densification.md
 docs/reports/P19-maui-list-load-performance.md
 docs/reports/P29-WP01-data-authority-and-schema-consistency.md

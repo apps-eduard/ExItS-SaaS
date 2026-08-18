@@ -56,7 +56,7 @@ Create Branch B:
 
 Customer-order place/reserve and POS sale checkout (`X-Pos-Branch-Id`) use this resolver. Storefront availability uses `fulfillmentBranchId` (auto-select single eligible or primary when omitted). Aggregate org stock is not presented as Branch B availability.
 
-Walk-in `Sale` has **no** `BranchId` column (no schema change). Overlay mutation uses the session branch header. Electronic payment webhooks without a branch header still consume org reservation; overlay was taken at awaiting-payment reserve when the checkout/create-attempt header was present.
+Walk-in `Sale` had **no** `BranchId` column in this WP (no schema change). Overlay mutation used the session branch header. **P28-WP13** added nullable `Sale.BranchId` for new checkouts; historical rows were not backfilled. Electronic payment webhooks without a branch header still consume org reservation; overlay was taken at awaiting-payment reserve when the checkout/create-attempt header was present.
 
 ## Transaction attribution
 
@@ -81,7 +81,7 @@ EN + fil-PH strings added. `CreateBranchRequest.PickupEnabled` default is **fals
 
 ## Explicit exclusions
 
-- No `Sale.BranchId` migration.
+- No `Sale.BranchId` migration **in this WP** (added later in [P28-WP13](P28-WP13-branch-operational-context-and-owner-switching.md)).
 - No staff↔branch ACL table.
 - No branch product clones or regional pricing.
 - No automatic inventory row per product on branch create.
@@ -89,6 +89,6 @@ EN + fil-PH strings added. `CreateBranchRequest.PickupEnabled` default is **fals
 
 ## Next
 
-P28-WP10 E2E validation and Phase 28 closeout.
+**P28-WP13** branch operational context + owner switching. P28-WP10 remains E2E / closeout.
 
 Branch Edit densification (UI only): [P28-branch-edit-ux-densification.md](P28-branch-edit-ux-densification.md).

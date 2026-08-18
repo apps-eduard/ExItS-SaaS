@@ -14,7 +14,7 @@ Organization Web (`:8093`) is the **business management center**.
 | InventoryStaff / ReportingUser (limited nav) | Personal-only users without org membership |
 | | Cart / checkout / barcode selling / payment taking |
 
-Selling remains on PinoyBusinessPOS MAUI.
+Selling remains on PinoyBusinessPOS MAUI. Walk-in POS current branch is selected on the mobile app (`SelectedBranchId`); Organization Web manages all locations and does not host checkout or operational branch switching.
 
 ## Session / identity (runtime)
 

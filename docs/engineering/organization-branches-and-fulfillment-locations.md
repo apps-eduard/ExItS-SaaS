@@ -36,11 +36,13 @@ Organization owns master/shared data. Branch owns operational state. Creating a 
 
 Subscription upgrade only unlocks `MaxBranches` capacity. It does not create branches or enable fulfillment. Downgrade retains existing branches and history; new creates that would exceed the limit are blocked.
 
-New branch inventory starts zero/unallocated to the primary. Stock arrives only through opening stock, receipt, transfer, or other existing movements. Storefront availability uses the selected fulfillment branch (`fulfillmentBranchId`). Customer orders reserve/consume that branch overlay; sales use `X-Pos-Branch-Id` when present. `CustomerOrder` keeps `SellerOrganizationId` + `FulfillmentBranchId`. Walk-in `Sale` has no branch column (no migration); overlay is session-branch.
+New branch inventory starts zero/unallocated to the primary. Stock arrives only through opening stock, receipt, transfer, or other existing movements. Storefront availability uses the selected fulfillment branch (`fulfillmentBranchId`). Customer orders reserve/consume that branch overlay; sales use `X-Pos-Branch-Id` for overlay mutation **and** persist `Sale.BranchId` on new checkouts (nullable; historical rows remain null — see [P28-WP13](../reports/P28-WP13-branch-operational-context-and-owner-switching.md)). `CustomerOrder` keeps `SellerOrganizationId` + `FulfillmentBranchId`.
 
 Staff are not auto-assigned to a new branch. Devices stay bound to the registration branch. Main readiness never satisfies Branch B.
 
-See [P28-WP12 report](../reports/P28-WP12-multi-branch-customer-commerce-hardening.md).
+Owner/Administrator may select any Active organization branch as **management context** (`SelectedBranchId`) without rebinding the POS device and without gaining `CreateSale` / `EnterPos`. Enter POS on another branch requires a device registered for that branch. An open cashier shift blocks switching the selected operational branch.
+
+See [P28-WP12 report](../reports/P28-WP12-multi-branch-customer-commerce-hardening.md) and [P28-WP13 branch operational context](../reports/P28-WP13-branch-operational-context-and-owner-switching.md).
 
 ## Management surfaces
 
