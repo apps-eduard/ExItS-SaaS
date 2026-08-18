@@ -32,11 +32,12 @@ Sign Up does **not** invent phone/password registration. Personal registration r
 
 - No large offline information panel
 - No full-width **Use PIN** / **Continue offline** button in the auth card
-- Compact **Use PIN** text link in the Remember / Forgot row **only** when connectivity reports offline **and** `EvaluateOfflineColdStartOfferAsync` says PIN can be offered
-- Online (including “PIN exists on this device”) does not show the compact PIN link
-- Slow-login prompt still offers **Use PIN instead** when eligible (existing `OnlineLoginProgressController` path)
+- Compact **Use PIN** text link in the Remember / Forgot row when a persisted offline grant+PIN is eligible **and** the OS reports no network interface (or a sign-in attempt just failed as unreachable)
+- Debug Local Validation may still treat `NetworkAccess.None` as connected for password/API attempts; PIN offer uses `HasNoNetworkInterfaceAsync` so airplane mode still shows **Use PIN**
+- Online with a working interface: PIN link hidden
+- Slow-login prompt still offers **Use PIN instead** when eligible
 - Tapping PIN still navigates to `/offline-pin`
-- Failed/unreachable login still uses existing error copy (`SignIn_ServerUnreachablePinHint` / `SignIn_OfflineNoPinMessage`)
+- Failed/unreachable login uses existing error copy only after a real Sign in attempt (`SignIn_ServerUnreachablePinHint` / `SignIn_OfflineNoPinMessage`)
 
 ## Development test user
 

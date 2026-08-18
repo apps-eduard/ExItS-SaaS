@@ -35,6 +35,7 @@
 - Multiple unlockable enrolled users → account picker → PIN for selected user
 - Single enrolled user → direct PIN entry
 - Only locally enrolled users are listed (no arbitrary enumeration)
+- Sign In compact **Use PIN** is offered offline only for previously authorized/provisioned device identities. Eligibility is restored from persisted per-user grant + PIN on cold start (`EvaluateOfflineColdStartOfferAsync` / `CanOfferPinUnlock`). Debug Local Validation may still treat `NetworkAccess.None` as connected for API attempts; PIN offer uses OS no-interface (`HasNoNetworkInterfaceAsync`). Unprovisioned, expired, revoked, or corrupted credentials do not expose PIN.
 
 ## Legacy migration
 

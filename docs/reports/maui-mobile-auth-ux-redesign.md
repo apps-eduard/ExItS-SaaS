@@ -21,7 +21,7 @@ Keep all existing MAUI authentication/security behavior and redesign Sign In, Pe
 - Overlapping white rounded auth card (~24px) and auth-scoped rounded inputs/buttons (~16px / ~52px)
 - Sign In / Sign Up tabs inside the card
 - `/signin` → Sign In active; `/register` → Sign Up active
-- Compact Remember / Forgot row; **Use PIN** is a small link only while connectivity is offline **and** PIN is eligible
+- Compact Remember / Forgot row; **Use PIN** is a small link when PIN is eligible **and** the OS reports no network interface (or a sign-in attempt failed as unreachable). Debug Local Validation may still treat `NetworkAccess.None` as connected for API attempts.
 - No large offline information panel; no full-width Use PIN button on the login card
 - Facebook / Google remain circular placeholders with accessible names
 - Development test-user `<select>` sits **below** the card; username-only fill preserved; Production still cannot expose it

@@ -93,7 +93,7 @@ Implementation: `4b8b727`. Context-switcher / session-org fixes: tip of `main` a
 Later MAUI work unified Sign In / Sign Up / Forgot password / Activate into one branded green-hero + overlapping rounded card (`AuthExperience`). **Authentication, activation, offline PIN eligibility, and development quick-login guards are unchanged.** Presentation notes:
 
 - `/signin` opens Sign In; `/register` opens the same shell with Sign Up active
-- Offline PIN is a compact link, shown only while connectivity is offline and PIN can be offered
+- Offline PIN is a compact link, shown when PIN can be offered **and** the OS reports no network interface (or a sign-in attempt failed as unreachable). Debug Local Validation may still treat `NetworkAccess.None` as connected for API attempts.
 - Development test-user `<select>` sits below the card, Development/Testing only
 - Google/Facebook remain placeholders
 - **Not Device Verified**
