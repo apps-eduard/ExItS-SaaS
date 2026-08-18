@@ -7,7 +7,7 @@
 |---|---|
 | Product | Pinoy Loan Manager / `pinoy-loan-manager` (proposed, PLM-D-00-01) |
 | Database | `ExItS_PinoyLoanManager` (proposed) / schema **Status: Open / Product Owner Decision Required** (PLM-D-00-02) |
-| Status | Draft — documentation baseline plus operating-model, financial-lifecycle, and operational-control planning; not product-owner approved |
+| Status | Draft — documentation baseline through borrower/Personal/publishing planning; not product-owner approved |
 | Implementation present | No |
 
 ## System context
@@ -71,17 +71,19 @@ Rules (planning; not designed as schema):
 - Loan data remains Loan-product-owned
 - Personal may eventually consume authorized Loan information through Loan APIs/contracts only
 
+Detail: [Product/borrower-model.md](Product/borrower-model.md), [Product/personal-borrower-linking.md](Product/personal-borrower-linking.md), [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md).
+
 Do **not** design the final generic Platform relationship schema here (**Status: Open / Product Owner Decision Required**, PLM-D-00-04, PLM-D-00-05).
 
 ## Product modules
 
-Planning modules only. None are designed or implemented. Exact formulas remain open (PLM-D-00-08). Origination: [Product/lending-operating-model.md](Product/lending-operating-model.md). Authorization: [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md). Cash / daily ops: [Product/cashier-and-collector-control-model.md](Product/cashier-and-collector-control-model.md), [Product/daily-operational-workflow.md](Product/daily-operational-workflow.md). Financial planning: [Product/financial-calculation-baseline.md](Product/financial-calculation-baseline.md), [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md).
+Planning modules only. None are designed or implemented. Exact formulas remain open (PLM-D-00-08). Origination: [Product/lending-operating-model.md](Product/lending-operating-model.md). Authorization: [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md). Borrower / Personal: [Product/borrower-model.md](Product/borrower-model.md), [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md). Cash / daily ops: [Product/cashier-and-collector-control-model.md](Product/cashier-and-collector-control-model.md), [Product/daily-operational-workflow.md](Product/daily-operational-workflow.md). Financial planning: [Product/financial-calculation-baseline.md](Product/financial-calculation-baseline.md), [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md).
 
 | Module | Responsibility | Notes |
 |---|---|---|
 | Product access / isolation | Independent subscription, org isolation, commercial gate | Depends on D-P12-03; no Platform table reads |
 | Product-local authorization | Loan presets + explicit grants | Intent recorded; identifiers open (PLM-D-00-06); no role-name hard-coding |
-| Borrower foundation | Product-local borrower records | Optional Personal link; PLM-D-00-04 / PLM-D-00-05 open |
+| Borrower foundation | Product-local borrower records | Optional Personal link; PLM-D-00-04 / PLM-D-00-05 open; [Product/borrower-model.md](Product/borrower-model.md) |
 | Loan product configuration | Traditional products and Quick Loan Templates | Templates are organization-configured, not built-in types |
 | Application / approval | Traditional application and Quick Loan Request | Manual approval default; no auto-approval |
 | Origination / disbursement | Starting a loan and releasing funds | Approved ≠ Disbursed; office or collector; cash availability check |

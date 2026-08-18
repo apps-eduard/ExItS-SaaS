@@ -2,7 +2,7 @@
 
 **Status:** Foundation / planning only
 **Implementation present:** No
-**Current work package:** PLM-00-WP05 — Authorization, Cash Control & Operational Workflow Baseline
+**Current work package:** PLM-00-WP06 — Borrower, Personal Linking & Quick Loan Publishing Baseline
 
 This file is the navigation map for future Cursor work. Load this product’s `Docs/` after the shared Product Foundation reference. Do not scan PinoyBusinessPOS implementation by default.
 
@@ -56,7 +56,17 @@ Shared contracts to load with this product:
 | `Docs/Product/disbursement-and-payment-controls.md` | Office/field disbursement and cash payment | Planning baseline / not a spec | No |
 | `Docs/Product/exception-reversal-and-variance-workflow.md` | Exceptions, waivers, reversals vs cash refund, variance | Planning baseline / not a spec | No |
 
-## Workspace indexes (PLM-00-WP01, updated in WP02–WP05)
+## Borrower / Personal / publishing (PLM-00-WP06)
+
+| Path | Purpose | Status | Implementation present |
+|---|---|---|---|
+| `Docs/Product/borrower-model.md` | PLM-owned Borrower; independent of POS/Personal | Planning baseline / not a spec | No |
+| `Docs/Product/personal-borrower-linking.md` | Optional consent-based linking and unlink | Planning baseline / not a spec | No |
+| `Docs/Product/quick-loan-publishing-and-eligibility.md` | Publishing audiences; eligibility ≠ approval | Planning baseline / not a spec | No |
+| `Docs/Product/borrower-groups-and-targeting.md` | Organization-owned groups | Planning baseline / not a spec | No |
+| `Docs/Architecture/personal-integration-boundary.md` | Personal vs PLM authority | Planning baseline / not a spec | No |
+
+## Workspace indexes (PLM-00-WP01, updated in WP02–WP06)
 
 | Path | Purpose | Status | Implementation present |
 |---|---|---|---|

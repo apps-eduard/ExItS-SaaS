@@ -24,12 +24,12 @@
 | PLM-D-00-02 | Decision | Database name final approval (`ExItS_PinoyLoanManager` proposed); schema unset | Open / Product Owner Decision Required | Persistence, migrations, operations | Product owner + architecture WP | None | Name/schema approved; database still not created until an authorized persistence WP |
 | PLM-D-00-03 | Decision | Physical source/test/deploy layout beside `Docs/` | Open / Product Owner Decision Required | PLM-01 scaffold | Architecture WP | Convention observation only (`ExItS.PinoyLoanManager.<Layer>` is not approved) | Layout ADR or authorized scaffold WP |
 | PLM-D-00-04 | Decision | Generic Platform cross-product relationship model | Open / Product Owner Decision Required | Personal as POS Customer, Loan Borrower, and future BNPL Customer | Platform architecture WP — do not design in PLM | Conceptual diagram only | Approved Platform contract/schema, not invented here |
-| PLM-D-00-05 | Decision | Personal-to-Borrower linking mechanism | Open / Product Owner Decision Required | Optional link, consent, no auto-link from EX ID / QR | PLM-04 + Platform | Intent recorded in architecture.md | Approved linking/consent design |
+| PLM-D-00-05 | Decision | Personal-to-Borrower linking mechanism | Open / Product Owner Decision Required | Optional link, consent, no auto-link from EX ID / QR | PLM-04 + Platform | Lifecycle and unlink *intent* recorded; schema not designed | Approved linking/consent design |
 | PLM-D-00-06 | Decision | Loan roles and grants | Open / Product Owner Decision Required | PLM-03 and all operational WPs | Product owner | Presets, grant **catalog intent**, scope, SoD recorded; **identifiers** not final | Owner-approved identifiers; no role-name hard-coding; no implicit hierarchy |
 | PLM-D-00-07 | Decision | Operational financial model | Open / Product Owner Decision Required | Origination, payments, collections, cash | Product owner | Loan vs collector cash; Cashier Session *concept*; billable event DISBURSED; schema not designed | Owner-approved money/ledger schema in this product |
 | PLM-D-00-08 | Decision | Loan business/calculation rules | Open / Product Owner Decision Required | PLM-05 through PLM-10 | Product owner | Treatment *modes*, partial payments, oldest-due *schedule* baseline recorded; **no** rates/formulas/component order | Owner-approved policy for each remaining rule area |
 | PLM-D-00-09 | Decision | Web/MAUI component-sharing strategy | Open / Product Owner Decision Required | Client scaffold and PLM-13 | Architecture WP | Surface split recorded (full Org Web vs limited MAUI vs Personal presentation) | Approved sharing/isolation approach; no client project until authorized |
-| PLM-D-00-10 | Decision | Product documentation baseline completion / owner approval | Open / Product Owner Decision Required | Closing PLM-00 | Product owner | Canonical docs from WP01–WP05 | Owner accepts baseline or lists required changes |
+| PLM-D-00-10 | Decision | Product documentation baseline completion / owner approval | Open / Product Owner Decision Required | Closing PLM-00 | Product owner | Canonical docs from WP01–WP06 | Owner accepts baseline or lists required changes |
 | PLM-D-00-11 | Decision | External legal/compliance validation | Open / Product Owner Decision Required | Production use | Product owner + external counsel | No rates/workflows claimed compliant | Written legal/compliance validation before Production |
 | PLM-D-00-12 | Decision | Exact money rounding mode | Open / Product Owner Decision Required | Calculation engine | Product owner + accounting | Decimal money; boundaries recorded; midpoint algorithm **not** chosen | Explicit rounding-mode decision before engine implementation |
 | PLM-D-00-13 | Decision | Small-org vs two-person high-risk approval | Open / Product Owner Decision Required | Operational SoD | Product owner | Multiple presets on one person allowed; high-risk self-approval still restricted where required | Explicit policy for which actions may never be self-approved |
@@ -81,9 +81,28 @@ These are **planning baselines**, not legal approval and not implementation. The
 - financial events are not silently deleted
 - server remains authoritative for future offline financial posting
 
+## Accepted engineering / planning baselines (WP06)
+
+These are **planning baselines**, not legal approval, KYC sufficiency, or implementation. They do **not** close PLM-D-00-04 / PLM-D-00-05 schema.
+
+- Borrower is PLM-owned and may exist without ExItS Personal
+- Borrower identity does not depend on POS Customer or another product
+- POS Customer ≠ PLM Borrower
+- linking is optional; EX ID / QR never auto-links
+- explicit Personal consent is required for an active link
+- decline / unlink does not delete Borrower, Loan, or payment history
+- unlink changes Personal access/relationship only
+- Personal must not query PLM tables
+- publishing does not create a Loan
+- “all” publishing means eligible linked borrowers of that organization, never all ExItS users
+- eligibility ≠ approval
+- default maximum active Quick Loans = 1 per borrower per organization (configurable)
+- manual approval remains default; no auto-approval
+- borrower groups are organization-owned; no built-in mandatory groups
+
 ## Operating-model, calculation, and operational open areas (do not invent)
 
-Direction in WP03–WP05 docs does **not** close these. Tracked primarily under PLM-D-00-06, PLM-D-00-07, PLM-D-00-08, PLM-D-00-11, PLM-D-00-12, PLM-D-00-13, and D-P12-03:
+Direction in WP03–WP06 docs does **not** close these. Tracked primarily under PLM-D-00-04, PLM-D-00-05, PLM-D-00-06, PLM-D-00-07, PLM-D-00-08, PLM-D-00-11, PLM-D-00-12, PLM-D-00-13, and D-P12-03:
 
 - exact grant identifiers
 - custom-role support / version
@@ -113,6 +132,12 @@ Direction in WP03–WP05 docs does **not** close these. Tracked primarily under 
 - write-off accounting treatment
 - due-date generation details
 - Personal / Loan API shape
+- who may initiate unlink
+- pending Quick Loan offer treatment after unlink
+- historical Personal visibility after unlink
+- re-linking and consent-history rules
+- duplicate-borrower detection
+- required KYC fields
 - Platform usage-charge transport (D-P12-03)
 - regulatory / legal validation (PLM-D-00-11)
 

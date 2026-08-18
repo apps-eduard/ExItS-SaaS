@@ -113,7 +113,7 @@ Personal is only a **presentation / customer** surface.
 
 Pinoy Loan Manager remains **authoritative** for Loan operational data. Personal may consume authorized Loan information through Loan APIs / contracts only.
 
-POS Customer ≠ Loan Borrower. Linking is optional, consent-required, and never auto-activated from EX ID / QR resolution. See [../architecture.md](../architecture.md) and [../Product/quick-loan-model.md](../Product/quick-loan-model.md).
+POS Customer ≠ Loan Borrower. Linking is optional, consent-required, and never auto-activated from EX ID / QR resolution. See [../architecture.md](../architecture.md), [../Product/personal-borrower-linking.md](../Product/personal-borrower-linking.md), and [personal-integration-boundary.md](personal-integration-boundary.md).
 
 ---
 

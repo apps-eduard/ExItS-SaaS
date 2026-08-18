@@ -73,6 +73,8 @@ Planning **categories**, not final identifiers. Full catalog: [Security/role-and
 | Configuration view | Allow | Allow | Scope | Deny |
 | Quick Loan template manage / publish | Allow | Deny | Deny | Deny |
 | Quick Loan template view | Allow | Allow | Deny | Deny |
+| Borrower group manage | Allow | Allow | Deny | Deny |
+| Personal / Borrower link request | Allow | Allow | Deny | Deny |
 | Borrower create / update | Allow | Allow | Deny | Deny |
 | Borrower view | Allow | Allow | Scope | Scope |
 | Application / request review | Allow | Allow | Deny | Deny |
@@ -135,4 +137,5 @@ Cashier **Scope** = assigned branch / own cash session unless a broader grant is
 - PinoyBusinessPOS roles do **not** grant Pinoy Loan Manager operations
 - A PinoyBusinessPOS subscription does **not** unlock Pinoy Loan Manager
 - EX ID / QR resolution does **not** grant a Personal-to-Borrower relationship
+- Decline or unlink does **not** authorize Borrower deletion
 - Role name alone does **not** authorize an action without the corresponding grant and scope

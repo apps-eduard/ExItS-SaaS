@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Status | Draft — documentation baseline plus operating-model, financial-lifecycle, and operational-control planning; not product-owner approved |
+| Status | Draft — documentation baseline through borrower/Personal/publishing planning; not product-owner approved |
 | Implementation present | No |
 
 ## Authentication boundary
@@ -55,6 +55,8 @@ Optional Personal-to-Borrower linking, if implemented later:
 - explicit Personal consent is required before activating a relationship
 - a borrower may exist without an ExItS Personal account
 - mechanism **Status: Open / Product Owner Decision Required** (PLM-D-00-05)
+
+Lifecycle intent: [Product/personal-borrower-linking.md](Product/personal-borrower-linking.md). Boundary: [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md).
 
 ## Data classification
 

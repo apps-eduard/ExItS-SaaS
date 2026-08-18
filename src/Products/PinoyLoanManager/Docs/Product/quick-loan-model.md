@@ -116,6 +116,8 @@ Future implementation should use explicit versioning / snapshot semantics. Schem
 
 ## Publishing and eligibility
 
+Publishing and eligibility detail: [quick-loan-publishing-and-eligibility.md](quick-loan-publishing-and-eligibility.md), [borrower-groups-and-targeting.md](borrower-groups-and-targeting.md). Personal linking: [personal-borrower-linking.md](personal-borrower-linking.md).
+
 Publishing audiences:
 
 - All Eligible Linked Borrowers of the organization

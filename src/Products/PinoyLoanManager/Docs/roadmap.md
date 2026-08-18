@@ -7,12 +7,12 @@
 |---|---|
 | Product | Pinoy Loan Manager |
 | Current phase | PLM-00 Foundation & Product Decisions |
-| Current work package | PLM-00-WP05 Authorization, Cash Control & Operational Workflow Baseline |
+| Current work package | PLM-00-WP06 Borrower, Personal Linking & Quick Loan Publishing Baseline |
 | Status | Draft — planning only |
 
 ## Phase objective
 
-Establish product documentation, architecture boundaries, Personal/Borrower intent, operating-model direction, financial-lifecycle planning, authorization/cash-control workflows, and an honest open-decision register. No Loan implementation.
+Establish product documentation, architecture boundaries, Personal/Borrower intent, operating-model direction, financial-lifecycle planning, authorization/cash-control workflows, borrower/publishing rules, and an honest open-decision register. No Loan implementation.
 
 ## Scope
 
@@ -23,6 +23,7 @@ Establish product documentation, architecture boundaries, Personal/Borrower inte
 - Agreed origination, surface, role-preset, Quick Loan, collector-cash, and penalty direction (WP03)
 - Financial terminology, interest-treatment modes, payment/schedule/lifecycle/ledger planning (WP04)
 - Grant-based authorization intent, Cashier Session, collector cash, disbursement/payment/exception/variance workflows (WP05)
+- Borrower model, Personal linking/consent lifecycle, Quick Loan publishing/eligibility, borrower groups (WP06)
 - Planning buckets PLM-00 through PLM-14
 
 ### Excluded
@@ -30,6 +31,7 @@ Establish product documentation, architecture boundaries, Personal/Borrower inte
 - Code, projects, database objects, migrations, APIs, UI, Docker, deployment, solution changes
 - Final grant identifiers, calculation formulas, peso/percent rates, rounding mode, component allocation order
 - Generic Platform relationship schema
+- Required KYC field lists
 - Production authentication (R-091) unless a later phase explicitly delivers it
 - Final commercial-state transport (D-P12-03) unless explicitly authorized
 
@@ -41,10 +43,11 @@ Establish product documentation, architecture boundaries, Personal/Borrower inte
 | PLM-00-WP02 | Product Definition & Architecture Baseline | Completed | PLM-00-WP01 |
 | PLM-00-WP03 | Lending Operating Model & Quick Loan Baseline | Completed | PLM-00-WP02 |
 | PLM-00-WP04 | Financial Calculation & Loan Lifecycle Baseline | Completed | PLM-00-WP03 |
-| PLM-00-WP05 | Authorization, Cash Control & Operational Workflow Baseline | Current | PLM-00-WP04 |
-| PLM-00-WP06 | Borrower, Personal Linking & Quick Loan Publishing Baseline | Next proposed | PLM-00-WP05 |
+| PLM-00-WP05 | Authorization, Cash Control & Operational Workflow Baseline | Completed | PLM-00-WP04 |
+| PLM-00-WP06 | Borrower, Personal Linking & Quick Loan Publishing Baseline | Current | PLM-00-WP05 |
+| PLM-00-WP07 | Traditional Loan & Origination Workflow Baseline | Next proposed | PLM-00-WP06 |
 
-Later phases (PLM-01 … PLM-14) have no authorized work packages yet. No implementation phase is authorized yet. WP06 remains documentation / product planning.
+Later phases (PLM-01 … PLM-14) have no authorized work packages yet. No implementation phase is authorized yet. WP07 remains documentation / product planning.
 
 ## Planning buckets (later phases)
 
@@ -79,7 +82,8 @@ Later phases (PLM-01 … PLM-14) have no authorized work packages yet. No implem
 - [x] Canonical definition/architecture/security/plan docs exist (WP02)
 - [x] Lending operating model and Quick Loan baseline recorded (WP03)
 - [x] Financial calculation and loan lifecycle baseline recorded (WP04)
-- [x] Authorization, cash control, and operational workflow baseline recorded (this WP)
+- [x] Authorization, cash control, and operational workflow baseline recorded (WP05)
+- [x] Borrower, Personal linking, and Quick Loan publishing baseline recorded (this WP)
 - [ ] Product-owner approval of documentation baseline (PLM-D-00-10)
 - [ ] Isolation contract preserved in any later implementation (separate DB; no Platform table reads; product-local roles)
 - [ ] Docs match implementation (no implementation yet)
@@ -92,14 +96,15 @@ Later phases (PLM-01 … PLM-14) have no authorized work packages yet. No implem
 | PLM-D-00-08 | Pressure to invent Loan formulas/rates to “fill” templates | Keep rates/formulas Open; stop at owner decisions |
 | PLM-D-00-06 | Hard-coding authorization to role names | Grants + scope; no implicit hierarchy |
 | PLM-D-00-04 | Premature generic Platform relationship schema | Record intent only; no schema |
+| PLM-D-00-05 | Auto-link from EX ID / QR | Consent required; resolution identifies only |
 | R-091 | Claiming production-ready identity | Honest Dev/Testing vs Production language |
 | D-P12-03 | Copying POS Dev commercial headers as PLM production design | Leave transport Open |
 
 ## Exact next package
 
-**PLM-00-WP06 — Borrower, Personal Linking & Quick Loan Publishing Baseline** (do not begin until authorized)
+**PLM-00-WP07 — Traditional Loan & Origination Workflow Baseline** (do not begin until this WP is committed)
 
-Documentation / product planning only. Deepen borrower identity, optional Personal linking/consent, and Quick Loan publishing / eligibility without implementing code or claiming legal compliance.
+Documentation / product planning only. Deepen Traditional application, Loan Product configuration, approval snapshot, and disbursement readiness without implementing code or claiming legal compliance.
 
 ## Phase closeout requirements
 

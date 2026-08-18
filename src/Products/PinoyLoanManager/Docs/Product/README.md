@@ -21,6 +21,10 @@ Do not treat this folder as a second product definition. Detailed agreed **direc
 | [cashier-and-collector-control-model.md](cashier-and-collector-control-model.md) | Cashier Session, float, remittance, cash availability |
 | [disbursement-and-payment-controls.md](disbursement-and-payment-controls.md) | Office/field disbursement and cash payment |
 | [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md) | Exceptions, waivers, reversals vs cash refund, variance |
+| [borrower-model.md](borrower-model.md) | PLM-owned Borrower; may exist without Personal |
+| [personal-borrower-linking.md](personal-borrower-linking.md) | Optional consent-based linking |
+| [quick-loan-publishing-and-eligibility.md](quick-loan-publishing-and-eligibility.md) | Publishing audiences; eligibility ≠ approval |
+| [borrower-groups-and-targeting.md](borrower-groups-and-targeting.md) | Organization-owned groups |
 
 Remaining formulas, rates, rounding mode, component allocation order, grant identifiers, and legal validation stay open in [../product-definition.md](../product-definition.md) and [../risks-and-decisions.md](../risks-and-decisions.md) (PLM-D-00-06, PLM-D-00-08, PLM-D-00-12, PLM-D-00-11, PLM-D-00-13). Do not invent:
 

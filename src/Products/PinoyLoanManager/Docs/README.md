@@ -11,7 +11,7 @@ Always load with:
 5. The active work-package prompt/report
 6. Files required for the task only
 
-**Status:** Draft — PLM-00 documentation baseline plus operating-model, financial-lifecycle, and operational-control planning
+**Status:** Draft — PLM-00 documentation baseline through borrower / Personal / publishing planning
 **Implementation present:** No
 **Documentation root:** `src/Products/PinoyLoanManager/Docs/` (D-P12-02)
 
@@ -51,6 +51,11 @@ Agreed operating-model direction (not implementation specs):
 | [Product/cashier-and-collector-control-model.md](Product/cashier-and-collector-control-model.md) | Cashier Session, float, remittance, cash availability |
 | [Product/disbursement-and-payment-controls.md](Product/disbursement-and-payment-controls.md) | Office/field disbursement and cash payment |
 | [Product/exception-reversal-and-variance-workflow.md](Product/exception-reversal-and-variance-workflow.md) | Exceptions, waivers, reversals vs cash refund, variance |
+| [Product/borrower-model.md](Product/borrower-model.md) | PLM-owned Borrower; may exist without Personal |
+| [Product/personal-borrower-linking.md](Product/personal-borrower-linking.md) | Optional consent-based linking; unlink does not delete history |
+| [Product/quick-loan-publishing-and-eligibility.md](Product/quick-loan-publishing-and-eligibility.md) | Publishing audiences; eligibility ≠ approval |
+| [Product/borrower-groups-and-targeting.md](Product/borrower-groups-and-targeting.md) | Organization-owned groups; no built-in mandatory groups |
+| [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md) | Personal vs PLM authority; no table access |
 
 Category folders below are indexes only. They must not become a second source of truth.
 
@@ -98,7 +103,7 @@ Authoritative text: [product-definition.md](product-definition.md) and [architec
 
 ## Personal / Borrower
 
-ExItS Personal is Platform-owned and product-neutral. POS Customer ≠ Loan Borrower. Linking is optional, consent-required, and never auto-activated from EX ID / QR resolution. Personal is a presentation surface; Loan operational data remains this product’s authority. Authoritative text: [architecture.md](architecture.md), [Architecture/application-surface-model.md](Architecture/application-surface-model.md).
+ExItS Personal is Platform-owned and product-neutral. POS Customer ≠ Loan Borrower. Linking is optional, consent-required, and never auto-activated from EX ID / QR resolution. Personal is a presentation surface; Loan operational data remains this product’s authority. Authoritative text: [architecture.md](architecture.md), [Product/borrower-model.md](Product/borrower-model.md), [Product/personal-borrower-linking.md](Product/personal-borrower-linking.md), [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md).
 
 ---
 

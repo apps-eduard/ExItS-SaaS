@@ -8,7 +8,7 @@
 | Product name | Pinoy Loan Manager |
 | Platform product code | `pinoy-loan-manager` (proposed — **Status: Open / Product Owner Decision Required**, PLM-D-00-01) |
 | Docs root | `src/Products/PinoyLoanManager/Docs/` |
-| Status | Draft — documentation baseline plus operating-model, financial-lifecycle, and operational-control planning; not product-owner approved |
+| Status | Draft — documentation baseline through borrower/Personal/publishing planning; not product-owner approved |
 | Last updated | 2026-08-19 |
 | Implementation present | No |
 
@@ -123,7 +123,8 @@ This package records:
 - product definition and architecture baseline (PLM-00-WP02, completed)
 - lending operating model and Quick Loan baseline (PLM-00-WP03, completed)
 - financial calculation and loan lifecycle baseline (PLM-00-WP04, completed)
-- authorization, cash control, and operational workflow baseline (PLM-00-WP05, this package)
+- authorization, cash control, and operational workflow baseline (PLM-00-WP05, completed)
+- borrower, Personal linking, and Quick Loan publishing baseline (PLM-00-WP06, this package)
 
 No loan MVP **implementation** is approved. Calculation algorithms, peso/percent rates, rounding mode, and legal validation remain open.
 
@@ -155,7 +156,7 @@ No loan MVP **implementation** is approved. Calculation algorithms, peso/percent
 | PLM-D-00-02 | Final database name / schema | Persistence, migrations |
 | PLM-D-00-03 | Physical source / test / deploy layout | Scaffold (PLM-01) |
 | PLM-D-00-04 | Generic Platform cross-product relationship model | Personal multi-product participation |
-| PLM-D-00-05 | Personal-to-Borrower linking mechanism | Borrower identity design (PLM-04) |
+| PLM-D-00-05 | Personal-to-Borrower linking mechanism (lifecycle intent recorded; schema open) | Borrower identity design (PLM-04) |
 | PLM-D-00-06 | Loan roles and grants (presets + grant intent recorded; identifiers open) | Authorization (PLM-03) |
 | PLM-D-00-07 | Operational financial model (ledger vs cash; subledger principles recorded; schema open) | Origination, payments, collections |
 | PLM-D-00-08 | Loan business / calculation rules (modes recorded; formulas/rates open) | Product configuration through collections |
@@ -188,6 +189,11 @@ No loan MVP **implementation** is approved. Calculation algorithms, peso/percent
 | Cashier / collector control | [Product/cashier-and-collector-control-model.md](Product/cashier-and-collector-control-model.md) |
 | Disbursement / payment controls | [Product/disbursement-and-payment-controls.md](Product/disbursement-and-payment-controls.md) |
 | Exception / reversal / variance | [Product/exception-reversal-and-variance-workflow.md](Product/exception-reversal-and-variance-workflow.md) |
+| Borrower model | [Product/borrower-model.md](Product/borrower-model.md) |
+| Personal / Borrower linking | [Product/personal-borrower-linking.md](Product/personal-borrower-linking.md) |
+| Quick Loan publishing / eligibility | [Product/quick-loan-publishing-and-eligibility.md](Product/quick-loan-publishing-and-eligibility.md) |
+| Borrower groups | [Product/borrower-groups-and-targeting.md](Product/borrower-groups-and-targeting.md) |
+| Personal integration boundary | [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md) |
 | Security | [security.md](security.md) |
 | Authorization | [authorization-matrix.md](authorization-matrix.md) |
 | Development plan | [development-plan.md](development-plan.md) |
