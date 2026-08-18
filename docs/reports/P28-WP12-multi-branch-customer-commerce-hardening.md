@@ -90,3 +90,5 @@ EN + fil-PH strings added. `CreateBranchRequest.PickupEnabled` default is **fals
 ## Next
 
 P28-WP10 E2E validation and Phase 28 closeout.
+
+Branch Edit densification (UI only): [P28-branch-edit-ux-densification.md](P28-branch-edit-ux-densification.md).

@@ -52,8 +52,8 @@ No invented default hours. Missing data ⇒ **Setup required**; delivery activat
 
 ## UI
 
-- **MAUI:** dense branch editor (`BranchEdit.razor`) — details, address/location, hours, fulfillment activation, delivery policy.
-- **Organization Web:** branch list status columns + dedicated branch edit page.
+- **MAUI:** dense branch editor (`BranchEdit.razor`) — compact setup rows, expandable details/address/hours/fulfillment, sticky save. See [P28 branch-edit UX densification](P28-branch-edit-ux-densification.md).
+- **Organization Web:** same hierarchy with a wider form grid and sticky Save.
 
 ## Tests (Release)
 

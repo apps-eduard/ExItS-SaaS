@@ -48,7 +48,7 @@ Delivery requires branch `DeliveryEnabled` **and** seller `store-delivery-orders
 
 - Platform branch coordinates and pickup/delivery capability flags.
 - Per-branch delivery policy and fee preview.
-- Mobile-first MAUI branch list and progressive branch editor.
+- Mobile-first MAUI branch list and densified progressive branch editor (sticky save, compact hours, expandable fulfillment).
 - Responsive Organization Web branch and fulfillment management.
 - English and Filipino MAUI localization.
 
