@@ -11,8 +11,8 @@ Always load with:
 5. The active work-package prompt/report
 6. Files required for the task only
 
-**Status:** Draft — PLM-00 documentation complete; not product-owner approved; no implementation
-**Implementation present:** No
+**Status:** PLM-00 accepted; PLM-01 product shell scaffolded
+**Implementation present:** Product shell only — no lending domain
 **Documentation root:** `src/Products/PinoyLoanManager/Docs/` (D-P12-02)
 
 Pinoy Loan Manager is a **separate first-class ExItS SaaS product**, a sibling of PinoyBusinessPOS, not a POS module, feature, or database extension.
@@ -65,12 +65,13 @@ Agreed operating-model direction (not implementation specs):
 | [Product/notification-model.md](Product/notification-model.md) | Personal and staff notifications |
 | [Product/personal-loan-experience.md](Product/personal-loan-experience.md) | Personal Loan area; distinct from P2P |
 | [Security/audit-and-history-baseline.md](Security/audit-and-history-baseline.md) | High-risk history |
-| [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md) | Future project tree; not created |
+| [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md) | Physical layout; MAUI/LocalStore deferred |
 | [Architecture/api-and-contract-boundary.md](Architecture/api-and-contract-boundary.md) | API / Personal / Platform contracts |
 | [Architecture/persistence-and-database-boundary.md](Architecture/persistence-and-database-boundary.md) | Separate database isolation |
 | [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md) | Online-first MAUI |
 | [Architecture/platform-commercial-integration.md](Architecture/platform-commercial-integration.md) | Commercial/identity contracts; D-P12-03 open |
 | [Reports/PLM-00-foundation-closeout.md](Reports/PLM-00-foundation-closeout.md) | PLM-00 closeout and implementation gates |
+| [Reports/PLM-01-product-scaffold-and-isolation.md](Reports/PLM-01-product-scaffold-and-isolation.md) | PLM-01 scaffold and isolation evidence |
 | [Validation/PLM-00-readiness-checklist.md](Validation/PLM-00-readiness-checklist.md) | Docs-only readiness checklist |
 
 Category folders below are indexes only. They must not become a second source of truth.
@@ -125,10 +126,10 @@ ExItS Personal is Platform-owned and product-neutral. POS Customer ≠ Loan Borr
 
 ## Client direction (proposed)
 
-Organization Web: Blazor Web (full operations). MAUI Blazor Hybrid: limited field/collector application. Platform Admin: SaaS control plane only. No client project is authorized.
+Organization Web: Blazor Web (full operations; PLM-01 identity shell only). MAUI Blazor Hybrid: limited field/collector application (deferred after PLM-01). Platform Admin: SaaS control plane only.
 
 ---
 
 ## Explicit exclusions
 
-No implementation exists. Exact loan calculation algorithms and peso/percent rates are not defined (PLM-D-00-08). Grant identifiers remain open (PLM-D-00-06). Do not copy PinoyBusinessPOS grants or money models. No recorded workflow is claimed legally compliant (PLM-D-00-11).
+PLM-01 created an isolated product shell only. Lending, borrower, authorization, persistence, and Platform catalog work are not implemented. Exact loan calculation algorithms and peso/percent rates are not defined (PLM-D-00-08). Grant identifiers remain open (PLM-D-00-06). Do not copy PinoyBusinessPOS grants or money models. No recorded workflow is claimed legally compliant (PLM-D-00-11).

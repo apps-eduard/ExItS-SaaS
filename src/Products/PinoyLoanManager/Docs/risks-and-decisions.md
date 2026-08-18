@@ -22,7 +22,7 @@
 |---|---|---|---|---|---|---|---|
 | PLM-D-00-01 | Decision | Product code/slug final registration (`pinoy-loan-manager` proposed) | Open / Product Owner Decision Required | Catalog, plans, independent subscription | Product owner + Platform catalog WP | None | Slug registered; docs match |
 | PLM-D-00-02 | Decision | Database name final approval (`ExItS_PinoyLoanManager` proposed); schema unset | Open / Product Owner Decision Required | Persistence, migrations, operations | Product owner + architecture WP | None | Name/schema approved; database still not created until an authorized persistence WP |
-| PLM-D-00-03 | Decision | Physical source/test/deploy layout beside `Docs/` | Open / Product Owner Decision Required | PLM-01 scaffold | Architecture WP | **Planning target** recorded (`ExItS.PinoyLoanManager.*`); projects **not** created; aligns with Product Foundation §9 | Authorized scaffold WP creates projects; still no Product Foundation change |
+| PLM-D-00-03 | Decision | Physical source/test/deploy layout beside `Docs/` | **Closed** | PLM-01 scaffold | Architecture WP | Scaffold created `ExItS.PinoyLoanManager.{Domain,Application,Infrastructure,Api,ApiClient,Web}` plus unit tests; MAUI/LocalStore deferred | Layout proven by scaffold; MAUI deferred intentionally, not removed from plan |
 | PLM-D-00-04 | Decision | Generic Platform cross-product relationship model | Open / Product Owner Decision Required | Personal as POS Customer, Loan Borrower, and future BNPL Customer | Platform architecture WP — do not design in PLM | Conceptual diagram only | Approved Platform contract/schema, not invented here |
 | PLM-D-00-05 | Decision | Personal-to-Borrower linking mechanism | Open / Product Owner Decision Required | Optional link, consent, no auto-link from EX ID / QR | PLM-04 + Platform | Lifecycle and unlink *intent* recorded; schema not designed | Approved linking/consent design |
 | PLM-D-00-06 | Decision | Loan roles and grants | Open / Product Owner Decision Required | PLM-03 and all operational WPs | Product owner | Presets, grant **catalog intent**, scope, SoD recorded; **identifiers** not final | Owner-approved identifiers; no role-name hard-coding; no implicit hierarchy |
@@ -229,6 +229,6 @@ Do **not** close remaining items by guessing. Do **not** claim legal compliance.
 - Prefer stable IDs (`R-…`, `D-…`, `PLM-D-…`).
 - “Closed” requires repository or operator evidence plus explicit approval.
 - Unresolved policy in approved docs must appear here as open decisions.
-- Do not close PLM-D-00-01 through PLM-D-00-09, PLM-D-00-11 through PLM-D-00-13, D-P12-03, R-091, or D-P12-05 without explicit approval.
-- PLM-D-00-10 is **Closed / Product Owner Accepted** (documentation baseline only).
+- Do not close PLM-D-00-01, PLM-D-00-02, PLM-D-00-04 through PLM-D-00-09, PLM-D-00-11 through PLM-D-00-13, D-P12-03, R-091, or D-P12-05 without explicit approval.
+- PLM-D-00-03 is **Closed** (scaffold layout). PLM-D-00-10 is **Closed / Product Owner Accepted** (documentation baseline only).
 - Category indexes under `Docs/*/README.md` are not ADRs; ADRs belong in `Docs/Decisions/` when later authorized.

@@ -6,8 +6,8 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Plan status | Draft — PLM-00 documentation complete; not product-owner approved; PLM-01 not started |
-| Implementation present | No |
+| Plan status | PLM-00 accepted; PLM-01 product shell scaffolded |
+| Implementation present | Product shell only — no lending domain |
 
 ## Delivery approach
 
@@ -48,14 +48,14 @@ Report template: `docs/Product-Foundation/Templates/work-package-report.md` → 
 
 Stop when any of these are missing without an approved decision:
 
-- [ ] Product definition approved (draft plus operating-model direction exists; owner approval open — PLM-D-00-10)
+- [x] Product documentation baseline accepted (PLM-D-00-10 Closed / Product Owner Accepted; financial/legal/production decisions remain open)
 - [ ] Roles/grants matrix draft (presets and grant **intent** recorded; identifiers open — PLM-D-00-06)
 - [ ] Operational-money definition (boundary and ledger-vs-cash direction — PLM-D-00-07)
 - [ ] DB name/schema (name proposed; schema open — PLM-D-00-02)
 - [x] Privacy classification (PHI default none) — recorded
 - [x] Explicit exclusions — recorded in [product-definition.md](product-definition.md)
 
-Do not start PLM-01 until PLM-00 owner decisions needed for scaffold are resolved or explicitly deferred.
+PLM-01 scaffold is in progress on `feat/plm-01-scaffold`. Do not start PLM-02 until PLM-01 is accepted. MAUI remains planned and is deferred (not removed).
 
 ## Dependencies
 

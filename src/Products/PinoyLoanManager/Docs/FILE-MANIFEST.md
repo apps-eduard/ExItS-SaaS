@@ -1,8 +1,8 @@
 # Pinoy Loan Manager — File Manifest
 
-**Status:** Foundation / planning only
-**Implementation present:** No
-**Current work package:** PLM-00-WP10 — Foundation Closeout & Implementation Readiness
+**Status:** PLM-01 product scaffold (no lending domain)
+**Implementation present:** Product shell only
+**Current work package:** PLM-01 Product Scaffold & Isolation
 
 This file is the navigation map for future Cursor work. Load this product’s `Docs/` after the shared Product Foundation reference. Do not scan PinoyBusinessPOS implementation by default.
 
@@ -116,22 +116,35 @@ Shared contracts to load with this product:
 | `Docs/Decisions/README.md` | Index for future ADRs | Foundation / Planning Only | No |
 | `Docs/Phases/README.md` | Index for phase sequencing | Foundation / Planning Only | No |
 | `Docs/Reports/README.md` | Index for WP evidence | Foundation / Planning Only | No |
+| `Docs/Reports/PLM-01-product-scaffold-and-isolation.md` | PLM-01 scaffold evidence | Scaffold complete / no lending domain | Product shell |
 | `Docs/Validation/README.md` | Index for validation evidence | Foundation / Planning Only | No |
 | `Docs/Operations/README.md` | Index for operations docs | Foundation / Planning Only | No |
 
 ---
 
+## Implemented projects (PLM-01 shell)
+
+| Item | Status |
+|---|---|
+| `ExItS.PinoyLoanManager.Domain` | Created — no lending entities |
+| `ExItS.PinoyLoanManager.Application` | Created — no use cases |
+| `ExItS.PinoyLoanManager.Infrastructure` | Created — no EF/Npgsql/DbContext |
+| `ExItS.PinoyLoanManager.Api` | Created — `/health` only |
+| `ExItS.PinoyLoanManager.ApiClient` | Created — marker only |
+| `ExItS.PinoyLoanManager.Web` | Created — identity shell only |
+| `tests/ExItS.PinoyLoanManager.UnitTests` | Created |
+| `ExItS.slnx` PLM entries | Registered |
+
 ## Not present (intentionally)
 
 | Item | Reason |
 |---|---|
-| `ExItS.PinoyLoanManager.Domain` (and other .NET projects) | Code projects not authorized |
-| Test projects | Not authorized |
-| Database / migration folders | Persistence not authorized |
+| `ExItS.PinoyLoanManager.Maui` | Deferred to a later field/mobile phase (avoid Android SDK in PLM-01) |
+| `ExItS.PinoyLoanManager.LocalStore` | Not justified until offline is authorized |
+| Database / migration folders | Persistence not authorized (PLM-D-00-02 remains open) |
 | Docker / deploy implementation | Not authorized |
-| `ExItS.slnx` entries | Not authorized |
+| Platform catalog registration | Not authorized (PLM-D-00-01 remains open) |
 | `Docs/deployment-notes.md` | Optional until packaging |
-| `Docs/Reports/<WP-id>.md` | In-tree WP report not required except PLM-00 closeout |
 | Exact grant identifiers / custom roles | Open (PLM-D-00-06) |
 | Small-org vs two-person high-risk approval | Open (PLM-D-00-13) |
 | Exact rounding mode | Open (PLM-D-00-12) |

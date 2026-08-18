@@ -6,32 +6,34 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Current phase | PLM-00 Foundation & Product Decisions |
-| Current work package | PLM-00-WP10 complete; PLM-01 authorized |
-| Status | PLM-00 documentation complete; **PLM-D-00-10 Closed / Product Owner Accepted**; PLM-01 authorized |
+| Current phase | PLM-01 Product Scaffold & Isolation |
+| Current work package | PLM-01 product scaffold (this branch) |
+| Status | PLM-00 accepted; PLM-01 scaffold in progress |
 
 ## Phase objective
 
-Establish product documentation, architecture boundaries, Personal/Borrower intent, operating-model, financial-lifecycle, authorization/cash-control, origination, reporting, technical layout, and an honest open-decision register. No Loan implementation.
+Create the isolated Pinoy Loan Manager product shell (projects, solution registration, architecture guards) without lending business functionality, persistence, Platform catalog registration, or MAUI.
 
 ## Scope
 
 ### Included
 
-- Canonical Product Foundation documents under `Docs/`
-- Isolation and Personal/Borrower planning rules
-- Operating-model, financial, authorization, cash, origination, reporting, and technical-boundary planning (WP01–WP09)
-- Foundation closeout and implementation-readiness gates (WP10)
-- Planning buckets PLM-00 through PLM-14
+- Domain / Application / Infrastructure / Api / ApiClient / Web project scaffold
+- Solution registration and isolation tests
+- Intentional deferral of MAUI and LocalStore
+- PLM-01 evidence report
 
 ### Excluded
 
-- Code, projects, database objects, migrations, APIs, UI, Docker, deployment, solution changes
-- Final grant identifiers, calculation formulas, peso/percent rates, rounding mode, component allocation order
-- Generic Platform relationship schema
-- Production authentication (R-091) unless a later phase explicitly delivers it
-- Final commercial-state transport (D-P12-03) unless explicitly authorized
-- Starting PLM-01 from this documentation WP (authorized separately after PLM-D-00-10)
+- Loan / Quick Loan / Borrower domain implementation
+- Database, DbContext, migrations, connection strings, secrets
+- Platform catalog / subscriptions / entitlements / Personal linking
+- Authorization implementation
+- MAUI / Android workload
+- Final grant identifiers, calculation formulas, peso/percent rates, rounding mode
+- Production authentication (R-091)
+- Final commercial-state transport (D-P12-03)
+- Starting PLM-02 from this package
 
 ## Work packages (current phase)
 
@@ -54,7 +56,7 @@ PLM-00 documentation phase is complete. PLM-01 is authorized.
 
 | Phase | Status |
 |---|---|
-| PLM-01 Product Scaffold & Isolation | **Authorized next** — do not start until this acceptance record is committed |
+| PLM-01 Product Scaffold & Isolation | **Current** |
 | PLM-02 Identity / Organization / Product Access | Not started |
 | PLM-03 Loan Product Authorization | Not started |
 | PLM-04 Borrower Foundation | Not started |
@@ -74,7 +76,7 @@ PLM-00 documentation phase is complete. PLM-01 is authorized.
 | Dependency | Notes |
 |---|---|
 | Platform subscription for `pinoy-loan-manager` | Required; registration open (PLM-D-00-01) |
-| Product-owner decisions | PLM-D-00-02 through PLM-D-00-13 |
+| Product-owner decisions | PLM-D-00-02, PLM-D-00-04 through PLM-D-00-09, PLM-D-00-11 through PLM-D-00-13 (PLM-D-00-03 and PLM-D-00-10 closed) |
 | D-P12-03 / R-091 / D-P12-05 | Portfolio-open; do not invent |
 
 ## Acceptance criteria (phase)
@@ -90,9 +92,9 @@ PLM-00 documentation phase is complete. PLM-01 is authorized.
 - [x] Technical product layout and integration boundary recorded (WP09)
 - [x] Foundation closeout and readiness checklist recorded (WP10)
 - [x] Product-owner approval of documentation baseline (PLM-D-00-10 Closed / Product Owner Accepted)
-- [ ] Isolation contract preserved in any later implementation (separate DB; no Platform table reads; product-local roles)
-- [ ] Docs match implementation (no implementation yet)
-- [ ] Tests green; `main = origin/main` (not applicable until implementation and authorized push)
+- [x] Isolation contract preserved in scaffold (no POS refs; no Platform Infrastructure; no EF/migrations)
+- [x] Docs match scaffold (no lending implementation claimed)
+- [ ] Tests green on `feat/plm-01-scaffold` (recorded in PLM-01 report; not merged to main)
 
 ## Risks
 
@@ -107,9 +109,9 @@ PLM-00 documentation phase is complete. PLM-01 is authorized.
 
 ## Exact next package
 
-**PLM-01 Product Scaffold & Isolation** (authorized after PLM-D-00-10)
+**PLM-02 Identity / Organization / Product Access** (do not begin until PLM-01 is accepted)
 
-Create authorized source/test/deploy skeleton and isolation guards **without** Loan domain implementation. Layout target: [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md).
+Consume Platform actor/org/product access without Platform table reads. Do not invent D-P12-03.
 
 ## Phase closeout requirements
 

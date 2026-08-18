@@ -18,6 +18,14 @@
     <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ExItS.PinoyBusinessPOS.Maui.csproj" />
     <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Web/ExItS.PinoyBusinessPOS.Web.csproj" />
   </Folder>
+  <Folder Name="/src/Products/PinoyLoanManager/">
+    <Project Path="src/Products/PinoyLoanManager/ExItS.PinoyLoanManager.Api/ExItS.PinoyLoanManager.Api.csproj" />
+    <Project Path="src/Products/PinoyLoanManager/ExItS.PinoyLoanManager.ApiClient/ExItS.PinoyLoanManager.ApiClient.csproj" />
+    <Project Path="src/Products/PinoyLoanManager/ExItS.PinoyLoanManager.Application/ExItS.PinoyLoanManager.Application.csproj" />
+    <Project Path="src/Products/PinoyLoanManager/ExItS.PinoyLoanManager.Domain/ExItS.PinoyLoanManager.Domain.csproj" />
+    <Project Path="src/Products/PinoyLoanManager/ExItS.PinoyLoanManager.Infrastructure/ExItS.PinoyLoanManager.Infrastructure.csproj" />
+    <Project Path="src/Products/PinoyLoanManager/ExItS.PinoyLoanManager.Web/ExItS.PinoyLoanManager.Web.csproj" />
+  </Folder>
   <Folder Name="/src/Shared/">
     <Project Path="src/Shared/ExItS.DesignSystem/ExItS.DesignSystem.csproj" />
     <Project Path="src/Shared/ExItS.BackupRestore/ExItS.BackupRestore.csproj" />
@@ -34,6 +42,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/ExItS.ArchitectureTests/ExItS.ArchitectureTests.csproj" />
     <Project Path="tests/ExItS.PinoyBusinessPOS.UnitTests/ExItS.PinoyBusinessPOS.UnitTests.csproj" />
+    <Project Path="tests/ExItS.PinoyLoanManager.UnitTests/ExItS.PinoyLoanManager.UnitTests.csproj" />
     <Project Path="tests/ExItS.Platform.Admin.UnitTests/ExItS.Platform.Admin.UnitTests.csproj" />
     <Project Path="tests/ExItS.Platform.IntegrationTests/ExItS.Platform.IntegrationTests.csproj" />
     <Project Path="tests/ExItS.Platform.UnitTests/ExItS.Platform.UnitTests.csproj" />

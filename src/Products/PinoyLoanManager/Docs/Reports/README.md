@@ -1,8 +1,8 @@
 # Reports
 
 **Purpose:** Evidence of completed Pinoy Loan Manager work packages.
-**Status:** Foundation / planning only
-**Implementation present:** No
+**Status:** PLM-00 closed; PLM-01 scaffold report present
+**Implementation present:** Product shell only
 
 Reports in this directory will eventually contain:
 
@@ -24,5 +24,6 @@ Do not rewrite historical signed-off reports merely to erase history.
 | Report | Purpose |
 |---|---|
 | [PLM-00-foundation-closeout.md](PLM-00-foundation-closeout.md) | PLM-00 documentation closeout, implementation gates, recommended PLM-01 |
+| [PLM-01-product-scaffold-and-isolation.md](PLM-01-product-scaffold-and-isolation.md) | PLM-01 product shell, isolation, deferred MAUI/LocalStore |
 
 PLM-00-WP01 through PLM-00-WP09 do not add a separate report file. Completion evidence for those documentation-only packages is the git commit on `docs/plm-foundation` plus the chat completion report.

@@ -158,14 +158,14 @@ No loan MVP **implementation** is approved. Calculation algorithms, peso/percent
 |---|---|---|
 | PLM-D-00-01 | Final product code / slug registration | Platform catalog, subscription bootstrap |
 | PLM-D-00-02 | Final database name / schema | Persistence, migrations |
-| PLM-D-00-03 | Physical source / test / deploy layout (planning target recorded; projects not created) | Scaffold (PLM-01) |
+| PLM-D-00-03 | Physical source / test / deploy layout | **Closed** (PLM-01 scaffold; MAUI/LocalStore deferred) |
 | PLM-D-00-04 | Generic Platform cross-product relationship model | Personal multi-product participation |
 | PLM-D-00-05 | Personal-to-Borrower linking mechanism (lifecycle intent recorded; schema open) | Borrower identity design (PLM-04) |
 | PLM-D-00-06 | Loan roles and grants (presets + grant intent recorded; identifiers open) | Authorization (PLM-03) |
 | PLM-D-00-07 | Operational financial model (ledger vs cash; subledger principles recorded; schema open) | Origination, payments, collections |
 | PLM-D-00-08 | Loan business / calculation rules (modes recorded; formulas/rates open) | Product configuration through collections |
 | PLM-D-00-09 | Web / MAUI component-sharing strategy | Client scaffold |
-| PLM-D-00-10 | Product documentation baseline completion / owner approval | Closing PLM-00 |
+| PLM-D-00-10 | Product documentation baseline completion / owner approval | **Closed / Product Owner Accepted** |
 | PLM-D-00-11 | External legal/compliance validation before Production | Production use |
 | PLM-D-00-12 | Exact money rounding mode | Calculation engine |
 | PLM-D-00-13 | Small-org vs two-person high-risk approval | Operational SoD |
