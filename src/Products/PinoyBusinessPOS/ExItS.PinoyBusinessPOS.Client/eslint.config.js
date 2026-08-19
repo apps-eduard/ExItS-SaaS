@@ -14,6 +14,7 @@ export default tseslint.config(
       "test-results",
       "node_modules",
       "e2e/artifacts",
+      "dev-dist",
     ],
   },
   {
@@ -33,7 +34,7 @@ export default tseslint.config(
         "warn",
         {
           allowConstantExport: true,
-          allowExportNames: ["usePreferences", "useI18n"],
+          allowExportNames: ["usePreferences", "useI18n", "useRegisterSW"],
         },
       ],
       "@typescript-eslint/no-explicit-any": "error",

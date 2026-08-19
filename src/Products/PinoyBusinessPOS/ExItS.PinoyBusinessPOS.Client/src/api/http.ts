@@ -69,7 +69,7 @@ export function getPosApiBaseUrl(): string {
 }
 
 export function getAppVersion(): string {
-  return import.meta.env.VITE_APP_VERSION ?? "0.0.1-impl-01";
+  return import.meta.env.VITE_APP_VERSION ?? "0.0.1-impl-02";
 }
 
 async function apiRequest<T>(

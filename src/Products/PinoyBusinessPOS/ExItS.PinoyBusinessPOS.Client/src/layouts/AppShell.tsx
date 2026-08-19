@@ -41,7 +41,10 @@ export function AppShell() {
   const desktop = useMediaMin(1024);
 
   return (
-    <div className="flex min-h-dvh bg-background" data-layout={desktop ? "desktop" : "phone"}>
+    <div
+      className="flex min-h-dvh bg-background pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]"
+      data-layout={desktop ? "desktop" : "phone"}
+    >
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-[var(--exits-z-notice)] focus:rounded-md focus:bg-surface focus:px-3 focus:py-2"
@@ -62,13 +65,13 @@ export function AppShell() {
         <AppTopBar />
         <main
           id="main"
-          className="mx-auto w-full max-w-6xl flex-1 px-[var(--exits-page-padding)] py-5 pb-[calc(var(--exits-bottom-nav-height)+1.25rem)] lg:pb-8"
+          className="mx-auto w-full max-w-6xl flex-1 px-[var(--exits-page-padding)] py-5 pb-[calc(var(--exits-bottom-nav-height)+1.25rem+env(safe-area-inset-bottom))] lg:pb-8"
         >
           <Outlet />
         </main>
         <div
           data-density="compact"
-          className="fixed inset-x-0 bottom-0 z-[var(--exits-z-nav)] border-t border-border bg-surface/95 backdrop-blur-sm lg:hidden"
+          className="fixed inset-x-0 bottom-0 z-[var(--exits-z-nav)] border-t border-border bg-surface/95 backdrop-blur-sm pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] lg:hidden"
         >
           <NavItems className="mx-auto flex max-w-6xl justify-around px-2 py-1 pb-[max(0.35rem,env(safe-area-inset-bottom))]" />
         </div>

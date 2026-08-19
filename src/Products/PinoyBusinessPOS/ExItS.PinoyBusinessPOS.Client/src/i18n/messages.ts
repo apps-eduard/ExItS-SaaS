@@ -34,7 +34,9 @@ export type MessageKey =
   | "appearance.title"
   | "appearance.subtitle"
   | "status.foundation"
-  | "status.preview";
+  | "status.preview"
+  | "pwa.updateAvailable"
+  | "pwa.refresh";
 
 export const en: Record<MessageKey, string> = {
   "app.name": "ExItS Mobile",
@@ -77,6 +79,8 @@ export const en: Record<MessageKey, string> = {
   "appearance.subtitle": "Language and theme apply immediately across the client.",
   "status.foundation": "Foundation",
   "status.preview": "Preview",
+  "pwa.updateAvailable": "New version available",
+  "pwa.refresh": "Refresh",
 };
 
 export const filPH: Record<MessageKey, string> = {
@@ -121,6 +125,8 @@ export const filPH: Record<MessageKey, string> = {
   "appearance.subtitle": "Agad na nalalapat ang wika at tema sa buong client.",
   "status.foundation": "Foundation",
   "status.preview": "Preview",
+  "pwa.updateAvailable": "May bagong bersyon",
+  "pwa.refresh": "I-refresh",
 };
 
 export const catalogs: Record<"en" | "fil-PH", Record<MessageKey, string>> = {

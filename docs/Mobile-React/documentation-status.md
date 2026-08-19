@@ -8,9 +8,11 @@ Baseline origin/main SHA: `5979a9ce008bb24a3257abd28ae79bc1a5a9b569`
 
 Documentation: `FINAL APPROVED` (DOC-00 … DOC-08; AMEND-01, AMEND-02, AMEND-03)
 
-React implementation: `Gate C AUTHORIZED` (MOBILE-REACT-IMPL-01 foundation; IMPL-01A diagnostics/connectivity correction COMPLETE)
+React implementation: `Gate C COMPLETE` (MOBILE-REACT-IMPL-01 / IMPL-01A)
 
-PWA implementation: `NOT AUTHORIZED`
+PWA implementation: `Gate D FOUNDATION AUTHORIZED + COMPLETE` (MOBILE-REACT-IMPL-02)
+
+PWA production rollout: `NOT AUTHORIZED`
 
 Capacitor implementation: `NOT AUTHORIZED`
 
@@ -26,15 +28,15 @@ Existing Personal Web status: `Retained / Unmodified`
 
 Existing .NET backends (Platform API + POS API + PostgreSQL): `Retained / Unmodified`
 
-Future React / PWA / Capacitor status: `Gate C foundation in progress; PWA and Capacitor locked`
+Future React / PWA / Capacitor status: `Gate C complete; Gate D PWA foundation complete; PWA production rollout and Capacitor locked`
 
-React implementation presence: `Present` (`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/` — foundation only)
+React implementation presence: `Present` (`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/` — foundation + PWA static shell)
 
 Capacitor implementation presence: `Absent`
 
-PWA production presence: `Absent`
+PWA production presence: `Absent` (installable static-shell foundation only; production rollout not authorized)
 
-Queue state: `STOPPED AFTER MOBILE-REACT-IMPL-01A`
+Queue state: `STOPPED AFTER MOBILE-REACT-IMPL-02`
 
 MOBILE-D-060: `OPEN`
 
@@ -58,18 +60,20 @@ MOBILE-D-060: `OPEN`
 | MOBILE-REACT-DOC-MERGE-01 | Complete | Approved planning baseline merged to `main` |
 | MOBILE-REACT-IMPL-01 | Complete | Gate C React Mobile Client foundation (shell, theme, i18n, HTTP stubs, diagnostics) |
 | MOBILE-REACT-IMPL-01A | Complete | Diagnostics/connectivity correction: no fabricated Online; Copy Diagnostics allowlist-safe |
+| MOBILE-REACT-IMPL-02 | Complete | Gate D PWA static shell foundation (manifest, prompt SW, no API/financial cache) |
 
 ## Authorization gates (locked)
 
 | Gate | Status |
 |---|---|
-| React mobile implementation | **Gate C AUTHORIZED** (IMPL-01 foundation; IMPL-01A correction COMPLETE) |
+| React mobile implementation | **Gate C COMPLETE** (IMPL-01 / IMPL-01A) |
+| PWA foundation (Gate D) | **AUTHORIZED + COMPLETE** (IMPL-02) |
 | PWA implementation / production rollout | **NOT AUTHORIZED** |
 | Capacitor implementation / production rollout | **NOT AUTHORIZED** |
 | MAUI retirement | **NOT AUTHORIZED** |
-| Merge to `main` | **PERFORMED** (`MOBILE-REACT-DOC-MERGE-01`) — does **not** authorize PWA, Capacitor, or MAUI retirement |
-| Gate D+ | **NOT AUTHORIZED** |
+| Merge to `main` | **PERFORMED** (`MOBILE-REACT-DOC-MERGE-01`) — does **not** authorize PWA production rollout, Capacitor, or MAUI retirement |
+| Gate E+ | **NOT AUTHORIZED** |
 
-Do not add a PWA service worker, Capacitor, authentication, PIN, workspace chooser, selling, or MAUI changes in this package.
+Do not add Capacitor, authentication, PIN, workspace chooser, selling, LocalStore/outbox, or MAUI changes in this package.
 
 MOBILE-D-060 remains **Open**. Do not rewrite [DOC-08 closeout](Reports/MOBILE-REACT-DOC-08-final-closeout.md) as if it originally contained AMEND decisions or this implementation.
