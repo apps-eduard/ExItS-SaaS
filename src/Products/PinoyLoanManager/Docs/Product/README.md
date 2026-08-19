@@ -33,7 +33,10 @@ Do not treat this folder as a second product definition. Detailed agreed **direc
 | [cashier-and-collector-control-model.md](cashier-and-collector-control-model.md) | Cashier Session, float, remittance, cash availability |
 | [disbursement-and-payment-controls.md](disbursement-and-payment-controls.md) | Office/field disbursement and cash payment |
 | [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md) | Exceptions, waivers, reversals vs cash refund, variance |
-| [borrower-model.md](borrower-model.md) | PLM-owned Borrower; may exist without Personal |
+| [borrower-onboarding-and-verification-policy.md](borrower-onboarding-and-verification-policy.md) | Natural-person Borrower minimum |
+| [traditional-application-and-assessment-policy.md](traditional-application-and-assessment-policy.md) | Traditional application + assessment |
+| [quick-loan-eligibility-and-approval-policy.md](quick-loan-eligibility-and-approval-policy.md) | Quick Loan request minimum |
+| [approval-revision-and-disbursement-readiness-policy.md](approval-revision-and-disbursement-readiness-policy.md) | Approval, reapproval, readiness |
 | [borrower-identity-and-duplicate-policy.md](borrower-identity-and-duplicate-policy.md) | Ownership, cardinality, duplicate handling |
 | [personal-borrower-linking.md](personal-borrower-linking.md) | Optional consent-based linking |
 | [personal-linking-lifecycle-and-visibility.md](personal-linking-lifecycle-and-visibility.md) | Link lifecycle, MVP flow, unlink/relink, visibility |

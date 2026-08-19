@@ -7,7 +7,7 @@
 |---|---|
 | Product | Pinoy Loan Manager |
 | Current phase | PLM-00 Foundation & Product Decisions (documentation complete) |
-| Current work package | **PLM-DOC-06** Restructuring, Write-Off, Recovery & Collections Closeout |
+| Current work package | **PLM-DOC-07** Borrower Onboarding, Application, Assessment, Approval & Disbursement Readiness |
 | Status | **PLM-D-00-10 Closed / Product Owner Accepted**. PLM-D-00-01 Closed. PLM-D-00-02 Closed for logical name. PLM-D-00-06 Closed for MVP. PLM-D-00-08 Closed for MVP Product business/calculation policy. PLM-D-00-12 Closed. PLM-D-00-13 Closed. PLM-D-00-07 Open / Partially Resolved. Implementation remains paused. |
 
 ## Phase objective
@@ -61,8 +61,9 @@ PLM-00 documentation phase is complete. **PLM-DOC-01** through **PLM-DOC-05** co
 | PLM-DOC-03 | Schedule Calendar, Delinquency, Penalties & Maturity Decisions | **Completed** |
 | PLM-DOC-04 | Early Settlement, Refunds, Reversals, Cash Variance & Accounting Boundaries | **Completed** |
 | PLM-DOC-05 | Roles, Grants, Workflow Authorization & Operational Security Finalization | **Completed** |
-| PLM-DOC-06 | Restructuring, Write-Off, Recovery & Collections Closeout | **This package** |
-| PLM-DOC-07 | Borrower Onboarding, Application, Assessment, Approval & Disbursement Readiness | Proposed next |
+| PLM-DOC-06 | Restructuring, Write-Off, Recovery & Collections Closeout | **Completed** |
+| PLM-DOC-07 | Borrower Onboarding, Application, Assessment, Approval & Disbursement Readiness | **This package** |
+| PLM-DOC-08 | Documents, Receipts, Reporting, Notifications, Privacy & Retention | Proposed next |
 
 ### PLM-DOC-01 completed decisions
 

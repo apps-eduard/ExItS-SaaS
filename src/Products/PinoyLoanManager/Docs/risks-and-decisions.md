@@ -212,7 +212,9 @@ Tracked under **PLM-D-00-08** unless noted. Remaining items (do **not** invent):
 
 **Resolved in PLM-DOC-06** (not legal approval): restructuring (same Loan, new schedule version, component treatment, Refinancing deferred), Write-Off classification and post-write-off behavior, Recovery Payment and allocation, Promise to Pay, Collection Case, collection conduct boundaries (**PLM-D-00-08 Closed for MVP Product business/calculation policy**).
 
-Do **not** close remaining items by guessing. Do **not** claim legal compliance or production-security readiness.
+**Resolved in PLM-DOC-07** (not legal approval): natural-person Borrower minimum, Traditional/Quick application minimums, manual assessment, approval scope without per-user limits, material reapproval, approval expiry, Disbursement readiness checklist, borrower acknowledgment content.
+
+Do **not** close remaining items by guessing.
 
 ## Instructions
 
