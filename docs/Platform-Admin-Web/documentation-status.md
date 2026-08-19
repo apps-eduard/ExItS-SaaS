@@ -26,6 +26,6 @@ Queue state: `CLEAR`
 | DOC-06 | Complete | Core Platform administration screen specifications + capability requirements |
 | DOC-07 | Complete | Product + commercial administration screen specifications + capability requirements |
 | DOC-08 | Complete | Governance, operations + settings screen specifications + security UX + capability requirements |
-| DOC-09 | Pending | Cutover plan (no merge) + rollback boundaries |
+| DOC-09 | Complete | Platform API capability matrix + backend gap audit (evidence-based DOC-09) |
 | DOC-10 | Pending | Documentation closeout and final evidence report |
 

@@ -26,4 +26,5 @@ boundaries, and records a dedicated planning worktree (`docs/platform-admin-web-
 - `Reports/PLATFORM-WEB-DOC-07-commercial-product-screens.md` — commercial product screens report
 - `Screens/governance-operations-settings-screens.md` — governance, operations + settings screen specifications
 - `Reports/PLATFORM-WEB-DOC-08-governance-operations-settings.md` — governance operations settings report
+- `api-capability-matrix.md` — Platform API capability matrix + backend gap audit (DOC-09)
 
