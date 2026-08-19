@@ -22,6 +22,8 @@ The MVP client boundaries are:
 
 These boundaries define where features are presented. They do not replace server-side authorization.
 
+**Future client-host planning (does not change this table):** “Mobile” in this document means the current MAUI Mobile Client (`ExItS.PinoyBusinessPOS.Maui`) until an explicit cutover. Future React / PWA / Capacitor replacement planning is documented under [docs/Mobile-React](../Mobile-React/README.md). That planning does **not** authorize implementation, PWA or Capacitor production, or MAUI retirement. It does **not** move Platform Administration onto Mobile, and it does **not** make Organization Web a POS checkout client. A future browser/PWA delivery of the Mobile Client is not the historical deferred “POS Web client” in §15.
+
 ---
 
 ## 1. Platform Administration
@@ -686,7 +688,7 @@ The following are deferred unless separately approved:
 - multiple branches — **delivered (P28);** branch workspace + capability matrix in [organization-branch-capability-matrix.md](../engineering/organization-branch-capability-matrix.md);
 - advanced branch-specific administration — Mobile non-primary branch ops vs Primary governance (WP15A baseline; UI enforcement WP15B+);
 - custom product roles;
-- offline synchronization;
+- offline synchronization — **partially delivered** for current MAUI (`ExItS.PinoyBusinessPOS.LocalStore`); a future React equivalent is unauthorized planning ([offline-sync-auth-and-security.md](../Mobile-React/offline-sync-auth-and-security.md));
 - advanced cross-client notifications (SignalR); Organization in-app bell for customer-link + Connected Supplier connection requests is live via Platform `OrganizationInAppNotification` (tap → Read; Connected buyers supplier-side list; see [unified-organization-business-notifications.md](../reports/unified-organization-business-notifications.md));
 - delegated Organization Administrators beyond the approved MVP role model.
 

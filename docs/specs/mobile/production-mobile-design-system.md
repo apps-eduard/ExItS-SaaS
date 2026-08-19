@@ -12,6 +12,8 @@
 
 Define a coherent, cashier-friendly visual language for Pinoy Business POS MAUI. Business behavior and authorization are unchanged. Visual principles were informed by retail density (Polaris), mobile touch (Material 3), and accessible hierarchy (Fluent 2) — **without** copying branding, packages, or source.
 
+This specification governs the **current MAUI host**. Future React/PWA/Capacitor replacement planning is under [docs/Mobile-React](../../Mobile-React/README.md) and is **not** authorization to add React packages or Tailwind to this host.
+
 ## 2. Authority and non-goals
 
 **Do**

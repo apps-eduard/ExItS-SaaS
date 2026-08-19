@@ -69,3 +69,7 @@ An earlier draft incorrectly stated that interim Platform Admin would retain Ant
 ### P15-WP01 amendment (2026-08-01)
 
 Platform Admin is authorized to use **Ant Design Blazor** per **ADR-015**. The native-only Admin requirement and any Fluent UI Admin direction are **superseded for Platform Admin**. POS remains native/DesignSystem.
+
+## Related planning (not a change to this ADR)
+
+This ADR describes **current** UI implementations. Future React replacement planning for Platform Admin and for the Mobile Client is documentation-only (`docs/Platform-Admin-Web`, `docs/Mobile-React`). Completing those documents does not amend this ADR and does not authorize adding React or Tailwind to current MAUI or current Admin.
