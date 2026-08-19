@@ -1,10 +1,10 @@
 # Pinoy Loan Manager — React / PWA / Capacitor Client Architecture
 
-**Status:** Accepted architecture (PLM-D-00-09 / PLM-01A)  
-**Implementation present:** No React client  
+**Status:** Accepted architecture (PLM-D-00-09 / PLM-01A); Gate B scaffold present
+**Implementation present:** React Client foundation only — no lending, auth, PWA, or Capacitor
 **Last updated:** 2026-08-19
 
-Documentation only. `ExItS.PinoyLoanManager.Client` **does not exist yet**. Do not create it from this document.
+`ExItS.PinoyLoanManager.Client` exists as a Gate B scaffold. Do not add PWA or Capacitor from this document.
 
 ADR: [../Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md](../Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md). Surfaces: [application-surface-model.md](application-surface-model.md). Layout: [source-and-project-layout.md](source-and-project-layout.md). Offline: [mobile-offline-boundary.md](mobile-offline-boundary.md).
 
@@ -31,11 +31,11 @@ Pinoy Loan Manager
        |     ASP.NET Core browser host / BFF / reverse proxy
        |     NOT a second lending UI
        |
-       +-- Client          FUTURE — does not exist yet
-             React + TypeScript
+       +-- Client
+             React + TypeScript (Gate B scaffold)
                     |
                     +-- Browser Web
-                    +-- PWA
+                    +-- PWA          later (Gate C)
                     +-- Capacitor Android
                             |
                             +-- APK

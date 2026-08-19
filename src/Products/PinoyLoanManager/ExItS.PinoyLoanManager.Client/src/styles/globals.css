@@ -1,0 +1,127 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--exits-bg);
+  --color-foreground: var(--exits-text);
+  --color-surface: var(--exits-surface);
+  --color-muted: var(--exits-text-muted);
+  --color-primary: var(--exits-primary);
+  --color-primary-foreground: var(--exits-primary-contrast);
+  --color-destructive: var(--exits-danger);
+  --color-warning: var(--exits-warning);
+  --color-success: var(--exits-success);
+  --color-border: var(--exits-border);
+  --color-ring: var(--exits-focus);
+  --font-sans: var(--exits-font-sans);
+  --radius-md: var(--exits-radius-md);
+}
+
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  --exits-bg: #f4f6f5;
+  --exits-surface: #ffffff;
+  --exits-text: #14201a;
+  --exits-text-muted: #5a6b62;
+  --exits-border: #d5ded8;
+  --exits-primary: #166534;
+  --exits-primary-hover: #14532d;
+  --exits-primary-contrast: #ffffff;
+  --exits-success: #166534;
+  --exits-warning: #92400e;
+  --exits-danger: #b42318;
+  --exits-focus: #166534;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --exits-bg: #101513;
+  --exits-surface: #171e1a;
+  --exits-text: #eef4f0;
+  --exits-text-muted: #9aaba2;
+  --exits-border: #2c3832;
+  --exits-primary: #3bb56a;
+  --exits-primary-hover: #4ac578;
+  --exits-primary-contrast: #06280f;
+  --exits-success: #3bb56a;
+  --exits-warning: #fbbf24;
+  --exits-danger: #ff8a80;
+  --exits-focus: #3bb56a;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme="system"],
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --exits-bg: #101513;
+    --exits-surface: #171e1a;
+    --exits-text: #eef4f0;
+    --exits-text-muted: #9aaba2;
+    --exits-border: #2c3832;
+    --exits-primary: #3bb56a;
+    --exits-primary-hover: #4ac578;
+    --exits-primary-contrast: #06280f;
+    --exits-success: #3bb56a;
+    --exits-warning: #fbbf24;
+    --exits-danger: #ff8a80;
+    --exits-focus: #3bb56a;
+  }
+}
+
+:root {
+  --exits-radius-md: 0.625rem;
+  --exits-space-1: 0.25rem;
+  --exits-space-2: 0.5rem;
+  --exits-space-3: 0.75rem;
+  --exits-space-4: 1rem;
+  --exits-space-6: 1.5rem;
+  --exits-font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --exits-text-xs: 0.75rem;
+  --exits-text-sm: 0.875rem;
+  --exits-text-md: 0.9375rem;
+  --exits-text-lg: 1rem;
+  --exits-text-xl: 1.25rem;
+  --exits-motion-fast: 140ms;
+  --exits-touch-target-min: 2.75rem;
+  --exits-control-height: 2.75rem;
+  --exits-page-padding: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --exits-motion-fast: 0ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  min-height: 100dvh;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  background: var(--exits-bg);
+  color: var(--exits-text);
+  font-family: var(--exits-font-sans);
+  font-size: var(--exits-text-md);
+  line-height: 1.45;
+  overflow-x: hidden;
+}
+
+*:focus-visible {
+  outline: 3px solid var(--exits-focus);
+  outline-offset: 2px;
+}

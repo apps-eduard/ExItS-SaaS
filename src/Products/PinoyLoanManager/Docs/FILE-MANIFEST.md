@@ -89,14 +89,15 @@ Shared contracts to load with this product:
 
 | Path | Purpose | Status | Implementation present |
 |---|---|---|---|
-| `Docs/Architecture/source-and-project-layout.md` | Physical layout; Client future path recorded, not created | PLM-01 scaffold + PLM-01A target | Product shell |
-| `Docs/Architecture/react-pwa-capacitor-client.md` | Shared React + PWA + Capacitor architecture | Accepted (PLM-D-00-09) | No |
+| `Docs/Architecture/source-and-project-layout.md` | Physical layout; Client Gate B scaffold | PLM-01 + Gate B | Product shell + React Client |
+| `Docs/Architecture/react-pwa-capacitor-client.md` | Shared React + PWA + Capacitor architecture | Accepted (PLM-D-00-09); Gate B scaffold | React foundation |
 | `Docs/Architecture/api-and-contract-boundary.md` | API consumers; Personal contracts | Planning target / not a spec | No |
 | `Docs/Architecture/persistence-and-database-boundary.md` | Separate DB isolation | Planning target / not a spec | No |
 | `Docs/Architecture/mobile-offline-boundary.md` | Online-first; LocalStore not authorized | Planning target / not a spec | No |
 | `Docs/Architecture/platform-commercial-integration.md` | Platform contracts; D-P12-03 open | Planning target / not a spec | No |
 | `Docs/Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md` | ADR: one React + PWA + Capacitor client | Accepted / Product Owner Approved | No |
 | `Docs/Reports/PLM-01A-react-pwa-capacitor-architecture-decision.md` | PLM-01A evidence | Architecture decision complete | No |
+| `Docs/Reports/PLM-CLIENT-GATE-B-react-client-scaffold.md` | Gate B React Client scaffold | Complete after validation | React foundation |
 
 ## Foundation closeout (PLM-00-WP10)
 
@@ -134,7 +135,8 @@ Shared contracts to load with this product:
 | `ExItS.PinoyLoanManager.Infrastructure` | Created — no EF/Npgsql/DbContext |
 | `ExItS.PinoyLoanManager.Api` | Created — `/health` only |
 | `ExItS.PinoyLoanManager.ApiClient` | Created — marker only |
-| `ExItS.PinoyLoanManager.Web` | Created — identity shell only; future host/BFF (not refactored in PLM-01A) |
+| `ExItS.PinoyLoanManager.Web` | Created — identity shell only; future host/BFF |
+| `ExItS.PinoyLoanManager.Client` | Created — Gate B React scaffold; no lending/auth/PWA/Capacitor |
 | `tests/ExItS.PinoyLoanManager.UnitTests` | Created |
 | `ExItS.slnx` PLM entries | Registered |
 
@@ -142,7 +144,6 @@ Shared contracts to load with this product:
 
 | Item | Reason |
 |---|---|
-| `ExItS.PinoyLoanManager.Client` | Future only — do not create in PLM-01A |
 | `ExItS.PinoyLoanManager.Maui` | Preferred path superseded (PLM-D-00-09); not created |
 | `ExItS.PinoyLoanManager.LocalStore` | Not justified until offline is authorized |
 | Database / migration folders | Persistence not authorized (PLM-D-00-02 remains open) |

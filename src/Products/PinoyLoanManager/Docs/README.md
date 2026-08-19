@@ -11,8 +11,8 @@ Always load with:
 5. The active work-package prompt/report
 6. Files required for the task only
 
-**Status:** PLM-00 accepted; PLM-01 product shell scaffolded; PLM-01A client architecture approved (PLM-D-00-09)
-**Implementation present:** Product shell only — no lending domain; React Client not created
+**Status:** PLM-00 accepted; PLM-01 product shell scaffolded; PLM-01A client architecture approved (PLM-D-00-09); PLM-CLIENT-GATE-B React scaffold complete
+**Implementation present:** Product shell + React Client foundation — no lending domain; no PWA/Capacitor/auth
 **Documentation root:** `src/Products/PinoyLoanManager/Docs/` (D-P12-02)
 
 Pinoy Loan Manager is a **separate first-class ExItS SaaS product**, a sibling of PinoyBusinessPOS, not a POS module, feature, or database extension.
@@ -74,6 +74,7 @@ Agreed operating-model direction (not implementation specs):
 | [Reports/PLM-00-foundation-closeout.md](Reports/PLM-00-foundation-closeout.md) | PLM-00 closeout and implementation gates |
 | [Reports/PLM-01-product-scaffold-and-isolation.md](Reports/PLM-01-product-scaffold-and-isolation.md) | PLM-01 scaffold and isolation evidence |
 | [Reports/PLM-01A-react-pwa-capacitor-architecture-decision.md](Reports/PLM-01A-react-pwa-capacitor-architecture-decision.md) | PLM-01A client architecture decision |
+| [Reports/PLM-CLIENT-GATE-B-react-client-scaffold.md](Reports/PLM-CLIENT-GATE-B-react-client-scaffold.md) | React Client scaffold (Gate B) |
 | [Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md](Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md) | ADR: one React + PWA + Capacitor client |
 | [Validation/PLM-00-readiness-checklist.md](Validation/PLM-00-readiness-checklist.md) | Docs-only readiness checklist |
 
@@ -129,7 +130,7 @@ ExItS Personal is Platform-owned and product-neutral. POS Customer ≠ Loan Borr
 
 ## Client direction (approved — PLM-D-00-09)
 
-One shared React + TypeScript client for Browser Web, installable PWA, and Capacitor Android. `ExItS.PinoyLoanManager.Web` is the future ASP.NET Core host/BFF (current PLM-01 identity shell remains scaffold only). MAUI is superseded as the preferred path. The React Client project does **not** exist yet. Platform Admin: SaaS control plane only. Detail: [Architecture/react-pwa-capacitor-client.md](Architecture/react-pwa-capacitor-client.md).
+One shared React + TypeScript client for Browser Web, installable PWA, and Capacitor Android. `ExItS.PinoyLoanManager.Client` exists as a **Gate B scaffold** (no lending, auth, PWA, or Capacitor). `ExItS.PinoyLoanManager.Web` is the future ASP.NET Core host/BFF (current PLM-01 identity shell remains scaffold only). MAUI is superseded as the preferred path. Platform Admin: SaaS control plane only. Detail: [Architecture/react-pwa-capacitor-client.md](Architecture/react-pwa-capacitor-client.md).
 
 ---
 

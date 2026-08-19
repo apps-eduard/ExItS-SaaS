@@ -7,8 +7,8 @@
 |---|---|
 | Product | Pinoy Loan Manager |
 | Current phase | PLM-01 Product Scaffold & Isolation (complete); PLM-01A client architecture (this package) |
-| Current work package | PLM-01A React + PWA + Capacitor architecture decision |
-| Status | PLM-00 accepted; PLM-01 scaffolded; PLM-01A client architecture approved; PLM-02 not started |
+| Current work package | PLM-CLIENT-GATE-B React client scaffold |
+| Status | PLM-00 accepted; PLM-01 scaffolded; PLM-01A approved; Gate B React scaffold complete; PLM-02 not started |
 
 ## Phase objective
 
@@ -30,7 +30,7 @@ Create the isolated Pinoy Loan Manager product shell (projects, solution registr
 - Database, DbContext, migrations, connection strings, secrets
 - Platform catalog / subscriptions / entitlements / Personal linking
 - Authorization implementation
-- MAUI / Android workload / Capacitor / React Client creation
+- MAUI / Android workload / Capacitor / PWA
 - Final grant identifiers, calculation formulas, peso/percent rates, rounding mode
 - Production authentication (R-091)
 - Final commercial-state transport (D-P12-03)
@@ -116,7 +116,7 @@ Does **not** replace the core business roadmap above. Detail: [Architecture/reac
 | Gate | Status |
 |---|---|
 | PLM-CLIENT-GATE A Architecture decision | **Complete** (PLM-01A) |
-| PLM-CLIENT-GATE B React scaffold | Not started |
+| PLM-CLIENT-GATE B React scaffold | **Complete** |
 | PLM-CLIENT-GATE C Browser/PWA foundation | Not started |
 | PLM-CLIENT-GATE D Auth + org/product access | Not started |
 | PLM-CLIENT-GATE E First lending slice + visual review | Not started |
@@ -130,9 +130,9 @@ Offline financial operation remains **PLM-13**.
 
 ## Exact next package
 
-**STOPPED AFTER PLM-01A.** Do not start Gate B, Capacitor, or PLM-02 from this package.
+**STOPPED AFTER PLM-CLIENT-GATE-B.** Do not start Gate C, Capacitor, auth, or PLM-02 from this package.
 
-Recommended later order when separately authorized: PLM-CLIENT-GATE B → PLM-CLIENT-GATE C → **PLM-02 Identity / Organization / Product Access** → continue business packages.
+Recommended later order when separately authorized: PLM-CLIENT-GATE C → **PLM-02 Identity / Organization / Product Access** → continue business packages.
 
 PLM-02 still consumes Platform actor/org/product access without Platform table reads. Do not invent D-P12-03.
 
