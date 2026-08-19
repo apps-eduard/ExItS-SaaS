@@ -618,6 +618,18 @@
   <data name="Devices_EmptyMessage" xml:space="preserve">
     <value>Magrehistro ng POS device mula sa mobile app para makita ito dito.</value>
   </data>
+  <data name="Devices_RevokeTitle" xml:space="preserve">
+    <value>I-revoke ang {0}</value>
+  </data>
+  <data name="Devices_RevokeMessage" xml:space="preserve">
+    <value>Mawawalan agad ng POS access ang device na ito. Naka-record ito sa audit log.</value>
+  </data>
+  <data name="Devices_Revoke" xml:space="preserve">
+    <value>I-revoke ang device</value>
+  </data>
+  <data name="Devices_Revoked" xml:space="preserve">
+    <value>Matagumpay na na-revoke ang device.</value>
+  </data>
   <data name="Registers_Title" xml:space="preserve">
     <value>Mga register</value>
   </data>

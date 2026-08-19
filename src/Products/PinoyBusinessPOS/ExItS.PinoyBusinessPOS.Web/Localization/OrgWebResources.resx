@@ -618,6 +618,18 @@
   <data name="Devices_EmptyMessage" xml:space="preserve">
     <value>Register a POS device from the mobile app to see it here.</value>
   </data>
+  <data name="Devices_RevokeTitle" xml:space="preserve">
+    <value>Revoke {0}</value>
+  </data>
+  <data name="Devices_RevokeMessage" xml:space="preserve">
+    <value>This device will lose POS access immediately. The action is recorded in the audit log.</value>
+  </data>
+  <data name="Devices_Revoke" xml:space="preserve">
+    <value>Revoke device</value>
+  </data>
+  <data name="Devices_Revoked" xml:space="preserve">
+    <value>Device revoked successfully.</value>
+  </data>
   <data name="Registers_Title" xml:space="preserve">
     <value>Registers</value>
   </data>

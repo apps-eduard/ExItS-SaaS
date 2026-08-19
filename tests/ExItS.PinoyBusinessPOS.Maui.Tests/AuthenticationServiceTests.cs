@@ -2644,8 +2644,20 @@ public sealed class AuthenticationServiceTests
         public Task<ApiResult<PosDeviceDto>> RenamePosDeviceAsync(Guid organizationId, Guid deviceId, string friendlyName, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<PosDeviceDto>.Unavailable());
 
-        public Task<ApiResult<PosDeviceDto>> RevokePosDeviceAsync(Guid organizationId, Guid deviceId, CancellationToken ct = default) =>
+        public Task<ApiResult<PosDeviceDto>> RevokePosDeviceAsync(Guid organizationId, Guid deviceId, GovernanceCriticalActionRequest request, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<PosDeviceDto>.Unavailable());
+
+        public Task<ApiResult<GovernanceStepUpTokenDto>> IssueGovernanceStepUpAsync(Guid organizationId, IssueGovernanceStepUpRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<GovernanceStepUpTokenDto>.Unavailable());
+
+        public Task<ApiResult<OrganizationBranchDto>> SuspendBranchAsync(Guid organizationId, Guid branchId, GovernanceCriticalActionRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<OrganizationBranchDto>.Unavailable());
+
+        public Task<ApiResult<OrganizationBranchDto>> ReactivateBranchAsync(Guid organizationId, Guid branchId, GovernanceCriticalActionRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<OrganizationBranchDto>.Unavailable());
+
+        public Task<ApiResult<OrganizationBranchDto>> ArchiveBranchAsync(Guid organizationId, Guid branchId, GovernanceCriticalActionRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<OrganizationBranchDto>.Unavailable());
 
         public ApiResult<PosDeviceAuthorizationDto> AuthorizePosDeviceResult { get; set; } =
             ApiResult<PosDeviceAuthorizationDto>.Unavailable();

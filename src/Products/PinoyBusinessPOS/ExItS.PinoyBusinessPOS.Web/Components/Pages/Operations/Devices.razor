@@ -4,6 +4,8 @@
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
 @inject IStringLocalizer<OrgWebResources> L
+@using ExItS.DesignSystem.Components.Overlay
+@using ExItS.PinoyBusinessPOS.Application.Platform
 
 <PageTitle>@L["Devices_Title"]</PageTitle>
 
@@ -47,7 +49,7 @@ else
                             <button type="button" class="ant-btn ant-btn-sm" @onclick="() => RenameAsync(d)">Rename</button>
                             @if (!string.Equals(d.Status, "Revoked", StringComparison.OrdinalIgnoreCase))
                             {
-                                <button type="button" class="ant-btn ant-btn-sm" @onclick="() => RevokeAsync(d)">Revoke</button>
+                                <button type="button" class="ant-btn ant-btn-sm ant-btn-danger" @onclick="() => OpenRevokeDialog(d)">Revoke</button>
                             }
                         </td>
                     </tr>
@@ -56,16 +58,40 @@ else
         </table>
     </div>
     }
+
+    <ConfirmDialog Visible="@(_revokeTarget is not null)"
+                   VisibleChanged="v => { if (!v) CloseRevokeDialog(); }"
+                   Title="@string.Format(L["Devices_RevokeTitle"].Value, _revokeTarget?.FriendlyName ?? string.Empty)"
+                   Message="@L["Devices_RevokeMessage"]"
+                   Danger="true"
+                   ShowReason="true"
+                   ShowPassword="true"
+                   RequireReason="true"
+                   RequirePassword="true"
+                   Reason="@_revokeReason"
+                   ReasonChanged="v => _revokeReason = v"
+                   Password="@_revokePassword"
+                   PasswordChanged="v => _revokePassword = v"
+                   ConfirmLabel="@L["Devices_Revoke"]"
+                   IsLoading="@_busy"
+                   OnConfirm="ConfirmRevokeAsync"
+                   OnCancel="CloseRevokeDialog" />
     </div>
 }
 
 @code {
     private string? _error;
+    private string? _success;
     private bool _loading = true;
+    private bool _busy;
     private PosDeviceCapacityDto? _capacity;
     private List<PosDeviceDto> _items = [];
     private readonly Dictionary<Guid, string> _names = [];
     private readonly Dictionary<Guid, string> _branchNames = [];
+
+    private PosDeviceDto? _revokeTarget;
+    private string? _revokeReason;
+    private string? _revokePassword;
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
@@ -107,16 +133,65 @@ else
         _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error);
     }
 
-    private async Task RevokeAsync(PosDeviceDto device)
+    private void OpenRevokeDialog(PosDeviceDto device)
+    {
+        _revokeTarget = device;
+        _revokeReason = null;
+        _revokePassword = null;
+    }
+
+    private void CloseRevokeDialog()
+    {
+        _revokeTarget = null;
+        _revokeReason = null;
+        _revokePassword = null;
+    }
+
+    private async Task ConfirmRevokeAsync()
     {
         var orgId = CurrentUser.Session?.OrganizationId;
-        if (orgId is null) return;
-        var result = await Platform.RevokePosDeviceAsync(orgId.Value, device.Id);
-        _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error);
-        if (result.IsSuccess)
+        if (orgId is null || _revokeTarget is null || string.IsNullOrWhiteSpace(_revokeReason) || string.IsNullOrWhiteSpace(_revokePassword))
+            return;
+
+        _busy = true;
+        var password = _revokePassword;
+        _revokePassword = null;
+        try
         {
-            var list = await Platform.GetPosDevicesAsync(orgId.Value);
-            _items = list.Data?.ToList() ?? [];
+            var stepUp = await GovernanceCriticalActionFlow.IssueStepUpTokenAsync(
+                Platform,
+                orgId.Value,
+                PlatformGovernanceActionCodes.PosDeviceRevoke,
+                PlatformGovernanceTargetTypes.PosDevice,
+                _revokeTarget.Id,
+                password);
+            if (!stepUp.IsSuccess || stepUp.Data is null)
+            {
+                _error = OrgWebUi.Error(stepUp.Error, L["Error_GenericLoad"]);
+                return;
+            }
+
+            var result = await Platform.RevokePosDeviceAsync(
+                orgId.Value,
+                _revokeTarget.Id,
+                new GovernanceCriticalActionRequest(_revokeReason.Trim(), stepUp.Data));
+            if (result.IsSuccess)
+            {
+                _error = null;
+                _success = L["Devices_Revoked"];
+                _revokeTarget = null;
+                _revokeReason = null;
+                await LoadAsync();
+            }
+            else
+            {
+                _error = OrgWebUi.Error(result.Error, L["Error_GenericLoad"]);
+            }
+        }
+        finally
+        {
+            _busy = false;
+            _revokePassword = null;
         }
     }
 }
