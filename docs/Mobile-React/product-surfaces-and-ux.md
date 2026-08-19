@@ -99,7 +99,7 @@ Desktop/PWA selling should still feel like a sell floor: product + cart + pay. A
 | Minimal steps | Default path: scan → cart → pay → receipt. Do not insert extra screens without a business rule. |
 | Minimal typing | Barcode, steppers, pickers, saved customers. Typed search is fallback. |
 | Barcode-first | Scanner / camera / wedge updates the cart immediately. Category chips never clear the cart. |
-| Persistent cart | Session-persistent during the sale (orientation, category, search). Cleared on successful sale, sign-out, or organization/workspace switch. Not a second financial database. |
+| Persistent cart | Session-persistent during the sale (orientation, category, search). Cleared on successful sale, **Sign Out**, or organization/workspace switch. **Lock / auto-lock must not discard the cart** unless a later approved security rule requires it. Not a second financial database. |
 | Clear offline / sync status | Header shows Online / Offline / Pending / Syncing / Failed. Financial actions state whether they are local-queued or blocked. |
 | Skeleton loading | Lists and sell floor use skeletons. Avoid blocking the whole shell after first content. |
 | Immediate success / error | Toasts or inline alerts on pay, save, sync failure. Destructive actions confirm. |
@@ -122,7 +122,7 @@ These are **current** shells. Future React may restyle them; it should not drop 
 
 | Shell | Current primary chrome | Destinations (summary) |
 |---|---|---|
-| Auth | No bottom nav | Sign-in, register, welcome, workspace select, Start a Business, device register, onboarding, offline PIN |
+| Auth | No bottom nav | Sign-in, register, welcome, workspace select, Start a Business, device register, onboarding, offline PIN / enrolled-user chooser |
 | Personal | Bottom: Home, People, I Lent, I Borrowed, More | `/personal`, Utang, profile, QR, explore POS, linked merchants, orders |
 | POS / Owner | Bottom: Home, Products, Sales, Customers, More (Products/Sales/Customers hidden without POS access) | Catalog, sales, customers, More hub (orders, inventory, purchasing, reports, org, branch settings) |
 
@@ -309,6 +309,32 @@ Sell floor must keep cart contents across orientation change.
 - Do not merge Platform Admin responsibilities into Mobile
 - Do not present Organization Web checkout (it is not a checkout client)
 - Future PWA on a large screen is still this Mobile Client’s layouts, not Admin
+
+---
+
+## 10.1 Account, lock, and connectivity UX (AMEND-01)
+
+Account menu / settings must distinguish **Lock**, **Sign Out**, and **Remove From This Device** (see [offline-sync-auth-and-security.md](offline-sync-auth-and-security.md) §5.3). Shared devices show an enrolled-user chooser with safe labels only.
+
+Internet-required UX is centralized:
+
+- Ordinary blocked actions: short-lived shared toast/banner that names the capability
+- Workspace/account switch: persistent dialog; stay in current context
+- Optional restrained “Back online” when API reachability returns
+
+Error surfaces that are more than field validation should offer compact **Copy Diagnostics** (see [frontend-architecture-and-reuse.md](frontend-architecture-and-reuse.md)). Visual example:
+
+```text
+Something went wrong                         [Copy]
+
+Unable to complete this operation.
+
+ERR-XXXX • Correlation <id>
+
+[ Retry ]
+```
+
+Screenshots remain useful for visual defects. Copy Diagnostics is the primary runtime-error handoff into Cursor/support.
 
 ---
 

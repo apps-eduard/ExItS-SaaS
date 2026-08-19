@@ -9,7 +9,7 @@ It does **not** authorize implementation.
 
 ## Status
 
-- Planning direction: documented and closed for Product Owner + ChatGPT review
+- Planning direction: documented; AMEND-01 applied; waiting for Product Owner + ChatGPT final review
 - React mobile implementation: **NOT AUTHORIZED**
 - MAUI retirement: **NOT AUTHORIZED**
 - PWA production rollout: **NOT AUTHORIZED**
@@ -35,6 +35,7 @@ It does **not** authorize implementation.
 - [device-and-payment-integration.md](device-and-payment-integration.md) — scanner/printer/drawer adapters, payment boundaries, capability matrix
 - [migration-testing-and-implementation-gates.md](migration-testing-and-implementation-gates.md) — coexistence stages, parity, testing, visual checkpoint, gates A–K
 - [Reports/MOBILE-REACT-DOC-08-final-closeout.md](Reports/MOBILE-REACT-DOC-08-final-closeout.md) — final consistency audit and closeout
+- [Reports/MOBILE-REACT-DOC-AMEND-01-auth-connectivity-diagnostics.md](Reports/MOBILE-REACT-DOC-AMEND-01-auth-connectivity-diagnostics.md) — AMEND-01 PIN/lock/connectivity/diagnostics
 
 ## Canonical rule
 

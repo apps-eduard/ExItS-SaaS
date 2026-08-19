@@ -270,7 +270,132 @@ Final cookie-vs-Bearer matrix per delivery mode is an implementation gate, not a
 
 ---
 
-## 9. Quality and dependency policy
+## 9. Copy Diagnostics (AMEND-01)
+
+When an error is shown, the user/developer should click **one** Copy Diagnostics control and paste the result directly into Cursor or support.
+
+Purpose:
+
+```text
+error occurs
+→ click Copy Diagnostics
+→ paste into Cursor
+→ enough safe context to identify the failing area
+```
+
+A screenshot is **not** the primary debugging artifact for runtime errors. Screenshots may still help visual defects.
+
+**Current MAUI evidence:** Settings support diagnostics can copy a formatted snapshot (`SupportDiagnosticsView` + `FormatReport`) with a forbidden-marker check. That is a **settings page**, not a global one-click control on every error. The future host must provide a **common format/service** usable from inline errors, page errors, toasts, and fatal boundaries.
+
+Not every validation error needs a global error screen. Presentation stays severity-appropriate (inline / page / toast / fatal boundary). The builder is shared.
+
+### 9.1 Visible UI
+
+Keep the on-screen state compact. Example:
+
+```text
+Something went wrong                         [Copy]
+
+Unable to complete this operation.
+
+ERR-XXXX • Correlation <id>
+
+[ Retry ]
+```
+
+### 9.2 Copied message (conceptual)
+
+```text
+EXITS ERROR DIAGNOSTICS
+
+Application:
+ExItS Mobile Client
+
+App Version:
+<safe version/build/commit>
+
+Delivery:
+Web / PWA / Capacitor Android / Capacitor iOS
+
+Platform:
+<safe OS/browser/device platform>
+
+Route/Screen:
+<route or screen>
+
+Operation:
+<operation>
+
+Error Reference:
+<client-generated safe reference>
+
+Error Type:
+<normalized safe error type>
+
+HTTP Status:
+<when applicable>
+
+Error Code:
+<server/application safe error code>
+
+Correlation ID:
+<when supplied by API>
+
+Connectivity:
+Online / Offline / Server Unreachable
+
+Sync State:
+<safe aggregate state>
+
+Local Operation ID:
+<when useful and non-secret>
+
+Timestamp:
+<ISO timestamp>
+
+Message:
+<safe user/technical normalized message>
+
+SECURITY:
+Sensitive credentials and protected payloads excluded.
+```
+
+Prefer identifiers and correlation references over raw payloads. Preserve API correlation IDs when exposed (`X-Correlation-Id` / problem+json `traceId`).
+
+### 9.3 Redaction (allowlist)
+
+The diagnostic builder **must** use an allowlist / redaction model. Do not rely on developers remembering to redact per screen.
+
+Copy Diagnostics MUST NEVER include:
+
+- password
+- PIN
+- PIN verifier / hash / salt
+- access token
+- refresh / session token
+- recovery credential
+- Authorization / Cookie headers
+- encryption keys
+- raw card data, CVV
+- GCash PIN / OTP
+- protected payment secrets
+- decrypted financial / customer payloads
+- arbitrary request/response bodies containing PII
+
+### 9.4 Intended sources
+
+- React render / error boundary
+- Normalized API errors
+- Auth / session errors
+- Offline / connectivity errors
+- Sync / outbox failures
+- Local storage failures
+- Capacitor / native adapter failures
+- Scanner / printer / payment-terminal adapter failures later
+
+---
+
+## 10. Quality and dependency policy
 
 - TypeScript strict; feature isolation; route lazy-loading where useful
 - Loading / empty / error / forbidden on data surfaces
@@ -282,7 +407,7 @@ Final cookie-vs-Bearer matrix per delivery mode is an implementation gate, not a
 
 ---
 
-## 10. Explicit non-goals
+## 11. Explicit non-goals
 
 - Creating `ExItS.PinoyBusinessPOS.Client`
 - Adding Capacitor/PWA to the solution

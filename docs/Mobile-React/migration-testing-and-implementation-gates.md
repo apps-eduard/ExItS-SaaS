@@ -167,7 +167,7 @@ Track at least these experience groups. Do **not** reduce “mobile” to POS ch
 - Organization Owner essentials (Manage business subset)
 - POS Operations (sell, catalog, customers, shifts, registers, purchasing, reports)
 - Offline/sync chrome
-- Settings (theme, language, density, logout)
+- Settings (theme, language, density, Lock / Sign Out / Remove From This Device)
 
 Organization Web full administration and Platform Admin are **out of this matrix** (different hosts).
 
@@ -194,7 +194,8 @@ Future React work (after Gate C) uses layers below. Current MAUI/.NET tests rema
 | Vitest | Unit tests for adapters, formatters, outbox state machines, Zod schemas | Prefer testing contracts, not pixel CSS |
 | Testing Library | Component behavior (roles, labels, checkout buttons) | Accessibility-friendly queries |
 | API client tests | Typed HTTP, problem+json, idempotency headers, auth handlers | Must not hit production DBs |
-| Sync / offline tests | DOC-05 scenarios (airplane, flap, duplicate retry, kill/restart, outbox recovery, conflict, GCash ref when that path exists) | PostgreSQL/Testcontainers remain the proof of **server** behavior |
+| Sync / offline tests | DOC-05 scenarios plus AMEND-01: Lock/Sign Out/Remove, PIN isolation, ordinary vs sensitive OnlineRequired UX | PostgreSQL/Testcontainers remain the proof of **server** behavior |
+| Copy Diagnostics tests | Allowlist/redaction: fixtures with tokens/PIN/payloads must not appear on the clipboard | Vitest on the builder; no secrets in snapshots |
 | Playwright | Browser/PWA journeys: sign-in, sell floor, theme/locale | Not a substitute for physical Android |
 | PWA tests | Manifest, SW does not cache-first financial APIs, update prompt does not destroy cart | DOC-04 |
 | Accessibility / axe | Automated smoke on checkpoint pages | Does not claim WCAG certification |
@@ -235,12 +236,13 @@ The **first** future implementation visual checkpoint is the sell-capable chrome
 
 | Surface | Why it is in the first checkpoint |
 |---|---|
-| Login / workspace | Auth and org/device context before any sale |
+| Login / workspace | Auth and org/device context before any sale; enrolled-user chooser when trusted |
 | POS selling screen | Primary cashier job (tablet landscape) |
 | Product browse / search | Barcode-first lookup |
-| Cart | Session-persistent; local updates |
+| Cart | Session-persistent; local updates; not discarded by Lock |
 | Checkout / payment selection | Cash, Manual GCash, Utang per current rules — no new methods |
-| Offline / sync indicator | Users always know LOCAL / PENDING / SYNCED / FAILED (DOC-05) |
+| Offline / sync indicator | LOCAL / PENDING / SYNCED / FAILED; ordinary Internet-required toast vs sensitive dialog |
+| Copy Diagnostics | Compact [Copy] on runtime errors (not field validation) |
 | Phone navigation | Personal/Owner/ops chrome at phone density |
 | Tablet landscape | Primary sell-floor layout |
 | Desktop / PWA | Side nav/tables allowed; must not become Admin |
