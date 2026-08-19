@@ -43,5 +43,11 @@ These are planning decisions. They do not change current implementation.
 | MOBILE-D-036 | Completed financial records are never silently rewritten. Conflicts retain work for review. Inventory management stays online-required; local catalog deduction is a projection only. | Accepted |
 | MOBILE-D-037 | Browser/PWA uses a browser-safe session (no tokens in ordinary localStorage). Capacitor uses native secure storage for Bearer, matching current MAUI. On reconnect, server authority wins. Offline snapshots do not permanently override entitlements. | Accepted |
 | MOBILE-D-038 | PWA and Capacitor may use different physical storage; they share logical outbox/repository contracts. IndexedDB/SQLite libraries are not pinned in planning docs. | Accepted |
+| MOBILE-D-039 | Device access uses conceptual contracts (Scanner, Camera, Printer, CashDrawer, NFC, PaymentTerminal, Share, Connectivity, DeviceIdentity) with separate Web/PWA and Capacitor adapters. Unimplemented adapters degrade; they do not invent hardware products. | Accepted |
+| MOBILE-D-040 | Barcode paths are HID/keyboard wedge, camera scan, and optional native scanner plugin. All feed a common product lookup. Checkout must not couple to a scanner manufacturer. Current MAUI camera path is still-image ExItS QR, not live product barcode. | Accepted |
+| MOBILE-D-041 | Receipt rendering is separate from printer transport. Current host has on-screen receipt + share-initiated handoff; no thermal/Bluetooth/USB printer. Browser/PWA must not be promised native printer parity. | Accepted |
+| MOBILE-D-042 | Physical cash drawer is an adapter-based future capability, commonly via printer kick. Current cash-drawer domain is logical shift movements only. Hardware is not assumed. | Accepted |
+| MOBILE-D-043 | POS retail payments stay cash, manual GCash, and customer credit. Platform SaaS payments stay separate. Fake/electronic Card/GCash remain Development/Testing. No real payment provider is selected. Future terminals use PaymentService → provider adapter; ExItS stores only permitted references. Unknown payment status is never success. | Accepted |
+| MOBILE-D-044 | NFC and payment terminals are NOT_ASSUMED until a later authorized package. No PAN/PIN/CVV/GCash secrets in ExItS storage or logs. | Accepted |
 
-Later DOC packages may add IDs. They must not weaken MOBILE-D-001 through MOBILE-D-038 without Product Owner review.
+Later DOC packages may add IDs. They must not weaken MOBILE-D-001 through MOBILE-D-044 without Product Owner review.
