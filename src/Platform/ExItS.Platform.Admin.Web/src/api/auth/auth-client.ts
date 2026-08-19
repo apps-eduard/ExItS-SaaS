@@ -49,7 +49,6 @@ export function getAuthMe(baseUrl: string, signal?: AbortSignal): Promise<AuthSe
   });
 }
 
-/** Typed contract only. Do not call from UI while CSRF posture remains BLOCKS_FUTURE_MUTATION. */
 export function logout(baseUrl: string, signal?: AbortSignal): Promise<void> {
   return platformRequest<void>(baseUrl, {
     method: "POST",

@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getAuthMe, login as loginRequest } from "@/api/auth/auth-client";
+import { getAuthMe, login as loginRequest, logout as logoutRequest } from "@/api/auth/auth-client";
 import { isNetworkFailure, isSessionInvalidError } from "@/api/auth/auth-errors";
 import type { AuthSession } from "@/api/auth/auth-types";
 import { env } from "@/lib/env";
@@ -21,6 +21,7 @@ type SessionContextValue = {
   status: SessionStatus;
   session: AuthSession | null;
   signIn: (usernameOrEmail: string, password: string) => Promise<AuthSession>;
+  signOut: () => Promise<void>;
   markExpired: () => void;
 };
 
@@ -76,9 +77,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return next;
   }, []);
 
+  const signOut = useCallback(async () => {
+    try {
+      await logoutRequest(env.platformApiBaseUrl);
+    } catch (error) {
+      if (!isSessionInvalidError(error)) {
+        report(error, {
+          operation: "Sign out",
+          category: isNetworkFailure(error) ? "NETWORK" : "UNKNOWN",
+        });
+        throw error;
+      }
+    }
+    setSession(null);
+    setStatus("unauthenticated");
+    clearClientState();
+  }, [clearClientState, report]);
+
   const value = useMemo<SessionContextValue>(
-    () => ({ status, session, signIn, markExpired }),
-    [status, session, signIn, markExpired],
+    () => ({ status, session, signIn, signOut, markExpired }),
+    [status, session, signIn, signOut, markExpired],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

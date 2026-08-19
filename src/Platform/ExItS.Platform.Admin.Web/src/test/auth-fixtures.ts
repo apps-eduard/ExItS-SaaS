@@ -100,6 +100,14 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}):
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       const path = pathnameOf(url);
+      if (url.includes("/api/v1/platform/auth/logout")) {
+        return {
+          ok: true,
+          status: 204,
+          json: async () => null,
+          text: async () => "",
+        } as Response;
+      }
       if (url.includes("/api/v1/platform/auth/me")) {
         return jsonResponse(200, sampleSession);
       }

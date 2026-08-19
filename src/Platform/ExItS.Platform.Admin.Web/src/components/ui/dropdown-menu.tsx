@@ -45,10 +45,14 @@ export function DropdownMenuItem({
   return (
     <DropdownMenuPrimitive.Item
       disabled={disabled}
-      className="flex min-h-9 cursor-pointer items-center rounded-sm px-2 text-[length:var(--exits-text-sm)] outline-none focus:bg-surface-muted data-disabled:cursor-default data-disabled:opacity-100"
+      className="flex min-h-9 cursor-pointer items-center gap-2 rounded-sm px-2 text-[length:var(--exits-text-sm)] outline-none focus:bg-surface-muted data-disabled:cursor-default data-disabled:opacity-100"
       onSelect={onSelect}
     >
       {children}
     </DropdownMenuPrimitive.Item>
   );
+}
+
+export function DropdownMenuSeparator() {
+  return <DropdownMenuPrimitive.Separator className="my-1 h-px bg-border" />;
 }

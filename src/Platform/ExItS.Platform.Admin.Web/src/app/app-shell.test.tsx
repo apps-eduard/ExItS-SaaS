@@ -10,6 +10,7 @@ import {
   mockUnauthenticatedFetch,
   sampleAuthorization,
   sampleSession,
+  textResponse,
 } from "@/test/auth-fixtures";
 
 function stubDesktop(desktop: boolean) {
@@ -128,6 +129,11 @@ describe("application shell", () => {
     const user = userEvent.setup();
     const { unmount } = render(<App />);
     await screen.findByRole("heading", { name: "Overview" });
+    const aside = document.querySelector("aside");
+    expect(aside).toBeTruthy();
+    expect(
+      within(aside as HTMLElement).queryByRole("button", { name: /sidebar/i }),
+    ).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Collapse sidebar" }));
     expect(
       JSON.parse(window.localStorage.getItem(UI_PREFERENCES_STORAGE_KEY) ?? "{}").sidebarCollapsed,
@@ -144,6 +150,8 @@ describe("application shell", () => {
     const user = userEvent.setup();
     render(<App />);
     await screen.findByRole("heading", { name: "Overview" });
+    expect(screen.getByRole("button", { name: "Open navigation" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Collapse sidebar" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Open navigation" }));
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByRole("link", { name: "Overview" })).toBeInTheDocument();
@@ -334,5 +342,66 @@ describe("application shell", () => {
     expect(
       screen.getByRole("link", { name: "Bumalik sa Pangkalahatang-tanaw" }),
     ).toBeInTheDocument();
+  });
+
+  it("renders initials in the account trigger and signs out through the logout endpoint", async () => {
+    stubDesktop(true);
+    let signedOut = false;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/auth/logout")) {
+          expect(init?.method).toBe("POST");
+          signedOut = true;
+          return {
+            ok: true,
+            status: 204,
+            json: async () => null,
+            text: async () => "",
+          } as Response;
+        }
+        if (url.includes("/auth/me")) {
+          if (signedOut) {
+            return jsonResponse(401, {
+              status: 401,
+              errorCode: "application.auth.session_invalid",
+            });
+          }
+          return jsonResponse(200, sampleSession);
+        }
+        if (url.includes("/authorization/me")) {
+          return jsonResponse(200, sampleAuthorization);
+        }
+        if (
+          url.includes("/organizations") ||
+          url.includes("/subscriptions") ||
+          url.includes("/users") ||
+          url.includes("/audit")
+        ) {
+          return jsonResponse(200, { items: [], totalCount: 0, page: 1, pageSize: 1 });
+        }
+        if (url.includes("/health")) {
+          return textResponse(200, "Healthy");
+        }
+        return jsonResponse(404, {});
+      }),
+    );
+    window.history.replaceState({}, "", "/admin");
+    const user = userEvent.setup();
+    const { unmount } = render(<App />);
+    await screen.findByRole("heading", { name: "Overview" });
+    expect(screen.getByText("OM", { exact: true })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: /Sign out/i })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Account menu" }));
+    expect(await screen.findByText("olivia@example.test")).toBeInTheDocument();
+    await user.click(await screen.findByRole("menuitem", { name: /Sign out/i }));
+    expect(await screen.findByRole("heading", { name: "Sign In" })).toBeInTheDocument();
+    expect(signedOut).toBe(true);
+    expect(window.location.pathname).toBe("/admin/login");
+    unmount();
+    render(<App />);
+    expect(await screen.findByRole("heading", { name: "Sign In" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Overview" })).not.toBeInTheDocument();
   });
 });

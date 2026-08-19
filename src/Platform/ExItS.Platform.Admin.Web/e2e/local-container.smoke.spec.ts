@@ -99,5 +99,27 @@ test.describe("local-validation React container smoke", () => {
       path: resolve(screenshotDir, "05-dashboard-after-test-login.png"),
       fullPage: true,
     });
+
+    await expect(page.getByRole("button", { name: "Collapse sidebar" })).toBeVisible();
+    await expect(page.getByText("OM", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Account menu" }).click();
+    await expect(page.getByRole("menuitem", { name: /Sign out/i })).toBeVisible();
+    const logout = page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/v1/platform/auth/logout") &&
+        response.request().method() === "POST",
+    );
+    await page.getByRole("menuitem", { name: /Sign out/i }).click();
+    expect((await logout).ok()).toBeTruthy();
+    await expect(page).toHaveURL(/\/admin\/login/);
+    await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Overview" })).toHaveCount(0);
+
+    await selector.selectOption(value!);
+    await page.locator("#sign-in-password").fill(password);
+    await page.getByRole("button", { name: "Sign In" }).click();
+    await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
   });
 });

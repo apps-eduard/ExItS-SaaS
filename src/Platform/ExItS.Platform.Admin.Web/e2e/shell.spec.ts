@@ -76,7 +76,10 @@ test("authenticated shell is usable on desktop and has no serious accessibility 
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Overview" })).toBeVisible();
   await expect(page.getByText("Development Tools")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Sign Out" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Account menu" })).toBeVisible();
+  await expect(page.getByText("OM", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Collapse sidebar" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: /Sign out/i })).toHaveCount(0);
 
   const results = await new AxeBuilder({ page }).analyze();
   const serious = results.violations.filter(

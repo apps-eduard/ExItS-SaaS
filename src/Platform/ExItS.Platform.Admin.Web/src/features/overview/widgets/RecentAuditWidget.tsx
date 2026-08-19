@@ -6,6 +6,11 @@ import { useRecentAuditQuery } from "@/features/overview/use-dashboard-queries";
 import { usePreferences } from "@/hooks/use-preferences";
 import { formatDate } from "@/lib/i18n/format";
 import type { MessageKey } from "@/lib/i18n/messages";
+import {
+  presentAuditAction,
+  presentAuditActor,
+  presentAuditType,
+} from "@/lib/audit/audit-presentation";
 
 function outcomeTone(outcome: string): "success" | "warning" | "danger" | "neutral" {
   if (outcome === "Succeeded") {
@@ -52,15 +57,24 @@ export function RecentAuditWidget({ enabled }: { enabled: boolean }) {
             time: t("dashboard.table.time"),
             outcome: t("dashboard.table.outcome"),
           }}
-          items={query.data.items.map((record) => ({
-            id: record.id,
-            title: record.actionCode,
-            actor: record.actorIdentifier,
-            context: record.targetType,
-            time: formatDate(new Date(record.occurredAtUtc), language),
-            outcomeLabel: outcomeLabel(t, record.outcome),
-            tone: outcomeTone(record.outcome),
-          }))}
+          items={query.data.items.map((record) => {
+            const action = presentAuditAction(record.actionCode, t);
+            const actor = presentAuditActor(record.actorIdentifier, t);
+            const context = presentAuditType(record.targetType, t);
+            return {
+              id: record.id,
+              title: action.label,
+              rawTitle: action.raw,
+              actor: actor.label,
+              actorDetail: actor.detail,
+              rawActor: actor.raw,
+              context: context.label,
+              rawContext: context.raw,
+              time: formatDate(new Date(record.occurredAtUtc), language),
+              outcomeLabel: outcomeLabel(t, record.outcome),
+              tone: outcomeTone(record.outcome),
+            };
+          })}
         />
       ) : null}
     </DashboardSection>

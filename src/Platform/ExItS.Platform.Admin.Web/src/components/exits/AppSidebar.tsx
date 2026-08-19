@@ -1,11 +1,9 @@
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { AppNav } from "@/components/exits/AppNav";
 import { usePreferences } from "@/hooks/use-preferences";
 import { cn } from "@/lib/utils";
 
 export function AppSidebar() {
-  const { t, sidebarCollapsed, setSidebarCollapsed } = usePreferences();
+  const { t, sidebarCollapsed } = usePreferences();
 
   return (
     <aside
@@ -29,21 +27,6 @@ export function AppSidebar() {
             </p>
           </div>
         )}
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="ml-auto"
-          aria-pressed={sidebarCollapsed}
-          aria-label={sidebarCollapsed ? t("shell.expandSidebar") : t("shell.collapseSidebar")}
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-        >
-          {sidebarCollapsed ? (
-            <PanelLeftOpen aria-hidden="true" size={16} />
-          ) : (
-            <PanelLeftClose aria-hidden="true" size={16} />
-          )}
-        </Button>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
         <AppNav collapsed={sidebarCollapsed} />

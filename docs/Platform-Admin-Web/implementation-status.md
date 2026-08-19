@@ -62,7 +62,8 @@ Mailpit and Development/Testing fake payments remain in place. This package does
 | PWEB-IMPL-05 | COMPLETE | Dashboard |
 | PWEB-IMPL-06 | AWAITING VISUAL REVIEW | First Visual Checkpoint |
 | PWEB-IMPL-06A | COMPLETE | Local Validation Test User runtime gate |
-| PWEB-IMPL-06B | AWAITING VISUAL REVIEW | Uniform shadcn structure + Stripe visual standard |
+| PWEB-IMPL-06B | VISUAL DIRECTION ACCEPTED | Uniform shadcn structure + Stripe visual standard |
+| PWEB-IMPL-06C | FINAL POLISH — AWAITING PRODUCT OWNER + CHATGPT VISUAL APPROVAL | Final shell, account, and audit polish |
 
 ## PWEB-IMPL-02 — Design system + global preferences
 
@@ -242,29 +243,28 @@ See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-06A-local-validation-test-user.md
 
 ## PWEB-IMPL-06B — Uniform shadcn / Stripe visual system
 
-Status: **AWAITING VISUAL REVIEW**
+Status: **VISUAL DIRECTION ACCEPTED**
 
-Cursor must **not** mark visual quality APPROVED. Product Owner + ChatGPT review is required.
+The 06B visual direction is the permanent Platform Admin standard. PWEB-IMPL-06C is a narrow polish pass on that direction, not a redesign.
 
-### PLATFORM ADMIN VISUAL STANDARD (permanent)
+See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-06B-uniform-shadcn-stripe-visual-system.md`.
 
-Structural basis: shadcn/ui dashboard/auth/sidebar composition patterns (adapted to ExItS components; not copied generated source).
-Primary visual reference: Stripe Dashboard (density/hierarchy).
-Secondary: Vercel Dashboard (shell/navigation/responsive).
-Polish: Linear (typography/dark-mode/control refinement).
-ExItS branding/tokens remain authoritative. Never copy third-party brand assets or exact proprietary layouts. Do not invent unrelated visual systems per feature.
+## PWEB-IMPL-06C — Final shell, account, and audit polish
+
+Status: **FINAL POLISH — AWAITING PRODUCT OWNER + CHATGPT VISUAL APPROVAL**
 
 | Area | Record |
 |---|---|
-| Shell | shadcn-style sidebar + operational top bar + shared `PageHeader` |
-| Login | Split brand/auth; compact form; Local Validation secondary |
-| Dashboard | Compact metrics, table attention/audit, quiet health; real API data only |
-| Tables / status / forms | Shared `AdminTable`; badges for status only; compact controls |
-| Preferences | Compact dropdown (theme, language, density) |
-| Screenshots | `docs/Platform-Admin-Web/Reports/impl-06b-uniform-visual-system/` |
+| Sidebar collapse | Moved to desktop top bar; removed from sidebar header |
+| Mobile nav | Existing Menu drawer preserved |
+| Account | Generated initials avatar; menu shows name/email; **Sign out** calls `POST /api/v1/platform/auth/logout` |
+| Audit | Presentation mapping for known codes; raw values remain in `title` / screen-reader text |
+| Actor | `platform-user:<GUID>` shown as Platform user + compact GUID; full value retained |
+| Platform readiness | Same bordered operational surface as other sections; still low visual weight |
+| Screenshots | `docs/Platform-Admin-Web/Reports/impl-06c-final-polish/` |
 | Visual status | **AWAITING PRODUCT OWNER + CHATGPT** |
 
-See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-06B-uniform-shadcn-stripe-visual-system.md`.
+See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-06C-final-shell-account-audit-polish.md`.
 
 ## Queue
 
@@ -273,6 +273,7 @@ See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-06B-uniform-shadcn-stripe-visual-
 | PWEB-IMPL-05 — Dashboard | COMPLETE |
 | PWEB-IMPL-06 — First Visual Checkpoint | AWAITING VISUAL REVIEW |
 | PWEB-IMPL-06A — Local Validation Test User | COMPLETE |
-| PWEB-IMPL-06B — Uniform visual system | AWAITING VISUAL REVIEW |
+| PWEB-IMPL-06B — Uniform visual system | VISUAL DIRECTION ACCEPTED |
+| PWEB-IMPL-06C — Final polish | FINAL POLISH — AWAITING PRODUCT OWNER + CHATGPT VISUAL APPROVAL |
 
-Stopped after PWEB-IMPL-06B.
+Stopped after PWEB-IMPL-06C.

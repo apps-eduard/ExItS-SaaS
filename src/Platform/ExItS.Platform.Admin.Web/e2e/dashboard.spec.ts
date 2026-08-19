@@ -155,7 +155,8 @@ test("full-permission dashboard renders real summaries", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Recent Platform activity" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Platform readiness" })).toBeVisible();
   await expect(page.getByText("Harbor Market")).toBeVisible();
-  await expect(page.getByText("platform.access.checked")).toBeVisible();
+  await expect(page.getByText("Platform access checked")).toBeVisible();
+  await expect(page.locator('[title="platform.access.checked"]')).toBeVisible();
   await expect(page.getByRole("link", { name: "View organizations" })).toHaveCount(0);
 });
 

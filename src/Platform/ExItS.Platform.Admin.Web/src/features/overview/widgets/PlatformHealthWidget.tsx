@@ -42,11 +42,7 @@ export function PlatformHealthWidget({ enabled }: { enabled: boolean }) {
   const query = usePlatformHealthQuery(enabled);
 
   return (
-    <DashboardSection
-      variant="quiet"
-      title={t("dashboard.health.title")}
-      description={t("dashboard.health.hint")}
-    >
+    <DashboardSection title={t("dashboard.health.title")} description={t("dashboard.health.hint")}>
       {query.isPending ? <DashboardWidgetSkeleton rows={2} /> : null}
       {query.isError ? <DashboardWidgetError onRetry={() => void query.refetch()} /> : null}
       {query.data ? (
