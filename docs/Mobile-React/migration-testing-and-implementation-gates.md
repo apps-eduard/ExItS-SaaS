@@ -328,13 +328,13 @@ Locked today:
 
 | Item | Status |
 |---|---|
-| Gate A — documentation as planning baseline | **APPROVED** (does not unlock implementation or merge) |
-| Gate C — React implementation | **NOT AUTHORIZED** |
+| Gate A — documentation as planning baseline | **APPROVED** |
+| Gate C — React implementation | **AUTHORIZED** for IMPL-01 foundation only |
 | Gate D production PWA | **NOT AUTHORIZED** |
 | Gate H Capacitor production | **NOT AUTHORIZED** |
 | Gate J MAUI retirement | **NOT AUTHORIZED** |
 | Gate K iOS native | **NOT AUTHORIZED** (later) |
-| Merge to `main` | **PERFORMED** (`MOBILE-REACT-DOC-MERGE-01`) — documentation only; does not unlock C–K |
+| Merge to `main` | **PERFORMED** (`MOBILE-REACT-DOC-MERGE-01`) — documentation only; Gate D+ remain locked |
 
 ---
 

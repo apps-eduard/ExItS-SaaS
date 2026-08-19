@@ -44,6 +44,7 @@ src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ (`/health` + `/health/
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ (+ Platform access client incl. org public-identity, `/api/v1/qr/resolve`, POS device registration-token create/redeem; PosCommercialHeaderHandler; PosCustomerClient; PosSaleClient/PosExpenseClient/**PosPurchaseOrderClient** idempotency headers; PosCatalogClient online-only; PosSupplierClient online-only)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.LocalStore/ (Microsoft.Data.Sqlite schema v9 + generic encrypted offline_operations outbox + BlockedByAccess reclaim + encrypted customer/credit/repayment projections + selective connected-supplier linked products and local PO drafts + product usage/sell-unit offline cache; never a full supplier catalog; **not** part of server backup sets)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; Customers + credit + repayments + ledger + overdue/due dates + statement/receipt preview/share + catalog/barcode + sales (**multi-unit Sell as checkout**) + inventory + expenses + suppliers + **purchasing hub (Receive stock / POs / discrepancy-aware goods receipts)** + connected supplier request/catalog/linked products/incoming order list/detail + lifecycle actions + **connected buyers + post-accept share prompt + per-buyer shared products/pricing** + **unified org notifications (Read-on-open)** + dashboard/reports; onboarding/auth; sync-status shell; private product-image cache + explicit adopted-template thumbs + queueable offline catalog create (metadata JSON; pending photos as files, never SQLite bytes); offline foundation diagnostics; PosResources en/fil-PH)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/ (React Mobile Client host; Gate C foundation only — shell, theme, i18n, HTTP stubs, diagnostics; not auth/PWA/Capacitor/selling)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Web/ (Organization Web Admin — AntDesign Blazor Server management/reporting per ADR-022; **not a POS checkout client**; unified org notifications + Connected buyers; Local Validation :8093)
 tests/ExItS.Platform.UnitTests/
 tests/ExItS.ArchitectureTests/
@@ -118,6 +119,8 @@ docs/Mobile-React/Reports/MOBILE-REACT-DOC-AMEND-02-language-theme-defaults.md
 docs/Mobile-React/Reports/MOBILE-REACT-DOC-AMEND-03-smart-workspace-product-context.md
 docs/Mobile-React/Reports/MOBILE-REACT-DOC-APPROVAL-record.md
 docs/Mobile-React/Reports/MOBILE-REACT-DOC-MERGE-01-approved-planning-baseline.md
+docs/Mobile-React/Reports/MOBILE-REACT-IMPL-01-react-foundation.md
+docs/Mobile-React/Reports/impl-01-previews/
 docs/phases/README.md
 docs/phases/phase-01-platform-boundary.md
 docs/phases/phase-02-platform-extraction.md

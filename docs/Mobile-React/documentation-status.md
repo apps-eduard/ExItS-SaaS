@@ -4,11 +4,11 @@ Program name: `ExItS Mobile React / PWA / Capacitor` (documentation-only plannin
 
 Target worktree branch: `docs/mobile-react-foundation`
 
-Baseline origin/main SHA: `5a9be9417b7a2217227ae93e9280102992861615`
+Baseline origin/main SHA: `5979a9ce008bb24a3257abd28ae79bc1a5a9b569`
 
 Documentation: `FINAL APPROVED` (DOC-00 … DOC-08; AMEND-01, AMEND-02, AMEND-03)
 
-React implementation: `NOT AUTHORIZED`
+React implementation: `Gate C AUTHORIZED` (MOBILE-REACT-IMPL-01 foundation)
 
 PWA implementation: `NOT AUTHORIZED`
 
@@ -26,15 +26,15 @@ Existing Personal Web status: `Retained / Unmodified`
 
 Existing .NET backends (Platform API + POS API + PostgreSQL): `Retained / Unmodified`
 
-Future React / PWA / Capacitor status: `Documentation Only`
+Future React / PWA / Capacitor status: `Gate C foundation in progress; PWA and Capacitor locked`
 
-React implementation presence: `Absent`
+React implementation presence: `Present` (`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/` — foundation only)
 
 Capacitor implementation presence: `Absent`
 
 PWA production presence: `Absent`
 
-Queue state: `STOPPED AFTER MOBILE-REACT-DOC-MERGE-01`
+Queue state: `STOPPED AFTER MOBILE-REACT-IMPL-01`
 
 MOBILE-D-060: `OPEN`
 
@@ -56,18 +56,19 @@ MOBILE-D-060: `OPEN`
 | MOBILE-REACT-DOC-AMEND-03 | Approved | Smart workspace + product context; AppTopBar shared context |
 | Product Owner approval | Recorded | [MOBILE-REACT-DOC-APPROVAL-record.md](Reports/MOBILE-REACT-DOC-APPROVAL-record.md) |
 | MOBILE-REACT-DOC-MERGE-01 | Complete | Approved planning baseline merged to `main` |
+| MOBILE-REACT-IMPL-01 | Complete | Gate C React Mobile Client foundation (shell, theme, i18n, HTTP stubs, diagnostics) |
 
 ## Authorization gates (locked)
 
 | Gate | Status |
 |---|---|
-| React mobile implementation | **NOT AUTHORIZED** |
+| React mobile implementation | **Gate C AUTHORIZED** (IMPL-01 foundation only) |
 | PWA implementation / production rollout | **NOT AUTHORIZED** |
 | Capacitor implementation / production rollout | **NOT AUTHORIZED** |
 | MAUI retirement | **NOT AUTHORIZED** |
-| Merge to `main` | **PERFORMED** (`MOBILE-REACT-DOC-MERGE-01`) — does **not** authorize implementation |
-| Documentation approval | Does **not** authorize React, PWA, Capacitor, or MAUI retirement |
+| Merge to `main` | **PERFORMED** (`MOBILE-REACT-DOC-MERGE-01`) — does **not** authorize PWA, Capacitor, or MAUI retirement |
+| Gate D+ | **NOT AUTHORIZED** |
 
-Do not scaffold React, add Capacitor, add a PWA service worker, add Node dependencies, or modify MAUI.
+Do not add a PWA service worker, Capacitor, authentication, PIN, workspace chooser, selling, or MAUI changes in this package.
 
-MOBILE-D-060 remains **Open**. Do not rewrite [DOC-08 closeout](Reports/MOBILE-REACT-DOC-08-final-closeout.md) as if it originally contained AMEND decisions or this merge.
+MOBILE-D-060 remains **Open**. Do not rewrite [DOC-08 closeout](Reports/MOBILE-REACT-DOC-08-final-closeout.md) as if it originally contained AMEND decisions or this implementation.

@@ -10,11 +10,12 @@ It does **not** authorize implementation.
 ## Status
 
 - Planning documentation: **FINAL APPROVED** (DOC-00 … DOC-08; AMEND-01, AMEND-02, AMEND-03)
-- React mobile implementation: **NOT AUTHORIZED**
+- React mobile implementation: **Gate C AUTHORIZED** (IMPL-01 foundation only)
 - MAUI retirement: **NOT AUTHORIZED**
 - PWA production rollout: **NOT AUTHORIZED**
 - Capacitor production rollout: **NOT AUTHORIZED**
-- Merge to `main`: **PERFORMED** (`MOBILE-REACT-DOC-MERGE-01`) — does **not** authorize implementation
+- Merge to `main`: **PERFORMED** (`MOBILE-REACT-DOC-MERGE-01`)
+- Gate D+: **NOT AUTHORIZED**
 - MOBILE-D-060: **OPEN**
 - Current MAUI, Organization Web, Personal Web, Platform APIs, and POS APIs: **unchanged**
 
@@ -41,6 +42,7 @@ It does **not** authorize implementation.
 - [Reports/MOBILE-REACT-DOC-AMEND-03-smart-workspace-product-context.md](Reports/MOBILE-REACT-DOC-AMEND-03-smart-workspace-product-context.md) — AMEND-03 smart workspace + product launch context
 - [Reports/MOBILE-REACT-DOC-APPROVAL-record.md](Reports/MOBILE-REACT-DOC-APPROVAL-record.md) — Product Owner documentation approval (merge still awaiting authorization)
 - [Reports/MOBILE-REACT-DOC-MERGE-01-approved-planning-baseline.md](Reports/MOBILE-REACT-DOC-MERGE-01-approved-planning-baseline.md) — merge of approved planning baseline to `main`
+- [Reports/MOBILE-REACT-IMPL-01-react-foundation.md](Reports/MOBILE-REACT-IMPL-01-react-foundation.md) — Gate C client foundation
 
 ## Canonical rule
 
