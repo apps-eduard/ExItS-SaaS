@@ -6,8 +6,9 @@
 |---|---|
 | Status | **Code Complete / Build Verified** |
 | Starting SHA | `40e4fe2c2b2d26e96ac0feda8723194362df946e` |
-| Feature commit | *(pending push)* |
-| Docs commit | *(pending push)* |
+| Feature commit | `36647761` |
+| Docs commit | `0092ca91` |
+| Final SHA | `0092ca9198694edf60da305622bb3ec73ae37835` |
 | Device Verified | **No** |
 | Browser Verified | **No** |
 | Production Ready | **No** |
