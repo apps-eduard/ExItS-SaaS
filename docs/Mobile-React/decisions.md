@@ -56,5 +56,7 @@ These are planning decisions. They do not change current implementation.
 | MOBILE-D-049 | First visual checkpoint is login/workspace, sell floor, browse/search, cart, checkout, sync indicator, phone/tablet/desktop. Cursor/agent cannot self-approve screenshots; a human Product Owner/reviewer must. | Accepted |
 | MOBILE-D-050 | Implementation gates A–K each need explicit Product Owner approval where specified. Completing documentation is Gate A material only and does not authorize scaffold, PWA production, Capacitor, cutover, or MAUI retirement. | Accepted |
 | MOBILE-D-051 | Until retirement, MAUI remains the fallback. A client host change must not require a database migration by itself. Backend stays .NET; Domain/Application/Infrastructure stay. | Accepted |
+| MOBILE-D-052 | This documentation set is closed for Product Owner + ChatGPT review. Completing DOC-08 does not pass Gate A, authorize implementation, or authorize merge. | Accepted |
+| MOBILE-D-053 | Canonical current docs may carry a future-planning cross-reference to `docs/Mobile-React`. They must not be rewritten as if React/PWA/Capacitor already shipped. CURRENT_IMPLEMENTATION_REQUIREMENT remains in force for MAUI. | Accepted |
 
-Later DOC packages may add IDs. They must not weaken MOBILE-D-001 through MOBILE-D-051 without Product Owner review.
+Later DOC packages may add IDs. They must not weaken MOBILE-D-001 through MOBILE-D-053 without Product Owner review.

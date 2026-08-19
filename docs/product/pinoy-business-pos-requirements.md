@@ -172,3 +172,5 @@ Cash and manually confirmed GCash may be recorded offline with stable local IDs.
 - Offline-first daily operations
 - Accessible labels, focus states and error messages
 - Native CSS / Razor components (no Ant Design, no Tailwind)
+
+**Client host (current vs planning):** The current implemented client remains MAUI/Razor. The Native CSS / Razor requirement above still governs that host. Future React/PWA/Capacitor replacement planning is documented under [docs/Mobile-React](../Mobile-React/README.md) and is **not** implementation authorization.

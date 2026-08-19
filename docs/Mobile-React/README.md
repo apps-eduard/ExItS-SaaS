@@ -9,11 +9,12 @@ It does **not** authorize implementation.
 
 ## Status
 
-- Planning direction: documented
+- Planning direction: documented and closed for Product Owner + ChatGPT review
 - React mobile implementation: **NOT AUTHORIZED**
 - MAUI retirement: **NOT AUTHORIZED**
 - PWA production rollout: **NOT AUTHORIZED**
 - Capacitor production rollout: **NOT AUTHORIZED**
+- Merge to `main`: **NOT AUTHORIZED**
 - Current MAUI, Organization Web, Personal Web, Platform APIs, and POS APIs: **unchanged**
 
 ## Worktree
@@ -33,6 +34,7 @@ It does **not** authorize implementation.
 - [offline-sync-auth-and-security.md](offline-sync-auth-and-security.md) — outbox/idempotency, financial offline rules, auth, client security
 - [device-and-payment-integration.md](device-and-payment-integration.md) — scanner/printer/drawer adapters, payment boundaries, capability matrix
 - [migration-testing-and-implementation-gates.md](migration-testing-and-implementation-gates.md) — coexistence stages, parity, testing, visual checkpoint, gates A–K
+- [Reports/MOBILE-REACT-DOC-08-final-closeout.md](Reports/MOBILE-REACT-DOC-08-final-closeout.md) — final consistency audit and closeout
 
 ## Canonical rule
 

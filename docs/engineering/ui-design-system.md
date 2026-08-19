@@ -238,6 +238,7 @@ Naming in earlier drafts (`ExTextField`, …) remains the documentation conventi
 
 ## Explicit non-goals
 
-- No Tailwind in POS or Platform Admin.
-- No Ant Design in PinoyBusinessPOS.
+- No Tailwind in **current** POS MAUI or **current** Platform Admin Blazor hosts.
+- No Ant Design in **current** PinoyBusinessPOS MAUI (Organization Web / Personal Web use Ant Design Blazor per ADR-022).
 - No single component that switches Ant vs native at runtime.
+- Future replacement-host planning (Platform Admin React; PinoyBusinessPOS React/PWA/Capacitor) lives under `docs/Platform-Admin-Web` and `docs/Mobile-React`. Completing those documents does **not** authorize adding React packages or Tailwind to the current MAUI or current Admin hosts.

@@ -21,7 +21,7 @@ The ExItS portfolio consists of the Platform and PinoyBusinessPOS. Platform owns
 | Offline database and sync | No | Own | Idempotency and contract rules |
 | Audit | Platform authority and administration | Retail operational audit | Correlation identifiers, not shared entities |
 | Platform Admin UI | Own; Ant Design Blazor | No | No Tailwind or Fluent UI |
-| POS UI | No | Own; native CSS / DesignSystem | Shared token semantics only |
+| POS UI | No | Own; native CSS / DesignSystem on **current MAUI** | Shared token semantics only. Future React/PWA/Capacitor Mobile Client planning: [docs/Mobile-React](../Mobile-React/README.md) (not authorized; does not change this row today) |
 
 ## Entitlement behavior
 
