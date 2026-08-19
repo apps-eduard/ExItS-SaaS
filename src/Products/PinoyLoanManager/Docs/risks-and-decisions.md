@@ -26,22 +26,23 @@
 | PLM-D-00-04 | Decision | Generic Platform cross-product relationship model | Open / Product Owner Decision Required | Personal as POS Customer, Loan Borrower, and future product-specific relationships | Platform architecture WP — do not design in PLM | Conceptual diagram only; product behavior in ADR-002 | Approved Platform contract/schema, not invented here |
 | PLM-D-00-05 | Decision | Personal-to-Borrower linking mechanism | Open / Product Owner Decision Required | Optional link, consent, no auto-link from EX ID / QR | PLM-04 + Platform | Product behavior defined (PLM-DOC-01); Platform transport, contract, persistence, and integration **not** designed | Approved linking/consent **implementation** design |
 | PLM-D-00-06 | Decision | Loan roles and grants | Open / Product Owner Decision Required | PLM-03 and all operational WPs | Product owner | Presets, grant **catalog intent**, scope, SoD recorded; **identifiers** not final | Owner-approved identifiers; no role-name hard-coding; no implicit hierarchy |
-| PLM-D-00-07 | Decision | Operational financial model | Open / Product Owner Decision Required | Origination, payments, collections, cash | Product owner | Loan vs collector cash; Cashier Session *concept*; billable event DISBURSED; schema not designed | Owner-approved money/ledger schema in this product |
-| PLM-D-00-08 | Decision | Loan business/calculation rules | Open / Product Owner Decision Required | PLM-05 through PLM-10 | Product owner | Treatment *modes*, partial payments, oldest-due *schedule* baseline recorded; **no** rates/formulas/component order | Owner-approved policy for each remaining rule area |
+| PLM-D-00-07 | Decision | Operational financial model | **Open / Partially Resolved** | Origination, payments, collections, cash | Product owner | Terminology, fee model, net proceeds, allocation baseline, money precision (PLM-DOC-02). Schema/GL/settlement/write-off/cash refund still open | Owner-approved money/ledger **schema** in this product; remaining accounting workflows |
+| PLM-D-00-08 | Decision | Loan business/calculation rules | **Open / Partially Resolved** | PLM-05 through PLM-10 | Product owner | Methods, formulas, treatments, fees, allocation (PLM-DOC-02). Calendar, penalties, excused days, early-settlement rebate, restructuring, write-off still open | Remaining policy areas approved; no invented rates |
 | PLM-D-00-09 | Decision | Web/MAUI component-sharing strategy | Open / Product Owner Decision Required | Client scaffold and PLM-13 | Architecture WP | Surface split recorded (full Org Web vs limited MAUI vs Personal presentation) | Approved sharing/isolation approach; no client project until authorized |
-| PLM-D-00-10 | Decision | Product documentation baseline completion / owner approval | **Closed / Product Owner Accepted** | Closing PLM-00 | Product owner | PLM-00 WP01–WP10 completed; GitHub branch reviewed; documentation baseline accepted. Product implementation is deliberately paused while ExItS scale architecture and remaining PLM business/policy decisions are finalized | Owner accepted documentation baseline. Financial, legal, and production decisions remain open. Implementation is not currently authorized |
-| PLM-D-00-11 | Decision | External legal/compliance validation | Open / Product Owner Decision Required | Production use | Product owner + external counsel | No rates/workflows claimed compliant | Written legal/compliance validation before Production |
-| PLM-D-00-12 | Decision | Exact money rounding mode | Open / Product Owner Decision Required | Calculation engine | Product owner + accounting | Decimal money; boundaries recorded; midpoint algorithm **not** chosen | Explicit rounding-mode decision before engine implementation |
+| PLM-D-00-10 | Decision | Product documentation baseline completion / owner approval | **Closed / Product Owner Accepted** | Closing PLM-00 | Product owner | PLM-00 WP01–WP10 completed; GitHub branch reviewed; documentation baseline accepted. Product implementation is deliberately paused while ExItS scale architecture and remaining PLM business/policy decisions are finalized | Owner accepted documentation baseline. Remaining financial calendar/penalty/legal and production decisions remain open. Implementation is not currently authorized |
+| PLM-D-00-11 | Decision | External legal/compliance validation | Open / Product Owner Decision Required | Production use | Product owner + external counsel | No rates/workflows claimed compliant. Effective-cost/EIR/APR formula, required documents, terminology, timing, rounding, and consumer presentation require qualified review | Written legal/compliance validation before Production |
+| PLM-D-00-12 | Decision | Exact money rounding mode | **Closed** | Calculation engine | Product owner + accounting | [ADR-004](Decisions/ADR-004-rounding-fees-and-payment-allocation.md) | PHP 2 dp posted; ≥8 intermediate; midpoint To Even; final-installment reconciliation |
 | PLM-D-00-13 | Decision | Small-org vs two-person high-risk approval | Open / Product Owner Decision Required | Operational SoD | Product owner | Multiple presets on one person allowed; high-risk self-approval still restricted where required | Explicit policy for which actions may never be self-approved |
 
 ## Accepted engineering / planning baselines (WP04)
 
-These are **planning baselines**, not legal approval and not implementation. They do **not** close PLM-D-00-07 / PLM-D-00-08 formulas or rates.
+These are **planning baselines**, not legal approval and not implementation. PLM-DOC-02 **partially resolves** PLM-D-00-07 / PLM-D-00-08 and **closes** PLM-D-00-12. Remaining calendar, penalty, settlement-rebate, schema, and legal items stay open. No default rates.
 
 - partial payments supported
 - multiple payments supported
 - deterministic allocation required
-- oldest due obligation first as recommended **schedule-level** allocation baseline
+- oldest due obligation first (approved schedule-level allocation)
+- component order Interest → Principal → Fees → Penalties (MVP, not org-editable)
 - true overpayment does not create a general customer wallet in MVP
 - financial history append-only / auditable in effect
 - loan ledger separate from collector cash ledger
@@ -52,7 +53,10 @@ These are **planning baselines**, not legal approval and not implementation. The
 - disbursement is preferred Platform usage-billing event
 - Traditional and Quick Loan converge into one financial core
 - decimal money arithmetic; no binary float for authoritative money
-- Principal, Net Proceeds, and Total Repayment are not assumed identical
+- PHP posted 2 decimal places; intermediate ≥8; midpoint To Even
+- Principal, Net Proceeds, and Total Scheduled Repayment are not assumed identical
+- Quick Loan MVP: Flat/Add-On only; Traditional: Flat/Add-On or Reducing-Balance Equal-Installment
+- deducted finance charge is not scheduled twice
 
 ## Accepted engineering / planning baselines (WP05)
 
@@ -154,7 +158,7 @@ These are **planning targets**, not created projects.
 
 ## Operating-model, calculation, and operational open areas (do not invent)
 
-Direction in WP03–WP10 docs does **not** close these. Tracked primarily under PLM-D-00-04, PLM-D-00-05, PLM-D-00-06, PLM-D-00-07, PLM-D-00-08, PLM-D-00-11, PLM-D-00-12, PLM-D-00-13, and D-P12-03:
+Direction in WP03–WP10 docs does **not** close these. Tracked primarily under PLM-D-00-04, PLM-D-00-05, PLM-D-00-06, PLM-D-00-07 (remainder), PLM-D-00-08 (remainder), PLM-D-00-11, PLM-D-00-13, and D-P12-03:
 
 - exact grant identifiers
 - custom-role support / version
@@ -174,22 +178,17 @@ Direction in WP03–WP10 docs does **not** close these. Tracked primarily under 
 - notification provider / channel selection
 - audit retention schedule
 - accounting / GL integration
-- exact financial calculation decisions remaining from WP04
 - exact traditional loan assessment criteria / approval limits
 - exact Traditional mandatory application fields
 - exact revision/reapproval workflow before disbursement
 - exact Traditional document/condition checklist for disbursement
-- exact interest formula(s) supported for MVP
-- exact rate / rate precision
-- exact rounding mode (PLM-D-00-12)
-- exact fee model
-- component payment allocation order (penalty / fee / interest / principal)
-- exact penalty basis / rates / caps
-- exact schedule behavior after excused collection day
+- default or maximum interest rates (not defined; never invent)
+- exact penalty basis / rates / caps (**PLM-DOC-03**)
+- exact schedule behavior after excused collection day (**PLM-DOC-03**)
 - exact future-interest treatment on early settlement
 - restructuring calculations
 - write-off accounting treatment
-- due-date generation details
+- due-date generation details (**PLM-DOC-03**)
 - Personal / Loan API shape
 - who may initiate unlink
 - pending Quick Loan offer treatment after unlink
@@ -198,30 +197,25 @@ Direction in WP03–WP10 docs does **not** close these. Tracked primarily under 
 - duplicate-borrower detection
 - required KYC fields
 - Platform usage-charge transport (D-P12-03)
-- regulatory / legal validation (PLM-D-00-11)
+- regulatory / legal validation (PLM-D-00-11), including effective-cost/disclosure formula
 
 ## Loan policy subjects (do not invent)
 
-Tracked under **PLM-D-00-08** unless noted. None of the following is decided as a formula, rate, or legal rule:
+Tracked under **PLM-D-00-08** unless noted. Remaining items (do **not** invent):
 
-- exact interest method/formula for MVP
-- amortization method
-- rate configuration/precision
-- rounding mode (PLM-D-00-12)
-- due-date generation
+- due-date generation (**PLM-DOC-03**)
 - loan types beyond the two origination *paths*
-- component payment allocation order
-- exact fee model
 - exact future-interest treatment on early settlement
-- exact schedule behavior after excused collection day
+- exact schedule behavior after excused collection day (**PLM-DOC-03**)
 - grace-period **N** (concept recorded; not a Platform default)
-- penalty basis/rates/caps (concepts recorded; no amount/rate)
+- penalty basis/rates/caps (concepts recorded; no amount/rate — **PLM-DOC-03**)
 - restructuring calculations
 - write-off accounting treatment
-- full accounting/GL integration
-- legal/regulatory operating rules
+- full accounting/GL integration (PLM-D-00-07 remainder)
+- legal/regulatory operating rules (PLM-D-00-11)
+- default or maximum interest rates / fee amounts (never invent)
 
-Partial-payment *support*, oldest-due *schedule-level* allocation, and no-MVP-wallet overpayment handling are recorded as engineering baselines, not as legal rules.
+**Resolved in PLM-DOC-02** (not legal approval): MVP methods and formulas, rate bases, added vs deducted interest, fee model, oldest-due allocation, component order, partial/multiple/advance/overpayment, money precision, rounding (PLM-D-00-12 Closed).
 
 Do **not** close remaining items by guessing. Do **not** claim legal compliance.
 
@@ -230,6 +224,6 @@ Do **not** close remaining items by guessing. Do **not** claim legal compliance.
 - Prefer stable IDs (`R-…`, `D-…`, `PLM-D-…`).
 - “Closed” requires repository or operator evidence plus explicit approval.
 - Unresolved policy in approved docs must appear here as open decisions.
-- Do not close PLM-D-00-03, PLM-D-00-04 through PLM-D-00-09, PLM-D-00-11 through PLM-D-00-13, D-P12-03, R-091, or D-P12-05 without explicit approval.
-- PLM-D-00-01 is **Closed** (`pinoy-loan-manager`). PLM-D-00-02 is **Closed for logical database name** only. PLM-D-00-10 is **Closed / Product Owner Accepted** (documentation baseline only).
-- ADRs: [Decisions/ADR-001-product-identity-and-database-name.md](Decisions/ADR-001-product-identity-and-database-name.md), [Decisions/ADR-002-borrower-personal-cardinality-and-consent.md](Decisions/ADR-002-borrower-personal-cardinality-and-consent.md).
+- Do not close PLM-D-00-03, PLM-D-00-04 through PLM-D-00-09, PLM-D-00-11, PLM-D-00-13, D-P12-03, R-091, or D-P12-05 without explicit approval. PLM-D-00-07 and PLM-D-00-08 remain **Open / Partially Resolved** — do not mark them Closed.
+- PLM-D-00-01 is **Closed** (`pinoy-loan-manager`). PLM-D-00-02 is **Closed for logical database name** only. PLM-D-00-10 is **Closed / Product Owner Accepted** (documentation baseline only). PLM-D-00-12 is **Closed** (To Even; PHP 2 dp; ≥8 intermediate).
+- ADRs: [Decisions/ADR-001-product-identity-and-database-name.md](Decisions/ADR-001-product-identity-and-database-name.md), [Decisions/ADR-002-borrower-personal-cardinality-and-consent.md](Decisions/ADR-002-borrower-personal-cardinality-and-consent.md), [Decisions/ADR-003-supported-interest-and-schedule-methods.md](Decisions/ADR-003-supported-interest-and-schedule-methods.md), [Decisions/ADR-004-rounding-fees-and-payment-allocation.md](Decisions/ADR-004-rounding-fees-and-payment-allocation.md).

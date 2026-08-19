@@ -6,7 +6,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Plan status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01 identity/linking recorded; PLM-01 paused on mainline |
+| Plan status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01 identity/linking recorded; PLM-DOC-02 calculation/allocation recorded; PLM-01 paused on mainline |
 | Implementation present | No |
 
 ## Delivery approach
@@ -50,7 +50,8 @@ Stop when any of these are missing without an approved decision:
 
 - [x] Product definition approved (documentation baseline accepted — PLM-D-00-10 Closed)
 - [ ] Roles/grants matrix draft (presets and grant **intent** recorded; identifiers open — PLM-D-00-06)
-- [ ] Operational-money definition (boundary and ledger-vs-cash direction — PLM-D-00-07)
+- [x] Operational-money **policy** (methods, fees, allocation, precision — PLM-DOC-02)
+- [ ] Operational-money **schema** / GL / cash refund (PLM-D-00-07 remainder)
 - [x] Logical DB name (`ExItS_PinoyLoanManager` — PLM-D-00-02 Closed for name)
 - [ ] DB schema / creation / connections / placement (deferred — PLM-D-00-02 remainder)
 - [x] Privacy classification (PHI default none) — recorded
@@ -66,7 +67,7 @@ Do not start PLM-01 on mainline until explicitly authorized. Product implementat
 | Commercial-state transport | **DECISION D-P12-03** | Provisional patterns only; do not invent final |
 | Production authentication | **R-091** | Keep Dev/Testing language honest (D-P12-05) |
 | Personal / cross-product relationship model | Platform + product | Open (PLM-D-00-04, PLM-D-00-05) |
-| Loan owner policy | Product owner | Open (PLM-D-00-06, PLM-D-00-07, PLM-D-00-08) |
+| Loan owner policy | Product owner | Grants open (PLM-D-00-06). Calculation methods accepted (PLM-DOC-02). Schema/calendar/penalties remain Open / Partially Resolved (PLM-D-00-07, PLM-D-00-08) |
 
 ## Testing expectations
 
@@ -98,6 +99,6 @@ Never weaken tests to pass a WP.
 ## Explicit exclusions from this plan
 
 - Implementing Loan capability in PLM-00
-- Finalizing calculation, penalty amounts, rounding mode, grant identifiers, or regulatory rules
+- Finalizing penalty amounts, remaining calendar/settlement rules, grant identifiers, or regulatory rules
 - Creating .NET projects, migrations, APIs, UI, Docker, or `ExItS.slnx` entries in this WP
 - Copying POS phases or grant sets

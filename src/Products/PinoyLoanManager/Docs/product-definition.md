@@ -8,13 +8,13 @@
 | Product name | Pinoy Loan Manager |
 | Platform product code | `pinoy-loan-manager` (**Closed**, PLM-D-00-01) |
 | Docs root | `src/Products/PinoyLoanManager/Docs/` |
-| Status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01 identity/linking recorded; no implementation |
+| Status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01 identity/linking recorded; PLM-DOC-02 calculation/allocation recorded; no implementation |
 | Last updated | 2026-08-19 |
 | Implementation present | No |
 
 ## Purpose and users
 
-- Purpose: Independently subscribed ExItS product for **lending operations**. Two origination paths are agreed: Traditional Loan and Quick Loan. After disbursement both converge into one core Loan model. Detail: [Product/lending-operating-model.md](Product/lending-operating-model.md). Money terminology, interest-treatment *modes*, lifecycle vs delinquency, and ledger vs cash are recorded in WP04. Exact formulas, rates, rounding mode, and component allocation order remain **Open** (PLM-D-00-08, PLM-D-00-12).
+- Purpose: Independently subscribed ExItS product for **lending operations**. Two origination paths are agreed: Traditional Loan and Quick Loan. After disbursement both converge into one core Loan model. Detail: [Product/lending-operating-model.md](Product/lending-operating-model.md). Money terminology, MVP calculation methods, fee model, rounding (**PLM-D-00-12 Closed**), and payment allocation are recorded in PLM-DOC-02. Default rates remain undefined. Calendar, penalties, and early-settlement rebate remain **Open** (PLM-D-00-08 remainder).
 - Target organizations: Independently subscribed ExItS lending organizations. Multi-branch support is intended from the beginning; a single-branch organization may use one default branch.
 - Target users / jobs: Organization staff via Owner / Manager / Cashier / Collector **presets** backed by explicit grants (identifiers still open — PLM-D-00-06). Borrowers use ExItS Personal as a presentation surface only. Do not hard-code authorization to role names. Do not copy PinoyBusinessPOS grant sets.
 
@@ -36,7 +36,7 @@ ExItS Platform
 | Catalog / plans / subscription | Platform | **Required:** independent subscription for this product only. Product code `pinoy-loan-manager` is **approved** for future catalog registration (PLM-D-00-01 Closed). Catalog registration itself is not performed in this package. |
 | Entitlements / commercial access | Platform facts | **DECISION:** D-P12-03 commercial-state transport — do not invent. Platform entitlement does not replace Loan product-local authorization. |
 | SaaS billing payments | Platform | Never store product operational money in Platform SaaS billing. |
-| Operational workflows / roles / money | **This product** | Not implemented. Role presets + grant **intent** recorded; identifiers open (PLM-D-00-06). Cashier Session and collector cash accountability recorded; schema open (PLM-D-00-07). |
+| Operational workflows / roles / money | **This product** | Not implemented. Role presets + grant **intent** recorded; identifiers open (PLM-D-00-06). Cashier Session and collector cash accountability recorded; ledger **schema** open (PLM-D-00-07 remainder). |
 
 ## Boundaries (checklist)
 
@@ -46,7 +46,7 @@ Recorded as **required intent**. Nothing below is implemented.
 - [x] Separate logical database name `ExItS_PinoyLoanManager` (**PLM-D-00-02** Closed for name). Database, schema, connections, partitions, stamps, backups, and migrations are **not** created.
 - [x] No direct Platform table reads; no cross-product FKs — required intent
 - [ ] Product-local roles and grants defined — presets and grant **intent** recorded; identifiers **Open / Product Owner Decision Required** (PLM-D-00-06)
-- [ ] Operational money defined separately from SaaS billing — ownership boundary and ledger-vs-cash direction recorded; schema open (PLM-D-00-07)
+- [ ] Operational money defined separately from SaaS billing — ownership, fee model, Net Proceeds, allocation, and precision recorded (PLM-DOC-02); subledger **schema** open (PLM-D-00-07 remainder)
 - [x] Trusted org + product context enforced server-side — required intent; not implemented
 - [x] PHI / sensitive data: default **none** unless explicitly authorized below
 - [x] No customer-specific source forks (config only)
@@ -73,16 +73,17 @@ Surface detail: [Architecture/application-surface-model.md](Architecture/applica
 
 ## Operational money
 
-**Status: Open / Product Owner Decision Required** for schema, component allocation order, exact formulas, and GL integration (PLM-D-00-07, PLM-D-00-08).
+**Status: Open / Partially Resolved** for schema, GL integration, settlement/write-off accounting, and cash refund (PLM-D-00-07 remainder). Calculation methods, fees, allocation, and rounding are recorded in PLM-DOC-02.
 
 Required / agreed direction:
 
 - SaaS subscription / billing money remains Platform-owned (Organization → ExItS).
 - Borrower Loan Charges remain Pinoy Loan Manager–owned (Borrower → lending organization) and must never become Platform `SaaSPayment*` records.
+- Platform usage charge must **not** enter the borrower Loan subledger. Fee model: [Product/fees-and-net-proceeds-policy.md](Product/fees-and-net-proceeds-policy.md).
 - Loan financial ledger and collector cash accountability are **separate facts**. See [Product/collector-cash-and-reconciliation.md](Product/collector-cash-and-reconciliation.md) and [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md).
 - Preferred Platform usage billable event: **LOAN DISBURSED** (not Loan Approved). Transport remains D-P12-03.
-- Do not assume Principal = Net Proceeds = Total Repayment. Terminology: [Product/financial-calculation-baseline.md](Product/financial-calculation-baseline.md).
-- Authoritative money math: decimal, not binary floating-point; exact rounding mode open (PLM-D-00-12).
+- Do not assume Principal = Net Proceeds = Total Scheduled Repayment. Terminology: [Product/financial-calculation-baseline.md](Product/financial-calculation-baseline.md).
+- Authoritative money math: decimal, PHP 2 dp posted, ≥8 intermediate, midpoint To Even (**PLM-D-00-12 Closed**). [Product/money-precision-and-rounding-policy.md](Product/money-precision-and-rounding-policy.md).
 - Entities, posting algorithms, and journal entries are **not** defined. Do not copy PinoyBusinessPOS money models.
 
 ## Product-local roles and grants (summary)
@@ -128,9 +129,11 @@ This package records:
 - traditional loan and origination workflow baseline (PLM-00-WP07, completed)
 - reporting, documents, notifications, and customer-visibility baseline (PLM-00-WP08, completed)
 - technical product layout and integration boundary (PLM-00-WP09, completed)
-- foundation closeout and implementation readiness (PLM-00-WP10, this package)
+- foundation closeout and implementation readiness (PLM-00-WP10, completed)
+- product identity and Personal linking (PLM-DOC-01, completed)
+- financial calculation, fees, rounding, and payment allocation (PLM-DOC-02, this package)
 
-No loan MVP **implementation** is approved. Calculation algorithms, peso/percent rates, rounding mode, and legal validation remain open.
+No loan MVP **implementation** is approved. Default rates, calendar/penalty policy, and legal validation remain open.
 
 ## Explicit exclusions
 
@@ -139,7 +142,7 @@ No loan MVP **implementation** is approved. Calculation algorithms, peso/percent
 - Final Loan grant identifiers (presets and grant **intent** recorded)
 - Generic Platform cross-product relationship schema
 - Copying PinoyBusinessPOS domain, grants, or financial models
-- Exact interest/amortization algorithms, peso or percent rates, rounding mode, due-date generation, component payment allocation order, early-settlement unearned interest, penalty amounts, legal/regulatory operating rules (PLM-D-00-08, PLM-D-00-12, and related open areas)
+- Exact interest **rates** (formulas/methods accepted in PLM-DOC-02), due-date generation, early-settlement unearned interest, penalty amounts, legal/regulatory operating rules (PLM-D-00-08 remainder, PLM-D-00-11, PLM-DOC-03)
 - Auto-approval of Quick Loans
 - Treating any recorded rate, fee, penalty, or workflow as legally compliant
 - Production authentication (R-091)
@@ -162,12 +165,12 @@ No loan MVP **implementation** is approved. Calculation algorithms, peso/percent
 | PLM-D-00-04 | Generic Platform cross-product relationship model | Personal multi-product participation |
 | PLM-D-00-05 | Personal-to-Borrower linking mechanism (product behavior defined; Platform transport/schema open) | Borrower identity implementation (PLM-04) |
 | PLM-D-00-06 | Loan roles and grants (presets + grant intent recorded; identifiers open) | Authorization (PLM-03) |
-| PLM-D-00-07 | Operational financial model (ledger vs cash; subledger principles recorded; schema open) | Origination, payments, collections |
-| PLM-D-00-08 | Loan business / calculation rules (modes recorded; formulas/rates open) | Product configuration through collections |
+| PLM-D-00-07 | Operational financial model (methods/fees/allocation recorded; schema/GL/refund open) | Origination, payments, collections |
+| PLM-D-00-08 | Loan business / calculation rules (MVP methods recorded; calendar/penalties/settlement open) | Product configuration through collections |
 | PLM-D-00-09 | Web / MAUI component-sharing strategy | Client scaffold |
 | PLM-D-00-10 | Product documentation baseline completion / owner approval | **Closed / Product Owner Accepted** |
 | PLM-D-00-11 | External legal/compliance validation before Production | Production use |
-| PLM-D-00-12 | Exact money rounding mode | Calculation engine |
+| PLM-D-00-12 | Exact money rounding mode | **Closed** — PHP 2 dp; ≥8 intermediate; To Even; final-installment reconciliation |
 | PLM-D-00-13 | Small-org vs two-person high-risk approval | Operational SoD |
 | D-P12-03 | Commercial-state transport | Product access enforcement |
 | R-091 | Production authentication | Production readiness |
@@ -184,7 +187,11 @@ No loan MVP **implementation** is approved. Calculation algorithms, peso/percent
 | Collector cash | [Product/collector-cash-and-reconciliation.md](Product/collector-cash-and-reconciliation.md) |
 | Penalty / exception / waiver | [Product/penalty-exception-and-waiver-model.md](Product/penalty-exception-and-waiver-model.md) |
 | Financial calculation | [Product/financial-calculation-baseline.md](Product/financial-calculation-baseline.md) |
-| Payment / allocation | [Product/payment-and-allocation-model.md](Product/payment-and-allocation-model.md) |
+| Interest / finance charge | [Product/interest-and-finance-charge-policy.md](Product/interest-and-finance-charge-policy.md) |
+| Fees / net proceeds | [Product/fees-and-net-proceeds-policy.md](Product/fees-and-net-proceeds-policy.md) |
+| Payment allocation / prepayment | [Product/payment-allocation-and-prepayment-policy.md](Product/payment-allocation-and-prepayment-policy.md) |
+| Money precision / rounding | [Product/money-precision-and-rounding-policy.md](Product/money-precision-and-rounding-policy.md) |
+| Payment / allocation (posting notes) | [Product/payment-and-allocation-model.md](Product/payment-and-allocation-model.md) |
 | Schedule / maturity / settlement | [Product/schedule-maturity-and-settlement.md](Product/schedule-maturity-and-settlement.md) |
 | Loan lifecycle | [Product/loan-lifecycle-model.md](Product/loan-lifecycle-model.md) |
 | Loan ledger / balances | [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md) |
@@ -215,6 +222,10 @@ No loan MVP **implementation** is approved. Calculation algorithms, peso/percent
 | Mobile / offline boundary | [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md) |
 | Platform commercial integration | [Architecture/platform-commercial-integration.md](Architecture/platform-commercial-integration.md) |
 | Foundation closeout | [Reports/PLM-00-foundation-closeout.md](Reports/PLM-00-foundation-closeout.md) |
+| PLM-DOC-01 | [Reports/PLM-DOC-01-product-identity-and-personal-linking.md](Reports/PLM-DOC-01-product-identity-and-personal-linking.md) |
+| PLM-DOC-02 | [Reports/PLM-DOC-02-financial-calculation-and-allocation.md](Reports/PLM-DOC-02-financial-calculation-and-allocation.md) |
+| ADR-003 | [Decisions/ADR-003-supported-interest-and-schedule-methods.md](Decisions/ADR-003-supported-interest-and-schedule-methods.md) |
+| ADR-004 | [Decisions/ADR-004-rounding-fees-and-payment-allocation.md](Decisions/ADR-004-rounding-fees-and-payment-allocation.md) |
 | Readiness checklist | [Validation/PLM-00-readiness-checklist.md](Validation/PLM-00-readiness-checklist.md) |
 | Security | [security.md](security.md) |
 | Authorization | [authorization-matrix.md](authorization-matrix.md) |

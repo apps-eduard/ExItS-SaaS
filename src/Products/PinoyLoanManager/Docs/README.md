@@ -11,7 +11,7 @@ Always load with:
 5. The active work-package prompt/report
 6. Files required for the task only
 
-**Status:** PLM-00 documentation baseline accepted (PLM-D-00-10); PLM-DOC-01 identity/linking decisions recorded; implementation paused
+**Status:** PLM-00 documentation baseline accepted (PLM-D-00-10); PLM-DOC-01 identity/linking and PLM-DOC-02 calculation/allocation recorded; implementation paused
 **Implementation present:** No
 **Documentation root:** `src/Products/PinoyLoanManager/Docs/` (D-P12-02)
 
@@ -41,8 +41,12 @@ Agreed operating-model direction (not implementation specs):
 | [Product/collector-cash-and-reconciliation.md](Product/collector-cash-and-reconciliation.md) | Loan ledger vs collector cash |
 | [Product/penalty-exception-and-waiver-model.md](Product/penalty-exception-and-waiver-model.md) | Penalty, exception, waiver, reversal, post-maturity |
 | [Architecture/application-surface-model.md](Architecture/application-surface-model.md) | Platform Admin, Org Web, MAUI, Personal |
-| [Product/financial-calculation-baseline.md](Product/financial-calculation-baseline.md) | Money terms, interest-treatment modes, precision |
-| [Product/payment-and-allocation-model.md](Product/payment-and-allocation-model.md) | Partial payments, oldest-due, reversals, idempotency |
+| [Product/financial-calculation-baseline.md](Product/financial-calculation-baseline.md) | Money terms; pointer to PLM-DOC-02 policies |
+| [Product/interest-and-finance-charge-policy.md](Product/interest-and-finance-charge-policy.md) | MVP methods, formulas, interest treatments |
+| [Product/fees-and-net-proceeds-policy.md](Product/fees-and-net-proceeds-policy.md) | Fee bases/treatments; Net Proceeds; Platform charge separation |
+| [Product/payment-allocation-and-prepayment-policy.md](Product/payment-allocation-and-prepayment-policy.md) | Oldest-due allocation; component order; advance/overpayment |
+| [Product/money-precision-and-rounding-policy.md](Product/money-precision-and-rounding-policy.md) | Decimal money; To Even; schedule reconciliation |
+| [Product/payment-and-allocation-model.md](Product/payment-and-allocation-model.md) | Partial payments, posting notes, reversals, idempotency |
 | [Product/schedule-maturity-and-settlement.md](Product/schedule-maturity-and-settlement.md) | Schedule, calendar, maturity, settlement |
 | [Product/loan-lifecycle-model.md](Product/loan-lifecycle-model.md) | Origination vs lifecycle vs delinquency |
 | [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md) | Operational subledger and balance components |
@@ -74,8 +78,11 @@ Agreed operating-model direction (not implementation specs):
 | [Architecture/platform-commercial-integration.md](Architecture/platform-commercial-integration.md) | Commercial/identity contracts; D-P12-03 open |
 | [Reports/PLM-00-foundation-closeout.md](Reports/PLM-00-foundation-closeout.md) | PLM-00 closeout and implementation gates |
 | [Reports/PLM-DOC-01-product-identity-and-personal-linking.md](Reports/PLM-DOC-01-product-identity-and-personal-linking.md) | PLM-DOC-01 identity and Personal linking finalization |
+| [Reports/PLM-DOC-02-financial-calculation-and-allocation.md](Reports/PLM-DOC-02-financial-calculation-and-allocation.md) | PLM-DOC-02 calculation, fees, rounding, allocation |
 | [Decisions/ADR-001-product-identity-and-database-name.md](Decisions/ADR-001-product-identity-and-database-name.md) | Product code and logical database name |
 | [Decisions/ADR-002-borrower-personal-cardinality-and-consent.md](Decisions/ADR-002-borrower-personal-cardinality-and-consent.md) | Borrower/Personal cardinality and consent |
+| [Decisions/ADR-003-supported-interest-and-schedule-methods.md](Decisions/ADR-003-supported-interest-and-schedule-methods.md) | MVP interest/schedule methods |
+| [Decisions/ADR-004-rounding-fees-and-payment-allocation.md](Decisions/ADR-004-rounding-fees-and-payment-allocation.md) | Rounding, fees, allocation |
 | [Validation/PLM-00-readiness-checklist.md](Validation/PLM-00-readiness-checklist.md) | Docs-only readiness checklist |
 
 Category folders below are indexes only. They must not become a second source of truth.
@@ -136,4 +143,4 @@ Organization Web: Blazor Web (full operations). MAUI Blazor Hybrid: limited fiel
 
 ## Explicit exclusions
 
-No implementation exists. Exact loan calculation algorithms and peso/percent rates are not defined (PLM-D-00-08). Grant identifiers remain open (PLM-D-00-06). Do not copy PinoyBusinessPOS grants or money models. No recorded workflow is claimed legally compliant (PLM-D-00-11).
+No implementation exists. Default interest **rates** and fee **amounts** are not defined. Grant identifiers remain open (PLM-D-00-06). Calendar, penalties, and early-settlement rebate remain open (PLM-D-00-08 remainder). Do not copy PinoyBusinessPOS grants or money models. No recorded workflow is claimed legally compliant (PLM-D-00-11).

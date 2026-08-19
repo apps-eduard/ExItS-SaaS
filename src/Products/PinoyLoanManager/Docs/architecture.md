@@ -7,7 +7,7 @@
 |---|---|
 | Product | Pinoy Loan Manager / `pinoy-loan-manager` (**Closed**, PLM-D-00-01) |
 | Database | `ExItS_PinoyLoanManager` (**logical name Closed**, PLM-D-00-02); not created; schema/placement deferred |
-| Status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01 identity/linking recorded; no implementation |
+| Status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01 identity/linking recorded; PLM-DOC-02 calculation/allocation recorded; no implementation |
 | Implementation present | No |
 
 ## System context
@@ -79,7 +79,7 @@ Do **not** design the final generic Platform relationship schema here (**Status:
 
 ## Product modules
 
-Planning modules only. None are designed or implemented. Exact formulas remain open (PLM-D-00-08). Origination: [Product/lending-operating-model.md](Product/lending-operating-model.md). Authorization: [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md). Borrower / Personal: [Product/borrower-model.md](Product/borrower-model.md), [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md). Cash / daily ops: [Product/cashier-and-collector-control-model.md](Product/cashier-and-collector-control-model.md), [Product/daily-operational-workflow.md](Product/daily-operational-workflow.md). Financial planning: [Product/financial-calculation-baseline.md](Product/financial-calculation-baseline.md), [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md).
+Planning modules only. None are designed or implemented. MVP calculation methods, fees, rounding, and allocation are recorded (PLM-DOC-02); default rates remain undefined. Origination: [Product/lending-operating-model.md](Product/lending-operating-model.md). Authorization: [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md). Borrower / Personal: [Product/borrower-model.md](Product/borrower-model.md), [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md). Cash / daily ops: [Product/cashier-and-collector-control-model.md](Product/cashier-and-collector-control-model.md), [Product/daily-operational-workflow.md](Product/daily-operational-workflow.md). Financial planning: [Product/financial-calculation-baseline.md](Product/financial-calculation-baseline.md), [Product/interest-and-finance-charge-policy.md](Product/interest-and-finance-charge-policy.md), [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md).
 
 | Module | Responsibility | Notes |
 |---|---|---|
@@ -90,8 +90,8 @@ Planning modules only. None are designed or implemented. Exact formulas remain o
 | Application / approval | Traditional application and Quick Loan Request | Manual approval default; no auto-approval |
 | Origination / disbursement | Starting a loan and releasing funds | Approved ≠ Disbursed; office or collector; cash availability and readiness checks |
 | Shared Loan core | Ledger, balances, schedule, payments, penalties, collections, settlement, audit | One engine after disbursement |
-| Schedule / calculation engine | Schedules and calculations | Modes recorded; formula, rounding (PLM-D-00-12), amortization open |
-| Payment posting | Applying receipts | Partial/multiple payments; oldest-due schedule baseline; component order open |
+| Schedule / calculation engine | Schedules and calculations | MVP methods accepted (PLM-DOC-02); rounding Closed (PLM-D-00-12); calendar/penalties open (PLM-DOC-03) |
+| Payment posting | Applying receipts | Partial/multiple payments; oldest-due; component order Interest → Principal → Fees → Penalties |
 | Collector cash / reconciliation | Float, Cashier Session, remittance, variance | Separate from loan ledger; unresolved variance remains visible |
 | Collections / delinquency | Arrears, exceptions, waivers, reversals | Separate from lifecycle; no hard-coded rate |
 | Reporting / documents | Product reports and documents | Contents: [Product/reporting-baseline.md](Product/reporting-baseline.md); KPI formulas open |
@@ -177,8 +177,9 @@ Detail: `deployment-notes.md` when packaging begins. Not created in this package
 
 ## Explicit non-goals
 
-- Implementing code, projects, databases, migrations, APIs, UI, Docker, or solution entries in PLM-00
-- Finalizing Loan calculation algorithms, peso/percent rates, rounding mode, or component allocation order
+- Implementing code, projects, databases, migrations, APIs, UI, Docker, or solution entries in this documentation package
+- Inventing default peso/percent rates
+- Calendar, penalty rates, or post-maturity rules (PLM-DOC-03)
 - Designing the generic Platform relationship schema
 - Copying PinoyBusinessPOS architecture, grants, or money models
 - Claiming production-secure authentication

@@ -92,7 +92,7 @@ After approval/disbursement, Traditional Loan and Quick Loan use the **same** op
 
 Origination UX and template/application artifacts may differ. Posted loan financial facts must not.
 
-Planning for that core: [financial-calculation-baseline.md](financial-calculation-baseline.md), [loan-lifecycle-model.md](loan-lifecycle-model.md), [../Architecture/loan-ledger-and-balance-model.md](../Architecture/loan-ledger-and-balance-model.md). Exact formulas, rates, rounding mode, and component allocation order remain open. See [../risks-and-decisions.md](../risks-and-decisions.md).
+Planning for that core: [financial-calculation-baseline.md](financial-calculation-baseline.md), [interest-and-finance-charge-policy.md](interest-and-finance-charge-policy.md), [payment-allocation-and-prepayment-policy.md](payment-allocation-and-prepayment-policy.md), [loan-lifecycle-model.md](loan-lifecycle-model.md), [../Architecture/loan-ledger-and-balance-model.md](../Architecture/loan-ledger-and-balance-model.md). MVP methods, rounding, and allocation are accepted (PLM-DOC-02). Default rates remain undefined. Calendar/penalties remain open (PLM-DOC-03). See [../risks-and-decisions.md](../risks-and-decisions.md).
 
 ---
 

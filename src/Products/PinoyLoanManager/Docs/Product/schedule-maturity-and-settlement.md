@@ -6,7 +6,9 @@
 
 Schedule generation, collection calendar, excused-day treatment, maturity, advance payment, and early settlement. Not a schedule-engine specification.
 
-Related: [financial-calculation-baseline.md](financial-calculation-baseline.md), [payment-and-allocation-model.md](payment-and-allocation-model.md), [loan-lifecycle-model.md](loan-lifecycle-model.md), [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md).
+Related: [financial-calculation-baseline.md](financial-calculation-baseline.md), [interest-and-finance-charge-policy.md](interest-and-finance-charge-policy.md), [payment-allocation-and-prepayment-policy.md](payment-allocation-and-prepayment-policy.md), [money-precision-and-rounding-policy.md](money-precision-and-rounding-policy.md), [payment-and-allocation-model.md](payment-and-allocation-model.md), [loan-lifecycle-model.md](loan-lifecycle-model.md), [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md).
+
+Due-date calendar, excused-day treatment, delinquency, penalties, and post-maturity rules remain **PLM-DOC-03**.
 
 ---
 
@@ -36,7 +38,7 @@ Possible state concepts (not a finalized enum):
 
 Once a Loan is disbursed, the schedule must be based on the Loan’s **snapshotted** terms. No template edit may silently change it.
 
-Term vs installment count: [financial-calculation-baseline.md](financial-calculation-baseline.md). Rounding residuals should reconcile into the contractual total, typically via the final applicable installment.
+Term vs installment count: [interest-and-finance-charge-policy.md](interest-and-finance-charge-policy.md). Rounding residuals must reconcile into the contractual total via the final applicable installment: [money-precision-and-rounding-policy.md](money-precision-and-rounding-policy.md).
 
 ---
 
@@ -130,23 +132,11 @@ Post-maturity penalty concepts (no invented rate): [penalty-exception-and-waiver
 
 ## Early / advance payment
 
-Support the concepts:
+MVP **advance payment** (accepted in PLM-DOC-02): after past/current due are satisfied, additional payment applies to future scheduled obligations in chronological order. For Flat / Add-On Loans it does not automatically reduce contracted finance charge and does not silently regenerate the schedule.
 
-- Advance Payment
-- Partial Prepayment
-- Early Settlement
+**Principal prepayment** is not inferred from excess. True principal-prepayment recalculation remains a later package.
 
-Financial treatment must stay **explicit**. A borrower may pay before scheduled due dates.
-
-The engine must know whether the applicable **snapshotted** Loan policy:
-
-- simply pays future scheduled obligations
-- reduces principal
-- changes future interest
-- creates a settlement adjustment
-- leaves schedule unchanged
-
-Do **not** guess this. Exact treatment depends on the snapshotted Loan policy and remains **OPEN** where not yet decided.
+Detail: [payment-allocation-and-prepayment-policy.md](payment-allocation-and-prepayment-policy.md).
 
 ---
 
@@ -172,8 +162,9 @@ A settlement quote should eventually include:
 - valid-through time / date
 - component breakdown
 - policy / version used
+- quote validity period
 
-Do **not** implement in this package.
+Exact future-interest rebate/treatment remains **OPEN** (PLM-DOC-03 / later package + PLM-D-00-11). Do **not** implement in this package.
 
 ---
 

@@ -13,8 +13,12 @@ Do not treat this folder as a second product definition. Detailed agreed **direc
 | [quick-loan-model.md](quick-loan-model.md) | Quick Loan templates, snapshot, eligibility, Personal flow |
 | [collector-cash-and-reconciliation.md](collector-cash-and-reconciliation.md) | Loan ledger vs collector cash |
 | [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md) | Penalty, exception, waiver, reversal, post-maturity |
-| [financial-calculation-baseline.md](financial-calculation-baseline.md) | Money terminology, interest-treatment modes, precision |
-| [payment-and-allocation-model.md](payment-and-allocation-model.md) | Payments, oldest-due allocation, reversals |
+| [financial-calculation-baseline.md](financial-calculation-baseline.md) | Money terminology; pointer to PLM-DOC-02 policies |
+| [interest-and-finance-charge-policy.md](interest-and-finance-charge-policy.md) | MVP methods, formulas, interest treatments |
+| [fees-and-net-proceeds-policy.md](fees-and-net-proceeds-policy.md) | Fee bases/treatments; Net Proceeds |
+| [payment-allocation-and-prepayment-policy.md](payment-allocation-and-prepayment-policy.md) | Oldest-due allocation; component order |
+| [money-precision-and-rounding-policy.md](money-precision-and-rounding-policy.md) | Decimal money; To Even; reconciliation |
+| [payment-and-allocation-model.md](payment-and-allocation-model.md) | Payments, posting notes, reversals |
 | [schedule-maturity-and-settlement.md](schedule-maturity-and-settlement.md) | Schedule, calendar, maturity, settlement |
 | [loan-lifecycle-model.md](loan-lifecycle-model.md) | Origination vs lifecycle vs delinquency |
 | [daily-operational-workflow.md](daily-operational-workflow.md) | Common operating day, assignments, offline boundary |
@@ -36,10 +40,8 @@ Do not treat this folder as a second product definition. Detailed agreed **direc
 | [notification-model.md](notification-model.md) | Notifications |
 | [personal-loan-experience.md](personal-loan-experience.md) | Personal Loan area |
 
-Remaining formulas, rates, rounding mode, component allocation order, grant identifiers, and legal validation stay open in [../product-definition.md](../product-definition.md) and [../risks-and-decisions.md](../risks-and-decisions.md) (PLM-D-00-06, PLM-D-00-08, PLM-D-00-12, PLM-D-00-11, PLM-D-00-13). Do not invent:
+Remaining default **rates**, calendar/penalty/settlement items, grant identifiers, and legal validation stay open in [../product-definition.md](../product-definition.md) and [../risks-and-decisions.md](../risks-and-decisions.md) (PLM-D-00-06, PLM-D-00-08 remainder, PLM-D-00-11, PLM-D-00-13). Do not invent:
 
-- interest method/formula or peso/percent rates as defaults
-- rounding mode
-- component allocation order
+- peso/percent **rates** as defaults
 - penalty amounts or legal limits
 - legal/regulatory operating rules

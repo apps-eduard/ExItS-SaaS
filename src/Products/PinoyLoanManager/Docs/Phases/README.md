@@ -20,5 +20,6 @@ Do not copy PinoyBusinessPOS phase history into this product.
 | PLM-00-WP09 | Technical product layout and integration boundary | Completed |
 | PLM-00-WP10 | Foundation closeout and implementation readiness | Completed |
 | PLM-DOC-01 | Product identity, Borrower identity, and Personal linking finalization | Completed |
+| PLM-DOC-02 | Financial calculation, fees, rounding, and payment allocation | Completed |
 
-Recommended next documentation package: **PLM-DOC-02 — Financial Calculation, Fees & Payment Allocation Decisions**. PLM-01 remains paused on mainline. Do not start until explicitly authorized.
+Recommended next documentation package: **PLM-DOC-03 — Schedule Calendar, Delinquency, Penalties & Maturity Decisions**. PLM-01 remains paused on mainline. Do not start until explicitly authorized.

@@ -119,6 +119,6 @@ Lifecycle and unlink: [Product/personal-linking-lifecycle-and-visibility.md](Pro
 | PLM-D-00-06 | Missing product-local grant identifiers (presets and intent recorded) | Open |
 | PLM-D-00-05 | Undesigned consent/linking **transport** (product behavior defined) | Open |
 | PLM-D-00-11 | Legal/compliance validation not performed | Open |
-| PLM-D-00-12 | Exact money rounding mode unset | Open |
+| PLM-D-00-12 | Money rounding | **Closed** — To Even; PHP 2 dp; ≥8 intermediate |
 
 Full register: [risks-and-decisions.md](risks-and-decisions.md).

@@ -2,7 +2,7 @@
 
 **Status:** Foundation / planning only
 **Implementation present:** No
-**Current work package:** PLM-DOC-01 — Product Identity, Borrower Identity & Personal Linking Finalization
+**Current work package:** PLM-DOC-02 — Financial Calculation, Fees & Payment Allocation Decisions
 
 This file is the navigation map for future Cursor work. Load this product’s `Docs/` after the shared Product Foundation reference. Do not scan PinoyBusinessPOS implementation by default.
 
@@ -40,8 +40,12 @@ Shared contracts to load with this product:
 
 | Path | Purpose | Status | Implementation present |
 |---|---|---|---|
-| `Docs/Product/financial-calculation-baseline.md` | Money terms, interest-treatment modes, precision | Planning baseline / not a spec | No |
-| `Docs/Product/payment-and-allocation-model.md` | Payments, allocation, reversals, idempotency | Planning baseline / not a spec | No |
+| `Docs/Product/financial-calculation-baseline.md` | Money terms; pointer to PLM-DOC-02 policies | Planning baseline / not a spec | No |
+| `Docs/Product/interest-and-finance-charge-policy.md` | MVP methods, formulas, treatments | Accepted product rules (PLM-DOC-02) | No |
+| `Docs/Product/fees-and-net-proceeds-policy.md` | Fee bases/treatments; Net Proceeds | Accepted product rules (PLM-DOC-02) | No |
+| `Docs/Product/payment-allocation-and-prepayment-policy.md` | Allocation, advance, overpayment | Accepted product rules (PLM-DOC-02) | No |
+| `Docs/Product/money-precision-and-rounding-policy.md` | Decimal money; To Even; reconciliation | Accepted product rules (PLM-DOC-02) | No |
+| `Docs/Product/payment-and-allocation-model.md` | Payments, posting notes, reversals, idempotency | Planning baseline / not a spec | No |
 | `Docs/Product/schedule-maturity-and-settlement.md` | Schedule, calendar, maturity, settlement | Planning baseline / not a spec | No |
 | `Docs/Product/loan-lifecycle-model.md` | Origination vs lifecycle vs delinquency | Planning baseline / not a spec | No |
 | `Docs/Architecture/loan-ledger-and-balance-model.md` | Operational subledger and balances | Planning baseline / not a spec | No |
@@ -103,6 +107,7 @@ Shared contracts to load with this product:
 |---|---|---|---|
 | `Docs/Reports/PLM-00-foundation-closeout.md` | PLM-00 vision, gates, next phase | Planning closeout | No |
 | `Docs/Reports/PLM-DOC-01-product-identity-and-personal-linking.md` | PLM-DOC-01 identity and Personal linking | Documentation closeout | No |
+| `Docs/Reports/PLM-DOC-02-financial-calculation-and-allocation.md` | PLM-DOC-02 calculation, fees, rounding, allocation | Documentation closeout | No |
 | `Docs/Validation/PLM-00-readiness-checklist.md` | Docs-only readiness gates | Planning closeout | No |
 
 ## Workspace indexes (PLM-00-WP01, updated in WP02–WP10)
@@ -119,6 +124,8 @@ Shared contracts to load with this product:
 | `Docs/Decisions/README.md` | Index for ADRs | Foundation / Planning Only | No |
 | `Docs/Decisions/ADR-001-product-identity-and-database-name.md` | Product code and logical database name | Accepted (PLM-DOC-01) | No |
 | `Docs/Decisions/ADR-002-borrower-personal-cardinality-and-consent.md` | Borrower/Personal cardinality and consent | Accepted product behavior (PLM-DOC-01) | No |
+| `Docs/Decisions/ADR-003-supported-interest-and-schedule-methods.md` | MVP interest/schedule methods | Accepted product policy (PLM-DOC-02) | No |
+| `Docs/Decisions/ADR-004-rounding-fees-and-payment-allocation.md` | Rounding, fees, allocation | Accepted; PLM-D-00-12 Closed | No |
 | `Docs/Phases/README.md` | Index for phase sequencing | Foundation / Planning Only | No |
 | `Docs/Reports/README.md` | Index for WP evidence | Foundation / Planning Only | No |
 | `Docs/Validation/README.md` | Index for validation evidence | Foundation / Planning Only | No |
@@ -139,6 +146,6 @@ Shared contracts to load with this product:
 | `Docs/Reports/<WP-id>.md` | In-tree WP report not required except PLM-00 closeout |
 | Exact grant identifiers / custom roles | Open (PLM-D-00-06) |
 | Small-org vs two-person high-risk approval | Open (PLM-D-00-13) |
-| Exact rounding mode | Open (PLM-D-00-12) |
-| Final calculation algorithms / peso or percent rates | Owner decision (PLM-D-00-08) |
+| Default interest rates / fee amounts | Not defined; never invent |
+| Penalty rates/amounts, calendar, excused days | Open (PLM-DOC-03 / PLM-D-00-08 remainder) |
 | Legal/compliance validation | Open (PLM-D-00-11) |
