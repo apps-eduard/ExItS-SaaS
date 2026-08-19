@@ -18,8 +18,8 @@ Queue state: `CLEAR`
 
 | Doc ID | Status | Notes |
 |---|---|---|
-| DOC-01 | Complete after this package | Establish dedicated worktree, baseline, audit, and replacement boundaries |
-| DOC-02 | Pending | Plans for replacement feature parity measurement |
+| DOC-01 | Complete | Establish dedicated worktree, baseline, audit, and replacement boundaries |
+| DOC-02 | Complete | Product vision, UX personas, and information architecture |
 | DOC-03 | Pending | Replacement frontend UI component boundaries and library decisions |
 | DOC-04 | Pending | Replacement frontend auth/session + navigation behavior |
 | DOC-05 | Pending | Replacement permissions model + permission-aware UI gating |

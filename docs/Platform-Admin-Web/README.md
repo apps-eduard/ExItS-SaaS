@@ -11,5 +11,7 @@ boundaries, and records a dedicated planning worktree (`docs/platform-admin-web-
 - `documentation-status.md` — queue state + DOC-01 through DOC-10 planning table
 - `decisions.md` — accepted decision identifiers for this planning track
 - `current-state-and-replacement-boundaries.md` — existing vs future application boundaries
+- `product-vision-personas-information-architecture.md` — product vision, UX personas, and information architecture
 - `Reports/PLATFORM-WEB-DOC-01-current-state-audit.md` — current-state audit report
+- `Reports/PLATFORM-WEB-DOC-02-product-and-information-architecture.md` — product and IA report
 
