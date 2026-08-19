@@ -108,6 +108,8 @@ services:
       PlatformEmail__FromAddress: noreply@exits.local
       PlatformEmail__FromDisplayName: ExItS Local Validation
       PlatformEmail__AdminPublicBaseUrl: ${LOCAL_VALIDATION_ADMIN_ORIGIN:-http://localhost:8090}
+      PlatformEmail__PinoyLoanManagerPublicBaseUrl: ${LOCAL_VALIDATION_PLM_ORIGIN:-http://localhost:4176}
+      PlatformEmail__AllowHttpLoopbackPublicUrls: "true"
     ports:
       - "${LOCAL_VALIDATION_PLATFORM_API_HOST_PORT:-8091}:8080"
     networks:

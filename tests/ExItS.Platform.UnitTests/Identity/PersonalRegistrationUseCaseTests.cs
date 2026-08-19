@@ -1,3 +1,4 @@
+using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.UnitTests.Support;
@@ -57,6 +58,88 @@ public sealed class PersonalRegistrationUseCaseTests
         Assert.Null(credential.EmailVerifiedAtUtc);
 
         Assert.Equal(PlatformAuthOutboundMessageKinds.EmailVerification, messages.Last!.Kind);
+        Assert.Null(messages.Last.PublicSurface);
+    }
+
+    [Fact]
+    public async Task Register_with_pinoy_loan_manager_surface_does_not_create_organization_access()
+    {
+        var users = new InMemoryPlatformUserRepository();
+        var credentials = new InMemoryPlatformUserCredentialRepository();
+        var tokens = new InMemoryPlatformCredentialTokenRepository();
+        var profiles = new InMemoryAccountProfileRepository();
+        var roles = new InMemoryPlatformRoleAssignmentRepository();
+        var memberships = new InMemoryOrganizationMembershipRepository();
+        var messages = new CapturingAuthOutboundMessageSink();
+        var clock = new FixedClock(T0);
+        var unitOfWork = new NoOpUnitOfWork();
+        var audit = new NoOpAuditWriter();
+        var tokenService = new StubSessionTokenService();
+        var ensureProfiles = new EnsureAccountProfilesForUser(profiles, roles, memberships, unitOfWork, clock);
+
+        var register = new RegisterPersonalAccount(
+            users,
+            credentials,
+            tokens,
+            tokenService,
+            ensureProfiles,
+            messages,
+            audit,
+            unitOfWork,
+            clock,
+            Options.Create(new PlatformCredentialLifecycleOptions { EmailVerificationTokenLifetimeHours = 24, ExposeDebugTokens = true }),
+            new SequentialPublicUserIdGenerator());
+
+        var result = await register.ExecuteAsync(
+            "PLM User",
+            "plm.user@example.com",
+            PlatformAuthPublicSurfaces.PinoyLoanManager);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(PlatformAuthPublicSurfaces.PinoyLoanManager, messages.Last!.PublicSurface);
+
+        var user = await users.GetByNormalizedEmailAsync("plm.user@example.com");
+        var profileList = await profiles.ListByUserAsync(user!.Id);
+        Assert.DoesNotContain(profileList, p => p.AccountClass is AccountClass.Platform or AccountClass.Organization);
+        Assert.Empty((await memberships.ListByUserAsync(user.Id, null, 0, 10)).Items);
+    }
+
+    [Fact]
+    public async Task Register_rejects_unknown_public_surface()
+    {
+        var users = new InMemoryPlatformUserRepository();
+        var credentials = new InMemoryPlatformUserCredentialRepository();
+        var tokens = new InMemoryPlatformCredentialTokenRepository();
+        var profiles = new InMemoryAccountProfileRepository();
+        var roles = new InMemoryPlatformRoleAssignmentRepository();
+        var memberships = new InMemoryOrganizationMembershipRepository();
+        var messages = new CapturingAuthOutboundMessageSink();
+        var clock = new FixedClock(T0);
+        var unitOfWork = new NoOpUnitOfWork();
+        var audit = new NoOpAuditWriter();
+        var tokenService = new StubSessionTokenService();
+        var ensureProfiles = new EnsureAccountProfilesForUser(profiles, roles, memberships, unitOfWork, clock);
+
+        var register = new RegisterPersonalAccount(
+            users,
+            credentials,
+            tokens,
+            tokenService,
+            ensureProfiles,
+            messages,
+            audit,
+            unitOfWork,
+            clock,
+            Options.Create(new PlatformCredentialLifecycleOptions { EmailVerificationTokenLifetimeHours = 24 }),
+            new SequentialPublicUserIdGenerator());
+
+        var result = await register.ExecuteAsync(
+            "New User",
+            "new.user@example.com",
+            "https://evil.example/callback");
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.AuthPublicSurfaceInvalid, result.ErrorCode);
+        Assert.Null(await users.GetByNormalizedEmailAsync("new.user@example.com"));
+        Assert.Null(messages.Last);
     }
 
     [Fact]

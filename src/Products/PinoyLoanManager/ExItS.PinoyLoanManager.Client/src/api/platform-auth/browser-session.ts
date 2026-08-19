@@ -46,6 +46,11 @@ export function assertBrowserStorageHasNoSessionToken(storage: Storage): void {
 export const AUTH_LOGIN_PATH = "/api/v1/platform/auth/login";
 export const AUTH_ME_PATH = "/api/v1/platform/auth/me";
 export const AUTH_LOGOUT_PATH = "/api/v1/platform/auth/logout";
+export const AUTH_REGISTER_PATH = "/api/v1/platform/auth/register";
+export const AUTH_ACTIVATE_PATH = "/api/v1/platform/auth/activate-account";
+export const AUTH_FORGOT_PASSWORD_PATH = "/api/v1/platform/auth/forgot-password";
+export const AUTH_RESET_PASSWORD_PATH = "/api/v1/platform/auth/reset-password";
+export const PLM_PUBLIC_SURFACE = "pinoy-loan-manager";
 export const LOCAL_VALIDATION_ENABLED_PATH = "/api/v1/platform/local-validation/enabled";
 export const LOCAL_VALIDATION_IDENTITIES_PATH =
   "/api/v1/platform/local-validation/quick-login-identities";

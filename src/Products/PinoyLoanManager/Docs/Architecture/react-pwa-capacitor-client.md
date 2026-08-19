@@ -1,7 +1,7 @@
 # Pinoy Loan Manager — React / PWA / Capacitor Client Architecture
 
-**Status:** Accepted architecture (PLM-D-00-09 / PLM-01A); Gates B–D1 present
-**Implementation present:** React Client + online-first PWA + cookie Sign In — no Register/Reset, lending, or Capacitor
+**Status:** Accepted architecture (PLM-D-00-09 / PLM-01A); Gates B–D2 present
+**Implementation present:** React Client + online-first PWA + cookie Sign In + Personal account lifecycle — no org/product access, lending, or Capacitor
 **Last updated:** 2026-08-19
 
 `ExItS.PinoyLoanManager.Client` exists as a Gate B/C scaffold. Do not add Capacitor from this document.
@@ -209,9 +209,9 @@ Vite **dev (5176)** and **preview (4176)** proxy `/platform-api` to loopback Pla
 
 Local Validation HTTP is the Staging exception for `Secure=false` on the Platform session cookie (plus existing Development/Testing `AllowHttpAuthCookies` semantics). Production and generic Staging remain `Secure=true`. HttpOnly and SameSite=Lax are unchanged.
 
-### Email callback gap (D0)
+### Email callback routing (D2)
 
-Platform outbound registration/reset emails currently build links to `/admin/activate-account` and `/admin/reset-password` using `PlatformEmail:AdminPublicBaseUrl`. That architecture is **not** changed in D0. Follow-up: **PLM-CLIENT-GATE-D2** (registration + activation + forgot/reset + Mailpit PLM callback routing). Do not pretend PLM registration/reset is ready.
+Registration and forgot-password may send only the server-selected public surface `pinoy-loan-manager`. Platform never accepts `callbackUrl` / `redirectUrl` / `returnUrl` / `origin` from the browser. Missing surface keeps Admin `/admin/activate-account` and `/admin/reset-password`. The PLM surface uses explicit `PlatformEmail:PinoyLoanManagerPublicBaseUrl` (`http://localhost:4176` in Local Validation) for EmailVerification and PasswordReset only. Invitation and recovery-email links stay on Admin.
 
 ---
 
@@ -275,7 +275,7 @@ Cross-cutting frontend delivery track. Does **not** replace the core PLM busines
 
 Offline financial operation remains under **PLM-13** and requires its own explicit authorization.
 
-Recommended next when separately authorized: **PLM-CLIENT-GATE D2**. Do not start D2, Capacitor, or PLM-02 from Gate D1.
+Recommended next when separately authorized: remaining **PLM-CLIENT-GATE D** organization/product access (not started). Do not start Capacitor, PLM-02 lending, or merge `main` from Gate D2.
 
 ---
 

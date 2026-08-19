@@ -8,6 +8,31 @@ export const signInSchema = z.object({
 
 export type SignInValues = z.infer<typeof signInSchema>;
 
+export const signUpSchema = z.object({
+  displayName: z.string().trim().min(1, "required"),
+  email: z.string().trim().min(1, "required"),
+});
+
+export type SignUpValues = z.infer<typeof signUpSchema>;
+
+export const forgotPasswordSchema = z.object({
+  usernameOrEmail: z.string().trim().min(1, "required"),
+});
+
+export type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
+
+export const passwordConfirmSchema = z
+  .object({
+    password: z.string().min(1, "required"),
+    confirmPassword: z.string().min(1, "required"),
+  })
+  .refine((values) => values.password === values.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "mismatch",
+  });
+
+export type PasswordConfirmValues = z.infer<typeof passwordConfirmSchema>;
+
 export function zodResolver<TFieldValues extends FieldValues>(
   schema: z.ZodType<TFieldValues>,
 ): Resolver<TFieldValues> {

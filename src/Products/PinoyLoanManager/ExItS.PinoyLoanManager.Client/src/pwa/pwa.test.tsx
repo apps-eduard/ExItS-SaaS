@@ -26,6 +26,9 @@ describe("PWA manifest", () => {
     expect(PWA_PLATFORM_API_PATH_PATTERN.test("/platform-api/api/v1/platform/auth/me")).toBe(true);
     expect(PWA_AUTH_PATH_PATTERN.test("/api/v1/platform/auth/me")).toBe(true);
     expect(PWA_API_PATH_PATTERN.test("/appearance")).toBe(false);
+    expect(PWA_PLATFORM_API_PATH_PATTERN.test("/platform-api/api/v1/platform/auth/register")).toBe(
+      true,
+    );
   });
 });
 

@@ -1,6 +1,6 @@
 # Pinoy Loan Manager — Application Surface Model
 
-**Status:** Agreed product direction; client strategy **PLM-D-00-09 Closed / Product Owner Approved**; Gate D1 Sign In present
+**Status:** Agreed product direction; client strategy **PLM-D-00-09 Closed / Product Owner Approved**; Gate D2 account lifecycle present
 **Implementation present:** React Client + online-first PWA + cookie Sign In; Capacitor not started
 **Last updated:** 2026-08-19
 

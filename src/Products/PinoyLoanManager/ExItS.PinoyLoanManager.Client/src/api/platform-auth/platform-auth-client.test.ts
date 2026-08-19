@@ -3,6 +3,7 @@ import { isFrontendLocalValidationMode } from "@/api/platform-auth/local-validat
 import {
   fetchLocalValidationIdentities,
   loginWithPassword,
+  registerPersonalAccount,
 } from "@/api/platform-auth/platform-auth-client";
 import { jsonResponse } from "@/test/render";
 
@@ -60,5 +61,19 @@ describe("platform auth client", () => {
     expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("quick-login"))).toBe(
       false,
     );
+  });
+
+  it("posts registration with the public surface identifier only", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("/platform-api/api/v1/platform/auth/register");
+      expect(JSON.parse(String(init?.body))).toEqual({
+        displayName: "Pat",
+        email: "pat@example.com",
+        publicSurface: "pinoy-loan-manager",
+      });
+      return jsonResponse(409, { errorCode: "application.auth.email_conflict" });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(registerPersonalAccount("Pat", "pat@example.com")).resolves.toEqual({ ok: true });
   });
 });

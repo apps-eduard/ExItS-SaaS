@@ -40,6 +40,8 @@ test.describe("PWA foundation", () => {
     expect(source).not.toMatch(/BackgroundSyncPlugin|workbox-background-sync/);
     expect(source).toMatch(/startsWith\("\/api\/"\)[\s\S]{0,200}NetworkOnly/);
     expect(source).toMatch(/platform-api[\s\S]{0,200}NetworkOnly/);
+    expect(source).toMatch(/activate-account/);
+    expect(source).toMatch(/reset-password/);
     expect(source).not.toMatch(
       /startsWith\("\/api\/"\)[\s\S]{0,160}(?:CacheFirst|StaleWhileRevalidate)/,
     );

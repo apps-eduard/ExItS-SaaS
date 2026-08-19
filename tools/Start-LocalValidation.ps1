@@ -549,6 +549,8 @@ $platformEnv = @{
     PlatformEmail__FromAddress = 'noreply@exits.local'
     PlatformEmail__FromDisplayName = 'ExItS Local Validation'
     PlatformEmail__AdminPublicBaseUrl = $publicAdminUrl
+    PlatformEmail__PinoyLoanManagerPublicBaseUrl = 'http://localhost:4176'
+    PlatformEmail__AllowHttpLoopbackPublicUrls = 'true'
 }
 for ($i = 0; $i -lt $corsOrigins.Count; $i++) {
     $platformEnv["Cors__AllowedOrigins__$i"] = $corsOrigins[$i]

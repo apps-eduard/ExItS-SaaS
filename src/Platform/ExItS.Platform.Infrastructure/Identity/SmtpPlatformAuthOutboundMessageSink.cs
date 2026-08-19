@@ -26,7 +26,11 @@ internal sealed class SmtpPlatformAuthOutboundMessageSink(
             return;
         }
 
-        var (subject, body) = PlatformAuthOutboundEmailComposer.Compose(message, opts.AdminPublicBaseUrl!);
+        var (subject, body) = PlatformAuthOutboundEmailComposer.Compose(
+            message,
+            opts.AdminPublicBaseUrl!,
+            opts.PinoyLoanManagerPublicBaseUrl,
+            opts.AllowHttpLoopbackPublicUrls);
         using var client = new SmtpClient(opts.SmtpHost!, opts.SmtpPort)
         {
             EnableSsl = opts.UseSsl,

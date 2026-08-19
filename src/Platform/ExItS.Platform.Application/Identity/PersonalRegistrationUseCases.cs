@@ -60,10 +60,19 @@ public sealed class RegisterPersonalAccount
     public async Task<ApplicationResult<PersonalRegistrationAckDto>> ExecuteAsync(
         string displayName,
         string email,
+        string? publicSurface = null,
         CancellationToken cancellationToken = default)
     {
         const string genericAck =
             "If the email is eligible, a verification message was sent. Open the message to activate your Personal Account.";
+
+        var surfaceResult = PlatformAuthPublicSurfaces.Normalize(publicSurface);
+        if (!surfaceResult.IsSuccess)
+        {
+            return ApplicationResult<PersonalRegistrationAckDto>.Failure(
+                surfaceResult.ErrorCode!,
+                surfaceResult.ErrorMessage!);
+        }
 
         try
         {
@@ -112,7 +121,8 @@ public sealed class RegisterPersonalAccount
                     user.Id.Value,
                     user.NormalizedEmail,
                     opaque,
-                    token.ExpiresAtUtc),
+                    token.ExpiresAtUtc,
+                    PublicSurface: surfaceResult.Value),
                 cancellationToken).ConfigureAwait(false);
 
             await _auditWriter.WriteAsync(

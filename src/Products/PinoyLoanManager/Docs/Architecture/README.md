@@ -2,8 +2,8 @@
 
 **Purpose:** Authoritative **HOW** — technical structure and product boundaries.
 **Canonical document:** [../architecture.md](../architecture.md)
-**Status:** PLM-01 scaffold; PLM-01A approved; Gates B–D1 Client/PWA/Sign In present
-**Implementation present:** Product shell + React Client + online-first PWA + cookie Sign In — no Register/Reset/lending/Capacitor
+**Status:** PLM-01 scaffold; PLM-01A approved; Gates B–D2 Client/PWA/Sign In/account lifecycle present
+**Implementation present:** Product shell + React Client + online-first PWA + cookie Sign In + Personal account lifecycle — no org/product access/lending/Capacitor
 
 Do not treat this folder as a second architecture document.
 

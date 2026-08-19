@@ -1,9 +1,14 @@
 import {
+  AUTH_ACTIVATE_PATH,
+  AUTH_FORGOT_PASSWORD_PATH,
   AUTH_LOGIN_PATH,
   AUTH_LOGOUT_PATH,
   AUTH_ME_PATH,
+  AUTH_REGISTER_PATH,
+  AUTH_RESET_PASSWORD_PATH,
   LOCAL_VALIDATION_ENABLED_PATH,
   LOCAL_VALIDATION_IDENTITIES_PATH,
+  PLM_PUBLIC_SURFACE,
   SESSION_EXPIRED_ERROR_CODE,
   platformApiJson,
   toBrowserSessionSnapshot,
@@ -67,4 +72,69 @@ export async function fetchLocalValidationIdentities(): Promise<QuickLoginIdenti
     return [];
   }
   return identities.body;
+}
+
+export function platformProblemDetail(body: PlatformProblem | null, fallback: string): string {
+  const detail = body?.detail?.trim();
+  return detail && detail.length > 0 ? detail : fallback;
+}
+
+export async function registerPersonalAccount(
+  displayName: string,
+  email: string,
+): Promise<{ ok: true } | { ok: false; status: number; body: PlatformProblem | null }> {
+  const { status, body } = await platformApiJson<PlatformProblem>(AUTH_REGISTER_PATH, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      displayName,
+      email,
+      publicSurface: PLM_PUBLIC_SURFACE,
+    }),
+  });
+  if (status >= 200 && status < 500) {
+    return { ok: true };
+  }
+  return { ok: false, status, body };
+}
+
+export async function activatePersonalAccount(
+  token: string,
+  password: string,
+): Promise<{ ok: true } | { ok: false; status: number; body: PlatformProblem | null }> {
+  const { status, body } = await platformApiJson<PlatformProblem>(AUTH_ACTIVATE_PATH, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, password }),
+  });
+  if (status >= 200 && status < 300) {
+    return { ok: true };
+  }
+  return { ok: false, status, body };
+}
+
+export async function requestPasswordReset(usernameOrEmail: string): Promise<void> {
+  await platformApiJson(AUTH_FORGOT_PASSWORD_PATH, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      usernameOrEmail,
+      publicSurface: PLM_PUBLIC_SURFACE,
+    }),
+  });
+}
+
+export async function resetPasswordWithToken(
+  token: string,
+  newPassword: string,
+): Promise<{ ok: true } | { ok: false; status: number; body: PlatformProblem | null }> {
+  const { status, body } = await platformApiJson<PlatformProblem>(AUTH_RESET_PASSWORD_PATH, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, newPassword }),
+  });
+  if (status >= 200 && status < 300) {
+    return { ok: true };
+  }
+  return { ok: false, status, body };
 }

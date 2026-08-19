@@ -60,6 +60,9 @@ public sealed class LocalValidationPackagingArchitectureTests
         var stackScript = File.ReadAllText(Path.Combine(root, "tools", "LocalValidation.stack.ps1"));
         Assert.Contains("Mailpit", startScript, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("PlatformEmail__SmtpHost", startScript, StringComparison.Ordinal);
+        Assert.Contains("PlatformEmail__PinoyLoanManagerPublicBaseUrl", startScript, StringComparison.Ordinal);
+        Assert.Contains("PlatformEmail__AllowHttpLoopbackPublicUrls", startScript, StringComparison.Ordinal);
+        Assert.Contains("PlatformEmail__PinoyLoanManagerPublicBaseUrl", live, StringComparison.Ordinal);
         Assert.Contains("dotnet watch", startScript, StringComparison.Ordinal);
         Assert.Contains("DataProtectionKeys", startScript, StringComparison.Ordinal);
         Assert.Contains("exits-local-validation-platform-db", stackScript, StringComparison.Ordinal);

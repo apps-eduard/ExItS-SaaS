@@ -128,6 +128,7 @@ public static class ApplicationErrorCodes
     public const string BootstrapForbiddenInEnvironment = "application.auth.bootstrap_forbidden_environment";
 
     public const string LoginFailed = "application.auth.login_failed";
+    public const string AuthPublicSurfaceInvalid = "application.auth.public_surface_invalid";
     public const string SessionInvalid = "application.auth.session_invalid";
     public const string SessionExpired = "application.auth.session_expired";
     public const string WebHandoffInvalid = "application.auth.web_handoff_invalid";

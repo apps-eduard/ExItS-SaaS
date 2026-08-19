@@ -151,7 +151,7 @@ internal static class AuthEndpoints
             RequestPasswordReset useCase,
             CancellationToken ct) =>
         {
-            var result = await useCase.ExecuteAsync(body.UsernameOrEmail, ct).ConfigureAwait(false);
+            var result = await useCase.ExecuteAsync(body.UsernameOrEmail, body.PublicSurface, ct).ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         })
         .RequireRateLimiting(PlatformSecurityPipeline.AuthPasswordResetRateLimitPolicy)
@@ -177,6 +177,7 @@ internal static class AuthEndpoints
                 .ExecuteAsync(
                     body.DisplayName ?? string.Empty,
                     body.Email ?? string.Empty,
+                    body.PublicSurface,
                     ct)
                 .ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
@@ -798,9 +799,9 @@ internal static class AuthEndpoints
 
     internal sealed record LoginRequest(string? UsernameOrEmail, string? Password);
     internal sealed record ChangePasswordRequest(string? CurrentPassword, string? NewPassword);
-    internal sealed record ForgotPasswordRequest(string? UsernameOrEmail);
+    internal sealed record ForgotPasswordRequest(string? UsernameOrEmail, string? PublicSurface = null);
     internal sealed record ResetPasswordRequest(string? Token, string? NewPassword);
-    internal sealed record RegisterPersonalAccountRequest(string? DisplayName, string? Email);
+    internal sealed record RegisterPersonalAccountRequest(string? DisplayName, string? Email, string? PublicSurface = null);
     internal sealed record ActivatePersonalAccountRequest(string? Token, string? Password);
     internal sealed record ConfirmEmailVerificationRequest(string? Token);
     internal sealed record RequestRecoveryEmailRequest(string? RecoveryEmail);

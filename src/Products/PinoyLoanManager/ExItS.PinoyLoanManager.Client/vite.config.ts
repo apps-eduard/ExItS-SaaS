@@ -30,12 +30,19 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest,woff,woff2}"],
         navigateFallback: "index.html",
-        navigateFallbackDenylist: [/^\/api\//, /\/platform-api\//],
+        navigateFallbackDenylist: [
+          /^\/api\//,
+          /\/platform-api\//,
+          /^\/activate-account/,
+          /^\/reset-password/,
+        ],
         runtimeCaching: [
           {
             urlPattern: ({ url }) =>
               url.pathname.startsWith("/api/") ||
               url.pathname.includes("/platform-api/") ||
+              url.pathname === "/activate-account" ||
+              url.pathname === "/reset-password" ||
               /\/(auth|session)\//i.test(url.pathname),
             handler: "NetworkOnly",
           },
