@@ -38,5 +38,10 @@ These are planning decisions. They do not change current implementation.
 | MOBILE-D-031 | Capacitor is a thin native host. Plugins may supply camera, scanner, secure storage, share/file, and later printer/Bluetooth/NFC/vendor SDKs. POS business rules stay out of native plugin code. Store-packaged assets; no assumed OTA live update. | Accepted |
 | MOBILE-D-032 | Desktop default is browser/PWA. Capacitor Windows native packaging is not claimed. True native Windows would be a separate evaluation. | Accepted |
 | MOBILE-D-033 | Release channels are independent: web/PWA deployment, signed Android packages, later iOS TestFlight/App Store. Frontends must tolerate a supported API compatibility window. | Accepted |
+| MOBILE-D-034 | Future React offline architecture mirrors current LocalStore: encrypted outbox, FIFO, idempotent POS API, access revalidation, OD-10 retention. Service-worker cache is not this layer. | Accepted |
+| MOBILE-D-035 | Current implemented offline checkout is **cash only** (`sale.checkout` dispatcher rejects non-Cash). Manual GCash remains online in current MAUI. React must not enable GCash/Utang/card offline ahead of that evidence. Product duplicate-GCash checks are required when that path is authorized; uniqueness was not found in current POS schema. | Accepted |
+| MOBILE-D-036 | Completed financial records are never silently rewritten. Conflicts retain work for review. Inventory management stays online-required; local catalog deduction is a projection only. | Accepted |
+| MOBILE-D-037 | Browser/PWA uses a browser-safe session (no tokens in ordinary localStorage). Capacitor uses native secure storage for Bearer, matching current MAUI. On reconnect, server authority wins. Offline snapshots do not permanently override entitlements. | Accepted |
+| MOBILE-D-038 | PWA and Capacitor may use different physical storage; they share logical outbox/repository contracts. IndexedDB/SQLite libraries are not pinned in planning docs. | Accepted |
 
-Later DOC packages may add IDs. They must not weaken MOBILE-D-001 through MOBILE-D-033 without Product Owner review.
+Later DOC packages may add IDs. They must not weaken MOBILE-D-001 through MOBILE-D-038 without Product Owner review.

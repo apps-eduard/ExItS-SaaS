@@ -30,6 +30,7 @@ It does **not** authorize implementation.
 - [product-surfaces-and-ux.md](product-surfaces-and-ux.md) — device classes, role matrix, selling UX, visual quality target
 - [frontend-architecture-and-reuse.md](frontend-architecture-and-reuse.md) — React stack, reuse levels, adapters, future project path
 - [pwa-and-capacitor-delivery.md](pwa-and-capacitor-delivery.md) — browser/PWA vs Capacitor channels, cache vs LocalStore, iOS interim
+- [offline-sync-auth-and-security.md](offline-sync-auth-and-security.md) — outbox/idempotency, financial offline rules, auth, client security
 
 ## Canonical rule
 
