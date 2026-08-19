@@ -29,5 +29,10 @@ Do not rewrite historical signed-off reports merely to erase history.
 | [PLM-DOC-03-schedule-delinquency-penalty-and-maturity.md](PLM-DOC-03-schedule-delinquency-penalty-and-maturity.md) | PLM-DOC-03 calendar, delinquency, penalties, and maturity |
 | [PLM-DOC-04-settlement-reversals-variance-and-accounting.md](PLM-DOC-04-settlement-reversals-variance-and-accounting.md) | PLM-DOC-04 settlement, reversals, variance, and accounting |
 | [PLM-DOC-05-authorization-and-operational-security.md](PLM-DOC-05-authorization-and-operational-security.md) | PLM-DOC-05 roles, grants, workflow security |
+| [PLM-DOC-06-restructuring-write-off-recovery-and-collections.md](PLM-DOC-06-restructuring-write-off-recovery-and-collections.md) | PLM-DOC-06 restructuring, Write-Off, Recovery, collections |
+| [PLM-DOC-07-onboarding-application-and-approval.md](PLM-DOC-07-onboarding-application-and-approval.md) | PLM-DOC-07 onboarding, application, approval |
+| [PLM-DOC-08-documents-reporting-privacy-and-notifications.md](PLM-DOC-08-documents-reporting-privacy-and-notifications.md) | PLM-DOC-08 documents, reporting, privacy, notifications |
+| [PLM-DOC-09-mobile-field-treasury-and-ui-boundaries.md](PLM-DOC-09-mobile-field-treasury-and-ui-boundaries.md) | PLM-DOC-09 mobile, treasury, UI boundaries; **PLM-D-00-09 Closed** |
+| [PLM-DOC-10-platform-personal-and-commercial-contracts.md](PLM-DOC-10-platform-personal-and-commercial-contracts.md) | PLM-DOC-10 Platform, Personal, commercial contracts; **PLM-D-00-05 Closed** |
 
-PLM-00-WP01 through PLM-00-WP09 do not add a separate report file. Completion evidence for those documentation-only packages is the git commit on `docs/plm-foundation` plus the chat completion report.
+PLM-00-WP01 through PLM-00-WP09 do not add a separate report file.

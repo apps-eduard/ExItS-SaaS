@@ -33,7 +33,7 @@
 | PLM-10 Collections / Delinquency | Arrears and collections | Only after collections policy exists |
 | PLM-11 Reporting / Documents | Product reports and documents | Only after report contents are decided |
 | PLM-12 Security / Audit / Privacy | Product audit, privacy, consent hardening | Evidence against this product’s security docs |
-| PLM-13 Offline / Mobile Field Capabilities | MAUI/offline/field capabilities | Only after PLM-D-00-09 and owner authorization |
+| PLM-13 Offline / Mobile Field Capabilities | MAUI/offline/field capabilities | Only after PLM-D-00-03, owner authorization, and implementation WP (PLM-D-00-09 Closed for sharing/offline policy) |
 | PLM-14 Production Validation / Closeout | Production-readiness evidence | Blocked while R-091 / other portfolio production risks remain |
 
 Detail per current phase: [roadmap.md](roadmap.md).

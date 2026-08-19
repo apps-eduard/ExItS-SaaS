@@ -24,5 +24,11 @@ Do not copy PinoyBusinessPOS phase history into this product.
 | PLM-DOC-03 | Schedule calendar, delinquency, penalties, and maturity | Completed |
 | PLM-DOC-04 | Early settlement, refunds, reversals, cash variance, and accounting | Completed |
 | PLM-DOC-05 | Roles, grants, workflow authorization, and operational security | Completed |
+| PLM-DOC-06 | Restructuring, Write-Off, Recovery & Collections Closeout | Completed |
+| PLM-DOC-07 | Borrower onboarding, application, assessment, approval & Disbursement readiness | Completed |
+| PLM-DOC-08 | Documents, receipts, reporting, notifications, privacy & retention | Completed |
+| PLM-DOC-09 | MAUI field operations, offline boundary, routes, treasury & UI sharing | Completed |
+| PLM-DOC-10 | Platform, Personal & commercial integration contracts | Completed |
+| PLM-DOC-11 | Final documentation consistency review & closeout | Completed |
 
-Recommended next documentation package: **PLM-DOC-06 — Restructuring, Write-Off, Recovery & Collections Closeout**. PLM-01 remains paused on mainline. Do not start until explicitly authorized.
+Product implementation **paused**. Recommended next after merge: **PLM-IMPLEMENTATION-00 Fresh Scaffold and Architecture Reconciliation**.

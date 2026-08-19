@@ -20,6 +20,6 @@ PLM-00-WP10 is documentation-only.
 | Browser | Not applicable |
 | Financial calculation | Not applicable |
 
-Readiness gates: [PLM-00-readiness-checklist.md](PLM-00-readiness-checklist.md).
+Readiness gates: [PLM-00-readiness-checklist.md](PLM-00-readiness-checklist.md), [PLM-final-documentation-readiness-checklist.md](PLM-final-documentation-readiness-checklist.md).
 
 No loan calculations exist to validate. Do not claim device or runtime validation for this package.

@@ -7,8 +7,8 @@
 |---|---|
 | Product | Pinoy Loan Manager |
 | Current phase | PLM-00 Foundation & Product Decisions (documentation complete) |
-| Current work package | **PLM-DOC-07** Borrower Onboarding, Application, Assessment, Approval & Disbursement Readiness |
-| Status | **PLM-D-00-10 Closed / Product Owner Accepted**. PLM-D-00-01 Closed. PLM-D-00-02 Closed for logical name. PLM-D-00-06 Closed for MVP. PLM-D-00-08 Closed for MVP Product business/calculation policy. PLM-D-00-12 Closed. PLM-D-00-13 Closed. PLM-D-00-07 Open / Partially Resolved. Implementation remains paused. |
+| Current work package | **PLM-DOC-11** Final Documentation Consistency Review & Closeout |
+| Status | **PLM MVP Product documentation 100% complete.** PLM-D-00-03/05/06/07/08/09/10/12/13 Closed as documented. PLM-D-00-04/11 and D-P12-03/R-091 Open external. Implementation **paused**. |
 
 ## Phase objective
 
@@ -62,8 +62,15 @@ PLM-00 documentation phase is complete. **PLM-DOC-01** through **PLM-DOC-05** co
 | PLM-DOC-04 | Early Settlement, Refunds, Reversals, Cash Variance & Accounting Boundaries | **Completed** |
 | PLM-DOC-05 | Roles, Grants, Workflow Authorization & Operational Security Finalization | **Completed** |
 | PLM-DOC-06 | Restructuring, Write-Off, Recovery & Collections Closeout | **Completed** |
-| PLM-DOC-07 | Borrower Onboarding, Application, Assessment, Approval & Disbursement Readiness | **This package** |
-| PLM-DOC-08 | Documents, Receipts, Reporting, Notifications, Privacy & Retention | Proposed next |
+| PLM-DOC-07 | Borrower Onboarding, Application, Assessment, Approval & Disbursement Readiness | **Completed** |
+| PLM-DOC-08 | Documents, Receipts, Reporting, Notifications, Privacy & Retention | **Completed** |
+| PLM-DOC-09 | MAUI Field Operations, Offline Boundary, Routes, Device Security, Branch Treasury & UI Sharing | **Completed** |
+| PLM-DOC-10 | Platform, Personal, and Commercial Contracts | **Completed** |
+| PLM-DOC-11 | Final Documentation Consistency Review, Decision Closeout & Readiness Gates | **Completed** |
+
+Product implementation: **Paused** pending final PR review/merge and explicit authorization.
+
+Recommended next after documentation merge: **PLM-IMPLEMENTATION-00 — Fresh Scaffold and Architecture Reconciliation**. Do not start without Gate A.
 
 ### PLM-DOC-01 completed decisions
 
@@ -132,6 +139,20 @@ PLM-00 documentation phase is complete. **PLM-DOC-01** through **PLM-DOC-05** co
 - Platform emergency Owner recovery boundary (not implemented)
 - high-risk action catalog; maker/checker retained; future step-up auth direction
 
+### PLM-DOC-08 completed decisions
+
+- authoritative document catalog and template versioning
+- durable receipt identity for Payment, Disbursement, Cash Refund, Settlement, Principal Prepayment, Recovery
+- account statement component breakdown
+- GROSS OUTSTANDING PRINCIPAL, PAST-DUE SCHEDULED AMOUNT, COLLECTION RATE, PAR-X formulas
+- PAR 1 / 7 / 30 / 60 / 90 and aging buckets Current / 1–7 / 8–30 / 31–60 / 61–90 / 91+
+- scope-filtered operational report catalog
+- Personal primary notification channel; optional SMS/email/push direction
+- delivery does not change financial state
+- data classification PUBLIC / INTERNAL / CONFIDENTIAL / HIGHLY SENSITIVE
+- retention architecture (policy-driven; no invented numeric periods)
+- audit coverage catalog and privacy/support boundaries
+
 Implementation remains paused. The parked scaffold remains unmerged.
 
 ## Planning buckets (later phases)
@@ -172,7 +193,7 @@ Portfolio: R-091 remains open. Scale architecture: [exits-scale-and-growth-archi
 | Dependency | Notes |
 |---|---|
 | Platform subscription for `pinoy-loan-manager` | Required; **code approved** (PLM-D-00-01); catalog registration not done |
-| Product-owner decisions | PLM-D-00-03 through PLM-D-00-05, PLM-D-00-07 through PLM-D-00-09, PLM-D-00-11 (PLM-D-00-01 Closed; PLM-D-00-02 Closed for name; PLM-D-00-06 Closed for MVP; PLM-D-00-10 closed; PLM-D-00-12 Closed; PLM-D-00-13 Closed; PLM-D-00-07 / PLM-D-00-08 Open / Partially Resolved) |
+| Product-owner decisions | PLM-D-00-03, PLM-D-00-04, PLM-D-00-07, PLM-D-00-11 (PLM-D-00-01 Closed; PLM-D-00-02 Closed for name; PLM-D-00-05 Closed for PLM behavior/contract; PLM-D-00-06 Closed for MVP; PLM-D-00-09 Closed; PLM-D-00-10 closed; PLM-D-00-12 Closed; PLM-D-00-13 Closed; PLM-D-00-07 / PLM-D-00-08 Open / Partially Resolved) |
 | D-P12-03 / R-091 / D-P12-05 | Portfolio-open; do not invent |
 | ExItS scale architecture | Documented on `docs/exits-scale-foundation`; implementation of stamps/shards not required to resume docs work |
 
@@ -201,16 +222,16 @@ Portfolio: R-091 remains open. Scale architecture: [exits-scale-and-growth-archi
 | PLM-D-00-08 | Pressure to invent Loan **rates** or remaining restructuring/write-off policy | Keep rates Open; settlement/prepayment accepted in PLM-DOC-04 |
 | PLM-D-00-06 | Pressure to invent custom roles or wildcard grants | MVP presets/grants closed in PLM-DOC-05; custom roles deferred |
 | PLM-D-00-04 | Premature generic Platform relationship schema | Record intent only; no schema |
-| PLM-D-00-05 | Auto-link from EX ID / QR | Consent required; resolution identifies only |
+| PLM-D-00-05 | Treating PLM contract close as Platform implementation | Product contract in PLM-DOC-10; Platform transport/schema still external (**PLM-D-00-04**, **D-P12-03**) |
 | R-091 | Claiming production-ready identity | Honest Dev/Testing vs Production language |
 | D-P12-03 | Copying POS Dev commercial headers as PLM production design | Leave transport Open |
 | PLM-D-00-03 | Treating parked scaffold as mainline | Leave PLM-D-00-03 open until authorized scaffold lands on `main` |
 
 ## Exact next package
 
-**PLM-DOC-06 — Restructuring, Write-Off, Recovery & Collections Closeout**
+**No further PLM-DOC packages are defined.** Await explicit Product Owner authorization before **PLM-01** implementation or additional documentation. Portfolio **D-P12-03**, **PLM-D-00-04**, and **R-091** remain open.
 
-Do **not** start PLM-DOC-06 in this package. Implementation remains paused. Do **not** start or merge PLM-01.
+Do **not** start or merge PLM-01 without authorization. Implementation remains paused.
 
 ## Phase closeout requirements
 

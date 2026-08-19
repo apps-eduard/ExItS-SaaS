@@ -2,7 +2,7 @@
 
 **Status:** Foundation / planning only
 **Implementation present:** No
-**Current work package:** PLM-DOC-07 — Borrower Onboarding, Application, Assessment, Approval & Disbursement Readiness
+**Current work package:** PLM-DOC-11 — Final Documentation Closeout (complete)
 
 This file is the navigation map for future Cursor work. Load this product’s `Docs/` after the shared Product Foundation reference. Do not scan PinoyBusinessPOS implementation by default.
 
@@ -67,7 +67,9 @@ Shared contracts to load with this product:
 | `Docs/Security/privileged-access-and-owner-recovery-policy.md` | Owner bootstrap, last-Owner protection, recovery | Accepted product policy (PLM-DOC-05) | No |
 | `Docs/Product/workflow-authorization-policy.md` | Workflow-state authorization guards | Accepted product policy (PLM-DOC-05) | No |
 | `Docs/Product/daily-operational-workflow.md` | Common operating day, assignments, offline boundary | Planning baseline / not a spec | No |
-| `Docs/Product/cashier-and-collector-control-model.md` | Cashier Session, float, remittance, cash availability | Planning baseline / not a spec | No |
+| `Docs/Product/cashier-and-collector-control-model.md` | Cashier Session, float, remittance, cash availability | Planning baseline; float ack in PLM-DOC-09 policy | No |
+| `Docs/Product/branch-treasury-and-float-acknowledgment-policy.md` | Branch Treasury; Pending Receipt float acknowledgment | Accepted product rules (PLM-DOC-09) | No |
+| `Docs/Product/collector-route-and-location-policy.md` | Routes; optional event GPS; no continuous tracking | Accepted product rules (PLM-DOC-09) | No |
 | `Docs/Product/disbursement-and-payment-controls.md` | Office/field disbursement and cash payment | Planning baseline / not a spec | No |
 | `Docs/Product/exception-reversal-and-variance-workflow.md` | Exceptions, waivers, reversals vs cash refund, variance | Planning baseline / not a spec | No |
 | `Docs/Product/reversal-refund-and-correction-policy.md` | Payment reversal, Refund Payable, cash refund | Accepted product rules (PLM-DOC-04) | No |
@@ -84,6 +86,10 @@ Shared contracts to load with this product:
 | `Docs/Reports/PLM-DOC-06-restructuring-write-off-recovery-and-collections.md` | PLM-DOC-06 closeout | Documentation closeout | No |
 | `Docs/Decisions/ADR-011-restructuring-refinancing-and-hardship.md` | Restructuring; Refinancing deferred | Accepted product policy (PLM-DOC-06) | No |
 | `Docs/Decisions/ADR-012-write-off-recovery-and-collections-case-policy.md` | Write-Off, Recovery, collections case | Accepted product policy (PLM-DOC-06) | No |
+| `Docs/Security/collector-device-security-policy.md` | Future collector device requirements; not implemented | Accepted future-requirements policy (PLM-DOC-09) | No |
+| `Docs/Reports/PLM-DOC-09-mobile-field-treasury-and-ui-boundaries.md` | PLM-DOC-09 closeout | Documentation closeout | No |
+| `Docs/Decisions/ADR-017-mobile-offline-route-and-device-policy.md` | Mobile, offline, route, device | Accepted (PLM-DOC-09) | No |
+| `Docs/Decisions/ADR-018-branch-treasury-float-and-ui-sharing-policy.md` | Treasury, float ack, UI sharing; **PLM-D-00-09 Closed** | Accepted (PLM-DOC-09) | No |
 
 ## Borrower / Personal / publishing (PLM-00-WP06)
 
@@ -111,10 +117,17 @@ Shared contracts to load with this product:
 | Path | Purpose | Status | Implementation present |
 |---|---|---|---|
 | `Docs/Product/reporting-baseline.md` | Dashboard and operational reporting areas | Planning baseline / not a spec | No |
-| `Docs/Product/loan-documents-and-receipts.md` | Documents, snapshot, durable receipts | Planning baseline / not a spec | No |
-| `Docs/Product/notification-model.md` | Personal and staff notification intent | Planning baseline / not a spec | No |
+| `Docs/Product/document-and-receipt-policy.md` | Document types, identity, receipts, statements | Accepted product rules (PLM-DOC-08) | No |
+| `Docs/Product/reporting-kpi-and-aging-policy.md` | KPI formulas, PAR, aging, report catalog | Accepted product rules (PLM-DOC-08) | No |
+| `Docs/Product/notification-and-delivery-policy.md` | Channels, events, delivery safety | Accepted product rules (PLM-DOC-08) | No |
+| `Docs/Product/loan-documents-and-receipts.md` | Documents, snapshot, durable receipts | Planning baseline; superseded by PLM-DOC-08 policy | No |
+| `Docs/Product/notification-model.md` | Personal and staff notification intent | Planning baseline; superseded by PLM-DOC-08 policy | No |
 | `Docs/Product/personal-loan-experience.md` | Personal Loan area; distinct from P2P | Planning baseline / not a spec | No |
 | `Docs/Security/audit-and-history-baseline.md` | High-risk history; not editable notes | Planning baseline / not a spec | No |
+| `Docs/Security/privacy-retention-and-audit-policy.md` | Classification, retention, audit, privacy | Accepted product policy (PLM-DOC-08) | No |
+| `Docs/Reports/PLM-DOC-08-documents-reporting-privacy-and-notifications.md` | PLM-DOC-08 closeout | Documentation closeout | No |
+| `Docs/Decisions/ADR-015-documents-receipts-and-reporting-policy.md` | Documents, receipts, reporting | Accepted (PLM-DOC-08) | No |
+| `Docs/Decisions/ADR-016-notification-privacy-retention-and-audit-policy.md` | Notification, privacy, retention, audit | Accepted (PLM-DOC-08) | No |
 
 ## Technical layout / integration (PLM-00-WP09)
 
@@ -123,7 +136,9 @@ Shared contracts to load with this product:
 | `Docs/Architecture/source-and-project-layout.md` | Future project tree; not created | Planning target / not a spec | No |
 | `Docs/Architecture/api-and-contract-boundary.md` | API consumers; Personal contracts | Planning target / not a spec | No |
 | `Docs/Architecture/persistence-and-database-boundary.md` | Separate DB isolation | Planning target / not a spec | No |
-| `Docs/Architecture/mobile-offline-boundary.md` | Online-first MAUI; offline not authorized | Planning target / not a spec | No |
+| `Docs/Architecture/mobile-offline-boundary.md` | Online-first MAUI; offline posting deferred | Accepted architecture policy (PLM-DOC-09) | No |
+| `Docs/Architecture/mobile-and-offline-operating-model.md` | MAUI purpose; MVP authority; cache/drafts; deferred posting | Accepted architecture policy (PLM-DOC-09) | No |
+| `Docs/Architecture/web-maui-component-sharing-policy.md` | Web/MAUI sharing; **PLM-D-00-09 Closed** | Accepted architecture policy (PLM-DOC-09) | No |
 | `Docs/Architecture/platform-commercial-integration.md` | Platform contracts; D-P12-03 open | Planning target / not a spec | No |
 
 ## Foundation closeout (PLM-00-WP10)
@@ -138,7 +153,10 @@ Shared contracts to load with this product:
 | `Docs/Reports/PLM-DOC-05-authorization-and-operational-security.md` | PLM-DOC-05 roles, grants, workflow security | Documentation closeout | No |
 | `Docs/Decisions/ADR-009-role-codes-grant-catalog-and-default-presets.md` | Role codes and grant catalog; PLM-D-00-06 Closed | Accepted product policy (PLM-DOC-05) | No |
 | `Docs/Decisions/ADR-010-resource-scope-workflow-security-and-owner-recovery.md` | Scope, workflow security, Owner recovery | Accepted product policy (PLM-DOC-05) | No |
-| `Docs/Validation/PLM-00-readiness-checklist.md` | Docs-only readiness gates | Planning closeout | No |
+| `Docs/implementation-gates.md` | Gate A–E before implementation resume | Accepted (PLM-DOC-11) | No |
+| `Docs/Reports/PLM-final-documentation-closeout.md` | PLM-DOC-11 final closeout | Documentation closeout | No |
+| `Docs/Decisions/PLM-decision-status-summary.md` | Final decision status summary | Accepted (PLM-DOC-11) | No |
+| `Docs/Validation/PLM-final-documentation-readiness-checklist.md` | Final docs readiness checklist | Accepted (PLM-DOC-11) | No |
 
 ## Workspace indexes (PLM-00-WP01, updated in WP02–WP10)
 
@@ -162,6 +180,10 @@ Shared contracts to load with this product:
 | `Docs/Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md` | Reversals, refunds, variance, GL boundary | Accepted; **PLM-D-00-13 Closed** | No |
 | `Docs/Decisions/ADR-009-role-codes-grant-catalog-and-default-presets.md` | Role codes, grant catalog v1, default presets | Accepted; **PLM-D-00-06 Closed for MVP** | No |
 | `Docs/Decisions/ADR-010-resource-scope-workflow-security-and-owner-recovery.md` | Scope, workflow security, Owner recovery | Accepted product policy (PLM-DOC-05) | No |
+| `Docs/Decisions/ADR-017-mobile-offline-route-and-device-policy.md` | Mobile, offline, route, device | Accepted (PLM-DOC-09) | No |
+| `Docs/Decisions/ADR-018-branch-treasury-float-and-ui-sharing-policy.md` | Treasury, float ack, UI sharing; **PLM-D-00-09 Closed** | Accepted (PLM-DOC-09) | No |
+| `Docs/Decisions/ADR-019-platform-personal-contract-requirements.md` | Platform/Personal contract requirements; **PLM-D-00-05 Closed** | Accepted (PLM-DOC-10) | No |
+| `Docs/Decisions/ADR-020-usage-metering-and-tenant-placement-contracts.md` | Usage metering and tenant placement | Accepted (PLM-DOC-10) | No |
 | `Docs/Phases/README.md` | Index for phase sequencing | Foundation / Planning Only | No |
 | `Docs/Reports/README.md` | Index for WP evidence | Foundation / Planning Only | No |
 | `Docs/Validation/README.md` | Index for validation evidence | Foundation / Planning Only | No |

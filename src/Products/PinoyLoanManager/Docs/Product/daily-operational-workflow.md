@@ -23,7 +23,7 @@ Collector work should be assignable. Possible dimensions:
 
 Collector visibility should derive from authorized assignment / scope. Do **not** let every Collector browse every organization’s borrower financial information by default.
 
-Route planning / GPS requirements remain **OPEN**.
+Route planning and optional event-based GPS are resolved in [collector-route-and-location-policy.md](collector-route-and-location-policy.md) (PLM-DOC-09): assignment-based routes, no auto optimization, optional event GPS with policy/permission/disclosure, no continuous tracking.
 
 ---
 
@@ -44,10 +44,10 @@ Route planning / GPS requirements remain **OPEN**.
 **Collector**
 
 - receives assignments
-- receives / acknowledges float
+- receives / acknowledges float (Pending Receipt → Received; see [branch-treasury-and-float-acknowledgment-policy.md](branch-treasury-and-float-acknowledgment-policy.md))
 - begins route
 
-Exact collector acknowledgement mechanism for float remains **OPEN**.
+Float acknowledgment uses two-step **Pending Receipt** workflow. Canonical: [branch-treasury-and-float-acknowledgment-policy.md](branch-treasury-and-float-acknowledgment-policy.md).
 
 ---
 
@@ -109,19 +109,19 @@ Organization Web is the full operational application. MAUI Hybrid is the limited
 
 ## Offline mobile boundary
 
-MAUI Collector offline capability remains a future design area. Do **not** treat offline activity as immediately authoritative.
+MAUI Collector offline capability: MVP allows read-only cache and offline drafts only; offline **final posting** is deferred. Do **not** treat offline activity as immediately authoritative.
 
 **Server remains authoritative** for final financial authorization / posting.
 
-Future offline design must explicitly address queued operations, idempotency, duplicate protection, stale balances, revoked authorization, cash accountability, conflicts, receipt status, and reconciliation.
+Future offline posting must explicitly address queued operations, idempotency, duplicate protection, stale balances, revoked authorization, cash accountability, conflicts, receipt status, and reconciliation. See [../Architecture/mobile-and-offline-operating-model.md](../Architecture/mobile-and-offline-operating-model.md).
 
-No offline implementation is authorized yet.
+No offline posting implementation is authorized yet.
 
 ---
 
 ## Explicit non-goals
 
-- Route / GPS product requirements
+- Route / GPS product requirements beyond [collector-route-and-location-policy.md](collector-route-and-location-policy.md)
 - Forcing a day to close at zero by inventing fake cash movements
 - Offline-first financial posting
 

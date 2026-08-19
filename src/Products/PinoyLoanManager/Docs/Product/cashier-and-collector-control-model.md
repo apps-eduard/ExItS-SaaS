@@ -43,7 +43,7 @@ Possible information (not a schema):
 - closed time
 - status
 
-Cash vault / branch treasury architecture remains **OPEN**.
+Cash vault / branch treasury architecture is resolved in [branch-treasury-and-float-acknowledgment-policy.md](branch-treasury-and-float-acknowledgment-policy.md) (PLM-DOC-09): Branch Treasury funds Cashier Session opening cash.
 
 ---
 
@@ -91,7 +91,7 @@ Authorized Float Amount
         ↓
 Cashier confirms cash handed over
         ↓
-Collector confirms / receives according to future workflow
+Collector confirms / receives according to two-step **Pending Receipt** workflow
         ↓
 Cash Movement recorded
 ```
@@ -101,7 +101,7 @@ Cash Movement recorded
 - Same correlated business event
 - **No** Loan balance changes
 
-Exact collector acknowledgement mechanism remains **OPEN**.
+Exact collector acknowledgement mechanism is resolved: two-step Pending Receipt → Received / Active. Canonical: [branch-treasury-and-float-acknowledgment-policy.md](branch-treasury-and-float-acknowledgment-policy.md).
 
 ---
 

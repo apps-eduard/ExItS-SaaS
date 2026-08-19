@@ -22,15 +22,15 @@
 |---|---|---|---|---|---|---|---|
 | PLM-D-00-01 | Decision | Product code/slug `pinoy-loan-manager` | **Closed** | Catalog, plans, independent subscription | Product owner | [ADR-001](Decisions/ADR-001-product-identity-and-database-name.md) | Code approved for future Platform catalog registration; catalog row not created here |
 | PLM-D-00-02 | Decision | Logical database name `ExItS_PinoyLoanManager` | **Closed for logical name**; creation/placement deferred | Persistence, migrations, operations | Product owner + architecture WP | [ADR-001](Decisions/ADR-001-product-identity-and-database-name.md) | Name approved. Database, schema, connections, partitions, stamps, backups, and migrations remain deferred |
-| PLM-D-00-03 | Decision | Physical source/test/deploy layout beside `Docs/` | Open / Product Owner Decision Required | PLM-01 scaffold | Architecture WP | **Planning target** recorded (`ExItS.PinoyLoanManager.*`); projects **not** on `main`. Parked unmerged branch `feat/plm-01-scaffold` is **not** accepted mainline state | Authorized scaffold WP creates projects on mainline; still no Product Foundation change |
-| PLM-D-00-04 | Decision | Generic Platform cross-product relationship model | Open / Product Owner Decision Required | Personal as POS Customer, Loan Borrower, and future product-specific relationships | Platform architecture WP — do not design in PLM | Conceptual diagram only; product behavior in ADR-002 | Approved Platform contract/schema, not invented here |
-| PLM-D-00-05 | Decision | Personal-to-Borrower linking mechanism | Open / Product Owner Decision Required | Optional link, consent, no auto-link from EX ID / QR | PLM-04 + Platform | Product behavior defined (PLM-DOC-01); Platform transport, contract, persistence, and integration **not** designed | Approved linking/consent **implementation** design |
+| PLM-D-00-03 | Decision | Physical source/test/deploy layout beside `Docs/` | **Closed for approved target architecture/layout** | PLM-01 scaffold | Architecture WP | [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md); [implementation-gates.md](implementation-gates.md) (PLM-DOC-11). Projects **not** on `main`. Parked `feat/plm-01-scaffold` is **not** accepted mainline state | Layout decision complete. Implementation requires Gate A authorization; fresh scaffold or careful rebuild — do not blindly merge parked branch |
+| PLM-D-00-04 | Decision | Generic Platform cross-product relationship model | **Open / External Platform dependency** | Personal as POS Customer, Loan Borrower, and future product-specific relationships | Platform architecture WP — do not design in PLM | Conceptual diagram only; PLM product behavior and contracts in ADR-002, PLM-DOC-10; **not an unresolved PLM business rule** | Approved Platform contract/schema implementation |
+| PLM-D-00-05 | Decision | Personal-to-Borrower linking mechanism | **Closed for PLM behavior/contract requirements**; Platform implementation **external** | Optional link, consent, no auto-link from EX ID / QR | PLM-04 + Platform | [ADR-019](Decisions/ADR-019-platform-personal-contract-requirements.md); [Architecture/personal-link-and-consent-contract.md](Architecture/personal-link-and-consent-contract.md); [Architecture/personal-facing-loan-api-contract.md](Architecture/personal-facing-loan-api-contract.md) (PLM-DOC-10) | PLM product contract requirements defined. Platform transport, persistence, APIs, and integration implementation remain External Platform work |
 | PLM-D-00-06 | Decision | Loan roles and grants | **Closed for MVP** | PLM-03 and all operational WPs | Product owner | [ADR-009](Decisions/ADR-009-role-codes-grant-catalog-and-default-presets.md); [Security/authorization-grant-catalog.md](Security/authorization-grant-catalog.md); [authorization-matrix.md](authorization-matrix.md) (PLM-DOC-05) | Role codes, grant catalog v1, default presets, scope model, assignment lifecycle, and no custom roles in MVP. Custom roles deferred to future explicit decision |
-| PLM-D-00-07 | Decision | Operational financial model | **Open / Partially Resolved** | Origination, payments, collections, cash | Product owner | Terminology, fee model, net proceeds, allocation, money precision (PLM-DOC-02). Settlement Quote, rebate, Refund Payable, reversal/disbursement boundaries, variance close, operational Loan subledger vs Cash Accountability vs GL boundary (PLM-DOC-04). Schema, journal/export, Write-Off/Recovery accounting, and external GL integration still open | Owner-approved money/ledger **schema** in this product; remaining accounting workflows |
+| PLM-D-00-07 | Decision | Operational financial model | **Closed for MVP Product operational financial model** | Origination, payments, collections, cash | Product owner | PLM-DOC-02 through PLM-DOC-06, PLM-DOC-08. Operational Loan subledger, Cash Accountability, settlement/rebate/refund/reversal/variance, Write-Off/Recovery product behavior, GL boundary documented | Concrete persistence schema, journal/export contract, and external GL integration are **implementation/integration work**, not unresolved Product policy |
 | PLM-D-00-08 | Decision | Loan business/calculation rules | **Closed for MVP Product business/calculation policy** | PLM-05 through PLM-10 | Product owner | Methods/fees/allocation (PLM-DOC-02). Calendar, DPD, penalties, maturity (PLM-DOC-03). Settlement, prepayment, refunds, reversals (PLM-DOC-04). Restructuring, Write-Off, Recovery, PTP, Collection Case (PLM-DOC-06). Default numeric rates/fees/penalties remain organization configuration subject to PLM-D-00-11 | MVP product calculation and business rules approved; no default numeric pricing; legal validation and schema remain external/deferred |
-| PLM-D-00-09 | Decision | Web/MAUI component-sharing strategy | Open / Product Owner Decision Required | Client scaffold and PLM-13 | Architecture WP | Surface split recorded (full Org Web vs limited MAUI vs Personal presentation) | Approved sharing/isolation approach; no client project until authorized |
+| PLM-D-00-09 | Decision | Web/MAUI component-sharing strategy | **Closed** | Client scaffold and PLM-13 | Product owner | [Architecture/web-maui-component-sharing-policy.md](Architecture/web-maui-component-sharing-policy.md); [Decisions/ADR-018-branch-treasury-float-and-ui-sharing-policy.md](Decisions/ADR-018-branch-treasury-float-and-ui-sharing-policy.md) (PLM-DOC-09) | Approved sharing/isolation approach; separate Web and MAUI UI; conditional future RCL; no client project until PLM-D-00-03 and owner authorization |
 | PLM-D-00-10 | Decision | Product documentation baseline completion / owner approval | **Closed / Product Owner Accepted** | Closing PLM-00 | Product owner | PLM-00 WP01–WP10 completed; GitHub branch reviewed; documentation baseline accepted. Product implementation is deliberately paused while ExItS scale architecture and remaining PLM business/policy decisions are finalized | Owner accepted documentation baseline. Remaining legal and production decisions remain open. Implementation is not currently authorized |
-| PLM-D-00-11 | Decision | External legal/compliance validation | Open / Product Owner Decision Required | Production use | Product owner + external counsel | No rates/workflows claimed compliant. Effective-cost/EIR/APR formula, required documents, terminology, timing, rounding, consumer presentation, prepayment rights, settlement disclosures, unearned finance-charge rebate formula, fees at settlement, penalty treatment, quote validity, borrower refunds, correction/reversal practices, retention, and collections after maturity require qualified review | Written legal/compliance validation before Production |
+| PLM-D-00-11 | Decision | External legal/compliance validation | **Open / External legal-compliance gate** | Production use | Product owner + external counsel | No rates/workflows claimed compliant. All consumer-facing and collections practices require qualified review | Written legal/compliance validation before Production |
 | PLM-D-00-12 | Decision | Exact money rounding mode | **Closed** | Calculation engine | Product owner + accounting | [ADR-004](Decisions/ADR-004-rounding-fees-and-payment-allocation.md) | PHP 2 dp posted; ≥8 intermediate; midpoint To Even; final-installment reconciliation |
 | PLM-D-00-13 | Decision | Small-org vs two-person high-risk approval | **Closed** | Operational SoD | Product owner | [ADR-008](Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md); [Security/privileged-access-and-owner-recovery-policy.md](Security/privileged-access-and-owner-recovery-policy.md) | Maker/checker required when another eligible approver exists; controlled Owner Override only for sole eligible Owner with enhanced audit and later review; Collector/Cashier restrictions preserved |
 
@@ -60,7 +60,7 @@ These are **planning baselines**, not legal approval and not implementation. PLM
 
 ## Accepted engineering / planning baselines (WP05)
 
-These are **planning baselines**, not legal approval and not implementation. Grant identifiers and default presets are accepted in PLM-DOC-05. Custom roles deferred. Offline posting design remains open. Cashier close-with-variance, cash-refund workflow, and PLM-D-00-13 maker/checker are accepted in PLM-DOC-04.
+These are **planning baselines**, not legal approval and not implementation. Grant identifiers and default presets are accepted in PLM-DOC-05. Custom roles deferred. Offline **final posting** deferred (PLM-DOC-09); read-only cache and offline drafts resolved for MVP planning. Cashier close-with-variance, cash-refund workflow, and PLM-D-00-13 maker/checker are accepted in PLM-DOC-04.
 
 - default roles = Owner, Manager, Cashier, Collector
 - role presets backed by explicit grants
@@ -87,7 +87,7 @@ These are **planning baselines**, not legal approval and not implementation. Gra
 
 ## Accepted engineering / planning baselines (WP06)
 
-These are **planning baselines**, not legal approval, KYC sufficiency, or implementation. They do **not** close PLM-D-00-04 / PLM-D-00-05 schema.
+These are **planning baselines**, not legal approval, KYC sufficiency, or implementation. They do **not** close PLM-D-00-04 Platform schema.
 
 - Borrower is PLM-owned and may exist without ExItS Personal
 - Borrower identity does not depend on POS Customer or another product
@@ -124,12 +124,12 @@ These are **planning baselines**, not legal approval and not implementation.
 
 These are **planning baselines**, not legal forms and not implementation.
 
-- organization dashboard indicators are operational, not finalized KPI formulas
+- organization dashboard indicators use approved operational KPI formulas (PLM-DOC-08)
 - reporting covers Loans, collections, operational financials, cash operations, borrowers, and audit
-- PAR / accounting formulas are not defined here
-- documents may be issued from snapshotted terms
-- posted payment has durable receipt identity independent of print success
-- notifications must not roll back posted financial events
+- PAR / aging formulas approved as operational metrics, not statutory accounting (PLM-DOC-08)
+- documents may be issued from snapshotted terms with versioned templates (PLM-DOC-08)
+- posted financial events have durable receipt identity independent of print success (PLM-DOC-08)
+- notifications must not roll back posted financial events (PLM-DOC-08)
 - Personal Loan area is distinct from any Personal P2P “I Lent / I Borrowed” feature
 - audit/high-risk history is not ordinary editable notes
 
@@ -143,7 +143,7 @@ These are **planning targets**, not created projects.
 - no project may reference POS
 - separate logical database `ExItS_PinoyLoanManager` (name Closed; not created)
 - Personal uses PLM APIs, never PLM tables
-- MAUI online/server-authoritative initially; offline financial posting not authorized
+- MAUI online/server-authoritative initially; offline read-only cache and drafts allowed in planning; offline final financial posting not authorized (PLM-DOC-09)
 - D-P12-03 remains open; no shared DB integration
 - follow existing ExItS technology direction; no new framework
 
@@ -158,19 +158,13 @@ These are **planning targets**, not created projects.
 
 ## Operating-model, calculation, and operational open areas (do not invent)
 
-Direction in WP03–WP10 docs does **not** close these. Tracked primarily under PLM-D-00-04, PLM-D-00-05, PLM-D-00-07 (remainder), PLM-D-00-08 (remainder), PLM-D-00-11, and D-P12-03:
+Direction in WP03–WP10 docs does **not** close these. Tracked primarily under PLM-D-00-04, PLM-D-00-07 (remainder), PLM-D-00-08 (remainder), PLM-D-00-11, and D-P12-03:
 
 - custom-role support (deferred; **not** MVP — PLM-D-00-06 Closed for MVP presets/grants)
-- exact collector acknowledgement mechanism for float
-- cash vault / branch treasury architecture
-- mobile offline financial behavior
-- route planning / GPS requirements
-- collector device security
-- receipt numbering / format
-- report KPI / PAR formulas
-- document legal sufficiency
-- notification provider / channel selection
-- audit retention schedule
+- document legal sufficiency (PLM-D-00-11)
+- exact legally mandated receipt/document format (PLM-D-00-11)
+- numeric retention durations (PLM-D-00-11)
+- notification provider integration (product channel direction resolved PLM-DOC-08; provider Open)
 - accounting / GL integration
 - exact traditional loan assessment criteria / approval limits
 - exact Traditional mandatory application fields
@@ -180,11 +174,6 @@ Direction in WP03–WP10 docs does **not** close these. Tracked primarily under 
 - exact penalty **rates**/amounts/caps as numbers (engine accepted; no defaults — PLM-DOC-03)
 - restructuring calculations (**resolved PLM-DOC-06**)
 - write-off product behavior (**resolved PLM-DOC-06**; GL projection open)
-- Personal / Loan API shape
-- who may initiate unlink
-- pending Quick Loan offer treatment after unlink
-- historical Personal visibility after unlink
-- re-linking and consent-history rules
 - duplicate-borrower detection
 - required KYC fields
 - Platform usage-charge transport (D-P12-03)
@@ -214,6 +203,12 @@ Tracked under **PLM-D-00-08** unless noted. Remaining items (do **not** invent):
 
 **Resolved in PLM-DOC-07** (not legal approval): natural-person Borrower minimum, Traditional/Quick application minimums, manual assessment, approval scope without per-user limits, material reapproval, approval expiry, Disbursement readiness checklist, borrower acknowledgment content.
 
+**Resolved in PLM-DOC-08** (not legal approval): authoritative document catalog, durable receipt identity, template versioning, account statement component breakdown, GROSS OUTSTANDING PRINCIPAL / PAST-DUE SCHEDULED AMOUNT / COLLECTION RATE / PAR-X formulas, PAR 1/7/30/60/90, aging buckets Current/1–7/8–30/31–60/61–90/91+, scope-filtered report catalog, Personal primary notification channel and optional SMS/email/push direction, delivery-does-not-change-financial-state, data classification PUBLIC/INTERNAL/CONFIDENTIAL/HIGHLY SENSITIVE, retention architecture (no numeric periods), audit coverage catalog, privacy/support boundaries.
+
+**Resolved in PLM-DOC-09** (not legal approval; not implementation): MAUI limited field purpose; MVP online/server authority; offline read-only cache and offline drafts; offline final posting deferred; assignment-based routes without auto optimization; optional event-based GPS with policy/permission/disclosure and no continuous tracking; Branch Treasury concept; Cashier Session funded from treasury; collector float two-step Pending Receipt acknowledgment; Web/MAUI component sharing (**PLM-D-00-09 Closed**); future collector device security requirements only (**no implemented security claim**).
+
+**Resolved in PLM-DOC-10** (not Platform implementation): Platform access context facts; Personal link/consent contract operations and facts; Personal-facing loan API operation groups; unlink/pending-offer/relink product-contract rules (**PLM-D-00-05 Closed for PLM behavior/contract**); usage metering event types and idempotency; tenant placement abstraction. **PLM-D-00-11** remains Open for post-unlink legal visibility basis.
+
 Do **not** close remaining items by guessing.
 
 ## Instructions
@@ -221,6 +216,6 @@ Do **not** close remaining items by guessing.
 - Prefer stable IDs (`R-…`, `D-…`, `PLM-D-…`).
 - “Closed” requires repository or operator evidence plus explicit approval.
 - Unresolved policy in approved docs must appear here as open decisions.
-- Do not close PLM-D-00-03, PLM-D-00-04, PLM-D-00-05, PLM-D-00-07, PLM-D-00-09, PLM-D-00-11, D-P12-03, R-091, or D-P12-05 without explicit approval. **PLM-D-00-08 is Closed for MVP Product business/calculation policy.** PLM-D-00-07 remains **Open / Partially Resolved** for persistence schema and external accounting integration.
-- PLM-D-00-01 is **Closed** (`pinoy-loan-manager`). PLM-D-00-02 is **Closed for logical database name** only. PLM-D-00-06 is **Closed for MVP** (role codes, grant catalog v1, default presets; custom roles deferred). PLM-D-00-10 is **Closed / Product Owner Accepted** (documentation baseline only). PLM-D-00-12 is **Closed** (To Even; PHP 2 dp; ≥8 intermediate). PLM-D-00-13 is **Closed** (maker/checker + controlled Owner Override).
-- ADRs: [Decisions/ADR-001-product-identity-and-database-name.md](Decisions/ADR-001-product-identity-and-database-name.md) through [Decisions/ADR-012-write-off-recovery-and-collections-case-policy.md](Decisions/ADR-012-write-off-recovery-and-collections-case-policy.md).
+- Do not close PLM-D-00-04, PLM-D-00-11, D-P12-03, R-091, or D-P12-05 without explicit approval. **PLM-D-00-03 Closed for approved layout.** **PLM-D-00-05 Closed for PLM behavior/contract.** **PLM-D-00-07 Closed for MVP Product operational financial model.** **PLM-D-00-08 Closed for MVP Product business/calculation policy.** **PLM-D-00-09 Closed.** Persistence schema and external accounting integration remain implementation work.
+- PLM-D-00-01 is **Closed** (`pinoy-loan-manager`). PLM-D-00-02 is **Closed for logical database name** only. PLM-D-00-06 is **Closed for MVP** (role codes, grant catalog v1, default presets; custom roles deferred). PLM-D-00-09 is **Closed** (Web/MAUI component-sharing policy). PLM-D-00-10 is **Closed / Product Owner Accepted** (documentation baseline only). PLM-D-00-12 is **Closed** (To Even; PHP 2 dp; ≥8 intermediate). PLM-D-00-13 is **Closed** (maker/checker + controlled Owner Override).
+- ADRs: [Decisions/ADR-001-product-identity-and-database-name.md](Decisions/ADR-001-product-identity-and-database-name.md) through [Decisions/ADR-020-usage-metering-and-tenant-placement-contracts.md](Decisions/ADR-020-usage-metering-and-tenant-placement-contracts.md).

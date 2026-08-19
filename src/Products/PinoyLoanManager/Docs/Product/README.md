@@ -31,6 +31,8 @@ Do not treat this folder as a second product definition. Detailed agreed **direc
 | [loan-lifecycle-model.md](loan-lifecycle-model.md) | Origination vs lifecycle vs delinquency |
 | [daily-operational-workflow.md](daily-operational-workflow.md) | Common operating day, assignments, offline boundary |
 | [cashier-and-collector-control-model.md](cashier-and-collector-control-model.md) | Cashier Session, float, remittance, cash availability |
+| [branch-treasury-and-float-acknowledgment-policy.md](branch-treasury-and-float-acknowledgment-policy.md) | Branch Treasury; Pending Receipt float acknowledgment |
+| [collector-route-and-location-policy.md](collector-route-and-location-policy.md) | Routes; optional event GPS; no continuous tracking |
 | [disbursement-and-payment-controls.md](disbursement-and-payment-controls.md) | Office/field disbursement and cash payment |
 | [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md) | Exceptions, waivers, reversals vs cash refund, variance |
 | [borrower-onboarding-and-verification-policy.md](borrower-onboarding-and-verification-policy.md) | Natural-person Borrower minimum |
@@ -48,8 +50,11 @@ Do not treat this folder as a second product definition. Detailed agreed **direc
 | [disbursement-readiness-model.md](disbursement-readiness-model.md) | Pre-release checks |
 | [workflow-authorization-policy.md](workflow-authorization-policy.md) | Workflow-state authorization guards |
 | [reporting-baseline.md](reporting-baseline.md) | Dashboard and operational reporting |
-| [loan-documents-and-receipts.md](loan-documents-and-receipts.md) | Documents and receipts |
-| [notification-model.md](notification-model.md) | Notifications |
+| [document-and-receipt-policy.md](document-and-receipt-policy.md) | Document types, identity, receipts, statements |
+| [reporting-kpi-and-aging-policy.md](reporting-kpi-and-aging-policy.md) | KPI formulas, PAR, aging, report catalog |
+| [notification-and-delivery-policy.md](notification-and-delivery-policy.md) | Channels, events, delivery safety |
+| [loan-documents-and-receipts.md](loan-documents-and-receipts.md) | Documents and receipts (planning baseline) |
+| [notification-model.md](notification-model.md) | Notifications (planning baseline) |
 | [restructuring-and-hardship-policy.md](restructuring-and-hardship-policy.md) | Restructuring, hardship; Refinancing deferred |
 | [write-off-and-recovery-policy.md](write-off-and-recovery-policy.md) | Write-Off, Recovery |
 | [collections-case-and-promise-to-pay-policy.md](collections-case-and-promise-to-pay-policy.md) | PTP, Collection Case |

@@ -88,8 +88,19 @@ Agreed operating-model direction (not implementation specs):
 | [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md) | Future project tree; not created |
 | [Architecture/api-and-contract-boundary.md](Architecture/api-and-contract-boundary.md) | API / Personal / Platform contracts |
 | [Architecture/persistence-and-database-boundary.md](Architecture/persistence-and-database-boundary.md) | Separate database isolation |
-| [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md) | Online-first MAUI |
-| [Architecture/platform-commercial-integration.md](Architecture/platform-commercial-integration.md) | Commercial/identity contracts; D-P12-03 open |
+| [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md) | Online-first MAUI; offline posting deferred |
+| [Architecture/mobile-and-offline-operating-model.md](Architecture/mobile-and-offline-operating-model.md) | MAUI purpose; MVP authority; cache/drafts |
+| [Architecture/web-maui-component-sharing-policy.md](Architecture/web-maui-component-sharing-policy.md) | Web/MAUI sharing; **PLM-D-00-09 Closed** |
+| [Security/collector-device-security-policy.md](Security/collector-device-security-policy.md) | Future collector device requirements |
+| [Architecture/platform-commercial-integration.md](Architecture/platform-commercial-integration.md) | Commercial/identity contracts index; D-P12-03 open |
+| [Architecture/platform-access-context-contract.md](Architecture/platform-access-context-contract.md) | Required Platform context facts (PLM-DOC-10) |
+| [Architecture/personal-link-and-consent-contract.md](Architecture/personal-link-and-consent-contract.md) | Link/consent contract; **PLM-D-00-05 Closed** |
+| [Architecture/personal-facing-loan-api-contract.md](Architecture/personal-facing-loan-api-contract.md) | Personal customer operations (PLM-DOC-10) |
+| [Architecture/platform-usage-metering-contract.md](Architecture/platform-usage-metering-contract.md) | LOAN DISBURSED usage events (PLM-DOC-10) |
+| [Architecture/tenant-placement-and-routing-contract.md](Architecture/tenant-placement-and-routing-contract.md) | Tenant placement abstraction (PLM-DOC-10) |
+| [Reports/PLM-DOC-10-platform-personal-and-commercial-contracts.md](Reports/PLM-DOC-10-platform-personal-and-commercial-contracts.md) | PLM-DOC-10 Platform, Personal, commercial contracts |
+| [Decisions/ADR-019-platform-personal-contract-requirements.md](Decisions/ADR-019-platform-personal-contract-requirements.md) | Platform/Personal contracts; PLM-D-00-05 Closed |
+| [Decisions/ADR-020-usage-metering-and-tenant-placement-contracts.md](Decisions/ADR-020-usage-metering-and-tenant-placement-contracts.md) | Usage metering and tenant placement |
 | [Reports/PLM-00-foundation-closeout.md](Reports/PLM-00-foundation-closeout.md) | PLM-00 closeout and implementation gates |
 | [Reports/PLM-DOC-01-product-identity-and-personal-linking.md](Reports/PLM-DOC-01-product-identity-and-personal-linking.md) | PLM-DOC-01 identity and Personal linking finalization |
 | [Reports/PLM-DOC-02-financial-calculation-and-allocation.md](Reports/PLM-DOC-02-financial-calculation-and-allocation.md) | PLM-DOC-02 calculation, fees, rounding, allocation |
@@ -106,7 +117,8 @@ Agreed operating-model direction (not implementation specs):
 | [Decisions/ADR-002-borrower-personal-cardinality-and-consent.md](Decisions/ADR-002-borrower-personal-cardinality-and-consent.md) | Borrower/Personal cardinality and consent |
 | [Decisions/ADR-003-supported-interest-and-schedule-methods.md](Decisions/ADR-003-supported-interest-and-schedule-methods.md) | MVP interest/schedule methods |
 | [Decisions/ADR-004-rounding-fees-and-payment-allocation.md](Decisions/ADR-004-rounding-fees-and-payment-allocation.md) | Rounding, fees, allocation |
-| [Validation/PLM-00-readiness-checklist.md](Validation/PLM-00-readiness-checklist.md) | Docs-only readiness checklist |
+| [Reports/PLM-final-documentation-closeout.md](Reports/PLM-final-documentation-closeout.md) | PLM-DOC-11 final closeout |
+| [implementation-gates.md](implementation-gates.md) | Implementation gates A–E |
 
 Category folders below are indexes only. They must not become a second source of truth.
 
@@ -160,7 +172,7 @@ ExItS Personal is Platform-owned and product-neutral. POS Customer ≠ Loan Borr
 
 ## Client direction (proposed)
 
-Organization Web: Blazor Web (full operations). MAUI Blazor Hybrid: limited field/collector application. Platform Admin: SaaS control plane only. No client project is authorized.
+Organization Web: Blazor Web (full operations). MAUI Blazor Hybrid: limited field/collector application. Platform Admin: SaaS control plane only. Web/MAUI sharing **Closed** (PLM-D-00-09); no client project until PLM-D-00-03 and owner authorization.
 
 ---
 

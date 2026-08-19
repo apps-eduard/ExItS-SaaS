@@ -52,7 +52,7 @@ UI projects must not reference Infrastructure, EF Core, or Npgsql. Domain remain
 
 Do **not** introduce a new application framework merely because this is a new product. Follow existing ExItS solution technology direction (.NET, Blazor Web, MAUI Blazor Hybrid). No NuGet / package additions in this WP.
 
-Web / MAUI component-sharing remains **OPEN** (PLM-D-00-09).
+Web / MAUI component-sharing is **Closed** (PLM-D-00-09). See [web-maui-component-sharing-policy.md](web-maui-component-sharing-policy.md).
 
 ---
 

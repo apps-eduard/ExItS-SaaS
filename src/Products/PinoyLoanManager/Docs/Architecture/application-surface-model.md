@@ -63,7 +63,7 @@ Expected functional areas **eventually** include:
 - Staff / roles / grants
 - Audit
 
-Proposed client direction remains Blazor Web. No web project is authorized (PLM-D-00-09).
+Proposed client direction remains Blazor Web. Web/MAUI sharing is **Closed** (PLM-D-00-09); no client project is authorized until PLM-D-00-03 and owner authorization. See [web-maui-component-sharing-policy.md](web-maui-component-sharing-policy.md).
 
 This surface is **not** Platform Admin.
 
@@ -87,7 +87,7 @@ Primarily for:
 
 It is **not** intended to duplicate the complete Organization Admin Web.
 
-Possible later native capabilities (secure storage, camera/document capture, biometrics, connectivity, notifications, SQLite/offline) remain listed in [../architecture.md](../architecture.md) and are **not authorized**. Collector offline behavior is open. **Server remains authoritative** for final financial authorization / posting. See [../Product/daily-operational-workflow.md](../Product/daily-operational-workflow.md).
+Possible later native capabilities (secure storage, camera/document capture, biometrics, connectivity, notifications, SQLite/offline) remain listed in [../architecture.md](../architecture.md) and are **not authorized** for MVP implementation. Offline **final posting** is deferred; read-only cache and offline drafts are approved for planning only. **Server remains authoritative** for final financial authorization / posting. See [mobile-and-offline-operating-model.md](mobile-and-offline-operating-model.md) and [../Product/daily-operational-workflow.md](../Product/daily-operational-workflow.md).
 
 ---
 

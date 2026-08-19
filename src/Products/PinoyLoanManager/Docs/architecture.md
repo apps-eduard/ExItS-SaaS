@@ -96,7 +96,7 @@ Planning modules only. None are designed or implemented. MVP calculation, calend
 | Collections / delinquency | Arrears, exceptions, waivers, reversals | Separate from lifecycle; penalty engine accepted; no hard-coded rate |
 | Reporting / documents | Product reports and documents | Contents: [Product/reporting-baseline.md](Product/reporting-baseline.md); KPI formulas open |
 | Security / audit / privacy | Product audit, consent, classification | See [security.md](security.md) |
-| Offline / MAUI field capabilities | Later native/offline support | Server remains authoritative; not authorized |
+| Offline / MAUI field capabilities | MVP online authority; read-only cache and drafts in planning; offline final posting deferred | Server remains authoritative; implementation not authorized |
 
 ## Data ownership
 
@@ -145,7 +145,7 @@ Possible later native MAUI capabilities (not designed):
 - notifications
 - SQLite / offline support
 
-Web / MAUI component-sharing strategy is **Status: Open / Product Owner Decision Required** (PLM-D-00-09). No client project is authorized. Future project names: [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md). Offline: [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md). Contracts: [Architecture/api-and-contract-boundary.md](Architecture/api-and-contract-boundary.md). Persistence: [Architecture/persistence-and-database-boundary.md](Architecture/persistence-and-database-boundary.md). Commercial: [Architecture/platform-commercial-integration.md](Architecture/platform-commercial-integration.md).
+Web / MAUI component-sharing strategy is **Closed** (PLM-D-00-09). See [Architecture/web-maui-component-sharing-policy.md](Architecture/web-maui-component-sharing-policy.md). No client project is authorized until PLM-D-00-03 and owner authorization. Future project names: [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md). Offline: [Architecture/mobile-and-offline-operating-model.md](Architecture/mobile-and-offline-operating-model.md), [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md). Contracts: [Architecture/api-and-contract-boundary.md](Architecture/api-and-contract-boundary.md). Persistence: [Architecture/persistence-and-database-boundary.md](Architecture/persistence-and-database-boundary.md). Commercial: [Architecture/platform-commercial-integration.md](Architecture/platform-commercial-integration.md).
 
 ## External integrations
 

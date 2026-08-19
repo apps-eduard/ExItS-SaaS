@@ -6,7 +6,7 @@
 
 Canonical linking, consent, unlink, and visibility rules. Cardinality and duplicates: [borrower-identity-and-duplicate-policy.md](borrower-identity-and-duplicate-policy.md). ADR: [../Decisions/ADR-002-borrower-personal-cardinality-and-consent.md](../Decisions/ADR-002-borrower-personal-cardinality-and-consent.md).
 
-**PLM-D-00-04** and **PLM-D-00-05** remain **open** for Platform contract, schema, transport, persistence, and integration mechanism. Do not design APIs or tables here.
+**PLM-D-00-04** remains **open** for Platform generic relationship schema. **PLM-D-00-05 is Closed for PLM behavior/contract requirements** ([../Architecture/personal-link-and-consent-contract.md](../Architecture/personal-link-and-consent-contract.md)); Platform transport/persistence implementation remains external.
 
 ---
 

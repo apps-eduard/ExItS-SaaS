@@ -64,8 +64,8 @@ Additional isolation (required intent):
 |---|---|---|
 | API | Product | Intended. No API project authorized. Personal/Loan API shape remains open. |
 | Platform Admin Web | Platform | Unified SaaS control plane. Must **not** become the normal borrower-loan operations UI. |
-| Organization Web UI | Product | Full operational lending application (proposed Blazor Web). No client project authorized (PLM-D-00-09). |
-| MAUI Hybrid UI | Product | Limited field / collector application. Not a duplicate of Organization Web. Native/offline capabilities not authorized. |
+| Organization Web UI | Product | Full operational lending application (proposed Blazor Web). Web/MAUI sharing **Closed** (PLM-D-00-09); no client project until PLM-D-00-03 and owner authorization. |
+| MAUI Hybrid UI | Product | Limited field / collector application. Not a duplicate of Organization Web. MVP online authority; offline cache/drafts only; final offline posting deferred. |
 | ExItS Personal | Platform (presentation) | Customer/borrower experience. Not a separate borrower app. Loan operational data remains this product’s authority. |
 | Reports | Product | Intended. Report contents **Status: Open / Product Owner Decision Required**. |
 
@@ -169,7 +169,7 @@ No loan MVP **implementation** is approved. Default rates, restructuring, write-
 | PLM-D-00-06 | Loan roles and grants | **Closed for MVP** — PLM Authorization Policy v1 | Authorization (PLM-03) |
 | PLM-D-00-07 | Operational financial model (methods/fees/allocation/settlement/refund/variance/ledger boundary recorded; schema/GL/write-off open) | Origination, payments, collections |
 | PLM-D-00-08 | Loan business / calculation rules (MVP methods, calendar/penalty engine, settlement/prepayment recorded; restructuring/write-off open) | Product configuration through collections |
-| PLM-D-00-09 | Web / MAUI component-sharing strategy | Client scaffold |
+| PLM-D-00-09 | Web / MAUI component-sharing strategy | **Closed** (PLM-DOC-09) |
 | PLM-D-00-10 | Product documentation baseline completion / owner approval | **Closed / Product Owner Accepted** |
 | PLM-D-00-11 | External legal/compliance validation before Production | Production use |
 | PLM-D-00-12 | Exact money rounding mode | **Closed** — PHP 2 dp; ≥8 intermediate; To Even; final-installment reconciliation |
@@ -230,7 +230,11 @@ No loan MVP **implementation** is approved. Default rates, restructuring, write-
 | Source / project layout | [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md) |
 | API / contract boundary | [Architecture/api-and-contract-boundary.md](Architecture/api-and-contract-boundary.md) |
 | Persistence / database boundary | [Architecture/persistence-and-database-boundary.md](Architecture/persistence-and-database-boundary.md) |
-| Mobile / offline boundary | [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md) |
+| Mobile / offline boundary | [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md), [Architecture/mobile-and-offline-operating-model.md](Architecture/mobile-and-offline-operating-model.md) |
+| Web / MAUI sharing | [Architecture/web-maui-component-sharing-policy.md](Architecture/web-maui-component-sharing-policy.md) |
+| Branch treasury / float acknowledgment | [Product/branch-treasury-and-float-acknowledgment-policy.md](Product/branch-treasury-and-float-acknowledgment-policy.md) |
+| Collector route / location | [Product/collector-route-and-location-policy.md](Product/collector-route-and-location-policy.md) |
+| Collector device security (future) | [Security/collector-device-security-policy.md](Security/collector-device-security-policy.md) |
 | Platform commercial integration | [Architecture/platform-commercial-integration.md](Architecture/platform-commercial-integration.md) |
 | Foundation closeout | [Reports/PLM-00-foundation-closeout.md](Reports/PLM-00-foundation-closeout.md) |
 | PLM-DOC-01 | [Reports/PLM-DOC-01-product-identity-and-personal-linking.md](Reports/PLM-DOC-01-product-identity-and-personal-linking.md) |

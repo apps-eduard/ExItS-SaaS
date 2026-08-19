@@ -89,7 +89,7 @@ Lifecycle and unlink: [Product/personal-linking-lifecycle-and-visibility.md](Pro
 |---|---|
 | TLS | Production TLS remains a portfolio risk until closed. Product-specific TLS design **Status: Open / Product Owner Decision Required**. |
 | Data at rest | **Status: Open / Product Owner Decision Required** (no database yet) |
-| Local/offline stores | Possible later MAUI/SQLite capability. Crypto approach **Status: Open / Product Owner Decision Required**. Not authorized. See [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md). |
+| Local/offline stores | MVP: read-only cache and offline drafts in planning only; LocalStore not authorized; offline final posting deferred. Future crypto/device requirements: [Security/collector-device-security-policy.md](Security/collector-device-security-policy.md). See [Architecture/mobile-and-offline-operating-model.md](Architecture/mobile-and-offline-operating-model.md), [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md). |
 
 ## Input / output controls
 
