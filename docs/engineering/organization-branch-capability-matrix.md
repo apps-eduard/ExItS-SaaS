@@ -205,8 +205,8 @@ When POS/org step-up infrastructure is extended beyond Platform lifecycle, class
 
 | Surface | OrganizationGovernance | BranchConfiguration | BranchOperation (POS) |
 |---|---|---|---|
-| **MAUI — Primary workspace** | Owner essentials + link to full Web | All accessible branches via branch routes | Enter POS when role+device allow |
-| **MAUI — non-primary workspace** | **Target:** hide org-wide governance nav; branch setup/ops only | Exact selected branch | Enter POS at selected branch if device matches |
+| **MAUI — Primary workspace** | **Manage business** hub (burger) + Web reminder | Branch list/create under Manage business → Branches | Enter POS when role+device allow |
+| **MAUI — non-primary workspace** | Hidden — no Manage business / org-wide nav | **Branch settings** → local configure only | Enter POS at selected branch if device matches |
 | **Organization Web** | Full management center | All branches | **No checkout** — read operational history only |
 | **Platform Admin Web** | Platform scope only | Org branches via Platform APIs | No POS |
 
@@ -216,7 +216,7 @@ When POS/org step-up infrastructure is extended beyond Platform lifecycle, class
 
 | Gap | Status | Follow-up |
 |---|---|---|
-| MAUI org governance visible regardless of Primary branch | **Current code** shows Owner `/org/*` nav without `IsPrimary` gate | WP15B+ UI/API alignment to Primary-only Mobile governance |
+| MAUI org governance visible regardless of Primary branch | **Implemented (WP15B)** — `IWorkspaceGovernanceGate`, burger Manage business, hub at `/manage-business` | Monitor staff ACL when resolver lands |
 | Staff↔branch ACL | Not implemented (`OwnerAccessibleBranchResolver` only) | Future resolver without redesigning workspace flow |
 | POS password step-up for void/adjustment | Not generalized | Extend when auth infrastructure approved |
 | Shifts/registers org-scoped (no `BranchId`) | Documented WP13 limitation | Future branch-scoped shift model if approved |

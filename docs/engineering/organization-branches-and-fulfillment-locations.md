@@ -52,6 +52,12 @@ See [P28-WP12 report](../reports/P28-WP12-multi-branch-customer-commerce-hardeni
 
 MAUI provides a dense branch list (tappable cards) and a progressive editor: compact setup/readiness rows, then expandable Details, Address & location, Operating hours, and Fulfillment. Delivery pricing is disclosed when configuring delivery. Organization Web uses the same hierarchy with a wider two-column form grid and a sticky Save bar. See [P28 branch-edit UX densification](../reports/P28-branch-edit-ux-densification.md).
 
+**Mobile navigation (P28-WP15B):**
+
+- Global branch list/create/edit for owners: **Manage business → Branches** (`/manage-business` → `/organization/branches`), Primary/Main workspace + Owner/Admin gate only.
+- Local branch configuration at any workspace: **Branch settings** (`/branch-settings`) → branch editor with `?return=branch-settings`.
+- Operational More/Org summary must not expose global branch management or org-wide governance clutter.
+
 Branch capacity remains entitlement-controlled. Primary branches cannot be treated as disposable, and archived branches cannot fulfill new orders.
 
 ## Boundaries

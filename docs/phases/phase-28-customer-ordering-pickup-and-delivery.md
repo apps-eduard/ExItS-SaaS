@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Open / In Progress** — WP01 Code Complete; WP02–WP09 Stage B Code Complete / Validation Pending; WP11–WP15A Code Complete / Validation Pending (WP15A docs-only); WP10 Not Started |
+| Status | **Open / In Progress** — WP01 Code Complete; WP02–WP09 Stage B Code Complete / Validation Pending; WP11–WP15B Code Complete / Validation Pending; WP10 Not Started |
 | Device Verified | **No** |
 | Browser Verified | **No** |
 | Production Ready | **No** |
@@ -33,6 +33,7 @@ Deliver customer ordering with explicit branch pickup and local-delivery fulfill
 | **P28-WP13** | Branch operational context + owner switching | **Code Complete / Validation Pending** — feat `ed75c827`; see [report](../reports/P28-WP13-branch-operational-context-and-owner-switching.md) |
 | **P28-WP14** | Unified organization + branch workspace selection | **Code Complete / Validation Pending** — see [report](../reports/P28-WP14-unified-organization-branch-workspace-selection.md) |
 | **P28-WP15A** | Organization/branch capability + client boundary baseline | **Docs Complete** — see [report](../reports/P28-WP15A-capability-client-boundary-baseline.md) |
+| **P28-WP15B** | Mobile operational shell + Manage business hub | **Code Complete / Validation Pending** — see [report](../reports/P28-WP15B-mobile-operations-and-manage-business.md) |
 | P28-WP10 | E2E validation and Phase 28 closeout | **Not Started** |
 
 ## Personal → Linked Merchant Shop (delivered)

@@ -100,13 +100,28 @@ Organization management follows a mobile-first, Web-complete model.
 
 **P28-WP15A:** Canonical capability scopes, Mobile Primary vs exact-branch exposure, and client boundaries are defined in [organization-branch-capability-matrix.md](../engineering/organization-branch-capability-matrix.md). Workspace selection (WP14) does not grant POS permission. Mobile **Primary/Main** workspace is the governance gateway; non-primary Mobile workspace is branch configuration/operations. Organization Web does not require selecting Main to manage the business.
 
+**P28-WP15B:** Mobile operational shell separates branch ops from org governance. Burger **Manage business** (Primary + Owner/Admin only) opens `/manage-business`. Operational surfaces link to `/branch-settings` for the selected branch. Global branch list/create lives under Manage business → Branches. Web unchanged.
+
 The Mobile application should provide every Organization Owner function that can be handled safely and clearly on a mobile device.
 
 The Web application provides full control, detailed administration, larger tables, advanced filters, audit views, and complex management workflows.
 
 ### Mobile Organization Owner Essentials
 
-For MVP, Mobile should support:
+For MVP, Mobile supports organization governance **when the selected workspace branch is Primary/Main** (P28-WP15B):
+
+- burger menu entry **Manage business** → `/manage-business` hub (branches, staff & access, profile, subscription, devices, compliance links);
+- compact summary on the hub; child pages lazy-load their own data;
+- clear Web reminder for full administration.
+
+From any workspace branch, Mobile supports **branch settings** for the selected location:
+
+- `/branch-settings` → configure this branch (details, address, hours, fulfillment, local devices);
+- no create/suspend other branches, change primary, or org-wide role matrix from branch settings.
+
+Operational POS surfaces (dashboard, More, inventory, orders, etc.) no longer expose global branch management or org-wide governance links.
+
+All other Owner essentials remain reachable from the Manage business hub (same APIs as before):
 
 - viewing and editing basic organization profile information (business name, legal/contact/address/locale fields; independent of Personal profile);
 - viewing organization status;
@@ -527,15 +542,14 @@ Mobile Application
 ├── Select Organization / Account context (outside Personal home)
 │   └── Workspace selection (`/workspace-select`) — Organization + Branch (WP14)
 │
-├── Organization Owner Essentials (Primary/Main workspace on Mobile — WP15A)
-│   ├── Basic Organization Profile
-│   ├── Business QR (org public identity; not Personal My QR)
-│   ├── Subscription Status
-│   ├── Entitlement Status
-│   ├── Staff
-│   ├── POS devices (show registration QR / revoke)
-│   ├── POS Role Assignment
-│   └── Open Web for Full Control
+├── Manage business (Primary/Main workspace only — WP15B)
+│   ├── Burger → `/manage-business` hub
+│   ├── Branches (list/create/edit under hub)
+│   ├── Staff & access, profile, subscription, devices, compliance
+│   └── Open Web for full control reminder
+│
+├── Branch settings (any selected workspace branch — WP15B)
+│   └── `/branch-settings` → local branch configure (not org-wide governance)
 │
 └── POS Product (PosShell)
     ├── Top bar — active organization name + logo/initials (session-derived; updates on org switch)

@@ -70,7 +70,7 @@ Documented explicitly (not hidden):
 | POS actor attribution | `PosOrganizationScope.TryGetActorId` on mutation endpoints |
 | Platform audit | Platform lifecycle + org actions audited; POS uses actor-on-record |
 | Org Web | Full management; no checkout; workspace accordion (WP14) |
-| MAUI OrgSummary | Owner governance links; no `IsPrimary` filter yet |
+| MAUI OrgSummary | ~~Owner governance links; no `IsPrimary` filter yet~~ **WP15B:** branch settings only; governance via Manage business hub |
 
 ## Docs updated (conflicts corrected)
 
