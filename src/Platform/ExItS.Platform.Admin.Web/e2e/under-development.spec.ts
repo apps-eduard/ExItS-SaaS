@@ -71,17 +71,17 @@ test.describe("development frontend mode", () => {
     await page.goto("/admin");
     await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
     await expect(page.getByText("Development", { exact: true })).toBeVisible();
-    await expect(page.getByLabel("Organizations. Under development")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Organizations" })).toBeVisible();
+    await expect(page.getByLabel("Organizations. Under development")).toHaveCount(0);
     await expect(page.getByLabel("Event Delivery. Planned")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Organizations" })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Event Delivery" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /Event Delivery/ })).toHaveCount(0);
   });
 });
 
-test("known /admin/organizations is under development", async ({ page }) => {
+test("known /admin/users is under development", async ({ page }) => {
   await mockAuthenticatedSession(page);
-  await page.goto("/admin/organizations");
+  await page.goto("/admin/users");
   await expect(page.getByRole("heading", { name: "Under development" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Back to Overview" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Copy diagnostics" })).toHaveCount(0);
@@ -100,6 +100,7 @@ test("production preview hides migration-status navigation entries", async ({ pa
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Overview" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Organizations" })).toBeVisible();
   await expect(page.getByText("Development", { exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Organizations. Under development")).toHaveCount(0);
   await expect(page.getByText("Under development")).toHaveCount(0);
@@ -111,7 +112,7 @@ test("production preview hides migration-status navigation entries", async ({ pa
 test("under-development page has no horizontal overflow at 375px", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await mockAuthenticatedSession(page);
-  await page.goto("/admin/organizations");
+  await page.goto("/admin/users");
   await expect(page.getByRole("heading", { name: "Under development" })).toBeVisible();
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -122,7 +123,7 @@ test("under-development page has no horizontal overflow at 375px", async ({ page
 test("under-development page has no serious accessibility violations", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await mockAuthenticatedSession(page);
-  await page.goto("/admin/organizations");
+  await page.goto("/admin/users");
   await expect(page.getByRole("heading", { name: "Under development" })).toBeVisible();
 
   const results = await new AxeBuilder({ page }).analyze();

@@ -28,9 +28,11 @@ export function AppBreadcrumbs() {
   });
   const currentLabel = isOverview
     ? t("nav.overview")
-    : resolution === "under-development"
-      ? (labelForAuthorizedPath(path, t) ?? t("underDevelopment.title"))
-      : t("shell.notFound.title");
+    : resolution === "implemented"
+      ? (labelForAuthorizedPath(path, t) ?? t("shell.notFound.title"))
+      : resolution === "under-development"
+        ? (labelForAuthorizedPath(path, t) ?? t("underDevelopment.title"))
+        : t("shell.notFound.title");
 
   return (
     <nav aria-label={t("shell.breadcrumb")} className="min-w-0 overflow-hidden">

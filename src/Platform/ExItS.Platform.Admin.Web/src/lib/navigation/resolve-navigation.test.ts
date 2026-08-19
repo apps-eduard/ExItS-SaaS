@@ -48,8 +48,7 @@ describe("resolveNavigation", () => {
       isPlatformAdministrator: true,
       developmentToolsAllowed: false,
     });
-    expect(itemIds(sections)).toEqual(["PWEB-NAV-OVERVIEW"]);
-    expect(itemIds(sections)).not.toContain("PWEB-NAV-ORGANIZATIONS");
+    expect(itemIds(sections)).toEqual(["PWEB-NAV-OVERVIEW", "PWEB-NAV-ORGANIZATIONS"]);
     expect(itemIds(sections)).not.toContain("PWEB-NAV-EVENT-DELIVERY");
     expect(itemIds(sections)).not.toContain("PWEB-NAV-PLATFORM-SETTINGS");
     expect(itemIds(sections)).not.toContain("PWEB-NAV-TEST-PAYMENTS");
@@ -65,15 +64,14 @@ describe("resolveNavigation", () => {
     });
     const items = sections.flatMap((section) => section.items);
     expect(items.find((item) => item.id === "PWEB-NAV-OVERVIEW")?.presentation).toBe("link");
+    expect(items.find((item) => item.id === "PWEB-NAV-ORGANIZATIONS")?.presentation).toBe("link");
     expect(sections.find((section) => section.id === "home")?.items.map((item) => item.id)).toEqual(
       ["PWEB-NAV-OVERVIEW"],
     );
-    expect(sections.find((section) => section.id === "organizations")).toBeUndefined();
-    expect(sections.find((section) => section.id === "operations")).toBeUndefined();
-    expect(sections.find((section) => section.id === "settings")).toBeUndefined();
-    expect(developmentItem(sections, "PWEB-NAV-ORGANIZATIONS")?.presentation).toBe(
-      "underDevelopment",
-    );
+    expect(
+      sections.find((section) => section.id === "organizations")?.items.map((item) => item.id),
+    ).toEqual(["PWEB-NAV-ORGANIZATIONS"]);
+    expect(developmentItem(sections, "PWEB-NAV-ORGANIZATIONS")).toBeUndefined();
     expect(developmentItem(sections, "PWEB-NAV-TEST-PAYMENTS")?.presentation).toBe(
       "underDevelopment",
     );
@@ -91,9 +89,8 @@ describe("resolveNavigation", () => {
         isPlatformAdministrator: true,
         developmentToolsAllowed: areDevelopmentToolsAllowed(mode),
       });
-      expect(developmentItem(sections, "PWEB-NAV-ORGANIZATIONS")?.presentation).toBe(
-        "underDevelopment",
-      );
+      expect(developmentItem(sections, "PWEB-NAV-ORGANIZATIONS")).toBeUndefined();
+      expect(itemIds(sections)).toContain("PWEB-NAV-ORGANIZATIONS");
       expect(developmentItem(sections, "PWEB-NAV-EVENT-DELIVERY")?.presentation).toBe("planned");
       expect(developmentItem(sections, "PWEB-NAV-PLATFORM-SETTINGS")?.presentation).toBe("planned");
     },
@@ -109,8 +106,7 @@ describe("resolveNavigation", () => {
         isPlatformAdministrator: true,
         developmentToolsAllowed: areDevelopmentToolsAllowed(mode),
       });
-      expect(itemIds(sections)).toEqual(["PWEB-NAV-OVERVIEW"]);
-      expect(itemIds(sections)).not.toContain("PWEB-NAV-ORGANIZATIONS");
+      expect(itemIds(sections)).toEqual(["PWEB-NAV-OVERVIEW", "PWEB-NAV-ORGANIZATIONS"]);
       expect(itemIds(sections)).not.toContain("PWEB-NAV-EVENT-DELIVERY");
       expect(itemIds(sections)).not.toContain("PWEB-NAV-PLATFORM-SETTINGS");
       expect(itemIds(sections)).not.toContain("PWEB-NAV-TEST-PAYMENTS");

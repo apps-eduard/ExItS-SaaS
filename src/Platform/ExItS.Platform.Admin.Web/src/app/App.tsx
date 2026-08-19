@@ -7,6 +7,7 @@ import { RequireSession } from "@/app/RequireSession";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthPlaceholderPage } from "@/features/auth/AuthPlaceholderPage";
 import { SignInPage } from "@/features/auth/SignInPage";
+import { OrganizationsPage } from "@/features/organizations/OrganizationsPage";
 import { OverviewPage } from "@/features/overview/OverviewPage";
 import { ShellCatchAllPage } from "@/features/overview/ShellCatchAllPage";
 import { AuthorizationProvider } from "@/hooks/use-authorization";
@@ -84,8 +85,11 @@ export function App() {
                     </Route>
                     <Route element={<ProtectedShell />}>
                       <Route path="/" element={<Navigate to="/admin" replace />} />
-                      <Route path="/admin" element={<OverviewPage />} />
-                      <Route path="/admin/*" element={<ShellCatchAllPage />} />
+                      <Route path="/admin" element={<Outlet />}>
+                        <Route index element={<OverviewPage />} />
+                        <Route path="organizations" element={<OrganizationsPage />} />
+                        <Route path="*" element={<ShellCatchAllPage />} />
+                      </Route>
                     </Route>
                   </Routes>
                 </SessionProvider>

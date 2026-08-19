@@ -63,7 +63,8 @@ Mailpit and Development/Testing fake payments remain in place. This package does
 | PWEB-IMPL-06 | AWAITING VISUAL REVIEW | First Visual Checkpoint |
 | PWEB-IMPL-06A | COMPLETE | Local Validation Test User runtime gate |
 | PWEB-IMPL-06B | VISUAL DIRECTION ACCEPTED | Uniform shadcn structure + Stripe visual standard |
-| PWEB-IMPL-06C | FINAL POLISH — AWAITING PRODUCT OWNER + CHATGPT VISUAL APPROVAL | Final shell, account, and audit polish |
+| PWEB-IMPL-06C | PRODUCT OWNER VISUAL APPROVED | Final shell, account, and audit polish |
+| PWEB-IMPL-07 | COMPLETE | Organizations list |
 
 ## PWEB-IMPL-02 — Design system + global preferences
 
@@ -251,7 +252,7 @@ See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-06B-uniform-shadcn-stripe-visual-
 
 ## PWEB-IMPL-06C — Final shell, account, and audit polish
 
-Status: **FINAL POLISH — AWAITING PRODUCT OWNER + CHATGPT VISUAL APPROVAL**
+Status: **PRODUCT OWNER VISUAL APPROVED**
 
 | Area | Record |
 |---|---|
@@ -262,9 +263,17 @@ Status: **FINAL POLISH — AWAITING PRODUCT OWNER + CHATGPT VISUAL APPROVAL**
 | Actor | `platform-user:<GUID>` shown as Platform user + compact GUID; full value retained |
 | Platform readiness | Same bordered operational surface as other sections; still low visual weight |
 | Screenshots | `docs/Platform-Admin-Web/Reports/impl-06c-final-polish/` |
-| Visual status | **AWAITING PRODUCT OWNER + CHATGPT** |
+| Visual status | **PRODUCT OWNER VISUAL APPROVED** |
 
 See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-06C-final-shell-account-audit-polish.md`.
+
+## PWEB-IMPL-07 — Organizations list
+
+Status: **COMPLETE**
+
+Read-only Organizations list at `/admin/organizations`. No create/edit/delete. CSRF remains `BLOCKS_FUTURE_MUTATION`. Social-auth token-in-URL remains `BLOCKS_CUTOVER`.
+
+See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-07-organizations-list.md`.
 
 ## Queue
 
@@ -274,6 +283,7 @@ See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-06C-final-shell-account-audit-pol
 | PWEB-IMPL-06 — First Visual Checkpoint | AWAITING VISUAL REVIEW |
 | PWEB-IMPL-06A — Local Validation Test User | COMPLETE |
 | PWEB-IMPL-06B — Uniform visual system | VISUAL DIRECTION ACCEPTED |
-| PWEB-IMPL-06C — Final polish | FINAL POLISH — AWAITING PRODUCT OWNER + CHATGPT VISUAL APPROVAL |
+| PWEB-IMPL-06C — Final polish | PRODUCT OWNER VISUAL APPROVED |
+| PWEB-IMPL-07 — Organizations list | COMPLETE |
 
-Stopped after PWEB-IMPL-06C.
+Stopped after PWEB-IMPL-07.

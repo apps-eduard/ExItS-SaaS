@@ -11,7 +11,7 @@ const loadedAuthorized = {
 };
 
 describe("react implementation status", () => {
-  it("keeps Overview implemented and Organizations under development without changing lifecycle", () => {
+  it("keeps Overview and Organizations implemented without changing lifecycle", () => {
     const overview = navigationRegistry
       .flatMap((section) => section.items)
       .find((item) => item.id === "PWEB-NAV-OVERVIEW");
@@ -21,7 +21,7 @@ describe("react implementation status", () => {
     expect(overview?.lifecycle).toBe("AVAILABLE");
     expect(organizations?.lifecycle).toBe("AVAILABLE");
     expect(reactImplementationStatus(overview!)).toBe("IMPLEMENTED");
-    expect(reactImplementationStatus(organizations!)).toBe("UNDER_DEVELOPMENT");
+    expect(reactImplementationStatus(organizations!)).toBe("IMPLEMENTED");
   });
 });
 
@@ -30,14 +30,17 @@ describe("resolveKnownReactRoute", () => {
     expect(resolveKnownReactRoute({ ...loadedAuthorized, pathname: "/admin" })).toBe("implemented");
   });
 
-  it.each([
-    "/admin/organizations",
-    "/admin/users",
-    "/admin/products",
-    "/admin/plans",
-    "/admin/users?directory=platform",
-  ])("treats known unimplemented pathname %s as under-development", (pathname) => {
-    expect(resolveKnownReactRoute({ ...loadedAuthorized, pathname })).toBe("under-development");
+  it.each(["/admin/users", "/admin/products", "/admin/plans", "/admin/users?directory=platform"])(
+    "treats known unimplemented pathname %s as under-development",
+    (pathname) => {
+      expect(resolveKnownReactRoute({ ...loadedAuthorized, pathname })).toBe("under-development");
+    },
+  );
+
+  it("treats /admin/organizations as implemented", () => {
+    expect(resolveKnownReactRoute({ ...loadedAuthorized, pathname: "/admin/organizations" })).toBe(
+      "implemented",
+    );
   });
 
   it("treats unknown pathnames as unknown", () => {

@@ -9,6 +9,7 @@ import {
   DASHBOARD_ATTENTION_PAGE_SIZE,
   DASHBOARD_AUDIT_PAGE_SIZE,
   DASHBOARD_COUNT_PAGE_SIZE,
+  assertDashboardPageSize,
 } from "@/features/overview/dashboard-bounds";
 
 export const dashboardQueryKeys = {
@@ -25,12 +26,14 @@ export function useOrganizationCountQuery(enabled: boolean, status?: string) {
   return useQuery({
     queryKey: dashboardQueryKeys.organizations(status, DASHBOARD_COUNT_PAGE_SIZE),
     enabled,
-    queryFn: ({ signal }) =>
-      listOrganizations(env.platformApiBaseUrl, {
+    queryFn: ({ signal }) => {
+      assertDashboardPageSize(DASHBOARD_COUNT_PAGE_SIZE);
+      return listOrganizations(env.platformApiBaseUrl, {
         status,
         pageSize: DASHBOARD_COUNT_PAGE_SIZE,
         signal,
-      }),
+      });
+    },
   });
 }
 
@@ -38,12 +41,14 @@ export function useSuspendedOrganizationsQuery(enabled: boolean) {
   return useQuery({
     queryKey: dashboardQueryKeys.organizations("Suspended", DASHBOARD_ATTENTION_PAGE_SIZE),
     enabled,
-    queryFn: ({ signal }) =>
-      listOrganizations(env.platformApiBaseUrl, {
+    queryFn: ({ signal }) => {
+      assertDashboardPageSize(DASHBOARD_ATTENTION_PAGE_SIZE);
+      return listOrganizations(env.platformApiBaseUrl, {
         status: "Suspended",
         pageSize: DASHBOARD_ATTENTION_PAGE_SIZE,
         signal,
-      }),
+      });
+    },
   });
 }
 

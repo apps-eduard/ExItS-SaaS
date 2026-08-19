@@ -71,6 +71,14 @@ export type AuthenticatedFetchOptions = {
   permissions?: string[];
   failOrganizations?: boolean;
   organizationTotalCount?: number;
+  organizationItems?: Array<{
+    id: string;
+    displayName: string;
+    slug: string;
+    status: string;
+    createdAtUtc?: string;
+    updatedAtUtc?: string;
+  }>;
 };
 
 export function mockUnauthenticatedFetch(): void {
@@ -128,7 +136,11 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}):
             detail: "Organization list failed.",
           });
         }
-        return jsonResponse(200, pagedJson([], options.organizationTotalCount ?? 0, 1));
+        const items = options.organizationItems ?? [];
+        return jsonResponse(
+          200,
+          pagedJson(items, options.organizationTotalCount ?? items.length, items.length || 1),
+        );
       }
       if (url.includes("/api/v1/platform/subscriptions")) {
         return jsonResponse(200, pagedJson([], 0, 1));

@@ -2,7 +2,7 @@ import type { NavigationItemDefinition } from "@/lib/navigation/navigation-types
 
 export type ReactImplementationStatus = "IMPLEMENTED" | "UNDER_DEVELOPMENT";
 
-const IMPLEMENTED_NAV_IDS = new Set(["PWEB-NAV-OVERVIEW"]);
+const IMPLEMENTED_NAV_IDS = new Set(["PWEB-NAV-OVERVIEW", "PWEB-NAV-ORGANIZATIONS"]);
 
 export function reactImplementationStatus(
   item: NavigationItemDefinition,

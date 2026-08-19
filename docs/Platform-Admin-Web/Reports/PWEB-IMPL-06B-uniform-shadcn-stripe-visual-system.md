@@ -1,6 +1,6 @@
 # PWEB-IMPL-06B — Uniform shadcn / Stripe visual system
 
-**Status:** Visual implementation COMPLETE. Visual approval **AWAITING PRODUCT OWNER + CHATGPT**.  
+**Status:** VISUAL DIRECTION ACCEPTED 
 **Branch:** `feat/platform-admin-web-v2`  
 **Starting HEAD:** `5f22978673f46942d154516a41578b35c49c296e`
 

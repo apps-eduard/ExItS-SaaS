@@ -54,7 +54,7 @@ describe("application shell", () => {
     expect(screen.getAllByText("Home").length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("navigation", { name: "Breadcrumb" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Organizations" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Organizations" })).toBeInTheDocument();
   });
 
   it("does not flash privileged navigation while authorization is loading", async () => {
@@ -81,8 +81,8 @@ describe("application shell", () => {
     expect(screen.queryByRole("link", { name: "Organizations" })).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Organizations. Under development")).not.toBeInTheDocument();
     resolveAuthz?.(jsonResponse(200, sampleAuthorization));
-    expect(await screen.findByLabelText("Organizations. Under development")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Organizations" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Organizations" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Organizations. Under development")).not.toBeInTheDocument();
   });
 
   it("hides unauthorized items after permissions load", async () => {
@@ -223,10 +223,11 @@ describe("application shell", () => {
     render(<App />);
     await screen.findByRole("heading", { name: "Overview" });
     expect(screen.getByText("Development")).toBeInTheDocument();
-    expect(screen.getByLabelText("Organizations. Under development")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Organizations" })).toBeInTheDocument();
+    expect(screen.getByLabelText("All Accounts. Under development")).toBeInTheDocument();
     expect(screen.getByLabelText("Event Delivery. Planned")).toBeInTheDocument();
     expect(screen.getAllByText("Under development").length).toBeGreaterThan(0);
-    expect(screen.queryByRole("link", { name: "Organizations" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Organizations. Under development")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Organizations/ })).not.toBeInTheDocument();
   });
 
@@ -238,6 +239,7 @@ describe("application shell", () => {
     render(<App />);
     await screen.findByRole("heading", { name: "Overview" });
     expect(screen.queryByText("Development")).not.toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Organizations" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Organizations. Under development")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Event Delivery. Planned")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Platform Settings. Planned")).not.toBeInTheDocument();
@@ -248,7 +250,7 @@ describe("application shell", () => {
   it("renders Under development for known unimplemented routes and Page not found for unknown routes", async () => {
     stubDesktop(true);
     mockAuthenticatedFetch();
-    window.history.replaceState({}, "", "/admin/organizations");
+    window.history.replaceState({}, "", "/admin/users");
     const { unmount } = render(<App />);
     expect(await screen.findByRole("heading", { name: "Under development" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Back to Overview" })).toHaveAttribute(
@@ -321,10 +323,8 @@ describe("application shell", () => {
     const overview = await screen.findByRole("link", { name: "Overview" });
     overview.focus();
     await user.tab();
-    expect(document.activeElement).not.toBe(
-      screen.getByLabelText("Organizations. Under development"),
-    );
-    expect(screen.getByLabelText("Organizations. Under development")).not.toHaveAttribute("href");
+    expect(document.activeElement).not.toBe(screen.getByLabelText("Event Delivery. Planned"));
+    expect(screen.getByLabelText("Event Delivery. Planned")).not.toHaveAttribute("href");
   });
 
   it("localizes the under-development page to Filipino", async () => {

@@ -9,6 +9,10 @@ const screenshotDir = resolve(
   dirname(fileURLToPath(import.meta.url)),
   "../../../../docs/Platform-Admin-Web/Reports/impl-06a-local-validation",
 );
+const organizationsScreenshotDir = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../../../docs/Platform-Admin-Web/Reports/impl-07-organizations",
+);
 
 test.describe("local-validation React container smoke", () => {
   test.skip(
@@ -121,5 +125,67 @@ test.describe("local-validation React container smoke", () => {
     await page.locator("#sign-in-password").fill(password);
     await page.getByRole("button", { name: "Sign In" }).click();
     await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
+
+    mkdirSync(organizationsScreenshotDir, { recursive: true });
+    await expect(
+      page
+        .getByRole("navigation", { name: "Primary" })
+        .getByRole("link", { name: "Organizations" }),
+    ).toBeVisible();
+    await page
+      .getByRole("navigation", { name: "Primary" })
+      .getByRole("link", { name: "Organizations" })
+      .click();
+    await expect(page).toHaveURL(/\/admin\/organizations/);
+    await expect(
+      page.getByRole("heading", { name: "Organizations", exact: true, level: 1 }),
+    ).toBeVisible();
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    await expect(page.getByText("abc-sari-sari")).toBeVisible();
+    await expect(page.getByRole("button", { name: /create/i })).toHaveCount(0);
+    await page.getByRole("button", { name: "Preferences" }).click();
+    await page.getByRole("menuitem", { name: /^Light/ }).click();
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.screenshot({
+      path: resolve(organizationsScreenshotDir, "01-organizations-1440x900-light.png"),
+      fullPage: true,
+    });
+    await page.getByRole("button", { name: "Preferences" }).click();
+    await page.getByRole("menuitem", { name: /^Dark/ }).click();
+    await page.screenshot({
+      path: resolve(organizationsScreenshotDir, "02-organizations-1440x900-dark.png"),
+      fullPage: true,
+    });
+    await page.getByRole("button", { name: "Preferences" }).click();
+    await page.getByRole("menuitem", { name: /^Light/ }).click();
+    await page.locator("#org-list-status").selectOption("Active");
+    await expect(page).toHaveURL(/status=Active/);
+    await page.reload();
+    await expect(page).toHaveURL(/status=Active/);
+    await expect(page.getByLabel("Search")).toBeVisible();
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    await expect(page.getByText("kizy-store")).toBeVisible();
+    await page.screenshot({
+      path: resolve(organizationsScreenshotDir, "04-organizations-filtered.png"),
+      fullPage: true,
+    });
+    await page.getByLabel("Search").fill("kizy");
+    await page.getByRole("button", { name: "Search" }).click();
+    await expect(page).toHaveURL(/search=kizy/);
+    await expect(page).toHaveURL(/status=Active/);
+    await page.reload();
+    await expect(page).toHaveURL(/search=kizy/);
+    await expect(page).toHaveURL(/status=Active/);
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    await expect(page.getByText("kizy-store")).toBeVisible();
+    await page.setViewportSize({ width: 375, height: 812 });
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+    expect(overflow).toBe(false);
+    await page.screenshot({
+      path: resolve(organizationsScreenshotDir, "03-organizations-375x812.png"),
+      fullPage: true,
+    });
   });
 });
