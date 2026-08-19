@@ -59,7 +59,7 @@ Mailpit and Development/Testing fake payments remain in place. This package does
 | PWEB-IMPL-04B | COMPLETE | Known Route Under-Development State |
 | PWEB-IMPL-04B-A | COMPLETE | Production nav implemented-only correction |
 | PWEB-IMPL-04C | COMPLETE | Parallel React Local-Validation Container |
-| PWEB-IMPL-05 | NOT STARTED | Dashboard |
+| PWEB-IMPL-05 | COMPLETE | Dashboard |
 | PWEB-IMPL-06 | NOT STARTED | First Visual Checkpoint |
 
 ## PWEB-IMPL-02 — Design system + global preferences
@@ -167,7 +167,7 @@ Status: **COMPLETE**
 | `PLANNED_DISABLED` presentation | Hidden from normal production/staging/preview/qa/uat/unknown navigation |
 | Development / test / testing | Authorized planned items appear under Development as non-navigable “Planned”; under-development items remain non-navigable “Under development” |
 | Direct known routes | Unchanged from PWEB-IMPL-04B |
-| Dashboard | **NOT implemented** |
+| Dashboard | **Implemented** in PWEB-IMPL-05 |
 | Docker | **NOT implemented** |
 
 ## PWEB-IMPL-04C — Parallel React local-validation container
@@ -180,16 +180,33 @@ Status: **COMPLETE**
 | Platform API | Unchanged on `localhost:8091`; CORS allowlist extended with the React origin only |
 | React Admin | Production nginx image on `localhost:8095` (`admin-web-react`) |
 | Cutover | **NONE** — parallel only |
-| Dashboard | **NOT implemented** |
+| Dashboard | **Implemented** in PWEB-IMPL-05 |
 | Auth model | Unchanged cookie session + `credentials: include`; API base URL injected at container start |
 
 See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-04C-parallel-react-local-validation-container.md`.
+
+## PWEB-IMPL-05 — Dashboard
+
+Status: **COMPLETE**
+
+| Area | Record |
+|---|---|
+| Route | `/admin` Overview is a permission-aware control-center dashboard |
+| Data | Real Platform API totals/lists only; no demo metrics |
+| Widgets | Organizations summary + suspended attention; subscription status totals; unassigned + pending-verification accounts; recent audit; liveness/readiness |
+| Navigation actions | None to UNDER_DEVELOPMENT destinations |
+| Query policy | Independent TanStack Query widgets; `page=1` with pageSize 1/5/8; missing `totalCount` is not coerced to zero |
+| Authorization | Widgets hidden until `authorization/me` is loaded; unauthorized widgets omitted |
+| i18n / theme | EN + fil-PH; System / Light / Dark; density tokens unchanged |
+| Visual checkpoint | **Not approved / not claimed** — PWEB-IMPL-06 |
+
+See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-05-dashboard.md`.
 
 ## Queue
 
 | Package | Status |
 |---|---|
-| PWEB-IMPL-05 — Dashboard | NOT STARTED |
+| PWEB-IMPL-05 — Dashboard | COMPLETE |
 | PWEB-IMPL-06 — First Visual Checkpoint | NOT STARTED |
 
-Next package: **PWEB-IMPL-05 — Dashboard**.
+Next package: **PWEB-IMPL-06 — First Visual Checkpoint**.

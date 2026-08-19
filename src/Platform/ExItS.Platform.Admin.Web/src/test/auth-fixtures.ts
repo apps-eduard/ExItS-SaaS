@@ -37,13 +37,41 @@ export const sampleAuthorization = {
   ],
 };
 
+export function pagedJson<T>(items: T[] = [], totalCount = items.length, pageSize = 1) {
+  return { items, totalCount, page: 1, pageSize };
+}
+
 export function jsonResponse(status: number, body: unknown): Response {
   return {
     ok: status >= 200 && status < 300,
     status,
     json: async () => body,
+    text: async () => (typeof body === "string" ? body : JSON.stringify(body)),
   } as Response;
 }
+
+export function textResponse(status: number, body: string): Response {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => body,
+    text: async () => body,
+  } as Response;
+}
+
+function pathnameOf(url: string): string {
+  try {
+    return new URL(url, "http://local.test").pathname;
+  } catch {
+    return url;
+  }
+}
+
+export type AuthenticatedFetchOptions = {
+  permissions?: string[];
+  failOrganizations?: boolean;
+  organizationTotalCount?: number;
+};
 
 export function mockUnauthenticatedFetch(): void {
   vi.stubGlobal(
@@ -66,16 +94,42 @@ export function mockUnauthenticatedFetch(): void {
   );
 }
 
-export function mockAuthenticatedFetch(): void {
+export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}): void {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
+      const path = pathnameOf(url);
       if (url.includes("/api/v1/platform/auth/me")) {
         return jsonResponse(200, sampleSession);
       }
       if (url.includes("/api/v1/platform/authorization/me")) {
-        return jsonResponse(200, sampleAuthorization);
+        return jsonResponse(200, {
+          ...sampleAuthorization,
+          permissions: options.permissions ?? sampleAuthorization.permissions,
+        });
+      }
+      if (path.endsWith("/health/ready") || path.endsWith("/health")) {
+        return textResponse(200, "Healthy");
+      }
+      if (url.includes("/api/v1/platform/organizations")) {
+        if (options.failOrganizations) {
+          return jsonResponse(500, {
+            title: "Error",
+            status: 500,
+            detail: "Organization list failed.",
+          });
+        }
+        return jsonResponse(200, pagedJson([], options.organizationTotalCount ?? 0, 1));
+      }
+      if (url.includes("/api/v1/platform/subscriptions")) {
+        return jsonResponse(200, pagedJson([], 0, 1));
+      }
+      if (url.includes("/api/v1/platform/users")) {
+        return jsonResponse(200, pagedJson([], 0, 5));
+      }
+      if (url.includes("/api/v1/platform/audit")) {
+        return jsonResponse(200, pagedJson([], 0, 8));
       }
       return jsonResponse(404, { title: "Not Found", status: 404 });
     }),

@@ -42,6 +42,24 @@ async function mockAuthenticatedSession(page: import("@playwright/test").Page) {
   await page.route("**/api/v1/platform/authorization/me", async (route) => {
     await route.fulfill({ json: authorization });
   });
+  await page.route("**/api/v1/platform/organizations*", async (route) => {
+    await route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 1 } });
+  });
+  await page.route("**/api/v1/platform/subscriptions*", async (route) => {
+    await route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 1 } });
+  });
+  await page.route("**/api/v1/platform/users*", async (route) => {
+    await route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 1 } });
+  });
+  await page.route("**/api/v1/platform/audit*", async (route) => {
+    await route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 8 } });
+  });
+  await page.route("**/health/ready", async (route) => {
+    await route.fulfill({ contentType: "text/plain", body: "Healthy" });
+  });
+  await page.route("**/health", async (route) => {
+    await route.fulfill({ contentType: "text/plain", body: "Healthy" });
+  });
 }
 
 test("unauthenticated /admin redirects to sign-in", async ({ page }) => {
