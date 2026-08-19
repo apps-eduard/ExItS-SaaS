@@ -215,3 +215,5 @@ Navigating to a URL that does not match any defined route displays a clear "page
 ### 4.11 No Security Decisions Based on Hidden Navigation
 
 Navigation visibility is a UX convenience. All authorization decisions are made server-side. The SaaS Control Center must not rely on hidden navigation items as a security control. This principle is consistent with the authorization matrix: "Navigation visibility is not authorization."
+
+Detailed application shell placement, global interactions (breadcrumbs, back/forward compatibility, global search vs command palette, and keyboard model) are specified in `application-shell-and-global-interactions.md`.

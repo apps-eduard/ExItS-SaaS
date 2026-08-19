@@ -18,4 +18,6 @@ boundaries, and records a dedicated planning worktree (`docs/platform-admin-web-
 - `Reports/PLATFORM-WEB-DOC-02-product-and-information-architecture.md` — product and IA report
 - `Reports/PLATFORM-WEB-DOC-03-frontend-architecture.md` — frontend architecture report
 - `Reports/PLATFORM-WEB-DOC-04-design-system-and-ux.md` — design system and UX foundation report
+- `application-shell-and-global-interactions.md` — application shell + global interactions
+- `Reports/PLATFORM-WEB-DOC-05-application-shell.md` — application shell report
 

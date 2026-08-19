@@ -22,7 +22,7 @@ Queue state: `CLEAR`
 | DOC-02 | Complete | Product vision, UX personas, and information architecture |
 | DOC-03 | Complete | Replacement frontend architecture (React stack, security, dependency policy) |
 | DOC-04 | Complete | Design system tokens, component patterns, and UX foundation |
-| DOC-05 | Pending | Replacement permissions model + permission-aware UI gating |
+| DOC-05 | Complete | Application shell + global interaction model |
 | DOC-06 | Pending | Replacement functional areas mapping (pages/routes/features) |
 | DOC-07 | Pending | Replacement API/contract consumption checklist |
 | DOC-08 | Pending | Regression/hardening notes for cutover readiness |

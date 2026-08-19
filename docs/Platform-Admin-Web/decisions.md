@@ -22,6 +22,11 @@ Accepted decision identifiers for this planning track (documentation-only).
 | PWEB-D-016 | Compact density is the default for administrative data views; comfortable density for form-heavy flows | Accepted |
 | PWEB-D-017 | WCAG 2.2 AA is the accessibility design target (not a compliance claim for the current application) | Accepted |
 | PWEB-D-018 | Motion is restrained and functional; `prefers-reduced-motion` fully honored with 0ms token overrides | Accepted |
+| PWEB-D-019 | DOC-05 application shell: persistent primary sidebar + top bar with context switcher, environment indicator, search entry, and account menu; breadcrumbs under header; responsive drawer navigation for tablet/narrow | Accepted |
+| PWEB-D-020 | DOC-05 global interactions: global search for supported entities (server-side, permission-safe; capability requirement for DOC-09) is distinct from command palette (safe navigation/commands only; no destructive one-keystroke mutations) | Accepted |
+| PWEB-D-021 | DOC-05 entity context rules: organization/product/user/commercial contexts are UX/navigation context only; server authorization must validate access and must not rely on client-supplied OrganizationId | Accepted |
+| PWEB-D-022 | DOC-05 canonical page templates + cross-page UX behavior are standardized (breadcrumbs, deep links, browser back/forward, session expiry, forbidden/not-found, stale-data indication, retry rules, success toasts, destructive confirmation) | Accepted |
+| PWEB-D-023 | DOC-05 keyboard model: predictable Tab order; Escape closes overlays only when safe; `Ctrl+K` opens command palette and `Alt+/` focuses global search; shortcuts must never bypass confirmation requirements | Accepted |
 
 Library decisions are recorded by DOC-03; design system decisions by DOC-04.
 
