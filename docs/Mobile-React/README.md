@@ -27,6 +27,7 @@ It does **not** authorize implementation.
 - [documentation-status.md](documentation-status.md) — queue state and DOC package table
 - [decisions.md](decisions.md) — accepted decision identifiers for this planning track
 - [current-state-and-replacement-boundaries.md](current-state-and-replacement-boundaries.md) — current clients, hosts, and replacement boundaries
+- [product-surfaces-and-ux.md](product-surfaces-and-ux.md) — device classes, role matrix, selling UX, visual quality target
 
 ## Canonical rule
 

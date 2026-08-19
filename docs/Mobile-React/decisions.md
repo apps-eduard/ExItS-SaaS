@@ -19,5 +19,12 @@ These are planning decisions. They do not change current implementation.
 | MOBILE-D-012 | Offline/sync currently lives in `ExItS.PinoyBusinessPOS.LocalStore` (SQLite + encrypted outbox) consumed by MAUI. A future React client must not invent a second operational database or bypass product/Platform APIs. Replacement of LocalStore is not authorized here. | Accepted |
 | MOBILE-D-013 | Authentication remains Platform-authoritative (password + Bearer introspect for MAUI; browser session for web hosts). A future React client must consume existing auth contracts; it must not create a separate identity. | Accepted |
 | MOBILE-D-014 | Platform Administration remains Web-only. This mobile planning track must not add Platform Admin screens to Mobile Client. | Accepted |
+| MOBILE-D-015 | Future client shares ExItS identity (brand, locales, theme, a11y) but must not copy Platform Admin presentation or information architecture. | Accepted |
+| MOBILE-D-016 | Device-class UX: phone is primary for Personal and quick Owner tasks; tablet landscape is primary for cashier selling; desktop/PWA may use side nav/tables/keyboard but must not become a dense admin console. | Accepted |
+| MOBILE-D-017 | UX principles for the replacement client: mobile-first, tablet-first selling, barcode-first, session-persistent cart, visible offline/sync, skeleton loading, immediate feedback, EN + fil-PH, Light/Dark/System. | Accepted |
+| MOBILE-D-018 | Role/experience matrix preserves current access chain. UI presentation does not grant permission. Cashiers do not receive Organization Administration. Organization Owner without a POS role does not receive checkout. | Accepted |
+| MOBILE-D-019 | Target selling workflow is workspace → scan/search → cart → customer by rule → payment → receipt → sync status. Cart is session-persistent, not a second ledger. | Accepted |
+| MOBILE-D-020 | Payment UX in this track stays on current retail boundaries: cash, manual GCash (reference required, not gateway-verified), customer-credit/Utang when entitled. No new wallets, split tender, or live card collection. Simulated P19 Card/GCash is not treated as production gateway UX. | Accepted |
+| MOBILE-D-021 | Visual quality target is WCAG 2.2 AA as a design bar (not a certification claim). No cramped controls, no shrunk-desktop-on-phone, no decorative heroes, reduced motion, safe areas, fil-PH wrapping, phone portrait + tablet landscape/portrait + desktop/browser. | Accepted |
 
-Later DOC packages may add IDs. They must not weaken MOBILE-D-001 through MOBILE-D-014 without Product Owner review.
+Later DOC packages may add IDs. They must not weaken MOBILE-D-001 through MOBILE-D-021 without Product Owner review.

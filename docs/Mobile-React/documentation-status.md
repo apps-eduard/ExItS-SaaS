@@ -24,7 +24,7 @@ Capacitor implementation: `Absent`
 
 PWA production: `Absent`
 
-Queue state: `READY FOR MOBILE-REACT-DOC-02`
+Queue state: `READY FOR MOBILE-REACT-DOC-03`
 
 ## DOC queue
 
@@ -32,7 +32,8 @@ Queue state: `READY FOR MOBILE-REACT-DOC-02`
 |---|---|---|
 | MOBILE-REACT-DOC-00 | Complete | Dedicated worktree and branch created |
 | MOBILE-REACT-DOC-01 | Complete | Current-state audit, terminology, replacement boundaries, CSS/Razor contradiction recorded |
-| MOBILE-REACT-DOC-02 | Not started | Next package |
+| MOBILE-REACT-DOC-02 | Complete | Product surfaces, device-class UX, role matrix, POS selling workflow, visual quality target |
+| MOBILE-REACT-DOC-03 | Not started | Next package |
 
 ## Authorization gates (locked)
 

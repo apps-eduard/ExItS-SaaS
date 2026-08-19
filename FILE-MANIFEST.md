@@ -106,6 +106,7 @@ docs/Mobile-React/README.md
 docs/Mobile-React/documentation-status.md
 docs/Mobile-React/decisions.md
 docs/Mobile-React/current-state-and-replacement-boundaries.md
+docs/Mobile-React/product-surfaces-and-ux.md
 docs/phases/README.md
 docs/phases/phase-01-platform-boundary.md
 docs/phases/phase-02-platform-extraction.md
