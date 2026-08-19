@@ -90,6 +90,7 @@ public static class PlatformAuditActions
     public const string MembershipSuspended = "platform.membership.suspended";
     public const string MembershipReactivated = "platform.membership.reactivated";
     public const string MembershipRevoked = "platform.membership.revoked";
+    public const string MembershipBranchAssignmentsUpdated = "platform.membership.branch_assignments_updated";
 
     public const string InvitationCreated = "platform.invitation.created";
     public const string InvitationResent = "platform.invitation.resent";

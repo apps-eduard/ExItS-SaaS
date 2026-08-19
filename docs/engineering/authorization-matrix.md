@@ -1,6 +1,6 @@
 # Authorization Matrix
 
-[Architecture summary](approved-architecture-summary.md) | [Capability boundary](platform-product-capability-boundary.md) | [Contracts](platform-product-contracts.md)
+[Architecture summary](approved-architecture-summary.md) | [Capability boundary](platform-product-capability-boundary.md) | [Organization + branch capability matrix](organization-branch-capability-matrix.md) | [Contracts](platform-product-contracts.md)
 
 **Version:** 2.0  
 **Status:** Authoritative  

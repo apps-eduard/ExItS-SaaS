@@ -630,6 +630,30 @@
   <data name="Staff_Subtitle" xml:space="preserve">
     <value>Invite and manage people who work in this business.</value>
   </data>
+  <data name="Staff_BranchesTitle" xml:space="preserve">
+    <value>Branch access</value>
+  </data>
+  <data name="Staff_BranchesAll" xml:space="preserve">
+    <value>This role has access to all active branches.</value>
+  </data>
+  <data name="Staff_BranchesNone" xml:space="preserve">
+    <value>No branches assigned yet.</value>
+  </data>
+  <data name="Staff_BranchesSave" xml:space="preserve">
+    <value>Save branch access</value>
+  </data>
+  <data name="Staff_BranchesSaved" xml:space="preserve">
+    <value>Branch access saved.</value>
+  </data>
+  <data name="Staff_BranchesRequired" xml:space="preserve">
+    <value>Select at least one branch.</value>
+  </data>
+  <data name="Staff_BranchesSaveFailed" xml:space="preserve">
+    <value>Could not save branch access.</value>
+  </data>
+  <data name="Staff_BranchPrimary" xml:space="preserve">
+    <value>Main</value>
+  </data>
   <data name="Staff_Invite" xml:space="preserve">
     <value>Invite staff</value>
   </data>
@@ -869,6 +893,24 @@
   </data>
   <data name="SelectOrg_Subtitle" xml:space="preserve">
     <value>Choose which business workspace to manage.</value>
+  </data>
+  <data name="WorkspaceSelect_Title" xml:space="preserve">
+    <value>Choose workspace</value>
+  </data>
+  <data name="WorkspaceSelect_Subtitle" xml:space="preserve">
+    <value>Select the organization and branch you want to manage.</value>
+  </data>
+  <data name="WorkspaceSelect_SwitchMenu" xml:space="preserve">
+    <value>Switch workspace</value>
+  </data>
+  <data name="WorkspaceSelect_BranchCount" xml:space="preserve">
+    <value>{0} branches</value>
+  </data>
+  <data name="WorkspaceSelect_NoneTitle" xml:space="preserve">
+    <value>No workspace available</value>
+  </data>
+  <data name="WorkspaceSelect_NoAccessibleBranch" xml:space="preserve">
+    <value>No active branch is available for your organizations yet.</value>
   </data>
   <data name="SalesDocuments_Subtitle" xml:space="preserve">
     <value>Review how sales documents currently work for this business.</value>

@@ -51,6 +51,7 @@ public sealed class PosOfflineCapabilityPolicy : IPosOfflineCapabilityPolicy
             ["/sales"] = PosConnectivityRequirement.OfflineCapable,
 
             // Online required destinations
+            ["/workspace-select"] = PosConnectivityRequirement.OnlineRequired,
             ["/organization-select"] = PosConnectivityRequirement.OnlineRequired,
             ["/reconnect"] = PosConnectivityRequirement.OnlineRequired,
             ["/register"] = PosConnectivityRequirement.OnlineRequired,
@@ -59,6 +60,9 @@ public sealed class PosOfflineCapabilityPolicy : IPosOfflineCapabilityPolicy
             ["/setup"] = PosConnectivityRequirement.OnlineRequired,
             ["/settings/cash-handling"] = PosConnectivityRequirement.OnlineRequired,
             ["/org"] = PosConnectivityRequirement.OnlineRequired,
+            ["/manage-business"] = PosConnectivityRequirement.OnlineRequired,
+            ["/branch-settings"] = PosConnectivityRequirement.OnlineRequired,
+            ["/organization/branches"] = PosConnectivityRequirement.OnlineRequired,
             ["/org/profile"] = PosConnectivityRequirement.OnlineRequired,
             ["/org/staff"] = PosConnectivityRequirement.OnlineRequired,
             ["/org/subscription"] = PosConnectivityRequirement.OnlineRequired,

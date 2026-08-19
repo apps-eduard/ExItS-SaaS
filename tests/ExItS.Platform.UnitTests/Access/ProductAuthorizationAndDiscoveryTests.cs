@@ -201,6 +201,7 @@ public sealed class ProductAuthorizationAndDiscoveryTests
                 harness.Users,
                 harness.Organizations,
                 harness.Memberships,
+                new InMemoryOrganizationMembershipBranchAssignmentRepository(),
                 new EnsureAccountProfilesForUser(
                     new InMemoryAccountProfileRepository(),
                     new InMemoryPlatformRoleAssignmentRepository(),
@@ -408,7 +409,7 @@ public sealed class ProductAuthorizationAndDiscoveryTests
                 .ExecuteAsync("owner", "Org Owner", "owner@example.com")).Value!;
             var org = (await new CreatePlatformOrganization(orgs, new FakePublicOrganizationIdGenerator(), uow, clock)
                 .ExecuteAsync("Launch Co", "launch-co")).Value!;
-            _ = (await new AddOrganizationMembership(users, orgs, memberships, new EnsureAccountProfilesForUser(new InMemoryAccountProfileRepository(), new InMemoryPlatformRoleAssignmentRepository(), memberships, uow, clock), uow, clock)
+            _ = (await new AddOrganizationMembership(users, orgs, memberships, new InMemoryOrganizationMembershipBranchAssignmentRepository(), new EnsureAccountProfilesForUser(new InMemoryAccountProfileRepository(), new InMemoryPlatformRoleAssignmentRepository(), memberships, uow, clock), uow, clock)
                 .ExecuteAsync(org.Id, user.Id, OrganizationRole.OrganizationOwner)).Value!;
 
             var product = Product.Create(ProductCode.Create(ProductCode.PinoyBusinessPos), "Pinoy Business POS", T0);

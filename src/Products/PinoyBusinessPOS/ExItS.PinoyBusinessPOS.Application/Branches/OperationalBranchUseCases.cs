@@ -6,7 +6,10 @@ using ExItS.PinoyBusinessPOS.Domain.Customers;
 
 namespace ExItS.PinoyBusinessPOS.Application.Branches;
 
-public sealed record SelectOperationalBranchRequest(Guid BranchId);
+public sealed record SelectOperationalBranchRequest(
+    Guid BranchId,
+    Guid? FromBranchId = null,
+    Guid? DeviceBoundBranchId = null);
 
 public sealed record OperationalBranchContextDto(
     Guid OrganizationId,

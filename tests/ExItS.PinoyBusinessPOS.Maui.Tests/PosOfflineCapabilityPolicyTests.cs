@@ -17,6 +17,7 @@ public sealed class PosOfflineCapabilityPolicyTests
     [InlineData("/catalog/products/new", PosConnectivityRequirement.Queueable)]
     [InlineData("/catalog/import", PosConnectivityRequirement.OnlineRequired)]
     [InlineData("/permissions", PosConnectivityRequirement.OnlineRequired)]
+    [InlineData("/workspace-select", PosConnectivityRequirement.OnlineRequired)]
     [InlineData("/organization-select", PosConnectivityRequirement.OnlineRequired)]
     [InlineData("/inventory", PosConnectivityRequirement.OnlineRequired)]
     [InlineData("/reports", PosConnectivityRequirement.OnlineRequired)]

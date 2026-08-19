@@ -149,6 +149,8 @@ public static class MauiProgram
                 sp.GetRequiredService<IProtectedShellAccessPolicy>(),
                 sp.GetRequiredService<IOfflineOperationQueue>()));
         services.AddSingleton<SellingModeService>();
+        services.AddSingleton<IAccessibleBranchResolver, OwnerAccessibleBranchResolver>();
+        services.AddSingleton<IWorkspaceSelectionService, WorkspaceSelectionService>();
         services.AddSingleton<AuthenticationService>();
         services.AddSingleton<IAuthenticationService>(sp => sp.GetRequiredService<AuthenticationService>());
         services.AddSingleton<IPlatformAccessTokenRecovery>(sp => sp.GetRequiredService<AuthenticationService>());
@@ -163,6 +165,7 @@ public static class MauiProgram
         services.AddSingleton<NavigationGate>();
         services.AddSingleton<OfflineFoundationDiagnostics>();
         services.AddSingleton<IOrganizationOwnerProbe, PlatformOrganizationOwnerProbe>();
+        services.AddSingleton<IWorkspaceGovernanceGate, WorkspaceGovernanceGate>();
         services.AddSingleton<IPersonalDiagnosticsSyncRetry, PersonalDiagnosticsSyncRetry>();
         services.AddSingleton<IOrganizationDiagnosticsSyncRetry, OrganizationDiagnosticsSyncRetry>();
         services.AddSingleton<ISupportDiagnosticsRoleReader, PosEffectiveRoleReader>();

@@ -3582,6 +3582,48 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                     b.ToTable("organization_invitations", "platform");
                 });
 
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Organizations.OrganizationMembershipBranchAssignmentRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ActorReference")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("actor_reference");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("MembershipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("membership_id");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("OrganizationId")
+                        .HasDatabaseName("ix_org_membership_branch_assignments_organization_id");
+
+                    b.HasIndex("MembershipId", "BranchId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_org_membership_branch_assignments_membership_branch");
+
+                    b.ToTable("organization_membership_branch_assignments", "platform");
+                });
+
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Organizations.OrganizationMembershipRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -6203,6 +6245,27 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Organizations.OrganizationMembershipBranchAssignmentRecord", b =>
+                {
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Organizations.OrganizationBranchRecord", null)
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Organizations.OrganizationMembershipRecord", null)
+                        .WithMany()
+                        .HasForeignKey("MembershipId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Organizations.PlatformOrganizationRecord", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 

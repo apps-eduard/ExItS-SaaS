@@ -1,0 +1,228 @@
+@page "/workspace-select"
+@attribute [Authorize]
+@using ExItS.PinoyBusinessPOS.Application.Auth
+@using ExItS.PinoyBusinessPOS.Application.Platform
+@inject OrgWebShellState Shell
+@inject OrgWebSessionHydrator Hydrator
+@inject IPlatformAccessClient Platform
+@inject ICurrentUserContext CurrentUser
+@inject NavigationManager Nav
+@inject IStringLocalizer<OrgWebResources> L
+
+<PageTitle>@L["WorkspaceSelect_Title"]</PageTitle>
+<div class="org-page org-page--narrow">
+    <ExitsPageHeader Title="@L["WorkspaceSelect_Title"]" Subtitle="@L["WorkspaceSelect_Subtitle"]" />
+    <OrgAlert Error="@_error" />
+    <OrgLoading Active="_loading" />
+
+    @if (!_loading && Shell.Organizations.Count == 0)
+    {
+        <OrgEmpty Title="@L["WorkspaceSelect_NoneTitle"]" Message="@L["WorkspaceSelect_NoAccessibleBranch"]" />
+    }
+    else if (!_loading)
+    {
+        <div class="org-workspace-select" role="list">
+            @foreach (var org in Shell.Organizations)
+            {
+                var expanded = _expandedOrgId == org.OrganizationId;
+                var branches = _branches.TryGetValue(org.OrganizationId, out var list) ? list : [];
+                var branchCount = branches.Count;
+                <div class="org-workspace-select__org" role="listitem">
+                    <button type="button"
+                            class="org-workspace-select__org-row"
+                            aria-expanded="@expanded"
+                            disabled="@_busy"
+                            @onclick="() => ToggleOrgAsync(org.OrganizationId)">
+                        <span class="org-workspace-select__org-body">
+                            <span class="org-workspace-select__org-name">@org.DisplayName</span>
+                            <span class="org-workspace-select__org-meta org-note">
+                                @string.Format(L["WorkspaceSelect_BranchCount"].Value, branchCount)
+                            </span>
+                        </span>
+                        <span class="org-workspace-select__chevron" aria-hidden="true">@(expanded ? "⌄" : "›")</span>
+                    </button>
+                    @if (expanded && branchCount > 0)
+                    {
+                        <ul class="org-workspace-select__branches" role="list">
+                            @foreach (var branch in branches)
+                            {
+                                var current = CurrentUser.Session?.OrganizationId == org.OrganizationId;
+                                <li role="listitem">
+                                    <button type="button"
+                                            class="org-workspace-select__branch-row @(current ? "org-workspace-select__branch-row--current" : null)"
+                                            disabled="@_busy"
+                                            @onclick="() => SelectWorkspaceAsync(org.OrganizationId, branch)">
+                                        <span class="org-workspace-select__branch-check" aria-hidden="true">@(current ? "✓" : "")</span>
+                                        <span class="org-workspace-select__branch-body">
+                                            <span class="org-workspace-select__branch-name">@branch.Name</span>
+                                            <span class="org-workspace-select__branch-meta org-note">@BranchSecondary(branch)</span>
+                                        </span>
+                                        <span class="org-workspace-select__chevron" aria-hidden="true">›</span>
+                                    </button>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else if (expanded && branchCount == 0 && !_branchLoading.Contains(org.OrganizationId))
+                    {
+                        <p class="org-note org-workspace-select__empty-branch">@L["WorkspaceSelect_NoAccessibleBranch"]</p>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _busy;
+    private string? _error;
+    private Guid? _expandedOrgId;
+    private readonly Dictionary<Guid, IReadOnlyList<OrganizationBranchDto>> _branches = new();
+    private readonly HashSet<Guid> _branchLoading = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Hydrator.HydrateAsync();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            if (Shell.Organizations.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var org in Shell.Organizations)
+            {
+                await LoadBranchesAsync(org.OrganizationId);
+            }
+
+            if (Shell.Organizations.Count == 1)
+            {
+                var onlyOrg = Shell.Organizations[0];
+                if (_branches.TryGetValue(onlyOrg.OrganizationId, out var branches) && branches.Count == 1)
+                {
+                    if (CurrentUser.Session?.OrganizationId is null)
+                    {
+                        await SelectWorkspaceAsync(onlyOrg.OrganizationId, branches[0], skipBusyUi: true);
+                        return;
+                    }
+                }
+            }
+
+            ResolveExpandedOrganization();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void ResolveExpandedOrganization()
+    {
+        if (Shell.Organizations.Count == 0)
+        {
+            _expandedOrgId = null;
+            return;
+        }
+
+        if (CurrentUser.Session?.OrganizationId is Guid active
+            && Shell.Organizations.Any(o => o.OrganizationId == active))
+        {
+            _expandedOrgId = active;
+            return;
+        }
+
+        _expandedOrgId = Shell.Organizations[0].OrganizationId;
+    }
+
+    private async Task ToggleOrgAsync(Guid organizationId)
+    {
+        _expandedOrgId = _expandedOrgId == organizationId ? null : organizationId;
+        if (_expandedOrgId == organizationId && !_branches.ContainsKey(organizationId))
+        {
+            await LoadBranchesAsync(organizationId);
+        }
+    }
+
+    private async Task LoadBranchesAsync(Guid organizationId)
+    {
+        if (_branchLoading.Contains(organizationId))
+        {
+            return;
+        }
+
+        _branchLoading.Add(organizationId);
+        try
+        {
+            var result = await Platform.GetBranchesAsync(organizationId);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _branches[organizationId] = [];
+                return;
+            }
+
+            _branches[organizationId] = result.Data
+                .Where(b => string.Equals(b.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(b => b.IsPrimary)
+                .ThenBy(b => b.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        finally
+        {
+            _branchLoading.Remove(organizationId);
+        }
+    }
+
+    private static string BranchSecondary(OrganizationBranchDto branch) =>
+        OwnerAccessibleBranchResolver.ResolveSecondaryLine(branch);
+
+    private async Task SelectWorkspaceAsync(
+        Guid organizationId,
+        OrganizationBranchDto branch,
+        bool skipBusyUi = false)
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        if (!skipBusyUi)
+        {
+            _busy = true;
+            _error = null;
+        }
+
+        try
+        {
+            if (CurrentUser.Session?.OrganizationId != organizationId)
+            {
+                var result = await Platform.SetOrganizationContextAsync(
+                    new SetOrganizationContextRequest(organizationId));
+                if (!result.IsSuccess)
+                {
+                    _error = OrgWebUi.Error(result.Error);
+                    return;
+                }
+
+                Shell.Ready = false;
+                await Hydrator.HydrateAsync();
+            }
+
+            Nav.NavigateTo("/overview", replace: true);
+        }
+        finally
+        {
+            if (!skipBusyUi)
+            {
+                _busy = false;
+            }
+        }
+    }
+}

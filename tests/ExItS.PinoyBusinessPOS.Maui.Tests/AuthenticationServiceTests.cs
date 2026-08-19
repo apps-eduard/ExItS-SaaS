@@ -142,6 +142,342 @@ public sealed class AuthenticationServiceTests
     }
 
     [Fact]
+    public async Task SelectBranch_round_trips_main_branch_b_and_back()
+    {
+        var org = Guid.NewGuid();
+        var main = Guid.NewGuid();
+        var branchB = Guid.NewGuid();
+        var current = new CurrentUserContext();
+        var session = new AuthSession(
+            Guid.NewGuid(),
+            "Owner",
+            "owner",
+            "o@example.com",
+            org,
+            "Kizy Store",
+            DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow.AddHours(1),
+            true,
+            "allowed",
+            AccessToken: "token",
+            BranchId: main,
+            PosDeviceId: Guid.NewGuid());
+        current.Set(session);
+        var tokens = new MemorySecureTokenStore();
+        await new SecureSessionStore(tokens).SaveAsync(session, Guid.NewGuid().ToString("N"));
+        var access = new FakeAccessClient
+        {
+            SelectBranchContextResult = ApiResult<OrganizationBranchContextDto>.Success(
+                new OrganizationBranchContextDto(org, branchB, "Branch B", "B", "Active", false))
+        };
+        var operational = new FakeOperationalBranch
+        {
+            Result = ApiResult<OperationalBranchContextDto>.Success(
+                new OperationalBranchContextDto(org, branchB, "Branch B", false, main, false))
+        };
+        var sut = new AuthenticationService(
+            new StubAppInfo("Development"),
+            new SecureSessionStore(tokens),
+            current,
+            new MemoryOnboardingStore(),
+            access,
+            new LoggingAuthEventSink(NullLogger<LoggingAuthEventSink>.Instance),
+            operationalBranch: operational);
+
+        Assert.True((await sut.SelectBranchAsync(branchB)).Succeeded);
+        Assert.Equal(branchB, current.Session?.SelectedBranchId);
+        Assert.Equal(main, operational.LastRequest?.FromBranchId);
+
+        access.SelectBranchContextResult = ApiResult<OrganizationBranchContextDto>.Success(
+            new OrganizationBranchContextDto(org, main, "Main Branch", "MAIN", "Active", true));
+        operational.Result = ApiResult<OperationalBranchContextDto>.Success(
+            new OperationalBranchContextDto(org, main, "Main Branch", true, main, false));
+
+        Assert.True((await sut.SelectBranchAsync(main)).Succeeded);
+        Assert.Equal(main, current.Session?.SelectedBranchId);
+        Assert.Equal(branchB, operational.LastRequest?.FromBranchId);
+
+        access.SelectBranchContextResult = ApiResult<OrganizationBranchContextDto>.Success(
+            new OrganizationBranchContextDto(org, branchB, "Branch B", "B", "Active", false));
+        operational.Result = ApiResult<OperationalBranchContextDto>.Success(
+            new OperationalBranchContextDto(org, branchB, "Branch B", false, main, false));
+
+        var again = await sut.SelectBranchAsync(branchB);
+        Assert.True(again.Succeeded);
+        Assert.Equal(branchB, current.Session?.SelectedBranchId);
+        Assert.Equal(main, operational.LastRequest?.FromBranchId);
+        Assert.Equal(main, operational.LastRequest?.DeviceBoundBranchId);
+        Assert.Equal(3, operational.Calls);
+    }
+
+    [Fact]
+    public async Task SelectWorkspace_same_org_switches_branch()
+    {
+        var org = Guid.NewGuid();
+        var main = Guid.NewGuid();
+        var branchB = Guid.NewGuid();
+        var current = new CurrentUserContext();
+        var session = new AuthSession(
+            Guid.NewGuid(),
+            "Owner",
+            "owner",
+            "o@example.com",
+            org,
+            "Kizy Store",
+            DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow.AddHours(1),
+            true,
+            "allowed",
+            AccessToken: "token",
+            BranchId: main,
+            PosDeviceId: Guid.NewGuid(),
+            SelectedBranchId: main);
+        current.Set(session);
+        var tokens = new MemorySecureTokenStore();
+        await new SecureSessionStore(tokens).SaveAsync(session, Guid.NewGuid().ToString("N"));
+        var access = new FakeAccessClient
+        {
+            SelectBranchContextResult = ApiResult<OrganizationBranchContextDto>.Success(
+                new OrganizationBranchContextDto(org, branchB, "Branch B", "B", "Active", false))
+        };
+        var operational = new FakeOperationalBranch
+        {
+            Result = ApiResult<OperationalBranchContextDto>.Success(
+                new OperationalBranchContextDto(org, branchB, "Branch B", false, main, false))
+        };
+        var sut = new AuthenticationService(
+            new StubAppInfo("Development"),
+            new SecureSessionStore(tokens),
+            current,
+            new MemoryOnboardingStore(),
+            access,
+            new LoggingAuthEventSink(NullLogger<LoggingAuthEventSink>.Instance),
+            operationalBranch: operational);
+
+        var result = await sut.SelectWorkspaceAsync(org, branchB);
+        Assert.True(result.Succeeded);
+        Assert.Equal(branchB, current.Session?.SelectedBranchId);
+        Assert.Equal(org, current.Session?.OrganizationId);
+    }
+
+    [Fact]
+    public async Task Restore_bearer_preserves_selected_branch_id()
+    {
+        var userId = Guid.NewGuid();
+        var orgId = Guid.NewGuid();
+        var main = Guid.NewGuid();
+        var selected = Guid.NewGuid();
+        var tokens = new MemorySecureTokenStore();
+        var current = new CurrentUserContext();
+        var now = DateTimeOffset.UtcNow;
+        var session = new AuthSession(
+            userId,
+            "Owner",
+            "owner",
+            "o@example.com",
+            orgId,
+            "Kizy Store",
+            now,
+            now.AddHours(8),
+            HasPosAccess: true,
+            AccessReasonCode: "allowed",
+            SubscriptionStatus: "Active",
+            EnabledFeatureCodes: ["pos.sell"],
+            AccessToken: "opaque-token",
+            AccountClass: "Organization",
+            BranchId: main,
+            PosDeviceId: Guid.NewGuid(),
+            SelectedBranchId: selected);
+        await new SecureSessionStore(tokens).SaveAsync(session, Guid.NewGuid().ToString("N"));
+        var access = new FakeAccessClient
+        {
+            IntrospectResult = ApiResult<PlatformAccessTokenIntrospectionDto>.Success(
+                new PlatformAccessTokenIntrospectionDto(
+                    Active: true,
+                    TokenId: Guid.NewGuid(),
+                    UserId: userId,
+                    Username: "owner",
+                    DisplayName: "Owner",
+                    OrganizationId: orgId,
+                    OrganizationDisplayName: "Kizy Store",
+                    ProductCode: PosProductCodes.PinoyBusinessPos,
+                    ExpiresAtUtc: now.AddHours(8),
+                    ProductAccessAllowed: true,
+                    ProductAccessReasonCode: "allowed",
+                    SubscriptionStatus: "Active",
+                    EnabledFeatureCodes: ["pos.sell"]))
+        };
+        var sut = CreateSut("Development", access, tokens, currentUser: current);
+
+        var restore = await sut.RestoreSessionAsync();
+
+        Assert.True(restore.Succeeded);
+        Assert.Equal(selected, restore.Session!.SelectedBranchId);
+        Assert.Equal(selected, current.Session?.SelectedBranchId);
+        Assert.Equal(main, restore.Session.BranchId);
+    }
+
+    [Fact]
+    public async Task Restore_bearer_does_not_clobber_branch_selected_during_introspect()
+    {
+        var userId = Guid.NewGuid();
+        var orgId = Guid.NewGuid();
+        var main = Guid.NewGuid();
+        var selected = Guid.NewGuid();
+        var tokens = new MemorySecureTokenStore();
+        var store = new SecureSessionStore(tokens);
+        var current = new CurrentUserContext();
+        var now = DateTimeOffset.UtcNow;
+        var session = new AuthSession(
+            userId,
+            "Owner",
+            "owner",
+            "o@example.com",
+            orgId,
+            "Kizy Store",
+            now,
+            now.AddHours(8),
+            HasPosAccess: true,
+            AccessReasonCode: "allowed",
+            AccessToken: "opaque-token",
+            AccountClass: "Organization",
+            BranchId: main,
+            PosDeviceId: Guid.NewGuid());
+        await store.SaveAsync(session, Guid.NewGuid().ToString("N"));
+        var access = new FakeAccessClient
+        {
+            IntrospectResult = ApiResult<PlatformAccessTokenIntrospectionDto>.Success(
+                new PlatformAccessTokenIntrospectionDto(
+                    Active: true,
+                    TokenId: Guid.NewGuid(),
+                    UserId: userId,
+                    Username: "owner",
+                    DisplayName: "Owner",
+                    OrganizationId: orgId,
+                    OrganizationDisplayName: "Kizy Store",
+                    ProductCode: PosProductCodes.PinoyBusinessPos,
+                    ExpiresAtUtc: now.AddHours(8),
+                    ProductAccessAllowed: true,
+                    ProductAccessReasonCode: "allowed",
+                    SubscriptionStatus: "Active",
+                    EnabledFeatureCodes: ["pos.sell"]))
+        };
+        access.BeforeIntrospect = async () =>
+        {
+            var live = current.Session ?? session;
+            var updated = live with { SelectedBranchId = selected };
+            var (_, marker) = await store.LoadAsync();
+            await store.SaveAsync(updated, marker ?? Guid.NewGuid().ToString("N"));
+            current.Set(updated);
+        };
+        var sut = CreateSut("Development", access, tokens, currentUser: current);
+
+        var restore = await sut.RestoreSessionAsync();
+
+        Assert.True(restore.Succeeded);
+        Assert.Equal(selected, restore.Session!.SelectedBranchId);
+        Assert.Equal(selected, current.Session?.SelectedBranchId);
+        Assert.Equal(main, restore.Session.BranchId);
+    }
+
+    [Fact]
+    public async Task SelectOrganization_same_org_keeps_selected_branch()
+    {
+        var userId = Guid.NewGuid();
+        var orgId = Guid.NewGuid();
+        var main = Guid.NewGuid();
+        var branchB = Guid.NewGuid();
+        var tokens = new MemorySecureTokenStore();
+        var prefs = new MemoryOnboardingStore();
+        var current = new CurrentUserContext();
+        var access = new FakeAccessClient
+        {
+            LoginResult = ApiResult<PlatformLoginResultDto>.Success(new PlatformLoginResultDto(
+                "platform-session",
+                Guid.NewGuid(),
+                userId,
+                "owner",
+                "Owner",
+                "o@example.com",
+                DateTimeOffset.UtcNow.AddHours(8),
+                DateTimeOffset.UtcNow.AddHours(24),
+                orgId,
+                "Kizy Store",
+                "Single",
+                1,
+                AccountProfileId: Guid.NewGuid(),
+                AccountClass: "Organization",
+                AllowedScope: "Organization")),
+            IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Success(new PlatformAccessTokenIssueDto(
+                "opaque-token",
+                "Bearer",
+                Guid.NewGuid(),
+                userId,
+                "owner",
+                "Owner",
+                "o@example.com",
+                DateTimeOffset.UtcNow.AddHours(8),
+                orgId,
+                "Kizy Store",
+                PosProductCodes.PinoyBusinessPos,
+                "Single",
+                1,
+                true,
+                "allowed")),
+            BindTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Success(new PlatformAccessTokenIssueDto(
+                "bound-token",
+                "Bearer",
+                Guid.NewGuid(),
+                userId,
+                "owner",
+                "Owner",
+                "o@example.com",
+                DateTimeOffset.UtcNow.AddHours(8),
+                orgId,
+                "Kizy Store",
+                PosProductCodes.PinoyBusinessPos,
+                "bound",
+                1,
+                true,
+                "allowed")),
+            IntrospectResult = ApiResult<PlatformAccessTokenIntrospectionDto>.Success(
+                new PlatformAccessTokenIntrospectionDto(
+                    Active: true,
+                    TokenId: Guid.NewGuid(),
+                    UserId: userId,
+                    Username: "owner",
+                    DisplayName: "Owner",
+                    OrganizationId: orgId,
+                    OrganizationDisplayName: "Kizy Store",
+                    ProductCode: PosProductCodes.PinoyBusinessPos,
+                    ExpiresAtUtc: DateTimeOffset.UtcNow.AddHours(8),
+                    ProductAccessAllowed: true,
+                    ProductAccessReasonCode: "allowed",
+                    SubscriptionStatus: "Active",
+                    EnabledFeatureCodes: ["pos.sell"])),
+            SelectBranchContextResult = ApiResult<OrganizationBranchContextDto>.Success(
+                new OrganizationBranchContextDto(orgId, branchB, "Branch 2", "B2", "Active", false))
+        };
+        var sut = CreateSut("Development", access, tokens, prefs, current);
+        var signIn = await sut.SignInAsync(new SignInRequest("owner", "password"));
+        Assert.True(signIn.Succeeded);
+
+        var first = await sut.SelectOrganizationAsync(orgId);
+        Assert.True(first.Succeeded);
+        current.Set(current.Session! with { BranchId = main, PosDeviceId = Guid.NewGuid() });
+        await new SecureSessionStore(tokens).SaveAsync(current.Session!, Guid.NewGuid().ToString("N"));
+
+        Assert.True((await sut.SelectBranchAsync(branchB)).Succeeded);
+        Assert.Equal(branchB, current.Session?.SelectedBranchId);
+
+        var again = await sut.SelectOrganizationAsync(orgId);
+        Assert.True(again.Succeeded);
+        Assert.Equal(branchB, again.Session!.SelectedBranchId);
+        Assert.Equal(branchB, current.Session?.SelectedBranchId);
+        Assert.Equal(main, again.Session.BranchId);
+    }
+
+    [Fact]
     public async Task SignIn_is_blocked_outside_development_testing()
     {
         var sut = CreateSut(environment: "Production", access: new FakeAccessClient());
@@ -2237,6 +2573,7 @@ public sealed class AuthenticationServiceTests
         public ApiResult<PlatformAccessTokenIntrospectionDto> IntrospectResult { get; set; } =
             ApiResult<PlatformAccessTokenIntrospectionDto>.Unavailable();
         public bool IntrospectThrows { get; set; }
+        public Func<Task>? BeforeIntrospect { get; set; }
         public ApiResult<PlatformLoginResultDto> LoginResult { get; set; } = ApiResult<PlatformLoginResultDto>.Unavailable();
         public ApiResult<IReadOnlyList<PlatformAuthEligibleOrganizationDto>> AuthEligibleOrganizationsResult { get; set; } =
             ApiResult<IReadOnlyList<PlatformAuthEligibleOrganizationDto>>.Unavailable();
@@ -2342,16 +2679,21 @@ public sealed class AuthenticationServiceTests
         public Task<ApiResult<PlatformAccessTokenIssueDto>> BindTokenAsync(BindPlatformAccessTokenRequest request, CancellationToken ct = default) =>
             Task.FromResult(BindTokenResult);
 
-        public Task<ApiResult<PlatformAccessTokenIntrospectionDto>> IntrospectTokenAsync(string? token = null, CancellationToken ct = default)
+        public async Task<ApiResult<PlatformAccessTokenIntrospectionDto>> IntrospectTokenAsync(string? token = null, CancellationToken ct = default)
         {
             IntrospectCalls++;
             LastIntrospectedToken = token;
+            if (BeforeIntrospect is not null)
+            {
+                await BeforeIntrospect().ConfigureAwait(false);
+            }
+
             if (IntrospectThrows)
             {
                 throw new HttpRequestException("unreachable");
             }
 
-            return Task.FromResult(IntrospectResult);
+            return IntrospectResult;
         }
 
         public Task<ApiResult<object>> RevokeAccessTokenAsync(CancellationToken ct = default) =>
@@ -2371,6 +2713,19 @@ public sealed class AuthenticationServiceTests
 
         public Task<ApiResult<PlatformMembershipDto>> RevokeMembershipAsync(Guid membershipId, PlatformMembershipLifecycleRequest request, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<PlatformMembershipDto>.Unavailable());
+
+        public Task<ApiResult<IReadOnlyList<MembershipBranchAssignmentDto>>> GetMembershipBranchAssignmentsAsync(
+            Guid organizationId,
+            Guid membershipId,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<IReadOnlyList<MembershipBranchAssignmentDto>>.Success([]));
+
+        public Task<ApiResult<IReadOnlyList<MembershipBranchAssignmentDto>>> SetMembershipBranchAssignmentsAsync(
+            Guid organizationId,
+            Guid membershipId,
+            SetMembershipBranchAssignmentsRequest request,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<IReadOnlyList<MembershipBranchAssignmentDto>>.Unavailable());
 
         public Task<ApiResult<PersonalRegistrationAckDto>> RegisterPersonalAccountAsync(RegisterPersonalAccountRequest request, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<PersonalRegistrationAckDto>.Unavailable());
@@ -2696,11 +3051,14 @@ public sealed class AuthenticationServiceTests
 
         public int Calls { get; private set; }
 
+        public SelectOperationalBranchRequest? LastRequest { get; private set; }
+
         public Task<ApiResult<OperationalBranchContextDto>> SelectAsync(
             SelectOperationalBranchRequest request,
             CancellationToken ct = default)
         {
             Calls++;
+            LastRequest = request;
             return Task.FromResult(Result);
         }
     }

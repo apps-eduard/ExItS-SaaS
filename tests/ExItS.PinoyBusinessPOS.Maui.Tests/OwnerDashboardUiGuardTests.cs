@@ -23,7 +23,8 @@ public sealed class OwnerDashboardUiGuardTests
         Assert.Contains("GoCategories", owner, StringComparison.Ordinal);
         Assert.Contains("GoInventory", owner, StringComparison.Ordinal);
         Assert.Contains("GoPurchasing", owner, StringComparison.Ordinal);
-        Assert.Contains("GoStaff", owner, StringComparison.Ordinal);
+        Assert.DoesNotContain("GoStaff", owner, StringComparison.Ordinal);
+        Assert.DoesNotContain("/org/staff", owner, StringComparison.Ordinal);
         Assert.Contains("GoRegisters", owner, StringComparison.Ordinal);
         Assert.Contains("GoShifts", owner, StringComparison.Ordinal);
         Assert.Contains("GoSales", owner, StringComparison.Ordinal);

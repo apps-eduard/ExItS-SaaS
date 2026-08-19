@@ -48,6 +48,41 @@ else
                 }
             </Card>
 
+            <Card Size="@CardSize.Small" Title="@L["Staff_BranchesTitle"]">
+                @if (_member is not null && UsesExplicitBranchAssignments(_member.Role))
+                {
+                    @if (_branchAssignments.Count == 0 && !_branchesLoading)
+                    {
+                        <p class="org-note">@L["Staff_BranchesNone"]</p>
+                    }
+                    else
+                    {
+                        <div class="org-branch-matrix">
+                            @foreach (var branch in _orgBranches)
+                            {
+                                var selected = _selectedBranchIds.Contains(branch.Id);
+                                <label class="org-branch-matrix__row">
+                                    <input type="checkbox"
+                                           checked="@selected"
+                                           disabled="@_busy"
+                                           @onchange="e => ToggleBranch(branch.Id, e)" />
+                                    <span class="org-branch-matrix__name">@branch.Name</span>
+                                    @if (branch.IsPrimary)
+                                    {
+                                        <span class="org-branch-matrix__tag">@L["Staff_BranchPrimary"]</span>
+                                    }
+                                </label>
+                            }
+                        </div>
+                        <Button Loading="_busy" OnClick="SaveBranchAssignmentsAsync">@L["Staff_BranchesSave"]</Button>
+                    }
+                }
+                else
+                {
+                    <p class="org-note">@L["Staff_BranchesAll"]</p>
+                }
+            </Card>
+
             <Card Size="@CardSize.Small" Title="Membership">
                 @if (string.Equals(_member.Status, "Active", StringComparison.OrdinalIgnoreCase))
                 {
@@ -72,6 +107,10 @@ else
     private string _posRole = "Cashier";
     private PlatformMembershipDto? _member;
     private PosRoleAssignmentDto? _assignment;
+    private IReadOnlyList<OrganizationBranchDto> _orgBranches = [];
+    private IReadOnlyList<MembershipBranchAssignmentDto> _branchAssignments = [];
+    private HashSet<Guid> _selectedBranchIds = [];
+    private bool _branchesLoading;
 
     protected override Task OnParametersSetAsync() => LoadAsync();
 
@@ -109,7 +148,86 @@ else
         {
             _posRole = _assignment.Role;
         }
+
+        await LoadBranchAssignmentsAsync(orgId.Value);
         _loading = false;
+    }
+
+    private async Task LoadBranchAssignmentsAsync(Guid orgId)
+    {
+        if (_member is null || !UsesExplicitBranchAssignments(_member.Role))
+        {
+            return;
+        }
+
+        _branchesLoading = true;
+        var branches = await Platform.GetBranchesAsync(orgId);
+        _orgBranches = branches.IsSuccess && branches.Data is not null
+            ? branches.Data
+                .Where(b => string.Equals(b.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(b => b.IsPrimary)
+                .ThenBy(b => b.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList()
+            : [];
+
+        var assignments = await Platform.GetMembershipBranchAssignmentsAsync(orgId, MembershipId);
+        _branchAssignments = assignments.IsSuccess && assignments.Data is not null
+            ? assignments.Data
+            : [];
+        _selectedBranchIds = _branchAssignments.Select(b => b.BranchId).ToHashSet();
+        _branchesLoading = false;
+    }
+
+    private static bool UsesExplicitBranchAssignments(string? role) =>
+        string.Equals(role, "OrganizationMember", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(role, "Member", StringComparison.OrdinalIgnoreCase);
+
+    private void ToggleBranch(Guid branchId, ChangeEventArgs e)
+    {
+        var selected = e.Value is bool on && on;
+        if (selected)
+        {
+            _selectedBranchIds.Add(branchId);
+        }
+        else
+        {
+            _selectedBranchIds.Remove(branchId);
+        }
+    }
+
+    private async Task SaveBranchAssignmentsAsync()
+    {
+        if (_member is null || CurrentUser.Session?.OrganizationId is not Guid orgId)
+        {
+            return;
+        }
+
+        if (_selectedBranchIds.Count == 0)
+        {
+            _error = L["Staff_BranchesRequired"];
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        try
+        {
+            var result = await Platform.SetMembershipBranchAssignmentsAsync(
+                orgId,
+                MembershipId,
+                new SetMembershipBranchAssignmentsRequest(_selectedBranchIds.ToList()));
+            _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error, L["Staff_BranchesSaveFailed"]);
+            _ok = result.IsSuccess ? L["Staff_BranchesSaved"] : null;
+            if (result.IsSuccess && result.Data is not null)
+            {
+                _branchAssignments = result.Data;
+                _selectedBranchIds = result.Data.Select(b => b.BranchId).ToHashSet();
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private async Task AssignPosRoleAsync()

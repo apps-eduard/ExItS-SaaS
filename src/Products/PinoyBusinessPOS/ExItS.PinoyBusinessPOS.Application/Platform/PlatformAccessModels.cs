@@ -220,6 +220,14 @@ public sealed record PlatformMembershipDto(
 
 public sealed record PlatformMembershipLifecycleRequest(string? Reason = null, string? ActorReference = null);
 
+public sealed record MembershipBranchAssignmentDto(
+    Guid BranchId,
+    string Name,
+    string Code,
+    bool IsPrimary);
+
+public sealed record SetMembershipBranchAssignmentsRequest(IReadOnlyList<Guid> BranchIds);
+
 public sealed record PlatformPagedResult<T>(IReadOnlyList<T> Items, int TotalCount, int Page, int PageSize);
 
 public sealed record EffectiveAccessDto(
@@ -1146,6 +1154,15 @@ public interface IPlatformAccessClient
     Task<ApiResult<PlatformMembershipDto>> RevokeMembershipAsync(
         Guid membershipId,
         PlatformMembershipLifecycleRequest request,
+        CancellationToken ct = default);
+    Task<ApiResult<IReadOnlyList<MembershipBranchAssignmentDto>>> GetMembershipBranchAssignmentsAsync(
+        Guid organizationId,
+        Guid membershipId,
+        CancellationToken ct = default);
+    Task<ApiResult<IReadOnlyList<MembershipBranchAssignmentDto>>> SetMembershipBranchAssignmentsAsync(
+        Guid organizationId,
+        Guid membershipId,
+        SetMembershipBranchAssignmentsRequest request,
         CancellationToken ct = default);
     Task<ApiResult<EffectiveAccessDto>> EvaluateAccessAsync(Guid userId, Guid organizationId, string productCode, CancellationToken ct = default);
 

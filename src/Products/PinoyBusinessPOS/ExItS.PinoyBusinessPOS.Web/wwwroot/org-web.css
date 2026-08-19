@@ -19,6 +19,34 @@
   margin: 8px 0;
 }
 
+.org-branch-matrix {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0 12px;
+}
+
+.org-branch-matrix__row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 4px 0;
+}
+
+.org-branch-matrix__name {
+  font-size: 14px;
+}
+
+.org-branch-matrix__tag {
+  font-size: 11px;
+  color: var(--exits-muted);
+  border: 1px solid var(--exits-border, #d0d5dd);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
 .org-alert {
   margin-bottom: 1rem;
 }
@@ -463,6 +491,12 @@ html.exits-theme-dark .org-badge--info { color: #69b1ff; }
   gap: 8px;
 }
 
+.org-fold-toggle {
+  border: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
 .org-fold > summary .org-badge {
   margin-left: auto;
 }
@@ -603,4 +637,85 @@ html.exits-theme-dark .org-badge--info { color: #69b1ff; }
   .org-ready-grid {
     grid-template-columns: 1fr 1fr;
   }
+
+  .org-workspace-select {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .org-workspace-select__org {
+    min-width: 0;
+  }
+}
+.org-workspace-select {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.org-workspace-select__org-row,
+.org-workspace-select__branch-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--exits-border, #f0f0f0);
+  border-radius: 8px;
+  background: var(--exits-surface, #fff);
+  text-align: left;
+  cursor: pointer;
+}
+
+.org-workspace-select__org-row {
+  font-weight: 600;
+}
+
+.org-workspace-select__org-body,
+.org-workspace-select__branch-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.org-workspace-select__org-name,
+.org-workspace-select__branch-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.org-workspace-select__chevron {
+  flex-shrink: 0;
+  color: var(--exits-muted);
+}
+
+.org-workspace-select__branches {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.org-workspace-select__branch-row--current {
+  border-color: var(--exits-primary, #1677ff);
+  background: color-mix(in srgb, var(--exits-primary, #1677ff) 6%, transparent);
+}
+
+.org-workspace-select__branch-check {
+  width: 1rem;
+  flex-shrink: 0;
+  text-align: center;
+  color: var(--exits-primary, #1677ff);
+}
+
+.org-workspace-select__empty-branch {
+  margin: 4px 0 0 12px;
 }

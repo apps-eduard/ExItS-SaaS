@@ -9,6 +9,7 @@
 @inject NavigationManager Nav
 @inject OfflineAwareNavigation OfflineNav
 @inject OnlineRequiredGuard OnlineRequired
+@inject IWorkspaceGovernanceGate Governance
 @inject IStringLocalizer<PosResources> L
 
 <div class="pos-topbar__overflow" @onclick:stopPropagation="true">
@@ -21,6 +22,13 @@
             @if (ExtraItems is not null)
             {
                 @ExtraItems
+            }
+            @if (_showManageBusiness)
+            {
+                <button type="button" class="pos-topbar__overflow-item" role="menuitem" @onclick="GoManageBusinessAsync">
+                    <span class="pos-topbar__overflow-icon" aria-hidden="true">@IconGlyphs.Get("settings")</span>
+                    <span>@L["ManageBusiness_Menu"]</span>
+                </button>
             }
             @if (ShowSettings)
             {
@@ -36,11 +44,11 @@
                     <span>@L["Nav_Dashboard"]</span>
                 </button>
             }
-            @if (ShowOrganizationSwitcherItem)
+            @if (ShowWorkspaceSwitcherItem)
             {
-                <button type="button" class="pos-topbar__overflow-item" role="menuitem" @onclick="GoSwitchOrgAsync">
+                <button type="button" class="pos-topbar__overflow-item" role="menuitem" @onclick="GoSwitchWorkspaceAsync">
                     <span class="pos-topbar__overflow-icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
-                    <span>@OrganizationSwitcherLabel</span>
+                    <span>@L["WorkspaceSelect_SwitchMenu"]</span>
                 </button>
             }
             @if (ShowPersonalHome)
@@ -92,24 +100,27 @@
     private bool _logoutBusy;
     private bool _lockBusy;
     private bool _canLock;
+    private bool _showManageBusiness;
+    private bool _governanceLoaded;
     private string _logoutMessage = string.Empty;
 
     private bool IsPersonalSession => CurrentUser.Session?.OrganizationId is null;
 
-    private bool IsOnOrganizationSelect
+    private bool IsOnWorkspaceSelect
     {
         get
         {
             var path = "/" + Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].Trim('/');
-            return path.StartsWith("/organization-select", StringComparison.OrdinalIgnoreCase);
+            return path.StartsWith("/workspace-select", StringComparison.OrdinalIgnoreCase)
+                   || path.StartsWith("/organization-select", StringComparison.OrdinalIgnoreCase);
         }
     }
 
     /// <summary>
-    /// Hide while already choosing an organization — the page itself is that flow.
+    /// Hide while already on workspace selection — the page itself is that flow.
     /// </summary>
-    private bool ShowOrganizationSwitcherItem =>
-        ShowSwitchOrganization && !IsOnOrganizationSelect;
+    private bool ShowWorkspaceSwitcherItem =>
+        ShowSwitchOrganization && !IsOnWorkspaceSelect;
 
     private bool ShowDashboardItem =>
         !IsPersonalSession
@@ -126,9 +137,6 @@
         && CurrentUser.HasPosAccess
         && _canLock
         && CurrentUser.IsAuthenticated;
-
-    private string OrganizationSwitcherLabel =>
-        IsPersonalSession ? L["OrgSelect_Title"] : L["Shell_ChangeOrganization"];
 
     public bool IsOpen => _open;
 
@@ -155,7 +163,12 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => _ = CloseAsync();
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        _governanceLoaded = false;
+        _showManageBusiness = false;
+        _ = CloseAsync();
+    }
 
     private async Task ToggleAsync()
     {
@@ -172,6 +185,20 @@
         }
 
         _open = true;
+        if (!_governanceLoaded && !IsPersonalSession)
+        {
+            try
+            {
+                _showManageBusiness = await Governance.CanAccessManageBusinessAsync();
+            }
+            catch
+            {
+                _showManageBusiness = false;
+            }
+
+            _governanceLoaded = true;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     public async Task CloseAsync()
@@ -190,6 +217,12 @@
         await InvokeAsync(StateHasChanged);
     }
 
+    private async Task GoManageBusinessAsync()
+    {
+        await CloseAsync();
+        Nav.NavigateTo("/manage-business");
+    }
+
     private async Task GoSettingsAsync()
     {
         await CloseAsync();
@@ -202,7 +235,7 @@
         await OfflineNav.NavigateAsync("/dashboard");
     }
 
-    private async Task GoSwitchOrgAsync()
+    private async Task GoSwitchWorkspaceAsync()
     {
         await CloseAsync();
         var orgName = CurrentUser.Session?.OrganizationDisplayName;
@@ -214,7 +247,7 @@
         }
 
         SellingMode.Clear();
-        Nav.NavigateTo("/organization-select");
+        Nav.NavigateTo("/workspace-select");
     }
 
     private async Task GoPersonalAsync()

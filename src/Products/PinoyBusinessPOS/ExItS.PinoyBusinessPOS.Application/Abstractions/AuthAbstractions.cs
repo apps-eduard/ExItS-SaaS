@@ -101,6 +101,13 @@ public interface IAuthenticationService
     Task<AuthResult> SelectBranchAsync(Guid branchId, CancellationToken ct = default);
 
     /// <summary>
+    /// Canonical organization + branch workspace bind. Validates server-side, then sets
+    /// <see cref="AuthSession.OrganizationId"/> and <see cref="AuthSession.SelectedBranchId"/>.
+    /// Does not rebind the POS device or grant selling rights.
+    /// </summary>
+    Task<AuthResult> SelectWorkspaceAsync(Guid organizationId, Guid branchId, CancellationToken ct = default);
+
+    /// <summary>
     /// Leaves organization/POS context and returns to Personal without signing out.
     /// Clears organization-scoped local state and process validation; keeps the Platform session.
     /// </summary>

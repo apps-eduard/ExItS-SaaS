@@ -42,6 +42,7 @@ public sealed class AuthenticationService(
     private readonly IDeviceRecoveryCredentialStore? _recoveryStore = recoveryStore;
     private readonly IPosOperationalBranchClient? _operationalBranch = operationalBranch;
     private readonly SemaphoreSlim _reissueGate = new(1, 1);
+    private readonly SemaphoreSlim _branchSwitchGate = new(1, 1);
 
     public bool IsDevelopmentAuthenticationEnabled =>
         string.Equals(appInfo.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase)
@@ -504,6 +505,8 @@ public sealed class AuthenticationService(
     private async Task<AuthResult> RestoreBearerSessionAsync(AuthSession shell, CancellationToken ct)
     {
         // Seed context so PlatformBearerHandler can attach the token for introspect/org calls.
+        // Keep a branch the user already picked — restore can overlap Owner → switcher.
+        shell = MergeLiveSelectedBranch(shell);
         currentUser.Set(shell);
 
         try
@@ -563,12 +566,15 @@ public sealed class AuthenticationService(
                     shell.AccountProfileId,
                     shell.OrganizationContextLocked,
                     shell.BranchId,
-                    shell.PosDeviceId);
+                    shell.PosDeviceId,
+                    SelectedBranchId: hasAccess && orgId is not null ? shell.SelectedBranchId : null);
+                restored = MergeLiveSelectedBranch(restored);
 
                 try
                 {
                     var (_, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
                     marker ??= Guid.NewGuid().ToString("N");
+                    restored = MergeLiveSelectedBranch(restored);
                     await sessionStore.SaveAsync(restored, marker, ct).ConfigureAwait(false);
                 }
                 catch
@@ -577,6 +583,7 @@ public sealed class AuthenticationService(
                     return new AuthResult(false, AuthFailureReason.SecureStorageFailure, SafeMessageKey: "Auth_SecureStorageFailure");
                 }
 
+                restored = MergeLiveSelectedBranch(restored);
                 currentUser.Set(restored);
                 if (AuthSessionWorkspace.IsPersonalDefault(shell))
                 {
@@ -590,6 +597,8 @@ public sealed class AuthenticationService(
 
                 if (hasAccess && orgId is Guid validatedOrg)
                 {
+                    restored = MergeLiveSelectedBranch(currentUser.Session ?? restored);
+                    restored = await EnsureSelectedBranchAccessibleAsync(restored, validatedOrg, ct).ConfigureAwait(false);
                     restored = await EnsurePosDeviceBindingAsync(restored, ct).ConfigureAwait(false);
                     await OpenLocalContextAsync(restored.UserId, validatedOrg, ct).ConfigureAwait(false);
                     _accessPolicy?.NotifySessionAccessChanged();
@@ -618,8 +627,8 @@ public sealed class AuthenticationService(
                     }
                 }
 
-                await EnrollRecoveryCredentialAsync(restored, ct).ConfigureAwait(false);
-                return new AuthResult(true, AuthFailureReason.None, restored);
+                await EnrollRecoveryCredentialAsync(currentUser.Session ?? restored, ct).ConfigureAwait(false);
+                return new AuthResult(true, AuthFailureReason.None, currentUser.Session ?? restored);
             }
 
             if (IsExplicitOfflineGrantRevocation(introspect.Error?.ErrorCode))
@@ -1469,7 +1478,7 @@ public sealed class AuthenticationService(
 
         try
         {
-            currentUser.Set(session);
+            currentUser.Set(MergeLiveSelectedBranch(session));
             var enroll = await accessClient.EnrollDeviceRecoveryCredentialAsync(ct).ConfigureAwait(false);
             if (!enroll.IsSuccess
                 || enroll.Data is null
@@ -1617,6 +1626,7 @@ public sealed class AuthenticationService(
 
         if (session.HasPosAccess && session.OrganizationId is not null)
         {
+            session = MergeLiveSelectedBranch(session);
             session = await EnsurePosDeviceBindingAsync(session, ct).ConfigureAwait(false);
             var deviceId = _deviceIdentity is null
                 ? string.Empty
@@ -1782,11 +1792,12 @@ public sealed class AuthenticationService(
                 return false;
             }
 
-            var updated = exchange.Session;
+            var updated = MergeLiveSelectedBranch(exchange.Session);
             try
             {
                 var (_, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
                 marker ??= Guid.NewGuid().ToString("N");
+                updated = MergeLiveSelectedBranch(updated);
                 await sessionStore.SaveAsync(updated, marker, ct).ConfigureAwait(false);
             }
             catch
@@ -2321,6 +2332,7 @@ public sealed class AuthenticationService(
             PosDeviceId = null,
             SelectedBranchId = null
         };
+        updated = CarryBranchBindingWhenSameOrganization(session, updated);
 
         return await PersistOrganizationSelectionAsync(session, updated, organizationId, ct).ConfigureAwait(false);
     }
@@ -2432,6 +2444,7 @@ public sealed class AuthenticationService(
             PosDeviceId = null,
             SelectedBranchId = null
         };
+        updated = CarryBranchBindingWhenSameOrganization(session, updated);
 
         if (issued.ProductAccessAllowed == false)
         {
@@ -2559,6 +2572,7 @@ public sealed class AuthenticationService(
             PosDeviceId = null,
             SelectedBranchId = null
         };
+        updated = CarryBranchBindingWhenSameOrganization(session, updated);
 
         events.Record("organization_selected_without_pos", Dict(
             ("userId", session.UserId.ToString("D")),
@@ -2618,10 +2632,12 @@ public sealed class AuthenticationService(
         Guid organizationId,
         CancellationToken ct)
     {
+        updated = MergeLiveSelectedBranch(updated);
         try
         {
             var (_, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
             marker ??= Guid.NewGuid().ToString("N");
+            updated = MergeLiveSelectedBranch(updated);
             await sessionStore.SaveAsync(updated, marker, ct).ConfigureAwait(false);
         }
         catch
@@ -2630,6 +2646,7 @@ public sealed class AuthenticationService(
             return new AuthResult(false, AuthFailureReason.SecureStorageFailure, SafeMessageKey: "Auth_SecureStorageFailure");
         }
 
+        updated = MergeLiveSelectedBranch(updated);
         currentUser.Set(updated);
         await AlignPlatformOrganizationContextAsync(updated, organizationId, ct).ConfigureAwait(false);
         await OpenLocalContextAsync(updated.UserId, organizationId, ct).ConfigureAwait(false);
@@ -2648,85 +2665,205 @@ public sealed class AuthenticationService(
 
     public async Task<AuthResult> SelectBranchAsync(Guid branchId, CancellationToken ct = default)
     {
+        await _branchSwitchGate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var session = currentUser.Session;
+            if (session is null)
+            {
+                return new AuthResult(false, AuthFailureReason.SessionExpired, SafeMessageKey: "Auth_SessionExpired");
+            }
+
+            if (session.OrganizationId is not Guid organizationId || organizationId == Guid.Empty)
+            {
+                return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "Org_MissingTitle");
+            }
+
+            if (branchId == Guid.Empty)
+            {
+                return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_Invalid");
+            }
+
+            var fromBranchId = AuthSessionBranchContext.GetSelectedBranchId(session);
+            var deviceBoundBranchId = session.BranchId is Guid deviceBranch && deviceBranch != Guid.Empty
+                ? deviceBranch
+                : (Guid?)null;
+
+            if (fromBranchId == branchId)
+            {
+                var already = session.SelectedBranchId == branchId
+                    ? session
+                    : session with { SelectedBranchId = branchId };
+                if (!ReferenceEquals(already, session))
+                {
+                    return await PersistSelectedBranchAsync(already, ct).ConfigureAwait(false);
+                }
+
+                return new AuthResult(true, AuthFailureReason.None, session);
+            }
+
+            var platform = await accessClient
+                .SelectBranchContextAsync(organizationId, new SelectBranchContextRequest(branchId), ct)
+                .ConfigureAwait(false);
+            if (!platform.IsSuccess || platform.Data is null)
+            {
+                if (platform.Status is ApiCallStatus.Offline or ApiCallStatus.Timeout or ApiCallStatus.Unavailable)
+                {
+                    return new AuthResult(false, AuthFailureReason.Offline, SafeMessageKey: "BranchContext_Offline");
+                }
+
+                if (platform.Error?.ErrorCode is "application.branch.not_found")
+                {
+                    return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_NotFound");
+                }
+
+                if (platform.Error?.ErrorCode is "application.branch.not_selectable")
+                {
+                    return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_Inactive");
+                }
+
+                if (platform.Error?.ErrorCode is "application.branch.access_denied")
+                {
+                    return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_AccessDenied");
+                }
+
+                return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_Denied");
+            }
+
+            if (_operationalBranch is not null)
+            {
+                var operational = await _operationalBranch
+                    .SelectAsync(
+                        new SelectOperationalBranchRequest(branchId, fromBranchId, deviceBoundBranchId),
+                        ct)
+                    .ConfigureAwait(false);
+                if (!operational.IsSuccess)
+                {
+                    if (operational.Status is ApiCallStatus.Offline or ApiCallStatus.Timeout or ApiCallStatus.Unavailable)
+                    {
+                        return new AuthResult(false, AuthFailureReason.Offline, SafeMessageKey: "BranchContext_Offline");
+                    }
+
+                    if (string.Equals(
+                        operational.Error?.ErrorCode,
+                        ApplicationErrorCodes.OperationalBranchSwitchBlocked,
+                        StringComparison.Ordinal))
+                    {
+                        return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_ShiftOpen");
+                    }
+
+                    if (string.Equals(
+                        operational.Error?.ErrorCode,
+                        ApplicationErrorCodes.CustomerOrderBranchNotFound,
+                        StringComparison.Ordinal))
+                    {
+                        return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_NotFound");
+                    }
+
+                    if (operational.Status is ApiCallStatus.Unauthorized or ApiCallStatus.Forbidden)
+                    {
+                        return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "Auth_SessionExpired");
+                    }
+
+                    return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_Denied");
+                }
+            }
+
+            session = currentUser.Session ?? session;
+            var updated = session with { SelectedBranchId = branchId };
+            return await PersistSelectedBranchAsync(updated, ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            _branchSwitchGate.Release();
+        }
+    }
+
+    public async Task<AuthResult> SelectWorkspaceAsync(
+        Guid organizationId,
+        Guid branchId,
+        CancellationToken ct = default)
+    {
+        if (organizationId == Guid.Empty || branchId == Guid.Empty)
+        {
+            return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_Invalid");
+        }
+
         var session = currentUser.Session;
         if (session is null)
         {
             return new AuthResult(false, AuthFailureReason.SessionExpired, SafeMessageKey: "Auth_SessionExpired");
         }
 
-        if (session.OrganizationId is not Guid organizationId || organizationId == Guid.Empty)
+        var sameOrganization = session.OrganizationId == organizationId;
+        var sameBranch = AuthSessionBranchContext.GetSelectedBranchId(session) == branchId;
+        if (sameOrganization && sameBranch && session.SelectedBranchId == branchId)
         {
-            return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "Org_MissingTitle");
-        }
-
-        if (branchId == Guid.Empty)
-        {
-            return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_Invalid");
-        }
-
-        var current = AuthSessionBranchContext.GetSelectedBranchId(session);
-        if (current == branchId)
-        {
-            var already = session.SelectedBranchId == branchId
-                ? session
-                : session with { SelectedBranchId = branchId };
-            if (!ReferenceEquals(already, session))
-            {
-                return await PersistSelectedBranchAsync(already, ct).ConfigureAwait(false);
-            }
-
             return new AuthResult(true, AuthFailureReason.None, session);
         }
 
-        var platform = await accessClient
-            .SelectBranchContextAsync(organizationId, new SelectBranchContextRequest(branchId), ct)
-            .ConfigureAwait(false);
-        if (!platform.IsSuccess || platform.Data is null)
+        if (!sameOrganization)
         {
-            if (platform.Status is ApiCallStatus.Offline or ApiCallStatus.Timeout or ApiCallStatus.Unavailable)
+            var orgResult = await SelectOrganizationAsync(organizationId, ct).ConfigureAwait(false);
+            if (!orgResult.Succeeded)
             {
-                return new AuthResult(false, AuthFailureReason.Offline, SafeMessageKey: "BranchContext_Offline");
-            }
-
-            if (platform.Error?.ErrorCode is "application.branch.not_found")
-            {
-                return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_NotFound");
-            }
-
-            if (platform.Error?.ErrorCode is "application.branch.not_selectable")
-            {
-                return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_Inactive");
-            }
-
-            return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_Denied");
-        }
-
-        if (_operationalBranch is not null)
-        {
-            var operational = await _operationalBranch
-                .SelectAsync(new SelectOperationalBranchRequest(branchId), ct)
-                .ConfigureAwait(false);
-            if (!operational.IsSuccess)
-            {
-                if (operational.Status is ApiCallStatus.Offline or ApiCallStatus.Timeout or ApiCallStatus.Unavailable)
-                {
-                    return new AuthResult(false, AuthFailureReason.Offline, SafeMessageKey: "BranchContext_Offline");
-                }
-
-                if (string.Equals(
-                    operational.Error?.ErrorCode,
-                    ApplicationErrorCodes.OperationalBranchSwitchBlocked,
-                    StringComparison.Ordinal))
-                {
-                    return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_ShiftOpen");
-                }
-
-                return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_Denied");
+                return orgResult;
             }
         }
 
-        var updated = session with { SelectedBranchId = branchId };
-        return await PersistSelectedBranchAsync(updated, ct).ConfigureAwait(false);
+        return await SelectBranchAsync(branchId, ct).ConfigureAwait(false);
+    }
+
+    private async Task<AuthSession> EnsureSelectedBranchAccessibleAsync(
+        AuthSession session,
+        Guid organizationId,
+        CancellationToken ct)
+    {
+        var selected = AuthSessionBranchContext.GetSelectedBranchId(session);
+        if (selected is not Guid branchId || branchId == Guid.Empty)
+        {
+            return session;
+        }
+
+        try
+        {
+            var branches = await accessClient.GetBranchesAsync(organizationId, ct).ConfigureAwait(false);
+            if (!branches.IsSuccess || branches.Data is null)
+            {
+                return session;
+            }
+
+            var allowed = branches.Data.Any(b =>
+                b.Id == branchId
+                && string.Equals(b.Status, "Active", StringComparison.OrdinalIgnoreCase));
+            if (allowed)
+            {
+                return session;
+            }
+
+            var cleared = session with { SelectedBranchId = null };
+            try
+            {
+                var (_, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
+                marker ??= Guid.NewGuid().ToString("N");
+                await sessionStore.SaveAsync(cleared, marker, ct).ConfigureAwait(false);
+                currentUser.Set(cleared);
+                events.Record("branch_access_revoked", Dict(
+                    ("userId", session.UserId.ToString("D")),
+                    ("organizationId", organizationId.ToString("D")),
+                    ("branchId", branchId.ToString("D"))));
+            }
+            catch
+            {
+                events.Record("secure_storage_failure", Dict(("operation", "branch_access_revoked_save")));
+            }
+
+            return cleared;
+        }
+        catch
+        {
+            return session;
+        }
     }
 
     private async Task<AuthResult> PersistSelectedBranchAsync(AuthSession updated, CancellationToken ct)
@@ -2885,12 +3022,15 @@ public sealed class AuthenticationService(
             existingShell.Session?.AccountProfileId,
             existingShell.Session?.OrganizationContextLocked == true,
             existingShell.Session?.BranchId,
-            existingShell.Session?.PosDeviceId);
+            existingShell.Session?.PosDeviceId,
+            SelectedBranchId: organizationId is not null ? existingShell.Session?.SelectedBranchId : null);
+        session = MergeLiveSelectedBranch(session);
 
         try
         {
             var (_, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
             marker ??= Guid.NewGuid().ToString("N");
+            session = MergeLiveSelectedBranch(session);
             await sessionStore.SaveAsync(session, marker, ct).ConfigureAwait(false);
         }
         catch
@@ -2899,6 +3039,7 @@ public sealed class AuthenticationService(
             return new AuthResult(false, AuthFailureReason.SecureStorageFailure, SafeMessageKey: "Auth_SecureStorageFailure");
         }
 
+        session = MergeLiveSelectedBranch(session);
         currentUser.Set(session);
         if (hasAccess && organizationId is Guid validatedOrg)
         {
@@ -3142,6 +3283,55 @@ public sealed class AuthenticationService(
         };
     }
 
+    /// <summary>
+    /// Re-selecting the same organization (Owner, Enable POS) must not drop the user's
+    /// management branch or the device bind. Only Org A → Org B clears them.
+    /// </summary>
+    private static AuthSession CarryBranchBindingWhenSameOrganization(AuthSession previous, AuthSession updated)
+    {
+        if (previous.OrganizationId is Guid previousOrg
+            && previousOrg != Guid.Empty
+            && previousOrg == updated.OrganizationId)
+        {
+            return updated with
+            {
+                BranchId = previous.BranchId,
+                PosDeviceId = previous.PosDeviceId,
+                SelectedBranchId = previous.SelectedBranchId
+            };
+        }
+
+        return updated with
+        {
+            BranchId = null,
+            PosDeviceId = null,
+            SelectedBranchId = null
+        };
+    }
+
+    /// <summary>
+    /// Restore, rebuild, and device bind can finish after the user already picked a branch.
+    /// Overlay that live selection so the header does not snap back to the device/Main branch.
+    /// </summary>
+    private AuthSession MergeLiveSelectedBranch(AuthSession snapshot)
+    {
+        var live = currentUser.Session;
+        if (live is null || live.UserId != snapshot.UserId)
+        {
+            return snapshot;
+        }
+
+        var sameOrganization = live.OrganizationId == snapshot.OrganizationId;
+        // SecureSessionStore restore shells omit OrganizationId; still keep a pick made in this process.
+        var liveIsPartialShell = live.OrganizationId is null && snapshot.OrganizationId is not null;
+        if (!sameOrganization && !liveIsPartialShell)
+        {
+            return snapshot;
+        }
+
+        return snapshot with { SelectedBranchId = live.SelectedBranchId ?? snapshot.SelectedBranchId };
+    }
+
     private async Task<AuthSession> EnsurePosDeviceBindingAsync(AuthSession session, CancellationToken ct)
     {
         if (!session.HasPosAccess
@@ -3169,16 +3359,17 @@ public sealed class AuthenticationService(
                 return session;
             }
 
-            var bound = session with
+            var bound = MergeLiveSelectedBranch(session with
             {
                 BranchId = authorization.Data.BranchId,
                 PosDeviceId = authorization.Data.PosDeviceId
-            };
+            });
 
             try
             {
                 var (_, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
                 marker ??= Guid.NewGuid().ToString("N");
+                bound = MergeLiveSelectedBranch(bound);
                 await sessionStore.SaveAsync(bound, marker, ct).ConfigureAwait(false);
             }
             catch
@@ -3186,6 +3377,7 @@ public sealed class AuthenticationService(
                 events.Record("secure_storage_failure", Dict(("operation", "pos_device_bind_save")));
             }
 
+            bound = MergeLiveSelectedBranch(bound);
             currentUser.Set(bound);
             return bound;
         }
