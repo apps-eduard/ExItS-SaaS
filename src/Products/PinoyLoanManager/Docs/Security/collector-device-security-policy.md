@@ -96,4 +96,4 @@ When collector MAUI implementation is authorized, the following requirements sho
 | Offline encrypted database | Deferred with offline posting package |
 | MDM / EMM integration | Open — organization deployment choice |
 | Device compliance attestation API | Open — future WP |
-| Production security validation | Blocked on R-091 and implementation |
+| Production security validation | Blocked on portfolio Production gates and PLM implementation |

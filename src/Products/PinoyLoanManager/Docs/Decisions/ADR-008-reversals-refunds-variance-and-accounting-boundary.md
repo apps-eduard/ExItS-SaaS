@@ -4,6 +4,8 @@
 **Date:** 2026-08-19
 **Decisions:** **PLM-D-00-13 Closed**; **PLM-D-00-07** and **PLM-D-00-08** Open / Partially Resolved; **PLM-D-00-11** Open
 
+> **Final status note:** **PLM-D-00-07/08 Closed for MVP Product policy** at final review. Persistence/GL remain implementation work. See [PLM-decision-status-summary.md](PLM-decision-status-summary.md).
+
 ---
 
 ## Context

@@ -154,7 +154,7 @@ Dashboard indicators listed in [reporting-baseline.md](reporting-baseline.md) ma
 |---|---|
 | Operational KPI formulas approved for MVP planning | Yes |
 | Statutory NPL/regulatory ratio compliance | **No** (PLM-D-00-11 Open) |
-| GL / external accounting integration | **No** (PLM-D-00-07 remainder Open) |
+| GL / external accounting integration | **No** — implementation work (persistence schema, journal/export) |
 | Implemented report engine | **No** |
 
 ---

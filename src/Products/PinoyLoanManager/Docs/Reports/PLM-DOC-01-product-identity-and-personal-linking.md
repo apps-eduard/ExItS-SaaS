@@ -7,6 +7,8 @@
 
 Runtime / browser / device / database / production validation: **Not Applicable**.
 
+> **Historical note:** Portfolio auth status at PLM-DOC-01 completion differed from final review. **R-091 is now Closed for Phase 13 scope.** **D-P12-05 Closed / satisfied for authentication honesty.** Final status: [../Decisions/PLM-decision-status-summary.md](../Decisions/PLM-decision-status-summary.md).
+
 ---
 
 ## Scope
@@ -66,7 +68,7 @@ Canonical: [../Product/borrower-identity-and-duplicate-policy.md](../Product/bor
 | PLM-D-00-11 | **Open** |
 | PLM-D-00-13 | **Open** |
 
-Other PLM-D-00 items and D-P12-03 / R-091 / D-P12-05 remain as previously recorded.
+Other PLM-D-00 items and **D-P12-03** remain as previously recorded. **R-091 Closed for Phase 13 scope.** **D-P12-05 Closed / satisfied for authentication honesty.**
 
 ---
 

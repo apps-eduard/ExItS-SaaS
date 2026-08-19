@@ -143,7 +143,7 @@ Multiple roles must not bypass branch scope, assignment scope, own-session requi
 
 ## Legal / security boundary
 
-No role preset is claimed legally compliant or production-security certified. **PLM-D-00-11 remains Open.** **R-091 remains Open.**
+No role preset is claimed legally compliant or production-security certified. **PLM-D-00-11 remains Open.** **R-091 Closed for Phase 13 scope.**
 
 ---
 

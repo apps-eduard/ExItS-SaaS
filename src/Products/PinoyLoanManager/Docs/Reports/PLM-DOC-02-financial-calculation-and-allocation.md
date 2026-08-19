@@ -7,6 +7,8 @@
 
 Runtime / browser / device / database / production validation: **Not Applicable**.
 
+> **Historical note:** PLM-D-00-07/08 statuses below reflect PLM-DOC-02 package completion. **Both are now Closed for MVP Product policy** (persistence/GL remain implementation work). Final status: [../Decisions/PLM-decision-status-summary.md](../Decisions/PLM-decision-status-summary.md).
+
 ---
 
 ## Scope
@@ -116,8 +118,8 @@ Implementation remains **paused**. `feat/plm-01-scaffold` remains unmerged.
 
 | ID | Outcome |
 |---|---|
-| PLM-D-00-07 | **Open / Partially Resolved** |
-| PLM-D-00-08 | **Open / Partially Resolved** |
+| PLM-D-00-07 | **Closed for MVP Product operational financial model** (historical: Open / Partially Resolved at package completion) |
+| PLM-D-00-08 | **Closed for MVP Product business/calculation policy** (historical: Open / Partially Resolved at package completion) |
 | PLM-D-00-12 | **Closed** — ToEven; PHP 2 dp; ≥8 intermediate; final-installment reconciliation |
 | PLM-D-00-11 | **Open** |
 | PLM-D-00-10 | **Closed / Product Owner Accepted** |

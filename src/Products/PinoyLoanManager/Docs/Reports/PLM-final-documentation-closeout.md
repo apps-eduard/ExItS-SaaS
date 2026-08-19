@@ -52,7 +52,7 @@ See [PLM-decision-status-summary.md](../Decisions/PLM-decision-status-summary.md
 - **PLM-D-00-09** Closed (PLM-DOC-09)
 - **PLM-D-00-05** Closed for PLM contract requirements (PLM-DOC-10)
 
-Remaining external: **PLM-D-00-04**, **PLM-D-00-11**, **D-P12-03**, **R-091**.
+Remaining external: **PLM-D-00-04**, **PLM-D-00-11**, **D-P12-03**. **R-091 Closed for Phase 13 scope.** **D-P12-05 Closed / satisfied for authentication honesty.**
 
 ---
 

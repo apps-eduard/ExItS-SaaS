@@ -42,10 +42,11 @@ Metering tracks **organizational** product usage, keyed to Organization + Produc
 
 | Event type | When emitted | Purpose |
 |---|---|---|
-| `LOAN_DISBURSEMENT_REVERSED` | Disbursement reversal posted after prior disbursement | Offset or adjust prior usage; never silent delete |
-| `LOAN_DISBURSEMENT_CANCELLED` | Disbursement cancelled before release (no prior billable disbursement) | Prevent false positive if pre-release cancellation occurred |
+| `LOAN_DISBURSEMENT_REVERSED` | Disbursement reversal posted after prior billable disbursement | Offset or adjust prior usage; never silent delete |
 
-Future Platform rating rules may map these to credits, voids, or net counts. Mapping logic is Platform-owned. PLM must emit durable, idempotent facts.
+**Pre-release cancellation** (loan cancelled before physical release): internal PLM lifecycle/audit fact only — **no Platform usage-metering event**, no charge, no compensating billing event.
+
+Future Platform rating rules may map reversal events to credits, voids, or net counts. Mapping logic is Platform-owned. PLM must emit durable, idempotent facts for billable events only.
 
 No other loan lifecycle event is authorized as billable in this contract unless a future ADR explicitly adds one.
 

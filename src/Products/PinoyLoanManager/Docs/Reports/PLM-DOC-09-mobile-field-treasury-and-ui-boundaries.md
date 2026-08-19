@@ -6,6 +6,8 @@
 
 Runtime / browser / device / database / production validation: **Not Applicable**.
 
+> **Historical note:** Open dependencies below reflect PLM-DOC-09 package completion. **PLM-D-00-03 Closed for approved layout.** **PLM-D-00-07 Closed for MVP Product financial model** (persistence/GL are implementation work). **R-091 Closed for Phase 13 scope.** Final status: [../Decisions/PLM-decision-status-summary.md](../Decisions/PLM-decision-status-summary.md).
+
 ---
 
 ## Scope
@@ -84,10 +86,10 @@ Finalize Pinoy Loan Manager MVP planning for MAUI purpose and offline posture, c
 
 | ID | Status |
 |---|---|
-| PLM-D-00-03 | Open — physical scaffold on mainline |
-| PLM-D-00-07 | Open / Partially Resolved — treasury/GL persistence |
+| PLM-D-00-03 | **Closed for approved layout** (historical: Open at package completion) |
+| PLM-D-00-07 | **Closed for MVP Product financial model** (historical: Open / Partially Resolved — persistence/GL implementation deferred) |
 | PLM-D-00-11 | Open — legal/compliance including location disclosure |
-| R-091 | Open — production authentication |
+| R-091 | **Closed for Phase 13 scope** (historical: Open at package completion) |
 | Offline financial posting implementation | Deferred — future explicit WP |
 | LocalStore / SQLite | Not authorized |
 

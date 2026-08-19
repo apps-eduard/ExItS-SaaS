@@ -11,7 +11,7 @@ Always load with:
 5. The active work-package prompt/report
 6. Files required for the task only
 
-**Status:** PLM-00 documentation baseline accepted (PLM-D-00-10); PLM-DOC-01–05 recorded; implementation paused
+**Status:** PLM MVP Product documentation complete (PLM-DOC-01–11); **PLM-D-00-10 Closed**; implementation paused pending Gate A
 **Implementation present:** No
 **Documentation root:** `src/Products/PinoyLoanManager/Docs/` (D-P12-02)
 
@@ -172,10 +172,10 @@ ExItS Personal is Platform-owned and product-neutral. POS Customer ≠ Loan Borr
 
 ## Client direction (proposed)
 
-Organization Web: Blazor Web (full operations). MAUI Blazor Hybrid: limited field/collector application. Platform Admin: SaaS control plane only. Web/MAUI sharing **Closed** (PLM-D-00-09); no client project until PLM-D-00-03 and owner authorization.
+Organization Web: Blazor Web (full operations). MAUI Blazor Hybrid: limited field/collector application. Platform Admin: SaaS control plane only. Web/MAUI sharing **Closed** (PLM-D-00-09); layout **Closed** (PLM-D-00-03); no client project until Gate A and owner authorization.
 
 ---
 
 ## Explicit exclusions
 
-No implementation exists. Default interest **rates** and penalty **amounts** are not defined. **PLM-D-00-06 Closed for MVP** (grant catalog v1). Restructuring and write-off/recovery remain open (PLM-D-00-08 remainder). Do not copy PinoyBusinessPOS grants or money models. No recorded workflow is claimed legally compliant or production-security certified (PLM-D-00-11, R-091).
+No implementation exists. Default interest **rates** and penalty **amounts** are not defined. **PLM-D-00-06 Closed for MVP** (grant catalog v1). **PLM-D-00-08 Closed for MVP** (business/calculation policy). Do not copy PinoyBusinessPOS grants or money models. No recorded workflow is claimed legally compliant or production-security certified (**PLM-D-00-11 Open**). **R-091 Closed for Phase 13 scope.**

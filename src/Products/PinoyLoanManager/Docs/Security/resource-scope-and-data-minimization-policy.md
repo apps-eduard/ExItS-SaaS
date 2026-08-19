@@ -115,7 +115,7 @@ Collector does **not** receive default access to:
 
 ## Legal / security boundary
 
-No scope or minimization rule is claimed legally compliant or production-security certified. **PLM-D-00-11 remains Open.** **R-091 remains Open.**
+No scope or minimization rule is claimed legally compliant or production-security certified. **PLM-D-00-11 remains Open.** **R-091 Closed for Phase 13 scope.**
 
 ---
 

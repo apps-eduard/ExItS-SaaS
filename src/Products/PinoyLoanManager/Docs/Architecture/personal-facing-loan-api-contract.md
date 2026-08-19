@@ -112,7 +112,7 @@ Aligns with portfolio async/idempotency direction; exact key format is implement
 ## Explicit non-goals
 
 - OpenAPI / route design
-- Authentication mechanism (**R-091 Open**)
+- Authentication mechanism (**R-091 Closed for Phase 13 scope**; transport **D-P12-03 Open**)
 - Platform relationship schema (**PLM-D-00-04 Open**)
 - Staff / Organization Web / MAUI operational APIs (separate surfaces)
 - Closing **D-P12-03** transport

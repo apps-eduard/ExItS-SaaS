@@ -18,22 +18,22 @@ PLM-00-WP03 through WP10 record agreed **product direction** in Product / Archit
 
 | ADR | Subject | Decisions closed |
 |---|---|---|
-| [ADR-003-supported-interest-and-schedule-methods.md](ADR-003-supported-interest-and-schedule-methods.md) | MVP interest/schedule methods | Product methods accepted; PLM-D-00-08 remains Open / Partially Resolved |
-| [ADR-004-rounding-fees-and-payment-allocation.md](ADR-004-rounding-fees-and-payment-allocation.md) | Rounding, fees, allocation | **PLM-D-00-12 Closed**; PLM-D-00-07 / PLM-D-00-08 remain Open / Partially Resolved |
+| [ADR-003-supported-interest-and-schedule-methods.md](ADR-003-supported-interest-and-schedule-methods.md) | MVP interest/schedule methods | Product methods accepted; **PLM-D-00-08 Closed for MVP** |
+| [ADR-004-rounding-fees-and-payment-allocation.md](ADR-004-rounding-fees-and-payment-allocation.md) | Rounding, fees, allocation | **PLM-D-00-12 Closed**; **PLM-D-00-07 / PLM-D-00-08 Closed for MVP** |
 
 ## Approved ADRs (PLM-DOC-03)
 
 | ADR | Subject | Decisions closed |
 |---|---|---|
-| [ADR-005-schedule-calendar-and-exception-treatment.md](ADR-005-schedule-calendar-and-exception-treatment.md) | Calendar, frequencies, exception defaults | Product calendar accepted; PLM-D-00-08 remains Open / Partially Resolved |
+| [ADR-005-schedule-calendar-and-exception-treatment.md](ADR-005-schedule-calendar-and-exception-treatment.md) | Calendar, frequencies, exception defaults | Product calendar accepted; **PLM-D-00-08 Closed for MVP** |
 | [ADR-006-delinquency-penalty-and-maturity-policy.md](ADR-006-delinquency-penalty-and-maturity-policy.md) | DPD, penalties, maturity | Product engine accepted; no default amounts; PLM-D-00-11 Open |
 
 ## Approved ADRs (PLM-DOC-04)
 
 | ADR | Subject | Decisions closed |
 |---|---|---|
-| [ADR-007-early-settlement-and-prepayment-policy.md](ADR-007-early-settlement-and-prepayment-policy.md) | Settlement Quote, rebate, principal prepayment | Product settlement/prepayment accepted; PLM-D-00-08 remains Open / Partially Resolved; PLM-D-00-11 Open |
-| [ADR-008-reversals-refunds-variance-and-accounting-boundary.md](ADR-008-reversals-refunds-variance-and-accounting-boundary.md) | Reversals, refunds, variance, GL boundary | **PLM-D-00-13 Closed**; PLM-D-00-07 / PLM-D-00-08 remain Open / Partially Resolved |
+| [ADR-007-early-settlement-and-prepayment-policy.md](ADR-007-early-settlement-and-prepayment-policy.md) | Settlement Quote, rebate, principal prepayment | Product settlement/prepayment accepted; **PLM-D-00-08 Closed for MVP**; PLM-D-00-11 Open |
+| [ADR-008-reversals-refunds-variance-and-accounting-boundary.md](ADR-008-reversals-refunds-variance-and-accounting-boundary.md) | Reversals, refunds, variance, GL boundary | **PLM-D-00-13 Closed**; **PLM-D-00-07 Closed for MVP financial model** |
 
 ## Approved ADRs (PLM-DOC-07)
 
@@ -60,9 +60,10 @@ PLM-00-WP03 through WP10 record agreed **product direction** in Product / Archit
 
 | ADR | Subject | Decisions closed |
 |---|---|---|
-| [ADR-019-platform-personal-contract-requirements.md](ADR-019-platform-personal-contract-requirements.md) | Platform access, Personal link, Personal-facing API contracts | **PLM-D-00-05 Closed for PLM behavior/contract**; PLM-D-00-04, D-P12-03, R-091 remain open |
-| [ADR-020-usage-metering-and-tenant-placement-contracts.md](ADR-020-usage-metering-and-tenant-placement-contracts.md) | Usage metering and tenant placement contracts | Contract requirements accepted; D-P12-03 transport open |
+| [ADR-019-platform-personal-contract-requirements.md](ADR-019-platform-personal-contract-requirements.md) | Platform access, Personal link, Personal-facing API contracts | **PLM-D-00-05 Closed for PLM behavior/contract**; PLM-D-00-04, D-P12-03 remain open |
+
+| [ADR-020-usage-metering-and-tenant-placement-contracts.md](ADR-020-usage-metering-and-tenant-placement-contracts.md) | Usage metering and tenant placement contracts | Contract requirements accepted; pre-release cancellation emits no usage event; D-P12-03 transport open |
 
 Major future irreversible or cross-product choices must receive an ADR here when explicitly approved.
 
-Do not close PLM-D-00-03, PLM-D-00-04, PLM-D-00-07, PLM-D-00-11, D-P12-03, R-091, or D-P12-05 without explicit approval. Do not mark PLM-D-00-07 or PLM-D-00-08 Closed. **PLM-D-00-05 is Closed for PLM behavior/contract requirements.** **PLM-D-00-06 is Closed for MVP.** **PLM-D-00-09 is Closed.** PLM-D-00-13 is **Closed**.
+Do not close PLM-D-00-04, PLM-D-00-11, or D-P12-03 without explicit approval. **R-091 Closed for Phase 13 scope.** **D-P12-05 Closed / satisfied for authentication honesty.** **PLM-D-00-03/05/06/07/08/09 Closed** as documented in [PLM-decision-status-summary.md](PLM-decision-status-summary.md). PLM-D-00-13 is **Closed**.

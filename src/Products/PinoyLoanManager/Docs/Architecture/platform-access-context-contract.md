@@ -89,7 +89,7 @@ PLM must deny **write authority** when any required fact is:
 
 Read-only behavior for unknown commercial state is **not** authorized here unless a later explicit product decision says otherwise. Default posture: **fail closed**.
 
-Dev/Testing shortcuts, if any, must be labeled and must not become the Production design (**D-P12-05** tied to **R-091**).
+Dev/Testing shortcuts, if any, must be labeled and must not become the Production design (**D-P12-05 Closed / satisfied for authentication honesty**; **R-091 Closed for Phase 13 scope**).
 
 ---
 
@@ -101,7 +101,7 @@ Dev/Testing shortcuts, if any, must be labeled and must not become the Productio
 | Cache TTL / revocation propagation | **D-P12-03 Open** |
 | Platform persistence schema | **PLM-D-00-04 Open** (External Platform) |
 | PLM grant catalog or workflow guards | Closed for MVP in PLM-DOC-05 |
-| Authentication implementation | **R-091 Open** |
+| Authentication implementation | **R-091 Closed for Phase 13 scope** — residual step-up/MFA are separate gates |
 
 ---
 
@@ -121,4 +121,4 @@ Dev/Testing shortcuts, if any, must be labeled and must not become the Productio
 - Selecting JWT vs cookie vs header vs lease
 - Designing Platform EF entities or SQL
 - Copying PinoyBusinessPOS Dev commercial headers as Production design
-- Closing **D-P12-03**, **PLM-D-00-04**, or **R-091**
+- Closing **D-P12-03** or **PLM-D-00-04** (residual step-up/MFA are separate Platform gates; **R-091 Closed for Phase 13 scope**)

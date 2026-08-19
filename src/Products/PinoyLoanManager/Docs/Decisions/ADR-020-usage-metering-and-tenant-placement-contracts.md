@@ -23,7 +23,8 @@ Portfolio scale and hosting packs ([hosted-saas-tenant-placement-model.md](../..
 
 1. Accept [../Architecture/platform-usage-metering-contract.md](../Architecture/platform-usage-metering-contract.md):
    - primary event: **`LOAN_DISBURSED`**
-   - additional events: **`LOAN_DISBURSEMENT_REVERSED`**, **`LOAN_DISBURSEMENT_CANCELLED`**
+   - additional event: **`LOAN_DISBURSEMENT_REVERSED`**
+   - pre-release cancellation emits **no** Platform usage event (PLM-DOC-04 rule)
    - idempotency keys and at-least-once safe delivery required
    - **no PII** in metering payloads
    - Platform owns rating/billing; PLM owns disbursement truth; no direct Platform billing table writes

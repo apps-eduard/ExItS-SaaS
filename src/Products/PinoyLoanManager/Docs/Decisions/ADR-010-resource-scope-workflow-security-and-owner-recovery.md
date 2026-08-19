@@ -2,7 +2,9 @@
 
 **Status:** Accepted product policy (PLM-DOC-05); not implemented
 **Date:** 2026-08-19
-**Decisions:** Scope, workflow guards, Owner bootstrap/recovery documented; **PLM-D-00-13 remains Closed**; D-P12-03 and R-091 remain Open
+**Decisions:** Scope, workflow guards, Owner bootstrap/recovery documented; **PLM-D-00-13 remains Closed**; **D-P12-03 remains Open**
+
+> **Historical note (PLM-DOC-05):** R-091 was Open at package completion. **R-091 is now Closed for Phase 13 scope.** Final status: [PLM-decision-status-summary.md](PLM-decision-status-summary.md).
 
 ---
 
@@ -22,8 +24,8 @@ PLM needed finalized scope types, server-side filtering, data minimization, work
 6. Last active Owner cannot be removed; Owner assignment is high risk with maker/checker or controlled Owner Override.
 7. Role assignment lifecycle with auditable status/history; no self-escalation.
 8. Platform emergency Owner recovery is control-plane only, limited to Owner restoration, fully audited; not implemented here.
-9. High-risk action catalog and enhanced audit; future step-up authentication when Platform supports it (R-091 Open).
-10. **PLM-D-00-13 remains Closed.** **D-P12-03** and production authentication remain Open.
+9. High-risk action catalog and enhanced audit; future step-up authentication when Platform supports it (residual gate; **R-091 Closed for Phase 13 scope**).
+10. **PLM-D-00-13 remains Closed.** **D-P12-03** remains Open.
 
 Canonical text: [../Security/resource-scope-and-data-minimization-policy.md](../Security/resource-scope-and-data-minimization-policy.md), [../Security/privileged-access-and-owner-recovery-policy.md](../Security/privileged-access-and-owner-recovery-policy.md).
 
@@ -33,6 +35,6 @@ Canonical text: [../Security/resource-scope-and-data-minimization-policy.md](../
 
 Operational security boundaries are documented without claiming production-security readiness.
 
-**Still open:** D-P12-03, R-091, step-up auth mechanism, recovery implementation, PLM-D-00-11.
+**Still open:** D-P12-03, step-up auth mechanism, recovery implementation, PLM-D-00-11.
 
 No implementation is authorized by this ADR.

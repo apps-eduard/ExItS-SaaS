@@ -8,7 +8,7 @@
 | Product | Pinoy Loan Manager |
 | Current phase | PLM-00 Foundation & Product Decisions (documentation complete) |
 | Current work package | **PLM-DOC-11** Final Documentation Consistency Review & Closeout |
-| Status | **PLM MVP Product documentation 100% complete.** PLM-D-00-03/05/06/07/08/09/10/12/13 Closed as documented. PLM-D-00-04/11 and D-P12-03/R-091 Open external. Implementation **paused**. |
+| Status | **PLM MVP Product documentation 100% complete.** PLM-D-00-03/05/06/07/08/09/10/12/13 Closed as documented. PLM-D-00-04/11 and D-P12-03 Open external. **R-091 Closed for Phase 13 scope.** **D-P12-05 Closed / satisfied for authentication honesty.** Implementation **paused**. |
 
 ## Phase objective
 
@@ -30,7 +30,7 @@ Establish product documentation, architecture boundaries, Personal/Borrower inte
 - Merging parked `feat/plm-01-scaffold` (unmerged; not accepted mainline state)
 - Remaining schema/GL/write-off items, peso/percent **rates**
 - Generic Platform relationship schema
-- Production authentication (R-091) unless a later phase explicitly delivers it
+- Portfolio authentication residuals (MFA enforcement, step-up, enterprise SSO/AD, outbound auth email) and overall Production readiness unless explicitly delivered later
 - Final commercial-state transport (D-P12-03) unless explicitly authorized
 
 ## Work packages (current phase)
@@ -186,15 +186,15 @@ Before product implementation resumes, documentation still needs **final decisio
 - Platform commercial-state transport dependencies (D-P12-03)
 - custom roles (deferred; not MVP)
 
-Portfolio: R-091 remains open. Scale architecture: [exits-scale-and-growth-architecture.md](../../../../docs/Product-Foundation/exits-scale-and-growth-architecture.md).
+Portfolio: **R-091 Closed for Phase 13 scope.** Scale architecture: [exits-scale-and-growth-architecture.md](../../../../docs/Product-Foundation/exits-scale-and-growth-architecture.md).
 
 ## Dependencies
 
 | Dependency | Notes |
 |---|---|
 | Platform subscription for `pinoy-loan-manager` | Required; **code approved** (PLM-D-00-01); catalog registration not done |
-| Product-owner decisions | PLM-D-00-03, PLM-D-00-04, PLM-D-00-07, PLM-D-00-11 (PLM-D-00-01 Closed; PLM-D-00-02 Closed for name; PLM-D-00-05 Closed for PLM behavior/contract; PLM-D-00-06 Closed for MVP; PLM-D-00-09 Closed; PLM-D-00-10 closed; PLM-D-00-12 Closed; PLM-D-00-13 Closed; PLM-D-00-07 / PLM-D-00-08 Open / Partially Resolved) |
-| D-P12-03 / R-091 / D-P12-05 | Portfolio-open; do not invent |
+| Product-owner decisions | PLM-D-00-04, PLM-D-00-11 (PLM-D-00-01 Closed; PLM-D-00-02 Closed for name; PLM-D-00-03 Closed for layout; PLM-D-00-05 Closed for PLM contract; PLM-D-00-06 Closed for MVP; PLM-D-00-07 Closed for MVP financial model; PLM-D-00-08 Closed for MVP business policy; PLM-D-00-09 Closed; PLM-D-00-10 closed; PLM-D-00-12 Closed; PLM-D-00-13 Closed) |
+| D-P12-03 | Portfolio-open; do not invent |
 | ExItS scale architecture | Documented on `docs/exits-scale-foundation`; implementation of stamps/shards not required to resume docs work |
 
 ## Acceptance criteria (phase)
@@ -219,17 +219,17 @@ Portfolio: R-091 remains open. Scale architecture: [exits-scale-and-growth-archi
 
 | ID | Risk | Mitigation |
 |---|---|---|
-| PLM-D-00-08 | Pressure to invent Loan **rates** or remaining restructuring/write-off policy | Keep rates Open; settlement/prepayment accepted in PLM-DOC-04 |
+| PLM-D-00-08 | Pressure to invent Loan **rates** | Keep rates organization-configured; business/calculation policy Closed for MVP |
 | PLM-D-00-06 | Pressure to invent custom roles or wildcard grants | MVP presets/grants closed in PLM-DOC-05; custom roles deferred |
 | PLM-D-00-04 | Premature generic Platform relationship schema | Record intent only; no schema |
 | PLM-D-00-05 | Treating PLM contract close as Platform implementation | Product contract in PLM-DOC-10; Platform transport/schema still external (**PLM-D-00-04**, **D-P12-03**) |
-| R-091 | Claiming production-ready identity | Honest Dev/Testing vs Production language |
+| R-091 | Residual auth hardening / portfolio Production readiness | **Closed for Phase 13 scope**; MFA/step-up/SSO/email remain separate gates; **D-P12-05 satisfied for authentication honesty** |
 | D-P12-03 | Copying POS Dev commercial headers as PLM production design | Leave transport Open |
-| PLM-D-00-03 | Treating parked scaffold as mainline | Leave PLM-D-00-03 open until authorized scaffold lands on `main` |
+| PLM-D-00-03 | Treating parked scaffold as mainline | **Closed for approved layout**; physical scaffold on main remains implementation work after Gate A |
 
 ## Exact next package
 
-**No further PLM-DOC packages are defined.** Await explicit Product Owner authorization before **PLM-01** implementation or additional documentation. Portfolio **D-P12-03**, **PLM-D-00-04**, and **R-091** remain open.
+**PLM-DOC-01 through PLM-DOC-11 complete.** Await explicit Product Owner authorization and Gate A before **PLM-IMPLEMENTATION-00**. Portfolio **D-P12-03** and **PLM-D-00-04** remain open external dependencies.
 
 Do **not** start or merge PLM-01 without authorization. Implementation remains paused.
 

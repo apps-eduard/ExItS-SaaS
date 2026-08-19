@@ -29,6 +29,6 @@ PLM needed stable MVP role preset codes, exact grant identifiers, and default Ow
 
 PLM-03 and operational WPs have an approved authorization contract for documentation and future implementation.
 
-**Still open:** D-P12-03 commercial transport, R-091 production authentication, PLM-D-00-11 legal/compliance, custom roles (future).
+**Still open:** D-P12-03 commercial transport, PLM-D-00-11 legal/compliance, custom roles (future).
 
 No authorization engine or schema is authorized by this ADR.

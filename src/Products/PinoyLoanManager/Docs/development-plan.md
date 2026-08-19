@@ -6,7 +6,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Plan status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01–05 recorded; PLM-01 paused on mainline |
+| Plan status | PLM MVP Product documentation complete (PLM-DOC-01–11); PLM-01 paused pending Gate A |
 | Implementation present | No |
 
 ## Delivery approach
@@ -34,7 +34,7 @@
 | PLM-11 Reporting / Documents | Product reports and documents | Only after report contents are decided |
 | PLM-12 Security / Audit / Privacy | Product audit, privacy, consent hardening | Evidence against this product’s security docs |
 | PLM-13 Offline / Mobile Field Capabilities | MAUI/offline/field capabilities | Only after PLM-D-00-03, owner authorization, and implementation WP (PLM-D-00-09 Closed for sharing/offline policy) |
-| PLM-14 Production Validation / Closeout | Production-readiness evidence | Blocked while R-091 / other portfolio production risks remain |
+| PLM-14 Production Validation / Closeout | Production-readiness evidence | Blocked while portfolio Production-readiness gates remain (**R-091 Closed for Phase 13 scope**; residuals separate) |
 
 Detail per current phase: [roadmap.md](roadmap.md).
 
@@ -65,7 +65,7 @@ Do not start PLM-01 on mainline until explicitly authorized. Product implementat
 |---|---|---|
 | Platform catalog / subscription | Platform | Independent subscription required; code `pinoy-loan-manager` approved (PLM-D-00-01 Closed); catalog registration not done |
 | Commercial-state transport | **DECISION D-P12-03** | Provisional patterns only; do not invent final |
-| Production authentication | **R-091** | Keep Dev/Testing language honest (D-P12-05) |
+| Production authentication | **R-091 Closed for Phase 13 scope** | Residual MFA/step-up/SSO/email are separate gates (**D-P12-05 Closed / satisfied for authentication honesty**) |
 | Personal / cross-product relationship model | Platform + product | Open (PLM-D-00-04, PLM-D-00-05) |
 | Loan owner policy | Product owner | Grants closed for MVP (PLM-D-00-06). Calculation, calendar, penalty, settlement, cash-control, and authorization policy accepted (PLM-DOC-02–05). Schema/restructuring/write-off remain Open / Partially Resolved (PLM-D-00-07, PLM-D-00-08) |
 
@@ -94,7 +94,7 @@ Never weaken tests to pass a WP.
 | Environment | Decision |
 |---|---|
 | Development / Testing | Not ready — no product runtime exists |
-| Production | Blocked while R-091 / TLS / other open risks remain — do not claim ready |
+| Production | Blocked while portfolio Production-readiness gates remain (TLS, legal, hosted deployment, etc.) — do not claim ready |
 
 ## Explicit exclusions from this plan
 

@@ -251,7 +251,7 @@ Custom organization-defined roles are **not** supported in MVP. Only `plm.owner`
 
 ## Legal / security boundary
 
-No grant catalog is claimed legally compliant or production-security certified. **PLM-D-00-11 remains Open.** **R-091 remains Open.** This package does not invent Philippine regulations or authentication mechanisms.
+No grant catalog is claimed legally compliant or production-security certified. **PLM-D-00-11 remains Open.** **R-091 Closed for Phase 13 scope.** This package does not invent Philippine regulations or authentication mechanisms.
 
 ---
 

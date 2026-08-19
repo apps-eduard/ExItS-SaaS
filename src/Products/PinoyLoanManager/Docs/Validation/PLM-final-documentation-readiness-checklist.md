@@ -66,7 +66,8 @@ Checking an item means the **documentation** satisfies the rule. It does **not**
 - [ ] PLM-D-00-11 legal/compliance validation
 - [ ] D-P12-03 commercial transport
 - [ ] PLM-D-00-04 Platform relationship schema
-- [ ] R-091 production authentication
+- [x] R-091 Closed for Phase 13 scope; residual MFA/step-up/SSO/email are separate gates
+- [x] D-P12-05 satisfied for authentication honesty
 - [ ] Persistence schema and external GL integration (implementation)
 
 ---

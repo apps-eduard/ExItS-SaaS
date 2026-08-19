@@ -5,16 +5,16 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01–05 recorded; no implementation |
+| Status | PLM MVP Product documentation complete (PLM-DOC-01–11); **PLM-D-00-10 Closed**; no implementation |
 | Implementation present | No |
 
 ## Authentication boundary
 
 | Item | State |
 |---|---|
-| Trusted actor source | Platform identity. Production login/session **Open — R-091**. |
-| Production auth (JWT/MFA/SSO/…) | **Open — R-091** — do not invent fake production login |
-| Dev/Testing shortcuts | Document honestly; fail closed outside approved environments (D-P12-05). No PLM-specific Dev gate is designed in this package. |
+| Trusted actor source | Platform identity. **R-091 Closed for Phase 13 scope** — consume trusted Platform actor/context only. |
+| Production auth | **R-091 Closed for Phase 13 scope** — passwords, sessions, Bearer, external login delivered; residuals (MFA enforcement, step-up, enterprise SSO/AD, outbound auth email) are separate gates |
+| Dev/Testing shortcuts | Document honestly; fail closed outside approved environments (**D-P12-05 Closed / satisfied for authentication honesty**). No PLM-specific Dev gate is designed in this package. |
 
 ## Product authorization
 
@@ -115,11 +115,11 @@ Lifecycle and unlink: [Product/personal-linking-lifecycle-and-visibility.md](Pro
 
 | ID | Risk | Status |
 |---|---|---|
-| R-091 | Production authentication | Open |
+| R-091 | Production authentication | **Closed for Phase 13 scope** — residuals (MFA, step-up, SSO/email) do not reopen |
 | D-P12-03 | Commercial-state transport; risk of inventing Platform table reads or copying POS Dev headers as production design | Open |
-| D-P12-05 | Dishonest Dev/Testing vs Production language | Open |
+| D-P12-05 | Dishonest Dev/Testing vs Production language | **Closed / satisfied for authentication honesty** |
 | PLM-D-00-06 | Product-local grant catalog | **Closed for MVP** — PLM Authorization Policy v1 |
-| PLM-D-00-05 | Undesigned consent/linking **transport** (product behavior defined) | Open |
+| PLM-D-00-05 | Personal linking Platform implementation | **Closed for PLM contract** — Platform transport external |
 | PLM-D-00-11 | Legal/compliance validation not performed | Open |
 | PLM-D-00-12 | Money rounding | **Closed** — To Even; PHP 2 dp; ≥8 intermediate |
 | PLM-D-00-13 | High-risk maker/checker vs small-org Owner Override | **Closed** — distinct approver when another eligible user exists; controlled Owner Override for sole eligible Owner |

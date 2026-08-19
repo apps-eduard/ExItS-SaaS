@@ -44,7 +44,7 @@ Requires:
 
 - **D-P12-03** commercial-state / access-context transport decision
 - Platform relationship model/contract implementation (**PLM-D-00-04** external)
-- trusted production identity/context direction (**R-091**)
+- trusted Platform identity/context (**R-091 Closed for Phase 13 scope**; residual step-up/MFA are separate gates)
 - tenant placement/routing appropriate to deployment
 
 Contract requirements: [Architecture/platform-access-context-contract.md](Architecture/platform-access-context-contract.md), [Architecture/personal-link-and-consent-contract.md](Architecture/personal-link-and-consent-contract.md).
@@ -65,7 +65,8 @@ Requires before production-grade financial implementation:
 
 Requires:
 
-- authentication/security readiness (**R-091**)
+- portfolio Production-readiness gates (legal, hosted deployment, observability, etc.)
+- authentication residuals: MFA enforcement, step-up authentication, enterprise SSO/AD, outbound auth email (**R-091 Closed for Phase 13 scope** — residuals do not reopen R-091)
 - legal/compliance validation (**PLM-D-00-11**)
 - privacy/retention approval
 - hosted deployment implementation (not documented as implemented)

@@ -2,7 +2,9 @@
 
 **Status:** Accepted (PLM-DOC-10)
 **Date:** 2026-08-19
-**Decisions:** **PLM-D-00-05 Closed for PLM behavior/contract requirements**; **PLM-D-00-04 Open** (External Platform); **D-P12-03 Open**; **R-091 Open**
+**Decisions:** **PLM-D-00-05 Closed for PLM behavior/contract requirements**; **PLM-D-00-04 Open** (External Platform); **D-P12-03 Open**
+
+> **Historical note (PLM-DOC-10):** R-091 was Open at package completion. **R-091 is now Closed for Phase 13 scope.** Final status: [PLM-decision-status-summary.md](PLM-decision-status-summary.md).
 
 ---
 
@@ -38,7 +40,6 @@ PLM documentation and future Application-layer design may rely on stable contrac
 
 - **PLM-D-00-04** — generic Platform cross-product relationship model (External Platform)
 - **D-P12-03** — commercial-state and cross-service transport (inbound and outbound where applicable)
-- **R-091** — production authentication
 - **PLM-D-00-11** — legal/compliance validation including post-unlink retention
 
 No code, schema, migrations, or Platform PR is authorized by this ADR alone.

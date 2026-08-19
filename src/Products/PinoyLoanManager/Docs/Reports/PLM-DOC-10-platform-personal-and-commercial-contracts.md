@@ -6,13 +6,15 @@
 
 Runtime / browser / device / database / production validation: **Not Applicable**.
 
+> **Historical note:** Decision statuses below reflect PLM-DOC-10 package completion. **R-091 is now Closed for Phase 13 scope.** **PLM-D-00-07/08 Closed for MVP Product policy.** Final status: [../Decisions/PLM-decision-status-summary.md](../Decisions/PLM-decision-status-summary.md).
+
 ---
 
 ## Scope
 
 Finalize Pinoy Loan Manager **Platform access context facts**, **Personal link/consent contract**, **Personal-facing loan API operations**, **Platform usage metering events**, and **tenant placement/routing contract** — without selecting transport, Platform schema, or authentication implementation.
 
-Explicitly **out of scope:** code, database creation, migrations, APIs, UI, solution changes, Platform implementation, POS implementation, closing **D-P12-03**, closing **PLM-D-00-04**, closing **R-091**, legal compliance claims.
+Explicitly **out of scope:** code, database creation, migrations, APIs, UI, solution changes, Platform implementation, POS implementation, closing **D-P12-03**, closing **PLM-D-00-04**, legal compliance claims. (**R-091 Closed for Phase 13 scope** at final review.)
 
 ---
 
@@ -55,7 +57,7 @@ Updated indexes and [platform-commercial-integration.md](../Architecture/platfor
 | PLM-D-00-05 | **Closed for PLM behavior/contract requirements** — Platform transport/persistence/implementation external |
 | PLM-D-00-04 | **Open** — External Platform generic relationship model |
 | D-P12-03 | **Open** — commercial-state and event transport |
-| R-091 | **Open** — production authentication |
+| R-091 | **Closed for Phase 13 scope** (historical: Open at package completion) |
 | PLM-D-00-11 | **Open** — legal/compliance including post-unlink visibility |
 
 Other PLM-D-00 items remain as previously recorded.
@@ -78,7 +80,7 @@ Moved from [../risks-and-decisions.md](../risks-and-decisions.md) operating-mode
 
 - Platform relationship tables / generic schema (**PLM-D-00-04**)
 - JWT/cookie/header/lease/cache commercial transport (**D-P12-03**)
-- OpenAPI routes and authentication (**R-091**)
+- OpenAPI routes and Platform auth transport (**D-P12-03**; **R-091 Closed for Phase 13 scope**)
 - Message bus / outbox technology
 - Stamp/partition provisioning and tenant movement tooling
 - Product implementation (remains **paused**)
@@ -101,6 +103,6 @@ Documentation only. No `.cs`, `.csproj`, `ExItS.slnx`, migrations, APIs, UI, tes
 
 ## Exact next documentation package
 
-**No further PLM-DOC packages are defined.** Await explicit Product Owner authorization before **PLM-01** implementation. **D-P12-03**, **PLM-D-00-04**, and **R-091** remain open.
+**No further PLM-DOC packages are defined.** Await explicit Product Owner authorization before **PLM-01** implementation. **D-P12-03** and **PLM-D-00-04** remain open. **R-091 Closed for Phase 13 scope.**
 
 Do not start PLM-DOC-08 in this package. Implementation remains paused.

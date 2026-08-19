@@ -7,7 +7,7 @@
 |---|---|
 | Product | Pinoy Loan Manager / `pinoy-loan-manager` (**Closed**, PLM-D-00-01) |
 | Database | `ExItS_PinoyLoanManager` (**logical name Closed**, PLM-D-00-02); not created; schema/placement deferred |
-| Status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01–05 recorded; no implementation |
+| Status | PLM MVP Product documentation complete (PLM-DOC-01–11); **PLM-D-00-10 Closed**; no implementation |
 | Implementation present | No |
 
 ## System context
@@ -30,7 +30,7 @@ Pinoy Loan Manager must never take a project or database dependency on PinoyBusi
 
 | Area | Platform | This product |
 |---|---|---|
-| Identity / accounts / future prod auth | Yes (R-091 open) | Consume trusted actor only |
+| Identity / accounts / Platform auth | Yes (**R-091 Closed for Phase 13 scope**) | Consume trusted actor only |
 | Organizations / memberships | Yes | Guid reference + isolation |
 | Product catalog / plans / subscriptions / entitlements | Yes | Enforce; no Platform table reads |
 | SaaS billing / Platform administration / Platform audit | Yes | No |

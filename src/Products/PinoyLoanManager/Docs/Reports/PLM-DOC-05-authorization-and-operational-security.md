@@ -7,6 +7,8 @@
 
 Runtime / browser / device / database / production validation: **Not Applicable**.
 
+> **Historical note:** R-091 was Open at PLM-DOC-05 completion. **R-091 is now Closed for Phase 13 scope.** Final status: [../Decisions/PLM-decision-status-summary.md](../Decisions/PLM-decision-status-summary.md).
+
 ---
 
 ## Scope
@@ -82,7 +84,7 @@ Canonical: [../Security/privileged-access-and-owner-recovery-policy.md](../Secur
 
 ## High-risk controls
 
-Maker/checker retained (**PLM-D-00-13 Closed**). Controlled Owner Override retained. Future step-up authentication when Platform supports it (**R-091 Open**).
+Maker/checker retained (**PLM-D-00-13 Closed**). Controlled Owner Override retained. Future step-up authentication when Platform supports it (residual gate; **R-091 Closed for Phase 13 scope**).
 
 ---
 
@@ -91,9 +93,9 @@ Maker/checker retained (**PLM-D-00-13 Closed**). Controlled Owner Override retai
 | ID | Status |
 |---|---|
 | PLM-D-00-04 | Open |
-| PLM-D-00-05 | Open |
+| PLM-D-00-05 | **Closed for PLM contract** (historical: Open at package completion) |
 | D-P12-03 | Open |
-| R-091 | Open |
+| R-091 | **Closed for Phase 13 scope** (historical: Open at package completion) |
 | PLM-D-00-11 | Open |
 | Custom roles | Deferred (future package) |
 

@@ -7,6 +7,8 @@
 
 Runtime / browser / device / database / production validation: **Not Applicable**.
 
+> **Historical note:** Open dependencies below reflect PLM-DOC-06 package completion. **PLM-D-00-07 Closed for MVP Product financial model** at final review. Final status: [../Decisions/PLM-decision-status-summary.md](../Decisions/PLM-decision-status-summary.md).
+
 ---
 
 ## Scope
@@ -38,7 +40,7 @@ Finalize Pinoy Loan Manager MVP product rules for restructuring, refinancing sep
 - Recovery: separate Payment identity; allocation Interest → Principal → Fees → Penalties
 - Collection conduct: respectful recording; no abusive product features
 - **PLM-D-00-08 Closed for MVP Product business/calculation policy**
-- **PLM-D-00-07** remains Open / Partially Resolved (schema, journal/export, GL)
+- **PLM-D-00-07 Closed for MVP Product operational financial model** (persistence, journal/export, GL remain implementation work)
 
 ---
 
@@ -46,7 +48,7 @@ Finalize Pinoy Loan Manager MVP product rules for restructuring, refinancing sep
 
 | ID | Status |
 |---|---|
-| PLM-D-00-07 | Open / Partially Resolved — persistence, journal/export, GL |
+| PLM-D-00-07 | **Closed for MVP Product financial model** (historical: Open / Partially Resolved — persistence, journal/export, GL implementation deferred) |
 | PLM-D-00-11 | Open — legal/compliance |
 | Refinancing | Deferred beyond MVP |
 

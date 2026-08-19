@@ -4,6 +4,8 @@
 **Date:** 2026-08-19
 **Decisions:** Calendar/frequency/exception defaults accepted; **PLM-D-00-08** Open / Partially Resolved; **PLM-D-00-11** Open
 
+> **Final status note:** **PLM-D-00-08 Closed for MVP Product business/calculation policy** at final review. See [PLM-decision-status-summary.md](PLM-decision-status-summary.md).
+
 ---
 
 ## Context

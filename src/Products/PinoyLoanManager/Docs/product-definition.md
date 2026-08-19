@@ -31,7 +31,7 @@ ExItS Platform
 
 | Concern | Owner | Notes |
 |---|---|---|
-| Identity / production auth | Platform | **DECISION:** R-091 open — do not claim production-secure auth. Keep Dev/Testing vs Production language honest (D-P12-05). |
+| Identity / production auth | Platform | **R-091 Closed for Phase 13 scope.** Residual MFA/step-up/SSO/email and portfolio Production readiness remain separate gates. **D-P12-05 Closed / satisfied for authentication honesty.** |
 | Organizations | Platform | Product will store organization id as a `Guid` reference / contract only. Field name **Status: Open / Product Owner Decision Required**. |
 | Catalog / plans / subscription | Platform | **Required:** independent subscription for this product only. Product code `pinoy-loan-manager` is **approved** for future catalog registration (PLM-D-00-01 Closed). Catalog registration itself is not performed in this package. |
 | Entitlements / commercial access | Platform facts | **DECISION:** D-P12-03 commercial-state transport — do not invent. Platform entitlement does not replace Loan product-local authorization. |
@@ -64,7 +64,7 @@ Additional isolation (required intent):
 |---|---|---|
 | API | Product | Intended. No API project authorized. Personal/Loan API shape remains open. |
 | Platform Admin Web | Platform | Unified SaaS control plane. Must **not** become the normal borrower-loan operations UI. |
-| Organization Web UI | Product | Full operational lending application (proposed Blazor Web). Web/MAUI sharing **Closed** (PLM-D-00-09); no client project until PLM-D-00-03 and owner authorization. |
+| Organization Web UI | Product | Full operational lending application (proposed Blazor Web). Web/MAUI sharing **Closed** (PLM-D-00-09); layout **Closed** (PLM-D-00-03); no client project until Gate A and owner authorization. |
 | MAUI Hybrid UI | Product | Limited field / collector application. Not a duplicate of Organization Web. MVP online authority; offline cache/drafts only; final offline posting deferred. |
 | ExItS Personal | Platform (presentation) | Customer/borrower experience. Not a separate borrower app. Loan operational data remains this product’s authority. |
 | Reports | Product | Intended. Report contents **Status: Open / Product Owner Decision Required**. |
@@ -147,7 +147,8 @@ No loan MVP **implementation** is approved. Default rates, restructuring, write-
 - Exact interest **rates** (formulas/methods accepted in PLM-DOC-02), penalty **amounts**, restructuring/write-off accounting, legal/regulatory operating rules (PLM-D-00-08 remainder, PLM-D-00-11)
 - Auto-approval of Quick Loans
 - Treating any recorded rate, fee, penalty, or workflow as legally compliant
-- Production authentication (R-091)
+- Platform integration contracts (**D-P12-03** Open)
+- External legal/compliance validation (**PLM-D-00-11** Open)
 - Final Platform→product commercial-state transport (D-P12-03)
 
 ## Assumptions
@@ -175,8 +176,8 @@ No loan MVP **implementation** is approved. Default rates, restructuring, write-
 | PLM-D-00-12 | Exact money rounding mode | **Closed** — PHP 2 dp; ≥8 intermediate; To Even; final-installment reconciliation |
 | PLM-D-00-13 | Small-org vs two-person high-risk approval | **Closed** — maker/checker when another eligible approver exists; controlled Owner Override for sole eligible Owner |
 | D-P12-03 | Commercial-state transport | Product access enforcement |
-| R-091 | Production authentication | Production readiness |
-| D-P12-05 | Honest Dev/Testing vs Production language | Tied to R-091 |
+| R-091 | Production authentication | **Closed for Phase 13 scope** — see [PLM-decision-status-summary.md](Decisions/PLM-decision-status-summary.md) |
+| D-P12-05 | Honest Dev/Testing vs Production language | **Closed / satisfied for authentication honesty** |
 
 ## Document links
 

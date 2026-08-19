@@ -4,6 +4,8 @@
 **Date:** 2026-08-19
 **Decisions:** Delinquency/penalty/maturity product rules accepted; **PLM-D-00-08** Open / Partially Resolved; **PLM-D-00-11** Open; **PLM-D-00-12** remains Closed
 
+> **Final status note:** **PLM-D-00-08 Closed for MVP Product business/calculation policy** at final review. See [PLM-decision-status-summary.md](PLM-decision-status-summary.md).
+
 ---
 
 ## Context

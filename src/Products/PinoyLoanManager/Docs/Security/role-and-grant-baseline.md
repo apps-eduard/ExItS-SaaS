@@ -74,7 +74,7 @@ Platform Owner / Platform Admin do **not** automatically receive PLM operational
 
 ## Legal / security boundary
 
-No role or grant policy is claimed legally compliant or production-security certified. **PLM-D-00-11 remains Open.** **R-091 remains Open.**
+No role or grant policy is claimed legally compliant or production-security certified. **PLM-D-00-11 remains Open.** **R-091 Closed for Phase 13 scope.** Residual MFA/step-up/SSO/email do not reopen R-091.
 
 ---
 

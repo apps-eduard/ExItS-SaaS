@@ -143,7 +143,7 @@ Audit logging must avoid unnecessary sensitive-data exposure.
 
 ## Legal / security boundary
 
-No privileged-access policy is claimed legally compliant or production-security certified. **PLM-D-00-11 remains Open.** **R-091 remains Open.**
+No privileged-access policy is claimed legally compliant or production-security certified. **PLM-D-00-11 remains Open.** **R-091 Closed for Phase 13 scope.**
 
 ---
 
