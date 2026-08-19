@@ -32,6 +32,7 @@ It does **not** authorize implementation.
 - [pwa-and-capacitor-delivery.md](pwa-and-capacitor-delivery.md) — browser/PWA vs Capacitor channels, cache vs LocalStore, iOS interim
 - [offline-sync-auth-and-security.md](offline-sync-auth-and-security.md) — outbox/idempotency, financial offline rules, auth, client security
 - [device-and-payment-integration.md](device-and-payment-integration.md) — scanner/printer/drawer adapters, payment boundaries, capability matrix
+- [migration-testing-and-implementation-gates.md](migration-testing-and-implementation-gates.md) — coexistence stages, parity, testing, visual checkpoint, gates A–K
 
 ## Canonical rule
 

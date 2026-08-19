@@ -24,7 +24,7 @@ Capacitor implementation: `Absent`
 
 PWA production: `Absent`
 
-Queue state: `READY FOR MOBILE-REACT-DOC-07`
+Queue state: `READY FOR MOBILE-REACT-DOC-08`
 
 ## DOC queue
 
@@ -37,7 +37,8 @@ Queue state: `READY FOR MOBILE-REACT-DOC-07`
 | MOBILE-REACT-DOC-04 | Complete | PWA vs Capacitor delivery, static cache vs LocalStore, iOS interim, Windows browser/PWA, independent release channels |
 | MOBILE-REACT-DOC-05 | Complete | Offline/outbox/idempotency audit, cash-only current checkout queue, auth/security, conflict policy |
 | MOBILE-REACT-DOC-06 | Complete | Device/payment adapters, HID vs camera vs QR, no current printer/NFC/terminal, capability matrix |
-| MOBILE-REACT-DOC-07 | Not started | Next package |
+| MOBILE-REACT-DOC-07 | Complete | Coexistence stages 0–8, feature parity fields, testing layers, visual checkpoint, gates A–K |
+| MOBILE-REACT-DOC-08 | Not started | Next package |
 
 ## Authorization gates (locked)
 

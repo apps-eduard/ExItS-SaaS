@@ -49,5 +49,12 @@ These are planning decisions. They do not change current implementation.
 | MOBILE-D-042 | Physical cash drawer is an adapter-based future capability, commonly via printer kick. Current cash-drawer domain is logical shift movements only. Hardware is not assumed. | Accepted |
 | MOBILE-D-043 | POS retail payments stay cash, manual GCash, and customer credit. Platform SaaS payments stay separate. Fake/electronic Card/GCash remain Development/Testing. No real payment provider is selected. Future terminals use PaymentService → provider adapter; ExItS stores only permitted references. Unknown payment status is never success. | Accepted |
 | MOBILE-D-044 | NFC and payment terminals are NOT_ASSUMED until a later authorized package. No PAN/PIN/CVV/GCash secrets in ExItS storage or logs. | Accepted |
+| MOBILE-D-045 | Coexistence is staged 0–8. MAUI stays the current Mobile Client until Gate I/J. No big-bang deletion. iOS native is a separate later gate (K). | Accepted |
+| MOBILE-D-046 | Parity is feature-based (not route-count). Tracked fields: MAUI capability, React feature, API, offline, device, authorization, role, EN/fil-PH, theme, a11y, tests, status. Personal + Owner + POS must all be tracked. | Accepted |
+| MOBILE-D-047 | Future React testing includes typecheck, lint, Vitest, Testing Library, API client, sync/offline, Playwright, PWA, axe, responsive screenshots, Android emulator and physical device, hardware and network-loss tests. iOS device testing is Gate K. | Accepted |
+| MOBILE-D-048 | Performance is principle-based (immediate scan feedback, local cart, no blocking round-trip for local cart, virtualization, bounded queries, lazy load, bundle control, minimal bridge, safe background sync, no sell-delaying animation). This track does not invent numeric SLOs. | Accepted |
+| MOBILE-D-049 | First visual checkpoint is login/workspace, sell floor, browse/search, cart, checkout, sync indicator, phone/tablet/desktop. Cursor/agent cannot self-approve screenshots; a human Product Owner/reviewer must. | Accepted |
+| MOBILE-D-050 | Implementation gates A–K each need explicit Product Owner approval where specified. Completing documentation is Gate A material only and does not authorize scaffold, PWA production, Capacitor, cutover, or MAUI retirement. | Accepted |
+| MOBILE-D-051 | Until retirement, MAUI remains the fallback. A client host change must not require a database migration by itself. Backend stays .NET; Domain/Application/Infrastructure stay. | Accepted |
 
-Later DOC packages may add IDs. They must not weaken MOBILE-D-001 through MOBILE-D-044 without Product Owner review.
+Later DOC packages may add IDs. They must not weaken MOBILE-D-001 through MOBILE-D-051 without Product Owner review.
