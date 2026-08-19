@@ -52,7 +52,8 @@ Mailpit and Development/Testing fake payments remain in place. This package does
 |---|---|---|
 | PWEB-IMPL-01 | COMPLETE | React + Vite scaffold |
 | PWEB-IMPL-02 | COMPLETE | Design system + global preferences foundation |
-| PWEB-IMPL-03 | NOT STARTED | Authentication / Sign-In |
+| PWEB-IMPL-03 | COMPLETE | Sign-In + session bootstrap |
+| PWEB-IMPL-04 | NOT STARTED | Application Shell + Navigation |
 
 ## PWEB-IMPL-02 — Design system + global preferences
 
@@ -70,3 +71,20 @@ Implemented foundation (not visually approved; first visual checkpoint is not co
 | Motion | Restrained durations; `prefers-reduced-motion` honored |
 
 Explicitly not claimed: visual approval, first visual checkpoint, Login, shell, or feature screens.
+
+## PWEB-IMPL-03 — Authentication / Sign-In
+
+Status: **COMPLETE**
+
+| Area | Record |
+|---|---|
+| Auth client | Typed `login` + `auth/me` (+ unused `logout` contract) with cookies and problem+json |
+| Session | Bootstrap via `GET /api/v1/platform/auth/me`; loading / authenticated / unauthenticated / expired |
+| Sign In | `/admin/login` with AuthLayout, RHF + Zod, password visibility |
+| Return path | Same-origin relative paths only; absolute/external URLs rejected |
+| Session expired | `/admin/login?notice=session-expired` |
+| External/social login | **DEFERRED** — complete flow appends `sessionToken=` to the return URL (`BLOCKS_CUTOVER`); buttons omitted |
+| Development Test User | **COMPLETE** for non-production only: fills email/username from `quick-login-identities`; never embeds passwords |
+| Logout UI | Not wired (CSRF `BLOCKS_FUTURE_MUTATION`) |
+
+Explicitly not claimed: visual approval, first visual checkpoint, application shell, or Dashboard.
