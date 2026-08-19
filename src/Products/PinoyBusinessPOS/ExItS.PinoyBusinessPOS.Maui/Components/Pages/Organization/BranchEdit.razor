@@ -1,12 +1,13 @@
 @page "/organization/branches/{BranchId:guid}"
 @using ExItS.DesignSystem.Components.Internal
+@using Microsoft.AspNetCore.Components
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
 @inject IStringLocalizer<PosResources> L
 @inject NavigationManager Nav
 
 <div class="pos-branches pos-branches--edit">
-    <StoreHeaderBack Href="/organization/branches" />
+    <StoreHeaderBack Href="@BackHref" />
     <Page>
         <header class="pos-branches__heading">
             <h1>@L["Branches_Edit"]</h1>
@@ -21,6 +22,8 @@
         }
         else if (_branch is not null)
         {
+            <ErrorBoundary>
+            <ChildContent>
             <section class="pos-branches__section" aria-labelledby="branch-setup-heading">
                 <h2 id="branch-setup-heading">@L["Branches_Setup"]</h2>
                 <div class="pos-branches__setup-rows" role="list">
@@ -29,13 +32,6 @@
                             @onclick="FocusDetails">
                         <span class="pos-branches__nav-label">@L["Branches_Details"]</span>
                         <span class="pos-branches__chip">@L["Branches_StatusReady"]</span>
-                        <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
-                    </button>
-                    <button type="button" class="pos-branches__nav-row" role="listitem"
-                            aria-label="@($"{L["Branches_Staff"]}, {L["Branches_StaffNotAuto"]}")"
-                            @onclick='() => Nav.NavigateTo("/org/staff")'>
-                        <span class="pos-branches__nav-label">@L["Branches_Staff"]</span>
-                        <span class="pos-branches__chip">@L["Branches_StaffNotAuto"]</span>
                         <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
                     </button>
                     <button type="button" class="pos-branches__nav-row" role="listitem"
@@ -101,34 +97,47 @@
                 </div>
             </section>
 
-            <details id="branch-details" class="exds-accordion pos-branches__fold" @key="_detailsTick" open="@_detailsOpen">
-                <summary class="exds-accordion__summary pos-branches__fold-summary">
-                    <span>@L["Branches_Details"]</span>
+            <section id="branch-details" class="pos-branches__fold">
+                <button type="button" class="pos-branches__nav-row pos-branches__fold-toggle"
+                        aria-expanded="@_detailsOpen"
+                        aria-controls="branch-details-body"
+                        @onclick="ToggleDetails">
+                    <span class="pos-branches__nav-label">@L["Branches_Details"]</span>
                     <span class="pos-branches__chip">@L["Branches_StatusReady"]</span>
                     <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
-                </summary>
-                <div class="exds-accordion__body pos-branches__fold-body">
-                    <div class="pos-branches__grid">
-                        <TextInput Label="@L["Branches_FieldName"]" @bind-Value="_name" Required />
-                        <TextInput Label="@L["Branches_ContactPhone"]" @bind-Value="_contactPhone" />
-                        <TextInput Label="@L["Branches_TimeZone"]" @bind-Value="_timeZoneId" Hint="@L["Branches_TimeZoneHint"]" Placeholder="@L["Branches_TimeZoneHint"]" />
-                        <label class="pos-branches__field">@L["Branches_ColStatus"]
-                            <select @bind="_status" disabled="@_busy">
-                                <option value="Active">@L["Branches_StatusActive"]</option>
-                                <option value="Inactive">@L["Branches_StatusInactive"]</option>
-                            </select>
-                        </label>
+                </button>
+                @if (_detailsOpen)
+                {
+                    <div id="branch-details-body" class="pos-branches__fold-body">
+                        <div class="pos-branches__grid">
+                            <TextInput Label="@L["Branches_FieldName"]" @bind-Value="_name" Required />
+                            <TextInput Label="@L["Branches_ContactPhone"]" @bind-Value="_contactPhone" />
+                            <TextInput Label="@L["Branches_TimeZone"]" @bind-Value="_timeZoneId" Hint="@L["Branches_TimeZoneHint"]" Placeholder="@L["Branches_TimeZoneHint"]" />
+                            <label class="pos-branches__field">@L["Branches_ColStatus"]
+                                <select @bind="_status" disabled="@_busy">
+                                    @foreach (var status in BranchLocationUi.StatusCodesFor(_status))
+                                    {
+                                        <option value="@status">@StatusLabel(status)</option>
+                                    }
+                                </select>
+                            </label>
+                        </div>
                     </div>
-                </div>
-            </details>
+                }
+            </section>
 
-            <details id="branch-address" class="exds-accordion pos-branches__fold" open="@_addressOpen">
-                <summary class="exds-accordion__summary pos-branches__fold-summary">
-                    <span>@L["Branches_AddressLocation"]</span>
+            <section id="branch-address" class="pos-branches__fold">
+                <button type="button" class="pos-branches__nav-row pos-branches__fold-toggle"
+                        aria-expanded="@_addressOpen"
+                        aria-controls="branch-address-body"
+                        @onclick="() => _addressOpen = !_addressOpen">
+                    <span class="pos-branches__nav-label">@L["Branches_AddressLocation"]</span>
                     <span class="pos-branches__chip">@(AddressIncomplete || MapIncomplete ? L["Branches_Required"] : L["Branches_StatusReady"])</span>
                     <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
-                </summary>
-                <div class="exds-accordion__body pos-branches__fold-body">
+                </button>
+                @if (_addressOpen)
+                {
+                    <div id="branch-address-body" class="pos-branches__fold-body">
                     <TextInput Label="@L["Branches_AddressLine1"]" @bind-Value="_address1" />
                     @if (_showAddressLine2 || !string.IsNullOrWhiteSpace(_address2))
                     {
@@ -146,7 +155,7 @@
                         <TextInput Label="@L["Branches_PostalCode"]" @bind-Value="_postalCode" />
                         <label class="pos-branches__field">@L["Branches_Country"]
                             <select @bind="_countryCode" disabled="@_busy" aria-label="@L["Branches_Country"]">
-                                <option value="">@L["Branches_None"]</option>
+                                <option value="@BranchLocationUi.UnspecifiedCode">@L["Branches_None"]</option>
                                 @foreach (var country in BranchLocationUi.CodesFor(_countryCode))
                                 {
                                     <option value="@country">@CountryName(country)</option>
@@ -172,16 +181,22 @@
                             <TextInput Label="@L["Branches_Longitude"]" @bind-Value="_longitude" Type="number" />
                         </div>
                     }
-                </div>
-            </details>
+                    </div>
+                }
+            </section>
 
-            <details id="branch-hours" class="exds-accordion pos-branches__fold" @key="_hoursTick" open="@_hoursOpen">
-                <summary class="exds-accordion__summary pos-branches__fold-summary">
-                    <span>@L["Branches_OperatingHours"]</span>
+            <section id="branch-hours" class="pos-branches__fold">
+                <button type="button" class="pos-branches__nav-row pos-branches__fold-toggle"
+                        aria-expanded="@_hoursOpen"
+                        aria-controls="branch-hours-body"
+                        @onclick="ToggleHours">
+                    <span class="pos-branches__nav-label">@L["Branches_OperatingHours"]</span>
                     <span class="pos-branches__chip" title="@HoursStatusLabel()">@CompactStatus(HoursStatusLabel())</span>
                     <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
-                </summary>
-                <div class="exds-accordion__body pos-branches__fold-body">
+                </button>
+                @if (_hoursOpen)
+                {
+                    <div id="branch-hours-body" class="pos-branches__fold-body">
                     <div class="pos-branches__hours" role="list">
                         @foreach (var day in _hours)
                         {
@@ -223,18 +238,24 @@
                                 disabled="@_busy"
                                 @onclick="OpenCopyPanel">@L["Branches_CopyHours"]</button>
                     }
-                </div>
-            </details>
+                    </div>
+                }
+            </section>
 
             @if (_readiness is not null)
             {
-                <details id="branch-fulfillment" class="exds-accordion pos-branches__fold" @key="_fulfillmentTick" open="@_fulfillmentOpen">
-                    <summary class="exds-accordion__summary pos-branches__fold-summary">
-                        <span>@L["Branches_Fulfillment"]</span>
+                <section id="branch-fulfillment" class="pos-branches__fold">
+                    <button type="button" class="pos-branches__nav-row pos-branches__fold-toggle"
+                            aria-expanded="@_fulfillmentOpen"
+                            aria-controls="branch-fulfillment-body"
+                            @onclick="ToggleFulfillment">
+                        <span class="pos-branches__nav-label">@L["Branches_Fulfillment"]</span>
                         <span class="pos-branches__chip" title="@FulfillmentRowStatus()">@FulfillmentRowStatus()</span>
                         <span class="pos-branches__nav-chevron" aria-hidden="true">@IconGlyphs.Get("back")</span>
-                    </summary>
-                    <div class="exds-accordion__body pos-branches__fold-body">
+                    </button>
+                    @if (_fulfillmentOpen)
+                    {
+                        <div id="branch-fulfillment-body" class="pos-branches__fold-body">
                         @if (!string.IsNullOrWhiteSpace(_readiness.StoreStatusMessage))
                         {
                             <p class="pos-muted pos-branches__hint">@_readiness.StoreStatusMessage</p>
@@ -355,13 +376,19 @@
                             </div>
                         }
                     </div>
-                </details>
+                    }
+                </section>
             }
 
             <div class="pos-branches__sticky-actions" role="region" aria-label="@L["Branches_SaveActions"]">
                 <Button Variant="ButtonVariant.Ghost" Disabled="_busy" OnClick="Cancel">@L["Common_Cancel"]</Button>
                 <Button Variant="ButtonVariant.Primary" Disabled="_busy" IsLoading="_busy" OnClick="SaveAsync">@L["Common_Save"]</Button>
             </div>
+            </ChildContent>
+            <ErrorContent>
+                <Alert Tone="AlertTone.Danger" Message="@L["Branches_LoadFailed"]" />
+            </ErrorContent>
+            </ErrorBoundary>
         }
     </Page>
 
@@ -437,6 +464,13 @@
 
 @code {
     [Parameter] public Guid BranchId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "return")]
+    public string? ReturnRoute { get; set; }
+
+    private string BackHref => string.Equals(ReturnRoute, "branch-settings", StringComparison.OrdinalIgnoreCase)
+        ? "/branch-settings"
+        : "/organization/branches";
     private OrganizationBranchDto? _branch;
     private BranchFulfillmentReadinessDto? _readiness;
     private readonly List<BranchHoursDayDraft> _hours = [];
@@ -459,22 +493,19 @@
     private bool _onlineOpen;
     private bool _pickupOpen;
     private bool _deliveryOpen;
-    private int _detailsTick;
-    private int _hoursTick;
-    private int _fulfillmentTick;
     private string? _error;
     private string? _success;
     private string? _code;
     private string? _name;
     private string? _contactPhone;
     private string? _timeZoneId;
-    private string? _status;
+    private string _status = "Active";
     private string? _address1;
     private string? _address2;
     private string? _city;
     private string? _region;
     private string? _postalCode;
-    private string? _countryCode;
+    private string _countryCode = BranchLocationUi.UnspecifiedCode;
     private string? _latitude;
     private string? _longitude;
     private string _minimumOrder = "0";
@@ -493,22 +524,32 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (CurrentUser.Session?.OrganizationId is not Guid orgId) { Nav.NavigateTo("/organization-select", true); return; }
-        var result = await Platform.GetBranchesAsync(orgId);
-        _branch = result.Data?.FirstOrDefault(x => x.Id == BranchId);
-        if (_branch is null) { _error = result.Error?.Detail ?? L["Branches_NotFound"]; _loading = false; return; }
-        Map(_branch);
-        await LoadFulfillmentAsync(orgId);
-        var devices = await Platform.GetPosDevicesAsync(orgId);
-        _deviceCount = devices.Data?.Count(d => d.BranchId == BranchId) ?? 0;
-        _showDeliverySettings = false;
-        _showAddressLine2 = !string.IsNullOrWhiteSpace(_address2);
-        _mapOpen = false;
-        _detailsOpen = false;
-        _addressOpen = AddressIncomplete;
-        _hoursOpen = !BranchHoursScheduleUi.HasConfiguredHours(_hours);
-        _fulfillmentOpen = false;
-        _loading = false;
+        try
+        {
+            if (CurrentUser.Session?.OrganizationId is not Guid orgId) { Nav.NavigateTo("/organization-select", true); return; }
+            var result = await Platform.GetBranchesAsync(orgId);
+            _branch = result.Data?.FirstOrDefault(x => x.Id == BranchId);
+            if (_branch is null) { _error = result.Error?.Detail ?? L["Branches_NotFound"]; return; }
+            Map(_branch);
+            await LoadFulfillmentAsync(orgId);
+            var devices = await Platform.GetPosDevicesAsync(orgId);
+            _deviceCount = devices.Data?.Count(d => d.BranchId == BranchId) ?? 0;
+            _showDeliverySettings = false;
+            _showAddressLine2 = !string.IsNullOrWhiteSpace(_address2);
+            _mapOpen = false;
+            _detailsOpen = false;
+            _addressOpen = AddressIncomplete;
+            _hoursOpen = !BranchHoursScheduleUi.HasConfiguredHours(_hours);
+            _fulfillmentOpen = false;
+        }
+        catch
+        {
+            _error = L["Branches_LoadFailed"];
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 
     private async Task LoadFulfillmentAsync(Guid orgId)
@@ -543,10 +584,12 @@
 
     private void Map(OrganizationBranchDto b)
     {
-        _code = b.Code; _name = b.Name; _status = b.Status;
+        _code = b.Code; _name = b.Name;
+        _status = BranchLocationUi.BindStatus(b.Status);
         _contactPhone = b.ContactPhone; _timeZoneId = b.TimeZoneId;
         _address1 = b.AddressLine1; _address2 = b.AddressLine2;
-        _city = b.City; _region = b.Region; _postalCode = b.PostalCode; _countryCode = b.CountryCode;
+        _city = b.City; _region = b.Region; _postalCode = b.PostalCode;
+        _countryCode = BranchLocationUi.BindCode(b.CountryCode);
         _latitude = b.Latitude?.ToString(System.Globalization.CultureInfo.InvariantCulture);
         _longitude = b.Longitude?.ToString(System.Globalization.CultureInfo.InvariantCulture);
         if (b.DeliveryPolicy is { } p)
@@ -561,7 +604,7 @@
     private static decimal D(string? value) => decimal.TryParse(value, System.Globalization.NumberStyles.Number,
         System.Globalization.CultureInfo.InvariantCulture, out var parsed) ? parsed : 0m;
 
-    private void Cancel() => Nav.NavigateTo("/organization/branches");
+    private void Cancel() => Nav.NavigateTo(BackHref);
 
     private async Task SaveAsync()
     {
@@ -571,7 +614,7 @@
         decimal? longitude = string.IsNullOrWhiteSpace(_longitude) ? null : D(_longitude);
         var updated = await Platform.UpdateBranchAsync(orgId, BranchId, new UpdateBranchRequest(
             _name.Trim(), _address1?.Trim(), _address2?.Trim(), _city?.Trim(), _region?.Trim(), _postalCode?.Trim(),
-            _countryCode?.Trim(), _status, latitude, longitude, latitude is null && longitude is null,
+            BranchLocationUi.ToStoredCode(_countryCode), _status, latitude, longitude, latitude is null && longitude is null,
             _contactPhone?.Trim(), _timeZoneId?.Trim()));
         if (!updated.IsSuccess) { _error = updated.Error?.Detail ?? L["Branches_SaveFailed"]; _busy = false; return; }
 
@@ -687,23 +730,17 @@
         _busy = false;
     }
 
-    private void FocusDetails()
-    {
-        _detailsOpen = true;
-        _detailsTick++;
-    }
+    private void FocusDetails() => _detailsOpen = true;
 
-    private void FocusHours()
-    {
-        _hoursOpen = true;
-        _hoursTick++;
-    }
+    private void ToggleDetails() => _detailsOpen = !_detailsOpen;
 
-    private void FocusFulfillment()
-    {
-        _fulfillmentOpen = true;
-        _fulfillmentTick++;
-    }
+    private void FocusHours() => _hoursOpen = true;
+
+    private void ToggleHours() => _hoursOpen = !_hoursOpen;
+
+    private void FocusFulfillment() => _fulfillmentOpen = true;
+
+    private void ToggleFulfillment() => _fulfillmentOpen = !_fulfillmentOpen;
 
     private string DeviceStatusLabel() =>
         _deviceCount == 0 ? L["Branches_DevicesNone"] : L["Branches_DevicesCount", _deviceCount];
@@ -728,6 +765,13 @@
         var localized = L[$"Branches_Country_{code}"];
         return localized.ResourceNotFound ? code : localized.Value;
     }
+
+    private string StatusLabel(string status) => status switch
+    {
+        "Inactive" => L["Branches_StatusInactive"],
+        "Archived" => L["Branches_StatusInactive"],
+        _ => L["Branches_StatusActive"]
+    };
 
     private string HoursStatusLabel() =>
         BranchHoursScheduleUi.HasConfiguredHours(_hours)
@@ -772,7 +816,7 @@
     private IEnumerable<CheckItem> DeliveryChecks()
     {
         if (_readiness is null) yield break;
-        var codes = _readiness.ReasonCodes.ToHashSet(StringComparer.Ordinal);
+        var codes = (_readiness.ReasonCodes ?? Array.Empty<string>()).ToHashSet(StringComparer.Ordinal);
         yield return new CheckItem(codes.Contains("delivery_policy_incomplete"), L["Branches_CheckDistance"]);
         yield return new CheckItem(codes.Contains("branch_address_incomplete"), L["Branches_CheckAddress"]);
         yield return new CheckItem(codes.Contains("map_location_missing"), L["Branches_CheckLocation"]);

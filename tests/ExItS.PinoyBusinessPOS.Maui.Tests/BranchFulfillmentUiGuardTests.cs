@@ -9,6 +9,7 @@ public sealed class BranchFulfillmentUiGuardTests
         var list = File.ReadAllText(Path.Combine(maui, "Components", "Pages", "Organization", "Branches.razor"));
         var edit = File.ReadAllText(Path.Combine(maui, "Components", "Pages", "Organization", "BranchEdit.razor"));
         Assert.Contains("@page \"/organization/branches\"", list, StringComparison.Ordinal);
+        Assert.Contains("Href=\"/manage-business\"", list, StringComparison.Ordinal);
         Assert.Contains("pos-branches__card", list, StringComparison.Ordinal);
         Assert.Contains("pos-branches__title-row", list, StringComparison.Ordinal);
         Assert.Contains("OpenCreate", list, StringComparison.Ordinal);
@@ -18,16 +19,25 @@ public sealed class BranchFulfillmentUiGuardTests
         Assert.DoesNotContain("L[\"Common_Edit\"]", list, StringComparison.Ordinal);
         Assert.DoesNotContain("<table", list, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("@page \"/organization/branches/{BranchId:guid}\"", edit, StringComparison.Ordinal);
+        Assert.Contains("BackHref", edit, StringComparison.Ordinal);
+        Assert.Contains("branch-settings", edit, StringComparison.Ordinal);
+        Assert.DoesNotContain("/org/staff", edit, StringComparison.Ordinal);
         Assert.Contains("PickupEnabled", edit, StringComparison.Ordinal);
         Assert.Contains("DeliveryEnabled", edit, StringComparison.Ordinal);
         Assert.Contains("pos-branches__nav-row", edit, StringComparison.Ordinal);
         Assert.Contains("FocusHours", edit, StringComparison.Ordinal);
         Assert.Contains("FocusDetails", edit, StringComparison.Ordinal);
+        Assert.Contains("ToggleDetails", edit, StringComparison.Ordinal);
+        Assert.Contains("pos-branches__fold-toggle", edit, StringComparison.Ordinal);
+        Assert.DoesNotContain("<details", edit, StringComparison.Ordinal);
         Assert.Contains("FocusFulfillment", edit, StringComparison.Ordinal);
         Assert.Contains("id=\"branch-hours\"", edit, StringComparison.Ordinal);
         Assert.Contains("id=\"branch-fulfillment\"", edit, StringComparison.Ordinal);
         Assert.Contains("Branches_AddAddressLine2", edit, StringComparison.Ordinal);
-        Assert.Contains("BranchLocationUi.CodesFor", edit, StringComparison.Ordinal);
+        Assert.Contains("BranchLocationUi.BindCode", edit, StringComparison.Ordinal);
+        Assert.Contains("BranchLocationUi.UnspecifiedCode", edit, StringComparison.Ordinal);
+        Assert.Contains("ErrorBoundary", edit, StringComparison.Ordinal);
+        Assert.Contains("finally", edit, StringComparison.Ordinal);
         Assert.Contains("Branches_DeliverySetup", edit, StringComparison.Ordinal);
         Assert.Contains("_deliveryOpen", edit, StringComparison.Ordinal);
         Assert.DoesNotContain("pos-branches__text-action", edit, StringComparison.Ordinal);
@@ -45,7 +55,7 @@ public sealed class BranchFulfillmentUiGuardTests
         Assert.Contains("Branches_OrgCatalog", edit, StringComparison.Ordinal);
         Assert.Contains("Branches_AddressLocation", edit, StringComparison.Ordinal);
         Assert.Contains("env(safe-area-inset-bottom", File.ReadAllText(Path.Combine(maui, "wwwroot", "app.css")), StringComparison.Ordinal);
-        Assert.Contains("ShellBranchSwitcher", File.ReadAllText(Path.Combine(maui, "Components", "Shared", "ShellOrganizationIdentity.razor")), StringComparison.Ordinal);
+        Assert.Contains("pos-topbar__subtitle--visible", File.ReadAllText(Path.Combine(maui, "Components", "Shared", "ShellOrganizationIdentity.razor")), StringComparison.Ordinal);
         Assert.DoesNotContain("Copy products from Main", edit, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("PickupEnabled = true", File.ReadAllText(Path.Combine(maui, "..", "ExItS.PinoyBusinessPOS.Application", "Platform", "PlatformAccessModels.cs")), StringComparison.Ordinal);
     }

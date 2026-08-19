@@ -41,6 +41,7 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.AccountScopeDenied
             or ApplicationErrorCodes.ProductEntryDenied
             or ApplicationErrorCodes.ProductLocalRoleMissing
+            or ApplicationErrorCodes.BranchAccessDenied
             or ApplicationErrorCodes.PersonalUtangUnauthorized
             or DomainErrorCodes.PersonalReminderUnauthorized
             or DomainErrorCodes.CustomerToStaffConversionDenied

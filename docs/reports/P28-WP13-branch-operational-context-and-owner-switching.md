@@ -75,10 +75,12 @@ Stock: `CheckoutSale` passes the header branch into `EnsureAvailableForSale` / `
 
 ## Densified UI
 
-- MAUI header: org title + branch subtitle ▼; bottom sheet, 44px rows, inactive status, EN + fil-PH.
-- Org summary: Current branch row + Switch; compact Enter POS blocked copy.
+> **Superseded by [P28-WP14](P28-WP14-unified-organization-branch-workspace-selection.md):** use `/workspace-select` and burger **Switch workspace**. Do not reintroduce topbar branch dropdown (`ShellBranchSwitcher` removed).
+
+- MAUI header: org title + branch subtitle (display-only); workspace accordion on `/workspace-select`, 44px rows, EN + fil-PH.
+- Org summary: Current branch row + link to workspace select; compact Enter POS blocked copy.
 - Sale checkout: `Selling at {branch}`.
-- Organization Web: one-line note that walk-in POS branch is selected on mobile. Org Web remains the management center, not checkout.
+- Organization Web: org→branch accordion on `/workspace-select`; walk-in POS branch selected on mobile.
 
 ## Remaining limitations
 

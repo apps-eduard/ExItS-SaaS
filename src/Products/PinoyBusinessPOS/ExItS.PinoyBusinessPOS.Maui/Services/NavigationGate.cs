@@ -31,7 +31,7 @@ public sealed class NavigationGate(
             // (Compact density, system theme). Open Sign-In directly for a faster first launch.
             if (string.Equals(step, nameof(OnboardingStep.OrganizationSelect), StringComparison.Ordinal))
             {
-                return "/organization-select";
+                return "/workspace-select";
             }
 
             if (string.Equals(step, nameof(OnboardingStep.AccessConfirm), StringComparison.Ordinal))
@@ -321,6 +321,7 @@ public sealed class NavigationGate(
             || path.Equals("/sales-document-education", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/reconnect", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/signin", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/workspace-select", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/organization-select", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/org", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/onboarding/business-types", StringComparison.OrdinalIgnoreCase)

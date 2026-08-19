@@ -10,16 +10,39 @@ internal static class BranchAndDeviceEndpoints
     public static IEndpointRouteBuilder MapBranchAndDeviceEndpoints(this IEndpointRouteBuilder app)
     {
         var root = app.MapGroup("/api/v1/platform/organizations/{organizationId:guid}");
-        root.MapGet("/branches", async (Guid organizationId, ListBranches useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
+        root.MapGet("/branches", async (
+            Guid organizationId,
+            ListBranches useCase,
+            PlatformOrganizationAuthz authz,
+            PlatformAuthz platformAuthz,
+            CancellationToken ct) =>
         {
             var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
-            return denied ?? Results.Ok(await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), ct).ConfigureAwait(false));
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var actor = platformAuthz.CurrentActor.PlatformUserId;
+            if (actor is null)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Authenticated Platform user is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            return Results.Ok(await useCase.ExecuteAsync(
+                PlatformOrganizationId.From(organizationId),
+                actor,
+                ct).ConfigureAwait(false));
         });
         root.MapPut("/branch-context", async (
             Guid organizationId,
             SelectBranchContextRequest body,
             SelectOrganizationBranchContext useCase,
             PlatformOrganizationAuthz authz,
+            PlatformAuthz platformAuthz,
             CancellationToken ct) =>
         {
             var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
@@ -31,10 +54,21 @@ internal static class BranchAndDeviceEndpoints
                     "BranchId cannot be an empty GUID.",
                     StatusCodes.Status400BadRequest);
             }
+
+            var actor = platformAuthz.CurrentActor.PlatformUserId;
+            if (actor is null)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Authenticated Platform user is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
             return PlatformApiResults.FromResult(
                 await useCase.ExecuteAsync(
                     PlatformOrganizationId.From(organizationId),
                     OrganizationBranchId.From(body.BranchId),
+                    actor,
                     ct).ConfigureAwait(false),
                 Results.Ok);
         });

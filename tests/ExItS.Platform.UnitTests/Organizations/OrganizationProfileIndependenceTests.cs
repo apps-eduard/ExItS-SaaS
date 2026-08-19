@@ -113,7 +113,7 @@ public sealed class OrganizationProfileIndependenceTests
         var uow = new NoOpUnitOfWork();
         var clock = new FixedClock(T0);
         var ensure = new EnsureAccountProfilesForUser(profiles, roles, memberships, uow, clock);
-        var add = new AddOrganizationMembership(users, orgs, memberships, ensure, uow, clock);
+        var add = new AddOrganizationMembership(users, orgs, memberships, new InMemoryOrganizationMembershipBranchAssignmentRepository(), ensure, uow, clock);
 
         var user = (await new CreatePlatformUser(users, uow, clock, new SequentialPublicUserIdGenerator())
             .ExecuteAsync("multi", "Multi Owner", "multi@example.com")).Value!;
@@ -143,7 +143,7 @@ public sealed class OrganizationProfileIndependenceTests
         var uow = new NoOpUnitOfWork();
         var clock = new FixedClock(T0);
         var ensure = new EnsureAccountProfilesForUser(profiles, roles, memberships, uow, clock);
-        var add = new AddOrganizationMembership(users, orgs, memberships, ensure, uow, clock);
+        var add = new AddOrganizationMembership(users, orgs, memberships, new InMemoryOrganizationMembershipBranchAssignmentRepository(), ensure, uow, clock);
 
         var ownerX = (await new CreatePlatformUser(users, uow, clock, new SequentialPublicUserIdGenerator())
             .ExecuteAsync("ownerx", "Owner X", "ownerx@example.com")).Value!;

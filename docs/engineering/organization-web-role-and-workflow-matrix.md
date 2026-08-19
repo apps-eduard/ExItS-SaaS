@@ -1,11 +1,13 @@
 # Organization Web — role and workflow matrix
 
 **Status:** Engineering remediation (Phase 25 remains Open; this is not P25-WP10 closeout).  
-**Related:** [phase-25-organization-web-admin.md](../phases/phase-25-organization-web-admin.md), [client-experience-boundaries.md](../architecture/client-experience-boundaries.md), [authorization-matrix.md](authorization-matrix.md).
+**Related:** [phase-25-organization-web-admin.md](../phases/phase-25-organization-web-admin.md), [client-experience-boundaries.md](../architecture/client-experience-boundaries.md), [authorization-matrix.md](authorization-matrix.md), [organization-branch-capability-matrix.md](organization-branch-capability-matrix.md).
 
 ## Boundary
 
 Organization Web (`:8093`) is the **business management center**.
+
+**P28-WP15A:** Full organization governance on Web does **not** require selecting the Primary branch. On Mobile, organization-wide governance entry points target **Primary/Main workspace** only; branch operations use exact selected branch context. See [organization-branch-capability-matrix.md](organization-branch-capability-matrix.md).
 
 | Allowed | Denied |
 |---|---|

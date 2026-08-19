@@ -1,0 +1,109 @@
+@page "/branch-settings"
+@using ExItS.DesignSystem.Components.Internal
+@inject ICurrentUserContext CurrentUser
+@inject IWorkspaceGovernanceGate Governance
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-branch-settings">
+    <StoreHeaderBack Href="/org" />
+    <Page>
+        @if (_loading)
+        {
+            <div class="pos-branch-settings__loading">
+                <Spinner /><span>@L["Common_Loading"]</span>
+            </div>
+        }
+        else if (_branchId is null)
+        {
+            <ErrorState Title="@L["BranchSettings_NoBranchTitle"]"
+                        Message="@L["BranchSettings_NoBranchMessage"]"
+                        RetryLabel="@L["WorkspaceSelect_SwitchMenu"]"
+                        OnRetry="GoWorkspaceSelect" />
+        }
+        else
+        {
+            <header class="pos-branch-settings__header">
+                <h1 class="pos-branch-settings__title">@L["BranchSettings_Title"]</h1>
+                <p class="pos-branch-settings__subtitle">@_branchName</p>
+            </header>
+
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <Alert Tone="AlertTone.Danger" Message="@_error" />
+            }
+
+            <nav class="pos-branch-settings__nav" role="list" aria-label="@L["BranchSettings_Title"]">
+                <button type="button" class="pos-branch-settings__row" role="listitem" @onclick="GoConfigureBranch">
+                    <span class="pos-branch-settings__row-body">
+                        <span class="pos-branch-settings__row-title">@L["BranchSettings_Configure"]</span>
+                        <span class="pos-branch-settings__row-meta pos-muted">@L["BranchSettings_ConfigureHint"]</span>
+                    </span>
+                    <span class="pos-branch-settings__chevron" aria-hidden="true">›</span>
+                </button>
+                <button type="button" class="pos-branch-settings__row" role="listitem" @onclick='() => Nav.NavigateTo("/organization/devices")'>
+                    <span class="pos-branch-settings__row-body">
+                        <span class="pos-branch-settings__row-title">@L["Branches_Devices"]</span>
+                        <span class="pos-branch-settings__row-meta pos-muted">@L["BranchSettings_DevicesHint"]</span>
+                    </span>
+                    <span class="pos-branch-settings__chevron" aria-hidden="true">›</span>
+                </button>
+            </nav>
+
+            <p class="pos-branch-settings__footnote pos-muted">@L["BranchSettings_LocalOnlyHint"]</p>
+        }
+    </Page>
+</div>
+
+@code {
+    private bool _loading = true;
+    private Guid? _branchId;
+    private string _branchName = string.Empty;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo("/signin", replace: true);
+            return;
+        }
+
+        _branchId = Governance.GetSelectedBranchId();
+        if (_branchId is not Guid branchId)
+        {
+            _loading = false;
+            return;
+        }
+
+        try
+        {
+            var orgId = CurrentUser.Session.OrganizationId.Value;
+            var branches = await Platform.GetBranchesAsync(orgId);
+            if (branches.IsSuccess && branches.Data is not null)
+            {
+                _branchName = branches.Data.FirstOrDefault(b => b.Id == branchId)?.Name
+                    ?? L["BranchContext_Fallback"].Value;
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void GoConfigureBranch()
+    {
+        if (_branchId is Guid id)
+        {
+            Nav.NavigateTo($"/organization/branches/{id:D}?return=branch-settings");
+        }
+    }
+
+    private void GoWorkspaceSelect() => Nav.NavigateTo("/workspace-select");
+}

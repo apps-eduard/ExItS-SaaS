@@ -396,7 +396,7 @@ public sealed class OrganizationScopedStaffIdentityTests
             var publicOrgIds = new FakePublicOrganizationIdGenerator();
             var tokens = new StubSessionTokenService();
             var ensure = new EnsureAccountProfilesForUser(profiles, roles, memberships, uow, clock);
-            var addMembership = new AddOrganizationMembership(users, orgs, memberships, ensure, uow, clock);
+            var addMembership = new AddOrganizationMembership(users, orgs, memberships, new InMemoryOrganizationMembershipBranchAssignmentRepository(), ensure, uow, clock);
             var products = new InMemoryProductRepository();
             var subscriptions = new InMemorySubscriptionRepository();
             var snapshots = new InMemoryEntitlementSnapshotRepository();

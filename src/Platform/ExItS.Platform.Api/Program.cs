@@ -328,6 +328,8 @@ builder.Services.AddScoped<ChangeOrganizationRole>();
 builder.Services.AddScoped<SuspendOrganizationMembership>();
 builder.Services.AddScoped<ReactivateOrganizationMembership>();
 builder.Services.AddScoped<RevokeOrganizationMembership>();
+builder.Services.AddScoped<ListMembershipBranchAssignments>();
+builder.Services.AddScoped<SetMembershipBranchAssignments>();
 builder.Services.AddScoped<OrganizationInvitationQueryService>();
 builder.Services.AddScoped<CreateOrganizationInvitation>();
 builder.Services.AddScoped<ResendOrganizationInvitation>();

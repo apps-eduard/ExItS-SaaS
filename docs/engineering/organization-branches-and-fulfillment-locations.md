@@ -42,11 +42,21 @@ Staff are not auto-assigned to a new branch. Devices stay bound to the registrat
 
 Owner/Administrator may select any Active organization branch as **management context** (`SelectedBranchId`) without rebinding the POS device and without gaining `CreateSale` / `EnterPos`. Enter POS on another branch requires a device registered for that branch. An open cashier shift blocks switching the selected operational branch.
 
+**Workspace selection (P28-WP14):** one `/workspace-select` flow chooses Organization + Branch together via `SelectWorkspaceAsync`. Burger menu **Switch workspace** is the only switch entry point; the topbar shows org + branch display-only. See [P28-WP14](../reports/P28-WP14-unified-organization-branch-workspace-selection.md).
+
+**Capability boundaries (P28-WP15A):** organization governance vs branch configuration vs branch operations, Mobile Primary vs exact-branch exposure, audit/step-up baseline — [organization-branch-capability-matrix.md](organization-branch-capability-matrix.md).
+
 See [P28-WP12 report](../reports/P28-WP12-multi-branch-customer-commerce-hardening.md) and [P28-WP13 branch operational context](../reports/P28-WP13-branch-operational-context-and-owner-switching.md).
 
 ## Management surfaces
 
 MAUI provides a dense branch list (tappable cards) and a progressive editor: compact setup/readiness rows, then expandable Details, Address & location, Operating hours, and Fulfillment. Delivery pricing is disclosed when configuring delivery. Organization Web uses the same hierarchy with a wider two-column form grid and a sticky Save bar. See [P28 branch-edit UX densification](../reports/P28-branch-edit-ux-densification.md).
+
+**Mobile navigation (P28-WP15B):**
+
+- Global branch list/create/edit for owners: **Manage business → Branches** (`/manage-business` → `/organization/branches`), Primary/Main workspace + Owner/Admin gate only.
+- Local branch configuration at any workspace: **Branch settings** (`/branch-settings`) → branch editor with `?return=branch-settings`.
+- Operational More/Org summary must not expose global branch management or org-wide governance clutter.
 
 Branch capacity remains entitlement-controlled. Primary branches cannot be treated as disposable, and archived branches cannot fulfill new orders.
 

@@ -3764,7 +3764,7 @@ html.pos-keyboard-open .pos-content {
 .pos-branch-sheet__backdrop {
     position: fixed;
     inset: 0;
-    z-index: var(--exits-z-drawer, 40);
+    z-index: var(--exits-z-dialog, 1200);
     background: rgba(15, 23, 20, 0.4);
     display: flex;
     align-items: flex-end;
@@ -3777,6 +3777,15 @@ html.pos-keyboard-open .pos-content {
     background: var(--exits-surface, #fff);
     border-radius: 0.75rem 0.75rem 0 0;
     padding: 0.4rem 0.75rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+html:has(.pos-branch-sheet) .pos-topbar {
+    z-index: var(--exits-z-dialog, 1200);
+}
+
+html:has(.pos-branch-sheet) .pos-bottom-nav {
+    pointer-events: none;
+    visibility: hidden;
 }
 
 .pos-branch-sheet__handle {
@@ -7087,6 +7096,42 @@ html.pos-keyboard-open .pos-content {
     margin: var(--exits-space-3) 0 0;
     font-size: var(--exits-text-xs, 0.75rem);
     line-height: 1.35;
+}
+
+.pos-staff__branches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.35rem;
+}
+
+.pos-staff__chip--branch {
+    padding-inline: 0.55rem;
+}
+
+.pos-staff__branch-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.pos-staff__branch-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0.35rem 0;
+}
+
+.pos-staff__branch-option input {
+    width: 1.1rem;
+    height: 1.1rem;
+}
+
+.pos-staff__sheet-error {
+    margin: 0.35rem 0 0;
+    color: var(--exits-danger, #b42318);
+    font-size: var(--exits-text-sm, 0.875rem);
 }
 
 /* ========== Cashier shifts list ================================== */
@@ -13718,6 +13763,289 @@ html:has(.pos-denom-sheet) .pos-denom-sheet {
     gap: 0.5rem;
 }
 
+/* Unified workspace selection (P28-WP14) */
+.pos-workspace-select__header {
+    margin-bottom: var(--exits-space-3, 0.75rem);
+}
+
+.pos-workspace-select__title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--exits-text, #15201a);
+}
+
+.pos-workspace-select__subtitle {
+    margin: 0.35rem 0 0;
+    font-size: 0.875rem;
+    line-height: 1.35;
+    color: var(--exits-text-muted, #5a6b62);
+}
+
+.pos-workspace-select__list,
+.pos-workspace-select__branches {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.pos-workspace-select__org + .pos-workspace-select__org {
+    margin-top: var(--exits-space-2, 0.5rem);
+}
+
+.pos-workspace-select__org-row,
+.pos-workspace-select__branch-row {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid var(--exits-border, #d8e3dc);
+    border-radius: var(--exits-radius-md, 0.5rem);
+    background: var(--exits-surface, #fff);
+    color: inherit;
+    text-align: start;
+    cursor: pointer;
+}
+
+.pos-workspace-select__org-row:disabled,
+.pos-workspace-select__branch-row:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.pos-workspace-select__org-row:hover:not(:disabled),
+.pos-workspace-select__branch-row:hover:not(:disabled),
+.pos-workspace-select__org-row:focus-visible:not(:disabled),
+.pos-workspace-select__branch-row:focus-visible:not(:disabled) {
+    border-color: var(--exits-accent, #1f7a53);
+    background: var(--exits-surface-hover, #f4faf6);
+}
+
+.pos-workspace-select__org-body,
+.pos-workspace-select__branch-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.pos-workspace-select__org-name,
+.pos-workspace-select__branch-name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pos-workspace-select__org-meta,
+.pos-workspace-select__branch-meta {
+    font-size: 0.8125rem;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pos-workspace-select__org-chevron,
+.pos-workspace-select__branch-chevron {
+    flex-shrink: 0;
+    color: var(--exits-text-muted, #5a6b62);
+    font-size: 1rem;
+}
+
+.pos-workspace-select__branches {
+    margin-top: 0.35rem;
+    padding-left: 0.35rem;
+}
+
+.pos-workspace-select__branches > li + li {
+    margin-top: 0.35rem;
+}
+
+.pos-workspace-select__branch-row {
+    min-height: 2.75rem;
+    padding-left: 0.5rem;
+}
+
+.pos-workspace-select__branch-row--current {
+    border-color: var(--exits-accent, #1f7a53);
+    background: var(--exits-accent-soft, #e8f5ee);
+}
+
+.pos-workspace-select__branch-check {
+    width: 1.1rem;
+    flex-shrink: 0;
+    text-align: center;
+    color: var(--exits-accent, #1f7a53);
+    font-weight: 700;
+}
+
+.pos-workspace-select-empty__actions {
+    margin-top: var(--exits-space-3);
+}
+
+/* Manage business hub + branch settings (P28-WP15B) */
+.pos-manage-business,
+.pos-branch-settings {
+    width: 100%;
+}
+
+.pos-manage-business__header,
+.pos-branch-settings__header {
+    margin-bottom: var(--exits-space-3, 0.75rem);
+}
+
+.pos-manage-business__title,
+.pos-branch-settings__title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--exits-text, #15201a);
+}
+
+.pos-manage-business__subtitle,
+.pos-branch-settings__subtitle {
+    margin: 0.25rem 0 0;
+    font-size: var(--exits-text-sm, 0.875rem);
+    line-height: 1.35;
+    color: var(--exits-text-muted, #5b6b62);
+}
+
+.pos-manage-business__loading,
+.pos-branch-settings__loading {
+    display: flex;
+    align-items: center;
+    gap: var(--exits-space-2, 0.5rem);
+    min-height: 2.75rem;
+}
+
+.pos-manage-business__summary-list {
+    margin: 0 0 var(--exits-space-3, 0.75rem);
+    padding: 0.35rem 0.65rem;
+    border: 1px solid var(--exits-border, #c9d4cd);
+    border-radius: var(--exits-radius-md, 0.5rem);
+    background: var(--exits-surface, #fff);
+}
+
+.pos-manage-business__summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-height: 2.75rem;
+    padding: 0.35rem 0;
+    border-top: 1px solid var(--exits-border, #c9d4cd);
+}
+
+.pos-manage-business__summary-row:first-child {
+    border-top: 0;
+}
+
+.pos-manage-business__summary-row dt {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.pos-manage-business__summary-row dd {
+    margin: 0;
+    font-size: 0.875rem;
+    text-align: right;
+}
+
+.pos-manage-business__nav,
+.pos-branch-settings__nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--exits-space-2, 0.5rem);
+    margin-bottom: var(--exits-space-3, 0.75rem);
+}
+
+.pos-manage-business__row,
+.pos-branch-settings__row {
+    display: flex;
+    align-items: center;
+    gap: var(--exits-space-2, 0.5rem);
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid var(--exits-border, #c9d4cd);
+    border-radius: var(--exits-radius-md, 0.5rem);
+    background: var(--exits-surface, #fff);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.pos-manage-business__row:hover:not(:disabled),
+.pos-branch-settings__row:hover:not(:disabled),
+.pos-manage-business__row:focus-visible:not(:disabled),
+.pos-branch-settings__row:focus-visible:not(:disabled) {
+    border-color: var(--exits-accent, #1f7a53);
+    background: var(--exits-accent-soft, #e8f5ee);
+}
+
+.pos-manage-business__row-body,
+.pos-branch-settings__row-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.pos-manage-business__row-title,
+.pos-branch-settings__row-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.pos-manage-business__row-meta,
+.pos-branch-settings__row-meta {
+    font-size: 0.8125rem;
+    line-height: 1.3;
+}
+
+.pos-manage-business__chevron,
+.pos-branch-settings__chevron {
+    flex-shrink: 0;
+    color: var(--exits-text-muted, #5b6b62);
+    font-size: 1.125rem;
+}
+
+.pos-manage-business__section-title {
+    margin: 0 0 0.35rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--exits-text-muted, #5b6b62);
+}
+
+.pos-manage-business__activity {
+    margin-bottom: var(--exits-space-3, 0.75rem);
+    padding: 0.65rem;
+    border: 1px dashed var(--exits-border, #c9d4cd);
+    border-radius: var(--exits-radius-md, 0.5rem);
+}
+
+.pos-manage-business__activity-note,
+.pos-manage-business__footnote,
+.pos-branch-settings__footnote {
+    margin: 0;
+    font-size: 0.8125rem;
+    line-height: 1.35;
+}
+
 /* Operational dashboard */
 .pos-dashboard {
     width: 100%;
@@ -15439,6 +15767,11 @@ button.pos-branches__card:focus-visible {
 .pos-branches__fold-summary {
     gap: .5rem;
     min-height: 2.75rem;
+    padding: 0;
+}
+
+.pos-branches__fold-toggle {
+    border-bottom: 0;
     padding: 0;
 }
 

@@ -26,14 +26,16 @@ internal static class OperationalBranchEndpoints
                 return problem!;
             }
 
-            PosOrganizationScope.TryGetOptionalBranchId(request, out var currentSelectedBranchId);
+            PosOrganizationScope.TryGetOptionalBranchId(request, out var headerSelectedBranchId);
+            var currentSelectedBranchId = body.FromBranchId ?? headerSelectedBranchId;
+            var deviceBoundBranchId = body.DeviceBoundBranchId;
 
             var result = await useCase.ExecuteAsync(
                     organizationId,
                     actorId,
                     body.BranchId,
                     currentSelectedBranchId,
-                    deviceBoundBranchId: null,
+                    deviceBoundBranchId,
                     ct)
                 .ConfigureAwait(false);
             return PosApiResults.FromResult(result, Results.Ok);

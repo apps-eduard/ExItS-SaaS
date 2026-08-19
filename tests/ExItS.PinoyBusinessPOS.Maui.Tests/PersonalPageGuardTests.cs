@@ -275,16 +275,16 @@ public sealed class PersonalPageGuardTests
         Assert.DoesNotContain("Personal_BackMore", settings, StringComparison.Ordinal);
         Assert.DoesNotContain("Auth_Logout", settings, StringComparison.Ordinal);
 
+        var workspaceSelect = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "WorkspaceSelect.razor"));
         var orgSelect = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "OrganizationSelect.razor"));
-        Assert.Contains("/personal/explore-pos", orgSelect, StringComparison.Ordinal);
-        Assert.DoesNotContain("GoStartBusiness", orgSelect, StringComparison.Ordinal);
-        Assert.DoesNotContain("Auth_Logout", orgSelect, StringComparison.Ordinal);
-        Assert.Contains("pos-org-select-empty", orgSelect, StringComparison.Ordinal);
-        Assert.Contains("IconGlyphs.Get(\"home\")", orgSelect, StringComparison.Ordinal);
-        Assert.Contains("Org_StaffUnknownName", orgSelect, StringComparison.Ordinal);
-        Assert.DoesNotContain("pos-org-role__row--personal", orgSelect, StringComparison.Ordinal);
-        Assert.DoesNotContain("OrgSelect_PersonalLabel", orgSelect, StringComparison.Ordinal);
-        Assert.DoesNotContain("UserId.ToString(\"D\")[..8]", orgSelect, StringComparison.Ordinal);
+        Assert.Contains("/workspace-select", orgSelect, StringComparison.Ordinal);
+        Assert.Contains("WorkspaceSelect_NoneTitle", workspaceSelect, StringComparison.Ordinal);
+        Assert.DoesNotContain("GoStartBusiness", workspaceSelect, StringComparison.Ordinal);
+        Assert.DoesNotContain("Auth_Logout", workspaceSelect, StringComparison.Ordinal);
+        Assert.Contains("pos-workspace-select-empty", workspaceSelect, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"home\")", workspaceSelect, StringComparison.Ordinal);
+        Assert.DoesNotContain("pos-org-role__row--personal", workspaceSelect, StringComparison.Ordinal);
+        Assert.DoesNotContain("OrgSelect_PersonalLabel", workspaceSelect, StringComparison.Ordinal);
     }
 
     [Fact]

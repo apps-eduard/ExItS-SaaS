@@ -7516,6 +7516,33 @@
   <data name="Org_RevokePosRole" xml:space="preserve">
     <value>Revoke</value>
   </data>
+  <data name="Org_StaffBranchesSection" xml:space="preserve">
+    <value>Mga naka-assign na branch</value>
+  </data>
+  <data name="Org_StaffBranchesAll" xml:space="preserve">
+    <value>Lahat ng active na branch</value>
+  </data>
+  <data name="Org_StaffBranchesNone" xml:space="preserve">
+    <value>Walang naka-assign na branch</value>
+  </data>
+  <data name="Org_StaffBranchesEdit" xml:space="preserve">
+    <value>Mga branch</value>
+  </data>
+  <data name="Org_StaffBranchesSave" xml:space="preserve">
+    <value>I-save ang mga branch</value>
+  </data>
+  <data name="Org_StaffBranchesSheetTitle" xml:space="preserve">
+    <value>Mga naka-assign na branch</value>
+  </data>
+  <data name="Org_StaffBranchesRequired" xml:space="preserve">
+    <value>Pumili ng kahit isang branch.</value>
+  </data>
+  <data name="Org_StaffBranchesSaveFailed" xml:space="preserve">
+    <value>Hindi ma-save ang branch assignments.</value>
+  </data>
+  <data name="Org_StaffBranchPrimary" xml:space="preserve">
+    <value>Main</value>
+  </data>
   <data name="Org_InviteTitle" xml:space="preserve">
     <value>Invite staff</value>
   </data>
@@ -10523,6 +10550,96 @@
   </data>
   <data name="BranchContext_SellingAt" xml:space="preserve">
     <value>Nagbebenta sa</value>
+  </data>
+  <data name="WorkspaceSelect_Title" xml:space="preserve">
+    <value>Pumili ng workspace</value>
+  </data>
+  <data name="WorkspaceSelect_Subtitle" xml:space="preserve">
+    <value>Piliin ang organisasyon at branch na gusto mong pamahalaan.</value>
+  </data>
+  <data name="WorkspaceSelect_SwitchMenu" xml:space="preserve">
+    <value>Magpalit ng workspace</value>
+  </data>
+  <data name="WorkspaceSelect_BranchCount" xml:space="preserve">
+    <value>{0} na branch</value>
+  </data>
+  <data name="WorkspaceSelect_PrimaryBranch" xml:space="preserve">
+    <value>Pangunahing branch</value>
+  </data>
+  <data name="WorkspaceSelect_NoneTitle" xml:space="preserve">
+    <value>Walang available na workspace</value>
+  </data>
+  <data name="WorkspaceSelect_NoAccessibleBranch" xml:space="preserve">
+    <value>Walang active na branch para sa iyong mga organisasyon.</value>
+  </data>
+  <data name="WorkspaceSelect_DiscardCartTitle" xml:space="preserve">
+    <value>I-discard ang kasalukuyang benta?</value>
+  </data>
+  <data name="WorkspaceSelect_DiscardCartMessage" xml:space="preserve">
+    <value>Tapusin o i-discard muna ang kasalukuyang benta bago magpalit ng workspace.</value>
+  </data>
+  <data name="WorkspaceSelect_DiscardAndSwitch" xml:space="preserve">
+    <value>I-discard at magpalit</value>
+  </data>
+  <data name="WorkspaceSelect_ContinueSale" xml:space="preserve">
+    <value>Ipagpatuloy ang benta</value>
+  </data>
+  <data name="ManageBusiness_Menu" xml:space="preserve">
+    <value>Pamahalaan ang negosyo</value>
+  </data>
+  <data name="ManageBusiness_Title" xml:space="preserve">
+    <value>Pamahalaan ang negosyo</value>
+  </data>
+  <data name="ManageBusiness_Subtitle" xml:space="preserve">
+    <value>Mga setting at pamamahala sa buong organisasyon.</value>
+  </data>
+  <data name="ManageBusiness_SummarySection" xml:space="preserve">
+    <value>Buod</value>
+  </data>
+  <data name="ManageBusiness_BranchCount" xml:space="preserve">
+    <value>Mga aktibong branch</value>
+  </data>
+  <data name="ManageBusiness_BranchesHint" xml:space="preserve">
+    <value>Gumawa, mag-edit, at pamahalaan ang mga lokasyon</value>
+  </data>
+  <data name="ManageBusiness_StaffAccess" xml:space="preserve">
+    <value>Staff at access</value>
+  </data>
+  <data name="ManageBusiness_StaffHint" xml:space="preserve">
+    <value>Mag-imbita ng staff at mag-assign ng role</value>
+  </data>
+  <data name="ManageBusiness_Devices" xml:space="preserve">
+    <value>Mga POS device</value>
+  </data>
+  <data name="ManageBusiness_ActivityTitle" xml:space="preserve">
+    <value>Kamakailang aktibidad</value>
+  </data>
+  <data name="ManageBusiness_ActivityHint" xml:space="preserve">
+    <value>Lalabas dito ang buod ng governance activity kapag available na.</value>
+  </data>
+  <data name="ManageBusiness_PrimaryRequired" xml:space="preserve">
+    <value>Lumipat sa primary branch workspace para pamahalaan ang negosyo sa mobile.</value>
+  </data>
+  <data name="BranchSettings_Title" xml:space="preserve">
+    <value>Mga setting ng branch</value>
+  </data>
+  <data name="BranchSettings_Configure" xml:space="preserve">
+    <value>I-configure ang lokasyong ito</value>
+  </data>
+  <data name="BranchSettings_ConfigureHint" xml:space="preserve">
+    <value>Detalye, address, oras, fulfillment</value>
+  </data>
+  <data name="BranchSettings_DevicesHint" xml:space="preserve">
+    <value>Mga register at device sa branch na ito</value>
+  </data>
+  <data name="BranchSettings_LocalOnlyHint" xml:space="preserve">
+    <value>Ang branch settings ay para lang sa napiling lokasyon.</value>
+  </data>
+  <data name="BranchSettings_NoBranchTitle" xml:space="preserve">
+    <value>Walang napiling branch</value>
+  </data>
+  <data name="BranchSettings_NoBranchMessage" xml:space="preserve">
+    <value>Pumili muna ng workspace branch bago i-configure ang branch settings.</value>
   </data>
   <data name="Org_EnterPosRoleRequired" xml:space="preserve">
     <value>Hindi kasama ang POS selling sa organization management. Mag-assign ng cashier o owner POS selling role para pumasok sa POS.</value>

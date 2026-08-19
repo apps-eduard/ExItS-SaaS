@@ -5,6 +5,7 @@ using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Common;
+using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Products;
 
@@ -115,13 +116,22 @@ public sealed class ListBranches(
     IPlatformOrganizationRepository organizations,
     EntitlementQueryService entitlements,
     IBranchFulfillmentReadinessEvaluator readinessEvaluator,
+    IOrganizationBranchAccessService branchAccess,
     IClock clock)
 {
     public async Task<IReadOnlyList<OrganizationBranchDto>> ExecuteAsync(
         PlatformOrganizationId organizationId,
+        PlatformUserId actorUserId,
         CancellationToken cancellationToken = default)
     {
         var list = await branches.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        var accessible = await branchAccess
+            .ResolveAccessibleActiveBranchIdsAsync(actorUserId, organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        if (accessible is not null)
+        {
+            list = list.Where(b => accessible.Contains(b.Id.Value)).ToList();
+        }
         var policyList = await policies.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false);
         var policiesByBranchId = policyList.ToDictionary(p => p.BranchId.Value);
         var org = await organizations.GetByIdAsync(organizationId, cancellationToken).ConfigureAwait(false);

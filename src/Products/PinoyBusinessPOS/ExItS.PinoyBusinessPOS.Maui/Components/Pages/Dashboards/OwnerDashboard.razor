@@ -120,10 +120,6 @@ else
                             <span class="pos-action-tile__label">@L["Nav_Suppliers"]</span>
                         </button>
                     }
-                    <button type="button" class="pos-action-tile" @onclick="GoStaff">
-                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
-                        <span class="pos-action-tile__label">@L["Org_StaffLink"]</span>
-                    </button>
                     <button type="button" class="pos-action-tile" @onclick="GoRegisters">
                         <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("sales")</span>
                         <span class="pos-action-tile__label">@L["Nav_Registers"]</span>
@@ -327,7 +323,6 @@ else
     private void GoInventory() => Nav.NavigateTo("/inventory");
     private void GoPurchasing() => Nav.NavigateTo("/purchasing");
     private void GoPermissions() => Nav.NavigateTo("/permissions");
-    private void GoStaff() => Nav.NavigateTo("/org/staff");
     private void GoRegisters() => Nav.NavigateTo("/registers");
     private void GoShifts() => Nav.NavigateTo("/shifts");
     private void GoSales() => Nav.NavigateTo("/sales");

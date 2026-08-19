@@ -19,6 +19,10 @@ public sealed class MoreHubUiGuardTests
         Assert.Contains("More_ToolsSection", more, StringComparison.Ordinal);
         Assert.Contains("GoRoleHome", more, StringComparison.Ordinal);
         Assert.Contains("GoOrg", more, StringComparison.Ordinal);
+        Assert.Contains("GoBranchSettings", more, StringComparison.Ordinal);
+        Assert.Contains("BranchSettings_Title", more, StringComparison.Ordinal);
+        Assert.DoesNotContain("More_BusinessSection", more, StringComparison.Ordinal);
+        Assert.DoesNotContain("GoBranches", more, StringComparison.Ordinal);
         Assert.Contains("AccountContextSwitcher", more, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ViewInventory", more, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ViewExpenses", more, StringComparison.Ordinal);

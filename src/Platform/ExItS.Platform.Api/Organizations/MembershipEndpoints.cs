@@ -437,6 +437,80 @@ internal static class MembershipEndpoints
             }
         });
 
+        return app.MapMembershipBranchAssignmentEndpoints();
+    }
+
+    private static IEndpointRouteBuilder MapMembershipBranchAssignmentEndpoints(this IEndpointRouteBuilder app)
+    {
+        app.MapGet("/api/v1/platform/organizations/{organizationId:guid}/members/{membershipId:guid}/branch-assignments", async (
+            Guid organizationId,
+            Guid membershipId,
+            ListMembershipBranchAssignments useCase,
+            PlatformMembershipAuthz membershipAuthz,
+            PlatformAuthz platformAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(OrganizationMembership),
+                membershipId.ToString("D"),
+                organizationId,
+                summary: "List staff branch assignments.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var actor = platformAuthz.CurrentActor.PlatformUserId;
+            if (actor is null)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Authenticated Platform user is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            return PlatformApiResults.FromResult(
+                await useCase.ExecuteAsync(
+                    PlatformOrganizationId.From(organizationId),
+                    OrganizationMembershipId.From(membershipId),
+                    actor,
+                    ct).ConfigureAwait(false),
+                dto => Results.Ok(dto));
+        });
+
+        app.MapPut("/api/v1/platform/organizations/{organizationId:guid}/members/{membershipId:guid}/branch-assignments", async (
+            Guid organizationId,
+            Guid membershipId,
+            SetMembershipBranchAssignmentsRequest body,
+            SetMembershipBranchAssignments useCase,
+            PlatformMembershipAuthz membershipAuthz,
+            PlatformAuthz platformAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
+                PlatformAuditActions.MembershipBranchAssignmentsUpdated,
+                nameof(OrganizationMembership),
+                membershipId.ToString("D"),
+                organizationId,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var actor = platformAuthz.CurrentActor;
+            return PlatformApiResults.FromResult(
+                await useCase.ExecuteAsync(
+                    PlatformOrganizationId.From(organizationId),
+                    OrganizationMembershipId.From(membershipId),
+                    new SetMembershipBranchAssignmentsCommand(body.BranchIds ?? []),
+                    actor.PlatformUserId?.Value.ToString("D"),
+                    ct).ConfigureAwait(false),
+                dto => Results.Ok(dto));
+        });
+
         return app;
     }
 
@@ -482,3 +556,4 @@ internal static class MembershipEndpoints
 internal sealed record AddMemberRequest(Guid UserId, string Role, string? Reason = null);
 internal sealed record ChangeRoleRequest(string Role, string? ActorReference);
 internal sealed record MembershipLifecycleRequest(string? Reason, string? ActorReference);
+internal sealed record SetMembershipBranchAssignmentsRequest(IReadOnlyList<Guid>? BranchIds);
