@@ -5,8 +5,10 @@ import {
   listOrganizationBranches,
   listOrganizationInvitations,
   listOrganizationMembers,
+  listOrganizationSubscriptions,
 } from "@/api/organizations/organization-client";
 import { ORGANIZATION_PEOPLE_PAGE_SIZE } from "@/api/organizations/organization-types";
+import type { OrganizationSubscriptionUrlState } from "@/api/organizations/subscription-list-query";
 import { env } from "@/lib/env";
 
 export const organizationDetailQueryKey = (organizationId: string) =>
@@ -88,5 +90,34 @@ export function useOrganizationInvitationsQuery(
         pageSize: ORGANIZATION_PEOPLE_PAGE_SIZE,
         signal,
       }),
+  });
+}
+
+export const organizationSubscriptionsQueryKey = (
+  organizationId: string,
+  state: OrganizationSubscriptionUrlState,
+) =>
+  [
+    "organizations",
+    "subscriptions",
+    organizationId,
+    state.page,
+    state.search,
+    state.status,
+    state.isTrial,
+    state.productCode,
+    state.sortBy,
+    state.sortDesc,
+  ] as const;
+
+export function useOrganizationSubscriptionsQuery(
+  organizationId: string | null,
+  state: OrganizationSubscriptionUrlState,
+) {
+  return useQuery({
+    queryKey: organizationSubscriptionsQueryKey(organizationId ?? "", state),
+    enabled: organizationId != null,
+    queryFn: ({ signal }) =>
+      listOrganizationSubscriptions(env.platformApiBaseUrl, organizationId!, state, signal),
   });
 }

@@ -369,6 +369,29 @@ Read-only Products/Access at `/admin/organizations/:organizationId/products` fro
 
 See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-11-organization-products-access.md`.
 
+## PWEB-IMPL-12 — Organization workspace / Subscriptions
+
+Status: **COMPLETE** after validation
+
+Read-only Subscription at `/admin/organizations/:organizationId/subscription` using org-scoped `GET .../subscriptions` with `status`, `search`, `isTrial`, `productCode`, `sortBy`, `sortDesc`, `page`, `pageSize`. No activate/cancel/plan-change. CSRF remains `BLOCKS_FUTURE_MUTATION`. Platform Admin is **WEB ONLY**. PWA is **NOT PLANNED**.
+
+| Area | Record |
+|---|---|
+| Overview | **IMPLEMENTED** |
+| Branches | **IMPLEMENTED — READ ONLY** |
+| People/Memberships | **IMPLEMENTED — READ ONLY** |
+| Products/Access | **IMPLEMENTED — READ ONLY** |
+| Subscription | **IMPLEMENTED — READ ONLY** |
+| Entitlements | **NOT STARTED** |
+| Billing | **NOT STARTED** |
+| Activity/Audit | **NOT STARTED** |
+| CSRF | `BLOCKS_FUTURE_MUTATION` |
+| Social-auth token-in-URL | `BLOCKS_CUTOVER` |
+| Platform Admin | **WEB ONLY** |
+| PWA | **NOT PLANNED** |
+
+See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-12-organization-subscriptions.md`.
+
 ## Queue
 
 | Package | Status |
@@ -383,5 +406,6 @@ See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-11-organization-products-access.m
 | PWEB-IMPL-09 — Organization workspace Branches | COMPLETE |
 | PWEB-IMPL-10 — Organization workspace People | COMPLETE |
 | PWEB-IMPL-11 — Organization workspace Products | COMPLETE |
+| PWEB-IMPL-12 — Organization workspace Subscriptions | COMPLETE |
 
-Stopped after PWEB-IMPL-11.
+Stopped after PWEB-IMPL-12.

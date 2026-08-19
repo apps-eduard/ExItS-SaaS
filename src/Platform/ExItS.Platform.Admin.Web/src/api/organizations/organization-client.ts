@@ -6,6 +6,11 @@ import {
   organizationInvitationsRequestPath,
   organizationMembersRequestPath,
 } from "@/api/organizations/people-list-query";
+import {
+  organizationSubscriptionsRequestPath,
+  type OrganizationSubscription,
+  type OrganizationSubscriptionUrlState,
+} from "@/api/organizations/subscription-list-query";
 import type {
   OrganizationBranch,
   OrganizationBranding,
@@ -355,6 +360,57 @@ export function listOrganizationInvitations(
     return {
       ...page,
       items: page.items.map(mapOrganizationInvitation),
+    };
+  });
+}
+
+export function mapOrganizationSubscription(payload: unknown): OrganizationSubscription {
+  const record = asRecord(payload);
+  if (!record) {
+    throw new Error("Invalid organization subscription.");
+  }
+  const id = readString(record, "id", "Id");
+  const organizationId = readString(record, "organizationId", "OrganizationId");
+  const productCode = readString(record, "productCode", "ProductCode");
+  const planId = readString(record, "planId", "PlanId");
+  const status = readString(record, "status", "Status");
+  if (!id || !organizationId || !productCode || !planId || !status) {
+    throw new Error("Invalid organization subscription.");
+  }
+  return {
+    id,
+    organizationId,
+    productCode,
+    planId,
+    status,
+    createdAtUtc: readString(record, "createdAtUtc", "CreatedAtUtc"),
+    updatedAtUtc: readString(record, "updatedAtUtc", "UpdatedAtUtc"),
+    trialStartUtc: readString(record, "trialStartUtc", "TrialStartUtc"),
+    trialEndUtc: readString(record, "trialEndUtc", "TrialEndUtc"),
+    paidPeriodStartUtc: readString(record, "paidPeriodStartUtc", "PaidPeriodStartUtc"),
+    paidPeriodEndUtc: readString(record, "paidPeriodEndUtc", "PaidPeriodEndUtc"),
+    currentPeriodStartUtc: readString(record, "currentPeriodStartUtc", "CurrentPeriodStartUtc"),
+    currentPeriodEndUtc: readString(record, "currentPeriodEndUtc", "CurrentPeriodEndUtc"),
+    productDisplayName: readString(record, "productDisplayName", "ProductDisplayName"),
+    planDisplayName: readString(record, "planDisplayName", "PlanDisplayName"),
+    planKey: readString(record, "planKey", "PlanKey"),
+  };
+}
+
+export function listOrganizationSubscriptions(
+  baseUrl: string,
+  organizationId: string,
+  state: OrganizationSubscriptionUrlState,
+  signal?: AbortSignal,
+): Promise<PagedResult<OrganizationSubscription>> {
+  return platformRequest<unknown>(baseUrl, {
+    path: organizationSubscriptionsRequestPath(organizationId, state),
+    signal,
+  }).then((payload) => {
+    const page = parsePagedResult<unknown>(payload);
+    return {
+      ...page,
+      items: page.items.map(mapOrganizationSubscription),
     };
   });
 }

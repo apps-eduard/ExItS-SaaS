@@ -100,6 +100,10 @@ export type AuthenticatedFetchOptions = {
   forbiddenInvitations?: boolean;
   invitationItems?: Array<Record<string, unknown>>;
   invitationTotalCount?: number;
+  failOrgSubscriptions?: boolean;
+  forbiddenOrgSubscriptions?: boolean;
+  orgSubscriptionItems?: Array<Record<string, unknown>>;
+  orgSubscriptionTotalCount?: number;
 };
 
 export function mockUnauthenticatedFetch(): void {
@@ -225,6 +229,30 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}):
         return jsonResponse(
           200,
           pagedJson(items, options.invitationTotalCount ?? items.length, items.length || 20),
+        );
+      }
+      const orgSubscriptionsGet = path.match(
+        /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/subscriptions$/,
+      );
+      if (orgSubscriptionsGet) {
+        if (options.forbiddenOrgSubscriptions) {
+          return jsonResponse(403, {
+            title: "Forbidden",
+            status: 403,
+            detail: "subscription-secret",
+          });
+        }
+        if (options.failOrgSubscriptions) {
+          return jsonResponse(500, {
+            title: "Error",
+            status: 500,
+            detail: "Subscription list failed.",
+          });
+        }
+        const items = options.orgSubscriptionItems ?? [];
+        return jsonResponse(
+          200,
+          pagedJson(items, options.orgSubscriptionTotalCount ?? items.length, items.length || 20),
         );
       }
       const organizationGet = path.match(

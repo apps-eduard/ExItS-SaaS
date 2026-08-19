@@ -10,6 +10,7 @@ import { SignInPage } from "@/features/auth/SignInPage";
 import { OrganizationBranchesPage } from "@/features/organizations/OrganizationBranchesPage";
 import { OrganizationPeoplePage } from "@/features/organizations/OrganizationPeoplePage";
 import { OrganizationProductsPage } from "@/features/organizations/OrganizationProductsPage";
+import { OrganizationSubscriptionsPage } from "@/features/organizations/OrganizationSubscriptionsPage";
 import { OrganizationOverviewPage } from "@/features/organizations/OrganizationOverviewPage";
 import { OrganizationsPage } from "@/features/organizations/OrganizationsPage";
 import { OrganizationWorkspaceLayout } from "@/features/organizations/OrganizationWorkspaceLayout";
@@ -99,6 +100,10 @@ export function App() {
                             <Route path="branches" element={<OrganizationBranchesPage />} />
                             <Route path="people" element={<OrganizationPeoplePage />} />
                             <Route path="products" element={<OrganizationProductsPage />} />
+                            <Route
+                              path="subscription"
+                              element={<OrganizationSubscriptionsPage />}
+                            />
                             <Route path="*" element={<ShellCatchAllPage />} />
                           </Route>
                         </Route>
