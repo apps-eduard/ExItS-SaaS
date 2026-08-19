@@ -97,15 +97,10 @@ export function SignInPage() {
   }
 
   return (
-    <Card className="overflow-hidden">
-      <header className="mb-5">
-        <p className="text-[length:var(--exits-text-xs)] font-semibold tracking-wide text-primary uppercase">
-          ExItS
-        </p>
-        <p className="mt-1 text-[length:var(--exits-text-sm)] text-muted">
-          {t("auth.product")} · {t("auth.productSubtitle")}
-        </p>
-        <h1 className="mt-3 text-[length:var(--exits-text-xl)] font-bold">{t("auth.signIn")}</h1>
+    <Card className="overflow-hidden shadow-md">
+      <header className="mb-4">
+        <h1 className="text-[length:var(--exits-text-xl)] font-bold">{t("auth.signIn")}</h1>
+        <p className="mt-1 text-[length:var(--exits-text-sm)] text-muted">{t("auth.signInHint")}</p>
       </header>
 
       {sessionExpired ? <Alert className="mb-4" title={t("auth.notice.sessionExpired")} /> : null}
@@ -166,7 +161,7 @@ export function SignInPage() {
               type="button"
               variant="ghost"
               size="sm"
-              className="absolute top-1/2 right-1 min-h-11 -translate-y-1/2 px-2"
+              className="absolute top-1/2 right-1 h-8 min-h-8 w-8 -translate-y-1/2 px-0"
               aria-pressed={passwordVisible}
               aria-label={passwordVisible ? t("auth.hidePassword") : t("auth.showPassword")}
               onClick={() => setPasswordVisible((current) => !current)}
@@ -188,12 +183,12 @@ export function SignInPage() {
           ) : null}
         </div>
 
-        <Button type="submit" disabled={submitting} aria-busy={submitting}>
+        <Button type="submit" className="mt-1 w-full" disabled={submitting} aria-busy={submitting}>
           {submitting ? t("auth.submitting") : t("auth.signIn")}
         </Button>
       </form>
 
-      <div className="mt-4 flex flex-col gap-2 text-[length:var(--exits-text-sm)]">
+      <div className="mt-3 flex flex-col gap-1.5 text-[length:var(--exits-text-sm)]">
         <Link
           className="text-primary underline-offset-4 hover:underline"
           to="/admin/forgot-password"

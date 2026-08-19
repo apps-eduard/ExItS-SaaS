@@ -20,7 +20,7 @@ export function OverviewPage() {
     access.canViewHealth;
 
   return (
-    <section className="grid gap-4">
+    <section className="grid gap-3">
       <PageHeader title={t("nav.overview")} description={t("overview.description")} />
 
       {access.status === "loading" ? (

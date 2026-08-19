@@ -33,7 +33,10 @@ export function AppBreadcrumbs() {
       : t("shell.notFound.title");
 
   return (
-    <nav aria-label={t("shell.breadcrumb")} className="min-w-0 overflow-hidden px-4 py-2">
+    <nav
+      aria-label={t("shell.breadcrumb")}
+      className="min-w-0 overflow-hidden border-b border-border px-4 py-1.5"
+    >
       <ol className="flex flex-wrap items-center gap-1 text-[length:var(--exits-text-sm)] text-muted">
         {isOverview ? (
           <li className="truncate text-foreground" aria-current="page">

@@ -60,7 +60,7 @@ Mailpit and Development/Testing fake payments remain in place. This package does
 | PWEB-IMPL-04B-A | COMPLETE | Production nav implemented-only correction |
 | PWEB-IMPL-04C | COMPLETE | Parallel React Local-Validation Container |
 | PWEB-IMPL-05 | COMPLETE | Dashboard |
-| PWEB-IMPL-06 | NOT STARTED | First Visual Checkpoint |
+| PWEB-IMPL-06 | AWAITING VISUAL REVIEW | First Visual Checkpoint |
 
 ## PWEB-IMPL-02 — Design system + global preferences
 
@@ -202,11 +202,28 @@ Status: **COMPLETE**
 
 See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-05-dashboard.md`.
 
+## PWEB-IMPL-06 — First visual checkpoint
+
+Status: **AWAITING VISUAL REVIEW**
+
+Cursor must **not** mark visual quality APPROVED. Product Owner + ChatGPT review is required.
+
+| Area | Record |
+|---|---|
+| 8095 integrated auth | **PASS** — cookie session on `http://localhost:8095` against `http://localhost:8091` |
+| Runtime `/config.js` | `platformApiBaseUrl` = `http://localhost:8091` |
+| CORS | `Access-Control-Allow-Origin: http://localhost:8095` with credentials |
+| Login / shell / dashboard polish | Applied for checkpoint screenshots; Gate not complete |
+| Screenshots | `docs/Platform-Admin-Web/Reports/impl-06-visual-checkpoint/` |
+| Visual status | **AWAITING PRODUCT OWNER + CHATGPT REVIEW** |
+
+See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-06-first-visual-checkpoint.md`.
+
 ## Queue
 
 | Package | Status |
 |---|---|
 | PWEB-IMPL-05 — Dashboard | COMPLETE |
-| PWEB-IMPL-06 — First Visual Checkpoint | NOT STARTED |
+| PWEB-IMPL-06 — First Visual Checkpoint | AWAITING VISUAL REVIEW |
 
-Next package: **PWEB-IMPL-06 — First Visual Checkpoint**.
+Stopped for Product Owner + ChatGPT visual review.

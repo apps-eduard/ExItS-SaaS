@@ -10,7 +10,7 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0">
         <h1 className="text-[length:var(--exits-text-xl)] font-bold">{title}</h1>
         {description ? <p className="mt-1 text-muted">{description}</p> : null}

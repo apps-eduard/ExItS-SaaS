@@ -12,18 +12,25 @@ export function AppSidebar() {
       className={cn(
         "flex h-dvh shrink-0 flex-col border-r border-border bg-surface",
         "transition-[width] duration-[var(--exits-motion-base)] ease-[var(--exits-ease)]",
-        sidebarCollapsed ? "w-16" : "w-64",
+        sidebarCollapsed ? "w-[4.25rem]" : "w-[15.25rem]",
       )}
     >
-      <div className="flex min-h-14 items-center justify-between gap-2 border-b border-border px-3">
+      <div className="flex min-h-12 items-center justify-between gap-2 border-b border-border px-2.5">
         {sidebarCollapsed ? (
-          <span className="text-sm font-bold text-primary">Ex</span>
+          <span className="grid size-8 place-items-center rounded-md bg-primary text-[length:var(--exits-text-xs)] font-bold text-primary-foreground">
+            Ex
+          </span>
         ) : (
-          <div className="min-w-0">
-            <p className="truncate text-sm font-bold">ExItS</p>
-            <p className="truncate text-[length:var(--exits-text-xs)] text-muted">
-              {t("auth.product")}
-            </p>
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="grid size-8 shrink-0 place-items-center rounded-md bg-primary text-[length:var(--exits-text-xs)] font-bold text-primary-foreground">
+              Ex
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold">ExItS</p>
+              <p className="truncate text-[length:var(--exits-text-xs)] text-muted">
+                {t("auth.product")}
+              </p>
+            </div>
           </div>
         )}
         <Button

@@ -18,7 +18,7 @@ export function AppTopBar({
   const showDev = areDevelopmentToolsAllowed();
 
   return (
-    <header className="flex min-h-14 items-center gap-2 border-b border-border bg-surface px-3">
+    <header className="flex min-h-12 items-center gap-2 border-b border-border bg-surface px-3">
       {showNavigationTrigger ? (
         <Button
           type="button"
@@ -30,10 +30,18 @@ export function AppTopBar({
         </Button>
       ) : null}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">ExItS {t("auth.product")}</p>
-        <p className="truncate text-[length:var(--exits-text-xs)] text-muted">
-          {t("auth.productSubtitle")}
-        </p>
+        {showNavigationTrigger ? (
+          <>
+            <p className="truncate text-sm font-semibold">ExItS</p>
+            <p className="truncate text-[length:var(--exits-text-xs)] text-muted">
+              {t("auth.product")}
+            </p>
+          </>
+        ) : (
+          <p className="truncate text-[length:var(--exits-text-sm)] text-muted">
+            {t("auth.productSubtitle")}
+          </p>
+        )}
       </div>
       {showDev ? (
         <span className="rounded-full border border-border px-2 py-0.5 text-[length:var(--exits-text-xs)] text-muted">
@@ -43,7 +51,12 @@ export function AppTopBar({
       <DropdownMenu
         label={t("shell.preferences")}
         trigger={
-          <Button type="button" variant="outline" size="sm">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 min-h-8 px-3 text-[length:var(--exits-text-sm)]"
+          >
             {t("shell.preferences")}
           </Button>
         }

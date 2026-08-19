@@ -35,7 +35,10 @@ export const enMessages = {
   "ui.sheet.body": "Drawer content for upcoming entity workspaces.",
   "auth.product": "Platform",
   "auth.productSubtitle": "SaaS Control Center",
+  "auth.panelHint":
+    "Platform administration for organizations, commercial status, identities, and audit.",
   "auth.signIn": "Sign In",
+  "auth.signInHint": "Use your Platform credentials to continue.",
   "auth.email": "Email",
   "auth.password": "Password",
   "auth.showPassword": "Show password",
@@ -205,7 +208,10 @@ export const filPhMessages: Record<MessageKey, string> = {
   "ui.sheet.body": "Nilalaman ng drawer para sa mga susunod na workspace.",
   "auth.product": "Platform",
   "auth.productSubtitle": "SaaS Control Center",
+  "auth.panelHint":
+    "Pamamahala ng Platform para sa mga organisasyon, katayuang komersyal, identity, at audit.",
   "auth.signIn": "Mag-sign In",
+  "auth.signInHint": "Gamitin ang iyong mga kredensyal sa Platform para magpatuloy.",
   "auth.email": "Email",
   "auth.password": "Password",
   "auth.showPassword": "Ipakita ang password",

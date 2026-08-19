@@ -18,7 +18,9 @@ export function AppShell() {
         <AppTopBar showNavigationTrigger={!desktop} onOpenNavigation={() => setDrawerOpen(true)} />
         <AppBreadcrumbs />
         <main className="min-w-0 flex-1 overflow-y-auto p-[var(--exits-page-padding)]">
-          <Outlet />
+          <div className="mx-auto w-full max-w-[86rem]">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
