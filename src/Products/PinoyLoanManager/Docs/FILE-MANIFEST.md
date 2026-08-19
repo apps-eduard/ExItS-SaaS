@@ -1,8 +1,8 @@
 # Pinoy Loan Manager — File Manifest
 
-**Status:** PLM-01 scaffold; Gates B–D2 client/PWA/Sign In/account lifecycle complete
-**Implementation present:** Product shell + React Client + online-first PWA + cookie Sign In + Personal account lifecycle; no org/product access/lending/Capacitor
-**Current work package:** PLM-CLIENT-GATE-D2 account lifecycle + Mailpit
+**Status:** PLM-01 scaffold; Gates B–D2 complete; PLM-D3-PRE Platform product registration + current-session access
+**Implementation present:** Product shell + React Client + online-first PWA + cookie Sign In + Personal account lifecycle; Platform catalog code `pinoy-loan-manager` + Local Validation fixture + current-session access API; no Gate D3 React org selector/lending/Capacitor
+**Current work package:** PLM-D3-PRE product registration + current-session product access
 
 This file is the navigation map for future Cursor work. Load this product’s `Docs/` after the shared Product Foundation reference. Do not scan PinoyBusinessPOS implementation by default.
 
@@ -125,6 +125,7 @@ Shared contracts to load with this product:
 | `Docs/Phases/README.md` | Index for phase sequencing | Foundation / Planning Only | No |
 | `Docs/Reports/README.md` | Index for WP evidence | Foundation / Planning Only | No |
 | `Docs/Reports/PLM-01-product-scaffold-and-isolation.md` | PLM-01 scaffold evidence | Scaffold complete / no lending domain | Product shell |
+| `Docs/Reports/PLM-D3-PRE-product-registration-self-access.md` | Product code + Local Validation fixture + current-session access API | PLM-D3-PRE complete; Gate D3 React not started | Platform prerequisite |
 | `Docs/Validation/README.md` | Index for validation evidence | Foundation / Planning Only | No |
 | `Docs/Operations/README.md` | Index for operations docs | Foundation / Planning Only | No |
 
@@ -140,7 +141,7 @@ Shared contracts to load with this product:
 | `ExItS.PinoyLoanManager.Api` | Created — `/health` only |
 | `ExItS.PinoyLoanManager.ApiClient` | Created — marker only |
 | `ExItS.PinoyLoanManager.Web` | Created — identity shell only; future host/BFF |
-| `ExItS.PinoyLoanManager.Client` | Created — Gates B–D2 React + PWA + cookie Sign In + Personal account lifecycle; no org/product access/lending/Capacitor |
+| `ExItS.PinoyLoanManager.Client` | Created — Gates B–D2 React + PWA + cookie Sign In + Personal account lifecycle; Gate D3 React not started |
 | `tests/ExItS.PinoyLoanManager.UnitTests` | Created |
 | `ExItS.slnx` PLM entries | Registered |
 
@@ -152,7 +153,7 @@ Shared contracts to load with this product:
 | `ExItS.PinoyLoanManager.LocalStore` | Not justified until offline is authorized |
 | Database / migration folders | Persistence not authorized (PLM-D-00-02 remains open) |
 | Docker / deploy implementation | Not authorized |
-| Platform catalog registration | Not authorized (PLM-D-00-01 remains open) |
+| Platform catalog code `pinoy-loan-manager` | **FINAL / PRODUCT OWNER APPROVED** (PLM-D-00-01). Local Validation fixture is test-only. D-P12-03 remains open. |
 | `Docs/deployment-notes.md` | Optional until packaging |
 | Exact grant identifiers / custom roles | Open (PLM-D-00-06) |
 | Small-org vs two-person high-risk approval | Open (PLM-D-00-13) |

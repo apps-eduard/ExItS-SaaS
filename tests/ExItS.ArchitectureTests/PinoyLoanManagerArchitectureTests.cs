@@ -85,6 +85,26 @@ public sealed class PinoyLoanManagerArchitectureTests
         Assert.DoesNotContain("ExItS.PinoyLoanManager.LocalStore.csproj", slnx, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Platform_product_code_registers_pinoy_loan_manager_independently_of_pos()
+    {
+        var root = FindRepositoryRoot();
+        var productCode = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Domain", "Products", "ProductCode.cs"));
+        Assert.Contains("PinoyBusinessPos = \"pinoy-business-pos\"", productCode, StringComparison.Ordinal);
+        Assert.Contains("PinoyLoanManager = \"pinoy-loan-manager\"", productCode, StringComparison.Ordinal);
+
+        var auth = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Api", "Identity", "AuthEndpoints.cs"));
+        Assert.Contains("/api/v1/platform/auth/product-access/effective", auth, StringComparison.Ordinal);
+        Assert.Contains("EvaluateCurrentSessionProductAccess", auth, StringComparison.Ordinal);
+
+        var productRoot = Path.Combine(root, "src", "Products", "PinoyLoanManager");
+        Assert.Empty(Directory.GetFiles(productRoot, "*Migration*.cs", SearchOption.AllDirectories)
+            .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                        && !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)));
+    }
+
     private static string FindRepositoryRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);

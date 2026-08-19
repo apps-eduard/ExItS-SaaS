@@ -7,8 +7,8 @@
 |---|---|
 | Product | Pinoy Loan Manager |
 | Current phase | PLM-01 Product Scaffold & Isolation (complete); PLM-01A client architecture (this package) |
-| Current work package | PLM-CLIENT-GATE-D2 account lifecycle + Mailpit |
-| Status | PLM-00 accepted; PLM-01 scaffolded; PLM-01A approved; Gates B, C, D0, D1, and D2 complete; PLM-02 and Capacitor not started |
+| Current work package | PLM-D3-PRE product registration + current-session product access |
+| Status | PLM-00 accepted; PLM-01 scaffolded; PLM-01A approved; Gates B, C, D0, D1, and D2 complete; PLM-D3-PRE complete; Gate D3 React **NOT COMPLETE**; Gate E and PLM-02 not started |
 
 ## Phase objective
 
@@ -77,7 +77,7 @@ PLM-00 documentation phase is complete. PLM-01 scaffold is complete. PLM-01A is 
 
 | Dependency | Notes |
 |---|---|
-| Platform subscription for `pinoy-loan-manager` | Required; registration open (PLM-D-00-01) |
+| Platform subscription for `pinoy-loan-manager` | Catalog code **FINAL / PRODUCT OWNER APPROVED** (PLM-D-00-01). Independent Local Validation fixture exists. Production commercial policy and D-P12-03 transport remain open. |
 | Product-owner decisions | PLM-D-00-02, PLM-D-00-04 through PLM-D-00-08, PLM-D-00-11 through PLM-D-00-13 (PLM-D-00-03, PLM-D-00-09, and PLM-D-00-10 closed) |
 | D-P12-03 / R-091 / D-P12-05 | Portfolio-open; do not invent |
 
@@ -121,8 +121,9 @@ Does **not** replace the core business roadmap above. Detail: [Architecture/reac
 | PLM-CLIENT-GATE D0 Browser session auth transport | **Complete** |
 | PLM-CLIENT-GATE D1 Sign In / session UI + Local Validation Test User | **Complete** |
 | PLM-CLIENT-GATE D2 Register/Activate/Forgot/Reset + Mailpit callback routing | **Complete** |
-| PLM-CLIENT-GATE D Auth + org/product access (remaining) | Not started |
-| PLM-CLIENT-GATE E First lending slice + visual review | Not started |
+| PLM-D3-PRE Product registration + session-bound access prerequisite | **Complete** (this package) |
+| PLM-CLIENT-GATE D3 Auth + org/product access | **BLOCKER RESOLUTION IN PROGRESS / NOT COMPLETE** — do not start React org selector until reviewed |
+| PLM-CLIENT-GATE E First lending slice + visual review | **NOT STARTED** |
 | PLM-CLIENT-GATE F Responsive/field workflows | Not started |
 | PLM-CLIENT-GATE G Capacitor Android shell | Not started |
 | PLM-CLIENT-GATE H Physical Android validation | Not started |
@@ -133,9 +134,9 @@ Offline financial operation remains **PLM-13**.
 
 ## Exact next package
 
-**STOPPED AFTER PLM-CLIENT-GATE-D2.** Do not start organization/product access, Capacitor, or PLM-02 from this package.
+**STOPPED AFTER PLM-D3-PRE.** Do not automatically resume Gate D3 React (organization selector / product-access UI). Do not start Gate E, Capacitor, or PLM-02 from this package.
 
-Recommended later order when separately authorized: remaining Gate D org/product access, then PLM-02.
+Recommended later order when separately authorized: remaining Gate D3 org/product access UI, then PLM-02.
 
 PLM-02 still consumes Platform actor/org/product access without Platform table reads. Do not invent D-P12-03.
 

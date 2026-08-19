@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using ExItS.Platform.Api.Authentication;
 using ExItS.Platform.Api.Common;
+using ExItS.Platform.Application.Access;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Organizations;
@@ -119,6 +120,21 @@ internal static class AuthEndpoints
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         })
         .AllowAnonymous();
+
+        // Browser self-access: binds only productCode. Never bind or trust userId/organizationId.
+        app.MapGet("/api/v1/platform/auth/product-access/effective", async (
+            string? productCode,
+            HttpContext http,
+            EvaluateCurrentSessionProductAccess useCase,
+            IOptions<PlatformSessionOptions> sessionOptions,
+            CancellationToken ct) =>
+        {
+            var token = ExtractSessionToken(http, sessionOptions.Value);
+            var result = await useCase.ExecuteAsync(token, productCode, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        })
+        .AllowAnonymous()
+        .DisableRateLimiting();
 
         app.MapPost("/api/v1/platform/auth/change-password", async (
             ChangePasswordRequest body,

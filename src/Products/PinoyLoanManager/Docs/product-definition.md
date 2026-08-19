@@ -6,10 +6,10 @@
 | Field | Value |
 |---|---|
 | Product name | Pinoy Loan Manager |
-| Platform product code | `pinoy-loan-manager` (proposed — **Status: Open / Product Owner Decision Required**, PLM-D-00-01) |
+| Platform product code | `pinoy-loan-manager` (**FINAL / PRODUCT OWNER APPROVED**, PLM-D-00-01) |
 | Docs root | `src/Products/PinoyLoanManager/Docs/` |
 | Status | PLM-00 accepted; PLM-01 shell scaffolded; PLM-01A client architecture approved; no lending implementation |
-| Last updated | 2026-08-19 |
+| Last updated | 2026-08-20 |
 | Implementation present | Product shell + React Client + online-first PWA + cookie Sign In + Personal account lifecycle — no org/product access/lending/Capacitor |
 
 ## Purpose and users
@@ -33,7 +33,7 @@ ExItS Platform
 |---|---|---|
 | Identity / production auth | Platform | **DECISION:** R-091 open — do not claim production-secure auth. Keep Dev/Testing vs Production language honest (D-P12-05). |
 | Organizations | Platform | Product will store organization id as a `Guid` reference / contract only. Field name **Status: Open / Product Owner Decision Required**. |
-| Catalog / plans / subscription | Platform | **Required:** independent subscription for this product only. Catalog registration of `pinoy-loan-manager` is not done (PLM-D-00-01). |
+| Catalog / plans / subscription | Platform | **Required:** independent subscription for this product only. Catalog code `pinoy-loan-manager` is **FINAL / PRODUCT OWNER APPROVED** (PLM-D-00-01). Local Validation may seed a test-only commercial fixture; that fixture is not production pricing/plans/grants. |
 | Entitlements / commercial access | Platform facts | **DECISION:** D-P12-03 commercial-state transport — do not invent. Platform entitlement does not replace Loan product-local authorization. |
 | SaaS billing payments | Platform | Never store product operational money in Platform SaaS billing. |
 | Operational workflows / roles / money | **This product** | Not implemented. Role presets + grant **intent** recorded; identifiers open (PLM-D-00-06). Cashier Session and collector cash accountability recorded; schema open (PLM-D-00-07). |

@@ -31,6 +31,7 @@ public sealed class InitializeLocalValidationDataset
     private readonly CreateProduct _createProduct;
     private readonly IProductRepository _products;
     private readonly EnsureMvpPosPlans _ensureMvpPosPlans;
+    private readonly EnsurePlmLocalValidationCatalog _ensurePlmCatalog;
     private readonly CreateTrialDefinition _createTrial;
     private readonly StartTrialSubscription _startTrial;
     private readonly GenerateEntitlementSnapshot _generateSnapshot;
@@ -73,6 +74,7 @@ public sealed class InitializeLocalValidationDataset
         CreateProduct createProduct,
         IProductRepository products,
         EnsureMvpPosPlans ensureMvpPosPlans,
+        EnsurePlmLocalValidationCatalog ensurePlmCatalog,
         CreateTrialDefinition createTrial,
         StartTrialSubscription startTrial,
         GenerateEntitlementSnapshot generateSnapshot,
@@ -114,6 +116,7 @@ public sealed class InitializeLocalValidationDataset
         _createProduct = createProduct;
         _products = products;
         _ensureMvpPosPlans = ensureMvpPosPlans;
+        _ensurePlmCatalog = ensurePlmCatalog;
         _createTrial = createTrial;
         _startTrial = startTrial;
         _generateSnapshot = generateSnapshot;
@@ -200,12 +203,32 @@ public sealed class InitializeLocalValidationDataset
                 var organization = await EnsureOrganizationAsync(orgDef, cancellationToken).ConfigureAwait(false);
                 organizations[orgDef.Slug] = organization;
                 await EnsureCatalogAndCommercialAsync(organization.Id, productCode, cancellationToken).ConfigureAwait(false);
+                if (string.Equals(
+                        orgDef.Slug,
+                        LocalValidationOrganizationCatalog.AbcSariSariSlug,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    if (organization.Status == OrganizationStatus.Active)
+                    {
+                        await _ensurePlmCatalog.EnsureCommercialAsync(organization.Id, cancellationToken)
+                            .ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        _logger.LogWarning(
+                            "Skipping PLM Local Validation commercial fixture for '{Slug}' because organization status is {Status}. Closed catalog organizations cannot be reopened.",
+                            orgDef.Slug,
+                            organization.Status);
+                    }
+                }
             }
         }
         else
         {
             await EnsureReferenceCatalogAsync(productCode, cancellationToken).ConfigureAwait(false);
         }
+
+        await _ensurePlmCatalog.EnsureReferenceAsync(cancellationToken).ConfigureAwait(false);
 
         var identities = LocalValidationOptions.IdentitiesForSeedScope(seedScope);
         var usersByKey = new Dictionary<string, PlatformUser>(StringComparer.OrdinalIgnoreCase);
@@ -555,6 +578,12 @@ public sealed class InitializeLocalValidationDataset
         {
             await EnsureProductAccessAsync(organization.Id, userId, productCode, ct).ConfigureAwait(false);
         }
+
+        if (identity.GrantPlmProductAccess)
+        {
+            await EnsureProductAccessAsync(organization.Id, userId, ProductCode.PinoyLoanManager, ct)
+                .ConfigureAwait(false);
+        }
     }
 
     private async Task ReconcileOrganizationAccessAsync(
@@ -649,6 +678,32 @@ public sealed class InitializeLocalValidationDataset
                 {
                     await _revokeProductAccess
                         .ExecuteAsync(access.Id, LocalValidationOptions.Actor, "local-validation single-scope reconcile", ct)
+                        .ConfigureAwait(false);
+                }
+            }
+
+            if (identity.GrantPlmProductAccess)
+            {
+                await EnsureProductAccessAsync(org.Id, userId, ProductCode.PinoyLoanManager, ct)
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                var plmAccess = await _accessAssignments
+                    .FindActiveByUserOrganizationProductAsync(
+                        userId,
+                        org.Id,
+                        ProductCode.Create(ProductCode.PinoyLoanManager),
+                        ct)
+                    .ConfigureAwait(false);
+                if (plmAccess is not null)
+                {
+                    await _revokeProductAccess
+                        .ExecuteAsync(
+                            plmAccess.Id,
+                            LocalValidationOptions.Actor,
+                            "local-validation single-scope reconcile",
+                            ct)
                         .ConfigureAwait(false);
                 }
             }

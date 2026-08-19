@@ -62,7 +62,7 @@ PLM-01A is documentation only. Do not start PLM-02, Gate B, or Capacitor until s
 
 | Dependency | Type | Notes |
 |---|---|---|
-| Platform catalog / subscription | Platform | Independent subscription required; slug registration open (PLM-D-00-01) |
+| Platform catalog / subscription | Platform | Independent subscription required; catalog code `pinoy-loan-manager` **FINAL / PRODUCT OWNER APPROVED** (PLM-D-00-01). Production commercial policy remains open. |
 | Commercial-state transport | **DECISION D-P12-03** | Provisional patterns only; do not invent final |
 | Production authentication | **R-091** | Keep Dev/Testing language honest (D-P12-05) |
 | Personal / cross-product relationship model | Platform + product | Open (PLM-D-00-04, PLM-D-00-05) |

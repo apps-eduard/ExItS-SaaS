@@ -6,7 +6,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Last updated | 2026-08-19 |
+| Last updated | 2026-08-20 |
 
 ## Portfolio items (always preserve until closed upstream)
 
@@ -20,7 +20,7 @@
 
 | ID | Type | Description | Current state | Impact | Owner / decision point | Evidence | Resolution criteria |
 |---|---|---|---|---|---|---|---|
-| PLM-D-00-01 | Decision | Product code/slug final registration (`pinoy-loan-manager` proposed) | Open / Product Owner Decision Required | Catalog, plans, independent subscription | Product owner + Platform catalog WP | None | Slug registered; docs match |
+| PLM-D-00-01 | Decision | Product code/slug final registration (`pinoy-loan-manager`) | **CLOSED / PRODUCT OWNER APPROVED** | Catalog, plans, independent subscription | Product owner + Platform catalog WP | Product Owner approval 2026-08-20; `ProductCode.PinoyLoanManager`; PLM-D3-PRE commit | Final Platform product code `pinoy-loan-manager` registered; docs match |
 | PLM-D-00-02 | Decision | Database name final approval (`ExItS_PinoyLoanManager` proposed); schema unset | Open / Product Owner Decision Required | Persistence, migrations, operations | Product owner + architecture WP | None | Name/schema approved; database still not created until an authorized persistence WP |
 | PLM-D-00-03 | Decision | Physical source/test/deploy layout beside `Docs/` | **Closed** | PLM-01 scaffold | Architecture WP | Scaffold created `ExItS.PinoyLoanManager.{Domain,Application,Infrastructure,Api,ApiClient,Web}` plus unit tests; MAUI/LocalStore not created | Layout proven by scaffold. Preferred client path later closed by PLM-D-00-09 (React + PWA + Capacitor; MAUI not preferred). |
 | PLM-D-00-04 | Decision | Generic Platform cross-product relationship model | Open / Product Owner Decision Required | Personal as POS Customer, Loan Borrower, and future BNPL Customer | Platform architecture WP — do not design in PLM | Conceptual diagram only | Approved Platform contract/schema, not invented here |
@@ -33,6 +33,14 @@
 | PLM-D-00-11 | Decision | External legal/compliance validation | Open / Product Owner Decision Required | Production use | Product owner + external counsel | No rates/workflows claimed compliant | Written legal/compliance validation before Production |
 | PLM-D-00-12 | Decision | Exact money rounding mode | Open / Product Owner Decision Required | Calculation engine | Product owner + accounting | Decimal money; boundaries recorded; midpoint algorithm **not** chosen | Explicit rounding-mode decision before engine implementation |
 | PLM-D-00-13 | Decision | Small-org vs two-person high-risk approval | Open / Product Owner Decision Required | Operational SoD | Product owner | Multiple presets on one person allowed; high-risk self-approval still restricted where required | Explicit policy for which actions may never be self-approved |
+
+### PLM-D-00-01 close (2026-08-20)
+
+**CLOSED / PRODUCT OWNER APPROVED.** Final Platform product code: `pinoy-loan-manager`.
+
+This closes **only** the product-code decision. It does **not** close D-P12-03, R-091, D-P12-05, PLM-D-00-02, PLM-D-00-04 through PLM-D-00-08, or PLM-D-00-11 through PLM-D-00-13. Local Validation catalog/plan/trial/zero-price/empty-grant values are test-only schema fixtures, not production commercial policy.
+
+The current-session browser API `GET /api/v1/platform/auth/product-access/effective` is a self access check for the cookie session. It is **not** Platform→PLM product-server commercial-state transport. **D-P12-03 remains OPEN.**
 
 ## Accepted engineering / planning baselines (WP04)
 
@@ -248,6 +256,6 @@ Do **not** close remaining items by guessing. Do **not** claim legal compliance.
 - Prefer stable IDs (`R-…`, `D-…`, `PLM-D-…`).
 - “Closed” requires repository or operator evidence plus explicit approval.
 - Unresolved policy in approved docs must appear here as open decisions.
-- Do not close PLM-D-00-01, PLM-D-00-02, PLM-D-00-04 through PLM-D-00-08, PLM-D-00-11 through PLM-D-00-13, D-P12-03, R-091, or D-P12-05 without explicit approval.
+- PLM-D-00-01 is **CLOSED / PRODUCT OWNER APPROVED**. Do not close PLM-D-00-02, PLM-D-00-04 through PLM-D-00-08, PLM-D-00-11 through PLM-D-00-13, D-P12-03, R-091, or D-P12-05 without explicit approval.
 - PLM-D-00-03 is **Closed** (scaffold layout). PLM-D-00-09 is **Closed / Product Owner Approved** (React + PWA + Capacitor client). PLM-D-00-10 is **Closed / Product Owner Accepted** (documentation baseline only).
 - ADRs belong in `Docs/Decisions/`. Category indexes under `Docs/*/README.md` are not ADRs.

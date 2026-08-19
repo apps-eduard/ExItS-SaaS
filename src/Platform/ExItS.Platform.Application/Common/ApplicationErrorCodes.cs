@@ -61,6 +61,7 @@ public static class ApplicationErrorCodes
     public const string ConcurrencyConflict = "application.concurrency_conflict";
     public const string OrganizationNotEligible = "application.organization.not_eligible";
     public const string OrganizationContextNotEligible = "application.auth.organization_context_not_eligible";
+    public const string OrganizationContextRequired = "application.auth.organization_context_required";
     public const string ProductNotActive = "application.product.not_active";
 
     public const string UnsupportedContractVersion = "application.contract.version.unsupported";

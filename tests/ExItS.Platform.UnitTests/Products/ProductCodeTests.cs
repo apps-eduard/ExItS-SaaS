@@ -37,6 +37,17 @@ public sealed class ProductCodeTests
         Assert.Equal(a, b);
         Assert.Equal("other-product", a.Value);
         Assert.Equal(ProductCode.PinoyBusinessPos, ProductCode.Create("pinoy-business-pos").Value);
+        Assert.Equal(ProductCode.PinoyLoanManager, ProductCode.Create("pinoy-loan-manager").Value);
+    }
+
+    [Fact]
+    public void PinoyLoanManager_constant_is_independent_valid_product_code()
+    {
+        Assert.Equal("pinoy-loan-manager", ProductCode.PinoyLoanManager);
+        Assert.NotEqual(ProductCode.PinoyBusinessPos, ProductCode.PinoyLoanManager);
+        var code = ProductCode.Create(ProductCode.PinoyLoanManager);
+        Assert.Equal("pinoy-loan-manager", code.Value);
+        Assert.Equal(code, ProductCode.Create("Pinoy-Loan-Manager"));
     }
 
     [Fact]

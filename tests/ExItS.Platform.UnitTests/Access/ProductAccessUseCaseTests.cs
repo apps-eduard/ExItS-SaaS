@@ -97,6 +97,22 @@ public sealed class ProductAccessUseCaseTests
             "other-product",
             SubscriptionStatus.Active,
             [view]));
+        Assert.True(ProductAccessEligibility.CanEnterProduct(
+            ProductCode.PinoyLoanManager,
+            SubscriptionStatus.Trialing,
+            []));
+        Assert.True(ProductAccessEligibility.CanEnterProduct(
+            ProductCode.PinoyLoanManager,
+            SubscriptionStatus.Active,
+            []));
+        Assert.False(ProductAccessEligibility.CanEnterProduct(
+            ProductCode.PinoyLoanManager,
+            SubscriptionStatus.Expired,
+            []));
+        Assert.False(ProductAccessEligibility.CanEnterProduct(
+            ProductCode.PinoyLoanManager,
+            SubscriptionStatus.GracePeriod,
+            [view]));
     }
 
     [Fact]
@@ -375,7 +391,7 @@ public sealed class ProductAccessUseCaseTests
         Assert.Equal(ProductAccessStatus.Revoked, assignment.Status);
     }
 
-    private sealed class AccessHarness
+    internal sealed class AccessHarness
     {
         public required InMemoryPlatformUserRepository Users { get; init; }
         public required InMemoryPlatformOrganizationRepository Organizations { get; init; }

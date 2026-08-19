@@ -5,7 +5,7 @@
 
 | Field | Value |
 |---|---|
-| Product | Pinoy Loan Manager / `pinoy-loan-manager` (proposed, PLM-D-00-01) |
+| Product | Pinoy Loan Manager / `pinoy-loan-manager` (**FINAL / PRODUCT OWNER APPROVED**, PLM-D-00-01) |
 | Database | `ExItS_PinoyLoanManager` (proposed) / schema **Status: Open / Product Owner Decision Required** (PLM-D-00-02) |
 | Status | PLM-00 accepted; PLM-01 shell scaffolded; PLM-01A client architecture approved; no lending implementation |
 | Implementation present | Product shell + React Client + online-first PWA + cookie Sign In + Personal account lifecycle — no org/product access/lending/Capacitor |
