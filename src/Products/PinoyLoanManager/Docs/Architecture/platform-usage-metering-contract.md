@@ -103,7 +103,7 @@ Before emitting `LOAN_DISBURSED`, PLM must have:
 - satisfied disbursement readiness and authorization rules
 - recorded audit evidence
 
-If disbursement is reversed, PLM emits the reversal/cancellation event in the same durable pattern. Platform usage must not remain overstated.
+If a previously billable Disbursement is reversed, PLM emits `LOAN_DISBURSEMENT_REVERSED` using the same durable pattern. A pre-release cancellation emits no Platform usage-metering event. Platform usage must not remain overstated.
 
 ---
 
