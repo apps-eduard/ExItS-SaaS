@@ -1,6 +1,6 @@
 # Pinoy Loan Manager — Product Documentation
 
-Authoritative product docs for **Pinoy Loan Manager** (`pinoy-loan-manager`, proposed).
+Authoritative product docs for **Pinoy Loan Manager** (`pinoy-loan-manager`).
 
 Always load with:
 
@@ -11,7 +11,7 @@ Always load with:
 5. The active work-package prompt/report
 6. Files required for the task only
 
-**Status:** Draft — PLM-00 documentation complete; not product-owner approved; no implementation
+**Status:** PLM MVP Product planning documentation complete (PLM-DOC-01–11); **PLM-D-00-10 Closed / Product Owner Accepted**; implementation absent and paused pending Gate A
 **Implementation present:** No
 **Documentation root:** `src/Products/PinoyLoanManager/Docs/` (D-P12-02)
 
@@ -26,7 +26,7 @@ Pinoy Loan Manager is a **separate first-class ExItS SaaS product**, a sibling o
 | [product-definition.md](product-definition.md) | Purpose, ownership, boundaries, exclusions |
 | [architecture.md](architecture.md) | System, data, Personal/Borrower, and client boundaries |
 | [security.md](security.md) | Security, privacy, consent |
-| [authorization-matrix.md](authorization-matrix.md) | Access layers; role presets and grant **intent**; identifiers open |
+| [authorization-matrix.md](authorization-matrix.md) | Access layers; MVP preset matrix (**PLM-D-00-06 Closed for MVP**) |
 | [development-plan.md](development-plan.md) | Delivery buckets and testing expectations |
 | [roadmap.md](roadmap.md) | Phases and work packages |
 | [risks-and-decisions.md](risks-and-decisions.md) | Open risks and decisions |
@@ -41,18 +41,38 @@ Agreed operating-model direction (not implementation specs):
 | [Product/collector-cash-and-reconciliation.md](Product/collector-cash-and-reconciliation.md) | Loan ledger vs collector cash |
 | [Product/penalty-exception-and-waiver-model.md](Product/penalty-exception-and-waiver-model.md) | Penalty, exception, waiver, reversal, post-maturity |
 | [Architecture/application-surface-model.md](Architecture/application-surface-model.md) | Platform Admin, Org Web, MAUI, Personal |
-| [Product/financial-calculation-baseline.md](Product/financial-calculation-baseline.md) | Money terms, interest-treatment modes, precision |
-| [Product/payment-and-allocation-model.md](Product/payment-and-allocation-model.md) | Partial payments, oldest-due, reversals, idempotency |
-| [Product/schedule-maturity-and-settlement.md](Product/schedule-maturity-and-settlement.md) | Schedule, calendar, maturity, settlement |
+| [Product/financial-calculation-baseline.md](Product/financial-calculation-baseline.md) | Money terms; pointer to PLM-DOC-02 policies |
+| [Product/interest-and-finance-charge-policy.md](Product/interest-and-finance-charge-policy.md) | MVP methods, formulas, interest treatments |
+| [Product/fees-and-net-proceeds-policy.md](Product/fees-and-net-proceeds-policy.md) | Fee bases/treatments; Net Proceeds; Platform charge separation |
+| [Product/payment-allocation-and-prepayment-policy.md](Product/payment-allocation-and-prepayment-policy.md) | Oldest-due allocation; component order; advance/overpayment |
+| [Product/early-settlement-and-principal-prepayment-policy.md](Product/early-settlement-and-principal-prepayment-policy.md) | Settlement Quote, rebate, principal prepayment |
+| [Product/reversal-refund-and-correction-policy.md](Product/reversal-refund-and-correction-policy.md) | Payment reversal, Refund Payable, cash refund |
+| [Product/cash-variance-and-session-close-policy.md](Product/cash-variance-and-session-close-policy.md) | Expected vs actual cash; close-with-variance |
+| [Product/disbursement-cancellation-and-reversal-policy.md](Product/disbursement-cancellation-and-reversal-policy.md) | Cancel before release; reverse after recovery |
+| [Product/money-precision-and-rounding-policy.md](Product/money-precision-and-rounding-policy.md) | Decimal money; To Even; schedule reconciliation |
+| [Product/payment-and-allocation-model.md](Product/payment-and-allocation-model.md) | Partial payments, posting notes, reversals, idempotency |
+| [Product/schedule-maturity-and-settlement.md](Product/schedule-maturity-and-settlement.md) | Schedule, calendar, maturity, settlement (index) |
+| [Product/schedule-and-collection-calendar-policy.md](Product/schedule-and-collection-calendar-policy.md) | Frequencies, collection calendar, first due, exceptions |
+| [Product/delinquency-and-missed-payment-policy.md](Product/delinquency-and-missed-payment-policy.md) | Past Due, DPD, missed-day counter, grace |
+| [Product/penalty-assessment-and-cap-policy.md](Product/penalty-assessment-and-cap-policy.md) | Tiers, bases, caps, waiver vs reversal |
+| [Product/maturity-and-post-maturity-policy.md](Product/maturity-and-post-maturity-policy.md) | Maturity Date, Matured Past Due, post-maturity modes |
 | [Product/loan-lifecycle-model.md](Product/loan-lifecycle-model.md) | Origination vs lifecycle vs delinquency |
 | [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md) | Operational subledger and balance components |
-| [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md) | Owner/Manager/Cashier/Collector presets; grant catalog intent |
+| [Architecture/operational-subledger-and-accounting-boundary.md](Architecture/operational-subledger-and-accounting-boundary.md) | Loan vs cash ledgers; PLM is not a complete GL |
+| [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md) | Index to PLM Authorization Policy v1 |
+| [Security/authorization-grant-catalog.md](Security/authorization-grant-catalog.md) | Exact MVP grant identifiers |
+| [Security/default-role-preset-policy.md](Security/default-role-preset-policy.md) | Role codes and default preset assignments |
+| [Security/resource-scope-and-data-minimization-policy.md](Security/resource-scope-and-data-minimization-policy.md) | Scope types and data minimization |
+| [Security/privileged-access-and-owner-recovery-policy.md](Security/privileged-access-and-owner-recovery-policy.md) | Owner bootstrap, last-Owner protection, recovery |
+| [Product/workflow-authorization-policy.md](Product/workflow-authorization-policy.md) | Workflow-state authorization guards |
 | [Product/daily-operational-workflow.md](Product/daily-operational-workflow.md) | Common operating day, assignments, offline boundary |
 | [Product/cashier-and-collector-control-model.md](Product/cashier-and-collector-control-model.md) | Cashier Session, float, remittance, cash availability |
 | [Product/disbursement-and-payment-controls.md](Product/disbursement-and-payment-controls.md) | Office/field disbursement and cash payment |
 | [Product/exception-reversal-and-variance-workflow.md](Product/exception-reversal-and-variance-workflow.md) | Exceptions, waivers, reversals vs cash refund, variance |
 | [Product/borrower-model.md](Product/borrower-model.md) | PLM-owned Borrower; may exist without Personal |
+| [Product/borrower-identity-and-duplicate-policy.md](Product/borrower-identity-and-duplicate-policy.md) | Borrower ownership, cardinality, duplicate handling |
 | [Product/personal-borrower-linking.md](Product/personal-borrower-linking.md) | Optional consent-based linking; unlink does not delete history |
+| [Product/personal-linking-lifecycle-and-visibility.md](Product/personal-linking-lifecycle-and-visibility.md) | Link lifecycle, MVP flow, unlink/relink, visibility |
 | [Product/quick-loan-publishing-and-eligibility.md](Product/quick-loan-publishing-and-eligibility.md) | Publishing audiences; eligibility ≠ approval |
 | [Product/borrower-groups-and-targeting.md](Product/borrower-groups-and-targeting.md) | Organization-owned groups; no built-in mandatory groups |
 | [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md) | Personal vs PLM authority; no table access |
@@ -68,10 +88,37 @@ Agreed operating-model direction (not implementation specs):
 | [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md) | Future project tree; not created |
 | [Architecture/api-and-contract-boundary.md](Architecture/api-and-contract-boundary.md) | API / Personal / Platform contracts |
 | [Architecture/persistence-and-database-boundary.md](Architecture/persistence-and-database-boundary.md) | Separate database isolation |
-| [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md) | Online-first MAUI |
-| [Architecture/platform-commercial-integration.md](Architecture/platform-commercial-integration.md) | Commercial/identity contracts; D-P12-03 open |
+| [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md) | Online-first MAUI; offline posting deferred |
+| [Architecture/mobile-and-offline-operating-model.md](Architecture/mobile-and-offline-operating-model.md) | MAUI purpose; MVP authority; cache/drafts |
+| [Architecture/web-maui-component-sharing-policy.md](Architecture/web-maui-component-sharing-policy.md) | Web/MAUI sharing; **PLM-D-00-09 Closed** |
+| [Security/collector-device-security-policy.md](Security/collector-device-security-policy.md) | Future collector device requirements |
+| [Architecture/platform-commercial-integration.md](Architecture/platform-commercial-integration.md) | Commercial/identity contracts index; D-P12-03 open |
+| [Architecture/platform-access-context-contract.md](Architecture/platform-access-context-contract.md) | Required Platform context facts (PLM-DOC-10) |
+| [Architecture/personal-link-and-consent-contract.md](Architecture/personal-link-and-consent-contract.md) | Link/consent contract; **PLM-D-00-05 Closed** |
+| [Architecture/personal-facing-loan-api-contract.md](Architecture/personal-facing-loan-api-contract.md) | Personal customer operations (PLM-DOC-10) |
+| [Architecture/platform-usage-metering-contract.md](Architecture/platform-usage-metering-contract.md) | LOAN DISBURSED usage events (PLM-DOC-10) |
+| [Architecture/tenant-placement-and-routing-contract.md](Architecture/tenant-placement-and-routing-contract.md) | Tenant placement abstraction (PLM-DOC-10) |
+| [Reports/PLM-DOC-10-platform-personal-and-commercial-contracts.md](Reports/PLM-DOC-10-platform-personal-and-commercial-contracts.md) | PLM-DOC-10 Platform, Personal, commercial contracts |
+| [Decisions/ADR-019-platform-personal-contract-requirements.md](Decisions/ADR-019-platform-personal-contract-requirements.md) | Platform/Personal contracts; PLM-D-00-05 Closed |
+| [Decisions/ADR-020-usage-metering-and-tenant-placement-contracts.md](Decisions/ADR-020-usage-metering-and-tenant-placement-contracts.md) | Usage metering and tenant placement |
 | [Reports/PLM-00-foundation-closeout.md](Reports/PLM-00-foundation-closeout.md) | PLM-00 closeout and implementation gates |
-| [Validation/PLM-00-readiness-checklist.md](Validation/PLM-00-readiness-checklist.md) | Docs-only readiness checklist |
+| [Reports/PLM-DOC-01-product-identity-and-personal-linking.md](Reports/PLM-DOC-01-product-identity-and-personal-linking.md) | PLM-DOC-01 identity and Personal linking finalization |
+| [Reports/PLM-DOC-02-financial-calculation-and-allocation.md](Reports/PLM-DOC-02-financial-calculation-and-allocation.md) | PLM-DOC-02 calculation, fees, rounding, allocation |
+| [Reports/PLM-DOC-03-schedule-delinquency-penalty-and-maturity.md](Reports/PLM-DOC-03-schedule-delinquency-penalty-and-maturity.md) | PLM-DOC-03 calendar, delinquency, penalty, maturity |
+| [Reports/PLM-DOC-04-settlement-reversals-variance-and-accounting.md](Reports/PLM-DOC-04-settlement-reversals-variance-and-accounting.md) | PLM-DOC-04 settlement, reversals, variance, accounting |
+| [Decisions/ADR-007-early-settlement-and-prepayment-policy.md](Decisions/ADR-007-early-settlement-and-prepayment-policy.md) | Early settlement and principal prepayment |
+| [Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md](Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md) | Reversals, refunds, variance, GL boundary; PLM-D-00-13 Closed |
+| [Reports/PLM-DOC-05-authorization-and-operational-security.md](Reports/PLM-DOC-05-authorization-and-operational-security.md) | PLM-DOC-05 roles, grants, workflow security |
+| [Decisions/ADR-009-role-codes-grant-catalog-and-default-presets.md](Decisions/ADR-009-role-codes-grant-catalog-and-default-presets.md) | Role codes and grant catalog; PLM-D-00-06 Closed |
+| [Decisions/ADR-010-resource-scope-workflow-security-and-owner-recovery.md](Decisions/ADR-010-resource-scope-workflow-security-and-owner-recovery.md) | Scope, workflow security, Owner recovery |
+| [Decisions/ADR-005-schedule-calendar-and-exception-treatment.md](Decisions/ADR-005-schedule-calendar-and-exception-treatment.md) | Calendar, frequencies, exception defaults |
+| [Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md](Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md) | DPD, penalties, maturity |
+| [Decisions/ADR-001-product-identity-and-database-name.md](Decisions/ADR-001-product-identity-and-database-name.md) | Product code and logical database name |
+| [Decisions/ADR-002-borrower-personal-cardinality-and-consent.md](Decisions/ADR-002-borrower-personal-cardinality-and-consent.md) | Borrower/Personal cardinality and consent |
+| [Decisions/ADR-003-supported-interest-and-schedule-methods.md](Decisions/ADR-003-supported-interest-and-schedule-methods.md) | MVP interest/schedule methods |
+| [Decisions/ADR-004-rounding-fees-and-payment-allocation.md](Decisions/ADR-004-rounding-fees-and-payment-allocation.md) | Rounding, fees, allocation |
+| [Reports/PLM-final-documentation-closeout.md](Reports/PLM-final-documentation-closeout.md) | PLM-DOC-11 final closeout |
+| [implementation-gates.md](implementation-gates.md) | Implementation gates A–E |
 
 Category folders below are indexes only. They must not become a second source of truth.
 
@@ -94,14 +141,14 @@ Do not scatter Pinoy Loan Manager documentation into the repository-root `docs/`
 
 ---
 
-## Identity (proposed)
+## Identity
 
 | Item | Value | Status |
 |---|---|---|
 | Display name | Pinoy Loan Manager | Recorded |
 | Repository directory | `PinoyLoanManager` | Recorded |
-| Product code / slug | `pinoy-loan-manager` | Open (PLM-D-00-01) |
-| Future database | `ExItS_PinoyLoanManager` | Open (PLM-D-00-02) |
+| Product code / slug | `pinoy-loan-manager` | **Closed** (PLM-D-00-01) |
+| Logical database | `ExItS_PinoyLoanManager` | **Closed for name** (PLM-D-00-02); not created |
 
 ---
 
@@ -119,16 +166,16 @@ Authoritative text: [product-definition.md](product-definition.md) and [architec
 
 ## Personal / Borrower
 
-ExItS Personal is Platform-owned and product-neutral. POS Customer ≠ Loan Borrower. Linking is optional, consent-required, and never auto-activated from EX ID / QR resolution. Personal is a presentation surface; Loan operational data remains this product’s authority. Authoritative text: [architecture.md](architecture.md), [Product/borrower-model.md](Product/borrower-model.md), [Product/personal-borrower-linking.md](Product/personal-borrower-linking.md), [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md).
+ExItS Personal is Platform-owned and product-neutral. POS Customer ≠ Loan Borrower. Linking is optional, consent-required, and never auto-activated from EX ID / QR resolution. Personal is a presentation surface; Loan operational data remains this product’s authority. Authoritative text: [architecture.md](architecture.md), [Product/borrower-model.md](Product/borrower-model.md), [Product/borrower-identity-and-duplicate-policy.md](Product/borrower-identity-and-duplicate-policy.md), [Product/personal-borrower-linking.md](Product/personal-borrower-linking.md), [Product/personal-linking-lifecycle-and-visibility.md](Product/personal-linking-lifecycle-and-visibility.md), [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md).
 
 ---
 
 ## Client direction (proposed)
 
-Organization Web: Blazor Web (full operations). MAUI Blazor Hybrid: limited field/collector application. Platform Admin: SaaS control plane only. No client project is authorized.
+Organization Web: Blazor Web (full operations). MAUI Blazor Hybrid: limited field/collector application. Platform Admin: SaaS control plane only. Web/MAUI sharing **Closed** (PLM-D-00-09); layout **Closed** (PLM-D-00-03); no client project until Gate A and owner authorization.
 
 ---
 
 ## Explicit exclusions
 
-No implementation exists. Exact loan calculation algorithms and peso/percent rates are not defined (PLM-D-00-08). Grant identifiers remain open (PLM-D-00-06). Do not copy PinoyBusinessPOS grants or money models. No recorded workflow is claimed legally compliant (PLM-D-00-11).
+No implementation exists. Default interest **rates** and penalty **amounts** are not defined. **PLM-D-00-06 Closed for MVP** (grant catalog v1). **PLM-D-00-08 Closed for MVP** (business/calculation policy). Do not copy PinoyBusinessPOS grants or money models. No recorded workflow is claimed legally compliant or production-security certified (**PLM-D-00-11 Open**). **R-091 Closed for Phase 13 scope.**

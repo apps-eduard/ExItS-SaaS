@@ -6,7 +6,7 @@
 
 Cashier Session, collector daily cash accountability, float, remittance, and cash availability. Complements [collector-cash-and-reconciliation.md](collector-cash-and-reconciliation.md). Does **not** replace the Loan subledger.
 
-Related: [daily-operational-workflow.md](daily-operational-workflow.md), [disbursement-and-payment-controls.md](disbursement-and-payment-controls.md), [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md), [../Architecture/loan-ledger-and-balance-model.md](../Architecture/loan-ledger-and-balance-model.md).
+Related: [daily-operational-workflow.md](daily-operational-workflow.md), [disbursement-and-payment-controls.md](disbursement-and-payment-controls.md), [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md), [cash-variance-and-session-close-policy.md](cash-variance-and-session-close-policy.md), [../Architecture/loan-ledger-and-balance-model.md](../Architecture/loan-ledger-and-balance-model.md), [../Architecture/operational-subledger-and-accounting-boundary.md](../Architecture/operational-subledger-and-accounting-boundary.md).
 
 ---
 
@@ -43,7 +43,7 @@ Possible information (not a schema):
 - closed time
 - status
 
-Cash vault / branch treasury architecture remains **OPEN**.
+Cash vault / branch treasury architecture is resolved in [branch-treasury-and-float-acknowledgment-policy.md](branch-treasury-and-float-acknowledgment-policy.md) (PLM-DOC-09): Branch Treasury funds Cashier Session opening cash.
 
 ---
 
@@ -91,7 +91,7 @@ Authorized Float Amount
         ↓
 Cashier confirms cash handed over
         ↓
-Collector confirms / receives according to future workflow
+Collector confirms / receives according to two-step **Pending Receipt** workflow
         ↓
 Cash Movement recorded
 ```
@@ -101,7 +101,7 @@ Cash Movement recorded
 - Same correlated business event
 - **No** Loan balance changes
 
-Exact collector acknowledgement mechanism remains **OPEN**.
+Exact collector acknowledgement mechanism is resolved: two-step Pending Receipt → Received / Active. Canonical: [branch-treasury-and-float-acknowledgment-policy.md](branch-treasury-and-float-acknowledgment-policy.md).
 
 ---
 
@@ -179,10 +179,10 @@ Variance calculated
         ↓
 Reconciliation recorded
         ↓
-Cashier Session closed or closed-with-variance according to future policy
+Cashier Session closed as Closed Balanced when variance is zero, or Closed With Variance after authorized review when variance is nonzero. Canonical: [cash-variance-and-session-close-policy.md](cash-variance-and-session-close-policy.md).
 ```
 
-Cashier expected cash must derive from recorded cash movements. Variance detail: [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md).
+Cashier expected cash must derive from recorded cash movements. Variance detail: [cash-variance-and-session-close-policy.md](cash-variance-and-session-close-policy.md), [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md).
 
 ---
 

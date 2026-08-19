@@ -6,7 +6,9 @@
 
 Conceptual operational Loan **subledger** and multi-component balances. Not a database schema, class design, or organization General Ledger.
 
-Related: [../Product/financial-calculation-baseline.md](../Product/financial-calculation-baseline.md), [../Product/payment-and-allocation-model.md](../Product/payment-and-allocation-model.md), [../Product/collector-cash-and-reconciliation.md](../Product/collector-cash-and-reconciliation.md), [../Product/cashier-and-collector-control-model.md](../Product/cashier-and-collector-control-model.md), [../Product/lending-operating-model.md](../Product/lending-operating-model.md).
+Related: [../Product/financial-calculation-baseline.md](../Product/financial-calculation-baseline.md), [../Product/payment-allocation-and-prepayment-policy.md](../Product/payment-allocation-and-prepayment-policy.md), [../Product/early-settlement-and-principal-prepayment-policy.md](../Product/early-settlement-and-principal-prepayment-policy.md), [../Product/fees-and-net-proceeds-policy.md](../Product/fees-and-net-proceeds-policy.md), [../Product/penalty-assessment-and-cap-policy.md](../Product/penalty-assessment-and-cap-policy.md), [../Product/payment-and-allocation-model.md](../Product/payment-and-allocation-model.md), [../Product/collector-cash-and-reconciliation.md](../Product/collector-cash-and-reconciliation.md), [../Product/cashier-and-collector-control-model.md](../Product/cashier-and-collector-control-model.md), [operational-subledger-and-accounting-boundary.md](operational-subledger-and-accounting-boundary.md), [../Product/lending-operating-model.md](../Product/lending-operating-model.md).
+
+Platform usage charge must **not** enter this subledger. Schema, journal/export, and write-off/recovery accounting remain **Open** (PLM-D-00-07 remainder). Operational vs GL boundary: [operational-subledger-and-accounting-boundary.md](operational-subledger-and-accounting-boundary.md).
 
 ---
 
@@ -14,20 +16,25 @@ Related: [../Product/financial-calculation-baseline.md](../Product/financial-cal
 
 An append-only / auditable Loan operational subledger is the **authoritative operational financial history** for the Loan.
 
-It is **not** the organization’s full General Ledger / accounting system. Full accounting / GL integration remains **OPEN**.
+It is **not** the organization’s full General Ledger / accounting system. Full accounting / GL integration remains **OPEN**. Canonical boundary: [operational-subledger-and-accounting-boundary.md](operational-subledger-and-accounting-boundary.md).
 
 Potential event categories (not finalized names / schema):
 
 - Disbursement
+- Principal Prepayment
+- Finance-Charge Assessment
+- Finance-Charge Rebate
 - Payment
+- Payment Allocation
 - Fee Assessment
 - Penalty Assessment
 - Waiver
 - Reversal
 - Adjustment
+- Refund Payable
 - Settlement
-- Write-Off
-- Recovery
+- future Write-Off
+- future Recovery
 
 Core principles:
 
@@ -52,15 +59,15 @@ Do **not** rely on one unexplained “Balance” number.
 The future Loan model should be capable of explaining components such as:
 
 - Outstanding Principal
-- Outstanding Interest / Charges
+- Outstanding Charges
 - Outstanding Fees
 - Outstanding Penalties
-- Past-Due Amount
+- Past Due
 - Current Due
 - Total Outstanding
 - Settlement Amount
 
-These may differ. Any displayed total must have a **defined derivation**. Terminology: [../Product/financial-calculation-baseline.md](../Product/financial-calculation-baseline.md).
+These may differ. Any displayed total must have a **defined derivation**. Terminology: [../Product/financial-calculation-baseline.md](../Product/financial-calculation-baseline.md). Allocation: [../Product/payment-allocation-and-prepayment-policy.md](../Product/payment-allocation-and-prepayment-policy.md).
 
 ---
 

@@ -1,168 +1,61 @@
 # Pinoy Loan Manager — Penalty, Exception, and Waiver Model
 
-**Status:** Agreed product direction (documentation only)
+**Status:** Planning index; penalty engine accepted in PLM-DOC-03
 **Implementation present:** No
 **Last updated:** 2026-08-19
 
-Penalty policy is configurable per Loan Template / snapshotted Loan terms. Do **not** make one hard-coded global penalty. Do **not** choose an actual peso rate or percentage. This is not a legally validated collections policy.
+Pointer to accepted penalty, exception, waiver, and reversal rules. Not a default price list or legally validated collections policy.
 
-Related: [lending-operating-model.md](lending-operating-model.md), [quick-loan-model.md](quick-loan-model.md), [payment-and-allocation-model.md](payment-and-allocation-model.md), [schedule-maturity-and-settlement.md](schedule-maturity-and-settlement.md), [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md).
+**Canonical PLM-DOC-03 policies:**
 
----
+- [delinquency-and-missed-payment-policy.md](delinquency-and-missed-payment-policy.md)
+- [penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md)
+- [maturity-and-post-maturity-policy.md](maturity-and-post-maturity-policy.md)
+- [schedule-and-collection-calendar-policy.md](schedule-and-collection-calendar-policy.md)
 
-## Penalty configuration concepts
+ADR: [../Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md](../Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md). Workflow: [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md).
 
-Support the concept of:
-
-- grace allowance
-- chargeable missed days
-- excused missed days
-- unexcused missed days
-- penalty tiers
-- fixed amount penalty
-- percentage penalty
-- explicit penalty basis
-- penalty cap
-- post-maturity policy
-- waiver
-- reversal
-- collection exception
-
-No Platform default amount, percentage, or “N days” is established.
+**No default peso amount, percentage, grace `N`, or cap is defined.** The product must be able to disable penalties entirely.
 
 ---
 
-## Missed collection classification
+## Concepts (accepted)
 
-A scheduled collection / payment event may conceptually result in:
+- grace allowance (snapshotted `N`; not retroactive)
+- cumulative unexcused missed scheduled days (does not reset on catch-up)
+- excused vs unexcused events
+- configurable non-overlapping tiers
+- MVP calculation types and excluded bases
+- required penalty cap when penalties are enabled
+- post-maturity modes
+- waiver vs reversal vs exception (distinct)
+- collection exception vs collector Collection Attempt
 
-- Paid
-- Partially Paid
-- Excused Missed Day
-- Unexcused Missed Day
-- Pending Exception Review
-
-### Potential excused reasons (examples)
-
-- severe weather
-- flooding
-- declared emergency
-- organization collection suspension
-- collector / service failure
-- organization closure
-- manager-approved exceptional circumstance
-
-**Customer simply being unavailable is not automatically excused.**
-
-### Possible unexcused reasons (examples)
-
-- customer unavailable
-- customer refused
-- insufficient funds
-- customer avoided collection
-
-Collector may **record** the reason. Collector must **not** unilaterally approve a penalty waiver where approval is required.
-
----
-
-## Allowable missed days / penalty tiers
-
-Support configurable logic such as:
-
-- Allowed unexcused / grace days: **N** (organization-configured; not a Platform default)
-- Penalty may begin after the configured allowance
-
-Support **tier** concepts such as (example of a configuration engine only):
-
-- Chargeable missed days 1–5 → configured rule
-- Chargeable missed days 6–10 → another configured rule
-- 11+ → another configured rule
-
-Do **not** establish 5 days or any amount as a Platform default.
-
-Penalty basis must be **explicit**. Possible future options (not selected):
-
-- missed installment
-- total past-due amount
-- outstanding principal
-- fixed amount
-
-Do **not** select the legal/business default yet.
+Customer unavailable is **unexcused by default**. Collector records facts; cannot approve own exception or waiver.
 
 ---
 
 ## Collection exception vs waiver vs reversal
 
-Keep these separate.
-
 | Concept | Meaning |
 |---|---|
-| **Collection exception** | A qualifying event **prevents penalty assessment**. Example: organization declares collection suspension due to flooding. Penalty may never be assessed for the affected event according to policy. |
-| **Penalty waiver** | Penalty was **validly assessed**, but authorized staff forgives all or part of it. History remains visible. |
-| **Penalty reversal** | Penalty was **incorrectly assessed** and is corrected through an auditable reversal. |
+| **Collection exception** | Qualifying event prevents penalty assessment (or invalidates it via reversal if already posted) |
+| **Penalty waiver** | Penalty was **validly assessed**; authorized staff forgives all or part. History remains. Missed-day counter is not reset |
+| **Penalty reversal** | Penalty was **incorrectly assessed** and is corrected through an auditable reversal |
 
-Never silently delete historical penalty records.
-
----
-
-## Organization-wide exceptions
-
-Owner / Manager with required grant may declare (future concept). Workflow detail: [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md).
-
-- collection suspension date
-- branch / area affected
-- collectors affected
-- reason
-- treatment of penalties
-- treatment of schedule / maturity
-
-Example: heavy rain / flooding.
-
-Schedule-extension rules are **not** finalized.
-
-The important distinction:
-
-**organization / service-caused missed collection** must be distinguishable from **borrower-caused missed payment**.
+Never silently delete historical penalty records. Retroactive exception never silently deletes an assessment.
 
 ---
 
-## Maturity / post-maturity
+## Safety (accepted)
 
-A loan does not disappear when the original term ends.
-
-If an amount remains at maturity:
-
-```text
-Active
-  → Maturity reached
-  → Matured / Past Due
-```
-
-The remaining obligation remains tracked.
-
-Support a configurable post-maturity policy such as:
-
-- post-maturity grace
-- penalty behavior
-- penalty basis
-- penalty cap
-- collection treatment
-
-Do **not** invent an actual penalty rate.
-
-No unlimited silent penalty growth.
-
-**Penalty-on-penalty should be OFF** as the engineering-safe default unless explicitly authorized and legally validated later.
-
-Penalty-cap support should exist.
-
-Exact maturity statuses and treatment remain **Open / Product Owner Decision Required**.
+Penalty-on-penalty **prohibited**. Capitalization into Principal **prohibited**. Unlimited growth **prohibited**. Cap **required** when penalties enabled.
 
 ---
 
 ## Legal / compliance boundary
 
-No interest, fee, penalty, collection policy, disclosure, or workflow in this document is claimed to be legally compliant. External legal/compliance validation is required before Production use. This package does not invent Philippine lending regulations.
+No penalty configuration is claimed legally permitted. **PLM-D-00-11 remains Open.** This package does not invent Philippine lending regulations.
 
 ---
 
@@ -172,5 +65,4 @@ No interest, fee, penalty, collection policy, disclosure, or workflow in this do
 - Platform-default days, peso amounts, or percentages
 - Silent deletion of penalty history
 - Collector self-approval of waivers
-- Final schedule-extension algorithm
-- Penalty-on-penalty as a default
+- Legal maximums

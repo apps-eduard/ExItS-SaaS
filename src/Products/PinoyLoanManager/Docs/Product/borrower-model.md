@@ -1,28 +1,26 @@
 # Pinoy Loan Manager — Borrower Model
 
-**Status:** Planning / product-rule baseline (documentation only)
+**Status:** Planning / product-rule baseline; identity rules accepted in PLM-DOC-01
 **Implementation present:** No
 **Last updated:** 2026-08-19
 
 Borrower is a **Pinoy Loan Manager–owned** operational entity. This is not a KYC specification, schema, or legally validated identity policy.
 
-Related: [personal-borrower-linking.md](personal-borrower-linking.md), [borrower-groups-and-targeting.md](borrower-groups-and-targeting.md), [../Architecture/personal-integration-boundary.md](../Architecture/personal-integration-boundary.md), [../architecture.md](../architecture.md).
+**Canonical identity, cardinality, and duplicate rules:** [borrower-identity-and-duplicate-policy.md](borrower-identity-and-duplicate-policy.md). Linking: [personal-borrower-linking.md](personal-borrower-linking.md), [personal-linking-lifecycle-and-visibility.md](personal-linking-lifecycle-and-visibility.md).
+
+Related: [borrower-groups-and-targeting.md](borrower-groups-and-targeting.md), [../Architecture/personal-integration-boundary.md](../Architecture/personal-integration-boundary.md), [../architecture.md](../architecture.md).
 
 ---
 
-## Ownership
+## Ownership (accepted)
 
-A Borrower record belongs to the lending **organization** in this product.
+A Borrower record belongs to exactly one lending **organization** in this product. Optional Branch relationship may exist where appropriate.
 
-Borrower identity must **not** depend on:
-
-- PinoyBusinessPOS Customer
-- ExItS Personal
-- another ExItS product
-
-A Borrower **may exist without** ExItS Personal.
+A Borrower **may exist without** ExItS Personal, POS Customer, another product relationship, a current Loan, or a Quick Loan request.
 
 POS Customer ≠ PLM Borrower. POS customer status never auto-creates a Loan Borrower. Pinoy Loan Manager never reads POS Customer tables.
+
+Deleting or unlinking a Personal relationship must never delete the Borrower.
 
 ---
 
@@ -42,7 +40,7 @@ Future borrower information **may** include categories such as:
 
 Do **not** finalize required KYC fields in this package. Do **not** claim that any field set is regulatorily sufficient.
 
-Duplicate-borrower detection is **OPEN** and must be designed later. Do not invent matching rules here.
+Duplicate handling: warning/review candidates only; **no automatic merge** in MVP. Detail: [borrower-identity-and-duplicate-policy.md](borrower-identity-and-duplicate-policy.md).
 
 ---
 
@@ -71,7 +69,8 @@ No borrower-identity, KYC, or data-retention design in this document is claimed 
 ## Explicit non-goals
 
 - Required KYC field list
-- Duplicate-detection algorithm
+- Duplicate-detection **formula**
 - Schema / enum design
 - Copying POS Customer tables
 - Treating Personal as the Borrower SoR
+- Automatic Borrower merge

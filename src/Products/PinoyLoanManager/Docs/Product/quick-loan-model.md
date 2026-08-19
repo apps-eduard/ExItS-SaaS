@@ -45,34 +45,24 @@ Examples may include daily, weekly, biweekly, semi-monthly, monthly. No frequenc
 
 ### Interest
 
-Support the concept of a **configurable interest calculation policy**. Agreed treatment modes:
+Quick Loan MVP uses **Flat / Add-On Finance Charge only**. Reducing-balance amortization is **not** supported for Quick Loan MVP.
 
-**A. Interest deducted from proceeds**
+Supported interest treatments: deducted from proceeds, or added to repayment. Deducted finance charge is satisfied at disbursement and must not also be scheduled as unpaid interest.
 
-Conceptual example only (not a rate or formula):
+Canonical formulas, rate bases, snapshot, and disclosure: [interest-and-finance-charge-policy.md](interest-and-finance-charge-policy.md), [fees-and-net-proceeds-policy.md](fees-and-net-proceeds-policy.md). Terminology: [financial-calculation-baseline.md](financial-calculation-baseline.md).
 
-- Face / principal amount = P
-- Interest charge = I
-- Net proceeds = P − I
-- Repayment obligation remains based on the agreed face/principal obligation and terms
-
-**B. Interest added to repayment**
-
-- Net proceeds = P
-- Total repayment may include P + agreed interest
-
-Do **not** hard-code a specific rate or formula. Do **not** claim legal permissibility of any configuration.
-
-Illustrative proceeds vs repayment examples and money terminology: [financial-calculation-baseline.md](financial-calculation-baseline.md). Exact methods, precision, and amortization remain **Open / Product Owner Decision Required**.
+Do **not** hard-code a specific rate. No default rate is defined. Do **not** claim legal permissibility of any configuration (PLM-D-00-11).
 
 ### Payment / schedule
 
-- schedule generated from **snapshot** terms
-- customer must see the calculation before submitting
+- schedule generated from **snapshot** terms (calendar: [schedule-and-collection-calendar-policy.md](schedule-and-collection-calendar-policy.md))
+- first due date default = next valid Collection Day after Disbursement; same-day first installment not MVP
+- customer must see the calculation and actual first due date before submitting
+- default exception policy = Shift Future Due Dates
 
 ### Penalty policy
 
-Template-specific configurable policy. Detail: [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md).
+Template-specific configurable policy. No default amount. Canonical: [penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md), [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md).
 
 ### Eligibility
 
@@ -158,16 +148,15 @@ Customer chooses amount within allowed range
         ↓
 System calculates and displays terms
         ↓
-Customer reviews:
+Customer reviews (minimum display: [interest-and-finance-charge-policy.md](interest-and-finance-charge-policy.md)):
   - requested amount
-  - interest / charges as applicable
-  - net proceeds
-  - repayment amount
-  - installment amount
-  - frequency
-  - number of installments
-  - first due date
-  - maturity date
+  - calculation method, rate, rate basis
+  - total finance charge and each fee
+  - total deductions and Net Proceeds
+  - installment amount(s), count, frequency
+  - first due date, maturity date
+  - Total Scheduled Repayment
+  - payment-allocation policy summary
         ↓
 Customer submits
         ↓
