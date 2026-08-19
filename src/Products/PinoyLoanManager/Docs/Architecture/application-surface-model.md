@@ -1,10 +1,10 @@
 # Pinoy Loan Manager — Application Surface Model
 
-**Status:** Agreed product direction (documentation only); client strategy **PLM-D-00-09 Closed / Product Owner Approved**
-**Implementation present:** No React Client; Web identity shell only
+**Status:** Agreed product direction; client strategy **PLM-D-00-09 Closed / Product Owner Approved**; Gate C PWA present
+**Implementation present:** React Client + online-first PWA; Capacitor not started
 **Last updated:** 2026-08-19
 
-Agreed application surfaces for Pinoy Loan Manager. The React Client is **not** created in this package.
+Agreed application surfaces for Pinoy Loan Manager. Capacitor is **not** created in Gate C.
 
 Root architecture: [../architecture.md](../architecture.md). Client architecture: [react-pwa-capacitor-client.md](react-pwa-capacitor-client.md). ADR: [../Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md](../Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md). Operating model: [../Product/lending-operating-model.md](../Product/lending-operating-model.md). Daily ops: [../Product/daily-operational-workflow.md](../Product/daily-operational-workflow.md). Authorization: [../Security/role-and-grant-baseline.md](../Security/role-and-grant-baseline.md).
 

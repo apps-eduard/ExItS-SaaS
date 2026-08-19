@@ -6,7 +6,7 @@ React organization/field client host for Pinoy Loan Manager. Sibling of the ASP.
 - Stack: React, TypeScript strict, Vite, Tailwind, React Router, TanStack Query, Lucide
 - Locale: English (`en`) default; `fil-PH` secondary
 - Theme: System default (Light / Dark supported)
-- Gate B: product chrome only. No lending screens, auth, PWA, or Capacitor
+- Gate B: product chrome. Gate C: installable online-first PWA. No lending screens, auth, or Capacitor
 
 ```powershell
 npm install
@@ -22,6 +22,7 @@ npm run format:check
 npm test
 npm run build
 npm run test:e2e
+npm run test:pwa
 ```
 
 Do not import PinoyBusinessPOS. Do not modify MAUI or Web in this package.

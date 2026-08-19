@@ -1,10 +1,10 @@
 # Pinoy Loan Manager — React / PWA / Capacitor Client Architecture
 
-**Status:** Accepted architecture (PLM-D-00-09 / PLM-01A); Gate B scaffold present
-**Implementation present:** React Client foundation only — no lending, auth, PWA, or Capacitor
+**Status:** Accepted architecture (PLM-D-00-09 / PLM-01A); Gate B scaffold; Gate C PWA present
+**Implementation present:** React Client + online-first PWA — no lending, auth, or Capacitor
 **Last updated:** 2026-08-19
 
-`ExItS.PinoyLoanManager.Client` exists as a Gate B scaffold. Do not add PWA or Capacitor from this document.
+`ExItS.PinoyLoanManager.Client` exists as a Gate B/C scaffold. Do not add Capacitor from this document.
 
 ADR: [../Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md](../Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md). Surfaces: [application-surface-model.md](application-surface-model.md). Layout: [source-and-project-layout.md](source-and-project-layout.md). Offline: [mobile-offline-boundary.md](mobile-offline-boundary.md).
 
@@ -32,10 +32,10 @@ Pinoy Loan Manager
        |     NOT a second lending UI
        |
        +-- Client
-             React + TypeScript (Gate B scaffold)
+             React + TypeScript (Browser + online-first PWA)
                     |
                     +-- Browser Web
-                    +-- PWA          later (Gate C)
+                    +-- PWA          Gate C (online-first)
                     +-- Capacitor Android
                             |
                             +-- APK
@@ -264,7 +264,7 @@ Cross-cutting frontend delivery track. Does **not** replace the core PLM busines
 
 Offline financial operation remains under **PLM-13** and requires its own explicit authorization.
 
-Recommended order after PLM-01A approval (not started here): Gate B → Gate C → PLM-02 identity/org/product access integration → continue business roadmap package-by-package.
+Recommended next when separately authorized: **PLM-CLIENT-GATE D**. Do not start Gate D, Capacitor, or PLM-02 from Gate C.
 
 ---
 

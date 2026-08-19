@@ -10,7 +10,7 @@
 | Docs root | `src/Products/PinoyLoanManager/Docs/` |
 | Status | PLM-00 accepted; PLM-01 shell scaffolded; PLM-01A client architecture approved; no lending implementation |
 | Last updated | 2026-08-19 |
-| Implementation present | Product shell only — React Client not created |
+| Implementation present | Product shell + React Client + online-first PWA — no lending/auth/Capacitor |
 
 ## Purpose and users
 

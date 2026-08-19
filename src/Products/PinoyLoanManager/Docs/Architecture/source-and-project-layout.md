@@ -1,10 +1,10 @@
 # Pinoy Loan Manager — Source and Project Layout
 
-**Status:** PLM-01 scaffold; Gate B React Client created
-**Implementation present:** Product shell + React Client foundation — no lending domain
+**Status:** PLM-01 scaffold; Gates B–C React Client + online-first PWA
+**Implementation present:** Product shell + React Client + PWA — no lending domain
 **Last updated:** 2026-08-19
 
-Physical layout after **PLM-01** and **PLM-CLIENT-GATE-B**. PLM-D-00-03 is **Closed**. PLM-D-00-09 is **Closed / Product Owner Approved**. `ExItS.PinoyLoanManager.Client` exists as a Gate B scaffold. LocalStore remains **intentionally deferred** (not authorized). MAUI is not the preferred future architecture.
+Physical layout after **PLM-01**, **PLM-CLIENT-GATE-B**, and **PLM-CLIENT-GATE-C**. PLM-D-00-03 is **Closed**. PLM-D-00-09 is **Closed / Product Owner Approved**. `ExItS.PinoyLoanManager.Client` is the Browser + PWA host. LocalStore remains **intentionally deferred** (not authorized). MAUI is not the preferred future architecture. Capacitor is not started.
 
 Related: [react-pwa-capacitor-client.md](react-pwa-capacitor-client.md), [api-and-contract-boundary.md](api-and-contract-boundary.md), [persistence-and-database-boundary.md](persistence-and-database-boundary.md), [mobile-offline-boundary.md](mobile-offline-boundary.md), [../architecture.md](../architecture.md), [../Reports/PLM-01-product-scaffold-and-isolation.md](../Reports/PLM-01-product-scaffold-and-isolation.md), [../Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md](../Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md).
 
@@ -21,11 +21,11 @@ src/Products/PinoyLoanManager/
 ├── ExItS.PinoyLoanManager.Api/               created (health only)
 ├── ExItS.PinoyLoanManager.ApiClient/         created (marker only)
 ├── ExItS.PinoyLoanManager.Web/               created (identity shell; future host/BFF)
-├── ExItS.PinoyLoanManager.Client/            created (Gate B scaffold; no lending/PWA/Capacitor)
+├── ExItS.PinoyLoanManager.Client/            created (Gate B/C React + online-first PWA)
 └── ExItS.PinoyLoanManager.LocalStore/        FUTURE ONLY IF AUTHORIZED
 ```
 
-Do **not** physically create PWA or Capacitor projects in Gate B.
+Do **not** physically create Capacitor Android/iOS projects in Gate C. PWA lives in this Client Vite application.
 
 Tests:
 

@@ -1,8 +1,8 @@
 # Pinoy Loan Manager — File Manifest
 
-**Status:** PLM-01 product scaffold; PLM-01A client architecture approved
-**Implementation present:** Product shell only; React Client not created
-**Current work package:** PLM-01A React + PWA + Capacitor architecture decision
+**Status:** PLM-01 scaffold; Gates B–C client/PWA complete
+**Implementation present:** Product shell + React Client + online-first PWA; no lending/auth/Capacitor
+**Current work package:** PLM-CLIENT-GATE-C Browser + PWA foundation
 
 This file is the navigation map for future Cursor work. Load this product’s `Docs/` after the shared Product Foundation reference. Do not scan PinoyBusinessPOS implementation by default.
 
@@ -98,6 +98,7 @@ Shared contracts to load with this product:
 | `Docs/Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md` | ADR: one React + PWA + Capacitor client | Accepted / Product Owner Approved | No |
 | `Docs/Reports/PLM-01A-react-pwa-capacitor-architecture-decision.md` | PLM-01A evidence | Architecture decision complete | No |
 | `Docs/Reports/PLM-CLIENT-GATE-B-react-client-scaffold.md` | Gate B React Client scaffold | Complete after validation | React foundation |
+| `Docs/Reports/PLM-CLIENT-GATE-C-browser-pwa-foundation.md` | Gate C Browser + PWA foundation | Complete after validation | Online-first PWA |
 
 ## Foundation closeout (PLM-00-WP10)
 
@@ -136,7 +137,7 @@ Shared contracts to load with this product:
 | `ExItS.PinoyLoanManager.Api` | Created — `/health` only |
 | `ExItS.PinoyLoanManager.ApiClient` | Created — marker only |
 | `ExItS.PinoyLoanManager.Web` | Created — identity shell only; future host/BFF |
-| `ExItS.PinoyLoanManager.Client` | Created — Gate B React scaffold; no lending/auth/PWA/Capacitor |
+| `ExItS.PinoyLoanManager.Client` | Created — Gate B/C React + online-first PWA; no lending/auth/Capacitor |
 | `tests/ExItS.PinoyLoanManager.UnitTests` | Created |
 | `ExItS.slnx` PLM entries | Registered |
 

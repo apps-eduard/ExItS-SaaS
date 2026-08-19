@@ -8,7 +8,7 @@
 | Product | Pinoy Loan Manager / `pinoy-loan-manager` (proposed, PLM-D-00-01) |
 | Database | `ExItS_PinoyLoanManager` (proposed) / schema **Status: Open / Product Owner Decision Required** (PLM-D-00-02) |
 | Status | PLM-00 accepted; PLM-01 shell scaffolded; PLM-01A client architecture approved; no lending implementation |
-| Implementation present | Product shell only — React Client not created |
+| Implementation present | Product shell + React Client + online-first PWA — no lending/auth/Capacitor |
 
 ## System context
 
@@ -20,7 +20,7 @@
          ExItS_PinoyLoanManager (product only; not created)
 ```
 
-Surfaces (approved direction, React Client not created): Platform Admin (SaaS only) · Organization Web/PWA (full ops) · Capacitor Android (same app, field subset later) · ExItS Personal (borrower presentation). Detail: [Architecture/application-surface-model.md](Architecture/application-surface-model.md), [Architecture/react-pwa-capacitor-client.md](Architecture/react-pwa-capacitor-client.md).
+Surfaces (Gate B/C Client present; Capacitor later): Platform Admin (SaaS only) · Organization Web/PWA (full ops) · Capacitor Android (same app, field subset later) · ExItS Personal (borrower presentation). Detail: [Architecture/application-surface-model.md](Architecture/application-surface-model.md), [Architecture/react-pwa-capacitor-client.md](Architecture/react-pwa-capacitor-client.md).
 
 Pinoy Loan Manager must never take a project or database dependency on PinoyBusinessPOS.
 

@@ -9,7 +9,9 @@ export type MessageKey =
   | "theme.label"
   | "theme.system"
   | "theme.light"
-  | "theme.dark";
+  | "theme.dark"
+  | "pwa.updateAvailable"
+  | "pwa.refresh";
 
 export const en: Record<MessageKey, string> = {
   "app.name": "Pinoy Loan Manager",
@@ -23,6 +25,8 @@ export const en: Record<MessageKey, string> = {
   "theme.system": "System",
   "theme.light": "Light",
   "theme.dark": "Dark",
+  "pwa.updateAvailable": "Update available",
+  "pwa.refresh": "Refresh",
 };
 
 export const filPH: Record<MessageKey, string> = {
@@ -37,6 +41,8 @@ export const filPH: Record<MessageKey, string> = {
   "theme.system": "System",
   "theme.light": "Light",
   "theme.dark": "Dark",
+  "pwa.updateAvailable": "May update",
+  "pwa.refresh": "I-refresh",
 };
 
 export const catalogs: Record<"en" | "fil-PH", Record<MessageKey, string>> = {
