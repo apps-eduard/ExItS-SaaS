@@ -24,7 +24,7 @@ Capacitor implementation: `Absent`
 
 PWA production: `Absent`
 
-Queue state: `READY FOR MOBILE-REACT-DOC-04`
+Queue state: `READY FOR MOBILE-REACT-DOC-05`
 
 ## DOC queue
 
@@ -34,7 +34,8 @@ Queue state: `READY FOR MOBILE-REACT-DOC-04`
 | MOBILE-REACT-DOC-01 | Complete | Current-state audit, terminology, replacement boundaries, CSS/Razor contradiction recorded |
 | MOBILE-REACT-DOC-02 | Complete | Product surfaces, device-class UX, role matrix, POS selling workflow, visual quality target |
 | MOBILE-REACT-DOC-03 | Complete | React stack, reuse strategy, device adapters, recommended `ExItS.PinoyBusinessPOS.Client` path (not created) |
-| MOBILE-REACT-DOC-04 | Not started | Next package |
+| MOBILE-REACT-DOC-04 | Complete | PWA vs Capacitor delivery, static cache vs LocalStore, iOS interim, Windows browser/PWA, independent release channels |
+| MOBILE-REACT-DOC-05 | Not started | Next package |
 
 ## Authorization gates (locked)
 

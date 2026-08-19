@@ -108,6 +108,7 @@ docs/Mobile-React/decisions.md
 docs/Mobile-React/current-state-and-replacement-boundaries.md
 docs/Mobile-React/product-surfaces-and-ux.md
 docs/Mobile-React/frontend-architecture-and-reuse.md
+docs/Mobile-React/pwa-and-capacitor-delivery.md
 docs/phases/README.md
 docs/phases/phase-01-platform-boundary.md
 docs/phases/phase-02-platform-extraction.md
