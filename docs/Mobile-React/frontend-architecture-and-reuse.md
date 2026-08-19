@@ -138,7 +138,7 @@ Capacitor config and PWA assets would live beside `src/` when implementation is 
 
 ---
 
-## 4. Reuse strategy (three levels)
+## 4. Reuse strategy
 
 ### A. Shareable concepts with Platform Admin React
 
@@ -180,6 +180,43 @@ The same feature modules should run on all three deliveries:
 - Offline **coordination** (queue, sync status, capability gates) — semantics aligned with current LocalStore/outbox, not a new business database
 
 Layout chrome may differ by device class (bottom nav vs side nav vs tablet split). Business flows must not fork into three products.
+
+### D. Shared UI primitives and composites (within this client)
+
+The React Mobile Client must use **reusable shared UI primitives and ExItS composites** for controls and patterns that repeat across pages.
+
+Pages **compose** shared components. They do not independently recreate repeated UI or behavior. A visual or behavior change to a shared control should propagate from **one** place.
+
+Conceptual examples (names are planning labels, not a created package):
+
+- AppTopBar / shell chrome
+- SearchBar
+- FilterBar
+- PageHeader
+- RefreshButton, CancelButton, BackButton, RetryButton, CopyDiagnosticsButton
+- EmptyState, ErrorState, LoadingState
+- StatusChip, SyncStatusChip, ConnectivityIndicator
+- ConfirmDialog
+- InternetRequiredToast / InternetRequiredDialog (AMEND-01)
+- Common form fields
+- Common money and quantity displays
+
+**Rules:**
+
+1. Repeated UI/behavior must not be recreated independently on each page.
+2. Shared component visual/behavior changes should propagate from one place.
+3. Pages compose shared components rather than fork them.
+4. Shared components support **controlled** customization through props, variants, slots/children, optional actions, and labels/content.
+5. Page-specific customization must not require duplicating the underlying component.
+6. Do **not** create an oversized generic component with dozens of unrelated behaviors. Keep primitives and composites focused.
+7. Do **not** prematurely put every component in a **cross-application** shared package. Share first **inside** the Mobile React Client. Extract to a cross-app package only when real reuse with Platform Admin React is proven.
+8. Platform Admin **business UI** must not be imported into Mobile. Shared concepts and design tokens are allowed (Reuse A). Business chrome remains app-specific (Reuse B).
+9. **Shell / top-bar:** one shared top-bar/shell family. Page-specific context is supplied via configuration and slots. Pages must not independently rebuild common chrome.
+10. Accessibility, localization, theme, density, loading, disabled, keyboard, and touch behavior live in the shared component where applicable — not re-implemented per page.
+
+Current MAUI analogue: DesignSystem primitives (`SearchBar`, `Button`, `EmptyState`, …) plus POS shell chrome. Future React must not import Razor components; it follows the same **reuse discipline**.
+
+This DOC still does not create TypeScript files.
 
 ---
 
@@ -413,6 +450,7 @@ Copy Diagnostics MUST NEVER include:
 - Adding Capacitor/PWA to the solution
 - Replacing LocalStore or MAUI
 - Sharing Admin billing/governance UI
+- A premature cross-app component package or importing Admin business chrome into Mobile
 - Pinning npm versions
 - Introducing Redux
 - NFC / printer / payment-terminal products

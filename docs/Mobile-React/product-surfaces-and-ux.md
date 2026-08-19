@@ -109,6 +109,7 @@ Desktop/PWA selling should still feel like a sell floor: product + cart + pay. A
 | EN default | English is default UI language. |
 | fil-PH | Filipino is the required secondary locale. Layouts must tolerate longer strings. |
 | Light / Dark / System | Required. Immediate switch; persist preference; no app restart; no lost cart/form. |
+| Shared UI by default | Repeated chrome and patterns use one shared primitive/composite (top bar, search, empty/error/loading, sync chips, confirm, Internet-required, Copy Diagnostics). Pages compose; they do not fork. |
 
 Motion is functional only (press, sheet, toast). Honor `prefers-reduced-motion` with essentially 0 ms decorative motion.
 
@@ -288,6 +289,16 @@ Must not:
 | Desktop / browser | Landscape window | Responsive down to tablet/phone breakpoints without requiring a separate “mobile site” |
 
 Sell floor must keep cart contents across orientation change.
+
+### 8.2 Shared chrome and composites
+
+Use **one** AppTopBar / shell family. Page-specific titles, actions, and context arrive through configuration and slots. List pages compose shared SearchBar, FilterBar, PageHeader, EmptyState, ErrorState, LoadingState, StatusChip / SyncStatusChip, and ConnectivityIndicator rather than restyling native controls independently.
+
+Destructive or blocking confirmations use ConfirmDialog. Ordinary vs sensitive Internet-required UX uses the shared toast/dialog pair (AMEND-01). Runtime errors use CopyDiagnosticsButton on the shared ErrorState where applicable.
+
+Customize via props, variants, slots, optional actions, and labels. Do not duplicate a composite to tweak one page. Do not grow a single “Swiss army” component that owns unrelated flows. Share first inside this client; do not import Platform Admin business chrome.
+
+Accessibility, `en` / `fil-PH`, Light/Dark/System, Compact/Comfortable, loading, disabled, keyboard, and touch minima belong on the shared control when they apply.
 
 ---
 
