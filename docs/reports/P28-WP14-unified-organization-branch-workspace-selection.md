@@ -96,7 +96,7 @@ Device mismatch shows compact blocked copy; no silent rebind.
 
 ## Staff ACL limitation
 
-`IAccessibleBranchResolver` abstracts accessible branches. **Only `OwnerAccessibleBranchResolver` is implemented** (Active org branches for access-allowed memberships). Staff↔branch ACL is **not** implemented; future resolver can filter chooser without redesigning navigation.
+**Resolved in [P28-WP15C](P28-WP15C-staff-branch-authorization.md).** Platform now stores explicit staff branch assignments and filters `ListBranches` / `SelectOrganizationBranchContext` server-side. `OwnerAccessibleBranchResolver` delegates to the filtered Platform branch list (no separate staff resolver type required).
 
 ## Removed / replaced (WP13)
 
@@ -124,7 +124,7 @@ Full `ExItS.slnx` Release build fails on this host without Android SDK (MAUI and
 
 ## Explicit exclusions
 
-- No staff↔branch ACL subsystem
+- Staff↔branch ACL implemented in [P28-WP15C](P28-WP15C-staff-branch-authorization.md)
 - No silent device rebind
 - No Org Web POS checkout
 - No production-ready claim without device/browser evidence

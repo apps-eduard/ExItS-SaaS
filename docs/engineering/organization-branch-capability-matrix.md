@@ -216,8 +216,8 @@ When POS/org step-up infrastructure is extended beyond Platform lifecycle, class
 
 | Gap | Status | Follow-up |
 |---|---|---|
-| MAUI org governance visible regardless of Primary branch | **Implemented (WP15B)** — `IWorkspaceGovernanceGate`, burger Manage business, hub at `/manage-business` | Monitor staff ACL when resolver lands |
-| Staff↔branch ACL | Not implemented (`OwnerAccessibleBranchResolver` only) | Future resolver without redesigning workspace flow |
+| MAUI org governance visible regardless of Primary branch | **Implemented (WP15B)** — `IWorkspaceGovernanceGate`, burger Manage business, hub at `/manage-business` | — |
+| Staff↔branch ACL | **Implemented (WP15C)** — `organization_membership_branch_assignments`, `IOrganizationBranchAccessService` | See [P28-WP15C](../reports/P28-WP15C-staff-branch-authorization.md) |
 | POS password step-up for void/adjustment | Not generalized | Extend when auth infrastructure approved |
 | Shifts/registers org-scoped (no `BranchId`) | Documented WP13 limitation | Future branch-scoped shift model if approved |
 | Org Web branch selection | Sets org context; branch is hierarchy UX | Parity with MAUI `SelectedBranchId` on Web optional |

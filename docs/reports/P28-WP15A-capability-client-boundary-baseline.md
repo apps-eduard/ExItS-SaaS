@@ -55,7 +55,7 @@ Documented explicitly (not hidden):
 | Gap | Notes |
 |---|---|
 | MAUI Owner `/org/*` nav without Primary gate | Target policy in matrix; **current UI** still shows org governance from any workspace branch |
-| Staff↔branch ACL | Abstraction exists (WP14); resolver not implemented |
+| Staff↔branch ACL | **Implemented (WP15C)** — Platform assignments + branch access service | [P28-WP15C](P28-WP15C-staff-branch-authorization.md) |
 | POS password step-up | Platform lifecycle step-up exists; not generalized for void/adjustment |
 | Shifts org-scoped | WP13 documented limitation retained |
 

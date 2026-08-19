@@ -57,7 +57,7 @@ Clean Mobile operational navigation: separate branch operations from organizatio
 
 ## Explicit exclusions
 
-- Staff↔branch ACL resolver (future)
+- Staff↔branch ACL (**WP15C** — [report](P28-WP15C-staff-branch-authorization.md))
 - POS password step-up for governance mutations
 - Live governance activity feed (placeholder only)
 - Device/browser validation
