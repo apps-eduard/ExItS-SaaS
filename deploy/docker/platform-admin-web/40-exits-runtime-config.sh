@@ -23,4 +23,11 @@ case "$url" in
     ;;
 esac
 
-printf 'window.__EXITS_PLATFORM_ADMIN_WEB__={platformApiBaseUrl:"%s"};\n' "$url" > /tmp/exits-platform-admin-web-config.js
+tools_enabled=false
+case "${LOCAL_VALIDATION_TOOLS_ENABLED:-}" in
+  true|TRUE|True|1)
+    tools_enabled=true
+    ;;
+esac
+
+printf 'window.__EXITS_PLATFORM_ADMIN_WEB__={platformApiBaseUrl:"%s",localValidationToolsEnabled:%s};\n' "$url" "$tools_enabled" > /tmp/exits-platform-admin-web-config.js

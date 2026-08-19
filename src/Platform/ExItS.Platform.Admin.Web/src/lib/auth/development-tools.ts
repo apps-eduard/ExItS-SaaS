@@ -1,3 +1,5 @@
+import { isLocalValidationToolsEnabled } from "@/lib/env";
+
 const ALLOWED_FRONTEND_MODES = new Set(["development", "test", "testing"]);
 
 export function areDevelopmentToolsAllowed(mode: string = import.meta.env.MODE): boolean {
@@ -11,4 +13,8 @@ export function areDevelopmentToolsAllowed(mode: string = import.meta.env.MODE):
   }
 
   return ALLOWED_FRONTEND_MODES.has(normalized);
+}
+
+export function areTestUserToolsPermitted(mode: string = import.meta.env.MODE): boolean {
+  return areDevelopmentToolsAllowed(mode) || isLocalValidationToolsEnabled();
 }

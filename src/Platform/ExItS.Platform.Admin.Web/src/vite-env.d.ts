@@ -10,8 +10,14 @@ interface ImportMeta {
 
 interface ExitsPlatformAdminWebRuntimeConfig {
   platformApiBaseUrl?: string;
+  localValidationToolsEnabled?: boolean;
 }
 
 interface Window {
   __EXITS_PLATFORM_ADMIN_WEB__?: ExitsPlatformAdminWebRuntimeConfig;
+}
+
+declare module "*?raw" {
+  const content: string;
+  export default content;
 }

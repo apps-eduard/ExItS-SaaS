@@ -199,6 +199,91 @@ describe("Sign In", () => {
     expect(screen.getByLabelText("Email")).toHaveValue("olivia@example.test");
     expect(screen.getByLabelText("Password")).toHaveValue("");
     expect(screen.queryByText(/stack/i)).not.toBeInTheDocument();
+    expect(screen.queryByText("Something went wrong")).not.toBeInTheDocument();
+  });
+
+  it("maps login_failed without a camelCase errorCode as invalid credentials", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("/auth/me")) {
+          return jsonResponse(401, { status: 401, errorCode: AUTH_ERROR_CODES.sessionInvalid });
+        }
+        if (url.includes("/auth/login")) {
+          return jsonResponse(400, {
+            status: 400,
+            extensions: { errorCode: AUTH_ERROR_CODES.loginFailed },
+            detail: "Exception text must not render",
+          });
+        }
+        return jsonResponse(404, {});
+      }),
+    );
+    window.history.replaceState({}, "", "/admin/login");
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole("heading", { name: "Sign In" });
+    await user.type(screen.getByLabelText("Email"), "olivia@example.test");
+    await user.type(screen.getByLabelText("Password"), "wrong-password");
+    await user.click(screen.getByRole("button", { name: "Sign In" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Invalid email or password.");
+    expect(screen.queryByText("Something went wrong")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Exception text/i)).not.toBeInTheDocument();
+  });
+
+  it("fills email only from a Test User selection and still requires a manual password on login", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/auth/me")) {
+        return jsonResponse(401, { status: 401, errorCode: AUTH_ERROR_CODES.sessionInvalid });
+      }
+      if (url.includes("/local-validation/enabled")) {
+        return jsonResponse(200, true);
+      }
+      if (url.includes("/local-validation/quick-login-identities")) {
+        return jsonResponse(200, [
+          {
+            key: "olivia",
+            username: "olivia",
+            displayName: "Olivia Mendoza",
+            email: "olivia.mendoza@exits.local",
+            listLabel: "Olivia Mendoza",
+          },
+        ]);
+      }
+      if (url.includes("/auth/login")) {
+        const body = JSON.parse(String(init?.body)) as {
+          usernameOrEmail?: string;
+          password?: string;
+        };
+        expect(body.usernameOrEmail).toBe("olivia.mendoza@exits.local");
+        expect(body.password).toBe("typed-by-tester");
+        return jsonResponse(200, { ...sampleSession, sessionToken: "must-not-persist" });
+      }
+      return jsonResponse(404, {});
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    window.history.replaceState({}, "", "/admin/login");
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole("heading", { name: "Sign In" });
+    const selector = await screen.findByLabelText("Test user");
+    await user.selectOptions(selector, "olivia");
+    expect(screen.getByLabelText("Email")).toHaveValue("olivia.mendoza@exits.local");
+    expect(screen.getByLabelText("Password")).toHaveValue("");
+    expect(fetchMock.mock.calls.some(([request]) => String(request).includes("/auth/login"))).toBe(
+      false,
+    );
+
+    await user.type(screen.getByLabelText("Password"), "typed-by-tester");
+    await user.click(screen.getByRole("button", { name: "Sign In" }));
+    await waitFor(() => {
+      expect(window.location.pathname).toBe("/admin");
+    });
+    expect(fetchMock.mock.calls.some(([request]) => String(request).includes("/auth/login"))).toBe(
+      true,
+    );
   });
 
   it("maps account lock and network failures", async () => {

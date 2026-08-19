@@ -58,6 +58,8 @@ export const enMessages = {
   "auth.devTools.hint": "Fills the email field only. Enter the local-validation password yourself.",
   "auth.devTools.select": "Test user",
   "auth.devTools.placeholder": "Choose a test user",
+  "auth.localValidationTools": "Local Validation",
+  "auth.localValidationTools.select": "Test User — Local Validation",
   "auth.placeholder.unavailable": "This screen is not implemented in the current package.",
   "auth.forgotPassword.title": "Forgot password",
   "auth.createAccount.title": "Create account",
@@ -231,6 +233,8 @@ export const filPhMessages: Record<MessageKey, string> = {
   "auth.devTools.hint": "Pinupunan lang ang email. Ikaw ang maglagay ng local-validation password.",
   "auth.devTools.select": "Test user",
   "auth.devTools.placeholder": "Pumili ng test user",
+  "auth.localValidationTools": "Local Validation",
+  "auth.localValidationTools.select": "Test User — Local Validation",
   "auth.placeholder.unavailable":
     "Hindi pa ipinatutupad ang screen na ito sa kasalukuyang package.",
   "auth.forgotPassword.title": "Nakalimutan ang password",

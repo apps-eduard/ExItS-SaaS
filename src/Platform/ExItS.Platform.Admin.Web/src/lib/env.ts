@@ -6,6 +6,14 @@ function readRuntimeApiBaseUrl(): string {
   return typeof runtime === "string" ? runtime.trim() : "";
 }
 
+export function isLocalValidationToolsEnabled(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return window.__EXITS_PLATFORM_ADMIN_WEB__?.localValidationToolsEnabled === true;
+}
+
 export function resolvePlatformApiBaseUrl(): string {
   const runtime = readRuntimeApiBaseUrl();
   if (runtime.length > 0) {
@@ -18,5 +26,8 @@ export function resolvePlatformApiBaseUrl(): string {
 export const env = {
   get platformApiBaseUrl(): string {
     return resolvePlatformApiBaseUrl();
+  },
+  get localValidationToolsEnabled(): boolean {
+    return isLocalValidationToolsEnabled();
   },
 };

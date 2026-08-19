@@ -32,18 +32,32 @@ export function createCorrelationId(): string {
   return crypto.randomUUID();
 }
 
+function readStringField(record: Record<string, unknown>, key: string): string | undefined {
+  const value = record[key];
+  return typeof value === "string" ? value : undefined;
+}
+
 function parseProblem(payload: unknown): PlatformProblemDetails {
   if (typeof payload !== "object" || payload === null) {
     return {};
   }
 
   const record = payload as Record<string, unknown>;
+  const extensions =
+    typeof record.extensions === "object" && record.extensions !== null
+      ? (record.extensions as Record<string, unknown>)
+      : undefined;
+
   return {
-    title: typeof record.title === "string" ? record.title : undefined,
+    title: readStringField(record, "title"),
     status: typeof record.status === "number" ? record.status : undefined,
-    detail: typeof record.detail === "string" ? record.detail : undefined,
-    errorCode: typeof record.errorCode === "string" ? record.errorCode : undefined,
-    traceId: typeof record.traceId === "string" ? record.traceId : undefined,
+    detail: readStringField(record, "detail"),
+    errorCode:
+      readStringField(record, "errorCode") ??
+      readStringField(record, "ErrorCode") ??
+      (extensions ? readStringField(extensions, "errorCode") : undefined) ??
+      (extensions ? readStringField(extensions, "ErrorCode") : undefined),
+    traceId: readStringField(record, "traceId") ?? readStringField(record, "TraceId"),
   };
 }
 

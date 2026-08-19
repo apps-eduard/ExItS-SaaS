@@ -12,6 +12,11 @@ export default defineConfig({
       "@": path.resolve(rootDir, "./src"),
     },
   },
+  server: {
+    fs: {
+      allow: [path.resolve(rootDir, "../../..")],
+    },
+  },
   test: {
     environment: "jsdom",
     globals: false,

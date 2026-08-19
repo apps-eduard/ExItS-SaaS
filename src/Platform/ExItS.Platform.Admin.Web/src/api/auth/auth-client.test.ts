@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { login } from "@/api/auth/auth-client";
+import { login, getLocalValidationEnabled } from "@/api/auth/auth-client";
 import { sampleSession } from "@/test/auth-fixtures";
 
 describe("auth client", () => {
@@ -24,5 +24,28 @@ describe("auth client", () => {
 
     expect(session).not.toHaveProperty("sessionToken");
     expect(JSON.stringify(session)).not.toContain("opaque-session-token");
+  });
+
+  it("treats Local Validation enabled as true only for JSON true", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => true,
+      }),
+    );
+
+    await expect(getLocalValidationEnabled("http://localhost:8091")).resolves.toBe(true);
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ enabled: true }),
+      }),
+    );
+    await expect(getLocalValidationEnabled("http://localhost:8091")).resolves.toBe(false);
   });
 });

@@ -249,6 +249,7 @@ services:
     image: exits/platform-admin-web:${LOCAL_VALIDATION_IMAGE_TAG:-local-validation}
     environment:
       PLATFORM_API_PUBLIC_URL: ${LOCAL_VALIDATION_PLATFORM_API_PUBLIC_URL:-http://localhost:8091}
+      LOCAL_VALIDATION_TOOLS_ENABLED: "true"
     ports:
       - "${LOCAL_VALIDATION_ADMIN_WEB_REACT_HOST_PORT:-8095}:8080"
     networks:

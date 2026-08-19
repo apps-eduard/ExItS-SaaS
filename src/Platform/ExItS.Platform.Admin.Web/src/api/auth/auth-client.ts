@@ -59,10 +59,10 @@ export function logout(baseUrl: string, signal?: AbortSignal): Promise<void> {
 }
 
 export function getLocalValidationEnabled(baseUrl: string, signal?: AbortSignal): Promise<boolean> {
-  return platformRequest<boolean>(baseUrl, {
+  return platformRequest<unknown>(baseUrl, {
     path: "/api/v1/platform/local-validation/enabled",
     signal,
-  });
+  }).then((value) => value === true);
 }
 
 export function listQuickLoginIdentities(

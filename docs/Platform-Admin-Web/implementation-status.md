@@ -39,7 +39,7 @@ Application path: `src/Platform/ExItS.Platform.Admin.Web/`
 | `X-Correlation-Id` | READY_FOR_FOUNDATION | Request/response correlation in `PlatformSecurityPipeline` |
 | External authentication | READY_FOR_FOUNDATION for later screens | Google/Facebook challenge/complete exist when configured |
 | Session token in external-login return URL | BLOCKS_CUTOVER | `ExternalAuthEndpoints` appends `sessionToken=` to `returnUrl`; reusable session credentials must not appear in URLs |
-| Development/Testing test-user picker | READY_FOR_FOUNDATION | Existing Admin Local Validation identity picker; Production must never render it |
+| Development/Testing test-user picker | READY_FOR_FOUNDATION | Visible only when Vite development/test/testing **or** explicit runtime `localValidationToolsEnabled` **and** Platform API `/local-validation/enabled` is true. Production remains hidden. |
 | Mailpit | PRESERVED | Local Validation SMTP catcher; not changed in this package |
 | Development/Testing Test Payments | PRESERVED | Local Validation only; no real payment integration |
 | OpenAPI/Swagger | DEFERRED_TOOLING | No Swagger registration; typed clients remain manual |
@@ -61,6 +61,7 @@ Mailpit and Development/Testing fake payments remain in place. This package does
 | PWEB-IMPL-04C | COMPLETE | Parallel React Local-Validation Container |
 | PWEB-IMPL-05 | COMPLETE | Dashboard |
 | PWEB-IMPL-06 | AWAITING VISUAL REVIEW | First Visual Checkpoint |
+| PWEB-IMPL-06A | COMPLETE | Local Validation Test User runtime gate |
 
 ## PWEB-IMPL-02 — Design system + global preferences
 
@@ -219,11 +220,31 @@ Cursor must **not** mark visual quality APPROVED. Product Owner + ChatGPT review
 
 See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-06-first-visual-checkpoint.md`.
 
+## PWEB-IMPL-06A — Local Validation Test User runtime gate
+
+Status: **COMPLETE**
+
+Test User tools remain available only in explicit Local Validation / Vite development / test. Real production stays hidden. Visual approval of PWEB-IMPL-06 is still awaiting Product Owner + ChatGPT.
+
+| Area | Record |
+|---|---|
+| Production Vite `MODE` | Does not hide Local Validation Test User by itself when runtime flag is explicitly true |
+| Runtime `/config.js` | `localValidationToolsEnabled` boolean; default/missing = false; never inferred from hostname/port |
+| Local Validation 8095 | `LOCAL_VALIDATION_TOOLS_ENABLED=true` on `admin-web-react` |
+| Double gate | Frontend permit **and** `GET /api/v1/platform/local-validation/enabled` → true, then identities |
+| Password | Never filled, retrieved, displayed, or stored by the selector |
+| Login | Still `POST /api/v1/platform/auth/login`; no GUID bypass |
+| Screenshots | `docs/Platform-Admin-Web/Reports/impl-06a-local-validation/` |
+| Visual approval | **STILL AWAITING PRODUCT OWNER + CHATGPT** (PWEB-IMPL-06) |
+
+See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-06A-local-validation-test-user.md`.
+
 ## Queue
 
 | Package | Status |
 |---|---|
 | PWEB-IMPL-05 — Dashboard | COMPLETE |
 | PWEB-IMPL-06 — First Visual Checkpoint | AWAITING VISUAL REVIEW |
+| PWEB-IMPL-06A — Local Validation Test User | COMPLETE |
 
-Stopped for Product Owner + ChatGPT visual review.
+Stopped after PWEB-IMPL-06A.

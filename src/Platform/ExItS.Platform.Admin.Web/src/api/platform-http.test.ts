@@ -54,4 +54,25 @@ describe("platformRequest", () => {
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
     );
   });
+
+  it("reads errorCode from ProblemDetails extensions", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: async () => ({
+          title: "Unauthorized",
+          status: 401,
+          extensions: { errorCode: "application.auth.login_failed" },
+        }),
+      }),
+    );
+
+    const error = await platformRequest("http://localhost:8091", {
+      path: "/api/v1/platform/auth/login",
+    }).catch((caught: unknown) => caught);
+
+    expect((error as PlatformApiError).errorCode).toBe("application.auth.login_failed");
+  });
 });

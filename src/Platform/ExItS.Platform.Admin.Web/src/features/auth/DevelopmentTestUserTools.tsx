@@ -4,8 +4,8 @@ import type { LocalValidationIdentity } from "@/api/auth/auth-types";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { usePreferences } from "@/hooks/use-preferences";
-import { areDevelopmentToolsAllowed } from "@/lib/auth/development-tools";
-import { env } from "@/lib/env";
+import { areTestUserToolsPermitted } from "@/lib/auth/development-tools";
+import { env, isLocalValidationToolsEnabled } from "@/lib/env";
 
 export function DevelopmentTestUserTools({
   onSelectLogin,
@@ -14,7 +14,8 @@ export function DevelopmentTestUserTools({
 }) {
   const { t } = usePreferences();
   const [identities, setIdentities] = useState<LocalValidationIdentity[]>([]);
-  const allowed = areDevelopmentToolsAllowed();
+  const allowed = areTestUserToolsPermitted();
+  const runtimeLocalValidation = isLocalValidationToolsEnabled();
 
   useEffect(() => {
     if (!allowed) {
@@ -25,12 +26,12 @@ export function DevelopmentTestUserTools({
     void (async () => {
       try {
         const enabled = await getLocalValidationEnabled(env.platformApiBaseUrl, controller.signal);
-        if (!enabled) {
+        if (enabled !== true) {
           return;
         }
         const list = await listQuickLoginIdentities(env.platformApiBaseUrl, controller.signal);
         if (!controller.signal.aborted) {
-          setIdentities(list);
+          setIdentities(Array.isArray(list) ? list : []);
         }
       } catch {
         if (!controller.signal.aborted) {
@@ -47,13 +48,13 @@ export function DevelopmentTestUserTools({
   }
 
   return (
-    <div className="mt-6">
-      <Separator className="mb-4" />
+    <div className="mt-4">
+      <Separator className="mb-3" />
       <p className="text-[length:var(--exits-text-xs)] font-semibold tracking-wide text-muted uppercase">
-        {t("auth.devTools")}
+        {runtimeLocalValidation ? t("auth.localValidationTools") : t("auth.devTools")}
       </p>
-      <Label htmlFor="dev-test-user" className="mt-3 block">
-        {t("auth.devTools.select")}
+      <Label htmlFor="dev-test-user" className="mt-2 block text-muted">
+        {runtimeLocalValidation ? t("auth.localValidationTools.select") : t("auth.devTools.select")}
       </Label>
       <select
         id="dev-test-user"

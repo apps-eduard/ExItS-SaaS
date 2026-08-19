@@ -1,5 +1,6 @@
 # ExItS Platform Admin Web (React) — production static build + nginx.
-# Runtime injects PLATFORM_API_PUBLIC_URL into /config.js (no machine-specific bake).
+# Runtime injects PLATFORM_API_PUBLIC_URL and LOCAL_VALIDATION_TOOLS_ENABLED into /config.js
+# (no machine-specific bake; Test User tools stay fail-closed unless the env flag is true).
 FROM node:22-alpine AS build
 WORKDIR /src
 COPY src/Platform/ExItS.Platform.Admin.Web/package.json src/Platform/ExItS.Platform.Admin.Web/package-lock.json ./
