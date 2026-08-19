@@ -4,16 +4,19 @@ import type { ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 rounded-[var(--exits-density-radius)] text-[length:var(--exits-text-md)] font-semibold transition-[background-color,border-color,color] duration-[var(--exits-motion-fast)] ease-[var(--exits-ease)] focus-visible:outline-none disabled:pointer-events-none disabled:bg-[var(--exits-disabled-bg)] disabled:text-[var(--exits-disabled-text)] disabled:border-[var(--exits-disabled-border)]",
   {
     variants: {
       variant: {
-        default: "bg-neutral-900 text-white hover:bg-neutral-800",
-        outline: "border border-neutral-300 bg-transparent hover:bg-neutral-100",
+        default: "bg-primary text-primary-foreground hover:bg-[var(--exits-primary-hover)]",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-[var(--exits-secondary-hover)]",
+        outline: "border border-border bg-surface text-foreground hover:bg-surface-muted",
+        destructive: "bg-destructive text-white hover:opacity-90",
+        ghost: "bg-transparent text-foreground hover:bg-surface-muted",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-8 px-3",
+        default: "h-[var(--exits-control-height)] min-h-[var(--exits-touch-target-min)] px-4",
+        sm: "h-9 min-h-11 px-3",
       },
     },
     defaultVariants: {

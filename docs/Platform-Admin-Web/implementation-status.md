@@ -45,3 +45,28 @@ Application path: `src/Platform/ExItS.Platform.Admin.Web/`
 | OpenAPI/Swagger | DEFERRED_TOOLING | No Swagger registration; typed clients remain manual |
 
 Mailpit and Development/Testing fake payments remain in place. This package does not add production email or real payment integration.
+
+## Package status
+
+| Package | Status | Notes |
+|---|---|---|
+| PWEB-IMPL-01 | COMPLETE | React + Vite scaffold |
+| PWEB-IMPL-02 | COMPLETE | Design system + global preferences foundation |
+| PWEB-IMPL-03 | NOT STARTED | Authentication / Sign-In |
+
+## PWEB-IMPL-02 — Design system + global preferences
+
+Status: **COMPLETE**
+
+Implemented foundation (not visually approved; first visual checkpoint is not complete):
+
+| Area | Record |
+|---|---|
+| Design system | Implemented React token foundation (`--exits-*` CSS variables; Light/Dark/System) |
+| Language | `en` default / `fil-PH` |
+| Theme | System / Light / Dark; default **System** |
+| Density | Comfortable / Balanced / Compact; default **Balanced** (React-owned; C# DesignSystem unchanged) |
+| Preferences | Non-sensitive UI prefs in `exits.platform-admin-web.ui-preferences.v1` |
+| Motion | Restrained durations; `prefers-reduced-motion` honored |
+
+Explicitly not claimed: visual approval, first visual checkpoint, Login, shell, or feature screens.
