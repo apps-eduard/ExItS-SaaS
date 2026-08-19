@@ -5,6 +5,8 @@
 @inject IPlatformAccessClient Platform
 @inject NavigationManager Nav
 @inject IStringLocalizer<OrgWebResources> L
+@using ExItS.DesignSystem.Components.Overlay
+@using ExItS.PinoyBusinessPOS.Application.Platform
 
 <PageTitle>@L["Branches_Title"]</PageTitle>
 
@@ -80,7 +82,7 @@ else
                                 <Button Size="@ButtonSize.Small" Disabled="_busy" OnClick="@(() => Nav.NavigateTo($"/organization/branches/{b.Id:D}"))">@L["Common_Edit"]</Button>
                                 @if (!b.IsPrimary && !string.Equals(b.Status, "Archived", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    <Button Size="@ButtonSize.Small" Danger Disabled="_busy" OnClick="() => ArchiveAsync(b)">@L["Branches_Archive"]</Button>
+                                    <Button Size="@ButtonSize.Small" Danger Disabled="_busy" OnClick="() => AskArchive(b)">@L["Branches_Archive"]</Button>
                                 }
                             </td>
                         </tr>
@@ -109,6 +111,24 @@ else
         </div>
         <p class="org-note">@L["Branches_CreateHint"]</p>
     </Modal>
+
+    <ConfirmDialog Visible="@(_archiveTarget is not null)"
+                   VisibleChanged="v => { if (!v) CloseArchiveDialog(); }"
+                   Title="@string.Format(L["Branches_ArchiveTitle"].Value, _archiveTarget?.Name ?? string.Empty)"
+                   Message="@L["Branches_ArchiveMessage"]"
+                   Danger="true"
+                   ShowReason="true"
+                   ShowPassword="true"
+                   RequireReason="true"
+                   RequirePassword="true"
+                   Reason="@_archiveReason"
+                   ReasonChanged="v => _archiveReason = v"
+                   Password="@_archivePassword"
+                   PasswordChanged="v => _archivePassword = v"
+                   ConfirmLabel="@L["Branches_Archive"]"
+                   IsLoading="@_busy"
+                   OnConfirm="ConfirmArchiveAsync"
+                   OnCancel="CloseArchiveDialog" />
     </div>
 }
 
@@ -124,6 +144,9 @@ else
     private string? _city;
     private BranchCapacityDto? _capacity;
     private List<OrganizationBranchDto> _items = [];
+    private OrganizationBranchDto? _archiveTarget;
+    private string? _archiveReason;
+    private string? _archivePassword;
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
@@ -219,22 +242,57 @@ else
         }
     }
 
-    private async Task ArchiveAsync(OrganizationBranchDto branch)
+    private void AskArchive(OrganizationBranchDto branch)
+    {
+        _archiveTarget = branch;
+        _archiveReason = null;
+        _archivePassword = null;
+    }
+
+    private void CloseArchiveDialog()
+    {
+        if (_busy) return;
+        _archiveTarget = null;
+        _archiveReason = null;
+        _archivePassword = null;
+    }
+
+    private async Task ConfirmArchiveAsync()
     {
         var orgId = CurrentUser.Session?.OrganizationId;
-        if (orgId is null)
+        if (orgId is null || _archiveTarget is null || string.IsNullOrWhiteSpace(_archiveReason) || string.IsNullOrWhiteSpace(_archivePassword))
         {
             return;
         }
 
         _busy = true;
+        var password = _archivePassword;
+        _archivePassword = null;
         try
         {
-            var result = await Platform.ArchiveBranchAsync(orgId.Value, branch.Id);
+            var stepUp = await GovernanceCriticalActionFlow.IssueStepUpTokenAsync(
+                Platform,
+                orgId.Value,
+                PlatformGovernanceActionCodes.BranchArchive,
+                PlatformGovernanceTargetTypes.OrganizationBranch,
+                _archiveTarget.Id,
+                password);
+            if (!stepUp.IsSuccess || stepUp.Data is null)
+            {
+                _error = OrgWebUi.Error(stepUp.Error, L["Error_GenericLoad"]);
+                return;
+            }
+
+            var result = await Platform.ArchiveBranchAsync(
+                orgId.Value,
+                _archiveTarget.Id,
+                new GovernanceCriticalActionRequest(_archiveReason.Trim(), stepUp.Data));
             if (result.IsSuccess)
             {
                 _error = null;
                 _success = L["Branches_Archived"];
+                _archiveTarget = null;
+                _archiveReason = null;
                 await LoadAsync();
             }
             else
@@ -245,6 +303,7 @@ else
         finally
         {
             _busy = false;
+            _archivePassword = null;
         }
     }
 }

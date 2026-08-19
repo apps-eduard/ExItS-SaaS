@@ -7,6 +7,7 @@ using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.GlobalCatalog;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.LocalValidation;
+using ExItS.Platform.Application.Governance;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Personal;
@@ -93,6 +94,7 @@ public static class DependencyInjection
         services.AddScoped<IPlatformAccessTokenRepository, PlatformAccessTokenRepository>();
         services.AddScoped<IPlatformDeviceRecoveryCredentialRepository, PlatformDeviceRecoveryCredentialRepository>();
         services.AddScoped<IPlatformExternalLoginRepository, PlatformExternalLoginRepository>();
+        services.AddScoped<IGovernanceStepUpGrantRepository, GovernanceStepUpGrantRepository>();
         services.AddScoped<IPlatformCredentialTokenRepository, PlatformCredentialTokenRepository>();
         services.AddSingleton<IPlatformPasswordHasher, AspNetCorePlatformPasswordHasher>();
         services.AddSingleton<IPlatformSessionTokenService, PlatformSessionTokenService>();

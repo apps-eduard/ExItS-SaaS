@@ -115,6 +115,9 @@ public static class ApplicationErrorCodes
     public const string LastPlatformAdministratorProtected = "application.role_assignment.last_platform_administrator";
     public const string StepUpRequired = "application.auth.step_up_required";
     public const string MfaStepUpRequired = "application.auth.mfa_step_up_required";
+    public const string GovernanceStepUpInvalid = "application.auth.governance_step_up_invalid";
+    public const string GovernanceStepUpExpired = "application.auth.governance_step_up_expired";
+    public const string GovernanceStepUpConsumed = "application.auth.governance_step_up_consumed";
     public const string AuditRecordNotFound = "application.audit_record.not_found";
 
     public const string CredentialNotFound = "application.credential.not_found";

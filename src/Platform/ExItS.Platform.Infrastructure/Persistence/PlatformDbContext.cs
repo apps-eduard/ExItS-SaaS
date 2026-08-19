@@ -4,6 +4,7 @@ using ExItS.Platform.Infrastructure.Persistence.Authorization;
 using ExItS.Platform.Infrastructure.Persistence.Catalog;
 using ExItS.Platform.Infrastructure.Persistence.Entitlements;
 using ExItS.Platform.Infrastructure.Persistence.GlobalCatalog;
+using ExItS.Platform.Infrastructure.Persistence.Governance;
 using ExItS.Platform.Infrastructure.Persistence.Identity;
 using ExItS.Platform.Infrastructure.Persistence.Organizations;
 using ExItS.Platform.Infrastructure.Persistence.Payments;
@@ -75,6 +76,7 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<PlatformDeviceRecoveryCredentialRecord> PlatformDeviceRecoveryCredentials =>
         Set<PlatformDeviceRecoveryCredentialRecord>();
     internal DbSet<PlatformCredentialTokenRecord> PlatformCredentialTokens => Set<PlatformCredentialTokenRecord>();
+    internal DbSet<GovernanceStepUpGrantRecord> GovernanceStepUpGrants => Set<GovernanceStepUpGrantRecord>();
     internal DbSet<PlatformExternalLoginRecord> PlatformExternalLogins => Set<PlatformExternalLoginRecord>();
     internal DbSet<OrganizationMembershipRecord> OrganizationMemberships => Set<OrganizationMembershipRecord>();
     internal DbSet<OrganizationMembershipBranchAssignmentRecord> OrganizationMembershipBranchAssignments =>
@@ -542,6 +544,9 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.OnlineOrdersPauseReason).HasColumnName("online_orders_pause_reason").HasMaxLength(32);
             entity.Property(e => e.IsPrimary).HasColumnName("is_primary");
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(16).IsRequired();
+            entity.Property(e => e.SuspendedAtUtc).HasColumnName("suspended_at_utc");
+            entity.Property(e => e.SuspendedByUserId).HasColumnName("suspended_by_user_id");
+            entity.Property(e => e.SuspensionReason).HasColumnName("suspension_reason").HasMaxLength(500);
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.HasIndex(e => new { e.OrganizationId, e.Code }).IsUnique();
@@ -1169,6 +1174,32 @@ public sealed class PlatformDbContext : DbContext
             entity.HasOne<PlatformUserRecord>()
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<GovernanceStepUpGrantRecord>(entity =>
+        {
+            entity.ToTable("governance_step_up_grants");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.ActionCode).HasColumnName("action_code").HasMaxLength(128).IsRequired();
+            entity.Property(e => e.TargetType).HasColumnName("target_type").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.TargetId).HasColumnName("target_id");
+            entity.Property(e => e.TokenHash).HasColumnName("token_hash").HasMaxLength(128).IsRequired();
+            entity.HasIndex(e => e.TokenHash).IsUnique();
+            entity.HasIndex(e => new { e.UserId, e.OrganizationId, e.ActionCode });
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
+            entity.Property(e => e.ConsumedAtUtc).HasColumnName("consumed_at_utc");
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

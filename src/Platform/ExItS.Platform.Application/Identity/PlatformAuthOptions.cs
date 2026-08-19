@@ -49,6 +49,13 @@ public sealed class PlatformSessionOptions
     public int IdleTimeoutMinutes { get; set; } = 30;
     public int AbsoluteLifetimeHours { get; set; } = 12;
     public bool SlidingRenewal { get; set; } = true;
+
+    /// <summary>
+    /// Minimum seconds between sliding-renewal writes. Parallel authenticated requests
+    /// (login restore, recovery enroll, branch list) share one session xmin and must not
+    /// all UPDATE. Zero persists on every request.
+    /// </summary>
+    public int SlidingRenewalPersistSeconds { get; set; } = 30;
 }
 
 /// <summary>

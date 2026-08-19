@@ -73,6 +73,9 @@ public static class DomainErrorCodes
     public const string BranchDeliveryPolicyNotFound = "platform.branch_delivery_policy.not_found";
     public const string BranchDeliveryNotAvailable = "platform.branch_delivery.not_available";
     public const string OrganizationBranchPrimaryRequired = "platform.organization_branch.primary.required";
+    public const string OrganizationBranchPrimarySuspendForbidden = "platform.organization_branch.primary.suspend_forbidden";
+    public const string OrganizationBranchSuspendBlockedActiveDevices = "platform.organization_branch.suspend_blocked_active_devices";
+    public const string OrganizationBranchSuspensionReasonRequired = "platform.organization_branch.suspension_reason.required";
     public const string InvalidPosDeviceId = "platform.pos_device.id.invalid";
     public const string InvalidPosDeviceInstallationId = "platform.pos_device.installation_id.invalid";
     public const string PosDeviceNotActive = "platform.pos_device.not_active";

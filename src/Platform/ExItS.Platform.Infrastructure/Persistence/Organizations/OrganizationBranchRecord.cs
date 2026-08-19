@@ -23,6 +23,9 @@ internal sealed class OrganizationBranchRecord
     public string? OnlineOrdersPauseReason { get; set; }
     public bool IsPrimary { get; set; }
     public string Status { get; set; } = string.Empty;
+    public DateTimeOffset? SuspendedAtUtc { get; set; }
+    public Guid? SuspendedByUserId { get; set; }
+    public string? SuspensionReason { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
 }

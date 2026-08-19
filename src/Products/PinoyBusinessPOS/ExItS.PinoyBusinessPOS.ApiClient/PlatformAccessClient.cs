@@ -76,14 +76,47 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
             request,
             ct);
 
+    public Task<ApiResult<GovernanceStepUpTokenDto>> IssueGovernanceStepUpAsync(
+        Guid organizationId,
+        IssueGovernanceStepUpRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<GovernanceStepUpTokenDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{organizationId:D}/governance/step-up",
+            request,
+            ct);
+
+    public Task<ApiResult<OrganizationBranchDto>> SuspendBranchAsync(
+        Guid organizationId,
+        Guid branchId,
+        GovernanceCriticalActionRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<OrganizationBranchDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{organizationId:D}/branches/{branchId:D}/suspend",
+            request,
+            ct);
+
+    public Task<ApiResult<OrganizationBranchDto>> ReactivateBranchAsync(
+        Guid organizationId,
+        Guid branchId,
+        GovernanceCriticalActionRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<OrganizationBranchDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{organizationId:D}/branches/{branchId:D}/reactivate",
+            request,
+            ct);
+
     public Task<ApiResult<OrganizationBranchDto>> ArchiveBranchAsync(
         Guid organizationId,
         Guid branchId,
+        GovernanceCriticalActionRequest request,
         CancellationToken ct = default) =>
         api.SendAsync<OrganizationBranchDto>(
             HttpMethod.Post,
             $"/api/v1/platform/organizations/{organizationId:D}/branches/{branchId:D}/archive",
-            null,
+            request,
             ct);
 
     public Task<ApiResult<BranchDeliveryPolicyDto>> UpsertBranchDeliveryPolicyAsync(
@@ -169,8 +202,16 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
     public Task<ApiResult<PosDeviceDto>> RenamePosDeviceAsync(Guid organizationId, Guid deviceId, string friendlyName, CancellationToken ct = default) =>
         api.SendAsync<PosDeviceDto>(HttpMethod.Put, $"/api/v1/platform/organizations/{organizationId:D}/pos-devices/{deviceId:D}", new { friendlyName }, ct);
 
-    public Task<ApiResult<PosDeviceDto>> RevokePosDeviceAsync(Guid organizationId, Guid deviceId, CancellationToken ct = default) =>
-        api.SendAsync<PosDeviceDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId:D}/pos-devices/{deviceId:D}/revoke", null, ct);
+    public Task<ApiResult<PosDeviceDto>> RevokePosDeviceAsync(
+        Guid organizationId,
+        Guid deviceId,
+        GovernanceCriticalActionRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<PosDeviceDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{organizationId:D}/pos-devices/{deviceId:D}/revoke",
+            request,
+            ct);
 
     public Task<ApiResult<PosDeviceAuthorizationDto>> AuthorizePosDeviceAsync(Guid organizationId, AuthorizePosDeviceRequest request, CancellationToken ct = default) =>
         api.SendAsync<PosDeviceAuthorizationDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId:D}/pos-devices/authorize", request, ct);

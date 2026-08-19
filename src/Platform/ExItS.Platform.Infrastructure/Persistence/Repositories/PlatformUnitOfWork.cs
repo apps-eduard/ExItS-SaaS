@@ -16,8 +16,13 @@ internal sealed class PlatformUnitOfWork : IPlatformUnitOfWork
         {
             await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (DbUpdateConcurrencyException)
+        catch (DbUpdateConcurrencyException ex)
         {
+            foreach (var entry in ex.Entries)
+            {
+                entry.State = EntityState.Detached;
+            }
+
             throw new PersistenceConflictException(
                 ApplicationErrorCodes.ConcurrencyConflict,
                 "A concurrency conflict occurred while saving changes.");

@@ -26,8 +26,17 @@ public sealed class BranchHoursScheduleUiTests
             new BranchHoursDayDraft { DayOfWeek = nameof(DayOfWeek.Monday), IsClosed = true },
             new BranchHoursDayDraft { DayOfWeek = nameof(DayOfWeek.Tuesday), IsClosed = false }
         ]));
-        Assert.Contains("PH", BranchLocationUi.CodesFor(null));
+        Assert.False(BranchHoursScheduleUi.HasConfiguredHours(null));
         Assert.Contains("XX", BranchLocationUi.CodesFor("XX"));
+        Assert.Equal(BranchLocationUi.UnspecifiedCode, BranchLocationUi.BindCode(null));
+        Assert.Equal(BranchLocationUi.UnspecifiedCode, BranchLocationUi.BindCode(" "));
+        Assert.Equal("PH", BranchLocationUi.BindCode("ph"));
+        Assert.Null(BranchLocationUi.ToStoredCode(BranchLocationUi.UnspecifiedCode));
+        Assert.Equal("PH", BranchLocationUi.ToStoredCode("PH"));
+        Assert.DoesNotContain(BranchLocationUi.UnspecifiedCode, BranchLocationUi.CodesFor(BranchLocationUi.UnspecifiedCode));
+        Assert.Equal("Active", BranchLocationUi.BindStatus(null));
+        Assert.Equal("Inactive", BranchLocationUi.BindStatus("inactive"));
+        Assert.Contains("Archived", BranchLocationUi.StatusCodesFor("Archived"));
     }
 
     [Fact]

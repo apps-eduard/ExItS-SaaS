@@ -126,6 +126,12 @@
   <data name="Branches_Archive" xml:space="preserve">
     <value>I-archive</value>
   </data>
+  <data name="Branches_ArchiveTitle" xml:space="preserve">
+    <value>I-archive ang {0}</value>
+  </data>
+  <data name="Branches_ArchiveMessage" xml:space="preserve">
+    <value>Hihinto ang sangay sa bagong operasyon. Mapapanatili ang kasaysayan, imbentaryo, at audit records.</value>
+  </data>
   <data name="Branches_Primary" xml:space="preserve">
     <value>Pangunahin</value>
   </data>

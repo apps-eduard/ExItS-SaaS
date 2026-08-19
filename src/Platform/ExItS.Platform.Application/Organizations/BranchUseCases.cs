@@ -54,7 +54,10 @@ public sealed record OrganizationBranchDto(
     bool PickupOperational = false,
     bool DeliveryOperational = false,
     string? StoreStatusMessage = null,
-    BranchDeliveryPolicyDto? DeliveryPolicy = null);
+    BranchDeliveryPolicyDto? DeliveryPolicy = null,
+    DateTimeOffset? SuspendedAtUtc = null,
+    Guid? SuspendedByUserId = null,
+    string? SuspensionReason = null);
 
 public sealed record BranchCapacityDto(int Used, int Allowed);
 
@@ -297,19 +300,11 @@ public sealed class UpdateBranch(
                 branch.UpdateTimeZone(command.TimeZoneId, clock.UtcNow);
             }
 
-            if (command.Status == OrganizationBranchStatus.Active)
+            if (command.Status is not null)
             {
-                branch.Activate(clock.UtcNow);
-            }
-
-            if (command.Status == OrganizationBranchStatus.Inactive)
-            {
-                branch.Deactivate(clock.UtcNow);
-            }
-
-            if (command.Status == OrganizationBranchStatus.Archived)
-            {
-                branch.Archive(clock.UtcNow);
+                return ApplicationResult<OrganizationBranchDto>.Failure(
+                    ApplicationErrorCodes.StepUpRequired,
+                    "Branch status changes require a dedicated governance action with password step-up.");
             }
         }
         catch (DomainException ex)
@@ -356,6 +351,91 @@ public sealed class ArchiveBranch(IOrganizationBranchRepository branches, IPlatf
         await branches.UpdateAsync(branch, cancellationToken).ConfigureAwait(false);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return ApplicationResult<OrganizationBranchDto>.Success(BranchMapper.ToDto(branch));
+    }
+}
+
+public sealed class SuspendBranch(
+    IOrganizationBranchRepository branches,
+    IPosDeviceRepository devices,
+    IPlatformUnitOfWork unitOfWork,
+    IClock clock)
+{
+    public async Task<ApplicationResult<OrganizationBranchDto>> ExecuteAsync(
+        PlatformOrganizationId organizationId,
+        OrganizationBranchId branchId,
+        PlatformUserId actorUserId,
+        string reason,
+        CancellationToken cancellationToken = default)
+    {
+        var branch = await branches.GetByIdAsync(branchId, cancellationToken).ConfigureAwait(false);
+        if (branch is null || branch.OrganizationId != organizationId)
+        {
+            return ApplicationResult<OrganizationBranchDto>.Failure(ApplicationErrorCodes.BranchNotFound, "Branch was not found.");
+        }
+
+        var activeDevices = (await devices
+            .ListByOrganizationAsync(organizationId, cancellationToken)
+            .ConfigureAwait(false))
+            .Count(d => d.BranchId == branchId && d.Status == PosDeviceStatus.Active);
+        if (activeDevices > 0)
+        {
+            return ApplicationResult<OrganizationBranchDto>.Failure(
+                DomainErrorCodes.OrganizationBranchSuspendBlockedActiveDevices,
+                "Revoke or reassign active POS devices on this branch before suspending it.");
+        }
+
+        try
+        {
+            branch.Suspend(actorUserId, reason, clock.UtcNow);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<OrganizationBranchDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+
+        await branches.UpdateAsync(branch, cancellationToken).ConfigureAwait(false);
+        await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return ApplicationResult<OrganizationBranchDto>.Success(BranchMapper.ToDto(branch));
+    }
+}
+
+public sealed class ReactivateBranch(
+    IOrganizationBranchRepository branches,
+    IBranchDeliveryPolicyRepository policies,
+    IPlatformUnitOfWork unitOfWork,
+    IClock clock)
+{
+    public async Task<ApplicationResult<OrganizationBranchDto>> ExecuteAsync(
+        PlatformOrganizationId organizationId,
+        OrganizationBranchId branchId,
+        CancellationToken cancellationToken = default)
+    {
+        var branch = await branches.GetByIdAsync(branchId, cancellationToken).ConfigureAwait(false);
+        if (branch is null || branch.OrganizationId != organizationId)
+        {
+            return ApplicationResult<OrganizationBranchDto>.Failure(ApplicationErrorCodes.BranchNotFound, "Branch was not found.");
+        }
+
+        if (branch.Status == OrganizationBranchStatus.Archived)
+        {
+            return ApplicationResult<OrganizationBranchDto>.Failure(
+                DomainErrorCodes.InvalidOrganizationBranchStatusTransition,
+                "An archived branch cannot be reactivated.");
+        }
+
+        try
+        {
+            branch.Activate(clock.UtcNow);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<OrganizationBranchDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+
+        await branches.UpdateAsync(branch, cancellationToken).ConfigureAwait(false);
+        await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        var policy = await policies.GetByBranchIdAsync(branch.Id, cancellationToken).ConfigureAwait(false);
+        return ApplicationResult<OrganizationBranchDto>.Success(BranchMapper.ToDto(branch, policy));
     }
 }
 
@@ -589,7 +669,10 @@ internal static class BranchMapper
             readiness?.PickupOperational ?? false,
             readiness?.DeliveryOperational ?? false,
             GetBranchFulfillmentReadiness.BuildStoreStatusMessage(readiness?.StoreOpenState),
-            policy is null ? null : ToDto(policy));
+            policy is null ? null : ToDto(policy),
+            x.SuspendedAtUtc,
+            x.SuspendedByUserId?.Value,
+            x.SuspensionReason);
 
     public static BranchDeliveryPolicyDto ToDto(BranchDeliveryPolicy x) =>
         new(

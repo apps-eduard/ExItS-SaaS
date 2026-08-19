@@ -178,7 +178,10 @@
     <value>Please fix the following:</value>
   </data>
   <data name="Confirm_ReasonLabel" xml:space="preserve">
-    <value>Reason (optional)</value>
+    <value>Reason</value>
+  </data>
+  <data name="Confirm_PasswordLabel" xml:space="preserve">
+    <value>Current password</value>
   </data>
   <data name="Data_TableLabel" xml:space="preserve">
     <value>Data table</value>

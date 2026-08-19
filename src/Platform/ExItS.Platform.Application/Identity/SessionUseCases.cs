@@ -452,12 +452,39 @@ public sealed class ValidateAndRenewPlatformSession
                 "Session is invalid.");
         }
 
-        if (_sessionOptions.SlidingRenewal)
+        if (_sessionOptions.SlidingRenewal
+            && ShouldPersistSlidingRenewal(session.LastActivityAtUtc, utcNow, _sessionOptions.SlidingRenewalPersistSeconds))
         {
             var idle = TimeSpan.FromMinutes(Math.Max(1, _sessionOptions.IdleTimeoutMinutes));
             session.RecordActivity(utcNow, idle);
             await _sessions.UpdateAsync(session, cancellationToken).ConfigureAwait(false);
-            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (PersistenceConflictException)
+            {
+                // Another request already renewed this session (optimistic xmin). Reload and
+                // authenticate if still valid — do not fail the request for a lost activity write.
+                var refreshed = await _sessions
+                    .GetByTokenHashAsync(session.TokenHash, cancellationToken)
+                    .ConfigureAwait(false);
+                if (refreshed is null || refreshed.RevokedAtUtc is not null)
+                {
+                    return ApplicationResult<PlatformAuthSessionInfoDto>.Failure(
+                        ApplicationErrorCodes.SessionInvalid,
+                        "Session is invalid.");
+                }
+
+                if (refreshed.ExpiresAtUtc <= utcNow || refreshed.AbsoluteExpiresAtUtc <= utcNow)
+                {
+                    return ApplicationResult<PlatformAuthSessionInfoDto>.Failure(
+                        ApplicationErrorCodes.SessionExpired,
+                        "Session has expired.");
+                }
+
+                session = refreshed;
+            }
         }
 
         Guid? orgId = null;
@@ -498,5 +525,18 @@ public sealed class ValidateAndRenewPlatformSession
             session.AccountProfileId.Value,
             session.AccountClass.ToString(),
             session.AllowedScope.ToString()));
+    }
+
+    internal static bool ShouldPersistSlidingRenewal(
+        DateTimeOffset lastActivityAtUtc,
+        DateTimeOffset utcNow,
+        int persistSeconds)
+    {
+        if (persistSeconds <= 0)
+        {
+            return true;
+        }
+
+        return utcNow - lastActivityAtUtc >= TimeSpan.FromSeconds(persistSeconds);
     }
 }

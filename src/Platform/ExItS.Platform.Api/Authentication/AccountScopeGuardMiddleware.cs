@@ -179,7 +179,11 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
             // Platform administration, catalog, global subscriptions, RBAC, and users stay Platform-only.
             if (accountClass is AccountClass.Organization)
             {
-                return path.StartsWith("/api/v1/platform/organizations", StringComparison.OrdinalIgnoreCase);
+                // Allow organization-scoped governance APIs that still live under /api/v1/platform/*.
+                // These require trusted selected-organization context and server-side authorization.
+                return path.StartsWith("/api/v1/platform/organizations", StringComparison.OrdinalIgnoreCase)
+                    || path.StartsWith("/api/v1/platform/memberships", StringComparison.OrdinalIgnoreCase)
+                    || path.StartsWith("/api/v1/platform/pos-devices", StringComparison.OrdinalIgnoreCase);
             }
 
             return accountClass is AccountClass.Platform;

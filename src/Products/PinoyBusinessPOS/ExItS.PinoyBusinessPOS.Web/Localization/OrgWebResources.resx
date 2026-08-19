@@ -126,6 +126,12 @@
   <data name="Branches_Archive" xml:space="preserve">
     <value>Archive</value>
   </data>
+  <data name="Branches_ArchiveTitle" xml:space="preserve">
+    <value>Archive {0}</value>
+  </data>
+  <data name="Branches_ArchiveMessage" xml:space="preserve">
+    <value>This branch will stop accepting new operations. History, inventory, and audit records are preserved.</value>
+  </data>
   <data name="Branches_Primary" xml:space="preserve">
     <value>Primary</value>
   </data>

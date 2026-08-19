@@ -178,7 +178,10 @@
     <value>Pakisayos ang mga sumusunod:</value>
   </data>
   <data name="Confirm_ReasonLabel" xml:space="preserve">
-    <value>Dahilan (opsyonal)</value>
+    <value>Dahilan</value>
+  </data>
+  <data name="Confirm_PasswordLabel" xml:space="preserve">
+    <value>Kasalukuyang password</value>
   </data>
   <data name="Data_TableLabel" xml:space="preserve">
     <value>Talahanayan ng datos</value>

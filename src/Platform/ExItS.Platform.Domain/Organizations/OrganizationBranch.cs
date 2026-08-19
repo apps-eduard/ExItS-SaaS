@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using ExItS.Platform.Domain.Common;
+using ExItS.Platform.Domain.Identity;
 
 namespace ExItS.Platform.Domain.Organizations;
 
@@ -39,6 +40,9 @@ public sealed class OrganizationBranch
     public OnlineOrdersPauseReason? PauseReason { get; private set; }
     public bool IsPrimary { get; }
     public OrganizationBranchStatus Status { get; private set; }
+    public DateTimeOffset? SuspendedAtUtc { get; private set; }
+    public PlatformUserId? SuspendedByUserId { get; private set; }
+    public string? SuspensionReason { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -84,6 +88,9 @@ public sealed class OrganizationBranch
         OnlineOrdersPauseReason? onlineOrdersPauseReason,
         bool isPrimary,
         OrganizationBranchStatus status,
+        DateTimeOffset? suspendedAtUtc,
+        PlatformUserId? suspendedByUserId,
+        string? suspensionReason,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc)
     {
@@ -108,6 +115,9 @@ public sealed class OrganizationBranch
         PauseReason = onlineOrdersPauseReason;
         IsPrimary = isPrimary;
         Status = status;
+        SuspendedAtUtc = suspendedAtUtc;
+        SuspendedByUserId = suspendedByUserId;
+        SuspensionReason = suspensionReason;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
     }
@@ -119,7 +129,10 @@ public sealed class OrganizationBranch
             latitude: null, longitude: null,
             pickupEnabled: false, deliveryEnabled: false, customerOrderingEnabled: false,
             contactPhone: null, timeZoneId: null, onlineOrdersPaused: false, onlineOrdersPauseReason: null,
-            isPrimary: true, OrganizationBranchStatus.Active, utcNow, id: null);
+            isPrimary: true,
+            status: OrganizationBranchStatus.Active,
+            utcNow: utcNow,
+            id: null);
 
     public static OrganizationBranch Create(
         PlatformOrganizationId organizationId,
@@ -143,7 +156,10 @@ public sealed class OrganizationBranch
             addressLine1, addressLine2, city, region, postalCode, countryCode,
             latitude, longitude, pickupEnabled, deliveryEnabled, customerOrderingEnabled,
             contactPhone: null, timeZoneId: null, onlineOrdersPaused: false, onlineOrdersPauseReason: null,
-            isPrimary: false, OrganizationBranchStatus.Active, utcNow, id);
+            isPrimary: false,
+            status: OrganizationBranchStatus.Active,
+            utcNow: utcNow,
+            id: id);
 
     internal static OrganizationBranch Rehydrate(
         OrganizationBranchId id,
@@ -168,7 +184,10 @@ public sealed class OrganizationBranch
         string? contactPhone = null,
         string? timeZoneId = null,
         bool onlineOrdersPaused = false,
-        OnlineOrdersPauseReason? onlineOrdersPauseReason = null) =>
+        OnlineOrdersPauseReason? onlineOrdersPauseReason = null,
+        DateTimeOffset? suspendedAtUtc = null,
+        PlatformUserId? suspendedByUserId = null,
+        string? suspensionReason = null) =>
         new(
             id,
             organizationId,
@@ -191,6 +210,9 @@ public sealed class OrganizationBranch
             onlineOrdersPauseReason,
             isPrimary,
             status,
+            suspendedAtUtc,
+            suspendedByUserId,
+            NormalizeSuspensionReason(suspensionReason),
             createdAtUtc,
             updatedAtUtc);
 
@@ -307,7 +329,53 @@ public sealed class OrganizationBranch
         UpdatedAtUtc = utcNow;
     }
 
-    public void Activate(DateTimeOffset utcNow) => TransitionTo(OrganizationBranchStatus.Active, utcNow);
+    public void Activate(DateTimeOffset utcNow)
+    {
+        EnsureMutable(utcNow);
+        if (Status == OrganizationBranchStatus.Archived)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidOrganizationBranchStatusTransition,
+                "An archived branch cannot be reactivated through this path.");
+        }
+
+        Status = OrganizationBranchStatus.Active;
+        SuspendedAtUtc = null;
+        SuspendedByUserId = null;
+        SuspensionReason = null;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void Suspend(PlatformUserId actorUserId, string reason, DateTimeOffset utcNow)
+    {
+        ArgumentNullException.ThrowIfNull(actorUserId);
+        EnsureMutable(utcNow);
+        if (IsPrimary)
+        {
+            throw new DomainException(
+                DomainErrorCodes.OrganizationBranchPrimarySuspendForbidden,
+                "The primary branch cannot be suspended.");
+        }
+
+        if (Status == OrganizationBranchStatus.Archived)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidOrganizationBranchStatusTransition,
+                "An archived branch cannot be suspended.");
+        }
+
+        var normalizedReason = NormalizeSuspensionReason(reason)
+            ?? throw new DomainException(
+                DomainErrorCodes.OrganizationBranchSuspensionReasonRequired,
+                "A suspension reason is required.");
+
+        Status = OrganizationBranchStatus.Inactive;
+        SuspendedAtUtc = utcNow;
+        SuspendedByUserId = actorUserId;
+        SuspensionReason = normalizedReason;
+        UpdatedAtUtc = utcNow;
+    }
+
     public void Deactivate(DateTimeOffset utcNow) => TransitionTo(OrganizationBranchStatus.Inactive, utcNow);
     public void Archive(DateTimeOffset utcNow) => TransitionTo(OrganizationBranchStatus.Archived, utcNow);
 
@@ -369,7 +437,10 @@ public sealed class OrganizationBranch
         bool isPrimary,
         OrganizationBranchStatus status,
         DateTimeOffset utcNow,
-        OrganizationBranchId? id)
+        OrganizationBranchId? id,
+        DateTimeOffset? suspendedAtUtc = null,
+        PlatformUserId? suspendedByUserId = null,
+        string? suspensionReason = null)
     {
         ArgumentNullException.ThrowIfNull(organizationId);
         DomainTime.EnsureUtc(utcNow);
@@ -419,8 +490,26 @@ public sealed class OrganizationBranch
             onlineOrdersPauseReason,
             isPrimary,
             status,
+            suspendedAtUtc,
+            suspendedByUserId,
+            NormalizeSuspensionReason(suspensionReason),
             utcNow,
             utcNow);
+    }
+
+    private static string? NormalizeSuspensionReason(string? reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            return null;
+        }
+
+        var trimmed = reason.Trim();
+        return trimmed.Length is < 8 or > 500
+            ? throw new DomainException(
+                DomainErrorCodes.OrganizationBranchSuspensionReasonRequired,
+                "Suspension reason must be between 8 and 500 characters.")
+            : trimmed;
     }
 
     private void EnsureMutable(DateTimeOffset utcNow)

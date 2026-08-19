@@ -1,6 +1,7 @@
 @page "/organization/devices"
 @page "/org/devices"
 @using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Application.Platform
 @using System.Threading
 @implements IDisposable
 @inject ICurrentUserContext CurrentUser
@@ -101,13 +102,22 @@
         }
 
         <ConfirmDialog Visible="@(_revokeTarget is not null)"
-                       VisibleChanged="v => { if (!v) _revokeTarget = null; }"
+                       VisibleChanged="v => { if (!v) CloseRevokeDialog(); }"
                        Title="@L["Device_RevokeTitle"]"
                        Message="@L["Device_RevokeMessage", _revokeTarget?.FriendlyName ?? string.Empty]"
                        Danger="true"
+                       ShowReason="true"
+                       ShowPassword="true"
+                       RequireReason="true"
+                       RequirePassword="true"
+                       Reason="@_revokeReason"
+                       ReasonChanged="v => _revokeReason = v"
+                       Password="@_revokePassword"
+                       PasswordChanged="v => _revokePassword = v"
                        ConfirmLabel="@L["Device_Revoke"]"
                        IsLoading="@_busy"
-                       OnConfirm="ConfirmRevokeAsync" />
+                       OnConfirm="ConfirmRevokeAsync"
+                       OnCancel="CloseRevokeDialog" />
     </Page>
 </div>
 
@@ -119,6 +129,8 @@
     private bool _busy;
     private string? _error;
     private PosDeviceDto? _revokeTarget;
+    private string? _revokeReason;
+    private string? _revokePassword;
     private PosDeviceRegistrationTokenDto? _registrationToken;
     private string? _registrationQrDataUrl;
     private string _expiryLabel = string.Empty;
@@ -216,20 +228,52 @@
         }
     }
 
-    private void AskRevoke(PosDeviceDto device) => _revokeTarget = device;
+    private void AskRevoke(PosDeviceDto device)
+    {
+        _revokeTarget = device;
+        _revokeReason = null;
+        _revokePassword = null;
+    }
+
+    private void CloseRevokeDialog()
+    {
+        if (_busy) return;
+        _revokeTarget = null;
+        _revokeReason = null;
+        _revokePassword = null;
+    }
 
     private async Task ConfirmRevokeAsync()
     {
-        if (_revokeTarget is null || CurrentUser.Session?.OrganizationId is not Guid orgId)
+        if (_revokeTarget is null || CurrentUser.Session?.OrganizationId is not Guid orgId
+            || string.IsNullOrWhiteSpace(_revokeReason) || string.IsNullOrWhiteSpace(_revokePassword))
         {
             return;
         }
 
         var deviceId = _revokeTarget.Id;
         _busy = true;
+        var password = _revokePassword;
+        _revokePassword = null;
         try
         {
-            var result = await Platform.RevokePosDeviceAsync(orgId, deviceId);
+            var stepUp = await GovernanceCriticalActionFlow.IssueStepUpTokenAsync(
+                Platform,
+                orgId,
+                PlatformGovernanceActionCodes.PosDeviceRevoke,
+                PlatformGovernanceTargetTypes.PosDevice,
+                deviceId,
+                password);
+            if (!stepUp.IsSuccess || stepUp.Data is null)
+            {
+                _error = L["Device_RevokeFailed"];
+                return;
+            }
+
+            var result = await Platform.RevokePosDeviceAsync(
+                orgId,
+                deviceId,
+                new GovernanceCriticalActionRequest(_revokeReason.Trim(), stepUp.Data));
             if (!result.IsSuccess)
             {
                 _error = L["Device_RevokeFailed"];
@@ -238,11 +282,12 @@
 
             _devices = _devices.Select(x => x.Id == deviceId ? x with { Status = "Revoked" } : x).ToList();
             _used = Math.Max(0, _used - 1);
-            _revokeTarget = null;
+            CloseRevokeDialog();
         }
         finally
         {
             _busy = false;
+            _revokePassword = null;
         }
     }
 

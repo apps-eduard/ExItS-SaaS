@@ -1,7 +1,9 @@
 using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Governance;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Domain.Audit;
+using ExItS.Platform.Domain.Governance;
 using ExItS.Platform.Domain.Organizations;
 
 namespace ExItS.Platform.Api.Organizations;
@@ -117,6 +119,13 @@ internal static class BranchAndDeviceEndpoints
             if (denied is not null) return denied;
             var status = string.IsNullOrWhiteSpace(body.Status) ? null : Enum.TryParse<OrganizationBranchStatus>(body.Status, true, out var value) ? value : (OrganizationBranchStatus?)null;
             if (!string.IsNullOrWhiteSpace(body.Status) && status is null) return PlatformApiResults.Problem(ApplicationErrorCodes.DomainViolation, "Branch status is invalid.", StatusCodes.Status400BadRequest);
+            if (status is not null)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.StepUpRequired,
+                    "Branch status changes require suspend, reactivate, or archive actions with password step-up.",
+                    StatusCodes.Status403Forbidden);
+            }
             var result = await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), OrganizationBranchId.From(branchId),
                 new UpdateBranchCommand(
                     body.Name ?? string.Empty,
@@ -134,25 +143,133 @@ internal static class BranchAndDeviceEndpoints
                     body.TimeZoneId), ct).ConfigureAwait(false);
             if (result.IsSuccess && result.Value is not null)
             {
-                var action = status == OrganizationBranchStatus.Active
-                    ? PlatformAuditActions.OrganizationBranchReactivated
-                    : PlatformAuditActions.OrganizationBranchUpdated;
-                var verb = status == OrganizationBranchStatus.Active ? "Reactivated" : "Updated";
                 await OrganizationGovernanceAuditWriter.WriteBranchAsync(
                     authz,
-                    action,
+                    PlatformAuditActions.OrganizationBranchUpdated,
                     result.Value,
                     organizationId,
-                    OrganizationGovernanceAuditWriter.BranchSummary(result.Value, verb),
+                    OrganizationGovernanceAuditWriter.BranchSummary(result.Value, "Updated"),
                     ct).ConfigureAwait(false);
             }
 
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
-        root.MapPost("/branches/{branchId:guid}/archive", async (Guid organizationId, Guid branchId, ArchiveBranch useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
+        root.MapPost("/branches/{branchId:guid}/suspend", async (
+            Guid organizationId,
+            Guid branchId,
+            GovernanceCriticalActionRequest body,
+            SuspendBranch useCase,
+            ConsumeGovernanceStepUpGrant stepUp,
+            PlatformOrganizationAuthz authz,
+            PlatformAuthz platformAuthz,
+            CancellationToken ct) =>
+        {
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, PlatformAuditActions.OrganizationBranchSuspended, ct).ConfigureAwait(false);
+            if (denied is not null) return denied;
+
+            var reasonError = GovernanceCriticalActionReason.ValidateRequired(body.Reason);
+            if (reasonError is not null)
+            {
+                return PlatformApiResults.Problem(reasonError.ErrorCode!, reasonError.ErrorMessage!, StatusCodes.Status400BadRequest);
+            }
+
+            var actor = platformAuthz.CurrentActor.PlatformUserId;
+            var stepUpDenied = await GovernanceStepUpHelper.EnsureConsumedAsync(
+                stepUp,
+                actor,
+                PlatformOrganizationId.From(organizationId),
+                GovernanceCriticalActionCodes.BranchSuspend,
+                GovernanceStepUpTargetTypes.OrganizationBranch,
+                branchId,
+                body.StepUpToken,
+                ct).ConfigureAwait(false);
+            if (stepUpDenied is not null) return stepUpDenied;
+            if (actor is null) return PlatformApiResults.Problem(ApplicationErrorCodes.SessionInvalid, "Authenticated Platform user is required.", StatusCodes.Status401Unauthorized);
+
+            var result = await useCase.ExecuteAsync(
+                PlatformOrganizationId.From(organizationId),
+                OrganizationBranchId.From(branchId),
+                actor,
+                body.Reason!.Trim(),
+                ct).ConfigureAwait(false);
+            if (result.IsSuccess && result.Value is not null)
+            {
+                await OrganizationGovernanceAuditWriter.WriteBranchAsync(
+                    authz,
+                    PlatformAuditActions.OrganizationBranchSuspended,
+                    result.Value,
+                    organizationId,
+                    OrganizationGovernanceAuditWriter.BranchSummary(result.Value, $"Suspended. Reason: {body.Reason!.Trim()}"),
+                    ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+        root.MapPost("/branches/{branchId:guid}/reactivate", async (
+            Guid organizationId,
+            Guid branchId,
+            GovernanceCriticalActionRequest body,
+            ReactivateBranch useCase,
+            ConsumeGovernanceStepUpGrant stepUp,
+            PlatformOrganizationAuthz authz,
+            PlatformAuthz platformAuthz,
+            CancellationToken ct) =>
+        {
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, PlatformAuditActions.OrganizationBranchReactivated, ct).ConfigureAwait(false);
+            if (denied is not null) return denied;
+
+            var actor = platformAuthz.CurrentActor.PlatformUserId;
+            var stepUpDenied = await GovernanceStepUpHelper.EnsureConsumedAsync(
+                stepUp,
+                actor,
+                PlatformOrganizationId.From(organizationId),
+                GovernanceCriticalActionCodes.BranchReactivate,
+                GovernanceStepUpTargetTypes.OrganizationBranch,
+                branchId,
+                body.StepUpToken,
+                ct).ConfigureAwait(false);
+            if (stepUpDenied is not null) return stepUpDenied;
+
+            var result = await useCase.ExecuteAsync(
+                PlatformOrganizationId.From(organizationId),
+                OrganizationBranchId.From(branchId),
+                ct).ConfigureAwait(false);
+            if (result.IsSuccess && result.Value is not null)
+            {
+                await OrganizationGovernanceAuditWriter.WriteBranchAsync(
+                    authz,
+                    PlatformAuditActions.OrganizationBranchReactivated,
+                    result.Value,
+                    organizationId,
+                    OrganizationGovernanceAuditWriter.BranchSummary(result.Value, "Reactivated"),
+                    ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+        root.MapPost("/branches/{branchId:guid}/archive", async (Guid organizationId, Guid branchId, GovernanceCriticalActionRequest body, ArchiveBranch useCase, ConsumeGovernanceStepUpGrant stepUp, PlatformOrganizationAuthz authz, PlatformAuthz platformAuthz, CancellationToken ct) =>
         {
             var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, PlatformAuditActions.OrganizationBranchArchived, ct).ConfigureAwait(false);
             if (denied is not null) return denied;
+
+            var reasonError = GovernanceCriticalActionReason.ValidateRequired(body.Reason);
+            if (reasonError is not null)
+            {
+                return PlatformApiResults.Problem(reasonError.ErrorCode!, reasonError.ErrorMessage!, StatusCodes.Status400BadRequest);
+            }
+
+            var actor = platformAuthz.CurrentActor.PlatformUserId;
+            var stepUpDenied = await GovernanceStepUpHelper.EnsureConsumedAsync(
+                stepUp,
+                actor,
+                PlatformOrganizationId.From(organizationId),
+                GovernanceCriticalActionCodes.BranchArchive,
+                GovernanceStepUpTargetTypes.OrganizationBranch,
+                branchId,
+                body.StepUpToken,
+                ct).ConfigureAwait(false);
+            if (stepUpDenied is not null) return stepUpDenied;
+
             var result = await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), OrganizationBranchId.From(branchId), ct).ConfigureAwait(false);
             if (result.IsSuccess && result.Value is not null)
             {
@@ -161,7 +278,7 @@ internal static class BranchAndDeviceEndpoints
                     PlatformAuditActions.OrganizationBranchArchived,
                     result.Value,
                     organizationId,
-                    OrganizationGovernanceAuditWriter.BranchSummary(result.Value, "Archived"),
+                    OrganizationGovernanceAuditWriter.BranchSummary(result.Value, $"Archived. Reason: {body.Reason!.Trim()}"),
                     ct).ConfigureAwait(false);
             }
 
@@ -454,12 +571,32 @@ internal static class BranchAndDeviceEndpoints
 
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
-        root.MapPost("/pos-devices/{deviceId:guid}/revoke", async (Guid organizationId, Guid deviceId, RevokeDevice useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
+        root.MapPost("/pos-devices/{deviceId:guid}/revoke", async (Guid organizationId, Guid deviceId, GovernanceCriticalActionRequest body, RevokeDevice useCase, ConsumeGovernanceStepUpGrant stepUp, PlatformOrganizationAuthz authz, PlatformAuthz platformAuthz, CancellationToken ct) =>
         {
             var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, PlatformAuditActions.PosDeviceRevoked, ct).ConfigureAwait(false);
             if (denied is not null) return denied;
-            if (authz.Inner.CurrentActor.PlatformUserId is null) return PlatformApiResults.Problem(ApplicationErrorCodes.PosDeviceNotAuthorized, "A signed-in Platform user is required.", StatusCodes.Status403Forbidden);
-            var result = await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), PosDeviceId.From(deviceId), authz.Inner.CurrentActor.PlatformUserId, ct).ConfigureAwait(false);
+
+            var reasonError = GovernanceCriticalActionReason.ValidateRequired(body.Reason);
+            if (reasonError is not null)
+            {
+                return PlatformApiResults.Problem(reasonError.ErrorCode!, reasonError.ErrorMessage!, StatusCodes.Status400BadRequest);
+            }
+
+            var actor = platformAuthz.CurrentActor.PlatformUserId;
+            if (actor is null) return PlatformApiResults.Problem(ApplicationErrorCodes.PosDeviceNotAuthorized, "A signed-in Platform user is required.", StatusCodes.Status403Forbidden);
+
+            var stepUpDenied = await GovernanceStepUpHelper.EnsureConsumedAsync(
+                stepUp,
+                actor,
+                PlatformOrganizationId.From(organizationId),
+                GovernanceCriticalActionCodes.PosDeviceRevoke,
+                GovernanceStepUpTargetTypes.PosDevice,
+                deviceId,
+                body.StepUpToken,
+                ct).ConfigureAwait(false);
+            if (stepUpDenied is not null) return stepUpDenied;
+
+            var result = await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), PosDeviceId.From(deviceId), actor, ct).ConfigureAwait(false);
             if (result.IsSuccess && result.Value is not null)
             {
                 await OrganizationGovernanceAuditWriter.WriteDeviceAsync(
@@ -467,7 +604,7 @@ internal static class BranchAndDeviceEndpoints
                     PlatformAuditActions.PosDeviceRevoked,
                     result.Value,
                     organizationId,
-                    OrganizationGovernanceAuditWriter.DeviceSummary(result.Value, "Revoked"),
+                    OrganizationGovernanceAuditWriter.DeviceSummary(result.Value, $"Revoked. Reason: {body.Reason!.Trim()}"),
                     ct).ConfigureAwait(false);
             }
 

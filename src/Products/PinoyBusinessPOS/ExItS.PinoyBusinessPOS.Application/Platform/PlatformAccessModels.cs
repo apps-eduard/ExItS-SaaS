@@ -72,7 +72,43 @@ public sealed record OrganizationBranchDto(
     bool PickupOperational = false,
     bool DeliveryOperational = false,
     string? StoreStatusMessage = null,
-    BranchDeliveryPolicyDto? DeliveryPolicy = null);
+    BranchDeliveryPolicyDto? DeliveryPolicy = null,
+    DateTimeOffset? SuspendedAtUtc = null,
+    Guid? SuspendedByUserId = null,
+    string? SuspensionReason = null);
+
+public static class PlatformGovernanceActionCodes
+{
+    public const string BranchSuspend = "platform.organization.branch.suspend";
+    public const string BranchArchive = "platform.organization.branch.archive";
+    public const string BranchReactivate = "platform.organization.branch.reactivate";
+    public const string MembershipSuspend = "platform.membership.suspend";
+    public const string MembershipRevoke = "platform.membership.revoke";
+    public const string MembershipRoleChange = "platform.membership.role_change";
+    public const string PosDeviceRevoke = "platform.pos_device.revoke";
+}
+
+public static class PlatformGovernanceTargetTypes
+{
+    public const string OrganizationBranch = "OrganizationBranch";
+    public const string OrganizationMembership = "OrganizationMembership";
+    public const string PosDevice = "PosDevice";
+}
+
+public sealed record GovernanceCriticalActionRequest(string? Reason, string? StepUpToken);
+
+public sealed record IssueGovernanceStepUpRequest(
+    string ActionCode,
+    string TargetType,
+    Guid? TargetId,
+    string CurrentPassword);
+
+public sealed record GovernanceStepUpTokenDto(
+    string StepUpToken,
+    DateTimeOffset ExpiresAtUtc,
+    string ActionCode,
+    string TargetType,
+    Guid? TargetId);
 public sealed record OrganizationBranchContextDto(
     Guid OrganizationId,
     Guid BranchId,
@@ -218,7 +254,7 @@ public sealed record PlatformMembershipDto(
     string? DisplayName = null,
     string? Email = null);
 
-public sealed record PlatformMembershipLifecycleRequest(string? Reason = null, string? ActorReference = null);
+public sealed record PlatformMembershipLifecycleRequest(string? Reason = null, string? ActorReference = null, string? StepUpToken = null);
 
 public sealed record MembershipBranchAssignmentDto(
     Guid BranchId,
@@ -1158,11 +1194,34 @@ public interface IPlatformAccessClient
         CancellationToken ct = default);
     Task<ApiResult<BranchCapacityDto>> GetBranchCapacityAsync(Guid organizationId, CancellationToken ct = default);
     Task<ApiResult<OrganizationBranchDto>> CreateBranchAsync(Guid organizationId, CreateBranchRequest request, CancellationToken ct = default);
+    Task<ApiResult<GovernanceStepUpTokenDto>> IssueGovernanceStepUpAsync(
+        Guid organizationId,
+        IssueGovernanceStepUpRequest request,
+        CancellationToken ct = default);
+    Task<ApiResult<OrganizationBranchDto>> SuspendBranchAsync(
+        Guid organizationId,
+        Guid branchId,
+        GovernanceCriticalActionRequest request,
+        CancellationToken ct = default);
+    Task<ApiResult<OrganizationBranchDto>> ReactivateBranchAsync(
+        Guid organizationId,
+        Guid branchId,
+        GovernanceCriticalActionRequest request,
+        CancellationToken ct = default);
+    Task<ApiResult<OrganizationBranchDto>> ArchiveBranchAsync(
+        Guid organizationId,
+        Guid branchId,
+        GovernanceCriticalActionRequest request,
+        CancellationToken ct = default);
     Task<ApiResult<IReadOnlyList<PosDeviceDto>>> GetPosDevicesAsync(Guid organizationId, CancellationToken ct = default);
     Task<ApiResult<PosDeviceCapacityDto>> GetPosDeviceCapacityAsync(Guid organizationId, CancellationToken ct = default);
     Task<ApiResult<PosDeviceDto>> RegisterCurrentDeviceAsync(Guid organizationId, RegisterPosDeviceRequest request, CancellationToken ct = default);
     Task<ApiResult<PosDeviceDto>> RenamePosDeviceAsync(Guid organizationId, Guid deviceId, string friendlyName, CancellationToken ct = default);
-    Task<ApiResult<PosDeviceDto>> RevokePosDeviceAsync(Guid organizationId, Guid deviceId, CancellationToken ct = default);
+    Task<ApiResult<PosDeviceDto>> RevokePosDeviceAsync(
+        Guid organizationId,
+        Guid deviceId,
+        GovernanceCriticalActionRequest request,
+        CancellationToken ct = default);
     Task<ApiResult<PosDeviceAuthorizationDto>> AuthorizePosDeviceAsync(Guid organizationId, AuthorizePosDeviceRequest request, CancellationToken ct = default);
     Task<ApiResult<PlatformPagedResult<PlatformMembershipDto>>> GetUserMembershipsAsync(Guid userId, CancellationToken ct = default);
     Task<ApiResult<PlatformPagedResult<PlatformMembershipDto>>> GetOrganizationMembersAsync(
@@ -1577,12 +1636,6 @@ public interface IPlatformAccessClient
         Guid organizationId,
         Guid branchId,
         UpdateBranchRequest request,
-        CancellationToken ct = default) =>
-        Task.FromResult(ApiResult<OrganizationBranchDto>.Unavailable());
-
-    Task<ApiResult<OrganizationBranchDto>> ArchiveBranchAsync(
-        Guid organizationId,
-        Guid branchId,
         CancellationToken ct = default) =>
         Task.FromResult(ApiResult<OrganizationBranchDto>.Unavailable());
 

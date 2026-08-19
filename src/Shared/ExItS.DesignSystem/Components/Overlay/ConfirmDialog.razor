@@ -25,6 +25,16 @@
                 {
                     <TextArea Label="@ReasonLabelResolved" Value="@Reason" ValueChanged="OnReasonChanged" Rows="3" Disabled="@IsLoading" />
                 }
+                @if (ShowPassword)
+                {
+                    <TextInput Label="@PasswordLabelResolved"
+                               Type="password"
+                               AdditionalAttributes="@_passwordAutocomplete"
+                               Value="@Password"
+                               ValueChanged="OnPasswordChanged"
+                               Disabled="@IsLoading"
+                               Required="true" />
+                }
             </div>
             <div class="exds-dialog__footer">
                 <Button Variant="ButtonVariant.Ghost" Disabled="@IsLoading" OnClick="CancelAsync">@CancelLabelResolved</Button>
@@ -41,9 +51,15 @@
     [Parameter] public string? Message { get; set; }
     [Parameter] public bool Danger { get; set; }
     [Parameter] public bool ShowReason { get; set; }
+    [Parameter] public bool ShowPassword { get; set; }
+    [Parameter] public bool RequireReason { get; set; }
+    [Parameter] public bool RequirePassword { get; set; }
     [Parameter] public string? Reason { get; set; }
     [Parameter] public EventCallback<string?> ReasonChanged { get; set; }
+    [Parameter] public string? Password { get; set; }
+    [Parameter] public EventCallback<string?> PasswordChanged { get; set; }
     [Parameter] public string? ReasonLabel { get; set; }
+    [Parameter] public string? PasswordLabel { get; set; }
     [Parameter] public string? ConfirmLabel { get; set; }
     [Parameter] public string? CancelLabel { get; set; }
     [Parameter] public bool IsLoading { get; set; }
@@ -52,12 +68,14 @@
 
     private readonly string _titleId = "exds-confirm-title-" + Guid.NewGuid().ToString("N");
     private readonly string _messageId = "exds-confirm-msg-" + Guid.NewGuid().ToString("N");
+    private readonly Dictionary<string, object> _passwordAutocomplete = new() { ["autocomplete"] = "current-password" };
     private ElementReference _dialogRef;
     private bool _wasVisible;
 
     private string ConfirmLabelResolved => ConfirmLabel ?? L["Action_Confirm"];
     private string CancelLabelResolved => CancelLabel ?? L["Action_Cancel"];
     private string ReasonLabelResolved => ReasonLabel ?? L["Confirm_ReasonLabel"];
+    private string PasswordLabelResolved => PasswordLabel ?? L["Confirm_PasswordLabel"];
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -82,8 +100,24 @@
         if (ReasonChanged.HasDelegate) await ReasonChanged.InvokeAsync(value);
     }
 
+    private async Task OnPasswordChanged(string? value)
+    {
+        Password = value;
+        if (PasswordChanged.HasDelegate) await PasswordChanged.InvokeAsync(value);
+    }
+
     private async Task ConfirmAsync()
     {
+        if (RequireReason && string.IsNullOrWhiteSpace(Reason))
+        {
+            return;
+        }
+
+        if (RequirePassword && string.IsNullOrWhiteSpace(Password))
+        {
+            return;
+        }
+
         if (OnConfirm.HasDelegate) await OnConfirm.InvokeAsync();
     }
 

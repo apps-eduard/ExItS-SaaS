@@ -23,6 +23,8 @@ else
 
         @if (!_loading && _branch is not null)
         {
+            <ErrorBoundary>
+            <ChildContent>
             <section class="org-panel org-setup">
                 <h3>@L["Branches_Setup"]</h3>
                 <div class="org-setup-rows" role="list">
@@ -101,32 +103,45 @@ else
                 </div>
             </section>
 
-            <details id="branch-details" class="org-fold" @key="_detailsTick" open="@_detailsOpen">
-                <summary>
+            <section id="branch-details" class="org-fold">
+                <button type="button" class="org-setup-nav org-fold-toggle"
+                        aria-expanded="@_detailsOpen"
+                        aria-controls="branch-details-body"
+                        @onclick="ToggleDetails">
                     <span>@L["Branches_Details"]</span>
                     <span class="org-badge">@L["Branches_StatusReady"]</span>
                     <span aria-hidden="true">›</span>
-                </summary>
-                <div class="org-form-grid">
+                </button>
+                @if (_detailsOpen)
+                {
+                    <div id="branch-details-body" class="org-form-grid">
                     <ExitsField Label="@L["Branches_FieldName"]"><Input @bind-Value="_name" Disabled="_busy" /></ExitsField>
                     <ExitsField Label="@L["Branches_ContactPhone"]"><Input @bind-Value="_contactPhone" Disabled="_busy" /></ExitsField>
                     <ExitsField Label="@L["Branches_TimeZone"]"><Input @bind-Value="_timeZoneId" Disabled="_busy" Placeholder="@L["Branches_TimeZoneHint"]" /></ExitsField>
                     <ExitsField Label="@L["Branches_ColStatus"]">
                         <select class="org-select" @bind="_status" disabled="@_busy">
-                            <option value="Active">@L["Branches_StatusActive"]</option>
-                            <option value="Inactive">@L["Branches_StatusInactive"]</option>
+                            @foreach (var status in BranchLocationUi.StatusCodesFor(_status))
+                            {
+                                <option value="@status">@StatusLabel(status)</option>
+                            }
                         </select>
                     </ExitsField>
-                </div>
-            </details>
+                    </div>
+                }
+            </section>
 
-            <details id="branch-address" class="org-fold" open="@_addressOpen">
-                <summary>
+            <section id="branch-address" class="org-fold">
+                <button type="button" class="org-setup-nav org-fold-toggle"
+                        aria-expanded="@_addressOpen"
+                        aria-controls="branch-address-body"
+                        @onclick="() => _addressOpen = !_addressOpen">
                     <span>@L["Branches_AddressLocation"]</span>
                     <span class="org-badge">@(AddressIncomplete || MapIncomplete ? L["Branches_Required"] : L["Branches_StatusReady"])</span>
                     <span aria-hidden="true">›</span>
-                </summary>
-                <div class="org-address-grid">
+                </button>
+                @if (_addressOpen)
+                {
+                    <div id="branch-address-body" class="org-address-grid">
                     <ExitsField Label="@L["Branches_AddressLine1"]"><Input @bind-Value="_address1" Disabled="_busy" /></ExitsField>
                     @if (_showAddressLine2 || !string.IsNullOrWhiteSpace(_address2))
                     {
@@ -142,7 +157,7 @@ else
                         <ExitsField Label="@L["Branches_PostalCode"]"><Input @bind-Value="_postalCode" Disabled="_busy" /></ExitsField>
                         <ExitsField Label="@L["Branches_Country"]">
                             <select class="org-select" @bind="_countryCode" disabled="@_busy" aria-label="@L["Branches_Country"]">
-                                <option value="">@L["Branches_None"]</option>
+                                <option value="@BranchLocationUi.UnspecifiedCode">@L["Branches_None"]</option>
                                 @foreach (var country in BranchLocationUi.CodesFor(_countryCode))
                                 {
                                     <option value="@country">@CountryName(country)</option>
@@ -166,16 +181,23 @@ else
                         <ExitsField Label="@L["Branches_Latitude"]"><Input @bind-Value="_latitude" Disabled="_busy" /></ExitsField>
                         <ExitsField Label="@L["Branches_Longitude"]"><Input @bind-Value="_longitude" Disabled="_busy" /></ExitsField>
                     }
-                </div>
-            </details>
+                    </div>
+                }
+            </section>
 
-            <details id="branch-hours" class="org-fold" @key="_hoursTick" open="@_hoursOpen">
-                <summary>
+            <section id="branch-hours" class="org-fold">
+                <button type="button" class="org-setup-nav org-fold-toggle"
+                        aria-expanded="@_hoursOpen"
+                        aria-controls="branch-hours-body"
+                        @onclick="ToggleHours">
                     <span>@L["Branches_OperatingHours"]</span>
                     <span class="org-badge" title="@HoursStatusLabel()">@CompactStatus(HoursStatusLabel())</span>
                     <span aria-hidden="true">›</span>
-                </summary>
-                <div class="org-hours" role="list">
+                </button>
+                @if (_hoursOpen)
+                {
+                    <div id="branch-hours-body">
+                    <div class="org-hours" role="list">
                     @foreach (var day in _hours)
                     {
                         <button type="button"
@@ -189,37 +211,45 @@ else
                             <span aria-hidden="true">›</span>
                         </button>
                     }
-                </div>
-                @if (_showCopyPanel)
-                {
-                    <div class="org-hours-copy">
-                        <p class="org-note">@L["Branches_CopyHoursTo"]</p>
-                        <div class="org-hours-copy__days">
-                            @foreach (var day in _hours.Where(d => !string.Equals(d.DayOfWeek, nameof(DayOfWeek.Monday), StringComparison.OrdinalIgnoreCase)))
-                            {
-                                <Checkbox Checked="@_copyTargets.Contains(day.DayOfWeek)"
-                                          CheckedChanged="@((bool value) => ToggleCopyTarget(day.DayOfWeek, value))">
-                                    @DayLabel(day.DayOfWeek)
-                                </Checkbox>
-                            }
+                    </div>
+                    @if (_showCopyPanel)
+                    {
+                        <div class="org-hours-copy">
+                            <p class="org-note">@L["Branches_CopyHoursTo"]</p>
+                            <div class="org-hours-copy__days">
+                                @foreach (var day in _hours.Where(d => !string.Equals(d.DayOfWeek, nameof(DayOfWeek.Monday), StringComparison.OrdinalIgnoreCase)))
+                                {
+                                    <Checkbox Checked="@_copyTargets.Contains(day.DayOfWeek)"
+                                              CheckedChanged="@((bool value) => ToggleCopyTarget(day.DayOfWeek, value))">
+                                        @DayLabel(day.DayOfWeek)
+                                    </Checkbox>
+                                }
+                            </div>
+                            <Button Size="@ButtonSize.Small" Disabled="_busy" OnClick="ApplyCopyHours">@L["Branches_ApplyCopy"]</Button>
                         </div>
-                        <Button Size="@ButtonSize.Small" Disabled="_busy" OnClick="ApplyCopyHours">@L["Branches_ApplyCopy"]</Button>
+                    }
+                    else
+                    {
+                        <Button Size="@ButtonSize.Small" Disabled="_busy" OnClick="OpenCopyPanel">@L["Branches_CopyHours"]</Button>
+                    }
                     </div>
                 }
-                else
-                {
-                    <Button Size="@ButtonSize.Small" Disabled="_busy" OnClick="OpenCopyPanel">@L["Branches_CopyHours"]</Button>
-                }
-            </details>
+            </section>
 
             @if (_readiness is not null)
             {
-                <details id="branch-fulfillment" class="org-fold" @key="_fulfillmentTick" open="@_fulfillmentOpen">
-                    <summary>
+                <section id="branch-fulfillment" class="org-fold">
+                    <button type="button" class="org-setup-nav org-fold-toggle"
+                            aria-expanded="@_fulfillmentOpen"
+                            aria-controls="branch-fulfillment-body"
+                            @onclick="ToggleFulfillment">
                         <span>@L["Branches_Fulfillment"]</span>
                         <span class="org-badge" title="@FulfillmentRowStatus()">@FulfillmentRowStatus()</span>
                         <span aria-hidden="true">›</span>
-                    </summary>
+                    </button>
+                    @if (_fulfillmentOpen)
+                    {
+                    <div id="branch-fulfillment-body">
                     @if (!string.IsNullOrWhiteSpace(_readiness.StoreStatusMessage))
                     {
                         <p class="org-note">@_readiness.StoreStatusMessage</p>
@@ -335,13 +365,20 @@ else
                             <ExitsField Label="@L["Branches_FreeThreshold"]"><Input @bind-Value="_freeThreshold" Disabled="_busy" Placeholder="@L["Branches_None"]" /></ExitsField>
                         </div>
                     }
-                </details>
+                    </div>
+                    }
+                </section>
             }
 
             <div class="org-branch-edit__sticky" role="region" aria-label="@L["Branches_SaveActions"]">
                 <Button OnClick='() => Nav.NavigateTo("/organization/branches")'>@L["Common_Cancel"]</Button>
                 <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveAsync">@L["Common_Save"]</Button>
             </div>
+            </ChildContent>
+            <ErrorContent>
+                <OrgAlert Error="@L["Error_GenericLoad"].Value" />
+            </ErrorContent>
+            </ErrorBoundary>
         }
 
         <Modal Title="@(_dayDraft is null ? L["Branches_OperatingHours"].Value : DayFullLabel(_dayDraft.DayOfWeek))"
@@ -417,22 +454,19 @@ else
     private bool _onlineOpen;
     private bool _pickupOpen;
     private bool _deliveryOpen;
-    private int _detailsTick;
-    private int _hoursTick;
-    private int _fulfillmentTick;
     private string? _error;
     private string? _success;
     private string? _code;
     private string? _name;
     private string? _contactPhone;
     private string? _timeZoneId;
-    private string? _status;
+    private string _status = "Active";
     private string? _address1;
     private string? _address2;
     private string? _city;
     private string? _region;
     private string? _postalCode;
-    private string? _countryCode;
+    private string _countryCode = BranchLocationUi.UnspecifiedCode;
     private string? _latitude;
     private string? _longitude;
     private int _deviceCount;
@@ -452,23 +486,33 @@ else
     private async Task LoadAsync()
     {
         _loading = true;
-        var orgId = CurrentUser.Session?.OrganizationId;
-        if (orgId is null) { _loading = false; _error = L["Error_SessionExpired"]; return; }
-        var list = await Platform.GetBranchesAsync(orgId.Value);
-        _branch = list.Data?.FirstOrDefault(b => b.Id == BranchId);
-        if (_branch is null) { _error = L["Error_GenericLoad"]; _loading = false; return; }
-        Map(_branch);
-        await LoadFulfillmentAsync(orgId.Value);
-        var devices = await Platform.GetPosDevicesAsync(orgId.Value);
-        _deviceCount = devices.Data?.Count(d => d.BranchId == BranchId) ?? 0;
-        _showDeliverySettings = false;
-        _showAddressLine2 = !string.IsNullOrWhiteSpace(_address2);
-        _mapOpen = false;
-        _detailsOpen = false;
-        _addressOpen = AddressIncomplete;
-        _hoursOpen = !BranchHoursScheduleUi.HasConfiguredHours(_hours);
-        _fulfillmentOpen = false;
-        _loading = false;
+        try
+        {
+            var orgId = CurrentUser.Session?.OrganizationId;
+            if (orgId is null) { _error = L["Error_SessionExpired"]; return; }
+            var list = await Platform.GetBranchesAsync(orgId.Value);
+            _branch = list.Data?.FirstOrDefault(b => b.Id == BranchId);
+            if (_branch is null) { _error = L["Error_GenericLoad"]; return; }
+            Map(_branch);
+            await LoadFulfillmentAsync(orgId.Value);
+            var devices = await Platform.GetPosDevicesAsync(orgId.Value);
+            _deviceCount = devices.Data?.Count(d => d.BranchId == BranchId) ?? 0;
+            _showDeliverySettings = false;
+            _showAddressLine2 = !string.IsNullOrWhiteSpace(_address2);
+            _mapOpen = false;
+            _detailsOpen = false;
+            _addressOpen = AddressIncomplete;
+            _hoursOpen = !BranchHoursScheduleUi.HasConfiguredHours(_hours);
+            _fulfillmentOpen = false;
+        }
+        catch
+        {
+            _error = L["Error_GenericLoad"];
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 
     private async Task LoadFulfillmentAsync(Guid orgId)
@@ -502,9 +546,12 @@ else
 
     private void Map(OrganizationBranchDto b)
     {
-        _code = b.Code; _name = b.Name; _status = b.Status; _contactPhone = b.ContactPhone; _timeZoneId = b.TimeZoneId;
+        _code = b.Code; _name = b.Name;
+        _status = BranchLocationUi.BindStatus(b.Status);
+        _contactPhone = b.ContactPhone; _timeZoneId = b.TimeZoneId;
         _address1 = b.AddressLine1; _address2 = b.AddressLine2; _city = b.City; _region = b.Region;
-        _postalCode = b.PostalCode; _countryCode = b.CountryCode;
+        _postalCode = b.PostalCode;
+        _countryCode = BranchLocationUi.BindCode(b.CountryCode);
         _latitude = b.Latitude?.ToString(System.Globalization.CultureInfo.InvariantCulture);
         _longitude = b.Longitude?.ToString(System.Globalization.CultureInfo.InvariantCulture);
         if (b.DeliveryPolicy is { } p)
@@ -521,7 +568,7 @@ else
         if (orgId is null || string.IsNullOrWhiteSpace(_name)) return;
         _busy = true;
         var updated = await Platform.UpdateBranchAsync(orgId.Value, BranchId, new UpdateBranchRequest(
-            _name.Trim(), _address1, _address2, _city, _region, _postalCode, _countryCode, _status,
+            _name.Trim(), _address1, _address2, _city, _region, _postalCode, BranchLocationUi.ToStoredCode(_countryCode), _status,
             NullableD(_latitude), NullableD(_longitude), string.IsNullOrWhiteSpace(_latitude) && string.IsNullOrWhiteSpace(_longitude),
             _contactPhone?.Trim(), _timeZoneId?.Trim()));
         if (!updated.IsSuccess) { _error = OrgWebUi.Error(updated.Error, L["Error_GenericLoad"]); _busy = false; return; }
@@ -628,23 +675,17 @@ else
         _busy = false;
     }
 
-    private void FocusDetails()
-    {
-        _detailsOpen = true;
-        _detailsTick++;
-    }
+    private void FocusDetails() => _detailsOpen = true;
 
-    private void FocusHours()
-    {
-        _hoursOpen = true;
-        _hoursTick++;
-    }
+    private void ToggleDetails() => _detailsOpen = !_detailsOpen;
 
-    private void FocusFulfillment()
-    {
-        _fulfillmentOpen = true;
-        _fulfillmentTick++;
-    }
+    private void FocusHours() => _hoursOpen = true;
+
+    private void ToggleHours() => _hoursOpen = !_hoursOpen;
+
+    private void FocusFulfillment() => _fulfillmentOpen = true;
+
+    private void ToggleFulfillment() => _fulfillmentOpen = !_fulfillmentOpen;
 
     private string DeviceStatusLabel() =>
         _deviceCount == 0 ? L["Branches_DevicesNone"] : string.Format(L["Branches_DevicesCount"].Value, _deviceCount);
@@ -669,6 +710,13 @@ else
         var localized = L[$"Branches_Country_{code}"];
         return localized.ResourceNotFound ? code : localized.Value;
     }
+
+    private string StatusLabel(string status) => status switch
+    {
+        "Inactive" => L["Branches_StatusInactive"],
+        "Archived" => L["Branches_StatusInactive"],
+        _ => L["Branches_StatusActive"]
+    };
 
     private string HoursStatusLabel() =>
         BranchHoursScheduleUi.HasConfiguredHours(_hours)
@@ -709,7 +757,7 @@ else
     private IEnumerable<CheckItem> DeliveryChecks()
     {
         if (_readiness is null) yield break;
-        var codes = _readiness.ReasonCodes.ToHashSet(StringComparer.Ordinal);
+        var codes = (_readiness.ReasonCodes ?? Array.Empty<string>()).ToHashSet(StringComparer.Ordinal);
         yield return new CheckItem(codes.Contains("delivery_policy_incomplete"), L["Branches_CheckDistance"]);
         yield return new CheckItem(codes.Contains("branch_address_incomplete"), L["Branches_CheckAddress"]);
         yield return new CheckItem(codes.Contains("map_location_missing"), L["Branches_CheckLocation"]);

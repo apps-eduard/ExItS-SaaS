@@ -1,7 +1,9 @@
 using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Governance;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Domain.Audit;
+using ExItS.Platform.Domain.Governance;
 using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
@@ -211,6 +213,8 @@ internal static class MembershipEndpoints
             ChangeOrganizationRole useCase,
             MembershipQueryService queries,
             PlatformMembershipAuthz membershipAuthz,
+            ConsumeGovernanceStepUpGrant stepUp,
+            PlatformAuthz platformAuthz,
             CancellationToken ct) =>
         {
             if (!TryParseRole(body.Role, out var role, out var error))
@@ -238,6 +242,21 @@ internal static class MembershipEndpoints
                 return denied;
             }
 
+            var actor = platformAuthz.CurrentActor.PlatformUserId;
+            var stepUpDenied = await GovernanceStepUpHelper.EnsureConsumedAsync(
+                stepUp,
+                actor,
+                PlatformOrganizationId.From(existing.OrganizationId),
+                GovernanceCriticalActionCodes.MembershipRoleChange,
+                GovernanceStepUpTargetTypes.OrganizationMembership,
+                membershipId,
+                body.StepUpToken,
+                ct).ConfigureAwait(false);
+            if (stepUpDenied is not null)
+            {
+                return stepUpDenied;
+            }
+
             var authority = await membershipAuthz
                 .ResolveActorMembershipAuthorityAsync(existing.OrganizationId, ct)
                 .ConfigureAwait(false);
@@ -260,7 +279,7 @@ internal static class MembershipEndpoints
                         nameof(OrganizationMembership),
                         membershipId.ToString("D"),
                         result.Value!.OrganizationId.Value,
-                        summary: $"Changed membership role to {role}.",
+                        summary: $"Changed membership role to {role}. Auth strength: PasswordStepUp.",
                         cancellationToken: ct).ConfigureAwait(false);
                 }
 
@@ -278,6 +297,8 @@ internal static class MembershipEndpoints
             SuspendOrganizationMembership useCase,
             MembershipQueryService queries,
             PlatformMembershipAuthz membershipAuthz,
+            ConsumeGovernanceStepUpGrant stepUp,
+            PlatformAuthz platformAuthz,
             CancellationToken ct) =>
         {
             var existing = await queries.GetByIdAsync(membershipId, ct).ConfigureAwait(false);
@@ -287,6 +308,12 @@ internal static class MembershipEndpoints
                     ApplicationErrorCodes.MembershipNotFound,
                     "Membership was not found.",
                     StatusCodes.Status404NotFound);
+            }
+
+            var reasonError = GovernanceCriticalActionReason.ValidateRequired(body?.Reason);
+            if (reasonError is not null)
+            {
+                return PlatformApiResults.Problem(reasonError.ErrorCode!, reasonError.ErrorMessage!, StatusCodes.Status400BadRequest);
             }
 
             var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
@@ -299,6 +326,21 @@ internal static class MembershipEndpoints
             if (denied is not null)
             {
                 return denied;
+            }
+
+            var actor = platformAuthz.CurrentActor.PlatformUserId;
+            var stepUpDenied = await GovernanceStepUpHelper.EnsureConsumedAsync(
+                stepUp,
+                actor,
+                PlatformOrganizationId.From(existing.OrganizationId),
+                GovernanceCriticalActionCodes.MembershipSuspend,
+                GovernanceStepUpTargetTypes.OrganizationMembership,
+                membershipId,
+                body?.StepUpToken,
+                ct).ConfigureAwait(false);
+            if (stepUpDenied is not null)
+            {
+                return stepUpDenied;
             }
 
             try
@@ -314,6 +356,7 @@ internal static class MembershipEndpoints
                         membershipId.ToString("D"),
                         result.Value!.OrganizationId.Value,
                         reason: body?.Reason,
+                        summary: "Auth strength: PasswordStepUp.",
                         cancellationToken: ct).ConfigureAwait(false);
                 }
 
@@ -382,6 +425,8 @@ internal static class MembershipEndpoints
             RevokeOrganizationMembership useCase,
             MembershipQueryService queries,
             PlatformMembershipAuthz membershipAuthz,
+            ConsumeGovernanceStepUpGrant stepUp,
+            PlatformAuthz platformAuthz,
             CancellationToken ct) =>
         {
             var existing = await queries.GetByIdAsync(membershipId, ct).ConfigureAwait(false);
@@ -391,6 +436,12 @@ internal static class MembershipEndpoints
                     ApplicationErrorCodes.MembershipNotFound,
                     "Membership was not found.",
                     StatusCodes.Status404NotFound);
+            }
+
+            var reasonError = GovernanceCriticalActionReason.ValidateRequired(body?.Reason);
+            if (reasonError is not null)
+            {
+                return PlatformApiResults.Problem(reasonError.ErrorCode!, reasonError.ErrorMessage!, StatusCodes.Status400BadRequest);
             }
 
             var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
@@ -405,18 +456,25 @@ internal static class MembershipEndpoints
                 return denied;
             }
 
-            if (string.IsNullOrWhiteSpace(body?.Reason))
+            var actor = platformAuthz.CurrentActor.PlatformUserId;
+            var stepUpDenied = await GovernanceStepUpHelper.EnsureConsumedAsync(
+                stepUp,
+                actor,
+                PlatformOrganizationId.From(existing.OrganizationId),
+                GovernanceCriticalActionCodes.MembershipRevoke,
+                GovernanceStepUpTargetTypes.OrganizationMembership,
+                membershipId,
+                body?.StepUpToken,
+                ct).ConfigureAwait(false);
+            if (stepUpDenied is not null)
             {
-                return PlatformApiResults.Problem(
-                    ApplicationErrorCodes.DomainViolation,
-                    "A reason is required to deactivate a membership.",
-                    StatusCodes.Status400BadRequest);
+                return stepUpDenied;
             }
 
             try
             {
                 var result = await useCase
-                    .ExecuteAsync(OrganizationMembershipId.From(membershipId), body.Reason, body?.ActorReference, ct)
+                    .ExecuteAsync(OrganizationMembershipId.From(membershipId), body!.Reason!, body?.ActorReference, ct)
                     .ConfigureAwait(false);
                 if (result.IsSuccess)
                 {
@@ -426,6 +484,7 @@ internal static class MembershipEndpoints
                         membershipId.ToString("D"),
                         result.Value!.OrganizationId.Value,
                         reason: body?.Reason,
+                        summary: "Auth strength: PasswordStepUp.",
                         cancellationToken: ct).ConfigureAwait(false);
                 }
 
@@ -567,6 +626,6 @@ internal static class MembershipEndpoints
 }
 
 internal sealed record AddMemberRequest(Guid UserId, string Role, string? Reason = null);
-internal sealed record ChangeRoleRequest(string Role, string? ActorReference);
-internal sealed record MembershipLifecycleRequest(string? Reason, string? ActorReference);
+internal sealed record ChangeRoleRequest(string Role, string? ActorReference, string? StepUpToken);
+internal sealed record MembershipLifecycleRequest(string? Reason, string? ActorReference, string? StepUpToken);
 internal sealed record SetMembershipBranchAssignmentsRequest(IReadOnlyList<Guid>? BranchIds);

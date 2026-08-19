@@ -396,7 +396,15 @@ public static class OrganizationContextResolver
                     .ConfigureAwait(false);
             }
 
-            await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (PersistenceConflictException)
+            {
+                // Parallel session sliding-renewal already updated xmin. Selection is re-resolved
+                // on the next authenticated request.
+            }
         }
 
         string? displayName = null;
