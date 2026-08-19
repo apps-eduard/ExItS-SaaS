@@ -77,6 +77,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<PlatformCredentialTokenRecord> PlatformCredentialTokens => Set<PlatformCredentialTokenRecord>();
     internal DbSet<PlatformExternalLoginRecord> PlatformExternalLogins => Set<PlatformExternalLoginRecord>();
     internal DbSet<OrganizationMembershipRecord> OrganizationMemberships => Set<OrganizationMembershipRecord>();
+    internal DbSet<OrganizationMembershipBranchAssignmentRecord> OrganizationMembershipBranchAssignments =>
+        Set<OrganizationMembershipBranchAssignmentRecord>();
     internal DbSet<OrganizationInvitationRecord> OrganizationInvitations => Set<OrganizationInvitationRecord>();
     internal DbSet<OrganizationOwnershipTransferRecord> OrganizationOwnershipTransfers =>
         Set<OrganizationOwnershipTransferRecord>();
@@ -1230,6 +1232,40 @@ public sealed class PlatformDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<OrganizationMembershipBranchAssignmentRecord>(entity =>
+        {
+            entity.ToTable("organization_membership_branch_assignments");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.MembershipId).HasColumnName("membership_id");
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.ActorReference).HasColumnName("actor_reference").HasMaxLength(128);
+
+            entity.HasIndex(e => new { e.MembershipId, e.BranchId })
+                .IsUnique()
+                .HasDatabaseName("ux_org_membership_branch_assignments_membership_branch");
+
+            entity.HasIndex(e => e.OrganizationId)
+                .HasDatabaseName("ix_org_membership_branch_assignments_organization_id");
+
+            entity.HasOne<OrganizationMembershipRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.MembershipId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne<OrganizationBranchRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.BranchId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<OrganizationInvitationRecord>(entity =>

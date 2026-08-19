@@ -88,6 +88,27 @@
                                 }
                             </div>
 
+                            <div class="pos-staff__branches" aria-label="@L["Org_StaffBranchesSection"]">
+                                @if (row.UsesExplicitBranchAssignments)
+                                {
+                                    @if (row.BranchAssignments.Count == 0)
+                                    {
+                                        <span class="pos-staff__roles-empty pos-muted">@L["Org_StaffBranchesNone"]</span>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var branch in row.BranchAssignments)
+                                        {
+                                            <span class="pos-staff__chip pos-staff__chip--branch">@branch.Name</span>
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="pos-staff__roles-empty pos-muted">@L["Org_StaffBranchesAll"]</span>
+                                }
+                            </div>
+
                             <div class="pos-staff__actions">
                                 <button type="button"
                                         class="pos-staff__action"
@@ -95,6 +116,15 @@
                                         @onclick="() => GoAssign(row)">
                                     @L["Org_AssignPosRole"]
                                 </button>
+                                @if (row.UsesExplicitBranchAssignments)
+                                {
+                                    <button type="button"
+                                            class="pos-staff__action"
+                                            disabled="@_busy"
+                                            @onclick="() => OpenBranchSheetAsync(row)">
+                                        @L["Org_StaffBranchesEdit"]
+                                    </button>
+                                }
                                 @if (string.Equals(row.MembershipStatus, "Active", StringComparison.OrdinalIgnoreCase))
                                 {
                                     <button type="button"
@@ -121,6 +151,49 @@
     </Page>
 </div>
 
+@if (_branchSheetRow is not null)
+{
+    <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@L["Org_StaffBranchesSheetTitle"]">
+        <div class="pos-denom-sheet__panel pos-denom-sheet__panel--fit">
+            <header class="pos-denom-sheet__header">
+                <div>
+                    <h2 class="pos-denom-sheet__title">@L["Org_StaffBranchesSheetTitle"]</h2>
+                    <p class="pos-muted">@_branchSheetRow.DisplayName</p>
+                </div>
+            </header>
+            <div class="pos-denom-sheet__list pos-denom-sheet__list--fit pos-staff__branch-picker">
+                @foreach (var branch in _orgBranches)
+                {
+                    var selected = _branchSheetSelection.Contains(branch.Id);
+                    <label class="pos-staff__branch-option">
+                        <input type="checkbox"
+                               checked="@selected"
+                               disabled="@_busy"
+                               @onchange="e => ToggleBranchSelection(branch.Id, e)" />
+                        <span>@branch.Name</span>
+                        @if (branch.IsPrimary)
+                        {
+                            <span class="pos-staff__chip pos-staff__chip--branch">@L["Org_StaffBranchPrimary"]</span>
+                        }
+                    </label>
+                }
+            </div>
+            @if (!string.IsNullOrEmpty(_branchSheetError))
+            {
+                <p class="pos-staff__sheet-error">@_branchSheetError</p>
+            }
+            <div class="pos-denom-sheet__actions">
+                <button type="button" class="pos-action-tile pos-action-tile--primary" disabled="@_busy" @onclick="SaveBranchSheetAsync">
+                    @L["Org_StaffBranchesSave"]
+                </button>
+                <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="CloseBranchSheet">
+                    @L["Common_Cancel"]
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private sealed record StaffPosGrant(Guid Id, string RoleCode, string MappedPosRoleCode, string? RoleDisplay);
 
@@ -131,12 +204,18 @@
         string Email,
         string MembershipRole,
         string MembershipStatus,
-        IReadOnlyList<StaffPosGrant> PosGrants);
+        IReadOnlyList<StaffPosGrant> PosGrants,
+        bool UsesExplicitBranchAssignments,
+        IReadOnlyList<MembershipBranchAssignmentDto> BranchAssignments);
 
     private bool _loading = true;
     private bool _busy;
     private string? _error;
     private List<StaffRow> _rows = [];
+    private IReadOnlyList<OrganizationBranchDto> _orgBranches = [];
+    private StaffRow? _branchSheetRow;
+    private HashSet<Guid> _branchSheetSelection = [];
+    private string? _branchSheetError;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -179,6 +258,15 @@
             var grantsResult = await Platform.GetProductLocalRolesAsync(orgId.Value, status: "Active");
             var grants = grantsResult.IsSuccess && grantsResult.Data is not null
                 ? grantsResult.Data
+                : [];
+
+            var branchesResult = await Platform.GetBranchesAsync(orgId.Value);
+            _orgBranches = branchesResult.IsSuccess && branchesResult.Data is not null
+                ? branchesResult.Data
+                    .Where(b => string.Equals(b.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(b => b.IsPrimary)
+                    .ThenBy(b => b.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToList()
                 : [];
 
             var rows = new List<StaffRow>();
@@ -232,6 +320,16 @@
                     .Select(g => new StaffPosGrant(g.Id, g.RoleCode, g.MappedPosRoleCode, g.RoleDisplay))
                     .ToList();
 
+                var usesExplicitBranches = UsesExplicitBranchAssignments(member.Role);
+                IReadOnlyList<MembershipBranchAssignmentDto> branchAssignments = [];
+                if (usesExplicitBranches)
+                {
+                    var assignmentResult = await Platform.GetMembershipBranchAssignmentsAsync(orgId.Value, member.Id);
+                    branchAssignments = assignmentResult.IsSuccess && assignmentResult.Data is not null
+                        ? assignmentResult.Data
+                        : [];
+                }
+
                 rows.Add(new StaffRow(
                     member.Id,
                     member.UserId,
@@ -239,7 +337,9 @@
                     email,
                     member.Role,
                     member.Status,
-                    memberGrants));
+                    memberGrants,
+                    usesExplicitBranches,
+                    branchAssignments));
             }
 
             _rows = rows;
@@ -425,6 +525,73 @@
     }
 
     private void GoInvite() => Nav.NavigateTo("/org/staff/invite");
+
+    private static bool UsesExplicitBranchAssignments(string? role) =>
+        string.Equals(role, "OrganizationMember", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(role, "Member", StringComparison.OrdinalIgnoreCase);
+
+    private void OpenBranchSheetAsync(StaffRow row)
+    {
+        _branchSheetRow = row;
+        _branchSheetError = null;
+        _branchSheetSelection = row.BranchAssignments.Select(b => b.BranchId).ToHashSet();
+    }
+
+    private void CloseBranchSheet()
+    {
+        _branchSheetRow = null;
+        _branchSheetError = null;
+        _branchSheetSelection = [];
+    }
+
+    private void ToggleBranchSelection(Guid branchId, ChangeEventArgs e)
+    {
+        var selected = e.Value is bool on && on;
+        if (selected)
+        {
+            _branchSheetSelection.Add(branchId);
+        }
+        else
+        {
+            _branchSheetSelection.Remove(branchId);
+        }
+    }
+
+    private async Task SaveBranchSheetAsync()
+    {
+        if (_branchSheetRow is null || CurrentUser.Session?.OrganizationId is not Guid orgId)
+        {
+            return;
+        }
+
+        if (_branchSheetSelection.Count == 0)
+        {
+            _branchSheetError = L["Org_StaffBranchesRequired"];
+            return;
+        }
+
+        _busy = true;
+        _branchSheetError = null;
+        try
+        {
+            var result = await Platform.SetMembershipBranchAssignmentsAsync(
+                orgId,
+                _branchSheetRow.MembershipId,
+                new SetMembershipBranchAssignmentsRequest(_branchSheetSelection.ToList()));
+            if (!result.IsSuccess)
+            {
+                _branchSheetError = L["Org_StaffBranchesSaveFailed"];
+                return;
+            }
+
+            CloseBranchSheet();
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
 
     private static string? FirstMeaningful(params string?[] values)
     {

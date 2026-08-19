@@ -13,6 +13,7 @@ public sealed class AddOrganizationMembership
     private readonly IPlatformUserRepository _users;
     private readonly IPlatformOrganizationRepository _organizations;
     private readonly IOrganizationMembershipRepository _memberships;
+    private readonly IOrganizationMembershipBranchAssignmentRepository _assignments;
     private readonly EnsureAccountProfilesForUser _ensureProfiles;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -21,6 +22,7 @@ public sealed class AddOrganizationMembership
         IPlatformUserRepository users,
         IPlatformOrganizationRepository organizations,
         IOrganizationMembershipRepository memberships,
+        IOrganizationMembershipBranchAssignmentRepository assignments,
         EnsureAccountProfilesForUser ensureProfiles,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
@@ -28,6 +30,7 @@ public sealed class AddOrganizationMembership
         _users = users;
         _organizations = organizations;
         _memberships = memberships;
+        _assignments = assignments;
         _ensureProfiles = ensureProfiles;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -120,6 +123,18 @@ public sealed class AddOrganizationMembership
         {
             var membership = OrganizationMembership.Create(organizationId, userId, role, _clock.UtcNow);
             await _memberships.AddAsync(membership, cancellationToken).ConfigureAwait(false);
+            if (role == OrganizationRole.OrganizationMember)
+            {
+                await _assignments
+                    .AssignPrimaryBranchForNewStaffAsync(
+                        organizationId,
+                        membership.Id,
+                        _clock.UtcNow,
+                        actorReference: null,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             await _ensureProfiles
                 .ExecuteAsync(

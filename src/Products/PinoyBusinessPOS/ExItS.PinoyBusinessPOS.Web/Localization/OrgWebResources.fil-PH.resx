@@ -630,6 +630,30 @@
   <data name="Staff_Subtitle" xml:space="preserve">
     <value>Mag-invite at pamahalaan ang mga taong nagtatrabaho sa negosyong ito.</value>
   </data>
+  <data name="Staff_BranchesTitle" xml:space="preserve">
+    <value>Branch access</value>
+  </data>
+  <data name="Staff_BranchesAll" xml:space="preserve">
+    <value>May access ang role na ito sa lahat ng active na branch.</value>
+  </data>
+  <data name="Staff_BranchesNone" xml:space="preserve">
+    <value>Walang naka-assign na branch.</value>
+  </data>
+  <data name="Staff_BranchesSave" xml:space="preserve">
+    <value>I-save ang branch access</value>
+  </data>
+  <data name="Staff_BranchesSaved" xml:space="preserve">
+    <value>Na-save ang branch access.</value>
+  </data>
+  <data name="Staff_BranchesRequired" xml:space="preserve">
+    <value>Pumili ng kahit isang branch.</value>
+  </data>
+  <data name="Staff_BranchesSaveFailed" xml:space="preserve">
+    <value>Hindi ma-save ang branch access.</value>
+  </data>
+  <data name="Staff_BranchPrimary" xml:space="preserve">
+    <value>Main</value>
+  </data>
   <data name="Staff_Invite" xml:space="preserve">
     <value>Mag-invite ng staff</value>
   </data>

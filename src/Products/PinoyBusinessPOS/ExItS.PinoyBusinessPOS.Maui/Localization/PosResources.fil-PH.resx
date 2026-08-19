@@ -7516,6 +7516,33 @@
   <data name="Org_RevokePosRole" xml:space="preserve">
     <value>Revoke</value>
   </data>
+  <data name="Org_StaffBranchesSection" xml:space="preserve">
+    <value>Mga naka-assign na branch</value>
+  </data>
+  <data name="Org_StaffBranchesAll" xml:space="preserve">
+    <value>Lahat ng active na branch</value>
+  </data>
+  <data name="Org_StaffBranchesNone" xml:space="preserve">
+    <value>Walang naka-assign na branch</value>
+  </data>
+  <data name="Org_StaffBranchesEdit" xml:space="preserve">
+    <value>Mga branch</value>
+  </data>
+  <data name="Org_StaffBranchesSave" xml:space="preserve">
+    <value>I-save ang mga branch</value>
+  </data>
+  <data name="Org_StaffBranchesSheetTitle" xml:space="preserve">
+    <value>Mga naka-assign na branch</value>
+  </data>
+  <data name="Org_StaffBranchesRequired" xml:space="preserve">
+    <value>Pumili ng kahit isang branch.</value>
+  </data>
+  <data name="Org_StaffBranchesSaveFailed" xml:space="preserve">
+    <value>Hindi ma-save ang branch assignments.</value>
+  </data>
+  <data name="Org_StaffBranchPrimary" xml:space="preserve">
+    <value>Main</value>
+  </data>
   <data name="Org_InviteTitle" xml:space="preserve">
     <value>Invite staff</value>
   </data>

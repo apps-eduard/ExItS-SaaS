@@ -598,6 +598,7 @@ public sealed class AuthenticationService(
                 if (hasAccess && orgId is Guid validatedOrg)
                 {
                     restored = MergeLiveSelectedBranch(currentUser.Session ?? restored);
+                    restored = await EnsureSelectedBranchAccessibleAsync(restored, validatedOrg, ct).ConfigureAwait(false);
                     restored = await EnsurePosDeviceBindingAsync(restored, ct).ConfigureAwait(false);
                     await OpenLocalContextAsync(restored.UserId, validatedOrg, ct).ConfigureAwait(false);
                     _accessPolicy?.NotifySessionAccessChanged();
@@ -2721,6 +2722,11 @@ public sealed class AuthenticationService(
                     return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_Inactive");
                 }
 
+                if (platform.Error?.ErrorCode is "application.branch.access_denied")
+                {
+                    return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_AccessDenied");
+                }
+
                 return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_Denied");
             }
 
@@ -2806,6 +2812,58 @@ public sealed class AuthenticationService(
         }
 
         return await SelectBranchAsync(branchId, ct).ConfigureAwait(false);
+    }
+
+    private async Task<AuthSession> EnsureSelectedBranchAccessibleAsync(
+        AuthSession session,
+        Guid organizationId,
+        CancellationToken ct)
+    {
+        var selected = AuthSessionBranchContext.GetSelectedBranchId(session);
+        if (selected is not Guid branchId || branchId == Guid.Empty)
+        {
+            return session;
+        }
+
+        try
+        {
+            var branches = await accessClient.GetBranchesAsync(organizationId, ct).ConfigureAwait(false);
+            if (!branches.IsSuccess || branches.Data is null)
+            {
+                return session;
+            }
+
+            var allowed = branches.Data.Any(b =>
+                b.Id == branchId
+                && string.Equals(b.Status, "Active", StringComparison.OrdinalIgnoreCase));
+            if (allowed)
+            {
+                return session;
+            }
+
+            var cleared = session with { SelectedBranchId = null };
+            try
+            {
+                var (_, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
+                marker ??= Guid.NewGuid().ToString("N");
+                await sessionStore.SaveAsync(cleared, marker, ct).ConfigureAwait(false);
+                currentUser.Set(cleared);
+                events.Record("branch_access_revoked", Dict(
+                    ("userId", session.UserId.ToString("D")),
+                    ("organizationId", organizationId.ToString("D")),
+                    ("branchId", branchId.ToString("D"))));
+            }
+            catch
+            {
+                events.Record("secure_storage_failure", Dict(("operation", "branch_access_revoked_save")));
+            }
+
+            return cleared;
+        }
+        catch
+        {
+            return session;
+        }
     }
 
     private async Task<AuthResult> PersistSelectedBranchAsync(AuthSession updated, CancellationToken ct)

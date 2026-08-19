@@ -19,6 +19,34 @@
   margin: 8px 0;
 }
 
+.org-branch-matrix {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0 12px;
+}
+
+.org-branch-matrix__row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 4px 0;
+}
+
+.org-branch-matrix__name {
+  font-size: 14px;
+}
+
+.org-branch-matrix__tag {
+  font-size: 11px;
+  color: var(--exits-muted);
+  border: 1px solid var(--exits-border, #d0d5dd);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
 .org-alert {
   margin-bottom: 1rem;
 }

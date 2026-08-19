@@ -188,6 +188,25 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
             request,
             ct);
 
+    public Task<ApiResult<IReadOnlyList<MembershipBranchAssignmentDto>>> GetMembershipBranchAssignmentsAsync(
+        Guid organizationId,
+        Guid membershipId,
+        CancellationToken ct = default) =>
+        api.GetAsync<IReadOnlyList<MembershipBranchAssignmentDto>>(
+            $"/api/v1/platform/organizations/{organizationId:D}/members/{membershipId:D}/branch-assignments",
+            ct);
+
+    public Task<ApiResult<IReadOnlyList<MembershipBranchAssignmentDto>>> SetMembershipBranchAssignmentsAsync(
+        Guid organizationId,
+        Guid membershipId,
+        SetMembershipBranchAssignmentsRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<IReadOnlyList<MembershipBranchAssignmentDto>>(
+            HttpMethod.Put,
+            $"/api/v1/platform/organizations/{organizationId:D}/members/{membershipId:D}/branch-assignments",
+            request,
+            ct);
+
     public Task<ApiResult<EffectiveAccessDto>> EvaluateAccessAsync(
         Guid userId,
         Guid organizationId,

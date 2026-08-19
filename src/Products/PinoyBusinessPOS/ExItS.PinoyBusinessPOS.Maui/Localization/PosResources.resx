@@ -7516,6 +7516,33 @@
   <data name="Org_RevokePosRole" xml:space="preserve">
     <value>Revoke</value>
   </data>
+  <data name="Org_StaffBranchesSection" xml:space="preserve">
+    <value>Assigned branches</value>
+  </data>
+  <data name="Org_StaffBranchesAll" xml:space="preserve">
+    <value>All active branches</value>
+  </data>
+  <data name="Org_StaffBranchesNone" xml:space="preserve">
+    <value>No branches assigned</value>
+  </data>
+  <data name="Org_StaffBranchesEdit" xml:space="preserve">
+    <value>Branches</value>
+  </data>
+  <data name="Org_StaffBranchesSave" xml:space="preserve">
+    <value>Save branches</value>
+  </data>
+  <data name="Org_StaffBranchesSheetTitle" xml:space="preserve">
+    <value>Assigned branches</value>
+  </data>
+  <data name="Org_StaffBranchesRequired" xml:space="preserve">
+    <value>Select at least one branch.</value>
+  </data>
+  <data name="Org_StaffBranchesSaveFailed" xml:space="preserve">
+    <value>Could not save branch assignments.</value>
+  </data>
+  <data name="Org_StaffBranchPrimary" xml:space="preserve">
+    <value>Main</value>
+  </data>
   <data name="Org_InviteTitle" xml:space="preserve">
     <value>Invite staff</value>
   </data>

@@ -97,6 +97,8 @@ public static class DependencyInjection
         services.AddSingleton<IPlatformPasswordHasher, AspNetCorePlatformPasswordHasher>();
         services.AddSingleton<IPlatformSessionTokenService, PlatformSessionTokenService>();
         services.AddScoped<IOrganizationMembershipRepository, OrganizationMembershipRepository>();
+        services.AddScoped<IOrganizationMembershipBranchAssignmentRepository, OrganizationMembershipBranchAssignmentRepository>();
+        services.AddScoped<IOrganizationBranchAccessService, OrganizationBranchAccessService>();
         services.AddScoped<IOrganizationInvitationRepository, OrganizationInvitationRepository>();
         services.AddScoped<IOrganizationOwnershipTransferRepository, OrganizationOwnershipTransferRepository>();
         services.AddScoped<IBusinessCustomerRepository, BusinessCustomerRepository>();

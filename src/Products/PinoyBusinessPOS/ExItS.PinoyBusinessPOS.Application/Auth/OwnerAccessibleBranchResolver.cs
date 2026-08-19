@@ -4,8 +4,7 @@ using ExItS.PinoyBusinessPOS.Application.Platform;
 namespace ExItS.PinoyBusinessPOS.Application.Auth;
 
 /// <summary>
-/// Owner/org-viewer path: any Active branch in the organization may be selected.
-/// Staff↔branch ACL is not implemented yet — documented limitation for WP14.
+/// Resolves accessible branches via Platform List Branches (server filters by role and assignments).
 /// </summary>
 public sealed class OwnerAccessibleBranchResolver(IPlatformAccessClient platform) : IAccessibleBranchResolver
 {

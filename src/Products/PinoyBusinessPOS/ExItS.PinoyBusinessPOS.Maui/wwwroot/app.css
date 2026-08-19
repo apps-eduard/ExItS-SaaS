@@ -7098,6 +7098,42 @@ html:has(.pos-branch-sheet) .pos-bottom-nav {
     line-height: 1.35;
 }
 
+.pos-staff__branches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.35rem;
+}
+
+.pos-staff__chip--branch {
+    padding-inline: 0.55rem;
+}
+
+.pos-staff__branch-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.pos-staff__branch-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0.35rem 0;
+}
+
+.pos-staff__branch-option input {
+    width: 1.1rem;
+    height: 1.1rem;
+}
+
+.pos-staff__sheet-error {
+    margin: 0.35rem 0 0;
+    color: var(--exits-danger, #b42318);
+    font-size: var(--exits-text-sm, 0.875rem);
+}
+
 /* ========== Cashier shifts list ================================== */
 .pos-shifts {
     width: 100%;

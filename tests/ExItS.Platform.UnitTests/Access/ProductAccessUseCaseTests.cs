@@ -416,7 +416,7 @@ public sealed class ProductAccessUseCaseTests
                 "Ada Lovelace",
                 T0);
             await users.AddAsync(user);
-            var membership = (await new AddOrganizationMembership(users, orgs, memberships, new EnsureAccountProfilesForUser(new InMemoryAccountProfileRepository(), new InMemoryPlatformRoleAssignmentRepository(), memberships, uow, clock), uow, clock)
+            var membership = (await new AddOrganizationMembership(users, orgs, memberships, new InMemoryOrganizationMembershipBranchAssignmentRepository(), new EnsureAccountProfilesForUser(new InMemoryAccountProfileRepository(), new InMemoryPlatformRoleAssignmentRepository(), memberships, uow, clock), uow, clock)
                 .ExecuteAsync(org.Id, user.Id, OrganizationRole.OrganizationMember)).Value!;
 
             var product = Product.Create(ProductCode.Create(ProductCode.PinoyBusinessPos), "PinoyBusinessPOS", T0);

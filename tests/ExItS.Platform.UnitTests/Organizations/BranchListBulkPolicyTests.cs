@@ -1,6 +1,7 @@
 using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Domain.Abstractions;
+using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.UnitTests.Support;
 
@@ -31,9 +32,10 @@ public sealed class BranchListBulkPolicyTests
             orgRepo,
             new EntitlementQueryService(new InMemoryEntitlementSnapshotRepository()),
             new BranchFulfillmentReadinessEvaluator(new BranchOperatingHoursEvaluator()),
+            new AllowAllBranchAccess(),
             new FixedClock(T0));
 
-        var result = await useCase.ExecuteAsync(Org);
+        var result = await useCase.ExecuteAsync(Org, PlatformUserId.New());
 
         Assert.Equal(2, result.Count);
         Assert.Equal(1, policies.ListByOrganizationCallCount);
@@ -110,5 +112,21 @@ public sealed class BranchListBulkPolicyTests
             PlatformOrganizationId organizationId,
             CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
+    }
+
+    private sealed class AllowAllBranchAccess : IOrganizationBranchAccessService
+    {
+        public Task<bool> CanAccessBranchAsync(
+            PlatformUserId userId,
+            PlatformOrganizationId organizationId,
+            OrganizationBranchId branchId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(true);
+
+        public Task<IReadOnlySet<Guid>?> ResolveAccessibleActiveBranchIdsAsync(
+            PlatformUserId userId,
+            PlatformOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlySet<Guid>?>(null);
     }
 }
