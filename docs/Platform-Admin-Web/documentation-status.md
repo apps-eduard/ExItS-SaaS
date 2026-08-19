@@ -21,7 +21,7 @@ Queue state: `CLEAR`
 | DOC-01 | Complete | Establish dedicated worktree, baseline, audit, and replacement boundaries |
 | DOC-02 | Complete | Product vision, UX personas, and information architecture |
 | DOC-03 | Complete | Replacement frontend architecture (React stack, security, dependency policy) |
-| DOC-04 | Pending | Replacement frontend auth/session + navigation behavior |
+| DOC-04 | Complete | Design system tokens, component patterns, and UX foundation |
 | DOC-05 | Pending | Replacement permissions model + permission-aware UI gating |
 | DOC-06 | Pending | Replacement functional areas mapping (pages/routes/features) |
 | DOC-07 | Pending | Replacement API/contract consumption checklist |

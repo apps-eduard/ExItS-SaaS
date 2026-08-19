@@ -18,6 +18,10 @@ Accepted decision identifiers for this planning track (documentation-only).
 | PWEB-D-012 | API client boundary: React page -> feature service/hook -> typed API client -> `ExItS.Platform.Api`, with server-authoritative authz and normalized problem+json error handling | Accepted |
 | PWEB-D-013 | Auth security posture for React is evidence-based: cookie/session-first when compatible; explicit CSRF + OpenAPI/typed-client gaps recorded if evidence is incomplete | Accepted |
 | PWEB-D-014 | Dependency policy governance: review cadence expectations, no auto-merge dependency PRs, and lock file required when implementation begins | Accepted |
+| PWEB-D-015 | React replacement uses canonical ExItS green brand tokens from DesignSystem, not the Ant Design blue overrides from the current Admin | Accepted |
+| PWEB-D-016 | Compact density is the default for administrative data views; comfortable density for form-heavy flows | Accepted |
+| PWEB-D-017 | WCAG 2.2 AA is the accessibility design target (not a compliance claim for the current application) | Accepted |
+| PWEB-D-018 | Motion is restrained and functional; `prefers-reduced-motion` fully honored with 0ms token overrides | Accepted |
 
-Library decisions are recorded by DOC-03; this file only contains the accepted identifiers/constraints for the planning track.
+Library decisions are recorded by DOC-03; design system decisions by DOC-04.
 
