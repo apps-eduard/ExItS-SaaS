@@ -3,19 +3,19 @@
 **Status:** Authoritative **planning** guidance (EXITS-SCALE-00). Not implemented.
 **Decisions:** **D-SCALE-04**, **D-SCALE-05**, **D-SCALE-09**
 **Index:** [exits-scale-and-growth-architecture.md](exits-scale-and-growth-architecture.md)
-**Related:** [production-deployment-architecture.md](../engineering/production-deployment-architecture.md) (P14 on-prem Production direction)
+**Related:** [hosting-and-deployment-operating-model.md](hosting-and-deployment-operating-model.md) · [production-deployment-architecture.md](../engineering/production-deployment-architecture.md) (**D-P14-01** on-prem topology)
 
 Stamps, cells, sharding, Kubernetes, and multi-region are **not** launch requirements and are **not** implemented here.
 
 ---
 
-## 1. Relationship to current Production direction
+## 1. Relationship to hosting modes
 
-P14 production packaging direction remains **customer on-prem** (or equivalent operator-controlled host) with separate Platform and product databases.
+**Portfolio default (D-HOST-01):** hosted multi-tenant SaaS. Stamps/cells are the preferred **future** horizontal isolation and scale mechanism **when measured demand requires them** (**D-SCALE-04**).
 
-This scale pack does **not** replace that direction.
+**On-prem (D-HOST-03 / D-P14-01):** customer-operated host with separate Platform and product databases remains the **on-prem mode** topology. This scale pack does **not** erase that history.
 
-Deployment stamps/cells are the preferred **future** horizontal isolation and scale mechanism **when measured demand requires them** (**D-SCALE-04**), especially for hosted/multi-tenant growth. They are not required for initial launch and must not be built solely because millions of users are a future goal.
+Stamps must not be built solely because millions of users are a future goal.
 
 ---
 

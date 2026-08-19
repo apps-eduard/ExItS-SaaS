@@ -3,7 +3,7 @@
 **Status:** Authoritative **planning** guidance for future ExItS product and Platform work (EXITS-SCALE-00). Not implemented. Not a production-capacity claim.
 **Pack:** [README.md](README.md) · [scale-readiness-checklist.md](scale-readiness-checklist.md)
 **Foundation:** [exits-product-foundation-reference.md](exits-product-foundation-reference.md)
-**Related:** [production-deployment-architecture.md](../engineering/production-deployment-architecture.md) (P14 on-prem direction) · [approved-architecture-summary.md](../engineering/approved-architecture-summary.md)
+**Related:** [hosting-and-deployment-operating-model.md](hosting-and-deployment-operating-model.md) (EXITS-ARCH-01) · [production-deployment-architecture.md](../engineering/production-deployment-architecture.md) (**D-P14-01** on-prem topology) · [approved-architecture-summary.md](../engineering/approved-architecture-summary.md)
 
 Do **not** treat this file as evidence that millions of users, multi-region, sharding, or microservices are currently supported.
 
@@ -53,6 +53,7 @@ Escape hatches are **documented options**. They are not launch deliverables.
 | [capacity-slos-observability-and-disaster-recovery.md](capacity-slos-observability-and-disaster-recovery.md) | Capacity stages, SLOs, telemetry, backup/DR, multi-region |
 | [service-evolution-and-extraction-strategy.md](service-evolution-and-extraction-strategy.md) | Modularity-first; when (not) to extract services |
 | [scale-readiness-checklist.md](scale-readiness-checklist.md) | Review checklist for future work packages |
+| [hosting-and-deployment-operating-model.md](hosting-and-deployment-operating-model.md) | Portfolio hosting modes (hosted default; on-prem special) |
 
 ---
 
@@ -77,9 +78,10 @@ These IDs are portfolio-stable. They do **not** close **D-P12-03** or **R-091**.
 
 ## 5. Relationship to existing architecture
 
-This pack **extends** Product Foundation isolation and P14 production deployment direction. It does not replace them.
+This pack **extends** Product Foundation isolation. It does not replace it.
 
-- **Today’s Production packaging direction** remains customer on-prem (or equivalent operator-controlled host) with separate Platform and product databases ([production-deployment-architecture.md](../engineering/production-deployment-architecture.md)).
+- **Portfolio default (D-HOST-01):** hosted multi-tenant SaaS — [hosting-and-deployment-operating-model.md](hosting-and-deployment-operating-model.md). **Not implemented.**
+- **On-prem Production topology (D-P14-01)** remains valid for **Mode C** ([production-deployment-architecture.md](../engineering/production-deployment-architecture.md)). It is **not** the universal default for every customer.
 - **Stamps, routing, and multi-region** are future hosted/SaaS and large-scale options. They are not required to launch, and they are not implemented here.
 - **Development backup/restore** for Platform and POS exists as ops capability. Production RPO/RTO, stamp-level recovery, and contractual SLAs remain **unset**.
 - **Commercial-state transport (D-P12-03)** and **production authentication (R-091)** remain **open**. This pack records scale *considerations* (availability, revocation, fail-closed, continuity) without inventing the mechanism.

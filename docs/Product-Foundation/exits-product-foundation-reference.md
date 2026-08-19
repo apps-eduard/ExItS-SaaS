@@ -4,7 +4,8 @@
 **Path:** `docs/Product-Foundation/exits-product-foundation-reference.md`
 **Companion audit:** [P12-WP01](../reports/P12-WP01-platform-product-contract-audit.md)
 **Permanent rules:** `.cursor/rules/exits-workflow.mdc`
-**Companion:** [Scale-ready architecture pack](exits-scale-and-growth-architecture.md) (EXITS-SCALE-00; authoritative for future work after merge; does not close D-P12-03 or R-091)
+**Companion:** [Scale-ready architecture pack](exits-scale-and-growth-architecture.md) (EXITS-SCALE-00; does not close D-P12-03 or R-091)
+**Hosting:** [Hosting operating model](hosting-and-deployment-operating-model.md) (EXITS-ARCH-01; hosted SaaS default **D-HOST-01**; on-prem mode **D-P14-01**)
 
 Label key used in this file:
 
@@ -157,18 +158,19 @@ Two verified consumers + product-neutral design remain the bar for new shared pa
 
 ## 8. Deployment and versioning
 
-Architectural model (**Implemented** for Platform + POS **pilot** images; **Required** for future products; **Production packaging** directed by [production-deployment-architecture.md](../engineering/production-deployment-architecture.md) — P14-WP01 docs; implementation in later Phase 14 WPs):
+Architectural model (**Implemented** for Platform + POS **pilot** images; **Required** for future products):
 
+- **Portfolio default (D-HOST-01):** hosted multi-tenant SaaS — [hosting-and-deployment-operating-model.md](hosting-and-deployment-operating-model.md). **Not implemented** as hosted infrastructure today.
+- **On-prem mode (D-HOST-03 / D-P14-01):** customer on-prem host with reverse-proxy HTTPS — [production-deployment-architecture.md](../engineering/production-deployment-architecture.md). Existing P14 packaging applies to this **mode**.
 - one Platform deployable (API; Admin as Platform surface)
 - one independently versioned image per product
 - one **logical** persistent database authority per product (physical instance count may grow later; see [deployment-stamps-and-data-scaling.md](deployment-stamps-and-data-scaling.md))
 - deploy only licensed/subscribed products
 - customer-specific **configuration**, never customer-specific source forks
 - immutable versioned images
-- independent upgrade/rollback per product where compatibility allows
-- customer on-prem host with reverse-proxy HTTPS (Production direction)
+- independent upgrade/rollback per product where compatibility allows (**D-HOST-08**)
 
-Do not create Dockerfiles or Compose profiles from this reference alone. Production TLS and overall Production readiness remain open portfolio risks — see [production-readiness-audit.md](../engineering/production-readiness-audit.md).
+Do not create Dockerfiles or Compose profiles from this reference alone. Hosted SaaS is **direction**, not current infrastructure. Production TLS and overall Production readiness remain open portfolio risks — see [production-readiness-audit.md](../engineering/production-readiness-audit.md).
 
 ---
 
@@ -211,6 +213,11 @@ docs/Product-Foundation/
 ├── capacity-slos-observability-and-disaster-recovery.md
 ├── service-evolution-and-extraction-strategy.md
 ├── scale-readiness-checklist.md
+├── hosting-and-deployment-operating-model.md  # EXITS-ARCH-01 index
+├── deployment-mode-contract.md
+├── hosted-saas-tenant-placement-model.md
+├── dedicated-and-on-prem-deployment-model.md
+├── hosting-readiness-checklist.md
 ├── product-bootstrap-prompt.md             # P12-WP05 docs-only bootstrap prompt
 ├── Reference-Product/                      # P12-WP06 fictional dry run (not a real product)
 └── Templates/                              # P12-WP03 reusable product doc templates
@@ -297,6 +304,8 @@ Guidance only — not scaffold implementation.
 | **D-P12-04** | **Open** — stale engineering matrix hygiene | Prefer incremental updates | Maintainers / dedicated docs hygiene WP |
 | **D-P12-05** | **Open** (tied to R-091) — keep Dev/Testing vs Production language honest | Do not claim production-secure identity | Phase 13 (with R-091) |
 | **D-SCALE-01 … D-SCALE-10** | **Accepted architecture baselines** (EXITS-SCALE-00). Implementation of stamps, routing, async infrastructure, and multi-region is **deferred**. | Future product/Platform design must not contradict these boundaries | Authorized scale/implementation WPs; see [exits-scale-and-growth-architecture.md](exits-scale-and-growth-architecture.md) |
+| **D-HOST-01 … D-HOST-10** | **Accepted architecture baselines / directions** (EXITS-ARCH-01). Hosted SaaS default; on-prem special mode; no forks. Hosted infrastructure **not implemented**. | Future hosting/product work must not contradict these | Authorized hosting WPs; see [hosting-and-deployment-operating-model.md](hosting-and-deployment-operating-model.md) |
+| **D-P14-01** | **Closed** as **on-prem Production topology**; **not** the portfolio-wide default after D-HOST-01 | On-prem mode packaging | [production-deployment-architecture.md](../engineering/production-deployment-architecture.md) |
 
 ---
 

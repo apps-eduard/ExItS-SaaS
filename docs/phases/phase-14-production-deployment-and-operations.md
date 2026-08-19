@@ -28,7 +28,9 @@ Authoritative docs:
 
 ## Purpose
 
-Deliver honest, evidence-based **Production** deployment and operations for customer on-prem ExItS (Platform + licensed products), without claiming Production readiness early and without violating Platform/product database boundaries.
+Deliver honest, evidence-based **on-prem Production** deployment and operations for customer-hosted ExItS (Platform + licensed products), without claiming Production readiness early and without violating Platform/product database boundaries.
+
+**Portfolio default** is hosted multi-tenant SaaS (**D-HOST-01**) — [hosting-and-deployment-operating-model.md](../Product-Foundation/hosting-and-deployment-operating-model.md). Phase 14 packaging remains the **on-prem mode** track (**D-P14-01** / **D-HOST-03**). Hosted SaaS is not claimed implemented by this phase.
 
 ## Phase objective
 
@@ -40,7 +42,7 @@ Deliver honest, evidence-based **Production** deployment and operations for cust
 
 ## Architectural principles
 
-1. Customer on-prem host; reverse-proxy HTTPS (**D-P14-01**).
+1. Customer on-prem host; reverse-proxy HTTPS (**D-P14-01**, on-prem mode). Portfolio default hosting is hosted SaaS (**D-HOST-01**; not implemented in this phase).
 2. One Platform + independently versioned licensed products; **one PostgreSQL per product** + Platform DB.
 3. Secrets environment-owned (**D-P14-02**).
 4. Backup-verify-migrate-validate; no Production startup `Migrate()` (**D-P14-03**).
