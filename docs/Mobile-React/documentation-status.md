@@ -14,6 +14,8 @@ PWA implementation: `Gate D FOUNDATION AUTHORIZED + COMPLETE` (MOBILE-REACT-IMPL
 
 Browser session auth unblock: `MOBILE-REACT-IMPL-03A COMPLETE` (same-origin `/platform-api` + Local Validation HTTP cookie). IMPL-03 workspace UI is **not** complete.
 
+Product shell visual correction: `MOBILE-REACT-IMPL-02A COMPLETE` (demo/foundation copy removed from product routes; commercial chrome).
+
 PWA production rollout: `NOT AUTHORIZED`
 
 Capacitor implementation: `NOT AUTHORIZED`
@@ -30,15 +32,15 @@ Existing Personal Web status: `Retained / Unmodified`
 
 Existing .NET backends (Platform API + POS API + PostgreSQL): `Platform API session-cookie Secure policy aligned with Local Validation HTTP only; CORS unchanged`
 
-Future React / PWA / Capacitor status: `Gate C complete; Gate D PWA foundation complete; IMPL-03A browser auth foundation complete; IMPL-03 not complete; PWA production rollout and Capacitor locked`
+Future React / PWA / Capacitor status: `Gate C complete; Gate D PWA foundation complete; IMPL-02A product shell complete; IMPL-03A browser auth foundation complete; IMPL-03 not complete; PWA production rollout and Capacitor locked`
 
-React implementation presence: `Present` (`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/` — foundation + PWA static shell + same-origin cookie Sign In)
+React implementation presence: `Present` (`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/` — product shell + PWA static shell + same-origin cookie Sign In)
 
 Capacitor implementation presence: `Absent`
 
 PWA production presence: `Absent` (installable static-shell foundation only; production rollout not authorized)
 
-Queue state: `STOPPED AFTER MOBILE-REACT-IMPL-03A`
+Queue state: `STOPPED AFTER MOBILE-REACT-IMPL-02A`
 
 MOBILE-D-060: `OPEN`
 
@@ -63,7 +65,8 @@ MOBILE-D-060: `OPEN`
 | MOBILE-REACT-IMPL-01 | Complete | Gate C React Mobile Client foundation (shell, theme, i18n, HTTP stubs, diagnostics) |
 | MOBILE-REACT-IMPL-01A | Complete | Diagnostics/connectivity correction: no fabricated Online; Copy Diagnostics allowlist-safe |
 | MOBILE-REACT-IMPL-02 | Complete | Gate D PWA static shell foundation (manifest, prompt SW, no API/financial cache) |
-| MOBILE-REACT-IMPL-03 | Blocked | Online auth + smart workspace — blocked on API/session transport |
+| MOBILE-REACT-IMPL-02A | Complete | Product shell visual correction; demo/foundation copy removed from product routes |
+| MOBILE-REACT-IMPL-03 | Blocked | Online auth + smart workspace — workspace UI not complete |
 | MOBILE-REACT-IMPL-03A | Complete | Browser same-origin `/platform-api` proxy + Local Validation HTTP cookie; no workspace UI |
 
 ## Authorization gates (locked)

@@ -4,7 +4,7 @@ export const PREVIEW_SESSION = {
   sessionId: "11111111-1111-4111-8111-111111111111",
   userId: "22222222-2222-4222-8222-222222222222",
   username: "preview.user",
-  displayName: "Preview User",
+  displayName: "Alex Rivera",
   email: "preview.user@example.test",
   expiresAtUtc: "2026-12-31T00:00:00.000Z",
   absoluteExpiresAtUtc: "2026-12-31T00:00:00.000Z",

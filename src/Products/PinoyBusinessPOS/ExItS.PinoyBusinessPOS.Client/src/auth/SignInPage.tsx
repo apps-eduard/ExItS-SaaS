@@ -110,10 +110,10 @@ export function SignInPage() {
             </Button>
           </form>
         </Card>
-        <Card className="flex flex-col gap-5">
+        <div className="flex flex-col gap-4">
           <LanguageControl />
           <ThemeControl />
-        </Card>
+        </div>
       </main>
     </div>
   );

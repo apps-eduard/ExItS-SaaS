@@ -187,9 +187,9 @@
   --exits-density-space-unit: 1rem;
   --exits-density-card-padding: 1.125rem;
   --exits-touch-target-min: 2.75rem;
-  --exits-page-padding: 1.25rem;
+  --exits-page-padding: 1rem;
   --exits-bottom-nav-height: 4.25rem;
-  --exits-topbar-height: 3.75rem;
+  --exits-topbar-height: 3.5rem;
 }
 
 [data-density="comfortable"] {

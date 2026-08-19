@@ -20,7 +20,7 @@ describe("connectivity foundation", () => {
       </AppProviders>,
     );
     const header = screen.getByRole("banner");
-    expect(header).toHaveTextContent("Preview");
+    expect(header).toHaveTextContent("ExItS Mobile");
     expect(header).not.toHaveTextContent("Online");
     expect(header).not.toHaveTextContent("Offline");
     expect(header).not.toHaveTextContent("Syncing");

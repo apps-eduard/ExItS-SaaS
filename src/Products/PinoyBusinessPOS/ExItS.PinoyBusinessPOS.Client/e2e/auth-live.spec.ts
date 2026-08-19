@@ -27,8 +27,8 @@ async function loginInBrowser(page: Page, username: string, password: string, di
   await page.getByLabel("Email or username").fill(username);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("heading", { name: "Client foundation" })).toBeVisible();
-  await expect(page.getByRole("banner")).toContainText(displayName);
+  await expect(page.getByRole("heading", { name: "ExItS Mobile" })).toBeVisible();
+  await expect(page.getByRole("main")).toContainText(displayName);
 }
 
 test.describe("real Local Validation cookie auth", () => {
@@ -61,8 +61,8 @@ test.describe("real Local Validation cookie auth", () => {
     expect(await collectBrowserAuthPersistence(page)).toEqual([]);
 
     await page.reload();
-    await expect(page.getByRole("heading", { name: "Client foundation" })).toBeVisible();
-    await expect(page.getByRole("banner")).toContainText("Maria Santos");
+    await expect(page.getByRole("heading", { name: "ExItS Mobile" })).toBeVisible();
+    await expect(page.getByRole("main")).toContainText("Maria Santos");
     expect(await collectBrowserAuthPersistence(page)).toEqual([]);
 
     const me = await page.request.get("/platform-api/api/v1/platform/auth/me");
@@ -83,7 +83,7 @@ test.describe("real Local Validation cookie auth", () => {
 
     await loginInBrowser(page, "luis.navarro", password, "Luis Navarro");
     await page.reload();
-    await expect(page.getByRole("banner")).toContainText("Luis Navarro");
+    await expect(page.getByRole("main")).toContainText("Luis Navarro");
     expect(await collectBrowserAuthPersistence(page)).toEqual([]);
   });
 });

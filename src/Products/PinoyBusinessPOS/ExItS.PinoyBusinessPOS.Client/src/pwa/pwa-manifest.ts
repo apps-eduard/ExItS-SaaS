@@ -53,7 +53,7 @@ export function createPwaManifest() {
     id: PWA_START_URL,
     name: PWA_APP_NAME,
     short_name: PWA_SHORT_NAME,
-    description: "ExItS Mobile Client foundation",
+    description: "Your business and personal ExItS experience.",
     start_url: PWA_START_URL,
     scope: PWA_SCOPE,
     display: PWA_DISPLAY,

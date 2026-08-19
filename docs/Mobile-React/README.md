@@ -13,6 +13,7 @@ It does **not** authorize implementation.
 - React mobile implementation: **Gate C COMPLETE** (IMPL-01 / IMPL-01A)
 - PWA foundation: **Gate D AUTHORIZED + COMPLETE** (IMPL-02)
 - Browser session auth unblock: **IMPL-03A COMPLETE** (same-origin `/platform-api` + Local Validation HTTP cookie)
+- Product shell visual correction: **IMPL-02A COMPLETE**
 - IMPL-03 workspace UI: **NOT COMPLETE**
 - PWA production rollout: **NOT AUTHORIZED**
 - Capacitor production rollout: **NOT AUTHORIZED**
@@ -47,6 +48,7 @@ It does **not** authorize implementation.
 - [Reports/MOBILE-REACT-DOC-MERGE-01-approved-planning-baseline.md](Reports/MOBILE-REACT-DOC-MERGE-01-approved-planning-baseline.md) — merge of approved planning baseline to `main`
 - [Reports/MOBILE-REACT-IMPL-01-react-foundation.md](Reports/MOBILE-REACT-IMPL-01-react-foundation.md) — Gate C client foundation
 - [Reports/MOBILE-REACT-IMPL-02-pwa-foundation.md](Reports/MOBILE-REACT-IMPL-02-pwa-foundation.md) — Gate D PWA static shell foundation
+- [Reports/MOBILE-REACT-IMPL-02A-product-shell-visual-correction.md](Reports/MOBILE-REACT-IMPL-02A-product-shell-visual-correction.md) — product shell visual correction
 - [Reports/MOBILE-REACT-IMPL-03A-browser-auth-unblock.md](Reports/MOBILE-REACT-IMPL-03A-browser-auth-unblock.md) — same-origin browser session auth unblock
 
 ## Canonical rule

@@ -6,6 +6,7 @@ React Mobile Client host. Sibling of MAUI, not a replacement yet.
 - Stack: React, TypeScript strict, Vite, Tailwind, React Router, TanStack Query, Lucide, vite-plugin-pwa
 - Default locale: English (`en`); secondary: `fil-PH`
 - Default theme: System (Light / Dark supported)
+- Product chrome: compact top bar + Settings → Appearance. No demo/foundation copy on product routes.
 - PWA: installable static shell + prompt updates. **Not** a production rollout, LocalStore, or financial offline SoR
 - Browser auth: same-origin `/platform-api` proxy to Platform. HttpOnly `.ExItS.Platform.Auth` cookie. JavaScript ignores `sessionToken`.
 - Capacitor / PIN / workspace chooser / selling: **not** in this package

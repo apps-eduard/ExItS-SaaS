@@ -74,7 +74,7 @@ test.describe("PWA foundation", () => {
     ] as const) {
       await page.setViewportSize(viewport);
       await page.goto("/");
-      await expect(page.getByRole("heading", { name: "Client foundation" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "ExItS Mobile" })).toBeVisible();
       await expect(page.getByRole("banner")).toBeVisible();
       await assertNoHorizontalOverflow(page);
     }

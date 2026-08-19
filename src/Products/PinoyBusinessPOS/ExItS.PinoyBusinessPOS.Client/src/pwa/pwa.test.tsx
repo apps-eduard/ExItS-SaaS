@@ -41,6 +41,8 @@ describe("PWA manifest identity", () => {
     expect(manifest.display).toBe(PWA_DISPLAY);
     expect(manifest.theme_color).toBe(PWA_THEME_COLOR);
     expect(manifest.background_color).toBe(PWA_BACKGROUND_COLOR);
+    expect(manifest.description).toBe("Your business and personal ExItS experience.");
+    expect(manifest.description.toLowerCase()).not.toContain("foundation");
     expect(PWA_ICON_FILES).toEqual(
       expect.arrayContaining([
         "icon-192.png",

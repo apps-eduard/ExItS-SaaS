@@ -6,7 +6,7 @@ import { AppProviders } from "@/app/providers";
 import { SessionGate } from "@/auth/SessionGate";
 import { SignInPage } from "@/auth/SignInPage";
 import { collectWebStorageAuthHits } from "@/auth/web-storage-guard";
-import { FoundationHomePage } from "@/features/foundation/FoundationHomePage";
+import { HomePage } from "@/features/home/HomePage";
 import { AppShell } from "@/layouts/AppShell";
 
 const loginUrl = "/platform-api/api/v1/platform/auth/login";
@@ -42,7 +42,7 @@ function renderAuthApp() {
           {
             path: "/",
             element: <AppShell />,
-            children: [{ index: true, element: <FoundationHomePage /> }],
+            children: [{ index: true, element: <HomePage /> }],
           },
         ],
       },
@@ -73,7 +73,7 @@ describe("browser session gate", () => {
     );
     renderAuthApp();
     expect(await screen.findByRole("heading", { name: "Sign in" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Client foundation" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "ExItS Mobile" })).not.toBeInTheDocument();
   });
 
   it("signs in with password login and never persists sessionToken", async () => {
@@ -102,8 +102,8 @@ describe("browser session gate", () => {
     await user.type(screen.getByLabelText("Password"), "not-a-real-secret");
     await user.click(screen.getByRole("button", { name: "Sign in" }));
 
-    expect(await screen.findByRole("heading", { name: "Client foundation" })).toBeInTheDocument();
-    expect(screen.getByText("Maria Santos")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "ExItS Mobile" })).toBeInTheDocument();
+    expect(screen.getByText(/Maria Santos/)).toBeInTheDocument();
     expect(collectWebStorageAuthHits()).toEqual([]);
     expect(JSON.stringify(window.localStorage)).not.toContain("reusable-secret");
     expect(JSON.stringify(window.sessionStorage)).not.toContain("reusable-secret");
