@@ -7,6 +7,11 @@ import {
   organizationMembersRequestPath,
 } from "@/api/organizations/people-list-query";
 import {
+  organizationEntitlementSnapshotsRequestPath,
+  type EntitlementGrant,
+  type EntitlementSnapshot,
+} from "@/api/organizations/entitlement-list-query";
+import {
   organizationSubscriptionsRequestPath,
   type OrganizationSubscription,
   type OrganizationSubscriptionUrlState,
@@ -411,6 +416,94 @@ export function listOrganizationSubscriptions(
     return {
       ...page,
       items: page.items.map(mapOrganizationSubscription),
+    };
+  });
+}
+
+function mapEntitlementGrant(payload: unknown): EntitlementGrant | null {
+  const record = asRecord(payload);
+  if (!record) {
+    return null;
+  }
+  const featureCode = readString(record, "featureCode", "FeatureCode");
+  const enabled = readBoolean(record, "enabled", "Enabled");
+  if (!featureCode || enabled === undefined) {
+    return null;
+  }
+  return {
+    featureCode,
+    enabled,
+    numericLimit: readNumber(record, "numericLimit", "NumericLimit"),
+    source: readString(record, "source", "Source"),
+    effectiveAtUtc: readString(record, "effectiveAtUtc", "EffectiveAtUtc"),
+    expiresAtUtc: readString(record, "expiresAtUtc", "ExpiresAtUtc"),
+  };
+}
+
+export function mapEntitlementSnapshot(payload: unknown): EntitlementSnapshot {
+  const record = asRecord(payload);
+  if (!record) {
+    throw new Error("Invalid entitlement snapshot.");
+  }
+  const id = readString(record, "id", "Id");
+  const organizationId = readString(record, "organizationId", "OrganizationId");
+  const productCode = readString(record, "productCode", "ProductCode");
+  const subscriptionId = readString(record, "subscriptionId", "SubscriptionId");
+  const planCode = readString(record, "planCode", "PlanCode");
+  const snapshotVersion = readNumber(record, "snapshotVersion", "SnapshotVersion");
+  const subscriptionStatus = readString(record, "subscriptionStatus", "SubscriptionStatus");
+  const inGracePeriod = readBoolean(record, "inGracePeriod", "InGracePeriod");
+  if (
+    !id ||
+    !organizationId ||
+    !productCode ||
+    !subscriptionId ||
+    !planCode ||
+    snapshotVersion === undefined ||
+    !subscriptionStatus ||
+    inGracePeriod === undefined
+  ) {
+    throw new Error("Invalid entitlement snapshot.");
+  }
+  const grantsPayload = record.grants ?? record.Grants;
+  return {
+    id,
+    organizationId,
+    productCode,
+    subscriptionId,
+    planCode,
+    planVersionNumber: readNumber(record, "planVersionNumber", "PlanVersionNumber"),
+    snapshotVersion,
+    schemaVersion: readNumber(record, "schemaVersion", "SchemaVersion"),
+    subscriptionStatus,
+    inGracePeriod,
+    generatedAtUtc: readString(record, "generatedAtUtc", "GeneratedAtUtc"),
+    effectiveAtUtc: readString(record, "effectiveAtUtc", "EffectiveAtUtc"),
+    refreshByUtc: readString(record, "refreshByUtc", "RefreshByUtc"),
+    expiresAtUtc: readString(record, "expiresAtUtc", "ExpiresAtUtc"),
+    grants: Array.isArray(grantsPayload)
+      ? grantsPayload.flatMap((item) => {
+          const mapped = mapEntitlementGrant(item);
+          return mapped ? [mapped] : [];
+        })
+      : [],
+  };
+}
+
+export function listOrganizationEntitlementSnapshots(
+  baseUrl: string,
+  organizationId: string,
+  productCode: string,
+  options: { page: number; pageSize?: number; signal?: AbortSignal },
+): Promise<PagedResult<EntitlementSnapshot>> {
+  return platformRequest<unknown>(baseUrl, {
+    path: organizationEntitlementSnapshotsRequestPath(organizationId, productCode, options),
+    signal: options.signal,
+  }).then((payload) => {
+    const page = parsePagedResult<unknown>(payload);
+    return {
+      ...page,
+      items: page.items.map(mapEntitlementSnapshot),
     };
   });
 }

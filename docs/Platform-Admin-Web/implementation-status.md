@@ -392,6 +392,29 @@ Read-only Subscription at `/admin/organizations/:organizationId/subscription` us
 
 See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-12-organization-subscriptions.md`.
 
+## PWEB-IMPL-13 — Organization workspace / Entitlements
+
+Status: **COMPLETE** after validation
+
+Read-only Entitlements at `/admin/organizations/:organizationId/entitlements`. Product codes come from already-authorized commercial-summary `latestEntitlements`. Snapshot history is product-scoped only: `GET .../products/{productCode}/entitlements/snapshots?page&pageSize`. URL `product` is sanitized against returned codes before the history call. No snapshot detail route. No override mutations. CSRF remains `BLOCKS_FUTURE_MUTATION`. Platform Admin is **WEB ONLY**. PWA is **NOT PLANNED**.
+
+| Area | Record |
+|---|---|
+| Overview | **IMPLEMENTED** |
+| Branches | **IMPLEMENTED — READ ONLY** |
+| People/Memberships | **IMPLEMENTED — READ ONLY** |
+| Products/Access | **IMPLEMENTED — READ ONLY** |
+| Subscription | **IMPLEMENTED — READ ONLY** |
+| Entitlements | **IMPLEMENTED — READ ONLY** |
+| Billing | **NOT STARTED** |
+| Activity/Audit | **NOT STARTED** |
+| CSRF | `BLOCKS_FUTURE_MUTATION` |
+| Social-auth token-in-URL | `BLOCKS_CUTOVER` |
+| Platform Admin | **WEB ONLY** |
+| PWA | **NOT PLANNED** |
+
+See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-13-organization-entitlements.md`.
+
 ## Queue
 
 | Package | Status |
@@ -407,5 +430,6 @@ See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-12-organization-subscriptions.md`
 | PWEB-IMPL-10 — Organization workspace People | COMPLETE |
 | PWEB-IMPL-11 — Organization workspace Products | COMPLETE |
 | PWEB-IMPL-12 — Organization workspace Subscriptions | COMPLETE |
+| PWEB-IMPL-13 — Organization workspace Entitlements | COMPLETE |
 
-Stopped after PWEB-IMPL-12.
+Stopped after PWEB-IMPL-13.

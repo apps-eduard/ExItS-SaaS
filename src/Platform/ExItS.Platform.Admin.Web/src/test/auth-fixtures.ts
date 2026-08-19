@@ -104,6 +104,10 @@ export type AuthenticatedFetchOptions = {
   forbiddenOrgSubscriptions?: boolean;
   orgSubscriptionItems?: Array<Record<string, unknown>>;
   orgSubscriptionTotalCount?: number;
+  failEntitlementSnapshots?: boolean;
+  forbiddenEntitlementSnapshots?: boolean;
+  entitlementSnapshotItems?: Array<Record<string, unknown>>;
+  entitlementSnapshotTotalCount?: number;
 };
 
 export function mockUnauthenticatedFetch(): void {
@@ -253,6 +257,34 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}):
         return jsonResponse(
           200,
           pagedJson(items, options.orgSubscriptionTotalCount ?? items.length, items.length || 20),
+        );
+      }
+      const entitlementSnapshotsGet = path.match(
+        /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/products\/[^/]+\/entitlements\/snapshots$/,
+      );
+      if (entitlementSnapshotsGet) {
+        if (options.forbiddenEntitlementSnapshots) {
+          return jsonResponse(403, {
+            title: "Forbidden",
+            status: 403,
+            detail: "entitlement-secret",
+          });
+        }
+        if (options.failEntitlementSnapshots) {
+          return jsonResponse(500, {
+            title: "Error",
+            status: 500,
+            detail: "Entitlement snapshot list failed.",
+          });
+        }
+        const items = options.entitlementSnapshotItems ?? [];
+        return jsonResponse(
+          200,
+          pagedJson(
+            items,
+            options.entitlementSnapshotTotalCount ?? items.length,
+            items.length || 20,
+          ),
         );
       }
       const organizationGet = path.match(

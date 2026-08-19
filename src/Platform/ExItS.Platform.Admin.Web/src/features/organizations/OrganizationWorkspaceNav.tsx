@@ -75,6 +75,15 @@ export function OrganizationWorkspaceNav() {
             {t("organization.workspace.nav.subscription")}
           </NavLink>
         </li>
+        <li>
+          <NavLink
+            className={linkClass}
+            state={state}
+            to={organizationWorkspaceHref(organizationId, "entitlements")}
+          >
+            {t("organization.workspace.nav.entitlements")}
+          </NavLink>
+        </li>
       </ul>
     </nav>
   );

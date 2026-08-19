@@ -3,11 +3,13 @@ import {
   getOrganization,
   getOrganizationCommercialSummary,
   listOrganizationBranches,
+  listOrganizationEntitlementSnapshots,
   listOrganizationInvitations,
   listOrganizationMembers,
   listOrganizationSubscriptions,
 } from "@/api/organizations/organization-client";
 import { ORGANIZATION_PEOPLE_PAGE_SIZE } from "@/api/organizations/organization-types";
+import { ORGANIZATION_ENTITLEMENT_PAGE_SIZE } from "@/api/organizations/entitlement-list-query";
 import type { OrganizationSubscriptionUrlState } from "@/api/organizations/subscription-list-query";
 import { env } from "@/lib/env";
 
@@ -119,5 +121,28 @@ export function useOrganizationSubscriptionsQuery(
     enabled: organizationId != null,
     queryFn: ({ signal }) =>
       listOrganizationSubscriptions(env.platformApiBaseUrl, organizationId!, state, signal),
+  });
+}
+
+export const organizationEntitlementSnapshotsQueryKey = (
+  organizationId: string,
+  product: string,
+  page: number,
+) => ["organizations", "entitlement-snapshots", organizationId, product, page] as const;
+
+export function useOrganizationEntitlementSnapshotsQuery(
+  organizationId: string | null,
+  product: string | null,
+  page: number,
+) {
+  return useQuery({
+    queryKey: organizationEntitlementSnapshotsQueryKey(organizationId ?? "", product ?? "", page),
+    enabled: organizationId != null && product != null && product.length > 0,
+    queryFn: ({ signal }) =>
+      listOrganizationEntitlementSnapshots(env.platformApiBaseUrl, organizationId!, product!, {
+        page,
+        pageSize: ORGANIZATION_ENTITLEMENT_PAGE_SIZE,
+        signal,
+      }),
   });
 }

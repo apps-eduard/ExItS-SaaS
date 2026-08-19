@@ -5,9 +5,9 @@ import { expect, test } from "@playwright/test";
 
 const enabled = process.env.PWEB_CONTAINER_SMOKE === "1";
 const password = process.env.LOCAL_VALIDATION_SHARED_PASSWORD ?? "";
-const subscriptionsScreenshotDir = resolve(
+const entitlementsScreenshotDir = resolve(
   dirname(fileURLToPath(import.meta.url)),
-  "../../../../docs/Platform-Admin-Web/Reports/impl-12-organization-subscriptions",
+  "../../../../docs/Platform-Admin-Web/Reports/impl-13-organization-entitlements",
 );
 
 test.describe("local-validation React container smoke", () => {
@@ -121,31 +121,38 @@ test.describe("local-validation React container smoke", () => {
     await expect(workspaceNav.getByRole("link", { name: "People" })).toBeVisible();
     await expect(workspaceNav.getByRole("link", { name: "Products" })).toBeVisible();
     await expect(workspaceNav.getByRole("link", { name: "Subscription" })).toBeVisible();
-    await expect(workspaceNav.getByRole("link", { name: "Entitlements" })).toHaveCount(0);
-    await workspaceNav.getByRole("link", { name: "Subscription" }).click();
-    await expect(page).toHaveURL(/\/admin\/organizations\/[0-9a-fA-F-]{36}\/subscription/);
+    await expect(workspaceNav.getByRole("link", { name: "Entitlements" })).toBeVisible();
+    await expect(workspaceNav.getByRole("link", { name: "Billing" })).toHaveCount(0);
+    await workspaceNav.getByRole("link", { name: "Entitlements" }).click();
+    await expect(page).toHaveURL(/\/admin\/organizations\/[0-9a-fA-F-]{36}\/entitlements/);
     await expect(
-      page.getByRole("heading", { name: "Subscription", exact: true, level: 1 }),
+      page.getByRole("heading", { name: "Entitlements", exact: true, level: 1 }),
     ).toBeVisible();
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /activate/i })).toHaveCount(0);
-    mkdirSync(subscriptionsScreenshotDir, { recursive: true });
+    await expect(page.getByRole("button", { name: /override/i })).toHaveCount(0);
+    mkdirSync(entitlementsScreenshotDir, { recursive: true });
     await page.getByRole("button", { name: "Preferences" }).click();
     await page.getByRole("menuitem", { name: /^Light/ }).click();
     await page.screenshot({
-      path: resolve(subscriptionsScreenshotDir, "01-subscriptions-1440x900-light.png"),
+      path: resolve(entitlementsScreenshotDir, "01-entitlements-1440x900-light.png"),
       fullPage: true,
     });
     await page.getByRole("button", { name: "Preferences" }).click();
     await page.getByRole("menuitem", { name: /^Dark/ }).click();
     await page.screenshot({
-      path: resolve(subscriptionsScreenshotDir, "02-subscriptions-1440x900-dark.png"),
+      path: resolve(entitlementsScreenshotDir, "02-entitlements-1440x900-dark.png"),
       fullPage: true,
     });
-    await page.locator("#org-sub-status").selectOption({ index: 1 });
-    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    const productSelect = page.locator("#org-entitlement-product");
+    if ((await productSelect.count()) > 0) {
+      const optionCount = await productSelect.locator("option").count();
+      if (optionCount > 1) {
+        await productSelect.selectOption({ index: 1 });
+        await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+      }
+    }
     await page.screenshot({
-      path: resolve(subscriptionsScreenshotDir, "04-subscriptions-filtered.png"),
+      path: resolve(entitlementsScreenshotDir, "04-entitlements-product-selector.png"),
       fullPage: true,
     });
     await page.getByRole("button", { name: "Preferences" }).click();
@@ -156,7 +163,7 @@ test.describe("local-validation React container smoke", () => {
     );
     expect(overflow).toBe(false);
     await page.screenshot({
-      path: resolve(subscriptionsScreenshotDir, "03-subscriptions-375x812.png"),
+      path: resolve(entitlementsScreenshotDir, "03-entitlements-375x812.png"),
       fullPage: true,
     });
   });
