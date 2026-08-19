@@ -81,3 +81,22 @@ export type OrganizationListQuery = {
   sortBy?: string;
   sortDesc?: boolean;
 };
+
+export type OrganizationBranch = {
+  id: string;
+  organizationId: string;
+  code: string;
+  name: string;
+  status: string;
+  isPrimary: boolean;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  region?: string;
+  postalCode?: string;
+  countryCode?: string;
+  contactPhone?: string;
+  timeZoneId?: string;
+  createdAtUtc?: string;
+  updatedAtUtc?: string;
+};

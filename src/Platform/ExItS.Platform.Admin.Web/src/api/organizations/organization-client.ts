@@ -3,6 +3,7 @@ import { platformRequest } from "@/api/platform-http";
 import { organizationsListPath } from "@/features/overview/dashboard-bounds";
 import { organizationsListRequestPath } from "@/api/organizations/organization-list-query";
 import type {
+  OrganizationBranch,
   OrganizationBranding,
   OrganizationCommercialSummary,
   OrganizationDetail,
@@ -179,6 +180,68 @@ export function getOrganizationCommercialSummary(
     path: `/api/v1/platform/admin/organizations/${organizationId}/commercial-summary`,
     signal,
   }).then(mapOrganizationCommercialSummary);
+}
+
+function readBoolean(record: Record<string, unknown>, ...keys: string[]): boolean | undefined {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "boolean") {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+export function mapOrganizationBranch(payload: unknown): OrganizationBranch {
+  const record = asRecord(payload);
+  if (!record) {
+    throw new Error("Invalid organization branch.");
+  }
+  const id = readString(record, "id", "Id");
+  const organizationId = readString(record, "organizationId", "OrganizationId");
+  const code = readString(record, "code", "Code");
+  const name = readString(record, "name", "Name");
+  const status = readString(record, "status", "Status");
+  const isPrimary = readBoolean(record, "isPrimary", "IsPrimary");
+  if (!id || !organizationId || !code || !name || !status || isPrimary === undefined) {
+    throw new Error("Invalid organization branch.");
+  }
+  return {
+    id,
+    organizationId,
+    code,
+    name,
+    status,
+    isPrimary,
+    addressLine1: readString(record, "addressLine1", "AddressLine1"),
+    addressLine2: readString(record, "addressLine2", "AddressLine2"),
+    city: readString(record, "city", "City"),
+    region: readString(record, "region", "Region"),
+    postalCode: readString(record, "postalCode", "PostalCode"),
+    countryCode: readString(record, "countryCode", "CountryCode"),
+    contactPhone: readString(record, "contactPhone", "ContactPhone"),
+    timeZoneId: readString(record, "timeZoneId", "TimeZoneId"),
+    createdAtUtc: readString(record, "createdAtUtc", "CreatedAtUtc"),
+    updatedAtUtc: readString(record, "updatedAtUtc", "UpdatedAtUtc"),
+  };
+}
+
+export function mapOrganizationBranches(payload: unknown): OrganizationBranch[] {
+  if (!Array.isArray(payload)) {
+    throw new Error("Invalid organization branch list.");
+  }
+  return payload.map(mapOrganizationBranch);
+}
+
+export function listOrganizationBranches(
+  baseUrl: string,
+  organizationId: string,
+  signal?: AbortSignal,
+): Promise<OrganizationBranch[]> {
+  return platformRequest<unknown>(baseUrl, {
+    path: `/api/v1/platform/organizations/${organizationId}/branches`,
+    signal,
+  }).then(mapOrganizationBranches);
 }
 
 export function listOrganizations(

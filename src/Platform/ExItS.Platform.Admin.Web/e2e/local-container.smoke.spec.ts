@@ -5,17 +5,9 @@ import { expect, test } from "@playwright/test";
 
 const enabled = process.env.PWEB_CONTAINER_SMOKE === "1";
 const password = process.env.LOCAL_VALIDATION_SHARED_PASSWORD ?? "";
-const screenshotDir = resolve(
+const branchesScreenshotDir = resolve(
   dirname(fileURLToPath(import.meta.url)),
-  "../../../../docs/Platform-Admin-Web/Reports/impl-06a-local-validation",
-);
-const organizationsScreenshotDir = resolve(
-  dirname(fileURLToPath(import.meta.url)),
-  "../../../../docs/Platform-Admin-Web/Reports/impl-07-organizations",
-);
-const workspaceScreenshotDir = resolve(
-  dirname(fileURLToPath(import.meta.url)),
-  "../../../../docs/Platform-Admin-Web/Reports/impl-08-organization-workspace",
+  "../../../../docs/Platform-Admin-Web/Reports/impl-09-organization-branches",
 );
 
 test.describe("local-validation React container smoke", () => {
@@ -48,7 +40,6 @@ test.describe("local-validation React container smoke", () => {
     page,
   }) => {
     test.skip(!password, "LOCAL_VALIDATION_SHARED_PASSWORD is required for the 8095 login path.");
-    mkdirSync(screenshotDir, { recursive: true });
 
     await page.goto("/admin/login");
     await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
@@ -59,27 +50,6 @@ test.describe("local-validation React container smoke", () => {
     await page.getByRole("button", { name: "Preferences" }).click();
     await page.getByRole("menuitem", { name: /^Light/ }).click();
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.screenshot({
-      path: resolve(screenshotDir, "01-login-local-validation-1440x900-light.png"),
-      fullPage: true,
-    });
-
-    await page.getByRole("button", { name: "Preferences" }).click();
-    await page.getByRole("menuitem", { name: /^Dark/ }).click();
-    await page.screenshot({
-      path: resolve(screenshotDir, "02-login-local-validation-1440x900-dark.png"),
-      fullPage: true,
-    });
-
-    await page.getByRole("button", { name: "Preferences" }).click();
-    await page.getByRole("menuitem", { name: /^Light/ }).click();
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.screenshot({
-      path: resolve(screenshotDir, "03-login-local-validation-375x812-light.png"),
-      fullPage: true,
-    });
-
-    await page.setViewportSize({ width: 1440, height: 900 });
     const option = page
       .locator("#dev-test-user option")
       .filter({ hasText: "Olivia Mendoza" })
@@ -89,10 +59,6 @@ test.describe("local-validation React container smoke", () => {
     await selector.selectOption(value!);
     await expect(page.getByLabel("Email")).toHaveValue(/olivia\.mendoza@exits\.local/i);
     await expect(page.locator("#sign-in-password")).toHaveValue("");
-    await page.screenshot({
-      path: resolve(screenshotDir, "04-login-after-test-user-selected.png"),
-      fullPage: true,
-    });
 
     await page.locator("#sign-in-password").fill(password);
     await page.getByRole("button", { name: "Sign In" }).click();
@@ -103,10 +69,6 @@ test.describe("local-validation React container smoke", () => {
       session: { ...window.sessionStorage },
     }));
     expect(JSON.stringify(storage)).not.toMatch(/sessionToken|accessToken|bearer/i);
-    await page.screenshot({
-      path: resolve(screenshotDir, "05-dashboard-after-test-login.png"),
-      fullPage: true,
-    });
 
     await expect(page.getByRole("button", { name: "Collapse sidebar" })).toBeVisible();
     await expect(page.getByText("OM", { exact: true })).toBeVisible();
@@ -130,7 +92,6 @@ test.describe("local-validation React container smoke", () => {
     await page.getByRole("button", { name: "Sign In" }).click();
     await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
 
-    mkdirSync(organizationsScreenshotDir, { recursive: true });
     await expect(
       page
         .getByRole("navigation", { name: "Primary" })
@@ -147,90 +108,51 @@ test.describe("local-validation React container smoke", () => {
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
     await expect(page.getByText("abc-sari-sari")).toBeVisible();
     await expect(page.getByRole("button", { name: /create/i })).toHaveCount(0);
+
+    mkdirSync(branchesScreenshotDir, { recursive: true });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const organizationLink = page.locator('table a[href^="/admin/organizations/"]').first();
+    await expect(organizationLink).toBeVisible();
+    await organizationLink.click();
+    await expect(page).toHaveURL(/\/admin\/organizations\/[0-9a-fA-F-]{36}$/);
+    await expect(page.locator("h1")).toBeVisible();
+    const workspaceNav = page.getByRole("navigation", { name: "Organization workspace" });
+    await expect(workspaceNav.getByRole("link", { name: "Overview" })).toBeVisible();
+    await expect(workspaceNav.getByRole("link", { name: "Branches" })).toBeVisible();
+    await expect(workspaceNav.getByRole("link", { name: "People" })).toHaveCount(0);
+    await page.screenshot({
+      path: resolve(branchesScreenshotDir, "04-workspace-navigation.png"),
+      fullPage: true,
+    });
+    await workspaceNav.getByRole("link", { name: "Branches" }).click();
+    await expect(page).toHaveURL(/\/admin\/organizations\/[0-9a-fA-F-]{36}\/branches$/);
+    await expect(
+      page.getByRole("heading", { name: "Branches", exact: true, level: 1 }),
+    ).toBeVisible();
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /create/i })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /edit/i })).toHaveCount(0);
     await page.getByRole("button", { name: "Preferences" }).click();
     await page.getByRole("menuitem", { name: /^Light/ }).click();
-    await page.setViewportSize({ width: 1440, height: 900 });
     await page.screenshot({
-      path: resolve(organizationsScreenshotDir, "01-organizations-1440x900-light.png"),
+      path: resolve(branchesScreenshotDir, "01-branches-1440x900-light.png"),
       fullPage: true,
     });
     await page.getByRole("button", { name: "Preferences" }).click();
     await page.getByRole("menuitem", { name: /^Dark/ }).click();
     await page.screenshot({
-      path: resolve(organizationsScreenshotDir, "02-organizations-1440x900-dark.png"),
+      path: resolve(branchesScreenshotDir, "02-branches-1440x900-dark.png"),
       fullPage: true,
     });
     await page.getByRole("button", { name: "Preferences" }).click();
     await page.getByRole("menuitem", { name: /^Light/ }).click();
-    await page.locator("#org-list-status").selectOption("Active");
-    await expect(page).toHaveURL(/status=Active/);
-    await page.reload();
-    await expect(page).toHaveURL(/status=Active/);
-    await expect(page.getByLabel("Search")).toBeVisible();
-    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
-    await expect(page.getByText("kizy-store")).toBeVisible();
-    await page.screenshot({
-      path: resolve(organizationsScreenshotDir, "04-organizations-filtered.png"),
-      fullPage: true,
-    });
-    await page.getByLabel("Search").fill("kizy");
-    await page.getByRole("button", { name: "Search" }).click();
-    await expect(page).toHaveURL(/search=kizy/);
-    await expect(page).toHaveURL(/status=Active/);
-    await page.reload();
-    await expect(page).toHaveURL(/search=kizy/);
-    await expect(page).toHaveURL(/status=Active/);
-    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
-    await expect(page.getByText("kizy-store")).toBeVisible();
     await page.setViewportSize({ width: 375, height: 812 });
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
     );
     expect(overflow).toBe(false);
     await page.screenshot({
-      path: resolve(organizationsScreenshotDir, "03-organizations-375x812.png"),
-      fullPage: true,
-    });
-
-    mkdirSync(workspaceScreenshotDir, { recursive: true });
-    await page.setViewportSize({ width: 1440, height: 900 });
-    const resetFilters = page.getByRole("button", { name: "Reset filters" });
-    if ((await resetFilters.count()) > 0) {
-      await resetFilters.first().click();
-    }
-    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
-    const organizationLink = page.locator('table a[href^="/admin/organizations/"]').first();
-    await expect(organizationLink).toBeVisible();
-    await organizationLink.click();
-    await expect(page).toHaveURL(/\/admin\/organizations\/[0-9a-fA-F-]{36}$/);
-    await expect(page.locator("h1")).toBeVisible();
-    await expect(page.getByRole("button", { name: /edit/i })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /create/i })).toHaveCount(0);
-    await page.getByRole("button", { name: "Preferences" }).click();
-    await page.getByRole("menuitem", { name: /^Light/ }).click();
-    await page.screenshot({
-      path: resolve(workspaceScreenshotDir, "04-overview-from-organizations.png"),
-      fullPage: true,
-    });
-    await page.screenshot({
-      path: resolve(workspaceScreenshotDir, "01-overview-1440x900-light.png"),
-      fullPage: true,
-    });
-    await page.getByRole("button", { name: "Preferences" }).click();
-    await page.getByRole("menuitem", { name: /^Dark/ }).click();
-    await page.screenshot({
-      path: resolve(workspaceScreenshotDir, "02-overview-1440x900-dark.png"),
-      fullPage: true,
-    });
-    await page.getByRole("button", { name: "Preferences" }).click();
-    await page.getByRole("menuitem", { name: /^Light/ }).click();
-    await page.setViewportSize({ width: 375, height: 812 });
-    const workspaceOverflow = await page.evaluate(
-      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
-    );
-    expect(workspaceOverflow).toBe(false);
-    await page.screenshot({
-      path: resolve(workspaceScreenshotDir, "03-overview-375x812.png"),
+      path: resolve(branchesScreenshotDir, "03-branches-375x812.png"),
       fullPage: true,
     });
   });

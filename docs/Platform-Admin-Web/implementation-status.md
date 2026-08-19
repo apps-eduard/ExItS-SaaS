@@ -284,7 +284,7 @@ Read-only `/admin/organizations/:organizationId` workspace shell with Overview o
 | Area | Record |
 |---|---|
 | Organization Workspace | Overview **IMPLEMENTED** |
-| Branches | **NOT STARTED** |
+| Branches | **IMPLEMENTED — READ ONLY** |
 | People/Memberships | **NOT STARTED** |
 | Products/Access | **NOT STARTED** |
 | Subscription | **NOT STARTED** |
@@ -297,6 +297,30 @@ Read-only `/admin/organizations/:organizationId` workspace shell with Overview o
 
 See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-08-organization-workspace-overview.md`.
 
+## PWEB-IMPL-09 — Organization workspace / Branches
+
+Status: **COMPLETE** after validation
+
+Read-only Branches at `/admin/organizations/:organizationId/branches`. Workspace navigation exposes Overview and Branches only. No branch detail, no mutations, no invented search/pagination. CSRF remains `BLOCKS_FUTURE_MUTATION`. Social-auth token-in-URL remains `BLOCKS_CUTOVER`. Platform Admin is **WEB ONLY**. PWA is **NOT PLANNED**.
+
+| Area | Record |
+|---|---|
+| Overview | **IMPLEMENTED** |
+| Branches | **IMPLEMENTED — READ ONLY** |
+| People/Memberships | **NOT STARTED** |
+| Products/Access | **NOT STARTED** |
+| Subscription | **NOT STARTED** |
+| Entitlements | **NOT STARTED** |
+| Billing | **NOT STARTED** |
+| Activity/Audit | **NOT STARTED** |
+| Branch API | Non-paged `GET .../branches` only; no server search/filter/sort in this package |
+| CSRF | `BLOCKS_FUTURE_MUTATION` |
+| Social-auth token-in-URL | `BLOCKS_CUTOVER` |
+| Platform Admin | **WEB ONLY** |
+| PWA | **NOT PLANNED** |
+
+See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-09-organization-branches.md`.
+
 ## Queue
 
 | Package | Status |
@@ -308,5 +332,6 @@ See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-08-organization-workspace-overvie
 | PWEB-IMPL-06C — Final polish | PRODUCT OWNER VISUAL APPROVED |
 | PWEB-IMPL-07 — Organizations list | COMPLETE |
 | PWEB-IMPL-08 — Organization workspace Overview | COMPLETE |
+| PWEB-IMPL-09 — Organization workspace Branches | COMPLETE |
 
-Stopped after PWEB-IMPL-08.
+Stopped after PWEB-IMPL-09.

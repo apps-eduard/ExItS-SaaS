@@ -1,7 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   ORGANIZATIONS_LIST_STATE_KEY,
+  isOrganizationWorkspaceBranchesPath,
   isOrganizationWorkspacePath,
+  organizationWorkspaceHref,
   organizationsListHref,
   type OrganizationsLocationState,
 } from "@/api/organizations/organization-id";
@@ -28,8 +30,13 @@ export function AppBreadcrumbs() {
       : location.pathname;
   const isOverview = path === "/admin";
   const isOrgWorkspace = isOrganizationWorkspacePath(path);
+  const isOrgBranches = isOrganizationWorkspaceBranchesPath(path);
+  const orgName = workspace?.identity?.displayName ?? t("organization.breadcrumb.fallback");
   const listState = (location.state as OrganizationsLocationState | null) ?? null;
   const organizationsHref = organizationsListHref(listState?.[ORGANIZATIONS_LIST_STATE_KEY]);
+  const overviewHref = workspace?.identity
+    ? organizationWorkspaceHref(workspace.identity.id)
+    : organizationsHref;
   const resolution = resolveKnownReactRoute({
     pathname: path,
     permissionStatus: authorization.status,
@@ -40,12 +47,14 @@ export function AppBreadcrumbs() {
   const currentLabel = isOverview
     ? t("nav.overview")
     : isOrgWorkspace
-      ? (workspace?.identity?.displayName ?? t("organization.breadcrumb.fallback"))
-      : resolution === "implemented"
-        ? (labelForAuthorizedPath(path, t) ?? t("shell.notFound.title"))
-        : resolution === "under-development"
-          ? (labelForAuthorizedPath(path, t) ?? t("underDevelopment.title"))
-          : t("shell.notFound.title");
+      ? orgName
+      : isOrgBranches
+        ? t("organization.workspace.nav.branches")
+        : resolution === "implemented"
+          ? (labelForAuthorizedPath(path, t) ?? t("shell.notFound.title"))
+          : resolution === "under-development"
+            ? (labelForAuthorizedPath(path, t) ?? t("underDevelopment.title"))
+            : t("shell.notFound.title");
 
   return (
     <nav aria-label={t("shell.breadcrumb")} className="min-w-0 overflow-hidden">
@@ -67,6 +76,42 @@ export function AppBreadcrumbs() {
               </span>
               <Link className="text-primary hover:underline" to={organizationsHref}>
                 {t("nav.organizations")}
+              </Link>
+            </li>
+            <li className="flex min-w-0 items-center">
+              <span aria-hidden="true" className="px-1">
+                /
+              </span>
+              <span className="truncate text-foreground" aria-current="page">
+                {currentLabel}
+              </span>
+            </li>
+          </>
+        ) : isOrgBranches ? (
+          <>
+            <li>
+              <Link className="text-primary hover:underline" to="/admin">
+                {t("nav.overview")}
+              </Link>
+            </li>
+            <li className="flex min-w-0 items-center">
+              <span aria-hidden="true" className="px-1">
+                /
+              </span>
+              <Link className="text-primary hover:underline" to={organizationsHref}>
+                {t("nav.organizations")}
+              </Link>
+            </li>
+            <li className="flex min-w-0 items-center">
+              <span aria-hidden="true" className="px-1">
+                /
+              </span>
+              <Link
+                className="truncate text-primary hover:underline"
+                state={listState}
+                to={overviewHref}
+              >
+                {orgName}
               </Link>
             </li>
             <li className="flex min-w-0 items-center">

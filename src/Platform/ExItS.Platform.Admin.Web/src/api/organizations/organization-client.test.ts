@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  mapOrganizationBranches,
   mapOrganizationCommercialSummary,
   mapOrganizationDetail,
 } from "@/api/organizations/organization-client";
@@ -90,5 +91,44 @@ describe("mapOrganizationCommercialSummary", () => {
     });
     expect(mapped.latestEntitlements[0]?.productCode).toBe("POS");
     expect(JSON.stringify(mapped)).not.toMatch(/agreedPrice|amount|999|1200/i);
+  });
+});
+
+describe("mapOrganizationBranches", () => {
+  it("maps identity fields and ignores fulfillment/delivery payload", () => {
+    const mapped = mapOrganizationBranches([
+      {
+        id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        code: "MAIN",
+        name: "Main Store",
+        status: "Active",
+        isPrimary: true,
+        city: "Manila",
+        contactPhone: "+63 2 1234",
+        timeZoneId: "Asia/Manila",
+        pickupEnabled: true,
+        deliveryEnabled: true,
+        baseDeliveryFee: 49,
+      },
+      {
+        id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+        organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        code: "QC",
+        name: "Quezon Branch",
+        status: "Inactive",
+        isPrimary: false,
+      },
+    ]);
+    expect(mapped[0]).toMatchObject({
+      code: "MAIN",
+      name: "Main Store",
+      isPrimary: true,
+      city: "Manila",
+      contactPhone: "+63 2 1234",
+      timeZoneId: "Asia/Manila",
+    });
+    expect(mapped[1]?.isPrimary).toBe(false);
+    expect(JSON.stringify(mapped)).not.toMatch(/pickupEnabled|deliveryEnabled|baseDeliveryFee/i);
   });
 });

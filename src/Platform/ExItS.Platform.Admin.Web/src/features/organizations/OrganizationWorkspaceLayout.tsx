@@ -5,6 +5,7 @@ import { PlatformApiError } from "@/api/platform-http";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
 import { OrganizationNotFoundPage } from "@/features/organizations/OrganizationNotFoundPage";
+import { OrganizationWorkspaceNav } from "@/features/organizations/OrganizationWorkspaceNav";
 import { useOrganizationWorkspaceIdentity } from "@/features/organizations/organization-workspace-context";
 import { useOrganizationDetailQuery } from "@/features/organizations/use-organization-workspace-queries";
 import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
@@ -84,7 +85,8 @@ export function OrganizationWorkspaceLayout() {
   }
 
   return (
-    <div className="min-w-0">
+    <div className="grid min-w-0 gap-4">
+      <OrganizationWorkspaceNav />
       <Outlet />
     </div>
   );

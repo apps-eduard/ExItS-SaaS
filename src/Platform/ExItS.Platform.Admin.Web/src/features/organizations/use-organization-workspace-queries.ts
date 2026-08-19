@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getOrganization,
   getOrganizationCommercialSummary,
+  listOrganizationBranches,
 } from "@/api/organizations/organization-client";
 import { env } from "@/lib/env";
 
@@ -25,5 +26,17 @@ export function useOrganizationCommercialSummaryQuery(organizationId: string | n
     enabled: organizationId != null,
     queryFn: ({ signal }) =>
       getOrganizationCommercialSummary(env.platformApiBaseUrl, organizationId!, signal),
+  });
+}
+
+export const organizationBranchesQueryKey = (organizationId: string) =>
+  ["organizations", "branches", organizationId] as const;
+
+export function useOrganizationBranchesQuery(organizationId: string | null) {
+  return useQuery({
+    queryKey: organizationBranchesQueryKey(organizationId ?? ""),
+    enabled: organizationId != null,
+    queryFn: ({ signal }) =>
+      listOrganizationBranches(env.platformApiBaseUrl, organizationId!, signal),
   });
 }

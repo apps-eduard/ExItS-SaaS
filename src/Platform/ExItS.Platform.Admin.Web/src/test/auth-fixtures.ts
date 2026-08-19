@@ -89,6 +89,9 @@ export type AuthenticatedFetchOptions = {
     payments?: Array<Record<string, unknown>>;
     latestEntitlements?: Array<Record<string, unknown>>;
   };
+  failBranches?: boolean;
+  forbiddenBranches?: boolean;
+  branchItems?: Array<Record<string, unknown>>;
 };
 
 export function mockUnauthenticatedFetch(): void {
@@ -155,6 +158,22 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}):
           payments: summary.payments ?? [],
           latestEntitlements: summary.latestEntitlements ?? [],
         });
+      }
+      const branchesGet = path.match(
+        /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/branches$/,
+      );
+      if (branchesGet) {
+        if (options.forbiddenBranches) {
+          return jsonResponse(403, { title: "Forbidden", status: 403, detail: "branch-secret" });
+        }
+        if (options.failBranches) {
+          return jsonResponse(500, {
+            title: "Error",
+            status: 500,
+            detail: "Branch list failed.",
+          });
+        }
+        return jsonResponse(200, options.branchItems ?? []);
       }
       const organizationGet = path.match(
         /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/,

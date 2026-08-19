@@ -27,3 +27,22 @@ export function isOrganizationWorkspacePath(pathname: string): boolean {
   const parts = pathname.replace(/\/+$/, "").split("/");
   return parts.length === 4 && parts[1] === "admin" && parts[2] === "organizations";
 }
+
+export function isOrganizationWorkspaceBranchesPath(pathname: string): boolean {
+  const parts = pathname.replace(/\/+$/, "").split("/");
+  return (
+    parts.length === 5 &&
+    parts[1] === "admin" &&
+    parts[2] === "organizations" &&
+    parts[4] === "branches"
+  );
+}
+
+export function organizationWorkspaceHref(
+  organizationId: string,
+  section: "overview" | "branches" = "overview",
+): string {
+  return section === "branches"
+    ? `/admin/organizations/${organizationId}/branches`
+    : `/admin/organizations/${organizationId}`;
+}

@@ -7,6 +7,7 @@ import { RequireSession } from "@/app/RequireSession";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthPlaceholderPage } from "@/features/auth/AuthPlaceholderPage";
 import { SignInPage } from "@/features/auth/SignInPage";
+import { OrganizationBranchesPage } from "@/features/organizations/OrganizationBranchesPage";
 import { OrganizationOverviewPage } from "@/features/organizations/OrganizationOverviewPage";
 import { OrganizationsPage } from "@/features/organizations/OrganizationsPage";
 import { OrganizationWorkspaceLayout } from "@/features/organizations/OrganizationWorkspaceLayout";
@@ -93,6 +94,7 @@ export function App() {
                           <Route index element={<OrganizationsPage />} />
                           <Route path=":organizationId" element={<OrganizationWorkspaceLayout />}>
                             <Route index element={<OrganizationOverviewPage />} />
+                            <Route path="branches" element={<OrganizationBranchesPage />} />
                             <Route path="*" element={<ShellCatchAllPage />} />
                           </Route>
                         </Route>
