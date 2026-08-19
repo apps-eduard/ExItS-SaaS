@@ -1,7 +1,7 @@
 # Mobile React — Frontend Architecture and Code Reuse
 
 **Status:** Documentation only. Implementation is **NOT AUTHORIZED**.  
-**Package:** MOBILE-REACT-DOC-03  
+**Package:** MOBILE-REACT-DOC-03 (AMEND-03 workspace/product context)
 **Depends on:** [current-state-and-replacement-boundaries.md](current-state-and-replacement-boundaries.md), [product-surfaces-and-ux.md](product-surfaces-and-ux.md)
 
 This file freezes the **PROPOSED_REPLACEMENT_CLIENT_ARCHITECTURE** for a future React host.
@@ -189,7 +189,7 @@ Pages **compose** shared components. They do not independently recreate repeated
 
 Conceptual examples (names are planning labels, not a created package):
 
-- AppTopBar / shell chrome
+- AppTopBar / shell chrome (consumes shared current-context state; does not authorize or switch independently — MOBILE-D-070)
 - SearchBar
 - FilterBar
 - PageHeader
@@ -198,6 +198,9 @@ Conceptual examples (names are planning labels, not a created package):
 - StatusChip, SyncStatusChip, ConnectivityIndicator
 - ConfirmDialog
 - InternetRequiredToast / InternetRequiredDialog (AMEND-01)
+- WorkspaceResolver, WorkspaceChooser, WorkspaceCard / WorkspaceRow (AMEND-03)
+- ProductLauncher / ProductChooser (AMEND-03; ExItS SaaS experiences, not catalog SKUs)
+- CurrentContextDisplay, SwitchWorkspaceAction, SwitchProductAction (shown only when alternatives exist)
 - Common form fields
 - Common money and quantity displays
 
@@ -211,9 +214,10 @@ Conceptual examples (names are planning labels, not a created package):
 6. Do **not** create an oversized generic component with dozens of unrelated behaviors. Keep primitives and composites focused.
 7. Do **not** prematurely put every component in a **cross-application** shared package. Share first **inside** the Mobile React Client. Extract to a cross-app package only when real reuse with Platform Admin React is proven.
 8. Platform Admin **business UI** must not be imported into Mobile. Shared concepts and design tokens are allowed (Reuse A). Business chrome remains app-specific (Reuse B).
-9. **Shell / top-bar:** one shared top-bar/shell family. Page-specific context is supplied via configuration and slots. Pages must not independently rebuild common chrome.
+9. **Shell / top-bar:** one shared top-bar/shell family. Page-specific context is supplied via configuration and slots from **centralized application state**. Pages must not independently rebuild common chrome, workspace switchers, or product switchers (MOBILE-D-062, MOBILE-D-070).
 10. Accessibility, localization, theme, density, loading, disabled, keyboard, and touch behavior live in the shared component where applicable — not re-implemented per page.
-11. Shared controls automatically follow the **global** locale (`en` / `fil-PH`) and **global** theme (System / Light / Dark). Pages must not implement a separate language or theme system (MOBILE-D-064).
+11. Shared controls automatically follow the **global** locale (`en` / `fil-PH`) and **global** theme (System / Light / Dark). Pages must not implement a separate language or theme system (MOBILE-D-064). Theme/language changes must not reset workspace or product without an authorization reason.
+12. **Workspace / product context:** one resolver policy and one chooser family. Workspace remains Organization + Branch; product is a separate launchable ExItS experience. Skip the corresponding chooser when exactly one authorized valid choice exists (MOBILE-D-065–D-069). Do not create a mega-component that owns routing, selling, and admin.
 
 Current MAUI analogue: DesignSystem primitives (`SearchBar`, `Button`, `EmptyState`, …) plus POS shell chrome. Future React must not import Razor components; it follows the same **reuse discipline**.
 
@@ -262,6 +266,7 @@ business authority   → .NET Platform API + POS API + PostgreSQL
 | Cart preview totals | Client preview only (current `SaleCartService` rule) | Treat preview as ledger |
 | AuthN | Platform (cookie session and/or Bearer introspect) | Separate identity per host |
 | AuthZ | Server on every protected call | Nav visibility as security |
+| Workspace / product launch eligibility | Server-authoritative membership, entitlement, product-local role, and client support; client applies smart skip/chooser only to **already authorized** choices | Inventing a branch; treating last-used as authorization; a static client product list |
 | Offline outbox | Client persistence aligned with current operation types + server idempotency | Second PostgreSQL or a different conflict model |
 
 Do not port authoritative .NET Domain/Application rules into JavaScript “to run offline.” Offline may **queue** already-defined operation types and **project** server-approved snapshots, as LocalStore does today.
@@ -278,9 +283,14 @@ Existing C# `ExItS.PinoyBusinessPOS.ApiClient` and `LocalStore` remain for MAUI 
 | Forms | React Hook Form + Zod |
 | Cart, selling mode, sheets | React state / narrow context |
 | Theme, density, locale | Persisted preference + context |
+| Current workspace / product context | Centralized application state consumed by AppTopBar and pages (MOBILE-D-070) |
 | Auth session facts | Query + memory; tokens only in secure/cookie stores |
 
-No default global store. Query cache is not a substitute for server authorization.
+No default global store. Query cache is not a substitute for server authorization. Pages must not keep a private competing copy of workspace authorization.
+
+Workspace remains Organization + Branch. Do not fold product into that model. Current MAUI `ProductAccessResolver` hard-codes Pinoy Business POS; future React must not treat that as a generic multi-product contract. API shape for listing launchable Mobile experiences is **implementation-time inspection** if current APIs are insufficient. This DOC does not invent product-launch endpoints.
+
+See [product-surfaces-and-ux.md](product-surfaces-and-ux.md) §11 for the routing matrix.
 
 ---
 
@@ -455,3 +465,5 @@ Copy Diagnostics MUST NEVER include:
 - Pinning npm versions
 - Introducing Redux
 - NFC / printer / payment-terminal products
+- Implementing WorkspaceResolver / ProductChooser
+- Creating product-launch APIs or adding parked products to Mobile

@@ -1,7 +1,7 @@
 # Mobile React — Product Surfaces and UX
 
 **Status:** Documentation only. Implementation is **NOT AUTHORIZED**.  
-**Package:** MOBILE-REACT-DOC-02  
+**Package:** MOBILE-REACT-DOC-02 (AMEND-03 workspace/product context)
 **Depends on:** [current-state-and-replacement-boundaries.md](current-state-and-replacement-boundaries.md), [decisions.md](decisions.md)
 
 This file defines the **proposed future** Mobile Client experience by device class, role, and selling workflow.
@@ -32,7 +32,7 @@ Organization Web remains the full-administration browser host. This client may r
 Primary for:
 
 - Personal / account journeys (register, sign-in, Utang, profile, Start a Business, invitations)
-- Quick Organization Owner / Manager tasks (workspace switch, staff invite, branch settings, subscription status, Start Selling)
+- Quick Organization Owner / Manager tasks (workspace switch **when alternatives exist**, staff invite, branch settings, subscription status, Start Selling)
 - POS Operations where practical (own shift, scan, cart sheet, cash/manual GCash/Utang checkout, receipts)
 
 Chrome:
@@ -168,7 +168,8 @@ Future desktop/PWA does **not** move Cashiers onto Organization Web. Organizatio
 ### 6.1 Workflow
 
 ```text
-Select workspace / branch
+Resolve workspace (auto-enter when exactly one authorized choice; chooser only when more than one)
+→ resolve launchable Mobile product/experience (skip when exactly one)
 → register + open own shift when required
 → sell floor
 → scan or search product
@@ -181,9 +182,11 @@ Select workspace / branch
 → local persistence / sync status visible
 ```
 
+Do **not** force a workspace chooser as the first tap when the user has only one authorized Organization + Branch. See §11 (AMEND-03).
+
 Preconditions the UI may **remind** but must not override:
 
-- Workspace/branch selected
+- Workspace/branch selected (server-authoritative; selection does not itself grant POS)
 - Device registered when product policy requires it
 - Open shift when shift policy requires it
 - Entitlement + POS role for `CreateSale`
@@ -292,7 +295,7 @@ Sell floor must keep cart contents across orientation change.
 
 ### 8.2 Shared chrome and composites
 
-Use **one** AppTopBar / shell family. Page-specific titles, actions, and context arrive through configuration and slots. List pages compose shared SearchBar, FilterBar, PageHeader, EmptyState, ErrorState, LoadingState, StatusChip / SyncStatusChip, and ConnectivityIndicator rather than restyling native controls independently.
+Use **one** AppTopBar / shell family (MOBILE-D-062, MOBILE-D-070). Page-specific titles, actions, and context arrive through configuration and slots from **centralized application state**. The top bar displays current organization, branch, and product/experience context; it does **not** independently query workspace authorization, invent branch context, or implement switching. List pages compose shared SearchBar, FilterBar, PageHeader, EmptyState, ErrorState, LoadingState, StatusChip / SyncStatusChip, and ConnectivityIndicator rather than restyling native controls independently.
 
 Destructive or blocking confirmations use ConfirmDialog. Ordinary vs sensitive Internet-required UX uses the shared toast/dialog pair (AMEND-01). Runtime errors use CopyDiagnosticsButton on the shared ErrorState where applicable.
 
@@ -354,6 +357,7 @@ Changing them must:
 - **not** clear offline pending work
 - **not** change authorization
 - **not** modify financial state
+- **not** reset current workspace or product without an authorization reason
 
 Theme/language change must not cause app reload, route reset, or an unexpected modal close. Avoid a flash of the wrong theme on startup where practical.
 
@@ -407,7 +411,368 @@ Screenshots remain useful for visual defects. Copy Diagnostics is the primary ru
 
 ---
 
-## 11. Explicit non-goals for DOC-02
+## 11. Smart workspace and product launch context (AMEND-03)
+
+Planning baseline for the future React Mobile Client. **Does not authorize implementation**, MAUI changes, backend APIs, or product-launch endpoints.
+
+Current MAUI evidence (read-only): `WorkspaceSelectionService.ResolveRoutingPlanAsync`, `ProductAccessResolver` (evaluates `PosProductCodes.PinoyBusinessPos`), `WorkspaceSelect.razor`, `SignIn.razor` post-auth routing, and `WorkspaceSelectionServiceTests`. See [P28-WP14](../reports/P28-WP14-unified-organization-branch-workspace-selection.md). That POS hard-coding is **implementation evidence**, not the future generic React contract (MOBILE-D-069).
+
+### 11.1 Canonical workspace model
+
+**Workspace** = Organization + selected Branch.
+
+Hierarchy:
+
+```text
+User
+→ Organization
+→ Branch
+→ operational POS / device / register / shift context
+```
+
+Do **not** redefine Workspace as Organization + Branch + Product. Product is a separate launchable ExItS SaaS experience. Branch switching can affect cart, inventory, device, and shift context; changing product is a different navigation concern.
+
+Workspace selection does **not** itself grant POS authorization. Server authorization remains authoritative. Selecting a management branch must not silently:
+
+- grant `CreateSale`
+- rebind a POS device
+- move inventory
+- move an open shift
+- change product-local role
+
+### 11.2 Smart routing principle (MOBILE-D-065)
+
+Do **not** show a chooser when there is nothing meaningful to choose.
+
+Resolve available authorized context first.
+
+| Valid choices | Outcome |
+|---|---|
+| Exactly one | Auto-enter / skip that chooser |
+| More than one | Show the corresponding chooser |
+| Zero | Explicit setup or access state — do not invent context |
+
+Do not add unnecessary taps. Do not show empty intermediate screens.
+
+### 11.3 Workspace routing matrix
+
+**CASE A — 1 accessible organization + 1 accessible Active branch**
+
+Auto-select workspace → skip workspace chooser → continue to destination.
+
+This includes the common case: the organization has only its Primary/Main branch. Primary/Main is a **real** branch. Do **not** treat “no additional branches” as “zero branches.”
+
+**Current MAUI evidence:** `WorkspaceRoutingOutcome.AutoSelect`; `SignIn.razor` calls `SelectWorkspaceAsync` then continues; `ResolveRoutingPlan_single_org_single_branch_auto_selects`.
+
+**CASE B — 1 accessible organization + 2 or more accessible Active branches**
+
+Show the workspace chooser. The organization may already be expanded. The user taps a branch.
+
+**CASE C — 2 or more accessible organizations**
+
+Show the unified workspace chooser. Organize choices by organization. Each organization exposes **only** branches the user may access.
+
+**CASE D — organization membership exists + zero accessible Active branches**
+
+Do **not** invent a branch. Show an appropriate state such as “No available location,” or, when the exact Owner/setup capability is known, “Set up your first location.” Do not promise a create-branch action unless that capability/API exists.
+
+**Current MAUI evidence:** `WorkspaceRoutingOutcome.NoAccessibleBranch`; `ListWorkspaces_skips_orgs_without_active_branches`.
+
+**CASE E — no eligible organization**
+
+Personal Home / Personal experience according to [client-experience-boundaries.md](../architecture/client-experience-boundaries.md). Do not force organization/workspace selection on a Personal-only user.
+
+**Current MAUI evidence:** `WorkspaceRoutingOutcome.PersonalHome`.
+
+### 11.4 Primary / Main branch (MOBILE-D-066)
+
+An organization with Primary/Main only has **one** branch. Therefore:
+
+```text
+1 organization + Primary/Main only = one valid workspace → AUTO-ENTER
+```
+
+Do not force the Owner through a workspace chooser every login.
+
+A genuinely branchless / no-accessible-Active-branch organization must not receive an invented branch.
+
+### 11.5 Multiple choices — last used (MOBILE-D-067)
+
+When multiple valid workspaces exist, **show the chooser**.
+
+The previous successful workspace **may** be highlighted as Current, Last used, or equivalent restrained wording. Example:
+
+```text
+Choose workspace
+
+ABC Grocery
+
+✓ Main
+  Last used
+
+  Mall Branch
+
+  Airport Branch
+```
+
+Do **not** silently auto-enter a previous branch merely because it was last used when multiple currently valid choices exist. The user confirms the branch with one tap.
+
+Reason: branch affects inventory, orders, branch configuration, devices, registers, shifts, and transaction origin. Do not accidentally place an Owner/Manager into the wrong store.
+
+**Current MAUI evidence:** `WorkspaceSelect.razor` marks the session workspace with a check and “current” styling (`IsCurrentWorkspace`). It does not auto-bind last-used when the routing plan is `ShowChooser`. Future React may add explicit “Last used” copy; it must not add silent last-used auto-entry.
+
+When the chooser is opened from inside the app:
+
+- current organization should be obvious
+- current branch should be obvious
+- current organization may be expanded initially
+- selected branch should be marked Current
+- other authorized branches remain selectable
+
+Do not make the user remember which branch they are currently operating.
+
+### 11.6 Switch workspace
+
+Preserve one canonical workspace-switching flow.
+
+Preferred entry: Account / menu / burger — **Switch workspace**.
+
+The shared AppTopBar displays Organization and Branch but must not independently implement authorization or switching logic.
+
+Avoid multiple competing branch switchers across pages. Do not rebuild a switcher per feature.
+
+**Adaptive actions (MOBILE-D-070):**
+
+- 1 authorized workspace only → omit “Switch workspace” from normal navigation
+- 2+ authorized workspaces → show “Switch workspace”
+- If availability cannot be known safely: fail conservatively; do not show fake alternatives
+
+### 11.7 Switch with active cart
+
+If workspace changes while the sale cart is non-empty:
+
+```text
+Switch workspace
+→ detect non-empty cart
+→ explicit confirmation
+```
+
+Example:
+
+```text
+Discard current cart and switch workspace?
+
+[Continue sale]
+[Discard and switch]
+```
+
+Do not silently discard the cart. Do not move an existing cart into a different organization/branch. User/context switching must not rewrite transaction ownership.
+
+**Current MAUI evidence:** `WorkspaceSelect.razor` `ConfirmDialog` (`WorkspaceSelect_DiscardCartTitle` / Continue sale / Discard and switch).
+
+### 11.8 Online requirement for workspace switch
+
+Workspace switching requires server-authoritative validation.
+
+```text
+Switch workspace while offline
+→ DO NOT switch
+→ stay in current workspace
+→ shared Internet-required persistent explanation
+```
+
+Example concept:
+
+```text
+Internet required
+
+You're currently working offline in:
+
+ABC Grocery
+Main Branch
+
+Connect to the internet before switching workspaces.
+
+Your pending offline transactions remain safe.
+
+[Got it]
+```
+
+Do not clear: current offline grant, pending sync work, cart automatically, enrolled PIN, or user enrollment.
+
+See [offline-sync-auth-and-security.md](offline-sync-auth-and-security.md) (AMEND-01 sensitive OnlineRequired dialog).
+
+### 11.9 Cashier / device-bound optimization
+
+Do not force every user through the same Owner-style chooser.
+
+If effective authorization/device constraints result in only **one** valid operational workspace for the current user/device → auto-enter it.
+
+Example: Cashier + device bound to Main + only authorized operational context is Main → skip chooser.
+
+Do **not** present branches the cashier/device cannot actually enter.
+
+Owner/Manager management workspace access remains separate from POS device authorization.
+
+Wrong device branch for Enter POS: blocked explanation; **do not** silently rebind the device.
+
+Open shift that blocks an operational switch: blocked explanation according to existing rules. Do not collapse these into generic “Access denied.”
+
+### 11.10 Product vs catalog products (MOBILE-D-069)
+
+This section refers **only** to ExItS SaaS products/experiences this Mobile Client is authorized to launch.
+
+Do **not** confuse this with store catalog products (SKU/inventory).
+
+Current POS implementation is hard-coded around Pinoy Business POS (`ProductAccessResolver` → `PosProductCodes.PinoyBusinessPos`). That is current evidence. Do **not** make that hard-coding the future generic React architecture.
+
+Do not invent Product B/C as shipped products. Use hypothetical labels only in architectural examples. Do not add PLM or any other parked product to the Mobile Client unless separately authorized.
+
+### 11.11 Smart product resolution
+
+For future Mobile-capable entitled ExItS products/experiences:
+
+| Launchable Mobile product experiences | Outcome |
+|---|---|
+| Zero | Remain in Personal/Organization experience or show an appropriate access state. Do not offer the product. |
+| One | Auto-enter / auto-launch. No product chooser. |
+| More than one | Show a product chooser. |
+
+Example (hypothetical labels only):
+
+```text
+Choose what to open
+
+[ Pinoy Business POS ]
+[ Future Product B ]
+[ Future Product C ]
+```
+
+**Adaptive:** 1 launchable product → omit “Switch product.” 2+ → show “Switch product.”
+
+### 11.12 Workspace then product
+
+Recommended conceptual resolution order:
+
+```text
+Authenticated identity
+→ resolve Personal vs organization context
+→ resolve workspace where applicable
+→ resolve launchable Mobile product/experience where applicable
+→ destination
+```
+
+Use smart skipping at every layer.
+
+Examples:
+
+| Context | Choosers |
+|---|---|
+| 1 org + 1 branch + 1 launchable Mobile product | none → direct destination |
+| 1 org + 3 branches + 1 product | workspace chooser only |
+| 1 org + 1 branch + multiple launchable products | product chooser only |
+| multiple workspaces + multiple launchable products | workspace chooser, then product chooser only if more than one valid product remains for the selected context |
+
+Product launch eligibility may depend on authoritative organization membership, entitlement, subscription/commercial state, account class, product assignment, product-local role, and client support. Derive choices from authorized capabilities, not a static client list.
+
+Do **not** invent new backend APIs in this amendment. If current APIs are not generic enough for multi-product launch, record the API shape as **implementation-time inspection**. Current evidence: POS evaluates a single product code on Platform access; a generic Mobile product catalog API is **not** claimed here.
+
+### 11.13 Personal experience and Start a Business
+
+Personal-only (0 eligible organizations) → Personal Home. Do not remove Personal identity merely because organization contexts exist.
+
+If a Personal user later has or creates organizations, authorized organization/workspace entry remains available through the approved Mobile experience.
+
+Preserve:
+
+```text
+Personal
+→ Start a Business
+→ Organization created
+→ Primary/Main branch/context established by existing approved server flow
+→ entitlement/setup
+→ Owner essentials / POS setup
+```
+
+Do not add an unnecessary chooser when the newly created organization has only one authorized workspace.
+
+### 11.14 Failure states (do not collapse)
+
+| State | Outcome |
+|---|---|
+| No organization | Personal experience |
+| Organization but no accessible Active branch | Branch/location setup or access state |
+| Multiple workspaces | Chooser |
+| Workspace access revoked | Safe re-resolution; stale last-used workspace is not kept merely because it was stored locally |
+| Product not entitled | Do not offer the product |
+| Device wrong branch for Enter POS | Blocked explanation; no silent rebind |
+| Open shift blocks operational switch | Blocked explanation per existing rules |
+| Offline workspace switch | Internet-required persistent explanation |
+
+When online validation later succeeds, **server denial/revocation wins** (branch access removed, membership suspended, product entitlement/role removed, branch archived/inactive). Do not silently fall back to another branch for financial operations. Resolve an authorized safe destination.
+
+### 11.15 Shared AppTopBar context (MOBILE-D-070)
+
+One shared AppTopBar / shell family. It receives current context from shared app state.
+
+Conceptual display (layout varies by device size):
+
+```text
+Pinoy Business POS
+
+ABC Grocery
+Main Branch
+
+Online • Synced
+```
+
+Even when there is only one branch, show useful context where appropriate (`ABC Grocery` / `Main`). Do **not** show a meaningless dropdown arrow or switch affordance when no alternative workspace exists.
+
+The top bar must **not**:
+
+- query workspace authorization independently on every page
+- duplicate workspace or product switch logic
+- invent branch context
+- become a second router
+
+Pages consume shared context.
+
+### 11.16 Reusable component plan
+
+Conceptual names (implementation names may differ). Do not implement now. Do not create a mega-component.
+
+| Concept | Role |
+|---|---|
+| WorkspaceResolver | One routing policy: auto-enter / chooser / empty / Personal |
+| WorkspaceChooser | Unified org-grouped chooser family |
+| WorkspaceCard / WorkspaceRow | Organization and branch rows |
+| ProductLauncher / ProductChooser | Launchable ExItS experience selection |
+| CurrentContextDisplay | Shared org / branch / product presentation |
+| SwitchWorkspaceAction | Shown only when 2+ authorized workspaces |
+| SwitchProductAction | Shown only when 2+ launchable Mobile products |
+
+Rules: one resolver policy; one chooser family; one shared current-context model; pages do not invent their own branch chooser; top bar consumes shared context.
+
+### 11.17 Language, theme, accessibility
+
+Chooser/context UX follows MOBILE-D-064: default English; secondary `fil-PH`; theme default System; also Light and Dark.
+
+fil-PH text must not clip branch, organization, or product names or actions. Theme/language switching must not reset current workspace or product without an authorization reason.
+
+Chooser accessibility (planning bar, not certification):
+
+- full keyboard accessibility
+- touch targets at the approved minimum
+- current selection conveyed by text/icon, not color only
+- organization grouping semantically understandable
+- screen reader names include enough context (organization + branch)
+- long organization/branch names wrap
+- no forced horizontal scrolling on phone
+- loading, empty, and error states
+
+---
+
+## 12. Explicit non-goals for DOC-02
 
 - React implementation, Capacitor plugins, PWA service worker
 - MAUI visual rewrite
@@ -415,3 +780,6 @@ Screenshots remain useful for visual defects. Copy Diagnostics is the primary ru
 - New roles
 - Pixel-perfect component library choice (later DOC)
 - Claiming WCAG certification of the current app
+- Implementing WorkspaceResolver / ProductChooser
+- Creating product-launch APIs
+- Adding parked products (including PLM) to the Mobile Client

@@ -115,6 +115,7 @@ docs/Mobile-React/migration-testing-and-implementation-gates.md
 docs/Mobile-React/Reports/MOBILE-REACT-DOC-08-final-closeout.md
 docs/Mobile-React/Reports/MOBILE-REACT-DOC-AMEND-01-auth-connectivity-diagnostics.md
 docs/Mobile-React/Reports/MOBILE-REACT-DOC-AMEND-02-language-theme-defaults.md
+docs/Mobile-React/Reports/MOBILE-REACT-DOC-AMEND-03-smart-workspace-product-context.md
 docs/phases/README.md
 docs/phases/phase-01-platform-boundary.md
 docs/phases/phase-02-platform-extraction.md

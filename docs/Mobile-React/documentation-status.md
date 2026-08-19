@@ -6,7 +6,7 @@ Target worktree branch: `docs/mobile-react-foundation`
 
 Baseline origin/main SHA: `5a9be9417b7a2217227ae93e9280102992861615`
 
-Documentation: `COMPLETE FOR PRODUCT OWNER + CHATGPT REVIEW` (AMEND-01, AMEND-02 applied)
+Documentation: `COMPLETE FOR PRODUCT OWNER + CHATGPT REVIEW` (AMEND-01, AMEND-02, AMEND-03 applied)
 
 React implementation: `NOT AUTHORIZED`
 
@@ -51,6 +51,7 @@ Queue state: `STOPPED FOR PRODUCT OWNER + CHATGPT FINAL REVIEW`
 | MOBILE-REACT-DOC-08 | Complete | Consistency audit, canonical cross-references, final closeout; stop for Product Owner + ChatGPT review |
 | MOBILE-REACT-DOC-AMEND-01 | Complete | Trusted-device PIN UX, Lock/Sign Out/Remove, connectivity messages, Copy Diagnostics |
 | MOBILE-REACT-DOC-AMEND-02 | Complete | Canonical `en` default, `fil-PH` secondary, System default theme |
+| MOBILE-REACT-DOC-AMEND-03 | Complete | Smart workspace + product context: skip chooser when one valid choice; Primary/Main-only auto-enter; last-used highlight without silent auto-entry; offline PIN grant-bound; future product-aware launch; AppTopBar shared context |
 
 ## Authorization gates (locked)
 
@@ -65,4 +66,4 @@ Queue state: `STOPPED FOR PRODUCT OWNER + CHATGPT FINAL REVIEW`
 
 Wait for Product Owner + ChatGPT **final** review. Do not scaffold React, add Capacitor, add a PWA service worker, add Node dependencies, modify MAUI, or merge.
 
-AMEND-01 and AMEND-02 do **not** authorize implementation. Do not rewrite [DOC-08 closeout](Reports/MOBILE-REACT-DOC-08-final-closeout.md) as if it originally contained these decisions.
+AMEND-01, AMEND-02, and AMEND-03 do **not** authorize implementation. Do not rewrite [DOC-08 closeout](Reports/MOBILE-REACT-DOC-08-final-closeout.md) as if it originally contained these decisions.

@@ -1,7 +1,7 @@
 # Mobile React — Migration, Testing, and Implementation Gates
 
 **Status:** Documentation only. Implementation is **NOT AUTHORIZED**.  
-**Package:** MOBILE-REACT-DOC-07  
+**Package:** MOBILE-REACT-DOC-07 (AMEND-03 workspace/product validation cases)
 **Depends on:** all prior Mobile-React documents, especially [current-state-and-replacement-boundaries.md](current-state-and-replacement-boundaries.md) and [client-experience-boundaries.md](../architecture/client-experience-boundaries.md)
 
 This file defines **safe coexistence** of the current MAUI Mobile Client with a future React / PWA / Capacitor client, plus testing, visual checkpoint, and authorization gates.
@@ -162,7 +162,7 @@ Every tracked feature uses:
 
 Track at least these experience groups. Do **not** reduce “mobile” to POS checkout.
 
-- Auth / workspace / device registration
+- Auth / workspace / device registration (smart skip vs chooser; Adaptive Switch workspace/product)
 - Personal Account (Utang, QR, Start a Business, invitations)
 - Organization Owner essentials (Manage business subset)
 - POS Operations (sell, catalog, customers, shifts, registers, purchasing, reports)
@@ -196,7 +196,7 @@ Future React work (after Gate C) uses layers below. Current MAUI/.NET tests rema
 | API client tests | Typed HTTP, problem+json, idempotency headers, auth handlers | Must not hit production DBs |
 | Sync / offline tests | DOC-05 scenarios plus AMEND-01: Lock/Sign Out/Remove, PIN isolation, ordinary vs sensitive OnlineRequired UX | PostgreSQL/Testcontainers remain the proof of **server** behavior |
 | Copy Diagnostics tests | Allowlist/redaction: fixtures with tokens/PIN/payloads must not appear on the clipboard | Vitest on the builder; no secrets in snapshots |
-| Playwright | Browser/PWA journeys: sign-in, sell floor, theme/locale | Not a substitute for physical Android |
+| Playwright | Browser/PWA journeys: sign-in, sell floor, theme/locale, workspace/product chooser when multiple choices exist | Not a substitute for physical Android |
 | PWA tests | Manifest, SW does not cache-first financial APIs, update prompt does not destroy cart | DOC-04 |
 | Accessibility / axe | Automated smoke on checkpoint pages | Does not claim WCAG certification |
 | Responsive screenshots | Phone / tablet portrait / tablet landscape / desktop | **Humans approve**; see §5 |
@@ -208,6 +208,39 @@ Future React work (after Gate C) uses layers below. Current MAUI/.NET tests rema
 | iOS device testing | Later | Gate **K**; not a Stage 6 requirement |
 
 .NET solution restore / Release build / existing tests stay mandatory for any repo change that touches backends. A React CI job does not replace `ExItS.slnx` validation when APIs change.
+
+### 3.1 Workspace and product context validation (AMEND-03)
+
+Documented for a future implementation package. **Do not implement these tests in this amendment.**
+
+| Case | Expected |
+|---|---|
+| Personal-only (no eligible organization) | Personal Home; no workspace chooser |
+| 1 org / 1 accessible Active branch | Auto-select; skip workspace chooser |
+| 1 org / Primary/Main only | Auto-select (Primary is one real branch) |
+| 1 org / 2+ accessible Active branches | Workspace chooser |
+| 2+ accessible organizations | Unified workspace chooser grouped by organization |
+| Org membership + zero accessible Active branches | Explicit empty/setup state; no invented branch |
+| Multiple workspaces | Current/last used may be highlighted; **not** silently auto-entered |
+| Single valid cashier/device operational workspace | Auto-enter; inaccessible branches absent |
+| Wrong device branch for Enter POS | Blocked explanation; **no** silent rebind |
+| Non-empty cart + workspace switch | Confirm; Continue sale vs Discard and switch |
+| Offline PIN cold start | Restore grant-bound workspace only |
+| Offline workspace switch attempt | Blocked; Internet-required persistent explanation; stay in current workspace |
+| Revocation learned online | Stale last-used workspace no longer usable; no silent financial fallback branch |
+| One launchable Mobile ExItS product | Skip product chooser |
+| Multiple launchable Mobile ExItS products | Product chooser |
+| Unauthorized / unentitled product | Absent from chooser and switch actions |
+| 1 authorized workspace | “Switch workspace” omitted |
+| 2+ authorized workspaces | “Switch workspace” shown |
+| 1 launchable product | “Switch product” omitted |
+| AppTopBar | Displays correct organization/branch (and product when applicable) from shared state; no switch affordance when no alternative |
+| Locale | `en` default; `fil-PH` secondary; names/actions do not clip |
+| Theme | System default; Light; Dark; does not reset workspace/product |
+| Viewports | Phone, tablet, desktop |
+| Accessibility | Keyboard; touch minima; current selection not color-only; semantic org grouping; wrap long names |
+
+These cases belong in Vitest (resolver policy), Testing Library (chooser/top bar), and Playwright (journeys). They do not authorize a React project in this package.
 
 ---
 
@@ -236,7 +269,7 @@ The **first** future implementation visual checkpoint is the sell-capable chrome
 
 | Surface | Why it is in the first checkpoint |
 |---|---|
-| Login / workspace | Auth and org/device context before any sale; enrolled-user chooser when trusted |
+| Login / workspace | Auth and org/device context before any sale; enrolled-user chooser when trusted; **skip** workspace chooser when exactly one authorized workspace |
 | POS selling screen | Primary cashier job (tablet landscape) |
 | Product browse / search | Barcode-first lookup |
 | Cart | Session-persistent; local updates; not discarded by Lock |

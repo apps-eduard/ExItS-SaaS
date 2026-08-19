@@ -189,6 +189,8 @@ MAUI evidence:
 - Dev/Testing GUID/header fallback is Dev/Testing-only; Production fail-closed
 - Offline PIN enrollment/unlock pages exist on AuthShell
 - Organization context and selected branch/workspace are session facts, not client-invented authority
+- Post-sign-in routing uses `WorkspaceSelectionService.ResolveRoutingPlanAsync`: PersonalHome / AutoSelect (1 org + 1 Active branch) / ShowChooser / NoAccessibleBranch — see P28-WP14. Future React planning for this matrix is AMEND-03; this track does not change MAUI.
+- `ProductAccessResolver` currently evaluates `PosProductCodes.PinoyBusinessPos` (single product). That hard-coding is current evidence, not a generic multi-product Mobile contract.
 - APIs remain the authorization enforcement point; hidden nav is convenience only
 
 Browser hosts use Platform session cookies (ADR-022 unified sign-in). A future React Mobile Client must consume the same Platform identity contracts; cookie vs Bearer for Capacitor is a later DOC decision (MOBILE-D-013 / MOBILE-D-010).

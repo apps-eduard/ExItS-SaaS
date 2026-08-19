@@ -1,7 +1,7 @@
 # Mobile React — Offline, Sync, Auth, and Client Security
 
 **Status:** Documentation only. Implementation is **NOT AUTHORIZED**.  
-**Package:** MOBILE-REACT-DOC-05  
+**Package:** MOBILE-REACT-DOC-05 (AMEND-03 grant-bound offline workspace)
 **Depends on:** [pwa-and-capacitor-delivery.md](pwa-and-capacitor-delivery.md), [frontend-architecture-and-reuse.md](frontend-architecture-and-reuse.md)
 
 The future React client must preserve **existing POS financial and offline rules**. This file records those rules from current LocalStore / MAUI / POS API evidence. It does not authorize a new LocalStore, a new payment method, or production PWA/Capacitor.
@@ -315,6 +315,37 @@ App starts / app is locked
 
 **Current MAUI evidence:** mandatory PIN enrollment after online sign-in when readiness requires it (`NavigationGate` / `OfflinePinEnrollment`); multi-user unlock at `/offline-pin`; online PIN revalidation in `UnlockOfflineWithPinCoreAsync` (wrong PIN never contacts the server); grant duration is not extended by PIN unlock (`OfflineOperatingGrantOptions`).
 
+### 5.1.1 Offline PIN, workspace context, and revocation (AMEND-03)
+
+The smart **online** chooser must not break offline PIN operation (MOBILE-D-068).
+
+When the device is offline and the user authenticates using an allowed bounded offline PIN grant:
+
+- Do **not** attempt to offer arbitrary server workspaces.
+- Use only the workspace/context authorized by the valid local offline grant and trusted local state.
+- Do **not** allow offline PIN to switch into another organization or branch whose authority cannot currently be validated.
+
+Conceptual cold start:
+
+```text
+App starts
+→ offline
+→ choose enrolled user
+→ PIN
+→ valid non-expired offline grant?
+   YES → restore the grant-bound safe workspace/context
+        → enter allowed offline experience
+   NO  → online authentication required
+```
+
+Workspace switching remains an OnlineRequired sensitive action (AMEND-01 persistent dialog). Offline switch attempt: stay in current workspace; do not clear grant, pending sync, cart, enrolled PIN, or enrollment.
+
+When online validation later succeeds, **server denial/revocation wins**. Examples: branch access removed, membership suspended, product entitlement removed, product role removed, branch archived/inactive.
+
+The client must not keep a stale online workspace available merely because it was last used locally. Do not silently fall back to another branch for financial operations. Resolve an authorized safe destination.
+
+Do not collapse revocation, wrong-device-branch, open-shift block, and offline-switch into a single generic “Access denied.”
+
 ### 5.2 Multi-user device
 
 A shared device may hold **multiple separately enrolled users**.
@@ -377,7 +408,7 @@ Do **not** silently invent final PIN complexity rules.
 | Weak / sequential PIN rejection | **OPEN** | Format check only (`OfflinePinHasher.IsValidPinFormat`); no sequential/weak list found |
 | Identical PIN values across different enrolled users on the same device | **OPEN** | Per-user salted PBKDF2 verifier and per-user lockout (`MaxFailedPinAttempts` default 5, `PinLockoutMinutes` default 15) — does not decide whether identical digit strings are allowed |
 
-Product Owner must approve these before they become MOBILE-D accepted rules.
+Product Owner must approve these before they become MOBILE-D accepted rules. MOBILE-D-060 remains **Open**. Workspace/product routing (MOBILE-D-065–D-070) does not close PIN complexity.
 
 ---
 
@@ -407,6 +438,9 @@ Required scenarios (implementation gate, not this DOC):
 - User A PIN never unlocks User B
 - Ordinary OnlineRequired toast: no execute, no reconnect redirect, no duplicate stack
 - Sensitive workspace switch: persistent dismissible dialog; grant and pending work retained
+- Offline PIN cold start restores **grant-bound** workspace only; no arbitrary org/branch switch
+- Offline workspace-switch attempt blocked; current workspace retained
+- Online revocation learned: stale last-used workspace no longer usable; no silent branch fallback for financial ops
 - Copy Diagnostics redaction (no PIN/token/payload) — see [frontend-architecture-and-reuse.md](frontend-architecture-and-reuse.md)
 - Inventory page remains blocked offline
 - Outbox recovery after logout/login same context
