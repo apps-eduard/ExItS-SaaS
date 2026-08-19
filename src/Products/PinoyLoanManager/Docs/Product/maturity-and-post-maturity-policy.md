@@ -8,7 +8,7 @@ Maturity Date, Matured Past Due, post-maturity grace, post-maturity penalty mode
 
 **Canonical companions:** [schedule-and-collection-calendar-policy.md](schedule-and-collection-calendar-policy.md), [delinquency-and-missed-payment-policy.md](delinquency-and-missed-payment-policy.md), [penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md). Allocation: [payment-allocation-and-prepayment-policy.md](payment-allocation-and-prepayment-policy.md). ADR: [../Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md](../Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md).
 
-Early-settlement future-interest treatment and Settlement Quote: [early-settlement-and-principal-prepayment-policy.md](early-settlement-and-principal-prepayment-policy.md). Restructuring and write-off remain later packages. **No default post-maturity amount or rate is selected.**
+Early-settlement future-interest treatment and Settlement Quote: [early-settlement-and-principal-prepayment-policy.md](early-settlement-and-principal-prepayment-policy.md). Restructuring: [restructuring-and-hardship-policy.md](restructuring-and-hardship-policy.md). Write-Off/Recovery: [write-off-and-recovery-policy.md](write-off-and-recovery-policy.md). **No default post-maturity amount or rate is selected.**
 
 ---
 

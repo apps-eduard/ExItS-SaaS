@@ -47,7 +47,9 @@ Do not treat this folder as a second product definition. Detailed agreed **direc
 | [reporting-baseline.md](reporting-baseline.md) | Dashboard and operational reporting |
 | [loan-documents-and-receipts.md](loan-documents-and-receipts.md) | Documents and receipts |
 | [notification-model.md](notification-model.md) | Notifications |
-| [personal-loan-experience.md](personal-loan-experience.md) | Personal Loan area |
+| [restructuring-and-hardship-policy.md](restructuring-and-hardship-policy.md) | Restructuring, hardship; Refinancing deferred |
+| [write-off-and-recovery-policy.md](write-off-and-recovery-policy.md) | Write-Off, Recovery |
+| [collections-case-and-promise-to-pay-policy.md](collections-case-and-promise-to-pay-policy.md) | PTP, Collection Case |
 
 Remaining default **rates**, restructuring/write-off, and legal validation stay open in [../product-definition.md](../product-definition.md) and [../risks-and-decisions.md](../risks-and-decisions.md) (PLM-D-00-08 remainder, PLM-D-00-11). Grant catalog v1 is closed for MVP (PLM-D-00-06). Do not invent:
 

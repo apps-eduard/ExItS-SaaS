@@ -27,7 +27,7 @@
 | PLM-D-00-05 | Decision | Personal-to-Borrower linking mechanism | Open / Product Owner Decision Required | Optional link, consent, no auto-link from EX ID / QR | PLM-04 + Platform | Product behavior defined (PLM-DOC-01); Platform transport, contract, persistence, and integration **not** designed | Approved linking/consent **implementation** design |
 | PLM-D-00-06 | Decision | Loan roles and grants | **Closed for MVP** | PLM-03 and all operational WPs | Product owner | [ADR-009](Decisions/ADR-009-role-codes-grant-catalog-and-default-presets.md); [Security/authorization-grant-catalog.md](Security/authorization-grant-catalog.md); [authorization-matrix.md](authorization-matrix.md) (PLM-DOC-05) | Role codes, grant catalog v1, default presets, scope model, assignment lifecycle, and no custom roles in MVP. Custom roles deferred to future explicit decision |
 | PLM-D-00-07 | Decision | Operational financial model | **Open / Partially Resolved** | Origination, payments, collections, cash | Product owner | Terminology, fee model, net proceeds, allocation, money precision (PLM-DOC-02). Settlement Quote, rebate, Refund Payable, reversal/disbursement boundaries, variance close, operational Loan subledger vs Cash Accountability vs GL boundary (PLM-DOC-04). Schema, journal/export, Write-Off/Recovery accounting, and external GL integration still open | Owner-approved money/ledger **schema** in this product; remaining accounting workflows |
-| PLM-D-00-08 | Decision | Loan business/calculation rules | **Open / Partially Resolved** | PLM-05 through PLM-10 | Product owner | Methods/fees/allocation (PLM-DOC-02). Calendar, DPD, missed-day counter, grace, penalty engine, exception policies, maturity/post-maturity (PLM-DOC-03). Early settlement, no MVP settlement/prepayment penalty, unearned finance-charge treatment, reducing-balance settlement accrual, partial principal prepayment, Reduce Term default, refunds/reversals/corrections (PLM-DOC-04). Restructuring and Write-Off/Recovery treatment still open | Remaining policy areas approved; no invented rates |
+| PLM-D-00-08 | Decision | Loan business/calculation rules | **Closed for MVP Product business/calculation policy** | PLM-05 through PLM-10 | Product owner | Methods/fees/allocation (PLM-DOC-02). Calendar, DPD, penalties, maturity (PLM-DOC-03). Settlement, prepayment, refunds, reversals (PLM-DOC-04). Restructuring, Write-Off, Recovery, PTP, Collection Case (PLM-DOC-06). Default numeric rates/fees/penalties remain organization configuration subject to PLM-D-00-11 | MVP product calculation and business rules approved; no default numeric pricing; legal validation and schema remain external/deferred |
 | PLM-D-00-09 | Decision | Web/MAUI component-sharing strategy | Open / Product Owner Decision Required | Client scaffold and PLM-13 | Architecture WP | Surface split recorded (full Org Web vs limited MAUI vs Personal presentation) | Approved sharing/isolation approach; no client project until authorized |
 | PLM-D-00-10 | Decision | Product documentation baseline completion / owner approval | **Closed / Product Owner Accepted** | Closing PLM-00 | Product owner | PLM-00 WP01–WP10 completed; GitHub branch reviewed; documentation baseline accepted. Product implementation is deliberately paused while ExItS scale architecture and remaining PLM business/policy decisions are finalized | Owner accepted documentation baseline. Remaining legal and production decisions remain open. Implementation is not currently authorized |
 | PLM-D-00-11 | Decision | External legal/compliance validation | Open / Product Owner Decision Required | Production use | Product owner + external counsel | No rates/workflows claimed compliant. Effective-cost/EIR/APR formula, required documents, terminology, timing, rounding, consumer presentation, prepayment rights, settlement disclosures, unearned finance-charge rebate formula, fees at settlement, penalty treatment, quote validity, borrower refunds, correction/reversal practices, retention, and collections after maturity require qualified review | Written legal/compliance validation before Production |
@@ -36,7 +36,7 @@
 
 ## Accepted engineering / planning baselines (WP04)
 
-These are **planning baselines**, not legal approval and not implementation. PLM-DOC-02, PLM-DOC-03, and PLM-DOC-04 **partially resolve** PLM-D-00-07 / PLM-D-00-08, **close** PLM-D-00-12, and **close** PLM-D-00-13. PLM-DOC-05 **closes PLM-D-00-06 for MVP**. Remaining schema, journal/export, Write-Off/Recovery accounting, restructuring, custom roles, and legal items stay open. No default rates or penalty amounts.
+These are **planning baselines**, not legal approval and not implementation. PLM-DOC-02 through PLM-DOC-06 **close PLM-D-00-08 for MVP Product business/calculation policy**, **close PLM-D-00-12**, and **close PLM-D-00-13**. PLM-DOC-05 **closes PLM-D-00-06 for MVP**. Remaining schema, journal/export, external GL, custom roles (deferred), and legal items stay open. No default rates or penalty amounts.
 
 - partial payments supported
 - multiple payments supported
@@ -178,8 +178,8 @@ Direction in WP03–WP10 docs does **not** close these. Tracked primarily under 
 - exact Traditional document/condition checklist for disbursement
 - default or maximum interest rates (not defined; never invent)
 - exact penalty **rates**/amounts/caps as numbers (engine accepted; no defaults — PLM-DOC-03)
-- restructuring calculations
-- write-off accounting treatment
+- restructuring calculations (**resolved PLM-DOC-06**)
+- write-off product behavior (**resolved PLM-DOC-06**; GL projection open)
 - Personal / Loan API shape
 - who may initiate unlink
 - pending Quick Loan offer treatment after unlink
@@ -195,9 +195,9 @@ Direction in WP03–WP10 docs does **not** close these. Tracked primarily under 
 Tracked under **PLM-D-00-08** unless noted. Remaining items (do **not** invent):
 
 - loan types beyond the two origination *paths*
-- restructuring calculations
-- write-off accounting treatment
-- Recovery treatment
+- restructuring calculations (**PLM-DOC-06**)
+- write-off accounting treatment (**PLM-DOC-06** product behavior; GL projection open)
+- Recovery treatment (**PLM-DOC-06**)
 - full accounting/GL integration details (PLM-D-00-07 remainder)
 - legal/regulatory operating rules (PLM-D-00-11)
 - default or maximum interest rates / fee amounts / penalty amounts (never invent)
@@ -210,6 +210,8 @@ Tracked under **PLM-D-00-08** unless noted. Remaining items (do **not** invent):
 
 **Resolved in PLM-DOC-05** (not legal/security-production approval): role codes (`plm.owner`, `plm.manager`, `plm.cashier`, `plm.collector`), PLM Authorization Policy v1 grant catalog, default preset matrix, multiple-role union, scope model, workflow guards, data minimization, first-Owner bootstrap direction, last-Owner protection, no self-escalation, Platform recovery boundary, high-risk audit catalog (**PLM-D-00-06 Closed for MVP**).
 
+**Resolved in PLM-DOC-06** (not legal approval): restructuring (same Loan, new schedule version, component treatment, Refinancing deferred), Write-Off classification and post-write-off behavior, Recovery Payment and allocation, Promise to Pay, Collection Case, collection conduct boundaries (**PLM-D-00-08 Closed for MVP Product business/calculation policy**).
+
 Do **not** close remaining items by guessing. Do **not** claim legal compliance or production-security readiness.
 
 ## Instructions
@@ -217,6 +219,6 @@ Do **not** close remaining items by guessing. Do **not** claim legal compliance 
 - Prefer stable IDs (`R-…`, `D-…`, `PLM-D-…`).
 - “Closed” requires repository or operator evidence plus explicit approval.
 - Unresolved policy in approved docs must appear here as open decisions.
-- Do not close PLM-D-00-03, PLM-D-00-04, PLM-D-00-05, PLM-D-00-07, PLM-D-00-08, PLM-D-00-09, PLM-D-00-11, D-P12-03, R-091, or D-P12-05 without explicit approval. PLM-D-00-07 and PLM-D-00-08 remain **Open / Partially Resolved** — do not mark them Closed.
+- Do not close PLM-D-00-03, PLM-D-00-04, PLM-D-00-05, PLM-D-00-07, PLM-D-00-09, PLM-D-00-11, D-P12-03, R-091, or D-P12-05 without explicit approval. **PLM-D-00-08 is Closed for MVP Product business/calculation policy.** PLM-D-00-07 remains **Open / Partially Resolved** for persistence schema and external accounting integration.
 - PLM-D-00-01 is **Closed** (`pinoy-loan-manager`). PLM-D-00-02 is **Closed for logical database name** only. PLM-D-00-06 is **Closed for MVP** (role codes, grant catalog v1, default presets; custom roles deferred). PLM-D-00-10 is **Closed / Product Owner Accepted** (documentation baseline only). PLM-D-00-12 is **Closed** (To Even; PHP 2 dp; ≥8 intermediate). PLM-D-00-13 is **Closed** (maker/checker + controlled Owner Override).
-- ADRs: [Decisions/ADR-001-product-identity-and-database-name.md](Decisions/ADR-001-product-identity-and-database-name.md), [Decisions/ADR-002-borrower-personal-cardinality-and-consent.md](Decisions/ADR-002-borrower-personal-cardinality-and-consent.md), [Decisions/ADR-003-supported-interest-and-schedule-methods.md](Decisions/ADR-003-supported-interest-and-schedule-methods.md), [Decisions/ADR-004-rounding-fees-and-payment-allocation.md](Decisions/ADR-004-rounding-fees-and-payment-allocation.md), [Decisions/ADR-005-schedule-calendar-and-exception-treatment.md](Decisions/ADR-005-schedule-calendar-and-exception-treatment.md), [Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md](Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md), [Decisions/ADR-007-early-settlement-and-prepayment-policy.md](Decisions/ADR-007-early-settlement-and-prepayment-policy.md), [Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md](Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md), [Decisions/ADR-009-role-codes-grant-catalog-and-default-presets.md](Decisions/ADR-009-role-codes-grant-catalog-and-default-presets.md), [Decisions/ADR-010-resource-scope-workflow-security-and-owner-recovery.md](Decisions/ADR-010-resource-scope-workflow-security-and-owner-recovery.md).
+- ADRs: [Decisions/ADR-001-product-identity-and-database-name.md](Decisions/ADR-001-product-identity-and-database-name.md) through [Decisions/ADR-012-write-off-recovery-and-collections-case-policy.md](Decisions/ADR-012-write-off-recovery-and-collections-case-policy.md).

@@ -7,8 +7,8 @@
 |---|---|
 | Product | Pinoy Loan Manager |
 | Current phase | PLM-00 Foundation & Product Decisions (documentation complete) |
-| Current work package | **PLM-DOC-05** Roles, Grants, Workflow Authorization & Operational Security Finalization |
-| Status | **PLM-D-00-10 Closed / Product Owner Accepted**. PLM-D-00-01 Closed. PLM-D-00-02 Closed for logical name. PLM-D-00-06 Closed for MVP. PLM-D-00-12 Closed. PLM-D-00-13 Closed. PLM-D-00-07 / PLM-D-00-08 Open / Partially Resolved. Implementation remains paused. |
+| Current work package | **PLM-DOC-06** Restructuring, Write-Off, Recovery & Collections Closeout |
+| Status | **PLM-D-00-10 Closed / Product Owner Accepted**. PLM-D-00-01 Closed. PLM-D-00-02 Closed for logical name. PLM-D-00-06 Closed for MVP. PLM-D-00-08 Closed for MVP Product business/calculation policy. PLM-D-00-12 Closed. PLM-D-00-13 Closed. PLM-D-00-07 Open / Partially Resolved. Implementation remains paused. |
 
 ## Phase objective
 
@@ -48,7 +48,7 @@ Establish product documentation, architecture boundaries, Personal/Borrower inte
 | PLM-00-WP09 | Technical Product Layout & Integration Boundary | Completed | PLM-00-WP08 |
 | PLM-00-WP10 | Foundation Closeout & Implementation Readiness | Completed | PLM-00-WP09 |
 
-PLM-00 documentation phase is complete. **PLM-DOC-01** finalized identity and Personal linking. **PLM-DOC-02** finalized MVP calculation, fees, rounding, and payment allocation. **PLM-DOC-03** finalized schedule calendar, delinquency, penalties, and maturity. **PLM-DOC-04** finalized settlement, prepayment, refunds, reversals, cash variance, and accounting boundaries. **PLM-DOC-05** finalizes roles, grants, workflow authorization, and operational security.
+PLM-00 documentation phase is complete. **PLM-DOC-01** through **PLM-DOC-05** completed. **PLM-DOC-06** finalizes restructuring, Write-Off, Recovery, and collections closeout.
 
 `feat/plm-01-scaffold` exists as an **unmerged parked** implementation branch. It is **not** part of accepted mainline product state. Do not merge or delete it from this documentation package. Do **not** use it as evidence to close **PLM-D-00-03**.
 
@@ -60,8 +60,9 @@ PLM-00 documentation phase is complete. **PLM-DOC-01** finalized identity and Pe
 | PLM-DOC-02 | Financial Calculation, Fees & Payment Allocation Decisions | **Completed** |
 | PLM-DOC-03 | Schedule Calendar, Delinquency, Penalties & Maturity Decisions | **Completed** |
 | PLM-DOC-04 | Early Settlement, Refunds, Reversals, Cash Variance & Accounting Boundaries | **Completed** |
-| PLM-DOC-05 | Roles, Grants, Workflow Authorization & Operational Security Finalization | **This package** |
-| PLM-DOC-06 | Restructuring, Write-Off, Recovery & Collections Closeout | Proposed next |
+| PLM-DOC-05 | Roles, Grants, Workflow Authorization & Operational Security Finalization | **Completed** |
+| PLM-DOC-06 | Restructuring, Write-Off, Recovery & Collections Closeout | **This package** |
+| PLM-DOC-07 | Borrower Onboarding, Application, Assessment, Approval & Disbursement Readiness | Proposed next |
 
 ### PLM-DOC-01 completed decisions
 

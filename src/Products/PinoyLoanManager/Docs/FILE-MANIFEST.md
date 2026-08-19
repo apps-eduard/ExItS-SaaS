@@ -2,7 +2,7 @@
 
 **Status:** Foundation / planning only
 **Implementation present:** No
-**Current work package:** PLM-DOC-05 — Roles, Grants, Workflow Authorization & Operational Security Finalization
+**Current work package:** PLM-DOC-06 — Restructuring, Write-Off, Recovery & Collections Closeout
 
 This file is the navigation map for future Cursor work. Load this product’s `Docs/` after the shared Product Foundation reference. Do not scan PinoyBusinessPOS implementation by default.
 
@@ -72,7 +72,12 @@ Shared contracts to load with this product:
 | `Docs/Product/exception-reversal-and-variance-workflow.md` | Exceptions, waivers, reversals vs cash refund, variance | Planning baseline / not a spec | No |
 | `Docs/Product/reversal-refund-and-correction-policy.md` | Payment reversal, Refund Payable, cash refund | Accepted product rules (PLM-DOC-04) | No |
 | `Docs/Product/cash-variance-and-session-close-policy.md` | Expected vs actual; close-with-variance | Accepted product rules (PLM-DOC-04) | No |
-| `Docs/Product/disbursement-cancellation-and-reversal-policy.md` | Cancel before release; reverse after recovery | Accepted product rules (PLM-DOC-04) | No |
+| `Docs/Product/restructuring-and-hardship-policy.md` | Restructuring, hardship, Refinancing separation | Accepted product rules (PLM-DOC-06) | No |
+| `Docs/Product/write-off-and-recovery-policy.md` | Write-Off, Recovery, component tracking | Accepted product rules (PLM-DOC-06) | No |
+| `Docs/Product/collections-case-and-promise-to-pay-policy.md` | PTP, Collection Case, conduct boundaries | Accepted product rules (PLM-DOC-06) | No |
+| `Docs/Reports/PLM-DOC-06-restructuring-write-off-recovery-and-collections.md` | PLM-DOC-06 closeout | Documentation closeout | No |
+| `Docs/Decisions/ADR-011-restructuring-refinancing-and-hardship.md` | Restructuring; Refinancing deferred | Accepted product policy (PLM-DOC-06) | No |
+| `Docs/Decisions/ADR-012-write-off-recovery-and-collections-case-policy.md` | Write-Off, Recovery, collections case | Accepted product policy (PLM-DOC-06) | No |
 
 ## Borrower / Personal / publishing (PLM-00-WP06)
 

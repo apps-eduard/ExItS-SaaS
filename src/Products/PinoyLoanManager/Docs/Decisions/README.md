@@ -35,12 +35,12 @@ PLM-00-WP03 through WP10 record agreed **product direction** in Product / Archit
 | [ADR-007-early-settlement-and-prepayment-policy.md](ADR-007-early-settlement-and-prepayment-policy.md) | Settlement Quote, rebate, principal prepayment | Product settlement/prepayment accepted; PLM-D-00-08 remains Open / Partially Resolved; PLM-D-00-11 Open |
 | [ADR-008-reversals-refunds-variance-and-accounting-boundary.md](ADR-008-reversals-refunds-variance-and-accounting-boundary.md) | Reversals, refunds, variance, GL boundary | **PLM-D-00-13 Closed**; PLM-D-00-07 / PLM-D-00-08 remain Open / Partially Resolved |
 
-## Approved ADRs (PLM-DOC-05)
+## Approved ADRs (PLM-DOC-06)
 
 | ADR | Subject | Decisions closed |
 |---|---|---|
-| [ADR-009-role-codes-grant-catalog-and-default-presets.md](ADR-009-role-codes-grant-catalog-and-default-presets.md) | Role codes, grant catalog v1, default presets | **PLM-D-00-06 Closed for MVP**; custom roles deferred |
-| [ADR-010-resource-scope-workflow-security-and-owner-recovery.md](ADR-010-resource-scope-workflow-security-and-owner-recovery.md) | Scope, workflow security, Owner recovery | Product security policy accepted; D-P12-03 and R-091 remain open |
+| [ADR-011-restructuring-refinancing-and-hardship.md](ADR-011-restructuring-refinancing-and-hardship.md) | Restructuring; Refinancing deferred | Restructuring accepted; **PLM-D-00-08** restructuring portion |
+| [ADR-012-write-off-recovery-and-collections-case-policy.md](ADR-012-write-off-recovery-and-collections-case-policy.md) | Write-Off, Recovery, PTP, Collection Case | **PLM-D-00-08 Closed for MVP Product business/calculation policy** |
 
 Major future irreversible or cross-product choices must receive an ADR here when explicitly approved.
 
