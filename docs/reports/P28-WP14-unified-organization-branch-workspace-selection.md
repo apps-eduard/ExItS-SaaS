@@ -109,6 +109,8 @@ Device mismatch shows compact blocked copy; no silent rebind.
 
 WP13 operational guards (`SelectBranchAsync`, open shift, device binding, `FromBranchId`/`DeviceBoundBranchId` on operational endpoint) **preserved**.
 
+Capability/client boundaries baseline: [P28-WP15A](../reports/P28-WP15A-capability-client-boundary-baseline.md) | [capability matrix](../engineering/organization-branch-capability-matrix.md).
+
 ## Tests (Release, targeted)
 
 | Suite | Filter / scope | Result |

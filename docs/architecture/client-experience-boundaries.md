@@ -98,6 +98,8 @@ The Web application must not duplicate Personal Account onboarding during MVP.
 
 Organization management follows a mobile-first, Web-complete model.
 
+**P28-WP15A:** Canonical capability scopes, Mobile Primary vs exact-branch exposure, and client boundaries are defined in [organization-branch-capability-matrix.md](../engineering/organization-branch-capability-matrix.md). Workspace selection (WP14) does not grant POS permission. Mobile **Primary/Main** workspace is the governance gateway; non-primary Mobile workspace is branch configuration/operations. Organization Web does not require selecting Main to manage the business.
+
 The Mobile application should provide every Organization Owner function that can be handled safely and clearly on a mobile device.
 
 The Web application provides full control, detailed administration, larger tables, advanced filters, audit views, and complex management workflows.
@@ -523,8 +525,9 @@ Mobile Application
 ├── Explore / Confirm business (AuthShell product brand only; no env badge; org created only on confirm)
 │
 ├── Select Organization / Account context (outside Personal home)
+│   └── Workspace selection (`/workspace-select`) — Organization + Branch (WP14)
 │
-├── Organization Owner Essentials
+├── Organization Owner Essentials (Primary/Main workspace on Mobile — WP15A)
 │   ├── Basic Organization Profile
 │   ├── Business QR (org public identity; not Personal My QR)
 │   ├── Subscription Status
@@ -664,8 +667,8 @@ The following are deferred unless separately approved:
 - POS Web client;
 - advanced bulk organization administration on Mobile;
 - large audit investigation views on Mobile;
-- multiple branches;
-- advanced branch-specific administration;
+- multiple branches — **delivered (P28);** branch workspace + capability matrix in [organization-branch-capability-matrix.md](../engineering/organization-branch-capability-matrix.md);
+- advanced branch-specific administration — Mobile non-primary branch ops vs Primary governance (WP15A baseline; UI enforcement WP15B+);
 - custom product roles;
 - offline synchronization;
 - advanced cross-client notifications (SignalR); Organization in-app bell for customer-link + Connected Supplier connection requests is live via Platform `OrganizationInAppNotification` (tap → Read; Connected buyers supplier-side list; see [unified-organization-business-notifications.md](../reports/unified-organization-business-notifications.md));

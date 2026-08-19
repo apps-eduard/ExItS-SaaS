@@ -44,6 +44,8 @@ Owner/Administrator may select any Active organization branch as **management co
 
 **Workspace selection (P28-WP14):** one `/workspace-select` flow chooses Organization + Branch together via `SelectWorkspaceAsync`. Burger menu **Switch workspace** is the only switch entry point; the topbar shows org + branch display-only. See [P28-WP14](../reports/P28-WP14-unified-organization-branch-workspace-selection.md).
 
+**Capability boundaries (P28-WP15A):** organization governance vs branch configuration vs branch operations, Mobile Primary vs exact-branch exposure, audit/step-up baseline — [organization-branch-capability-matrix.md](organization-branch-capability-matrix.md).
+
 See [P28-WP12 report](../reports/P28-WP12-multi-branch-customer-commerce-hardening.md) and [P28-WP13 branch operational context](../reports/P28-WP13-branch-operational-context-and-owner-switching.md).
 
 ## Management surfaces
