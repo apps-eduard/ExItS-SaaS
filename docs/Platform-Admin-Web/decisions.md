@@ -30,6 +30,10 @@ Accepted decision identifiers for this planning track (documentation-only).
 | PWEB-D-024 | DOC-06 core screen specifications standardize required UI surfaces and introduce stable capability requirement IDs (`PWEB-CAP-*`); these must not be claimed as implemented until DOC-09 verification | Accepted |
 | PWEB-D-025 | DOC-07 commercial screen specifications enforce money ownership boundaries: Platform SaaS billing screens must never display POS operational money or PLM operational money; usage/metering screens reference PLM LOAN_DISBURSED as a future product contract concept (D-P12-03 unresolved) without inventing transport | Accepted |
 | PWEB-D-026 | DOC-07 high-risk commercial actions (subscription state change, plan change, entitlement override, manual payment, payment void) require explicit confirmation dialogs; UI confirmation never replaces server authorization/audit | Accepted |
+| PWEB-D-027 | DOC-08 security UX: step-up auth is a hook for policy-defined sensitive operations (`PlatformLifecycleStepUp` exists; generalization is future); no impersonation/support-login invented; forbidden states use minimum-disclosure 403; no secret/token/credential display | Accepted |
+| PWEB-D-028 | DOC-08 audit explorer surfaces existing `platform.audit_records` only; no POS operational audit; no audit record edit/delete; export is itself audited | Accepted |
+| PWEB-D-029 | DOC-08 Platform Operations screens are evidence-gated: only display what the backend can actually report; no fabricated health dashboards; capabilities marked for DOC-09 verification | Accepted |
+| PWEB-D-030 | DOC-08 Platform Settings strictly separates Platform-global, organization-scoped, and product-local (read-only reference) settings; no POS/PLM operational configuration editing from Platform | Accepted |
 
 Library decisions are recorded by DOC-03; design system decisions by DOC-04.
 

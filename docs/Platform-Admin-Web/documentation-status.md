@@ -25,7 +25,7 @@ Queue state: `CLEAR`
 | DOC-05 | Complete | Application shell + global interaction model |
 | DOC-06 | Complete | Core Platform administration screen specifications + capability requirements |
 | DOC-07 | Complete | Product + commercial administration screen specifications + capability requirements |
-| DOC-08 | Pending | Regression/hardening notes for cutover readiness |
+| DOC-08 | Complete | Governance, operations + settings screen specifications + security UX + capability requirements |
 | DOC-09 | Pending | Cutover plan (no merge) + rollback boundaries |
 | DOC-10 | Pending | Documentation closeout and final evidence report |
 
