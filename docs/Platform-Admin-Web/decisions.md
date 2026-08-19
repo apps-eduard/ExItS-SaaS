@@ -28,6 +28,8 @@ Accepted decision identifiers for this planning track (documentation-only).
 | PWEB-D-022 | DOC-05 canonical page templates + cross-page UX behavior are standardized (breadcrumbs, deep links, browser back/forward, session expiry, forbidden/not-found, stale-data indication, retry rules, success toasts, destructive confirmation) | Accepted |
 | PWEB-D-023 | DOC-05 keyboard model: predictable Tab order; Escape closes overlays only when safe; `Ctrl+K` opens command palette and `Alt+/` focuses global search; shortcuts must never bypass confirmation requirements | Accepted |
 | PWEB-D-024 | DOC-06 core screen specifications standardize required UI surfaces and introduce stable capability requirement IDs (`PWEB-CAP-*`); these must not be claimed as implemented until DOC-09 verification | Accepted |
+| PWEB-D-025 | DOC-07 commercial screen specifications enforce money ownership boundaries: Platform SaaS billing screens must never display POS operational money or PLM operational money; usage/metering screens reference PLM LOAN_DISBURSED as a future product contract concept (D-P12-03 unresolved) without inventing transport | Accepted |
+| PWEB-D-026 | DOC-07 high-risk commercial actions (subscription state change, plan change, entitlement override, manual payment, payment void) require explicit confirmation dialogs; UI confirmation never replaces server authorization/audit | Accepted |
 
 Library decisions are recorded by DOC-03; design system decisions by DOC-04.
 

@@ -22,4 +22,6 @@ boundaries, and records a dedicated planning worktree (`docs/platform-admin-web-
 - `Reports/PLATFORM-WEB-DOC-05-application-shell.md` — application shell report
 - `Screens/core-administration-screens.md` — core administration screen specifications
 - `Reports/PLATFORM-WEB-DOC-06-core-administration-screens.md` — core administration screens report
+- `Screens/commercial-and-product-screens.md` — product + commercial administration screen specifications
+- `Reports/PLATFORM-WEB-DOC-07-commercial-product-screens.md` — commercial product screens report
 

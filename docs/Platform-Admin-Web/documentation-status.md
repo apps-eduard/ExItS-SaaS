@@ -24,7 +24,7 @@ Queue state: `CLEAR`
 | DOC-04 | Complete | Design system tokens, component patterns, and UX foundation |
 | DOC-05 | Complete | Application shell + global interaction model |
 | DOC-06 | Complete | Core Platform administration screen specifications + capability requirements |
-| DOC-07 | Pending | Replacement API/contract consumption checklist |
+| DOC-07 | Complete | Product + commercial administration screen specifications + capability requirements |
 | DOC-08 | Pending | Regression/hardening notes for cutover readiness |
 | DOC-09 | Pending | Cutover plan (no merge) + rollback boundaries |
 | DOC-10 | Pending | Documentation closeout and final evidence report |
