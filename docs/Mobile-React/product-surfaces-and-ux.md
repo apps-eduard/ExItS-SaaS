@@ -106,9 +106,9 @@ Desktop/PWA selling should still feel like a sell floor: product + cart + pay. A
 | Responsive | One product; layouts change by device class. No desktop page merely shrunk to phone. |
 | Touch-friendly | Primary controls meet touch minima even in Compact density. |
 | Accessibility | WCAG 2.2 AA **design target** (not a current-app compliance claim). |
-| EN default | English is default UI language. |
-| fil-PH | Filipino is the required secondary locale. Layouts must tolerate longer strings. |
-| Light / Dark / System | Required. Immediate switch; persist preference; no app restart; no lost cart/form. |
+| EN default | English (`en`) is the **default** UI language. Do not infer Filipino from device locale on first launch. |
+| fil-PH | Filipino / Tagalog is the required secondary locale (`fil-PH`). Do not add `tl-PH` unless a later decision requires it. Layouts must tolerate longer strings. |
+| Light / Dark / System | All three supported. **System is the default.** Immediate switch; persist preference; no app restart; no lost cart/form. |
 | Shared UI by default | Repeated chrome and patterns use one shared primitive/composite (top bar, search, empty/error/loading, sync chips, confirm, Internet-required, Copy Diagnostics). Pages compose; they do not fork. |
 
 Motion is functional only (press, sheet, toast). Honor `prefers-reduced-motion` with essentially 0 ms decorative motion.
@@ -304,12 +304,70 @@ Accessibility, `en` / `fil-PH`, Light/Dark/System, Compact/Comfortable, loading,
 
 ## 9. Localization and theme
 
-- Default locale: **en**
-- Required secondary: **fil-PH** (Filipino; Tagalog wording may appear in copy)
-- No hard-coded user-visible strings in reusable components
-- PHP / Philippine locale formatting for money and dates
-- Theme: **Light / Dark / System**, persisted, no flash of wrong theme where host allows
-- Theme/language/density change must not drop the cart
+Canonical client-wide rules (Web / PWA / Capacitor Android / Capacitor iOS later). **MOBILE-D-064.**
+
+### 9.1 Language
+
+| Role | Locale key | User-facing name |
+|---|---|---|
+| **Default** | `en` | English |
+| **Required secondary** | `fil-PH` | Filipino / Tagalog |
+
+Do **not** introduce a separate `tl-PH` locale unless a later explicit decision requires it.
+
+All reusable/shared UI consumes the **global** localization system. No page implements independent language state. No hard-coded reusable UI strings.
+
+### 9.2 Theme
+
+| Option | Meaning |
+|---|---|
+| **System** (**default**) | Follow the host/device/browser OS preference. If the OS theme changes while the app is running, the UI updates where the delivery host supports it. |
+| Light | Explicit light override |
+| Dark | Explicit dark override |
+
+Once the user explicitly selects Light or Dark, that preference **overrides System** until they change it again.
+
+**System is a real stored preference value.** Do not snapshot the OS Light/Dark result and persist it as an explicit Light or Dark choice.
+
+**Current MAUI evidence:** `ThemePreference.System` is already the store default (`MauiThemePreferenceStore` / `ThemeController`). This package locks the same default for the future React host; it does not change MAUI.
+
+### 9.3 First launch
+
+New installation / no saved preference:
+
+- Language: **English** (`en`)
+- Theme: **System**
+
+Do not infer Filipino automatically from device locale. Do not infer Light/Dark and permanently store it as an explicit user choice.
+
+### 9.4 Persistence and apply
+
+Language and theme are **non-sensitive client UI preferences**, persisted locally, shared across the entire Mobile React Client.
+
+Changing them must:
+
+- apply immediately
+- require **no** restart
+- **not** sign the user out
+- **not** clear the cart
+- **not** clear forms
+- **not** clear offline pending work
+- **not** change authorization
+- **not** modify financial state
+
+Theme/language change must not cause app reload, route reset, or an unexpected modal close. Avoid a flash of the wrong theme on startup where practical.
+
+PHP / Philippine locale formatting for money and dates remains required regardless of UI language.
+
+### 9.5 Shared components
+
+Shared controls (MOBILE-D-061–D-063) automatically follow the current locale and theme: AppTopBar, SearchBar, FilterBar, PageHeader, buttons, dialogs, toasts, ErrorState, CopyDiagnosticsButton, StatusChip, SyncStatusChip, ConnectivityIndicator, forms, money/quantity, navigation.
+
+Pages must **not** implement a separate theme or localization system.
+
+fil-PH strings may be longer than English. Shared components must wrap, use flexible widths, avoid fixed-height clipping, keep primary actions visible, and avoid translation-caused horizontal overflow on phone/tablet/desktop.
+
+Theme visual checks: Light, Dark, System-resolved-Light, System-resolved-Dark. WCAG 2.2 AA remains a design bar, not a certification claim.
 
 ---
 

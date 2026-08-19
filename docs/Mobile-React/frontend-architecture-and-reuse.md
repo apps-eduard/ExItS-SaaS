@@ -147,8 +147,8 @@ May share or adapt **conventions**, not Admin screens:
 - ExItS semantic design tokens (`--exits-*`)
 - Typography and tabular money
 - Color semantics (primary / success / warning / danger / info)
-- Localization conventions (en default, fil-PH, resource keys, no hard-coded UI strings)
-- Theme concepts (Light / Dark / System)
+- Localization conventions (`en` **default**, `fil-PH` required secondary; resource keys; no hard-coded UI strings)
+- Theme concepts (**System default**, plus Light and Dark; System is a stored value, not a one-time snapshot of OS Light/Dark)
 - Formatting utilities (PHP, dates)
 - Validation conventions (Zod schemas mirroring API, not replacing server validation)
 - HTTP / error conventions (credentials or Bearer per host, `X-Correlation-Id`, problem+json `errorCode`)
@@ -213,6 +213,7 @@ Conceptual examples (names are planning labels, not a created package):
 8. Platform Admin **business UI** must not be imported into Mobile. Shared concepts and design tokens are allowed (Reuse A). Business chrome remains app-specific (Reuse B).
 9. **Shell / top-bar:** one shared top-bar/shell family. Page-specific context is supplied via configuration and slots. Pages must not independently rebuild common chrome.
 10. Accessibility, localization, theme, density, loading, disabled, keyboard, and touch behavior live in the shared component where applicable — not re-implemented per page.
+11. Shared controls automatically follow the **global** locale (`en` / `fil-PH`) and **global** theme (System / Light / Dark). Pages must not implement a separate language or theme system (MOBILE-D-064).
 
 Current MAUI analogue: DesignSystem primitives (`SearchBar`, `Button`, `EmptyState`, …) plus POS shell chrome. Future React must not import Razor components; it follows the same **reuse discipline**.
 

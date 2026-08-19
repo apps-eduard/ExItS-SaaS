@@ -150,8 +150,8 @@ Every tracked feature uses:
 | **Device behavior** | Scanner, camera, share, printer, etc. (DOC-06); often N/A |
 | **Authorization** | Entitlement + product role + host rules; UI is not permission |
 | **Role** | Personal / Owner / Manager / Cashier / staff — who may see it |
-| **EN / fil-PH** | Both locales required before that feature is parity-complete |
-| **Light / Dark / System** | Theme required before that feature is parity-complete |
+| **EN / fil-PH** | Both locales required before that feature is parity-complete (`en` default; `fil-PH` secondary) |
+| **Light / Dark / System** | Theme required before that feature is parity-complete (**System default**) |
 | **Accessibility** | DOC-02 bar (focus, names, contrast, touch, reduced motion) |
 | **Tests** | Automated and/or device tests that cover the feature |
 | **Status** | `NOT_STARTED` · `IN_PROGRESS` · `PARITY` · `DEFERRED` · `WONT_PORT` |
@@ -253,14 +253,17 @@ For each surface in §5.1, capture:
 
 | Locale / theme | Viewport |
 |---|---|
-| EN Light | Phone portrait |
-| EN Dark | Phone portrait |
+| EN Light (explicit) | Phone portrait |
+| EN Dark (explicit) | Phone portrait |
+| EN System-resolved-Light **or** System-resolved-Dark | Phone portrait (cover both resolved appearances before Gate I) |
 | fil-PH (Light or Dark, at least one full pass; both themes before Gate I for these surfaces) | Phone portrait |
 | EN Light | Tablet portrait |
 | EN Light | Tablet landscape |
 | EN Light | Desktop / PWA width |
 
-Minimum before Gate E can even be **submitted**: EN Light + EN Dark + fil-PH on **phone**, plus tablet landscape sell floor, plus one desktop/PWA frame. Remaining combinations complete before Gate I for checkpoint surfaces.
+Theme testing must include **Light**, **Dark**, **System-resolved-Light**, and **System-resolved-Dark**. First-launch default is System (not stored as explicit Light/Dark).
+
+Minimum before Gate E can even be **submitted**: EN Light + EN Dark + fil-PH on **phone**, plus tablet landscape sell floor, plus one desktop/PWA frame. Remaining combinations, including both System-resolved appearances, complete before Gate I for checkpoint surfaces.
 
 ### 5.3 Approval
 
