@@ -148,6 +148,8 @@ For longer Web guidance, operators may also see:
 
 > For complete organization administration, advanced settings, detailed audit history, and larger management views, open ExItS in a Web browser.
 
+**P28-WP15E:** MAUI **Manage business** (Primary workspace) shows a compact **Recent activity** summary (up to 15 governance events) with a Web reminder; full filtered/paged investigation lives on Organization Web `/organization/audit`. See [P28-WP15E](../reports/P28-WP15E-governance-audit-trail.md).
+
 ### Full Organization Administration on Web
 
 The Web application owns the complete Organization Administration experience, including:

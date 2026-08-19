@@ -116,7 +116,7 @@ Legend:
 | Sales-document Owner education ack | Platform compliance | OrgGov | Exact Owner | No | Primary | Yes | No | No | No | Yes | Platform | No | Target | Immutable ack |
 | Tax/compliance profile (when enabled) | Platform compliance | OrgGov | Owner | No | No | Yes | No | No | No | Yes | Platform | No | Target | Update |
 | Org notifications inbox | Platform | OrgGov | Owner; Mgr | No | Primary | Yes | No | No | No | Yes | Platform | No | No | Read/update read state |
-| Reporting / audit investigation | Mixed | OrgGov | Owner; Mgr; ReportingUser | No | No | Yes | No | No | No | Yes | Platform + POS read | No | No | Read |
+| Reporting / audit investigation | Mixed | OrgGov | Owner; Mgr; ReportingUser | No | Primary summary | Yes full | No | No | No | Yes | Platform governance + POS actor read | No | No | Read |
 
 ### Branch configuration
 
@@ -198,7 +198,7 @@ When POS/org step-up infrastructure is extended beyond Platform lifecycle, class
 - **WP15D:** Customer order fulfillment handoffs, stock count draft create, and payment provider finalization now persist actor/system provenance on authoritative records — see [P28-WP15D](../reports/P28-WP15D-operational-actor-traceability.md).
 - Void/expense/reversal domains include reason fields in persistence where applicable.
 - **Password step-up** is implemented for select **Platform lifecycle** actions (`PlatformLifecycleStepUp`), not yet generalized for POS void/refund/stock adjustment.
-- **POS unified audit log** beyond actor-on-record is **not** claimed.
+- **P28-WP15E:** Platform governance mutations emit append-only `platform.audit_records` events; Organization Web exposes full filtered/paged audit; MAUI Manage business shows a compact recent-activity summary (5–15 rows) with “View full audit on Web”. Separate from POS operational actor-on-record ([WP15D](../reports/P28-WP15D-operational-actor-traceability.md)).
 
 ---
 
@@ -206,7 +206,7 @@ When POS/org step-up infrastructure is extended beyond Platform lifecycle, class
 
 | Surface | OrganizationGovernance | BranchConfiguration | BranchOperation (POS) |
 |---|---|---|---|
-| **MAUI — Primary workspace** | **Manage business** hub (burger) + Web reminder | Branch list/create under Manage business → Branches | Enter POS when role+device allow |
+| **MAUI — Primary workspace** | **Manage business** hub (burger) + recent governance activity summary + Web reminder | Branch list/create under Manage business → Branches | Enter POS when role+device allow |
 | **MAUI — non-primary workspace** | Hidden — no Manage business / org-wide nav | **Branch settings** → local configure only | Enter POS at selected branch if device matches |
 | **Organization Web** | Full management center | All branches | **No checkout** — read operational history only |
 | **Platform Admin Web** | Platform scope only | Org branches via Platform APIs | No POS |

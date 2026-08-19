@@ -68,6 +68,8 @@ Covers: authenticated actor persisted, empty actor rejected, legacy null provena
 - UI actor chips on primary lists
 - Platform `AuditActorType` replication inside POS domain (boolean system marker used where needed)
 
+**Related (separate concern):** [P28-WP15E](P28-WP15E-governance-audit-trail.md) records **Platform governance** mutations in append-only `platform.audit_records` — not a substitute for operational actor fields on POS transactions documented above.
+
 ## Readiness
 
 Actor gaps on fulfillment, stock-count creation, and provider finalization are closed at the domain/API/persistence layer. Production readiness still requires PostgreSQL migration apply/rollback validation and broader Release suite sign-off on `ExItS.slnx`.
