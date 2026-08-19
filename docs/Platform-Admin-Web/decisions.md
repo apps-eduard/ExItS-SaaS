@@ -35,5 +35,10 @@ Accepted decision identifiers for this planning track (documentation-only).
 | PWEB-D-029 | DOC-08 Platform Operations screens are evidence-gated: only display what the backend can actually report; no fabricated health dashboards; capabilities marked for DOC-09 verification | Accepted |
 | PWEB-D-030 | DOC-08 Platform Settings strictly separates Platform-global, organization-scoped, and product-local (read-only reference) settings; no POS/PLM operational configuration editing from Platform | Accepted |
 
+| PWEB-D-031 | DOC-10 staged replacement strategy: six stages (current state → scaffold → feature slices → parity → acceptance → cutover → retirement); no big-bang rewrite; existing Admin retained as fallback at every stage | Accepted |
+| PWEB-D-032 | DOC-10 feature parity model: old Admin cannot be removed merely because new routes exist; parity is measured per feature across authorization, audit, states, accessibility, and browser tests | Accepted |
+| PWEB-D-033 | DOC-10 implementation gates: seven sequential gates (A–G); documentation completion (Gate A) does not authorize React scaffold (Gate C); each gate requires explicit authorization | Accepted |
+| PWEB-D-034 | DOC-10 cross-document audit: all 20 planning documents verified consistent; no contradictions found across vision, boundaries, auth, design, screens, API matrix, and status | Accepted |
+
 Library decisions are recorded by DOC-03; design system decisions by DOC-04.
 

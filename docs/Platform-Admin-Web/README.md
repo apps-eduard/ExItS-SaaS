@@ -27,4 +27,6 @@ boundaries, and records a dedicated planning worktree (`docs/platform-admin-web-
 - `Screens/governance-operations-settings-screens.md` — governance, operations + settings screen specifications
 - `Reports/PLATFORM-WEB-DOC-08-governance-operations-settings.md` — governance operations settings report
 - `api-capability-matrix.md` — Platform API capability matrix + backend gap audit (DOC-09)
+- `migration-testing-and-implementation-gates.md` — migration plan, testing strategy, implementation gates (DOC-10)
+- `Reports/PLATFORM-WEB-DOC-10-final-closeout.md` — final closeout report (DOC-10)
 
