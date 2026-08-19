@@ -11,8 +11,8 @@ Always load with:
 5. The active work-package prompt/report
 6. Files required for the task only
 
-**Status:** PLM-00 accepted; PLM-01 product shell scaffolded
-**Implementation present:** Product shell only — no lending domain
+**Status:** PLM-00 accepted; PLM-01 product shell scaffolded; PLM-01A client architecture approved (PLM-D-00-09)
+**Implementation present:** Product shell only — no lending domain; React Client not created
 **Documentation root:** `src/Products/PinoyLoanManager/Docs/` (D-P12-02)
 
 Pinoy Loan Manager is a **separate first-class ExItS SaaS product**, a sibling of PinoyBusinessPOS, not a POS module, feature, or database extension.
@@ -40,7 +40,7 @@ Agreed operating-model direction (not implementation specs):
 | [Product/quick-loan-model.md](Product/quick-loan-model.md) | Templates, snapshot, eligibility, Personal flow |
 | [Product/collector-cash-and-reconciliation.md](Product/collector-cash-and-reconciliation.md) | Loan ledger vs collector cash |
 | [Product/penalty-exception-and-waiver-model.md](Product/penalty-exception-and-waiver-model.md) | Penalty, exception, waiver, reversal, post-maturity |
-| [Architecture/application-surface-model.md](Architecture/application-surface-model.md) | Platform Admin, Org Web, MAUI, Personal |
+| [Architecture/application-surface-model.md](Architecture/application-surface-model.md) | Platform Admin, Org Web/PWA, Capacitor Android, Personal |
 | [Product/financial-calculation-baseline.md](Product/financial-calculation-baseline.md) | Money terms, interest-treatment modes, precision |
 | [Product/payment-and-allocation-model.md](Product/payment-and-allocation-model.md) | Partial payments, oldest-due, reversals, idempotency |
 | [Product/schedule-maturity-and-settlement.md](Product/schedule-maturity-and-settlement.md) | Schedule, calendar, maturity, settlement |
@@ -65,13 +65,16 @@ Agreed operating-model direction (not implementation specs):
 | [Product/notification-model.md](Product/notification-model.md) | Personal and staff notifications |
 | [Product/personal-loan-experience.md](Product/personal-loan-experience.md) | Personal Loan area; distinct from P2P |
 | [Security/audit-and-history-baseline.md](Security/audit-and-history-baseline.md) | High-risk history |
-| [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md) | Physical layout; MAUI/LocalStore deferred |
+| [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md) | Physical layout; Client future; LocalStore deferred |
+| [Architecture/react-pwa-capacitor-client.md](Architecture/react-pwa-capacitor-client.md) | Shared React + PWA + Capacitor client architecture (PLM-D-00-09) |
 | [Architecture/api-and-contract-boundary.md](Architecture/api-and-contract-boundary.md) | API / Personal / Platform contracts |
 | [Architecture/persistence-and-database-boundary.md](Architecture/persistence-and-database-boundary.md) | Separate database isolation |
-| [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md) | Online-first MAUI |
+| [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md) | Online-first; LocalStore not authorized |
 | [Architecture/platform-commercial-integration.md](Architecture/platform-commercial-integration.md) | Commercial/identity contracts; D-P12-03 open |
 | [Reports/PLM-00-foundation-closeout.md](Reports/PLM-00-foundation-closeout.md) | PLM-00 closeout and implementation gates |
 | [Reports/PLM-01-product-scaffold-and-isolation.md](Reports/PLM-01-product-scaffold-and-isolation.md) | PLM-01 scaffold and isolation evidence |
+| [Reports/PLM-01A-react-pwa-capacitor-architecture-decision.md](Reports/PLM-01A-react-pwa-capacitor-architecture-decision.md) | PLM-01A client architecture decision |
+| [Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md](Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md) | ADR: one React + PWA + Capacitor client |
 | [Validation/PLM-00-readiness-checklist.md](Validation/PLM-00-readiness-checklist.md) | Docs-only readiness checklist |
 
 Category folders below are indexes only. They must not become a second source of truth.
@@ -85,7 +88,7 @@ Category folders below are indexes only. They must not become a second source of
 | [Product/](Product/README.md) | **WHAT** — points to [product-definition.md](product-definition.md) and operating-model docs |
 | [Architecture/](Architecture/README.md) | **HOW** — points to [architecture.md](architecture.md), surfaces, and ledger/balance model |
 | [Security/](Security/README.md) | Access and privacy — points to [security.md](security.md), [authorization-matrix.md](authorization-matrix.md), and [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md) |
-| [Decisions/](Decisions/README.md) | Future ADRs — register is [risks-and-decisions.md](risks-and-decisions.md) |
+| [Decisions/](Decisions/README.md) | ADRs — register is [risks-and-decisions.md](risks-and-decisions.md) |
 | [Phases/](Phases/README.md) | Sequencing — points to [roadmap.md](roadmap.md) and [development-plan.md](development-plan.md) |
 | [Reports/](Reports/README.md) | Completed work-package evidence |
 | [Validation/](Validation/README.md) | Owner/device/browser/calculation evidence |
@@ -110,7 +113,7 @@ Do not scatter Pinoy Loan Manager documentation into the repository-root `docs/`
 
 Platform owns identity, organizations, memberships, catalog, plans, subscriptions, entitlements, SaaS billing, Platform administration, and Platform audit.
 
-Pinoy Loan Manager will own borrower records, loan-domain state, operational financial state, product-local authorization, product database/migrations, API, Web UI, MAUI UI, reports, and product audit/history.
+Pinoy Loan Manager will own borrower records, loan-domain state, operational financial state, product-local authorization, product database/migrations, API, Organization Web/PWA/Capacitor client presentation, reports, and product audit/history.
 
 Isolation: independent subscription; separate database; no cross-product FKs; no direct POS or Platform table reads; OrganizationId as identifier only; approved contracts/APIs only; SaaS billing ≠ Loan operational money.
 
@@ -124,9 +127,9 @@ ExItS Personal is Platform-owned and product-neutral. POS Customer ≠ Loan Borr
 
 ---
 
-## Client direction (proposed)
+## Client direction (approved — PLM-D-00-09)
 
-Organization Web: Blazor Web (full operations; PLM-01 identity shell only). MAUI Blazor Hybrid: limited field/collector application (deferred after PLM-01). Platform Admin: SaaS control plane only.
+One shared React + TypeScript client for Browser Web, installable PWA, and Capacitor Android. `ExItS.PinoyLoanManager.Web` is the future ASP.NET Core host/BFF (current PLM-01 identity shell remains scaffold only). MAUI is superseded as the preferred path. The React Client project does **not** exist yet. Platform Admin: SaaS control plane only. Detail: [Architecture/react-pwa-capacitor-client.md](Architecture/react-pwa-capacitor-client.md).
 
 ---
 

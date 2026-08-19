@@ -1,12 +1,12 @@
 # Pinoy Loan Manager — Application Surface Model
 
-**Status:** Agreed product direction (documentation only)
-**Implementation present:** No
+**Status:** Agreed product direction (documentation only); client strategy **PLM-D-00-09 Closed / Product Owner Approved**
+**Implementation present:** No React Client; Web identity shell only
 **Last updated:** 2026-08-19
 
-Agreed application surfaces for Pinoy Loan Manager. No client, API, or UI project is authorized in this package.
+Agreed application surfaces for Pinoy Loan Manager. The React Client is **not** created in this package.
 
-Root architecture: [../architecture.md](../architecture.md). Operating model: [../Product/lending-operating-model.md](../Product/lending-operating-model.md). Daily ops: [../Product/daily-operational-workflow.md](../Product/daily-operational-workflow.md). Authorization: [../Security/role-and-grant-baseline.md](../Security/role-and-grant-baseline.md).
+Root architecture: [../architecture.md](../architecture.md). Client architecture: [react-pwa-capacitor-client.md](react-pwa-capacitor-client.md). ADR: [../Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md](../Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md). Operating model: [../Product/lending-operating-model.md](../Product/lending-operating-model.md). Daily ops: [../Product/daily-operational-workflow.md](../Product/daily-operational-workflow.md). Authorization: [../Security/role-and-grant-baseline.md](../Security/role-and-grant-baseline.md).
 
 ---
 
@@ -38,9 +38,11 @@ Platform Administrator does not automatically receive Loan operational access. S
 
 ---
 
-## B. Pinoy Loan Manager Organization Web
+## B. Pinoy Loan Manager Organization Web / PWA
 
 This is the **full operational application** for the lending organization.
+
+It is the shared React Client (`ExItS.PinoyLoanManager.Client`, **not created yet**) running in the browser and as an installable PWA. `ExItS.PinoyLoanManager.Web` is the future ASP.NET Core host/BFF, not a second Blazor lending UI.
 
 Expected functional areas **eventually** include:
 
@@ -63,31 +65,36 @@ Expected functional areas **eventually** include:
 - Staff / roles / grants
 - Audit
 
-Proposed client direction remains Blazor Web. No web project is authorized (PLM-D-00-09).
+This list records **surface ownership only**. Do not implement them here. Do not invent data models, calculations, or API contracts.
 
 This surface is **not** Platform Admin.
 
 ---
 
-## C. Pinoy Loan Manager MAUI Blazor Hybrid
+## C. Pinoy Loan Manager Capacitor Android
 
-**Limited** operational / field application.
+**Same** React application as Organization Web/PWA, hosted in a thin Capacitor Android container.
 
-Primarily for:
+Mobile may present a role/capability-optimized subset such as:
 
-- Collector
-- field operations
-- assigned borrowers
-- collection routes / work
-- collecting payment
-- recording missed collection reasons
-- approved loan disbursement
+- assigned work
+- borrower lookup
+- collection workflow
+- approved field disbursement
 - cash accountability
-- end-of-day remittance
+- remittance
 
-It is **not** intended to duplicate the complete Organization Admin Web.
+**only** when those business packages are authorized.
 
-Possible later native capabilities (secure storage, camera/document capture, biometrics, connectivity, notifications, SQLite/offline) remain listed in [../architecture.md](../architecture.md) and are **not authorized**. Collector offline behavior is open. **Server remains authoritative** for final financial authorization / posting. See [../Product/daily-operational-workflow.md](../Product/daily-operational-workflow.md).
+It is **not** a separate Android business implementation and is **not** intended to duplicate the complete Organization Admin Web.
+
+Authorization remains server enforced. Hiding a route on Android is **not** authorization.
+
+The previous MAUI Blazor Hybrid preferred path is **superseded** (PLM-D-00-09). Capacitor must not become a loan calculation engine, authorization engine, financial ledger, or second API.
+
+Possible later native capabilities (secure storage, camera/document capture, biometrics, connectivity, notifications) remain listed in [react-pwa-capacitor-client.md](react-pwa-capacitor-client.md) and are **not authorized** here. Collector offline behavior is open. **Server remains authoritative** for final financial authorization / posting. See [../Product/daily-operational-workflow.md](../Product/daily-operational-workflow.md) and [mobile-offline-boundary.md](mobile-offline-boundary.md).
+
+iOS is later only, by separate Product Owner authorization.
 
 ---
 
@@ -95,7 +102,7 @@ Possible later native capabilities (secure storage, camera/document capture, bio
 
 This is the **customer / borrower** experience.
 
-Do **not** create a separate borrower application.
+Do **not** create a separate borrower application. Do **not** merge Personal borrower UX into the organization React Client.
 
 Loan area intent: [../Product/personal-loan-experience.md](../Product/personal-loan-experience.md). Keep Personal peer-to-peer “I Lent / I Borrowed” separate from organizational PLM Loans.
 
@@ -124,8 +131,8 @@ POS Customer ≠ Loan Borrower. Linking is optional, consent-required, and never
 | Surface | Role |
 |---|---|
 | Platform Admin | SaaS control plane |
-| Organization Web | Full lending operations |
-| MAUI Hybrid | Field / collector operations (subset) |
+| Organization Web / PWA | Full lending operations (shared React Client) |
+| Capacitor Android | Same React Client; field / collector subset later |
 | ExItS Personal | Borrower presentation |
 
 Server-authoritative business rules remain in Pinoy Loan Manager. UI/API must not become a second source of truth.
@@ -134,8 +141,10 @@ Server-authoritative business rules remain in Pinoy Loan Manager. UI/API must no
 
 ## Explicit non-goals
 
-- Scaffolding any of these clients in this package
+- Creating the React Client, PWA code, or Capacitor/Android workspace in this package
 - Using Platform Admin as the loan operations console
-- Duplicating full Admin Web on MAUI
+- Duplicating full Admin Web on Android
 - A standalone borrower app
 - Treating Personal as the loan ledger
+- Copying PinoyBusinessPOS React
+- Restoring MAUI as the preferred field client

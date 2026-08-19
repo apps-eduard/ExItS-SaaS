@@ -6,13 +6,13 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Current phase | PLM-01 Product Scaffold & Isolation |
-| Current work package | PLM-01 product scaffold (this branch) |
-| Status | PLM-00 accepted; PLM-01 scaffold in progress |
+| Current phase | PLM-01 Product Scaffold & Isolation (complete); PLM-01A client architecture (this package) |
+| Current work package | PLM-01A React + PWA + Capacitor architecture decision |
+| Status | PLM-00 accepted; PLM-01 scaffolded; PLM-01A client architecture approved; PLM-02 not started |
 
 ## Phase objective
 
-Create the isolated Pinoy Loan Manager product shell (projects, solution registration, architecture guards) without lending business functionality, persistence, Platform catalog registration, or MAUI.
+Create the isolated Pinoy Loan Manager product shell (projects, solution registration, architecture guards) without lending business functionality, persistence, Platform catalog registration, or a native field client. PLM-01A records the approved React + PWA + Capacitor client architecture without creating that client.
 
 ## Scope
 
@@ -20,8 +20,9 @@ Create the isolated Pinoy Loan Manager product shell (projects, solution registr
 
 - Domain / Application / Infrastructure / Api / ApiClient / Web project scaffold
 - Solution registration and isolation tests
-- Intentional deferral of MAUI and LocalStore
+- Intentional deferral of LocalStore; MAUI preferred path superseded (PLM-D-00-09)
 - PLM-01 evidence report
+- PLM-01A client architecture ADR (documentation only; Client not created)
 
 ### Excluded
 
@@ -29,7 +30,7 @@ Create the isolated Pinoy Loan Manager product shell (projects, solution registr
 - Database, DbContext, migrations, connection strings, secrets
 - Platform catalog / subscriptions / entitlements / Personal linking
 - Authorization implementation
-- MAUI / Android workload
+- MAUI / Android workload / Capacitor / React Client creation
 - Final grant identifiers, calculation formulas, peso/percent rates, rounding mode
 - Production authentication (R-091)
 - Final commercial-state transport (D-P12-03)
@@ -50,13 +51,14 @@ Create the isolated Pinoy Loan Manager product shell (projects, solution registr
 | PLM-00-WP09 | Technical Product Layout & Integration Boundary | Completed | PLM-00-WP08 |
 | PLM-00-WP10 | Foundation Closeout & Implementation Readiness | Completed | PLM-00-WP09 |
 
-PLM-00 documentation phase is complete. PLM-01 is authorized.
+PLM-00 documentation phase is complete. PLM-01 scaffold is complete. PLM-01A is the current documentation package.
 
 ## Planning buckets (later phases)
 
 | Phase | Status |
 |---|---|
-| PLM-01 Product Scaffold & Isolation | **Current** |
+| PLM-01 Product Scaffold & Isolation | **Complete** (shell) |
+| PLM-01A React / PWA / Capacitor client architecture | **Complete** (documentation; Gate A) |
 | PLM-02 Identity / Organization / Product Access | Not started |
 | PLM-03 Loan Product Authorization | Not started |
 | PLM-04 Borrower Foundation | Not started |
@@ -76,7 +78,7 @@ PLM-00 documentation phase is complete. PLM-01 is authorized.
 | Dependency | Notes |
 |---|---|
 | Platform subscription for `pinoy-loan-manager` | Required; registration open (PLM-D-00-01) |
-| Product-owner decisions | PLM-D-00-02, PLM-D-00-04 through PLM-D-00-09, PLM-D-00-11 through PLM-D-00-13 (PLM-D-00-03 and PLM-D-00-10 closed) |
+| Product-owner decisions | PLM-D-00-02, PLM-D-00-04 through PLM-D-00-08, PLM-D-00-11 through PLM-D-00-13 (PLM-D-00-03, PLM-D-00-09, and PLM-D-00-10 closed) |
 | D-P12-03 / R-091 / D-P12-05 | Portfolio-open; do not invent |
 
 ## Acceptance criteria (phase)
@@ -107,11 +109,32 @@ PLM-00 documentation phase is complete. PLM-01 is authorized.
 | R-091 | Claiming production-ready identity | Honest Dev/Testing vs Production language |
 | D-P12-03 | Copying POS Dev commercial headers as PLM production design | Leave transport Open |
 
+## Frontend delivery track (cross-cutting)
+
+Does **not** replace the core business roadmap above. Detail: [Architecture/react-pwa-capacitor-client.md](Architecture/react-pwa-capacitor-client.md).
+
+| Gate | Status |
+|---|---|
+| PLM-CLIENT-GATE A Architecture decision | **Complete** (PLM-01A) |
+| PLM-CLIENT-GATE B React scaffold | Not started |
+| PLM-CLIENT-GATE C Browser/PWA foundation | Not started |
+| PLM-CLIENT-GATE D Auth + org/product access | Not started |
+| PLM-CLIENT-GATE E First lending slice + visual review | Not started |
+| PLM-CLIENT-GATE F Responsive/field workflows | Not started |
+| PLM-CLIENT-GATE G Capacitor Android shell | Not started |
+| PLM-CLIENT-GATE H Physical Android validation | Not started |
+| PLM-CLIENT-GATE I Performance/reliability assessment | Not started |
+| PLM-CLIENT-GATE J Production readiness/cutover | Not started |
+
+Offline financial operation remains **PLM-13**.
+
 ## Exact next package
 
-**PLM-02 Identity / Organization / Product Access** (do not begin until PLM-01 is accepted)
+**STOPPED AFTER PLM-01A.** Do not start Gate B, Capacitor, or PLM-02 from this package.
 
-Consume Platform actor/org/product access without Platform table reads. Do not invent D-P12-03.
+Recommended later order when separately authorized: PLM-CLIENT-GATE B → PLM-CLIENT-GATE C → **PLM-02 Identity / Organization / Product Access** → continue business packages.
+
+PLM-02 still consumes Platform actor/org/product access without Platform table reads. Do not invent D-P12-03.
 
 ## Phase closeout requirements
 

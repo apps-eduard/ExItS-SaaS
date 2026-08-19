@@ -1,8 +1,8 @@
 # Pinoy Loan Manager — File Manifest
 
-**Status:** PLM-01 product scaffold (no lending domain)
-**Implementation present:** Product shell only
-**Current work package:** PLM-01 Product Scaffold & Isolation
+**Status:** PLM-01 product scaffold; PLM-01A client architecture approved
+**Implementation present:** Product shell only; React Client not created
+**Current work package:** PLM-01A React + PWA + Capacitor architecture decision
 
 This file is the navigation map for future Cursor work. Load this product’s `Docs/` after the shared Product Foundation reference. Do not scan PinoyBusinessPOS implementation by default.
 
@@ -34,7 +34,7 @@ Shared contracts to load with this product:
 | `Docs/Product/quick-loan-model.md` | Templates, snapshot, eligibility, Personal flow | Agreed direction / not a spec | No |
 | `Docs/Product/collector-cash-and-reconciliation.md` | Loan ledger vs collector cash | Agreed direction / not a spec | No |
 | `Docs/Product/penalty-exception-and-waiver-model.md` | Penalty, exception, waiver, reversal, post-maturity | Agreed direction / not a spec | No |
-| `Docs/Architecture/application-surface-model.md` | Platform Admin, Org Web, MAUI, Personal | Agreed direction / not a spec | No |
+| `Docs/Architecture/application-surface-model.md` | Platform Admin, Org Web/PWA, Capacitor Android, Personal | Agreed direction / not a spec | No |
 
 ## Financial / lifecycle planning (PLM-00-WP04)
 
@@ -89,11 +89,14 @@ Shared contracts to load with this product:
 
 | Path | Purpose | Status | Implementation present |
 |---|---|---|---|
-| `Docs/Architecture/source-and-project-layout.md` | Future project tree; not created | Planning target / not a spec | No |
+| `Docs/Architecture/source-and-project-layout.md` | Physical layout; Client future path recorded, not created | PLM-01 scaffold + PLM-01A target | Product shell |
+| `Docs/Architecture/react-pwa-capacitor-client.md` | Shared React + PWA + Capacitor architecture | Accepted (PLM-D-00-09) | No |
 | `Docs/Architecture/api-and-contract-boundary.md` | API consumers; Personal contracts | Planning target / not a spec | No |
 | `Docs/Architecture/persistence-and-database-boundary.md` | Separate DB isolation | Planning target / not a spec | No |
-| `Docs/Architecture/mobile-offline-boundary.md` | Online-first MAUI; offline not authorized | Planning target / not a spec | No |
+| `Docs/Architecture/mobile-offline-boundary.md` | Online-first; LocalStore not authorized | Planning target / not a spec | No |
 | `Docs/Architecture/platform-commercial-integration.md` | Platform contracts; D-P12-03 open | Planning target / not a spec | No |
+| `Docs/Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md` | ADR: one React + PWA + Capacitor client | Accepted / Product Owner Approved | No |
+| `Docs/Reports/PLM-01A-react-pwa-capacitor-architecture-decision.md` | PLM-01A evidence | Architecture decision complete | No |
 
 ## Foundation closeout (PLM-00-WP10)
 
@@ -113,7 +116,7 @@ Shared contracts to load with this product:
 | `Docs/Product/README.md` | Index for product-policy docs | Foundation / Planning Only | No |
 | `Docs/Architecture/README.md` | Index for architecture docs | Foundation / Planning Only | No |
 | `Docs/Security/README.md` | Index for security docs | Foundation / Planning Only | No |
-| `Docs/Decisions/README.md` | Index for future ADRs | Foundation / Planning Only | No |
+| `Docs/Decisions/README.md` | Index for ADRs | Foundation / Planning Only | No |
 | `Docs/Phases/README.md` | Index for phase sequencing | Foundation / Planning Only | No |
 | `Docs/Reports/README.md` | Index for WP evidence | Foundation / Planning Only | No |
 | `Docs/Reports/PLM-01-product-scaffold-and-isolation.md` | PLM-01 scaffold evidence | Scaffold complete / no lending domain | Product shell |
@@ -131,7 +134,7 @@ Shared contracts to load with this product:
 | `ExItS.PinoyLoanManager.Infrastructure` | Created — no EF/Npgsql/DbContext |
 | `ExItS.PinoyLoanManager.Api` | Created — `/health` only |
 | `ExItS.PinoyLoanManager.ApiClient` | Created — marker only |
-| `ExItS.PinoyLoanManager.Web` | Created — identity shell only |
+| `ExItS.PinoyLoanManager.Web` | Created — identity shell only; future host/BFF (not refactored in PLM-01A) |
 | `tests/ExItS.PinoyLoanManager.UnitTests` | Created |
 | `ExItS.slnx` PLM entries | Registered |
 
@@ -139,7 +142,8 @@ Shared contracts to load with this product:
 
 | Item | Reason |
 |---|---|
-| `ExItS.PinoyLoanManager.Maui` | Deferred to a later field/mobile phase (avoid Android SDK in PLM-01) |
+| `ExItS.PinoyLoanManager.Client` | Future only — do not create in PLM-01A |
+| `ExItS.PinoyLoanManager.Maui` | Preferred path superseded (PLM-D-00-09); not created |
 | `ExItS.PinoyLoanManager.LocalStore` | Not justified until offline is authorized |
 | Database / migration folders | Persistence not authorized (PLM-D-00-02 remains open) |
 | Docker / deploy implementation | Not authorized |

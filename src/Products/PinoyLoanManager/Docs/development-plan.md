@@ -6,7 +6,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Plan status | PLM-00 accepted; PLM-01 product shell scaffolded |
+| Plan status | PLM-00 accepted; PLM-01 product shell scaffolded; PLM-01A client architecture approved |
 | Implementation present | Product shell only — no lending domain |
 
 ## Delivery approach
@@ -22,6 +22,7 @@
 |---|---|---|
 | PLM-00 Foundation & Product Decisions | Documentation, identity, isolation, operating-model through technical-boundary planning, closeout, and owner-decision register | Canonical docs exist; closeout filed; open decisions listed; no implementation claimed |
 | PLM-01 Product Scaffold & Isolation | Authorized source/test/deploy skeleton and isolation guards | Projects exist without Loan domain; solution isolation proven; layout: [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md) |
+| PLM-01A React / PWA / Capacitor client architecture | Close PLM-D-00-09; record one React client for Browser/PWA/Capacitor | ADR accepted; Client **not created**; Web retained as future host/BFF |
 | PLM-02 Identity / Organization / Product Access | Consume Platform actor/org/product access without Platform table reads | Access intersection entry gates exist; D-P12-03 not invented |
 | PLM-03 Loan Product Authorization | Product-local roles/grants | Matrix implemented only after PLM-D-00-06 |
 | PLM-04 Borrower Foundation | Product-local borrower records; optional Personal link | Borrower exists without requiring Personal; no POS Customer reads |
@@ -33,7 +34,7 @@
 | PLM-10 Collections / Delinquency | Arrears and collections | Only after collections policy exists |
 | PLM-11 Reporting / Documents | Product reports and documents | Only after report contents are decided |
 | PLM-12 Security / Audit / Privacy | Product audit, privacy, consent hardening | Evidence against this product’s security docs |
-| PLM-13 Offline / Mobile Field Capabilities | MAUI/offline/field capabilities | Only after PLM-D-00-09 and owner authorization |
+| PLM-13 Offline / Mobile Field Capabilities | Optional LocalStore / field offline against the React/PWA/Capacitor track | Only after dedicated PLM-13 authorization; LocalStore not created by PLM-D-00-09 |
 | PLM-14 Production Validation / Closeout | Production-readiness evidence | Blocked while R-091 / other portfolio production risks remain |
 
 Detail per current phase: [roadmap.md](roadmap.md).
@@ -55,7 +56,7 @@ Stop when any of these are missing without an approved decision:
 - [x] Privacy classification (PHI default none) — recorded
 - [x] Explicit exclusions — recorded in [product-definition.md](product-definition.md)
 
-PLM-01 scaffold is in progress on `feat/plm-01-scaffold`. Do not start PLM-02 until PLM-01 is accepted. MAUI remains planned and is deferred (not removed).
+PLM-01A is documentation only. Do not start PLM-02, Gate B, or Capacitor until separately authorized. LocalStore remains deferred. MAUI is not the preferred client path (PLM-D-00-09).
 
 ## Dependencies
 
@@ -66,6 +67,7 @@ PLM-01 scaffold is in progress on `feat/plm-01-scaffold`. Do not start PLM-02 un
 | Production authentication | **R-091** | Keep Dev/Testing language honest (D-P12-05) |
 | Personal / cross-product relationship model | Platform + product | Open (PLM-D-00-04, PLM-D-00-05) |
 | Loan owner policy | Product owner | Open (PLM-D-00-06, PLM-D-00-07, PLM-D-00-08) |
+| Organization/field client strategy | Product owner | **Closed / Product Owner Approved** (PLM-D-00-09) |
 
 ## Testing expectations
 

@@ -103,13 +103,13 @@ Exact Cashier Session closing rules with unresolved variance remain **OPEN**. Un
 
 ## Surfaces
 
-Organization Web is the full operational application. MAUI Hybrid is the limited field / collector surface. Platform Admin is **not** the loan operations console. Personal is borrower presentation only. See [../Architecture/application-surface-model.md](../Architecture/application-surface-model.md).
+Organization Web / PWA is the full operational application (shared React Client, not created yet). Capacitor Android is the same application in a thin native host and may later show a field/collector subset. Platform Admin is **not** the loan operations console. Personal is borrower presentation only. See [../Architecture/application-surface-model.md](../Architecture/application-surface-model.md).
 
 ---
 
 ## Offline mobile boundary
 
-MAUI Collector offline capability remains a future design area. Do **not** treat offline activity as immediately authoritative.
+Field/collector offline capability remains a future **PLM-13** design area. Do **not** treat offline activity as immediately authoritative.
 
 **Server remains authoritative** for final financial authorization / posting.
 
