@@ -39,7 +39,7 @@ export const ORGANIZATION_WORKSPACE_SECTIONS = [
 
 export type OrganizationWorkspaceSection = (typeof ORGANIZATION_WORKSPACE_SECTIONS)[number];
 
-export type OrganizationWorkspaceNavSection = "overview" | "branches" | "people";
+export type OrganizationWorkspaceNavSection = "overview" | "branches" | "people" | "products";
 
 export function parseOrganizationWorkspaceSection(
   pathname: string,

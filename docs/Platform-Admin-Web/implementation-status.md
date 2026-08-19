@@ -346,6 +346,29 @@ Read-only People at `/admin/organizations/:organizationId/people` with independe
 
 See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-10-organization-people-memberships.md`.
 
+## PWEB-IMPL-11 — Organization workspace / Products
+
+Status: **COMPLETE** after validation
+
+Read-only Products/Access at `/admin/organizations/:organizationId/products` from commercial-summary `latestEntitlements`. No catalog fan-out, no invented totals, no POS/PLM operations. CSRF remains `BLOCKS_FUTURE_MUTATION`. Social-auth token-in-URL remains `BLOCKS_CUTOVER`. Platform Admin is **WEB ONLY**. PWA is **NOT PLANNED**.
+
+| Area | Record |
+|---|---|
+| Overview | **IMPLEMENTED** |
+| Branches | **IMPLEMENTED — READ ONLY** |
+| People/Memberships | **IMPLEMENTED — READ ONLY** |
+| Products/Access | **IMPLEMENTED — READ ONLY** |
+| Subscription | **NOT STARTED** |
+| Entitlements | **NOT STARTED** |
+| Billing | **NOT STARTED** |
+| Activity/Audit | **NOT STARTED** |
+| CSRF | `BLOCKS_FUTURE_MUTATION` |
+| Social-auth token-in-URL | `BLOCKS_CUTOVER` |
+| Platform Admin | **WEB ONLY** |
+| PWA | **NOT PLANNED** |
+
+See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-11-organization-products-access.md`.
+
 ## Queue
 
 | Package | Status |
@@ -359,5 +382,6 @@ See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-10-organization-people-membership
 | PWEB-IMPL-08 — Organization workspace Overview | COMPLETE |
 | PWEB-IMPL-09 — Organization workspace Branches | COMPLETE |
 | PWEB-IMPL-10 — Organization workspace People | COMPLETE |
+| PWEB-IMPL-11 — Organization workspace Products | COMPLETE |
 
-Stopped after PWEB-IMPL-10.
+Stopped after PWEB-IMPL-11.

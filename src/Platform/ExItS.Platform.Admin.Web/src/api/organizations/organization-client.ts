@@ -160,6 +160,9 @@ export function mapOrganizationCommercialSummary(payload: unknown): Organization
           productCode,
           subscriptionStatus,
           generatedAtUtc: readString(item, "generatedAtUtc", "GeneratedAtUtc"),
+          productDisplayName: readString(item, "productDisplayName", "ProductDisplayName"),
+          snapshotVersion: readNumber(item, "snapshotVersion", "SnapshotVersion"),
+          schemaVersion: readNumber(item, "schemaVersion", "SchemaVersion"),
         };
       },
     ),
@@ -186,6 +189,16 @@ export function getOrganizationCommercialSummary(
     path: `/api/v1/platform/admin/organizations/${organizationId}/commercial-summary`,
     signal,
   }).then(mapOrganizationCommercialSummary);
+}
+
+function readNumber(record: Record<string, unknown>, ...keys: string[]): number | undefined {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+  }
+  return undefined;
 }
 
 function readBoolean(record: Record<string, unknown>, ...keys: string[]): boolean | undefined {

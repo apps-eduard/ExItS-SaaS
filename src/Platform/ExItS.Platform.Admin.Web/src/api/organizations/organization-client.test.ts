@@ -91,7 +91,15 @@ describe("mapOrganizationCommercialSummary", () => {
       status: "Confirmed",
       paidAtUtc: "2026-08-01T08:00:00Z",
     });
-    expect(mapped.latestEntitlements[0]?.productCode).toBe("POS");
+    expect(mapped.latestEntitlements[0]).toEqual({
+      id: "33333333-3333-3333-3333-333333333333",
+      productCode: "POS",
+      subscriptionStatus: "Active",
+      generatedAtUtc: "2026-08-01T08:00:00Z",
+      productDisplayName: undefined,
+      snapshotVersion: undefined,
+      schemaVersion: undefined,
+    });
     expect(JSON.stringify(mapped)).not.toMatch(/agreedPrice|amount|999|1200/i);
   });
 });

@@ -65,6 +65,9 @@ export type CommercialEntitlementRecord = {
   productCode: string;
   subscriptionStatus: string;
   generatedAtUtc?: string;
+  productDisplayName?: string;
+  snapshotVersion?: number;
+  schemaVersion?: number;
 };
 
 export type OrganizationCommercialSummary = {

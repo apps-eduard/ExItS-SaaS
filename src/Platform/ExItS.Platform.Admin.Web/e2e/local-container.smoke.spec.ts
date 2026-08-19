@@ -5,9 +5,9 @@ import { expect, test } from "@playwright/test";
 
 const enabled = process.env.PWEB_CONTAINER_SMOKE === "1";
 const password = process.env.LOCAL_VALIDATION_SHARED_PASSWORD ?? "";
-const peopleScreenshotDir = resolve(
+const productsScreenshotDir = resolve(
   dirname(fileURLToPath(import.meta.url)),
-  "../../../../docs/Platform-Admin-Web/Reports/impl-10-organization-people",
+  "../../../../docs/Platform-Admin-Web/Reports/impl-11-organization-products",
 );
 
 test.describe("local-validation React container smoke", () => {
@@ -119,44 +119,38 @@ test.describe("local-validation React container smoke", () => {
     await expect(workspaceNav.getByRole("link", { name: "Overview" })).toBeVisible();
     await expect(workspaceNav.getByRole("link", { name: "Branches" })).toBeVisible();
     await expect(workspaceNav.getByRole("link", { name: "People" })).toBeVisible();
-    await expect(workspaceNav.getByRole("link", { name: "Products" })).toHaveCount(0);
-    await workspaceNav.getByRole("link", { name: "People" }).click();
-    await expect(page).toHaveURL(/\/admin\/organizations\/[0-9a-fA-F-]{36}\/people/);
+    await expect(workspaceNav.getByRole("link", { name: "Products" })).toBeVisible();
+    await expect(workspaceNav.getByRole("link", { name: "Subscription" })).toHaveCount(0);
+    await workspaceNav.getByRole("link", { name: "Products" }).click();
+    await expect(page).toHaveURL(/\/admin\/organizations\/[0-9a-fA-F-]{36}\/products/);
     await expect(
-      page.getByRole("heading", { name: "People", exact: true, level: 1 }),
+      page.getByRole("heading", { name: "Products", exact: true, level: 1 }),
     ).toBeVisible();
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /invite/i })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /revoke/i })).toHaveCount(0);
-    mkdirSync(peopleScreenshotDir, { recursive: true });
+    await expect(page.getByRole("button", { name: /grant/i })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /activate/i })).toHaveCount(0);
+    mkdirSync(productsScreenshotDir, { recursive: true });
     await page.getByRole("button", { name: "Preferences" }).click();
     await page.getByRole("menuitem", { name: /^Light/ }).click();
     await page.screenshot({
-      path: resolve(peopleScreenshotDir, "01-people-1440x900-light.png"),
+      path: resolve(productsScreenshotDir, "01-products-1440x900-light.png"),
       fullPage: true,
     });
     await page.getByRole("button", { name: "Preferences" }).click();
     await page.getByRole("menuitem", { name: /^Dark/ }).click();
     await page.screenshot({
-      path: resolve(peopleScreenshotDir, "02-people-1440x900-dark.png"),
-      fullPage: true,
-    });
-    await page.getByRole("tab", { name: "Invitations" }).click();
-    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
-    await page.screenshot({
-      path: resolve(peopleScreenshotDir, "04-invitations.png"),
+      path: resolve(productsScreenshotDir, "02-products-1440x900-dark.png"),
       fullPage: true,
     });
     await page.getByRole("button", { name: "Preferences" }).click();
     await page.getByRole("menuitem", { name: /^Light/ }).click();
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.getByRole("tab", { name: "Members" }).click();
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
     );
     expect(overflow).toBe(false);
     await page.screenshot({
-      path: resolve(peopleScreenshotDir, "03-people-375x812.png"),
+      path: resolve(productsScreenshotDir, "03-products-375x812.png"),
       fullPage: true,
     });
   });
