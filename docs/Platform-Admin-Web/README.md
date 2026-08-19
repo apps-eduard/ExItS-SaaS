@@ -20,4 +20,6 @@ boundaries, and records a dedicated planning worktree (`docs/platform-admin-web-
 - `Reports/PLATFORM-WEB-DOC-04-design-system-and-ux.md` — design system and UX foundation report
 - `application-shell-and-global-interactions.md` — application shell + global interactions
 - `Reports/PLATFORM-WEB-DOC-05-application-shell.md` — application shell report
+- `Screens/core-administration-screens.md` — core administration screen specifications
+- `Reports/PLATFORM-WEB-DOC-06-core-administration-screens.md` — core administration screens report
 

@@ -23,7 +23,7 @@ Queue state: `CLEAR`
 | DOC-03 | Complete | Replacement frontend architecture (React stack, security, dependency policy) |
 | DOC-04 | Complete | Design system tokens, component patterns, and UX foundation |
 | DOC-05 | Complete | Application shell + global interaction model |
-| DOC-06 | Pending | Replacement functional areas mapping (pages/routes/features) |
+| DOC-06 | Complete | Core Platform administration screen specifications + capability requirements |
 | DOC-07 | Pending | Replacement API/contract consumption checklist |
 | DOC-08 | Pending | Regression/hardening notes for cutover readiness |
 | DOC-09 | Pending | Cutover plan (no merge) + rollback boundaries |

@@ -27,6 +27,7 @@ Accepted decision identifiers for this planning track (documentation-only).
 | PWEB-D-021 | DOC-05 entity context rules: organization/product/user/commercial contexts are UX/navigation context only; server authorization must validate access and must not rely on client-supplied OrganizationId | Accepted |
 | PWEB-D-022 | DOC-05 canonical page templates + cross-page UX behavior are standardized (breadcrumbs, deep links, browser back/forward, session expiry, forbidden/not-found, stale-data indication, retry rules, success toasts, destructive confirmation) | Accepted |
 | PWEB-D-023 | DOC-05 keyboard model: predictable Tab order; Escape closes overlays only when safe; `Ctrl+K` opens command palette and `Alt+/` focuses global search; shortcuts must never bypass confirmation requirements | Accepted |
+| PWEB-D-024 | DOC-06 core screen specifications standardize required UI surfaces and introduce stable capability requirement IDs (`PWEB-CAP-*`); these must not be claimed as implemented until DOC-09 verification | Accepted |
 
 Library decisions are recorded by DOC-03; design system decisions by DOC-04.
 
