@@ -1,0 +1,168 @@
+@page "/organization/audit"
+@attribute [Authorize]
+@using ExItS.PinoyBusinessPOS.Application.Platform
+@inject OrgWebShellState Shell
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject IStringLocalizer<OrgWebResources> L
+
+<PageTitle>@L["Audit_Title"]</PageTitle>
+
+@if (!Shell.CanSee("audit"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <div class="org-page">
+        <ExitsPageHeader Title="@L["Audit_Title"]" Subtitle="@L["Audit_Subtitle"]" />
+        <OrgAlert Error="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+
+        <div class="org-filter-bar" style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;">
+            <label>
+                <span class="org-filter-label">@L["Audit_FilterFrom"]</span>
+                <InputDate @bind-Value="_fromDate" TValue="DateTime?" />
+            </label>
+            <label>
+                <span class="org-filter-label">@L["Audit_FilterTo"]</span>
+                <InputDate @bind-Value="_toDate" TValue="DateTime?" />
+            </label>
+            <label>
+                <span class="org-filter-label">@L["Audit_FilterActor"]</span>
+                <Input @bind-Value="_actorFilter" placeholder="@L["Audit_FilterActorPlaceholder"]" />
+            </label>
+            <label>
+                <span class="org-filter-label">@L["Audit_FilterAction"]</span>
+                <Input @bind-Value="_actionFilter" placeholder="@L["Audit_FilterActionPlaceholder"]" />
+            </label>
+            <label>
+                <span class="org-filter-label">@L["Audit_FilterBranch"]</span>
+                <select class="ant-input" @bind="_branchFilter">
+                    <option value="">@L["Audit_FilterBranchAll"]</option>
+                    @foreach (var branch in _branches)
+                    {
+                        <option value="@branch.Id">@branch.Name (@branch.Code)</option>
+                    }
+                </select>
+            </label>
+            <Button Type="@ButtonType.Primary" Loading="_loading" OnClick="ApplyFiltersAsync">@L["Audit_ApplyFilters"]</Button>
+        </div>
+
+        <OrgLoading Active="_loading && _items.Count == 0" />
+        @if (!_loading && _items.Count == 0)
+        {
+            <OrgEmpty Title="@L["Audit_EmptyTitle"]" Message="@L["Audit_EmptyMessage"]" />
+        }
+        else if (!_loading || _items.Count > 0)
+        {
+            <div class="org-table-wrap">
+                <table class="org-table">
+                    <thead>
+                        <tr>
+                            <th>@L["Audit_ColumnWhen"]</th>
+                            <th>@L["Audit_ColumnActor"]</th>
+                            <th>@L["Audit_ColumnAction"]</th>
+                            <th>@L["Audit_ColumnTarget"]</th>
+                            <th>@L["Audit_ColumnOutcome"]</th>
+                            <th>@L["Audit_ColumnSummary"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in _items)
+                        {
+                            <tr>
+                                <td>@GovernanceAuditDisplay.FormatWebTimestamp(row.OccurredAtUtc)</td>
+                                <td>@row.ActorIdentifier</td>
+                                <td>@GovernanceAuditDisplay.FormatWebAction(row.ActionCode)</td>
+                                <td>@row.TargetType · @row.TargetId</td>
+                                <td>@row.Outcome</td>
+                                <td>@(row.Summary ?? row.Reason ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <OrgPager Page="_page" PageSize="PageSize" TotalCount="_total" Busy="_loading" PageChanged="ChangePageAsync" />
+        }
+    </div>
+}
+
+@code {
+    private const int PageSize = 20;
+
+    private string? _error;
+    private bool _loading = true;
+    private int _page = 1;
+    private int _total;
+    private DateTime? _fromDate;
+    private DateTime? _toDate;
+    private string? _actorFilter;
+    private string? _actionFilter;
+    private string _branchFilter = string.Empty;
+    private List<PlatformGovernanceAuditRecordDto> _items = [];
+    private List<OrganizationBranchDto> _branches = [];
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task ApplyFiltersAsync()
+    {
+        _page = 1;
+        await LoadAsync();
+    }
+
+    private async Task ChangePageAsync(int page)
+    {
+        _page = page;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            var orgId = CurrentUser.Session?.OrganizationId;
+            if (orgId is null)
+            {
+                return;
+            }
+
+            if (_branches.Count == 0)
+            {
+                var branchResult = await Platform.GetBranchesAsync(orgId.Value);
+                if (branchResult.IsSuccess && branchResult.Data is not null)
+                {
+                    _branches = branchResult.Data.OrderBy(b => b.Name).ToList();
+                }
+            }
+
+            Guid? branchId = Guid.TryParse(_branchFilter, out var parsedBranch) ? parsedBranch : null;
+            var fromUtc = _fromDate is null ? null : (DateTimeOffset?)new DateTimeOffset(_fromDate.Value.Date, TimeSpan.Zero);
+            var toUtc = _toDate is null ? null : (DateTimeOffset?)new DateTimeOffset(_toDate.Value.Date.AddDays(1).AddTicks(-1), TimeSpan.Zero);
+
+            var result = await Platform.GetOrganizationAuditAsync(
+                orgId.Value,
+                page: _page,
+                pageSize: PageSize,
+                fromUtc: fromUtc,
+                toUtc: toUtc,
+                action: string.IsNullOrWhiteSpace(_actionFilter) ? null : _actionFilter.Trim(),
+                actor: string.IsNullOrWhiteSpace(_actorFilter) ? null : _actorFilter.Trim(),
+                branchId: branchId);
+
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+
+            _items = result.Data.Items.ToList();
+            _total = result.Data.TotalCount;
+            _error = null;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

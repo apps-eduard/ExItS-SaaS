@@ -129,6 +129,24 @@
             <section class="pos-manage-business__activity" aria-labelledby="manage-activity-heading">
                 <h2 id="manage-activity-heading" class="pos-manage-business__section-title">@L["ManageBusiness_ActivityTitle"]</h2>
                 <p class="pos-manage-business__activity-note pos-muted">@L["ManageBusiness_ActivityHint"]</p>
+                @if (_activityLoading)
+                {
+                    <div class="pos-manage-business__loading"><Spinner /><span>@L["Common_Loading"]</span></div>
+                }
+                else if (_activity.Count == 0)
+                {
+                    <p class="pos-muted">@L["ManageBusiness_ActivityEmpty"]</p>
+                }
+                else
+                {
+                    <ul class="pos-manage-business__activity-list" role="list">
+                        @foreach (var item in _activity)
+                        {
+                            <li class="pos-manage-business__activity-row" role="listitem">@GovernanceAuditDisplay.FormatMobileRow(item)</li>
+                        }
+                    </ul>
+                }
+                <p class="pos-manage-business__activity-note pos-muted">@L["ManageBusiness_ViewAuditOnWeb"]</p>
             </section>
 
             <p class="pos-manage-business__footnote pos-muted">@L["Org_WebAdminReminder"]</p>
@@ -143,6 +161,10 @@
     private string? _orgName;
     private int _branchCount;
     private string? _subscriptionStatus;
+    private bool _activityLoading;
+    private List<PlatformGovernanceAuditRecordDto> _activity = [];
+
+    private const int ActivitySummaryPageSize = 15;
 
     protected override async Task OnInitializedAsync()
     {
@@ -175,6 +197,13 @@
             {
                 _subscriptionStatus = sub.Data.Status;
             }
+
+            _activityLoading = true;
+            var audit = await Platform.GetOrganizationAuditAsync(orgId, page: 1, pageSize: ActivitySummaryPageSize);
+            if (audit.IsSuccess && audit.Data?.Items is not null)
+            {
+                _activity = audit.Data.Items.Take(ActivitySummaryPageSize).ToList();
+            }
         }
         catch (Exception ex)
         {
@@ -182,6 +211,7 @@
         }
         finally
         {
+            _activityLoading = false;
             _loading = false;
         }
     }

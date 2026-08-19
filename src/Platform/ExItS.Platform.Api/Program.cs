@@ -525,6 +525,7 @@ app.MapMerchantCatalogDiscoveryEndpoints();
 app.MapCommercialEndpoints();
 app.MapOrganizationEndpoints();
 app.MapBranchAndDeviceEndpoints();
+app.MapOrganizationAuditEndpoints();
 app.MapIdentityEndpoints();
 app.MapPublicIdentityEndpoints();
 app.MapScopedQrEndpoints();

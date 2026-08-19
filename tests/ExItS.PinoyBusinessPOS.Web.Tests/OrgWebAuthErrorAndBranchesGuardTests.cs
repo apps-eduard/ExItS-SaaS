@@ -71,9 +71,13 @@ public sealed class OrgWebAuthErrorAndBranchesGuardTests
         Assert.Contains("org-setup-nav", edit, StringComparison.Ordinal);
         Assert.Contains("FocusHours", edit, StringComparison.Ordinal);
         Assert.Contains("FocusDetails", edit, StringComparison.Ordinal);
+        Assert.Contains("ToggleDetails", edit, StringComparison.Ordinal);
+        Assert.DoesNotContain("<details", edit, StringComparison.Ordinal);
         Assert.Contains("FocusFulfillment", edit, StringComparison.Ordinal);
         Assert.Contains("Branches_AddAddressLine2", edit, StringComparison.Ordinal);
         Assert.Contains("BranchLocationUi.CodesFor", edit, StringComparison.Ordinal);
+        Assert.Contains("BranchLocationUi.BindCode", edit, StringComparison.Ordinal);
+        Assert.Contains("BranchLocationUi.UnspecifiedCode", edit, StringComparison.Ordinal);
         Assert.Contains("Branches_DeliverySetup", edit, StringComparison.Ordinal);
         Assert.Contains("_deliveryOpen", edit, StringComparison.Ordinal);
         Assert.Contains("Branches_OrgCatalog", edit, StringComparison.Ordinal);
@@ -101,6 +105,47 @@ public sealed class OrgWebAuthErrorAndBranchesGuardTests
             Assert.Contains($"<data name=\"{key}\"", en, StringComparison.Ordinal);
             Assert.Contains($"<data name=\"{key}\"", fil, StringComparison.Ordinal);
         }
+    }
+
+    [Fact]
+    public void Audit_page_uses_server_side_filters_and_pager()
+    {
+        var root = FindRepoRoot();
+        var page = File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Web",
+            "Components",
+            "Pages",
+            "Organization",
+            "Audit.razor"));
+
+        Assert.Contains("GetOrganizationAuditAsync", page, StringComparison.Ordinal);
+        Assert.Contains("OrgPager", page, StringComparison.Ordinal);
+        Assert.Contains("Shell.CanSee(\"audit\")", page, StringComparison.Ordinal);
+        Assert.Contains("Audit_FilterFrom", page, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ManageBusiness_activity_summary_is_bounded()
+    {
+        var root = FindRepoRoot();
+        var page = File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui",
+            "Components",
+            "Pages",
+            "Organization",
+            "ManageBusiness.razor"));
+
+        Assert.Contains("ActivitySummaryPageSize", page, StringComparison.Ordinal);
+        Assert.Contains("GetOrganizationAuditAsync", page, StringComparison.Ordinal);
+        Assert.Contains("ManageBusiness_ViewAuditOnWeb", page, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -10615,7 +10615,13 @@
     <value>Kamakailang aktibidad</value>
   </data>
   <data name="ManageBusiness_ActivityHint" xml:space="preserve">
-    <value>Lalabas dito ang buod ng governance activity kapag available na.</value>
+    <value>Mga kamakailang pagbabago sa governance ng organisasyon.</value>
+  </data>
+  <data name="ManageBusiness_ActivityEmpty" xml:space="preserve">
+    <value>Wala pang kamakailang governance activity.</value>
+  </data>
+  <data name="ManageBusiness_ViewAuditOnWeb" xml:space="preserve">
+    <value>Tingnan ang buong audit sa Web</value>
   </data>
   <data name="ManageBusiness_PrimaryRequired" xml:space="preserve">
     <value>Lumipat sa primary branch workspace para pamahalaan ang negosyo sa mobile.</value>

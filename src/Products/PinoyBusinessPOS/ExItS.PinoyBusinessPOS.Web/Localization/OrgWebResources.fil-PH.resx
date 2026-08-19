@@ -888,6 +888,66 @@
   <data name="Notifications_AriaUnread" xml:space="preserve">
     <value>Mga notification, {0} hindi pa nabasa</value>
   </data>
+  <data name="Nav_Audit" xml:space="preserve">
+    <value>Audit log</value>
+  </data>
+  <data name="Audit_Title" xml:space="preserve">
+    <value>Audit log</value>
+  </data>
+  <data name="Audit_Subtitle" xml:space="preserve">
+    <value>Mga pagbabago sa governance ng organisasyon — profile, branch, staff, device, at settings.</value>
+  </data>
+  <data name="Audit_EmptyTitle" xml:space="preserve">
+    <value>Walang audit event</value>
+  </data>
+  <data name="Audit_EmptyMessage" xml:space="preserve">
+    <value>Lalabas dito ang governance activity pag may ginawang pagbabago.</value>
+  </data>
+  <data name="Audit_FilterFrom" xml:space="preserve">
+    <value>Mula</value>
+  </data>
+  <data name="Audit_FilterTo" xml:space="preserve">
+    <value>Hanggang</value>
+  </data>
+  <data name="Audit_FilterActor" xml:space="preserve">
+    <value>Actor</value>
+  </data>
+  <data name="Audit_FilterActorPlaceholder" xml:space="preserve">
+    <value>platform-user:…</value>
+  </data>
+  <data name="Audit_FilterAction" xml:space="preserve">
+    <value>Aksyon</value>
+  </data>
+  <data name="Audit_FilterActionPlaceholder" xml:space="preserve">
+    <value>platform.organization.branch.created</value>
+  </data>
+  <data name="Audit_FilterBranch" xml:space="preserve">
+    <value>Branch</value>
+  </data>
+  <data name="Audit_FilterBranchAll" xml:space="preserve">
+    <value>Lahat ng branch</value>
+  </data>
+  <data name="Audit_ApplyFilters" xml:space="preserve">
+    <value>Ilapat</value>
+  </data>
+  <data name="Audit_ColumnWhen" xml:space="preserve">
+    <value>Kailan</value>
+  </data>
+  <data name="Audit_ColumnActor" xml:space="preserve">
+    <value>Actor</value>
+  </data>
+  <data name="Audit_ColumnAction" xml:space="preserve">
+    <value>Aksyon</value>
+  </data>
+  <data name="Audit_ColumnTarget" xml:space="preserve">
+    <value>Target</value>
+  </data>
+  <data name="Audit_ColumnOutcome" xml:space="preserve">
+    <value>Resulta</value>
+  </data>
+  <data name="Audit_ColumnSummary" xml:space="preserve">
+    <value>Buod</value>
+  </data>
   <data name="SelectOrg_Title" xml:space="preserve">
     <value>Pumili ng organisasyon</value>
   </data>

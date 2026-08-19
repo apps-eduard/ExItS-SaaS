@@ -10615,7 +10615,13 @@
     <value>Recent activity</value>
   </data>
   <data name="ManageBusiness_ActivityHint" xml:space="preserve">
-    <value>Governance activity summary will appear here when available.</value>
+    <value>Recent organization governance changes.</value>
+  </data>
+  <data name="ManageBusiness_ActivityEmpty" xml:space="preserve">
+    <value>No recent governance activity yet.</value>
+  </data>
+  <data name="ManageBusiness_ViewAuditOnWeb" xml:space="preserve">
+    <value>View full audit on Web</value>
   </data>
   <data name="ManageBusiness_PrimaryRequired" xml:space="preserve">
     <value>Switch to your primary branch workspace to manage the business on mobile.</value>

@@ -168,6 +168,37 @@ internal sealed class PlatformMembershipAuthz(
         return denied;
     }
 
+    /// <summary>
+    /// Organization governance audit read: Platform ViewAuditRecords, or Organization Owner/Manager
+    /// in trusted organization context. Cashiers and other staff are denied.
+    /// </summary>
+    public async Task<IResult?> EnsureCanViewOrganizationAuditAsync(
+        string actionCode,
+        string targetType,
+        string targetId,
+        Guid organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var platformDenied = await authz.EnsureAsync(
+            PlatformPermission.ViewAuditRecords,
+            actionCode,
+            targetType,
+            targetId,
+            organizationId,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+        if (platformDenied is null)
+        {
+            return null;
+        }
+
+        return await EnsureCanAccessOrganizationNotificationsAsync(
+            actionCode,
+            targetType,
+            targetId,
+            organizationId,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<(OrganizationRole? ActorMembershipRole, bool HasPlatformManageMemberships)> ResolveActorMembershipAuthorityAsync(
         Guid organizationId,
         CancellationToken cancellationToken = default)

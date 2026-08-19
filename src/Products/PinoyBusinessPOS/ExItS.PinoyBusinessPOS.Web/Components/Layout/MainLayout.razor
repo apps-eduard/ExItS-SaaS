@@ -151,6 +151,10 @@
                         {
                             <MenuItem Key="notifications" RouterLink="/notifications" Icon="bell" Title="@L["Nav_Alerts"]">@L["Nav_Alerts"]</MenuItem>
                         }
+                        @if (Shell.CanSee("audit"))
+                        {
+                            <MenuItem Key="audit" RouterLink="/organization/audit" Icon="audit" Title="@L["Nav_Audit"]">@L["Nav_Audit"]</MenuItem>
+                        }
                     </SubMenu>
                 }
             </Menu>
@@ -349,6 +353,10 @@
             @if (Shell.CanSee("notifications"))
             {
                 <MenuItem RouterLink="/notifications" Icon="bell">@L["Nav_Alerts"]</MenuItem>
+            }
+            @if (Shell.CanSee("audit"))
+            {
+                <MenuItem RouterLink="/organization/audit" Icon="audit">@L["Nav_Audit"]</MenuItem>
             }
         </Menu>
     </Drawer>

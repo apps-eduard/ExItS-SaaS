@@ -72,14 +72,7 @@ internal sealed class PlatformOrganizationAuthz(
         string actionCode,
         CancellationToken cancellationToken = default)
     {
-        var denied = await authz.EnsureAsync(
-            PlatformPermission.ManageOrganizations,
-            actionCode,
-            nameof(PlatformOrganization),
-            organizationId.ToString("D"),
-            organizationId,
-            cancellationToken: cancellationToken).ConfigureAwait(false);
-        if (denied is null)
+        if (await HasPlatformManageOrganizationsAsync(organizationId, cancellationToken).ConfigureAwait(false))
         {
             return (null, true);
         }
@@ -94,6 +87,13 @@ internal sealed class PlatformOrganizationAuthz(
             return (null, false);
         }
 
+        var denied = await authz.EnsureAsync(
+            PlatformPermission.ManageOrganizations,
+            actionCode,
+            nameof(PlatformOrganization),
+            organizationId.ToString("D"),
+            organizationId,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
         return (denied, false);
     }
 

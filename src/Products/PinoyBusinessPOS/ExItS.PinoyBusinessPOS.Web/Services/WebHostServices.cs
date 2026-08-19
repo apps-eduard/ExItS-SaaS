@@ -556,6 +556,7 @@ public sealed class OrgWebShellState
             "tax-compliance" => IsOrgOwner || IsOrgManager,
             "profile" => IsOrgOwner,
             "notifications" => IsOrgOwner || IsOrgManager,
+            "audit" => IsOrgOwner || IsOrgManager,
             "branches" or "staff" or "roles" => IsOrgOwner || IsOrgManager,
             "products" => Can(UtangCapability.ViewCatalog) || IsOrgOwner || IsOrgManager,
             "inventory" => Can(UtangCapability.ViewInventory) || IsOrgOwner || IsOrgManager,

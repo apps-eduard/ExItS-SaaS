@@ -885,6 +885,66 @@
   <data name="Notifications_Aria" xml:space="preserve">
     <value>Notifications</value>
   </data>
+  <data name="Nav_Audit" xml:space="preserve">
+    <value>Audit log</value>
+  </data>
+  <data name="Audit_Title" xml:space="preserve">
+    <value>Audit log</value>
+  </data>
+  <data name="Audit_Subtitle" xml:space="preserve">
+    <value>Organization governance changes — profile, branches, staff, devices, and settings.</value>
+  </data>
+  <data name="Audit_EmptyTitle" xml:space="preserve">
+    <value>No audit events</value>
+  </data>
+  <data name="Audit_EmptyMessage" xml:space="preserve">
+    <value>Governance activity will appear here after changes are made.</value>
+  </data>
+  <data name="Audit_FilterFrom" xml:space="preserve">
+    <value>From</value>
+  </data>
+  <data name="Audit_FilterTo" xml:space="preserve">
+    <value>To</value>
+  </data>
+  <data name="Audit_FilterActor" xml:space="preserve">
+    <value>Actor</value>
+  </data>
+  <data name="Audit_FilterActorPlaceholder" xml:space="preserve">
+    <value>platform-user:…</value>
+  </data>
+  <data name="Audit_FilterAction" xml:space="preserve">
+    <value>Action</value>
+  </data>
+  <data name="Audit_FilterActionPlaceholder" xml:space="preserve">
+    <value>platform.organization.branch.created</value>
+  </data>
+  <data name="Audit_FilterBranch" xml:space="preserve">
+    <value>Branch</value>
+  </data>
+  <data name="Audit_FilterBranchAll" xml:space="preserve">
+    <value>All branches</value>
+  </data>
+  <data name="Audit_ApplyFilters" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="Audit_ColumnWhen" xml:space="preserve">
+    <value>When</value>
+  </data>
+  <data name="Audit_ColumnActor" xml:space="preserve">
+    <value>Actor</value>
+  </data>
+  <data name="Audit_ColumnAction" xml:space="preserve">
+    <value>Action</value>
+  </data>
+  <data name="Audit_ColumnTarget" xml:space="preserve">
+    <value>Target</value>
+  </data>
+  <data name="Audit_ColumnOutcome" xml:space="preserve">
+    <value>Outcome</value>
+  </data>
+  <data name="Audit_ColumnSummary" xml:space="preserve">
+    <value>Summary</value>
+  </data>
   <data name="Notifications_AriaUnread" xml:space="preserve">
     <value>Notifications, {0} unread</value>
   </data>

@@ -1,6 +1,7 @@
 using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Organizations;
+using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Organizations;
 
 namespace ExItS.Platform.Api.Organizations;
@@ -80,7 +81,7 @@ internal static class BranchAndDeviceEndpoints
         });
         root.MapPost("/branches", async (Guid organizationId, CreateBranchRequest body, CreateBranch useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
         {
-            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, "platform.organization.branch_created", ct).ConfigureAwait(false);
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, PlatformAuditActions.OrganizationBranchCreated, ct).ConfigureAwait(false);
             if (denied is not null) return denied;
             var result = await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId),
                 new CreateBranchCommand(
@@ -97,15 +98,26 @@ internal static class BranchAndDeviceEndpoints
                     body.PickupEnabled ?? false,
                     body.DeliveryEnabled ?? false,
                     body.CustomerOrderingEnabled ?? false), ct).ConfigureAwait(false);
+            if (result.IsSuccess && result.Value is not null)
+            {
+                await OrganizationGovernanceAuditWriter.WriteBranchAsync(
+                    authz,
+                    PlatformAuditActions.OrganizationBranchCreated,
+                    result.Value,
+                    organizationId,
+                    OrganizationGovernanceAuditWriter.BranchSummary(result.Value, "Created"),
+                    ct).ConfigureAwait(false);
+            }
+
             return PlatformApiResults.FromResult(result, x => Results.Created($"/api/v1/platform/organizations/{organizationId}/branches/{x.Id}", x));
         });
         root.MapPut("/branches/{branchId:guid}", async (Guid organizationId, Guid branchId, UpdateBranchRequest body, UpdateBranch useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
         {
-            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, "platform.organization.branch_updated", ct).ConfigureAwait(false);
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, PlatformAuditActions.OrganizationBranchUpdated, ct).ConfigureAwait(false);
             if (denied is not null) return denied;
             var status = string.IsNullOrWhiteSpace(body.Status) ? null : Enum.TryParse<OrganizationBranchStatus>(body.Status, true, out var value) ? value : (OrganizationBranchStatus?)null;
             if (!string.IsNullOrWhiteSpace(body.Status) && status is null) return PlatformApiResults.Problem(ApplicationErrorCodes.DomainViolation, "Branch status is invalid.", StatusCodes.Status400BadRequest);
-            return PlatformApiResults.FromResult(await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), OrganizationBranchId.From(branchId),
+            var result = await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), OrganizationBranchId.From(branchId),
                 new UpdateBranchCommand(
                     body.Name ?? string.Empty,
                     body.AddressLine1,
@@ -119,19 +131,47 @@ internal static class BranchAndDeviceEndpoints
                     body.Longitude,
                     body.ClearCoordinates,
                     body.ContactPhone,
-                    body.TimeZoneId), ct).ConfigureAwait(false), Results.Ok);
+                    body.TimeZoneId), ct).ConfigureAwait(false);
+            if (result.IsSuccess && result.Value is not null)
+            {
+                var action = status == OrganizationBranchStatus.Active
+                    ? PlatformAuditActions.OrganizationBranchReactivated
+                    : PlatformAuditActions.OrganizationBranchUpdated;
+                var verb = status == OrganizationBranchStatus.Active ? "Reactivated" : "Updated";
+                await OrganizationGovernanceAuditWriter.WriteBranchAsync(
+                    authz,
+                    action,
+                    result.Value,
+                    organizationId,
+                    OrganizationGovernanceAuditWriter.BranchSummary(result.Value, verb),
+                    ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
         });
         root.MapPost("/branches/{branchId:guid}/archive", async (Guid organizationId, Guid branchId, ArchiveBranch useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
         {
-            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, "platform.organization.branch_archived", ct).ConfigureAwait(false);
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, PlatformAuditActions.OrganizationBranchArchived, ct).ConfigureAwait(false);
             if (denied is not null) return denied;
-            return PlatformApiResults.FromResult(await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), OrganizationBranchId.From(branchId), ct).ConfigureAwait(false), Results.Ok);
+            var result = await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), OrganizationBranchId.From(branchId), ct).ConfigureAwait(false);
+            if (result.IsSuccess && result.Value is not null)
+            {
+                await OrganizationGovernanceAuditWriter.WriteBranchAsync(
+                    authz,
+                    PlatformAuditActions.OrganizationBranchArchived,
+                    result.Value,
+                    organizationId,
+                    OrganizationGovernanceAuditWriter.BranchSummary(result.Value, "Archived"),
+                    ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
         });
         root.MapPut("/branches/{branchId:guid}/delivery-policy", async (Guid organizationId, Guid branchId, UpsertBranchDeliveryPolicyRequest body, UpsertBranchDeliveryPolicy useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
         {
-            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, "platform.organization.branch_delivery_policy_updated", ct).ConfigureAwait(false);
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, PlatformAuditActions.OrganizationBranchDeliveryPolicyUpdated, ct).ConfigureAwait(false);
             if (denied is not null) return denied;
-            return PlatformApiResults.FromResult(await useCase.ExecuteAsync(
+            var result = await useCase.ExecuteAsync(
                 PlatformOrganizationId.From(organizationId),
                 OrganizationBranchId.From(branchId),
                 new UpsertBranchDeliveryPolicyCommand(
@@ -141,7 +181,19 @@ internal static class BranchAndDeviceEndpoints
                     body.AdditionalFeePerKm,
                     body.MaximumDeliveryDistanceKm,
                     body.FreeDeliveryThreshold),
-                ct).ConfigureAwait(false), Results.Ok);
+                ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.Inner.AuditSucceededAsync(
+                    PlatformAuditActions.OrganizationBranchDeliveryPolicyUpdated,
+                    nameof(OrganizationBranch),
+                    branchId.ToString("D"),
+                    organizationId,
+                    summary: OrganizationGovernanceAuditWriter.BranchConfigSummary(branchId, "Updated delivery policy"),
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
         });
         root.MapPost("/branches/{branchId:guid}/delivery-fee-preview", async (Guid organizationId, Guid branchId, DeliveryFeePreviewRequest body, PreviewBranchDeliveryFee useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
         {
@@ -196,15 +248,25 @@ internal static class BranchAndDeviceEndpoints
             PlatformOrganizationAuthz authz,
             CancellationToken ct) =>
         {
-            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, "platform.organization.branch_hours_updated", ct).ConfigureAwait(false);
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, PlatformAuditActions.OrganizationBranchHoursUpdated, ct).ConfigureAwait(false);
             if (denied is not null) return denied;
-            return PlatformApiResults.FromResult(
-                await useCase.ExecuteAsync(
-                    PlatformOrganizationId.From(organizationId),
-                    OrganizationBranchId.From(branchId),
-                    new UpsertBranchOperatingHoursCommand(body.Days ?? []),
-                    ct).ConfigureAwait(false),
-                Results.Ok);
+            var result = await useCase.ExecuteAsync(
+                PlatformOrganizationId.From(organizationId),
+                OrganizationBranchId.From(branchId),
+                new UpsertBranchOperatingHoursCommand(body.Days ?? []),
+                ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.Inner.AuditSucceededAsync(
+                    PlatformAuditActions.OrganizationBranchHoursUpdated,
+                    nameof(OrganizationBranch),
+                    branchId.ToString("D"),
+                    organizationId,
+                    summary: OrganizationGovernanceAuditWriter.BranchConfigSummary(branchId, "Updated operating hours"),
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
         });
 
         root.MapPut("/branches/{branchId:guid}/fulfillment-settings", async (
@@ -215,18 +277,28 @@ internal static class BranchAndDeviceEndpoints
             PlatformOrganizationAuthz authz,
             CancellationToken ct) =>
         {
-            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, "platform.organization.branch_fulfillment_updated", ct).ConfigureAwait(false);
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, PlatformAuditActions.OrganizationBranchFulfillmentUpdated, ct).ConfigureAwait(false);
             if (denied is not null) return denied;
-            return PlatformApiResults.FromResult(
-                await useCase.ExecuteAsync(
-                    PlatformOrganizationId.From(organizationId),
-                    OrganizationBranchId.From(branchId),
-                    new UpdateBranchFulfillmentSettingsCommand(
-                        body.CustomerOrderingEnabled,
-                        body.PickupEnabled,
-                        body.DeliveryEnabled),
-                    ct).ConfigureAwait(false),
-                Results.Ok);
+            var result = await useCase.ExecuteAsync(
+                PlatformOrganizationId.From(organizationId),
+                OrganizationBranchId.From(branchId),
+                new UpdateBranchFulfillmentSettingsCommand(
+                    body.CustomerOrderingEnabled,
+                    body.PickupEnabled,
+                    body.DeliveryEnabled),
+                ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.Inner.AuditSucceededAsync(
+                    PlatformAuditActions.OrganizationBranchFulfillmentUpdated,
+                    nameof(OrganizationBranch),
+                    branchId.ToString("D"),
+                    organizationId,
+                    summary: OrganizationGovernanceAuditWriter.BranchConfigSummary(branchId, "Updated fulfillment settings"),
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
         });
 
         root.MapPost("/branches/{branchId:guid}/online-orders-pause", async (
@@ -237,15 +309,25 @@ internal static class BranchAndDeviceEndpoints
             PlatformOrganizationAuthz authz,
             CancellationToken ct) =>
         {
-            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, "platform.organization.branch_orders_paused", ct).ConfigureAwait(false);
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, PlatformAuditActions.OrganizationBranchOrdersPaused, ct).ConfigureAwait(false);
             if (denied is not null) return denied;
-            return PlatformApiResults.FromResult(
-                await useCase.ExecuteAsync(
-                    PlatformOrganizationId.From(organizationId),
-                    OrganizationBranchId.From(branchId),
-                    new SetBranchOnlineOrdersPausedCommand(body.Paused, body.Reason),
-                    ct).ConfigureAwait(false),
-                Results.Ok);
+            var result = await useCase.ExecuteAsync(
+                PlatformOrganizationId.From(organizationId),
+                OrganizationBranchId.From(branchId),
+                new SetBranchOnlineOrdersPausedCommand(body.Paused, body.Reason),
+                ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.Inner.AuditSucceededAsync(
+                    PlatformAuditActions.OrganizationBranchOrdersPaused,
+                    nameof(OrganizationBranch),
+                    branchId.ToString("D"),
+                    organizationId,
+                    summary: OrganizationGovernanceAuditWriter.PauseSummary(branchId, body.Paused, body.Reason),
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
         });
 
         root.MapGet("/pos-devices", async (Guid organizationId, ListDevices useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
@@ -261,10 +343,22 @@ internal static class BranchAndDeviceEndpoints
         });
         root.MapPost("/pos-devices/register", async (Guid organizationId, RegisterPosDeviceRequest body, RegisterCurrentDevice useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
         {
-            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, "platform.organization.pos_device_registered", ct).ConfigureAwait(false);
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, PlatformAuditActions.PosDeviceRegistered, ct).ConfigureAwait(false);
             if (denied is not null) return denied;
-            return PlatformApiResults.FromResult(await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId),
-                new(body.BranchId, body.InstallationDeviceId ?? string.Empty, body.FriendlyName ?? string.Empty, body.Platform, body.Model, body.AppVersion), ct).ConfigureAwait(false), Results.Ok);
+            var result = await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId),
+                new(body.BranchId, body.InstallationDeviceId ?? string.Empty, body.FriendlyName ?? string.Empty, body.Platform, body.Model, body.AppVersion), ct).ConfigureAwait(false);
+            if (result.IsSuccess && result.Value is not null)
+            {
+                await OrganizationGovernanceAuditWriter.WriteDeviceAsync(
+                    authz,
+                    PlatformAuditActions.PosDeviceRegistered,
+                    result.Value,
+                    organizationId,
+                    OrganizationGovernanceAuditWriter.DeviceSummary(result.Value, "Registered"),
+                    ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
         });
         root.MapPost("/pos-devices/registration-tokens", async (
             Guid organizationId,
@@ -274,7 +368,7 @@ internal static class BranchAndDeviceEndpoints
         {
             var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(
                 organizationId,
-                "platform.organization.pos_device_registration_token_created",
+                PlatformAuditActions.PosDeviceRegistrationTokenCreated,
                 ct).ConfigureAwait(false);
             if (denied is not null) return denied;
             if (authz.Inner.CurrentActor.PlatformUserId is null)
@@ -344,16 +438,40 @@ internal static class BranchAndDeviceEndpoints
         });
         root.MapPut("/pos-devices/{deviceId:guid}", async (Guid organizationId, Guid deviceId, RenamePosDeviceRequest body, RenameDevice useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
         {
-            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, "platform.organization.pos_device_renamed", ct).ConfigureAwait(false);
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, PlatformAuditActions.PosDeviceRenamed, ct).ConfigureAwait(false);
             if (denied is not null) return denied;
-            return PlatformApiResults.FromResult(await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), PosDeviceId.From(deviceId), body.FriendlyName ?? string.Empty, ct).ConfigureAwait(false), Results.Ok);
+            var result = await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), PosDeviceId.From(deviceId), body.FriendlyName ?? string.Empty, ct).ConfigureAwait(false);
+            if (result.IsSuccess && result.Value is not null)
+            {
+                await OrganizationGovernanceAuditWriter.WriteDeviceAsync(
+                    authz,
+                    PlatformAuditActions.PosDeviceRenamed,
+                    result.Value,
+                    organizationId,
+                    OrganizationGovernanceAuditWriter.DeviceSummary(result.Value, "Renamed"),
+                    ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
         });
         root.MapPost("/pos-devices/{deviceId:guid}/revoke", async (Guid organizationId, Guid deviceId, RevokeDevice useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
         {
-            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, "platform.organization.pos_device_revoked", ct).ConfigureAwait(false);
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, PlatformAuditActions.PosDeviceRevoked, ct).ConfigureAwait(false);
             if (denied is not null) return denied;
             if (authz.Inner.CurrentActor.PlatformUserId is null) return PlatformApiResults.Problem(ApplicationErrorCodes.PosDeviceNotAuthorized, "A signed-in Platform user is required.", StatusCodes.Status403Forbidden);
-            return PlatformApiResults.FromResult(await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), PosDeviceId.From(deviceId), authz.Inner.CurrentActor.PlatformUserId, ct).ConfigureAwait(false), Results.Ok);
+            var result = await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), PosDeviceId.From(deviceId), authz.Inner.CurrentActor.PlatformUserId, ct).ConfigureAwait(false);
+            if (result.IsSuccess && result.Value is not null)
+            {
+                await OrganizationGovernanceAuditWriter.WriteDeviceAsync(
+                    authz,
+                    PlatformAuditActions.PosDeviceRevoked,
+                    result.Value,
+                    organizationId,
+                    OrganizationGovernanceAuditWriter.DeviceSummary(result.Value, "Revoked"),
+                    ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
         });
         root.MapPost("/pos-devices/authorize", async (Guid organizationId, AuthorizePosDeviceRequest body, AuthorizeForTransactions useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
         {

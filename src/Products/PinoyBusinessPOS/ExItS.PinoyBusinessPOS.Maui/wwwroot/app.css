@@ -14046,6 +14046,24 @@ html:has(.pos-denom-sheet) .pos-denom-sheet {
     line-height: 1.35;
 }
 
+.pos-manage-business__activity-list {
+    list-style: none;
+    margin: 0.5rem 0 0;
+    padding: 0;
+}
+
+.pos-manage-business__activity-row {
+    font-size: 0.875rem;
+    line-height: 1.35;
+    padding: 0.35rem 0;
+    border-top: 1px solid var(--pos-border-subtle, #d7e0da);
+}
+
+.pos-manage-business__activity-row:first-child {
+    border-top: none;
+    padding-top: 0;
+}
+
 /* Operational dashboard */
 .pos-dashboard {
     width: 100%;

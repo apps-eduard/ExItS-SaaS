@@ -230,6 +230,19 @@ public sealed record SetMembershipBranchAssignmentsRequest(IReadOnlyList<Guid> B
 
 public sealed record PlatformPagedResult<T>(IReadOnlyList<T> Items, int TotalCount, int Page, int PageSize);
 
+public sealed record PlatformGovernanceAuditRecordDto(
+    Guid Id,
+    DateTimeOffset OccurredAtUtc,
+    string ActorIdentifier,
+    string ActorType,
+    string ActionCode,
+    string TargetType,
+    string TargetId,
+    Guid? OrganizationId,
+    string Outcome,
+    string? Reason,
+    string? Summary);
+
 public sealed record EffectiveAccessDto(
     bool Allowed,
     string ReasonCode,
@@ -1128,6 +1141,17 @@ public interface IPlatformAccessClient
         UpdatePlatformOrganizationRequest request,
         CancellationToken ct = default);
     Task<ApiResult<IReadOnlyList<OrganizationBranchDto>>> GetBranchesAsync(Guid organizationId, CancellationToken ct = default);
+    Task<ApiResult<PlatformPagedResult<PlatformGovernanceAuditRecordDto>>> GetOrganizationAuditAsync(
+        Guid organizationId,
+        int page = 1,
+        int pageSize = 20,
+        DateTimeOffset? fromUtc = null,
+        DateTimeOffset? toUtc = null,
+        string? action = null,
+        string? actor = null,
+        string? outcome = null,
+        Guid? branchId = null,
+        CancellationToken ct = default);
     Task<ApiResult<OrganizationBranchContextDto>> SelectBranchContextAsync(
         Guid organizationId,
         SelectBranchContextRequest request,

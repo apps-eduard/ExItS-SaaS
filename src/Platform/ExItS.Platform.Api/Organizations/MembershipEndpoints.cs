@@ -501,13 +501,26 @@ internal static class MembershipEndpoints
             }
 
             var actor = platformAuthz.CurrentActor;
-            return PlatformApiResults.FromResult(
-                await useCase.ExecuteAsync(
+            var result = await useCase.ExecuteAsync(
                     PlatformOrganizationId.From(organizationId),
                     OrganizationMembershipId.From(membershipId),
                     new SetMembershipBranchAssignmentsCommand(body.BranchIds ?? []),
                     actor.PlatformUserId?.Value.ToString("D"),
-                    ct).ConfigureAwait(false),
+                    ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                var branchCount = body.BranchIds?.Count ?? 0;
+                await membershipAuthz.Inner.AuditSucceededAsync(
+                    PlatformAuditActions.MembershipBranchAssignmentsUpdated,
+                    nameof(OrganizationMembership),
+                    membershipId.ToString("D"),
+                    organizationId,
+                    summary: $"Updated branch assignments ({branchCount} branch(es)).",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(
+                result,
                 dto => Results.Ok(dto));
         });
 

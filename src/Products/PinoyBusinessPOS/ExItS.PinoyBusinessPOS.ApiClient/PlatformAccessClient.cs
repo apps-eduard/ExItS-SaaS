@@ -20,6 +20,35 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
     public Task<ApiResult<IReadOnlyList<OrganizationBranchDto>>> GetBranchesAsync(Guid organizationId, CancellationToken ct = default) =>
         api.GetAsync<IReadOnlyList<OrganizationBranchDto>>($"/api/v1/platform/organizations/{organizationId:D}/branches", ct);
 
+    public Task<ApiResult<PlatformPagedResult<PlatformGovernanceAuditRecordDto>>> GetOrganizationAuditAsync(
+        Guid organizationId,
+        int page = 1,
+        int pageSize = 20,
+        DateTimeOffset? fromUtc = null,
+        DateTimeOffset? toUtc = null,
+        string? action = null,
+        string? actor = null,
+        string? outcome = null,
+        Guid? branchId = null,
+        CancellationToken ct = default)
+    {
+        var query = new List<string>
+        {
+            $"page={page}",
+            $"pageSize={pageSize}",
+            "outcome=Succeeded"
+        };
+        if (fromUtc is not null) query.Add($"fromUtc={Uri.EscapeDataString(fromUtc.Value.ToString("O"))}");
+        if (toUtc is not null) query.Add($"toUtc={Uri.EscapeDataString(toUtc.Value.ToString("O"))}");
+        if (!string.IsNullOrWhiteSpace(action)) query.Add($"action={Uri.EscapeDataString(action)}");
+        if (!string.IsNullOrWhiteSpace(actor)) query.Add($"actor={Uri.EscapeDataString(actor)}");
+        if (!string.IsNullOrWhiteSpace(outcome)) query[^1] = $"outcome={Uri.EscapeDataString(outcome)}";
+        if (branchId is not null) query.Add($"branchId={branchId.Value:D}");
+
+        var url = $"/api/v1/platform/organizations/{organizationId:D}/audit?{string.Join('&', query)}";
+        return api.GetAsync<PlatformPagedResult<PlatformGovernanceAuditRecordDto>>(url, ct);
+    }
+
     public Task<ApiResult<OrganizationBranchContextDto>> SelectBranchContextAsync(
         Guid organizationId,
         SelectBranchContextRequest request,

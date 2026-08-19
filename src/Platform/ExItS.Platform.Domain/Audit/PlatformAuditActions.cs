@@ -31,6 +31,18 @@ public static class PlatformAuditActions
     public const string OrganizationReactivated = "platform.organization.reactivated";
     public const string OrganizationClosed = "platform.organization.closed";
 
+    public const string OrganizationBranchCreated = "platform.organization.branch.created";
+    public const string OrganizationBranchUpdated = "platform.organization.branch.updated";
+    public const string OrganizationBranchArchived = "platform.organization.branch.archived";
+    public const string OrganizationBranchReactivated = "platform.organization.branch.reactivated";
+    public const string OrganizationBranchHoursUpdated = "platform.organization.branch.hours_updated";
+    public const string OrganizationBranchFulfillmentUpdated = "platform.organization.branch.fulfillment_updated";
+    public const string OrganizationBranchDeliveryPolicyUpdated = "platform.organization.branch.delivery_policy_updated";
+    public const string OrganizationBranchOrdersPaused = "platform.organization.branch.orders_paused";
+    public const string PosDeviceRegistered = "platform.pos_device.registered";
+    public const string PosDeviceRevoked = "platform.pos_device.revoked";
+    public const string PosDeviceRenamed = "platform.pos_device.renamed";
+
     public const string PlatformUserCreated = "platform.user.created";
     public const string PlatformUserProfileUpdated = "platform.user.profile_updated";
     public const string PlatformUserPublicIdAssigned = "platform.user.public_id_assigned";

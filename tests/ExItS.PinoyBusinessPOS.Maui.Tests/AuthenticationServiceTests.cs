@@ -2596,6 +2596,20 @@ public sealed class AuthenticationServiceTests
         public Task<ApiResult<IReadOnlyList<OrganizationBranchDto>>> GetBranchesAsync(Guid organizationId, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<IReadOnlyList<OrganizationBranchDto>>.Success(Branches));
 
+        public Task<ApiResult<PlatformPagedResult<PlatformGovernanceAuditRecordDto>>> GetOrganizationAuditAsync(
+            Guid organizationId,
+            int page = 1,
+            int pageSize = 20,
+            DateTimeOffset? fromUtc = null,
+            DateTimeOffset? toUtc = null,
+            string? action = null,
+            string? actor = null,
+            string? outcome = null,
+            Guid? branchId = null,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PlatformPagedResult<PlatformGovernanceAuditRecordDto>>.Success(
+                new PlatformPagedResult<PlatformGovernanceAuditRecordDto>([], 0, page, pageSize)));
+
         public List<OrganizationBranchDto> Branches { get; set; } = [];
 
         public ApiResult<OrganizationBranchContextDto> SelectBranchContextResult { get; set; } =
