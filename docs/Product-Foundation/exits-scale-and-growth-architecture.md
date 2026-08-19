@@ -59,7 +59,7 @@ Escape hatches are **documented options**. They are not launch deliverables.
 
 ## 4. Formal scale decisions
 
-These IDs are portfolio-stable. They do **not** close **D-P12-03** or **R-091**.
+These IDs are portfolio-stable. They do **not** close **D-P12-03**. **R-091** is Closed for Phase 13 scope; this pack does not reopen it.
 
 | ID | Decision | Status |
 |---|---|---|
@@ -84,7 +84,7 @@ This pack **extends** Product Foundation isolation. It does not replace it.
 - **On-prem Production topology (D-P14-01)** remains valid for **Mode C** ([production-deployment-architecture.md](../engineering/production-deployment-architecture.md)). It is **not** the universal default for every customer.
 - **Stamps, routing, and multi-region** are future hosted/SaaS and large-scale options. They are not required to launch, and they are not implemented here.
 - **Development backup/restore** for Platform and POS exists as ops capability. Production RPO/RTO, stamp-level recovery, and contractual SLAs remain **unset**.
-- **Commercial-state transport (D-P12-03)** and **production authentication (R-091)** remain **open**. This pack records scale *considerations* (availability, revocation, fail-closed, continuity) without inventing the mechanism.
+- **Commercial-state transport (D-P12-03)** remains **Open**. **R-091** is Closed for Phase 13 scope. This pack records scale *considerations* (availability, revocation, fail-closed, continuity) without inventing the mechanism.
 - **Privileged support access** into product data must be explicit, time-bound, audited, and minimized. Silent unrestricted support access is forbidden. This is not implemented here.
 
 ---
@@ -113,7 +113,8 @@ Build these only when justified by measurement, isolation, residency, or an expl
 |---|---|
 | Architecture *can evolve* toward large scale without redesigning product ownership | Yes (this pack) |
 | Millions of users currently supported | **No** |
-| Product or Platform is Production Ready | **No** (R-091 and other blockers remain) |
+| Product or Platform is Production Ready | **No** (residual auth/Production blockers remain; **R-091 Closed for Phase 13 scope**) |
 | Fabricated benchmarks, SLAs, or cloud bills | **No** |
 | Stamps / sharding / multi-region implemented | **No** |
-| D-P12-03 or R-091 closed by this pack | **No** |
+| D-P12-03 closed by this pack | **No** |
+| R-091 reopened by this pack | **No** — Closed for Phase 13 scope |

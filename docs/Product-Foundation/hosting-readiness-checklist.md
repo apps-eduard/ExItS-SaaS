@@ -35,5 +35,7 @@ Checking an item means the **design** respects the rule. It does **not** mean ho
 - [ ] No premature multi-region or sharding implementation
 - [ ] On-prem continuity does not invent D-P12-03 mechanisms
 - [ ] D-P12-03 remains open
+- [ ] R-091 Closed for Phase 13 scope; authentication residuals and portfolio Production readiness remain separate gates
+- [ ] D-P12-05 satisfied for authentication honesty; Dev/Testing paths labeled honestly
 - [ ] Support access is never implied unrestricted by deployment mode
 - [ ] No claim of hosted SaaS implemented, million-user scale, SLA, or Production Ready

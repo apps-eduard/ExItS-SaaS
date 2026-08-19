@@ -30,7 +30,7 @@ Pinoy Loan Manager must never take a project or database dependency on PinoyBusi
 
 | Area | Platform | This product |
 |---|---|---|
-| Identity / accounts / future prod auth | Yes (R-091 open) | Consume trusted actor only |
+| Identity / accounts / Platform auth | Yes (**R-091 Closed for Phase 13 scope**; consume trusted actor only) | Consume trusted actor only |
 | Organizations / memberships | Yes | Guid reference + isolation |
 | Product catalog / plans / subscriptions / entitlements | Yes | Enforce; no Platform table reads |
 | SaaS billing / Platform administration / Platform audit | Yes | No |
