@@ -128,12 +128,13 @@ Foundational modeling **without rates** is supported for:
 
 ---
 
-## Recommended next phase
+## Recommended next documentation (not implementation)
 
-**PLM-01 Product Scaffold & Isolation**
+Finalize remaining PLM business and financial decisions before any implementation.
 
-Then (refine later as needed):
+Then (only when explicitly re-authorized):
 
+- PLM-01 Product Scaffold & Isolation
 - PLM-02 Identity / Organization / Product Access
 - PLM-03 Product-local Authorization
 - PLM-04 Borrower Foundation
@@ -156,16 +157,19 @@ Then (refine later as needed):
 
 **Closed / Product Owner Accepted.**
 
-Evidence:
+**PLM-00 documentation baseline WAS accepted (PLM-D-00-10 Closed / Product Owner Accepted).** Product implementation is deliberately paused while ExItS scale architecture and remaining PLM business/policy decisions are finalized.
+
+Evidence of documentation acceptance:
 
 - PLM-00 WP01–WP10 completed
 - GitHub branch `docs/plm-foundation` reviewed
-- Product Owner authorized progression to PLM-01
 - financial, legal, and production decisions remain explicitly open
 
 This acceptance applies to the **documentation baseline** only. It does **not** approve unresolved interest formulas, rates, rounding, allocation order, legal/compliance sufficiency, production authentication, or commercial-state transport.
 
-PLM-01 Product Scaffold & Isolation is authorized as the next phase.
+**Current direction:** do **not** treat PLM-01 as currently authorized on mainline. `feat/plm-01-scaffold` is an unmerged parked implementation branch and is **not** accepted mainline product state. Do not merge or delete it here. Do not use it to close PLM-D-00-03.
+
+Recommended documentation next: remaining PLM business/financial/legal decisions listed in [../roadmap.md](../roadmap.md). Scale architecture: [exits-scale-and-growth-architecture.md](../../../../../docs/Product-Foundation/exits-scale-and-growth-architecture.md).
 
 ---
 

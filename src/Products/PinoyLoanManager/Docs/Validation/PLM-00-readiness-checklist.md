@@ -42,9 +42,9 @@ Authoritative closeout: [../Reports/PLM-00-foundation-closeout.md](../Reports/PL
 
 | Gate | Ready? |
 |---|---|
-| A. Scaffold (PLM-01) | **Authorized** — Product Owner accepted PLM-00 documentation baseline (PLM-D-00-10); financial/legal/production decisions remain open |
+| A. Scaffold (PLM-01) | **Paused** — documentation baseline accepted (PLM-D-00-10); product implementation is deliberately paused; PLM-D-00-03 remains open on mainline |
 | B. Early domain (no rates) | **Yes, after scaffold + access** — concepts recorded |
 | C. Financial engine | **No** — formulas, rounding, allocation, fees, penalties, settlement still open |
 | D. Production | **No** — R-091, D-P12-03, PLM-D-00-11, ops/security still open |
 
-PLM-01 Product Scaffold & Isolation is **authorized**. Do **not** treat this as approval of rates, formulas, or legal compliance.
+PLM-00 documentation baseline is **accepted** (PLM-D-00-10). Product implementation is **paused**. Do **not** treat this as authorization of PLM-01 on mainline, or as approval of rates, formulas, or legal compliance. Parked branch `feat/plm-01-scaffold` is not accepted mainline state.

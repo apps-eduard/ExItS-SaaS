@@ -4,6 +4,7 @@
 **Path:** `docs/Product-Foundation/exits-product-foundation-reference.md`
 **Companion audit:** [P12-WP01](../reports/P12-WP01-platform-product-contract-audit.md)
 **Permanent rules:** `.cursor/rules/exits-workflow.mdc`
+**Companion:** [Scale-ready architecture pack](exits-scale-and-growth-architecture.md) (EXITS-SCALE-00; authoritative for future work after merge; does not close D-P12-03 or R-091)
 
 Label key used in this file:
 
@@ -70,7 +71,7 @@ Each product owns (**Required**; POS is the **Implemented** reference):
 | Rule | Binding |
 |---|---|
 | Separate Platform database | **Implemented** / **Required** |
-| Separate database per product | **Implemented** (POS) / **Required** |
+| Separate database per product | **Implemented** (POS) / **Required** — **logical** ownership; physical partitions/stamps are a future option ([tenant-isolation-routing-and-partitioning.md](tenant-isolation-routing-and-partitioning.md)) |
 | No cross-product foreign keys | **Implemented** / **Required** |
 | No direct product reads of Platform tables | **Implemented** / **Required** |
 | No direct Platform reads of product operational tables | **Implemented** / **Required** |
@@ -160,7 +161,7 @@ Architectural model (**Implemented** for Platform + POS **pilot** images; **Requ
 
 - one Platform deployable (API; Admin as Platform surface)
 - one independently versioned image per product
-- one persistent database per product
+- one **logical** persistent database authority per product (physical instance count may grow later; see [deployment-stamps-and-data-scaling.md](deployment-stamps-and-data-scaling.md))
 - deploy only licensed/subscribed products
 - customer-specific **configuration**, never customer-specific source forks
 - immutable versioned images
@@ -202,6 +203,14 @@ Do **not** create `_ProductTemplate` or new product folders from this WP.
 docs/Product-Foundation/
 ├── README.md
 ├── exits-product-foundation-reference.md   # this file (authoritative)
+├── exits-scale-and-growth-architecture.md  # EXITS-SCALE-00 index (after merge: authoritative scale guidance)
+├── unified-control-plane-and-product-plane.md
+├── tenant-isolation-routing-and-partitioning.md
+├── deployment-stamps-and-data-scaling.md
+├── async-events-idempotency-and-resilience.md
+├── capacity-slos-observability-and-disaster-recovery.md
+├── service-evolution-and-extraction-strategy.md
+├── scale-readiness-checklist.md
 ├── product-bootstrap-prompt.md             # P12-WP05 docs-only bootstrap prompt
 ├── Reference-Product/                      # P12-WP06 fictional dry run (not a real product)
 └── Templates/                              # P12-WP03 reusable product doc templates
@@ -287,6 +296,7 @@ Guidance only — not scaffold implementation.
 | **R-091** | **Open** — no production JWT/passwords/MFA/SSO in code; P13-WP01 architecture recorded | Honest Dev/Testing vs Production language | Remaining Phase 13 implementation WPs |
 | **D-P12-04** | **Open** — stale engineering matrix hygiene | Prefer incremental updates | Maintainers / dedicated docs hygiene WP |
 | **D-P12-05** | **Open** (tied to R-091) — keep Dev/Testing vs Production language honest | Do not claim production-secure identity | Phase 13 (with R-091) |
+| **D-SCALE-01 … D-SCALE-10** | **Accepted architecture baselines** (EXITS-SCALE-00). Implementation of stamps, routing, async infrastructure, and multi-region is **deferred**. | Future product/Platform design must not contradict these boundaries | Authorized scale/implementation WPs; see [exits-scale-and-growth-architecture.md](exits-scale-and-growth-architecture.md) |
 
 ---
 
