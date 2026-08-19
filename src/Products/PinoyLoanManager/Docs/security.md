@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Status | PLM MVP Product documentation complete (PLM-DOC-01–11); **PLM-D-00-10 Closed**; no implementation |
+| Status | PLM MVP Product planning documentation complete (PLM-DOC-01–11); **PLM-D-00-10 Closed / Product Owner Accepted**; no implementation |
 | Implementation present | No |
 
 ## Authentication boundary
@@ -57,7 +57,7 @@ Optional Personal-to-Borrower linking, if implemented later:
 - explicit Personal consent is required before activating a relationship
 - a borrower may exist without an ExItS Personal account
 - MVP: organization-initiated link request (Owner/Manager grants); Personal self-claim not MVP
-- product behavior defined (PLM-DOC-01); Platform transport/persistence/integration **Open** (PLM-D-00-05)
+- product behavior and contract **Closed for PLM requirements** (**PLM-D-00-05**); Platform transport/persistence **PLM-D-00-04** external
 
 Lifecycle and unlink: [Product/personal-linking-lifecycle-and-visibility.md](Product/personal-linking-lifecycle-and-visibility.md). Boundary: [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md).
 
@@ -66,29 +66,29 @@ Lifecycle and unlink: [Product/personal-linking-lifecycle-and-visibility.md](Pro
 | Class | In scope? | Handling |
 |---|---|---|
 | PHI | **No** (default) | Not authorized. Do not add unless explicitly designed later. |
-| PII | Expected later / not present | Handling, retention, and minimization **Status: Open / Product Owner Decision Required**. |
-| Operational financial | Intended later / not present | Remains in the Loan product database when defined (PLM-D-00-07). Loan ledger and collector cash are separate facts. Never in Platform SaaS billing. |
+| PII | Expected later / not present | Classification and retention **architecture accepted** (**ADR-016**); numeric legal retention periods remain **PLM-D-00-11** |
+| Operational financial | Intended later / not present | Remains in the Loan product database when implemented (**PLM-D-00-07 Closed for MVP policy**). Loan ledger and collector cash are separate facts. Never in Platform SaaS billing. |
 | Secrets / credentials | Never in git | No PLM secret store is implemented. |
 
 ## Secrets
 
 - [x] No secrets in source or docs (this package)
-- [ ] Config via environment / secret store: **Status: Open / Product Owner Decision Required**
+- [ ] Config via environment / secret store: **implementation/Production work** (Product Foundation direction documented)
 
 ## Logging and audit
 
 | Concern | Approach |
 |---|---|
-| Application logs | **Status: Open / Product Owner Decision Required** — no secrets/card/PHI dumps |
-| Product audit / immutable history | Intended product-owned append-only operational history. Posted disbursement, payment, penalty, waiver, reversal, collector cash movement, remittance, and cash-variance records must not be silently edited or deleted. High-risk fields: [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md), [Security/audit-and-history-baseline.md](Security/audit-and-history-baseline.md). Subledger principles: [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md). Schema **Open**. |
+| Application logs | **Required by Product Foundation** — tenant/product/org/correlation-aware observability; exact tooling deferred to implementation; no secrets/card/PHI dumps |
+| Product audit / immutable history | Intended product-owned append-only operational history. Posted disbursement, payment, penalty, waiver, reversal, collector cash movement, remittance, and cash-variance records must not be silently edited or deleted. High-risk fields: [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md), [Security/audit-and-history-baseline.md](Security/audit-and-history-baseline.md). Subledger principles: [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md). Persistence schema is **implementation work**. |
 | Platform audit | Platform-owned; do not push operational payloads that violate boundary |
 
 ## Encryption
 
 | At rest / in transit | Approach |
 |---|---|
-| TLS | Production TLS remains a portfolio risk until closed. Product-specific TLS design **Status: Open / Product Owner Decision Required**. |
-| Data at rest | **Status: Open / Product Owner Decision Required** (no database yet) |
+| TLS | Portfolio/hosted deployment requirement; product-specific TLS wiring **implementation work** |
+| Data at rest | **Implementation/Production work** (no database yet) |
 | Local/offline stores | MVP: read-only cache and offline drafts in planning only; LocalStore not authorized; offline final posting deferred. Future crypto/device requirements: [Security/collector-device-security-policy.md](Security/collector-device-security-policy.md). See [Architecture/mobile-and-offline-operating-model.md](Architecture/mobile-and-offline-operating-model.md), [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md). |
 
 ## Input / output controls
@@ -108,7 +108,7 @@ Lifecycle and unlink: [Product/personal-linking-lifecycle-and-visibility.md](Pro
 
 - Product DB backup independent of Platform DB (when a database exists)
 - Independent of PinoyBusinessPOS backup
-- Procedure **Status: Open / Product Owner Decision Required**
+- Procedure remains **implementation/Production operations work** (Gate E)
 - Destructive restore guards required for operator tools
 
 ## Production security risks (register)

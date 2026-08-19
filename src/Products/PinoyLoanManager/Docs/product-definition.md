@@ -32,7 +32,7 @@ ExItS Platform
 | Concern | Owner | Notes |
 |---|---|---|
 | Identity / production auth | Platform | **R-091 Closed for Phase 13 scope.** Residual MFA/step-up/SSO/email and portfolio Production readiness remain separate gates. **D-P12-05 Closed / satisfied for authentication honesty.** |
-| Organizations | Platform | Product will store organization id as a `Guid` reference / contract only. Field name **Status: Open / Product Owner Decision Required**. |
+| Organizations | Platform | Product will store organization id as a `Guid` reference / contract only. Exact field naming is **implementation detail** |
 | Catalog / plans / subscription | Platform | **Required:** independent subscription for this product only. Product code `pinoy-loan-manager` is **approved** for future catalog registration (PLM-D-00-01 Closed). Catalog registration itself is not performed in this package. |
 | Entitlements / commercial access | Platform facts | **DECISION:** D-P12-03 commercial-state transport — do not invent. Platform entitlement does not replace Loan product-local authorization. |
 | SaaS billing payments | Platform | Never store product operational money in Platform SaaS billing. |
