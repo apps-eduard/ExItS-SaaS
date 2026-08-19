@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Open / In Progress** — WP01 Code Complete; WP02–WP09 Stage B Code Complete / Validation Pending (Personal storefront/cart UX + manual CustomerOrder payment method delivered); WP11–WP13 Code Complete / Validation Pending; WP10 Not Started |
+| Status | **Open / In Progress** — WP01 Code Complete; WP02–WP09 Stage B Code Complete / Validation Pending (Personal storefront/cart UX + manual CustomerOrder payment method delivered); WP11–WP14 Code Complete / Validation Pending; WP10 Not Started |
 | Device Verified | **No** |
 | Browser Verified | **No** |
 | Production Ready | **No** |
@@ -31,6 +31,7 @@ Deliver customer ordering with explicit branch pickup and local-delivery fulfill
 | **P28-WP11** | Organization setup + branch fulfillment readiness | **Code Complete / Validation Pending** — see [report](../reports/P28-WP11-organization-setup-and-branch-fulfillment-readiness.md) |
 | **P28-WP12** | Multi-branch customer commerce hardening | **Code Complete / Validation Pending** — feat `69111d45`; see [report](../reports/P28-WP12-multi-branch-customer-commerce-hardening.md) |
 | **P28-WP13** | Branch operational context + owner switching | **Code Complete / Validation Pending** — feat `ed75c827`; see [report](../reports/P28-WP13-branch-operational-context-and-owner-switching.md) |
+| **P28-WP14** | Unified organization + branch workspace selection | **Code Complete / Validation Pending** — see [report](../reports/P28-WP14-unified-organization-branch-workspace-selection.md) |
 | P28-WP10 | E2E validation and Phase 28 closeout | **Not Started** |
 
 ## Personal → Linked Merchant Shop (delivered)
