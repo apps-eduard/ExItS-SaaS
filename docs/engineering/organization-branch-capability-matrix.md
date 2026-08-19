@@ -197,7 +197,11 @@ When POS/org step-up infrastructure is extended beyond Platform lifecycle, class
 - POS APIs consistently require `ActorId` via `PosOrganizationScope`.
 - **WP15D:** Customer order fulfillment handoffs, stock count draft create, and payment provider finalization now persist actor/system provenance on authoritative records — see [P28-WP15D](../reports/P28-WP15D-operational-actor-traceability.md).
 - Void/expense/reversal domains include reason fields in persistence where applicable.
-- **Password step-up** is implemented for select **Platform lifecycle** actions (`PlatformLifecycleStepUp`), not yet generalized for POS void/refund/stock adjustment.
+- **Password step-up** is implemented for critical **Platform governance** mutations (server-issued scoped grants bound to user + org + action + target + expiry) covering:
+  - branch suspend / archive / reactivate
+  - membership suspend / revoke / role-change
+  - POS device revoke
+- POS void/refund/stock adjustment password step-up remains not generalized beyond Platform lifecycle actions.
 - **P28-WP15E:** Platform governance mutations emit append-only `platform.audit_records` events; Organization Web exposes full filtered/paged audit; MAUI Manage business shows a compact recent-activity summary (5–15 rows) with “View full audit on Web”. Separate from POS operational actor-on-record ([WP15D](../reports/P28-WP15D-operational-actor-traceability.md)).
 
 ---
