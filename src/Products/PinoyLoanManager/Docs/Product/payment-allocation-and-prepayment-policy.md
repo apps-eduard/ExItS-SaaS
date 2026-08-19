@@ -178,7 +178,7 @@ Original Payment
 
 Loan payment reversal and physical cash refund are separate correlated actions. Canonical: [reversal-refund-and-correction-policy.md](reversal-refund-and-correction-policy.md).
 
-Exact grant identifiers remain future authorization decisions (PLM-D-00-06).
+Grant identifiers: `plm.payments.reversal-request`, `plm.payments.reversal-approve` per [authorization-grant-catalog.md](../Security/authorization-grant-catalog.md).
 
 ---
 

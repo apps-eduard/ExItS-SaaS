@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01–04 recorded; no implementation |
+| Status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01–05 recorded; no implementation |
 | Implementation present | No |
 
 ## Authentication boundary
@@ -19,7 +19,7 @@
 ## Product authorization
 
 - Platform product access / commercial state / entitlements: **entry gate only**
-- Product-local roles and grants: **operational authority** ([authorization-matrix.md](authorization-matrix.md), [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md)) — presets and grant **intent** recorded; identifiers **Open** (PLM-D-00-06)
+- Product-local roles and grants: **operational authority** ([authorization-matrix.md](authorization-matrix.md), [Security/authorization-grant-catalog.md](Security/authorization-grant-catalog.md)) — **PLM Authorization Policy v1**; **PLM-D-00-06 Closed for MVP**
 - No implicit role hierarchy; no client-only authorization
 - Resource / branch / assignment / session **scope** is a required layer
 - Both layers must allow the action; neither bypasses the other
@@ -33,10 +33,12 @@ Authenticated Actor
 + Platform Product Access
 + Allowed Commercial State
 + Required Entitlement
-+ Active PLM Product Role
++ Active PLM Role Assignment
 + Required PLM Grant
-+ Resource / Branch / Workflow Scope
-= Authorized Operational Action
++ Valid Resource Scope
++ Valid Workflow State
++ Domain Invariants
+= Authorized Action
 ```
 
 ## Organization isolation
@@ -116,7 +118,7 @@ Lifecycle and unlink: [Product/personal-linking-lifecycle-and-visibility.md](Pro
 | R-091 | Production authentication | Open |
 | D-P12-03 | Commercial-state transport; risk of inventing Platform table reads or copying POS Dev headers as production design | Open |
 | D-P12-05 | Dishonest Dev/Testing vs Production language | Open |
-| PLM-D-00-06 | Missing product-local grant identifiers (presets and intent recorded) | Open |
+| PLM-D-00-06 | Product-local grant catalog | **Closed for MVP** — PLM Authorization Policy v1 |
 | PLM-D-00-05 | Undesigned consent/linking **transport** (product behavior defined) | Open |
 | PLM-D-00-11 | Legal/compliance validation not performed | Open |
 | PLM-D-00-12 | Money rounding | **Closed** — To Even; PHP 2 dp; ≥8 intermediate |

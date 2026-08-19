@@ -16,7 +16,7 @@
 
 - Purpose: Independently subscribed ExItS product for **lending operations**. Two origination paths are agreed: Traditional Loan and Quick Loan. After disbursement both converge into one core Loan model. Detail: [Product/lending-operating-model.md](Product/lending-operating-model.md). Money terminology, MVP calculation methods, fee model, rounding (**PLM-D-00-12 Closed**), payment allocation, schedule calendar, delinquency, penalties, and maturity are recorded in PLM-DOC-02 and PLM-DOC-03. Default rates and penalty amounts remain undefined. Early-settlement rebate remains **Open** (PLM-D-00-08 remainder).
 - Target organizations: Independently subscribed ExItS lending organizations. Multi-branch support is intended from the beginning; a single-branch organization may use one default branch.
-- Target users / jobs: Organization staff via Owner / Manager / Cashier / Collector **presets** backed by explicit grants (identifiers still open — PLM-D-00-06). Borrowers use ExItS Personal as a presentation surface only. Do not hard-code authorization to role names. Do not copy PinoyBusinessPOS grant sets.
+- Target users / jobs: Organization staff via `plm.owner` / `plm.manager` / `plm.cashier` / `plm.collector` presets backed by explicit grants (**PLM Authorization Policy v1**; PLM-D-00-06 Closed for MVP). Borrowers use ExItS Personal as a presentation surface only. Do not hard-code authorization to role names. Do not copy PinoyBusinessPOS grant sets.
 
 Pinoy Loan Manager is a **separate first-class ExItS SaaS product**, a sibling of PinoyBusinessPOS. It is not a POS module, POS feature, or POS database extension.
 
@@ -36,7 +36,7 @@ ExItS Platform
 | Catalog / plans / subscription | Platform | **Required:** independent subscription for this product only. Product code `pinoy-loan-manager` is **approved** for future catalog registration (PLM-D-00-01 Closed). Catalog registration itself is not performed in this package. |
 | Entitlements / commercial access | Platform facts | **DECISION:** D-P12-03 commercial-state transport — do not invent. Platform entitlement does not replace Loan product-local authorization. |
 | SaaS billing payments | Platform | Never store product operational money in Platform SaaS billing. |
-| Operational workflows / roles / money | **This product** | Not implemented. Role presets + grant **intent** recorded; identifiers open (PLM-D-00-06). Cashier Session and collector cash accountability recorded; ledger **schema** open (PLM-D-00-07 remainder). |
+| Operational workflows / roles / money | **This product** | Not implemented. Role presets + grant catalog v1 recorded (**PLM-D-00-06 Closed for MVP**). Cashier Session and collector cash accountability recorded; ledger **schema** open (PLM-D-00-07 remainder). |
 
 ## Boundaries (checklist)
 
@@ -45,7 +45,7 @@ Recorded as **required intent**. Nothing below is implemented.
 - [x] Independent product subscription (not shared with other products) — required intent
 - [x] Separate logical database name `ExItS_PinoyLoanManager` (**PLM-D-00-02** Closed for name). Database, schema, connections, partitions, stamps, backups, and migrations are **not** created.
 - [x] No direct Platform table reads; no cross-product FKs — required intent
-- [ ] Product-local roles and grants defined — presets and grant **intent** recorded; identifiers **Open / Product Owner Decision Required** (PLM-D-00-06)
+- [x] Product-local roles and grants defined for MVP — **PLM Authorization Policy v1** (**PLM-D-00-06 Closed for MVP**)
 - [ ] Operational money defined separately from SaaS billing — ownership, fee model, Net Proceeds, allocation, and precision recorded (PLM-DOC-02); subledger **schema** open (PLM-D-00-07 remainder)
 - [x] Trusted org + product context enforced server-side — required intent; not implemented
 - [x] PHI / sensitive data: default **none** unless explicitly authorized below
@@ -88,7 +88,7 @@ Required / agreed direction:
 
 ## Product-local roles and grants (summary)
 
-Role **presets** and grant **intent** recorded; identifiers **Open / Product Owner Decision Required** (PLM-D-00-06).
+Role preset codes and grant catalog v1 recorded (**PLM-D-00-06 Closed for MVP**). Custom roles deferred.
 
 Do **not** hard-code authorization to role names. Do **not** implement implicit role hierarchy. Do **not** copy PinoyBusinessPOS grant sets.
 
@@ -132,8 +132,8 @@ This package records:
 - foundation closeout and implementation readiness (PLM-00-WP10, completed)
 - product identity and Personal linking (PLM-DOC-01, completed)
 - financial calculation, fees, rounding, and payment allocation (PLM-DOC-02, completed)
-- schedule calendar, delinquency, penalties, and maturity (PLM-DOC-03, completed)
-- early settlement, refunds, reversals, cash variance, and accounting boundaries (PLM-DOC-04, this package)
+- early settlement, refunds, reversals, cash variance, and accounting boundaries (PLM-DOC-04, completed)
+- roles, grants, workflow authorization, and operational security (PLM-DOC-05, this package)
 
 No loan MVP **implementation** is approved. Default rates, restructuring, write-off/recovery accounting, and legal validation remain open.
 
@@ -141,7 +141,7 @@ No loan MVP **implementation** is approved. Default rates, restructuring, write-
 
 - Loan implementation, entities, calculations, workflows, and business rules
 - .NET projects, tests, solution entries, migrations, Docker, and deployment
-- Final Loan grant identifiers (presets and grant **intent** recorded)
+- Final Loan grant identifiers (PLM Authorization Policy v1 — **PLM-D-00-06 Closed for MVP**)
 - Generic Platform cross-product relationship schema
 - Copying PinoyBusinessPOS domain, grants, or financial models
 - Exact interest **rates** (formulas/methods accepted in PLM-DOC-02), penalty **amounts**, restructuring/write-off accounting, legal/regulatory operating rules (PLM-D-00-08 remainder, PLM-D-00-11)
@@ -166,7 +166,7 @@ No loan MVP **implementation** is approved. Default rates, restructuring, write-
 | PLM-D-00-03 | Physical source / test / deploy layout (planning target recorded; projects not created) | Scaffold (PLM-01) |
 | PLM-D-00-04 | Generic Platform cross-product relationship model | Personal multi-product participation |
 | PLM-D-00-05 | Personal-to-Borrower linking mechanism (product behavior defined; Platform transport/schema open) | Borrower identity implementation (PLM-04) |
-| PLM-D-00-06 | Loan roles and grants (presets + grant intent recorded; identifiers open) | Authorization (PLM-03) |
+| PLM-D-00-06 | Loan roles and grants | **Closed for MVP** — PLM Authorization Policy v1 | Authorization (PLM-03) |
 | PLM-D-00-07 | Operational financial model (methods/fees/allocation/settlement/refund/variance/ledger boundary recorded; schema/GL/write-off open) | Origination, payments, collections |
 | PLM-D-00-08 | Loan business / calculation rules (MVP methods, calendar/penalty engine, settlement/prepayment recorded; restructuring/write-off open) | Product configuration through collections |
 | PLM-D-00-09 | Web / MAUI component-sharing strategy | Client scaffold |
@@ -239,6 +239,9 @@ No loan MVP **implementation** is approved. Default rates, restructuring, write-
 | PLM-DOC-04 | [Reports/PLM-DOC-04-settlement-reversals-variance-and-accounting.md](Reports/PLM-DOC-04-settlement-reversals-variance-and-accounting.md) |
 | ADR-007 | [Decisions/ADR-007-early-settlement-and-prepayment-policy.md](Decisions/ADR-007-early-settlement-and-prepayment-policy.md) |
 | ADR-008 | [Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md](Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md) |
+| ADR-009 | [Decisions/ADR-009-role-codes-grant-catalog-and-default-presets.md](Decisions/ADR-009-role-codes-grant-catalog-and-default-presets.md) |
+| ADR-010 | [Decisions/ADR-010-resource-scope-workflow-security-and-owner-recovery.md](Decisions/ADR-010-resource-scope-workflow-security-and-owner-recovery.md) |
+| PLM-DOC-05 | [Reports/PLM-DOC-05-authorization-and-operational-security.md](Reports/PLM-DOC-05-authorization-and-operational-security.md) |
 | ADR-005 | [Decisions/ADR-005-schedule-calendar-and-exception-treatment.md](Decisions/ADR-005-schedule-calendar-and-exception-treatment.md) |
 | ADR-006 | [Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md](Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md) |
 | ADR-003 | [Decisions/ADR-003-supported-interest-and-schedule-methods.md](Decisions/ADR-003-supported-interest-and-schedule-methods.md) |
@@ -246,6 +249,8 @@ No loan MVP **implementation** is approved. Default rates, restructuring, write-
 | Readiness checklist | [Validation/PLM-00-readiness-checklist.md](Validation/PLM-00-readiness-checklist.md) |
 | Security | [security.md](security.md) |
 | Authorization | [authorization-matrix.md](authorization-matrix.md) |
+| Grant catalog | [Security/authorization-grant-catalog.md](Security/authorization-grant-catalog.md) |
+| Workflow authorization | [Product/workflow-authorization-policy.md](Product/workflow-authorization-policy.md) |
 | Development plan | [development-plan.md](development-plan.md) |
 | Roadmap | [roadmap.md](roadmap.md) |
 | Risks / decisions | [risks-and-decisions.md](risks-and-decisions.md) |

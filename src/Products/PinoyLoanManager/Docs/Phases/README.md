@@ -23,5 +23,6 @@ Do not copy PinoyBusinessPOS phase history into this product.
 | PLM-DOC-02 | Financial calculation, fees, rounding, and payment allocation | Completed |
 | PLM-DOC-03 | Schedule calendar, delinquency, penalties, and maturity | Completed |
 | PLM-DOC-04 | Early settlement, refunds, reversals, cash variance, and accounting | Completed |
+| PLM-DOC-05 | Roles, grants, workflow authorization, and operational security | Completed |
 
-Recommended next documentation package: **PLM-DOC-05 — Roles, Grants, Workflow Authorization & Operational Security Finalization**. PLM-01 remains paused on mainline. Do not start until explicitly authorized.
+Recommended next documentation package: **PLM-DOC-06 — Restructuring, Write-Off, Recovery & Collections Closeout**. PLM-01 remains paused on mainline. Do not start until explicitly authorized.

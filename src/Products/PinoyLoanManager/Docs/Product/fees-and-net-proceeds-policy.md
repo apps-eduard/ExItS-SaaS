@@ -165,7 +165,7 @@ The original fee remains historically visible.
 
 A financial fee reversal is **not** automatically proof that physical cash was returned. Cash refund remains a separate correlated physical-cash action. Settlement fee treatment: [early-settlement-and-principal-prepayment-policy.md](early-settlement-and-principal-prepayment-policy.md). Refunds: [reversal-refund-and-correction-policy.md](reversal-refund-and-correction-policy.md).
 
-Exact grant/approval thresholds remain future authorization work (PLM-D-00-06).
+Exact grant identifiers: [authorization-grant-catalog.md](../Security/authorization-grant-catalog.md) (PLM Authorization Policy v1).
 
 ---
 

@@ -6,7 +6,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Plan status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01–04 recorded; PLM-01 paused on mainline |
+| Plan status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01–05 recorded; PLM-01 paused on mainline |
 | Implementation present | No |
 
 ## Delivery approach
@@ -23,7 +23,7 @@
 | PLM-00 Foundation & Product Decisions | Documentation, identity, isolation, operating-model through technical-boundary planning, closeout, and owner-decision register | Canonical docs exist; closeout filed; open decisions listed; no implementation claimed |
 | PLM-01 Product Scaffold & Isolation | Authorized source/test/deploy skeleton and isolation guards | Projects exist without Loan domain; solution isolation proven; layout: [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md) |
 | PLM-02 Identity / Organization / Product Access | Consume Platform actor/org/product access without Platform table reads | Access intersection entry gates exist; D-P12-03 not invented |
-| PLM-03 Loan Product Authorization | Product-local roles/grants | Matrix implemented only after PLM-D-00-06 |
+| PLM-03 Loan Product Authorization | Product-local roles/grants | Matrix documented (PLM-DOC-05); implementation after authorization |
 | PLM-04 Borrower Foundation | Product-local borrower records; optional Personal link | Borrower exists without requiring Personal; no POS Customer reads |
 | PLM-05 Loan Product Configuration | Configurable loan products | Only after PLM-D-00-08 decisions for configuration |
 | PLM-06 Loan Application / Approval | Application and approval workflows | Only after owner approval rules exist |
@@ -49,7 +49,7 @@ Report template: `docs/Product-Foundation/Templates/work-package-report.md` → 
 Stop when any of these are missing without an approved decision:
 
 - [x] Product definition approved (documentation baseline accepted — PLM-D-00-10 Closed)
-- [ ] Roles/grants matrix draft (presets and grant **intent** recorded; identifiers open — PLM-D-00-06)
+- [x] Roles/grants matrix finalized for MVP (PLM Authorization Policy v1 — PLM-D-00-06 Closed for MVP)
 - [x] Operational-money **policy** (methods, fees, allocation, precision — PLM-DOC-02)
 - [ ] Operational-money **schema** / journal export / Write-Off accounting (PLM-D-00-07 remainder; cash-refund policy accepted in PLM-DOC-04)
 - [x] Logical DB name (`ExItS_PinoyLoanManager` — PLM-D-00-02 Closed for name)
@@ -67,7 +67,7 @@ Do not start PLM-01 on mainline until explicitly authorized. Product implementat
 | Commercial-state transport | **DECISION D-P12-03** | Provisional patterns only; do not invent final |
 | Production authentication | **R-091** | Keep Dev/Testing language honest (D-P12-05) |
 | Personal / cross-product relationship model | Platform + product | Open (PLM-D-00-04, PLM-D-00-05) |
-| Loan owner policy | Product owner | Grants open (PLM-D-00-06). Calculation, calendar, penalty, settlement, and cash-control policy accepted (PLM-DOC-02–04). Schema/restructuring/write-off remain Open / Partially Resolved (PLM-D-00-07, PLM-D-00-08) |
+| Loan owner policy | Product owner | Grants closed for MVP (PLM-D-00-06). Calculation, calendar, penalty, settlement, cash-control, and authorization policy accepted (PLM-DOC-02–05). Schema/restructuring/write-off remain Open / Partially Resolved (PLM-D-00-07, PLM-D-00-08) |
 
 ## Testing expectations
 
@@ -99,6 +99,6 @@ Never weaken tests to pass a WP.
 ## Explicit exclusions from this plan
 
 - Implementing Loan capability in PLM-00
-- Finalizing remaining settlement/refund rules, grant identifiers, or regulatory rules
+- Finalizing remaining restructuring/write-off rules or regulatory rules
 - Creating .NET projects, migrations, APIs, UI, Docker, or `ExItS.slnx` entries in this WP
 - Copying POS phases or grant sets

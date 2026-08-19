@@ -6,12 +6,17 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager / `pinoy-loan-manager` (**Closed**, PLM-D-00-01) |
-| Status | Draft — role presets and grant **intent** recorded; identifiers **Open** (PLM-D-00-06) |
+| Policy version | **PLM Authorization Policy v1** |
+| Status | **Accepted MVP preset matrix (PLM-DOC-05)**; **PLM-D-00-06 Closed for MVP** |
 | Implementation present | No |
 
-Planning catalog: [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md). Maker/checker and Owner Override: [Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md](Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md) (**PLM-D-00-13 Closed**).
+Canonical grant definitions: [Security/authorization-grant-catalog.md](Security/authorization-grant-catalog.md). Default preset policy: [Security/default-role-preset-policy.md](Security/default-role-preset-policy.md). Workflow guards: [Product/workflow-authorization-policy.md](Product/workflow-authorization-policy.md). Maker/checker: [Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md](Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md) (**PLM-D-00-13 Closed**).
 
-## Layers
+Custom roles are **not** supported in MVP.
+
+---
+
+## Authorization formula
 
 ```text
 Authenticated Actor
@@ -19,123 +24,235 @@ Authenticated Actor
 + Platform Product Access
 + Allowed Commercial State
 + Required Entitlement
-+ Active PLM Product Role
++ Active PLM Role Assignment
 + Required PLM Grant
-+ Resource / Branch / Workflow Scope
-= Authorized Operational Action
++ Valid Resource Scope
++ Valid Workflow State
++ Domain Invariants
+= Authorized Action
 ```
 
-No client-only authorization. No `if Role == "Manager" then allow everything`. Roles are **default presets** backed by **explicit grants**. No implicit role hierarchy.
+Deny by default. Server-authoritative only. No client-only authorization. No role-name-only authorization. No implicit role hierarchy.
 
-**DECISION D-P12-03:** commercial-state transport remains unresolved. Provisional approach: **none chosen**. Do not copy PinoyBusinessPOS Dev/Testing commercial headers as production design. Any later Dev/Testing gate must fail closed outside approved environments.
+**D-P12-03:** commercial-state transport remains **Open**. Fail closed on unknown/denied commercial state for write authority.
 
-## Platform vs product
+---
 
-| Concern | Platform | Product |
+## Role preset codes
+
+| Code | Display | Default scope |
 |---|---|---|
-| System / org admin roles | Yes | Do not grant product ops by implication |
-| Product access assignment | Yes | Consumed only |
-| Subscription / entitlement | Yes | Enforced |
-| Operational roles / grants | No | **Yes — authoritative** |
+| `plm.owner` | Owner | Organization |
+| `plm.manager` | Manager | Organization or assigned Branch(es) |
+| `plm.cashier` | Cashier | Branch + Own Cashier Session for execution |
+| `plm.collector` | Collector | Branch + Assigned Work + Own Collector Accountability |
 
-Platform Owner / Platform Admin do **not** automatically receive PLM operational grants.
+Multiple active assignments per user are allowed. Effective grants = union of active assignments, each retaining its scope. High-risk maker/checker and Owner Override still apply.
 
-## Product roles
+---
 
-Organization-scoped PLM **presets**. Role **codes** are not assigned. Custom roles are future work.
-
-| Role code | Display name | Purpose |
-|---|---|---|
-| *open* | Owner | Organization-level PLM administration |
-| *open* | Manager | Lending operations and supervision |
-| *open* | Cashier | Cash custody, float, remittance, office cash |
-| *open* | Collector | Assigned field collections and remittance |
-
-## Grants / permissions
-
-Planning **categories**, not final identifiers. Full catalog: [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md).
-
-## Planning matrix legend
+## Matrix legend
 
 | Mark | Meaning |
 |---|---|
-| **Allow** | Allowed by default preset (still requires the corresponding grant + scope at runtime) |
-| **Deny** | Not allowed by default preset |
-| **Scope** | Allowed only with assignment / branch / session scope |
-| **Open** | Future decision |
+| **Allow** | Included in default preset (still requires grant + scope + workflow + domain checks at runtime) |
+| **Deny** | Not included in default preset |
+| **Scoped** | Included only within the preset’s scope (Branch / Assigned Work / Own Session as noted) |
 
-## Default preset intent (planning)
+No **Open** cells in this MVP matrix.
 
-| Capability | Owner | Manager | Cashier | Collector |
+---
+
+## Administration
+
+| Grant | `plm.owner` | `plm.manager` | `plm.cashier` | `plm.collector` |
 |---|---|---|---|---|
-| Staff / PLM role management | Allow | Deny | Deny | Deny |
-| Configuration manage | Allow | Deny | Deny | Deny |
-| Configuration view | Allow | Allow | Scope | Deny |
-| Quick Loan template manage / publish | Allow | Deny | Deny | Deny |
-| Quick Loan template view | Allow | Allow | Deny | Deny |
-| Borrower group manage | Allow | Allow | Deny | Deny |
-| Personal / Borrower link request | Allow | Allow | Deny | Deny |
-| Borrower create / update | Allow | Allow | Deny | Deny |
-| Borrower view | Allow | Allow | Scope | Scope |
-| Application / request review | Allow | Allow | Deny | Deny |
-| Loan approve / reject | Allow | Allow | Deny | Deny |
-| Loan view financials | Allow | Allow | Scope | Scope |
-| Office disbursement | Allow | Deny | Allow | Deny |
-| Field disbursement execute | Allow | Deny | Deny | Scope |
-| Disbursement authorize (create approval) | Allow | Allow | Deny | Deny |
-| Office payment post | Allow | Deny | Allow | Deny |
-| Field payment post | Allow | Deny | Deny | Scope |
-| Collection assignments manage | Allow | Allow | Deny | Deny |
-| Collection attempt record | Allow | Allow | Deny | Scope |
-| Collection exception request | Allow | Allow | Deny | Scope |
-| Collection exception approve | Allow | Allow | Deny | Deny |
-| Organization-wide exception declare | Allow | Allow | Deny | Deny |
-| Penalty waiver request | Allow | Allow | Deny | Scope |
-| Penalty waiver approve | Allow | Allow | Deny | Deny |
-| Cash session open / close | Allow | Deny | Allow | Deny |
-| Collector float issue | Allow | Deny | Allow | Deny |
-| Collector float receive | Allow | Deny | Deny | Scope |
-| Remittance submit | Allow | Deny | Deny | Scope |
-| Remittance receive / reconcile | Allow | Deny | Allow | Deny |
-| Cash variance view | Allow | Allow | Allow | Scope |
-| Cash variance resolve | Allow | Allow | Deny | Deny |
-| Payment / disbursement reverse request | Allow | Allow | Allow | Scope |
-| Reverse approve | Allow | Allow | Deny | Deny |
-| Reports operational | Allow | Allow | Scope | Scope |
-| Reports financial | Allow | Allow | Deny | Deny |
-| Audit view | Allow | Allow | Scope | Deny |
-| Unrestricted org-wide financial browse | Allow | Allow | Deny | Deny |
-| Platform administration | Deny | Deny | Deny | Deny |
-| Silent edit / delete of posted history | Deny | Deny | Deny | Deny |
-| Self-approve own Loan | Deny | Open | Deny | Deny |
-| Self-approve own waiver | Deny | Open | Deny | Deny |
-| Self-resolve own cash variance | Deny | Open | Deny | Deny |
+| `plm.staff.view` | Allow | Allow | Allow | Deny |
+| `plm.role-assignments.manage` | Allow | Deny | Deny | Deny |
+| `plm.owner-assignments.manage` | Allow | Deny | Deny | Deny |
+| `plm.configuration.view` | Allow | Allow | Deny | Deny |
+| `plm.configuration.manage` | Allow | Deny | Deny | Deny |
+| `plm.loan-products.view` | Allow | Allow | Deny | Deny |
+| `plm.loan-products.manage` | Allow | Deny | Deny | Deny |
+| `plm.loan-products.publish` | Allow | Deny | Deny | Deny |
 
-**Closed** (PLM-D-00-13): requester normally cannot approve their own high-risk action when another eligible approver exists. When the organization has only one eligible high-authority user, a controlled **Owner Override** may be used only with Owner preset plus explicit override grant, mandatory reason/evidence, enhanced audit, and subsequent-review reporting. Owner Override is not available to Collector, Cashier-only, or Manager without the grant. Do **not** fake separation of duties with screen labels. Grant identifiers remain PLM-D-00-06.
+---
 
-Collector **Scope** = assigned borrowers / loans / disbursement tasks / own cash accountability only.
+## Borrowers and Personal
 
-Cashier **Scope** = assigned branch / own cash session unless a broader grant is given.
+| Grant | `plm.owner` | `plm.manager` | `plm.cashier` | `plm.collector` |
+|---|---|---|---|---|
+| `plm.borrowers.view` | Allow | Allow | Scoped | Scoped |
+| `plm.borrowers.create` | Allow | Allow | Deny | Deny |
+| `plm.borrowers.update` | Allow | Allow | Deny | Deny |
+| `plm.borrower-documents.view` | Allow | Allow | Deny | Deny |
+| `plm.borrower-documents.manage` | Allow | Allow | Deny | Deny |
+| `plm.borrower-groups.manage` | Allow | Allow | Deny | Deny |
+| `plm.personal-links.request` | Allow | Allow | Deny | Deny |
+| `plm.personal-links.suspend` | Allow | Allow | Deny | Deny |
+| `plm.personal-links.correction-request` | Allow | Allow | Deny | Deny |
+| `plm.personal-links.correction-approve` | Allow | Allow | Deny | Deny |
 
-## Continuity / denied commercial states
+Cashier/Collector **Scoped** = Branch / Assigned Work only. No auto-link grant exists.
 
-| Commercial state | Operational effect |
+---
+
+## Loan requests and Loans
+
+| Grant | `plm.owner` | `plm.manager` | `plm.cashier` | `plm.collector` |
+|---|---|---|---|---|
+| `plm.loan-requests.view` | Allow | Allow | Deny | Deny |
+| `plm.loan-requests.create` | Allow | Allow | Deny | Deny |
+| `plm.loan-requests.submit` | Allow | Allow | Deny | Deny |
+| `plm.loan-requests.review` | Allow | Allow | Deny | Deny |
+| `plm.loan-requests.approve` | Allow | Allow | Deny | Deny |
+| `plm.loan-requests.reject` | Allow | Allow | Deny | Deny |
+| `plm.loan-requests.cancel` | Allow | Allow | Deny | Deny |
+| `plm.loans.view` | Allow | Allow | Scoped | Scoped |
+| `plm.loans.view-financials` | Allow | Allow | Scoped | Scoped |
+
+Actor may not approve where they are Borrower, co-borrower, guarantor, or direct beneficiary (domain invariant, all presets).
+
+---
+
+## Disbursements
+
+| Grant | `plm.owner` | `plm.manager` | `plm.cashier` | `plm.collector` |
+|---|---|---|---|---|
+| `plm.disbursements.view` | Allow | Allow | Scoped | Scoped |
+| `plm.disbursements.authorize` | Allow | Allow | Deny | Deny |
+| `plm.disbursements.execute-office` | Deny | Deny | Scoped | Deny |
+| `plm.disbursements.execute-field` | Deny | Deny | Deny | Scoped |
+| `plm.disbursements.reversal-request` | Allow | Allow | Scoped | Scoped |
+| `plm.disbursements.reversal-approve` | Allow | Allow | Deny | Deny |
+
+Authorization ≠ execution. Owner executes office/field disbursement only when also assigned Cashier/Collector preset.
+
+---
+
+## Payments
+
+| Grant | `plm.owner` | `plm.manager` | `plm.cashier` | `plm.collector` |
+|---|---|---|---|---|
+| `plm.payments.view` | Allow | Allow | Scoped | Scoped |
+| `plm.payments.post-office` | Deny | Deny | Scoped | Deny |
+| `plm.payments.post-field` | Deny | Deny | Deny | Scoped |
+| `plm.payments.reversal-request` | Allow | Allow | Scoped | Scoped |
+| `plm.payments.reversal-approve` | Allow | Allow | Deny | Deny |
+
+---
+
+## Settlement and prepayment
+
+| Grant | `plm.owner` | `plm.manager` | `plm.cashier` | `plm.collector` |
+|---|---|---|---|---|
+| `plm.settlements.quote` | Allow | Allow | Deny | Deny |
+| `plm.settlements.execute` | Deny | Deny | Scoped | Deny |
+| `plm.prepayments.quote` | Allow | Allow | Deny | Deny |
+| `plm.prepayments.execute` | Deny | Deny | Scoped | Deny |
+
+Formal settlement/prepayment execution is Office/Cashier only in MVP.
+
+---
+
+## Refunds
+
+| Grant | `plm.owner` | `plm.manager` | `plm.cashier` | `plm.collector` |
+|---|---|---|---|---|
+| `plm.refunds.request` | Allow | Allow | Allow | Deny |
+| `plm.refunds.approve` | Allow | Allow | Deny | Deny |
+| `plm.refunds.pay` | Deny | Deny | Scoped | Deny |
+
+---
+
+## Collections
+
+| Grant | `plm.owner` | `plm.manager` | `plm.cashier` | `plm.collector` |
+|---|---|---|---|---|
+| `plm.collections.view-assigned` | Deny | Deny | Deny | Scoped |
+| `plm.collections.record-attempt` | Deny | Deny | Deny | Scoped |
+| `plm.collection-assignments.manage` | Allow | Allow | Deny | Deny |
+| `plm.collection-exceptions.request` | Deny | Allow | Deny | Scoped |
+| `plm.collection-exceptions.approve` | Allow | Allow | Deny | Deny |
+| `plm.collection-exceptions.declare` | Allow | Allow | Deny | Deny |
+
+---
+
+## Penalties
+
+| Grant | `plm.owner` | `plm.manager` | `plm.cashier` | `plm.collector` |
+|---|---|---|---|---|
+| `plm.penalties.view` | Allow | Allow | Deny | Scoped |
+| `plm.penalties.waiver-request` | Deny | Allow | Deny | Scoped |
+| `plm.penalties.waiver-approve` | Allow | Allow | Deny | Deny |
+| `plm.penalties.reversal-request` | Deny | Allow | Deny | Scoped |
+| `plm.penalties.reversal-approve` | Allow | Allow | Deny | Deny |
+
+---
+
+## Cash operations
+
+| Grant | `plm.owner` | `plm.manager` | `plm.cashier` | `plm.collector` |
+|---|---|---|---|---|
+| `plm.cash-sessions.open` | Deny | Deny | Scoped | Deny |
+| `plm.cash-sessions.view-own` | Deny | Deny | Scoped | Deny |
+| `plm.cash-sessions.view-branch` | Allow | Allow | Deny | Deny |
+| `plm.cash-sessions.close` | Deny | Deny | Scoped | Deny |
+| `plm.collector-floats.issue` | Deny | Deny | Scoped | Deny |
+| `plm.collector-floats.receive` | Deny | Deny | Deny | Scoped |
+| `plm.collector-floats.view` | Allow | Allow | Scoped | Scoped |
+| `plm.remittances.view` | Allow | Allow | Scoped | Scoped |
+| `plm.remittances.submit` | Deny | Deny | Deny | Scoped |
+| `plm.remittances.receive` | Deny | Deny | Scoped | Deny |
+| `plm.remittances.reconcile` | Deny | Deny | Scoped | Deny |
+| `plm.cash-variances.view` | Allow | Allow | Scoped | Scoped |
+| `plm.cash-variances.resolve` | Allow | Allow | Deny | Deny |
+
+Cashier **Scoped** = Branch + active Cashier Session. Collector **Scoped** = own accountability / assigned remittance context. Nonzero variance cannot be marked balanced.
+
+---
+
+## Reports, audit, override
+
+| Grant | `plm.owner` | `plm.manager` | `plm.cashier` | `plm.collector` |
+|---|---|---|---|---|
+| `plm.reports.operational` | Allow | Allow | Scoped | Scoped |
+| `plm.reports.financial` | Allow | Allow | Deny | Deny |
+| `plm.audit.view` | Allow | Allow | Deny | Deny |
+| `plm.owner-override.execute` | Allow | Deny | Deny | Deny |
+
+---
+
+## Maker/checker and Owner Override
+
+**PLM-D-00-13 Closed.**
+
+High-risk actions (reversal approve, refund approve/pay, variance resolve, Owner assignment, Personal correction approve, Owner Override, future write-off/recovery): requester normally cannot self-approve when another eligible approver exists.
+
+Controlled **Owner Override** (`plm.owner-override.execute`): only when no other eligible approver exists; mandatory reason/evidence; enhanced audit; subsequent-review reporting. Not available to Manager, Cashier-only, or Collector.
+
+Cashier cannot approve own Payment Reversal or Cash Refund. Cashier cannot resolve own Cashier variance. Collector cannot approve own high-risk actions or resolve own variance.
+
+---
+
+## Platform and commercial boundaries
+
+| Concern | Effect |
 |---|---|
-| Any denied / unknown state | Fail closed. Specific view-only or continuity behavior **Open**. |
+| Platform Admin / Platform Owner | **Deny** automatic PLM operational grants |
+| PinoyBusinessPOS roles | **Deny** PLM operational grants |
+| EX ID / QR resolution | **Deny** Personal link without consent workflow |
+| Unknown/denied commercial state | Fail closed for write authority (**D-P12-03 Open**) |
+| Silent edit/delete posted history | **Deny** all presets |
 
-## Ownership and workflow rules
-
-- Last-owner / bootstrap rules: **Open**.
-- POS Customer status never grants Loan operational permission.
-- Platform Admin Web is not the normal UI for managing borrower loans.
-- Approval and disbursement are separate authorities.
-- Small organizations may assign multiple presets to one person; each action remains individually authorized and audited. High-risk maker/checker and controlled Owner Override: **PLM-D-00-13 Closed**.
+---
 
 ## Explicit non-grants
 
-- Platform Administrator does **not** automatically receive unrestricted product operational access
-- PinoyBusinessPOS roles do **not** grant Pinoy Loan Manager operations
-- A PinoyBusinessPOS subscription does **not** unlock Pinoy Loan Manager
-- EX ID / QR resolution does **not** grant a Personal-to-Borrower relationship
-- Decline or unlink does **not** authorize Borrower deletion
-- Role name alone does **not** authorize an action without the corresponding grant and scope
+- Wildcard or `plm.*` grant
+- Custom organization roles in MVP
+- Role name without matching grant and scope
+- Client UI visibility as authorization
+- Borrower self-approval of own Loan
+- Collector field cash refund in MVP
+- Last active Owner removal

@@ -7,7 +7,7 @@
 |---|---|
 | Product | Pinoy Loan Manager / `pinoy-loan-manager` (**Closed**, PLM-D-00-01) |
 | Database | `ExItS_PinoyLoanManager` (**logical name Closed**, PLM-D-00-02); not created; schema/placement deferred |
-| Status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01–04 recorded; no implementation |
+| Status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01–05 recorded; no implementation |
 | Implementation present | No |
 
 ## System context
@@ -37,7 +37,7 @@ Pinoy Loan Manager must never take a project or database dependency on PinoyBusi
 | Borrower operational records | No | Yes (future) |
 | Loan-domain state and workflows | No | Yes (future) — Traditional and Quick origination; one core Loan after disbursement |
 | Loan operational financial state | No | Yes (future) — operational Loan subledger separate from Cash Accountability; not a complete GL |
-| Product-local authorization | No | Yes (future; presets + grant intent recorded; identifiers open) |
+| Product-local authorization | No | Yes (future; PLM Authorization Policy v1 — PLM-D-00-06 Closed for MVP) |
 | Product DB / migrations | No | Yes (future) |
 | Product API / Web UI / MAUI UI / reports / product audit | No | Yes (future) |
 
@@ -84,7 +84,7 @@ Planning modules only. None are designed or implemented. MVP calculation, calend
 | Module | Responsibility | Notes |
 |---|---|---|
 | Product access / isolation | Independent subscription, org isolation, commercial gate | Depends on D-P12-03; no Platform table reads |
-| Product-local authorization | Loan presets + explicit grants | Intent recorded; identifiers open (PLM-D-00-06); no role-name hard-coding |
+| Product-local authorization | Loan presets + explicit grants | **PLM Authorization Policy v1** (PLM-D-00-06 Closed for MVP); no role-name hard-coding |
 | Borrower foundation | Product-local borrower records | Optional Personal link; PLM-D-00-04 / PLM-D-00-05 open; [Product/borrower-model.md](Product/borrower-model.md) |
 | Loan product configuration | Traditional products and Quick Loan Templates | Templates are organization-configured, not built-in types. Traditional: [Product/loan-product-configuration.md](Product/loan-product-configuration.md) |
 | Application / approval | Traditional application and Quick Loan Request | Manual approval default; no auto-approval |

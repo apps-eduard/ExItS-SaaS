@@ -11,7 +11,7 @@ Always load with:
 5. The active work-package prompt/report
 6. Files required for the task only
 
-**Status:** PLM-00 documentation baseline accepted (PLM-D-00-10); PLM-DOC-01–04 recorded; implementation paused
+**Status:** PLM-00 documentation baseline accepted (PLM-D-00-10); PLM-DOC-01–05 recorded; implementation paused
 **Implementation present:** No
 **Documentation root:** `src/Products/PinoyLoanManager/Docs/` (D-P12-02)
 
@@ -26,7 +26,7 @@ Pinoy Loan Manager is a **separate first-class ExItS SaaS product**, a sibling o
 | [product-definition.md](product-definition.md) | Purpose, ownership, boundaries, exclusions |
 | [architecture.md](architecture.md) | System, data, Personal/Borrower, and client boundaries |
 | [security.md](security.md) | Security, privacy, consent |
-| [authorization-matrix.md](authorization-matrix.md) | Access layers; role presets and grant **intent**; identifiers open |
+| [authorization-matrix.md](authorization-matrix.md) | Access layers; MVP preset matrix (**PLM-D-00-06 Closed for MVP**) |
 | [development-plan.md](development-plan.md) | Delivery buckets and testing expectations |
 | [roadmap.md](roadmap.md) | Phases and work packages |
 | [risks-and-decisions.md](risks-and-decisions.md) | Open risks and decisions |
@@ -59,7 +59,12 @@ Agreed operating-model direction (not implementation specs):
 | [Product/loan-lifecycle-model.md](Product/loan-lifecycle-model.md) | Origination vs lifecycle vs delinquency |
 | [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md) | Operational subledger and balance components |
 | [Architecture/operational-subledger-and-accounting-boundary.md](Architecture/operational-subledger-and-accounting-boundary.md) | Loan vs cash ledgers; PLM is not a complete GL |
-| [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md) | Owner/Manager/Cashier/Collector presets; grant catalog intent |
+| [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md) | Index to PLM Authorization Policy v1 |
+| [Security/authorization-grant-catalog.md](Security/authorization-grant-catalog.md) | Exact MVP grant identifiers |
+| [Security/default-role-preset-policy.md](Security/default-role-preset-policy.md) | Role codes and default preset assignments |
+| [Security/resource-scope-and-data-minimization-policy.md](Security/resource-scope-and-data-minimization-policy.md) | Scope types and data minimization |
+| [Security/privileged-access-and-owner-recovery-policy.md](Security/privileged-access-and-owner-recovery-policy.md) | Owner bootstrap, last-Owner protection, recovery |
+| [Product/workflow-authorization-policy.md](Product/workflow-authorization-policy.md) | Workflow-state authorization guards |
 | [Product/daily-operational-workflow.md](Product/daily-operational-workflow.md) | Common operating day, assignments, offline boundary |
 | [Product/cashier-and-collector-control-model.md](Product/cashier-and-collector-control-model.md) | Cashier Session, float, remittance, cash availability |
 | [Product/disbursement-and-payment-controls.md](Product/disbursement-and-payment-controls.md) | Office/field disbursement and cash payment |
@@ -92,6 +97,9 @@ Agreed operating-model direction (not implementation specs):
 | [Reports/PLM-DOC-04-settlement-reversals-variance-and-accounting.md](Reports/PLM-DOC-04-settlement-reversals-variance-and-accounting.md) | PLM-DOC-04 settlement, reversals, variance, accounting |
 | [Decisions/ADR-007-early-settlement-and-prepayment-policy.md](Decisions/ADR-007-early-settlement-and-prepayment-policy.md) | Early settlement and principal prepayment |
 | [Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md](Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md) | Reversals, refunds, variance, GL boundary; PLM-D-00-13 Closed |
+| [Reports/PLM-DOC-05-authorization-and-operational-security.md](Reports/PLM-DOC-05-authorization-and-operational-security.md) | PLM-DOC-05 roles, grants, workflow security |
+| [Decisions/ADR-009-role-codes-grant-catalog-and-default-presets.md](Decisions/ADR-009-role-codes-grant-catalog-and-default-presets.md) | Role codes and grant catalog; PLM-D-00-06 Closed |
+| [Decisions/ADR-010-resource-scope-workflow-security-and-owner-recovery.md](Decisions/ADR-010-resource-scope-workflow-security-and-owner-recovery.md) | Scope, workflow security, Owner recovery |
 | [Decisions/ADR-005-schedule-calendar-and-exception-treatment.md](Decisions/ADR-005-schedule-calendar-and-exception-treatment.md) | Calendar, frequencies, exception defaults |
 | [Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md](Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md) | DPD, penalties, maturity |
 | [Decisions/ADR-001-product-identity-and-database-name.md](Decisions/ADR-001-product-identity-and-database-name.md) | Product code and logical database name |
@@ -158,4 +166,4 @@ Organization Web: Blazor Web (full operations). MAUI Blazor Hybrid: limited fiel
 
 ## Explicit exclusions
 
-No implementation exists. Default interest **rates** and penalty **amounts** are not defined. Grant identifiers remain open (PLM-D-00-06). Restructuring and write-off/recovery remain open (PLM-D-00-08 remainder). Do not copy PinoyBusinessPOS grants or money models. No recorded workflow is claimed legally compliant (PLM-D-00-11).
+No implementation exists. Default interest **rates** and penalty **amounts** are not defined. **PLM-D-00-06 Closed for MVP** (grant catalog v1). Restructuring and write-off/recovery remain open (PLM-D-00-08 remainder). Do not copy PinoyBusinessPOS grants or money models. No recorded workflow is claimed legally compliant or production-security certified (PLM-D-00-11, R-091).

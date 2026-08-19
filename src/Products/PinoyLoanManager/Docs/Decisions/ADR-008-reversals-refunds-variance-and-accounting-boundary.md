@@ -19,7 +19,7 @@ PLM needed Product Owner rules for correcting posted financial history, physical
 3. Approved/Awaiting Disbursement Loans may be cancelled before cash release. After release, Disbursement Reversal is allowed only for error/duplicate/incomplete disbursement or fully recovered funds with high-risk approval. Do not fake reversal while the borrower retains funds.
 4. Collector and Cashier sessions may close with **visible** unresolved variance after authorized review. Nonzero variance cannot be marked balanced. Resolve via new events; do not rewrite the original day.
 5. Maker/checker: requester cannot self-approve high-risk actions when another eligible approver exists. Collector never self-approves high-risk actions. Cashier never resolves own variance or approves own Payment Reversal/Cash Refund.
-6. Controlled **Owner Override** is allowed only when no other eligible approver exists, the actor has Owner preset plus explicit override grant, reason/evidence are mandatory, the action is classified Owner Override, enhanced audit is written, and subsequent-review reporting is required. Not available to Collector, Cashier-only, or Manager without the override grant. This **closes PLM-D-00-13**. Exact grant identifiers remain PLM-D-00-06.
+6. Controlled **Owner Override** is allowed only when no other eligible approver exists, the actor has Owner preset plus explicit `plm.owner-override.execute` grant, reason/evidence are mandatory, the action is classified Owner Override, enhanced audit is written, and subsequent-review reporting is required. Not available to Collector, Cashier-only, or Manager without the override grant. This **closes PLM-D-00-13**. Grant identifiers finalized in PLM-DOC-05 (**PLM-D-00-06 Closed for MVP**).
 7. PLM operational Loan subledger and Cash Accountability ledger are separate and correlated. PLM is **not** a complete General Ledger. Accounting projection must not rewrite PLM operational history. Write-off/recovery accounting remains open.
 
 Canonical text: [../Product/reversal-refund-and-correction-policy.md](../Product/reversal-refund-and-correction-policy.md), [../Product/cash-variance-and-session-close-policy.md](../Product/cash-variance-and-session-close-policy.md), [../Product/disbursement-cancellation-and-reversal-policy.md](../Product/disbursement-cancellation-and-reversal-policy.md), [../Architecture/operational-subledger-and-accounting-boundary.md](../Architecture/operational-subledger-and-accounting-boundary.md).
@@ -30,6 +30,6 @@ Canonical text: [../Product/reversal-refund-and-correction-policy.md](../Product
 
 Corrections, cash, and SoD have an approved operational contract.
 
-**Still open:** persistence/schema, journal/export contract, write-off/recovery accounting, external GL details, grant identifiers (PLM-D-00-06), legal/compliance (PLM-D-00-11).
+**Still open:** persistence/schema, journal/export contract, write-off/recovery accounting, external GL details, legal/compliance (PLM-D-00-11). Grant identifiers closed for MVP in PLM-DOC-05 (PLM-D-00-06).
 
 No implementation is authorized by this ADR.

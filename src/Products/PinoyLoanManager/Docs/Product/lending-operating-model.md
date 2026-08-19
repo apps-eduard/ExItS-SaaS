@@ -117,7 +117,7 @@ Separation-of-duty baseline (intent):
 - Cashier should not normally be the loan approver.
 - Owner/Manager may approve according to grants.
 
-Grant catalog **intent** and scope: [../Security/role-and-grant-baseline.md](../Security/role-and-grant-baseline.md). Planning matrix: [../authorization-matrix.md](../authorization-matrix.md). Identifiers remain **Open** (PLM-D-00-06).
+Grant catalog v1 and default presets: [../Security/authorization-grant-catalog.md](../Security/authorization-grant-catalog.md). Planning matrix: [../authorization-matrix.md](../authorization-matrix.md). (**PLM-D-00-06 Closed for MVP**)
 
 ---
 

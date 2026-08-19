@@ -84,7 +84,7 @@ Loan balance recalculated from events
 
 Original payment remains visible. If corrected, a **separate** correct payment is posted.
 
-Exact payment reversal approval threshold remains **OPEN** for grant identifiers (PLM-D-00-06). Policy: [reversal-refund-and-correction-policy.md](reversal-refund-and-correction-policy.md).
+Payment reversal approval uses `plm.payments.reversal-approve` per [authorization-grant-catalog.md](../Security/authorization-grant-catalog.md).
 
 ---
 

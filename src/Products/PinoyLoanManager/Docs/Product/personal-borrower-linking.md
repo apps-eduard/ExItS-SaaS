@@ -30,7 +30,7 @@ EX ID / QR resolution identifies a Personal identity **only**. Resolution **neve
 
 **Explicit Personal consent** is required before an active Personal / Borrower link.
 
-MVP: an authorized organization user (Owner/Manager grants, identifiers open) initiates the request against an **existing** Borrower. Personal self-service claiming is **not** MVP.
+MVP: an authorized organization user with `plm.personal-links.request` (Owner/Manager default presets) initiates the request against an **existing** Borrower. Personal self-service claiming is **not** MVP.
 
 Do **not** copy POS linking tables. Do **not** design generic Platform relationship tables here (**PLM-D-00-04** Open). Platform transport/persistence/integration remains **Open** (**PLM-D-00-05**).
 

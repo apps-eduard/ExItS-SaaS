@@ -43,12 +43,13 @@ Do not treat this folder as a second product definition. Detailed agreed **direc
 | [loan-application-and-approval.md](loan-application-and-approval.md) | Application, approval, rejection |
 | [loan-product-configuration.md](loan-product-configuration.md) | Reusable Loan Product configuration |
 | [disbursement-readiness-model.md](disbursement-readiness-model.md) | Pre-release checks |
+| [workflow-authorization-policy.md](workflow-authorization-policy.md) | Workflow-state authorization guards |
 | [reporting-baseline.md](reporting-baseline.md) | Dashboard and operational reporting |
 | [loan-documents-and-receipts.md](loan-documents-and-receipts.md) | Documents and receipts |
 | [notification-model.md](notification-model.md) | Notifications |
 | [personal-loan-experience.md](personal-loan-experience.md) | Personal Loan area |
 
-Remaining default **rates**, grant identifiers, restructuring/write-off, and legal validation stay open in [../product-definition.md](../product-definition.md) and [../risks-and-decisions.md](../risks-and-decisions.md) (PLM-D-00-06, PLM-D-00-08 remainder, PLM-D-00-11). Do not invent:
+Remaining default **rates**, restructuring/write-off, and legal validation stay open in [../product-definition.md](../product-definition.md) and [../risks-and-decisions.md](../risks-and-decisions.md) (PLM-D-00-08 remainder, PLM-D-00-11). Grant catalog v1 is closed for MVP (PLM-D-00-06). Do not invent:
 
 - peso/percent **rates** or penalty **amounts** as defaults
 - legal/regulatory operating rules

@@ -28,5 +28,6 @@ Do not rewrite historical signed-off reports merely to erase history.
 | [PLM-DOC-02-financial-calculation-and-allocation.md](PLM-DOC-02-financial-calculation-and-allocation.md) | PLM-DOC-02 calculation, fees, rounding, and payment allocation |
 | [PLM-DOC-03-schedule-delinquency-penalty-and-maturity.md](PLM-DOC-03-schedule-delinquency-penalty-and-maturity.md) | PLM-DOC-03 calendar, delinquency, penalties, and maturity |
 | [PLM-DOC-04-settlement-reversals-variance-and-accounting.md](PLM-DOC-04-settlement-reversals-variance-and-accounting.md) | PLM-DOC-04 settlement, reversals, variance, and accounting |
+| [PLM-DOC-05-authorization-and-operational-security.md](PLM-DOC-05-authorization-and-operational-security.md) | PLM-DOC-05 roles, grants, workflow security |
 
 PLM-00-WP01 through PLM-00-WP09 do not add a separate report file. Completion evidence for those documentation-only packages is the git commit on `docs/plm-foundation` plus the chat completion report.

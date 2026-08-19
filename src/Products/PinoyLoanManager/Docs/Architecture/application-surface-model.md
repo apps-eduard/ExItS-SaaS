@@ -6,7 +6,7 @@
 
 Agreed application surfaces for Pinoy Loan Manager. No client, API, or UI project is authorized in this package.
 
-Root architecture: [../architecture.md](../architecture.md). Operating model: [../Product/lending-operating-model.md](../Product/lending-operating-model.md). Daily ops: [../Product/daily-operational-workflow.md](../Product/daily-operational-workflow.md). Authorization: [../Security/role-and-grant-baseline.md](../Security/role-and-grant-baseline.md).
+Root architecture: [../architecture.md](../architecture.md). Operating model: [../Product/lending-operating-model.md](../Product/lending-operating-model.md). Daily ops: [../Product/daily-operational-workflow.md](../Product/daily-operational-workflow.md). Authorization: [../Security/authorization-grant-catalog.md](../Security/authorization-grant-catalog.md), [../authorization-matrix.md](../authorization-matrix.md).
 
 ---
 

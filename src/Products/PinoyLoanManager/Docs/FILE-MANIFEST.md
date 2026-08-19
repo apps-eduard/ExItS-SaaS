@@ -2,7 +2,7 @@
 
 **Status:** Foundation / planning only
 **Implementation present:** No
-**Current work package:** PLM-DOC-04 — Early Settlement, Refunds, Reversals, Cash Variance & Accounting Boundaries
+**Current work package:** PLM-DOC-05 — Roles, Grants, Workflow Authorization & Operational Security Finalization
 
 This file is the navigation map for future Cursor work. Load this product’s `Docs/` after the shared Product Foundation reference. Do not scan PinoyBusinessPOS implementation by default.
 
@@ -21,7 +21,7 @@ Shared contracts to load with this product:
 | `Docs/product-definition.md` | Product identity, ownership, boundaries, exclusions | Foundation / Planning Only | No |
 | `Docs/architecture.md` | Technical and data boundaries; Personal/Borrower intent | Foundation / Planning Only | No |
 | `Docs/security.md` | Security, privacy, consent | Foundation / Planning Only | No |
-| `Docs/authorization-matrix.md` | Access intersection; role presets; grant intent; identifiers open | Foundation / Planning Only | No |
+| `Docs/authorization-matrix.md` | Access intersection; MVP preset matrix; grant catalog v1 | Accepted product policy (PLM-DOC-05) | No |
 | `Docs/development-plan.md` | Delivery buckets PLM-00–PLM-14 | Foundation / Planning Only | No |
 | `Docs/roadmap.md` | Current phase and work-package sequence | Foundation / Planning Only | No |
 | `Docs/risks-and-decisions.md` | Open risks and decisions | Foundation / Planning Only | No |
@@ -60,7 +60,12 @@ Shared contracts to load with this product:
 
 | Path | Purpose | Status | Implementation present |
 |---|---|---|---|
-| `Docs/Security/role-and-grant-baseline.md` | Presets, grant catalog intent, scope, SoD | Planning baseline / not a spec | No |
+| `Docs/Security/role-and-grant-baseline.md` | Index to PLM Authorization Policy v1 | Accepted product policy (PLM-DOC-05) | No |
+| `Docs/Security/authorization-grant-catalog.md` | Exact MVP grant identifiers | Accepted product policy (PLM-DOC-05) | No |
+| `Docs/Security/default-role-preset-policy.md` | Role codes and default preset assignments | Accepted product policy (PLM-DOC-05) | No |
+| `Docs/Security/resource-scope-and-data-minimization-policy.md` | Scope types and data minimization | Accepted product policy (PLM-DOC-05) | No |
+| `Docs/Security/privileged-access-and-owner-recovery-policy.md` | Owner bootstrap, last-Owner protection, recovery | Accepted product policy (PLM-DOC-05) | No |
+| `Docs/Product/workflow-authorization-policy.md` | Workflow-state authorization guards | Accepted product policy (PLM-DOC-05) | No |
 | `Docs/Product/daily-operational-workflow.md` | Common operating day, assignments, offline boundary | Planning baseline / not a spec | No |
 | `Docs/Product/cashier-and-collector-control-model.md` | Cashier Session, float, remittance, cash availability | Planning baseline / not a spec | No |
 | `Docs/Product/disbursement-and-payment-controls.md` | Office/field disbursement and cash payment | Planning baseline / not a spec | No |
@@ -119,6 +124,9 @@ Shared contracts to load with this product:
 | `Docs/Reports/PLM-DOC-02-financial-calculation-and-allocation.md` | PLM-DOC-02 calculation, fees, rounding, allocation | Documentation closeout | No |
 | `Docs/Reports/PLM-DOC-03-schedule-delinquency-penalty-and-maturity.md` | PLM-DOC-03 calendar, delinquency, penalty, maturity | Documentation closeout | No |
 | `Docs/Reports/PLM-DOC-04-settlement-reversals-variance-and-accounting.md` | PLM-DOC-04 settlement, reversals, variance, accounting | Documentation closeout | No |
+| `Docs/Reports/PLM-DOC-05-authorization-and-operational-security.md` | PLM-DOC-05 roles, grants, workflow security | Documentation closeout | No |
+| `Docs/Decisions/ADR-009-role-codes-grant-catalog-and-default-presets.md` | Role codes and grant catalog; PLM-D-00-06 Closed | Accepted product policy (PLM-DOC-05) | No |
+| `Docs/Decisions/ADR-010-resource-scope-workflow-security-and-owner-recovery.md` | Scope, workflow security, Owner recovery | Accepted product policy (PLM-DOC-05) | No |
 | `Docs/Validation/PLM-00-readiness-checklist.md` | Docs-only readiness gates | Planning closeout | No |
 
 ## Workspace indexes (PLM-00-WP01, updated in WP02–WP10)
@@ -141,6 +149,8 @@ Shared contracts to load with this product:
 | `Docs/Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md` | DPD, penalties, maturity | Accepted product policy (PLM-DOC-03) | No |
 | `Docs/Decisions/ADR-007-early-settlement-and-prepayment-policy.md` | Early settlement and principal prepayment | Accepted product policy (PLM-DOC-04) | No |
 | `Docs/Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md` | Reversals, refunds, variance, GL boundary | Accepted; **PLM-D-00-13 Closed** | No |
+| `Docs/Decisions/ADR-009-role-codes-grant-catalog-and-default-presets.md` | Role codes, grant catalog v1, default presets | Accepted; **PLM-D-00-06 Closed for MVP** | No |
+| `Docs/Decisions/ADR-010-resource-scope-workflow-security-and-owner-recovery.md` | Scope, workflow security, Owner recovery | Accepted product policy (PLM-DOC-05) | No |
 | `Docs/Phases/README.md` | Index for phase sequencing | Foundation / Planning Only | No |
 | `Docs/Reports/README.md` | Index for WP evidence | Foundation / Planning Only | No |
 | `Docs/Validation/README.md` | Index for validation evidence | Foundation / Planning Only | No |
@@ -159,7 +169,7 @@ Shared contracts to load with this product:
 | `ExItS.slnx` entries | Not authorized |
 | `Docs/deployment-notes.md` | Optional until packaging |
 | `Docs/Reports/<WP-id>.md` | In-tree WP report not required except PLM-00 closeout |
-| Exact grant identifiers / custom roles | Open (PLM-D-00-06) |
+| Exact grant identifiers / custom roles | **Closed for MVP** (PLM-D-00-06); custom roles deferred |
 | Small-org vs two-person high-risk approval | **Closed** (PLM-D-00-13) — maker/checker + controlled Owner Override |
 | Default interest rates / fee amounts / penalty amounts | Not defined; never invent |
 | Penalty rates/amounts, grace `N`, caps as numbers | Engine accepted; no defaults (PLM-DOC-03) |

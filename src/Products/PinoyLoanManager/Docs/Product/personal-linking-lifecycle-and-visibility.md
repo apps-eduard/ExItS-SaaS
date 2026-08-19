@@ -33,7 +33,7 @@ The identity preview must expose only the **minimum** information required to av
 
 An **authorized PLM organization user** initiates the link request.
 
-Examples of authorized presets according to **future grants** (identifiers still open — PLM-D-00-06): Owner, Manager.
+Authorized presets with Personal Link grants: `plm.owner`, `plm.manager` (see [../Security/default-role-preset-policy.md](../Security/default-role-preset-policy.md)).
 
 The organization user:
 
