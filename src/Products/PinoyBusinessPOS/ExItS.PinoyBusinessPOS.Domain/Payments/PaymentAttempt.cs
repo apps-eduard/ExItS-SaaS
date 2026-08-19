@@ -47,6 +47,7 @@ public sealed class PaymentAttempt
     public DateTimeOffset? ExpiresAtUtc { get; private set; }
     public DateTimeOffset? CompletedAtUtc { get; private set; }
     public long ProviderEventSequence { get; private set; }
+    public bool ProviderFinalizedBySystem { get; private set; }
 
     private PaymentAttempt(
         PaymentAttemptId id,
@@ -74,7 +75,8 @@ public sealed class PaymentAttempt
         DateTimeOffset updatedAtUtc,
         DateTimeOffset? expiresAtUtc,
         DateTimeOffset? completedAtUtc,
-        long providerEventSequence)
+        long providerEventSequence,
+        bool providerFinalizedBySystem)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -102,6 +104,7 @@ public sealed class PaymentAttempt
         ExpiresAtUtc = expiresAtUtc;
         CompletedAtUtc = completedAtUtc;
         ProviderEventSequence = providerEventSequence;
+        ProviderFinalizedBySystem = providerFinalizedBySystem;
     }
 
     public static PaymentAttempt CreateElectronic(
@@ -154,7 +157,8 @@ public sealed class PaymentAttempt
             utcNow,
             expiresAtUtc: utcNow.Add(DefaultExpiry),
             completedAtUtc: null,
-            providerEventSequence: 0);
+            providerEventSequence: 0,
+            providerFinalizedBySystem: false);
     }
 
     public static PaymentAttempt CreateManualGCashTransfer(
@@ -200,7 +204,8 @@ public sealed class PaymentAttempt
             utcNow,
             expiresAtUtc: null,
             completedAtUtc: null,
-            providerEventSequence: 0);
+            providerEventSequence: 0,
+            providerFinalizedBySystem: false);
     }
 
     public static PaymentAttempt Rehydrate(
@@ -229,7 +234,8 @@ public sealed class PaymentAttempt
         DateTimeOffset updatedAtUtc,
         DateTimeOffset? expiresAtUtc,
         DateTimeOffset? completedAtUtc,
-        long providerEventSequence) =>
+        long providerEventSequence,
+        bool providerFinalizedBySystem) =>
         new(
             id,
             organizationId,
@@ -256,7 +262,8 @@ public sealed class PaymentAttempt
             updatedAtUtc,
             expiresAtUtc,
             completedAtUtc,
-            providerEventSequence);
+            providerEventSequence,
+            providerFinalizedBySystem);
 
     public bool IsTerminal =>
         Status is PaymentAttemptStatus.Paid
@@ -354,6 +361,7 @@ public sealed class PaymentAttempt
         FailureMessage = null;
         CompletedAtUtc = utcNow;
         ProviderEventSequence = eventSequence;
+        ProviderFinalizedBySystem = true;
         UpdatedAtUtc = utcNow;
     }
 
@@ -380,6 +388,7 @@ public sealed class PaymentAttempt
         FailureMessage = NormalizeOptionalText(failureMessage, FailureMessageMaxLength, DomainErrorCodes.InvalidPaymentAttemptFailure);
         CompletedAtUtc = utcNow;
         ProviderEventSequence = eventSequence;
+        ProviderFinalizedBySystem = true;
         UpdatedAtUtc = utcNow;
     }
 
@@ -476,6 +485,7 @@ public sealed class PaymentAttempt
             DomainErrorCodes.InvalidPaymentAttemptFailure);
         CompletedAtUtc = utcNow;
         ProviderEventSequence = eventSequence;
+        ProviderFinalizedBySystem = true;
         UpdatedAtUtc = utcNow;
     }
 

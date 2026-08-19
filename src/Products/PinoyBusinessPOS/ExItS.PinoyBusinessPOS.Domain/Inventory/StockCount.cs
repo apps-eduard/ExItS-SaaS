@@ -33,6 +33,7 @@ public sealed class StockCount
     public Guid? CompletedBy { get; private set; }
     public DateTimeOffset? CancelledAtUtc { get; private set; }
     public Guid? CancelledBy { get; private set; }
+    public Guid? CreatedBy { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -52,6 +53,7 @@ public sealed class StockCount
         Guid? completedBy,
         DateTimeOffset? cancelledAtUtc,
         Guid? cancelledBy,
+        Guid? createdBy,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
         List<StockCountLine> lines)
@@ -69,6 +71,7 @@ public sealed class StockCount
         CompletedBy = completedBy;
         CancelledAtUtc = cancelledAtUtc;
         CancelledBy = cancelledBy;
+        CreatedBy = createdBy;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
         _lines = lines;
@@ -79,11 +82,13 @@ public sealed class StockCount
         IReadOnlyList<StockCountLineDraft> lines,
         DateTimeOffset utcNow,
         string title,
+        Guid createdBy,
         DateOnly? countDate = null,
         string? notes = null,
         StockCountId? id = null)
     {
         SaleMoney.EnsureUtc(utcNow);
+        SaleMoney.EnsureActor(createdBy);
         EnsureLines(lines);
 
         var countId = id ?? StockCountId.New();
@@ -103,6 +108,7 @@ public sealed class StockCount
             completedBy: null,
             cancelledAtUtc: null,
             cancelledBy: null,
+            createdBy,
             utcNow,
             utcNow,
             countLines);
@@ -387,6 +393,7 @@ public sealed class StockCount
         Guid? completedBy,
         DateTimeOffset? cancelledAtUtc,
         Guid? cancelledBy,
+        Guid? createdBy,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
         IReadOnlyList<StockCountLine> lines) =>
@@ -404,6 +411,7 @@ public sealed class StockCount
             completedBy,
             cancelledAtUtc,
             cancelledBy,
+            createdBy,
             createdAtUtc,
             updatedAtUtc,
             lines.ToList());

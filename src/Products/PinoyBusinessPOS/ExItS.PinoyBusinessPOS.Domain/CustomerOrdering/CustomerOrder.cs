@@ -50,6 +50,14 @@ public sealed class CustomerOrder
     public Guid? CancelledBy { get; private set; }
     public DateTimeOffset? CompletedAtUtc { get; private set; }
     public Guid? CompletedBy { get; private set; }
+    public DateTimeOffset? ReadyAtUtc { get; private set; }
+    public Guid? ReadyBy { get; private set; }
+    public DateTimeOffset? OutForDeliveryAtUtc { get; private set; }
+    public Guid? OutForDeliveryBy { get; private set; }
+    public DateTimeOffset? DeliveredAtUtc { get; private set; }
+    public Guid? DeliveredBy { get; private set; }
+    public DateTimeOffset? CollectedAtUtc { get; private set; }
+    public Guid? CollectedBy { get; private set; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
     private CustomerOrder(
@@ -84,6 +92,14 @@ public sealed class CustomerOrder
         Guid? cancelledBy,
         DateTimeOffset? completedAtUtc,
         Guid? completedBy,
+        DateTimeOffset? readyAtUtc,
+        Guid? readyBy,
+        DateTimeOffset? outForDeliveryAtUtc,
+        Guid? outForDeliveryBy,
+        DateTimeOffset? deliveredAtUtc,
+        Guid? deliveredBy,
+        DateTimeOffset? collectedAtUtc,
+        Guid? collectedBy,
         DateTimeOffset updatedAtUtc)
     {
         Id = id;
@@ -117,6 +133,14 @@ public sealed class CustomerOrder
         CancelledBy = cancelledBy;
         CompletedAtUtc = completedAtUtc;
         CompletedBy = completedBy;
+        ReadyAtUtc = readyAtUtc;
+        ReadyBy = readyBy;
+        OutForDeliveryAtUtc = outForDeliveryAtUtc;
+        OutForDeliveryBy = outForDeliveryBy;
+        DeliveredAtUtc = deliveredAtUtc;
+        DeliveredBy = deliveredBy;
+        CollectedAtUtc = collectedAtUtc;
+        CollectedBy = collectedBy;
         UpdatedAtUtc = updatedAtUtc;
     }
 
@@ -246,6 +270,14 @@ public sealed class CustomerOrder
             cancelledBy: null,
             completedAtUtc: null,
             completedBy: null,
+            readyAtUtc: null,
+            readyBy: null,
+            outForDeliveryAtUtc: null,
+            outForDeliveryBy: null,
+            deliveredAtUtc: null,
+            deliveredBy: null,
+            collectedAtUtc: null,
+            collectedBy: null,
             utcNow);
     }
 
@@ -281,6 +313,14 @@ public sealed class CustomerOrder
         Guid? cancelledBy,
         DateTimeOffset? completedAtUtc,
         Guid? completedBy,
+        DateTimeOffset? readyAtUtc,
+        Guid? readyBy,
+        DateTimeOffset? outForDeliveryAtUtc,
+        Guid? outForDeliveryBy,
+        DateTimeOffset? deliveredAtUtc,
+        Guid? deliveredBy,
+        DateTimeOffset? collectedAtUtc,
+        Guid? collectedBy,
         DateTimeOffset updatedAtUtc) =>
         new(
             id,
@@ -314,6 +354,14 @@ public sealed class CustomerOrder
             cancelledBy,
             completedAtUtc,
             completedBy,
+            readyAtUtc,
+            readyBy,
+            outForDeliveryAtUtc,
+            outForDeliveryBy,
+            deliveredAtUtc,
+            deliveredBy,
+            collectedAtUtc,
+            collectedBy,
             updatedAtUtc);
 
     public void Accept(Guid actorId, DateTimeOffset utcNow)
@@ -390,9 +438,10 @@ public sealed class CustomerOrder
         UpdatedAtUtc = utcNow;
     }
 
-    public void StartPreparing(DateTimeOffset utcNow)
+    public void StartPreparing(DateTimeOffset utcNow, Guid actorId)
     {
         SaleMoney.EnsureUtc(utcNow);
+        EnsureActor(actorId);
 
         if (FulfillmentStatus == CustomerOrderFulfillmentStatus.Preparing)
         {
@@ -405,9 +454,10 @@ public sealed class CustomerOrder
             "Accepted orders should already be preparing; unexpected fulfillment status.");
     }
 
-    public void MarkReady(DateTimeOffset utcNow)
+    public void MarkReady(DateTimeOffset utcNow, Guid actorId)
     {
         SaleMoney.EnsureUtc(utcNow);
+        EnsureActor(actorId);
 
         var target = FulfillmentType == CustomerOrderFulfillmentType.Delivery
             ? CustomerOrderFulfillmentStatus.Ready
@@ -422,12 +472,15 @@ public sealed class CustomerOrder
         EnsureFulfillment(CustomerOrderFulfillmentStatus.Preparing, "Only preparing orders can be marked ready.");
 
         FulfillmentStatus = target;
+        ReadyAtUtc = utcNow;
+        ReadyBy = actorId;
         UpdatedAtUtc = utcNow;
     }
 
-    public void MarkOutForDelivery(DateTimeOffset utcNow)
+    public void MarkOutForDelivery(DateTimeOffset utcNow, Guid actorId)
     {
         SaleMoney.EnsureUtc(utcNow);
+        EnsureActor(actorId);
 
         if (FulfillmentType != CustomerOrderFulfillmentType.Delivery)
         {
@@ -445,12 +498,15 @@ public sealed class CustomerOrder
         EnsureFulfillment(CustomerOrderFulfillmentStatus.Ready, "Only ready delivery orders can go out for delivery.");
 
         FulfillmentStatus = CustomerOrderFulfillmentStatus.OutForDelivery;
+        OutForDeliveryAtUtc = utcNow;
+        OutForDeliveryBy = actorId;
         UpdatedAtUtc = utcNow;
     }
 
-    public void MarkDelivered(DateTimeOffset utcNow)
+    public void MarkDelivered(DateTimeOffset utcNow, Guid actorId)
     {
         SaleMoney.EnsureUtc(utcNow);
+        EnsureActor(actorId);
 
         if (FulfillmentType != CustomerOrderFulfillmentType.Delivery)
         {
@@ -470,12 +526,15 @@ public sealed class CustomerOrder
             "Only out-for-delivery orders can be marked delivered.");
 
         FulfillmentStatus = CustomerOrderFulfillmentStatus.Delivered;
+        DeliveredAtUtc = utcNow;
+        DeliveredBy = actorId;
         UpdatedAtUtc = utcNow;
     }
 
-    public void MarkCollected(DateTimeOffset utcNow)
+    public void MarkCollected(DateTimeOffset utcNow, Guid actorId)
     {
         SaleMoney.EnsureUtc(utcNow);
+        EnsureActor(actorId);
 
         if (FulfillmentType != CustomerOrderFulfillmentType.Pickup)
         {
@@ -495,6 +554,8 @@ public sealed class CustomerOrder
             "Only ready-for-pickup orders can be marked collected.");
 
         FulfillmentStatus = CustomerOrderFulfillmentStatus.Collected;
+        CollectedAtUtc = utcNow;
+        CollectedBy = actorId;
         UpdatedAtUtc = utcNow;
     }
 

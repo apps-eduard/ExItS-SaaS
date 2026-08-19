@@ -60,6 +60,14 @@ internal sealed class CustomerOrderRecord
     public Guid? CancelledBy { get; set; }
     public DateTimeOffset? CompletedAtUtc { get; set; }
     public Guid? CompletedBy { get; set; }
+    public DateTimeOffset? ReadyAtUtc { get; set; }
+    public Guid? ReadyBy { get; set; }
+    public DateTimeOffset? OutForDeliveryAtUtc { get; set; }
+    public Guid? OutForDeliveryBy { get; set; }
+    public DateTimeOffset? DeliveredAtUtc { get; set; }
+    public Guid? DeliveredBy { get; set; }
+    public DateTimeOffset? CollectedAtUtc { get; set; }
+    public Guid? CollectedBy { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public uint Xmin { get; set; }
 }

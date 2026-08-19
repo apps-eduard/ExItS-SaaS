@@ -64,12 +64,13 @@ internal static class InventoryEndpoints
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
-            if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem))
+            if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+                || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
             {
                 return problem!;
             }
 
-            var result = await useCase.ExecuteAsync(organizationId, body, ct).ConfigureAwait(false);
+            var result = await useCase.ExecuteAsync(organizationId, body, actorId, ct).ConfigureAwait(false);
             return await FromStockCountResultAsync(organizationId, result, queries, ct).ConfigureAwait(false);
         });
 

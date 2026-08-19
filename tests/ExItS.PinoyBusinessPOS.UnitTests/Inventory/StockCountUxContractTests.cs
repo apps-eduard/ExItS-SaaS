@@ -24,7 +24,8 @@ public sealed class StockCountUxContractTests
                 Org,
                 [new StockCountLineDraft(ProductA, null), new StockCountLineDraft(ProductA, null)],
                 Utc,
-                "Weekly count"));
+                "Weekly count",
+                Actor));
         Assert.Equal(DomainErrorCodes.StockCountDuplicateProduct, ex.ErrorCode);
     }
 
@@ -35,7 +36,8 @@ public sealed class StockCountUxContractTests
             Org,
             [new StockCountLineDraft(ProductA, null), new StockCountLineDraft(ProductB, null)],
             Utc,
-            "Weekly count");
+            "Weekly count",
+            Actor);
         Assert.Equal(2, draft.Lines.Count);
         Assert.Equal("Weekly count", draft.Title);
     }
@@ -48,6 +50,7 @@ public sealed class StockCountUxContractTests
             [new StockCountLineDraft(ProductA, null)],
             Utc,
             "Weekly count",
+            Actor,
             notes: "Counted after Friday closing.");
         Assert.Equal("Weekly count", weekly.Title);
         Assert.Equal("Counted after Friday closing.", weekly.Notes);
@@ -57,6 +60,7 @@ public sealed class StockCountUxContractTests
             [new StockCountLineDraft(ProductA, null)],
             Utc,
             "  Freezer inventory check  ",
+            Actor,
             notes: null);
         Assert.Equal("Freezer inventory check", custom.Title);
         Assert.Null(custom.Notes);
@@ -66,7 +70,7 @@ public sealed class StockCountUxContractTests
     public void CreateDraft_rejects_blank_custom_title()
     {
         var ex = Assert.Throws<DomainException>(() =>
-            StockCount.CreateDraft(Org, [new StockCountLineDraft(ProductA, null)], Utc, "   "));
+            StockCount.CreateDraft(Org, [new StockCountLineDraft(ProductA, null)], Utc, "   ", Actor));
         Assert.Equal(DomainErrorCodes.InvalidStockCountTitle, ex.ErrorCode);
     }
 
@@ -87,6 +91,7 @@ public sealed class StockCountUxContractTests
             completedBy: Actor,
             cancelledAtUtc: null,
             cancelledBy: null,
+            createdBy: null,
             createdAtUtc: Utc,
             updatedAtUtc: Utc.AddMinutes(20),
             lines: []);
@@ -119,9 +124,35 @@ public sealed class StockCountUxContractTests
             Org,
             [new StockCountLineDraft(ProductA, null)],
             Utc,
-            "Weekly count");
+            "Weekly count",
+            Actor);
         Assert.Equal(TimeSpan.Zero, draft.CreatedAtUtc.Offset);
         Assert.Equal(Utc, draft.CreatedAtUtc);
+    }
+
+    [Fact]
+    public void CreateDraft_persists_created_by_actor()
+    {
+        var draft = StockCount.CreateDraft(
+            Org,
+            [new StockCountLineDraft(ProductA, null)],
+            Utc,
+            "Weekly count",
+            Actor);
+        Assert.Equal(Actor, draft.CreatedBy);
+    }
+
+    [Fact]
+    public void CreateDraft_rejects_empty_actor()
+    {
+        var ex = Assert.Throws<DomainException>(() =>
+            StockCount.CreateDraft(
+                Org,
+                [new StockCountLineDraft(ProductA, null)],
+                Utc,
+                "Weekly count",
+                Guid.Empty));
+        Assert.Equal(DomainErrorCodes.InvalidSaleActor, ex.ErrorCode);
     }
 
     [Fact]

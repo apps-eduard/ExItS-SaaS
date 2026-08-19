@@ -399,6 +399,7 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
             entity.Property(e => e.CompletedAtUtc).HasColumnName("completed_at_utc");
             entity.Property(e => e.ProviderEventSequence).HasColumnName("provider_event_sequence");
+            entity.Property(e => e.ProviderFinalizedBySystem).HasColumnName("provider_finalized_by_system").IsRequired();
 
             entity.HasIndex(e => new { e.OrganizationId, e.IdempotencyKey })
                 .IsUnique()
@@ -1247,6 +1248,14 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.CancelledBy).HasColumnName("cancelled_by");
             entity.Property(e => e.CompletedAtUtc).HasColumnName("completed_at_utc");
             entity.Property(e => e.CompletedBy).HasColumnName("completed_by");
+            entity.Property(e => e.ReadyAtUtc).HasColumnName("ready_at_utc");
+            entity.Property(e => e.ReadyBy).HasColumnName("ready_by");
+            entity.Property(e => e.OutForDeliveryAtUtc).HasColumnName("out_for_delivery_at_utc");
+            entity.Property(e => e.OutForDeliveryBy).HasColumnName("out_for_delivery_by");
+            entity.Property(e => e.DeliveredAtUtc).HasColumnName("delivered_at_utc");
+            entity.Property(e => e.DeliveredBy).HasColumnName("delivered_by");
+            entity.Property(e => e.CollectedAtUtc).HasColumnName("collected_at_utc");
+            entity.Property(e => e.CollectedBy).HasColumnName("collected_by");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
@@ -1838,6 +1847,7 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.CompletedBy).HasColumnName("completed_by");
             entity.Property(e => e.CancelledAtUtc).HasColumnName("cancelled_at_utc");
             entity.Property(e => e.CancelledBy).HasColumnName("cancelled_by");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.Xmin)

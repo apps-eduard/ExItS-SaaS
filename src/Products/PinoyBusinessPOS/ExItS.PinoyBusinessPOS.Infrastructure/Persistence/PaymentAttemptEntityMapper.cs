@@ -35,7 +35,8 @@ internal static class PaymentAttemptEntityMapper
             r.UpdatedAtUtc,
             r.ExpiresAtUtc,
             r.CompletedAtUtc,
-            r.ProviderEventSequence);
+            r.ProviderEventSequence,
+            r.ProviderFinalizedBySystem);
 
     public static PaymentAttemptRecord ToRecord(PaymentAttempt a) =>
         new()
@@ -65,7 +66,8 @@ internal static class PaymentAttemptEntityMapper
             UpdatedAtUtc = a.UpdatedAtUtc,
             ExpiresAtUtc = a.ExpiresAtUtc,
             CompletedAtUtc = a.CompletedAtUtc,
-            ProviderEventSequence = a.ProviderEventSequence
+            ProviderEventSequence = a.ProviderEventSequence,
+            ProviderFinalizedBySystem = a.ProviderFinalizedBySystem
         };
 
     public static void Apply(PaymentAttempt a, PaymentAttemptRecord r)
@@ -87,5 +89,6 @@ internal static class PaymentAttemptEntityMapper
         r.ExpiresAtUtc = a.ExpiresAtUtc;
         r.CompletedAtUtc = a.CompletedAtUtc;
         r.ProviderEventSequence = a.ProviderEventSequence;
+        r.ProviderFinalizedBySystem = a.ProviderFinalizedBySystem;
     }
 }

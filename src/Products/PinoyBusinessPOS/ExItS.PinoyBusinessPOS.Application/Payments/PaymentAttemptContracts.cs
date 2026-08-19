@@ -60,7 +60,8 @@ public sealed record PaymentAttemptDto(
     DateTimeOffset? ExpiresAtUtc,
     DateTimeOffset? CompletedAtUtc,
     Guid? VerifiedBy,
-    string? VerificationReason);
+    string? VerificationReason,
+    bool ProviderFinalizedBySystem);
 
 public sealed record CreatePaymentAttemptRequest(
     string Method,
@@ -97,5 +98,6 @@ public static class PaymentAttemptMaps
             a.ExpiresAtUtc,
             a.CompletedAtUtc,
             a.VerifiedBy,
-            a.VerificationReason);
+            a.VerificationReason,
+            a.ProviderFinalizedBySystem);
 }

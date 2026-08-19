@@ -820,60 +820,83 @@ public sealed class AdvanceCustomerOrderFulfillment
     public Task<ApplicationResult<CustomerOrderDto>> StartPreparingAsync(
         Guid sellerOrganizationId,
         Guid orderId,
-        CancellationToken cancellationToken = default) =>
-        MutateAsync(sellerOrganizationId, orderId, o => o.StartPreparing(_clock.UtcNow), null, cancellationToken);
-
-    public Task<ApplicationResult<CustomerOrderDto>> MarkReadyAsync(
-        Guid sellerOrganizationId,
-        Guid orderId,
+        Guid actorId,
         CancellationToken cancellationToken = default) =>
         MutateAsync(
             sellerOrganizationId,
             orderId,
-            o => o.MarkReady(_clock.UtcNow),
+            actorId,
+            o => o.StartPreparing(_clock.UtcNow, actorId),
+            null,
+            cancellationToken);
+
+    public Task<ApplicationResult<CustomerOrderDto>> MarkReadyAsync(
+        Guid sellerOrganizationId,
+        Guid orderId,
+        Guid actorId,
+        CancellationToken cancellationToken = default) =>
+        MutateAsync(
+            sellerOrganizationId,
+            orderId,
+            actorId,
+            o => o.MarkReady(_clock.UtcNow, actorId),
             CustomerOrderNotificationTypes.Ready,
             cancellationToken);
 
     public Task<ApplicationResult<CustomerOrderDto>> MarkOutForDeliveryAsync(
         Guid sellerOrganizationId,
         Guid orderId,
+        Guid actorId,
         CancellationToken cancellationToken = default) =>
         MutateAsync(
             sellerOrganizationId,
             orderId,
-            o => o.MarkOutForDelivery(_clock.UtcNow),
+            actorId,
+            o => o.MarkOutForDelivery(_clock.UtcNow, actorId),
             CustomerOrderNotificationTypes.OutForDelivery,
             cancellationToken);
 
     public Task<ApplicationResult<CustomerOrderDto>> MarkDeliveredAsync(
         Guid sellerOrganizationId,
         Guid orderId,
+        Guid actorId,
         CancellationToken cancellationToken = default) =>
         MutateAsync(
             sellerOrganizationId,
             orderId,
-            o => o.MarkDelivered(_clock.UtcNow),
+            actorId,
+            o => o.MarkDelivered(_clock.UtcNow, actorId),
             CustomerOrderNotificationTypes.Delivered,
             cancellationToken);
 
     public Task<ApplicationResult<CustomerOrderDto>> MarkCollectedAsync(
         Guid sellerOrganizationId,
         Guid orderId,
+        Guid actorId,
         CancellationToken cancellationToken = default) =>
         MutateAsync(
             sellerOrganizationId,
             orderId,
-            o => o.MarkCollected(_clock.UtcNow),
+            actorId,
+            o => o.MarkCollected(_clock.UtcNow, actorId),
             CustomerOrderNotificationTypes.Collected,
             cancellationToken);
 
     private async Task<ApplicationResult<CustomerOrderDto>> MutateAsync(
         Guid sellerOrganizationId,
         Guid orderId,
+        Guid actorId,
         Action<CustomerOrder> mutate,
         string? notifyType,
         CancellationToken cancellationToken)
     {
+        if (actorId == Guid.Empty)
+        {
+            return ApplicationResult<CustomerOrderDto>.Failure(
+                ApplicationErrorCodes.ActorRequired,
+                "An actor identifier is required to advance customer order fulfillment.");
+        }
+
         try
         {
             var orgId = PosOrganizationId.From(sellerOrganizationId);

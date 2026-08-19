@@ -64,6 +64,14 @@ public sealed record CustomerOrderDto(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset? SubmittedAtUtc,
     DateTimeOffset? AcceptedAtUtc,
+    DateTimeOffset? ReadyAtUtc,
+    Guid? ReadyBy,
+    DateTimeOffset? OutForDeliveryAtUtc,
+    Guid? OutForDeliveryBy,
+    DateTimeOffset? DeliveredAtUtc,
+    Guid? DeliveredBy,
+    DateTimeOffset? CollectedAtUtc,
+    Guid? CollectedBy,
     DateTimeOffset? CompletedAtUtc,
     DateTimeOffset UpdatedAtUtc);
 
@@ -200,6 +208,14 @@ public static class CustomerOrderMaps
             order.CreatedAtUtc,
             order.SubmittedAtUtc,
             order.AcceptedAtUtc,
+            order.ReadyAtUtc,
+            order.ReadyBy,
+            order.OutForDeliveryAtUtc,
+            order.OutForDeliveryBy,
+            order.DeliveredAtUtc,
+            order.DeliveredBy,
+            order.CollectedAtUtc,
+            order.CollectedBy,
             order.CompletedAtUtc,
             order.UpdatedAtUtc);
 

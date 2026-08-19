@@ -197,11 +197,11 @@ internal static class CustomerOrderEndpoints
                 Results.Ok);
         });
 
-        MapFulfillment(group, "start-preparing", (u, org, id, ct) => u.StartPreparingAsync(org, id, ct));
-        MapFulfillment(group, "mark-ready", (u, org, id, ct) => u.MarkReadyAsync(org, id, ct));
-        MapFulfillment(group, "mark-out-for-delivery", (u, org, id, ct) => u.MarkOutForDeliveryAsync(org, id, ct));
-        MapFulfillment(group, "mark-delivered", (u, org, id, ct) => u.MarkDeliveredAsync(org, id, ct));
-        MapFulfillment(group, "mark-collected", (u, org, id, ct) => u.MarkCollectedAsync(org, id, ct));
+        MapFulfillment(group, "start-preparing", (u, org, id, actor, ct) => u.StartPreparingAsync(org, id, actor, ct));
+        MapFulfillment(group, "mark-ready", (u, org, id, actor, ct) => u.MarkReadyAsync(org, id, actor, ct));
+        MapFulfillment(group, "mark-out-for-delivery", (u, org, id, actor, ct) => u.MarkOutForDeliveryAsync(org, id, actor, ct));
+        MapFulfillment(group, "mark-delivered", (u, org, id, actor, ct) => u.MarkDeliveredAsync(org, id, actor, ct));
+        MapFulfillment(group, "mark-collected", (u, org, id, actor, ct) => u.MarkCollectedAsync(org, id, actor, ct));
 
         group.MapPost("/{orderId:guid}/complete", async (
             HttpRequest request,
@@ -234,7 +234,7 @@ internal static class CustomerOrderEndpoints
     private static void MapFulfillment(
         RouteGroupBuilder group,
         string action,
-        Func<AdvanceCustomerOrderFulfillment, Guid, Guid, CancellationToken, Task<ApplicationResult<CustomerOrderDto>>> execute)
+        Func<AdvanceCustomerOrderFulfillment, Guid, Guid, Guid, CancellationToken, Task<ApplicationResult<CustomerOrderDto>>> execute)
     {
         group.MapPost($"/{{orderId:guid}}/{action}", async (
             HttpRequest request,
@@ -244,13 +244,14 @@ internal static class CustomerOrderEndpoints
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
-            if (!TryAuthorizeSeller(request, access, organizationId, UtangCapability.ManageCustomerOrders, out var problem))
+            if (!TryAuthorizeSeller(request, access, organizationId, UtangCapability.ManageCustomerOrders, out var problem)
+                || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
             {
                 return problem!;
             }
 
             return PosApiResults.FromResult(
-                await execute(useCase, organizationId, orderId, ct).ConfigureAwait(false),
+                await execute(useCase, organizationId, orderId, actorId, ct).ConfigureAwait(false),
                 Results.Ok);
         });
     }

@@ -103,11 +103,14 @@ public sealed class CustomerOrderDomainTests
         Assert.Equal(CustomerOrderFulfillmentStatus.Preparing, order.FulfillmentStatus);
         Assert.Equal(CustomerOrderStockReservationState.None, order.StockReservationState);
 
-        order.StartPreparing(Utc.AddMinutes(2));
-        order.MarkReady(Utc.AddMinutes(3));
+        order.StartPreparing(Utc.AddMinutes(2), Actor);
+        order.MarkReady(Utc.AddMinutes(3), Actor);
         Assert.Equal(CustomerOrderFulfillmentStatus.ReadyForPickup, order.FulfillmentStatus);
+        Assert.Equal(Actor, order.ReadyBy);
+        Assert.Equal(Utc.AddMinutes(3), order.ReadyAtUtc);
 
-        order.MarkCollected(Utc.AddMinutes(4));
+        order.MarkCollected(Utc.AddMinutes(4), Actor);
+        Assert.Equal(Actor, order.CollectedBy);
         order.Complete(Actor, Utc.AddMinutes(5));
         Assert.Equal(CustomerOrderStatus.Completed, order.Status);
         Assert.Equal(CustomerOrderFulfillmentStatus.Collected, order.FulfillmentStatus);
@@ -118,11 +121,14 @@ public sealed class CustomerOrderDomainTests
     {
         var order = CreateDelivery(fee: 40m);
         order.Accept(Actor, Utc.AddMinutes(1));
-        order.MarkReady(Utc.AddMinutes(2));
+        order.MarkReady(Utc.AddMinutes(2), Actor);
         Assert.Equal(CustomerOrderFulfillmentStatus.Ready, order.FulfillmentStatus);
+        Assert.Equal(Actor, order.ReadyBy);
 
-        order.MarkOutForDelivery(Utc.AddMinutes(3));
-        order.MarkDelivered(Utc.AddMinutes(4));
+        order.MarkOutForDelivery(Utc.AddMinutes(3), Actor);
+        Assert.Equal(Actor, order.OutForDeliveryBy);
+        order.MarkDelivered(Utc.AddMinutes(4), Actor);
+        Assert.Equal(Actor, order.DeliveredBy);
         order.Complete(Actor, Utc.AddMinutes(5));
 
         Assert.Equal(CustomerOrderStatus.Completed, order.Status);
@@ -158,20 +164,20 @@ public sealed class CustomerOrderDomainTests
     {
         var pickup = CreatePickup(CustomerOrderParty.Personal(PlatformUser, "Ana"));
         var outForDelivery = Assert.Throws<DomainException>(() =>
-            pickup.MarkOutForDelivery(Utc.AddMinutes(1)));
+            pickup.MarkOutForDelivery(Utc.AddMinutes(1), Actor));
         Assert.Equal(DomainErrorCodes.InvalidCustomerOrderFulfillmentTransition, outForDelivery.ErrorCode);
 
         pickup.Accept(Actor, Utc.AddMinutes(1));
-        pickup.MarkReady(Utc.AddMinutes(2));
+        pickup.MarkReady(Utc.AddMinutes(2), Actor);
         var deliveryOnly = Assert.Throws<DomainException>(() =>
-            pickup.MarkOutForDelivery(Utc.AddMinutes(3)));
+            pickup.MarkOutForDelivery(Utc.AddMinutes(3), Actor));
         Assert.Equal(DomainErrorCodes.InvalidCustomerOrderFulfillmentTransition, deliveryOnly.ErrorCode);
 
         var delivery = CreateDelivery(fee: 10m);
         delivery.Accept(Actor, Utc.AddMinutes(1));
-        delivery.MarkReady(Utc.AddMinutes(2));
+        delivery.MarkReady(Utc.AddMinutes(2), Actor);
         var collectOnDelivery = Assert.Throws<DomainException>(() =>
-            delivery.MarkCollected(Utc.AddMinutes(3)));
+            delivery.MarkCollected(Utc.AddMinutes(3), Actor));
         Assert.Equal(DomainErrorCodes.InvalidCustomerOrderFulfillmentTransition, collectOnDelivery.ErrorCode);
     }
 

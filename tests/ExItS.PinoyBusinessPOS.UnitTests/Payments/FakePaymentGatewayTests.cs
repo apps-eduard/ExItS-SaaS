@@ -114,5 +114,24 @@ public sealed class FakePaymentGatewayTests
         attempt.MarkPaidFromProvider(20, DateTimeOffset.UtcNow, "Visa", "4242");
         Assert.Equal(PaymentAttemptStatus.Paid, attempt.Status);
         Assert.Equal(20, attempt.ProviderEventSequence);
+        Assert.True(attempt.ProviderFinalizedBySystem);
+    }
+
+    [Fact]
+    public void MarkFailedFromProvider_records_system_finalization()
+    {
+        var attempt = PaymentAttempt.CreateElectronic(
+            PosOrganizationId.From(Guid.NewGuid()),
+            SaleId.From(Guid.NewGuid()),
+            PaymentAttemptMethod.GCash,
+            10m,
+            "PHP",
+            "key-2",
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow);
+        attempt.AttachProviderSession("fake_ref2", null, null, "qr", DateTimeOffset.UtcNow);
+        attempt.MarkFailedFromProvider(5, "declined", "no", DateTimeOffset.UtcNow);
+        Assert.Equal(PaymentAttemptStatus.Failed, attempt.Status);
+        Assert.True(attempt.ProviderFinalizedBySystem);
     }
 }

@@ -95,6 +95,14 @@ internal static class CustomerOrderEntityMapper
             record.CancelledBy,
             record.CompletedAtUtc,
             record.CompletedBy,
+            record.ReadyAtUtc,
+            record.ReadyBy,
+            record.OutForDeliveryAtUtc,
+            record.OutForDeliveryBy,
+            record.DeliveredAtUtc,
+            record.DeliveredBy,
+            record.CollectedAtUtc,
+            record.CollectedBy,
             record.UpdatedAtUtc);
     }
 
@@ -135,6 +143,14 @@ internal static class CustomerOrderEntityMapper
             CancelledBy = order.CancelledBy,
             CompletedAtUtc = order.CompletedAtUtc,
             CompletedBy = order.CompletedBy,
+            ReadyAtUtc = order.ReadyAtUtc,
+            ReadyBy = order.ReadyBy,
+            OutForDeliveryAtUtc = order.OutForDeliveryAtUtc,
+            OutForDeliveryBy = order.OutForDeliveryBy,
+            DeliveredAtUtc = order.DeliveredAtUtc,
+            DeliveredBy = order.DeliveredBy,
+            CollectedAtUtc = order.CollectedAtUtc,
+            CollectedBy = order.CollectedBy,
             UpdatedAtUtc = order.UpdatedAtUtc
         };
 
@@ -175,6 +191,14 @@ internal static class CustomerOrderEntityMapper
         record.CancelledBy = order.CancelledBy;
         record.CompletedAtUtc = order.CompletedAtUtc;
         record.CompletedBy = order.CompletedBy;
+        record.ReadyAtUtc = order.ReadyAtUtc;
+        record.ReadyBy = order.ReadyBy;
+        record.OutForDeliveryAtUtc = order.OutForDeliveryAtUtc;
+        record.OutForDeliveryBy = order.OutForDeliveryBy;
+        record.DeliveredAtUtc = order.DeliveredAtUtc;
+        record.DeliveredBy = order.DeliveredBy;
+        record.CollectedAtUtc = order.CollectedAtUtc;
+        record.CollectedBy = order.CollectedBy;
         record.UpdatedAtUtc = order.UpdatedAtUtc;
     }
 

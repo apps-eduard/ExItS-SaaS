@@ -22,6 +22,7 @@ internal static class StockCountEntityMapper
             record.CompletedBy,
             record.CancelledAtUtc,
             record.CancelledBy,
+            record.CreatedBy,
             record.CreatedAtUtc,
             record.UpdatedAtUtc,
             lines.Select(ToDomain).ToList());
@@ -52,6 +53,7 @@ internal static class StockCountEntityMapper
             CompletedBy = count.CompletedBy,
             CancelledAtUtc = count.CancelledAtUtc,
             CancelledBy = count.CancelledBy,
+            CreatedBy = count.CreatedBy,
             CreatedAtUtc = count.CreatedAtUtc,
             UpdatedAtUtc = count.UpdatedAtUtc
         };

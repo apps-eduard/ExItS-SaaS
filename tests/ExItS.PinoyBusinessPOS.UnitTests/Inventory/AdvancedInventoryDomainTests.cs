@@ -75,7 +75,8 @@ public sealed class AdvancedInventoryDomainTests
             Org,
             [new StockCountLineDraft(Product, null)],
             Utc,
-            "Weekly count");
+            "Weekly count",
+            Actor);
         draft.Start("CNT-20260731-000001", new Dictionary<Guid, decimal> { [Product.Value] = 7m }, Actor, Utc.AddMinutes(1));
 
         Assert.Equal(StockCountStatus.InProgress, draft.Status);
@@ -91,7 +92,8 @@ public sealed class AdvancedInventoryDomainTests
             Org,
             [new StockCountLineDraft(Product, null)],
             Utc,
-            "Monthly count");
+            "Monthly count",
+            Actor);
         draft.Start("CNT-20260731-000002", new Dictionary<Guid, decimal> { [Product.Value] = 4m }, Actor, Utc.AddMinutes(1));
 
         var ex = Assert.Throws<DomainException>(() => draft.MarkCompleted(Actor, Utc.AddMinutes(2)));

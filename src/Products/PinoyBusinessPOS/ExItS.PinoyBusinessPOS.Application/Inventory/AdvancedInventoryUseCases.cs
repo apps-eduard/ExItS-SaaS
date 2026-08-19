@@ -262,8 +262,16 @@ public sealed class CreateStockCount
     public async Task<ApplicationResult<StockCount>> ExecuteAsync(
         Guid organizationId,
         CreateStockCountRequest request,
+        Guid actorId,
         CancellationToken cancellationToken = default)
     {
+        if (actorId == Guid.Empty)
+        {
+            return ApplicationResult<StockCount>.Failure(
+                ApplicationErrorCodes.ActorRequired,
+                "An actor identifier is required to create a stock count.");
+        }
+
         var orgId = PosOrganizationId.From(organizationId);
         try
         {
@@ -275,6 +283,7 @@ public sealed class CreateStockCount
                 drafts,
                 _clock.UtcNow,
                 request.Title,
+                actorId,
                 request.CountDate,
                 request.Notes);
             await _counts.AddAsync(count, cancellationToken).ConfigureAwait(false);

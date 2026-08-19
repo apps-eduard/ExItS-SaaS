@@ -28,4 +28,5 @@ internal sealed class PaymentAttemptRecord
     public DateTimeOffset? ExpiresAtUtc { get; set; }
     public DateTimeOffset? CompletedAtUtc { get; set; }
     public long ProviderEventSequence { get; set; }
+    public bool ProviderFinalizedBySystem { get; set; }
 }
