@@ -1,0 +1,192 @@
+@page "/manage-business"
+@using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Application.Platform
+@inject ICurrentUserContext CurrentUser
+@inject IWorkspaceGovernanceGate Governance
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-manage-business">
+    <StoreHeaderBack Href="/" />
+    <Page>
+        @if (_loading)
+        {
+            <div class="pos-manage-business__loading">
+                <Spinner /><span>@L["Common_Loading"]</span>
+            </div>
+        }
+        else if (!_allowed)
+        {
+            <ErrorState Title="@L["Access_DeniedTitle"]"
+                        Message="@L["ManageBusiness_PrimaryRequired"]"
+                        RetryLabel="@L["Nav_Dashboard"]"
+                        OnRetry="GoHome" />
+        }
+        else
+        {
+            <header class="pos-manage-business__header">
+                <h1 class="pos-manage-business__title">@L["ManageBusiness_Title"]</h1>
+                <p class="pos-manage-business__subtitle">@L["ManageBusiness_Subtitle"]</p>
+            </header>
+
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <Alert Tone="AlertTone.Danger" Message="@_error" />
+            }
+
+            <section class="pos-manage-business__summary" aria-label="@L["ManageBusiness_SummarySection"]">
+                <dl class="pos-manage-business__summary-list">
+                    <div class="pos-manage-business__summary-row">
+                        <dt>@L["Org_OrganizationLabel"]</dt>
+                        <dd>@(_orgName ?? "—")</dd>
+                    </div>
+                    <div class="pos-manage-business__summary-row">
+                        <dt>@L["ManageBusiness_BranchCount"]</dt>
+                        <dd>@_branchCount</dd>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(_subscriptionStatus))
+                    {
+                        <div class="pos-manage-business__summary-row">
+                            <dt>@L["Org_Subscription"]</dt>
+                            <dd>@_subscriptionStatus</dd>
+                        </div>
+                    }
+                </dl>
+            </section>
+
+            <nav class="pos-manage-business__nav" role="list" aria-label="@L["ManageBusiness_Title"]">
+                <button type="button" class="pos-manage-business__row" role="listitem" @onclick='() => Go("/organization/branches")'>
+                    <span class="pos-manage-business__row-body">
+                        <span class="pos-manage-business__row-title">@L["Branches_Title"]</span>
+                        <span class="pos-manage-business__row-meta pos-muted">@L["ManageBusiness_BranchesHint"]</span>
+                    </span>
+                    <span class="pos-manage-business__chevron" aria-hidden="true">›</span>
+                </button>
+                <button type="button" class="pos-manage-business__row" role="listitem" @onclick='() => Go("/org/staff")'>
+                    <span class="pos-manage-business__row-body">
+                        <span class="pos-manage-business__row-title">@L["ManageBusiness_StaffAccess"]</span>
+                        <span class="pos-manage-business__row-meta pos-muted">@L["ManageBusiness_StaffHint"]</span>
+                    </span>
+                    <span class="pos-manage-business__chevron" aria-hidden="true">›</span>
+                </button>
+                <button type="button" class="pos-manage-business__row" role="listitem" @onclick='() => Go("/org/profile")'>
+                    <span class="pos-manage-business__row-body">
+                        <span class="pos-manage-business__row-title">@L["Org_ProfileLink"]</span>
+                    </span>
+                    <span class="pos-manage-business__chevron" aria-hidden="true">›</span>
+                </button>
+                <button type="button" class="pos-manage-business__row" role="listitem" @onclick='() => Go("/org/business-qr")'>
+                    <span class="pos-manage-business__row-body">
+                        <span class="pos-manage-business__row-title">@L["Org_BusinessQrLink"]</span>
+                    </span>
+                    <span class="pos-manage-business__chevron" aria-hidden="true">›</span>
+                </button>
+                <button type="button" class="pos-manage-business__row" role="listitem" @onclick='() => Go("/org/subscription")'>
+                    <span class="pos-manage-business__row-body">
+                        <span class="pos-manage-business__row-title">@L["Org_SubscriptionLink"]</span>
+                    </span>
+                    <span class="pos-manage-business__chevron" aria-hidden="true">›</span>
+                </button>
+                <button type="button" class="pos-manage-business__row" role="listitem" @onclick='() => Go("/org/business-types")'>
+                    <span class="pos-manage-business__row-body">
+                        <span class="pos-manage-business__row-title">@L["Org_BusinessTypesLink"]</span>
+                    </span>
+                    <span class="pos-manage-business__chevron" aria-hidden="true">›</span>
+                </button>
+                <button type="button" class="pos-manage-business__row" role="listitem" @onclick='() => Go("/org/notifications")'>
+                    <span class="pos-manage-business__row-body">
+                        <span class="pos-manage-business__row-title">@L["OrgNotifications_Title"]</span>
+                    </span>
+                    <span class="pos-manage-business__chevron" aria-hidden="true">›</span>
+                </button>
+                <button type="button" class="pos-manage-business__row" role="listitem" @onclick='() => Go("/org/privacy")'>
+                    <span class="pos-manage-business__row-body">
+                        <span class="pos-manage-business__row-title">@L["Privacy_Title"]</span>
+                    </span>
+                    <span class="pos-manage-business__chevron" aria-hidden="true">›</span>
+                </button>
+                <button type="button" class="pos-manage-business__row" role="listitem" @onclick='() => Go("/org/devices")'>
+                    <span class="pos-manage-business__row-body">
+                        <span class="pos-manage-business__row-title">@L["ManageBusiness_Devices"]</span>
+                    </span>
+                    <span class="pos-manage-business__chevron" aria-hidden="true">›</span>
+                </button>
+                <button type="button" class="pos-manage-business__row" role="listitem" @onclick='() => Go("/sales-document-education")'>
+                    <span class="pos-manage-business__row-body">
+                        <span class="pos-manage-business__row-title">@L["SalesDocument_EducationTitle"]</span>
+                    </span>
+                    <span class="pos-manage-business__chevron" aria-hidden="true">›</span>
+                </button>
+                <button type="button" class="pos-manage-business__row" role="listitem" @onclick='() => Go("/organization/tax-compliance")'>
+                    <span class="pos-manage-business__row-body">
+                        <span class="pos-manage-business__row-title">@L["TaxCompliance_Title"]</span>
+                    </span>
+                    <span class="pos-manage-business__chevron" aria-hidden="true">›</span>
+                </button>
+            </nav>
+
+            <section class="pos-manage-business__activity" aria-labelledby="manage-activity-heading">
+                <h2 id="manage-activity-heading" class="pos-manage-business__section-title">@L["ManageBusiness_ActivityTitle"]</h2>
+                <p class="pos-manage-business__activity-note pos-muted">@L["ManageBusiness_ActivityHint"]</p>
+            </section>
+
+            <p class="pos-manage-business__footnote pos-muted">@L["Org_WebAdminReminder"]</p>
+        }
+    </Page>
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _allowed;
+    private string? _error;
+    private string? _orgName;
+    private int _branchCount;
+    private string? _subscriptionStatus;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo("/signin", replace: true);
+            return;
+        }
+
+        _orgName = CurrentUser.Session.OrganizationDisplayName;
+        _allowed = await Governance.CanAccessManageBusinessAsync();
+        if (!_allowed)
+        {
+            _loading = false;
+            return;
+        }
+
+        try
+        {
+            var orgId = CurrentUser.Session.OrganizationId.Value;
+            var branches = await Platform.GetBranchesAsync(orgId);
+            if (branches.IsSuccess && branches.Data is not null)
+            {
+                _branchCount = branches.Data.Count(b =>
+                    string.Equals(b.Status, "Active", StringComparison.OrdinalIgnoreCase));
+            }
+
+            var sub = await Platform.GetCurrentSubscriptionAsync(orgId, PosProductCodes.PinoyBusinessPos);
+            if (sub.IsSuccess && sub.Data is not null)
+            {
+                _subscriptionStatus = sub.Data.Status;
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void Go(string path) => Nav.NavigateTo(path);
+
+    private void GoHome() => Nav.NavigateTo("/");
+}

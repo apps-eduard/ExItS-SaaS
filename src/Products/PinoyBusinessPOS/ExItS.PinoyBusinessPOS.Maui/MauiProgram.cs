@@ -165,6 +165,7 @@ public static class MauiProgram
         services.AddSingleton<NavigationGate>();
         services.AddSingleton<OfflineFoundationDiagnostics>();
         services.AddSingleton<IOrganizationOwnerProbe, PlatformOrganizationOwnerProbe>();
+        services.AddSingleton<IWorkspaceGovernanceGate, WorkspaceGovernanceGate>();
         services.AddSingleton<IPersonalDiagnosticsSyncRetry, PersonalDiagnosticsSyncRetry>();
         services.AddSingleton<IOrganizationDiagnosticsSyncRetry, OrganizationDiagnosticsSyncRetry>();
         services.AddSingleton<ISupportDiagnosticsRoleReader, PosEffectiveRoleReader>();

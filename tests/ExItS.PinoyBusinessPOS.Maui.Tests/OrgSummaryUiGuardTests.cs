@@ -28,14 +28,13 @@ public sealed class OrgSummaryUiGuardTests
         Assert.Contains("_enteringPos", page, StringComparison.Ordinal);
         Assert.Contains("EnablePosAsync", page, StringComparison.Ordinal);
         Assert.Contains("pos-org__nav-row", page, StringComparison.Ordinal);
-        Assert.Contains("Org_ProfileLink", page, StringComparison.Ordinal);
-        Assert.Contains("Org_StaffLink", page, StringComparison.Ordinal);
-        Assert.Contains("Org_BusinessQrLink", page, StringComparison.Ordinal);
-        Assert.Contains("Org_SubscriptionLink", page, StringComparison.Ordinal);
-        Assert.Contains("/org/profile", page, StringComparison.Ordinal);
-        Assert.Contains("/org/staff", page, StringComparison.Ordinal);
-        Assert.Contains("/org/business-qr", page, StringComparison.Ordinal);
-        Assert.Contains("/org/subscription", page, StringComparison.Ordinal);
+        Assert.Contains("BranchSettings_Title", page, StringComparison.Ordinal);
+        Assert.Contains("GoBranchSettings", page, StringComparison.Ordinal);
+        Assert.Contains("/branch-settings", page, StringComparison.Ordinal);
+        Assert.Contains("BranchSettings_LocalOnlyHint", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("/org/profile", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("/org/staff", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("Org_EssentialsSection", page, StringComparison.Ordinal);
         Assert.Contains("Org_WebAdminReminder", page, StringComparison.Ordinal);
         // My QR is Personal-only; Org shell must not deep-link into Personal tabs.
         Assert.DoesNotContain("Personal_MyQrLink", page, StringComparison.Ordinal);

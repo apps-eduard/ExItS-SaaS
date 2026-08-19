@@ -9,6 +9,7 @@
 @inject NavigationManager Nav
 @inject OfflineAwareNavigation OfflineNav
 @inject OnlineRequiredGuard OnlineRequired
+@inject IWorkspaceGovernanceGate Governance
 @inject IStringLocalizer<PosResources> L
 
 <div class="pos-topbar__overflow" @onclick:stopPropagation="true">
@@ -21,6 +22,13 @@
             @if (ExtraItems is not null)
             {
                 @ExtraItems
+            }
+            @if (_showManageBusiness)
+            {
+                <button type="button" class="pos-topbar__overflow-item" role="menuitem" @onclick="GoManageBusinessAsync">
+                    <span class="pos-topbar__overflow-icon" aria-hidden="true">@IconGlyphs.Get("settings")</span>
+                    <span>@L["ManageBusiness_Menu"]</span>
+                </button>
             }
             @if (ShowSettings)
             {
@@ -92,6 +100,8 @@
     private bool _logoutBusy;
     private bool _lockBusy;
     private bool _canLock;
+    private bool _showManageBusiness;
+    private bool _governanceLoaded;
     private string _logoutMessage = string.Empty;
 
     private bool IsPersonalSession => CurrentUser.Session?.OrganizationId is null;
@@ -153,7 +163,12 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => _ = CloseAsync();
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        _governanceLoaded = false;
+        _showManageBusiness = false;
+        _ = CloseAsync();
+    }
 
     private async Task ToggleAsync()
     {
@@ -170,6 +185,20 @@
         }
 
         _open = true;
+        if (!_governanceLoaded && !IsPersonalSession)
+        {
+            try
+            {
+                _showManageBusiness = await Governance.CanAccessManageBusinessAsync();
+            }
+            catch
+            {
+                _showManageBusiness = false;
+            }
+
+            _governanceLoaded = true;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     public async Task CloseAsync()
@@ -186,6 +215,12 @@
         }
 
         await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task GoManageBusinessAsync()
+    {
+        await CloseAsync();
+        Nav.NavigateTo("/manage-business");
     }
 
     private async Task GoSettingsAsync()

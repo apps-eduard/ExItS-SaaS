@@ -12,6 +12,7 @@
 @inject NavigationManager Nav
 @inject PostSignInReturnRoute ReturnRoute
 @inject ApiStatusLocalizer StatusLocalizer
+@inject IWorkspaceGovernanceGate Governance
 @inject IStringLocalizer<PosResources> L
 
 @if (!_ready)
@@ -158,54 +159,23 @@ else
                 }
             </div>
 
-            <section class="pos-org__essentials" aria-labelledby="org-essentials-heading">
-                <h2 id="org-essentials-heading" class="pos-org__section-title">@L["Org_EssentialsSection"]</h2>
+            <section class="pos-org__essentials" aria-labelledby="org-branch-heading">
+                <h2 id="org-branch-heading" class="pos-org__section-title">@L["BranchSettings_Title"]</h2>
 
-                @if (_isOrganizationOwner)
+                @if (_hasSelectedBranch)
                 {
                     <div class="pos-org__nav" role="list">
-                        <button type="button" class="pos-org__nav-row" role="listitem" @onclick="GoProfile">
+                        <button type="button" class="pos-org__nav-row" role="listitem" @onclick="GoBranchSettings">
                             <span class="pos-org__nav-icon" aria-hidden="true">@IconGlyphs.Get("settings")</span>
-                            <span class="pos-org__nav-label">@L["Org_ProfileLink"]</span>
-                            <span class="pos-org__nav-chevron" aria-hidden="true">›</span>
-                        </button>
-                        <button type="button" class="pos-org__nav-row" role="listitem" @onclick="GoStaff">
-                            <span class="pos-org__nav-icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
-                            <span class="pos-org__nav-label">@L["Org_StaffLink"]</span>
-                            <span class="pos-org__nav-chevron" aria-hidden="true">›</span>
-                        </button>
-                        <button type="button" class="pos-org__nav-row" role="listitem" @onclick="GoBusinessQr">
-                            <span class="pos-org__nav-icon" aria-hidden="true">@IconGlyphs.Get("qr")</span>
-                            <span class="pos-org__nav-label">@L["Org_BusinessQrLink"]</span>
-                            <span class="pos-org__nav-chevron" aria-hidden="true">›</span>
-                        </button>
-                        <button type="button" class="pos-org__nav-row" role="listitem" @onclick="GoDevices">
-                            <span class="pos-org__nav-icon" aria-hidden="true">@IconGlyphs.Get("settings")</span>
-                            <span class="pos-org__nav-label">POS devices</span>
-                            <span class="pos-org__nav-chevron" aria-hidden="true">›</span>
-                        </button>
-                        <button type="button" class="pos-org__nav-row" role="listitem" @onclick="GoSubscription">
-                            <span class="pos-org__nav-icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
-                            <span class="pos-org__nav-label">@L["Org_SubscriptionLink"]</span>
-                            <span class="pos-org__nav-chevron" aria-hidden="true">›</span>
-                        </button>
-                        <button type="button" class="pos-org__nav-row" role="listitem" @onclick="GoBusinessTypes">
-                            <span class="pos-org__nav-icon" aria-hidden="true">@IconGlyphs.Get("settings")</span>
-                            <span class="pos-org__nav-label">@L["Org_BusinessTypesLink"]</span>
-                            <span class="pos-org__nav-chevron" aria-hidden="true">›</span>
-                        </button>
-                        <button type="button" class="pos-org__nav-row" role="listitem" @onclick="GoCustomerLinkNotifications">
-                            <span class="pos-org__nav-icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
-                            <span class="pos-org__nav-label">@L["OrgNotifications_Title"]</span>
+                            <span class="pos-org__nav-label">@L["BranchSettings_Configure"]</span>
                             <span class="pos-org__nav-chevron" aria-hidden="true">›</span>
                         </button>
                     </div>
+                    <p class="pos-org__hint pos-muted">@L["BranchSettings_LocalOnlyHint"]</p>
                 }
                 else
                 {
-                    @* My QR stays in Personal workspace only — opening it from Org shell
-                       switches to Personal tabs and traps org-locked members. *@
-                    <p class="pos-org__hint pos-muted">@L["Org_EssentialsOwnerOnly"]</p>
+                    <p class="pos-org__hint pos-muted">@L["BranchSettings_NoBranchMessage"]</p>
                 }
             </section>
 
@@ -320,6 +290,7 @@ else
     private PlatformSubscriptionDto? _subscription;
     private PlatformEntitlementSnapshotDto? _entitlement;
     private bool _isOrganizationOwner;
+    private bool _hasSelectedBranch;
 
     private string OrganizationStatusText
     {
@@ -516,6 +487,7 @@ else
         }
 
         var selected = AuthSessionBranchContext.GetSelectedBranchId(CurrentUser.Session);
+        _hasSelectedBranch = selected is Guid;
         var deviceBranch = CurrentUser.Session.BranchId;
         _deviceBranchMismatch = CurrentUser.Session.PosDeviceId is not null
             && deviceBranch is Guid bound
@@ -703,13 +675,7 @@ else
         return "muted";
     }
 
-    private void GoProfile() => Nav.NavigateTo("/org/profile");
-    private void GoStaff() => Nav.NavigateTo("/org/staff");
-    private void GoBusinessQr() => Nav.NavigateTo("/org/business-qr");
-    private void GoDevices() => Nav.NavigateTo("/organization/devices");
-    private void GoSubscription() => Nav.NavigateTo("/org/subscription");
-    private void GoBusinessTypes() => Nav.NavigateTo("/org/business-types");
-    private void GoCustomerLinkNotifications() => Nav.NavigateTo("/org/notifications");
+    private void GoBranchSettings() => Nav.NavigateTo("/branch-settings");
     private void GoSelect() => Nav.NavigateTo("/organization-select");
 
     private void GoSignIn()
