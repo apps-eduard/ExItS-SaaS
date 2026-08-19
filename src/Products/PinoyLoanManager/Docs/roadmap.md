@@ -6,13 +6,13 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Current phase | PLM-00 Foundation & Product Decisions |
-| Current work package | PLM-00-WP10 complete; PLM-01 authorized |
-| Status | PLM-00 documentation complete; **PLM-D-00-10 Closed / Product Owner Accepted**; PLM-01 authorized |
+| Current phase | PLM-00 Foundation & Product Decisions (documentation complete) |
+| Current work package | PLM-00-WP10 complete; **product implementation paused** |
+| Status | **PLM-D-00-10 Closed / Product Owner Accepted** (documentation baseline). Implementation is deliberately paused while ExItS scale architecture and remaining PLM business/policy decisions are finalized |
 
 ## Phase objective
 
-Establish product documentation, architecture boundaries, Personal/Borrower intent, operating-model, financial-lifecycle, authorization/cash-control, origination, reporting, technical layout, and an honest open-decision register. No Loan implementation.
+Establish product documentation, architecture boundaries, Personal/Borrower intent, operating-model, financial-lifecycle, authorization/cash-control, origination, reporting, technical layout, and an honest open-decision register. No Loan implementation on `main`.
 
 ## Scope
 
@@ -26,12 +26,12 @@ Establish product documentation, architecture boundaries, Personal/Borrower inte
 
 ### Excluded
 
-- Code, projects, database objects, migrations, APIs, UI, Docker, deployment, solution changes
+- Code, projects, database objects, migrations, APIs, UI, Docker, deployment, solution changes **on main**
+- Merging parked `feat/plm-01-scaffold` (unmerged; not accepted mainline state)
 - Final grant identifiers, calculation formulas, peso/percent rates, rounding mode, component allocation order
 - Generic Platform relationship schema
 - Production authentication (R-091) unless a later phase explicitly delivers it
 - Final commercial-state transport (D-P12-03) unless explicitly authorized
-- Starting PLM-01 from this documentation WP (authorized separately after PLM-D-00-10)
 
 ## Work packages (current phase)
 
@@ -48,13 +48,15 @@ Establish product documentation, architecture boundaries, Personal/Borrower inte
 | PLM-00-WP09 | Technical Product Layout & Integration Boundary | Completed | PLM-00-WP08 |
 | PLM-00-WP10 | Foundation Closeout & Implementation Readiness | Completed | PLM-00-WP09 |
 
-PLM-00 documentation phase is complete. PLM-01 is authorized.
+PLM-00 documentation phase is complete. Product implementation is **not** currently authorized.
+
+`feat/plm-01-scaffold` exists as an **unmerged parked** implementation branch. It is **not** part of accepted mainline product state. Do not merge or delete it from this documentation package. Do **not** use it as evidence to close **PLM-D-00-03**.
 
 ## Planning buckets (later phases)
 
 | Phase | Status |
 |---|---|
-| PLM-01 Product Scaffold & Isolation | **Authorized next** — do not start until this acceptance record is committed |
+| PLM-01 Product Scaffold & Isolation | **Paused** — not currently authorized on mainline |
 | PLM-02 Identity / Organization / Product Access | Not started |
 | PLM-03 Loan Product Authorization | Not started |
 | PLM-04 Borrower Foundation | Not started |
@@ -69,13 +71,33 @@ PLM-00 documentation phase is complete. PLM-01 is authorized.
 | PLM-13 Offline / Mobile Field Capabilities | Not started |
 | PLM-14 Production Validation / Closeout | Not started |
 
+## Remaining documentation before implementation resumes
+
+Before product implementation resumes, documentation still needs **final decisions** for (do **not** invent them in a scale-architecture package):
+
+- product slug (PLM-D-00-01)
+- database name (PLM-D-00-02)
+- physical source/test/deploy layout on mainline (PLM-D-00-03; remains open)
+- Personal/Borrower linking contract (PLM-D-00-04, PLM-D-00-05)
+- final grants (PLM-D-00-06)
+- financial model (PLM-D-00-07)
+- interest calculation methods, rounding, payment allocation, fee model, penalty policies, excused-day schedule treatment, settlement (PLM-D-00-08, PLM-D-00-12)
+- high-risk separation of duties (PLM-D-00-13)
+- cash variance close policy
+- refund/reversal workflow
+- legal/compliance validation (PLM-D-00-11)
+- Platform commercial-state transport dependencies (D-P12-03)
+
+Portfolio: R-091 remains open. Scale architecture: [exits-scale-and-growth-architecture.md](../../../../docs/Product-Foundation/exits-scale-and-growth-architecture.md).
+
 ## Dependencies
 
 | Dependency | Notes |
 |---|---|
 | Platform subscription for `pinoy-loan-manager` | Required; registration open (PLM-D-00-01) |
-| Product-owner decisions | PLM-D-00-02 through PLM-D-00-13 |
+| Product-owner decisions | PLM-D-00-01 through PLM-D-00-09, PLM-D-00-11 through PLM-D-00-13 (PLM-D-00-10 closed) |
 | D-P12-03 / R-091 / D-P12-05 | Portfolio-open; do not invent |
+| ExItS scale architecture | Documented on `docs/exits-scale-foundation`; implementation of stamps/shards not required to resume docs work |
 
 ## Acceptance criteria (phase)
 
@@ -90,8 +112,9 @@ PLM-00 documentation phase is complete. PLM-01 is authorized.
 - [x] Technical product layout and integration boundary recorded (WP09)
 - [x] Foundation closeout and readiness checklist recorded (WP10)
 - [x] Product-owner approval of documentation baseline (PLM-D-00-10 Closed / Product Owner Accepted)
+- [ ] Remaining business/financial/legal decisions listed above
 - [ ] Isolation contract preserved in any later implementation (separate DB; no Platform table reads; product-local roles)
-- [ ] Docs match implementation (no implementation yet)
+- [ ] Docs match implementation (no implementation on `main`)
 - [ ] Tests green; `main = origin/main` (not applicable until implementation and authorized push)
 
 ## Risks
@@ -104,12 +127,13 @@ PLM-00 documentation phase is complete. PLM-01 is authorized.
 | PLM-D-00-05 | Auto-link from EX ID / QR | Consent required; resolution identifies only |
 | R-091 | Claiming production-ready identity | Honest Dev/Testing vs Production language |
 | D-P12-03 | Copying POS Dev commercial headers as PLM production design | Leave transport Open |
+| PLM-D-00-03 | Treating parked scaffold as mainline | Leave PLM-D-00-03 open until authorized scaffold lands on `main` |
 
 ## Exact next package
 
-**PLM-01 Product Scaffold & Isolation** (authorized after PLM-D-00-10)
+**Finalize remaining PLM business and financial decisions** (and complete review of ExItS scale architecture) **before any product implementation**.
 
-Create authorized source/test/deploy skeleton and isolation guards **without** Loan domain implementation. Layout target: [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md).
+Do **not** start or merge PLM-01 from this documentation state.
 
 ## Phase closeout requirements
 
@@ -118,4 +142,5 @@ Create authorized source/test/deploy skeleton and isolation guards **without** L
 - [x] No invented unresolved policy
 - [x] Closeout report filed ([Reports/PLM-00-foundation-closeout.md](Reports/PLM-00-foundation-closeout.md))
 - [ ] Portfolio / phase status updated (outside this product Docs tree; not done here)
-- [x] Product-owner acceptance (PLM-D-00-10 Closed / Product Owner Accepted)
+- [x] Product-owner acceptance of documentation baseline (PLM-D-00-10 Closed / Product Owner Accepted)
+- [x] Implementation pause recorded (current Product Owner direction)
