@@ -53,6 +53,7 @@ Mailpit and Development/Testing fake payments remain in place. This package does
 | PWEB-IMPL-01 | COMPLETE | React + Vite scaffold |
 | PWEB-IMPL-02 | COMPLETE | Design system + global preferences foundation |
 | PWEB-IMPL-03 | COMPLETE | Sign-In + session bootstrap |
+| PWEB-IMPL-03A | COMPLETE | Restrict Development Test User frontend environment gate |
 | PWEB-IMPL-04 | NOT STARTED | Application Shell + Navigation |
 
 ## PWEB-IMPL-02 — Design system + global preferences
@@ -84,7 +85,13 @@ Status: **COMPLETE**
 | Return path | Same-origin relative paths only; absolute/external URLs rejected |
 | Session expired | `/admin/login?notice=session-expired` |
 | External/social login | **DEFERRED** — complete flow appends `sessionToken=` to the return URL (`BLOCKS_CUTOVER`); buttons omitted |
-| Development Test User | **COMPLETE** for non-production only: fills email/username from `quick-login-identities`; never embeds passwords |
+| Development Test User | **COMPLETE** for Development/Testing frontend modes only: fills email/username from `quick-login-identities`; never embeds passwords |
 | Logout UI | Not wired (CSRF `BLOCKS_FUTURE_MUTATION`) |
 
 Explicitly not claimed: visual approval, first visual checkpoint, application shell, or Dashboard.
+
+## PWEB-IMPL-03A — Development Test User environment gate
+
+Status: **COMPLETE** (correction to PWEB-IMPL-03; PWEB-IMPL-03 remains COMPLETE)
+
+Development Test User frontend environment gate changed from broad non-production behavior (`MODE !== "production"`) to an explicit Development/Testing allowlist (`development`, `test`, `testing`). Unrecognized modes fail closed. Backend `GET /api/v1/platform/local-validation/enabled` is still required before identities are queried.
