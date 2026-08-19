@@ -55,7 +55,8 @@ Mailpit and Development/Testing fake payments remain in place. This package does
 | PWEB-IMPL-03 | COMPLETE | Sign-In + session bootstrap |
 | PWEB-IMPL-03A | COMPLETE | Restrict Development Test User frontend environment gate |
 | PWEB-IMPL-04 | COMPLETE | Application shell + navigation foundation |
-| PWEB-IMPL-04A | NOT STARTED | Global Error Diagnostics + Copy |
+| PWEB-IMPL-04A | COMPLETE | Global Error Diagnostics + Copy |
+| PWEB-IMPL-04B | NOT STARTED | Known Route Under-Development State |
 | PWEB-IMPL-05 | NOT STARTED | Dashboard |
 
 ## PWEB-IMPL-02 — Design system + global preferences
@@ -114,4 +115,23 @@ Status: **COMPLETE**
 
 Explicitly not claimed: visual approval, first visual checkpoint.
 
-Next package: **PWEB-IMPL-04A — Global Error Diagnostics + Copy**, then **PWEB-IMPL-05 — Dashboard**.
+## PWEB-IMPL-04A — Global error diagnostics + copy
+
+Status: **COMPLETE**
+
+| Area | Record |
+|---|---|
+| Diagnostic model | Allowlisted report with client error reference |
+| Global diagnostic notice | One persistent notice; Copy Diagnostics is direct |
+| React error boundary | Compact fatal state + copy + reload/retry |
+| API correlation | Request `X-Correlation-Id` retained; problem `traceId` used as server trace |
+| Authorization load failure | Fail-closed + compact diagnostics (no permission dump) |
+| Expected credential/session errors | Remain local / login notice UX |
+| Dashboard | **NOT implemented** |
+| External error service | **NONE** |
+
+Follow-up recorded: **PWEB-IMPL-04B — Known Route Under-Development State** (AVAILABLE destinations that are not yet implemented currently use the shell catch-all not-found page).
+
+Explicitly not claimed: visual approval, first visual checkpoint.
+
+Next package: **PWEB-IMPL-04B — Known Route Under-Development State**, then **PWEB-IMPL-05 — Dashboard**.

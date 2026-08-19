@@ -36,12 +36,22 @@ describe("platformRequest", () => {
           status: 401,
           detail: "Session is not valid.",
           errorCode: "auth.session_invalid",
+          traceId: "00-server-trace",
         }),
       }),
     );
 
-    await expect(
-      platformRequest("http://localhost:8091", { path: "/api/v1/platform/auth/me" }),
-    ).rejects.toBeInstanceOf(PlatformApiError);
+    const error = await platformRequest("http://localhost:8091", {
+      path: "/api/v1/platform/auth/me",
+    }).catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(PlatformApiError);
+    const apiError = error as PlatformApiError;
+    expect(apiError.status).toBe(401);
+    expect(apiError.errorCode).toBe("auth.session_invalid");
+    expect(apiError.traceId).toBe("00-server-trace");
+    expect(apiError.requestCorrelationId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    );
   });
 });

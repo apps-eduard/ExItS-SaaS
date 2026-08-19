@@ -10,6 +10,7 @@ import { SignInPage } from "@/features/auth/SignInPage";
 import { OverviewPage } from "@/features/overview/OverviewPage";
 import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
 import { AuthorizationProvider } from "@/hooks/use-authorization";
+import { DiagnosticsProvider } from "@/hooks/use-diagnostics";
 import { PreferencesProvider } from "@/hooks/use-preferences";
 import { SessionProvider, useSession } from "@/hooks/use-session";
 import { AppShell } from "@/layouts/AppShell";
@@ -55,42 +56,44 @@ export function App() {
   const [queryClient] = useState(createQueryClient);
 
   return (
-    <AppErrorBoundary>
-      <PreferencesProvider>
+    <PreferencesProvider>
+      <AppErrorBoundary>
         <TooltipProvider>
           <QueryClientProvider client={queryClient}>
             <BrowserRouter>
-              <SessionProvider>
-                <Routes>
-                  <Route element={<AuthRoutes />}>
-                    <Route
-                      path="/admin/login"
-                      element={
-                        <RedirectIfAuthenticated>
-                          <SignInPage />
-                        </RedirectIfAuthenticated>
-                      }
-                    />
-                    <Route
-                      path="/admin/forgot-password"
-                      element={<AuthPlaceholderPage titleKey="auth.forgotPassword.title" />}
-                    />
-                    <Route
-                      path="/admin/register"
-                      element={<AuthPlaceholderPage titleKey="auth.createAccount.title" />}
-                    />
-                  </Route>
-                  <Route element={<ProtectedShell />}>
-                    <Route path="/" element={<Navigate to="/admin" replace />} />
-                    <Route path="/admin" element={<OverviewPage />} />
-                    <Route path="/admin/*" element={<ShellNotFoundPage />} />
-                  </Route>
-                </Routes>
-              </SessionProvider>
+              <DiagnosticsProvider>
+                <SessionProvider>
+                  <Routes>
+                    <Route element={<AuthRoutes />}>
+                      <Route
+                        path="/admin/login"
+                        element={
+                          <RedirectIfAuthenticated>
+                            <SignInPage />
+                          </RedirectIfAuthenticated>
+                        }
+                      />
+                      <Route
+                        path="/admin/forgot-password"
+                        element={<AuthPlaceholderPage titleKey="auth.forgotPassword.title" />}
+                      />
+                      <Route
+                        path="/admin/register"
+                        element={<AuthPlaceholderPage titleKey="auth.createAccount.title" />}
+                      />
+                    </Route>
+                    <Route element={<ProtectedShell />}>
+                      <Route path="/" element={<Navigate to="/admin" replace />} />
+                      <Route path="/admin" element={<OverviewPage />} />
+                      <Route path="/admin/*" element={<ShellNotFoundPage />} />
+                    </Route>
+                  </Routes>
+                </SessionProvider>
+              </DiagnosticsProvider>
             </BrowserRouter>
           </QueryClientProvider>
         </TooltipProvider>
-      </PreferencesProvider>
-    </AppErrorBoundary>
+      </AppErrorBoundary>
+    </PreferencesProvider>
   );
 }

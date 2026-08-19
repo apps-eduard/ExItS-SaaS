@@ -12,6 +12,8 @@ import { getAuthMe, login as loginRequest } from "@/api/auth/auth-client";
 import { isNetworkFailure, isSessionInvalidError } from "@/api/auth/auth-errors";
 import type { AuthSession } from "@/api/auth/auth-types";
 import { env } from "@/lib/env";
+import { isAbortError } from "@/lib/diagnostics/diagnostic-redaction";
+import { useDiagnostics } from "@/hooks/use-diagnostics";
 
 export type SessionStatus = "loading" | "authenticated" | "unauthenticated" | "expired";
 
@@ -26,6 +28,7 @@ const SessionContext = createContext<SessionContextValue | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
+  const { report } = useDiagnostics();
   const [status, setStatus] = useState<SessionStatus>("loading");
   const [session, setSession] = useState<AuthSession | null>(null);
 
@@ -45,19 +48,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setSession(next);
         setStatus("authenticated");
       } catch (error) {
-        if (controller.signal.aborted) {
+        if (controller.signal.aborted || isAbortError(error)) {
           return;
         }
         setSession(null);
-        if (isSessionInvalidError(error) || isNetworkFailure(error)) {
-          setStatus("unauthenticated");
-          return;
-        }
         setStatus("unauthenticated");
+        if (!isSessionInvalidError(error) && !isNetworkFailure(error)) {
+          report(error, { operation: "Load session" });
+        }
       }
     })();
 
     return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- session bootstrap once
   }, []);
 
   const markExpired = useCallback(() => {

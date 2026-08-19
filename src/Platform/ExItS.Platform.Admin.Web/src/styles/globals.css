@@ -187,6 +187,7 @@
   --exits-z-overlay: 10;
   --exits-z-drawer: 1100;
   --exits-z-dialog: 1200;
+  --exits-z-notice: 1300;
   --exits-control-height: 2.875rem;
   --exits-density-space-unit: 0.875rem;
   --exits-density-card-padding: 1rem;

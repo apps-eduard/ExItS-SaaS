@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { getMyAuthorization } from "@/api/authorization/authorization-client";
 import type { ResolvedPermissionsDto } from "@/api/authorization/authorization-types";
 import { env } from "@/lib/env";
+import { isAbortError } from "@/lib/diagnostics/diagnostic-redaction";
+import { useDiagnostics } from "@/hooks/use-diagnostics";
 import { useSession } from "@/hooks/use-session";
 
 export type AuthorizationStatus = "loading" | "loaded" | "failed";
@@ -30,8 +32,10 @@ function isPlatformActor(
 
 export function AuthorizationProvider({ children }: { children: ReactNode }) {
   const { session } = useSession();
+  const { report } = useDiagnostics();
   const [status, setStatus] = useState<AuthorizationStatus>("loading");
   const [snapshot, setSnapshot] = useState<ResolvedPermissionsDto | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -44,17 +48,26 @@ export function AuthorizationProvider({ children }: { children: ReactNode }) {
         }
         setSnapshot(next);
         setStatus("loaded");
-      } catch {
-        if (controller.signal.aborted) {
+      } catch (error) {
+        if (controller.signal.aborted || isAbortError(error)) {
           return;
         }
         setSnapshot(null);
         setStatus("failed");
+        report(error, {
+          operation: "Load authorization",
+          retry: () => {
+            setStatus("loading");
+            setSnapshot(null);
+            setAttempt((value) => value + 1);
+          },
+        });
       }
     })();
 
     return () => controller.abort();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- retry is driven by attempt
+  }, [attempt]);
 
   const value = useMemo<AuthorizationContextValue>(() => {
     const permissions = new Set(snapshot?.permissions ?? []);

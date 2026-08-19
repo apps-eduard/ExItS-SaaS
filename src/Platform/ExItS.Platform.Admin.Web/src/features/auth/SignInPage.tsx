@@ -10,10 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ErrorState } from "@/components/exits/ErrorState";
 import { DevelopmentTestUserTools } from "@/features/auth/DevelopmentTestUserTools";
 import { usePreferences } from "@/hooks/use-preferences";
 import { useSession } from "@/hooks/use-session";
 import { resolvePostLoginPath } from "@/lib/auth/safe-return-path";
+import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
+import type { DiagnosticRecord } from "@/lib/diagnostics/diagnostic-types";
 
 type SignInValues = {
   email: string;
@@ -36,12 +39,13 @@ function failureMessageKey(kind: SignInFailureKind) {
 }
 
 export function SignInPage() {
-  const { t } = usePreferences();
+  const { t, language, theme, density } = usePreferences();
   const { signIn } = useSession();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [formError, setFormError] = useState<SignInFailureKind | null>(null);
+  const [diagnostic, setDiagnostic] = useState<DiagnosticRecord | null>(null);
 
   const schema = useMemo(
     () =>
@@ -66,19 +70,29 @@ export function SignInPage() {
 
   async function onSubmit(values: SignInValues) {
     setFormError(null);
+    setDiagnostic(null);
     try {
       await signIn(values.email, values.password);
       navigate(resolvePostLoginPath(params.get("return")), { replace: true });
     } catch (error) {
       const kind = classifySignInFailure(error);
-      setFormError(kind);
       if (
         kind === "invalid_credentials" ||
         kind === "account_locked" ||
         kind === "account_disabled"
       ) {
+        setFormError(kind);
         form.setValue("password", "");
+        return;
       }
+      setDiagnostic(
+        normalizeDiagnosticError({
+          error,
+          operation: "Sign in",
+          category: kind === "network" ? "NETWORK" : "UNKNOWN",
+          environment: { locale: language, theme, density },
+        }),
+      );
     }
   }
 
@@ -98,6 +112,17 @@ export function SignInPage() {
 
       {formError ? (
         <Alert className="mb-4" tone="danger" title={t(failureMessageKey(formError))} />
+      ) : null}
+
+      {diagnostic ? (
+        <div className="mb-4">
+          <ErrorState
+            diagnostic={diagnostic}
+            description={
+              diagnostic.category === "NETWORK" ? t("auth.error.network") : t("auth.error.unknown")
+            }
+          />
+        </div>
       ) : null}
 
       <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)} noValidate>

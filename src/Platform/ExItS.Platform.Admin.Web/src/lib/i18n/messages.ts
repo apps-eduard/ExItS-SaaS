@@ -110,6 +110,16 @@ export const enMessages = {
     "Platform administration landing. Dashboard metrics are not in this package.",
   "shell.notFound.title": "Page not found",
   "shell.notFound.body": "This route is not available in the current package.",
+  "diagnostics.title": "Something went wrong",
+  "diagnostics.body": "Unable to complete this operation.",
+  "diagnostics.copy": "Copy diagnostics",
+  "diagnostics.copied": "Copied",
+  "diagnostics.copyFailed": "Unable to copy diagnostics.",
+  "diagnostics.retry": "Retry",
+  "diagnostics.reload": "Reload",
+  "diagnostics.close": "Close",
+  "diagnostics.reference": "Error reference",
+  "diagnostics.correlation": "Correlation",
 } as const;
 
 export type MessageKey = keyof typeof enMessages;
@@ -228,6 +238,16 @@ export const filPhMessages: Record<MessageKey, string> = {
     "Landing ng platform administration. Wala pang dashboard metrics sa package na ito.",
   "shell.notFound.title": "Hindi nahanap ang page",
   "shell.notFound.body": "Hindi available ang route na ito sa kasalukuyang package.",
+  "diagnostics.title": "May naganap na problema",
+  "diagnostics.body": "Hindi matapos ang operasyong ito.",
+  "diagnostics.copy": "Kopyahin ang diagnostics",
+  "diagnostics.copied": "Nakopya",
+  "diagnostics.copyFailed": "Hindi makopya ang diagnostics.",
+  "diagnostics.retry": "Subukan ulit",
+  "diagnostics.reload": "I-reload",
+  "diagnostics.close": "Isara",
+  "diagnostics.reference": "Error reference",
+  "diagnostics.correlation": "Correlation",
 };
 
 export const catalogs: Record<"en" | "fil-PH", Record<MessageKey, string>> = {

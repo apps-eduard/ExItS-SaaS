@@ -1,30 +1,60 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { ErrorState } from "@/components/exits/ErrorState";
+import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
+import type { DiagnosticRecord } from "@/lib/diagnostics/diagnostic-types";
 
 type AppErrorBoundaryProps = {
   children: ReactNode;
 };
 
 type AppErrorBoundaryState = {
-  hasError: boolean;
+  diagnostic: DiagnosticRecord | null;
 };
 
 export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorBoundaryState> {
-  public override state: AppErrorBoundaryState = { hasError: false };
+  public override state: AppErrorBoundaryState = { diagnostic: null };
 
-  public static getDerivedStateFromError(): AppErrorBoundaryState {
-    return { hasError: true };
+  public static getDerivedStateFromError(error: Error): AppErrorBoundaryState {
+    return {
+      diagnostic: normalizeDiagnosticError({
+        error,
+        category: "RENDER",
+        operation: "Render application",
+      }),
+    };
   }
 
   public override componentDidCatch(error: Error, info: ErrorInfo): void {
-    console.error("Platform Admin Web failed to render.", error.name, info.componentStack);
+    this.setState((current) => {
+      if (!current.diagnostic) {
+        return current;
+      }
+      return {
+        diagnostic: normalizeDiagnosticError({
+          error,
+          category: "RENDER",
+          operation: "Render application",
+          componentStack: info.componentStack ?? undefined,
+          environment: {
+            createReference: () => current.diagnostic?.errorReference ?? "ERR-0000",
+            now: () => current.diagnostic?.timestamp ?? new Date().toISOString(),
+            pathname: current.diagnostic.route,
+          },
+        }),
+      };
+    });
   }
 
   public override render(): ReactNode {
-    if (this.state.hasError) {
+    if (this.state.diagnostic) {
       return (
-        <main>
-          <h1>Something went wrong</h1>
-          <p>The application could not continue. Refresh and try again.</p>
+        <main className="flex min-h-dvh items-center justify-center bg-background p-[var(--exits-page-padding)]">
+          <ErrorState
+            diagnostic={this.state.diagnostic}
+            headingLevel="h1"
+            onReload={() => window.location.reload()}
+            onRetry={() => this.setState({ diagnostic: null })}
+          />
         </main>
       );
     }

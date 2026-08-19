@@ -9,12 +9,22 @@ export type PlatformProblemDetails = {
 export class PlatformApiError extends Error {
   readonly status: number;
   readonly problem: PlatformProblemDetails;
+  readonly requestCorrelationId?: string;
 
-  constructor(status: number, problem: PlatformProblemDetails) {
+  constructor(status: number, problem: PlatformProblemDetails, requestCorrelationId?: string) {
     super(problem.detail ?? problem.title ?? `Platform API request failed (${status})`);
     this.name = "PlatformApiError";
     this.status = status;
     this.problem = problem;
+    this.requestCorrelationId = requestCorrelationId;
+  }
+
+  get errorCode(): string | undefined {
+    return this.problem.errorCode;
+  }
+
+  get traceId(): string | undefined {
+    return this.problem.traceId;
   }
 }
 
@@ -48,9 +58,10 @@ export async function platformRequest<T>(
   baseUrl: string,
   options: PlatformRequestOptions,
 ): Promise<T> {
+  const requestCorrelationId = createCorrelationId();
   const headers = new Headers({
     Accept: "application/json",
-    "X-Correlation-Id": createCorrelationId(),
+    "X-Correlation-Id": requestCorrelationId,
   });
 
   if (options.body !== undefined) {
@@ -72,7 +83,7 @@ export async function platformRequest<T>(
     } catch {
       // Non-JSON error bodies still surface as a status-only problem.
     }
-    throw new PlatformApiError(response.status, problem);
+    throw new PlatformApiError(response.status, problem, requestCorrelationId);
   }
 
   if (response.status === 204) {
