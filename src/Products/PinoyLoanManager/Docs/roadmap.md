@@ -7,8 +7,8 @@
 |---|---|
 | Product | Pinoy Loan Manager |
 | Current phase | PLM-01 Product Scaffold & Isolation (complete); PLM-01A client architecture (this package) |
-| Current work package | PLM-CLIENT-GATE-D0 Browser session auth transport |
-| Status | PLM-00 accepted; PLM-01 scaffolded; PLM-01A approved; Gates B, C, and D0 complete; D1/D2 and PLM-02 not started |
+| Current work package | PLM-CLIENT-GATE-D1 Mobile-first Sign In + session UI |
+| Status | PLM-00 accepted; PLM-01 scaffolded; PLM-01A approved; Gates B, C, D0, and D1 complete; D2 and PLM-02 not started |
 
 ## Phase objective
 
@@ -119,7 +119,7 @@ Does **not** replace the core business roadmap above. Detail: [Architecture/reac
 | PLM-CLIENT-GATE B React scaffold | **Complete** |
 | PLM-CLIENT-GATE C Browser/PWA foundation | **Complete** |
 | PLM-CLIENT-GATE D0 Browser session auth transport | **Complete** |
-| PLM-CLIENT-GATE D1 Sign In / session UI + Local Validation Test User | Not started |
+| PLM-CLIENT-GATE D1 Sign In / session UI + Local Validation Test User | **Complete** |
 | PLM-CLIENT-GATE D2 Register/Activate/Forgot/Reset + Mailpit callback routing | Not started |
 | PLM-CLIENT-GATE D Auth + org/product access (remaining) | Not started |
 | PLM-CLIENT-GATE E First lending slice + visual review | Not started |
@@ -133,9 +133,9 @@ Offline financial operation remains **PLM-13**.
 
 ## Exact next package
 
-**STOPPED AFTER PLM-CLIENT-GATE-D0.** Do not start D1, D2, Capacitor, or PLM-02 from this package.
+**STOPPED AFTER PLM-CLIENT-GATE-D1.** Do not start D2, Capacitor, or PLM-02 from this package.
 
-Recommended later order when separately authorized: **PLM-CLIENT-GATE D1**.
+Recommended later order when separately authorized: **PLM-CLIENT-GATE D2**.
 
 PLM-02 still consumes Platform actor/org/product access without Platform table reads. Do not invent D-P12-03.
 

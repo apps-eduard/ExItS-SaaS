@@ -1,7 +1,7 @@
 # Pinoy Loan Manager — React / PWA / Capacitor Client Architecture
 
-**Status:** Accepted architecture (PLM-D-00-09 / PLM-01A); Gate B scaffold; Gate C PWA; Gate D0 browser auth transport
-**Implementation present:** React Client + online-first PWA + same-origin `/platform-api` proxy — no auth UI, lending, or Capacitor
+**Status:** Accepted architecture (PLM-D-00-09 / PLM-01A); Gates B–D1 present
+**Implementation present:** React Client + online-first PWA + cookie Sign In — no Register/Reset, lending, or Capacitor
 **Last updated:** 2026-08-19
 
 `ExItS.PinoyLoanManager.Client` exists as a Gate B/C scaffold. Do not add Capacitor from this document.
@@ -275,7 +275,7 @@ Cross-cutting frontend delivery track. Does **not** replace the core PLM busines
 
 Offline financial operation remains under **PLM-13** and requires its own explicit authorization.
 
-Recommended next when separately authorized: **PLM-CLIENT-GATE D1**. Do not start D1, D2, Capacitor, or PLM-02 from Gate D0.
+Recommended next when separately authorized: **PLM-CLIENT-GATE D2**. Do not start D2, Capacitor, or PLM-02 from Gate D1.
 
 ---
 

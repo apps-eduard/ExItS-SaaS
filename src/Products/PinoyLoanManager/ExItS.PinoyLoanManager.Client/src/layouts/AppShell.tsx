@@ -1,7 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { AppTopBar } from "@/components/exits/AppTopBar";
 import { useI18n } from "@/i18n/I18nProvider";
-import { PwaUpdateHost } from "@/pwa/PwaUpdateHost";
 
 export function AppShell() {
   const { t } = useI18n();
@@ -18,7 +17,6 @@ export function AppShell() {
       <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 py-4">
         <Outlet />
       </main>
-      <PwaUpdateHost />
     </div>
   );
 }

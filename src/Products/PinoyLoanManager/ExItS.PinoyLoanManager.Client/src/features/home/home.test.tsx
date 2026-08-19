@@ -1,30 +1,36 @@
 import type { ReactElement } from "react";
-import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { AppProviders } from "@/app/providers";
+import { Route, Routes } from "react-router-dom";
 import { HomePage } from "@/features/home/HomePage";
 import { AppShell } from "@/layouts/AppShell";
 import { UI_PREFERENCES_STORAGE_KEY } from "@/lib/preferences/ui-preferences";
+import { jsonResponse, renderWithSession } from "@/test/render";
 
 function renderApp(ui: ReactElement = <HomePage />) {
-  return render(
-    <AppProviders>
-      <MemoryRouter>
-        <Routes>
-          <Route element={<AppShell />}>
-            <Route path="/" element={ui} />
-          </Route>
-        </Routes>
-      </MemoryRouter>
-    </AppProviders>,
+  vi.stubGlobal("fetch", (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes("/auth/me")) {
+      return jsonResponse(200, { username: "olivia", displayName: "Olivia Mendoza" });
+    }
+    return jsonResponse(404, null);
+  });
+  return renderWithSession(
+    <Routes>
+      <Route element={<AppShell />}>
+        <Route path="/" element={ui} />
+      </Route>
+    </Routes>,
   );
 }
 
 const forbidden = ["Preview", "Foundation", "coming soon", "1,250.00", "Online", "Synced"];
 
 describe("product home", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
   it("renders the product surface without demo or package copy", () => {
     renderApp();
     expect(screen.getByRole("heading", { name: "Pinoy Loan Manager" })).toBeInTheDocument();

@@ -125,3 +125,27 @@ body {
   outline: 3px solid var(--exits-focus);
   outline-offset: 2px;
 }
+
+.auth-stage {
+  background-color: #0f3d24;
+  background-image: radial-gradient(
+    120% 70% at 50% -20%,
+    rgba(255, 255, 255, 0.07),
+    transparent 58%
+  );
+}
+
+.auth-sheet {
+  background: var(--exits-surface);
+  color: var(--exits-text);
+  border-top-left-radius: 1.75rem;
+  border-top-right-radius: 1.75rem;
+  box-shadow: 0 -10px 28px rgba(6, 24, 15, 0.18);
+}
+
+@media (min-width: 768px) {
+  .auth-sheet {
+    border-radius: 1.25rem;
+    box-shadow: 0 16px 40px rgba(6, 24, 15, 0.22);
+  }
+}

@@ -1,13 +1,6 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-
-async function assertNoHorizontalOverflow(page: import("@playwright/test").Page) {
-  const overflow = await page.evaluate(() => {
-    const root = document.scrollingElement ?? document.documentElement;
-    return root.scrollWidth - root.clientWidth;
-  });
-  expect(overflow).toBeLessThanOrEqual(1);
-}
+import { assertNoHorizontalOverflow, mockAnonymousSession } from "./helpers";
 
 test.describe("PWA foundation", () => {
   test("serves a valid installable manifest and required icons", async ({ request }) => {
@@ -60,15 +53,17 @@ test.describe("PWA foundation", () => {
     const response = await request.get("/not-a-route");
     expect(response.ok()).toBeTruthy();
     expect(await response.text()).toContain("Pinoy Loan Manager");
+    await mockAnonymousSession(page);
     await page.goto("/");
     await page.reload();
-    await expect(page.getByRole("heading", { name: "Pinoy Loan Manager" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
   });
 
   test("registers a service worker and keeps the product shell", async ({ page }) => {
+    await mockAnonymousSession(page);
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Pinoy Loan Manager" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
     await expect(page.getByRole("status")).toHaveCount(0);
     const registered = await page.evaluate(async () => {
       const registration = await navigator.serviceWorker.ready;
@@ -83,8 +78,10 @@ test.describe("PWA foundation", () => {
   });
 
   test("axe has no serious or critical violations with the PWA shell", async ({ page }) => {
+    await mockAnonymousSession(page);
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/");
+    await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
     const results = await new AxeBuilder({ page }).analyze();
     const serious = results.violations.filter(
       (violation) => violation.impact === "serious" || violation.impact === "critical",

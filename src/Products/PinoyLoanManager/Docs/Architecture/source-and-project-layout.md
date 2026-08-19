@@ -1,10 +1,10 @@
 # Pinoy Loan Manager — Source and Project Layout
 
-**Status:** PLM-01 scaffold; Gates B–D0 React Client + PWA + `/platform-api` transport
-**Implementation present:** Product shell + React Client + PWA — no lending domain; no auth UI
+**Status:** PLM-01 scaffold; Gates B–D1 React Client + PWA + cookie Sign In
+**Implementation present:** Product shell + React Client + PWA + Sign In — no lending domain; no Register/Reset
 **Last updated:** 2026-08-19
 
-Physical layout after **PLM-01**, **PLM-CLIENT-GATE-B**, **PLM-CLIENT-GATE-C**, and **PLM-CLIENT-GATE-D0**. PLM-D-00-03 is **Closed**. PLM-D-00-09 is **Closed / Product Owner Approved**. `ExItS.PinoyLoanManager.Client` is the Browser + PWA host with same-origin `/platform-api` transport. LocalStore remains **intentionally deferred** (not authorized). MAUI is not the preferred future architecture. Capacitor is not started.
+Physical layout after **PLM-01** through **PLM-CLIENT-GATE-D1**. PLM-D-00-03 is **Closed**. PLM-D-00-09 is **Closed / Product Owner Approved**. `ExItS.PinoyLoanManager.Client` is the Browser + PWA host with same-origin `/platform-api` transport and cookie Sign In. LocalStore remains **intentionally deferred** (not authorized). MAUI is not the preferred future architecture. Capacitor is not started.
 
 Related: [react-pwa-capacitor-client.md](react-pwa-capacitor-client.md), [api-and-contract-boundary.md](api-and-contract-boundary.md), [persistence-and-database-boundary.md](persistence-and-database-boundary.md), [mobile-offline-boundary.md](mobile-offline-boundary.md), [../architecture.md](../architecture.md), [../Reports/PLM-01-product-scaffold-and-isolation.md](../Reports/PLM-01-product-scaffold-and-isolation.md), [../Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md](../Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md).
 
@@ -21,7 +21,7 @@ src/Products/PinoyLoanManager/
 ├── ExItS.PinoyLoanManager.Api/               created (health only)
 ├── ExItS.PinoyLoanManager.ApiClient/         created (marker only)
 ├── ExItS.PinoyLoanManager.Web/               created (identity shell; future host/BFF)
-├── ExItS.PinoyLoanManager.Client/            created (Gate B/C React + online-first PWA)
+├── ExItS.PinoyLoanManager.Client/            created (Gates B–D1 React + PWA + Sign In)
 └── ExItS.PinoyLoanManager.LocalStore/        FUTURE ONLY IF AUTHORIZED
 ```
 

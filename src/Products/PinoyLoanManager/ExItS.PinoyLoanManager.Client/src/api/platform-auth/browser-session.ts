@@ -43,17 +43,32 @@ export function assertBrowserStorageHasNoSessionToken(storage: Storage): void {
   }
 }
 
+export const AUTH_LOGIN_PATH = "/api/v1/platform/auth/login";
+export const AUTH_ME_PATH = "/api/v1/platform/auth/me";
+export const AUTH_LOGOUT_PATH = "/api/v1/platform/auth/logout";
+export const LOCAL_VALIDATION_ENABLED_PATH = "/api/v1/platform/local-validation/enabled";
+export const LOCAL_VALIDATION_IDENTITIES_PATH =
+  "/api/v1/platform/local-validation/quick-login-identities";
+
+export const SESSION_EXPIRED_ERROR_CODE = "application.auth.session_expired";
+
+export type PlatformProblem = {
+  errorCode?: string;
+  detail?: string;
+};
+
 export async function platformApiJson<T>(
   path: string,
   init?: RequestInit,
 ): Promise<{ status: number; body: T | null }> {
+  const headers = new Headers(init?.headers);
+  if (!headers.has("Accept")) {
+    headers.set("Accept", "application/json");
+  }
   const response = await fetch(platformApiUrl(path), {
     ...init,
     credentials: "include",
-    headers: {
-      Accept: "application/json",
-      ...(init?.headers ?? {}),
-    },
+    headers,
   });
   if (response.status === 204) {
     return { status: response.status, body: null };

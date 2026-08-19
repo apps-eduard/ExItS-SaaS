@@ -6,7 +6,7 @@ React organization/field client host for Pinoy Loan Manager. Sibling of the ASP.
 - Stack: React, TypeScript strict, Vite, Tailwind, React Router, TanStack Query, Lucide
 - Locale: English (`en`) default; `fil-PH` secondary
 - Theme: System default (Light / Dark supported)
-- Gate B: product chrome. Gate C: installable online-first PWA. Gate D0: same-origin `/platform-api` cookie transport. No lending screens, auth UI, or Capacitor
+- Gate B: product chrome. Gate C: installable online-first PWA. Gate D0: same-origin `/platform-api` cookie transport. Gate D1: Sign In + session UI. No Register/Reset, lending screens, or Capacitor
 
 ```powershell
 npm install
