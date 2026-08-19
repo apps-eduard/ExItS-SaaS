@@ -6,7 +6,7 @@
 
 Collection exceptions, penalty waivers, payment reversals vs cash refunds, remittance-after-correction, and cash variance.
 
-Related: [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md), [payment-and-allocation-model.md](payment-and-allocation-model.md), [cashier-and-collector-control-model.md](cashier-and-collector-control-model.md), [../Security/role-and-grant-baseline.md](../Security/role-and-grant-baseline.md).
+Related: [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md), [penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md), [schedule-and-collection-calendar-policy.md](schedule-and-collection-calendar-policy.md), [payment-and-allocation-model.md](payment-and-allocation-model.md), [cashier-and-collector-control-model.md](cashier-and-collector-control-model.md), [../Security/role-and-grant-baseline.md](../Security/role-and-grant-baseline.md).
 
 ---
 
@@ -36,7 +36,7 @@ Owner / Manager with required grant may declare an organization / branch / area 
 
 Record: date / time window; affected branch / area; affected collectors / customers according to scope; reason; approver; penalty treatment; schedule treatment according to applicable policy; audit history.
 
-Do **not** delete original due dates / history. Schedule-extension vs fixed-maturity remains **OPEN**. See [schedule-maturity-and-settlement.md](schedule-maturity-and-settlement.md).
+Do **not** delete original due dates / history. Schedule treatment uses the Loan’s snapshotted exception policy: [schedule-and-collection-calendar-policy.md](schedule-and-collection-calendar-policy.md).
 
 ---
 

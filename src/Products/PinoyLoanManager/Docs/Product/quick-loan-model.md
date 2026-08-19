@@ -55,12 +55,14 @@ Do **not** hard-code a specific rate. No default rate is defined. Do **not** cla
 
 ### Payment / schedule
 
-- schedule generated from **snapshot** terms
-- customer must see the calculation before submitting
+- schedule generated from **snapshot** terms (calendar: [schedule-and-collection-calendar-policy.md](schedule-and-collection-calendar-policy.md))
+- first due date default = next valid Collection Day after Disbursement; same-day first installment not MVP
+- customer must see the calculation and actual first due date before submitting
+- default exception policy = Shift Future Due Dates
 
 ### Penalty policy
 
-Template-specific configurable policy. Detail: [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md).
+Template-specific configurable policy. No default amount. Canonical: [penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md), [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md).
 
 ### Eligibility
 

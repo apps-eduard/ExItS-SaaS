@@ -29,7 +29,7 @@ A Loan Product **may** eventually include:
 
 Do **not** establish actual rates, peso limits, or fee amounts.
 
-Interest-treatment **modes** and MVP methods: [interest-and-finance-charge-policy.md](interest-and-finance-charge-policy.md). Changing a Loan Product later must never recalculate an already submitted, approved, or disbursed Loan silently. Default rates remain undefined. Remaining PLM-D-00-08 items (calendar, penalties, early settlement) stay open.
+Interest-treatment **modes** and MVP methods: [interest-and-finance-charge-policy.md](interest-and-finance-charge-policy.md). Calendar, first due, and penalty engine: [schedule-and-collection-calendar-policy.md](schedule-and-collection-calendar-policy.md), [penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md). Changing a Loan Product later must never recalculate an already submitted, approved, or disbursed Loan silently. Default rates and penalty amounts remain undefined. Remaining PLM-D-00-08 items (early settlement, restructuring, write-off) stay open.
 
 ---
 

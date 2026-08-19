@@ -21,6 +21,13 @@ PLM-00-WP03 through WP10 record agreed **product direction** in Product / Archit
 | [ADR-003-supported-interest-and-schedule-methods.md](ADR-003-supported-interest-and-schedule-methods.md) | MVP interest/schedule methods | Product methods accepted; PLM-D-00-08 remains Open / Partially Resolved |
 | [ADR-004-rounding-fees-and-payment-allocation.md](ADR-004-rounding-fees-and-payment-allocation.md) | Rounding, fees, allocation | **PLM-D-00-12 Closed**; PLM-D-00-07 / PLM-D-00-08 remain Open / Partially Resolved |
 
+## Approved ADRs (PLM-DOC-03)
+
+| ADR | Subject | Decisions closed |
+|---|---|---|
+| [ADR-005-schedule-calendar-and-exception-treatment.md](ADR-005-schedule-calendar-and-exception-treatment.md) | Calendar, frequencies, exception defaults | Product calendar accepted; PLM-D-00-08 remains Open / Partially Resolved |
+| [ADR-006-delinquency-penalty-and-maturity-policy.md](ADR-006-delinquency-penalty-and-maturity-policy.md) | DPD, penalties, maturity | Product engine accepted; no default amounts; PLM-D-00-11 Open |
+
 Major future irreversible or cross-product choices must receive an ADR here when explicitly approved.
 
 Do not close PLM-D-00-03, PLM-D-00-04 through PLM-D-00-09, PLM-D-00-11, PLM-D-00-13, D-P12-03, R-091, or D-P12-05 without explicit approval. Do not mark PLM-D-00-07 or PLM-D-00-08 Closed.

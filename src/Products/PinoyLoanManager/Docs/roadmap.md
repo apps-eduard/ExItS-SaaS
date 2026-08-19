@@ -7,7 +7,7 @@
 |---|---|
 | Product | Pinoy Loan Manager |
 | Current phase | PLM-00 Foundation & Product Decisions (documentation complete) |
-| Current work package | **PLM-DOC-02** Financial Calculation, Fees & Payment Allocation Decisions |
+| Current work package | **PLM-DOC-03** Schedule Calendar, Delinquency, Penalties & Maturity Decisions |
 | Status | **PLM-D-00-10 Closed / Product Owner Accepted**. PLM-D-00-01 Closed. PLM-D-00-02 Closed for logical name. PLM-D-00-12 Closed. PLM-D-00-07 / PLM-D-00-08 Open / Partially Resolved. Implementation remains paused. |
 
 ## Phase objective
@@ -28,7 +28,7 @@ Establish product documentation, architecture boundaries, Personal/Borrower inte
 
 - Code, projects, database objects, migrations, APIs, UI, Docker, deployment, solution changes **on main**
 - Merging parked `feat/plm-01-scaffold` (unmerged; not accepted mainline state)
-- Final grant identifiers, remaining calculation calendar/penalty/settlement items, peso/percent **rates**
+- Final grant identifiers, remaining settlement/refund/accounting items, peso/percent **rates**
 - Generic Platform relationship schema
 - Production authentication (R-091) unless a later phase explicitly delivers it
 - Final commercial-state transport (D-P12-03) unless explicitly authorized
@@ -48,7 +48,7 @@ Establish product documentation, architecture boundaries, Personal/Borrower inte
 | PLM-00-WP09 | Technical Product Layout & Integration Boundary | Completed | PLM-00-WP08 |
 | PLM-00-WP10 | Foundation Closeout & Implementation Readiness | Completed | PLM-00-WP09 |
 
-PLM-00 documentation phase is complete. **PLM-DOC-01** finalized product identity, Borrower identity, and Personal linking. **PLM-DOC-02** finalizes MVP calculation, fees, rounding, and payment allocation.
+PLM-00 documentation phase is complete. **PLM-DOC-01** finalized identity and Personal linking. **PLM-DOC-02** finalized MVP calculation, fees, rounding, and payment allocation. **PLM-DOC-03** finalizes schedule calendar, delinquency, penalties, and maturity.
 
 `feat/plm-01-scaffold` exists as an **unmerged parked** implementation branch. It is **not** part of accepted mainline product state. Do not merge or delete it from this documentation package. Do **not** use it as evidence to close **PLM-D-00-03**.
 
@@ -57,8 +57,9 @@ PLM-00 documentation phase is complete. **PLM-DOC-01** finalized product identit
 | Package | Name | Status |
 |---|---|---|
 | PLM-DOC-01 | Product Identity, Borrower Identity & Personal Linking Finalization | **Completed** |
-| PLM-DOC-02 | Financial Calculation, Fees & Payment Allocation Decisions | **This package** |
-| PLM-DOC-03 | Schedule Calendar, Delinquency, Penalties & Maturity Decisions | Proposed next |
+| PLM-DOC-02 | Financial Calculation, Fees & Payment Allocation Decisions | **Completed** |
+| PLM-DOC-03 | Schedule Calendar, Delinquency, Penalties & Maturity Decisions | **This package** |
+| PLM-DOC-04 | Early Settlement, Refunds, Reversals, Cash Variance & Accounting Boundaries | Proposed next |
 
 ### PLM-DOC-01 completed decisions
 
@@ -82,6 +83,19 @@ PLM-00 documentation phase is complete. **PLM-DOC-01** finalized product identit
 - fee bases and treatments; Platform usage charge not a borrower fee
 - oldest-due allocation; component order Interest → Principal → Fees → Penalties
 - partial, multiple, and advance payments; no inferred principal prepayment; no borrower wallet
+
+### PLM-DOC-03 completed decisions
+
+- UTC instants vs Branch local collection dates; Loan-snapshotted time zone
+- MVP frequencies: Daily, Weekly, Biweekly, Semi-Monthly, Monthly
+- Following Valid Collection Day; Same Day or Last Calendar Day
+- Quick Loan and Traditional first-due defaults
+- DPD vs cumulative unexcused missed scheduled-day counter
+- grace `N` semantics (not retroactive; no Platform default)
+- penalty types, excluded bases, required cap, no penalty-on-penalty / capitalization
+- Quick Loan vs Traditional exception defaults; schedule version history
+- waiver vs reversal vs exception
+- maturity does not erase balance; post-maturity modes
 
 Implementation remains paused. The parked scaffold remains unmerged.
 
@@ -112,7 +126,7 @@ Before product implementation resumes, documentation still needs **final decisio
 - Platform relationship contract/schema (PLM-D-00-04) and linking transport (PLM-D-00-05)
 - final grants (PLM-D-00-06)
 - remaining financial model (PLM-D-00-07 remainder: schema, GL, settlement/write-off accounting, cash refund)
-- remaining loan policy (PLM-D-00-08 remainder: calendar, penalties, excused days, early-settlement rebate, restructuring, write-off)
+- remaining loan policy (PLM-D-00-08 remainder: early-settlement rebate, principal prepayment, restructuring, write-off)
 - high-risk separation of duties (PLM-D-00-13)
 - cash variance close policy
 - refund/reversal workflow
@@ -152,7 +166,7 @@ Portfolio: R-091 remains open. Scale architecture: [exits-scale-and-growth-archi
 
 | ID | Risk | Mitigation |
 |---|---|---|
-| PLM-D-00-08 | Pressure to invent Loan **rates** or remaining calendar/penalty policy | Keep rates/penalties Open; stop at owner decisions; methods already accepted in PLM-DOC-02 |
+| PLM-D-00-08 | Pressure to invent Loan **rates** or remaining settlement policy | Keep rates Open; calendar/penalty engine accepted in PLM-DOC-03 |
 | PLM-D-00-06 | Hard-coding authorization to role names | Grants + scope; no implicit hierarchy |
 | PLM-D-00-04 | Premature generic Platform relationship schema | Record intent only; no schema |
 | PLM-D-00-05 | Auto-link from EX ID / QR | Consent required; resolution identifies only |
@@ -162,9 +176,9 @@ Portfolio: R-091 remains open. Scale architecture: [exits-scale-and-growth-archi
 
 ## Exact next package
 
-**PLM-DOC-03 — Schedule Calendar, Delinquency, Penalties & Maturity Decisions**
+**PLM-DOC-04 — Early Settlement, Refunds, Reversals, Cash Variance & Accounting Boundaries**
 
-Do **not** start PLM-DOC-03 in this package. Implementation remains paused. Do **not** start or merge PLM-01.
+Do **not** start PLM-DOC-04 in this package. Implementation remains paused. Do **not** start or merge PLM-01.
 
 ## Phase closeout requirements
 

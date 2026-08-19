@@ -12,7 +12,11 @@ Do not treat this folder as a second product definition. Detailed agreed **direc
 | [lending-operating-model.md](lending-operating-model.md) | Origination paths, shared Loan core, role presets, branch, PHP, Platform usage |
 | [quick-loan-model.md](quick-loan-model.md) | Quick Loan templates, snapshot, eligibility, Personal flow |
 | [collector-cash-and-reconciliation.md](collector-cash-and-reconciliation.md) | Loan ledger vs collector cash |
-| [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md) | Penalty, exception, waiver, reversal, post-maturity |
+| [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md) | Penalty, exception, waiver, reversal (index) |
+| [schedule-and-collection-calendar-policy.md](schedule-and-collection-calendar-policy.md) | Frequencies, collection calendar, first due, exceptions |
+| [delinquency-and-missed-payment-policy.md](delinquency-and-missed-payment-policy.md) | Past Due, DPD, missed-day counter, grace |
+| [penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md) | Tiers, bases, caps, waiver vs reversal |
+| [maturity-and-post-maturity-policy.md](maturity-and-post-maturity-policy.md) | Maturity Date, Matured Past Due, post-maturity modes |
 | [financial-calculation-baseline.md](financial-calculation-baseline.md) | Money terminology; pointer to PLM-DOC-02 policies |
 | [interest-and-finance-charge-policy.md](interest-and-finance-charge-policy.md) | MVP methods, formulas, interest treatments |
 | [fees-and-net-proceeds-policy.md](fees-and-net-proceeds-policy.md) | Fee bases/treatments; Net Proceeds |
@@ -40,8 +44,7 @@ Do not treat this folder as a second product definition. Detailed agreed **direc
 | [notification-model.md](notification-model.md) | Notifications |
 | [personal-loan-experience.md](personal-loan-experience.md) | Personal Loan area |
 
-Remaining default **rates**, calendar/penalty/settlement items, grant identifiers, and legal validation stay open in [../product-definition.md](../product-definition.md) and [../risks-and-decisions.md](../risks-and-decisions.md) (PLM-D-00-06, PLM-D-00-08 remainder, PLM-D-00-11, PLM-D-00-13). Do not invent:
+Remaining default **rates**, early-settlement/refund items, grant identifiers, and legal validation stay open in [../product-definition.md](../product-definition.md) and [../risks-and-decisions.md](../risks-and-decisions.md) (PLM-D-00-06, PLM-D-00-08 remainder, PLM-D-00-11, PLM-D-00-13). Do not invent:
 
-- peso/percent **rates** as defaults
-- penalty amounts or legal limits
+- peso/percent **rates** or penalty **amounts** as defaults
 - legal/regulatory operating rules

@@ -17,7 +17,7 @@ ADRs: [../Decisions/ADR-003-supported-interest-and-schedule-methods.md](../Decis
 
 Companions: [schedule-maturity-and-settlement.md](schedule-maturity-and-settlement.md), [loan-lifecycle-model.md](loan-lifecycle-model.md), [../Architecture/loan-ledger-and-balance-model.md](../Architecture/loan-ledger-and-balance-model.md), [quick-loan-model.md](quick-loan-model.md), [lending-operating-model.md](lending-operating-model.md).
 
-Penalties, calendars, excused days, and post-maturity rules: **PLM-DOC-03**.
+Penalties, calendars, excused days, and post-maturity **engine** rules: [schedule-and-collection-calendar-policy.md](schedule-and-collection-calendar-policy.md), [penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md). Default amounts remain undefined.
 
 ---
 
@@ -40,7 +40,7 @@ Do **not** assume that Principal, Net Proceeds, and Total Scheduled Repayment ar
 | **Past Due** | Unpaid obligations whose due dates have passed |
 | **Outstanding Principal** | Contract principal not yet satisfied |
 | **Outstanding Charges** | Interest/finance charges, fees, or other approved non-principal obligations not yet satisfied |
-| **Penalty** | Separately assessed late/delinquency charge (PLM-DOC-03) |
+| **Penalty** | Separately assessed late/delinquency charge ([penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md)) |
 | **Total Outstanding** | All currently outstanding contractual components |
 | **Settlement Amount** | Amount required by a valid settlement quote to fully settle the Loan |
 
@@ -73,7 +73,7 @@ Detail: [money-precision-and-rounding-policy.md](money-precision-and-rounding-po
 
 ## Term vs installment count
 
-“1 month” and “30 daily installments” are **not** automatically the same thing. `N` must be explicit. Calendar/due-date rules remain **PLM-DOC-03**.
+“1 month” and “30 daily installments” are **not** automatically the same thing. `N` must be explicit. Calendar/due-date rules: [schedule-and-collection-calendar-policy.md](schedule-and-collection-calendar-policy.md).
 
 ---
 
@@ -96,7 +96,7 @@ Before Production, qualified review is required (PLM-D-00-11). This package does
 ## Explicit non-goals
 
 - Default interest rates or fee amounts
-- Penalty rates/amounts (PLM-DOC-03)
+- Penalty rates/amounts (engine accepted; no defaults)
 - Early-settlement unearned-interest formula
 - Legal EIR/APR algorithm
 - Database tables, classes, or enums

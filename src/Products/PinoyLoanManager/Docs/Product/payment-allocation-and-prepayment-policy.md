@@ -6,9 +6,9 @@
 
 Deterministic payment allocation, partial/multiple/advance payments, overpayment, and reversal. Not a posting engine, cash-refund workflow, or legally validated collections policy.
 
-**Canonical companions:** [interest-and-finance-charge-policy.md](interest-and-finance-charge-policy.md), [fees-and-net-proceeds-policy.md](fees-and-net-proceeds-policy.md), [money-precision-and-rounding-policy.md](money-precision-and-rounding-policy.md). ADR: [../Decisions/ADR-004-rounding-fees-and-payment-allocation.md](../Decisions/ADR-004-rounding-fees-and-payment-allocation.md). Operational posting notes: [payment-and-allocation-model.md](payment-and-allocation-model.md).
+**Canonical companions:** [interest-and-finance-charge-policy.md](interest-and-finance-charge-policy.md), [fees-and-net-proceeds-policy.md](fees-and-net-proceeds-policy.md), [money-precision-and-rounding-policy.md](money-precision-and-rounding-policy.md), [penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md), [maturity-and-post-maturity-policy.md](maturity-and-post-maturity-policy.md). ADR: [../Decisions/ADR-004-rounding-fees-and-payment-allocation.md](../Decisions/ADR-004-rounding-fees-and-payment-allocation.md). Operational posting notes: [payment-and-allocation-model.md](payment-and-allocation-model.md).
 
-Penalties as assessed charges remain **PLM-DOC-03**. Early-settlement unearned-interest treatment remains open.
+Penalty **amounts** remain undefined. Early-settlement unearned-interest treatment remains open (**PLM-DOC-04**).
 
 ---
 
@@ -20,7 +20,7 @@ Penalties as assessed charges remain **PLM-DOC-03**. Early-settlement unearned-i
 | Past Due | Unpaid obligations whose due dates have passed |
 | Outstanding Principal | Contract principal not yet satisfied |
 | Outstanding Charges | Interest/finance charges, fees, or other approved non-principal obligations not yet satisfied |
-| Penalty | Separately assessed late/delinquency charge (PLM-DOC-03) |
+| Penalty | Separately assessed late/delinquency charge ([penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md)) |
 | Total Outstanding | All currently outstanding contractual components |
 | Settlement Amount | Amount required by a valid settlement quote to fully settle the Loan |
 
@@ -152,7 +152,7 @@ Early settlement requires a **Settlement Quote**. The quote must eventually show
 - quote validity period
 - calculation policy/version
 
-Exact future-interest rebate/treatment remains open for a later documentation package and legal/accounting review (PLM-D-00-08 remainder, PLM-D-00-11).
+Exact future-interest rebate/treatment remains open for a later documentation package and legal/accounting review (PLM-D-00-08 remainder, PLM-D-00-11, **PLM-DOC-04**).
 
 ---
 
@@ -214,6 +214,6 @@ No allocation order, advance-payment, or overpayment rule in this document is cl
 - Automatic conversion of excess into principal prepayment
 - Borrower wallet / stored credit
 - Early-settlement unearned-interest formula
-- Penalty rates/amounts (PLM-DOC-03)
+- Penalty rates/amounts (engine accepted; no defaults)
 - Cash-refund workflow design
 - Implementation of a posting engine

@@ -6,7 +6,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Plan status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01 identity/linking recorded; PLM-DOC-02 calculation/allocation recorded; PLM-01 paused on mainline |
+| Plan status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01–03 recorded; PLM-01 paused on mainline |
 | Implementation present | No |
 
 ## Delivery approach
@@ -67,7 +67,7 @@ Do not start PLM-01 on mainline until explicitly authorized. Product implementat
 | Commercial-state transport | **DECISION D-P12-03** | Provisional patterns only; do not invent final |
 | Production authentication | **R-091** | Keep Dev/Testing language honest (D-P12-05) |
 | Personal / cross-product relationship model | Platform + product | Open (PLM-D-00-04, PLM-D-00-05) |
-| Loan owner policy | Product owner | Grants open (PLM-D-00-06). Calculation methods accepted (PLM-DOC-02). Schema/calendar/penalties remain Open / Partially Resolved (PLM-D-00-07, PLM-D-00-08) |
+| Loan owner policy | Product owner | Grants open (PLM-D-00-06). Calculation, calendar, and penalty engine accepted (PLM-DOC-02, PLM-DOC-03). Schema/settlement remain Open / Partially Resolved (PLM-D-00-07, PLM-D-00-08) |
 
 ## Testing expectations
 
@@ -99,6 +99,6 @@ Never weaken tests to pass a WP.
 ## Explicit exclusions from this plan
 
 - Implementing Loan capability in PLM-00
-- Finalizing penalty amounts, remaining calendar/settlement rules, grant identifiers, or regulatory rules
+- Finalizing remaining settlement/refund rules, grant identifiers, or regulatory rules
 - Creating .NET projects, migrations, APIs, UI, Docker, or `ExItS.slnx` entries in this WP
 - Copying POS phases or grant sets

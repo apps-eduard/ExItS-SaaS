@@ -8,13 +8,13 @@
 | Product name | Pinoy Loan Manager |
 | Platform product code | `pinoy-loan-manager` (**Closed**, PLM-D-00-01) |
 | Docs root | `src/Products/PinoyLoanManager/Docs/` |
-| Status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01 identity/linking recorded; PLM-DOC-02 calculation/allocation recorded; no implementation |
+| Status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01–03 recorded; no implementation |
 | Last updated | 2026-08-19 |
 | Implementation present | No |
 
 ## Purpose and users
 
-- Purpose: Independently subscribed ExItS product for **lending operations**. Two origination paths are agreed: Traditional Loan and Quick Loan. After disbursement both converge into one core Loan model. Detail: [Product/lending-operating-model.md](Product/lending-operating-model.md). Money terminology, MVP calculation methods, fee model, rounding (**PLM-D-00-12 Closed**), and payment allocation are recorded in PLM-DOC-02. Default rates remain undefined. Calendar, penalties, and early-settlement rebate remain **Open** (PLM-D-00-08 remainder).
+- Purpose: Independently subscribed ExItS product for **lending operations**. Two origination paths are agreed: Traditional Loan and Quick Loan. After disbursement both converge into one core Loan model. Detail: [Product/lending-operating-model.md](Product/lending-operating-model.md). Money terminology, MVP calculation methods, fee model, rounding (**PLM-D-00-12 Closed**), payment allocation, schedule calendar, delinquency, penalties, and maturity are recorded in PLM-DOC-02 and PLM-DOC-03. Default rates and penalty amounts remain undefined. Early-settlement rebate remains **Open** (PLM-D-00-08 remainder).
 - Target organizations: Independently subscribed ExItS lending organizations. Multi-branch support is intended from the beginning; a single-branch organization may use one default branch.
 - Target users / jobs: Organization staff via Owner / Manager / Cashier / Collector **presets** backed by explicit grants (identifiers still open — PLM-D-00-06). Borrowers use ExItS Personal as a presentation surface only. Do not hard-code authorization to role names. Do not copy PinoyBusinessPOS grant sets.
 
@@ -131,9 +131,10 @@ This package records:
 - technical product layout and integration boundary (PLM-00-WP09, completed)
 - foundation closeout and implementation readiness (PLM-00-WP10, completed)
 - product identity and Personal linking (PLM-DOC-01, completed)
-- financial calculation, fees, rounding, and payment allocation (PLM-DOC-02, this package)
+- financial calculation, fees, rounding, and payment allocation (PLM-DOC-02, completed)
+- schedule calendar, delinquency, penalties, and maturity (PLM-DOC-03, this package)
 
-No loan MVP **implementation** is approved. Default rates, calendar/penalty policy, and legal validation remain open.
+No loan MVP **implementation** is approved. Default rates, early-settlement rebate, and legal validation remain open.
 
 ## Explicit exclusions
 
@@ -142,7 +143,7 @@ No loan MVP **implementation** is approved. Default rates, calendar/penalty poli
 - Final Loan grant identifiers (presets and grant **intent** recorded)
 - Generic Platform cross-product relationship schema
 - Copying PinoyBusinessPOS domain, grants, or financial models
-- Exact interest **rates** (formulas/methods accepted in PLM-DOC-02), due-date generation, early-settlement unearned interest, penalty amounts, legal/regulatory operating rules (PLM-D-00-08 remainder, PLM-D-00-11, PLM-DOC-03)
+- Exact interest **rates** (formulas/methods accepted in PLM-DOC-02), early-settlement unearned interest, penalty **amounts**, legal/regulatory operating rules (PLM-D-00-08 remainder, PLM-D-00-11, PLM-DOC-04)
 - Auto-approval of Quick Loans
 - Treating any recorded rate, fee, penalty, or workflow as legally compliant
 - Production authentication (R-091)
@@ -166,7 +167,7 @@ No loan MVP **implementation** is approved. Default rates, calendar/penalty poli
 | PLM-D-00-05 | Personal-to-Borrower linking mechanism (product behavior defined; Platform transport/schema open) | Borrower identity implementation (PLM-04) |
 | PLM-D-00-06 | Loan roles and grants (presets + grant intent recorded; identifiers open) | Authorization (PLM-03) |
 | PLM-D-00-07 | Operational financial model (methods/fees/allocation recorded; schema/GL/refund open) | Origination, payments, collections |
-| PLM-D-00-08 | Loan business / calculation rules (MVP methods recorded; calendar/penalties/settlement open) | Product configuration through collections |
+| PLM-D-00-08 | Loan business / calculation rules (MVP methods and calendar/penalty engine recorded; settlement rebate open) | Product configuration through collections |
 | PLM-D-00-09 | Web / MAUI component-sharing strategy | Client scaffold |
 | PLM-D-00-10 | Product documentation baseline completion / owner approval | **Closed / Product Owner Accepted** |
 | PLM-D-00-11 | External legal/compliance validation before Production | Production use |
@@ -193,6 +194,10 @@ No loan MVP **implementation** is approved. Default rates, calendar/penalty poli
 | Money precision / rounding | [Product/money-precision-and-rounding-policy.md](Product/money-precision-and-rounding-policy.md) |
 | Payment / allocation (posting notes) | [Product/payment-and-allocation-model.md](Product/payment-and-allocation-model.md) |
 | Schedule / maturity / settlement | [Product/schedule-maturity-and-settlement.md](Product/schedule-maturity-and-settlement.md) |
+| Schedule / collection calendar | [Product/schedule-and-collection-calendar-policy.md](Product/schedule-and-collection-calendar-policy.md) |
+| Delinquency / missed payment | [Product/delinquency-and-missed-payment-policy.md](Product/delinquency-and-missed-payment-policy.md) |
+| Penalty assessment / cap | [Product/penalty-assessment-and-cap-policy.md](Product/penalty-assessment-and-cap-policy.md) |
+| Maturity / post-maturity | [Product/maturity-and-post-maturity-policy.md](Product/maturity-and-post-maturity-policy.md) |
 | Loan lifecycle | [Product/loan-lifecycle-model.md](Product/loan-lifecycle-model.md) |
 | Loan ledger / balances | [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md) |
 | Role / grant baseline | [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md) |
@@ -224,6 +229,9 @@ No loan MVP **implementation** is approved. Default rates, calendar/penalty poli
 | Foundation closeout | [Reports/PLM-00-foundation-closeout.md](Reports/PLM-00-foundation-closeout.md) |
 | PLM-DOC-01 | [Reports/PLM-DOC-01-product-identity-and-personal-linking.md](Reports/PLM-DOC-01-product-identity-and-personal-linking.md) |
 | PLM-DOC-02 | [Reports/PLM-DOC-02-financial-calculation-and-allocation.md](Reports/PLM-DOC-02-financial-calculation-and-allocation.md) |
+| PLM-DOC-03 | [Reports/PLM-DOC-03-schedule-delinquency-penalty-and-maturity.md](Reports/PLM-DOC-03-schedule-delinquency-penalty-and-maturity.md) |
+| ADR-005 | [Decisions/ADR-005-schedule-calendar-and-exception-treatment.md](Decisions/ADR-005-schedule-calendar-and-exception-treatment.md) |
+| ADR-006 | [Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md](Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md) |
 | ADR-003 | [Decisions/ADR-003-supported-interest-and-schedule-methods.md](Decisions/ADR-003-supported-interest-and-schedule-methods.md) |
 | ADR-004 | [Decisions/ADR-004-rounding-fees-and-payment-allocation.md](Decisions/ADR-004-rounding-fees-and-payment-allocation.md) |
 | Readiness checklist | [Validation/PLM-00-readiness-checklist.md](Validation/PLM-00-readiness-checklist.md) |

@@ -6,7 +6,7 @@
 
 Common operating day for Owner / Manager, Cashier, and Collector. Not a UI or scheduling specification.
 
-Related: [cashier-and-collector-control-model.md](cashier-and-collector-control-model.md), [disbursement-and-payment-controls.md](disbursement-and-payment-controls.md), [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md), [../Security/role-and-grant-baseline.md](../Security/role-and-grant-baseline.md).
+Related: [cashier-and-collector-control-model.md](cashier-and-collector-control-model.md), [disbursement-and-payment-controls.md](disbursement-and-payment-controls.md), [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md), [schedule-and-collection-calendar-policy.md](schedule-and-collection-calendar-policy.md), [../Security/role-and-grant-baseline.md](../Security/role-and-grant-baseline.md).
 
 ---
 

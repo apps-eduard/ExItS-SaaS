@@ -8,7 +8,7 @@ MVP contractual calculation methods, rate bases, interest-treatment compatibilit
 
 **Canonical companions:** [fees-and-net-proceeds-policy.md](fees-and-net-proceeds-policy.md), [money-precision-and-rounding-policy.md](money-precision-and-rounding-policy.md), [payment-allocation-and-prepayment-policy.md](payment-allocation-and-prepayment-policy.md). ADR: [../Decisions/ADR-003-supported-interest-and-schedule-methods.md](../Decisions/ADR-003-supported-interest-and-schedule-methods.md). Terminology index: [financial-calculation-baseline.md](financial-calculation-baseline.md).
 
-Penalties, due-date calendars, excused days, and post-maturity rules belong to **PLM-DOC-03**. Early-settlement unearned-interest treatment remains open.
+Penalties, due-date calendars, excused days, and post-maturity **engine** rules: [schedule-and-collection-calendar-policy.md](schedule-and-collection-calendar-policy.md), [penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md). Default amounts remain undefined. Early-settlement unearned-interest treatment remains open.
 
 ---
 
@@ -210,7 +210,7 @@ Do **not** assume:
 - four weeks = one month
 - daily payment means every calendar day
 
-The relationship among term, frequency, installment count, first due date, and calendar rules must be explicit. Exact due-date/calendar behavior remains **PLM-DOC-03**.
+The relationship among term, frequency, installment count, first due date, and calendar rules must be explicit. Canonical calendar: [schedule-and-collection-calendar-policy.md](schedule-and-collection-calendar-policy.md).
 
 ---
 
@@ -253,7 +253,7 @@ No formula, rate basis, or interest treatment in this document is claimed legall
 - Organization-supplied custom formulas
 - Reducing-balance for Quick Loan MVP
 - Reducing-balance with deducted-interest treatment
-- Due-date calendar, penalties, excused days (PLM-DOC-03)
+- Due-date calendar, penalties, excused days: engine accepted; no default amounts
 - Early-settlement unearned-interest formula
 - Legal EIR/APR algorithm
 - Implementation of a calculation engine

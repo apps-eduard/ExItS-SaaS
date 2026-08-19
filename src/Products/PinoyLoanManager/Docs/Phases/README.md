@@ -21,5 +21,6 @@ Do not copy PinoyBusinessPOS phase history into this product.
 | PLM-00-WP10 | Foundation closeout and implementation readiness | Completed |
 | PLM-DOC-01 | Product identity, Borrower identity, and Personal linking finalization | Completed |
 | PLM-DOC-02 | Financial calculation, fees, rounding, and payment allocation | Completed |
+| PLM-DOC-03 | Schedule calendar, delinquency, penalties, and maturity | Completed |
 
-Recommended next documentation package: **PLM-DOC-03 — Schedule Calendar, Delinquency, Penalties & Maturity Decisions**. PLM-01 remains paused on mainline. Do not start until explicitly authorized.
+Recommended next documentation package: **PLM-DOC-04 — Early Settlement, Refunds, Reversals, Cash Variance & Accounting Boundaries**. PLM-01 remains paused on mainline. Do not start until explicitly authorized.

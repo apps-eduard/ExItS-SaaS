@@ -10,7 +10,7 @@ Payment posting, missed-installment carry-forward, reversal/idempotency, and poi
 
 Related: [financial-calculation-baseline.md](financial-calculation-baseline.md), [schedule-maturity-and-settlement.md](schedule-maturity-and-settlement.md), [../Architecture/loan-ledger-and-balance-model.md](../Architecture/loan-ledger-and-balance-model.md), [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md), [disbursement-and-payment-controls.md](disbursement-and-payment-controls.md), [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md).
 
-Penalty rates/caps remain **PLM-DOC-03**.
+Penalty rates/caps: [penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md). Classification: [delinquency-and-missed-payment-policy.md](delinquency-and-missed-payment-policy.md), [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md).
 
 ---
 
@@ -41,7 +41,7 @@ Illustrative example only (not a rate):
 - Day 1: PHP 100 due, PHP 0 paid
 - Day 2: another PHP 100 becomes due
 
-Conceptually the customer may now have Past Due plus Current Due. Subject to penalty / grace / exception rules (**PLM-DOC-03**).
+Conceptually the customer may now have Past Due plus Current Due. Subject to penalty / grace / exception rules: [delinquency-and-missed-payment-policy.md](delinquency-and-missed-payment-policy.md).
 
 The schedule retains **both** installment histories.
 
@@ -49,7 +49,7 @@ The schedule retains **both** installment histories.
 
 ## Penalty posting (explicit event)
 
-Penalty must be represented as an explicit financial event / charge. Do **not** silently increase principal. Rates/caps: **PLM-DOC-03**. Classification: [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md).
+Penalty must be represented as an explicit financial event / charge. Do **not** silently increase principal. Rates/caps: engine accepted; no default amounts — [penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md). Classification: [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md).
 
 Engineering safety defaults (not legal caps): penalty-on-penalty default **OFF**; unlimited penalty growth **prohibited** as an engineering default; penalty-cap **support** required.
 
@@ -73,5 +73,5 @@ Financial commands must be protected against accidental duplicate submission. Fu
 
 - Organization-editable allocation order in MVP
 - Customer wallet / unapplied credit as MVP
-- Penalty rates/amounts (PLM-DOC-03)
+- Penalty rates/amounts (engine accepted; no defaults)
 - Implementation of posting, idempotency keys, or APIs

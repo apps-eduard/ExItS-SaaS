@@ -11,7 +11,7 @@ Always load with:
 5. The active work-package prompt/report
 6. Files required for the task only
 
-**Status:** PLM-00 documentation baseline accepted (PLM-D-00-10); PLM-DOC-01 identity/linking and PLM-DOC-02 calculation/allocation recorded; implementation paused
+**Status:** PLM-00 documentation baseline accepted (PLM-D-00-10); PLM-DOC-01–03 recorded; implementation paused
 **Implementation present:** No
 **Documentation root:** `src/Products/PinoyLoanManager/Docs/` (D-P12-02)
 
@@ -47,7 +47,11 @@ Agreed operating-model direction (not implementation specs):
 | [Product/payment-allocation-and-prepayment-policy.md](Product/payment-allocation-and-prepayment-policy.md) | Oldest-due allocation; component order; advance/overpayment |
 | [Product/money-precision-and-rounding-policy.md](Product/money-precision-and-rounding-policy.md) | Decimal money; To Even; schedule reconciliation |
 | [Product/payment-and-allocation-model.md](Product/payment-and-allocation-model.md) | Partial payments, posting notes, reversals, idempotency |
-| [Product/schedule-maturity-and-settlement.md](Product/schedule-maturity-and-settlement.md) | Schedule, calendar, maturity, settlement |
+| [Product/schedule-maturity-and-settlement.md](Product/schedule-maturity-and-settlement.md) | Schedule, calendar, maturity, settlement (index) |
+| [Product/schedule-and-collection-calendar-policy.md](Product/schedule-and-collection-calendar-policy.md) | Frequencies, collection calendar, first due, exceptions |
+| [Product/delinquency-and-missed-payment-policy.md](Product/delinquency-and-missed-payment-policy.md) | Past Due, DPD, missed-day counter, grace |
+| [Product/penalty-assessment-and-cap-policy.md](Product/penalty-assessment-and-cap-policy.md) | Tiers, bases, caps, waiver vs reversal |
+| [Product/maturity-and-post-maturity-policy.md](Product/maturity-and-post-maturity-policy.md) | Maturity Date, Matured Past Due, post-maturity modes |
 | [Product/loan-lifecycle-model.md](Product/loan-lifecycle-model.md) | Origination vs lifecycle vs delinquency |
 | [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md) | Operational subledger and balance components |
 | [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md) | Owner/Manager/Cashier/Collector presets; grant catalog intent |
@@ -79,6 +83,9 @@ Agreed operating-model direction (not implementation specs):
 | [Reports/PLM-00-foundation-closeout.md](Reports/PLM-00-foundation-closeout.md) | PLM-00 closeout and implementation gates |
 | [Reports/PLM-DOC-01-product-identity-and-personal-linking.md](Reports/PLM-DOC-01-product-identity-and-personal-linking.md) | PLM-DOC-01 identity and Personal linking finalization |
 | [Reports/PLM-DOC-02-financial-calculation-and-allocation.md](Reports/PLM-DOC-02-financial-calculation-and-allocation.md) | PLM-DOC-02 calculation, fees, rounding, allocation |
+| [Reports/PLM-DOC-03-schedule-delinquency-penalty-and-maturity.md](Reports/PLM-DOC-03-schedule-delinquency-penalty-and-maturity.md) | PLM-DOC-03 calendar, delinquency, penalty, maturity |
+| [Decisions/ADR-005-schedule-calendar-and-exception-treatment.md](Decisions/ADR-005-schedule-calendar-and-exception-treatment.md) | Calendar, frequencies, exception defaults |
+| [Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md](Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md) | DPD, penalties, maturity |
 | [Decisions/ADR-001-product-identity-and-database-name.md](Decisions/ADR-001-product-identity-and-database-name.md) | Product code and logical database name |
 | [Decisions/ADR-002-borrower-personal-cardinality-and-consent.md](Decisions/ADR-002-borrower-personal-cardinality-and-consent.md) | Borrower/Personal cardinality and consent |
 | [Decisions/ADR-003-supported-interest-and-schedule-methods.md](Decisions/ADR-003-supported-interest-and-schedule-methods.md) | MVP interest/schedule methods |
@@ -143,4 +150,4 @@ Organization Web: Blazor Web (full operations). MAUI Blazor Hybrid: limited fiel
 
 ## Explicit exclusions
 
-No implementation exists. Default interest **rates** and fee **amounts** are not defined. Grant identifiers remain open (PLM-D-00-06). Calendar, penalties, and early-settlement rebate remain open (PLM-D-00-08 remainder). Do not copy PinoyBusinessPOS grants or money models. No recorded workflow is claimed legally compliant (PLM-D-00-11).
+No implementation exists. Default interest **rates** and penalty **amounts** are not defined. Grant identifiers remain open (PLM-D-00-06). Early-settlement rebate remains open (PLM-D-00-08 remainder). Do not copy PinoyBusinessPOS grants or money models. No recorded workflow is claimed legally compliant (PLM-D-00-11).

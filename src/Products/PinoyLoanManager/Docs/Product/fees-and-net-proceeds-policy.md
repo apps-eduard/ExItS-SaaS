@@ -22,7 +22,7 @@ No default fee amount or percentage is defined in this package.
 | Net Proceeds | The cash/value actually released to the borrower |
 | Total Scheduled Repayment | The total contractual amount expected under the original schedule |
 | Outstanding Charges | Interest/finance charges, fees, or other approved non-principal obligations not yet satisfied |
-| Penalty | A separately assessed late/delinquency charge governed by **PLM-DOC-03** |
+| Penalty | A separately assessed late/delinquency charge ([penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md)) |
 
 ---
 
@@ -197,7 +197,7 @@ No fee, deduction, or Net Proceeds presentation in this document is claimed lega
 
 - Default fee amounts or percentages
 - Treating Platform usage as a borrower fee
-- Penalty rates/amounts (PLM-DOC-03)
+- Penalty rates/amounts (engine accepted; no defaults)
 - Silent mutation of posted fees
 - Schema / enum design
 - Implementation of a fee engine
