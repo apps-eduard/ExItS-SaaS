@@ -49,6 +49,7 @@ Accepted decision identifiers for this planning track (documentation-only).
 | PWEB-D-041 | AMEND-01 release/cache/version policy: no manual cache clearing required; content-hashed assets; entry HTML revalidation; no service worker by default; version awareness | Accepted |
 | PWEB-D-042 | AMEND-01 WCAG target normalized to 2.2 AA consistently across all documents | Accepted |
 | PWEB-D-043 | AMEND-01 environment indicators: Production restrained/neutral; non-production visually distinctive | Accepted |
+| PWEB-D-044 | PWEB-IMPL-01: Product Owner authorized React scaffold at `src/Platform/ExItS.Platform.Admin.Web`; existing Blazor Admin remains active; CSRF remains BLOCKS_FUTURE_MUTATION; implementation stops after the first visual foundation checkpoint | Accepted |
 
 Library decisions are recorded by DOC-03; design system decisions by DOC-04.
 

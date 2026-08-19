@@ -6,13 +6,13 @@ Target worktree branch: `docs/platform-admin-web-v2`
 
 Baseline origin/main SHA: `7f576f70665d78b319f31fc1cfa12a7e9c14482f`
 
-Implementation status: `Not Authorized`
+Implementation status: `Authorized through first visual foundation checkpoint`
 
 Existing Admin status: `Retained / Unmodified`
 
-Future Admin status: `Documentation Only` (future frontend only)
+Future Admin status: `Scaffold in progress` (`src/Platform/ExItS.Platform.Admin.Web`)
 
-React implementation: `Absent`
+React implementation: `Scaffold only` (PWEB-IMPL-01)
 
 Backend implementation from this series: `Absent`
 
@@ -20,7 +20,7 @@ API gaps: `Documented, not implemented`
 
 Platform Admin Web documentation: `100% Final` (approved planning baseline + AMEND-01)
 
-Queue state: `STOPPED FOR PRODUCT OWNER + CHATGPT REVIEW`
+Queue state: `STOPPED AFTER PWEB-IMPL-01`
 
 ## DOC queue
 

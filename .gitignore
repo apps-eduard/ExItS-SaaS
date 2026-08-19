@@ -61,3 +61,12 @@ Desktop.ini
 tools/node_modules/
 artifacts/
 
+# Node / frontend (Platform Admin Web React app and future web clients)
+**/node_modules/
+**/dist/
+**/coverage/
+**/playwright-report/
+**/blob-report/
+**/test-results/
+**/playwright/.cache/
+

@@ -1,0 +1,83 @@
+export type PlatformProblemDetails = {
+  title?: string;
+  status?: number;
+  detail?: string;
+  errorCode?: string;
+  traceId?: string;
+};
+
+export class PlatformApiError extends Error {
+  readonly status: number;
+  readonly problem: PlatformProblemDetails;
+
+  constructor(status: number, problem: PlatformProblemDetails) {
+    super(problem.detail ?? problem.title ?? `Platform API request failed (${status})`);
+    this.name = "PlatformApiError";
+    this.status = status;
+    this.problem = problem;
+  }
+}
+
+export function createCorrelationId(): string {
+  return crypto.randomUUID();
+}
+
+function parseProblem(payload: unknown): PlatformProblemDetails {
+  if (typeof payload !== "object" || payload === null) {
+    return {};
+  }
+
+  const record = payload as Record<string, unknown>;
+  return {
+    title: typeof record.title === "string" ? record.title : undefined,
+    status: typeof record.status === "number" ? record.status : undefined,
+    detail: typeof record.detail === "string" ? record.detail : undefined,
+    errorCode: typeof record.errorCode === "string" ? record.errorCode : undefined,
+    traceId: typeof record.traceId === "string" ? record.traceId : undefined,
+  };
+}
+
+export type PlatformRequestOptions = {
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  path: string;
+  body?: unknown;
+  signal?: AbortSignal;
+};
+
+export async function platformRequest<T>(
+  baseUrl: string,
+  options: PlatformRequestOptions,
+): Promise<T> {
+  const headers = new Headers({
+    Accept: "application/json",
+    "X-Correlation-Id": createCorrelationId(),
+  });
+
+  if (options.body !== undefined) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const response = await fetch(`${baseUrl}${options.path}`, {
+    method: options.method ?? "GET",
+    credentials: "include",
+    headers,
+    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    signal: options.signal,
+  });
+
+  if (!response.ok) {
+    let problem: PlatformProblemDetails = { status: response.status };
+    try {
+      problem = { ...problem, ...parseProblem(await response.json()) };
+    } catch {
+      // Non-JSON error bodies still surface as a status-only problem.
+    }
+    throw new PlatformApiError(response.status, problem);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return (await response.json()) as T;
+}
