@@ -81,7 +81,7 @@ Switching workspace runs `SelectWorkspaceAsync` (org then branch). Open cashier 
 | POS product-local role | POS role assignment | Owner ⊇ Manager ⊇ Cashier capabilities |
 | UtangCapability / feature codes | POS permission matrix | Authoritative for POS API operations |
 | Entitlement / subscription | Commercial gate | Feature-level; fails closed |
-| Branch access ACL | `IAccessibleBranchResolver` | **Owner path only today** — future staff filter |
+| Branch access ACL | `IAccessibleBranchResolver` | Owner path = all Active branches; staff path filters by `organization_membership_branch_assignments` (WP15C) |
 
 ---
 
@@ -91,7 +91,7 @@ Legend:
 
 - **Mobile:** `Primary` | `Exact` | `Any` | `No`
 - **Web:** `Yes` | `No` | `Read`
-- **Branch access:** whether resolver/ACL must include target branch (future staff ACL)
+- **Branch access:** whether resolver/ACL must include target branch (staff ACL via WP15C)
 - **Device match:** POS device registration branch must equal operational branch
 - **Shift:** open shift/register rules
 - **Actor:** mutation records acting user id
@@ -111,7 +111,7 @@ Legend:
 | Staff invite | Platform membership | OrgGov | Owner; Mgr policy | No | Primary | Yes | No | No | No | Yes | Platform | No | Target | Update |
 | Staff remove / suspend membership | Platform membership | OrgGov | Owner | No | Primary | Yes | No | No | No | Yes | Platform | Yes | Target | Archive |
 | Assign/revoke POS product role | Platform + POS | OrgGov | Owner; Mgr policy | No | Primary | Yes | No | No | No | Yes | Platform + POS assignment record | No | Target | Update |
-| Staff branch assignment | Platform (future ACL) | OrgGov | Owner | Per branch | No | Target | No | No | No | Yes | Target | No | Target | Update |
+| Staff branch assignment | Platform | OrgGov | Owner | Per branch | No | Target | No | No | No | Yes | Target | No | Target | Update |
 | Ownership transfer request/accept | Platform org | OrgGov | Exact Owner / Personal acceptor | No | Primary | Yes | No | No | No | Yes | Platform | Yes | Target | Update |
 | Sales-document Owner education ack | Platform compliance | OrgGov | Exact Owner | No | Primary | Yes | No | No | No | Yes | Platform | No | Target | Immutable ack |
 | Tax/compliance profile (when enabled) | Platform compliance | OrgGov | Owner | No | No | Yes | No | No | No | Yes | Platform | No | Target | Update |

@@ -106,7 +106,7 @@ The following canonical documents were verified for consistency:
 - WP15A–F reports — all present and internally consistent
 - WP13/WP14 reports — consistent with current workspace/branch model
 
-No stale contradictions found requiring correction.
+Three stale "future staff ACL" references in `organization-branch-capability-matrix.md` (lines 84, 94, 114) were updated to reflect WP15C implementation.
 
 ---
 
@@ -138,13 +138,16 @@ Fixed WP15F gaps (Web Devices step-up, FakeAccessClient stubs). Audited capabili
 ## Known remaining limitations
 
 1. **POS void/refund/stock adjustment step-up** — password step-up is not generalized beyond Platform governance lifecycle actions
-2. **Shifts/registers org-scoped** — no `BranchId` on shift model (WP13 documented limitation)
-3. **Staff branch ACL** — owner path returns all branches; staff filtering implemented but not yet enforced on all operational queries
-4. **Android SDK** — MAUI Android target not buildable on this workstation (XA5300)
-5. **18 pre-existing MAUI test failures** — UI guard/localization pattern tests and branch-restore tests (not introduced by WP15)
-6. **57 pre-existing Platform integration failures** — SaaS payment/subscription commercial flow tests (not introduced by WP15)
-7. **Org Web branch selection** — sets org context; branch hierarchy is informational UX. Parity with MAUI `SelectedBranchId` on Web is optional.
-8. **Production authentication** — development-stage APIs; no production auth infrastructure claimed
+2. **Web StaffDetail step-up gap** — revoke POS role and suspend membership on `StaffDetail.razor` fire directly without ConfirmDialog/step-up (hardcoded reason). Needs step-up integration in a future WP.
+3. **MoreHub non-primary exposure** — `MoreHub.razor` shows Setup/Permissions/Privacy/Reports tiles on all branches (capability-gated only, not branch-gated). Not a security issue (server enforces), but violates "non-primary = clean operations" UX intent.
+4. **Performance: eager picker loads** — Form/create pages (`CatalogTodaysPrices`, `PurchasingCreate`, `ReceiveStock`, `StockCountCreate`, `ConnectedSupplierCatalog`) eagerly load full product/supplier catalogs (up to 200–2000 items) for dropdown pickers. Core list pages are properly paginated.
+5. **Shifts/registers org-scoped** — no `BranchId` on shift model (WP13 documented limitation)
+6. **Staff branch ACL** — owner path returns all branches; staff filtering implemented but not yet enforced on all operational queries
+7. **Android SDK** — MAUI Android target not buildable on this workstation (XA5300)
+8. **18 pre-existing MAUI test failures** — UI guard/localization pattern tests and branch-restore tests (not introduced by WP15)
+9. **57 pre-existing Platform integration failures** — SaaS payment/subscription commercial flow tests (not introduced by WP15)
+10. **Org Web branch selection** — sets org context; branch hierarchy is informational UX. Parity with MAUI `SelectedBranchId` on Web is optional.
+11. **Production authentication** — development-stage APIs; no production auth infrastructure claimed
 
 ---
 
@@ -156,6 +159,7 @@ Fixed WP15F gaps (Web Devices step-up, FakeAccessClient stubs). Audited capabili
 | `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Web/Localization/OrgWebResources.resx` | EN strings for device revoke dialog |
 | `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Web/Localization/OrgWebResources.fil-PH.resx` | fil-PH strings for device revoke dialog |
 | `tests/ExItS.PinoyBusinessPOS.Maui.Tests/AuthenticationServiceTests.cs` | FakeAccessClient interface stubs |
+| `docs/engineering/organization-branch-capability-matrix.md` | Fix 3 stale "future staff ACL" references |
 | `docs/reports/P28-WP15G-governance-branch-authority-closeout.md` | This report |
 
 ---
