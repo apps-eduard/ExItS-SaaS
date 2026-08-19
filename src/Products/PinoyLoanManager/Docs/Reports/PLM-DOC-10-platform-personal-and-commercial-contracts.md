@@ -44,7 +44,7 @@ Updated indexes and [platform-commercial-integration.md](../Architecture/platfor
 | Platform relationship schema | **Not designed** — **PLM-D-00-04 Open External Platform** |
 | Personal-facing API | Customer operation checklist defined; Personal never reads PLM tables |
 | Unlink / pending offers / relink | Product-contract behavior resolved (legal basis still **PLM-D-00-11 Open**) |
-| Usage metering | `LOAN_DISBURSED` primary; reversal/cancellation events; idempotent; no PII |
+| Usage metering | `LOAN_DISBURSED` primary; `LOAN_DISBURSEMENT_REVERSED` compensates a previously billable Disbursement; pre-release cancellation emits no Platform usage event; idempotent; no PII |
 | Tenant placement | Abstraction required; no hard-coded DB routing |
 | PLM-D-00-05 | **Closed for PLM behavior/contract**; Platform implementation external |
 
@@ -101,8 +101,13 @@ Documentation only. No `.cs`, `.csproj`, `ExItS.slnx`, migrations, APIs, UI, tes
 
 ---
 
-## Exact next documentation package
+## Historical follow-up
 
-**No further PLM-DOC packages are defined.** Await explicit Product Owner authorization before **PLM-01** implementation. **D-P12-03** and **PLM-D-00-04** remain open. **R-091 Closed for Phase 13 scope.**
+At PLM-DOC-10 completion, PLM-DOC-11 remained as the final documentation consistency and closeout package.
 
-Do not start PLM-DOC-08 in this package. Implementation remains paused.
+PLM-DOC-11 has since been completed. No further PLM-DOC packages are defined for the approved MVP Product planning baseline.
+
+Implementation remains paused pending Gate A and explicit Product Owner authorization.
+
+**D-P12-03** and **PLM-D-00-04** remain external Platform dependencies.
+**R-091 is Closed for Phase 13 scope.**
