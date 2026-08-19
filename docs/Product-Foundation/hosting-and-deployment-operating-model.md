@@ -41,7 +41,7 @@ Existing P14 packaging, Compose templates, and on-prem evidence remain valid **f
 
 ## 3. Formal hosting decisions
 
-These IDs are portfolio-stable. They do **not** close **D-P12-03** or **R-091**. They do **not** implement infrastructure.
+These IDs are portfolio-stable. They do **not** close **D-P12-03**. **R-091** is Closed for Phase 13 scope; this pack does not reopen it. They do **not** implement infrastructure.
 
 | ID | Decision | Status |
 |---|---|---|

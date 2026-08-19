@@ -129,4 +129,4 @@ Do not implement.
 
 Hosted SaaS will eventually require strong production authentication, MFA for privileged administration, secret management, encryption, tenant isolation, rate limiting, abuse detection, audit, backup protection, and deployment security.
 
-Do **not** claim these are complete. Keep current security risks honest. **R-091** remains open until production authentication is accepted as Production-ready.
+Do **not** claim these are complete. Keep current security risks honest. **R-091** is Closed for Phase 13 scope. Residual MFA enforcement, enterprise SSO/AD, outbound auth delivery, step-up authentication, and overall portfolio Production-readiness work remain separate gates and do not reopen R-091.

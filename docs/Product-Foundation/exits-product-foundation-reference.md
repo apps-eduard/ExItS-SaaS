@@ -4,7 +4,7 @@
 **Path:** `docs/Product-Foundation/exits-product-foundation-reference.md`
 **Companion audit:** [P12-WP01](../reports/P12-WP01-platform-product-contract-audit.md)
 **Permanent rules:** `.cursor/rules/exits-workflow.mdc`
-**Companion:** [Scale-ready architecture pack](exits-scale-and-growth-architecture.md) (EXITS-SCALE-00; does not close D-P12-03 or R-091)
+**Companion:** [Scale-ready architecture pack](exits-scale-and-growth-architecture.md) (EXITS-SCALE-00; does not close D-P12-03; R-091 Closed for Phase 13 scope — this reference does not reopen it)
 **Hosting:** [Hosting operating model](hosting-and-deployment-operating-model.md) (EXITS-ARCH-01; hosted SaaS default **D-HOST-01**; on-prem mode **D-P14-01**)
 
 Label key used in this file:
@@ -38,7 +38,7 @@ Use this reference so new product work loads a small context pack instead of sca
 
 Platform owns (**Implemented** today unless noted):
 
-- identity / users and the **future** production authentication boundary (**Unresolved:** R-091 — Dev/Testing identity is not production-secure)
+- identity / users and the **Platform production authentication boundary** (**R-091 Closed for Phase 13 scope** — password credentials, browser sessions, lifecycle tokens, trusted organization context, product Bearer access, Google/Facebook external login, verified recovery email; MFA enforcement, enterprise SSO/AD beyond delivered providers, outbound auth delivery, and step-up authentication remain separate gates)
 - organizations and Platform memberships
 - product catalog, plans, plan versions, trials
 - **independent** product subscriptions and commercial state
@@ -125,7 +125,7 @@ Future products must preserve “no direct Platform table reads” while obtaini
 
 ### Production authentication — R-091
 
-**Unresolved for login/session.** Credential persistence shipped in **P13-WP02** (`platform_user_credentials`, ASP.NET Core `PasswordHasher<TUser>`). No production cookie/JWT login yet. Implementation of login begins only in authorized later Phase 13 WPs. Do not claim production-secure identity. Do not invent fake production login. Keep Dev/Testing vs Production language honest (**D-P12-05**).
+**Closed for Phase 13 scope.** Platform production authentication exists: password credentials, browser sessions, lifecycle tokens, trusted organization context, product Bearer access, Google/Facebook external login, and optional verified recovery email ([P13-WP09](../reports/P13-WP09-phase-13-closeout.md)). Residual MFA enrollment/enforcement, enterprise SSO/AD beyond delivered providers, production outbound authentication email provider, future high-risk step-up authentication, and overall portfolio Production-readiness work remain separate gates and **do not reopen R-091**. Dev/Testing headers remain Dev/Testing-only. **D-P12-05** is Closed / satisfied for authentication honesty — continue to label Dev/Testing-only paths honestly and do not claim portfolio Production Ready.
 
 ---
 
@@ -300,9 +300,9 @@ Guidance only — not scaffold implementation.
 | **D-P12-01** | **Closed** — this path/name is authoritative | Context loading uses this file | — |
 | **D-P12-02** | **Closed** for intent — `src/Products/<Name>/Docs/`; POS historical docs stay under `docs/` | New products use product Docs root | Templates pack delivered |
 | **D-P12-03** | **Open** — POS uses provisional Dev commercial headers; final Platform→product transport unresolved | Do not invent production transport | Phase 13+ or dedicated commercial-integration WP |
-| **R-091** | **Open** — no production JWT/passwords/MFA/SSO in code; P13-WP01 architecture recorded | Honest Dev/Testing vs Production language | Remaining Phase 13 implementation WPs |
+| **R-091** | **Closed for Phase 13 scope** — Platform production authentication delivered; residuals (MFA enforcement, enterprise SSO/AD beyond Google/Facebook, outbound auth email vendor, step-up authentication) do not reopen R-091 | Honest Dev/Testing vs Production language; portfolio Production readiness remains separate | Residual auth hardening and Production gates outside Phase 13 scope |
 | **D-P12-04** | **Open** — stale engineering matrix hygiene | Prefer incremental updates | Maintainers / dedicated docs hygiene WP |
-| **D-P12-05** | **Open** (tied to R-091) — keep Dev/Testing vs Production language honest | Do not claim production-secure identity | Phase 13 (with R-091) |
+| **D-P12-05** | **Closed / satisfied for Phase 13 authentication-honesty scope** — Dev/Testing paths labeled honestly; portfolio still not Production Ready | Do not claim portfolio Production Ready | Portfolio Production readiness gates |
 | **D-SCALE-01 … D-SCALE-10** | **Accepted architecture baselines** (EXITS-SCALE-00). Implementation of stamps, routing, async infrastructure, and multi-region is **deferred**. | Future product/Platform design must not contradict these boundaries | Authorized scale/implementation WPs; see [exits-scale-and-growth-architecture.md](exits-scale-and-growth-architecture.md) |
 | **D-HOST-01 … D-HOST-10** | **Accepted architecture baselines / directions** (EXITS-ARCH-01). Hosted SaaS default; on-prem special mode; no forks. Hosted infrastructure **not implemented**. | Future hosting/product work must not contradict these | Authorized hosting WPs; see [hosting-and-deployment-operating-model.md](hosting-and-deployment-operating-model.md) |
 | **D-P14-01** | **Closed** as **on-prem Production topology**; **not** the portfolio-wide default after D-HOST-01 | On-prem mode packaging | [production-deployment-architecture.md](../engineering/production-deployment-architecture.md) |
