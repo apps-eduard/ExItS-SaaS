@@ -52,6 +52,7 @@ describe("application shell", () => {
     });
     expect(screen.getAllByText("Home").length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("navigation", { name: "Breadcrumb" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Organizations" })).not.toBeInTheDocument();
   });
 

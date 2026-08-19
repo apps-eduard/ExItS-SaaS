@@ -1,9 +1,12 @@
 import { Badge } from "@/components/ui/badge";
+import { AdminTable } from "@/components/exits/AdminTable";
 
 export type RecentActivityItem = {
   id: string;
   title: string;
-  meta: string;
+  actor: string;
+  context: string;
+  time: string;
   outcomeLabel: string;
   tone: "success" | "warning" | "danger" | "info" | "neutral";
 };
@@ -11,30 +14,53 @@ export type RecentActivityItem = {
 export function RecentActivityList({
   items,
   emptyLabel,
+  caption,
+  columns,
 }: {
   items: RecentActivityItem[];
   emptyLabel: string;
+  caption: string;
+  columns: {
+    action: string;
+    actor: string;
+    context: string;
+    time: string;
+    outcome: string;
+  };
 }) {
-  if (items.length === 0) {
-    return (
-      <p className="text-[length:var(--exits-text-sm)] text-muted break-words">{emptyLabel}</p>
-    );
-  }
-
   return (
-    <ul className="divide-y divide-border">
-      {items.map((item) => (
-        <li
-          key={item.id}
-          className="flex min-w-0 items-start justify-between gap-3 py-2 first:pt-0 last:pb-0"
-        >
-          <div className="min-w-0">
-            <p className="truncate text-[length:var(--exits-text-sm)] font-medium">{item.title}</p>
-            <p className="truncate text-[length:var(--exits-text-xs)] text-muted">{item.meta}</p>
-          </div>
-          <Badge tone={item.tone}>{item.outcomeLabel}</Badge>
-        </li>
-      ))}
-    </ul>
+    <AdminTable
+      caption={caption}
+      empty={emptyLabel}
+      columns={[
+        {
+          id: "action",
+          header: columns.action,
+          cell: (item) => <span className="font-medium break-all">{item.title}</span>,
+        },
+        {
+          id: "actor",
+          header: columns.actor,
+          cell: (item) => <span className="text-muted break-all">{item.actor}</span>,
+        },
+        {
+          id: "context",
+          header: columns.context,
+          cell: (item) => <span className="text-muted">{item.context}</span>,
+        },
+        {
+          id: "time",
+          header: columns.time,
+          cell: (item) => <span className="text-muted whitespace-nowrap">{item.time}</span>,
+        },
+        {
+          id: "outcome",
+          header: columns.outcome,
+          align: "right",
+          cell: (item) => <Badge tone={item.tone}>{item.outcomeLabel}</Badge>,
+        },
+      ]}
+      rows={items}
+    />
   );
 }

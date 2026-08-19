@@ -2,7 +2,7 @@ import { DashboardSection } from "@/components/exits/dashboard/DashboardSection"
 import { DashboardStatCard } from "@/components/exits/dashboard/DashboardStatCard";
 import { DashboardWidgetError } from "@/components/exits/dashboard/DashboardWidgetError";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
-import { StatusBreakdown } from "@/components/exits/dashboard/StatusBreakdown";
+import { formatStatusLine } from "@/components/exits/dashboard/StatusBreakdown";
 import { useOrganizationSummaryQueries } from "@/features/overview/use-dashboard-queries";
 import { usePreferences } from "@/hooks/use-preferences";
 import { formatNumber } from "@/lib/i18n/format";
@@ -14,10 +14,7 @@ export function OrganizationsSummaryWidget({ enabled }: { enabled: boolean }) {
   const failed = total.isError || active.isError || closed.isError || suspended.isError;
 
   return (
-    <DashboardSection
-      title={t("dashboard.organizations.title")}
-      description={t("dashboard.organizations.hint")}
-    >
+    <DashboardSection variant="metric" title={t("dashboard.organizations.title")}>
       {loading ? <DashboardWidgetSkeleton rows={2} /> : null}
       {failed && !loading ? (
         <DashboardWidgetError
@@ -30,34 +27,26 @@ export function OrganizationsSummaryWidget({ enabled }: { enabled: boolean }) {
         />
       ) : null}
       {!loading && !failed && total.data && active.data && closed.data && suspended.data ? (
-        <div className="grid gap-3">
-          <DashboardStatCard
-            label={t("dashboard.organizations.total")}
-            value={formatNumber(total.data.totalCount, language)}
-          />
-          <StatusBreakdown
-            items={[
-              {
-                key: "Active",
-                label: t("dashboard.status.Active"),
-                value: formatNumber(active.data.totalCount, language),
-                tone: "success",
-              },
-              {
-                key: "Suspended",
-                label: t("dashboard.status.Suspended"),
-                value: formatNumber(suspended.data.totalCount, language),
-                tone: "danger",
-              },
-              {
-                key: "Closed",
-                label: t("dashboard.status.Closed"),
-                value: formatNumber(closed.data.totalCount, language),
-                tone: "neutral",
-              },
-            ]}
-          />
-        </div>
+        <DashboardStatCard
+          value={formatNumber(total.data.totalCount, language)}
+          detail={formatStatusLine([
+            {
+              key: "Active",
+              label: t("dashboard.status.Active"),
+              value: formatNumber(active.data.totalCount, language),
+            },
+            {
+              key: "Suspended",
+              label: t("dashboard.status.Suspended"),
+              value: formatNumber(suspended.data.totalCount, language),
+            },
+            {
+              key: "Closed",
+              label: t("dashboard.status.Closed"),
+              value: formatNumber(closed.data.totalCount, language),
+            },
+          ])}
+        />
       ) : null}
     </DashboardSection>
   );

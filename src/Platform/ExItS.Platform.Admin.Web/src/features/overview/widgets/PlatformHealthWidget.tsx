@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge";
+import { StatusIndicator } from "@/components/exits/StatusIndicator";
 import { DashboardSection } from "@/components/exits/dashboard/DashboardSection";
 import { DashboardWidgetError } from "@/components/exits/dashboard/DashboardWidgetError";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
@@ -42,26 +42,40 @@ export function PlatformHealthWidget({ enabled }: { enabled: boolean }) {
   const query = usePlatformHealthQuery(enabled);
 
   return (
-    <DashboardSection title={t("dashboard.health.title")} description={t("dashboard.health.hint")}>
+    <DashboardSection
+      variant="quiet"
+      title={t("dashboard.health.title")}
+      description={t("dashboard.health.hint")}
+    >
       {query.isPending ? <DashboardWidgetSkeleton rows={2} /> : null}
       {query.isError ? <DashboardWidgetError onRetry={() => void query.refetch()} /> : null}
       {query.data ? (
-        <ul className="grid gap-2">
+        <ul className="grid gap-1.5">
           <li className="flex items-center justify-between gap-3">
-            <span className="min-w-0 break-words text-[length:var(--exits-text-sm)]">
+            <span className="min-w-0 break-words text-[length:var(--exits-text-sm)] text-muted">
               {t("dashboard.health.liveness")}
             </span>
-            <Badge tone={healthTone(query.data.liveness.reportedStatus)}>
-              {healthLabel(t, query.data.liveness.reportedStatus, query.data.liveness.rawBody)}
-            </Badge>
+            <StatusIndicator
+              tone={healthTone(query.data.liveness.reportedStatus)}
+              label={healthLabel(
+                t,
+                query.data.liveness.reportedStatus,
+                query.data.liveness.rawBody,
+              )}
+            />
           </li>
           <li className="flex items-center justify-between gap-3">
-            <span className="min-w-0 break-words text-[length:var(--exits-text-sm)]">
+            <span className="min-w-0 break-words text-[length:var(--exits-text-sm)] text-muted">
               {t("dashboard.health.readiness")}
             </span>
-            <Badge tone={healthTone(query.data.readiness.reportedStatus)}>
-              {healthLabel(t, query.data.readiness.reportedStatus, query.data.readiness.rawBody)}
-            </Badge>
+            <StatusIndicator
+              tone={healthTone(query.data.readiness.reportedStatus)}
+              label={healthLabel(
+                t,
+                query.data.readiness.reportedStatus,
+                query.data.readiness.rawBody,
+              )}
+            />
           </li>
         </ul>
       ) : null}

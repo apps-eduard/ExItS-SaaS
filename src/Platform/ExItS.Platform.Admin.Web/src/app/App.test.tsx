@@ -36,8 +36,9 @@ describe("App foundation", () => {
     expect(document.documentElement.dataset.theme).toBe("system");
     expect(document.documentElement.lang).toBe("en");
     expect(document.documentElement.dataset.density).toBe("balanced");
-    expect(screen.getByRole("button", { name: "System" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "English" })).toHaveAttribute("aria-pressed", "true");
+    await userEvent.setup().click(screen.getByRole("button", { name: "Preferences" }));
+    expect(await screen.findByRole("menuitem", { name: /System/ })).toHaveTextContent("✓");
+    expect(screen.getByRole("menuitem", { name: /English/ })).toHaveTextContent("✓");
   });
 
   it("applies Light and Dark theme selections and persists them", async () => {
@@ -46,20 +47,23 @@ describe("App foundation", () => {
     const { unmount } = render(<App />);
     await screen.findByRole("heading", { name: "Sign In" });
 
-    await user.click(screen.getByRole("button", { name: "Light" }));
+    await user.click(screen.getByRole("button", { name: "Preferences" }));
+    await user.click(await screen.findByRole("menuitem", { name: /^Light/ }));
     expect(document.documentElement.dataset.theme).toBe("light");
     expect(JSON.parse(window.localStorage.getItem(UI_PREFERENCES_STORAGE_KEY) ?? "{}").theme).toBe(
       "light",
     );
 
-    await user.click(screen.getByRole("button", { name: "Dark" }));
+    await user.click(screen.getByRole("button", { name: "Preferences" }));
+    await user.click(await screen.findByRole("menuitem", { name: /^Dark/ }));
     expect(document.documentElement.dataset.theme).toBe("dark");
     unmount();
 
     render(<App />);
     await screen.findByRole("heading", { name: "Sign In" });
     expect(document.documentElement.dataset.theme).toBe("dark");
-    expect(screen.getByRole("button", { name: "Dark" })).toHaveAttribute("aria-pressed", "true");
+    await userEvent.setup().click(screen.getByRole("button", { name: "Preferences" }));
+    expect(await screen.findByRole("menuitem", { name: /^Dark/ })).toHaveTextContent("✓");
   });
 
   it("keeps System mode as an explicit preference so OS color-scheme can drive tokens", async () => {
@@ -68,8 +72,10 @@ describe("App foundation", () => {
     render(<App />);
     await screen.findByRole("heading", { name: "Sign In" });
 
-    await user.click(screen.getByRole("button", { name: "Dark" }));
-    await user.click(screen.getByRole("button", { name: "System" }));
+    await user.click(screen.getByRole("button", { name: "Preferences" }));
+    await user.click(await screen.findByRole("menuitem", { name: /^Dark/ }));
+    await user.click(screen.getByRole("button", { name: "Preferences" }));
+    await user.click(await screen.findByRole("menuitem", { name: /^System/ }));
     expect(document.documentElement.dataset.theme).toBe("system");
   });
 
@@ -79,7 +85,8 @@ describe("App foundation", () => {
     render(<App />);
     await screen.findByRole("heading", { name: "Sign In" });
 
-    await user.click(screen.getByRole("button", { name: "Filipino" }));
+    await user.click(screen.getByRole("button", { name: "Preferences" }));
+    await user.click(await screen.findByRole("menuitem", { name: /Filipino/ }));
     expect(document.documentElement.lang).toBe("fil-PH");
     expect(screen.getByRole("heading", { name: "Mag-sign In" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Mag-sign In" })).toBeInTheDocument();

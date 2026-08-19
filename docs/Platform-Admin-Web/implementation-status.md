@@ -62,6 +62,7 @@ Mailpit and Development/Testing fake payments remain in place. This package does
 | PWEB-IMPL-05 | COMPLETE | Dashboard |
 | PWEB-IMPL-06 | AWAITING VISUAL REVIEW | First Visual Checkpoint |
 | PWEB-IMPL-06A | COMPLETE | Local Validation Test User runtime gate |
+| PWEB-IMPL-06B | AWAITING VISUAL REVIEW | Uniform shadcn structure + Stripe visual standard |
 
 ## PWEB-IMPL-02 — Design system + global preferences
 
@@ -239,6 +240,32 @@ Test User tools remain available only in explicit Local Validation / Vite develo
 
 See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-06A-local-validation-test-user.md`.
 
+## PWEB-IMPL-06B — Uniform shadcn / Stripe visual system
+
+Status: **AWAITING VISUAL REVIEW**
+
+Cursor must **not** mark visual quality APPROVED. Product Owner + ChatGPT review is required.
+
+### PLATFORM ADMIN VISUAL STANDARD (permanent)
+
+Structural basis: shadcn/ui dashboard/auth/sidebar composition patterns (adapted to ExItS components; not copied generated source).
+Primary visual reference: Stripe Dashboard (density/hierarchy).
+Secondary: Vercel Dashboard (shell/navigation/responsive).
+Polish: Linear (typography/dark-mode/control refinement).
+ExItS branding/tokens remain authoritative. Never copy third-party brand assets or exact proprietary layouts. Do not invent unrelated visual systems per feature.
+
+| Area | Record |
+|---|---|
+| Shell | shadcn-style sidebar + operational top bar + shared `PageHeader` |
+| Login | Split brand/auth; compact form; Local Validation secondary |
+| Dashboard | Compact metrics, table attention/audit, quiet health; real API data only |
+| Tables / status / forms | Shared `AdminTable`; badges for status only; compact controls |
+| Preferences | Compact dropdown (theme, language, density) |
+| Screenshots | `docs/Platform-Admin-Web/Reports/impl-06b-uniform-visual-system/` |
+| Visual status | **AWAITING PRODUCT OWNER + CHATGPT** |
+
+See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-06B-uniform-shadcn-stripe-visual-system.md`.
+
 ## Queue
 
 | Package | Status |
@@ -246,5 +273,6 @@ See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-06A-local-validation-test-user.md
 | PWEB-IMPL-05 — Dashboard | COMPLETE |
 | PWEB-IMPL-06 — First Visual Checkpoint | AWAITING VISUAL REVIEW |
 | PWEB-IMPL-06A — Local Validation Test User | COMPLETE |
+| PWEB-IMPL-06B — Uniform visual system | AWAITING VISUAL REVIEW |
 
-Stopped after PWEB-IMPL-06A.
+Stopped after PWEB-IMPL-06B.

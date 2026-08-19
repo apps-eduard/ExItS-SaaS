@@ -6,23 +6,39 @@ export function DashboardSection({
   description,
   children,
   className,
+  variant = "panel",
 }: {
   title: string;
   description?: string;
   children: ReactNode;
   className?: string;
+  variant?: "panel" | "metric" | "quiet";
 }) {
   return (
     <section
       className={cn(
-        "min-w-0 rounded-[var(--exits-density-radius)] border border-border bg-surface p-[var(--exits-density-card-padding)] shadow-sm",
+        "min-w-0",
+        variant === "panel" &&
+          "rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-3",
+        variant === "metric" &&
+          "rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-3",
+        variant === "quiet" && "px-0 py-0",
         className,
       )}
     >
-      <header className="mb-3 min-w-0">
-        <h2 className="text-[length:var(--exits-text-md)] font-semibold break-words">{title}</h2>
-        {description ? (
-          <p className="mt-1 text-[length:var(--exits-text-sm)] text-muted break-words">
+      <header className={cn("min-w-0", variant === "quiet" ? "mb-2" : "mb-2.5")}>
+        <h2
+          className={cn(
+            "break-words",
+            variant === "metric"
+              ? "text-[length:var(--exits-text-xs)] font-medium text-muted"
+              : "text-[length:var(--exits-text-sm)] font-semibold",
+          )}
+        >
+          {title}
+        </h2>
+        {description && variant !== "metric" ? (
+          <p className="mt-0.5 text-[length:var(--exits-text-xs)] text-muted break-words">
             {description}
           </p>
         ) : null}

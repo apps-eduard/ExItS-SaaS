@@ -69,6 +69,9 @@ describe("Overview dashboard", () => {
 
     resolveAuthz?.(jsonResponse(200, sampleAuthorization));
     expect(await screen.findByRole("heading", { name: "Organizations" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Accounts requiring attention" }),
+    ).toBeInTheDocument();
   });
 
   it("hides unauthorized widgets and keeps authorized ones", async () => {
@@ -147,6 +150,9 @@ describe("Overview dashboard", () => {
     expect(screen.getByRole("heading", { name: "Mga Subskripsyon" })).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Mga account na kailangang suriin" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Mga account na kailangan ng pansin" }),
     ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Mga kagustuhan" }));
     await user.click(await screen.findByRole("menuitem", { name: /Madilim/i }));

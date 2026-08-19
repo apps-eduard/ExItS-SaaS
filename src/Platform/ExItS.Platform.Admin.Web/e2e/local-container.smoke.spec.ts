@@ -48,20 +48,23 @@ test.describe("local-validation React container smoke", () => {
     const selector = page.getByLabel("Test User — Local Validation");
     await expect(selector).toBeVisible();
 
-    await page.getByRole("button", { name: "Light" }).click();
+    await page.getByRole("button", { name: "Preferences" }).click();
+    await page.getByRole("menuitem", { name: /^Light/ }).click();
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.screenshot({
       path: resolve(screenshotDir, "01-login-local-validation-1440x900-light.png"),
       fullPage: true,
     });
 
-    await page.getByRole("button", { name: "Dark" }).click();
+    await page.getByRole("button", { name: "Preferences" }).click();
+    await page.getByRole("menuitem", { name: /^Dark/ }).click();
     await page.screenshot({
       path: resolve(screenshotDir, "02-login-local-validation-1440x900-dark.png"),
       fullPage: true,
     });
 
-    await page.getByRole("button", { name: "Light" }).click();
+    await page.getByRole("button", { name: "Preferences" }).click();
+    await page.getByRole("menuitem", { name: /^Light/ }).click();
     await page.setViewportSize({ width: 375, height: 812 });
     await page.screenshot({
       path: resolve(screenshotDir, "03-login-local-validation-375x812-light.png"),

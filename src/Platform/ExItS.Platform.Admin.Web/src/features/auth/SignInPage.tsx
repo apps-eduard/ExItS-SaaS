@@ -97,7 +97,7 @@ export function SignInPage() {
   }
 
   return (
-    <Card className="overflow-hidden shadow-md">
+    <Card className="border-border">
       <header className="mb-4">
         <h1 className="text-[length:var(--exits-text-xl)] font-bold">{t("auth.signIn")}</h1>
         <p className="mt-1 text-[length:var(--exits-text-sm)] text-muted">{t("auth.signInHint")}</p>

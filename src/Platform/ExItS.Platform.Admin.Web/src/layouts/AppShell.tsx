@@ -1,10 +1,9 @@
-import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { useIsDesktopShell } from "@/hooks/use-media-query";
-import { AppBreadcrumbs } from "@/components/exits/AppBreadcrumbs";
 import { AppSidebar } from "@/components/exits/AppSidebar";
 import { AppTopBar } from "@/components/exits/AppTopBar";
 import { NavigationDrawer } from "@/components/exits/NavigationDrawer";
+import { useState } from "react";
 
 export function AppShell() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -16,8 +15,7 @@ export function AppShell() {
       {desktop ? null : <NavigationDrawer open={drawerOpen} onOpenChange={setDrawerOpen} />}
       <div className="flex min-w-0 flex-1 flex-col">
         <AppTopBar showNavigationTrigger={!desktop} onOpenNavigation={() => setDrawerOpen(true)} />
-        <AppBreadcrumbs />
-        <main className="min-w-0 flex-1 overflow-y-auto p-[var(--exits-page-padding)]">
+        <main className="min-w-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5 lg:px-6">
           <div className="mx-auto w-full max-w-[86rem]">
             <Outlet />
           </div>

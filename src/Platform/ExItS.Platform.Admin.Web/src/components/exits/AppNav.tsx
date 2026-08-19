@@ -20,11 +20,11 @@ export function AppNav({ collapsed, onNavigate }: { collapsed: boolean; onNaviga
   });
 
   return (
-    <nav aria-label={t("shell.primaryNav")} className="flex flex-col gap-4 p-3">
+    <nav aria-label={t("shell.primaryNav")} className="flex flex-col gap-5 px-2 py-3">
       {sections.map((section) => (
         <div key={section.id}>
           {collapsed ? null : (
-            <p className="px-2 pb-1 text-[length:var(--exits-text-xs)] font-semibold tracking-wide text-muted uppercase">
+            <p className="px-2 pb-1 text-[11px] font-medium tracking-wide text-muted uppercase">
               {t(section.labelKey)}
             </p>
           )}
@@ -59,7 +59,7 @@ function NavItem({
   const content = (
     <span
       className={cn(
-        "flex min-h-11 items-center gap-2 rounded-[var(--exits-density-radius)] px-2",
+        "flex min-h-11 items-center gap-2 rounded-md px-2 lg:min-h-9",
         collapsed && "justify-center",
       )}
     >
@@ -99,10 +99,10 @@ function NavItem({
       onClick={onNavigate}
       className={({ isActive }) =>
         cn(
-          "block rounded-[var(--exits-density-radius)] text-[length:var(--exits-text-sm)] font-medium",
+          "block rounded-md text-[length:var(--exits-text-sm)] font-medium",
           isActive
-            ? "bg-[var(--exits-primary-soft)] text-primary"
-            : "text-foreground hover:bg-surface-muted",
+            ? "bg-surface-muted text-foreground shadow-[inset_2px_0_0_0_var(--exits-primary)]"
+            : "text-muted hover:bg-surface-muted/70 hover:text-foreground",
         )
       }
     >

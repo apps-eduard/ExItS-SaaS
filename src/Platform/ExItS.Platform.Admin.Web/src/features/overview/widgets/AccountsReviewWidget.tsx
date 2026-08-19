@@ -1,8 +1,10 @@
 import { Badge } from "@/components/ui/badge";
+import { AdminTable } from "@/components/exits/AdminTable";
 import { DashboardSection } from "@/components/exits/dashboard/DashboardSection";
 import { DashboardStatCard } from "@/components/exits/dashboard/DashboardStatCard";
 import { DashboardWidgetError } from "@/components/exits/dashboard/DashboardWidgetError";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
+import { formatStatusLine } from "@/components/exits/dashboard/StatusBreakdown";
 import {
   usePendingVerificationAccountsQuery,
   useUnassignedAccountsQuery,
@@ -24,12 +26,53 @@ function accountStatusLabel(t: (key: MessageKey) => string, status: string): str
   return status;
 }
 
-export function AccountsReviewWidget({ enabled }: { enabled: boolean }) {
+export function AccountsReviewWidget({
+  enabled,
+  variant = "list",
+}: {
+  enabled: boolean;
+  variant?: "metric" | "list";
+}) {
   const { t, language } = usePreferences();
   const unassigned = useUnassignedAccountsQuery(enabled);
   const pending = usePendingVerificationAccountsQuery(enabled);
   const loading = unassigned.isPending || pending.isPending;
   const failed = unassigned.isError || pending.isError;
+  const ready = !loading && !failed && unassigned.data && pending.data;
+  const attentionCount = ready ? unassigned.data.totalCount + pending.data.totalCount : 0;
+
+  if (variant === "metric") {
+    return (
+      <DashboardSection variant="metric" title={t("dashboard.accounts.metricTitle")}>
+        {loading ? <DashboardWidgetSkeleton rows={2} /> : null}
+        {failed && !loading ? (
+          <DashboardWidgetError
+            onRetry={() => {
+              void unassigned.refetch();
+              void pending.refetch();
+            }}
+          />
+        ) : null}
+        {ready ? (
+          <DashboardStatCard
+            value={formatNumber(attentionCount, language)}
+            detail={formatStatusLine([
+              {
+                key: "Unassigned",
+                label: t("dashboard.accounts.unassigned"),
+                value: formatNumber(unassigned.data.totalCount, language),
+              },
+              {
+                key: "Pending",
+                label: t("dashboard.accounts.pendingVerification"),
+                value: formatNumber(pending.data.totalCount, language),
+              },
+            ])}
+          />
+        ) : null}
+      </DashboardSection>
+    );
+  }
 
   return (
     <DashboardSection
@@ -45,35 +88,30 @@ export function AccountsReviewWidget({ enabled }: { enabled: boolean }) {
           }}
         />
       ) : null}
-      {!loading && !failed && unassigned.data && pending.data ? (
-        <div className="grid gap-3">
-          <div className="grid grid-cols-2 gap-2">
-            <DashboardStatCard
-              label={t("dashboard.accounts.unassigned")}
-              value={formatNumber(unassigned.data.totalCount, language)}
-            />
-            <DashboardStatCard
-              label={t("dashboard.accounts.pendingVerification")}
-              value={formatNumber(pending.data.totalCount, language)}
-            />
-          </div>
-          {unassigned.data.totalCount === 0 ? (
-            <p className="text-[length:var(--exits-text-sm)] text-muted break-words">
-              {t("dashboard.accounts.empty")}
-            </p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {unassigned.data.items.map((user) => (
-                <li key={user.id} className="flex items-center justify-between gap-3 py-2">
-                  <span className="min-w-0 truncate text-[length:var(--exits-text-sm)]">
-                    {user.displayName}
-                  </span>
-                  <Badge tone="warning">{accountStatusLabel(t, user.status)}</Badge>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+      {ready ? (
+        <AdminTable
+          caption={t("dashboard.accounts.title")}
+          empty={t("dashboard.accounts.empty")}
+          columns={[
+            {
+              id: "name",
+              header: t("dashboard.table.name"),
+              cell: (user) => <span className="truncate">{user.displayName}</span>,
+            },
+            {
+              id: "reason",
+              header: t("dashboard.table.reason"),
+              cell: () => t("dashboard.accounts.unassigned"),
+            },
+            {
+              id: "status",
+              header: t("dashboard.table.status"),
+              align: "right",
+              cell: (user) => <Badge tone="warning">{accountStatusLabel(t, user.status)}</Badge>,
+            },
+          ]}
+          rows={unassigned.data.items}
+        />
       ) : null}
     </DashboardSection>
   );

@@ -12,39 +12,36 @@ export function AppSidebar() {
       className={cn(
         "flex h-dvh shrink-0 flex-col border-r border-border bg-surface",
         "transition-[width] duration-[var(--exits-motion-base)] ease-[var(--exits-ease)]",
-        sidebarCollapsed ? "w-[4.25rem]" : "w-[15.25rem]",
+        sidebarCollapsed ? "w-16" : "w-[15.5rem]",
       )}
     >
-      <div className="flex min-h-12 items-center justify-between gap-2 border-b border-border px-2.5">
-        {sidebarCollapsed ? (
-          <span className="grid size-8 place-items-center rounded-md bg-primary text-[length:var(--exits-text-xs)] font-bold text-primary-foreground">
-            Ex
-          </span>
-        ) : (
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="grid size-8 shrink-0 place-items-center rounded-md bg-primary text-[length:var(--exits-text-xs)] font-bold text-primary-foreground">
-              Ex
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-bold">ExItS</p>
-              <p className="truncate text-[length:var(--exits-text-xs)] text-muted">
-                {t("auth.product")}
-              </p>
-            </div>
+      <div className="flex h-12 items-center gap-2 border-b border-border px-3">
+        <span className="grid size-7 shrink-0 place-items-center rounded-md bg-primary text-[11px] font-bold text-primary-foreground">
+          Ex
+        </span>
+        {sidebarCollapsed ? null : (
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[length:var(--exits-text-sm)] font-semibold leading-tight">
+              ExItS
+            </p>
+            <p className="truncate text-[length:var(--exits-text-xs)] text-muted">
+              {t("auth.product")}
+            </p>
           </div>
         )}
         <Button
           type="button"
           variant="ghost"
-          size="sm"
+          size="icon"
+          className="ml-auto"
           aria-pressed={sidebarCollapsed}
           aria-label={sidebarCollapsed ? t("shell.expandSidebar") : t("shell.collapseSidebar")}
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
         >
           {sidebarCollapsed ? (
-            <PanelLeftOpen aria-hidden="true" size={18} />
+            <PanelLeftOpen aria-hidden="true" size={16} />
           ) : (
-            <PanelLeftClose aria-hidden="true" size={18} />
+            <PanelLeftClose aria-hidden="true" size={16} />
           )}
         </Button>
       </div>

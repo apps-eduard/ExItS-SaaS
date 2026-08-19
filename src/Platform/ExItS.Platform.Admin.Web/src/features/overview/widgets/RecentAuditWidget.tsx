@@ -43,11 +43,21 @@ export function RecentAuditWidget({ enabled }: { enabled: boolean }) {
       {query.isError ? <DashboardWidgetError onRetry={() => void query.refetch()} /> : null}
       {query.data ? (
         <RecentActivityList
+          caption={t("dashboard.audit.title")}
           emptyLabel={t("dashboard.audit.empty")}
+          columns={{
+            action: t("dashboard.table.action"),
+            actor: t("dashboard.table.actor"),
+            context: t("dashboard.table.context"),
+            time: t("dashboard.table.time"),
+            outcome: t("dashboard.table.outcome"),
+          }}
           items={query.data.items.map((record) => ({
             id: record.id,
             title: record.actionCode,
-            meta: `${record.actorIdentifier} · ${formatDate(new Date(record.occurredAtUtc), language)}`,
+            actor: record.actorIdentifier,
+            context: record.targetType,
+            time: formatDate(new Date(record.occurredAtUtc), language),
             outcomeLabel: outcomeLabel(t, record.outcome),
             tone: outcomeTone(record.outcome),
           }))}
