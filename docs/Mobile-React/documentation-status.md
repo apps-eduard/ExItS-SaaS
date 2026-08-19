@@ -8,7 +8,7 @@ Baseline origin/main SHA: `5979a9ce008bb24a3257abd28ae79bc1a5a9b569`
 
 Documentation: `FINAL APPROVED` (DOC-00 … DOC-08; AMEND-01, AMEND-02, AMEND-03)
 
-React implementation: `Gate C AUTHORIZED` (MOBILE-REACT-IMPL-01 foundation)
+React implementation: `Gate C AUTHORIZED` (MOBILE-REACT-IMPL-01 foundation; IMPL-01A diagnostics/connectivity correction COMPLETE)
 
 PWA implementation: `NOT AUTHORIZED`
 
@@ -34,7 +34,7 @@ Capacitor implementation presence: `Absent`
 
 PWA production presence: `Absent`
 
-Queue state: `STOPPED AFTER MOBILE-REACT-IMPL-01`
+Queue state: `STOPPED AFTER MOBILE-REACT-IMPL-01A`
 
 MOBILE-D-060: `OPEN`
 
@@ -57,12 +57,13 @@ MOBILE-D-060: `OPEN`
 | Product Owner approval | Recorded | [MOBILE-REACT-DOC-APPROVAL-record.md](Reports/MOBILE-REACT-DOC-APPROVAL-record.md) |
 | MOBILE-REACT-DOC-MERGE-01 | Complete | Approved planning baseline merged to `main` |
 | MOBILE-REACT-IMPL-01 | Complete | Gate C React Mobile Client foundation (shell, theme, i18n, HTTP stubs, diagnostics) |
+| MOBILE-REACT-IMPL-01A | Complete | Diagnostics/connectivity correction: no fabricated Online; Copy Diagnostics allowlist-safe |
 
 ## Authorization gates (locked)
 
 | Gate | Status |
 |---|---|
-| React mobile implementation | **Gate C AUTHORIZED** (IMPL-01 foundation only) |
+| React mobile implementation | **Gate C AUTHORIZED** (IMPL-01 foundation; IMPL-01A correction COMPLETE) |
 | PWA implementation / production rollout | **NOT AUTHORIZED** |
 | Capacitor implementation / production rollout | **NOT AUTHORIZED** |
 | MAUI retirement | **NOT AUTHORIZED** |

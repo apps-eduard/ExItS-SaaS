@@ -24,10 +24,7 @@ export function AppTopBar() {
             {t("shell.contextPlaceholder")}
           </p>
         </div>
-        <StatusChip tone="success" className="shrink-0">
-          <span aria-hidden="true">• </span>
-          {t("shell.online")}
-        </StatusChip>
+        <StatusChip className="shrink-0">{t("shell.preview")}</StatusChip>
       </div>
     </header>
   );

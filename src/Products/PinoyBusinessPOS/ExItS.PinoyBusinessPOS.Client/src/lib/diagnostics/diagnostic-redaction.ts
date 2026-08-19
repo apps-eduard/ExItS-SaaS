@@ -1,12 +1,5 @@
-const SENSITIVE_PATTERN =
-  /(password|passwd|pin|token|bearer|authorization|cookie|session|secret|otp|cvv|payload|stack)/i;
-
-export function isAbortError(error: unknown): boolean {
-  if (error instanceof DOMException && error.name === "AbortError") {
-    return true;
-  }
-  return error instanceof Error && error.name === "AbortError";
-}
+const SAFE_ERROR_CODE = /^[a-zA-Z][a-zA-Z0-9_-]{0,32}(\.[a-zA-Z0-9_-]{1,32}){1,5}$/;
+const SAFE_CORRELATION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function safePathname(pathname: string | undefined): string {
   if (typeof pathname !== "string" || pathname.trim().length === 0) {
@@ -49,15 +42,27 @@ export function presentText(value: string | undefined): string | undefined {
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
-export function redactIfSensitive(value: string | undefined): string | undefined {
+export function allowlistedErrorCode(value: string | undefined): string | undefined {
   const text = presentText(value);
-  if (!text) {
+  if (!text || !SAFE_ERROR_CODE.test(text)) {
     return undefined;
   }
-  if (SENSITIVE_PATTERN.test(text)) {
-    return "[redacted]";
+  return text;
+}
+
+export function allowlistedCorrelationId(value: string | undefined): string | undefined {
+  const text = presentText(value);
+  if (!text || !SAFE_CORRELATION_ID.test(text)) {
+    return undefined;
   }
   return text;
+}
+
+export function allowlistedHttpStatus(value: number | undefined): number | undefined {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 100 || value > 599) {
+    return undefined;
+  }
+  return value;
 }
 
 export function assertNoForbiddenDiagnostics(report: string, sentinels: readonly string[]): void {

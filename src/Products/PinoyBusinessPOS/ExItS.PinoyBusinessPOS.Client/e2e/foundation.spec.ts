@@ -32,6 +32,9 @@ test.describe("foundation shell", () => {
       await page.setViewportSize({ width, height: 812 });
       await page.goto("/");
       await expect(page.getByRole("heading", { name: "Client foundation" })).toBeVisible();
+      await expect(page.getByRole("banner")).not.toContainText("Online");
+      await expect(page.getByRole("banner")).not.toContainText("Offline");
+      await expect(page.getByRole("banner")).toContainText("Preview");
       await assertNoHorizontalOverflow(page);
       await assertTouchTargets(page);
     }

@@ -45,3 +45,30 @@ Preview screenshots (not Gate E):
 Gate D+ remain **NOT AUTHORIZED**.
 
 MOBILE-D-060 remains **OPEN**.
+
+---
+
+## MOBILE-REACT-IMPL-01A — Diagnostics / connectivity correction
+
+**Status:** COMPLETE
+**Date:** 2026-08-19
+**Starting HEAD:** `b476c8fb956c6d9ad37775e575c83e710bd53fb4`
+
+Correction before IMPL-02. Does **not** authorize Gate D+.
+
+### Connectivity
+
+- AppTopBar no longer claims Online / Offline / Syncing.
+- Neutral **Preview** label only — not operational API health.
+- Foundation sample Online chip removed.
+- `navigator.onLine` is modeled as browser network reachability only and is not treated as ExItS API health.
+- Full API-reachability monitoring is **not** implemented in this package.
+
+### Diagnostics
+
+- Copy Diagnostics is allowlist-only. Arbitrary `Error.message`, API problem title/detail, bodies, payloads, and stacks are **not ingested**.
+- Runtime/API copied messages are generic controlled strings.
+- Safe fields only: category, HTTP status, namespaced `errorCode`, request correlation ID, error reference, pathname (no query/hash), app/build version, locale/theme, compact platform class, timestamp.
+- Independent sentinel tests cover email, phone, customer name, GCash/financial text, PIN, token, session secret, and raw stack dump.
+
+Gate D+ remains **NOT AUTHORIZED**.

@@ -46,7 +46,6 @@ export function FoundationHomePage() {
             {t("foundation.opsPreviewTitle")}
           </h2>
           <StatusChip tone="info">{t("status.preview")}</StatusChip>
-          <StatusChip tone="success">{t("status.online")}</StatusChip>
         </div>
         <p className="m-0 text-muted">{t("foundation.opsPreviewHint")}</p>
         <div>

@@ -56,6 +56,25 @@ describe("foundation home", () => {
     expect(screen.getByRole("heading", { name: "Client foundation" })).toBeInTheDocument();
     expect(screen.getByText(/not a store/i)).toBeInTheDocument();
     expect(screen.getByText("1,250.00")).toHaveClass("tabular-nums");
+    expect(screen.queryByText("Online")).not.toBeInTheDocument();
+  });
+
+  it("Copy Diagnostics uses a generic message, not the sample Error text", async () => {
+    const writeText = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <AppProviders>
+        <MemoryRouter>
+          <FoundationHomePage />
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    await user.click(screen.getByRole("button", { name: "Copy" }));
+    expect(writeText).toHaveBeenCalledTimes(1);
+    const payload = String(writeText.mock.calls[0]?.[0]);
+    expect(payload).toContain("Unexpected client error.");
+    expect(payload).not.toContain("Unable to complete this operation.");
+    writeText.mockRestore();
   });
 });
 
@@ -74,6 +93,7 @@ describe("error boundary", () => {
     );
     expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Copy" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).not.toHaveTextContent("Simulated foundation runtime error");
     consoleError.mockRestore();
   });
 });

@@ -3,7 +3,7 @@ export type MessageKey =
   | "app.skipToContent"
   | "shell.productPlaceholder"
   | "shell.contextPlaceholder"
-  | "shell.online"
+  | "shell.preview"
   | "nav.home"
   | "nav.appearance"
   | "foundation.title"
@@ -34,7 +34,6 @@ export type MessageKey =
   | "appearance.title"
   | "appearance.subtitle"
   | "status.foundation"
-  | "status.online"
   | "status.preview";
 
 export const en: Record<MessageKey, string> = {
@@ -42,7 +41,7 @@ export const en: Record<MessageKey, string> = {
   "app.skipToContent": "Skip to content",
   "shell.productPlaceholder": "Foundation preview",
   "shell.contextPlaceholder": "No workspace selected",
-  "shell.online": "Online",
+  "shell.preview": "Preview",
   "nav.home": "Home",
   "nav.appearance": "Appearance",
   "foundation.title": "Client foundation",
@@ -77,7 +76,6 @@ export const en: Record<MessageKey, string> = {
   "appearance.title": "Appearance",
   "appearance.subtitle": "Language and theme apply immediately across the client.",
   "status.foundation": "Foundation",
-  "status.online": "Online",
   "status.preview": "Preview",
 };
 
@@ -86,7 +84,7 @@ export const filPH: Record<MessageKey, string> = {
   "app.skipToContent": "Laktawan papunta sa nilalaman",
   "shell.productPlaceholder": "Preview ng foundation",
   "shell.contextPlaceholder": "Walang napiling workspace",
-  "shell.online": "Online",
+  "shell.preview": "Preview",
   "nav.home": "Home",
   "nav.appearance": "Hitsura",
   "foundation.title": "Foundation ng client",
@@ -122,7 +120,6 @@ export const filPH: Record<MessageKey, string> = {
   "appearance.title": "Hitsura",
   "appearance.subtitle": "Agad na nalalapat ang wika at tema sa buong client.",
   "status.foundation": "Foundation",
-  "status.online": "Online",
   "status.preview": "Preview",
 };
 
