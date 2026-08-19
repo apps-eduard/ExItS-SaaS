@@ -5,9 +5,9 @@ import { expect, test } from "@playwright/test";
 
 const enabled = process.env.PWEB_CONTAINER_SMOKE === "1";
 const password = process.env.LOCAL_VALIDATION_SHARED_PASSWORD ?? "";
-const branchesScreenshotDir = resolve(
+const peopleScreenshotDir = resolve(
   dirname(fileURLToPath(import.meta.url)),
-  "../../../../docs/Platform-Admin-Web/Reports/impl-09-organization-branches",
+  "../../../../docs/Platform-Admin-Web/Reports/impl-10-organization-people",
 );
 
 test.describe("local-validation React container smoke", () => {
@@ -109,7 +109,6 @@ test.describe("local-validation React container smoke", () => {
     await expect(page.getByText("abc-sari-sari")).toBeVisible();
     await expect(page.getByRole("button", { name: /create/i })).toHaveCount(0);
 
-    mkdirSync(branchesScreenshotDir, { recursive: true });
     await page.setViewportSize({ width: 1440, height: 900 });
     const organizationLink = page.locator('table a[href^="/admin/organizations/"]').first();
     await expect(organizationLink).toBeVisible();
@@ -119,40 +118,45 @@ test.describe("local-validation React container smoke", () => {
     const workspaceNav = page.getByRole("navigation", { name: "Organization workspace" });
     await expect(workspaceNav.getByRole("link", { name: "Overview" })).toBeVisible();
     await expect(workspaceNav.getByRole("link", { name: "Branches" })).toBeVisible();
-    await expect(workspaceNav.getByRole("link", { name: "People" })).toHaveCount(0);
-    await page.screenshot({
-      path: resolve(branchesScreenshotDir, "04-workspace-navigation.png"),
-      fullPage: true,
-    });
-    await workspaceNav.getByRole("link", { name: "Branches" }).click();
-    await expect(page).toHaveURL(/\/admin\/organizations\/[0-9a-fA-F-]{36}\/branches$/);
+    await expect(workspaceNav.getByRole("link", { name: "People" })).toBeVisible();
+    await expect(workspaceNav.getByRole("link", { name: "Products" })).toHaveCount(0);
+    await workspaceNav.getByRole("link", { name: "People" }).click();
+    await expect(page).toHaveURL(/\/admin\/organizations\/[0-9a-fA-F-]{36}\/people/);
     await expect(
-      page.getByRole("heading", { name: "Branches", exact: true, level: 1 }),
+      page.getByRole("heading", { name: "People", exact: true, level: 1 }),
     ).toBeVisible();
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /create/i })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /edit/i })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /invite/i })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /revoke/i })).toHaveCount(0);
+    mkdirSync(peopleScreenshotDir, { recursive: true });
     await page.getByRole("button", { name: "Preferences" }).click();
     await page.getByRole("menuitem", { name: /^Light/ }).click();
     await page.screenshot({
-      path: resolve(branchesScreenshotDir, "01-branches-1440x900-light.png"),
+      path: resolve(peopleScreenshotDir, "01-people-1440x900-light.png"),
       fullPage: true,
     });
     await page.getByRole("button", { name: "Preferences" }).click();
     await page.getByRole("menuitem", { name: /^Dark/ }).click();
     await page.screenshot({
-      path: resolve(branchesScreenshotDir, "02-branches-1440x900-dark.png"),
+      path: resolve(peopleScreenshotDir, "02-people-1440x900-dark.png"),
+      fullPage: true,
+    });
+    await page.getByRole("tab", { name: "Invitations" }).click();
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    await page.screenshot({
+      path: resolve(peopleScreenshotDir, "04-invitations.png"),
       fullPage: true,
     });
     await page.getByRole("button", { name: "Preferences" }).click();
     await page.getByRole("menuitem", { name: /^Light/ }).click();
     await page.setViewportSize({ width: 375, height: 812 });
+    await page.getByRole("tab", { name: "Members" }).click();
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
     );
     expect(overflow).toBe(false);
     await page.screenshot({
-      path: resolve(branchesScreenshotDir, "03-branches-375x812.png"),
+      path: resolve(peopleScreenshotDir, "03-people-375x812.png"),
       fullPage: true,
     });
   });

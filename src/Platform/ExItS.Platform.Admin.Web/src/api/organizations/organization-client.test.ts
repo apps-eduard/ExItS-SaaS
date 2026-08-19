@@ -3,6 +3,8 @@ import {
   mapOrganizationBranches,
   mapOrganizationCommercialSummary,
   mapOrganizationDetail,
+  mapOrganizationInvitation,
+  mapOrganizationMember,
 } from "@/api/organizations/organization-client";
 
 describe("mapOrganizationDetail", () => {
@@ -130,5 +132,49 @@ describe("mapOrganizationBranches", () => {
     });
     expect(mapped[1]?.isPrimary).toBe(false);
     expect(JSON.stringify(mapped)).not.toMatch(/pickupEnabled|deliveryEnabled|baseDeliveryFee/i);
+  });
+});
+
+describe("mapOrganizationMember", () => {
+  it("maps returned identity fields and omits product roles", () => {
+    const mapped = mapOrganizationMember({
+      id: "11111111-1111-1111-1111-111111111111",
+      organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      userId: "22222222-2222-2222-2222-222222222222",
+      role: "OrganizationMember",
+      status: "Active",
+      displayName: "Ana Cruz",
+      email: "ana@org.test",
+      username: "ana@ORG000001",
+      roleDisplay: "Staff",
+      productRoles: ["Cashier"],
+      employeeCode: "E-12",
+    });
+    expect(mapped.displayName).toBe("Ana Cruz");
+    expect(mapped.roleDisplay).toBe("Staff");
+    expect(mapped.employeeCode).toBe("E-12");
+    expect(JSON.stringify(mapped)).not.toMatch(/Cashier|productRoles/i);
+  });
+});
+
+describe("mapOrganizationInvitation", () => {
+  it("maps safe invitation fields and never keeps an accept token", () => {
+    const mapped = mapOrganizationInvitation({
+      id: "33333333-3333-3333-3333-333333333333",
+      organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      email: "invitee@example.test",
+      role: "OrganizationMember",
+      status: "Pending",
+      invitationStatus: "Sent",
+      roleDisplay: "Staff",
+      expiresAtUtc: "2026-09-01T00:00:00Z",
+      acceptToken: "super-secret-accept-token",
+      AcceptToken: "another-secret",
+      productRole: "Cashier",
+    });
+    expect(mapped.email).toBe("invitee@example.test");
+    expect(mapped.invitationStatus).toBe("Sent");
+    expect(mapped).not.toHaveProperty("acceptToken");
+    expect(JSON.stringify(mapped)).not.toMatch(/super-secret|another-secret|Cashier/i);
   });
 });

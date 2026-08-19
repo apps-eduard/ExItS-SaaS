@@ -82,6 +82,48 @@ export type OrganizationListQuery = {
   sortDesc?: boolean;
 };
 
+export const MEMBERSHIP_STATUSES = ["Active", "Suspended", "Removed"] as const;
+export type MembershipStatus = (typeof MEMBERSHIP_STATUSES)[number];
+
+export const INVITATION_STATUSES = ["Pending", "Accepted", "Revoked", "Expired"] as const;
+export type InvitationStatus = (typeof INVITATION_STATUSES)[number];
+
+export const ORGANIZATION_PEOPLE_PAGE_SIZE = 20;
+
+export type OrganizationMember = {
+  id: string;
+  organizationId: string;
+  userId: string;
+  role: string;
+  status: string;
+  createdAtUtc?: string;
+  updatedAtUtc?: string;
+  suspendedAtUtc?: string;
+  removedAtUtc?: string;
+  username?: string;
+  displayName?: string;
+  email?: string;
+  roleDisplay?: string;
+  accountStatus?: string;
+  employeeCode?: string;
+};
+
+export type OrganizationInvitation = {
+  id: string;
+  organizationId: string;
+  email: string;
+  role: string;
+  status: string;
+  createdAtUtc?: string;
+  updatedAtUtc?: string;
+  expiresAtUtc?: string;
+  acceptedAtUtc?: string;
+  revokedAtUtc?: string;
+  roleDisplay?: string;
+  inviteeDisplayName?: string;
+  invitationStatus?: string;
+};
+
 export type OrganizationBranch = {
   id: string;
   organizationId: string;

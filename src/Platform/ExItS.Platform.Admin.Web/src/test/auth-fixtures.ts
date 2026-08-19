@@ -92,6 +92,14 @@ export type AuthenticatedFetchOptions = {
   failBranches?: boolean;
   forbiddenBranches?: boolean;
   branchItems?: Array<Record<string, unknown>>;
+  failMembers?: boolean;
+  forbiddenMembers?: boolean;
+  memberItems?: Array<Record<string, unknown>>;
+  memberTotalCount?: number;
+  failInvitations?: boolean;
+  forbiddenInvitations?: boolean;
+  invitationItems?: Array<Record<string, unknown>>;
+  invitationTotalCount?: number;
 };
 
 export function mockUnauthenticatedFetch(): void {
@@ -174,6 +182,50 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}):
           });
         }
         return jsonResponse(200, options.branchItems ?? []);
+      }
+      const membersGet = path.match(
+        /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/members$/,
+      );
+      if (membersGet) {
+        if (options.forbiddenMembers) {
+          return jsonResponse(403, { title: "Forbidden", status: 403, detail: "member-secret" });
+        }
+        if (options.failMembers) {
+          return jsonResponse(500, {
+            title: "Error",
+            status: 500,
+            detail: "Member list failed.",
+          });
+        }
+        const items = options.memberItems ?? [];
+        return jsonResponse(
+          200,
+          pagedJson(items, options.memberTotalCount ?? items.length, items.length || 20),
+        );
+      }
+      const invitationsGet = path.match(
+        /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/invitations$/,
+      );
+      if (invitationsGet) {
+        if (options.forbiddenInvitations) {
+          return jsonResponse(403, {
+            title: "Forbidden",
+            status: 403,
+            detail: "invitation-secret",
+          });
+        }
+        if (options.failInvitations) {
+          return jsonResponse(500, {
+            title: "Error",
+            status: 500,
+            detail: "Invitation list failed.",
+          });
+        }
+        const items = options.invitationItems ?? [];
+        return jsonResponse(
+          200,
+          pagedJson(items, options.invitationTotalCount ?? items.length, items.length || 20),
+        );
       }
       const organizationGet = path.match(
         /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/,

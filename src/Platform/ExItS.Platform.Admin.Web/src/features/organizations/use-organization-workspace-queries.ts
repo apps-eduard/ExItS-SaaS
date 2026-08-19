@@ -3,7 +3,10 @@ import {
   getOrganization,
   getOrganizationCommercialSummary,
   listOrganizationBranches,
+  listOrganizationInvitations,
+  listOrganizationMembers,
 } from "@/api/organizations/organization-client";
+import { ORGANIZATION_PEOPLE_PAGE_SIZE } from "@/api/organizations/organization-types";
 import { env } from "@/lib/env";
 
 export const organizationDetailQueryKey = (organizationId: string) =>
@@ -38,5 +41,52 @@ export function useOrganizationBranchesQuery(organizationId: string | null) {
     enabled: organizationId != null,
     queryFn: ({ signal }) =>
       listOrganizationBranches(env.platformApiBaseUrl, organizationId!, signal),
+  });
+}
+
+export const organizationMembersQueryKey = (organizationId: string, status: string, page: number) =>
+  ["organizations", "members", organizationId, status, page] as const;
+
+export function useOrganizationMembersQuery(
+  organizationId: string | null,
+  options: { status?: string; page: number },
+) {
+  return useQuery({
+    queryKey: organizationMembersQueryKey(organizationId ?? "", options.status ?? "", options.page),
+    enabled: organizationId != null,
+    queryFn: ({ signal }) =>
+      listOrganizationMembers(env.platformApiBaseUrl, organizationId!, {
+        status: options.status,
+        page: options.page,
+        pageSize: ORGANIZATION_PEOPLE_PAGE_SIZE,
+        signal,
+      }),
+  });
+}
+
+export const organizationInvitationsQueryKey = (
+  organizationId: string,
+  status: string,
+  page: number,
+) => ["organizations", "invitations", organizationId, status, page] as const;
+
+export function useOrganizationInvitationsQuery(
+  organizationId: string | null,
+  options: { status?: string; page: number },
+) {
+  return useQuery({
+    queryKey: organizationInvitationsQueryKey(
+      organizationId ?? "",
+      options.status ?? "",
+      options.page,
+    ),
+    enabled: organizationId != null,
+    queryFn: ({ signal }) =>
+      listOrganizationInvitations(env.platformApiBaseUrl, organizationId!, {
+        status: options.status,
+        page: options.page,
+        pageSize: ORGANIZATION_PEOPLE_PAGE_SIZE,
+        signal,
+      }),
   });
 }

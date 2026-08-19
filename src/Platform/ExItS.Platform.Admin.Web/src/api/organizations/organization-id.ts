@@ -28,21 +28,53 @@ export function isOrganizationWorkspacePath(pathname: string): boolean {
   return parts.length === 4 && parts[1] === "admin" && parts[2] === "organizations";
 }
 
-export function isOrganizationWorkspaceBranchesPath(pathname: string): boolean {
+export const ORGANIZATION_WORKSPACE_SECTIONS = [
+  "branches",
+  "people",
+  "products",
+  "subscription",
+  "entitlements",
+  "billing",
+] as const;
+
+export type OrganizationWorkspaceSection = (typeof ORGANIZATION_WORKSPACE_SECTIONS)[number];
+
+export type OrganizationWorkspaceNavSection = "overview" | "branches" | "people";
+
+export function parseOrganizationWorkspaceSection(
+  pathname: string,
+): OrganizationWorkspaceSection | null {
   const parts = pathname.replace(/\/+$/, "").split("/");
-  return (
-    parts.length === 5 &&
-    parts[1] === "admin" &&
-    parts[2] === "organizations" &&
-    parts[4] === "branches"
-  );
+  const section = parts[4];
+  if (
+    parts.length !== 5 ||
+    parts[1] !== "admin" ||
+    parts[2] !== "organizations" ||
+    !section ||
+    !(ORGANIZATION_WORKSPACE_SECTIONS as readonly string[]).includes(section)
+  ) {
+    return null;
+  }
+  return section as OrganizationWorkspaceSection;
+}
+
+export function isOrganizationWorkspaceBranchesPath(pathname: string): boolean {
+  return parseOrganizationWorkspaceSection(pathname) === "branches";
+}
+
+export function isOrganizationWorkspacePeoplePath(pathname: string): boolean {
+  return parseOrganizationWorkspaceSection(pathname) === "people";
+}
+
+export function isOrganizationWorkspaceSectionPath(pathname: string): boolean {
+  return parseOrganizationWorkspaceSection(pathname) != null;
 }
 
 export function organizationWorkspaceHref(
   organizationId: string,
-  section: "overview" | "branches" = "overview",
+  section: OrganizationWorkspaceNavSection = "overview",
 ): string {
-  return section === "branches"
-    ? `/admin/organizations/${organizationId}/branches`
-    : `/admin/organizations/${organizationId}`;
+  return section === "overview"
+    ? `/admin/organizations/${organizationId}`
+    : `/admin/organizations/${organizationId}/${section}`;
 }

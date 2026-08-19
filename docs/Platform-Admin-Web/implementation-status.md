@@ -321,6 +321,31 @@ Read-only Branches at `/admin/organizations/:organizationId/branches`. Workspace
 
 See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-09-organization-branches.md`.
 
+## PWEB-IMPL-10 — Organization workspace / People
+
+Status: **COMPLETE** after validation
+
+Read-only People at `/admin/organizations/:organizationId/people` with independent Members and Invitations sections. Workspace navigation exposes Overview, Branches, and People only. No invite/revoke/resend. Invitation accept tokens are never mapped or rendered. CSRF remains `BLOCKS_FUTURE_MUTATION`. Social-auth token-in-URL remains `BLOCKS_CUTOVER`. Platform Admin is **WEB ONLY**. PWA is **NOT PLANNED**.
+
+| Area | Record |
+|---|---|
+| Overview | **IMPLEMENTED** |
+| Branches | **IMPLEMENTED — READ ONLY** |
+| People/Memberships | **IMPLEMENTED — READ ONLY** |
+| Products/Access | **NOT STARTED** |
+| Subscription | **NOT STARTED** |
+| Entitlements | **NOT STARTED** |
+| Billing | **NOT STARTED** |
+| Activity/Audit | **NOT STARTED** |
+| Members API | Paged `GET .../members` with `status`, `page`, `pageSize`. No search. |
+| Invitations API | Paged `GET .../invitations` with `status`, `page`, `pageSize`. Sanitized; accept tokens omitted. |
+| CSRF | `BLOCKS_FUTURE_MUTATION` |
+| Social-auth token-in-URL | `BLOCKS_CUTOVER` |
+| Platform Admin | **WEB ONLY** |
+| PWA | **NOT PLANNED** |
+
+See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-10-organization-people-memberships.md`.
+
 ## Queue
 
 | Package | Status |
@@ -333,5 +358,6 @@ See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-09-organization-branches.md`.
 | PWEB-IMPL-07 — Organizations list | COMPLETE |
 | PWEB-IMPL-08 — Organization workspace Overview | COMPLETE |
 | PWEB-IMPL-09 — Organization workspace Branches | COMPLETE |
+| PWEB-IMPL-10 — Organization workspace People | COMPLETE |
 
-Stopped after PWEB-IMPL-09.
+Stopped after PWEB-IMPL-10.

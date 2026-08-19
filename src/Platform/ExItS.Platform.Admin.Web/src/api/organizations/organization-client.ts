@@ -2,13 +2,19 @@ import { parsePagedResult, type PagedResult } from "@/api/platform/paged-result"
 import { platformRequest } from "@/api/platform-http";
 import { organizationsListPath } from "@/features/overview/dashboard-bounds";
 import { organizationsListRequestPath } from "@/api/organizations/organization-list-query";
+import {
+  organizationInvitationsRequestPath,
+  organizationMembersRequestPath,
+} from "@/api/organizations/people-list-query";
 import type {
   OrganizationBranch,
   OrganizationBranding,
   OrganizationCommercialSummary,
   OrganizationDetail,
+  OrganizationInvitation,
   OrganizationListItem,
   OrganizationListQuery,
+  OrganizationMember,
   OrganizationProfile,
 } from "@/api/organizations/organization-types";
 
@@ -242,6 +248,102 @@ export function listOrganizationBranches(
     path: `/api/v1/platform/organizations/${organizationId}/branches`,
     signal,
   }).then(mapOrganizationBranches);
+}
+
+export function mapOrganizationMember(payload: unknown): OrganizationMember {
+  const record = asRecord(payload);
+  if (!record) {
+    throw new Error("Invalid organization member.");
+  }
+  const id = readString(record, "id", "Id");
+  const organizationId = readString(record, "organizationId", "OrganizationId");
+  const userId = readString(record, "userId", "UserId");
+  const role = readString(record, "role", "Role");
+  const status = readString(record, "status", "Status");
+  if (!id || !organizationId || !userId || !role || !status) {
+    throw new Error("Invalid organization member.");
+  }
+  return {
+    id,
+    organizationId,
+    userId,
+    role,
+    status,
+    createdAtUtc: readString(record, "createdAtUtc", "CreatedAtUtc"),
+    updatedAtUtc: readString(record, "updatedAtUtc", "UpdatedAtUtc"),
+    suspendedAtUtc: readString(record, "suspendedAtUtc", "SuspendedAtUtc"),
+    removedAtUtc: readString(record, "removedAtUtc", "RemovedAtUtc"),
+    username: readString(record, "username", "Username"),
+    displayName: readString(record, "displayName", "DisplayName"),
+    email: readString(record, "email", "Email"),
+    roleDisplay: readString(record, "roleDisplay", "RoleDisplay"),
+    accountStatus: readString(record, "accountStatus", "AccountStatus"),
+    employeeCode: readString(record, "employeeCode", "EmployeeCode"),
+  };
+}
+
+export function mapOrganizationInvitation(payload: unknown): OrganizationInvitation {
+  const record = asRecord(payload);
+  if (!record) {
+    throw new Error("Invalid organization invitation.");
+  }
+  const id = readString(record, "id", "Id");
+  const organizationId = readString(record, "organizationId", "OrganizationId");
+  const email = readString(record, "email", "Email");
+  const role = readString(record, "role", "Role");
+  const status = readString(record, "status", "Status");
+  if (!id || !organizationId || !email || !role || !status) {
+    throw new Error("Invalid organization invitation.");
+  }
+  return {
+    id,
+    organizationId,
+    email,
+    role,
+    status,
+    createdAtUtc: readString(record, "createdAtUtc", "CreatedAtUtc"),
+    updatedAtUtc: readString(record, "updatedAtUtc", "UpdatedAtUtc"),
+    expiresAtUtc: readString(record, "expiresAtUtc", "ExpiresAtUtc"),
+    acceptedAtUtc: readString(record, "acceptedAtUtc", "AcceptedAtUtc"),
+    revokedAtUtc: readString(record, "revokedAtUtc", "RevokedAtUtc"),
+    roleDisplay: readString(record, "roleDisplay", "RoleDisplay"),
+    inviteeDisplayName: readString(record, "inviteeDisplayName", "InviteeDisplayName"),
+    invitationStatus: readString(record, "invitationStatus", "InvitationStatus"),
+  };
+}
+
+export function listOrganizationMembers(
+  baseUrl: string,
+  organizationId: string,
+  options: { status?: string; page: number; pageSize?: number; signal?: AbortSignal },
+): Promise<PagedResult<OrganizationMember>> {
+  return platformRequest<unknown>(baseUrl, {
+    path: organizationMembersRequestPath(organizationId, options),
+    signal: options.signal,
+  }).then((payload) => {
+    const page = parsePagedResult<unknown>(payload);
+    return {
+      ...page,
+      items: page.items.map(mapOrganizationMember),
+    };
+  });
+}
+
+export function listOrganizationInvitations(
+  baseUrl: string,
+  organizationId: string,
+  options: { status?: string; page: number; pageSize?: number; signal?: AbortSignal },
+): Promise<PagedResult<OrganizationInvitation>> {
+  return platformRequest<unknown>(baseUrl, {
+    path: organizationInvitationsRequestPath(organizationId, options),
+    signal: options.signal,
+  }).then((payload) => {
+    const page = parsePagedResult<unknown>(payload);
+    return {
+      ...page,
+      items: page.items.map(mapOrganizationInvitation),
+    };
+  });
 }
 
 export function listOrganizations(

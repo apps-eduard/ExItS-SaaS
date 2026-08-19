@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   isOrganizationWorkspaceBranchesPath,
+  isOrganizationWorkspacePeoplePath,
   isOrganizationWorkspacePath,
   organizationsListHref,
   parseOrganizationId,
@@ -31,6 +32,11 @@ describe("organization workspace path helpers", () => {
     expect(
       isOrganizationWorkspaceBranchesPath(
         "/admin/organizations/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/branches",
+      ),
+    ).toBe(true);
+    expect(
+      isOrganizationWorkspacePeoplePath(
+        "/admin/organizations/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/people",
       ),
     ).toBe(true);
     expect(organizationsListHref("?search=north&status=Active")).toBe(

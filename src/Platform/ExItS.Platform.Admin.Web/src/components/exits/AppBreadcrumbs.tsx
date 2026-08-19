@@ -1,10 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   ORGANIZATIONS_LIST_STATE_KEY,
-  isOrganizationWorkspaceBranchesPath,
   isOrganizationWorkspacePath,
+  isOrganizationWorkspaceSectionPath,
   organizationWorkspaceHref,
   organizationsListHref,
+  parseOrganizationWorkspaceSection,
   type OrganizationsLocationState,
 } from "@/api/organizations/organization-id";
 import { useOrganizationWorkspaceIdentity } from "@/features/organizations/organization-workspace-context";
@@ -13,6 +14,11 @@ import { usePreferences } from "@/hooks/use-preferences";
 import { areDevelopmentToolsAllowed } from "@/lib/auth/development-tools";
 import type { MessageKey } from "@/lib/i18n/messages";
 import { itemsForPathname, resolveKnownReactRoute } from "@/lib/navigation/known-react-routes";
+
+const SECTION_LABELS: Record<string, MessageKey> = {
+  branches: "organization.workspace.nav.branches",
+  people: "organization.workspace.nav.people",
+};
 
 function labelForAuthorizedPath(pathname: string, t: (key: MessageKey) => string): string | null {
   const item = itemsForPathname(pathname)[0];
@@ -30,7 +36,8 @@ export function AppBreadcrumbs() {
       : location.pathname;
   const isOverview = path === "/admin";
   const isOrgWorkspace = isOrganizationWorkspacePath(path);
-  const isOrgBranches = isOrganizationWorkspaceBranchesPath(path);
+  const workspaceSection = parseOrganizationWorkspaceSection(path);
+  const isOrgSection = isOrganizationWorkspaceSectionPath(path);
   const orgName = workspace?.identity?.displayName ?? t("organization.breadcrumb.fallback");
   const listState = (location.state as OrganizationsLocationState | null) ?? null;
   const organizationsHref = organizationsListHref(listState?.[ORGANIZATIONS_LIST_STATE_KEY]);
@@ -48,8 +55,8 @@ export function AppBreadcrumbs() {
     ? t("nav.overview")
     : isOrgWorkspace
       ? orgName
-      : isOrgBranches
-        ? t("organization.workspace.nav.branches")
+      : isOrgSection && workspaceSection && SECTION_LABELS[workspaceSection]
+        ? t(SECTION_LABELS[workspaceSection]!)
         : resolution === "implemented"
           ? (labelForAuthorizedPath(path, t) ?? t("shell.notFound.title"))
           : resolution === "under-development"
@@ -87,7 +94,7 @@ export function AppBreadcrumbs() {
               </span>
             </li>
           </>
-        ) : isOrgBranches ? (
+        ) : isOrgSection ? (
           <>
             <li>
               <Link className="text-primary hover:underline" to="/admin">
