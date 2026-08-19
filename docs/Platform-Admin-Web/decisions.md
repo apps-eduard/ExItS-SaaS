@@ -13,6 +13,11 @@ Accepted decision identifiers for this planning track (documentation-only).
 | PWEB-D-007 | UX personas are design artifacts, not authorization roles; authorization is governed by existing Platform roles and permissions | Accepted |
 | PWEB-D-008 | Product-operational workflows (POS, PLM) are explicitly excluded from the SaaS Control Center navigation | Accepted |
 | PWEB-D-009 | Navigation visibility is a UX convenience, not a security boundary; all authorization is server-side | Accepted |
+| PWEB-D-010 | DOC-03 approved target stack: React + TypeScript + Vite; Tailwind CSS + shadcn/ui + Lucide; React Router; TanStack Query/Table; React Hook Form + Zod; Motion; backend is existing .NET Platform API | Accepted |
+| PWEB-D-011 | State management mapping: TanStack Query for server state; React Hook Form + Zod for forms/schema; local React state for transient UI; minimal shared UI context only when justified | Accepted |
+| PWEB-D-012 | API client boundary: React page -> feature service/hook -> typed API client -> `ExItS.Platform.Api`, with server-authoritative authz and normalized problem+json error handling | Accepted |
+| PWEB-D-013 | Auth security posture for React is evidence-based: cookie/session-first when compatible; explicit CSRF + OpenAPI/typed-client gaps recorded if evidence is incomplete | Accepted |
+| PWEB-D-014 | Dependency policy governance: review cadence expectations, no auto-merge dependency PRs, and lock file required when implementation begins | Accepted |
 
-Do not decide detailed frontend libraries here. That belongs to DOC-03 and later docs.
+Library decisions are recorded by DOC-03; this file only contains the accepted identifiers/constraints for the planning track.
 
