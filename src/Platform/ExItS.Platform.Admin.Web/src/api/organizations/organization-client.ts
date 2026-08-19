@@ -7,6 +7,11 @@ import {
   organizationMembersRequestPath,
 } from "@/api/organizations/people-list-query";
 import {
+  organizationPaymentsRequestPath,
+  type OrganizationBillingUrlState,
+  type OrganizationPayment,
+} from "@/api/organizations/billing-list-query";
+import {
   organizationEntitlementSnapshotsRequestPath,
   type EntitlementGrant,
   type EntitlementSnapshot,
@@ -504,6 +509,66 @@ export function listOrganizationEntitlementSnapshots(
     return {
       ...page,
       items: page.items.map(mapEntitlementSnapshot),
+    };
+  });
+}
+
+export function mapOrganizationPayment(payload: unknown): OrganizationPayment {
+  const record = asRecord(payload);
+  if (!record) {
+    throw new Error("Invalid organization payment.");
+  }
+  const id = readString(record, "id", "Id");
+  const organizationId = readString(record, "organizationId", "OrganizationId");
+  const productCode = readString(record, "productCode", "ProductCode");
+  const amount = readNumber(record, "amount", "Amount");
+  const currencyCode = readString(record, "currencyCode", "CurrencyCode");
+  const method = readString(record, "method", "Method");
+  const status = readString(record, "status", "Status");
+  if (
+    !id ||
+    !organizationId ||
+    !productCode ||
+    amount === undefined ||
+    !currencyCode ||
+    !method ||
+    !status
+  ) {
+    throw new Error("Invalid organization payment.");
+  }
+  return {
+    id,
+    organizationId,
+    productCode,
+    amount,
+    currencyCode,
+    method,
+    status,
+    subscriptionId: readString(record, "subscriptionId", "SubscriptionId"),
+    externalReference: readString(record, "externalReference", "ExternalReference"),
+    paidAtUtc: readString(record, "paidAtUtc", "PaidAtUtc"),
+    confirmedAtUtc: readString(record, "confirmedAtUtc", "ConfirmedAtUtc"),
+    rejectedAtUtc: readString(record, "rejectedAtUtc", "RejectedAtUtc"),
+    voidedAtUtc: readString(record, "voidedAtUtc", "VoidedAtUtc"),
+    createdAtUtc: readString(record, "createdAtUtc", "CreatedAtUtc"),
+    updatedAtUtc: readString(record, "updatedAtUtc", "UpdatedAtUtc"),
+  };
+}
+
+export function listOrganizationPayments(
+  baseUrl: string,
+  organizationId: string,
+  state: OrganizationBillingUrlState,
+  signal?: AbortSignal,
+): Promise<PagedResult<OrganizationPayment>> {
+  return platformRequest<unknown>(baseUrl, {
+    path: organizationPaymentsRequestPath(organizationId, state),
+    signal,
+  }).then((payload) => {
+    const page = parsePagedResult<unknown>(payload);
+    return {
+      ...page,
+      items: page.items.map(mapOrganizationPayment),
     };
   });
 }

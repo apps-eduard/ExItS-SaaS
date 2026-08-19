@@ -6,8 +6,10 @@ import {
   listOrganizationEntitlementSnapshots,
   listOrganizationInvitations,
   listOrganizationMembers,
+  listOrganizationPayments,
   listOrganizationSubscriptions,
 } from "@/api/organizations/organization-client";
+import type { OrganizationBillingUrlState } from "@/api/organizations/billing-list-query";
 import { ORGANIZATION_PEOPLE_PAGE_SIZE } from "@/api/organizations/organization-types";
 import { ORGANIZATION_ENTITLEMENT_PAGE_SIZE } from "@/api/organizations/entitlement-list-query";
 import type { OrganizationSubscriptionUrlState } from "@/api/organizations/subscription-list-query";
@@ -144,5 +146,22 @@ export function useOrganizationEntitlementSnapshotsQuery(
         pageSize: ORGANIZATION_ENTITLEMENT_PAGE_SIZE,
         signal,
       }),
+  });
+}
+
+export const organizationPaymentsQueryKey = (
+  organizationId: string,
+  state: OrganizationBillingUrlState,
+) => ["organizations", "payments", organizationId, state.status, state.page] as const;
+
+export function useOrganizationPaymentsQuery(
+  organizationId: string | null,
+  state: OrganizationBillingUrlState,
+) {
+  return useQuery({
+    queryKey: organizationPaymentsQueryKey(organizationId ?? "", state),
+    enabled: organizationId != null,
+    queryFn: ({ signal }) =>
+      listOrganizationPayments(env.platformApiBaseUrl, organizationId!, state, signal),
   });
 }

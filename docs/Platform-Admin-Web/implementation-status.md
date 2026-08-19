@@ -415,6 +415,29 @@ Read-only Entitlements at `/admin/organizations/:organizationId/entitlements`. P
 
 See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-13-organization-entitlements.md`.
 
+## PWEB-IMPL-14 — Organization workspace / Billing
+
+Status: **COMPLETE** after validation
+
+Read-only Billing at `/admin/organizations/:organizationId/billing` using org-scoped `GET .../payments` with `status`, `page`, `pageSize`. Platform SaaS money only — not POS sales/tenders/cash or PLM loan/collections. No Record/Confirm/Reject/Void. 403 fail-closes without leaking amounts. CSRF remains `BLOCKS_FUTURE_MUTATION`. Platform Admin is **WEB ONLY**. PWA is **NOT PLANNED**.
+
+| Area | Record |
+|---|---|
+| Overview | **IMPLEMENTED** |
+| Branches | **IMPLEMENTED — READ ONLY** |
+| People/Memberships | **IMPLEMENTED — READ ONLY** |
+| Products/Access | **IMPLEMENTED — READ ONLY** |
+| Subscription | **IMPLEMENTED — READ ONLY** |
+| Entitlements | **IMPLEMENTED — READ ONLY** |
+| Billing | **IMPLEMENTED — READ ONLY** |
+| Activity/Audit | **NOT STARTED** |
+| CSRF | `BLOCKS_FUTURE_MUTATION` |
+| Social-auth token-in-URL | `BLOCKS_CUTOVER` |
+| Platform Admin | **WEB ONLY** |
+| PWA | **NOT PLANNED** |
+
+See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-14-organization-billing.md`.
+
 ## Queue
 
 | Package | Status |
@@ -431,5 +454,6 @@ See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-13-organization-entitlements.md`.
 | PWEB-IMPL-11 — Organization workspace Products | COMPLETE |
 | PWEB-IMPL-12 — Organization workspace Subscriptions | COMPLETE |
 | PWEB-IMPL-13 — Organization workspace Entitlements | COMPLETE |
+| PWEB-IMPL-14 — Organization workspace Billing | COMPLETE |
 
-Stopped after PWEB-IMPL-13.
+Stopped after PWEB-IMPL-14. PWEB-IMPL-15 (Activity/Audit) was not started.

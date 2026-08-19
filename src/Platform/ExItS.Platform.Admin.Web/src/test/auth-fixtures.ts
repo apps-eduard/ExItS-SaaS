@@ -108,6 +108,10 @@ export type AuthenticatedFetchOptions = {
   forbiddenEntitlementSnapshots?: boolean;
   entitlementSnapshotItems?: Array<Record<string, unknown>>;
   entitlementSnapshotTotalCount?: number;
+  failOrgPayments?: boolean;
+  forbiddenOrgPayments?: boolean;
+  orgPaymentItems?: Array<Record<string, unknown>>;
+  orgPaymentTotalCount?: number;
 };
 
 export function mockUnauthenticatedFetch(): void {
@@ -285,6 +289,31 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}):
             options.entitlementSnapshotTotalCount ?? items.length,
             items.length || 20,
           ),
+        );
+      }
+      const orgPaymentsGet = path.match(
+        /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/payments$/,
+      );
+      if (orgPaymentsGet) {
+        if (options.forbiddenOrgPayments) {
+          return jsonResponse(403, {
+            title: "Forbidden",
+            status: 403,
+            detail: "payment-secret",
+            amount: 9999.99,
+          });
+        }
+        if (options.failOrgPayments) {
+          return jsonResponse(500, {
+            title: "Error",
+            status: 500,
+            detail: "Payment list failed.",
+          });
+        }
+        const items = options.orgPaymentItems ?? [];
+        return jsonResponse(
+          200,
+          pagedJson(items, options.orgPaymentTotalCount ?? items.length, items.length || 20),
         );
       }
       const organizationGet = path.match(

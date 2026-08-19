@@ -21,6 +21,7 @@ const SECTION_LABELS: Record<string, MessageKey> = {
   products: "organization.workspace.nav.products",
   subscription: "organization.workspace.nav.subscription",
   entitlements: "organization.workspace.nav.entitlements",
+  billing: "organization.workspace.nav.billing",
 };
 
 function labelForAuthorizedPath(pathname: string, t: (key: MessageKey) => string): string | null {
