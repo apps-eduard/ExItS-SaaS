@@ -102,6 +102,10 @@ docs/engineering/testing-strategy.md
 docs/engineering/theme-system.md
 docs/engineering/ui-design-system.md
 docs/index.md
+docs/Mobile-React/README.md
+docs/Mobile-React/documentation-status.md
+docs/Mobile-React/decisions.md
+docs/Mobile-React/current-state-and-replacement-boundaries.md
 docs/phases/README.md
 docs/phases/phase-01-platform-boundary.md
 docs/phases/phase-02-platform-extraction.md

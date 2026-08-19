@@ -7,6 +7,7 @@
 - [Portfolio vision](product/portfolio-vision.md)
 - [ExItS Product Foundation reference](Product-Foundation/exits-product-foundation-reference.md)
 - [Platform Admin Web modernization](Platform-Admin-Web/README.md)
+- [Mobile React / PWA / Capacitor planning](Mobile-React/README.md)
 - [Product documentation templates](Product-Foundation/Templates/README.md)
 - [Product bootstrap prompt](Product-Foundation/product-bootstrap-prompt.md)
 - [ReferenceLoan fictional dry run](Product-Foundation/Reference-Product/README.md)
