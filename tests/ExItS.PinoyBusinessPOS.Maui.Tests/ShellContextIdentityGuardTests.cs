@@ -27,11 +27,11 @@ public sealed class ShellContextIdentityGuardTests
         Assert.DoesNotContain("ShellUserIdentity", pos, StringComparison.Ordinal);
         Assert.Contains("IconName=\"menu\"", File.ReadAllText(Path.Combine(MauiProject(), "Components", "Shared", "ShellAccountMenu.razor")), StringComparison.Ordinal);
         var accountMenu = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Shared", "ShellAccountMenu.razor"));
-        Assert.Contains("ShowOrganizationSwitcherItem", accountMenu, StringComparison.Ordinal);
+        Assert.Contains("ShowWorkspaceSwitcherItem", accountMenu, StringComparison.Ordinal);
         Assert.Contains("ShowDashboardItem", accountMenu, StringComparison.Ordinal);
-        Assert.Contains("Shell_ChangeOrganization", accountMenu, StringComparison.Ordinal);
+        Assert.Contains("WorkspaceSelect_SwitchMenu", accountMenu, StringComparison.Ordinal);
         Assert.Contains("GoDashboardAsync", accountMenu, StringComparison.Ordinal);
-        Assert.Contains("IsOnOrganizationSelect", accountMenu, StringComparison.Ordinal);
+        Assert.Contains("IsOnWorkspaceSelect", accountMenu, StringComparison.Ordinal);
 
         var syncStatus = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Shared", "ShellSyncStatus.razor"));
         Assert.Contains("InvokeAsync(StateHasChanged)", syncStatus, StringComparison.Ordinal);
@@ -115,28 +115,20 @@ public sealed class ShellContextIdentityGuardTests
     }
 
     [Fact]
-    public void Organization_select_uses_dual_top_bar_preview_with_role_and_staff_headers()
+    public void Workspace_select_uses_dual_top_bar_preview_with_org_branch_hierarchy()
     {
+        var workspaceSelect = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "WorkspaceSelect.razor"));
         var orgSelect = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "OrganizationSelect.razor"));
 
-        // Dual top-bar preview remains the org identity surface.
-        Assert.Contains("AuthShellIdentityState", orgSelect, StringComparison.Ordinal);
-        Assert.Contains("SetOrganizationPreview", orgSelect, StringComparison.Ordinal);
-        Assert.Contains("AvatarShape.SoftSquare", orgSelect, StringComparison.Ordinal);
-        Assert.Contains("FriendlyMembershipRole", orgSelect, StringComparison.Ordinal);
-        Assert.Contains("OrgSelect_EnterOwner", orgSelect, StringComparison.Ordinal);
-        Assert.Contains("SelectOrganizationAsync", orgSelect, StringComparison.Ordinal);
-        Assert.Contains("Org_StaffUnknownName", orgSelect, StringComparison.Ordinal);
-        Assert.DoesNotContain("pos-org-role__row--personal", orgSelect, StringComparison.Ordinal);
-        Assert.DoesNotContain("Auth_Logout", orgSelect, StringComparison.Ordinal);
-        Assert.Contains("pos-org-select-empty", orgSelect, StringComparison.Ordinal);
-
-        // Accepted org-select polish keeps densified section headers for owner role bind and staff list.
-        Assert.DoesNotContain("PageHeader", orgSelect, StringComparison.Ordinal);
-        Assert.Contains("pos-org-role__header", orgSelect, StringComparison.Ordinal);
-        Assert.Contains("OrgSelect_RoleTitle", orgSelect, StringComparison.Ordinal);
-        Assert.Contains("OrgSelect_Title", orgSelect, StringComparison.Ordinal);
-        Assert.Contains("OrgSelect_SubtitleStaff", orgSelect, StringComparison.Ordinal);
+        Assert.Contains("/workspace-select", orgSelect, StringComparison.Ordinal);
+        Assert.Contains("AuthShellIdentityState", workspaceSelect, StringComparison.Ordinal);
+        Assert.Contains("SetOrganizationPreview", workspaceSelect, StringComparison.Ordinal);
+        Assert.Contains("AvatarShape.SoftSquare", workspaceSelect, StringComparison.Ordinal);
+        Assert.Contains("SelectWorkspaceAsync", workspaceSelect, StringComparison.Ordinal);
+        Assert.Contains("WorkspaceSelect_Title", workspaceSelect, StringComparison.Ordinal);
+        Assert.Contains("pos-workspace-select__org-row", workspaceSelect, StringComparison.Ordinal);
+        Assert.Contains("pos-workspace-select__branch-row", workspaceSelect, StringComparison.Ordinal);
+        Assert.DoesNotContain("Auth_Logout", workspaceSelect, StringComparison.Ordinal);
     }
 
     [Fact]

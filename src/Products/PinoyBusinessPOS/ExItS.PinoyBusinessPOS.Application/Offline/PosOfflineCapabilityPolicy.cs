@@ -51,6 +51,7 @@ public sealed class PosOfflineCapabilityPolicy : IPosOfflineCapabilityPolicy
             ["/sales"] = PosConnectivityRequirement.OfflineCapable,
 
             // Online required destinations
+            ["/workspace-select"] = PosConnectivityRequirement.OnlineRequired,
             ["/organization-select"] = PosConnectivityRequirement.OnlineRequired,
             ["/reconnect"] = PosConnectivityRequirement.OnlineRequired,
             ["/register"] = PosConnectivityRequirement.OnlineRequired,

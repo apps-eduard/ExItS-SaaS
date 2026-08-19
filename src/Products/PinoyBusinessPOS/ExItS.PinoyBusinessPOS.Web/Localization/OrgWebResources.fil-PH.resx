@@ -870,6 +870,24 @@
   <data name="SelectOrg_Subtitle" xml:space="preserve">
     <value>Piliin kung aling business workspace ang pamamahalaan.</value>
   </data>
+  <data name="WorkspaceSelect_Title" xml:space="preserve">
+    <value>Pumili ng workspace</value>
+  </data>
+  <data name="WorkspaceSelect_Subtitle" xml:space="preserve">
+    <value>Piliin ang organisasyon at branch na gusto mong pamahalaan.</value>
+  </data>
+  <data name="WorkspaceSelect_SwitchMenu" xml:space="preserve">
+    <value>Magpalit ng workspace</value>
+  </data>
+  <data name="WorkspaceSelect_BranchCount" xml:space="preserve">
+    <value>{0} na branch</value>
+  </data>
+  <data name="WorkspaceSelect_NoneTitle" xml:space="preserve">
+    <value>Walang available na workspace</value>
+  </data>
+  <data name="WorkspaceSelect_NoAccessibleBranch" xml:space="preserve">
+    <value>Walang active na branch para sa iyong mga organisasyon.</value>
+  </data>
   <data name="SalesDocuments_Subtitle" xml:space="preserve">
     <value>Suriin kung paano gumagana ang sales documents para sa negosyong ito.</value>
   </data>

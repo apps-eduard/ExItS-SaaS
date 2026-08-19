@@ -230,48 +230,34 @@ public sealed class HomeDestinationRoutingGuardTests
     }
 
     [Fact]
-    public void Org_workspace_routing_uses_count_not_owner_flag_and_personal_switch_goes_to_select()
+    public void Org_workspace_routing_uses_workspace_selection_and_personal_switch_goes_to_select()
     {
         var signIn = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "SignIn.razor"));
+        var workspaceSelect = File.ReadAllText(Path.Combine(
+            MauiProject(), "Components", "Pages", "WorkspaceSelect.razor"));
         var orgSelect = File.ReadAllText(Path.Combine(
             MauiProject(), "Components", "Pages", "OrganizationSelect.razor"));
         var switcher = File.ReadAllText(Path.Combine(
             MauiProject(), "Components", "Shared", "AccountContextSwitcher.razor"));
+        var menu = File.ReadAllText(Path.Combine(
+            MauiProject(), "Components", "Shared", "ShellAccountMenu.razor"));
 
-        // Login: 0 → personal, >=1 → organization-select. Single-org auto-enter is on
-        // organization-select only — sign-in must not await bind under the login spinner.
         Assert.Contains("NavigateAfterSignInAsync", signIn, StringComparison.Ordinal);
         Assert.Contains("if (orgs.Count == 0)", signIn, StringComparison.Ordinal);
-        Assert.Contains("Nav.NavigateTo(\"/organization-select\", replace: true)", signIn, StringComparison.Ordinal);
+        Assert.Contains("ResolveRoutingPlanAsync", signIn, StringComparison.Ordinal);
+        Assert.Contains("WorkspaceRoutingOutcome.AutoSelect", signIn, StringComparison.Ordinal);
+        Assert.Contains("Nav.NavigateTo(\"/workspace-select\", replace: true)", signIn, StringComparison.Ordinal);
         Assert.DoesNotContain("SelectOrganizationAsync(orgs[0].OrganizationId", signIn, StringComparison.Ordinal);
-        Assert.DoesNotContain("if (orgs.Count > 1)", signIn, StringComparison.Ordinal);
-        Assert.DoesNotContain(
-            "if (OrganizationMembershipRoles.HasOrganizationOwner(orgs))",
-            signIn,
-            StringComparison.Ordinal);
 
-        // Organization-select auto-enters any unbound single-org user (owner or staff).
-        Assert.Contains("_organizations.Count == 1 && CurrentUser.Session.OrganizationId is null", orgSelect, StringComparison.Ordinal);
-        Assert.DoesNotContain("!_isOwner\n                && _organizations.Count == 1", orgSelect, StringComparison.Ordinal);
-        var loadingFalse = orgSelect.IndexOf("_loading = false;", StringComparison.Ordinal);
-        var autoEnter = orgSelect.IndexOf(
-            "_organizations.Count == 1 && CurrentUser.Session.OrganizationId is null",
-            StringComparison.Ordinal);
-        Assert.InRange(loadingFalse, 0, autoEnter);
+        Assert.Contains("/workspace-select", orgSelect, StringComparison.Ordinal);
+        Assert.Contains("WorkspaceRoutingOutcome.AutoSelect", workspaceSelect, StringComparison.Ordinal);
+        Assert.Contains("SelectWorkspaceAsync", workspaceSelect, StringComparison.Ordinal);
 
-        Assert.Contains("EnsureOrganizationAccountProfileAsync", orgSelect, StringComparison.Ordinal);
-        Assert.Contains("ListEligibleOrganizationsAsync", orgSelect, StringComparison.Ordinal);
-
-        // Personal → Organization always opens Select Organization.
         Assert.Contains("if (IsPersonalActive)", switcher, StringComparison.Ordinal);
-        Assert.Contains("Nav.NavigateTo(\"/organization-select\", replace: true)", switcher, StringComparison.Ordinal);
-        var personalGate = switcher.IndexOf("if (IsPersonalActive)", StringComparison.Ordinal);
-        var selectNav = switcher.IndexOf(
-            "Nav.NavigateTo(\"/organization-select\", replace: true)",
-            personalGate,
-            StringComparison.Ordinal);
-        var bind = switcher.IndexOf("SelectOrganizationAsync(organizationId)", personalGate, StringComparison.Ordinal);
-        Assert.InRange(selectNav, 0, bind);
+        Assert.Contains("Nav.NavigateTo(\"/workspace-select\", replace: true)", switcher, StringComparison.Ordinal);
+
+        Assert.Contains("WorkspaceSelect_SwitchMenu", menu, StringComparison.Ordinal);
+        Assert.Contains("/workspace-select", menu, StringComparison.Ordinal);
     }
 
     [Fact]

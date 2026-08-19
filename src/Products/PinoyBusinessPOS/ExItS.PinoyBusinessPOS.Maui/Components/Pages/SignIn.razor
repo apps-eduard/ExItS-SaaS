@@ -2,11 +2,13 @@
 @layout Layout.AuthShell
 @implements IDisposable
 @using ExItS.DesignSystem.Components.Primitives
+@using ExItS.PinoyBusinessPOS.Application.Auth
 @using ExItS.PinoyBusinessPOS.Application.Options
 @using ExItS.PinoyBusinessPOS.Application.Platform
 @using Microsoft.Extensions.Options
 @inject IAuthenticationService Auth
 @inject IProductAccessResolver Access
+@inject IWorkspaceSelectionService WorkspaceSelection
 @inject IOnboardingPreferenceStore Prefs
 @inject IPlatformAccessClient Platform
 @inject IConnectivityService Connectivity
@@ -588,9 +590,26 @@
             return;
         }
 
-        // One or more memberships → organization-select. Single-org auto-enter happens there
-        // once; the eligible-org list is cached so this page and org-select share one HTTP call.
-        Nav.NavigateTo("/organization-select", replace: true);
+        var plan = await WorkspaceSelection.ResolveRoutingPlanAsync(session.UserId);
+        if (plan.Outcome == WorkspaceRoutingOutcome.PersonalHome)
+        {
+            Nav.NavigateTo(RoleHomeResolver.PersonalHome, replace: true);
+            return;
+        }
+
+        if (plan.Outcome == WorkspaceRoutingOutcome.AutoSelect
+            && plan.AutoOrganizationId is Guid autoOrg
+            && plan.AutoBranchId is Guid autoBranch)
+        {
+            var selected = await Auth.SelectWorkspaceAsync(autoOrg, autoBranch);
+            if (selected.Succeeded)
+            {
+                Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+                return;
+            }
+        }
+
+        Nav.NavigateTo("/workspace-select", replace: true);
     }
 
     private async Task<bool> RequiresOfflinePinEnrollmentAsync(AuthSession session)

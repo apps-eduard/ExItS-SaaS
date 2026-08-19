@@ -5,11 +5,9 @@
 
 @if (ShowOrganization)
 {
-    <button type="button"
-            class="pos-topbar__brand pos-topbar__brand--switch"
-            title="@OrgDisplayName"
-            aria-label="@BranchAriaLabel"
-            @onclick="OpenBranchSheetAsync">
+    <div class="pos-topbar__brand"
+         title="@OrgDisplayName"
+         aria-label="@BranchAriaLabel">
         <Avatar Name="@OrgDisplayName"
                 ImageUrl="@_organizationLogoUrl"
                 Size="AvatarSize.Sm"
@@ -19,17 +17,16 @@
             <span class="pos-topbar__title">@OrgDisplayName</span>
             @if (!string.IsNullOrWhiteSpace(BranchDisplayName))
             {
-                <span class="pos-topbar__subtitle pos-topbar__subtitle--visible">@BranchDisplayName ▼</span>
+                <span class="pos-topbar__subtitle pos-topbar__subtitle--visible">@BranchDisplayName</span>
             }
         </div>
-    </button>
-    <ShellBranchSwitcher @ref="_switcher" OnChanged="OnBranchChangedAsync" />
+    </div>
 }
 
 @code {
     /// <summary>
     /// When set, use this organization instead of the session's active organization
-    /// (e.g. preview on organization-select before bind).
+    /// (e.g. preview on workspace-select before bind).
     /// </summary>
     [Parameter] public Guid? OrganizationIdOverride { get; set; }
 
@@ -40,7 +37,6 @@
     private bool _logoResolved;
     private bool _logoInFlight;
     private CancellationTokenSource? _logoCts;
-    private ShellBranchSwitcher? _switcher;
     private string? _branchName;
     private Guid? _namedBranchId;
 
@@ -114,21 +110,6 @@
         _ = RefreshOrganizationLogoAsync();
         _ = RefreshBranchNameAsync();
         return InvokeAsync(StateHasChanged);
-    }
-
-    private async Task OpenBranchSheetAsync()
-    {
-        if (_switcher is not null)
-        {
-            await _switcher.OpenAsync();
-        }
-    }
-
-    private Task OnBranchChangedAsync()
-    {
-        _namedBranchId = null;
-        _branchName = null;
-        return RefreshBranchNameAsync();
     }
 
     private async Task RefreshBranchNameAsync()

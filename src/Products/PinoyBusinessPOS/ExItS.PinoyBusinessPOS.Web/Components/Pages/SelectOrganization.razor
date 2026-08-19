@@ -1,69 +1,8 @@
 @page "/select-organization"
-@attribute [Authorize]
-@inject OrgWebShellState Shell
-@inject OrgWebSessionHydrator Hydrator
-@inject IPlatformAccessClient Platform
 @inject NavigationManager Nav
-@inject IStringLocalizer<OrgWebResources> L
-
-<PageTitle>@L["SelectOrg_Title"]</PageTitle>
-<div class="org-page">
-<ExitsPageHeader Title="@L["SelectOrg_Title"]" Subtitle="@L["SelectOrg_Subtitle"]" />
-<OrgAlert Error="@_error" />
-<OrgLoading Active="_busy" />
-
-@if (Shell.Organizations.Count == 0)
-{
-    <OrgEmpty Title="No organization" Message="This account has no organization membership." />
-}
-else if (!_busy)
-{
-    <div class="org-table-wrap">
-        <table class="org-table">
-            <thead>
-                <tr><th>Organization</th><th>Role</th><th></th></tr>
-            </thead>
-            <tbody>
-                @foreach (var org in Shell.Organizations)
-                {
-                    <tr>
-                        <td>@org.DisplayName</td>
-                        <td><OrgStatusBadge Text="@org.MembershipRole" Tone="active" /></td>
-                        <td>
-                            <button type="button" class="ant-btn ant-btn-sm" disabled="@_busy" @onclick="() => SelectAsync(org.OrganizationId)">Open</button>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-}
-</div>
 
 @code {
-    private bool _busy;
-    private string? _error;
-
-    private async Task SelectAsync(Guid organizationId)
-    {
-        _busy = true;
-        _error = null;
-        try
-        {
-            var result = await Platform.SetOrganizationContextAsync(new SetOrganizationContextRequest(organizationId));
-            if (!result.IsSuccess)
-            {
-                _error = OrgWebUi.Error(result.Error);
-                return;
-            }
-
-            Shell.Ready = false;
-            await Hydrator.HydrateAsync();
-            Nav.NavigateTo("/overview");
-        }
-        finally
-        {
-            _busy = false;
-        }
-    }
+    /// <summary>Legacy route — unified workspace selection lives at /workspace-select (P28-WP14).</summary>
+    protected override void OnInitialized() =>
+        Nav.NavigateTo("/workspace-select", replace: true);
 }

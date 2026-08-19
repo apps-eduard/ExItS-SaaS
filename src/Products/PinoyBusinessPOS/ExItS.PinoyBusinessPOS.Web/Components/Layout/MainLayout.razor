@@ -189,7 +189,7 @@
                         <Overlay>
                             <Menu>
                                 <MenuItem OnClick='() => Nav.NavigateTo("/handoff/personal", forceLoad: true)'>Personal workspace</MenuItem>
-                                <MenuItem OnClick='() => Nav.NavigateTo("/select-organization")'>Switch organization</MenuItem>
+                                <MenuItem OnClick='() => Nav.NavigateTo("/workspace-select")'>@L["WorkspaceSelect_SwitchMenu"]</MenuItem>
                                 <MenuDivider />
                                 <MenuItem>
                                     <a href="/logout">Sign out</a>
@@ -216,8 +216,8 @@
                 <Space Direction="SpaceDirection.Vertical" Style="margin-top:1rem;">
                     @if (Shell.Organizations.Count > 0)
                     {
-                        <Button Type="@ButtonType.Primary" OnClick='() => Nav.NavigateTo("/select-organization")'>
-                            Select organization
+                        <Button Type="@ButtonType.Primary" OnClick='() => Nav.NavigateTo("/workspace-select")'>
+                            @L["WorkspaceSelect_Title"]
                         </Button>
                     }
                     else
@@ -394,11 +394,12 @@
         var path = Nav.ToBaseRelativePath(Nav.Uri);
         if (CurrentUser.Session?.OrganizationId is null
             && !path.StartsWith("login", StringComparison.OrdinalIgnoreCase)
+            && !path.StartsWith("workspace-select", StringComparison.OrdinalIgnoreCase)
             && !path.StartsWith("select-organization", StringComparison.OrdinalIgnoreCase)
             && !path.StartsWith("session/", StringComparison.OrdinalIgnoreCase)
             && Shell.Organizations.Count > 1)
         {
-            Nav.NavigateTo("/select-organization");
+            Nav.NavigateTo("/workspace-select");
         }
     }
 

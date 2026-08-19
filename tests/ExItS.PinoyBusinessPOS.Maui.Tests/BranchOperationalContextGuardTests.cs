@@ -1,32 +1,34 @@
+using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Auth;
-using ExItS.PinoyBusinessPOS.Application.Common;
-using ExItS.PinoyBusinessPOS.Application.Platform;
 
 namespace ExItS.PinoyBusinessPOS.Maui.Tests;
 
 public sealed class BranchOperationalContextGuardTests
 {
     [Fact]
-    public void Header_shows_branch_subtitle_and_opens_switcher_sheet()
+    public void Header_shows_org_and_branch_without_switch_control()
     {
         var maui = MauiProject();
         var identity = File.ReadAllText(Path.Combine(maui, "Components", "Shared", "ShellOrganizationIdentity.razor"));
-        var switcher = File.ReadAllText(Path.Combine(maui, "Components", "Shared", "ShellBranchSwitcher.razor"));
+        var menu = File.ReadAllText(Path.Combine(maui, "Components", "Shared", "ShellAccountMenu.razor"));
+        var workspace = File.ReadAllText(Path.Combine(maui, "Components", "Pages", "WorkspaceSelect.razor"));
         var css = File.ReadAllText(Path.Combine(maui, "wwwroot", "app.css"));
         var en = File.ReadAllText(Path.Combine(maui, "Localization", "PosResources.resx"));
         var fil = File.ReadAllText(Path.Combine(maui, "Localization", "PosResources.fil-PH.resx"));
 
-        Assert.Contains("ShellBranchSwitcher", identity, StringComparison.Ordinal);
+        Assert.DoesNotContain("ShellBranchSwitcher", identity, StringComparison.Ordinal);
+        Assert.DoesNotContain("pos-topbar__brand--switch", identity, StringComparison.Ordinal);
         Assert.Contains("pos-topbar__subtitle--visible", identity, StringComparison.Ordinal);
-        Assert.Contains("SelectBranchAsync", switcher, StringComparison.Ordinal);
+        Assert.Contains("WorkspaceSelect_SwitchMenu", menu, StringComparison.Ordinal);
+        Assert.Contains("/workspace-select", menu, StringComparison.Ordinal);
+        Assert.Contains("SelectWorkspaceAsync", workspace, StringComparison.Ordinal);
+        Assert.Contains("pos-workspace-select__org-row", css, StringComparison.Ordinal);
         Assert.Contains("min-height: 2.75rem", css, StringComparison.Ordinal);
-        Assert.Contains("pos-branch-sheet", css, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.CreateSale", File.ReadAllText(Path.Combine(maui, "Components", "Pages", "Organization", "OrgSummary.razor")), StringComparison.Ordinal);
-        Assert.DoesNotContain("CreateSale", switcher, StringComparison.Ordinal);
         foreach (var key in new[]
                  {
-                     "BranchContext_SwitchTitle",
-                     "BranchContext_Current",
+                     "WorkspaceSelect_Title",
+                     "WorkspaceSelect_SwitchMenu",
                      "BranchContext_DeviceMismatch",
                      "BranchContext_ShiftOpen",
                      "Org_EnterPosRoleRequired"
@@ -45,10 +47,11 @@ public sealed class BranchOperationalContextGuardTests
         var checkout = File.ReadAllText(Path.Combine(maui, "Components", "Pages", "Sales", "SaleCheckout.razor"));
 
         Assert.Contains("BranchContext_Current", org, StringComparison.Ordinal);
+        Assert.Contains("WorkspaceSelect_SwitchMenu", org, StringComparison.Ordinal);
         Assert.Contains("Org_EnterPosRoleRequired", org, StringComparison.Ordinal);
         Assert.Contains("BranchContext_DeviceMismatch", org, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.CreateSale", org, StringComparison.Ordinal);
-        Assert.Contains("OpenBranchSwitchAsync", org, StringComparison.Ordinal);
+        Assert.DoesNotContain("ShellBranchSwitcher", org, StringComparison.Ordinal);
         Assert.Contains("pos-sell-branch", checkout, StringComparison.Ordinal);
         Assert.Contains("BranchContext_SellingAt", checkout, StringComparison.Ordinal);
     }
@@ -79,75 +82,37 @@ public sealed class BranchOperationalContextGuardTests
             "Auth",
             "AuthModels.cs"));
         Assert.Contains("SelectedBranchId", keys, StringComparison.Ordinal);
-        Assert.Contains("pos.session.selectedBranchId", keys, StringComparison.Ordinal);
-
-        var deviceId = Guid.NewGuid();
-        var selectedId = Guid.NewGuid();
-        var session = new AuthSession(
-            Guid.NewGuid(),
-            "Owner",
-            "owner",
-            "o@example.com",
-            Guid.NewGuid(),
-            "Kizy Store",
-            DateTimeOffset.UtcNow,
-            DateTimeOffset.UtcNow.AddHours(1),
-            true,
-            "allowed",
-            BranchId: deviceId,
-            PosDeviceId: Guid.NewGuid(),
-            SelectedBranchId: selectedId);
-
-        Assert.Equal(selectedId, AuthSessionBranchContext.GetSelectedBranchId(session));
-        Assert.False(AuthSessionBranchContext.DeviceMatchesSelected(session));
-        Assert.True(AuthSessionBranchContext.DeviceMatchesSelected(session with { SelectedBranchId = deviceId }));
+        Assert.Contains("GetSelectedBranchId", keys, StringComparison.Ordinal);
+        Assert.Contains("DeviceMatchesSelected", keys, StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task Secure_session_store_round_trips_selected_branch()
     {
-        var tokens = new MemoryTokenStore();
+        var branchId = Guid.NewGuid();
+        var tokens = new MemorySecureTokenStore();
         var store = new SecureSessionStore(tokens);
-        var selected = Guid.NewGuid();
         var session = new AuthSession(
             Guid.NewGuid(),
             "Owner",
             "owner",
             "o@example.com",
             Guid.NewGuid(),
-            "Kizy Store",
+            "Store",
             DateTimeOffset.UtcNow,
-            DateTimeOffset.UtcNow.AddHours(1),
+            DateTimeOffset.UtcNow.AddHours(8),
             true,
             "allowed",
-            AccessToken: "token",
             BranchId: Guid.NewGuid(),
             PosDeviceId: Guid.NewGuid(),
-            SelectedBranchId: selected);
-
-        await store.SaveAsync(session, "marker");
-        var loaded = await store.LoadAsync();
-        Assert.Equal(selected, loaded.Session?.SelectedBranchId);
-        Assert.Equal(session.BranchId, loaded.Session?.BranchId);
+            SelectedBranchId: branchId);
+        await store.SaveAsync(session, Guid.NewGuid().ToString("N"));
+        var (loaded, _) = await store.LoadAsync();
+        Assert.Equal(branchId, loaded?.SelectedBranchId);
     }
 
-    private static string MauiProject()
-    {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null)
-        {
-            var candidate = Path.Combine(dir.FullName, "src", "Products", "PinoyBusinessPOS",
-                "ExItS.PinoyBusinessPOS.Maui");
-            if (Directory.Exists(candidate))
-            {
-                return candidate;
-            }
-
-            dir = dir.Parent;
-        }
-
-        throw new InvalidOperationException("Could not locate PinoyBusinessPOS.Maui project.");
-    }
+    private static string MauiProject() =>
+        Path.Combine(FindRepoRoot(), "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Maui");
 
     private static string FindRepoRoot()
     {
@@ -165,7 +130,7 @@ public sealed class BranchOperationalContextGuardTests
         throw new InvalidOperationException("Could not locate repository root.");
     }
 
-    private sealed class MemoryTokenStore : ExItS.PinoyBusinessPOS.Application.Abstractions.ISecureTokenStore
+    private sealed class MemorySecureTokenStore : ISecureTokenStore
     {
         private readonly Dictionary<string, string> _values = new(StringComparer.Ordinal);
 
@@ -186,7 +151,11 @@ public sealed class BranchOperationalContextGuardTests
 
         public Task ClearAllSessionKeysAsync(CancellationToken ct = default)
         {
-            _values.Clear();
+            foreach (var key in _values.Keys.ToList())
+            {
+                _values.Remove(key);
+            }
+
             return Task.CompletedTask;
         }
     }

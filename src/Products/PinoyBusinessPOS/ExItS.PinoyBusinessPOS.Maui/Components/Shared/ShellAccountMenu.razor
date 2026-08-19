@@ -36,11 +36,11 @@
                     <span>@L["Nav_Dashboard"]</span>
                 </button>
             }
-            @if (ShowOrganizationSwitcherItem)
+            @if (ShowWorkspaceSwitcherItem)
             {
-                <button type="button" class="pos-topbar__overflow-item" role="menuitem" @onclick="GoSwitchOrgAsync">
+                <button type="button" class="pos-topbar__overflow-item" role="menuitem" @onclick="GoSwitchWorkspaceAsync">
                     <span class="pos-topbar__overflow-icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
-                    <span>@OrganizationSwitcherLabel</span>
+                    <span>@L["WorkspaceSelect_SwitchMenu"]</span>
                 </button>
             }
             @if (ShowPersonalHome)
@@ -96,20 +96,21 @@
 
     private bool IsPersonalSession => CurrentUser.Session?.OrganizationId is null;
 
-    private bool IsOnOrganizationSelect
+    private bool IsOnWorkspaceSelect
     {
         get
         {
             var path = "/" + Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].Trim('/');
-            return path.StartsWith("/organization-select", StringComparison.OrdinalIgnoreCase);
+            return path.StartsWith("/workspace-select", StringComparison.OrdinalIgnoreCase)
+                   || path.StartsWith("/organization-select", StringComparison.OrdinalIgnoreCase);
         }
     }
 
     /// <summary>
-    /// Hide while already choosing an organization — the page itself is that flow.
+    /// Hide while already on workspace selection — the page itself is that flow.
     /// </summary>
-    private bool ShowOrganizationSwitcherItem =>
-        ShowSwitchOrganization && !IsOnOrganizationSelect;
+    private bool ShowWorkspaceSwitcherItem =>
+        ShowSwitchOrganization && !IsOnWorkspaceSelect;
 
     private bool ShowDashboardItem =>
         !IsPersonalSession
@@ -126,9 +127,6 @@
         && CurrentUser.HasPosAccess
         && _canLock
         && CurrentUser.IsAuthenticated;
-
-    private string OrganizationSwitcherLabel =>
-        IsPersonalSession ? L["OrgSelect_Title"] : L["Shell_ChangeOrganization"];
 
     public bool IsOpen => _open;
 
@@ -202,7 +200,7 @@
         await OfflineNav.NavigateAsync("/dashboard");
     }
 
-    private async Task GoSwitchOrgAsync()
+    private async Task GoSwitchWorkspaceAsync()
     {
         await CloseAsync();
         var orgName = CurrentUser.Session?.OrganizationDisplayName;
@@ -214,7 +212,7 @@
         }
 
         SellingMode.Clear();
-        Nav.NavigateTo("/organization-select");
+        Nav.NavigateTo("/workspace-select");
     }
 
     private async Task GoPersonalAsync()

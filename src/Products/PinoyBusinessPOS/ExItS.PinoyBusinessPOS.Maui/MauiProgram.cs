@@ -149,6 +149,8 @@ public static class MauiProgram
                 sp.GetRequiredService<IProtectedShellAccessPolicy>(),
                 sp.GetRequiredService<IOfflineOperationQueue>()));
         services.AddSingleton<SellingModeService>();
+        services.AddSingleton<IAccessibleBranchResolver, OwnerAccessibleBranchResolver>();
+        services.AddSingleton<IWorkspaceSelectionService, WorkspaceSelectionService>();
         services.AddSingleton<AuthenticationService>();
         services.AddSingleton<IAuthenticationService>(sp => sp.GetRequiredService<AuthenticationService>());
         services.AddSingleton<IPlatformAccessTokenRecovery>(sp => sp.GetRequiredService<AuthenticationService>());

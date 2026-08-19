@@ -1,0 +1,393 @@
+@page "/workspace-select"
+@layout Layout.AuthShell
+@implements IDisposable
+@using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Application.Auth
+@using ExItS.PinoyBusinessPOS.Application.Offline
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IWorkspaceSelectionService WorkspaceSelection
+@inject IPlatformAccessClient Platform
+@inject IOnboardingPreferenceStore Prefs
+@inject SellingModeService SellingMode
+@inject AuthShellIdentityState IdentityState
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject OnlineRequiredGuard OnlineRequired
+@inject SaleCartService Cart
+@inject IStringLocalizer<PosResources> L
+
+<Page>
+    @if (_loading)
+    {
+        <Stack Align="StackAlign.Center" Gap="3">
+            <Spinner />
+            <span>@L["Common_Loading"]</span>
+        </Stack>
+    }
+    else if (!_authenticated)
+    {
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else if (_workspaces.Count == 0)
+    {
+        <div class="pos-workspace-select-empty">
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
+            }
+            <EmptyState Title="@L["WorkspaceSelect_NoneTitle"]" Message="@L["WorkspaceSelect_NoAccessibleBranch"]" />
+            <div class="pos-action-grid pos-action-grid--single pos-workspace-select-empty__actions" role="group">
+                <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="GoPersonalAsync">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("home")</span>
+                    <span class="pos-action-tile__label">@L["Personal_HomeTitle"]</span>
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <header class="pos-workspace-select__header">
+            <h1 class="pos-workspace-select__title">@L["WorkspaceSelect_Title"]</h1>
+            <p class="pos-workspace-select__subtitle">@L["WorkspaceSelect_Subtitle"]</p>
+        </header>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
+        }
+
+        <div class="pos-workspace-select__list" role="list">
+            @foreach (var org in _workspaces)
+            {
+                var expanded = _expandedOrgId == org.OrganizationId;
+                var branchCount = org.Branches.Count;
+                <div class="pos-workspace-select__org" role="listitem">
+                    <button type="button"
+                            class="pos-workspace-select__org-row"
+                            aria-expanded="@expanded"
+                            disabled="@_busy"
+                            @onclick="() => ToggleOrgAsync(org.OrganizationId)">
+                        <Avatar Name="@org.DisplayName"
+                                ImageUrl="@OrgLogo(org.OrganizationId)"
+                                Size="AvatarSize.Md"
+                                Shape="AvatarShape.SoftSquare"
+                                AriaLabel="@org.DisplayName" />
+                        <span class="pos-workspace-select__org-body">
+                            <span class="pos-workspace-select__org-name">@org.DisplayName</span>
+                            <span class="pos-workspace-select__org-meta pos-muted">
+                                @string.Format(L["WorkspaceSelect_BranchCount"].Value, branchCount)
+                            </span>
+                        </span>
+                        <span class="pos-workspace-select__org-chevron" aria-hidden="true">@(expanded ? "⌄" : "›")</span>
+                    </button>
+                    @if (expanded)
+                    {
+                        <ul class="pos-workspace-select__branches" role="list">
+                            @foreach (var branch in org.Branches)
+                            {
+                                var current = IsCurrentWorkspace(org.OrganizationId, branch.BranchId);
+                                <li role="listitem">
+                                    <button type="button"
+                                            class="pos-workspace-select__branch-row @(current ? "pos-workspace-select__branch-row--current" : null)"
+                                            disabled="@_busy"
+                                            @onclick="() => BeginSelectWorkspaceAsync(org.OrganizationId, branch.BranchId)">
+                                        <span class="pos-workspace-select__branch-check" aria-hidden="true">@(current ? "✓" : "")</span>
+                                        <span class="pos-workspace-select__branch-body">
+                                            <span class="pos-workspace-select__branch-name">@branch.Name</span>
+                                            <span class="pos-workspace-select__branch-meta pos-muted">@BranchSecondary(branch)</span>
+                                        </span>
+                                        <span class="pos-workspace-select__branch-chevron" aria-hidden="true">›</span>
+                                    </button>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            }
+        </div>
+
+        @if (_busy)
+        {
+            <Stack Align="StackAlign.Center" Gap="2">
+                <Spinner />
+                <span>@L["Common_Loading"]</span>
+            </Stack>
+        }
+    }
+</Page>
+
+<ConfirmDialog @bind-Visible="_discardCartOpen"
+               Title="@L["WorkspaceSelect_DiscardCartTitle"]"
+               Message="@L["WorkspaceSelect_DiscardCartMessage"]"
+               ConfirmLabel="@L["WorkspaceSelect_DiscardAndSwitch"]"
+               CancelLabel="@L["WorkspaceSelect_ContinueSale"]"
+               Danger="true"
+               OnConfirm="ConfirmDiscardAndSwitchAsync"
+               OnCancel="CancelPendingSwitch" />
+
+@code {
+    private bool _loading = true;
+    private bool _busy;
+    private bool _authenticated;
+    private string? _error;
+    private Guid? _expandedOrgId;
+    private IReadOnlyList<AccessibleOrganizationWorkspace> _workspaces = [];
+    private readonly Dictionary<Guid, string?> _orgLogos = new();
+    private Guid? _pendingOrgId;
+    private Guid? _pendingBranchId;
+    private bool _discardCartOpen;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    public void Dispose() => IdentityState.Clear();
+
+    private string? OrgLogo(Guid organizationId) =>
+        _orgLogos.TryGetValue(organizationId, out var url) ? url : null;
+
+    private bool IsCurrentWorkspace(Guid organizationId, Guid branchId)
+    {
+        var session = CurrentUser.Session;
+        return session?.OrganizationId == organizationId
+               && AuthSessionBranchContext.GetSelectedBranchId(session) == branchId;
+    }
+
+    private string BranchSecondary(AccessibleWorkspaceBranch branch)
+    {
+        if (branch.IsPrimary && string.IsNullOrWhiteSpace(branch.SecondaryLine))
+        {
+            return L["WorkspaceSelect_PrimaryBranch"].Value;
+        }
+
+        return branch.SecondaryLine;
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            if (!CurrentUser.IsAuthenticated)
+            {
+                var restore = await Auth.RestoreSessionAsync();
+                if (!restore.Succeeded)
+                {
+                    _authenticated = false;
+                    IdentityState.Clear();
+                    return;
+                }
+            }
+
+            _authenticated = CurrentUser.IsAuthenticated;
+            if (!_authenticated || CurrentUser.Session is null)
+            {
+                IdentityState.Clear();
+                return;
+            }
+
+            if (CurrentUser.Session.OrganizationId is null
+                && !string.Equals(CurrentUser.Session.AccountClass, "Organization", StringComparison.OrdinalIgnoreCase))
+            {
+                _ = await Auth.EnsureOrganizationAccountProfileAsync();
+            }
+
+            var plan = await WorkspaceSelection.ResolveRoutingPlanAsync(CurrentUser.Session.UserId);
+            if (plan.Outcome == WorkspaceRoutingOutcome.AutoSelect
+                && plan.AutoOrganizationId is Guid autoOrg
+                && plan.AutoBranchId is Guid autoBranch
+                && CurrentUser.Session.OrganizationId is null)
+            {
+                var auto = await Auth.SelectWorkspaceAsync(autoOrg, autoBranch);
+                if (auto.Succeeded)
+                {
+                    await FinishNavigationAsync();
+                    return;
+                }
+
+                _error = L[auto.SafeMessageKey ?? "Access_Denied"];
+            }
+
+            _workspaces = await WorkspaceSelection.ListWorkspacesAsync(CurrentUser.Session.UserId);
+            ResolveExpandedOrganization();
+            PublishTopBarPreview();
+        }
+        finally
+        {
+            _loading = false;
+        }
+
+        await InvokeAsync(StateHasChanged);
+        if (_authenticated && _workspaces.Count > 0)
+        {
+            _ = LoadOrganizationLogosAsync();
+        }
+    }
+
+    private void ResolveExpandedOrganization()
+    {
+        if (_workspaces.Count == 0)
+        {
+            _expandedOrgId = null;
+            return;
+        }
+
+        if (CurrentUser.Session?.OrganizationId is Guid active
+            && _workspaces.Any(w => w.OrganizationId == active))
+        {
+            _expandedOrgId = active;
+            return;
+        }
+
+        _expandedOrgId = _workspaces[0].OrganizationId;
+    }
+
+    private Task ToggleOrgAsync(Guid organizationId)
+    {
+        _expandedOrgId = _expandedOrgId == organizationId ? null : organizationId;
+        var org = _workspaces.FirstOrDefault(w => w.OrganizationId == organizationId);
+        if (org is not null)
+        {
+            IdentityState.SetOrganizationPreview(
+                org.OrganizationId,
+                org.DisplayName,
+                membershipRole: null,
+                orgSelectChrome: true);
+        }
+
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private void PublishTopBarPreview()
+    {
+        var org = _workspaces.FirstOrDefault(w => w.OrganizationId == _expandedOrgId)
+                  ?? _workspaces.FirstOrDefault();
+        if (org is null)
+        {
+            IdentityState.Clear();
+            return;
+        }
+
+        IdentityState.SetOrganizationPreview(
+            org.OrganizationId,
+            org.DisplayName,
+            membershipRole: null,
+            orgSelectChrome: true);
+    }
+
+    private async Task LoadOrganizationLogosAsync()
+    {
+        foreach (var org in _workspaces)
+        {
+            try
+            {
+                var result = await Platform.GetOrganizationAsync(org.OrganizationId);
+                var logo = result.IsSuccess ? result.Data?.Branding?.LogoUrl : null;
+                _orgLogos[org.OrganizationId] = string.IsNullOrWhiteSpace(logo) ? null : logo.Trim();
+            }
+            catch
+            {
+                _orgLogos[org.OrganizationId] = null;
+            }
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task BeginSelectWorkspaceAsync(Guid organizationId, Guid branchId)
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        if (!await OnlineRequired.EnsureOnlineForActionAsync(
+                PosOfflineActionKeys.SwitchOrganization,
+                CurrentUser.Session?.OrganizationDisplayName))
+        {
+            return;
+        }
+
+        if (!Cart.IsEmpty)
+        {
+            _pendingOrgId = organizationId;
+            _pendingBranchId = branchId;
+            _discardCartOpen = true;
+            return;
+        }
+
+        await ExecuteSelectWorkspaceAsync(organizationId, branchId);
+    }
+
+    private Task CancelPendingSwitch()
+    {
+        _pendingOrgId = null;
+        _pendingBranchId = null;
+        _discardCartOpen = false;
+        return Task.CompletedTask;
+    }
+
+    private async Task ConfirmDiscardAndSwitchAsync()
+    {
+        _discardCartOpen = false;
+        if (_pendingOrgId is Guid org && _pendingBranchId is Guid branch)
+        {
+            Cart.Clear();
+            await ExecuteSelectWorkspaceAsync(org, branch);
+        }
+
+        _pendingOrgId = null;
+        _pendingBranchId = null;
+    }
+
+    private async Task ExecuteSelectWorkspaceAsync(Guid organizationId, Guid branchId)
+    {
+        _busy = true;
+        _error = null;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            SellingMode.Clear();
+            var result = await Auth.SelectWorkspaceAsync(organizationId, branchId);
+            if (!result.Succeeded)
+            {
+                _error = L[result.SafeMessageKey ?? "Access_Denied"];
+                return;
+            }
+
+            await FinishNavigationAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task FinishNavigationAsync()
+    {
+        await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.AccessConfirm));
+        await Prefs.SetOnboardingCompletedAsync(true);
+        IdentityState.Clear();
+
+        if (CurrentUser.Session is not { HasPosAccess: true })
+        {
+            Nav.NavigateTo(RoleHomeResolver.OrgEssentials, replace: true);
+            return;
+        }
+
+        Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+    }
+
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+
+    private async Task GoPersonalAsync()
+    {
+        SellingMode.Clear();
+        IdentityState.Clear();
+        var result = await Auth.SwitchToPersonalAsync();
+        if (result.Succeeded)
+        {
+            Nav.NavigateTo(RoleHomeResolver.PersonalHome, replace: true);
+        }
+    }
+}

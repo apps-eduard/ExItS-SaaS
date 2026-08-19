@@ -870,6 +870,24 @@
   <data name="SelectOrg_Subtitle" xml:space="preserve">
     <value>Choose which business workspace to manage.</value>
   </data>
+  <data name="WorkspaceSelect_Title" xml:space="preserve">
+    <value>Choose workspace</value>
+  </data>
+  <data name="WorkspaceSelect_Subtitle" xml:space="preserve">
+    <value>Select the organization and branch you want to manage.</value>
+  </data>
+  <data name="WorkspaceSelect_SwitchMenu" xml:space="preserve">
+    <value>Switch workspace</value>
+  </data>
+  <data name="WorkspaceSelect_BranchCount" xml:space="preserve">
+    <value>{0} branches</value>
+  </data>
+  <data name="WorkspaceSelect_NoneTitle" xml:space="preserve">
+    <value>No workspace available</value>
+  </data>
+  <data name="WorkspaceSelect_NoAccessibleBranch" xml:space="preserve">
+    <value>No active branch is available for your organizations yet.</value>
+  </data>
   <data name="SalesDocuments_Subtitle" xml:space="preserve">
     <value>Review how sales documents currently work for this business.</value>
   </data>

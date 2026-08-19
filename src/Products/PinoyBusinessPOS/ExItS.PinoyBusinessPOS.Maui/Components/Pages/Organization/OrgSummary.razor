@@ -105,7 +105,7 @@ else
                         <dt>@L["BranchContext_Current"]</dt>
                         <dd class="pos-org__branch-dd">
                             <span class="pos-org__chip pos-org__chip--ok">@_currentBranchName</span>
-                            <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Sm" OnClick="OpenBranchSwitchAsync">@L["BranchContext_Switch"]</Button>
+                            <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Sm" OnClick="GoWorkspaceSelect">@L["WorkspaceSelect_SwitchMenu"]</Button>
                         </dd>
                     </div>
                 </dl>
@@ -211,7 +211,6 @@ else
 
             <p class="pos-org__footnote pos-muted">@L["Org_WebAdminReminder"]</p>
         </Page>
-        <ShellBranchSwitcher @ref="_branchSwitcher" OnChanged="OnBranchChangedAsync" />
     </div>
 }
 
@@ -317,7 +316,6 @@ else
     private bool _deviceBranchMismatch;
     private string _currentBranchName = "—";
     private string _deviceBranchName = "—";
-    private ShellBranchSwitcher? _branchSwitcher;
     private PlatformOrganizationDto? _org;
     private PlatformSubscriptionDto? _subscription;
     private PlatformEntitlementSnapshotDto? _entitlement;
@@ -548,15 +546,7 @@ else
         }
     }
 
-    private async Task OpenBranchSwitchAsync()
-    {
-        if (_branchSwitcher is not null)
-        {
-            await _branchSwitcher.OpenAsync();
-        }
-    }
-
-    private Task OnBranchChangedAsync() => RefreshBranchContextAsync();
+    private void GoWorkspaceSelect() => Nav.NavigateTo("/workspace-select");
 
     private void GoDeviceRegister() => Nav.NavigateTo("/devices/register");
 

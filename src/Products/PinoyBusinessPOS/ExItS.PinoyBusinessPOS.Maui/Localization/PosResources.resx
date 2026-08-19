@@ -10524,6 +10524,39 @@
   <data name="BranchContext_SellingAt" xml:space="preserve">
     <value>Selling at</value>
   </data>
+  <data name="WorkspaceSelect_Title" xml:space="preserve">
+    <value>Choose workspace</value>
+  </data>
+  <data name="WorkspaceSelect_Subtitle" xml:space="preserve">
+    <value>Select the organization and branch you want to manage.</value>
+  </data>
+  <data name="WorkspaceSelect_SwitchMenu" xml:space="preserve">
+    <value>Switch workspace</value>
+  </data>
+  <data name="WorkspaceSelect_BranchCount" xml:space="preserve">
+    <value>{0} branches</value>
+  </data>
+  <data name="WorkspaceSelect_PrimaryBranch" xml:space="preserve">
+    <value>Primary branch</value>
+  </data>
+  <data name="WorkspaceSelect_NoneTitle" xml:space="preserve">
+    <value>No workspace available</value>
+  </data>
+  <data name="WorkspaceSelect_NoAccessibleBranch" xml:space="preserve">
+    <value>No active branch is available for your organizations yet.</value>
+  </data>
+  <data name="WorkspaceSelect_DiscardCartTitle" xml:space="preserve">
+    <value>Discard current sale?</value>
+  </data>
+  <data name="WorkspaceSelect_DiscardCartMessage" xml:space="preserve">
+    <value>Finish or discard the current sale before switching workspace.</value>
+  </data>
+  <data name="WorkspaceSelect_DiscardAndSwitch" xml:space="preserve">
+    <value>Discard and switch</value>
+  </data>
+  <data name="WorkspaceSelect_ContinueSale" xml:space="preserve">
+    <value>Continue sale</value>
+  </data>
   <data name="Org_EnterPosRoleRequired" xml:space="preserve">
     <value>Organization management does not include POS selling. Assign a cashier or owner POS selling role to enter POS.</value>
   </data>

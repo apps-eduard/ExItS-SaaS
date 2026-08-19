@@ -111,7 +111,7 @@ public sealed class MauiListLoadPerformanceGuardTests
         var signIn = File.ReadAllText(Path.Combine(MauiPages(), "SignIn.razor"));
         var navigate = ExtractMethod(signIn, "NavigateAfterSignInAsync");
         Assert.Contains("ListEligibleOrganizationsAsync", navigate, StringComparison.Ordinal);
-        Assert.Contains("Nav.NavigateTo(\"/organization-select\", replace: true)", navigate, StringComparison.Ordinal);
+        Assert.Contains("Nav.NavigateTo(\"/workspace-select\", replace: true)", navigate, StringComparison.Ordinal);
         Assert.DoesNotContain("SelectOrganizationAsync", navigate, StringComparison.Ordinal);
         Assert.DoesNotContain("CancellationTokenSource(TimeSpan.FromSeconds(20))", navigate, StringComparison.Ordinal);
         Assert.DoesNotContain("Gate.ResolveStartRouteAsync", navigate, StringComparison.Ordinal);
@@ -128,14 +128,13 @@ public sealed class MauiListLoadPerformanceGuardTests
     }
 
     [Fact]
-    public void Organization_select_paints_before_auto_bind_and_auth_shell_quiets_header_http()
+    public void Workspace_select_paints_before_auto_bind_and_auth_shell_quiets_header_http()
     {
-        var orgSelect = File.ReadAllText(Path.Combine(MauiPages(), "OrganizationSelect.razor"));
-        var load = ExtractMethod(orgSelect, "LoadAsync");
-        var loadingFalse = load.IndexOf("_loading = false;", StringComparison.Ordinal);
-        var autoEnter = load.IndexOf("await SelectAsAsync(", StringComparison.Ordinal);
-        Assert.True(loadingFalse >= 0, "LoadAsync must clear the full-page spinner.");
-        Assert.True(autoEnter > loadingFalse, "Single-org auto-bind must not hold the Loading... spinner.");
+        var workspaceSelect = File.ReadAllText(Path.Combine(MauiPages(), "WorkspaceSelect.razor"));
+        var load = ExtractMethod(workspaceSelect, "LoadAsync");
+        Assert.Contains("_loading = false;", load, StringComparison.Ordinal);
+        Assert.Contains("WorkspaceRoutingOutcome.AutoSelect", load, StringComparison.Ordinal);
+        Assert.Contains("SelectWorkspaceAsync", load, StringComparison.Ordinal);
         Assert.Contains("await InvokeAsync(StateHasChanged);", load, StringComparison.Ordinal);
 
         var auth = File.ReadAllText(Path.Combine(
@@ -148,6 +147,7 @@ public sealed class MauiListLoadPerformanceGuardTests
             "Layout",
             "AuthShell.razor"));
         Assert.Contains("QuietHeaderNetwork", auth, StringComparison.Ordinal);
+        Assert.Contains("workspace-select", auth, StringComparison.Ordinal);
         Assert.Contains("ShowNotifications=\"@(quietHeaderNetwork ? false : (bool?)null)\"", auth, StringComparison.Ordinal);
         Assert.Contains("IdentityState.UseOrgSelectChrome ? null : EffectiveOrgId", auth, StringComparison.Ordinal);
     }

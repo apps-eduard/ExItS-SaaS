@@ -185,7 +185,7 @@
 
     private async Task SwitchOrgAsync(Guid organizationId)
     {
-        // Personal → Organization always goes through Select Organization (role / workspace chooser).
+        // Personal → Organization always goes through unified workspace selection.
         if (IsPersonalActive)
         {
             if (!await OnlineRequired.EnsureOnlineForActionAsync(PosOfflineActionKeys.SwitchOrganization))
@@ -194,7 +194,7 @@
             }
 
             SellingMode.Clear();
-            Nav.NavigateTo("/organization-select", replace: true);
+            Nav.NavigateTo("/workspace-select", replace: true);
             return;
         }
 
