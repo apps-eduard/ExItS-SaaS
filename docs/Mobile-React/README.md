@@ -9,12 +9,13 @@ It does **not** authorize implementation.
 
 ## Status
 
-- Planning direction: documented; AMEND-01, AMEND-02, and AMEND-03 applied; waiting for Product Owner + ChatGPT final review
+- Planning documentation: **FINAL APPROVED** (DOC-00 … DOC-08; AMEND-01, AMEND-02, AMEND-03)
 - React mobile implementation: **NOT AUTHORIZED**
 - MAUI retirement: **NOT AUTHORIZED**
 - PWA production rollout: **NOT AUTHORIZED**
 - Capacitor production rollout: **NOT AUTHORIZED**
-- Merge to `main`: **NOT AUTHORIZED**
+- Merge to `main`: **AWAITING PRODUCT OWNER AUTHORIZATION**
+- MOBILE-D-060: **OPEN**
 - Current MAUI, Organization Web, Personal Web, Platform APIs, and POS APIs: **unchanged**
 
 ## Worktree
@@ -38,6 +39,7 @@ It does **not** authorize implementation.
 - [Reports/MOBILE-REACT-DOC-AMEND-01-auth-connectivity-diagnostics.md](Reports/MOBILE-REACT-DOC-AMEND-01-auth-connectivity-diagnostics.md) — AMEND-01 PIN/lock/connectivity/diagnostics
 - [Reports/MOBILE-REACT-DOC-AMEND-02-language-theme-defaults.md](Reports/MOBILE-REACT-DOC-AMEND-02-language-theme-defaults.md) — AMEND-02 `en` + System defaults
 - [Reports/MOBILE-REACT-DOC-AMEND-03-smart-workspace-product-context.md](Reports/MOBILE-REACT-DOC-AMEND-03-smart-workspace-product-context.md) — AMEND-03 smart workspace + product launch context
+- [Reports/MOBILE-REACT-DOC-APPROVAL-record.md](Reports/MOBILE-REACT-DOC-APPROVAL-record.md) — Product Owner documentation approval (merge still awaiting authorization)
 
 ## Canonical rule
 

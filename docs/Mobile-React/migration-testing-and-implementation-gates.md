@@ -308,11 +308,11 @@ A human Product Owner (or named visual reviewer) must accept or reject the check
 
 ## 6. Implementation gates
 
-Every gate below requires **explicit Product Owner approval** where the table says PO. Completing Mobile-React documentation (Gate A materials) **does not** authorize implementation.
+Every gate below requires **explicit Product Owner approval** where the table says PO. Completing or approving Mobile-React documentation (Gate A materials) **does not** authorize implementation.
 
 | Gate | Name | Unlocks | Requires (planning) | PO |
 |---|---|---|---|---|
-| **A** | Documentation approved | Permission to treat this doc set as the planning baseline | DOC-01…DOC-08 (or successor) reviewed; contradictions recorded | Yes |
+| **A** | Documentation approved | Permission to treat this doc set as the planning baseline | DOC-01…DOC-08 plus AMEND-01…AMEND-03 reviewed; contradictions recorded | Yes — **planning baseline approved 2026-08-19**. Does **not** unlock C–K or merge. |
 | **B** | Backend / client gap plan | Known API/auth/offline gaps scheduled | Written gaps vs current Platform/POS APIs; no silent new endpoints as “frontend work” | Yes |
 | **C** | React scaffold authorization | Stage 1 — create `ExItS.PinoyBusinessPOS.Client` | Gate A; must not touch MAUI retirement; CI typecheck/lint/Vitest smoke | Yes |
 | **D** | PWA foundation | Stage 2 — browser/PWA shell | Gate C; DOC-04 cache vs LocalStore; **production PWA still separate** unless PO says ship | Yes |
@@ -328,11 +328,13 @@ Locked today:
 
 | Item | Status |
 |---|---|
+| Gate A — documentation as planning baseline | **APPROVED** (does not unlock implementation or merge) |
 | Gate C — React implementation | **NOT AUTHORIZED** |
 | Gate D production PWA | **NOT AUTHORIZED** |
 | Gate H Capacitor production | **NOT AUTHORIZED** |
 | Gate J MAUI retirement | **NOT AUTHORIZED** |
 | Gate K iOS native | **NOT AUTHORIZED** (later) |
+| Merge to `main` | **AWAITING PRODUCT OWNER AUTHORIZATION** |
 
 ---
 

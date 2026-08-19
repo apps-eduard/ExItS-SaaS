@@ -6,7 +6,7 @@ Target worktree branch: `docs/mobile-react-foundation`
 
 Baseline origin/main SHA: `5a9be9417b7a2217227ae93e9280102992861615`
 
-Documentation: `COMPLETE FOR PRODUCT OWNER + CHATGPT REVIEW` (AMEND-01, AMEND-02, AMEND-03 applied)
+Documentation: `FINAL APPROVED` (DOC-00 … DOC-08; AMEND-01, AMEND-02, AMEND-03)
 
 React implementation: `NOT AUTHORIZED`
 
@@ -16,7 +16,7 @@ Capacitor implementation: `NOT AUTHORIZED`
 
 MAUI retirement: `NOT AUTHORIZED`
 
-Merge: `NOT AUTHORIZED`
+Merge: `AWAITING PRODUCT OWNER AUTHORIZATION`
 
 Existing MAUI status: `Retained / Unmodified`
 
@@ -34,7 +34,9 @@ Capacitor implementation presence: `Absent`
 
 PWA production presence: `Absent`
 
-Queue state: `STOPPED FOR PRODUCT OWNER + CHATGPT FINAL REVIEW`
+Queue state: `DOCUMENTATION FINAL APPROVED — MERGE AWAITING PRODUCT OWNER AUTHORIZATION`
+
+MOBILE-D-060: `OPEN`
 
 ## DOC queue
 
@@ -48,10 +50,11 @@ Queue state: `STOPPED FOR PRODUCT OWNER + CHATGPT FINAL REVIEW`
 | MOBILE-REACT-DOC-05 | Complete | Offline/outbox/idempotency audit, cash-only current checkout queue, auth/security, conflict policy |
 | MOBILE-REACT-DOC-06 | Complete | Device/payment adapters, HID vs camera vs QR, no current printer/NFC/terminal, capability matrix |
 | MOBILE-REACT-DOC-07 | Complete | Coexistence stages 0–8, feature parity fields, testing layers, visual checkpoint, gates A–K |
-| MOBILE-REACT-DOC-08 | Complete | Consistency audit, canonical cross-references, final closeout; stop for Product Owner + ChatGPT review |
-| MOBILE-REACT-DOC-AMEND-01 | Complete | Trusted-device PIN UX, Lock/Sign Out/Remove, connectivity messages, Copy Diagnostics |
-| MOBILE-REACT-DOC-AMEND-02 | Complete | Canonical `en` default, `fil-PH` secondary, System default theme |
-| MOBILE-REACT-DOC-AMEND-03 | Complete | Smart workspace + product context: skip chooser when one valid choice; Primary/Main-only auto-enter; last-used highlight without silent auto-entry; offline PIN grant-bound; future product-aware launch; AppTopBar shared context |
+| MOBILE-REACT-DOC-08 | Complete | Consistency audit, canonical cross-references, final closeout |
+| MOBILE-REACT-DOC-AMEND-01 | Approved | Trusted-device PIN UX, Lock/Sign Out/Remove, connectivity messages, Copy Diagnostics |
+| MOBILE-REACT-DOC-AMEND-02 | Approved | Canonical `en` default, `fil-PH` secondary, System default theme |
+| MOBILE-REACT-DOC-AMEND-03 | Approved | Smart workspace + product context; AppTopBar shared context |
+| Product Owner approval | Recorded | [MOBILE-REACT-DOC-APPROVAL-record.md](Reports/MOBILE-REACT-DOC-APPROVAL-record.md) |
 
 ## Authorization gates (locked)
 
@@ -61,9 +64,11 @@ Queue state: `STOPPED FOR PRODUCT OWNER + CHATGPT FINAL REVIEW`
 | PWA implementation / production rollout | **NOT AUTHORIZED** |
 | Capacitor implementation / production rollout | **NOT AUTHORIZED** |
 | MAUI retirement | **NOT AUTHORIZED** |
-| Merge to `main` | **NOT AUTHORIZED** |
-| Documentation completion | Does **not** authorize any of the above |
+| Merge to `main` | **AWAITING PRODUCT OWNER AUTHORIZATION** |
+| Documentation approval | Does **not** authorize React, PWA, Capacitor, MAUI retirement, or merge |
 
-Wait for Product Owner + ChatGPT **final** review. Do not scaffold React, add Capacitor, add a PWA service worker, add Node dependencies, modify MAUI, or merge.
+Do not scaffold React, add Capacitor, add a PWA service worker, add Node dependencies, or modify MAUI.
 
-AMEND-01, AMEND-02, and AMEND-03 do **not** authorize implementation. Do not rewrite [DOC-08 closeout](Reports/MOBILE-REACT-DOC-08-final-closeout.md) as if it originally contained these decisions.
+Do not merge until the Product Owner explicitly authorizes merge to `main`.
+
+MOBILE-D-060 remains **Open**. Do not rewrite [DOC-08 closeout](Reports/MOBILE-REACT-DOC-08-final-closeout.md) as if it originally contained AMEND decisions or this approval.
