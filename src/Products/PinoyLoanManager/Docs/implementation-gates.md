@@ -65,16 +65,21 @@ Requires before production-grade financial implementation:
 
 Requires:
 
-- portfolio Production-readiness gates (legal, hosted deployment, observability, etc.)
-- authentication residuals: MFA enforcement, step-up authentication, enterprise SSO/AD, outbound auth email (**R-091 Closed for Phase 13 scope** — residuals do not reopen R-091)
+- portfolio Production-readiness gates
+- MFA/step-up authentication where required by policy
+- enterprise SSO/AD if required by customer deployment
+- production auth notification delivery
 - legal/compliance validation (**PLM-D-00-11**)
-- privacy/retention approval
-- hosted deployment implementation (not documented as implemented)
+- privacy/retention approval (numeric periods where jurisdiction requires)
+- hosted infrastructure implementation
 - backup/restore/DR
-- observability
+- observability implementation (tenant/product/org/correlation-aware)
 - load/capacity evidence
 - incident/release operations
-- device validation where applicable
+- notification-provider selection and production delivery
+- device validation for field/collector apps where applicable
+
+Authentication residuals above are **not R-091** — **R-091 Closed for Phase 13 scope**; residuals do not reopen R-091.
 
 ---
 

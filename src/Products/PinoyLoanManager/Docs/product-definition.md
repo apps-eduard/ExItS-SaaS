@@ -8,13 +8,13 @@
 | Product name | Pinoy Loan Manager |
 | Platform product code | `pinoy-loan-manager` (**Closed**, PLM-D-00-01) |
 | Docs root | `src/Products/PinoyLoanManager/Docs/` |
-| Status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01–03 recorded; no implementation |
+| Status | PLM MVP Product planning documentation complete (PLM-DOC-01 through PLM-DOC-11); **PLM-D-00-10 Closed / Product Owner Accepted**; implementation absent and paused |
 | Last updated | 2026-08-19 |
 | Implementation present | No |
 
 ## Purpose and users
 
-- Purpose: Independently subscribed ExItS product for **lending operations**. Two origination paths are agreed: Traditional Loan and Quick Loan. After disbursement both converge into one core Loan model. Detail: [Product/lending-operating-model.md](Product/lending-operating-model.md). Money terminology, MVP calculation methods, fee model, rounding (**PLM-D-00-12 Closed**), payment allocation, schedule calendar, delinquency, penalties, and maturity are recorded in PLM-DOC-02 and PLM-DOC-03. Default rates and penalty amounts remain undefined. Early-settlement rebate remains **Open** (PLM-D-00-08 remainder).
+- Purpose: Independently subscribed ExItS product for **lending operations**. Two origination paths are agreed: Traditional Loan and Quick Loan. After disbursement both converge into one core Loan model. Detail: [Product/lending-operating-model.md](Product/lending-operating-model.md). Money terminology, MVP calculation methods, fee model, rounding (**PLM-D-00-12 Closed**), payment allocation, schedule calendar, delinquency, penalties, maturity, early settlement, and principal prepayment are recorded (PLM-DOC-02–04, **ADR-007**). Default organization **rates** and penalty **amounts** remain undefined (organization-configured). Restructuring, Write-Off, and Recovery product rules are **Closed for MVP** (PLM-DOC-06).
 - Target organizations: Independently subscribed ExItS lending organizations. Multi-branch support is intended from the beginning; a single-branch organization may use one default branch.
 - Target users / jobs: Organization staff via `plm.owner` / `plm.manager` / `plm.cashier` / `plm.collector` presets backed by explicit grants (**PLM Authorization Policy v1**; PLM-D-00-06 Closed for MVP). Borrowers use ExItS Personal as a presentation surface only. Do not hard-code authorization to role names. Do not copy PinoyBusinessPOS grant sets.
 
@@ -36,7 +36,7 @@ ExItS Platform
 | Catalog / plans / subscription | Platform | **Required:** independent subscription for this product only. Product code `pinoy-loan-manager` is **approved** for future catalog registration (PLM-D-00-01 Closed). Catalog registration itself is not performed in this package. |
 | Entitlements / commercial access | Platform facts | **DECISION:** D-P12-03 commercial-state transport — do not invent. Platform entitlement does not replace Loan product-local authorization. |
 | SaaS billing payments | Platform | Never store product operational money in Platform SaaS billing. |
-| Operational workflows / roles / money | **This product** | Not implemented. Role presets + grant catalog v1 recorded (**PLM-D-00-06 Closed for MVP**). Cashier Session and collector cash accountability recorded; ledger **schema** open (PLM-D-00-07 remainder). |
+| Operational workflows / roles / money | **This product** | Not implemented. Role presets + grant catalog v1 recorded (**PLM-D-00-06 Closed for MVP**). Operational financial model **Closed for MVP Product policy** (**PLM-D-00-07**); persistence, journal/export, and external GL are implementation work |
 
 ## Boundaries (checklist)
 
@@ -46,7 +46,7 @@ Recorded as **required intent**. Nothing below is implemented.
 - [x] Separate logical database name `ExItS_PinoyLoanManager` (**PLM-D-00-02** Closed for name). Database, schema, connections, partitions, stamps, backups, and migrations are **not** created.
 - [x] No direct Platform table reads; no cross-product FKs — required intent
 - [x] Product-local roles and grants defined for MVP — **PLM Authorization Policy v1** (**PLM-D-00-06 Closed for MVP**)
-- [ ] Operational money defined separately from SaaS billing — ownership, fee model, Net Proceeds, allocation, and precision recorded (PLM-DOC-02); subledger **schema** open (PLM-D-00-07 remainder)
+- [x] Operational money boundary defined for MVP Product policy — ownership, fee model, Net Proceeds, allocation, precision, subledger vs cash accountability, settlement/refund/variance recorded (**PLM-D-00-07 Closed for MVP**); persistence/schema/journal/export/GL remain implementation work
 - [x] Trusted org + product context enforced server-side — required intent; not implemented
 - [x] PHI / sensitive data: default **none** unless explicitly authorized below
 - [x] No customer-specific source forks (config only)
@@ -62,18 +62,18 @@ Additional isolation (required intent):
 
 | Surface | Ownership | Notes |
 |---|---|---|
-| API | Product | Intended. No API project authorized. Personal/Loan API shape remains open. |
+| API | Product | Intended. No API project authorized. Personal-facing loan API contract **accepted** (**ADR-019**); transport **D-P12-03 Open** |
 | Platform Admin Web | Platform | Unified SaaS control plane. Must **not** become the normal borrower-loan operations UI. |
 | Organization Web UI | Product | Full operational lending application (proposed Blazor Web). Web/MAUI sharing **Closed** (PLM-D-00-09); layout **Closed** (PLM-D-00-03); no client project until Gate A and owner authorization. |
 | MAUI Hybrid UI | Product | Limited field / collector application. Not a duplicate of Organization Web. MVP online authority; offline cache/drafts only; final offline posting deferred. |
 | ExItS Personal | Platform (presentation) | Customer/borrower experience. Not a separate borrower app. Loan operational data remains this product’s authority. |
-| Reports | Product | Intended. Report contents **Status: Open / Product Owner Decision Required**. |
+| Reports | Product | Intended. MVP report formulas, aging buckets, and KPI definitions **accepted** (**ADR-015**); [Product/reporting-kpi-and-aging-policy.md](Product/reporting-kpi-and-aging-policy.md) |
 
 Surface detail: [Architecture/application-surface-model.md](Architecture/application-surface-model.md).
 
 ## Operational money
 
-**Status: Open / Partially Resolved** for schema, GL integration, settlement/write-off accounting, and cash refund (PLM-D-00-07 remainder). Calculation methods, fees, allocation, and rounding are recorded in PLM-DOC-02.
+**Closed for MVP Product operational financial model** (**PLM-D-00-07**). Calculation methods, fees, allocation, rounding, settlement, refund, variance, and subledger boundaries are recorded (PLM-DOC-02–04). Persistence schema, journal/export, and external GL integration are **implementation work**, not unresolved MVP Product policy.
 
 Required / agreed direction:
 
@@ -110,32 +110,15 @@ Detail: [authorization-matrix.md](authorization-matrix.md).
 | Class | Present? | Notes |
 |---|---|---|
 | PHI | No (default) | Not authorized. Do not add PHI unless a later package explicitly authorizes and designs for it. |
-| PII | Expected later / not implemented | Borrower and related person data, if created later, will likely include PII. Retention and handling **Status: Open / Product Owner Decision Required**. |
-| Financial operational | Intended later / not implemented | Loan operational financial records belong in this product when defined (PLM-D-00-07). |
-| Other sensitive | **Status: Open / Product Owner Decision Required** | Consent records for optional Personal linking, if implemented later, would be sensitive. Schema not designed (PLM-D-00-04, PLM-D-00-05). |
+| PII | Expected later / not implemented | Borrower and related person data will likely include PII. Retention and handling architecture **accepted** (**ADR-016**); numeric legal retention periods remain **PLM-D-00-11** |
+| Financial operational | Intended later / not implemented | Loan operational financial records belong in this product when implemented (**PLM-D-00-07 Closed for MVP policy**) |
+| Other sensitive | Consent records for optional Personal linking | Sensitive when implemented. **PLM-D-00-05 Closed** for PLM contract; **PLM-D-00-04** external Platform schema |
 
 ## MVP inclusions
 
-**Status: Open / Product Owner Decision Required.**
+**PLM MVP Product planning documentation is complete** (PLM-DOC-01 through PLM-DOC-11). No loan MVP **implementation** is approved. Default organization **rates** remain undefined; legal sufficiency and numeric legal limits remain **PLM-D-00-11**.
 
-This package records:
-
-- documentation workspace (PLM-00-WP01, completed)
-- product definition and architecture baseline (PLM-00-WP02, completed)
-- lending operating model and Quick Loan baseline (PLM-00-WP03, completed)
-- financial calculation and loan lifecycle baseline (PLM-00-WP04, completed)
-- authorization, cash control, and operational workflow baseline (PLM-00-WP05, completed)
-- borrower, Personal linking, and Quick Loan publishing baseline (PLM-00-WP06, completed)
-- traditional loan and origination workflow baseline (PLM-00-WP07, completed)
-- reporting, documents, notifications, and customer-visibility baseline (PLM-00-WP08, completed)
-- technical product layout and integration boundary (PLM-00-WP09, completed)
-- foundation closeout and implementation readiness (PLM-00-WP10, completed)
-- product identity and Personal linking (PLM-DOC-01, completed)
-- financial calculation, fees, rounding, and payment allocation (PLM-DOC-02, completed)
-- early settlement, refunds, reversals, cash variance, and accounting boundaries (PLM-DOC-04, completed)
-- roles, grants, workflow authorization, and operational security (PLM-DOC-05, this package)
-
-No loan MVP **implementation** is approved. Default rates, restructuring, write-off/recovery accounting, and legal validation remain open.
+Final decision register and closeout: [Reports/PLM-final-documentation-closeout.md](Reports/PLM-final-documentation-closeout.md), [Decisions/PLM-decision-status-summary.md](Decisions/PLM-decision-status-summary.md).
 
 ## Explicit exclusions
 
@@ -144,7 +127,8 @@ No loan MVP **implementation** is approved. Default rates, restructuring, write-
 - Final Loan grant identifiers (PLM Authorization Policy v1 — **PLM-D-00-06 Closed for MVP**)
 - Generic Platform cross-product relationship schema
 - Copying PinoyBusinessPOS domain, grants, or financial models
-- Exact interest **rates** (formulas/methods accepted in PLM-DOC-02), penalty **amounts**, restructuring/write-off accounting, legal/regulatory operating rules (PLM-D-00-08 remainder, PLM-D-00-11)
+- Exact interest **rates** (formulas/methods accepted; organization-configured rates subject to **PLM-D-00-11**)
+- Legal/regulatory operating rules and numeric legal limits (**PLM-D-00-11** Open)
 - Auto-approval of Quick Loans
 - Treating any recorded rate, fee, penalty, or workflow as legally compliant
 - Platform integration contracts (**D-P12-03** Open)
@@ -156,7 +140,7 @@ No loan MVP **implementation** is approved. Default rates, restructuring, write-
 - ExItS remains one Platform plus independently subscribed products.
 - Pinoy Loan Manager remains operationally isolated from PinoyBusinessPOS.
 - Documentation in this `Docs/` root is the product documentation authority (D-P12-02).
-- Physical source/test/deploy layout beside `Docs/` has a recorded **planning target**; projects are not created (PLM-D-00-03).
+- Physical source/test/deploy layout has a **Closed** approved target (**PLM-D-00-03**); projects are not implemented on main
 
 ## Unresolved decisions
 
@@ -164,12 +148,12 @@ No loan MVP **implementation** is approved. Default rates, restructuring, write-
 |---|---|---|
 | PLM-D-00-01 | Final product code / slug | **Closed** — `pinoy-loan-manager` |
 | PLM-D-00-02 | Logical database name vs physical creation | **Closed for name** — `ExItS_PinoyLoanManager`; creation/schema/placement deferred |
-| PLM-D-00-03 | Physical source / test / deploy layout (planning target recorded; projects not created) | Scaffold (PLM-01) |
-| PLM-D-00-04 | Generic Platform cross-product relationship model | Personal multi-product participation |
-| PLM-D-00-05 | Personal-to-Borrower linking mechanism (product behavior defined; Platform transport/schema open) | Borrower identity implementation (PLM-04) |
-| PLM-D-00-06 | Loan roles and grants | **Closed for MVP** — PLM Authorization Policy v1 | Authorization (PLM-03) |
-| PLM-D-00-07 | Operational financial model (methods/fees/allocation/settlement/refund/variance/ledger boundary recorded; schema/GL/write-off open) | Origination, payments, collections |
-| PLM-D-00-08 | Loan business / calculation rules (MVP methods, calendar/penalty engine, settlement/prepayment recorded; restructuring/write-off open) | Product configuration through collections |
+| PLM-D-00-03 | Physical source / test / deploy layout | **Closed for approved target architecture/layout** — implementation absent on main; Gate A required |
+| PLM-D-00-04 | Generic Platform cross-product relationship model | **Open / External Platform dependency** |
+| PLM-D-00-05 | Personal-to-Borrower linking mechanism | **Closed for PLM behavior/contract requirements** — Platform transport/schema external |
+| PLM-D-00-06 | Loan roles and grants | **Closed for MVP** — PLM Authorization Policy v1 |
+| PLM-D-00-07 | Operational financial model | **Closed for MVP Product operational financial model** — persistence/journal/export/GL are implementation work |
+| PLM-D-00-08 | Loan business / calculation rules | **Closed for MVP Product business/calculation policy** — organization rates subject to **PLM-D-00-11** |
 | PLM-D-00-09 | Web / MAUI component-sharing strategy | **Closed** (PLM-DOC-09) |
 | PLM-D-00-10 | Product documentation baseline completion / owner approval | **Closed / Product Owner Accepted** |
 | PLM-D-00-11 | External legal/compliance validation before Production | Production use |

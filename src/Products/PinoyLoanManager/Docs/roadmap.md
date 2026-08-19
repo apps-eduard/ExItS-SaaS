@@ -48,9 +48,9 @@ Establish product documentation, architecture boundaries, Personal/Borrower inte
 | PLM-00-WP09 | Technical Product Layout & Integration Boundary | Completed | PLM-00-WP08 |
 | PLM-00-WP10 | Foundation Closeout & Implementation Readiness | Completed | PLM-00-WP09 |
 
-PLM-00 documentation phase is complete. **PLM-DOC-01** through **PLM-DOC-05** completed. **PLM-DOC-06** finalizes restructuring, Write-Off, Recovery, and collections closeout.
+PLM-00 documentation phase is complete. **PLM-DOC-01** through **PLM-DOC-11** completed.
 
-`feat/plm-01-scaffold` exists as an **unmerged parked** implementation branch. It is **not** part of accepted mainline product state. Do not merge or delete it from this documentation package. Do **not** use it as evidence to close **PLM-D-00-03**.
+`feat/plm-01-scaffold` exists as an **unmerged parked** implementation branch. It is **not** part of accepted mainline product state. Do not merge or delete it from this documentation package. It is **not** evidence that **PLM-D-00-03** implementation is complete (**PLM-D-00-03 Closed for approved layout only**).
 
 ## Documentation finalization
 
@@ -174,19 +174,22 @@ Implementation remains paused. The parked scaffold remains unmerged.
 | PLM-13 Offline / Mobile Field Capabilities | Not started |
 | PLM-14 Production Validation / Closeout | Not started |
 
-## Remaining documentation before implementation resumes
+## External and implementation dependencies
 
-Before product implementation resumes, documentation still needs **final decisions** for (do **not** invent them here):
+These are **not** unresolved MVP Product behavior rules. They are external Platform dependencies, legal/compliance gates, or future implementation work:
 
-- physical source/test/deploy layout on mainline (PLM-D-00-03; remains open)
-- Platform relationship contract/schema (PLM-D-00-04) and linking transport (PLM-D-00-05)
-- remaining financial model (PLM-D-00-07 remainder: schema, journal/export, Write-Off/Recovery accounting, external GL)
-- remaining loan policy (PLM-D-00-08 remainder: restructuring, Write-Off, Recovery)
-- legal/compliance validation (PLM-D-00-11)
-- Platform commercial-state transport dependencies (D-P12-03)
-- custom roles (deferred; not MVP)
+- **PLM-D-00-04** — external Platform generic relationship schema
+- **D-P12-03** — external Platform commercial-state and event transport
+- **PLM-D-00-11** — external legal/compliance validation (including numeric legal limits and retention periods)
+- Platform catalog registration for `pinoy-loan-manager`
+- persistence/schema/migrations and product database creation
+- external journal/export/GL implementation
+- hosted deployment infrastructure and Production operations
+- residual authentication/security hardening (MFA/step-up, enterprise SSO/AD, outbound auth email, device validation)
+- notification-provider selection and production delivery wiring
+- legal retention period approval where required by jurisdiction
 
-Portfolio: **R-091 Closed for Phase 13 scope.** Scale architecture: [exits-scale-and-growth-architecture.md](../../../../docs/Product-Foundation/exits-scale-and-growth-architecture.md).
+Portfolio: **R-091 Closed for Phase 13 scope.** **D-P12-05 Closed / satisfied for authentication honesty.** Scale architecture: [exits-scale-and-growth-architecture.md](../../../../docs/Product-Foundation/exits-scale-and-growth-architecture.md).
 
 ## Dependencies
 
@@ -209,11 +212,15 @@ Portfolio: **R-091 Closed for Phase 13 scope.** Scale architecture: [exits-scale
 - [x] Reporting, documents, notifications, and customer-visibility baseline recorded (WP08)
 - [x] Technical product layout and integration boundary recorded (WP09)
 - [x] Foundation closeout and readiness checklist recorded (WP10)
-- [x] Product-owner approval of documentation baseline (PLM-D-00-10 Closed / Product Owner Accepted)
-- [ ] Remaining business/financial/legal decisions listed above
+- [x] PLM-DOC-01 through PLM-DOC-11 completed
+- [x] MVP Product business/financial/authorization policy completed
+- [x] Final decision register reconciled
+- [x] Implementation gates documented
+- [ ] Hosting PR merged (PR #3)
+- [ ] PLM PR merged (PR #4)
+- [ ] Explicit Product Owner implementation authorization
 - [ ] Isolation contract preserved in any later implementation (separate DB; no Platform table reads; product-local roles)
 - [ ] Docs match implementation (no implementation on `main`)
-- [ ] Tests green; `main = origin/main` (not applicable until implementation and authorized push)
 
 ## Risks
 

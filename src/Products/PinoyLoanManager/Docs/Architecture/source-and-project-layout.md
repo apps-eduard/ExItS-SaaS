@@ -29,7 +29,15 @@ src/Products/PinoyLoanManager/
 
 Tests should follow repository Product Foundation / existing solution conventions (typically `tests/ExItS.PinoyLoanManager.*.Tests` when authorized). Exact test-project names remain for the scaffold WP.
 
-This matches Product Foundation section 9 (product folder with Domain, Application, Infrastructure, Api, clients, UI as authorized). **No Product Foundation conflict.** **PLM-D-00-03 Closed for approved layout** — projects not created on main until Gate A.
+This matches Product Foundation section 9 (product folder with Domain, Application, Infrastructure, Api, clients, UI as authorized). **No Product Foundation conflict.** **PLM-D-00-03 Closed for approved target architecture/layout.**
+
+**Implementation status:**
+
+- projects are **not** implemented on `main`
+- parked `feat/plm-01-scaffold` is **not** accepted implementation evidence
+- fresh implementation requires **Gate A** and a new authorized package
+- **LocalStore** remains conditional — only if/when explicitly justified
+- layout decision does **not** equal implementation completion
 
 ---
 

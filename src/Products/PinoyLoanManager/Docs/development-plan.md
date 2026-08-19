@@ -25,15 +25,15 @@
 | PLM-02 Identity / Organization / Product Access | Consume Platform actor/org/product access without Platform table reads | Access intersection entry gates exist; D-P12-03 not invented |
 | PLM-03 Loan Product Authorization | Product-local roles/grants | Matrix documented (PLM-DOC-05); implementation after authorization |
 | PLM-04 Borrower Foundation | Product-local borrower records; optional Personal link | Borrower exists without requiring Personal; no POS Customer reads |
-| PLM-05 Loan Product Configuration | Configurable loan products | Only after PLM-D-00-08 decisions for configuration |
-| PLM-06 Loan Application / Approval | Application and approval workflows | Only after owner approval rules exist |
-| PLM-07 Origination / Disbursement | Starting loans and disbursing | Only after PLM-D-00-07 / relevant PLM-D-00-08 |
-| PLM-08 Schedule / Calculation Engine | Schedules and calculations | Only after calculation policy exists |
-| PLM-09 Payment Posting | Applying payments | Only after allocation rules exist |
-| PLM-10 Collections / Delinquency | Arrears and collections | Only after collections policy exists |
-| PLM-11 Reporting / Documents | Product reports and documents | Only after report contents are decided |
-| PLM-12 Security / Audit / Privacy | Product audit, privacy, consent hardening | Evidence against this product’s security docs |
-| PLM-13 Offline / Mobile Field Capabilities | MAUI/offline/field capabilities | Only after PLM-D-00-03, owner authorization, and implementation WP (PLM-D-00-09 Closed for sharing/offline policy) |
+| PLM-05 Loan Product Configuration | Configurable loan products | After Gate A; MVP business/calculation policy Closed (**PLM-D-00-08**) |
+| PLM-06 Loan Application / Approval | Application and approval workflows | After Gate A; origination policy documented (PLM-DOC-07) |
+| PLM-07 Origination / Disbursement | Starting loans and disbursing | After Gate A; operational financial model Closed for MVP (**PLM-D-00-07**) |
+| PLM-08 Schedule / Calculation Engine | Schedules and calculations | After Gate A; calculation policy documented (PLM-DOC-02–03) |
+| PLM-09 Payment Posting | Applying payments | After Gate A; allocation rules documented (PLM-DOC-02) |
+| PLM-10 Collections / Delinquency | Arrears and collections | After Gate A; collections policy documented (PLM-DOC-03, PLM-DOC-06) |
+| PLM-11 Reporting / Documents | Product reports and documents | After Gate A; report/KPI policy documented (**ADR-015**) |
+| PLM-12 Security / Audit / Privacy | Product audit, privacy, consent hardening | Evidence against this product’s security docs; privacy architecture **ADR-016** |
+| PLM-13 Offline / Mobile Field Capabilities | MAUI/offline/field capabilities | After Gate A and explicit authorization (**PLM-D-00-09 Closed**; offline final posting deferred) |
 | PLM-14 Production Validation / Closeout | Production-readiness evidence | Blocked while portfolio Production-readiness gates remain (**R-091 Closed for Phase 13 scope**; residuals separate) |
 
 Detail per current phase: [roadmap.md](roadmap.md).

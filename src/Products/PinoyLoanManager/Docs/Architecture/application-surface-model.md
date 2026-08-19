@@ -63,7 +63,7 @@ Expected functional areas **eventually** include:
 - Staff / roles / grants
 - Audit
 
-Proposed client direction remains Blazor Web. Web/MAUI sharing is **Closed** (PLM-D-00-09); no client project is authorized until PLM-D-00-03 and owner authorization. See [web-maui-component-sharing-policy.md](web-maui-component-sharing-policy.md).
+Proposed client direction remains Blazor Web. Web/MAUI sharing is **Closed** (PLM-D-00-09). Target layout is **Closed** (PLM-D-00-03). **No client project** is authorized until **Gate A** documentation merge and explicit Product Owner implementation authorization. See [web-maui-component-sharing-policy.md](web-maui-component-sharing-policy.md).
 
 This surface is **not** Platform Admin.
 
