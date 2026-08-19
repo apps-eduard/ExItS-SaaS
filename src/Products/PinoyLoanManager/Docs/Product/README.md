@@ -21,6 +21,10 @@ Do not treat this folder as a second product definition. Detailed agreed **direc
 | [interest-and-finance-charge-policy.md](interest-and-finance-charge-policy.md) | MVP methods, formulas, interest treatments |
 | [fees-and-net-proceeds-policy.md](fees-and-net-proceeds-policy.md) | Fee bases/treatments; Net Proceeds |
 | [payment-allocation-and-prepayment-policy.md](payment-allocation-and-prepayment-policy.md) | Oldest-due allocation; component order |
+| [early-settlement-and-principal-prepayment-policy.md](early-settlement-and-principal-prepayment-policy.md) | Settlement Quote, rebate, principal prepayment |
+| [reversal-refund-and-correction-policy.md](reversal-refund-and-correction-policy.md) | Payment reversal, Refund Payable, cash refund |
+| [cash-variance-and-session-close-policy.md](cash-variance-and-session-close-policy.md) | Expected vs actual; close-with-variance |
+| [disbursement-cancellation-and-reversal-policy.md](disbursement-cancellation-and-reversal-policy.md) | Cancel before release; reverse after recovery |
 | [money-precision-and-rounding-policy.md](money-precision-and-rounding-policy.md) | Decimal money; To Even; reconciliation |
 | [payment-and-allocation-model.md](payment-and-allocation-model.md) | Payments, posting notes, reversals |
 | [schedule-maturity-and-settlement.md](schedule-maturity-and-settlement.md) | Schedule, calendar, maturity, settlement |
@@ -44,7 +48,7 @@ Do not treat this folder as a second product definition. Detailed agreed **direc
 | [notification-model.md](notification-model.md) | Notifications |
 | [personal-loan-experience.md](personal-loan-experience.md) | Personal Loan area |
 
-Remaining default **rates**, early-settlement/refund items, grant identifiers, and legal validation stay open in [../product-definition.md](../product-definition.md) and [../risks-and-decisions.md](../risks-and-decisions.md) (PLM-D-00-06, PLM-D-00-08 remainder, PLM-D-00-11, PLM-D-00-13). Do not invent:
+Remaining default **rates**, grant identifiers, restructuring/write-off, and legal validation stay open in [../product-definition.md](../product-definition.md) and [../risks-and-decisions.md](../risks-and-decisions.md) (PLM-D-00-06, PLM-D-00-08 remainder, PLM-D-00-11). Do not invent:
 
 - peso/percent **rates** or penalty **amounts** as defaults
 - legal/regulatory operating rules

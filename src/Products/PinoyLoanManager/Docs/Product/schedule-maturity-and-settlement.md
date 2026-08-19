@@ -1,10 +1,10 @@
 # Pinoy Loan Manager — Schedule, Maturity, and Settlement
 
-**Status:** Planning index; calendar/maturity accepted in PLM-DOC-03
+**Status:** Planning index; calendar/maturity accepted in PLM-DOC-03; settlement/prepayment accepted in PLM-DOC-04
 **Implementation present:** No
 **Last updated:** 2026-08-19
 
-Pointer to accepted schedule, delinquency, penalty, and maturity policies. Early settlement, restructuring, and write-off remain later packages.
+Pointer to accepted schedule, delinquency, penalty, maturity, and settlement policies. Restructuring and write-off remain later packages.
 
 **Canonical PLM-DOC-03 policies:**
 
@@ -13,7 +13,11 @@ Pointer to accepted schedule, delinquency, penalty, and maturity policies. Early
 - [penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md)
 - [maturity-and-post-maturity-policy.md](maturity-and-post-maturity-policy.md)
 
-ADRs: [../Decisions/ADR-005-schedule-calendar-and-exception-treatment.md](../Decisions/ADR-005-schedule-calendar-and-exception-treatment.md), [../Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md](../Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md).
+**Canonical PLM-DOC-04 policies:**
+
+- [early-settlement-and-principal-prepayment-policy.md](early-settlement-and-principal-prepayment-policy.md)
+
+ADRs: [../Decisions/ADR-005-schedule-calendar-and-exception-treatment.md](../Decisions/ADR-005-schedule-calendar-and-exception-treatment.md), [../Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md](../Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md), [../Decisions/ADR-007-early-settlement-and-prepayment-policy.md](../Decisions/ADR-007-early-settlement-and-prepayment-policy.md).
 
 Related: [financial-calculation-baseline.md](financial-calculation-baseline.md), [payment-allocation-and-prepayment-policy.md](payment-allocation-and-prepayment-policy.md), [loan-lifecycle-model.md](loan-lifecycle-model.md), [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md).
 
@@ -53,13 +57,13 @@ Detail: [maturity-and-post-maturity-policy.md](maturity-and-post-maturity-policy
 
 ## Early / advance payment
 
-MVP advance payment remains as in PLM-DOC-02: [payment-allocation-and-prepayment-policy.md](payment-allocation-and-prepayment-policy.md). Principal prepayment recalculation and early-settlement unearned-interest treatment remain **OPEN** (**PLM-DOC-04**).
+MVP advance payment remains as in PLM-DOC-02: [payment-allocation-and-prepayment-policy.md](payment-allocation-and-prepayment-policy.md). Principal prepayment recalculation: [early-settlement-and-principal-prepayment-policy.md](early-settlement-and-principal-prepayment-policy.md).
 
 ---
 
 ## Early settlement
 
-Settlement Quote remains required in a later package. Exact future-interest rebate/treatment remains **OPEN** (PLM-D-00-08 remainder, PLM-D-00-11).
+Settlement Quote is required. Canonical formula, rebate/accrual, and quote validity: [early-settlement-and-principal-prepayment-policy.md](early-settlement-and-principal-prepayment-policy.md). Legal review remains **OPEN** (PLM-D-00-11).
 
 ---
 
@@ -72,6 +76,5 @@ Do **not** silently edit an existing schedule. Exact financial/accounting rules 
 ## Explicit non-goals
 
 - Default penalty amounts or grace `N`
-- Early-settlement unearned-interest formula
 - Restructuring or write-off accounting
 - Final enum / schema design

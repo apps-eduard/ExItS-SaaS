@@ -6,7 +6,7 @@
 
 Product-local, **server-authoritative** authorization. Grant names below are **planning categories**, not final code constants.
 
-Companions: [../authorization-matrix.md](../authorization-matrix.md), [../Product/daily-operational-workflow.md](../Product/daily-operational-workflow.md), [../Product/cashier-and-collector-control-model.md](../Product/cashier-and-collector-control-model.md), [../Architecture/application-surface-model.md](../Architecture/application-surface-model.md).
+Companions: [../authorization-matrix.md](../authorization-matrix.md), [../Product/daily-operational-workflow.md](../Product/daily-operational-workflow.md), [../Product/cashier-and-collector-control-model.md](../Product/cashier-and-collector-control-model.md), [../Product/reversal-refund-and-correction-policy.md](../Product/reversal-refund-and-correction-policy.md), [../Product/cash-variance-and-session-close-policy.md](../Product/cash-variance-and-session-close-policy.md), [../Architecture/application-surface-model.md](../Architecture/application-surface-model.md). ADR: [../Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md](../Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md).
 
 ---
 
@@ -249,7 +249,21 @@ However:
 
 Do **not** fake separation of duties merely by changing screen labels.
 
-Whether high-risk actions require two distinct humans for **all** organization sizes remains **OPEN**.
+**PLM-D-00-13 Closed.** For high-risk financial actions, the requester normally cannot approve their own action when another eligible approver exists. Collector never self-approves a high-risk action. Cashier never resolves their own Cashier variance and never approves their own Payment Reversal or Cash Refund.
+
+When an organization has only one eligible high-authority user, a controlled **Owner Override** may be permitted only when:
+
+- the actor has Owner preset plus the required explicit override grant
+- no other eligible approver exists
+- reason and evidence/notes are mandatory
+- the action is prominently classified as Owner Override
+- enhanced audit is written
+- the action appears in a mandatory subsequent-review report
+- override use is visible in financial/audit reporting
+
+Owner Override is not available to Collector, Cashier-only user, or Manager without the explicit Owner Override grant. Exact grant identifiers remain PLM-D-00-06 / later documentation.
+
+Canonical: [../Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md](../Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md).
 
 ---
 
@@ -270,7 +284,7 @@ No direct cross-database access. Commercial-state transport remains **D-P12-03**
 
 High-risk operations must eventually preserve: actor, organization, branch, time, action, target resource, amount where relevant, reason where required, approval actor where applicable, correlation / reference, original transaction reference for reversal, device / channel where useful.
 
-High-risk examples: loan approval, disbursement, payment, reversal, penalty waiver, collector float, remittance, cash variance resolution, collection exception declaration.
+High-risk examples: loan approval, disbursement, payment, reversal, penalty waiver, collector float, remittance, cash variance resolution, cash refund, collection exception declaration, future write-off/recovery.
 
 ---
 

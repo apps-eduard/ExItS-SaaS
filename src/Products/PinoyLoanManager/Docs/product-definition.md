@@ -132,9 +132,10 @@ This package records:
 - foundation closeout and implementation readiness (PLM-00-WP10, completed)
 - product identity and Personal linking (PLM-DOC-01, completed)
 - financial calculation, fees, rounding, and payment allocation (PLM-DOC-02, completed)
-- schedule calendar, delinquency, penalties, and maturity (PLM-DOC-03, this package)
+- schedule calendar, delinquency, penalties, and maturity (PLM-DOC-03, completed)
+- early settlement, refunds, reversals, cash variance, and accounting boundaries (PLM-DOC-04, this package)
 
-No loan MVP **implementation** is approved. Default rates, early-settlement rebate, and legal validation remain open.
+No loan MVP **implementation** is approved. Default rates, restructuring, write-off/recovery accounting, and legal validation remain open.
 
 ## Explicit exclusions
 
@@ -143,7 +144,7 @@ No loan MVP **implementation** is approved. Default rates, early-settlement reba
 - Final Loan grant identifiers (presets and grant **intent** recorded)
 - Generic Platform cross-product relationship schema
 - Copying PinoyBusinessPOS domain, grants, or financial models
-- Exact interest **rates** (formulas/methods accepted in PLM-DOC-02), early-settlement unearned interest, penalty **amounts**, legal/regulatory operating rules (PLM-D-00-08 remainder, PLM-D-00-11, PLM-DOC-04)
+- Exact interest **rates** (formulas/methods accepted in PLM-DOC-02), penalty **amounts**, restructuring/write-off accounting, legal/regulatory operating rules (PLM-D-00-08 remainder, PLM-D-00-11)
 - Auto-approval of Quick Loans
 - Treating any recorded rate, fee, penalty, or workflow as legally compliant
 - Production authentication (R-091)
@@ -166,13 +167,13 @@ No loan MVP **implementation** is approved. Default rates, early-settlement reba
 | PLM-D-00-04 | Generic Platform cross-product relationship model | Personal multi-product participation |
 | PLM-D-00-05 | Personal-to-Borrower linking mechanism (product behavior defined; Platform transport/schema open) | Borrower identity implementation (PLM-04) |
 | PLM-D-00-06 | Loan roles and grants (presets + grant intent recorded; identifiers open) | Authorization (PLM-03) |
-| PLM-D-00-07 | Operational financial model (methods/fees/allocation recorded; schema/GL/refund open) | Origination, payments, collections |
-| PLM-D-00-08 | Loan business / calculation rules (MVP methods and calendar/penalty engine recorded; settlement rebate open) | Product configuration through collections |
+| PLM-D-00-07 | Operational financial model (methods/fees/allocation/settlement/refund/variance/ledger boundary recorded; schema/GL/write-off open) | Origination, payments, collections |
+| PLM-D-00-08 | Loan business / calculation rules (MVP methods, calendar/penalty engine, settlement/prepayment recorded; restructuring/write-off open) | Product configuration through collections |
 | PLM-D-00-09 | Web / MAUI component-sharing strategy | Client scaffold |
 | PLM-D-00-10 | Product documentation baseline completion / owner approval | **Closed / Product Owner Accepted** |
 | PLM-D-00-11 | External legal/compliance validation before Production | Production use |
 | PLM-D-00-12 | Exact money rounding mode | **Closed** — PHP 2 dp; ≥8 intermediate; To Even; final-installment reconciliation |
-| PLM-D-00-13 | Small-org vs two-person high-risk approval | Operational SoD |
+| PLM-D-00-13 | Small-org vs two-person high-risk approval | **Closed** — maker/checker when another eligible approver exists; controlled Owner Override for sole eligible Owner |
 | D-P12-03 | Commercial-state transport | Product access enforcement |
 | R-091 | Production authentication | Production readiness |
 | D-P12-05 | Honest Dev/Testing vs Production language | Tied to R-091 |
@@ -191,6 +192,10 @@ No loan MVP **implementation** is approved. Default rates, early-settlement reba
 | Interest / finance charge | [Product/interest-and-finance-charge-policy.md](Product/interest-and-finance-charge-policy.md) |
 | Fees / net proceeds | [Product/fees-and-net-proceeds-policy.md](Product/fees-and-net-proceeds-policy.md) |
 | Payment allocation / prepayment | [Product/payment-allocation-and-prepayment-policy.md](Product/payment-allocation-and-prepayment-policy.md) |
+| Early settlement / principal prepayment | [Product/early-settlement-and-principal-prepayment-policy.md](Product/early-settlement-and-principal-prepayment-policy.md) |
+| Reversal / refund / correction | [Product/reversal-refund-and-correction-policy.md](Product/reversal-refund-and-correction-policy.md) |
+| Cash variance / session close | [Product/cash-variance-and-session-close-policy.md](Product/cash-variance-and-session-close-policy.md) |
+| Disbursement cancellation / reversal | [Product/disbursement-cancellation-and-reversal-policy.md](Product/disbursement-cancellation-and-reversal-policy.md) |
 | Money precision / rounding | [Product/money-precision-and-rounding-policy.md](Product/money-precision-and-rounding-policy.md) |
 | Payment / allocation (posting notes) | [Product/payment-and-allocation-model.md](Product/payment-and-allocation-model.md) |
 | Schedule / maturity / settlement | [Product/schedule-maturity-and-settlement.md](Product/schedule-maturity-and-settlement.md) |
@@ -200,6 +205,7 @@ No loan MVP **implementation** is approved. Default rates, early-settlement reba
 | Maturity / post-maturity | [Product/maturity-and-post-maturity-policy.md](Product/maturity-and-post-maturity-policy.md) |
 | Loan lifecycle | [Product/loan-lifecycle-model.md](Product/loan-lifecycle-model.md) |
 | Loan ledger / balances | [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md) |
+| Operational subledger / accounting boundary | [Architecture/operational-subledger-and-accounting-boundary.md](Architecture/operational-subledger-and-accounting-boundary.md) |
 | Role / grant baseline | [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md) |
 | Daily operational workflow | [Product/daily-operational-workflow.md](Product/daily-operational-workflow.md) |
 | Cashier / collector control | [Product/cashier-and-collector-control-model.md](Product/cashier-and-collector-control-model.md) |
@@ -230,6 +236,9 @@ No loan MVP **implementation** is approved. Default rates, early-settlement reba
 | PLM-DOC-01 | [Reports/PLM-DOC-01-product-identity-and-personal-linking.md](Reports/PLM-DOC-01-product-identity-and-personal-linking.md) |
 | PLM-DOC-02 | [Reports/PLM-DOC-02-financial-calculation-and-allocation.md](Reports/PLM-DOC-02-financial-calculation-and-allocation.md) |
 | PLM-DOC-03 | [Reports/PLM-DOC-03-schedule-delinquency-penalty-and-maturity.md](Reports/PLM-DOC-03-schedule-delinquency-penalty-and-maturity.md) |
+| PLM-DOC-04 | [Reports/PLM-DOC-04-settlement-reversals-variance-and-accounting.md](Reports/PLM-DOC-04-settlement-reversals-variance-and-accounting.md) |
+| ADR-007 | [Decisions/ADR-007-early-settlement-and-prepayment-policy.md](Decisions/ADR-007-early-settlement-and-prepayment-policy.md) |
+| ADR-008 | [Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md](Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md) |
 | ADR-005 | [Decisions/ADR-005-schedule-calendar-and-exception-treatment.md](Decisions/ADR-005-schedule-calendar-and-exception-treatment.md) |
 | ADR-006 | [Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md](Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md) |
 | ADR-003 | [Decisions/ADR-003-supported-interest-and-schedule-methods.md](Decisions/ADR-003-supported-interest-and-schedule-methods.md) |

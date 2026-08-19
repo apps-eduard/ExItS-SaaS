@@ -8,7 +8,7 @@ Due-date generation, collection calendars, MVP frequencies, first due date, and 
 
 **Canonical companions:** [delinquency-and-missed-payment-policy.md](delinquency-and-missed-payment-policy.md), [penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md), [maturity-and-post-maturity-policy.md](maturity-and-post-maturity-policy.md). ADR: [../Decisions/ADR-005-schedule-calendar-and-exception-treatment.md](../Decisions/ADR-005-schedule-calendar-and-exception-treatment.md). Index: [schedule-maturity-and-settlement.md](schedule-maturity-and-settlement.md).
 
-Early settlement, principal prepayment recalculation, restructuring, and write-off remain later packages.
+Early settlement and principal prepayment: [early-settlement-and-principal-prepayment-policy.md](early-settlement-and-principal-prepayment-policy.md). Restructuring and write-off remain later packages.
 
 ---
 

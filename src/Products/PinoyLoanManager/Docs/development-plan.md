@@ -6,7 +6,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Plan status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01–03 recorded; PLM-01 paused on mainline |
+| Plan status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01–04 recorded; PLM-01 paused on mainline |
 | Implementation present | No |
 
 ## Delivery approach
@@ -51,7 +51,7 @@ Stop when any of these are missing without an approved decision:
 - [x] Product definition approved (documentation baseline accepted — PLM-D-00-10 Closed)
 - [ ] Roles/grants matrix draft (presets and grant **intent** recorded; identifiers open — PLM-D-00-06)
 - [x] Operational-money **policy** (methods, fees, allocation, precision — PLM-DOC-02)
-- [ ] Operational-money **schema** / GL / cash refund (PLM-D-00-07 remainder)
+- [ ] Operational-money **schema** / journal export / Write-Off accounting (PLM-D-00-07 remainder; cash-refund policy accepted in PLM-DOC-04)
 - [x] Logical DB name (`ExItS_PinoyLoanManager` — PLM-D-00-02 Closed for name)
 - [ ] DB schema / creation / connections / placement (deferred — PLM-D-00-02 remainder)
 - [x] Privacy classification (PHI default none) — recorded
@@ -67,7 +67,7 @@ Do not start PLM-01 on mainline until explicitly authorized. Product implementat
 | Commercial-state transport | **DECISION D-P12-03** | Provisional patterns only; do not invent final |
 | Production authentication | **R-091** | Keep Dev/Testing language honest (D-P12-05) |
 | Personal / cross-product relationship model | Platform + product | Open (PLM-D-00-04, PLM-D-00-05) |
-| Loan owner policy | Product owner | Grants open (PLM-D-00-06). Calculation, calendar, and penalty engine accepted (PLM-DOC-02, PLM-DOC-03). Schema/settlement remain Open / Partially Resolved (PLM-D-00-07, PLM-D-00-08) |
+| Loan owner policy | Product owner | Grants open (PLM-D-00-06). Calculation, calendar, penalty, settlement, and cash-control policy accepted (PLM-DOC-02–04). Schema/restructuring/write-off remain Open / Partially Resolved (PLM-D-00-07, PLM-D-00-08) |
 
 ## Testing expectations
 

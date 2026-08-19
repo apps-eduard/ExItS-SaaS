@@ -2,7 +2,7 @@
 
 **Status:** Foundation / planning only
 **Implementation present:** No
-**Current work package:** PLM-DOC-03 — Schedule Calendar, Delinquency, Penalties & Maturity Decisions
+**Current work package:** PLM-DOC-04 — Early Settlement, Refunds, Reversals, Cash Variance & Accounting Boundaries
 
 This file is the navigation map for future Cursor work. Load this product’s `Docs/` after the shared Product Foundation reference. Do not scan PinoyBusinessPOS implementation by default.
 
@@ -44,6 +44,7 @@ Shared contracts to load with this product:
 | `Docs/Product/interest-and-finance-charge-policy.md` | MVP methods, formulas, treatments | Accepted product rules (PLM-DOC-02) | No |
 | `Docs/Product/fees-and-net-proceeds-policy.md` | Fee bases/treatments; Net Proceeds | Accepted product rules (PLM-DOC-02) | No |
 | `Docs/Product/payment-allocation-and-prepayment-policy.md` | Allocation, advance, overpayment | Accepted product rules (PLM-DOC-02) | No |
+| `Docs/Product/early-settlement-and-principal-prepayment-policy.md` | Settlement Quote, rebate, principal prepayment | Accepted product rules (PLM-DOC-04) | No |
 | `Docs/Product/money-precision-and-rounding-policy.md` | Decimal money; To Even; reconciliation | Accepted product rules (PLM-DOC-02) | No |
 | `Docs/Product/payment-and-allocation-model.md` | Payments, posting notes, reversals, idempotency | Planning baseline / not a spec | No |
 | `Docs/Product/schedule-maturity-and-settlement.md` | Schedule, calendar, maturity, settlement (index) | Planning baseline / not a spec | No |
@@ -53,6 +54,7 @@ Shared contracts to load with this product:
 | `Docs/Product/maturity-and-post-maturity-policy.md` | Maturity and post-maturity modes | Accepted product rules (PLM-DOC-03) | No |
 | `Docs/Product/loan-lifecycle-model.md` | Origination vs lifecycle vs delinquency | Planning baseline / not a spec | No |
 | `Docs/Architecture/loan-ledger-and-balance-model.md` | Operational subledger and balances | Planning baseline / not a spec | No |
+| `Docs/Architecture/operational-subledger-and-accounting-boundary.md` | Loan vs cash ledgers; not a complete GL | Accepted architecture policy (PLM-DOC-04) | No |
 
 ## Authorization / cash / operational workflow (PLM-00-WP05)
 
@@ -63,6 +65,9 @@ Shared contracts to load with this product:
 | `Docs/Product/cashier-and-collector-control-model.md` | Cashier Session, float, remittance, cash availability | Planning baseline / not a spec | No |
 | `Docs/Product/disbursement-and-payment-controls.md` | Office/field disbursement and cash payment | Planning baseline / not a spec | No |
 | `Docs/Product/exception-reversal-and-variance-workflow.md` | Exceptions, waivers, reversals vs cash refund, variance | Planning baseline / not a spec | No |
+| `Docs/Product/reversal-refund-and-correction-policy.md` | Payment reversal, Refund Payable, cash refund | Accepted product rules (PLM-DOC-04) | No |
+| `Docs/Product/cash-variance-and-session-close-policy.md` | Expected vs actual; close-with-variance | Accepted product rules (PLM-DOC-04) | No |
+| `Docs/Product/disbursement-cancellation-and-reversal-policy.md` | Cancel before release; reverse after recovery | Accepted product rules (PLM-DOC-04) | No |
 
 ## Borrower / Personal / publishing (PLM-00-WP06)
 
@@ -113,6 +118,7 @@ Shared contracts to load with this product:
 | `Docs/Reports/PLM-DOC-01-product-identity-and-personal-linking.md` | PLM-DOC-01 identity and Personal linking | Documentation closeout | No |
 | `Docs/Reports/PLM-DOC-02-financial-calculation-and-allocation.md` | PLM-DOC-02 calculation, fees, rounding, allocation | Documentation closeout | No |
 | `Docs/Reports/PLM-DOC-03-schedule-delinquency-penalty-and-maturity.md` | PLM-DOC-03 calendar, delinquency, penalty, maturity | Documentation closeout | No |
+| `Docs/Reports/PLM-DOC-04-settlement-reversals-variance-and-accounting.md` | PLM-DOC-04 settlement, reversals, variance, accounting | Documentation closeout | No |
 | `Docs/Validation/PLM-00-readiness-checklist.md` | Docs-only readiness gates | Planning closeout | No |
 
 ## Workspace indexes (PLM-00-WP01, updated in WP02–WP10)
@@ -133,6 +139,8 @@ Shared contracts to load with this product:
 | `Docs/Decisions/ADR-004-rounding-fees-and-payment-allocation.md` | Rounding, fees, allocation | Accepted; PLM-D-00-12 Closed | No |
 | `Docs/Decisions/ADR-005-schedule-calendar-and-exception-treatment.md` | Calendar, frequencies, exception defaults | Accepted product policy (PLM-DOC-03) | No |
 | `Docs/Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md` | DPD, penalties, maturity | Accepted product policy (PLM-DOC-03) | No |
+| `Docs/Decisions/ADR-007-early-settlement-and-prepayment-policy.md` | Early settlement and principal prepayment | Accepted product policy (PLM-DOC-04) | No |
+| `Docs/Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md` | Reversals, refunds, variance, GL boundary | Accepted; **PLM-D-00-13 Closed** | No |
 | `Docs/Phases/README.md` | Index for phase sequencing | Foundation / Planning Only | No |
 | `Docs/Reports/README.md` | Index for WP evidence | Foundation / Planning Only | No |
 | `Docs/Validation/README.md` | Index for validation evidence | Foundation / Planning Only | No |
@@ -152,8 +160,8 @@ Shared contracts to load with this product:
 | `Docs/deployment-notes.md` | Optional until packaging |
 | `Docs/Reports/<WP-id>.md` | In-tree WP report not required except PLM-00 closeout |
 | Exact grant identifiers / custom roles | Open (PLM-D-00-06) |
-| Small-org vs two-person high-risk approval | Open (PLM-D-00-13) |
+| Small-org vs two-person high-risk approval | **Closed** (PLM-D-00-13) — maker/checker + controlled Owner Override |
 | Default interest rates / fee amounts / penalty amounts | Not defined; never invent |
 | Penalty rates/amounts, grace `N`, caps as numbers | Engine accepted; no defaults (PLM-DOC-03) |
-| Early-settlement rebate, refunds, write-off accounting | Open (PLM-DOC-04 / PLM-D-00-08 remainder) |
+| Write-off/recovery accounting, restructuring, journal/export | Open (PLM-D-00-07 / PLM-D-00-08 remainder) |
 | Legal/compliance validation | Open (PLM-D-00-11) |

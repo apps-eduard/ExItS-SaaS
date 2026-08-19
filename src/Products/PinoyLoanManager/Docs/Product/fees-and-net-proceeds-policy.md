@@ -6,7 +6,7 @@
 
 Structured borrower-facing fee model, fee treatments, Net Proceeds, snapshot/disclosure, and Platform usage-charge separation. Not a fee catalog, default price list, or legally validated disclosure.
 
-**Canonical companions:** [interest-and-finance-charge-policy.md](interest-and-finance-charge-policy.md), [money-precision-and-rounding-policy.md](money-precision-and-rounding-policy.md), [payment-allocation-and-prepayment-policy.md](payment-allocation-and-prepayment-policy.md). ADR: [../Decisions/ADR-004-rounding-fees-and-payment-allocation.md](../Decisions/ADR-004-rounding-fees-and-payment-allocation.md).
+**Canonical companions:** [interest-and-finance-charge-policy.md](interest-and-finance-charge-policy.md), [money-precision-and-rounding-policy.md](money-precision-and-rounding-policy.md), [payment-allocation-and-prepayment-policy.md](payment-allocation-and-prepayment-policy.md), [early-settlement-and-principal-prepayment-policy.md](early-settlement-and-principal-prepayment-policy.md). ADR: [../Decisions/ADR-004-rounding-fees-and-payment-allocation.md](../Decisions/ADR-004-rounding-fees-and-payment-allocation.md).
 
 No default fee amount or percentage is defined in this package.
 
@@ -124,6 +124,8 @@ Once a request/application is submitted:
 - later template/product fee changes do not silently change that request
 - approved/disbursed Loans retain their original fee terms
 - fee name, purpose, amount, and treatment remain reproducible
+- the snapshot must state whether the fee is refundable, non-refundable once assessed, earned over schedule periods, or waived only through authorization
+- settlement uses that snapshot: [early-settlement-and-principal-prepayment-policy.md](early-settlement-and-principal-prepayment-policy.md)
 
 ---
 
@@ -161,7 +163,7 @@ Future concepts (not designed as schema here):
 
 The original fee remains historically visible.
 
-A financial fee reversal is **not** automatically proof that physical cash was returned. Cash refund remains a separate correlated physical-cash action.
+A financial fee reversal is **not** automatically proof that physical cash was returned. Cash refund remains a separate correlated physical-cash action. Settlement fee treatment: [early-settlement-and-principal-prepayment-policy.md](early-settlement-and-principal-prepayment-policy.md). Refunds: [reversal-refund-and-correction-policy.md](reversal-refund-and-correction-policy.md).
 
 Exact grant/approval thresholds remain future authorization work (PLM-D-00-06).
 

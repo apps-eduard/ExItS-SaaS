@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01 linking rules recorded; no implementation |
+| Status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01–04 recorded; no implementation |
 | Implementation present | No |
 
 ## Authentication boundary
@@ -120,5 +120,6 @@ Lifecycle and unlink: [Product/personal-linking-lifecycle-and-visibility.md](Pro
 | PLM-D-00-05 | Undesigned consent/linking **transport** (product behavior defined) | Open |
 | PLM-D-00-11 | Legal/compliance validation not performed | Open |
 | PLM-D-00-12 | Money rounding | **Closed** — To Even; PHP 2 dp; ≥8 intermediate |
+| PLM-D-00-13 | High-risk maker/checker vs small-org Owner Override | **Closed** — distinct approver when another eligible user exists; controlled Owner Override for sole eligible Owner |
 
 Full register: [risks-and-decisions.md](risks-and-decisions.md).

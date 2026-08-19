@@ -6,7 +6,7 @@
 
 Common operating day for Owner / Manager, Cashier, and Collector. Not a UI or scheduling specification.
 
-Related: [cashier-and-collector-control-model.md](cashier-and-collector-control-model.md), [disbursement-and-payment-controls.md](disbursement-and-payment-controls.md), [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md), [schedule-and-collection-calendar-policy.md](schedule-and-collection-calendar-policy.md), [../Security/role-and-grant-baseline.md](../Security/role-and-grant-baseline.md).
+Related: [cashier-and-collector-control-model.md](cashier-and-collector-control-model.md), [disbursement-and-payment-controls.md](disbursement-and-payment-controls.md), [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md), [cash-variance-and-session-close-policy.md](cash-variance-and-session-close-policy.md), [schedule-and-collection-calendar-policy.md](schedule-and-collection-calendar-policy.md), [../Security/role-and-grant-baseline.md](../Security/role-and-grant-baseline.md).
 
 ---
 
@@ -97,7 +97,7 @@ Exact collector acknowledgement mechanism for float remains **OPEN**.
 
 - reviews exceptions / variances requiring authorization
 
-Exact Cashier Session closing rules with unresolved variance remain **OPEN**. Unresolved variance must remain **visible**. See [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md).
+Cashier Session may close as Closed Balanced when variance is zero, or Closed With Variance after authorized review when variance is nonzero. Unresolved variance remains **visible**. Canonical: [cash-variance-and-session-close-policy.md](cash-variance-and-session-close-policy.md).
 
 ---
 

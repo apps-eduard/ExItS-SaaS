@@ -7,7 +7,7 @@
 |---|---|
 | Product | Pinoy Loan Manager / `pinoy-loan-manager` (**Closed**, PLM-D-00-01) |
 | Database | `ExItS_PinoyLoanManager` (**logical name Closed**, PLM-D-00-02); not created; schema/placement deferred |
-| Status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01–03 recorded; no implementation |
+| Status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01–04 recorded; no implementation |
 | Implementation present | No |
 
 ## System context
@@ -36,7 +36,7 @@ Pinoy Loan Manager must never take a project or database dependency on PinoyBusi
 | SaaS billing / Platform administration / Platform audit | Yes | No |
 | Borrower operational records | No | Yes (future) |
 | Loan-domain state and workflows | No | Yes (future) — Traditional and Quick origination; one core Loan after disbursement |
-| Loan operational financial state | No | Yes (future) — loan ledger separate from collector cash |
+| Loan operational financial state | No | Yes (future) — operational Loan subledger separate from Cash Accountability; not a complete GL |
 | Product-local authorization | No | Yes (future; presets + grant intent recorded; identifiers open) |
 | Product DB / migrations | No | Yes (future) |
 | Product API / Web UI / MAUI UI / reports / product audit | No | Yes (future) |
@@ -79,7 +79,7 @@ Do **not** design the final generic Platform relationship schema here (**Status:
 
 ## Product modules
 
-Planning modules only. None are designed or implemented. MVP calculation, calendar, delinquency, and penalty **engine** rules are recorded (PLM-DOC-02, PLM-DOC-03); default rates remain undefined. Origination: [Product/lending-operating-model.md](Product/lending-operating-model.md). Authorization: [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md). Borrower / Personal: [Product/borrower-model.md](Product/borrower-model.md), [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md). Cash / daily ops: [Product/cashier-and-collector-control-model.md](Product/cashier-and-collector-control-model.md), [Product/daily-operational-workflow.md](Product/daily-operational-workflow.md). Financial planning: [Product/financial-calculation-baseline.md](Product/financial-calculation-baseline.md), [Product/schedule-and-collection-calendar-policy.md](Product/schedule-and-collection-calendar-policy.md), [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md).
+Planning modules only. None are designed or implemented. MVP calculation, calendar, penalty, settlement, refund, and cash-control **engine** rules are recorded (PLM-DOC-02–04); default rates remain undefined. Origination: [Product/lending-operating-model.md](Product/lending-operating-model.md). Authorization: [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md). Borrower / Personal: [Product/borrower-model.md](Product/borrower-model.md), [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md). Cash / daily ops: [Product/cashier-and-collector-control-model.md](Product/cashier-and-collector-control-model.md), [Product/daily-operational-workflow.md](Product/daily-operational-workflow.md), [Product/cash-variance-and-session-close-policy.md](Product/cash-variance-and-session-close-policy.md). Financial planning: [Product/financial-calculation-baseline.md](Product/financial-calculation-baseline.md), [Product/schedule-and-collection-calendar-policy.md](Product/schedule-and-collection-calendar-policy.md), [Product/early-settlement-and-principal-prepayment-policy.md](Product/early-settlement-and-principal-prepayment-policy.md), [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md), [Architecture/operational-subledger-and-accounting-boundary.md](Architecture/operational-subledger-and-accounting-boundary.md).
 
 | Module | Responsibility | Notes |
 |---|---|---|

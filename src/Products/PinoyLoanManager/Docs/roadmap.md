@@ -7,8 +7,8 @@
 |---|---|
 | Product | Pinoy Loan Manager |
 | Current phase | PLM-00 Foundation & Product Decisions (documentation complete) |
-| Current work package | **PLM-DOC-03** Schedule Calendar, Delinquency, Penalties & Maturity Decisions |
-| Status | **PLM-D-00-10 Closed / Product Owner Accepted**. PLM-D-00-01 Closed. PLM-D-00-02 Closed for logical name. PLM-D-00-12 Closed. PLM-D-00-07 / PLM-D-00-08 Open / Partially Resolved. Implementation remains paused. |
+| Current work package | **PLM-DOC-04** Early Settlement, Refunds, Reversals, Cash Variance & Accounting Boundaries |
+| Status | **PLM-D-00-10 Closed / Product Owner Accepted**. PLM-D-00-01 Closed. PLM-D-00-02 Closed for logical name. PLM-D-00-12 Closed. PLM-D-00-13 Closed. PLM-D-00-07 / PLM-D-00-08 Open / Partially Resolved. Implementation remains paused. |
 
 ## Phase objective
 
@@ -28,7 +28,7 @@ Establish product documentation, architecture boundaries, Personal/Borrower inte
 
 - Code, projects, database objects, migrations, APIs, UI, Docker, deployment, solution changes **on main**
 - Merging parked `feat/plm-01-scaffold` (unmerged; not accepted mainline state)
-- Final grant identifiers, remaining settlement/refund/accounting items, peso/percent **rates**
+- Final grant identifiers, remaining schema/GL/write-off items, peso/percent **rates**
 - Generic Platform relationship schema
 - Production authentication (R-091) unless a later phase explicitly delivers it
 - Final commercial-state transport (D-P12-03) unless explicitly authorized
@@ -48,7 +48,7 @@ Establish product documentation, architecture boundaries, Personal/Borrower inte
 | PLM-00-WP09 | Technical Product Layout & Integration Boundary | Completed | PLM-00-WP08 |
 | PLM-00-WP10 | Foundation Closeout & Implementation Readiness | Completed | PLM-00-WP09 |
 
-PLM-00 documentation phase is complete. **PLM-DOC-01** finalized identity and Personal linking. **PLM-DOC-02** finalized MVP calculation, fees, rounding, and payment allocation. **PLM-DOC-03** finalizes schedule calendar, delinquency, penalties, and maturity.
+PLM-00 documentation phase is complete. **PLM-DOC-01** finalized identity and Personal linking. **PLM-DOC-02** finalized MVP calculation, fees, rounding, and payment allocation. **PLM-DOC-03** finalized schedule calendar, delinquency, penalties, and maturity. **PLM-DOC-04** finalizes settlement, prepayment, refunds, reversals, cash variance, and accounting boundaries.
 
 `feat/plm-01-scaffold` exists as an **unmerged parked** implementation branch. It is **not** part of accepted mainline product state. Do not merge or delete it from this documentation package. Do **not** use it as evidence to close **PLM-D-00-03**.
 
@@ -58,8 +58,9 @@ PLM-00 documentation phase is complete. **PLM-DOC-01** finalized identity and Pe
 |---|---|---|
 | PLM-DOC-01 | Product Identity, Borrower Identity & Personal Linking Finalization | **Completed** |
 | PLM-DOC-02 | Financial Calculation, Fees & Payment Allocation Decisions | **Completed** |
-| PLM-DOC-03 | Schedule Calendar, Delinquency, Penalties & Maturity Decisions | **This package** |
-| PLM-DOC-04 | Early Settlement, Refunds, Reversals, Cash Variance & Accounting Boundaries | Proposed next |
+| PLM-DOC-03 | Schedule Calendar, Delinquency, Penalties & Maturity Decisions | **Completed** |
+| PLM-DOC-04 | Early Settlement, Refunds, Reversals, Cash Variance & Accounting Boundaries | **This package** |
+| PLM-DOC-05 | Roles, Grants, Workflow Authorization & Operational Security Finalization | Proposed next |
 
 ### PLM-DOC-01 completed decisions
 
@@ -97,6 +98,23 @@ PLM-00 documentation phase is complete. **PLM-DOC-01** finalized identity and Pe
 - waiver vs reversal vs exception
 - maturity does not erase balance; post-maturity modes
 
+### PLM-DOC-04 completed decisions
+
+- full early settlement and partial principal prepayment supported
+- no MVP settlement/prepayment penalty or hidden settlement fee
+- Settlement Quote contract and Branch-local business-date validity default
+- Flat/Add-On earned vs unearned finance charge; deducted-charge rebate credit
+- reducing-balance current-period Actual-Days accrual; future interest not charged
+- fee snapshot refundable/earned treatment; penalties remain unless waived/reversed
+- Reduce Term default for principal prepayment
+- no borrower wallet; Refund Payable for excess credit
+- payment correction = full reversal + repost; Loan reversal ≠ Cash Refund
+- office/Cashier-only cash refunds in MVP
+- disbursement cancellation before release vs reversal after recovery
+- Collector/Cashier close-with-variance; nonzero variance cannot be marked balanced
+- maker/checker required when another eligible approver exists; controlled Owner Override (**PLM-D-00-13 Closed**)
+- operational Loan subledger vs Cash Accountability ledger; PLM is not a complete GL
+
 Implementation remains paused. The parked scaffold remains unmerged.
 
 ## Planning buckets (later phases)
@@ -125,11 +143,9 @@ Before product implementation resumes, documentation still needs **final decisio
 - physical source/test/deploy layout on mainline (PLM-D-00-03; remains open)
 - Platform relationship contract/schema (PLM-D-00-04) and linking transport (PLM-D-00-05)
 - final grants (PLM-D-00-06)
-- remaining financial model (PLM-D-00-07 remainder: schema, GL, settlement/write-off accounting, cash refund)
-- remaining loan policy (PLM-D-00-08 remainder: early-settlement rebate, principal prepayment, restructuring, write-off)
-- high-risk separation of duties (PLM-D-00-13)
-- cash variance close policy
-- refund/reversal workflow
+- remaining financial model (PLM-D-00-07 remainder: schema, journal/export, Write-Off/Recovery accounting, external GL)
+- remaining loan policy (PLM-D-00-08 remainder: restructuring, Write-Off, Recovery)
+- grant identifiers (PLM-D-00-06)
 - legal/compliance validation (PLM-D-00-11)
 - Platform commercial-state transport dependencies (D-P12-03)
 
@@ -140,7 +156,7 @@ Portfolio: R-091 remains open. Scale architecture: [exits-scale-and-growth-archi
 | Dependency | Notes |
 |---|---|
 | Platform subscription for `pinoy-loan-manager` | Required; **code approved** (PLM-D-00-01); catalog registration not done |
-| Product-owner decisions | PLM-D-00-03 through PLM-D-00-09, PLM-D-00-11, PLM-D-00-13 (PLM-D-00-01 Closed; PLM-D-00-02 Closed for name; PLM-D-00-10 closed; PLM-D-00-12 Closed; PLM-D-00-07 / PLM-D-00-08 Open / Partially Resolved) |
+| Product-owner decisions | PLM-D-00-03 through PLM-D-00-09, PLM-D-00-11 (PLM-D-00-01 Closed; PLM-D-00-02 Closed for name; PLM-D-00-10 closed; PLM-D-00-12 Closed; PLM-D-00-13 Closed; PLM-D-00-07 / PLM-D-00-08 Open / Partially Resolved) |
 | D-P12-03 / R-091 / D-P12-05 | Portfolio-open; do not invent |
 | ExItS scale architecture | Documented on `docs/exits-scale-foundation`; implementation of stamps/shards not required to resume docs work |
 
@@ -166,7 +182,7 @@ Portfolio: R-091 remains open. Scale architecture: [exits-scale-and-growth-archi
 
 | ID | Risk | Mitigation |
 |---|---|---|
-| PLM-D-00-08 | Pressure to invent Loan **rates** or remaining settlement policy | Keep rates Open; calendar/penalty engine accepted in PLM-DOC-03 |
+| PLM-D-00-08 | Pressure to invent Loan **rates** or remaining restructuring/write-off policy | Keep rates Open; settlement/prepayment accepted in PLM-DOC-04 |
 | PLM-D-00-06 | Hard-coding authorization to role names | Grants + scope; no implicit hierarchy |
 | PLM-D-00-04 | Premature generic Platform relationship schema | Record intent only; no schema |
 | PLM-D-00-05 | Auto-link from EX ID / QR | Consent required; resolution identifies only |
@@ -176,9 +192,9 @@ Portfolio: R-091 remains open. Scale architecture: [exits-scale-and-growth-archi
 
 ## Exact next package
 
-**PLM-DOC-04 — Early Settlement, Refunds, Reversals, Cash Variance & Accounting Boundaries**
+**PLM-DOC-05 — Roles, Grants, Workflow Authorization & Operational Security Finalization**
 
-Do **not** start PLM-DOC-04 in this package. Implementation remains paused. Do **not** start or merge PLM-01.
+Do **not** start PLM-DOC-05 in this package. Implementation remains paused. Do **not** start or merge PLM-01.
 
 ## Phase closeout requirements
 

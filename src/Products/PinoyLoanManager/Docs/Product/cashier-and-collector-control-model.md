@@ -6,7 +6,7 @@
 
 Cashier Session, collector daily cash accountability, float, remittance, and cash availability. Complements [collector-cash-and-reconciliation.md](collector-cash-and-reconciliation.md). Does **not** replace the Loan subledger.
 
-Related: [daily-operational-workflow.md](daily-operational-workflow.md), [disbursement-and-payment-controls.md](disbursement-and-payment-controls.md), [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md), [../Architecture/loan-ledger-and-balance-model.md](../Architecture/loan-ledger-and-balance-model.md).
+Related: [daily-operational-workflow.md](daily-operational-workflow.md), [disbursement-and-payment-controls.md](disbursement-and-payment-controls.md), [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md), [cash-variance-and-session-close-policy.md](cash-variance-and-session-close-policy.md), [../Architecture/loan-ledger-and-balance-model.md](../Architecture/loan-ledger-and-balance-model.md), [../Architecture/operational-subledger-and-accounting-boundary.md](../Architecture/operational-subledger-and-accounting-boundary.md).
 
 ---
 
@@ -179,10 +179,10 @@ Variance calculated
         ↓
 Reconciliation recorded
         ↓
-Cashier Session closed or closed-with-variance according to future policy
+Cashier Session closed as Closed Balanced when variance is zero, or Closed With Variance after authorized review when variance is nonzero. Canonical: [cash-variance-and-session-close-policy.md](cash-variance-and-session-close-policy.md).
 ```
 
-Cashier expected cash must derive from recorded cash movements. Variance detail: [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md).
+Cashier expected cash must derive from recorded cash movements. Variance detail: [cash-variance-and-session-close-policy.md](cash-variance-and-session-close-policy.md), [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md).
 
 ---
 

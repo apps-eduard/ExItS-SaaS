@@ -9,7 +9,7 @@
 | Status | Draft — role presets and grant **intent** recorded; identifiers **Open** (PLM-D-00-06) |
 | Implementation present | No |
 
-Planning catalog: [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md).
+Planning catalog: [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md). Maker/checker and Owner Override: [Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md](Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md) (**PLM-D-00-13 Closed**).
 
 ## Layers
 
@@ -111,7 +111,7 @@ Planning **categories**, not final identifiers. Full catalog: [Security/role-and
 | Self-approve own waiver | Deny | Open | Deny | Deny |
 | Self-resolve own cash variance | Deny | Open | Deny | Deny |
 
-**Open** on Owner/Manager self-approval: whether two distinct humans are required for **all** organization sizes remains a product-owner decision. High-risk self-approval restrictions may still apply where explicitly required. Do **not** fake separation of duties with screen labels.
+**Closed** (PLM-D-00-13): requester normally cannot approve their own high-risk action when another eligible approver exists. When the organization has only one eligible high-authority user, a controlled **Owner Override** may be used only with Owner preset plus explicit override grant, mandatory reason/evidence, enhanced audit, and subsequent-review reporting. Owner Override is not available to Collector, Cashier-only, or Manager without the grant. Do **not** fake separation of duties with screen labels. Grant identifiers remain PLM-D-00-06.
 
 Collector **Scope** = assigned borrowers / loans / disbursement tasks / own cash accountability only.
 
@@ -129,7 +129,7 @@ Cashier **Scope** = assigned branch / own cash session unless a broader grant is
 - POS Customer status never grants Loan operational permission.
 - Platform Admin Web is not the normal UI for managing borrower loans.
 - Approval and disbursement are separate authorities.
-- Small organizations may assign multiple presets to one person; each action remains individually authorized and audited.
+- Small organizations may assign multiple presets to one person; each action remains individually authorized and audited. High-risk maker/checker and controlled Owner Override: **PLM-D-00-13 Closed**.
 
 ## Explicit non-grants
 

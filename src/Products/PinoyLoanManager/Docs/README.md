@@ -11,7 +11,7 @@ Always load with:
 5. The active work-package prompt/report
 6. Files required for the task only
 
-**Status:** PLM-00 documentation baseline accepted (PLM-D-00-10); PLM-DOC-01–03 recorded; implementation paused
+**Status:** PLM-00 documentation baseline accepted (PLM-D-00-10); PLM-DOC-01–04 recorded; implementation paused
 **Implementation present:** No
 **Documentation root:** `src/Products/PinoyLoanManager/Docs/` (D-P12-02)
 
@@ -45,6 +45,10 @@ Agreed operating-model direction (not implementation specs):
 | [Product/interest-and-finance-charge-policy.md](Product/interest-and-finance-charge-policy.md) | MVP methods, formulas, interest treatments |
 | [Product/fees-and-net-proceeds-policy.md](Product/fees-and-net-proceeds-policy.md) | Fee bases/treatments; Net Proceeds; Platform charge separation |
 | [Product/payment-allocation-and-prepayment-policy.md](Product/payment-allocation-and-prepayment-policy.md) | Oldest-due allocation; component order; advance/overpayment |
+| [Product/early-settlement-and-principal-prepayment-policy.md](Product/early-settlement-and-principal-prepayment-policy.md) | Settlement Quote, rebate, principal prepayment |
+| [Product/reversal-refund-and-correction-policy.md](Product/reversal-refund-and-correction-policy.md) | Payment reversal, Refund Payable, cash refund |
+| [Product/cash-variance-and-session-close-policy.md](Product/cash-variance-and-session-close-policy.md) | Expected vs actual cash; close-with-variance |
+| [Product/disbursement-cancellation-and-reversal-policy.md](Product/disbursement-cancellation-and-reversal-policy.md) | Cancel before release; reverse after recovery |
 | [Product/money-precision-and-rounding-policy.md](Product/money-precision-and-rounding-policy.md) | Decimal money; To Even; schedule reconciliation |
 | [Product/payment-and-allocation-model.md](Product/payment-and-allocation-model.md) | Partial payments, posting notes, reversals, idempotency |
 | [Product/schedule-maturity-and-settlement.md](Product/schedule-maturity-and-settlement.md) | Schedule, calendar, maturity, settlement (index) |
@@ -54,6 +58,7 @@ Agreed operating-model direction (not implementation specs):
 | [Product/maturity-and-post-maturity-policy.md](Product/maturity-and-post-maturity-policy.md) | Maturity Date, Matured Past Due, post-maturity modes |
 | [Product/loan-lifecycle-model.md](Product/loan-lifecycle-model.md) | Origination vs lifecycle vs delinquency |
 | [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md) | Operational subledger and balance components |
+| [Architecture/operational-subledger-and-accounting-boundary.md](Architecture/operational-subledger-and-accounting-boundary.md) | Loan vs cash ledgers; PLM is not a complete GL |
 | [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md) | Owner/Manager/Cashier/Collector presets; grant catalog intent |
 | [Product/daily-operational-workflow.md](Product/daily-operational-workflow.md) | Common operating day, assignments, offline boundary |
 | [Product/cashier-and-collector-control-model.md](Product/cashier-and-collector-control-model.md) | Cashier Session, float, remittance, cash availability |
@@ -84,6 +89,9 @@ Agreed operating-model direction (not implementation specs):
 | [Reports/PLM-DOC-01-product-identity-and-personal-linking.md](Reports/PLM-DOC-01-product-identity-and-personal-linking.md) | PLM-DOC-01 identity and Personal linking finalization |
 | [Reports/PLM-DOC-02-financial-calculation-and-allocation.md](Reports/PLM-DOC-02-financial-calculation-and-allocation.md) | PLM-DOC-02 calculation, fees, rounding, allocation |
 | [Reports/PLM-DOC-03-schedule-delinquency-penalty-and-maturity.md](Reports/PLM-DOC-03-schedule-delinquency-penalty-and-maturity.md) | PLM-DOC-03 calendar, delinquency, penalty, maturity |
+| [Reports/PLM-DOC-04-settlement-reversals-variance-and-accounting.md](Reports/PLM-DOC-04-settlement-reversals-variance-and-accounting.md) | PLM-DOC-04 settlement, reversals, variance, accounting |
+| [Decisions/ADR-007-early-settlement-and-prepayment-policy.md](Decisions/ADR-007-early-settlement-and-prepayment-policy.md) | Early settlement and principal prepayment |
+| [Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md](Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md) | Reversals, refunds, variance, GL boundary; PLM-D-00-13 Closed |
 | [Decisions/ADR-005-schedule-calendar-and-exception-treatment.md](Decisions/ADR-005-schedule-calendar-and-exception-treatment.md) | Calendar, frequencies, exception defaults |
 | [Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md](Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md) | DPD, penalties, maturity |
 | [Decisions/ADR-001-product-identity-and-database-name.md](Decisions/ADR-001-product-identity-and-database-name.md) | Product code and logical database name |
@@ -150,4 +158,4 @@ Organization Web: Blazor Web (full operations). MAUI Blazor Hybrid: limited fiel
 
 ## Explicit exclusions
 
-No implementation exists. Default interest **rates** and penalty **amounts** are not defined. Grant identifiers remain open (PLM-D-00-06). Early-settlement rebate remains open (PLM-D-00-08 remainder). Do not copy PinoyBusinessPOS grants or money models. No recorded workflow is claimed legally compliant (PLM-D-00-11).
+No implementation exists. Default interest **rates** and penalty **amounts** are not defined. Grant identifiers remain open (PLM-D-00-06). Restructuring and write-off/recovery remain open (PLM-D-00-08 remainder). Do not copy PinoyBusinessPOS grants or money models. No recorded workflow is claimed legally compliant (PLM-D-00-11).

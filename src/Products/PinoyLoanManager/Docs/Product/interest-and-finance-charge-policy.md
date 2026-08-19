@@ -6,9 +6,9 @@
 
 MVP contractual calculation methods, rate bases, interest-treatment compatibility, and snapshot rules. Not a calculation engine, default price list, or legally validated disclosure.
 
-**Canonical companions:** [fees-and-net-proceeds-policy.md](fees-and-net-proceeds-policy.md), [money-precision-and-rounding-policy.md](money-precision-and-rounding-policy.md), [payment-allocation-and-prepayment-policy.md](payment-allocation-and-prepayment-policy.md). ADR: [../Decisions/ADR-003-supported-interest-and-schedule-methods.md](../Decisions/ADR-003-supported-interest-and-schedule-methods.md). Terminology index: [financial-calculation-baseline.md](financial-calculation-baseline.md).
+**Canonical companions:** [fees-and-net-proceeds-policy.md](fees-and-net-proceeds-policy.md), [money-precision-and-rounding-policy.md](money-precision-and-rounding-policy.md), [payment-allocation-and-prepayment-policy.md](payment-allocation-and-prepayment-policy.md), [early-settlement-and-principal-prepayment-policy.md](early-settlement-and-principal-prepayment-policy.md). ADR: [../Decisions/ADR-003-supported-interest-and-schedule-methods.md](../Decisions/ADR-003-supported-interest-and-schedule-methods.md). Terminology index: [financial-calculation-baseline.md](financial-calculation-baseline.md).
 
-Penalties, due-date calendars, excused days, and post-maturity **engine** rules: [schedule-and-collection-calendar-policy.md](schedule-and-collection-calendar-policy.md), [penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md). Default amounts remain undefined. Early-settlement unearned-interest treatment remains open.
+Penalties, due-date calendars, excused days, and post-maturity **engine** rules: [schedule-and-collection-calendar-policy.md](schedule-and-collection-calendar-policy.md), [penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md). Default amounts remain undefined. Early-settlement unearned-interest treatment: [early-settlement-and-principal-prepayment-policy.md](early-settlement-and-principal-prepayment-policy.md).
 
 ---
 

@@ -8,7 +8,7 @@ Payment posting, missed-installment carry-forward, reversal/idempotency, and poi
 
 **Canonical allocation policy:** [payment-allocation-and-prepayment-policy.md](payment-allocation-and-prepayment-policy.md). ADR: [../Decisions/ADR-004-rounding-fees-and-payment-allocation.md](../Decisions/ADR-004-rounding-fees-and-payment-allocation.md).
 
-Related: [financial-calculation-baseline.md](financial-calculation-baseline.md), [schedule-maturity-and-settlement.md](schedule-maturity-and-settlement.md), [../Architecture/loan-ledger-and-balance-model.md](../Architecture/loan-ledger-and-balance-model.md), [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md), [disbursement-and-payment-controls.md](disbursement-and-payment-controls.md), [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md).
+Related: [financial-calculation-baseline.md](financial-calculation-baseline.md), [schedule-maturity-and-settlement.md](schedule-maturity-and-settlement.md), [../Architecture/loan-ledger-and-balance-model.md](../Architecture/loan-ledger-and-balance-model.md), [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md), [disbursement-and-payment-controls.md](disbursement-and-payment-controls.md), [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md), [reversal-refund-and-correction-policy.md](reversal-refund-and-correction-policy.md).
 
 Penalty rates/caps: [penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md). Classification: [delinquency-and-missed-payment-policy.md](delinquency-and-missed-payment-policy.md), [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md).
 
@@ -57,7 +57,7 @@ Engineering safety defaults (not legal caps): penalty-on-penalty default **OFF**
 
 ## Reversals
 
-Do **not** edit the original payment to zero. Original Payment + Authorized Reversal Event + new correct payment where needed. Cash refund is a separate correlated action.
+Do **not** edit the original payment to zero. Original Payment + Authorized Reversal Event + new correct payment where needed. Cash refund is a separate correlated action. Canonical: [reversal-refund-and-correction-policy.md](reversal-refund-and-correction-policy.md).
 
 Posted events are not silently deleted. See [../Architecture/loan-ledger-and-balance-model.md](../Architecture/loan-ledger-and-balance-model.md).
 

@@ -6,9 +6,9 @@
 
 Deterministic payment allocation, partial/multiple/advance payments, overpayment, and reversal. Not a posting engine, cash-refund workflow, or legally validated collections policy.
 
-**Canonical companions:** [interest-and-finance-charge-policy.md](interest-and-finance-charge-policy.md), [fees-and-net-proceeds-policy.md](fees-and-net-proceeds-policy.md), [money-precision-and-rounding-policy.md](money-precision-and-rounding-policy.md), [penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md), [maturity-and-post-maturity-policy.md](maturity-and-post-maturity-policy.md). ADR: [../Decisions/ADR-004-rounding-fees-and-payment-allocation.md](../Decisions/ADR-004-rounding-fees-and-payment-allocation.md). Operational posting notes: [payment-and-allocation-model.md](payment-and-allocation-model.md).
+**Canonical companions:** [interest-and-finance-charge-policy.md](interest-and-finance-charge-policy.md), [fees-and-net-proceeds-policy.md](fees-and-net-proceeds-policy.md), [money-precision-and-rounding-policy.md](money-precision-and-rounding-policy.md), [penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md), [maturity-and-post-maturity-policy.md](maturity-and-post-maturity-policy.md), [early-settlement-and-principal-prepayment-policy.md](early-settlement-and-principal-prepayment-policy.md), [reversal-refund-and-correction-policy.md](reversal-refund-and-correction-policy.md). ADR: [../Decisions/ADR-004-rounding-fees-and-payment-allocation.md](../Decisions/ADR-004-rounding-fees-and-payment-allocation.md). Operational posting notes: [payment-and-allocation-model.md](payment-and-allocation-model.md).
 
-Penalty **amounts** remain undefined. Early-settlement unearned-interest treatment remains open (**PLM-DOC-04**).
+Penalty **amounts** remain undefined. Settlement and principal-prepayment calculation: [early-settlement-and-principal-prepayment-policy.md](early-settlement-and-principal-prepayment-policy.md).
 
 ---
 
@@ -128,31 +128,17 @@ Principal prepayment is **not** the same as ordinary advance installment payment
 
 Do **not** implicitly convert an excess payment into principal prepayment.
 
-Principal prepayment requires an explicit future workflow/policy that defines whether allowed, minimum amount, approval, effect on future interest, effect on schedule, recalculation, disclosures, and audit.
+Canonical policy: [early-settlement-and-principal-prepayment-policy.md](early-settlement-and-principal-prepayment-policy.md). Explicit request, rebate/recalculation, new schedule version, Reduce Term default.
 
-For MVP documentation, ordinary excess within valid scheduled obligations is an **advance payment**.
-
-True principal-prepayment recalculation remains part of early-settlement decisions in a later package.
+For MVP ordinary excess within valid scheduled obligations remains an **advance payment**.
 
 ---
 
 ## Early settlement
 
-Do **not** finalize the treatment of future/unearned interest in this package.
+Full early settlement requires a **Settlement Quote**. Canonical formula, method-specific rebate/accrual, quote validity, and consumption: [early-settlement-and-principal-prepayment-policy.md](early-settlement-and-principal-prepayment-policy.md). ADR: [../Decisions/ADR-007-early-settlement-and-prepayment-policy.md](../Decisions/ADR-007-early-settlement-and-prepayment-policy.md).
 
-Early settlement requires a **Settlement Quote**. The quote must eventually show:
-
-- outstanding principal
-- applicable accrued/contractual finance charge
-- fees
-- penalties
-- waivers
-- credits
-- settlement amount
-- quote validity period
-- calculation policy/version
-
-Exact future-interest rebate/treatment remains open for a later documentation package and legal/accounting review (PLM-D-00-08 remainder, PLM-D-00-11, **PLM-DOC-04**).
+No MVP settlement/prepayment penalty. Legal/accounting review remains required before Production (PLM-D-00-11).
 
 ---
 
@@ -174,7 +160,7 @@ If physical cash was already accepted:
 - use an explicit refund/cash-correction workflow
 - do not mutate the posted payment silently
 
-Exact cash-refund workflow remains open (PLM-D-00-07 remainder).
+Exact cash-refund workflow: [reversal-refund-and-correction-policy.md](reversal-refund-and-correction-policy.md).
 
 ---
 
@@ -190,9 +176,9 @@ Original Payment
 + New Correct Payment where needed
 ```
 
-Loan payment reversal and physical cash refund are separate correlated actions.
+Loan payment reversal and physical cash refund are separate correlated actions. Canonical: [reversal-refund-and-correction-policy.md](reversal-refund-and-correction-policy.md).
 
-Exact approval thresholds remain future authorization decisions (PLM-D-00-06).
+Exact grant identifiers remain future authorization decisions (PLM-D-00-06).
 
 ---
 
@@ -213,7 +199,6 @@ No allocation order, advance-payment, or overpayment rule in this document is cl
 - Organization-editable allocation order in MVP
 - Automatic conversion of excess into principal prepayment
 - Borrower wallet / stored credit
-- Early-settlement unearned-interest formula
+- Settlement/prepayment penalty in MVP
 - Penalty rates/amounts (engine accepted; no defaults)
-- Cash-refund workflow design
 - Implementation of a posting engine

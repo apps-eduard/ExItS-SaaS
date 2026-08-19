@@ -26,3 +26,4 @@ This directory will hold Pinoy Loan Manager operations notes when a deployable p
 - recovery
 - observability
 - production-readiness evidence
+- GL journal/export contract (deferred; PLM operational ledgers remain authoritative)
