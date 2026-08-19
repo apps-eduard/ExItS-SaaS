@@ -107,13 +107,16 @@ describe("application shell", () => {
     });
   });
 
-  it("shows planned items as disabled", async () => {
+  it("shows planned items as non-navigable Development status when tools are allowed", async () => {
     stubDesktop(true);
+    vi.spyOn(developmentTools, "areDevelopmentToolsAllowed").mockReturnValue(true);
     mockAuthenticatedFetch();
     window.history.replaceState({}, "", "/admin");
     render(<App />);
-    const planned = await screen.findByRole("button", { name: /Event Delivery/i });
-    expect(planned).toBeDisabled();
+    expect(await screen.findByLabelText("Event Delivery. Planned")).toBeInTheDocument();
+    expect(screen.getByLabelText("Platform Settings. Planned")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Event Delivery/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Event Delivery" })).not.toBeInTheDocument();
     expect(screen.getAllByText("Planned").length).toBeGreaterThan(0);
   });
 
@@ -212,6 +215,7 @@ describe("application shell", () => {
     await screen.findByRole("heading", { name: "Overview" });
     expect(screen.getByText("Development")).toBeInTheDocument();
     expect(screen.getByLabelText("Organizations. Under development")).toBeInTheDocument();
+    expect(screen.getByLabelText("Event Delivery. Planned")).toBeInTheDocument();
     expect(screen.getAllByText("Under development").length).toBeGreaterThan(0);
     expect(screen.queryByRole("link", { name: "Organizations" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Organizations/ })).not.toBeInTheDocument();
@@ -226,6 +230,9 @@ describe("application shell", () => {
     await screen.findByRole("heading", { name: "Overview" });
     expect(screen.queryByText("Development")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Organizations. Under development")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Event Delivery. Planned")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Platform Settings. Planned")).not.toBeInTheDocument();
+    expect(screen.queryByText("Test Payments")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Overview" })).toBeInTheDocument();
   });
 

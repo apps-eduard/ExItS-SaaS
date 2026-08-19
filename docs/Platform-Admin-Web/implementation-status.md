@@ -57,6 +57,7 @@ Mailpit and Development/Testing fake payments remain in place. This package does
 | PWEB-IMPL-04 | COMPLETE | Application shell + navigation foundation |
 | PWEB-IMPL-04A | COMPLETE | Global Error Diagnostics + Copy |
 | PWEB-IMPL-04B | COMPLETE | Known Route Under-Development State |
+| PWEB-IMPL-04B-A | COMPLETE | Production nav implemented-only correction |
 | PWEB-IMPL-04C | NOT STARTED | Parallel React Local-Validation Container |
 | PWEB-IMPL-05 | NOT STARTED | Dashboard |
 | PWEB-IMPL-06 | NOT STARTED | First Visual Checkpoint |
@@ -154,6 +155,20 @@ Status: **COMPLETE**
 | Visual checkpoint | **Not approved / not claimed** |
 
 Explicitly not claimed: visual approval, first visual checkpoint, Dashboard, Docker, logout.
+
+## PWEB-IMPL-04B-A — Production nav implemented-only correction
+
+Status: **COMPLETE**
+
+| Area | Record |
+|---|---|
+| Canonical navigation lifecycle | Preserved (`AVAILABLE` / `PLANNED_DISABLED` metadata unchanged) |
+| Production-shaped navigation | Implemented React destinations only (`PWEB-NAV-OVERVIEW` at this stage) |
+| `PLANNED_DISABLED` presentation | Hidden from normal production/staging/preview/qa/uat/unknown navigation |
+| Development / test / testing | Authorized planned items appear under Development as non-navigable “Planned”; under-development items remain non-navigable “Under development” |
+| Direct known routes | Unchanged from PWEB-IMPL-04B |
+| Dashboard | **NOT implemented** |
+| Docker | **NOT implemented** |
 
 ## Queue
 

@@ -54,7 +54,10 @@ test.describe("development frontend mode", () => {
     await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
     await expect(page.getByText("Development", { exact: true })).toBeVisible();
     await expect(page.getByLabel("Organizations. Under development")).toBeVisible();
+    await expect(page.getByLabel("Event Delivery. Planned")).toBeVisible();
     await expect(page.getByRole("link", { name: "Organizations" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Event Delivery" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /Event Delivery/ })).toHaveCount(0);
   });
 });
 
@@ -79,8 +82,12 @@ test("production preview hides migration-status navigation entries", async ({ pa
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Overview" })).toBeVisible();
+  await expect(page.getByText("Development", { exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Organizations. Under development")).toHaveCount(0);
   await expect(page.getByText("Under development")).toHaveCount(0);
+  await expect(page.getByText("Event Delivery")).toHaveCount(0);
+  await expect(page.getByText("Platform Settings")).toHaveCount(0);
+  await expect(page.getByText("Test Payments")).toHaveCount(0);
 });
 
 test("under-development page has no horizontal overflow at 375px", async ({ page }) => {

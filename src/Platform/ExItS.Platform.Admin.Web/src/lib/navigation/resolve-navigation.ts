@@ -45,6 +45,14 @@ function presentationFor(item: NavigationItemDefinition): ResolvedNavigationItem
   return "link";
 }
 
+function isMigrationOrPlanningPresentation(
+  presentation: ResolvedNavigationItem["presentation"],
+): boolean {
+  return (
+    presentation === "underDevelopment" || presentation === "planned" || presentation === "context"
+  );
+}
+
 export function resolveNavigation(input: ResolveNavigationInput): ResolvedNavigationSection[] {
   const developmentItems: ResolvedNavigationItem[] = [];
 
@@ -68,7 +76,7 @@ export function resolveNavigation(input: ResolveNavigationInput): ResolvedNaviga
             presentation: presentationFor(item),
           };
 
-          if (resolved.presentation === "underDevelopment") {
+          if (isMigrationOrPlanningPresentation(resolved.presentation)) {
             if (input.developmentToolsAllowed) {
               developmentItems.push(resolved);
             }

@@ -74,39 +74,22 @@ function NavItem({
     </span>
   );
 
-  if (underDevelopment) {
+  if (underDevelopment || planned || !item.href) {
+    const statusLabel = underDevelopment
+      ? `${label}. ${t("nav.underDevelopment")}`
+      : planned
+        ? `${label}. ${t("nav.planned")}`
+        : `${label}. ${hint}`;
     const status = (
       <span
         aria-disabled="true"
-        aria-label={`${label}. ${t("nav.underDevelopment")}`}
+        aria-label={statusLabel}
         className="block w-full cursor-default text-[length:var(--exits-text-sm)] text-muted"
       >
         {content}
       </span>
     );
-    return collapsed ? (
-      <Tooltip content={`${label}. ${t("nav.underDevelopment")}`}>{status}</Tooltip>
-    ) : (
-      status
-    );
-  }
-
-  if (planned || !item.href) {
-    const disabled = (
-      <button
-        type="button"
-        disabled
-        aria-disabled="true"
-        className="w-full cursor-not-allowed text-left text-[length:var(--exits-text-sm)] text-muted"
-      >
-        {content}
-      </button>
-    );
-    return (
-      <Tooltip content={`${label}. ${hint}`}>
-        <span className="block w-full">{disabled}</span>
-      </Tooltip>
-    );
+    return collapsed ? <Tooltip content={statusLabel}>{status}</Tooltip> : status;
   }
 
   const link = (
