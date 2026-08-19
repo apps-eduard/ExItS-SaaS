@@ -21,6 +21,7 @@
     "vite.config.ts",
     "vitest.config.ts",
     "playwright.config.ts",
-    "src/pwa/pwa-manifest.ts"
+    "src/pwa/pwa-manifest.ts",
+    "src/pwa/platform-api-proxy.ts"
   ]
 }

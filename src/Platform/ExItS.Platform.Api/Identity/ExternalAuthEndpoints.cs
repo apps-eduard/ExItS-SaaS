@@ -50,6 +50,7 @@ internal static class ExternalAuthEndpoints
             IOptions<PlatformSessionOptions> sessionOptions,
             IOptions<PlatformExternalAuthOptions> options,
             IHostEnvironment env,
+            IConfiguration config,
             CancellationToken ct) =>
         {
             if (!TryResolveScheme(provider, options.Value, out var scheme, out var error))
@@ -103,7 +104,8 @@ internal static class ExternalAuthEndpoints
                 result.Value.SessionToken,
                 result.Value.ExpiresAtUtc,
                 sessionOptions.Value,
-                env);
+                env,
+                config);
 
             var returnUrl = auth.Properties?.Items.TryGetValue(
                 PlatformExternalAuthDefaults.ReturnUrlItemKey,
@@ -124,6 +126,7 @@ internal static class ExternalAuthEndpoints
             IOptions<PlatformSessionOptions> sessionOptions,
             IOptions<PlatformExternalAuthOptions> options,
             IHostEnvironment env,
+            IConfiguration config,
             CancellationToken ct) =>
         {
             if (!(env.IsDevelopment() || env.IsEnvironment("Testing")) || !options.Value.TestingEndpointEnabled)
@@ -157,7 +160,8 @@ internal static class ExternalAuthEndpoints
                 result.Value.SessionToken,
                 result.Value.ExpiresAtUtc,
                 sessionOptions.Value,
-                env);
+                env,
+                config);
             return Results.Ok(result.Value);
         })
         .RequireRateLimiting(PlatformSecurityPipeline.AuthLoginRateLimitPolicy)

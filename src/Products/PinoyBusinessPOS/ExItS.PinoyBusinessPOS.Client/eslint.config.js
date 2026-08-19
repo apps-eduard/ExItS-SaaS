@@ -34,10 +34,16 @@ export default tseslint.config(
         "warn",
         {
           allowConstantExport: true,
-          allowExportNames: ["usePreferences", "useI18n", "useRegisterSW"],
+          allowExportNames: ["usePreferences", "useI18n", "useRegisterSW", "useSession"],
         },
       ],
       "@typescript-eslint/no-explicit-any": "error",
+    },
+  },
+  {
+    files: ["src/pwa/platform-api-proxy.ts", "e2e/**/*.ts"],
+    languageOptions: {
+      globals: globals.node,
     },
   },
 );

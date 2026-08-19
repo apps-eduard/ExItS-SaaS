@@ -12,13 +12,15 @@ It does **not** authorize implementation.
 - Planning documentation: **FINAL APPROVED** (DOC-00 … DOC-08; AMEND-01, AMEND-02, AMEND-03)
 - React mobile implementation: **Gate C COMPLETE** (IMPL-01 / IMPL-01A)
 - PWA foundation: **Gate D AUTHORIZED + COMPLETE** (IMPL-02)
+- Browser session auth unblock: **IMPL-03A COMPLETE** (same-origin `/platform-api` + Local Validation HTTP cookie)
+- IMPL-03 workspace UI: **NOT COMPLETE**
 - PWA production rollout: **NOT AUTHORIZED**
 - Capacitor production rollout: **NOT AUTHORIZED**
 - MAUI retirement: **NOT AUTHORIZED**
 - Merge to `main`: **PERFORMED** (`MOBILE-REACT-DOC-MERGE-01`)
 - Gate E+: **NOT AUTHORIZED**
 - MOBILE-D-060: **OPEN**
-- Current MAUI, Organization Web, Personal Web, Platform APIs, and POS APIs: **unchanged**
+- Current MAUI, Organization Web, Personal Web, and POS APIs: **unchanged**. Platform API session-cookie Secure flag now allows explicit Local Validation HTTP only.
 
 ## Worktree
 
@@ -45,6 +47,7 @@ It does **not** authorize implementation.
 - [Reports/MOBILE-REACT-DOC-MERGE-01-approved-planning-baseline.md](Reports/MOBILE-REACT-DOC-MERGE-01-approved-planning-baseline.md) — merge of approved planning baseline to `main`
 - [Reports/MOBILE-REACT-IMPL-01-react-foundation.md](Reports/MOBILE-REACT-IMPL-01-react-foundation.md) — Gate C client foundation
 - [Reports/MOBILE-REACT-IMPL-02-pwa-foundation.md](Reports/MOBILE-REACT-IMPL-02-pwa-foundation.md) — Gate D PWA static shell foundation
+- [Reports/MOBILE-REACT-IMPL-03A-browser-auth-unblock.md](Reports/MOBILE-REACT-IMPL-03A-browser-auth-unblock.md) — same-origin browser session auth unblock
 
 ## Canonical rule
 

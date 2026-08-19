@@ -23,6 +23,7 @@ internal static class AuthEndpoints
             LoginPlatformUser useCase,
             IOptions<PlatformSessionOptions> sessionOptions,
             IHostEnvironment env,
+            IConfiguration config,
             CancellationToken ct) =>
         {
             var result = await useCase.ExecuteAsync(
@@ -37,7 +38,13 @@ internal static class AuthEndpoints
                 return PlatformApiResults.FromResult(result, _ => Results.Ok());
             }
 
-            AppendSessionCookie(http, result.Value.SessionToken, result.Value.ExpiresAtUtc, sessionOptions.Value, env);
+            AppendSessionCookie(
+                http,
+                result.Value.SessionToken,
+                result.Value.ExpiresAtUtc,
+                sessionOptions.Value,
+                env,
+                config);
             return Results.Ok(result.Value);
         })
         .RequireRateLimiting(PlatformSecurityPipeline.AuthLoginRateLimitPolicy)
@@ -444,6 +451,7 @@ internal static class AuthEndpoints
             SelectAccountProfileSession useCase,
             IOptions<PlatformSessionOptions> sessionOptions,
             IHostEnvironment env,
+            IConfiguration config,
             CancellationToken ct) =>
         {
             if (!TryGetAuthenticatedUserId(http, out var userId))
@@ -476,7 +484,13 @@ internal static class AuthEndpoints
                 return PlatformApiResults.FromResult(result, _ => Results.Ok());
             }
 
-            AppendSessionCookie(http, result.Value.SessionToken, result.Value.ExpiresAtUtc, sessionOptions.Value, env);
+            AppendSessionCookie(
+                http,
+                result.Value.SessionToken,
+                result.Value.ExpiresAtUtc,
+                sessionOptions.Value,
+                env,
+                config);
             return Results.Ok(result.Value);
         });
 
@@ -758,9 +772,10 @@ internal static class AuthEndpoints
         string sessionToken,
         DateTimeOffset expiresAtUtc,
         PlatformSessionOptions options,
-        IHostEnvironment env)
+        IHostEnvironment env,
+        IConfiguration configuration)
     {
-        var secure = !(env.IsDevelopment() || env.IsEnvironment("Testing"));
+        var secure = PlatformSessionCookiePolicy.IsSecure(env, configuration, http.Request.IsHttps);
         http.Response.Cookies.Append(
             options.CookieName,
             sessionToken,

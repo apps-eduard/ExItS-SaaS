@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { mockAuthenticatedSession } from "./helpers/session";
 
 async function assertNoHorizontalOverflow(page: import("@playwright/test").Page) {
   const overflow = await page.evaluate(() => {
@@ -39,12 +40,14 @@ test.describe("PWA foundation", () => {
     const source = await response.text();
     expect(source).toContain("NetworkOnly");
     expect(source).toMatch(/\\\/api\\\//);
+    expect(source).toMatch(/platform-api/);
     expect(source).not.toMatch(/BackgroundSyncPlugin|workbox-background-sync/);
     expect(source).not.toMatch(/CacheFirst[\s\S]{0,180}\/api\/|\/api\/[\s\S]{0,180}CacheFirst/);
     expect(source).toMatch(/assets\/index-[A-Za-z0-9_-]+\.(js|css)/);
   });
 
   test("standalone phone tablet and desktop shell do not overflow", async ({ page }) => {
+    await mockAuthenticatedSession(page);
     await page.addInitScript(() => {
       const original = window.matchMedia.bind(window);
       window.matchMedia = ((query: string) => {
@@ -78,6 +81,7 @@ test.describe("PWA foundation", () => {
   });
 
   test("axe has no serious or critical violations with the PWA shell", async ({ page }) => {
+    await mockAuthenticatedSession(page);
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/");
     const results = await new AxeBuilder({ page }).analyze();

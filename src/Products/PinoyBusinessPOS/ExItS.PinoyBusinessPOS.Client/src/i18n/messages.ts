@@ -36,7 +36,20 @@ export type MessageKey =
   | "status.foundation"
   | "status.preview"
   | "pwa.updateAvailable"
-  | "pwa.refresh";
+  | "pwa.refresh"
+  | "auth.checking"
+  | "auth.signInTitle"
+  | "auth.signInSubtitle"
+  | "auth.username"
+  | "auth.password"
+  | "auth.showPassword"
+  | "auth.hidePassword"
+  | "auth.submit"
+  | "auth.invalidCredentials"
+  | "auth.signInFailed"
+  | "auth.rateLimited"
+  | "auth.signedInAs"
+  | "auth.signOut";
 
 export const en: Record<MessageKey, string> = {
   "app.name": "ExItS Mobile",
@@ -51,7 +64,7 @@ export const en: Record<MessageKey, string> = {
   "foundation.intro":
     "This screen proves the Mobile Client host: shared top bar, phone bottom navigation, tablet and desktop layout, and ExItS tokens. It is not a store, not a checkout, and not Platform Admin.",
   "foundation.notLiveNotice":
-    "Placeholder content only. Selling, auth, and workspace selection are not in this package.",
+    "Placeholder content only. Workspace selection, PIN, and selling are not in this package.",
   "foundation.opsPreviewTitle": "Compact operations chrome",
   "foundation.opsPreviewHint":
     "Cashier surfaces use compact spacing. Controls stay at least 44 CSS pixels.",
@@ -81,6 +94,19 @@ export const en: Record<MessageKey, string> = {
   "status.preview": "Preview",
   "pwa.updateAvailable": "New version available",
   "pwa.refresh": "Refresh",
+  "auth.checking": "Checking session",
+  "auth.signInTitle": "Sign in",
+  "auth.signInSubtitle": "Use your ExItS account. The browser keeps an HttpOnly session cookie.",
+  "auth.username": "Email or username",
+  "auth.password": "Password",
+  "auth.showPassword": "Show password",
+  "auth.hidePassword": "Hide password",
+  "auth.submit": "Sign in",
+  "auth.invalidCredentials": "Email or password is incorrect.",
+  "auth.signInFailed": "Unable to sign in. Try again.",
+  "auth.rateLimited": "Too many sign-in attempts. Try again later.",
+  "auth.signedInAs": "Signed in as",
+  "auth.signOut": "Sign out",
 };
 
 export const filPH: Record<MessageKey, string> = {
@@ -96,7 +122,7 @@ export const filPH: Record<MessageKey, string> = {
   "foundation.intro":
     "Pinapatunayan ng screen na ito ang Mobile Client host: shared top bar, bottom navigation sa telepono, layout sa tablet at desktop, at mga token ng ExItS. Hindi ito tindahan, hindi checkout, at hindi Platform Admin.",
   "foundation.notLiveNotice":
-    "Placeholder lamang. Hindi kasama sa package na ito ang pagbebenta, auth, at pagpili ng workspace.",
+    "Placeholder lamang. Hindi kasama sa package na ito ang pagpili ng workspace, PIN, at pagbebenta.",
   "foundation.opsPreviewTitle": "Compact na operations chrome",
   "foundation.opsPreviewHint":
     "Masikip ang spacing sa cashier surfaces. Hindi bababa sa 44 CSS pixels ang mga control.",
@@ -127,6 +153,20 @@ export const filPH: Record<MessageKey, string> = {
   "status.preview": "Preview",
   "pwa.updateAvailable": "May bagong bersyon",
   "pwa.refresh": "I-refresh",
+  "auth.checking": "Tinitingnan ang session",
+  "auth.signInTitle": "Mag-sign in",
+  "auth.signInSubtitle":
+    "Gamitin ang ExItS account. HttpOnly session cookie ang iniingatan ng browser.",
+  "auth.username": "Email o username",
+  "auth.password": "Password",
+  "auth.showPassword": "Ipakita ang password",
+  "auth.hidePassword": "Itago ang password",
+  "auth.submit": "Mag-sign in",
+  "auth.invalidCredentials": "Mali ang email o password.",
+  "auth.signInFailed": "Hindi makapag-sign in. Subukan ulit.",
+  "auth.rateLimited": "Sobra na ang mga pagtatangka. Subukan ulit mamaya.",
+  "auth.signedInAs": "Naka-sign in bilang",
+  "auth.signOut": "Mag-sign out",
 };
 
 export const catalogs: Record<"en" | "fil-PH", Record<MessageKey, string>> = {

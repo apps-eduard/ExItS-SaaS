@@ -16,7 +16,8 @@ describe("api http foundation", () => {
 
     await platformRequest<{ ok: boolean }>({ path: "/health" });
 
-    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("/platform-api/health");
     const headers = new Headers(init.headers);
     expect(headers.get("X-Correlation-Id")).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,

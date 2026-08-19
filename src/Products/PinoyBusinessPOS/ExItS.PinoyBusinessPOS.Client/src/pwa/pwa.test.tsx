@@ -13,6 +13,7 @@ import {
   PWA_DEFAULT_APP_VERSION,
   PWA_DISPLAY,
   PWA_ICON_FILES,
+  PWA_PLATFORM_API_PREFIX_PATTERN,
   PWA_SHORT_NAME,
   PWA_START_URL,
   PWA_THEME_COLOR,
@@ -58,7 +59,11 @@ describe("PWA manifest identity", () => {
 
   it("keeps API traffic on NetworkOnly patterns", () => {
     expect(PWA_API_PATH_PATTERN.test("/api/sales")).toBe(true);
-    expect(PWA_API_PATH_PATTERN.test("/appearance")).toBe(false);
+    expect(PWA_API_PATH_PATTERN.test("/platform-api/api/v1/platform/auth/me")).toBe(true);
+    expect(PWA_PLATFORM_API_PREFIX_PATTERN.test("/platform-api/api/v1/platform/auth/login")).toBe(
+      true,
+    );
+    expect(PWA_PLATFORM_API_PREFIX_PATTERN.test("/appearance")).toBe(false);
     expect(PWA_API_PORT_PATTERN.test("http://127.0.0.1:8091/health")).toBe(true);
     expect(PWA_API_PORT_PATTERN.test("http://127.0.0.1:8092/sales")).toBe(true);
     expect(PWA_API_PORT_PATTERN.test("http://127.0.0.1:4175/")).toBe(false);

@@ -61,7 +61,11 @@ export type ApiRequestOptions = {
 };
 
 export function getPlatformApiBaseUrl(): string {
-  return import.meta.env.VITE_PLATFORM_API_BASE_URL ?? "http://127.0.0.1:8091";
+  const configured = import.meta.env.VITE_PLATFORM_API_BASE_URL?.trim();
+  if (!configured) {
+    return "/platform-api";
+  }
+  return configured.replace(/\/$/, "");
 }
 
 export function getPosApiBaseUrl(): string {
@@ -69,7 +73,7 @@ export function getPosApiBaseUrl(): string {
 }
 
 export function getAppVersion(): string {
-  return import.meta.env.VITE_APP_VERSION ?? "0.0.1-impl-02";
+  return import.meta.env.VITE_APP_VERSION ?? "0.0.1-impl-03a";
 }
 
 async function apiRequest<T>(

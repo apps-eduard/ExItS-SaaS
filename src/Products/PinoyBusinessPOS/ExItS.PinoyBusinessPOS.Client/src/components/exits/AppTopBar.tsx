@@ -1,8 +1,10 @@
 import { StatusChip } from "@/components/ui/badge";
+import { useSession } from "@/auth/SessionProvider";
 import { useI18n } from "@/i18n/I18nProvider";
 
 export function AppTopBar() {
   const { t } = useI18n();
+  const { session } = useSession();
 
   return (
     <header
@@ -18,7 +20,7 @@ export function AppTopBar() {
             {t("app.name")}
           </p>
           <p className="m-0 truncate text-[length:var(--exits-text-xs)] text-muted">
-            {t("shell.productPlaceholder")}
+            {session?.displayName ?? t("shell.productPlaceholder")}
           </p>
           <p className="m-0 truncate text-[length:var(--exits-text-xs)] text-muted">
             {t("shell.contextPlaceholder")}

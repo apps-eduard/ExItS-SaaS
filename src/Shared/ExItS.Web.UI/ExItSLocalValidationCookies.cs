@@ -24,5 +24,27 @@ public static class ExItSLocalValidationCookies
             ? CookieSecurePolicy.SameAsRequest
             : CookieSecurePolicy.Always;
 
+    /// <summary>
+    /// SameAsRequest when HTTP auth cookies are allowed; otherwise always Secure.
+    /// Production remains Secure even over HTTP. Generic Staging HTTP stays Secure.
+    /// </summary>
+    public static bool SessionCookieSecure(
+        IHostEnvironment environment,
+        IConfiguration configuration,
+        bool requestIsHttps)
+    {
+        if (environment.IsProduction())
+        {
+            return true;
+        }
+
+        if (!AllowHttpAuthCookies(environment, configuration))
+        {
+            return true;
+        }
+
+        return requestIsHttps;
+    }
+
     public static bool SessionTokenSecure(HttpRequest request) => request.IsHttps;
 }

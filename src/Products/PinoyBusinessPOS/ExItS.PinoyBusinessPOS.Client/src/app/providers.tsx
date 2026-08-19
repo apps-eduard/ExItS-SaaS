@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
+import { SessionProvider } from "@/auth/SessionProvider";
 import { AppErrorBoundary } from "@/components/exits/AppErrorBoundary";
 import { I18nProvider } from "@/i18n/I18nProvider";
 import { PreferencesProvider, usePreferences } from "@/hooks/usePreferences";
@@ -23,7 +24,9 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <PreferencesProvider>
         <LocaleBridge>
-          <AppErrorBoundary>{children}</AppErrorBoundary>
+          <SessionProvider>
+            <AppErrorBoundary>{children}</AppErrorBoundary>
+          </SessionProvider>
         </LocaleBridge>
       </PreferencesProvider>
     </QueryClientProvider>

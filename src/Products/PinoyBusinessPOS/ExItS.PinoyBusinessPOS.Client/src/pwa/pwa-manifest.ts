@@ -6,7 +6,8 @@ export const PWA_DISPLAY = "standalone";
 export const PWA_THEME_COLOR = "#166534";
 export const PWA_BACKGROUND_COLOR = "#eef3f0";
 export const PWA_LANG = "en";
-export const PWA_DEFAULT_APP_VERSION = "0.0.1-impl-02";
+export const PWA_DEFAULT_APP_VERSION = "0.0.1-impl-03a";
+export const PWA_PLATFORM_API_PREFIX_PATTERN = /\/platform-api\//i;
 
 export const PWA_ICON_FILES = [
   "icon-192.png",

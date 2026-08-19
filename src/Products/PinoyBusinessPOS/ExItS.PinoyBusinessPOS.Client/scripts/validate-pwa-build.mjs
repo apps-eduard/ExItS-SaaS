@@ -63,6 +63,9 @@ if (!serviceWorker.includes("NetworkOnly")) {
 if (!/\\\/api\\\//.test(serviceWorker) && !serviceWorker.includes("/api/")) {
   fail("Production service worker must exclude /api/ from runtime cache.");
 }
+if (!serviceWorker.includes("platform-api")) {
+  fail("Production service worker must keep /platform-api traffic NetworkOnly.");
+}
 if (!serviceWorker.includes("8091") || !serviceWorker.includes("8092")) {
   fail("Production service worker must keep Platform/POS API ports NetworkOnly.");
 }

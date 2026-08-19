@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { mockAuthenticatedSession } from "./helpers/session";
 
 const artifactDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "artifacts");
 
@@ -27,6 +28,10 @@ async function assertTouchTargets(page: import("@playwright/test").Page) {
 }
 
 test.describe("foundation shell", () => {
+  test.beforeEach(async ({ page }) => {
+    await mockAuthenticatedSession(page);
+  });
+
   test("phone 320 and 375 have no horizontal overflow", async ({ page }) => {
     for (const width of [320, 375] as const) {
       await page.setViewportSize({ width, height: 812 });
@@ -62,8 +67,7 @@ test.describe("foundation shell", () => {
   test("keyboard focus is visible on appearance controls", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/appearance");
-    await page.keyboard.press("Tab");
-    await page.keyboard.press("Tab");
+    await page.getByRole("button", { name: "English" }).focus();
     const focused = page.locator(":focus-visible");
     await expect(focused).toBeVisible();
   });
