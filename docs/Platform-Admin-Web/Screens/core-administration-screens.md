@@ -77,10 +77,10 @@ Additional practical IDs used by the screens:
 ## 3. A) Platform Overview / Dashboard
 
 ### Purpose
-High-level operational/control-plane overview for Platform Admin users.
+High-level operational/control-plane overview for Platform Admin users. The Dashboard is one of the initial visual reference screens establishing the SaaS Control Center's visual identity and data-presentation patterns.
 
 ### Route concept
-Top-level “Overview” page in the Platform shell (dashboard landing for the Admin experience).
+Top-level "Overview" page in the Platform shell (dashboard landing for the Admin experience).
 
 ### Primary personas
 - Platform Administrator
@@ -90,18 +90,31 @@ Top-level “Overview” page in the Platform shell (dashboard landing for the A
 - Requires authenticated Platform/Admin shell authorization.
 - Specific data blocks must be permission-aware (server enforces; UI hides unauthorized widgets).
 
-### Data displayed (no fake KPIs)
-- Organization counts and status distribution (only where backed by Platform capability)
-- Recent audit highlights (permission filtered)
-- Operational “needs attention” items expressed as status summaries (not product operations)
-- Recent Platform events (time-window selection)
+### Data displayed (evidence-backed only; no fake KPIs)
+
+Every dashboard widget must identify its backing capability. Do not fabricate counts, load unbounded datasets to calculate cards, show health widgets without a real source, or create fake success/healthy states.
+
+| Widget | Content | Backing capability | Authorization | Navigation target |
+|---|---|---|---|---|
+| Organization summary | Organization count and status distribution | `PWEB-CAP-ORG-LIST` (count from list endpoint) | `ViewPortfolio` or `ManageOrganizations` | Organizations list |
+| Attention-required organizations | Organizations needing review (status-filtered) | `PWEB-CAP-ORG-LIST` (status filter) | `ViewPortfolio` or `ManageOrganizations` | Organizations list (filtered) |
+| Subscription/commercial summary | Active/trialing/past-due subscription counts | `PWEB-CAP-SUBSCRIPTION-LIST` (status aggregation) | `ManageSubscriptions` | Subscriptions list |
+| Accounts needing review | Platform users with needs-review status | `PWEB-CAP-IDENTITY-LIST` (status filter) | `ManagePlatformUsers` | Users list (filtered) |
+| Recent Platform audit/activity | Recent audit events (time-windowed) | `PWEB-CAP-ORG-ACTIVITY-AUDIT` or `PWEB-CAP-AUDIT-LIST` | `ViewAuditRecords` | Audit log |
+| Platform health | Health/readiness status | `PWEB-CAP-OPS-HEALTH-STATUS` | Platform Administrator | Operations health |
+
+If a desired KPI cannot currently be obtained efficiently and safely, mark it Planned/Deferred or omit it. Do not fake it.
 
 ### Primary actions
-- “Open Organizations list” (navigation only)
+- "Open Organizations list" (navigation only)
 
 ### Secondary actions
 - Refresh/reload dashboard data
 - Open Audit timeline with pre-filled filters (if supported later)
+
+### Quick navigation
+- Safe navigation shortcuts to key sections (Organizations, Users, Subscriptions)
+- No destructive actions from the dashboard
 
 ### Search
 No global search execution from dashboard. Dashboard widgets are navigation-only.
@@ -110,8 +123,9 @@ No global search execution from dashboard. Dashboard widgets are navigation-only
 Within dashboard widgets, any filtering/sorting is internal to that widget and must map to backed server capability.
 
 ### Pagination / loading policy
-- Loading uses skeleton placeholders.
+- Loading uses skeleton placeholders per widget.
 - Widgets that return lists must use server paging or limited window (no infinite loading).
+- Do not load huge unbounded datasets into the browser merely to calculate card values.
 
 ### Table / card behavior
 - Summary widgets use cards/stat blocks.
@@ -119,13 +133,14 @@ Within dashboard widgets, any filtering/sorting is internal to that widget and m
 
 ### Loading state
 - Skeleton for each widget area.
+- Each widget loads independently; one widget loading does not block others.
 - Disable primary navigation actions only when absolutely necessary.
 
 ### Empty state / zero-result
-- Empty widget shows “No data yet” (not error).
+- Empty widget shows "No data yet" (not error).
 
 ### Partial / error state
-- If a widget fails, show inline widget error with “Retry” for that widget; do not blank the entire dashboard.
+- If a widget fails, show inline widget error with "Retry" for that widget; do not blank the entire dashboard.
 
 ### Forbidden state
 - If user lacks permission for a widget, widget is hidden; no partial unauthorized disclosure.
@@ -145,14 +160,19 @@ None on dashboard.
 - Status badges always include text labels (no color-only meaning).
 
 ### Required backend capabilities
-- `PWEB-CAP-ORG-OVERVIEW-DATA`
-- `PWEB-CAP-ORG-ACTIVITY-AUDIT`
+- `PWEB-CAP-ORG-LIST` (organization counts)
+- `PWEB-CAP-ORG-ACTIVITY-AUDIT` or `PWEB-CAP-AUDIT-LIST` (recent activity)
+- `PWEB-CAP-SUBSCRIPTION-LIST` (commercial summary)
+- `PWEB-CAP-IDENTITY-LIST` (accounts needing review)
+- `PWEB-CAP-OPS-HEALTH-STATUS` (Platform health; if available)
 
 ### Explicit non-goals
 - Do not invent or display KPIs not backed by Platform capabilities.
 - Do not include POS/PLM operational workflow data.
+- Do not fabricate counts or load unbounded datasets for card calculations.
 
 ---
+
 
 ## 4. B) Organizations List
 

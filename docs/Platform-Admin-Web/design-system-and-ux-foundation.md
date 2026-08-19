@@ -161,7 +161,7 @@ Easing: `ease` (standard), `ease-in`, `ease-out`, `ease-emphasized`.
 | `density-icon-size` | 18px | 20px |
 | `touch-target-min` | 3rem (48px) | 3rem (48px) |
 
-Platform Admin defaults to compact density for data-dense administrative tables.
+The existing shared C# DesignSystem defines Compact and Comfortable density modes. The React Platform Admin adds Balanced as the default density. Compact and Comfortable remain available as user preferences.
 
 ---
 
@@ -196,10 +196,15 @@ All spacing uses the 4px base scale. Consistent gap/padding patterns:
 
 ### 3.5 Density behavior
 
-- **Compact (default for Admin):** Denser tables, shorter control heights, tighter padding. Suited for data-heavy administrative views (organization lists, audit logs, subscription tables).
-- **Comfortable:** Slightly taller controls, more generous padding. Suited for form-heavy flows where readability and input comfort matter (user creation, plan editing).
+Three density modes are available:
 
-Forms remain readable even in compact mode — only table/list density is aggressively compact.
+- **Compact:** Denser tables, shorter control heights, tighter padding. Suited for experienced operators who prefer maximum information density.
+- **Balanced (default for React Platform Admin):** Moderate density that balances information density with readability. Suited for most administrative workflows. This is the approved future React Admin web density model; it does not exist in the current shared C# DesignSystem implementation (which defines only Compact and Comfortable).
+- **Comfortable:** Taller controls, more generous padding. Suited for form-heavy flows where readability and input comfort matter (user creation, plan editing).
+
+Forms remain readable even in Compact mode — only table/list density is aggressively compact.
+
+Density preference is remembered per user where persistence is available.
 
 ---
 
@@ -393,3 +398,36 @@ Desktop-first. The SaaS Control Center is primarily used on desktop/laptop viewp
 - Dialogs expand to full viewport width on narrow screens.
 - Touch targets remain ≥ 48px on all viewports.
 - Admin does not need to be optimized for phone-first workflows, but core read and navigation tasks must not break catastrophically on any supported width.
+---
+
+## 9. Localization
+
+### 9.1 Supported languages
+
+| Language | Code | Role |
+|---|---|---|
+| English | `en` | Default language |
+| Filipino | `fil-PH` | Supported secondary language |
+
+### 9.2 Localization rules
+
+- No hard-coded user-facing application strings. All visible text uses localization keys/resources from the beginning.
+- Do not translate user-entered data (organization names, product names, person names).
+- Do not translate technical identifiers (capability IDs, error codes, API paths).
+- Locale-aware formatting for dates, numbers, and currencies.
+- Test longer Filipino labels for clipping and wrapping in all UI surfaces (sidebar, buttons, table headers, form labels, badges, tooltips).
+
+### 9.3 User preferences
+
+| Preference | Options | Persistence |
+|---|---|---|
+| Language | English / Filipino | Remembered per user where persistence is available |
+| Theme | System / Light / Dark | Remembered per user where persistence is available |
+| Density | Comfortable / Balanced / Compact | Remembered per user where persistence is available |
+| Sidebar | Expanded / Collapsed | Remembered per user/session |
+| Table display | Column visibility, sort order (where supported) | Remembered per user where persistence is available |
+| Regional / time-zone | Display preferences for date/time formatting (where supported) | Remembered per user where persistence is available |
+
+### 9.4 Responsive authentication
+
+Authentication screens (Sign In, Register, Forgot Password, Reset Password) must be deliberately polished for phone-sized screens. Mobile login is a first-class UX requirement, unlike the administrative shell which is desktop-first.

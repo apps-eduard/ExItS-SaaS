@@ -25,7 +25,7 @@ It is not a product-operational console. POS checkout, inventory operations, cas
 | Data-dense when appropriate | List and detail views present the information operators need without hiding it behind unnecessary clicks, while avoiding overwhelming low-frequency users. |
 | Discoverable | Features and entities are findable through navigation, search, and contextual links without requiring prior memorization. |
 | Keyboard-friendly | All primary workflows are operable via keyboard. Focus management is correct. Tab order is logical. |
-| Accessible | Meets WCAG 2.1 AA. Screen reader support, sufficient contrast, resizable text, no information conveyed by color alone. |
+| Accessible | Meets WCAG 2.2 AA. Screen reader support, sufficient contrast, resizable text, no information conveyed by color alone. |
 | Responsive | Usable on desktop and tablet. The primary target is desktop (wide viewport); tablet is supported but not optimized for mobile-phone form factors. |
 | Safe for high-impact administration | Destructive or irreversible actions require explicit confirmation. Bulk operations show preview and count. Role and permission changes are audited. |
 | Consistent across Platform capabilities | Navigation patterns, list/detail layout, form behavior, error handling, and empty states follow shared conventions. |
@@ -107,6 +107,8 @@ A person responsible for audit review, privacy compliance, and security governan
 ---
 
 ## 3. Information Architecture
+
+The canonical navigation registry with stable `PWEB-NAV-*` identifiers, lifecycle states, localization keys, and permission mappings is maintained in `navigation-registry.md`. This section summarizes the high-level structure.
 
 ### 3.1 Primary Navigation Structure
 

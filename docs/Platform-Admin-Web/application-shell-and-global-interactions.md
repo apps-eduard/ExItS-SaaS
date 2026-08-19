@@ -21,24 +21,46 @@ This DOC specifies shell behavior to match the approved Platform Admin Web IA (D
 
 This DOC defines the future app shell behavior without requiring any specific React/route implementation details.
 
+## 0.1 Shell surface responsibility boundaries
+
+Each shell surface has a distinct responsibility. Avoid duplicating the same information or control across multiple surfaces.
+
+| Surface | Responsibility | Question it answers |
+|---|---|---|
+| **Sidebar** | Global navigation structure | "Where can I go?" |
+| **Top bar** | Global context, tools, and preferences | "What global context/tool/preference do I need?" |
+| **Breadcrumb** | Current location in the navigation hierarchy | "Where am I?" |
+| **Page header** | Entity/page identity and available actions | "What am I looking at and what can I do?" |
+| **Workspace navigation** | Entity-local section selection | "Which part of this entity am I managing?" |
+
+The canonical navigation structure is defined in `navigation-registry.md`. This document specifies shell behavior; it does not duplicate the full registry.
+
 ---
 
 ## 1. Application Shell (behavior spec)
 
 ### 1.1 Persistent primary sidebar
 
-The primary sidebar is always present in the Platform shell:
+The primary sidebar is always present in the Platform shell. Its sole responsibility is answering "Where can I go?" — the canonical navigation structure is defined in `navigation-registry.md`.
 
-- **Purpose:** provide global access to top-level navigation groups (as defined by DOC-02).
+- **Purpose:** provide global access to top-level navigation groups.
 - **State:** the sidebar supports expand/collapse on desktop.
+- **Icon-only collapsed mode:** when collapsed, show icons with accessible tooltips for each section/item.
 - **Selected state indication:**
   - active group is visually indicated in the sidebar
   - active page highlights the specific leaf item where applicable
-- **Permission-aware visibility:** items the user cannot access must not be shown.
-  - This is UX behavior only. Server-side authorization remains authoritative.
+- **Hover / focus states:** clear visual feedback for hover and keyboard focus on all items.
+- **Permission-aware visibility (`UNAUTHORIZED`):** items the user cannot access are hidden (not shown disabled). Server-side authorization remains authoritative.
+- **Planned disabled state (`PLANNED_DISABLED`):** items that exist in an approved roadmap but are not yet implemented are visible but disabled with a small "Planned" badge and tooltip: "Planned — not available yet." No route to fake/empty implementation.
+- **Context required state (`CONTEXT_REQUIRED`):** items requiring a selected organization/entity context are visible but disabled until context is selected, with tooltip explaining what must be selected.
+- **Development-only visibility (`DEV_TEST_ONLY`):** items available only in Development/Testing are completely absent from Production navigation.
 - **Loading fallback:**
   - while permission facts load, the sidebar must not show unauthorized items
   - show a loading placeholder (spin/skeleton) instead of briefly flashing hidden items
+- **Keyboard interaction:** all sidebar items reachable via keyboard. Arrow keys navigate within sections. Enter/Space activates.
+- **EN / fil-PH resilience:** sidebar labels must not clip or overflow with longer Filipino translations. Test with representative fil-PH strings.
+- **Light/dark behavior:** sidebar follows the active theme using ExItS design tokens. No arbitrary one-off menu styling.
+- **No clipping:** labels, icons, and badges must remain fully visible in both expanded and collapsed modes at all supported viewports.
 
 ### 1.2 Collapse/expand behavior
 
@@ -55,24 +77,36 @@ In addition to the selected leaf item highlight, the shell exposes a “current 
 
 ### 1.4 Top bar
 
-The top bar is persistent and contains:
+The top bar is persistent. Its responsibility is "What global context/tool/preference do I need?" It contains:
 
 1. **Navigation control**
    - on tablet/narrow, show a hamburger/menu button that opens the navigation drawer
-2. **Breadcrumb area placeholder**
-   - breadcrumbs sit directly under the top bar (see §1.6)
-3. **Search entry**
-   - a global search entry (input/button) that focuses the global search experience
-4. **Command palette entry**
-   - either an explicit button or a visible hint for keyboard access (e.g., “Ctrl+K”)
-5. **Organization context switcher**
+2. **Global search entry**
+   - only when global entity search capability is genuinely usable (`PWEB-CAP-*` backed)
+   - if server-side entity search is not yet available, either disable with "Planned" state or provide only the subset genuinely backed
+   - do not create fake search results
+   - command palette may still support safe local navigation even if global server entity search is unavailable
+3. **Command palette entry**
+   - either an explicit button or a visible hint for keyboard access (e.g., "Ctrl+K")
+4. **Organization/entity context switcher**
    - shows the current organization context when applicable to the route
-6. **Environment indicator**
-   - only when the app is running in a non-production environment (e.g., Local Validation or staging markers)
-7. **User/account menu**
+5. **Environment indicator**
+   - Production: restrained neutral indicator (may be absent or subtle)
+   - Development/Testing/Staging: visually distinctive — an administrator must not easily confuse non-production with Production
+6. **Language selector**
+   - English (`en`) / Filipino (`fil-PH`)
+7. **Theme selector**
+   - System / Light / Dark
+8. **User/account menu**
    - sign out
-   - account settings that are available in the current account class/shell mode
+   - account settings, preferences (language, theme, density)
    - settings links that depend on selected organization context (disabled/hidden if not available)
+9. **Notifications**
+   - only when a real approved capability exists; do not invent notification infrastructure
+
+Breadcrumbs sit directly under the top bar (see §1.6).
+
+**Responsive collapse/overflow:** top bar elements compress gracefully. Search and command palette remain accessible via keyboard on narrow screens. Non-essential elements may move to overflow menus.
 
 ### 1.5 User/account menu
 

@@ -27,6 +27,9 @@ boundaries, and records a dedicated planning worktree (`docs/platform-admin-web-
 - `Screens/governance-operations-settings-screens.md` — governance, operations + settings screen specifications
 - `Reports/PLATFORM-WEB-DOC-08-governance-operations-settings.md` — governance operations settings report
 - `api-capability-matrix.md` — Platform API capability matrix + backend gap audit (DOC-09)
-- `migration-testing-and-implementation-gates.md` — migration plan, testing strategy, implementation gates (DOC-10)
+- `navigation-registry.md` — canonical navigation registry with PWEB-NAV-* IDs (AMEND-01)
+- `Screens/authentication-screens.md` — authentication screen specifications (AMEND-01)
+- `migration-testing-and-implementation-gates.md` — migration plan, testing strategy, implementation gates, visual DoD, release policy (DOC-10 + AMEND-01)
 - `Reports/PLATFORM-WEB-DOC-10-final-closeout.md` — final closeout report (DOC-10)
+- `Reports/PLATFORM-WEB-DOC-FINAL-AMEND-01.md` — UX/release amendment report (AMEND-01)
 

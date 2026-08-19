@@ -14,7 +14,7 @@ All `PWEB-CAP-*` requirements extracted from:
 - `Screens/commercial-and-product-screens.md` (DOC-07)
 - `Screens/governance-operations-settings-screens.md` (DOC-08)
 
-Total capability IDs: **63**.
+Total capability IDs: **75**.
 
 ## Classification meanings (must be evidence-based)
 
@@ -845,9 +845,121 @@ Total capability IDs: **63**.
 - Audit requirement: audited via organization mutation authz paths (`PlatformAuditActions.OrganizationUpdated` / branching audit writers where applicable)
 - Gap owner / priority: Platform API / High
 
+### Authentication Screens (AMEND-01)
+
+#### `PWEB-CAP-AUTH-LOGIN`
+- Screen: Sign In
+- Need: authenticate with credentials (email + password)
+- Required operation: login
+- Status: **EXISTS**
+- Verified API route (method): `POST /api/v1/platform/auth/login`
+- Relevant auth requirement: AllowAnonymous, rate-limited (`auth-login`)
+- Evidence source: `src/Platform/ExItS.Platform.Api/Identity/AuthEndpoints.cs`
+- Notes: sets session cookie on success.
+
+#### `PWEB-CAP-AUTH-LOGOUT`
+- Screen: Application shell (sign out)
+- Need: invalidate session and clear cookie
+- Required operation: logout
+- Status: **EXISTS**
+- Verified API route (method): `POST /api/v1/platform/auth/logout`
+- Relevant auth requirement: AllowAnonymous
+- Evidence source: `src/Platform/ExItS.Platform.Api/Identity/AuthEndpoints.cs`
+
+#### `PWEB-CAP-AUTH-ME`
+- Screen: Session validation / shell bootstrap
+- Need: validate/renew session, return auth state
+- Required operation: session check
+- Status: **EXISTS**
+- Verified API route (method): `GET /api/v1/platform/auth/me`
+- Relevant auth requirement: AllowAnonymous
+- Evidence source: `src/Platform/ExItS.Platform.Api/Identity/AuthEndpoints.cs`
+
+#### `PWEB-CAP-AUTH-FORGOT-PASSWORD`
+- Screen: Forgot Password
+- Need: request password reset email
+- Required operation: initiate reset
+- Status: **EXISTS**
+- Verified API route (method): `POST /api/v1/platform/auth/forgot-password`
+- Relevant auth requirement: AllowAnonymous, rate-limited (`auth-password-reset`)
+- Evidence source: `src/Platform/ExItS.Platform.Api/Identity/AuthEndpoints.cs`
+
+#### `PWEB-CAP-AUTH-RESET-PASSWORD`
+- Screen: Reset Password
+- Need: reset password with token
+- Required operation: complete reset
+- Status: **EXISTS**
+- Verified API route (method): `POST /api/v1/platform/auth/reset-password`
+- Relevant auth requirement: AllowAnonymous, rate-limited (`auth-password-reset`)
+- Evidence source: `src/Platform/ExItS.Platform.Api/Identity/AuthEndpoints.cs`
+
+#### `PWEB-CAP-AUTH-REGISTER`
+- Screen: Create Account / Register
+- Need: register personal account
+- Required operation: register
+- Status: **EXISTS**
+- Verified API route (method): `POST /api/v1/platform/auth/register`
+- Relevant auth requirement: AllowAnonymous, rate-limited (`auth-password-reset`)
+- Evidence source: `src/Platform/ExItS.Platform.Api/Identity/AuthEndpoints.cs`
+
+#### `PWEB-CAP-AUTH-ACTIVATE`
+- Screen: Account Activation
+- Need: activate personal account with token + password
+- Required operation: activate
+- Status: **EXISTS**
+- Verified API route (method): `POST /api/v1/platform/auth/activate-account`
+- Relevant auth requirement: AllowAnonymous, rate-limited
+- Evidence source: `src/Platform/ExItS.Platform.Api/Identity/AuthEndpoints.cs`
+
+#### `PWEB-CAP-AUTH-EXTERNAL-CHALLENGE`
+- Screen: Sign In (social auth)
+- Need: initiate external login (Google/Facebook)
+- Required operation: OAuth challenge redirect
+- Status: **EXISTS**
+- Verified API route (method): `GET /api/v1/platform/auth/external/{provider}/challenge`
+- Relevant auth requirement: AllowAnonymous, rate-limited (`auth-login`)
+- Evidence source: `src/Platform/ExItS.Platform.Api/Identity/ExternalAuthEndpoints.cs`
+- Notes: Google and Facebook supported when configured with ClientId/ClientSecret.
+
+#### `PWEB-CAP-AUTH-EXTERNAL-COMPLETE`
+- Screen: Sign In (social auth callback)
+- Need: complete external login
+- Required operation: OAuth callback
+- Status: **EXISTS**
+- Verified API route (method): `GET /api/v1/platform/auth/external/{provider}/complete`
+- Relevant auth requirement: AllowAnonymous
+- Evidence source: `src/Platform/ExItS.Platform.Api/Identity/ExternalAuthEndpoints.cs`
+
+#### `PWEB-CAP-AUTH-CHANGE-PASSWORD`
+- Screen: Account settings (change password)
+- Need: change password (authenticated)
+- Required operation: password change
+- Status: **EXISTS**
+- Verified API route (method): `POST /api/v1/platform/auth/change-password`
+- Relevant auth requirement: Authenticated (session claim)
+- Evidence source: `src/Platform/ExItS.Platform.Api/Identity/AuthEndpoints.cs`
+
+#### `PWEB-CAP-AUTH-ACCOUNT-PROFILES`
+- Screen: Account profile selection
+- Need: list account profiles for user
+- Required operation: list profiles
+- Status: **EXISTS**
+- Verified API route (method): `GET /api/v1/platform/auth/account-profiles`
+- Relevant auth requirement: Authenticated
+- Evidence source: `src/Platform/ExItS.Platform.Api/Identity/AuthEndpoints.cs`
+
+#### `PWEB-CAP-AUTH-PROFILE-SELECT`
+- Screen: Account profile selection
+- Need: select account profile, set session
+- Required operation: profile select
+- Status: **EXISTS**
+- Verified API route (method): `POST /api/v1/platform/auth/account-profiles/select`
+- Relevant auth requirement: Authenticated
+- Evidence source: `src/Platform/ExItS.Platform.Api/Identity/AuthEndpoints.cs`
+
 ## Backend gap summary (prioritized; evidence-based)
 
-A. Reuse as-is (backed by verified routes): **49 capabilities**
+A. Reuse as-is (backed by verified routes): **61 capabilities**
 - Products/catalog: list/get and plan/trial management exist (DOC-07)
 - Commercial config: subscriptions/plan change, entitlements/snapshots + feature overrides, manual SaaS payments, and org-scoped views exist (DOC-07 + DOC-06)
 - Audit read APIs exist (global + org-scoped) (DOC-06 + DOC-08)

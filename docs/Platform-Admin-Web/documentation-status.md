@@ -18,9 +18,9 @@ Backend implementation from this series: `Absent`
 
 API gaps: `Documented, not implemented`
 
-Platform Admin Web documentation: `100% Final` (approved planning baseline)
+Platform Admin Web documentation: `100% Final` (approved planning baseline + AMEND-01)
 
-Queue state: `CLEAR`
+Queue state: `STOPPED FOR PRODUCT OWNER + CHATGPT REVIEW`
 
 ## DOC queue
 
@@ -36,4 +36,5 @@ Queue state: `CLEAR`
 | DOC-08 | Complete | Governance, operations + settings screen specifications + security UX + capability requirements |
 | DOC-09 | Complete | Platform API capability matrix + backend gap audit (evidence-based DOC-09) |
 | DOC-10 | Complete | Migration plan, testing strategy, implementation gates, cross-document audit, final closeout |
+| AMEND-01 | Complete | UX, authentication, navigation, visual-quality, and release-policy amendment |
 

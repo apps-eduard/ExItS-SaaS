@@ -174,3 +174,198 @@ Define the authorization gates that control progression from documentation to im
 - Each gate requires explicit authorization before proceeding to the next.
 - Gate authorization is recorded in the decisions log with the authorizing party and date.
 - If a gate fails validation, work returns to the previous gate for remediation.
+---
+
+## 7. Visual Definition of Done
+
+### 7.1 Purpose
+
+A frontend package is not complete merely because it compiles, API calls work, and tests pass. Every significant UI package must satisfy this visual Definition of Done.
+
+### 7.2 Verification checklist
+
+| Category | Verification items |
+|---|---|
+| **Structure** | Documented screen/component structure matched |
+| **Design tokens** | ExItS design tokens used; no arbitrary one-off styling |
+| **Typography** | Typography hierarchy correct (page title, section, body, label, caption) |
+| **Spacing** | Spacing consistency using the 4px base scale |
+| **Desktop** | Correct layout at desktop viewport (>=1024px) |
+| **Laptop** | Correct layout at laptop viewport (768-1023px) |
+| **Tablet** | Correct layout at tablet viewport (480-767px) |
+| **Narrow** | Correct layout at narrow viewport (<480px) where applicable |
+| **Mobile auth** | Authentication screens polished for phone-sized screens |
+| **Light theme** | Correct appearance in Light theme |
+| **Dark theme** | Correct appearance in Dark theme |
+| **System theme** | Correct theme switching with system preference |
+| **English** | All text renders correctly in English |
+| **Filipino** | All text renders correctly in Filipino; no clipping or overflow with longer labels |
+| **Density** | Correct appearance in Comfortable, Balanced, and Compact modes (where relevant) |
+| **Loading state** | Loading skeleton/indicator present |
+| **Empty state** | Correct empty state message and optional action |
+| **Zero-result** | Correct zero-result state reflecting search/filter terms |
+| **Error state** | Correct partial/error state with retry |
+| **Forbidden state** | Correct forbidden/unauthorized state |
+| **Focus** | Visible focus ring on all interactive elements |
+| **Hover** | Correct hover states |
+| **Keyboard** | Full keyboard operability; logical tab order |
+| **Reduced motion** | All animations suppressed when `prefers-reduced-motion: reduce` is active |
+| **No clipping** | No text, icon, or control clipping |
+| **No overflow** | No uncontrolled horizontal page overflow |
+| **No overlap** | No overlapping controls or elements |
+| **Long translations** | No broken layout with long Filipino translations |
+| **Console** | Console free of unexpected runtime errors |
+| **TypeScript** | TypeScript typecheck passes |
+| **Lint** | ESLint/Prettier passes |
+| **Tests** | Relevant unit/component/integration tests pass |
+| **Accessibility** | Automated accessibility checks pass (axe-core or equivalent) |
+
+---
+
+## 8. Playwright Visual QA / Screenshots
+
+### 8.1 Purpose
+
+Document automated screenshot QA for visual consistency verification. Exact implementation tooling and versions remain future work.
+
+### 8.2 Representative screenshot matrix
+
+#### Platform shell / Dashboard
+
+| Viewport | Language | Theme | Description |
+|---|---|---|---|
+| 1440x900 | English | Light | Primary desktop reference |
+| 1440x900 | English | Dark | Desktop dark theme |
+| 1280x800 | English | Light | Laptop viewport |
+| 768x1024 | English | Light | Tablet responsive |
+
+#### Authentication
+
+| Viewport | Language | Theme | Description |
+|---|---|---|---|
+| 1440x900 | English | Light | Desktop sign-in Light |
+| 1440x900 | English | Dark | Desktop sign-in Dark |
+| 375x812 | English | Light | Phone sign-in Light |
+| 375x812 | English | Dark | Phone sign-in Dark |
+| 375x812 | Filipino | Light | Phone sign-in Filipino (label length stress) |
+| 320x568 | English | Light | Narrow-width stress case |
+
+### 8.3 Screenshot workflow
+
+- Cursor generates screenshots during implementation rather than requiring the Product Owner to manually capture every routine state.
+- Before Product Owner visual approval, screenshots are review/QA artifacts.
+- After Product Owner visual approval, approved screenshots may become visual-regression baselines.
+- Cursor must NOT automatically declare its own first screenshot as an approved baseline.
+- Visual-regression baselines require explicit Product Owner sign-off.
+
+---
+
+## 9. Visual Reference Screens
+
+### 9.1 Initial visual reference surfaces
+
+The following screens are designated as the initial visual references that establish the SaaS Control Center's visual language:
+
+| Order | Screen | Purpose |
+|---|---|---|
+| 1 | Authentication / Sign In | Establishes brand identity, auth visual language, mobile-first auth UX |
+| 2 | Platform Dashboard | Establishes shell layout, data card patterns, summary presentation |
+| 3 | Organizations List | Establishes data table/list patterns, search/filter toolbar, pagination |
+| 4 | Organization Workspace | Establishes entity detail, workspace navigation, tab patterns |
+
+Once Product Owner-approved implementations exist for these screens, later screens inherit their visual patterns rather than inventing new visual languages.
+
+### 9.2 Design quality target
+
+The SaaS Control Center targets the quality level of professional administrative products such as Linear, Stripe Dashboard, Vercel, and GitHub administration — but must NOT copy their visual identity. ExItS has its own brand tokens, color palette, and typography.
+
+Target: a professional SaaS control center an administrator can comfortably use for an entire work day.
+
+---
+
+## 10. First Visual Implementation Checkpoint
+
+### 10.1 Purpose
+
+After a future authorized and validated React scaffold (Gate C), the first meaningful visual implementation milestone establishes only the visual foundation.
+
+### 10.2 PWEB Visual Foundation checkpoint scope
+
+The visual foundation milestone covers:
+
+1. Authentication / sign-in experience
+2. Core design tokens and primitives
+3. Application shell (sidebar, top bar, content region)
+4. Navigation (sidebar sections, active/hover/focus states)
+5. Breadcrumbs and page-header pattern
+6. Theme, language, and density preference switching
+7. Dashboard (with evidence-backed widgets only)
+
+### 10.3 Verification sequence
+
+After implementing the visual foundation:
+
+1. TypeScript typecheck
+2. Lint
+3. Tests
+4. Accessibility checks
+5. Playwright automated visual screenshots
+6. Fix obvious visual failures
+7. Git diff review
+8. Focused commit
+9. Push
+10. Report
+11. **STOP**
+
+### 10.4 Mandatory stop
+
+After the visual foundation milestone: **STOP**.
+
+Do NOT automatically continue into Organizations, Users, Products, Plans, Subscriptions, Entitlements, Billing, Governance, or Settings implementation — even if later commands were queued.
+
+Product Owner + ChatGPT review the visual foundation first. Later implementation resumes only after explicit approval.
+
+---
+
+## 11. Frontend Release / Cache / Version Policy
+
+### 11.1 Purpose
+
+Define requirements so that normal end users are never instructed to manually clear their browser cache after routine ExItS deployments.
+
+### 11.2 Caching strategy
+
+| Asset type | Caching behavior |
+|---|---|
+| Entry HTML / app bootstrap | Must not use long-lived immutable caching. Browser/proxy should revalidate on every load. |
+| Content-hashed JS/CSS/static assets | May use long-lived immutable caching. Changed builds receive changed filenames (content hash in filename). |
+| Fonts / images | May use long-lived caching with content-hash or versioned paths. |
+
+### 11.3 Restrictions
+
+- **No service worker / PWA by default.** Service workers require separate explicit authorization and an update strategy.
+- **CDN / reverse proxy** caching rules must preserve entry-point revalidation. Must not pin stale application HTML.
+
+### 11.4 Deployment requirements
+
+- Versioned/atomic or equivalent safe release behavior.
+- Avoid mixed old/new asset sets during rollout.
+- Preserve previous hashed assets long enough (or use equivalent safe strategy) so existing sessions do not immediately fail on lazy chunk requests.
+
+### 11.5 Version awareness
+
+- Frontend build/release identifier available for diagnostics (accessible in UI or dev tools).
+- Long-running Admin sessions can detect that a newer frontend release is available.
+- Show a safe "New version available — Refresh" experience where useful.
+- Never silently destroy unsaved administrator work.
+- Refresh should occur safely.
+- Manual cache clearing is NOT the normal update procedure.
+
+### 11.6 API compatibility
+
+- Frontend/backend rolling deployment must avoid an incompatible old-frontend/new-API or new-frontend/old-API window.
+- Document compatible rollout/version strategy as a release requirement.
+
+### 11.7 Validation
+
+- Production/deployment validation must verify expected cache headers and update behavior where practical.
