@@ -268,6 +268,8 @@ Navigation visibility is not authorization. Every API and domain operation must 
 
 No cross-database foreign keys. Products consume stable IDs and versioned projections.
 
+**Portfolio hosting (EXITS-ARCH-01):** default = hosted multi-tenant SaaS (**D-HOST-01**, not implemented). On-prem remains a supported special mode (**D-P14-01**). Same product architecture across modes; no customer source forks. See [hosting-and-deployment-operating-model.md](../Product-Foundation/hosting-and-deployment-operating-model.md).
+
 ---
 
 ## 12. Validation order

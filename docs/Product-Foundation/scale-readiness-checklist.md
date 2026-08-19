@@ -41,7 +41,8 @@ Use this when reviewing future Platform or product work packages. Checking an it
 
 ## Honesty
 
-- [ ] R-091 remains open until production authentication is actually Production-ready
+- [ ] R-091 is Closed for Phase 13 scope; residual MFA/SSO/email/step-up and portfolio Production readiness remain separate gates
+- [ ] D-P12-05 satisfied for authentication honesty; Dev/Testing paths labeled honestly; portfolio not Production Ready
 - [ ] D-P12-03 remains open until commercial-state transport is decided
 - [ ] No claim of millions of users supported
 - [ ] No fabricated SLA, benchmark, or RPO/RTO

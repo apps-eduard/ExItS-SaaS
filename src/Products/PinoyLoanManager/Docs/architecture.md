@@ -24,11 +24,13 @@ Surfaces (agreed direction, not implemented): Platform Admin (SaaS only) · Orga
 
 Pinoy Loan Manager must never take a project or database dependency on PinoyBusinessPOS.
 
+**Hosting:** this product is intended to follow the portfolio hosting model — hosted multi-tenant SaaS as default (**D-HOST-01**), dedicated hosting optional, customer on-prem as a special mode. Same PLM architecture/source across modes; no customer forks. Hosted infrastructure is **not** implemented. Product implementation remains paused. See [hosting-and-deployment-operating-model.md](../../../../docs/Product-Foundation/hosting-and-deployment-operating-model.md).
+
 ## Responsibility boundary
 
 | Area | Platform | This product |
 |---|---|---|
-| Identity / accounts / future prod auth | Yes (R-091 open) | Consume trusted actor only |
+| Identity / accounts / Platform auth | Yes (**R-091 Closed for Phase 13 scope**; consume trusted actor only) | Consume trusted actor only |
 | Organizations / memberships | Yes | Guid reference + isolation |
 | Product catalog / plans / subscriptions / entitlements | Yes | Enforce; no Platform table reads |
 | SaaS billing / Platform administration / Platform audit | Yes | No |
