@@ -4,6 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { defineConfig } from "vitest/config";
+import { createPlatformApiProxy } from "./vite.platform-api-proxy";
 import { createPwaManifest } from "./src/pwa/pwa-manifest";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
@@ -61,15 +62,17 @@ export default defineConfig({
   server: {
     port: 5176,
     strictPort: true,
+    proxy: createPlatformApiProxy(),
   },
   preview: {
     port: 4176,
     strictPort: true,
     host: "127.0.0.1",
+    proxy: createPlatformApiProxy(),
   },
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
-    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx", "vite.platform-api-proxy.test.ts"],
   },
 });

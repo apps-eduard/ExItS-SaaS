@@ -11,8 +11,8 @@ Always load with:
 5. The active work-package prompt/report
 6. Files required for the task only
 
-**Status:** PLM-00 accepted; PLM-01 product shell scaffolded; PLM-01A client architecture approved (PLM-D-00-09); Gate B React scaffold complete; Gate C PWA foundation complete
-**Implementation present:** Product shell + React Client + installable online-first PWA — no lending domain; no auth; no Capacitor
+**Status:** PLM-00 accepted; PLM-01 product shell scaffolded; PLM-01A client architecture approved (PLM-D-00-09); Gates B, C, and D0 complete
+**Implementation present:** Product shell + React Client + installable online-first PWA + `/platform-api` transport — no lending domain; no auth UI; no Capacitor
 **Documentation root:** `src/Products/PinoyLoanManager/Docs/` (D-P12-02)
 
 Pinoy Loan Manager is a **separate first-class ExItS SaaS product**, a sibling of PinoyBusinessPOS, not a POS module, feature, or database extension.
@@ -76,6 +76,7 @@ Agreed operating-model direction (not implementation specs):
 | [Reports/PLM-01A-react-pwa-capacitor-architecture-decision.md](Reports/PLM-01A-react-pwa-capacitor-architecture-decision.md) | PLM-01A client architecture decision |
 | [Reports/PLM-CLIENT-GATE-B-react-client-scaffold.md](Reports/PLM-CLIENT-GATE-B-react-client-scaffold.md) | React Client scaffold (Gate B) |
 | [Reports/PLM-CLIENT-GATE-C-browser-pwa-foundation.md](Reports/PLM-CLIENT-GATE-C-browser-pwa-foundation.md) | Browser + PWA foundation (Gate C) |
+| [Reports/PLM-CLIENT-GATE-D0-browser-auth-transport.md](Reports/PLM-CLIENT-GATE-D0-browser-auth-transport.md) | Browser session auth transport (Gate D0) |
 | [Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md](Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md) | ADR: one React + PWA + Capacitor client |
 | [Validation/PLM-00-readiness-checklist.md](Validation/PLM-00-readiness-checklist.md) | Docs-only readiness checklist |
 

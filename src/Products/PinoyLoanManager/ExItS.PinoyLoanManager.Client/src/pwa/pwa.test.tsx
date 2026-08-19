@@ -4,7 +4,13 @@ import userEvent from "@testing-library/user-event";
 import { AppProviders } from "@/app/providers";
 import { applyPwaUpdateIfAllowed } from "@/pwa/apply-pwa-update";
 import { PwaUpdateNotice } from "@/pwa/PwaUpdateNotice";
-import { createPwaManifest, PWA_API_PATH_PATTERN, PWA_THEME_COLOR } from "@/pwa/pwa-manifest";
+import {
+  createPwaManifest,
+  PWA_API_PATH_PATTERN,
+  PWA_AUTH_PATH_PATTERN,
+  PWA_PLATFORM_API_PATH_PATTERN,
+  PWA_THEME_COLOR,
+} from "@/pwa/pwa-manifest";
 import { UI_PREFERENCES_STORAGE_KEY } from "@/lib/preferences/ui-preferences";
 
 describe("PWA manifest", () => {
@@ -17,6 +23,8 @@ describe("PWA manifest", () => {
     expect(manifest.theme_color).toBe(PWA_THEME_COLOR);
     expect(manifest.description.toLowerCase()).not.toContain("foundation");
     expect(PWA_API_PATH_PATTERN.test("/api/loans")).toBe(true);
+    expect(PWA_PLATFORM_API_PATH_PATTERN.test("/platform-api/api/v1/platform/auth/me")).toBe(true);
+    expect(PWA_AUTH_PATH_PATTERN.test("/api/v1/platform/auth/me")).toBe(true);
     expect(PWA_API_PATH_PATTERN.test("/appearance")).toBe(false);
   });
 });

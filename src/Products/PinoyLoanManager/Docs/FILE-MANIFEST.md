@@ -1,8 +1,8 @@
 # Pinoy Loan Manager — File Manifest
 
-**Status:** PLM-01 scaffold; Gates B–C client/PWA complete
-**Implementation present:** Product shell + React Client + online-first PWA; no lending/auth/Capacitor
-**Current work package:** PLM-CLIENT-GATE-C Browser + PWA foundation
+**Status:** PLM-01 scaffold; Gates B–C client/PWA complete; Gate D0 browser auth transport
+**Implementation present:** Product shell + React Client + online-first PWA + `/platform-api` transport; no lending/auth UI/Capacitor
+**Current work package:** PLM-CLIENT-GATE-D0 Browser session auth transport
 
 This file is the navigation map for future Cursor work. Load this product’s `Docs/` after the shared Product Foundation reference. Do not scan PinoyBusinessPOS implementation by default.
 
@@ -99,6 +99,7 @@ Shared contracts to load with this product:
 | `Docs/Reports/PLM-01A-react-pwa-capacitor-architecture-decision.md` | PLM-01A evidence | Architecture decision complete | No |
 | `Docs/Reports/PLM-CLIENT-GATE-B-react-client-scaffold.md` | Gate B React Client scaffold | Complete after validation | React foundation |
 | `Docs/Reports/PLM-CLIENT-GATE-C-browser-pwa-foundation.md` | Gate C Browser + PWA foundation | Complete after validation | Online-first PWA |
+| `Docs/Reports/PLM-CLIENT-GATE-D0-browser-auth-transport.md` | Gate D0 browser session auth transport | Complete after validation | Same-origin `/platform-api` + cookie policy |
 
 ## Foundation closeout (PLM-00-WP10)
 
@@ -137,7 +138,7 @@ Shared contracts to load with this product:
 | `ExItS.PinoyLoanManager.Api` | Created — `/health` only |
 | `ExItS.PinoyLoanManager.ApiClient` | Created — marker only |
 | `ExItS.PinoyLoanManager.Web` | Created — identity shell only; future host/BFF |
-| `ExItS.PinoyLoanManager.Client` | Created — Gate B/C React + online-first PWA; no lending/auth/Capacitor |
+| `ExItS.PinoyLoanManager.Client` | Created — Gates B–D0 React + PWA + `/platform-api` transport; no lending/auth UI/Capacitor |
 | `tests/ExItS.PinoyLoanManager.UnitTests` | Created |
 | `ExItS.slnx` PLM entries | Registered |
 

@@ -1,7 +1,7 @@
 # Pinoy Loan Manager — React / PWA / Capacitor Client Architecture
 
-**Status:** Accepted architecture (PLM-D-00-09 / PLM-01A); Gate B scaffold; Gate C PWA present
-**Implementation present:** React Client + online-first PWA — no lending, auth, or Capacitor
+**Status:** Accepted architecture (PLM-D-00-09 / PLM-01A); Gate B scaffold; Gate C PWA; Gate D0 browser auth transport
+**Implementation present:** React Client + online-first PWA + same-origin `/platform-api` proxy — no auth UI, lending, or Capacitor
 **Last updated:** 2026-08-19
 
 `ExItS.PinoyLoanManager.Client` exists as a Gate B/C scaffold. Do not add Capacitor from this document.
@@ -202,8 +202,16 @@ R-091 remains **OPEN**. Do not claim production-secure authentication.
 
 | Surface | Target separation |
 |---|---|
-| Browser / PWA | Prefer same-origin browser session architecture through `ExItS.PinoyLoanManager.Web` host/BFF when compatible with Platform auth. No auth/session tokens in `localStorage`, `sessionStorage`, service-worker cache, or URLs. |
+| Browser / PWA | Same-origin `/platform-api` → Platform API. HttpOnly `.ExItS.Platform.Auth` cookie is the browser session. No auth/session tokens in `localStorage`, `sessionStorage`, IndexedDB, Cache Storage, service-worker cache, or URLs. Login JSON `sessionToken` is ignored by browser JS. |
 | Capacitor | Native secure-storage based credential/session transport may be designed later. Never store reusable native credentials in ordinary web storage. |
+
+Vite **dev (5176)** and **preview (4176)** proxy `/platform-api` to loopback Platform API (`EXITS_PLATFORM_API_PROXY_TARGET`, default `http://127.0.0.1:8091`). Do not call `:8091` from browser JavaScript. Do not broaden Platform CORS for those origins.
+
+Local Validation HTTP is the Staging exception for `Secure=false` on the Platform session cookie (plus existing Development/Testing `AllowHttpAuthCookies` semantics). Production and generic Staging remain `Secure=true`. HttpOnly and SameSite=Lax are unchanged.
+
+### Email callback gap (D0)
+
+Platform outbound registration/reset emails currently build links to `/admin/activate-account` and `/admin/reset-password` using `PlatformEmail:AdminPublicBaseUrl`. That architecture is **not** changed in D0. Follow-up: **PLM-CLIENT-GATE-D2** (registration + activation + forgot/reset + Mailpit PLM callback routing). Do not pretend PLM registration/reset is ready.
 
 ---
 
@@ -255,6 +263,9 @@ Cross-cutting frontend delivery track. Does **not** replace the core PLM busines
 | **PLM-CLIENT-GATE B** | React client scaffold — no lending business screens |
 | **PLM-CLIENT-GATE C** | Browser/PWA foundation |
 | **PLM-CLIENT-GATE D** | Auth + organization/product access integration |
+| **PLM-CLIENT-GATE D0** | Browser session auth transport (this package when authorized) |
+| **PLM-CLIENT-GATE D1** | Sign In / session UI + Local Validation Test User |
+| **PLM-CLIENT-GATE D2** | Register / Activate / Forgot / Reset + Mailpit callback routing |
 | **PLM-CLIENT-GATE E** | First real lending vertical slice + mandatory visual review |
 | **PLM-CLIENT-GATE F** | Responsive/field workflows |
 | **PLM-CLIENT-GATE G** | Capacitor Android shell |
@@ -264,7 +275,7 @@ Cross-cutting frontend delivery track. Does **not** replace the core PLM busines
 
 Offline financial operation remains under **PLM-13** and requires its own explicit authorization.
 
-Recommended next when separately authorized: **PLM-CLIENT-GATE D**. Do not start Gate D, Capacitor, or PLM-02 from Gate C.
+Recommended next when separately authorized: **PLM-CLIENT-GATE D1**. Do not start D1, D2, Capacitor, or PLM-02 from Gate D0.
 
 ---
 

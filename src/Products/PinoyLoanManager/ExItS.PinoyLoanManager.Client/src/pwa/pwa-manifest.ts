@@ -14,6 +14,7 @@ export const PWA_ICON_FILES = [
 ] as const;
 
 export const PWA_API_PATH_PATTERN = /\/api\//;
+export const PWA_PLATFORM_API_PATH_PATTERN = /\/platform-api\//;
 export const PWA_AUTH_PATH_PATTERN = /\/(auth|session)\//i;
 
 export function createPwaManifest() {

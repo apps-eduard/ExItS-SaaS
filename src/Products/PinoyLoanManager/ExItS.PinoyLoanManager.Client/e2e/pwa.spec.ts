@@ -43,8 +43,10 @@ test.describe("PWA foundation", () => {
     const source = await response.text();
     expect(source).toContain("NetworkOnly");
     expect(source).toMatch(/\/api\//);
+    expect(source).toMatch(/platform-api/);
     expect(source).not.toMatch(/BackgroundSyncPlugin|workbox-background-sync/);
-    expect(source).toMatch(/startsWith\("\/api\/"\)[\s\S]{0,160}NetworkOnly/);
+    expect(source).toMatch(/startsWith\("\/api\/"\)[\s\S]{0,200}NetworkOnly/);
+    expect(source).toMatch(/platform-api[\s\S]{0,200}NetworkOnly/);
     expect(source).not.toMatch(
       /startsWith\("\/api\/"\)[\s\S]{0,160}(?:CacheFirst|StaleWhileRevalidate)/,
     );

@@ -9,6 +9,7 @@ using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace ExItS.Platform.Api.Identity;
@@ -23,6 +24,7 @@ internal static class AuthEndpoints
             LoginPlatformUser useCase,
             IOptions<PlatformSessionOptions> sessionOptions,
             IHostEnvironment env,
+            IConfiguration configuration,
             CancellationToken ct) =>
         {
             var result = await useCase.ExecuteAsync(
@@ -37,7 +39,13 @@ internal static class AuthEndpoints
                 return PlatformApiResults.FromResult(result, _ => Results.Ok());
             }
 
-            AppendSessionCookie(http, result.Value.SessionToken, result.Value.ExpiresAtUtc, sessionOptions.Value, env);
+            AppendSessionCookie(
+                http,
+                result.Value.SessionToken,
+                result.Value.ExpiresAtUtc,
+                sessionOptions.Value,
+                env,
+                configuration);
             return Results.Ok(result.Value);
         })
         .RequireRateLimiting(PlatformSecurityPipeline.AuthLoginRateLimitPolicy)
@@ -444,6 +452,7 @@ internal static class AuthEndpoints
             SelectAccountProfileSession useCase,
             IOptions<PlatformSessionOptions> sessionOptions,
             IHostEnvironment env,
+            IConfiguration configuration,
             CancellationToken ct) =>
         {
             if (!TryGetAuthenticatedUserId(http, out var userId))
@@ -476,7 +485,13 @@ internal static class AuthEndpoints
                 return PlatformApiResults.FromResult(result, _ => Results.Ok());
             }
 
-            AppendSessionCookie(http, result.Value.SessionToken, result.Value.ExpiresAtUtc, sessionOptions.Value, env);
+            AppendSessionCookie(
+                http,
+                result.Value.SessionToken,
+                result.Value.ExpiresAtUtc,
+                sessionOptions.Value,
+                env,
+                configuration);
             return Results.Ok(result.Value);
         });
 
@@ -758,9 +773,10 @@ internal static class AuthEndpoints
         string sessionToken,
         DateTimeOffset expiresAtUtc,
         PlatformSessionOptions options,
-        IHostEnvironment env)
+        IHostEnvironment env,
+        IConfiguration configuration)
     {
-        var secure = !(env.IsDevelopment() || env.IsEnvironment("Testing"));
+        var secure = PlatformSessionCookiePolicy.CookieSecure(http.Request.IsHttps, env, configuration);
         http.Response.Cookies.Append(
             options.CookieName,
             sessionToken,

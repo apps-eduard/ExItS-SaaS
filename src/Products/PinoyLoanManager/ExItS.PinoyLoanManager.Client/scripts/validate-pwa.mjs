@@ -52,8 +52,17 @@ if (!sw.includes("/api/")) {
 if (/BackgroundSyncPlugin|workbox-background-sync/.test(sw)) {
   fail("Background Sync is prohibited.");
 }
-if (!/startsWith\("\/api\/"\)[\s\S]{0,160}NetworkOnly/.test(sw)) {
+if (!/platform-api/.test(sw)) {
+  fail("Service worker must mention /platform-api NetworkOnly routing.");
+}
+if (!/startsWith\("\/api\/"\)[\s\S]{0,200}NetworkOnly/.test(sw)) {
   fail("Service worker must route /api/ with NetworkOnly.");
+}
+if (
+  !/includes\("\/platform-api\/"\)[\s\S]{0,200}NetworkOnly/.test(sw) &&
+  !/platform-api[\s\S]{0,200}NetworkOnly/.test(sw)
+) {
+  fail("Service worker must route /platform-api/ with NetworkOnly.");
 }
 if (/startsWith\("\/api\/"\)[\s\S]{0,160}(?:CacheFirst|StaleWhileRevalidate)/.test(sw)) {
   fail("API CacheFirst/StaleWhileRevalidate is prohibited.");

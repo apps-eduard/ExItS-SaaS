@@ -1,10 +1,10 @@
 # Pinoy Loan Manager — Source and Project Layout
 
-**Status:** PLM-01 scaffold; Gates B–C React Client + online-first PWA
-**Implementation present:** Product shell + React Client + PWA — no lending domain
+**Status:** PLM-01 scaffold; Gates B–D0 React Client + PWA + `/platform-api` transport
+**Implementation present:** Product shell + React Client + PWA — no lending domain; no auth UI
 **Last updated:** 2026-08-19
 
-Physical layout after **PLM-01**, **PLM-CLIENT-GATE-B**, and **PLM-CLIENT-GATE-C**. PLM-D-00-03 is **Closed**. PLM-D-00-09 is **Closed / Product Owner Approved**. `ExItS.PinoyLoanManager.Client` is the Browser + PWA host. LocalStore remains **intentionally deferred** (not authorized). MAUI is not the preferred future architecture. Capacitor is not started.
+Physical layout after **PLM-01**, **PLM-CLIENT-GATE-B**, **PLM-CLIENT-GATE-C**, and **PLM-CLIENT-GATE-D0**. PLM-D-00-03 is **Closed**. PLM-D-00-09 is **Closed / Product Owner Approved**. `ExItS.PinoyLoanManager.Client` is the Browser + PWA host with same-origin `/platform-api` transport. LocalStore remains **intentionally deferred** (not authorized). MAUI is not the preferred future architecture. Capacitor is not started.
 
 Related: [react-pwa-capacitor-client.md](react-pwa-capacitor-client.md), [api-and-contract-boundary.md](api-and-contract-boundary.md), [persistence-and-database-boundary.md](persistence-and-database-boundary.md), [mobile-offline-boundary.md](mobile-offline-boundary.md), [../architecture.md](../architecture.md), [../Reports/PLM-01-product-scaffold-and-isolation.md](../Reports/PLM-01-product-scaffold-and-isolation.md), [../Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md](../Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md).
 

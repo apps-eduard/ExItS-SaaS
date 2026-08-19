@@ -24,5 +24,16 @@ export default tseslint.config(
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
     },
   },
+  {
+    files: [
+      "vite.config.ts",
+      "vite.platform-api-proxy.ts",
+      "vite.platform-api-proxy.test.ts",
+      "playwright.config.ts",
+    ],
+    languageOptions: {
+      globals: { ...globals.node, ...globals.browser },
+    },
+  },
   prettier,
 );
