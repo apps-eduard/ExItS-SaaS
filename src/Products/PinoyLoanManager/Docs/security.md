@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Status | Draft — PLM-00 documentation complete; not product-owner approved; no implementation |
+| Status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01 linking rules recorded; no implementation |
 | Implementation present | No |
 
 ## Authentication boundary
@@ -54,9 +54,10 @@ Optional Personal-to-Borrower linking, if implemented later:
 - resolution alone never links
 - explicit Personal consent is required before activating a relationship
 - a borrower may exist without an ExItS Personal account
-- mechanism **Status: Open / Product Owner Decision Required** (PLM-D-00-05)
+- MVP: organization-initiated link request (Owner/Manager grants); Personal self-claim not MVP
+- product behavior defined (PLM-DOC-01); Platform transport/persistence/integration **Open** (PLM-D-00-05)
 
-Lifecycle intent: [Product/personal-borrower-linking.md](Product/personal-borrower-linking.md). Boundary: [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md).
+Lifecycle and unlink: [Product/personal-linking-lifecycle-and-visibility.md](Product/personal-linking-lifecycle-and-visibility.md). Boundary: [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md).
 
 ## Data classification
 
@@ -116,7 +117,7 @@ Lifecycle intent: [Product/personal-borrower-linking.md](Product/personal-borrow
 | D-P12-03 | Commercial-state transport; risk of inventing Platform table reads or copying POS Dev headers as production design | Open |
 | D-P12-05 | Dishonest Dev/Testing vs Production language | Open |
 | PLM-D-00-06 | Missing product-local grant identifiers (presets and intent recorded) | Open |
-| PLM-D-00-05 | Undesigned consent/linking mechanism | Open |
+| PLM-D-00-05 | Undesigned consent/linking **transport** (product behavior defined) | Open |
 | PLM-D-00-11 | Legal/compliance validation not performed | Open |
 | PLM-D-00-12 | Exact money rounding mode unset | Open |
 

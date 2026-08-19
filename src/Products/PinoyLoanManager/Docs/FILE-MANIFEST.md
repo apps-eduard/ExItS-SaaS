@@ -2,7 +2,7 @@
 
 **Status:** Foundation / planning only
 **Implementation present:** No
-**Current work package:** PLM-00-WP10 — Foundation Closeout & Implementation Readiness
+**Current work package:** PLM-DOC-01 — Product Identity, Borrower Identity & Personal Linking Finalization
 
 This file is the navigation map for future Cursor work. Load this product’s `Docs/` after the shared Product Foundation reference. Do not scan PinoyBusinessPOS implementation by default.
 
@@ -61,7 +61,9 @@ Shared contracts to load with this product:
 | Path | Purpose | Status | Implementation present |
 |---|---|---|---|
 | `Docs/Product/borrower-model.md` | PLM-owned Borrower; independent of POS/Personal | Planning baseline / not a spec | No |
+| `Docs/Product/borrower-identity-and-duplicate-policy.md` | Ownership, cardinality, duplicate handling | Accepted product rules (PLM-DOC-01) | No |
 | `Docs/Product/personal-borrower-linking.md` | Optional consent-based linking and unlink | Planning baseline / not a spec | No |
+| `Docs/Product/personal-linking-lifecycle-and-visibility.md` | Link lifecycle, MVP flow, unlink/relink, visibility | Accepted product rules (PLM-DOC-01) | No |
 | `Docs/Product/quick-loan-publishing-and-eligibility.md` | Publishing audiences; eligibility ≠ approval | Planning baseline / not a spec | No |
 | `Docs/Product/borrower-groups-and-targeting.md` | Organization-owned groups | Planning baseline / not a spec | No |
 | `Docs/Architecture/personal-integration-boundary.md` | Personal vs PLM authority | Planning baseline / not a spec | No |
@@ -100,6 +102,7 @@ Shared contracts to load with this product:
 | Path | Purpose | Status | Implementation present |
 |---|---|---|---|
 | `Docs/Reports/PLM-00-foundation-closeout.md` | PLM-00 vision, gates, next phase | Planning closeout | No |
+| `Docs/Reports/PLM-DOC-01-product-identity-and-personal-linking.md` | PLM-DOC-01 identity and Personal linking | Documentation closeout | No |
 | `Docs/Validation/PLM-00-readiness-checklist.md` | Docs-only readiness gates | Planning closeout | No |
 
 ## Workspace indexes (PLM-00-WP01, updated in WP02–WP10)
@@ -113,7 +116,9 @@ Shared contracts to load with this product:
 | `Docs/Product/README.md` | Index for product-policy docs | Foundation / Planning Only | No |
 | `Docs/Architecture/README.md` | Index for architecture docs | Foundation / Planning Only | No |
 | `Docs/Security/README.md` | Index for security docs | Foundation / Planning Only | No |
-| `Docs/Decisions/README.md` | Index for future ADRs | Foundation / Planning Only | No |
+| `Docs/Decisions/README.md` | Index for ADRs | Foundation / Planning Only | No |
+| `Docs/Decisions/ADR-001-product-identity-and-database-name.md` | Product code and logical database name | Accepted (PLM-DOC-01) | No |
+| `Docs/Decisions/ADR-002-borrower-personal-cardinality-and-consent.md` | Borrower/Personal cardinality and consent | Accepted product behavior (PLM-DOC-01) | No |
 | `Docs/Phases/README.md` | Index for phase sequencing | Foundation / Planning Only | No |
 | `Docs/Reports/README.md` | Index for WP evidence | Foundation / Planning Only | No |
 | `Docs/Validation/README.md` | Index for validation evidence | Foundation / Planning Only | No |

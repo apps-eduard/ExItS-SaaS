@@ -6,7 +6,7 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Plan status | Draft — PLM-00 documentation complete; not product-owner approved; PLM-01 not started |
+| Plan status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01 identity/linking recorded; PLM-01 paused on mainline |
 | Implementation present | No |
 
 ## Delivery approach
@@ -48,20 +48,21 @@ Report template: `docs/Product-Foundation/Templates/work-package-report.md` → 
 
 Stop when any of these are missing without an approved decision:
 
-- [ ] Product definition approved (draft plus operating-model direction exists; owner approval open — PLM-D-00-10)
+- [x] Product definition approved (documentation baseline accepted — PLM-D-00-10 Closed)
 - [ ] Roles/grants matrix draft (presets and grant **intent** recorded; identifiers open — PLM-D-00-06)
 - [ ] Operational-money definition (boundary and ledger-vs-cash direction — PLM-D-00-07)
-- [ ] DB name/schema (name proposed; schema open — PLM-D-00-02)
+- [x] Logical DB name (`ExItS_PinoyLoanManager` — PLM-D-00-02 Closed for name)
+- [ ] DB schema / creation / connections / placement (deferred — PLM-D-00-02 remainder)
 - [x] Privacy classification (PHI default none) — recorded
 - [x] Explicit exclusions — recorded in [product-definition.md](product-definition.md)
 
-Do not start PLM-01 until PLM-00 owner decisions needed for scaffold are resolved or explicitly deferred.
+Do not start PLM-01 on mainline until explicitly authorized. Product implementation remains paused. Parked `feat/plm-01-scaffold` is not accepted mainline state (PLM-D-00-03 Open).
 
 ## Dependencies
 
 | Dependency | Type | Notes |
 |---|---|---|
-| Platform catalog / subscription | Platform | Independent subscription required; slug registration open (PLM-D-00-01) |
+| Platform catalog / subscription | Platform | Independent subscription required; code `pinoy-loan-manager` approved (PLM-D-00-01 Closed); catalog registration not done |
 | Commercial-state transport | **DECISION D-P12-03** | Provisional patterns only; do not invent final |
 | Production authentication | **R-091** | Keep Dev/Testing language honest (D-P12-05) |
 | Personal / cross-product relationship model | Platform + product | Open (PLM-D-00-04, PLM-D-00-05) |

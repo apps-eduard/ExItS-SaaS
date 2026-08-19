@@ -7,8 +7,8 @@
 |---|---|
 | Product | Pinoy Loan Manager |
 | Current phase | PLM-00 Foundation & Product Decisions (documentation complete) |
-| Current work package | PLM-00-WP10 complete; **product implementation paused** |
-| Status | **PLM-D-00-10 Closed / Product Owner Accepted** (documentation baseline). Implementation is deliberately paused while ExItS scale architecture and remaining PLM business/policy decisions are finalized |
+| Current work package | **PLM-DOC-01** Product Identity, Borrower Identity & Personal Linking Finalization |
+| Status | **PLM-D-00-10 Closed / Product Owner Accepted**. PLM-D-00-01 Closed. PLM-D-00-02 Closed for logical name. Implementation remains paused. |
 
 ## Phase objective
 
@@ -48,9 +48,30 @@ Establish product documentation, architecture boundaries, Personal/Borrower inte
 | PLM-00-WP09 | Technical Product Layout & Integration Boundary | Completed | PLM-00-WP08 |
 | PLM-00-WP10 | Foundation Closeout & Implementation Readiness | Completed | PLM-00-WP09 |
 
-PLM-00 documentation phase is complete. Product implementation is **not** currently authorized.
+PLM-00 documentation phase is complete. **PLM-DOC-01** finalizes product identity, Borrower identity, and Personal linking product rules.
 
 `feat/plm-01-scaffold` exists as an **unmerged parked** implementation branch. It is **not** part of accepted mainline product state. Do not merge or delete it from this documentation package. Do **not** use it as evidence to close **PLM-D-00-03**.
+
+## Documentation finalization
+
+| Package | Name | Status |
+|---|---|---|
+| PLM-DOC-01 | Product Identity, Borrower Identity & Personal Linking Finalization | **This package** |
+| PLM-DOC-02 | Financial Calculation, Fees & Payment Allocation Decisions | Proposed next |
+
+### PLM-DOC-01 completed decisions
+
+- product name, product code `pinoy-loan-manager`, logical database name `ExItS_PinoyLoanManager`
+- Borrower ownership
+- Personal/Borrower cardinality
+- organization-initiated MVP linking
+- consent lifecycle
+- unlink behavior
+- relinking safety
+- duplicate-handling baseline
+- Personal data minimization
+
+Implementation remains paused. The parked scaffold remains unmerged.
 
 ## Planning buckets (later phases)
 
@@ -73,12 +94,10 @@ PLM-00 documentation phase is complete. Product implementation is **not** curren
 
 ## Remaining documentation before implementation resumes
 
-Before product implementation resumes, documentation still needs **final decisions** for (do **not** invent them in a scale-architecture package):
+Before product implementation resumes, documentation still needs **final decisions** for (do **not** invent them here):
 
-- product slug (PLM-D-00-01)
-- database name (PLM-D-00-02)
 - physical source/test/deploy layout on mainline (PLM-D-00-03; remains open)
-- Personal/Borrower linking contract (PLM-D-00-04, PLM-D-00-05)
+- Platform relationship contract/schema (PLM-D-00-04) and linking transport (PLM-D-00-05)
 - final grants (PLM-D-00-06)
 - financial model (PLM-D-00-07)
 - interest calculation methods, rounding, payment allocation, fee model, penalty policies, excused-day schedule treatment, settlement (PLM-D-00-08, PLM-D-00-12)
@@ -94,8 +113,8 @@ Portfolio: R-091 remains open. Scale architecture: [exits-scale-and-growth-archi
 
 | Dependency | Notes |
 |---|---|
-| Platform subscription for `pinoy-loan-manager` | Required; registration open (PLM-D-00-01) |
-| Product-owner decisions | PLM-D-00-01 through PLM-D-00-09, PLM-D-00-11 through PLM-D-00-13 (PLM-D-00-10 closed) |
+| Platform subscription for `pinoy-loan-manager` | Required; **code approved** (PLM-D-00-01); catalog registration not done |
+| Product-owner decisions | PLM-D-00-03 through PLM-D-00-09, PLM-D-00-11 through PLM-D-00-13 (PLM-D-00-01 Closed; PLM-D-00-02 Closed for name; PLM-D-00-10 closed) |
 | D-P12-03 / R-091 / D-P12-05 | Portfolio-open; do not invent |
 | ExItS scale architecture | Documented on `docs/exits-scale-foundation`; implementation of stamps/shards not required to resume docs work |
 
@@ -131,9 +150,9 @@ Portfolio: R-091 remains open. Scale architecture: [exits-scale-and-growth-archi
 
 ## Exact next package
 
-**Finalize remaining PLM business and financial decisions** (and complete review of ExItS scale architecture) **before any product implementation**.
+**PLM-DOC-02 — Financial Calculation, Fees & Payment Allocation Decisions**
 
-Do **not** start or merge PLM-01 from this documentation state.
+Do **not** start PLM-DOC-02 in this package. Implementation remains paused. Do **not** start or merge PLM-01.
 
 ## Phase closeout requirements
 

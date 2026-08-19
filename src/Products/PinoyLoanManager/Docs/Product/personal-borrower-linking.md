@@ -1,10 +1,12 @@
 # Pinoy Loan Manager — Personal / Borrower Linking
 
-**Status:** Planning / product-rule baseline (documentation only)
+**Status:** Planning / product-rule baseline; lifecycle accepted in PLM-DOC-01
 **Implementation present:** No
 **Last updated:** 2026-08-19
 
 Optional linking between a PLM Borrower and an ExItS Personal identity. Not a schema, Platform relationship table design, or copy of POS linking.
+
+**Canonical lifecycle, MVP flow, unlink, relink, minimization:** [personal-linking-lifecycle-and-visibility.md](personal-linking-lifecycle-and-visibility.md). Cardinality: [borrower-identity-and-duplicate-policy.md](borrower-identity-and-duplicate-policy.md). ADR: [../Decisions/ADR-002-borrower-personal-cardinality-and-consent.md](../Decisions/ADR-002-borrower-personal-cardinality-and-consent.md).
 
 Related: [borrower-model.md](borrower-model.md), [../Architecture/personal-integration-boundary.md](../Architecture/personal-integration-boundary.md), [../architecture.md](../architecture.md), [../security.md](../security.md).
 
@@ -18,7 +20,7 @@ A Personal identity may separately relate to:
 
 - POS Customer
 - PLM Borrower
-- future product relationships
+- future product-specific relationships
 
 POS Customer ≠ PLM Borrower.
 
@@ -28,77 +30,15 @@ EX ID / QR resolution identifies a Personal identity **only**. Resolution **neve
 
 **Explicit Personal consent** is required before an active Personal / Borrower link.
 
-Do **not** copy POS linking tables. Do **not** design generic Platform relationship tables here (PLM-D-00-04). Linking mechanism remains **Open** (PLM-D-00-05).
+MVP: an authorized organization user (Owner/Manager grants, identifiers open) initiates the request against an **existing** Borrower. Personal self-service claiming is **not** MVP.
+
+Do **not** copy POS linking tables. Do **not** design generic Platform relationship tables here (**PLM-D-00-04** Open). Platform transport/persistence/integration remains **Open** (**PLM-D-00-05**).
 
 ---
 
-## Conceptual lifecycle
+## Lifecycle and unlink
 
-Not a finalized enum:
-
-```text
-Unlinked
-  → Link Requested
-  → Pending Personal Consent
-  → Linked
-```
-
-Later:
-
-```text
-Linked
-  → Unlinked / Consent Revoked
-```
-
----
-
-## Link request flow
-
-```text
-Organization has Borrower
-        ↓
-Borrower provides / scans ExItS ID
-        ↓
-PLM resolves Personal identity through approved Platform contract
-        ↓
-PLM requests relationship
-        ↓
-Personal receives consent request
-        ↓
-Accept / Decline
-        ↓
-If Accept:
-PLM Borrower becomes linked to that Personal identity
-```
-
-Decline must **not** delete the Borrower.
-
-No loan history is transferred into Platform.
-
-PLM stores only approved identity / relationship facts required for this product. It must not ingest unrelated Personal activity from POS, another lender, or other products.
-
----
-
-## Unlinking / revocation
-
-Unlinking must **not**:
-
-- delete Borrower
-- delete Loan
-- delete payment history
-- change contractual financial history
-
-It changes **Personal access / relationship** only.
-
----
-
-## Open questions (do not invent)
-
-- who may initiate unlink (Borrower / Personal / organization staff / all of these)
-- what happens to pending Quick Loan offers after unlink
-- what Personal retains visibility of historically
-- re-linking rules
-- consent-history retention and display
+See [personal-linking-lifecycle-and-visibility.md](personal-linking-lifecycle-and-visibility.md). Unlinking must not delete Borrower, Loan, payments, receipts, or audit history.
 
 ---
 
@@ -121,6 +61,8 @@ PLM remains **authoritative**. Personal must **not** query PLM database tables. 
 
 One lender’s private operational data must not be exposed to another lender.
 
+After unlink, submitted requests and active contractual obligations must not disappear silently. Exact legal retention/visibility remains **PLM-D-00-11**.
+
 ---
 
 ## Legal / compliance boundary
@@ -136,3 +78,5 @@ No consent, identity-resolution, or data-sharing workflow in this document is cl
 - Moving Loan history to Platform
 - Generic Platform relationship schema
 - POS Customer table reuse
+- Personal self-claim of a Borrower in MVP
+- Automatic Borrower merge

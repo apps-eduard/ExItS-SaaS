@@ -20,11 +20,11 @@
 
 | ID | Type | Description | Current state | Impact | Owner / decision point | Evidence | Resolution criteria |
 |---|---|---|---|---|---|---|---|
-| PLM-D-00-01 | Decision | Product code/slug final registration (`pinoy-loan-manager` proposed) | Open / Product Owner Decision Required | Catalog, plans, independent subscription | Product owner + Platform catalog WP | None | Slug registered; docs match |
-| PLM-D-00-02 | Decision | Database name final approval (`ExItS_PinoyLoanManager` proposed); schema unset | Open / Product Owner Decision Required | Persistence, migrations, operations | Product owner + architecture WP | None | Name/schema approved; database still not created until an authorized persistence WP |
+| PLM-D-00-01 | Decision | Product code/slug `pinoy-loan-manager` | **Closed** | Catalog, plans, independent subscription | Product owner | [ADR-001](Decisions/ADR-001-product-identity-and-database-name.md) | Code approved for future Platform catalog registration; catalog row not created here |
+| PLM-D-00-02 | Decision | Logical database name `ExItS_PinoyLoanManager` | **Closed for logical name**; creation/placement deferred | Persistence, migrations, operations | Product owner + architecture WP | [ADR-001](Decisions/ADR-001-product-identity-and-database-name.md) | Name approved. Database, schema, connections, partitions, stamps, backups, and migrations remain deferred |
 | PLM-D-00-03 | Decision | Physical source/test/deploy layout beside `Docs/` | Open / Product Owner Decision Required | PLM-01 scaffold | Architecture WP | **Planning target** recorded (`ExItS.PinoyLoanManager.*`); projects **not** on `main`. Parked unmerged branch `feat/plm-01-scaffold` is **not** accepted mainline state | Authorized scaffold WP creates projects on mainline; still no Product Foundation change |
-| PLM-D-00-04 | Decision | Generic Platform cross-product relationship model | Open / Product Owner Decision Required | Personal as POS Customer, Loan Borrower, and future BNPL Customer | Platform architecture WP — do not design in PLM | Conceptual diagram only | Approved Platform contract/schema, not invented here |
-| PLM-D-00-05 | Decision | Personal-to-Borrower linking mechanism | Open / Product Owner Decision Required | Optional link, consent, no auto-link from EX ID / QR | PLM-04 + Platform | Lifecycle and unlink *intent* recorded; schema not designed | Approved linking/consent design |
+| PLM-D-00-04 | Decision | Generic Platform cross-product relationship model | Open / Product Owner Decision Required | Personal as POS Customer, Loan Borrower, and future product-specific relationships | Platform architecture WP — do not design in PLM | Conceptual diagram only; product behavior in ADR-002 | Approved Platform contract/schema, not invented here |
+| PLM-D-00-05 | Decision | Personal-to-Borrower linking mechanism | Open / Product Owner Decision Required | Optional link, consent, no auto-link from EX ID / QR | PLM-04 + Platform | Product behavior defined (PLM-DOC-01); Platform transport, contract, persistence, and integration **not** designed | Approved linking/consent **implementation** design |
 | PLM-D-00-06 | Decision | Loan roles and grants | Open / Product Owner Decision Required | PLM-03 and all operational WPs | Product owner | Presets, grant **catalog intent**, scope, SoD recorded; **identifiers** not final | Owner-approved identifiers; no role-name hard-coding; no implicit hierarchy |
 | PLM-D-00-07 | Decision | Operational financial model | Open / Product Owner Decision Required | Origination, payments, collections, cash | Product owner | Loan vs collector cash; Cashier Session *concept*; billable event DISBURSED; schema not designed | Owner-approved money/ledger schema in this product |
 | PLM-D-00-08 | Decision | Loan business/calculation rules | Open / Product Owner Decision Required | PLM-05 through PLM-10 | Product owner | Treatment *modes*, partial payments, oldest-due *schedule* baseline recorded; **no** rates/formulas/component order | Owner-approved policy for each remaining rule area |
@@ -137,7 +137,7 @@ These are **planning targets**, not created projects.
 - LocalStore only if/when justified
 - Domain persistence-independent; Application must not reference Infrastructure
 - no project may reference POS
-- separate proposed database `ExItS_PinoyLoanManager` (not created)
+- separate logical database `ExItS_PinoyLoanManager` (name Closed; not created)
 - Personal uses PLM APIs, never PLM tables
 - MAUI online/server-authoritative initially; offline financial posting not authorized
 - D-P12-03 remains open; no shared DB integration
@@ -230,6 +230,6 @@ Do **not** close remaining items by guessing. Do **not** claim legal compliance.
 - Prefer stable IDs (`R-…`, `D-…`, `PLM-D-…`).
 - “Closed” requires repository or operator evidence plus explicit approval.
 - Unresolved policy in approved docs must appear here as open decisions.
-- Do not close PLM-D-00-01 through PLM-D-00-09, PLM-D-00-11 through PLM-D-00-13, D-P12-03, R-091, or D-P12-05 without explicit approval.
-- PLM-D-00-10 is **Closed / Product Owner Accepted** (documentation baseline only).
-- Category indexes under `Docs/*/README.md` are not ADRs; ADRs belong in `Docs/Decisions/` when later authorized.
+- Do not close PLM-D-00-03, PLM-D-00-04 through PLM-D-00-09, PLM-D-00-11 through PLM-D-00-13, D-P12-03, R-091, or D-P12-05 without explicit approval.
+- PLM-D-00-01 is **Closed** (`pinoy-loan-manager`). PLM-D-00-02 is **Closed for logical database name** only. PLM-D-00-10 is **Closed / Product Owner Accepted** (documentation baseline only).
+- ADRs: [Decisions/ADR-001-product-identity-and-database-name.md](Decisions/ADR-001-product-identity-and-database-name.md), [Decisions/ADR-002-borrower-personal-cardinality-and-consent.md](Decisions/ADR-002-borrower-personal-cardinality-and-consent.md).

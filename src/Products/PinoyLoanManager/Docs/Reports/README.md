@@ -24,5 +24,6 @@ Do not rewrite historical signed-off reports merely to erase history.
 | Report | Purpose |
 |---|---|
 | [PLM-00-foundation-closeout.md](PLM-00-foundation-closeout.md) | PLM-00 documentation closeout, implementation gates, recommended PLM-01 |
+| [PLM-DOC-01-product-identity-and-personal-linking.md](PLM-DOC-01-product-identity-and-personal-linking.md) | PLM-DOC-01 product identity, Borrower identity, and Personal linking finalization |
 
 PLM-00-WP01 through PLM-00-WP09 do not add a separate report file. Completion evidence for those documentation-only packages is the git commit on `docs/plm-foundation` plus the chat completion report.

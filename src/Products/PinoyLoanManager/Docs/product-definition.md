@@ -6,9 +6,9 @@
 | Field | Value |
 |---|---|
 | Product name | Pinoy Loan Manager |
-| Platform product code | `pinoy-loan-manager` (proposed — **Status: Open / Product Owner Decision Required**, PLM-D-00-01) |
+| Platform product code | `pinoy-loan-manager` (**Closed**, PLM-D-00-01) |
 | Docs root | `src/Products/PinoyLoanManager/Docs/` |
-| Status | Draft — PLM-00 documentation complete; not product-owner approved; no implementation |
+| Status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01 identity/linking recorded; no implementation |
 | Last updated | 2026-08-19 |
 | Implementation present | No |
 
@@ -33,7 +33,7 @@ ExItS Platform
 |---|---|---|
 | Identity / production auth | Platform | **DECISION:** R-091 open — do not claim production-secure auth. Keep Dev/Testing vs Production language honest (D-P12-05). |
 | Organizations | Platform | Product will store organization id as a `Guid` reference / contract only. Field name **Status: Open / Product Owner Decision Required**. |
-| Catalog / plans / subscription | Platform | **Required:** independent subscription for this product only. Catalog registration of `pinoy-loan-manager` is not done (PLM-D-00-01). |
+| Catalog / plans / subscription | Platform | **Required:** independent subscription for this product only. Product code `pinoy-loan-manager` is **approved** for future catalog registration (PLM-D-00-01 Closed). Catalog registration itself is not performed in this package. |
 | Entitlements / commercial access | Platform facts | **DECISION:** D-P12-03 commercial-state transport — do not invent. Platform entitlement does not replace Loan product-local authorization. |
 | SaaS billing payments | Platform | Never store product operational money in Platform SaaS billing. |
 | Operational workflows / roles / money | **This product** | Not implemented. Role presets + grant **intent** recorded; identifiers open (PLM-D-00-06). Cashier Session and collector cash accountability recorded; schema open (PLM-D-00-07). |
@@ -43,7 +43,7 @@ ExItS Platform
 Recorded as **required intent**. Nothing below is implemented.
 
 - [x] Independent product subscription (not shared with other products) — required intent
-- [ ] Separate database `ExItS_PinoyLoanManager` / schema **Status: Open / Product Owner Decision Required** (PLM-D-00-02) — proposed name only; not created
+- [x] Separate logical database name `ExItS_PinoyLoanManager` (**PLM-D-00-02** Closed for name). Database, schema, connections, partitions, stamps, backups, and migrations are **not** created.
 - [x] No direct Platform table reads; no cross-product FKs — required intent
 - [ ] Product-local roles and grants defined — presets and grant **intent** recorded; identifiers **Open / Product Owner Decision Required** (PLM-D-00-06)
 - [ ] Operational money defined separately from SaaS billing — ownership boundary and ledger-vs-cash direction recorded; schema open (PLM-D-00-07)
@@ -156,16 +156,16 @@ No loan MVP **implementation** is approved. Calculation algorithms, peso/percent
 
 | ID | Question | Blocks |
 |---|---|---|
-| PLM-D-00-01 | Final product code / slug registration | Platform catalog, subscription bootstrap |
-| PLM-D-00-02 | Final database name / schema | Persistence, migrations |
+| PLM-D-00-01 | Final product code / slug | **Closed** — `pinoy-loan-manager` |
+| PLM-D-00-02 | Logical database name vs physical creation | **Closed for name** — `ExItS_PinoyLoanManager`; creation/schema/placement deferred |
 | PLM-D-00-03 | Physical source / test / deploy layout (planning target recorded; projects not created) | Scaffold (PLM-01) |
 | PLM-D-00-04 | Generic Platform cross-product relationship model | Personal multi-product participation |
-| PLM-D-00-05 | Personal-to-Borrower linking mechanism (lifecycle intent recorded; schema open) | Borrower identity design (PLM-04) |
+| PLM-D-00-05 | Personal-to-Borrower linking mechanism (product behavior defined; Platform transport/schema open) | Borrower identity implementation (PLM-04) |
 | PLM-D-00-06 | Loan roles and grants (presets + grant intent recorded; identifiers open) | Authorization (PLM-03) |
 | PLM-D-00-07 | Operational financial model (ledger vs cash; subledger principles recorded; schema open) | Origination, payments, collections |
 | PLM-D-00-08 | Loan business / calculation rules (modes recorded; formulas/rates open) | Product configuration through collections |
 | PLM-D-00-09 | Web / MAUI component-sharing strategy | Client scaffold |
-| PLM-D-00-10 | Product documentation baseline completion / owner approval | Closing PLM-00 |
+| PLM-D-00-10 | Product documentation baseline completion / owner approval | **Closed / Product Owner Accepted** |
 | PLM-D-00-11 | External legal/compliance validation before Production | Production use |
 | PLM-D-00-12 | Exact money rounding mode | Calculation engine |
 | PLM-D-00-13 | Small-org vs two-person high-risk approval | Operational SoD |
@@ -194,7 +194,9 @@ No loan MVP **implementation** is approved. Calculation algorithms, peso/percent
 | Disbursement / payment controls | [Product/disbursement-and-payment-controls.md](Product/disbursement-and-payment-controls.md) |
 | Exception / reversal / variance | [Product/exception-reversal-and-variance-workflow.md](Product/exception-reversal-and-variance-workflow.md) |
 | Borrower model | [Product/borrower-model.md](Product/borrower-model.md) |
+| Borrower identity / duplicates | [Product/borrower-identity-and-duplicate-policy.md](Product/borrower-identity-and-duplicate-policy.md) |
 | Personal / Borrower linking | [Product/personal-borrower-linking.md](Product/personal-borrower-linking.md) |
+| Linking lifecycle / visibility | [Product/personal-linking-lifecycle-and-visibility.md](Product/personal-linking-lifecycle-and-visibility.md) |
 | Quick Loan publishing / eligibility | [Product/quick-loan-publishing-and-eligibility.md](Product/quick-loan-publishing-and-eligibility.md) |
 | Borrower groups | [Product/borrower-groups-and-targeting.md](Product/borrower-groups-and-targeting.md) |
 | Personal integration boundary | [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md) |

@@ -1,6 +1,6 @@
 # Pinoy Loan Manager — Product Documentation
 
-Authoritative product docs for **Pinoy Loan Manager** (`pinoy-loan-manager`, proposed).
+Authoritative product docs for **Pinoy Loan Manager** (`pinoy-loan-manager`).
 
 Always load with:
 
@@ -11,7 +11,7 @@ Always load with:
 5. The active work-package prompt/report
 6. Files required for the task only
 
-**Status:** Draft — PLM-00 documentation complete; not product-owner approved; no implementation
+**Status:** PLM-00 documentation baseline accepted (PLM-D-00-10); PLM-DOC-01 identity/linking decisions recorded; implementation paused
 **Implementation present:** No
 **Documentation root:** `src/Products/PinoyLoanManager/Docs/` (D-P12-02)
 
@@ -52,7 +52,9 @@ Agreed operating-model direction (not implementation specs):
 | [Product/disbursement-and-payment-controls.md](Product/disbursement-and-payment-controls.md) | Office/field disbursement and cash payment |
 | [Product/exception-reversal-and-variance-workflow.md](Product/exception-reversal-and-variance-workflow.md) | Exceptions, waivers, reversals vs cash refund, variance |
 | [Product/borrower-model.md](Product/borrower-model.md) | PLM-owned Borrower; may exist without Personal |
+| [Product/borrower-identity-and-duplicate-policy.md](Product/borrower-identity-and-duplicate-policy.md) | Borrower ownership, cardinality, duplicate handling |
 | [Product/personal-borrower-linking.md](Product/personal-borrower-linking.md) | Optional consent-based linking; unlink does not delete history |
+| [Product/personal-linking-lifecycle-and-visibility.md](Product/personal-linking-lifecycle-and-visibility.md) | Link lifecycle, MVP flow, unlink/relink, visibility |
 | [Product/quick-loan-publishing-and-eligibility.md](Product/quick-loan-publishing-and-eligibility.md) | Publishing audiences; eligibility ≠ approval |
 | [Product/borrower-groups-and-targeting.md](Product/borrower-groups-and-targeting.md) | Organization-owned groups; no built-in mandatory groups |
 | [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md) | Personal vs PLM authority; no table access |
@@ -71,6 +73,9 @@ Agreed operating-model direction (not implementation specs):
 | [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md) | Online-first MAUI |
 | [Architecture/platform-commercial-integration.md](Architecture/platform-commercial-integration.md) | Commercial/identity contracts; D-P12-03 open |
 | [Reports/PLM-00-foundation-closeout.md](Reports/PLM-00-foundation-closeout.md) | PLM-00 closeout and implementation gates |
+| [Reports/PLM-DOC-01-product-identity-and-personal-linking.md](Reports/PLM-DOC-01-product-identity-and-personal-linking.md) | PLM-DOC-01 identity and Personal linking finalization |
+| [Decisions/ADR-001-product-identity-and-database-name.md](Decisions/ADR-001-product-identity-and-database-name.md) | Product code and logical database name |
+| [Decisions/ADR-002-borrower-personal-cardinality-and-consent.md](Decisions/ADR-002-borrower-personal-cardinality-and-consent.md) | Borrower/Personal cardinality and consent |
 | [Validation/PLM-00-readiness-checklist.md](Validation/PLM-00-readiness-checklist.md) | Docs-only readiness checklist |
 
 Category folders below are indexes only. They must not become a second source of truth.
@@ -94,14 +99,14 @@ Do not scatter Pinoy Loan Manager documentation into the repository-root `docs/`
 
 ---
 
-## Identity (proposed)
+## Identity
 
 | Item | Value | Status |
 |---|---|---|
 | Display name | Pinoy Loan Manager | Recorded |
 | Repository directory | `PinoyLoanManager` | Recorded |
-| Product code / slug | `pinoy-loan-manager` | Open (PLM-D-00-01) |
-| Future database | `ExItS_PinoyLoanManager` | Open (PLM-D-00-02) |
+| Product code / slug | `pinoy-loan-manager` | **Closed** (PLM-D-00-01) |
+| Logical database | `ExItS_PinoyLoanManager` | **Closed for name** (PLM-D-00-02); not created |
 
 ---
 
@@ -119,7 +124,7 @@ Authoritative text: [product-definition.md](product-definition.md) and [architec
 
 ## Personal / Borrower
 
-ExItS Personal is Platform-owned and product-neutral. POS Customer ≠ Loan Borrower. Linking is optional, consent-required, and never auto-activated from EX ID / QR resolution. Personal is a presentation surface; Loan operational data remains this product’s authority. Authoritative text: [architecture.md](architecture.md), [Product/borrower-model.md](Product/borrower-model.md), [Product/personal-borrower-linking.md](Product/personal-borrower-linking.md), [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md).
+ExItS Personal is Platform-owned and product-neutral. POS Customer ≠ Loan Borrower. Linking is optional, consent-required, and never auto-activated from EX ID / QR resolution. Personal is a presentation surface; Loan operational data remains this product’s authority. Authoritative text: [architecture.md](architecture.md), [Product/borrower-model.md](Product/borrower-model.md), [Product/borrower-identity-and-duplicate-policy.md](Product/borrower-identity-and-duplicate-policy.md), [Product/personal-borrower-linking.md](Product/personal-borrower-linking.md), [Product/personal-linking-lifecycle-and-visibility.md](Product/personal-linking-lifecycle-and-visibility.md), [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md).
 
 ---
 

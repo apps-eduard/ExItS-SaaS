@@ -5,9 +5,9 @@
 
 | Field | Value |
 |---|---|
-| Product | Pinoy Loan Manager / `pinoy-loan-manager` (proposed, PLM-D-00-01) |
-| Database | `ExItS_PinoyLoanManager` (proposed) / schema **Status: Open / Product Owner Decision Required** (PLM-D-00-02) |
-| Status | Draft — PLM-00 documentation complete; not product-owner approved; no implementation |
+| Product | Pinoy Loan Manager / `pinoy-loan-manager` (**Closed**, PLM-D-00-01) |
+| Database | `ExItS_PinoyLoanManager` (**logical name Closed**, PLM-D-00-02); not created; schema/placement deferred |
+| Status | PLM-00 baseline accepted (PLM-D-00-10); PLM-DOC-01 identity/linking recorded; no implementation |
 | Implementation present | No |
 
 ## System context
@@ -54,8 +54,8 @@ ExItS Personal
       +-- Pinoy Loan Manager
       |      +-- Borrower relationship
       |
-      +-- future BNPL
-             +-- BNPL Customer relationship
+      +-- future independent ExItS product
+             +-- future product-specific relationship
 ```
 
 Rules (planning; not designed as schema):
@@ -73,7 +73,7 @@ Rules (planning; not designed as schema):
 - Loan data remains Loan-product-owned
 - Personal may eventually consume authorized Loan information through Loan APIs/contracts only
 
-Detail: [Product/borrower-model.md](Product/borrower-model.md), [Product/personal-borrower-linking.md](Product/personal-borrower-linking.md), [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md).
+Detail: [Product/borrower-model.md](Product/borrower-model.md), [Product/borrower-identity-and-duplicate-policy.md](Product/borrower-identity-and-duplicate-policy.md), [Product/personal-borrower-linking.md](Product/personal-borrower-linking.md), [Product/personal-linking-lifecycle-and-visibility.md](Product/personal-linking-lifecycle-and-visibility.md), [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md).
 
 Do **not** design the final generic Platform relationship schema here (**Status: Open / Product Owner Decision Required**, PLM-D-00-04, PLM-D-00-05).
 
@@ -161,7 +161,7 @@ Web / MAUI component-sharing strategy is **Status: Open / Product Owner Decision
 |---|---|
 | Product image | **Status: Open / Product Owner Decision Required** — independently versioned when packaging is authorized |
 | Platform images | Separate — do not fork per customer |
-| Persistent DB | `ExItS_PinoyLoanManager` (proposed, PLM-D-00-02) |
+| Persistent DB | `ExItS_PinoyLoanManager` (logical name Closed, PLM-D-00-02; not created) |
 | Config | Environment / secrets — not source forks |
 | Physical layout | **Planning target recorded** — [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md); projects not created (PLM-D-00-03) |
 

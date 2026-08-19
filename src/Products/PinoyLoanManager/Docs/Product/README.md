@@ -22,7 +22,9 @@ Do not treat this folder as a second product definition. Detailed agreed **direc
 | [disbursement-and-payment-controls.md](disbursement-and-payment-controls.md) | Office/field disbursement and cash payment |
 | [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md) | Exceptions, waivers, reversals vs cash refund, variance |
 | [borrower-model.md](borrower-model.md) | PLM-owned Borrower; may exist without Personal |
+| [borrower-identity-and-duplicate-policy.md](borrower-identity-and-duplicate-policy.md) | Ownership, cardinality, duplicate handling |
 | [personal-borrower-linking.md](personal-borrower-linking.md) | Optional consent-based linking |
+| [personal-linking-lifecycle-and-visibility.md](personal-linking-lifecycle-and-visibility.md) | Link lifecycle, MVP flow, unlink/relink, visibility |
 | [quick-loan-publishing-and-eligibility.md](quick-loan-publishing-and-eligibility.md) | Publishing audiences; eligibility ≠ approval |
 | [borrower-groups-and-targeting.md](borrower-groups-and-targeting.md) | Organization-owned groups |
 | [traditional-loan-model.md](traditional-loan-model.md) | Traditional origination path |

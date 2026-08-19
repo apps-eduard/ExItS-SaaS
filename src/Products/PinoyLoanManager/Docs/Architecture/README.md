@@ -14,7 +14,7 @@ Do not treat this folder as a second architecture document.
 | [personal-integration-boundary.md](personal-integration-boundary.md) | Personal vs PLM authority; no table access |
 | [source-and-project-layout.md](source-and-project-layout.md) | Future `ExItS.PinoyLoanManager.*` projects (not created) |
 | [api-and-contract-boundary.md](api-and-contract-boundary.md) | API consumers and Personal contracts |
-| [persistence-and-database-boundary.md](persistence-and-database-boundary.md) | Separate database isolation |
+| [persistence-and-database-boundary.md](persistence-and-database-boundary.md) | Separate database isolation; logical name `ExItS_PinoyLoanManager` |
 | [mobile-offline-boundary.md](mobile-offline-boundary.md) | Online-first MAUI; offline not authorized |
 | [platform-commercial-integration.md](platform-commercial-integration.md) | Platform commercial/identity contracts |
 

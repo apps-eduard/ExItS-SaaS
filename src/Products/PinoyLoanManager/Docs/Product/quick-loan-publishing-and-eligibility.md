@@ -6,7 +6,7 @@
 
 Publishing and eligibility for Quick Loan Templates. Complements [quick-loan-model.md](quick-loan-model.md); does not replace template/snapshot rules.
 
-Related: [borrower-groups-and-targeting.md](borrower-groups-and-targeting.md), [personal-borrower-linking.md](personal-borrower-linking.md), [borrower-model.md](borrower-model.md).
+Related: [borrower-groups-and-targeting.md](borrower-groups-and-targeting.md), [personal-borrower-linking.md](personal-borrower-linking.md), [personal-linking-lifecycle-and-visibility.md](personal-linking-lifecycle-and-visibility.md), [borrower-model.md](borrower-model.md).
 
 ---
 
@@ -26,15 +26,15 @@ Template snapshot rules remain as in [quick-loan-model.md](quick-loan-model.md).
 
 A template may be published to:
 
-- All Eligible Linked Borrowers of **that organization**
-- Borrower Group
-- Selected Borrower(s)
+- linked eligible Borrowers of **that organization**
+- an eligible Borrower Group
+- selected eligible linked Borrowers
 
 Never interpret “all” as all ExItS users globally.
 
 A POS Customer alone is never a publishing audience.
 
-Personal publishing of an offer to a customer requires a **linked** Personal / Borrower relationship plus eligibility. Unlinked Borrowers may still be served in Organization Web according to grants; they do not see Personal offers.
+Personal publishing of an offer to a customer requires a **linked** Personal / Borrower relationship plus eligibility. Unlinked Borrowers may still exist and may still use organization-operated traditional workflows; they cannot receive a Personal-delivered offer until linked. Revoking the link stops future Personal-delivered offers. Detail: [personal-linking-lifecycle-and-visibility.md](personal-linking-lifecycle-and-visibility.md).
 
 ---
 
