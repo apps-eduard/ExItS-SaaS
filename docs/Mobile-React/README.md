@@ -28,6 +28,7 @@ It does **not** authorize implementation.
 - [decisions.md](decisions.md) — accepted decision identifiers for this planning track
 - [current-state-and-replacement-boundaries.md](current-state-and-replacement-boundaries.md) — current clients, hosts, and replacement boundaries
 - [product-surfaces-and-ux.md](product-surfaces-and-ux.md) — device classes, role matrix, selling UX, visual quality target
+- [frontend-architecture-and-reuse.md](frontend-architecture-and-reuse.md) — React stack, reuse levels, adapters, future project path
 
 ## Canonical rule
 
