@@ -18,6 +18,7 @@ import { StatusIndicator } from "@/components/exits/StatusIndicator";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { OrganizationWorkspaceLink } from "@/features/organizations/OrganizationWorkspaceLink";
 import { useOrganizationListQuery } from "@/features/organizations/use-organization-list-query";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { usePreferences } from "@/hooks/use-preferences";
@@ -306,7 +307,12 @@ function OrganizationResults({
                 id: "name",
                 header: t("organizations.column.organization"),
                 cell: (organization) => (
-                  <span className="font-medium">{organization.displayName}</span>
+                  <OrganizationWorkspaceLink
+                    className="font-medium"
+                    organizationId={organization.id}
+                  >
+                    {organization.displayName}
+                  </OrganizationWorkspaceLink>
                 ),
               },
               {
@@ -370,7 +376,7 @@ function OrganizationResults({
                 <p className="mt-0.5 font-mono text-[length:var(--exits-text-xs)] text-muted">
                   {organization.slug}
                 </p>
-                <div className="mt-1.5">
+                <div className="mt-1.5 flex flex-wrap items-center gap-2">
                   <StatusIndicator
                     tone={statusTone(organization.status)}
                     label={
@@ -379,6 +385,9 @@ function OrganizationResults({
                         : organization.status
                     }
                   />
+                  <OrganizationWorkspaceLink organizationId={organization.id}>
+                    {t("organization.open")}
+                  </OrganizationWorkspaceLink>
                 </div>
               </li>
             ))

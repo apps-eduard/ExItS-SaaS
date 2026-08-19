@@ -7,7 +7,9 @@ import { RequireSession } from "@/app/RequireSession";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthPlaceholderPage } from "@/features/auth/AuthPlaceholderPage";
 import { SignInPage } from "@/features/auth/SignInPage";
+import { OrganizationOverviewPage } from "@/features/organizations/OrganizationOverviewPage";
 import { OrganizationsPage } from "@/features/organizations/OrganizationsPage";
+import { OrganizationWorkspaceLayout } from "@/features/organizations/OrganizationWorkspaceLayout";
 import { OverviewPage } from "@/features/overview/OverviewPage";
 import { ShellCatchAllPage } from "@/features/overview/ShellCatchAllPage";
 import { AuthorizationProvider } from "@/hooks/use-authorization";
@@ -87,7 +89,13 @@ export function App() {
                       <Route path="/" element={<Navigate to="/admin" replace />} />
                       <Route path="/admin" element={<Outlet />}>
                         <Route index element={<OverviewPage />} />
-                        <Route path="organizations" element={<OrganizationsPage />} />
+                        <Route path="organizations">
+                          <Route index element={<OrganizationsPage />} />
+                          <Route path=":organizationId" element={<OrganizationWorkspaceLayout />}>
+                            <Route index element={<OrganizationOverviewPage />} />
+                            <Route path="*" element={<ShellCatchAllPage />} />
+                          </Route>
+                        </Route>
                         <Route path="*" element={<ShellCatchAllPage />} />
                       </Route>
                     </Route>

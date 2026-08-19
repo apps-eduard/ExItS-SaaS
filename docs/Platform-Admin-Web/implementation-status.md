@@ -275,6 +275,28 @@ Read-only Organizations list at `/admin/organizations`. No create/edit/delete. C
 
 See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-07-organizations-list.md`.
 
+## PWEB-IMPL-08 — Organization workspace + Overview
+
+Status: **COMPLETE** after validation
+
+Read-only `/admin/organizations/:organizationId` workspace shell with Overview only. Nested layout is ready for later tabs; no dead tabs are shown. CSRF remains `BLOCKS_FUTURE_MUTATION`. Social-auth token-in-URL remains `BLOCKS_CUTOVER`. PWA is not in this package.
+
+| Area | Record |
+|---|---|
+| Organization Workspace | Overview **IMPLEMENTED** |
+| Branches | **NOT STARTED** |
+| People/Memberships | **NOT STARTED** |
+| Products/Access | **NOT STARTED** |
+| Subscription | **NOT STARTED** |
+| Entitlements | **NOT STARTED** |
+| Billing | **NOT STARTED** |
+| Activity/Audit | **NOT STARTED** |
+| CSRF | `BLOCKS_FUTURE_MUTATION` |
+| Social-auth token-in-URL | `BLOCKS_CUTOVER` |
+| PWA | **NOT IN THIS PACKAGE** |
+
+See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-08-organization-workspace-overview.md`.
+
 ## Queue
 
 | Package | Status |
@@ -285,5 +307,6 @@ See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-07-organizations-list.md`.
 | PWEB-IMPL-06B — Uniform visual system | VISUAL DIRECTION ACCEPTED |
 | PWEB-IMPL-06C — Final polish | PRODUCT OWNER VISUAL APPROVED |
 | PWEB-IMPL-07 — Organizations list | COMPLETE |
+| PWEB-IMPL-08 — Organization workspace Overview | COMPLETE |
 
-Stopped after PWEB-IMPL-07.
+Stopped after PWEB-IMPL-08.

@@ -21,6 +21,58 @@ export type OrganizationListItem = {
   updatedAtUtc?: string;
 };
 
+export type OrganizationProfile = {
+  legalName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  region?: string;
+  postalCode?: string;
+  countryCode?: string;
+  timeZoneId?: string;
+  locale?: string;
+  currencyCode?: string;
+};
+
+export type OrganizationBranding = {
+  brandDisplayName?: string;
+  primaryColor?: string;
+  accentColor?: string;
+};
+
+export type OrganizationDetail = OrganizationListItem & {
+  profile: OrganizationProfile;
+  branding: OrganizationBranding;
+};
+
+export type CommercialSubscriptionRecord = {
+  id: string;
+  productCode: string;
+  status: string;
+};
+
+export type CommercialPaymentRecord = {
+  id: string;
+  productCode: string;
+  status: string;
+  paidAtUtc?: string;
+};
+
+export type CommercialEntitlementRecord = {
+  id: string;
+  productCode: string;
+  subscriptionStatus: string;
+  generatedAtUtc?: string;
+};
+
+export type OrganizationCommercialSummary = {
+  subscriptions: CommercialSubscriptionRecord[];
+  payments: CommercialPaymentRecord[];
+  latestEntitlements: CommercialEntitlementRecord[];
+};
+
 export type OrganizationListQuery = {
   page?: number;
   pageSize?: number;

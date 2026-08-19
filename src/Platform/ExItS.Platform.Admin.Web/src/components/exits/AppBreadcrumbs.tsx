@@ -1,4 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
+import {
+  ORGANIZATIONS_LIST_STATE_KEY,
+  isOrganizationWorkspacePath,
+  organizationsListHref,
+  type OrganizationsLocationState,
+} from "@/api/organizations/organization-id";
+import { useOrganizationWorkspaceIdentity } from "@/features/organizations/organization-workspace-context";
 import { useAuthorization } from "@/hooks/use-authorization";
 import { usePreferences } from "@/hooks/use-preferences";
 import { areDevelopmentToolsAllowed } from "@/lib/auth/development-tools";
@@ -14,11 +21,15 @@ export function AppBreadcrumbs() {
   const { t } = usePreferences();
   const authorization = useAuthorization();
   const location = useLocation();
+  const workspace = useOrganizationWorkspaceIdentity();
   const path =
     location.pathname.length > 1 && location.pathname.endsWith("/")
       ? location.pathname.slice(0, -1)
       : location.pathname;
   const isOverview = path === "/admin";
+  const isOrgWorkspace = isOrganizationWorkspacePath(path);
+  const listState = (location.state as OrganizationsLocationState | null) ?? null;
+  const organizationsHref = organizationsListHref(listState?.[ORGANIZATIONS_LIST_STATE_KEY]);
   const resolution = resolveKnownReactRoute({
     pathname: path,
     permissionStatus: authorization.status,
@@ -28,11 +39,13 @@ export function AppBreadcrumbs() {
   });
   const currentLabel = isOverview
     ? t("nav.overview")
-    : resolution === "implemented"
-      ? (labelForAuthorizedPath(path, t) ?? t("shell.notFound.title"))
-      : resolution === "under-development"
-        ? (labelForAuthorizedPath(path, t) ?? t("underDevelopment.title"))
-        : t("shell.notFound.title");
+    : isOrgWorkspace
+      ? (workspace?.identity?.displayName ?? t("organization.breadcrumb.fallback"))
+      : resolution === "implemented"
+        ? (labelForAuthorizedPath(path, t) ?? t("shell.notFound.title"))
+        : resolution === "under-development"
+          ? (labelForAuthorizedPath(path, t) ?? t("underDevelopment.title"))
+          : t("shell.notFound.title");
 
   return (
     <nav aria-label={t("shell.breadcrumb")} className="min-w-0 overflow-hidden">
@@ -41,6 +54,30 @@ export function AppBreadcrumbs() {
           <li className="truncate text-foreground" aria-current="page">
             {currentLabel}
           </li>
+        ) : isOrgWorkspace ? (
+          <>
+            <li>
+              <Link className="text-primary hover:underline" to="/admin">
+                {t("nav.overview")}
+              </Link>
+            </li>
+            <li className="flex min-w-0 items-center">
+              <span aria-hidden="true" className="px-1">
+                /
+              </span>
+              <Link className="text-primary hover:underline" to={organizationsHref}>
+                {t("nav.organizations")}
+              </Link>
+            </li>
+            <li className="flex min-w-0 items-center">
+              <span aria-hidden="true" className="px-1">
+                /
+              </span>
+              <span className="truncate text-foreground" aria-current="page">
+                {currentLabel}
+              </span>
+            </li>
+          </>
         ) : resolution === "pending" ? (
           <li>
             <Link className="text-primary hover:underline" to="/admin">

@@ -13,6 +13,10 @@ const organizationsScreenshotDir = resolve(
   dirname(fileURLToPath(import.meta.url)),
   "../../../../docs/Platform-Admin-Web/Reports/impl-07-organizations",
 );
+const workspaceScreenshotDir = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../../../docs/Platform-Admin-Web/Reports/impl-08-organization-workspace",
+);
 
 test.describe("local-validation React container smoke", () => {
   test.skip(
@@ -185,6 +189,48 @@ test.describe("local-validation React container smoke", () => {
     expect(overflow).toBe(false);
     await page.screenshot({
       path: resolve(organizationsScreenshotDir, "03-organizations-375x812.png"),
+      fullPage: true,
+    });
+
+    mkdirSync(workspaceScreenshotDir, { recursive: true });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const resetFilters = page.getByRole("button", { name: "Reset filters" });
+    if ((await resetFilters.count()) > 0) {
+      await resetFilters.first().click();
+    }
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    const organizationLink = page.locator('table a[href^="/admin/organizations/"]').first();
+    await expect(organizationLink).toBeVisible();
+    await organizationLink.click();
+    await expect(page).toHaveURL(/\/admin\/organizations\/[0-9a-fA-F-]{36}$/);
+    await expect(page.locator("h1")).toBeVisible();
+    await expect(page.getByRole("button", { name: /edit/i })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /create/i })).toHaveCount(0);
+    await page.getByRole("button", { name: "Preferences" }).click();
+    await page.getByRole("menuitem", { name: /^Light/ }).click();
+    await page.screenshot({
+      path: resolve(workspaceScreenshotDir, "04-overview-from-organizations.png"),
+      fullPage: true,
+    });
+    await page.screenshot({
+      path: resolve(workspaceScreenshotDir, "01-overview-1440x900-light.png"),
+      fullPage: true,
+    });
+    await page.getByRole("button", { name: "Preferences" }).click();
+    await page.getByRole("menuitem", { name: /^Dark/ }).click();
+    await page.screenshot({
+      path: resolve(workspaceScreenshotDir, "02-overview-1440x900-dark.png"),
+      fullPage: true,
+    });
+    await page.getByRole("button", { name: "Preferences" }).click();
+    await page.getByRole("menuitem", { name: /^Light/ }).click();
+    await page.setViewportSize({ width: 375, height: 812 });
+    const workspaceOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+    expect(workspaceOverflow).toBe(false);
+    await page.screenshot({
+      path: resolve(workspaceScreenshotDir, "03-overview-375x812.png"),
       fullPage: true,
     });
   });

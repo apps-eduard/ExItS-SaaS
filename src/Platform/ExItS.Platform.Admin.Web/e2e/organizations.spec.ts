@@ -61,7 +61,36 @@ async function mockSession(
   await page.route("**/api/v1/platform/authorization/me", async (route) => {
     await route.fulfill({ json: { ...authorization, permissions } });
   });
-  await page.route("**/api/v1/platform/organizations*", async (route) => {
+  await page.route("**/api/v1/platform/admin/organizations/*/commercial-summary", async (route) => {
+    await route.fulfill({
+      json: {
+        subscriptions: [{ id: "s1", productCode: "POS", status: "Active" }],
+        payments: [],
+        latestEntitlements: [],
+      },
+    });
+  });
+  await page.route(/\/api\/v1\/platform\/organizations(\/|\?|$)/, async (route) => {
+    const url = route.request().url();
+    const match = url.match(
+      /\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?:\?|$)/,
+    );
+    if (match) {
+      const organization = organizations.items.find((item) => item.id === match[1]);
+      if (!organization) {
+        await route.fulfill({
+          status: 404,
+          json: {
+            title: "Not Found",
+            status: 404,
+            errorCode: "application.organization.not_found",
+          },
+        });
+        return;
+      }
+      await route.fulfill({ json: organization });
+      return;
+    }
     await route.fulfill({ json: organizations });
   });
   await page.route("**/api/v1/platform/subscriptions*", async (route) => {
@@ -117,7 +146,7 @@ test("search, status, sort, and pagination update the server query and URL", asy
   await page.route("**/api/v1/platform/authorization/me", async (route) => {
     await route.fulfill({ json: authorization });
   });
-  await page.route("**/api/v1/platform/organizations*", async (route) => {
+  await page.route(/\/api\/v1\/platform\/organizations(\/|\?|$)/, async (route) => {
     seen.push(route.request().url());
     await route.fulfill({ json: organizations });
   });
@@ -151,7 +180,7 @@ test("empty, zero-result, and error states stay in the list region", async ({ pa
   await page.route("**/api/v1/platform/authorization/me", async (route) => {
     await route.fulfill({ json: authorization });
   });
-  await page.route("**/api/v1/platform/organizations*", async (route) => {
+  await page.route(/\/api\/v1\/platform\/organizations(\/|\?|$)/, async (route) => {
     await route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 20 } });
   });
   await page.goto("/admin/organizations");

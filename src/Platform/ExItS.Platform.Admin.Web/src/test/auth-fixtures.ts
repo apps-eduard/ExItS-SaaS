@@ -70,6 +70,9 @@ function pathnameOf(url: string): string {
 export type AuthenticatedFetchOptions = {
   permissions?: string[];
   failOrganizations?: boolean;
+  failOrganizationGet?: boolean;
+  failCommercialSummary?: boolean;
+  forbiddenOrganization?: boolean;
   organizationTotalCount?: number;
   organizationItems?: Array<{
     id: string;
@@ -78,7 +81,14 @@ export type AuthenticatedFetchOptions = {
     status: string;
     createdAtUtc?: string;
     updatedAtUtc?: string;
+    profile?: Record<string, unknown>;
+    branding?: Record<string, unknown>;
   }>;
+  commercialSummary?: {
+    subscriptions?: Array<Record<string, unknown>>;
+    payments?: Array<Record<string, unknown>>;
+    latestEntitlements?: Array<Record<string, unknown>>;
+  };
 };
 
 export function mockUnauthenticatedFetch(): void {
@@ -127,6 +137,50 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}):
       }
       if (path.endsWith("/health/ready") || path.endsWith("/health")) {
         return textResponse(200, "Healthy");
+      }
+      if (
+        url.includes("/api/v1/platform/admin/organizations") &&
+        url.includes("commercial-summary")
+      ) {
+        if (options.failCommercialSummary) {
+          return jsonResponse(500, {
+            title: "Error",
+            status: 500,
+            detail: "Commercial summary failed.",
+          });
+        }
+        const summary = options.commercialSummary ?? {};
+        return jsonResponse(200, {
+          subscriptions: summary.subscriptions ?? [],
+          payments: summary.payments ?? [],
+          latestEntitlements: summary.latestEntitlements ?? [],
+        });
+      }
+      const organizationGet = path.match(
+        /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/,
+      );
+      if (organizationGet) {
+        if (options.forbiddenOrganization) {
+          return jsonResponse(403, { title: "Forbidden", status: 403, detail: "Forbidden." });
+        }
+        if (options.failOrganizationGet) {
+          return jsonResponse(500, {
+            title: "Error",
+            status: 500,
+            detail: "Organization load failed.",
+          });
+        }
+        const items = options.organizationItems ?? [];
+        const match = items.find((item) => item.id === organizationGet[1]);
+        if (!match) {
+          return jsonResponse(404, {
+            title: "Not Found",
+            status: 404,
+            detail: "Platform Organization was not found.",
+            errorCode: "application.organization.not_found",
+          });
+        }
+        return jsonResponse(200, match);
       }
       if (url.includes("/api/v1/platform/organizations")) {
         if (options.failOrganizations) {

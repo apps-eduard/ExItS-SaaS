@@ -24,7 +24,13 @@ export default tseslint.config(
         "warn",
         {
           allowConstantExport: true,
-          allowExportNames: ["usePreferences", "useSession", "useAuthorization", "useDiagnostics"],
+          allowExportNames: [
+            "usePreferences",
+            "useSession",
+            "useAuthorization",
+            "useDiagnostics",
+            "useOrganizationWorkspaceIdentity",
+          ],
         },
       ],
       "@typescript-eslint/no-explicit-any": "error",

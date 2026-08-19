@@ -53,7 +53,10 @@ describe("organizations list", () => {
     expect(screen.queryByRole("button", { name: /create/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /edit/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /delete/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /northwind/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Northwind Market" })).toHaveAttribute(
+      "href",
+      "/admin/organizations/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    );
   });
 
   it("shows the Organizations nav item when authorized and fail-closes when not", async () => {
