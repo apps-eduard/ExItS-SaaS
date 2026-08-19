@@ -54,7 +54,9 @@ Mailpit and Development/Testing fake payments remain in place. This package does
 | PWEB-IMPL-02 | COMPLETE | Design system + global preferences foundation |
 | PWEB-IMPL-03 | COMPLETE | Sign-In + session bootstrap |
 | PWEB-IMPL-03A | COMPLETE | Restrict Development Test User frontend environment gate |
-| PWEB-IMPL-04 | NOT STARTED | Application Shell + Navigation |
+| PWEB-IMPL-04 | COMPLETE | Application shell + navigation foundation |
+| PWEB-IMPL-04A | NOT STARTED | Global Error Diagnostics + Copy |
+| PWEB-IMPL-05 | NOT STARTED | Dashboard |
 
 ## PWEB-IMPL-02 — Design system + global preferences
 
@@ -95,3 +97,21 @@ Explicitly not claimed: visual approval, first visual checkpoint, application sh
 Status: **COMPLETE** (correction to PWEB-IMPL-03; PWEB-IMPL-03 remains COMPLETE)
 
 Development Test User frontend environment gate changed from broad non-production behavior (`MODE !== "production"`) to an explicit Development/Testing allowlist (`development`, `test`, `testing`). Unrecognized modes fail closed. Backend `GET /api/v1/platform/local-validation/enabled` is still required before identities are queried.
+
+## PWEB-IMPL-04 — Application shell + navigation
+
+Status: **COMPLETE**
+
+| Area | Record |
+|---|---|
+| Application shell | Implemented (`/admin`, sidebar, top bar, breadcrumbs, page header) |
+| Navigation foundation | Registry-driven lifecycle + permission-aware UI shaping via `GET /api/v1/platform/authorization/me` |
+| Responsive drawer | Implemented below 1024px |
+| Preference integration | Language / theme / density in top-bar preferences menu; sidebar collapse persisted |
+| Dashboard | **NOT implemented** |
+| Global diagnostics | **NOT implemented** |
+| Logout | **Not wired** (CSRF `BLOCKS_FUTURE_MUTATION`) |
+
+Explicitly not claimed: visual approval, first visual checkpoint.
+
+Next package: **PWEB-IMPL-04A — Global Error Diagnostics + Copy**, then **PWEB-IMPL-05 — Dashboard**.

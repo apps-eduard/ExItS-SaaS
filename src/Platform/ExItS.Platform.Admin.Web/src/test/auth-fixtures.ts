@@ -14,6 +14,27 @@ export const sampleSession: AuthSession = {
   selectedOrganizationDisplayName: null,
   organizationSelectionState: "None",
   activeOrganizationCount: 0,
+  accountClass: "Platform",
+  allowedScope: "Platform",
+};
+
+export const sampleAuthorization = {
+  actorIdentifier: "olivia@example.test",
+  actorType: "PlatformUser",
+  platformUserId: "22222222-2222-2222-2222-222222222222",
+  organizationId: null,
+  permissions: [
+    "platform.permission.view_portfolio",
+    "platform.permission.manage_organizations",
+    "platform.permission.manage_platform_users",
+    "platform.permission.manage_memberships",
+    "platform.permission.manage_subscriptions",
+    "platform.permission.manage_manual_payments",
+    "platform.permission.manage_entitlement_overrides",
+    "platform.permission.view_audit_records",
+    "platform.permission.view_global_catalog",
+    "platform.permission.view_privacy_compliance",
+  ],
 };
 
 export function jsonResponse(status: number, body: unknown): Response {
@@ -52,6 +73,9 @@ export function mockAuthenticatedFetch(): void {
       const url = String(input);
       if (url.includes("/api/v1/platform/auth/me")) {
         return jsonResponse(200, sampleSession);
+      }
+      if (url.includes("/api/v1/platform/authorization/me")) {
+        return jsonResponse(200, sampleAuthorization);
       }
       return jsonResponse(404, { title: "Not Found", status: 404 });
     }),

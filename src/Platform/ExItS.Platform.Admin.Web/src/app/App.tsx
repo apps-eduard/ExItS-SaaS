@@ -1,17 +1,19 @@
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { AppErrorBoundary } from "@/app/AppErrorBoundary";
 import { RedirectIfAuthenticated } from "@/app/RedirectIfAuthenticated";
 import { RequireSession } from "@/app/RequireSession";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthPlaceholderPage } from "@/features/auth/AuthPlaceholderPage";
 import { SignInPage } from "@/features/auth/SignInPage";
-import { ScaffoldPage } from "@/features/scaffold/ScaffoldPage";
+import { OverviewPage } from "@/features/overview/OverviewPage";
+import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
+import { AuthorizationProvider } from "@/hooks/use-authorization";
 import { PreferencesProvider } from "@/hooks/use-preferences";
-import { SessionProvider } from "@/hooks/use-session";
+import { SessionProvider, useSession } from "@/hooks/use-session";
+import { AppShell } from "@/layouts/AppShell";
 import { AuthLayout } from "@/layouts/AuthLayout";
-import { RootLayout } from "@/layouts/RootLayout";
 
 function createQueryClient() {
   return new QueryClient({
@@ -29,6 +31,23 @@ function AuthRoutes() {
     <AuthLayout>
       <Outlet />
     </AuthLayout>
+  );
+}
+
+function ProtectedShell() {
+  return (
+    <RequireSession>
+      <AuthorizedAppShell />
+    </RequireSession>
+  );
+}
+
+function AuthorizedAppShell() {
+  const { session } = useSession();
+  return (
+    <AuthorizationProvider key={session?.userId ?? "session"}>
+      <AppShell />
+    </AuthorizationProvider>
   );
 }
 
@@ -61,15 +80,10 @@ export function App() {
                       element={<AuthPlaceholderPage titleKey="auth.createAccount.title" />}
                     />
                   </Route>
-                  <Route element={<RootLayout />}>
-                    <Route
-                      path="/"
-                      element={
-                        <RequireSession>
-                          <ScaffoldPage />
-                        </RequireSession>
-                      }
-                    />
+                  <Route element={<ProtectedShell />}>
+                    <Route path="/" element={<Navigate to="/admin" replace />} />
+                    <Route path="/admin" element={<OverviewPage />} />
+                    <Route path="/admin/*" element={<ShellNotFoundPage />} />
                   </Route>
                 </Routes>
               </SessionProvider>

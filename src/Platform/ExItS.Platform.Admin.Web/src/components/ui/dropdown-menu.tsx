@@ -34,13 +34,16 @@ export function DropdownMenu({
 export function DropdownMenuItem({
   children,
   onSelect,
+  disabled,
 }: {
   children: ReactNode;
   onSelect?: () => void;
+  disabled?: boolean;
 }) {
   return (
     <DropdownMenuPrimitive.Item
-      className="flex min-h-11 cursor-pointer items-center rounded-sm px-2 text-[length:var(--exits-text-sm)] outline-none focus:bg-surface-muted"
+      disabled={disabled}
+      className="flex min-h-11 cursor-pointer items-center rounded-sm px-2 text-[length:var(--exits-text-sm)] outline-none focus:bg-surface-muted data-disabled:cursor-default data-disabled:opacity-100"
       onSelect={onSelect}
     >
       {children}

@@ -19,8 +19,8 @@ describe("sanitizeReturnPath", () => {
   });
 
   it("resolves missing or unsafe returns to the foundation route", () => {
-    expect(resolvePostLoginPath(null)).toBe("/");
-    expect(resolvePostLoginPath("https://evil.example")).toBe("/");
+    expect(resolvePostLoginPath(null)).toBe("/admin");
+    expect(resolvePostLoginPath("https://evil.example")).toBe("/admin");
     expect(buildLoginPath({ returnPath: "https://evil.example", notice: "session-expired" })).toBe(
       "/admin/login?notice=session-expired",
     );

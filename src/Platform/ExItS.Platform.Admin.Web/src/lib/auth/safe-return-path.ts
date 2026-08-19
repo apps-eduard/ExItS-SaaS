@@ -1,4 +1,4 @@
-const DEFAULT_AUTHENTICATED_PATH = "/";
+const DEFAULT_AUTHENTICATED_PATH = "/admin";
 
 export function sanitizeReturnPath(raw: string | null | undefined): string | null {
   if (raw == null) {

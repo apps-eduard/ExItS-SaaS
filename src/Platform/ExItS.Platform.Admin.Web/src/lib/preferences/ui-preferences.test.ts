@@ -21,6 +21,7 @@ describe("parseUiPreferences", () => {
       theme: "dark",
       language: "fil-PH",
       density: "compact",
+      sidebarCollapsed: false,
     });
     expect(parseUiPreferences({ theme: "LIGHT", language: "en", density: "balanced" }).theme).toBe(
       "system",
@@ -47,6 +48,7 @@ describe("readUiPreferences", () => {
       theme: "light",
       language: "en",
       density: "comfortable",
+      sidebarCollapsed: false,
     });
   });
 });
@@ -60,7 +62,7 @@ describe("writeUiPreferences", () => {
           written[key] = value;
         },
       },
-      { theme: "dark", language: "fil-PH", density: "balanced" },
+      { theme: "dark", language: "fil-PH", density: "balanced", sidebarCollapsed: true },
     );
     expect(Object.keys(written)).toEqual([UI_PREFERENCES_STORAGE_KEY]);
     expect(written[UI_PREFERENCES_STORAGE_KEY]).toBeDefined();
@@ -68,6 +70,7 @@ describe("writeUiPreferences", () => {
       theme: "dark",
       language: "fil-PH",
       density: "balanced",
+      sidebarCollapsed: true,
     });
   });
 });

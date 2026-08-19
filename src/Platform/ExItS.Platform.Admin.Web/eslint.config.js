@@ -22,7 +22,10 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": [
         "warn",
-        { allowConstantExport: true, allowExportNames: ["usePreferences", "useSession"] },
+        {
+          allowConstantExport: true,
+          allowExportNames: ["usePreferences", "useSession", "useAuthorization"],
+        },
       ],
       "@typescript-eslint/no-explicit-any": "error",
     },

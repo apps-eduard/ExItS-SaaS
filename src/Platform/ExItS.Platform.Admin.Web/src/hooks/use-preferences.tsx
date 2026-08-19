@@ -16,6 +16,7 @@ type PreferencesContextValue = UiPreferences & {
   setTheme: (theme: ThemeMode) => void;
   setLanguage: (language: Language) => void;
   setDensity: (density: Density) => void;
+  setSidebarCollapsed: (sidebarCollapsed: boolean) => void;
 };
 
 const PreferencesContext = createContext<PreferencesContextValue | null>(null);
@@ -47,6 +48,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       setTheme: (theme) => update({ theme }),
       setLanguage: (language) => update({ language }),
       setDensity: (density) => update({ density }),
+      setSidebarCollapsed: (sidebarCollapsed) => update({ sidebarCollapsed }),
     }),
     [preferences, update],
   );

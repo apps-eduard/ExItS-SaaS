@@ -98,7 +98,8 @@ describe("App foundation", () => {
   it("shows the authenticated foundation after auth/me bootstrap", async () => {
     mockAuthenticatedFetch();
     render(<App />);
-    expect(await screen.findByText(/Design foundation preview/i)).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Overview" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/admin");
   });
 });
 
@@ -163,7 +164,7 @@ describe("Sign In", () => {
     expect(await screen.findByRole("button", { name: "Signing in" })).toBeDisabled();
     resolveLogin?.(jsonResponse(200, { ...sampleSession, sessionToken: "must-not-persist" }));
     await waitFor(() => {
-      expect(window.location.pathname).toBe("/");
+      expect(window.location.pathname).toBe("/admin");
     });
   });
 
@@ -267,7 +268,7 @@ describe("Sign In", () => {
     await user.type(screen.getByLabelText("Password"), "secret-password");
     await user.click(screen.getByRole("button", { name: "Sign In" }));
     await waitFor(() => {
-      expect(window.location.pathname).toBe("/");
+      expect(window.location.pathname).toBe("/admin");
     });
     expect(window.localStorage.getItem("sessionToken")).toBeNull();
     expect(document.cookie.includes("opaque-token")).toBe(false);
@@ -299,7 +300,7 @@ describe("Sign In", () => {
     await user.type(screen.getByLabelText("Password"), "secret-password");
     await user.click(screen.getByRole("button", { name: "Sign In" }));
     await waitFor(() => {
-      expect(window.location.pathname).toBe("/");
+      expect(window.location.pathname).toBe("/admin");
     });
     expect(window.location.href).not.toContain("evil.example");
   });

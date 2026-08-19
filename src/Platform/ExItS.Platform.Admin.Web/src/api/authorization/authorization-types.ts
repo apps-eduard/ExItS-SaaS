@@ -1,0 +1,23 @@
+export const PLATFORM_PERMISSIONS = {
+  viewPortfolio: "platform.permission.view_portfolio",
+  manageOrganizations: "platform.permission.manage_organizations",
+  managePlatformUsers: "platform.permission.manage_platform_users",
+  manageMemberships: "platform.permission.manage_memberships",
+  manageSubscriptions: "platform.permission.manage_subscriptions",
+  manageManualPayments: "platform.permission.manage_manual_payments",
+  manageEntitlementOverrides: "platform.permission.manage_entitlement_overrides",
+  viewAuditRecords: "platform.permission.view_audit_records",
+  viewGlobalCatalog: "platform.permission.view_global_catalog",
+  viewPrivacyCompliance: "platform.permission.view_privacy_compliance",
+} as const;
+
+export type PlatformPermissionCode =
+  (typeof PLATFORM_PERMISSIONS)[keyof typeof PLATFORM_PERMISSIONS];
+
+export type ResolvedPermissionsDto = {
+  actorIdentifier: string;
+  actorType: string;
+  platformUserId: string | null;
+  organizationId: string | null;
+  permissions: string[];
+};

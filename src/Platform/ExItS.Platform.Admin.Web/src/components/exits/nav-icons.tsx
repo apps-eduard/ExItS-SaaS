@@ -1,0 +1,63 @@
+import type { LucideIcon } from "lucide-react";
+import {
+  Activity,
+  AlertCircle,
+  Box,
+  Building,
+  Building2,
+  CheckSquare,
+  CreditCard,
+  FileText,
+  FlaskConical,
+  Folder,
+  Key,
+  LayoutDashboard,
+  Package,
+  Receipt,
+  Repeat,
+  ScrollText,
+  Send,
+  Settings,
+  Shield,
+  ShieldCheck,
+  Star,
+  Tag,
+  Upload,
+  User,
+  UserPlus,
+  Users,
+} from "lucide-react";
+
+const icons: Record<string, LucideIcon> = {
+  activity: Activity,
+  "alert-circle": AlertCircle,
+  box: Box,
+  building: Building,
+  "building-2": Building2,
+  "check-square": CheckSquare,
+  "credit-card": CreditCard,
+  "file-text": FileText,
+  "flask-conical": FlaskConical,
+  folder: Folder,
+  key: Key,
+  "layout-dashboard": LayoutDashboard,
+  package: Package,
+  receipt: Receipt,
+  repeat: Repeat,
+  "scroll-text": ScrollText,
+  send: Send,
+  settings: Settings,
+  shield: Shield,
+  "shield-check": ShieldCheck,
+  star: Star,
+  tag: Tag,
+  upload: Upload,
+  user: User,
+  "user-plus": UserPlus,
+  users: Users,
+};
+
+export function NavIcon({ name, className }: { name: string; className?: string }) {
+  const Icon = icons[name] ?? LayoutDashboard;
+  return <Icon aria-hidden="true" className={className} size={18} />;
+}

@@ -13,12 +13,14 @@ export type UiPreferences = {
   theme: ThemeMode;
   language: Language;
   density: Density;
+  sidebarCollapsed: boolean;
 };
 
 export const defaultUiPreferences: UiPreferences = {
   theme: "system",
   language: "en",
   density: "balanced",
+  sidebarCollapsed: false,
 };
 
 function isThemeMode(value: unknown): value is ThemeMode {
@@ -43,6 +45,10 @@ export function parseUiPreferences(value: unknown): UiPreferences {
     theme: isThemeMode(record.theme) ? record.theme : defaultUiPreferences.theme,
     language: isLanguage(record.language) ? record.language : defaultUiPreferences.language,
     density: isDensity(record.density) ? record.density : defaultUiPreferences.density,
+    sidebarCollapsed:
+      typeof record.sidebarCollapsed === "boolean"
+        ? record.sidebarCollapsed
+        : defaultUiPreferences.sidebarCollapsed,
   };
 }
 
