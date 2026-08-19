@@ -58,7 +58,7 @@ Mailpit and Development/Testing fake payments remain in place. This package does
 | PWEB-IMPL-04A | COMPLETE | Global Error Diagnostics + Copy |
 | PWEB-IMPL-04B | COMPLETE | Known Route Under-Development State |
 | PWEB-IMPL-04B-A | COMPLETE | Production nav implemented-only correction |
-| PWEB-IMPL-04C | NOT STARTED | Parallel React Local-Validation Container |
+| PWEB-IMPL-04C | COMPLETE | Parallel React Local-Validation Container |
 | PWEB-IMPL-05 | NOT STARTED | Dashboard |
 | PWEB-IMPL-06 | NOT STARTED | First Visual Checkpoint |
 
@@ -170,14 +170,26 @@ Status: **COMPLETE**
 | Dashboard | **NOT implemented** |
 | Docker | **NOT implemented** |
 
+## PWEB-IMPL-04C — Parallel React local-validation container
+
+Status: **COMPLETE**
+
+| Area | Record |
+|---|---|
+| Blazor Admin | Unchanged on `localhost:8090` |
+| Platform API | Unchanged on `localhost:8091`; CORS allowlist extended with the React origin only |
+| React Admin | Production nginx image on `localhost:8095` (`admin-web-react`) |
+| Cutover | **NONE** — parallel only |
+| Dashboard | **NOT implemented** |
+| Auth model | Unchanged cookie session + `credentials: include`; API base URL injected at container start |
+
+See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-04C-parallel-react-local-validation-container.md`.
+
 ## Queue
 
 | Package | Status |
 |---|---|
-| PWEB-IMPL-04C — Parallel React Local-Validation Container | NOT STARTED |
 | PWEB-IMPL-05 — Dashboard | NOT STARTED |
 | PWEB-IMPL-06 — First Visual Checkpoint | NOT STARTED |
 
-Target for PWEB-IMPL-04C (not implemented in this package): keep existing Blazor Platform Admin on `localhost:8090`, keep Platform API on `localhost:8091`, add the new React Platform Admin on `localhost:8095`.
-
-Next package: **PWEB-IMPL-04C — Parallel React Local-Validation Container**.
+Next package: **PWEB-IMPL-05 — Dashboard**.

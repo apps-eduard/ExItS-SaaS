@@ -1,0 +1,1 @@
+window.__EXITS_PLATFORM_ADMIN_WEB__ = window.__EXITS_PLATFORM_ADMIN_WEB__ || {};

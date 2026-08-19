@@ -1,0 +1,2 @@
+deploy/docker/platform-admin-web/*.sh text eol=lf
+deploy/docker/platform-admin-web/*.conf text eol=lf

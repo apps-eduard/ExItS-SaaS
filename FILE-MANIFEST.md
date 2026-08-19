@@ -37,7 +37,7 @@ tools/ExItS.BackupRestore.Cli/ (non-interactive backup/verify/restore/encrypt/re
 tools/ExItS.Deployment.Cli/ (validate-config / backup-gate / readiness / smoke-catalog CLI)
 ops/backup/ (PowerShell operators scripts + disabled schedule notes + config.example.env)
 ops/deploy/ (pilot deploy orchestration, smoke, pre-deploy backup, env templates)
-deploy/docker/ (packaging + local-validation + production compose, Dockerfiles, nginx; local-validation default = DBs only)
+deploy/docker/ (packaging + local-validation + production compose, Dockerfiles, nginx; local-validation apps include Blazor Admin 8090 and React Admin 8095)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Domain/ (POSCustomer + CreditEntry + CreditDueDateChange + Repayment + CatalogProduct + ProductCategory + Supplier + **PurchaseOrder/GoodsReceipt** aggregates; connected PO lifecycle + receiving discrepancies; FIFO aging helpers)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ (+ Auth; Customers; Credit; due dates/overdue; Payments/ledger; Statements/receipts; Catalog; Suppliers; **Purchasing**; ConnectedSuppliers client contracts + `ConnectedPoDisplayStatus` + linked-product delta sync; Commercial/UtangCapabilityPolicy; Reporting batch lookups)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ (PosDbContext schema `pos`; migrations through **`20260818223000_AddSaleBranchId`**; Magick.NET WebP merchant-override pipeline + local/dev filesystem object store; `Health/PosDatabaseReadyHealthCheck`)

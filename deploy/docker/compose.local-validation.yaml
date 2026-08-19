@@ -9,11 +9,11 @@
 #   See README.local-validation.md and tools/Start-LocalValidation.ps1
 #   docker compose -f compose.local-validation.yaml --env-file .env.local-validation up -d
 #
-# Optional full containerized stack:
+# Optional full containerized stack (Blazor Admin 8090 + React Admin 8095 in parallel):
 #   docker compose -f compose.local-validation.yaml --env-file .env.local-validation --profile apps up -d --build
 #
 # Default host ports (do not collide with packaging baseline):
-#   admin-web 8090 · platform-api 8091 · pos-api 8092 · org-web 8093 · personal-web 8094
+#   admin-web 8090 · platform-api 8091 · pos-api 8092 · org-web 8093 · personal-web 8094 · admin-web-react 8095
 #   platform-db 15533 · pos-db 15534
 #
 # Boundaries: separate Platform and POS databases; no nested clinical product tree.
@@ -88,10 +88,11 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Staging
       ConnectionStrings__PlatformDatabase: Host=platform-db;Port=5432;Database=exits_platform;Username=${LOCAL_VALIDATION_PLATFORM_DB_USER};Password=${LOCAL_VALIDATION_PLATFORM_DB_PASSWORD}
-      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api;org-web;personal-web}
+      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;admin-web-react;pos-api;org-web;personal-web}
       Cors__AllowedOrigins__0: ${LOCAL_VALIDATION_ADMIN_ORIGIN:-http://localhost:8090}
       Cors__AllowedOrigins__1: ${LOCAL_VALIDATION_ORG_WEB_ORIGIN:-http://localhost:8093}
       Cors__AllowedOrigins__2: ${LOCAL_VALIDATION_PERSONAL_WEB_ORIGIN:-http://localhost:8094}
+      Cors__AllowedOrigins__3: ${LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN:-http://localhost:8095}
       Security__EnforceHttps: "false"
       LocalValidation__Enabled: "true"
       LocalValidation__SeedScope: ${LOCAL_VALIDATION_SEED_SCOPE:-PlatformAdministratorsOnly}
@@ -134,10 +135,11 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Staging
       ConnectionStrings__PosDatabase: Host=pos-db;Port=5432;Database=exits_pos;Username=${LOCAL_VALIDATION_POS_DB_USER};Password=${LOCAL_VALIDATION_POS_DB_PASSWORD}
-      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api;org-web;personal-web}
+      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;admin-web-react;pos-api;org-web;personal-web}
       Cors__AllowedOrigins__0: ${LOCAL_VALIDATION_ADMIN_ORIGIN:-http://localhost:8090}
       Cors__AllowedOrigins__1: ${LOCAL_VALIDATION_ORG_WEB_ORIGIN:-http://localhost:8093}
       Cors__AllowedOrigins__2: ${LOCAL_VALIDATION_PERSONAL_WEB_ORIGIN:-http://localhost:8094}
+      Cors__AllowedOrigins__3: ${LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN:-http://localhost:8095}
       Security__EnforceHttps: "false"
       LocalValidation__Enabled: "true"
       LocalValidation__PlatformApiBaseUrl: ${LOCAL_VALIDATION_PLATFORM_API_INTERNAL_URL:-http://platform-api:8080}
@@ -162,7 +164,7 @@ services:
       - platform-api
     environment:
       ASPNETCORE_ENVIRONMENT: Staging
-      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api;org-web;personal-web}
+      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;admin-web-react;pos-api;org-web;personal-web}
       # Server-side Blazor HttpClient must use the Docker network hostname.
       # Browser-facing links still use LOCAL_VALIDATION_ADMIN_ORIGIN / public API ports.
       PlatformApi__BaseUrl: ${LOCAL_VALIDATION_PLATFORM_API_INTERNAL_URL:-http://platform-api:8080}
@@ -194,7 +196,7 @@ services:
       - pos-api
     environment:
       ASPNETCORE_ENVIRONMENT: Staging
-      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api;org-web;personal-web}
+      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;admin-web-react;pos-api;org-web;personal-web}
       LocalValidation__Enabled: "true"
       Security__RequireHttpsApiUrls: "false"
       # Server-to-server on Compose DNS (not host PublicHost).
@@ -223,7 +225,7 @@ services:
       - platform-api
     environment:
       ASPNETCORE_ENVIRONMENT: Staging
-      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api;org-web;personal-web}
+      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;admin-web-react;pos-api;org-web;personal-web}
       LocalValidation__Enabled: "true"
       PlatformApi__BaseUrl: ${LOCAL_VALIDATION_PLATFORM_API_INTERNAL_URL:-http://platform-api:8080}
       ExItSWebHosts__PlatformAdmin: ${LOCAL_VALIDATION_ADMIN_ORIGIN:-http://localhost:8090}
@@ -237,6 +239,26 @@ services:
     tmpfs:
       - /tmp
     stop_grace_period: 30s
+
+  admin-web-react:
+    profiles: ["apps"]
+    container_name: exits-local-validation-admin-web-react
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.platform-admin-web
+    image: exits/platform-admin-web:${LOCAL_VALIDATION_IMAGE_TAG:-local-validation}
+    environment:
+      PLATFORM_API_PUBLIC_URL: ${LOCAL_VALIDATION_PLATFORM_API_PUBLIC_URL:-http://localhost:8091}
+    ports:
+      - "${LOCAL_VALIDATION_ADMIN_WEB_REACT_HOST_PORT:-8095}:8080"
+    networks:
+      - exits-local-validation
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
+    stop_grace_period: 10s
 
 volumes:
   exits_local_validation_platform_db_data:

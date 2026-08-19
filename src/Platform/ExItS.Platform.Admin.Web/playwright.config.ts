@@ -26,6 +26,7 @@ export default defineConfig({
   ],
   projects: [
     {
+      testIgnore: /local-container\.smoke\.spec\.ts/,
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },

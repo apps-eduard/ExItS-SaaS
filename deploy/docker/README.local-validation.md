@@ -12,10 +12,8 @@ From repository root:
 .\tools\Start-LocalValidation.ps1
 ```
 
-This keeps PostgreSQL and Mailpit in Docker while all five apps run with `dotnet watch`.
-It is the daily coding default because source changes rebuild quickly. If FULL Docker mode
-is running, this command automatically stops only its app containers; infrastructure and
-database volumes remain.
+This keeps PostgreSQL and Mailpit in Docker while the five .NET apps run with `dotnet watch`
+and the React Admin production image listens on 8095 (parallel to Blazor Admin on 8090).
 
 ## FULL Docker mode
 
@@ -25,7 +23,7 @@ Use the production-shaped container topology for end-to-end image validation:
 .\tools\Start-DockerLocalValidation.ps1
 ```
 
-The launcher automatically stops repo-scoped host apps before claiming ports 8090-8094.
+The launcher automatically stops repo-scoped host apps before claiming ports 8090-8095.
 Use `-Build` to rebuild changed images during startup, or `-CleanBuild` for a no-cache image
 build. Neither option removes database volumes.
 
@@ -71,14 +69,17 @@ Docker
 Local .NET (dotnet watch)
 ├── Platform API         http://localhost:8091  (PlatformEmail → Mailpit)
 ├── POS API              http://localhost:8092
-├── Platform Admin Web   http://localhost:8090
+├── Platform Admin Web   http://localhost:8090  (existing Blazor Admin)
 ├── Organization Web     http://localhost:8093
 └── Personal Web         http://localhost:8094
+
+Docker (FAST also starts this production image)
+└── React Platform Admin http://localhost:8095  (parallel; not a cutover)
 
 FULL Docker mode
 Docker Compose
 ├── Platform/POS PostgreSQL + Mailpit
-└── Platform API, POS API, Admin, Organization Web, Personal Web
+└── Platform API, POS API, Blazor Admin (8090), Organization Web, Personal Web, React Admin (8095)
 ```
 
 Tailscale/LAN: pass `-PublicHost <tailscale-ip>` to either start launcher. Firewall and

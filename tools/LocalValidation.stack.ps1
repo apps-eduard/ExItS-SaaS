@@ -12,9 +12,10 @@ $script:LocalValidationStack = [pscustomobject]@{
     PlatformApiContainer   = 'exits-local-validation-platform-api'
     PosApiContainer        = 'exits-local-validation-pos-api'
     AdminWebContainer      = 'exits-local-validation-admin-web'
+    AdminWebReactContainer = 'exits-local-validation-admin-web-react'
     OrgWebContainer        = 'exits-local-validation-org-web'
     PersonalWebContainer   = 'exits-local-validation-personal-web'
-    AppComposeServices     = @('platform-api', 'pos-api', 'admin-web', 'org-web', 'personal-web')
+    AppComposeServices     = @('platform-api', 'pos-api', 'admin-web', 'org-web', 'personal-web', 'admin-web-react')
     InfraComposeServices   = @('platform-db', 'pos-db', 'mailpit')
     AppMarkers             = @(
         'ExItS.Platform.Api',
@@ -33,7 +34,8 @@ $script:LocalValidationStack = [pscustomobject]@{
     DefaultPlatformApiPort = 8091
     DefaultPosApiPort      = 8092
     DefaultOrgWebPort      = 8093
-    DefaultPersonalWebPort = 8094
+    DefaultPersonalWebPort      = 8094
+    DefaultAdminWebReactPort    = 8095
     DefaultSeedScope       = 'PlatformAdministratorsOnly'
 }
 
@@ -259,7 +261,7 @@ function Get-LocalValidationAllowedHostsList {
     )
 
     $hosts = New-Object 'System.Collections.Generic.List[string]'
-    foreach ($hostName in @('localhost', '127.0.0.1', '10.0.2.2', 'platform-api', 'pos-api', 'admin-web', 'org-web', 'personal-web')) {
+        foreach ($hostName in @('localhost', '127.0.0.1', '10.0.2.2', 'platform-api', 'pos-api', 'admin-web', 'admin-web-react', 'org-web', 'personal-web')) {
         if (-not $hosts.Contains($hostName)) { $hosts.Add($hostName) }
     }
     if (-not [string]::IsNullOrWhiteSpace($PublicHostValue) -and -not $hosts.Contains($PublicHostValue)) {

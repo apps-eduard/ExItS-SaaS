@@ -7,3 +7,11 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+interface ExitsPlatformAdminWebRuntimeConfig {
+  platformApiBaseUrl?: string;
+}
+
+interface Window {
+  __EXITS_PLATFORM_ADMIN_WEB__?: ExitsPlatformAdminWebRuntimeConfig;
+}

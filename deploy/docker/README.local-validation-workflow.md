@@ -10,11 +10,11 @@ From the repository root:
 .\tools\Start-LocalValidation.ps1
 ```
 
-FAST mode runs PostgreSQL and Mailpit in Docker and all five applications under local
-`dotnet watch`. Keep this as the daily coding default for quick edit/rebuild cycles.
+FAST mode runs PostgreSQL and Mailpit in Docker and the five .NET applications under local
+`dotnet watch`, plus the React Admin production image on 8095.
 
-Mode switching is automatic: FAST startup stops only FULL mode's five app containers
-before it starts host apps. PostgreSQL, Mailpit, and database volumes remain in place.
+Mode switching is automatic: FAST startup stops FULL mode's app containers
+before it starts host apps, then starts React Admin on 8095. PostgreSQL, Mailpit, and database volumes remain in place.
 
 ## FULL Docker mode
 
@@ -25,7 +25,8 @@ Use FULL mode to validate application images and Docker service wiring:
 ```
 
 FULL startup stops only this repository's host app processes, verifies that no unknown
-process owns ports 8090-8094, starts infrastructure, then starts the five app containers.
+process owns ports 8090-8095, starts infrastructure, then starts the app containers
+(including Blazor Admin on 8090 and React Admin on 8095 in parallel).
 It does not replace FAST mode as the normal coding workflow.
 
 Build controls:
@@ -69,6 +70,7 @@ Printed when `-PublicHost` is set:
 - POS API: `http://100.120.79.81:8092`
 - Org Web: `http://100.120.79.81:8093`
 - Personal Web: `http://100.120.79.81:8094`
+- React Admin: `http://100.120.79.81:8095` (parallel; Blazor Admin remains canonical on 8090)
 
 Kestrel always binds `http://0.0.0.0:8090|8091|8092|8093|8094` (localhost still works). Database connection strings stay `127.0.0.1:15533` / `127.0.0.1:15534`. These local ports are internal; production public entry is HTTPS :443.
 
@@ -76,7 +78,7 @@ If you omit `-PublicHost`, Start still tries (in order): `LOCAL_VALIDATION_PUBLI
 
 ### Windows Firewall (apps only)
 
-Allow inbound TCP **8090 / 8091 / 8092 / 8093 / 8094**. Do **not** open **15533 / 15534** (PostgreSQL stays local-only).
+Allow inbound TCP **8090 / 8091 / 8092 / 8093 / 8094 / 8095**. Do **not** open **15533 / 15534** (PostgreSQL stays local-only).
 
 ```powershell
 New-NetFirewallRule -DisplayName "ExItS Local Validation Admin 8090" -Direction Inbound -Protocol TCP -LocalPort 8090 -Action Allow -Profile Any
@@ -84,6 +86,7 @@ New-NetFirewallRule -DisplayName "ExItS Local Validation Platform API 8091" -Dir
 New-NetFirewallRule -DisplayName "ExItS Local Validation POS API 8092" -Direction Inbound -Protocol TCP -LocalPort 8092 -Action Allow -Profile Any
 New-NetFirewallRule -DisplayName "ExItS Local Validation Org Web 8093" -Direction Inbound -Protocol TCP -LocalPort 8093 -Action Allow -Profile Any
 New-NetFirewallRule -DisplayName "ExItS Local Validation Personal Web 8094" -Direction Inbound -Protocol TCP -LocalPort 8094 -Action Allow -Profile Any
+New-NetFirewallRule -DisplayName "ExItS Local Validation React Admin 8095" -Direction Inbound -Protocol TCP -LocalPort 8095 -Action Allow -Profile Any
 ```
 
 Requires an elevated PowerShell. The start script prints the same guidance after a successful launch.
@@ -100,9 +103,9 @@ The FAST host launcher:
    - Platform Admin → http://localhost:8090
    - Organization Web → http://localhost:8093
    - Personal Web → http://localhost:8094
-   - Platform Admin → http://localhost:8090 (or `http://<PublicHost>:8090`)
+   - React Platform Admin (Docker production image) → http://localhost:8095
 6. Waits for ports, runs health checks, prints URLs
-7. Configures CORS for Admin, Organization Web, and Personal Web localhost/public origins
+7. Configures CORS for Admin, Organization Web, Personal Web, and React Admin localhost/public origins
 
 Stop local apps (DBs keep running):
 

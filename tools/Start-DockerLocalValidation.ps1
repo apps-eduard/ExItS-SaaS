@@ -5,7 +5,8 @@
 
 .DESCRIPTION
   Stops repo-scoped host apps, preserves Local Validation database volumes, starts
-  infrastructure, and starts all five application services under the apps profile.
+  infrastructure, and starts application services under the apps profile
+  (including Blazor Admin on 8090 and React Admin on 8095 in parallel).
   Migrations remain application hosted services when the APIs start.
 #>
 [CmdletBinding()]
@@ -132,6 +133,7 @@ $platformApiPort = if ($envMap['LOCAL_VALIDATION_PLATFORM_API_HOST_PORT']) { [in
 $posApiPort = if ($envMap['LOCAL_VALIDATION_POS_API_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_POS_API_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultPosApiPort }
 $orgWebPort = if ($envMap['LOCAL_VALIDATION_ORG_WEB_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_ORG_WEB_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultOrgWebPort }
 $personalWebPort = if ($envMap['LOCAL_VALIDATION_PERSONAL_WEB_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_PERSONAL_WEB_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultPersonalWebPort }
+$adminWebReactPort = if ($envMap['LOCAL_VALIDATION_ADMIN_WEB_REACT_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_ADMIN_WEB_REACT_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultAdminWebReactPort }
 $mailpitUiPort = if ($envMap['LOCAL_VALIDATION_MAILPIT_UI_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_MAILPIT_UI_HOST_PORT'] } else { 8025 }
 
 New-Item -ItemType Directory -Force -Path $stateDir | Out-Null
@@ -142,12 +144,14 @@ $platformApiPublicUrl = "http://${browserHost}:$platformApiPort"
 $posApiPublicUrl = "http://${browserHost}:$posApiPort"
 $orgWebOrigin = "http://${browserHost}:$orgWebPort"
 $personalWebOrigin = "http://${browserHost}:$personalWebPort"
+$adminWebReactOrigin = "http://${browserHost}:$adminWebReactPort"
 $allowedHosts = Get-LocalValidationAllowedHostsList -PublicHostValue $resolvedPublicHost -EnvMap $envMap
 
 Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_ALLOWED_HOSTS' -Value $allowedHosts
 Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_ADMIN_ORIGIN' -Value $adminOrigin
 Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_ORG_WEB_ORIGIN' -Value $orgWebOrigin
 Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_PERSONAL_WEB_ORIGIN' -Value $personalWebOrigin
+Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN' -Value $adminWebReactOrigin
 Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_PLATFORM_API_PUBLIC_URL' -Value $platformApiPublicUrl
 Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_PLATFORM_API_INTERNAL_URL' -Value 'http://platform-api:8080'
 Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_POS_API_INTERNAL_URL' -Value 'http://pos-api:8080'
@@ -158,7 +162,7 @@ Write-Step 'Stopping repo-scoped host applications before Docker app mode...'
 $null = Stop-LocalValidationRepoScopedHostApps -RepoRoot $repoRoot
 Write-Step 'Stopping any existing Docker app services before the port safety check...'
 $null = Stop-LocalValidationDockerAppServices -ComposeFile $composeFile -EnvFile $envFile
-$conflicts = @(Report-LocalValidationPortConflicts -Ports @($adminPort, $platformApiPort, $posApiPort, $orgWebPort, $personalWebPort))
+$conflicts = @(Report-LocalValidationPortConflicts -Ports @($adminPort, $platformApiPort, $posApiPort, $orgWebPort, $personalWebPort, $adminWebReactPort))
 if ($conflicts.Count -gt 0) {
     throw 'Local Validation app ports remain occupied by unknown processes. Free them and retry.'
 }
@@ -190,12 +194,16 @@ Wait-TcpPort -Label 'POS API' -Port $posApiPort -TimeoutSeconds $PortWaitSeconds
 Wait-TcpPort -Label 'Platform Admin' -Port $adminPort -TimeoutSeconds $PortWaitSeconds
 Wait-TcpPort -Label 'Organization Web' -Port $orgWebPort -TimeoutSeconds $PortWaitSeconds
 Wait-TcpPort -Label 'Personal Web' -Port $personalWebPort -TimeoutSeconds $PortWaitSeconds
+Wait-TcpPort -Label 'React Platform Admin' -Port $adminWebReactPort -TimeoutSeconds $PortWaitSeconds
 
 Wait-HttpEndpoint -Label 'Platform API /health' -Url "http://127.0.0.1:$platformApiPort/health" -TimeoutSeconds $PortWaitSeconds
 Wait-HttpEndpoint -Label 'POS API /health' -Url "http://127.0.0.1:$posApiPort/health" -TimeoutSeconds $PortWaitSeconds
 Wait-HttpEndpoint -Label 'Admin /admin/login' -Url "http://127.0.0.1:$adminPort/admin/login" -TimeoutSeconds $PortWaitSeconds
 Wait-HttpEndpoint -Label 'Organization Web /health' -Url "http://127.0.0.1:$orgWebPort/health" -TimeoutSeconds $PortWaitSeconds
 Wait-HttpEndpoint -Label 'Personal Web /health' -Url "http://127.0.0.1:$personalWebPort/health" -TimeoutSeconds $PortWaitSeconds
+Wait-HttpEndpoint -Label 'React Admin /health' -Url "http://127.0.0.1:$adminWebReactPort/health" -TimeoutSeconds $PortWaitSeconds
+Wait-HttpEndpoint -Label 'React Admin /admin' -Url "http://127.0.0.1:$adminWebReactPort/admin" -TimeoutSeconds $PortWaitSeconds
+Wait-HttpEndpoint -Label 'React Admin SPA /admin/organizations' -Url "http://127.0.0.1:$adminWebReactPort/admin/organizations" -TimeoutSeconds $PortWaitSeconds
 
 $state = @{
     Mode = 'DockerApps'
@@ -213,6 +221,7 @@ $state = @{
         PosApi = $posApiPort
         OrgWeb = $orgWebPort
         PersonalWeb = $personalWebPort
+        AdminWebReact = $adminWebReactPort
     }
 }
 $state | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $stateFile -Encoding UTF8
@@ -224,6 +233,7 @@ Write-Host "  Platform API: $platformApiPublicUrl"
 Write-Host "  POS API:      $posApiPublicUrl"
 Write-Host "  Org Web:      $orgWebOrigin"
 Write-Host "  Personal Web: $personalWebOrigin"
+Write-Host "  React Admin:  $adminWebReactOrigin"
 Write-Host "  Mailpit:      http://localhost:$mailpitUiPort"
 Write-Host '  Migrations:   API-hosted LocalValidation services'
 Write-Host '  Volumes:      preserved'

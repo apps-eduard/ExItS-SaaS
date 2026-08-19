@@ -32,5 +32,6 @@ boundaries, and records a dedicated planning worktree (`docs/platform-admin-web-
 - `migration-testing-and-implementation-gates.md` — migration plan, testing strategy, implementation gates, visual DoD, release policy (DOC-10 + AMEND-01)
 - `Reports/PLATFORM-WEB-DOC-10-final-closeout.md` — final closeout report (DOC-10)
 - `Reports/PLATFORM-WEB-DOC-FINAL-AMEND-01.md` — UX/release amendment report (AMEND-01)
-- `implementation-status.md` — implementation gates, Gate B findings, and authorized scope
+- `implementation-status.md` — implementation gates and package status
+- `Reports/PWEB-IMPL-04C-parallel-react-local-validation-container.md` — parallel React local-validation container
 
