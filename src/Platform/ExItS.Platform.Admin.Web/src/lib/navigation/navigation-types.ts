@@ -26,7 +26,7 @@ export type NavigationSectionDefinition = {
 };
 
 export type ResolvedNavigationItem = NavigationItemDefinition & {
-  presentation: "link" | "planned" | "context";
+  presentation: "link" | "planned" | "context" | "underDevelopment";
 };
 
 export type ResolvedNavigationSection = {

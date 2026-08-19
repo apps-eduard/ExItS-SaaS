@@ -1,0 +1,97 @@
+import { describe, expect, it } from "vitest";
+import { navigationRegistry } from "@/lib/navigation/navigation-registry";
+import { resolveKnownReactRoute } from "@/lib/navigation/known-react-routes";
+import { reactImplementationStatus } from "@/lib/navigation/react-implementation";
+
+const loadedAuthorized = {
+  permissionStatus: "loaded" as const,
+  hasAnyPermission: () => true,
+  isPlatformAdministrator: true,
+  developmentToolsAllowed: false,
+};
+
+describe("react implementation status", () => {
+  it("keeps Overview implemented and Organizations under development without changing lifecycle", () => {
+    const overview = navigationRegistry
+      .flatMap((section) => section.items)
+      .find((item) => item.id === "PWEB-NAV-OVERVIEW");
+    const organizations = navigationRegistry
+      .flatMap((section) => section.items)
+      .find((item) => item.id === "PWEB-NAV-ORGANIZATIONS");
+    expect(overview?.lifecycle).toBe("AVAILABLE");
+    expect(organizations?.lifecycle).toBe("AVAILABLE");
+    expect(reactImplementationStatus(overview!)).toBe("IMPLEMENTED");
+    expect(reactImplementationStatus(organizations!)).toBe("UNDER_DEVELOPMENT");
+  });
+});
+
+describe("resolveKnownReactRoute", () => {
+  it("treats /admin as implemented", () => {
+    expect(resolveKnownReactRoute({ ...loadedAuthorized, pathname: "/admin" })).toBe("implemented");
+  });
+
+  it.each([
+    "/admin/organizations",
+    "/admin/users",
+    "/admin/products",
+    "/admin/plans",
+    "/admin/users?directory=platform",
+  ])("treats known unimplemented pathname %s as under-development", (pathname) => {
+    expect(resolveKnownReactRoute({ ...loadedAuthorized, pathname })).toBe("under-development");
+  });
+
+  it("treats unknown pathnames as unknown", () => {
+    expect(
+      resolveKnownReactRoute({
+        ...loadedAuthorized,
+        pathname: "/admin/this-route-does-not-exist-xyz",
+      }),
+    ).toBe("unknown");
+  });
+
+  it("stays pending while authorization is loading", () => {
+    expect(
+      resolveKnownReactRoute({
+        pathname: "/admin/organizations",
+        permissionStatus: "loading",
+        hasAnyPermission: () => true,
+        isPlatformAdministrator: true,
+        developmentToolsAllowed: true,
+      }),
+    ).toBe("pending");
+  });
+
+  it("fails closed when authorization load failed", () => {
+    expect(
+      resolveKnownReactRoute({
+        pathname: "/admin/organizations",
+        permissionStatus: "failed",
+        hasAnyPermission: () => true,
+        isPlatformAdministrator: true,
+        developmentToolsAllowed: true,
+      }),
+    ).toBe("unknown");
+  });
+
+  it("does not reveal privileged known routes to unauthorized users", () => {
+    expect(
+      resolveKnownReactRoute({
+        pathname: "/admin/organizations",
+        permissionStatus: "loaded",
+        hasAnyPermission: () => false,
+        isPlatformAdministrator: false,
+        developmentToolsAllowed: true,
+      }),
+    ).toBe("unknown");
+  });
+
+  it("hides DEV_TEST_ONLY routes outside development tools", () => {
+    expect(
+      resolveKnownReactRoute({
+        ...loadedAuthorized,
+        pathname: "/admin/local-validation/test-payments",
+        developmentToolsAllowed: false,
+      }),
+    ).toBe("unknown");
+  });
+});

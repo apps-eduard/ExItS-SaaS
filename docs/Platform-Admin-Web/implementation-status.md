@@ -56,8 +56,10 @@ Mailpit and Development/Testing fake payments remain in place. This package does
 | PWEB-IMPL-03A | COMPLETE | Restrict Development Test User frontend environment gate |
 | PWEB-IMPL-04 | COMPLETE | Application shell + navigation foundation |
 | PWEB-IMPL-04A | COMPLETE | Global Error Diagnostics + Copy |
-| PWEB-IMPL-04B | NOT STARTED | Known Route Under-Development State |
+| PWEB-IMPL-04B | COMPLETE | Known Route Under-Development State |
+| PWEB-IMPL-04C | NOT STARTED | Parallel React Local-Validation Container |
 | PWEB-IMPL-05 | NOT STARTED | Dashboard |
+| PWEB-IMPL-06 | NOT STARTED | First Visual Checkpoint |
 
 ## PWEB-IMPL-02 — Design system + global preferences
 
@@ -134,4 +136,33 @@ Follow-up recorded: **PWEB-IMPL-04B — Known Route Under-Development State** (A
 
 Explicitly not claimed: visual approval, first visual checkpoint.
 
-Next package: **PWEB-IMPL-04B — Known Route Under-Development State**, then **PWEB-IMPL-05 — Dashboard**.
+## PWEB-IMPL-04B — Known route under-development state
+
+Status: **COMPLETE**
+
+| Area | Record |
+|---|---|
+| Canonical navigation lifecycle | Preserved (`AVAILABLE` is not rewritten to `PLANNED_DISABLED` because a React screen is missing) |
+| React implementation status | Separate (`IMPLEMENTED` / `UNDER_DEVELOPMENT`); Overview `/admin` is `IMPLEMENTED` |
+| Production-shaped navigation | Implemented React destinations only (plus canonical `PLANNED_DISABLED` items that remain planned) |
+| Development / test / testing | Authorized unimplemented production destinations appear under Development as non-navigable “Under development” items |
+| Direct known routes | `/admin/organizations`, `/admin/users`, `/admin/products`, and other known unimplemented pathnames show Under development (query variants use pathname) |
+| Unknown routes | Remain Page not found |
+| Authorization | Fail-closed; no flash while loading; unauthorized users do not see privileged under-development details |
+| Dashboard | **NOT implemented** |
+| Diagnostics | **Unchanged** (under-development is not an error and does not trigger Copy Diagnostics) |
+| Visual checkpoint | **Not approved / not claimed** |
+
+Explicitly not claimed: visual approval, first visual checkpoint, Dashboard, Docker, logout.
+
+## Queue
+
+| Package | Status |
+|---|---|
+| PWEB-IMPL-04C — Parallel React Local-Validation Container | NOT STARTED |
+| PWEB-IMPL-05 — Dashboard | NOT STARTED |
+| PWEB-IMPL-06 — First Visual Checkpoint | NOT STARTED |
+
+Target for PWEB-IMPL-04C (not implemented in this package): keep existing Blazor Platform Admin on `localhost:8090`, keep Platform API on `localhost:8091`, add the new React Platform Admin on `localhost:8095`.
+
+Next package: **PWEB-IMPL-04C — Parallel React Local-Validation Container**.

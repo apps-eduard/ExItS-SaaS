@@ -97,6 +97,11 @@ export const enMessages = {
   "nav.planned": "Planned",
   "nav.plannedHint": "Planned — not available yet.",
   "nav.contextHint": "Select the required context first.",
+  "nav.underDevelopment": "Under development",
+  "underDevelopment.title": "Under development",
+  "underDevelopment.body":
+    "This Platform feature is not yet available in the new Admin experience.",
+  "underDevelopment.back": "Back to Overview",
   "shell.primaryNav": "Primary",
   "shell.breadcrumb": "Breadcrumb",
   "shell.openNavigation": "Open navigation",
@@ -225,6 +230,11 @@ export const filPhMessages: Record<MessageKey, string> = {
   "nav.planned": "Nakaplano",
   "nav.plannedHint": "Nakaplano — hindi pa available.",
   "nav.contextHint": "Piliin muna ang kinakailangang konteksto.",
+  "nav.underDevelopment": "Kasalukuyang dinadagdag",
+  "underDevelopment.title": "Kasalukuyang dinadagdag",
+  "underDevelopment.body":
+    "Hindi pa available ang tampok na ito ng Platform sa bagong Admin experience.",
+  "underDevelopment.back": "Bumalik sa Pangkalahatang-tanaw",
   "shell.primaryNav": "Pangunahin",
   "shell.breadcrumb": "Breadcrumb",
   "shell.openNavigation": "Buksan ang nabigasyon",

@@ -51,8 +51,8 @@ describe("application shell", () => {
       expect(window.location.pathname).toBe("/admin");
     });
     expect(screen.getAllByText("Home").length).toBeGreaterThan(0);
-    expect(screen.getByRole("link", { name: "Organizations" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
+    expect(screen.queryByRole("link", { name: "Organizations" })).not.toBeInTheDocument();
   });
 
   it("does not flash privileged navigation while authorization is loading", async () => {
@@ -77,8 +77,10 @@ describe("application shell", () => {
     render(<App />);
     expect(await screen.findByRole("heading", { name: "Overview" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Organizations" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Organizations. Under development")).not.toBeInTheDocument();
     resolveAuthz?.(jsonResponse(200, sampleAuthorization));
-    expect(await screen.findByRole("link", { name: "Organizations" })).toBeInTheDocument();
+    expect(await screen.findByLabelText("Organizations. Under development")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Organizations" })).not.toBeInTheDocument();
   });
 
   it("hides unauthorized items after permissions load", async () => {
@@ -101,6 +103,7 @@ describe("application shell", () => {
     expect(await screen.findByRole("heading", { name: "Overview" })).toBeInTheDocument();
     await waitFor(() => {
       expect(screen.queryByRole("link", { name: "Organizations" })).not.toBeInTheDocument();
+      expect(screen.queryByLabelText("Organizations. Under development")).not.toBeInTheDocument();
     });
   });
 
@@ -187,6 +190,7 @@ describe("application shell", () => {
     render(<App />);
     await screen.findByRole("heading", { name: "Overview" });
     expect(screen.queryByRole("link", { name: "Test Payments" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Test Payments/)).not.toBeInTheDocument();
   });
 
   it("shows DEV_TEST_ONLY navigation when development tools are allowed", async () => {
@@ -195,6 +199,132 @@ describe("application shell", () => {
     mockAuthenticatedFetch();
     window.history.replaceState({}, "", "/admin");
     render(<App />);
-    expect(await screen.findByRole("link", { name: "Test Payments" })).toBeInTheDocument();
+    expect(await screen.findByLabelText("Test Payments. Under development")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Test Payments" })).not.toBeInTheDocument();
+  });
+
+  it("shows authorized under-development items in Development and keeps them non-navigable", async () => {
+    stubDesktop(true);
+    vi.spyOn(developmentTools, "areDevelopmentToolsAllowed").mockReturnValue(true);
+    mockAuthenticatedFetch();
+    window.history.replaceState({}, "", "/admin");
+    render(<App />);
+    await screen.findByRole("heading", { name: "Overview" });
+    expect(screen.getByText("Development")).toBeInTheDocument();
+    expect(screen.getByLabelText("Organizations. Under development")).toBeInTheDocument();
+    expect(screen.getAllByText("Under development").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("link", { name: "Organizations" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Organizations/ })).not.toBeInTheDocument();
+  });
+
+  it("hides under-development migration items in production-shaped modes", async () => {
+    stubDesktop(true);
+    vi.spyOn(developmentTools, "areDevelopmentToolsAllowed").mockReturnValue(false);
+    mockAuthenticatedFetch();
+    window.history.replaceState({}, "", "/admin");
+    render(<App />);
+    await screen.findByRole("heading", { name: "Overview" });
+    expect(screen.queryByText("Development")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Organizations. Under development")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Overview" })).toBeInTheDocument();
+  });
+
+  it("renders Under development for known unimplemented routes and Page not found for unknown routes", async () => {
+    stubDesktop(true);
+    mockAuthenticatedFetch();
+    window.history.replaceState({}, "", "/admin/organizations");
+    const { unmount } = render(<App />);
+    expect(await screen.findByRole("heading", { name: "Under development" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Back to Overview" })).toHaveAttribute(
+      "href",
+      "/admin",
+    );
+    expect(screen.queryByRole("button", { name: "Copy diagnostics" })).not.toBeInTheDocument();
+    unmount();
+
+    window.history.replaceState({}, "", "/admin/users?directory=platform");
+    const second = render(<App />);
+    expect(await screen.findByRole("heading", { name: "Under development" })).toBeInTheDocument();
+    second.unmount();
+
+    window.history.replaceState({}, "", "/admin/this-route-does-not-exist-xyz");
+    render(<App />);
+    expect(await screen.findByRole("heading", { name: "Page not found" })).toBeInTheDocument();
+  });
+
+  it("does not leak privileged feature names on unauthorized known routes", async () => {
+    stubDesktop(true);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("/auth/me")) {
+          return jsonResponse(200, sampleSession);
+        }
+        if (url.includes("/authorization/me")) {
+          return jsonResponse(200, { ...sampleAuthorization, permissions: [] });
+        }
+        return jsonResponse(404, {});
+      }),
+    );
+    window.history.replaceState({}, "", "/admin/organizations");
+    render(<App />);
+    expect(await screen.findByRole("heading", { name: "Page not found" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Under development" })).not.toBeInTheDocument();
+  });
+
+  it("does not flash under-development content while authorization is loading", async () => {
+    stubDesktop(true);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("/auth/me")) {
+          return jsonResponse(200, sampleSession);
+        }
+        if (url.includes("/authorization/me")) {
+          return await new Promise<Response>(() => undefined);
+        }
+        return jsonResponse(404, {});
+      }),
+    );
+    window.history.replaceState({}, "", "/admin/organizations");
+    render(<App />);
+    expect(await screen.findAllByRole("link", { name: "Overview" })).not.toHaveLength(0);
+    expect(screen.queryByRole("heading", { name: "Under development" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Organizations")).not.toBeInTheDocument();
+  });
+
+  it("keeps under-development nav items out of the keyboard tab order", async () => {
+    stubDesktop(true);
+    vi.spyOn(developmentTools, "areDevelopmentToolsAllowed").mockReturnValue(true);
+    mockAuthenticatedFetch();
+    window.history.replaceState({}, "", "/admin");
+    const user = userEvent.setup();
+    render(<App />);
+    const overview = await screen.findByRole("link", { name: "Overview" });
+    overview.focus();
+    await user.tab();
+    expect(document.activeElement).not.toBe(
+      screen.getByLabelText("Organizations. Under development"),
+    );
+    expect(screen.getByLabelText("Organizations. Under development")).not.toHaveAttribute("href");
+  });
+
+  it("localizes the under-development page to Filipino", async () => {
+    stubDesktop(true);
+    mockAuthenticatedFetch();
+    window.history.replaceState({}, "", "/admin/products");
+    const user = userEvent.setup();
+    render(<App />);
+    expect(await screen.findByRole("heading", { name: "Under development" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Preferences" }));
+    await user.click(await screen.findByRole("menuitem", { name: /Filipino/i }));
+    expect(
+      await screen.findByRole("heading", { name: "Kasalukuyang dinadagdag" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Bumalik sa Pangkalahatang-tanaw" }),
+    ).toBeInTheDocument();
   });
 });

@@ -53,6 +53,7 @@ function NavItem({
   const { t } = usePreferences();
   const label = t(item.labelKey);
   const planned = item.presentation === "planned" || item.presentation === "context";
+  const underDevelopment = item.presentation === "underDevelopment";
   const hint = item.presentation === "context" ? t("nav.contextHint") : t("nav.plannedHint");
 
   const content = (
@@ -67,10 +68,28 @@ function NavItem({
         <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
           <span className="truncate">{label}</span>
           {planned ? <Badge tone="neutral">{t("nav.planned")}</Badge> : null}
+          {underDevelopment ? <Badge tone="neutral">{t("nav.underDevelopment")}</Badge> : null}
         </span>
       )}
     </span>
   );
+
+  if (underDevelopment) {
+    const status = (
+      <span
+        aria-disabled="true"
+        aria-label={`${label}. ${t("nav.underDevelopment")}`}
+        className="block w-full cursor-default text-[length:var(--exits-text-sm)] text-muted"
+      >
+        {content}
+      </span>
+    );
+    return collapsed ? (
+      <Tooltip content={`${label}. ${t("nav.underDevelopment")}`}>{status}</Tooltip>
+    ) : (
+      status
+    );
+  }
 
   if (planned || !item.href) {
     const disabled = (

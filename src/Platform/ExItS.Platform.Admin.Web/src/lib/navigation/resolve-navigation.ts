@@ -1,11 +1,12 @@
+import type { AuthorizationStatus } from "@/hooks/use-authorization";
 import { navigationRegistry } from "@/lib/navigation/navigation-registry";
+import { reactImplementationStatus } from "@/lib/navigation/react-implementation";
 import type {
   NavigationItemDefinition,
   PermissionRequirement,
   ResolvedNavigationItem,
   ResolvedNavigationSection,
 } from "@/lib/navigation/navigation-types";
-import type { AuthorizationStatus } from "@/hooks/use-authorization";
 
 export type ResolveNavigationInput = {
   permissionStatus: AuthorizationStatus;
@@ -14,7 +15,10 @@ export type ResolveNavigationInput = {
   developmentToolsAllowed: boolean;
 };
 
-function isAuthorized(item: NavigationItemDefinition, input: ResolveNavigationInput): boolean {
+export function isNavItemAuthorized(
+  item: NavigationItemDefinition,
+  input: ResolveNavigationInput,
+): boolean {
   const requirement: PermissionRequirement = item.permission;
   if (requirement.kind === "authenticated") {
     return true;
@@ -35,11 +39,16 @@ function presentationFor(item: NavigationItemDefinition): ResolvedNavigationItem
   if (item.lifecycle === "CONTEXT_REQUIRED") {
     return "context";
   }
+  if (reactImplementationStatus(item) === "UNDER_DEVELOPMENT") {
+    return "underDevelopment";
+  }
   return "link";
 }
 
 export function resolveNavigation(input: ResolveNavigationInput): ResolvedNavigationSection[] {
-  return navigationRegistry
+  const developmentItems: ResolvedNavigationItem[] = [];
+
+  const sections = navigationRegistry
     .slice()
     .sort((a, b) => a.order - b.order)
     .map((section) => {
@@ -50,12 +59,35 @@ export function resolveNavigation(input: ResolveNavigationInput): ResolvedNaviga
           if (item.lifecycle === "DEV_TEST_ONLY" && !input.developmentToolsAllowed) {
             return [];
           }
-          if (!isAuthorized(item, input)) {
+          if (!isNavItemAuthorized(item, input)) {
             return [];
           }
-          return [{ ...item, presentation: presentationFor(item) }];
+
+          const resolved: ResolvedNavigationItem = {
+            ...item,
+            presentation: presentationFor(item),
+          };
+
+          if (resolved.presentation === "underDevelopment") {
+            if (input.developmentToolsAllowed) {
+              developmentItems.push(resolved);
+            }
+            return [];
+          }
+
+          return [resolved];
         });
       return { id: section.id, labelKey: section.labelKey, items };
     })
-    .filter((section) => section.items.length > 0);
+    .filter((section) => section.id !== "development" && section.items.length > 0);
+
+  if (developmentItems.length > 0) {
+    sections.push({
+      id: "development",
+      labelKey: "nav.group.development",
+      items: developmentItems,
+    });
+  }
+
+  return sections;
 }

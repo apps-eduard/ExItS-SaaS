@@ -8,7 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthPlaceholderPage } from "@/features/auth/AuthPlaceholderPage";
 import { SignInPage } from "@/features/auth/SignInPage";
 import { OverviewPage } from "@/features/overview/OverviewPage";
-import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
+import { ShellCatchAllPage } from "@/features/overview/ShellCatchAllPage";
 import { AuthorizationProvider } from "@/hooks/use-authorization";
 import { DiagnosticsProvider } from "@/hooks/use-diagnostics";
 import { PreferencesProvider } from "@/hooks/use-preferences";
@@ -85,7 +85,7 @@ export function App() {
                     <Route element={<ProtectedShell />}>
                       <Route path="/" element={<Navigate to="/admin" replace />} />
                       <Route path="/admin" element={<OverviewPage />} />
-                      <Route path="/admin/*" element={<ShellNotFoundPage />} />
+                      <Route path="/admin/*" element={<ShellCatchAllPage />} />
                     </Route>
                   </Routes>
                 </SessionProvider>

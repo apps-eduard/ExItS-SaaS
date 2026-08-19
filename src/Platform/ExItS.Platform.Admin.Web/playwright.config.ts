@@ -10,12 +10,20 @@ export default defineConfig({
     baseURL: "http://127.0.0.1:4173",
     trace: "on-first-retry",
   },
-  webServer: {
-    command: "npm run build && npm run preview -- --host 127.0.0.1 --port 4173",
-    url: "http://127.0.0.1:4173",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      command: "npm run build && npm run preview -- --host 127.0.0.1 --port 4173",
+      url: "http://127.0.0.1:4173",
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+    {
+      command: "npx vite --host 127.0.0.1 --port 4174 --strictPort --mode development",
+      url: "http://127.0.0.1:4174",
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+  ],
   projects: [
     {
       name: "chromium",
