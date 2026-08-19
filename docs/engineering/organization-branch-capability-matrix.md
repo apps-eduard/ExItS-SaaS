@@ -195,6 +195,7 @@ When POS/org step-up infrastructure is extended beyond Platform lifecycle, class
 **Current implementation notes (honest baseline):**
 
 - POS APIs consistently require `ActorId` via `PosOrganizationScope`.
+- **WP15D:** Customer order fulfillment handoffs, stock count draft create, and payment provider finalization now persist actor/system provenance on authoritative records — see [P28-WP15D](../reports/P28-WP15D-operational-actor-traceability.md).
 - Void/expense/reversal domains include reason fields in persistence where applicable.
 - **Password step-up** is implemented for select **Platform lifecycle** actions (`PlatformLifecycleStepUp`), not yet generalized for POS void/refund/stock adjustment.
 - **POS unified audit log** beyond actor-on-record is **not** claimed.

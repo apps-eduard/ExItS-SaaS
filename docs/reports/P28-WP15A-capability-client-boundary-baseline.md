@@ -67,7 +67,7 @@ Documented explicitly (not hidden):
 | WP13 branch ops | Device binding, shift guard, `SelectedBranchId` vs device branch preserved |
 | WP12 branch ownership | Org master vs branch overlay documented and aligned |
 | WP11 fulfillment | Branch readiness evaluator; reason optional on online pause API |
-| POS actor attribution | `PosOrganizationScope.TryGetActorId` on mutation endpoints |
+| POS actor attribution | `PosOrganizationScope.TryGetActorId` on mutation endpoints; WP15D fulfillment + stock-count create + provider system flag — [P28-WP15D](P28-WP15D-operational-actor-traceability.md) |
 | Platform audit | Platform lifecycle + org actions audited; POS uses actor-on-record |
 | Org Web | Full management; no checkout; workspace accordion (WP14) |
 | MAUI OrgSummary | ~~Owner governance links; no `IsPrimary` filter yet~~ **WP15B:** branch settings only; governance via Manage business hub |
