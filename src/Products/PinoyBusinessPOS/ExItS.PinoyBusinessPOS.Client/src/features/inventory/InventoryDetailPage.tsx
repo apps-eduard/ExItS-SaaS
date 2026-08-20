@@ -48,7 +48,7 @@ export function InventoryDetailPage() {
 
   const movementsQuery = useQuery({
     queryKey: ["inventory", "movements", workspace?.organizationId, productId],
-    enabled: Boolean(workspace) && Boolean(productId) && accountQuery.data?.isTracked === true,
+    enabled: Boolean(workspace) && Boolean(productId),
     queryFn: ({ signal }) => listInventoryMovements(workspace!, productId!, {}, signal),
   });
 
@@ -88,13 +88,17 @@ export function InventoryDetailPage() {
   });
 
   const adjustMutation = useMutation({
-    mutationFn: () =>
-      adjustInventoryStock(workspace!, productId!, {
+    mutationFn: () => {
+      const reason = adjustReason.trim();
+      if (!reason) {
+        throw new Error(t("inventory.reasonRequired"));
+      }
+      return adjustInventoryStock(workspace!, productId!, {
         direction: adjustDirection,
         quantity: Number(adjustQty),
-        reason:
-          adjustReason.trim() || (adjustDirection === "In" ? "Adjustment in" : "Adjustment out"),
-      }),
+        reason,
+      });
+    },
     onSuccess: async () => {
       setAdjustQty("");
       setAdjustReason("");
@@ -205,28 +209,29 @@ export function InventoryDetailPage() {
           >
             {t("inventory.disable")}
           </Button>
-          <div data-testid="inventory-movements">
-            <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
-              {t("inventory.movements")}
-            </h2>
-            {movementsQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
-            <ul className="mt-2 mb-0 flex list-none flex-col gap-2 p-0">
-              {movementsQuery.data?.items.map((movement) => (
-                <li key={movement.movementId}>
-                  <Card className="p-3">
-                    <p className="m-0 font-semibold">
-                      {movement.movementType} · {movement.quantityEffect}
-                    </p>
-                    <p className="mt-1 mb-0 truncate text-[length:var(--exits-text-sm)] text-muted">
-                      {movement.reason} · {new Date(movement.recordedAtUtc).toLocaleString()}
-                    </p>
-                  </Card>
-                </li>
-              ))}
-            </ul>
-          </div>
         </>
       )}
+
+      <div data-testid="inventory-movements">
+        <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
+          {t("inventory.movements")}
+        </h2>
+        {movementsQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
+        <ul className="mt-2 mb-0 flex list-none flex-col gap-2 p-0">
+          {movementsQuery.data?.items.map((movement) => (
+            <li key={movement.movementId}>
+              <Card className="p-3">
+                <p className="m-0 font-semibold">
+                  {movement.movementType} · {movement.quantityEffect}
+                </p>
+                <p className="mt-1 mb-0 truncate text-[length:var(--exits-text-sm)] text-muted">
+                  {movement.reason} · {new Date(movement.recordedAtUtc).toLocaleString()}
+                </p>
+              </Card>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

@@ -123,9 +123,10 @@ export function TodaysPricesPage() {
             .replace("{failed}", String(response.failedCount))
             .replace("{succeeded}", String(response.succeededCount)),
         );
-      } else {
-        setBanner(t("prices.success").replace("{changed}", String(response.changedCount)));
+        // Preserve dirty failed rows and concurrency tokens for retry.
+        return;
       }
+      setBanner(t("prices.success").replace("{changed}", String(response.changedCount)));
       await queryClient.invalidateQueries({ queryKey: ["catalog"] });
     },
     onError: (err) => {

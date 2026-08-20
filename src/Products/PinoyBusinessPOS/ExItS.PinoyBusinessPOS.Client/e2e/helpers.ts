@@ -8,6 +8,12 @@ export async function assertNoHorizontalOverflow(page: Page) {
   expect(overflow).toBeLessThanOrEqual(1);
 }
 
+export async function assertMinTouchTarget(locator: import("@playwright/test").Locator) {
+  const box = await locator.boundingBox();
+  expect(box, "control should be visible for touch-target check").toBeTruthy();
+  expect(box!.height).toBeGreaterThanOrEqual(40);
+}
+
 export async function waitForServiceWorker(page: Page) {
   await page.waitForFunction(async () => {
     const registration = await navigator.serviceWorker.ready;

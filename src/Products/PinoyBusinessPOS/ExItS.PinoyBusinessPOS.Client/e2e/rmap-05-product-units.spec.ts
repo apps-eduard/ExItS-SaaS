@@ -27,7 +27,6 @@ test.describe("RMAP-05 product units and selling mode", () => {
     await page.getByTestId("catalog-configure-packages").check();
     await expect(page.getByTestId("catalog-unit-editor")).toBeVisible();
 
-    const sellCards = page.getByTestId("catalog-unit-editor").locator(".flex.flex-col.gap-2");
     // Fill second card (Sell) after Purchase defaults
     await page.getByRole("button", { name: "Add sell package" }).click();
     const sellName = page.getByRole("textbox", { name: "Package name" }).last();

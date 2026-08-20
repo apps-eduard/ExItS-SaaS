@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import {
+  MOCK_CHIPS_PRODUCT_ID,
   MOCK_COKE_PRODUCT_ID,
   MOCK_DRINKS_CATEGORY_ID,
   MOCK_SNACKS_CATEGORY_ID,
@@ -359,4 +360,4 @@ export async function mockPosCatalogAdminApi(page: Page) {
   });
 }
 
-export { MOCK_COKE_PRODUCT_ID, MOCK_DRINKS_CATEGORY_ID, MOCK_SNACKS_CATEGORY_ID };
+export { MOCK_CHIPS_PRODUCT_ID, MOCK_COKE_PRODUCT_ID, MOCK_DRINKS_CATEGORY_ID, MOCK_SNACKS_CATEGORY_ID };
