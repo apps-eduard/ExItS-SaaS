@@ -6,6 +6,7 @@ import {
   canEnterManagerRoleHome,
   canEnterOwnerRoleHome,
   canInviteOrganizationStaff,
+  canManageCatalog,
   canUseAdminExperience,
 } from "@/access/pos-capabilities";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -118,7 +119,10 @@ export function AllowInvitationAccept({ children }: { children: ReactNode }) {
             title={t("accountClass.deniedTitle")}
             description={t("accountClass.deniedLede")}
           />
-          <ErrorState title={t("accountClass.deniedTitle")} detail={t("accountClass.deniedDetail")} />
+          <ErrorState
+            title={t("accountClass.deniedTitle")}
+            detail={t("accountClass.deniedDetail")}
+          />
         </div>
       );
     }
@@ -135,6 +139,11 @@ export function RequireWorkspaceBound({ children }: { children: ReactNode }) {
   }
   if (boundWorkspace) {
     return children;
+  }
+  // AutoSelect bind is in flight via WorkspaceProvider — keep deep links (e.g. /catalog)
+  // from being redirected to `/` then role-home before the deny/allow guard can run.
+  if (routingPlan?.outcome === "AutoSelect") {
+    return <SessionLoading />;
   }
   if (routingPlan) {
     return <Navigate to={workspaceRouteForOutcome(routingPlan.outcome)} replace />;
@@ -211,6 +220,16 @@ export function RequireCashierRoleHome({ children }: { children: ReactNode }) {
 
   if (!canEnterCashierRoleHome(sessionGrant)) {
     return <ExperienceAccessDeniedPage testId="cashier-role-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireManageCatalog({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canManageCatalog(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="catalog-manage-denied" />;
   }
 
   return children;

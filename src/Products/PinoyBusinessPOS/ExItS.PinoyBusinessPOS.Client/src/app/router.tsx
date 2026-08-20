@@ -7,6 +7,12 @@ import { NotFoundPage } from "@/features/not-found/NotFoundPage";
 import { PersonalHomePage } from "@/features/personal/PersonalHomePage";
 import { PreferencesPage } from "@/features/preferences/PreferencesPage";
 import { OrgEssentialsPage } from "@/features/role/OrgEssentialsPage";
+import { CatalogCategoriesPage } from "@/features/catalog/CatalogCategoriesPage";
+import {
+  CatalogProductCreatePage,
+  CatalogProductEditPage,
+} from "@/features/catalog/CatalogProductFormPage";
+import { CatalogProductsPage } from "@/features/catalog/CatalogProductsPage";
 import {
   CashierRoleHomePage,
   ManagerRoleHomePage,
@@ -25,6 +31,7 @@ import {
   RequireCashierRoleHome,
   RequireCreateSale,
   RequireInviteStaff,
+  RequireManageCatalog,
   RequireManagerRoleHome,
   RequireOrganizationSession,
   RequireOwnerRoleHome,
@@ -161,6 +168,24 @@ export const appRoutes = [
                   </RequireInviteStaff>
                 ),
               },
+            ],
+          },
+          {
+            path: "catalog",
+            element: (
+              <RequireOrganizationSession>
+                <RequireWorkspaceBound>
+                  <RequireManageCatalog>
+                    <Outlet />
+                  </RequireManageCatalog>
+                </RequireWorkspaceBound>
+              </RequireOrganizationSession>
+            ),
+            children: [
+              { index: true, element: <CatalogProductsPage /> },
+              { path: "categories", element: <CatalogCategoriesPage /> },
+              { path: "products/new", element: <CatalogProductCreatePage /> },
+              { path: "products/:productId/edit", element: <CatalogProductEditPage /> },
             ],
           },
           { path: "*", element: <NotFoundPage /> },

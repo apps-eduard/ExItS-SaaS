@@ -1,6 +1,6 @@
-import { Link, useNavigate } from "react-router-dom";
 import {
   canCreateSale,
+  canManageCatalog,
   canUseAdminExperience,
   canUseOperationsExperience,
   resolveEffectivePosRoleCode,
@@ -12,6 +12,7 @@ import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSellingMode } from "@/selling/SellingModeProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { Link, useNavigate } from "react-router-dom";
 
 type RoleHomeShellProps = {
   titleKey: "role.ownerTitle" | "role.managerTitle" | "role.cashierTitle";
@@ -40,6 +41,7 @@ export function RoleHomeShell({
   const canAdmin = canUseAdminExperience(sessionGrant);
   const canOps = canUseOperationsExperience(sessionGrant);
   const canSell = canCreateSale(sessionGrant);
+  const canCatalog = canManageCatalog(sessionGrant);
   const securityRole = resolveEffectivePosRoleCode(sessionGrant);
 
   function startSelling() {
@@ -110,6 +112,12 @@ export function RoleHomeShell({
           ) : null}
         </div>
       )}
+
+      {canCatalog ? (
+        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-catalog">
+          <Link to="/catalog">{t("catalog.openCatalog")}</Link>
+        </Button>
+      ) : null}
     </div>
   );
 }

@@ -1,19 +1,33 @@
 import type {
+  CatalogProductImageVariant,
+  CreatePosCatalogProductRequest,
+  CreatePosProductCategoryRequest,
   PosCatalogProductDto,
   PosCatalogProductPagedResult,
+  PosProductCategoryDto,
   PosProductCategoryPagedResult,
+  UpdatePosCatalogProductRequest,
+  UpdatePosProductCategoryRequest,
 } from "@/api/pos/pos-catalog-types";
-import { posRequest, type PosWorkspaceScope } from "@/api/pos/pos-http";
+import { posRequest, posRequestBlob, type PosWorkspaceScope } from "@/api/pos/pos-http";
 
 const CATEGORIES_PATH = "/api/v1/pos/catalog/categories";
 const PRODUCTS_PATH = "/api/v1/pos/catalog/products";
 
 export const CATALOG_BROWSE_PAGE_SIZE = 24;
+export const CATALOG_ADMIN_PAGE_SIZE = 50;
 
 export type ListCatalogProductsOptions = {
   search?: string;
   status?: string;
   categoryId?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+export type ListCatalogCategoriesOptions = {
+  search?: string;
+  status?: string;
   page?: number;
   pageSize?: number;
 };
@@ -31,7 +45,7 @@ function appendQuery(path: string, params: Record<string, string | number | unde
 
 export function listCatalogCategories(
   workspace: PosWorkspaceScope,
-  options: { search?: string; status?: string; page?: number; pageSize?: number } = {},
+  options: ListCatalogCategoriesOptions = {},
   signal?: AbortSignal,
 ): Promise<PosProductCategoryPagedResult> {
   return posRequest({
@@ -42,8 +56,76 @@ export function listCatalogCategories(
       search: options.search,
       status: options.status ?? "Active",
       page: options.page ?? 1,
-      pageSize: options.pageSize ?? 50,
+      pageSize: options.pageSize ?? CATALOG_ADMIN_PAGE_SIZE,
     }),
+  });
+}
+
+export function getCatalogCategory(
+  workspace: PosWorkspaceScope,
+  categoryId: string,
+  signal?: AbortSignal,
+): Promise<PosProductCategoryDto> {
+  return posRequest({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${CATEGORIES_PATH}/${categoryId}`,
+  });
+}
+
+export function createCatalogCategory(
+  workspace: PosWorkspaceScope,
+  body: CreatePosProductCategoryRequest,
+  signal?: AbortSignal,
+): Promise<PosProductCategoryDto> {
+  return posRequest({
+    method: "POST",
+    workspace,
+    signal,
+    path: CATEGORIES_PATH,
+    body,
+  });
+}
+
+export function updateCatalogCategory(
+  workspace: PosWorkspaceScope,
+  categoryId: string,
+  body: UpdatePosProductCategoryRequest,
+  signal?: AbortSignal,
+): Promise<PosProductCategoryDto> {
+  return posRequest({
+    method: "PUT",
+    workspace,
+    signal,
+    path: `${CATEGORIES_PATH}/${categoryId}`,
+    body,
+  });
+}
+
+export function deactivateCatalogCategory(
+  workspace: PosWorkspaceScope,
+  categoryId: string,
+  signal?: AbortSignal,
+): Promise<PosProductCategoryDto> {
+  return posRequest({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${CATEGORIES_PATH}/${categoryId}/deactivate`,
+  });
+}
+
+export function reactivateCatalogCategory(
+  workspace: PosWorkspaceScope,
+  categoryId: string,
+  signal?: AbortSignal,
+): Promise<PosProductCategoryDto> {
+  return posRequest({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${CATEGORIES_PATH}/${categoryId}/reactivate`,
   });
 }
 
@@ -63,6 +145,74 @@ export function listCatalogProducts(
       page: options.page ?? 1,
       pageSize: options.pageSize ?? CATALOG_BROWSE_PAGE_SIZE,
     }),
+  });
+}
+
+export function getCatalogProduct(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  signal?: AbortSignal,
+): Promise<PosCatalogProductDto> {
+  return posRequest({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${PRODUCTS_PATH}/${productId}`,
+  });
+}
+
+export function createCatalogProduct(
+  workspace: PosWorkspaceScope,
+  body: CreatePosCatalogProductRequest,
+  signal?: AbortSignal,
+): Promise<PosCatalogProductDto> {
+  return posRequest({
+    method: "POST",
+    workspace,
+    signal,
+    path: PRODUCTS_PATH,
+    body,
+  });
+}
+
+export function updateCatalogProduct(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  body: UpdatePosCatalogProductRequest,
+  signal?: AbortSignal,
+): Promise<PosCatalogProductDto> {
+  return posRequest({
+    method: "PUT",
+    workspace,
+    signal,
+    path: `${PRODUCTS_PATH}/${productId}`,
+    body,
+  });
+}
+
+export function deactivateCatalogProduct(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  signal?: AbortSignal,
+): Promise<PosCatalogProductDto> {
+  return posRequest({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${PRODUCTS_PATH}/${productId}/deactivate`,
+  });
+}
+
+export function reactivateCatalogProduct(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  signal?: AbortSignal,
+): Promise<PosCatalogProductDto> {
+  return posRequest({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${PRODUCTS_PATH}/${productId}/reactivate`,
   });
 }
 
@@ -91,5 +241,51 @@ export function lookupCatalogProductByBarcode(
     workspace,
     signal,
     path: `${PRODUCTS_PATH}/by-barcode/${encoded}`,
+  });
+}
+
+/** Multipart field name must be `file` (CatalogEndpoints). */
+export function uploadCatalogProductImage(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  file: Blob,
+  fileName = "product-image.jpg",
+  signal?: AbortSignal,
+): Promise<PosCatalogProductDto> {
+  const formData = new FormData();
+  formData.append("file", file, fileName);
+  return posRequest({
+    method: "PUT",
+    workspace,
+    signal,
+    path: `${PRODUCTS_PATH}/${productId}/image`,
+    formData,
+  });
+}
+
+export function removeCatalogProductImage(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  return posRequest({
+    method: "DELETE",
+    workspace,
+    signal,
+    path: `${PRODUCTS_PATH}/${productId}/image`,
+  });
+}
+
+export function getCatalogProductImage(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  variant: CatalogProductImageVariant = "thumb",
+  signal?: AbortSignal,
+): Promise<Blob> {
+  return posRequestBlob({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${PRODUCTS_PATH}/${productId}/image/${variant}`,
   });
 }

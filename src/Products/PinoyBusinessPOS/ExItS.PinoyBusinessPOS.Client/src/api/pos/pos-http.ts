@@ -79,52 +79,90 @@ export type PosRequestOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   path: string;
   body?: unknown;
+  /** When set, sent as multipart; do not also set `body`. Browser sets Content-Type boundary. */
+  formData?: FormData;
   signal?: AbortSignal;
   workspace: PosWorkspaceScope;
 };
 
-export async function posRequest<T>(options: PosRequestOptions): Promise<T> {
-  assertRelativePosBase(POS_API_BASE_PATH);
-
-  const method = options.method ?? "GET";
-  const requestCorrelationId = createCorrelationId();
+function buildPosHeaders(
+  workspace: PosWorkspaceScope,
+  requestCorrelationId: string,
+  accept: string,
+): Headers {
   const headers = new Headers({
-    Accept: "application/json",
+    Accept: accept,
     "X-Correlation-Id": requestCorrelationId,
-    "X-Pos-Organization-Id": options.workspace.organizationId,
-    "X-Pos-Branch-Id": options.workspace.branchId,
+    "X-Pos-Organization-Id": workspace.organizationId,
+    "X-Pos-Branch-Id": workspace.branchId,
   });
 
   const accessToken = getPosAccessToken();
   if (accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`);
   }
+  return headers;
+}
 
-  if (options.body !== undefined) {
+async function throwIfNotOk(response: Response, requestCorrelationId: string): Promise<void> {
+  if (response.ok) {
+    return;
+  }
+  let problem: PosProblemDetails = { status: response.status };
+  try {
+    problem = { ...problem, ...parseProblem(await response.json()) };
+  } catch {
+    // Non-JSON error bodies still surface as a status-only problem.
+  }
+  throw new PosApiError(response.status, problem, requestCorrelationId);
+}
+
+export async function posRequest<T>(options: PosRequestOptions): Promise<T> {
+  assertRelativePosBase(POS_API_BASE_PATH);
+
+  const method = options.method ?? "GET";
+  const requestCorrelationId = createCorrelationId();
+  const headers = buildPosHeaders(options.workspace, requestCorrelationId, "application/json");
+
+  let body: BodyInit | undefined;
+  if (options.formData !== undefined) {
+    body = options.formData;
+  } else if (options.body !== undefined) {
     headers.set("Content-Type", "application/json");
+    body = JSON.stringify(options.body);
   }
 
   const response = await fetch(`${POS_API_BASE_PATH}${options.path}`, {
     method,
     credentials: "include",
     headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    body,
     signal: options.signal,
   });
 
-  if (!response.ok) {
-    let problem: PosProblemDetails = { status: response.status };
-    try {
-      problem = { ...problem, ...parseProblem(await response.json()) };
-    } catch {
-      // Non-JSON error bodies still surface as a status-only problem.
-    }
-    throw new PosApiError(response.status, problem, requestCorrelationId);
-  }
+  await throwIfNotOk(response, requestCorrelationId);
 
   if (response.status === 204) {
     return undefined as T;
   }
 
   return (await response.json()) as T;
+}
+
+export async function posRequestBlob(options: PosRequestOptions): Promise<Blob> {
+  assertRelativePosBase(POS_API_BASE_PATH);
+
+  const method = options.method ?? "GET";
+  const requestCorrelationId = createCorrelationId();
+  const headers = buildPosHeaders(options.workspace, requestCorrelationId, "*/*");
+
+  const response = await fetch(`${POS_API_BASE_PATH}${options.path}`, {
+    method,
+    credentials: "include",
+    headers,
+    signal: options.signal,
+  });
+
+  await throwIfNotOk(response, requestCorrelationId);
+  return response.blob();
 }

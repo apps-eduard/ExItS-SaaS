@@ -135,13 +135,28 @@ export function canCreateSale(grant: PosSessionGrantFacts | null | undefined): b
   return canEnterSellFloor(grant);
 }
 
+/**
+ * UI gate for catalog administration (ManageCatalog).
+ * Mirrors PosRoleMatrix: Owner/Admin/StoreManager (+ Manager alias).
+ * OrganizationAdministrator alone does NOT imply ManageCatalog.
+ * Server remains authoritative via StoreCatalogManage feature grants.
+ */
+export function canManageCatalog(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  return isPosOwnerRole(grant) || isPosOperationsManager(grant);
+}
+
 /** Admin / business-management experience (Organization Web essentials in React). */
 export function canUseAdminExperience(grant: PosSessionGrantFacts | null | undefined): boolean {
   return hasOrganizationManagementAuthority(grant);
 }
 
 /** Manager-style operations experience. */
-export function canUseOperationsExperience(grant: PosSessionGrantFacts | null | undefined): boolean {
+export function canUseOperationsExperience(
+  grant: PosSessionGrantFacts | null | undefined,
+): boolean {
   if (!grant?.productAccessAllowed) {
     return false;
   }

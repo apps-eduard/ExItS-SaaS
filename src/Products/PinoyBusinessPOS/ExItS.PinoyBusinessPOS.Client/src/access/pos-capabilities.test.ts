@@ -6,6 +6,7 @@ import {
   canEnterOwnerRoleHome,
   canEnterSellFloor,
   canInviteOrganizationStaff,
+  canManageCatalog,
   canSelectExperienceMode,
   canUseAdminExperience,
   canUseOperationsExperience,
@@ -73,6 +74,7 @@ describe("pos-capabilities", () => {
     expect(canEnterSellFloor(manager)).toBe(true);
     expect(canUseOperationsExperience(manager)).toBe(true);
     expect(canUseSellingExperience(manager)).toBe(true);
+    expect(canManageCatalog(manager)).toBe(true);
     expect(canUseAdminExperience(manager)).toBe(false);
     expect(canInviteOrganizationStaff(manager)).toBe(false);
     expect(canEnterOwnerRoleHome(manager)).toBe(false);
@@ -92,6 +94,7 @@ describe("pos-capabilities", () => {
     expect(canUseAdminExperience(owner)).toBe(true);
     expect(canUseOperationsExperience(owner)).toBe(true);
     expect(canUseSellingExperience(owner)).toBe(true);
+    expect(canManageCatalog(owner)).toBe(true);
     expect(canInviteOrganizationStaff(owner)).toBe(true);
     expect(canEnterOwnerRoleHome(owner)).toBe(true);
     expect(canEnterManagerRoleHome(owner)).toBe(true);
@@ -113,7 +116,17 @@ describe("pos-capabilities", () => {
     expect(canUseAdminExperience(admin)).toBe(true);
     expect(canInviteOrganizationStaff(admin)).toBe(false);
     expect(canCreateSale(admin)).toBe(false);
+    expect(canManageCatalog(admin)).toBe(false);
     expect(canUseOperationsExperience(admin)).toBe(false);
+  });
+
+  it("denies ManageCatalog for Cashier", () => {
+    const cashier = grant({
+      mappedPosRoleCode: "Cashier",
+      productLocalRoleCode: "Cashier",
+      membershipRole: "OrganizationMember",
+    });
+    expect(canManageCatalog(cashier)).toBe(false);
   });
 
   it("denies sell floor when product access is not allowed", () => {
