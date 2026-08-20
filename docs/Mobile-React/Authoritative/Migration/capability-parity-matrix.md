@@ -22,10 +22,10 @@ Current Contract Status: `CURRENT` | `OWNER_CONFIRMED_CHANGE` | `MIXED` | `UNRES
 | ByWeight selling | Required | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | UOM, RMAP-00 | React sell WP | SellingMode |
 | Multi-UOM shared pool (rice etc.) | Required | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Product units, RMAP-05 | Prices next | CatalogProductUnit |
 | Milligram UOM | Decision item | PROVEN_MISSING | PROVEN_MISSING | MISSING | UNRESOLVED | N/A | UD-01 | Owner decision; optional backend | No enum member |
-| Today’s Prices | Daily price change | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Catalog admin, RMAP-00 | React pricing WP | prices endpoint |
+| Today’s Prices | Daily price change | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Catalog admin, RMAP-06 | Cashier override later | prices endpoint |
 | Sale-line price override policy | Owner policy | PROVEN_MISSING | PROVEN_MISSING | MISSING | OWNER_CONFIRMED_CHANGE | BLOCKED | UD-02 backend | Backend domain first | No SalePricePolicy |
-| Inventory default untracked | Default untracked | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Catalog | Migrate CURRENT | CreateUntracked |
-| Inventory track/adjust/movements | Tracked authority | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Product, RMAP-00 | React inventory WP | InventoryUseCases |
+| Inventory default untracked | Default untracked | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Catalog, RMAP-07 | Lots RMAP-08 | CreateUntracked |
+| Inventory track/adjust/movements | Tracked authority | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Product, RMAP-07 | Lots RMAP-08 | InventoryUseCases |
 | Oversell prevention | Required | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Inventory+checkout | Enforce on checkout | insufficient_stock |
 | Expiry lots + FEFO | Optional expiry | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Tracked inventory | Later inventory WP | InventoryLotFefo |
 | Manual suppliers | Local suppliers | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Org, RMAP-00 | React supplier WP | Supplier |

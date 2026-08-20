@@ -23,6 +23,9 @@ Do not treat prior WP labels as completeness. Inventory against routes and code.
 | `/catalog/categories` | Categories | COMPLETE CRUD-lite (RMAP-04) |
 | `/catalog/products/new` | Product create | COMPLETE core fields (RMAP-04); UOM/price editors deferred |
 | `/catalog/products/:productId/edit` | Product edit | COMPLETE core fields + image + concurrency (RMAP-04) |
+| `/catalog/todays-prices` | Today's Prices | COMPLETE bulk price update (RMAP-06) |
+| `/inventory` | Inventory list | COMPLETE tracking list (RMAP-07); Not tracked language |
+| `/inventory/:productId` | Inventory detail | COMPLETE enable/adjust/movements (RMAP-07); lots excluded |
 | `*` | Not found | COMPLETE |
 
 ## Area inventory

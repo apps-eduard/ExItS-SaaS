@@ -167,21 +167,20 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 ### RMAP-06 — Today’s Prices
 | Field | Content |
 |-------|---------|
+| Status | **COMPLETE** |
 | Objective | Bulk current selling price updates with concurrency |
-| Dependencies | RMAP-05, RMAP-00 |
-| Backend | CURRENT prices endpoint |
-| Owner | OD-PRICE-01 |
+| Report | [POS-REACT-RMAP-06-todays-prices.md](../../Reports/POS-REACT-RMAP-06-todays-prices.md) |
 | Exclusions | Cashier override (RMAP-B01) |
 | Next | RMAP-07 |
 
 ### RMAP-07 — Inventory tracking + movements + opening stock
 | Field | Content |
 |-------|---------|
-| Objective | Enable/disable tracking, opening movement, adjust, on-hand, oversell rules |
-| Dependencies | RMAP-05, RMAP-00 |
-| Backend | CURRENT (default untracked aligned) |
-| Owner | OD-INV-* |
-| Next | RMAP-08 |
+| Status | **COMPLETE** |
+| Objective | Enable/disable tracking, opening, adjustments, on-hand, movements, oversell |
+| Report | [POS-REACT-RMAP-07-inventory.md](../../Reports/POS-REACT-RMAP-07-inventory.md) |
+| Exclusions | Lots/expiry (RMAP-08) |
+| Next | **HARD STOP** — do not start RMAP-08 |
 
 ### RMAP-08 — Lots / expiry / FEFO (optional track)
 | Field | Content |
