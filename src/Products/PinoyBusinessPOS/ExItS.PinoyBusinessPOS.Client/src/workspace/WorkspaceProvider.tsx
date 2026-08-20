@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import type { BrowserSessionSnapshot } from "@/api/platform/browser-session";
 import { clearPosAccessToken } from "@/api/platform/pos-access-token";
 import { clearPosSessionGrant, getPosSessionGrant } from "@/api/platform/pos-session-grant";
@@ -73,6 +73,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { status: sessionStatus, session } = useSession();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const location = useLocation();
   const autoBindAttempted = useRef(false);
 
   const [status, setStatus] = useState<WorkspaceStatus>("idle");
@@ -248,6 +249,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (cancelled || !ok) {
         return;
       }
+      // Only boot-route from post-login landing — do not steal /org/staff/invite etc.
+      if (location.pathname !== "/") {
+        return;
+      }
       const grant = getPosSessionGrant();
       navigate(resolveRoleHomeRoute(grant), { replace: true });
     });
@@ -255,7 +260,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [bindWorkspace, boundWorkspace, navigate, routingPlan, session, sessionStatus, status]);
+  }, [
+    bindWorkspace,
+    boundWorkspace,
+    location.pathname,
+    navigate,
+    routingPlan,
+    session,
+    sessionStatus,
+    status,
+  ]);
 
   const signOutReset = useCallback(() => {
     queryClient.clear();

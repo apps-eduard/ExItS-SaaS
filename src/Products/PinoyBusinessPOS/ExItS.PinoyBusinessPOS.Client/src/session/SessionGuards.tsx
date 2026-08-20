@@ -89,6 +89,36 @@ export function RequireOrganizationSession({ children }: { children: ReactNode }
   return <RequireAccountClass allow={["Organization"]}>{children}</RequireAccountClass>;
 }
 
+/**
+ * Staff invitation accept: anonymous or Personal only.
+ * Organization/Platform sessions cannot convert via LinkedPersonalUserId or accept-as-personal.
+ */
+export function AllowInvitationAccept({ children }: { children: ReactNode }) {
+  const { status, session } = useSession();
+  const { t } = useI18n();
+
+  if (status === "loading") {
+    return <SessionLoading />;
+  }
+
+  if (status === "authenticated") {
+    const accountClass = sessionAccountClass(session);
+    if (accountClass === "Organization" || accountClass === "Platform") {
+      return (
+        <div className="flex min-w-0 flex-col gap-4" data-testid="account-class-denied">
+          <PageHeader
+            title={t("accountClass.deniedTitle")}
+            description={t("accountClass.deniedLede")}
+          />
+          <ErrorState title={t("accountClass.deniedTitle")} detail={t("accountClass.deniedDetail")} />
+        </div>
+      );
+    }
+  }
+
+  return children;
+}
+
 export function RequireWorkspaceBound({ children }: { children: ReactNode }) {
   const { status, boundWorkspace, routingPlan } = useWorkspace();
 

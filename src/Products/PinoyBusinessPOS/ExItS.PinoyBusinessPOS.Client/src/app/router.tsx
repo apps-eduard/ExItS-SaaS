@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+﻿import { createBrowserRouter, Outlet } from "react-router-dom";
 import { SessionWorkspaceRoot } from "@/app/SessionWorkspaceRoot";
 import { RootLayout } from "@/app/RootLayout";
 import { SignInPage } from "@/features/auth/SignInPage";
@@ -13,9 +13,13 @@ import {
   OwnerRoleHomePage,
 } from "@/features/role/RoleHomePages";
 import { SellFloorPage } from "@/features/sell/SellFloorPage";
+import { OrgStaffInvitePage } from "@/features/staff/OrgStaffInvitePage";
+import { StaffInvitationAcceptPage } from "@/features/staff/StaffInvitationAcceptPage";
 import { NoAccessibleBranchPage } from "@/features/workspace/NoAccessibleBranchPage";
 import { WorkspaceChooserPage } from "@/features/workspace/WorkspaceChooserPage";
+import { AppShell } from "@/layouts/AppShell";
 import {
+  AllowInvitationAccept,
   GuestOnly,
   RequireCreateSale,
   RequireOrganizationSession,
@@ -24,6 +28,16 @@ import {
   RequireWorkspaceBound,
   WorkspaceBootGate,
 } from "@/session/SessionGuards";
+
+function OrganizationWorkspaceOutlet() {
+  return (
+    <RequireOrganizationSession>
+      <RequireWorkspaceBound>
+        <Outlet />
+      </RequireWorkspaceBound>
+    </RequireOrganizationSession>
+  );
+}
 
 export const appRoutes = [
   {
@@ -35,6 +49,16 @@ export const appRoutes = [
           <GuestOnly>
             <SignInPage />
           </GuestOnly>
+        ),
+      },
+      {
+        path: "/personal/invitations/accept",
+        element: (
+          <AllowInvitationAccept>
+            <AppShell>
+              <StaffInvitationAcceptPage />
+            </AppShell>
+          </AllowInvitationAccept>
         ),
       },
       {
@@ -117,13 +141,11 @@ export const appRoutes = [
           },
           {
             path: "org",
-            element: (
-              <RequireOrganizationSession>
-                <RequireWorkspaceBound>
-                  <OrgEssentialsPage />
-                </RequireWorkspaceBound>
-              </RequireOrganizationSession>
-            ),
+            element: <OrganizationWorkspaceOutlet />,
+            children: [
+              { index: true, element: <OrgEssentialsPage /> },
+              { path: "staff/invite", element: <OrgStaffInvitePage /> },
+            ],
           },
           { path: "*", element: <NotFoundPage /> },
         ],

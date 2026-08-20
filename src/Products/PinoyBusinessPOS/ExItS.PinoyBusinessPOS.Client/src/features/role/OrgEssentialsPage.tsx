@@ -20,9 +20,14 @@ export function OrgEssentialsPage() {
         </p>
       </Card>
       <EmptyState title={t("org.emptyTitle")} detail={t("org.emptyDetail")} />
-      <Button asChild variant="ghost">
-        <Link to="/workspace">{t("workspace.switch")}</Link>
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button asChild className="min-h-11">
+          <Link to="/org/staff/invite">{t("staffInvite.title")}</Link>
+        </Button>
+        <Button asChild variant="ghost" className="min-h-11">
+          <Link to="/workspace">{t("workspace.switch")}</Link>
+        </Button>
+      </div>
     </div>
   );
 }
