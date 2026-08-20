@@ -30,10 +30,13 @@ UI WPs must also satisfy [06-react-ui-ux-and-responsive-foundation.md](../06-rea
 | Connected EXPOSABLE≠SHARED | Connected domain | Connected API | MAUI share UI | | E2E expose without share | Linked cache only | | Cross-org | Browser | | |
 | Receive-only inventory | ReceiveStock* | PO/GRN API | Purchasing receive | | E2E submit≠stock; receive=stock | OnlineRequired | | | Browser | | |
 | Checkout cash online | SaleDomain | Sales API | SaleCheckout | Sale client | E2E pay | Later offline | CreateSale+shift | | Browser first | | |
+| Commercial discount (RMAP-B03) | SaleCommercialDiscount* | PosSaleCommercialDiscountApiTests | No MAUI discount UI | No React discount UI | Quote+checkout E2E later | Offline discount fail-closed | ApplyCommercialDiscount | Allocation persisted | PASS backend | UX deferred |
 | Offline cash | OfflineSaleSnapshot* | Sync | LocalStore dispatch | Future LocalStore | Limited | Required | Device grant | | **Device Verified manual** | Not auto |
 | Customer ordering/delivery | Ordering domain | CustomerOrder API | BranchEdit+shop | | E2E pickup/delivery | OnlineRequired | Linked merchant | Cross-org | Browser + geo manual | Owner delivery setup |
-| Transaction Summary wording | SalesDocumentFoundation | | Phase26 wording guards | Copy tests | E2E disclaimer | | Compliance capability | | Browser | Never claim BIR certified |
-| Reports | Report aggregates | Reports API | Reports pages | | Smoke E2E | OnlineRequired | Viewer+ | | Browser | No fake P&L |
+| Transaction Summary wording | SalesDocumentFoundation | | Phase26 wording guards | Copy tests | E2E disclaimer | | Compliance capability | | Browser | Never claim BIR certified; RMAP-TAX future |
+| Buyer purchase projection | — | — | — | — | — | — | — | — | NOT STARTED | RMAP-B04 |
+| Final tax activation | — | Platform capability | — | — | — | — | — | — | NOT STARTED | RMAP-TAX |
+| Reports | Report aggregates | Reports API | Reports pages | | Smoke E2E | OnlineRequired | Viewer+ | | Browser | No fake P&L; tax reports gated later |
 | UI responsive quality | N/A | N/A | N/A | Visual regression where practical | Phone/tablet/desktop screenshots | N/A | | | **Manual owner UX review** | Poor UX = PARTIAL |
 
 ## Evidence rules

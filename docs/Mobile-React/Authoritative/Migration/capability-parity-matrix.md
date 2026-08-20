@@ -22,8 +22,11 @@ Current Contract Status: `CURRENT` | `OWNER_CONFIRMED_CHANGE` | `MIXED` | `UNRES
 | ByWeight selling | Required | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | UOM, RMAP-00 | React sell WP | SellingMode |
 | Multi-UOM shared pool (rice etc.) | Required | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Product units, RMAP-05 | Prices next | CatalogProductUnit |
 | Milligram UOM | Decision item | PROVEN_MISSING | PROVEN_MISSING | MISSING | UNRESOLVED | N/A | UD-01 | Owner decision; optional backend | No enum member |
-| Today’s Prices | Daily price change | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Catalog admin, RMAP-06 | Cashier override later (RMAP-B01); commercial discount RMAP-B03 NOT STARTED | prices endpoint; validation closeout `cb91145b` |
-| Sale-line price override policy | Owner policy | PROVEN_MISSING | PROVEN_MISSING | MISSING | OWNER_CONFIRMED_CHANGE | BLOCKED | UD-02 backend | Backend domain first | No SalePricePolicy |
+| Today’s Prices | Daily price change | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Catalog admin, RMAP-06 | Cashier override later (RMAP-B01) | prices endpoint; validation closeout `cb91145b` |
+| Commercial sale discount | Preserve UnitPrice; separate adjustment | PROVEN_CURRENT | PROVEN_CURRENT (no discount UI) | MISSING (no React UX) | CURRENT | Backend PASS; UI BLOCKED | RMAP-B03 | Discount UX after B03 (RMAP-09b) | ApplyCommercialDiscount; quote+checkout |
+| Sale-line price override policy | Owner policy | PROVEN_MISSING | PROVEN_MISSING | MISSING | OWNER_CONFIRMED_CHANGE | BLOCKED | UD-02 / RMAP-B01 | Backend domain first | No SalePricePolicy |
+| Linked buyer purchase projection | Read-only buyer history | PROVEN_MISSING | PROVEN_MISSING | MISSING | OWNER_CONFIRMED_CHANGE (future) | N/A | RMAP-B04 NOT STARTED | Backend-first later | SaleBuyerParty counterparty only |
+| Controlled tax activation UX | TAX_NOT_AVAILABLE→ACTIVE | PROVEN_PARTIAL (capability) | PROVEN_PARTIAL | MISSING | OWNER_CONFIRMED_CHANGE (future) | N/A | RMAP-TAX NOT STARTED | After RMAP-23 | Not BIR certification |
 | Inventory default untracked | Default untracked | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Catalog, RMAP-07 | Lots RMAP-08 | CreateUntracked; validation closeout `cb91145b` |
 | Inventory track/adjust/movements | Tracked authority | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Product, RMAP-07 | Lots RMAP-08 | InventoryUseCases; validation closeout `cb91145b` |
 | Oversell prevention | Required | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Inventory+checkout | Enforce on checkout | insufficient_stock |

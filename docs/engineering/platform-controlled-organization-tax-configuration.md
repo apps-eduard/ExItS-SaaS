@@ -50,3 +50,15 @@ Tax values do **not** prove compliance. Eligibility alone does **not** enable ta
 `20260816120000_AddOrganizationTaxConfigurationEnabled` — `tax_configuration_enabled boolean NOT NULL DEFAULT false`
 
 LocalStore version: unchanged.
+
+## Future owner-confirmed activation UX (DOCUMENT ONLY)
+
+RMAP-TAX (**NOT STARTED**) will own the merchant-facing transition:
+
+TAX_NOT_AVAILABLE → (Platform compliance approval) → TAX_SETUP_REQUIRED → (valid setup) → TAX_ACTIVE
+
+Internal capability flags may remain as the enforcement mechanism. The desired UX is that Platform approval makes tax setup available without requiring the merchant to discover a second unrelated switch.
+
+Suspension/revocation disables new tax calculation while preserving historical tax snapshots.
+
+This document remains the Platform/POS ownership boundary for Phase 26 controls; RMAP-TAX is the React/product activation package after hardening (after RMAP-23, before RMAP-24).

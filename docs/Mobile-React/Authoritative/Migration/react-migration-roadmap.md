@@ -136,11 +136,22 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 ### RMAP-B03 — Sale discount / adjustment backend contract
 | Field | Content |
 |-------|---------|
-| Status | **NOT STARTED** |
+| Status | **COMPLETE** (backend only) |
 | Objective | Backend-first commercial sale discount / adjustment contract |
 | Blocking? | YES for discount UI |
-| Authorization | Requires ChatGPT / Product Owner after RMAP-06/07 validation closeout |
+| Report | [POS-REACT-RMAP-B03-sale-discount-contract.md](../../Reports/POS-REACT-RMAP-B03-sale-discount-contract.md) |
 | Distinct from | Today's Price · Cashier Price Override · Promotion · Regulatory Discount |
+| Exclusions | React discount UX; promotions; regulatory; RMAP-TAX |
+| Next | HARD STOP — do not start RMAP-08 / RMAP-B04 / RMAP-TAX / discount UI |
+
+### RMAP-B04 — Linked ExItS buyer purchase projection
+| Field | Content |
+|-------|---------|
+| Status | **NOT STARTED** |
+| Objective | Read-only projection of seller-owned Completed sales into authenticated Personal/Organization buyer purchase history |
+| Blocking? | YES for buyer purchase-history UI |
+| Rules | Seller Sale remains authoritative; no ownership transfer; no cross-org DB shortcut; privacy/retention review required |
+| UI later | RMAP-13 / RMAP-22 / Organization purchase-history surfaces |
 | Next | Do not implement until authorized |
 
 ---
@@ -182,7 +193,7 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 | Report | [POS-REACT-RMAP-06-todays-prices.md](../../Reports/POS-REACT-RMAP-06-todays-prices.md) |
 | Shared impl SHA | `d3e4e3da` (with RMAP-07; history not rewritten) |
 | Validation repair | `cb91145b` |
-| Exclusions | Cashier override (RMAP-B01); commercial discount (RMAP-B03 NOT STARTED) |
+| Exclusions | Cashier override (RMAP-B01); commercial discount UX deferred (backend RMAP-B03 COMPLETE) |
 | Next | RMAP-07 COMPLETE — ChatGPT review / HARD STOP |
 
 ### RMAP-07 — Inventory tracking + movements + opening stock
@@ -194,7 +205,7 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 | Shared impl SHA | `d3e4e3da` (with RMAP-06; history not rewritten) |
 | Validation repair | `cb91145b` |
 | Exclusions | Lots/expiry (RMAP-08 NOT STARTED) |
-| Next | **HARD STOP** — ChatGPT review; do not start RMAP-08; RMAP-B03 Sale discount/adjustment backend contract NOT STARTED |
+| Next | **HARD STOP** — ChatGPT review; do not start RMAP-08; RMAP-B04 / RMAP-TAX NOT STARTED; discount UX not started |
 
 ### RMAP-08 — Lots / expiry / FEFO (optional track)
 | Field | Content |
@@ -305,8 +316,9 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 ### RMAP-20 — Reports + dashboard
 | Field | Content |
 |-------|---------|
-| Objective | Operational reports (no fake P&L) |
-| Dependencies | RMAP-11+, RMAP-00 |
+| Objective | Management overview + operational reports (no fake P&L) |
+| Dependencies | Prior sales/inventory/expense packages, RMAP-11+, RMAP-00 |
+| Future gating | Default org: **no tax-specific report navigation**. When TAX_ACTIVE (RMAP-TAX): tax report sections may appear. Commercial discount reporting (Gross / Commercial Discounts / Net) is independent and is **not** a statutory tax report unless RMAP-TAX defines it. Buyer purchase-history projection is not seller reporting (RMAP-B04). |
 | Next | RMAP-21 |
 
 ---
@@ -334,13 +346,24 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 |-------|---------|
 | Objective | Authz matrix, cross-org denials, wording, a11y, performance, responsive debt |
 | Dependencies | Core WPs, RMAP-00 |
+| Next | RMAP-TAX |
+
+### RMAP-TAX — Final controlled tax activation
+| Field | Content |
+|-------|---------|
+| Status | **NOT STARTED** |
+| Position | After RMAP-23; before RMAP-24 |
+| Objective | Platform compliance approval → TAX_SETUP_REQUIRED → TAX_ACTIVE UX; capability-gated menus/checkout/reports; discount/tax interaction validation; Transaction Summary vs future TaxDocument; suspension/revocation; offline fail-closed; BIR/legal/accounting review |
+| Default org UX (future) | TAX_NOT_AVAILABLE — no tax menu/widgets/reports; checkout does not apply ExItS tax; document = Transaction Summary |
+| After Platform approval | TAX_SETUP_REQUIRED then TAX_ACTIVE after valid setup |
+| Explicit non-claims | Not BIR certification; not government approval |
 | Next | RMAP-24 |
 
 ### RMAP-24 — E2E validation matrix execution
 | Field | Content |
 |-------|---------|
 | Objective | Execute [validation-matrix.md](validation-matrix.md) owner + automated evidence |
-| Dependencies | RMAP-23 |
+| Dependencies | RMAP-23; RMAP-TAX when tax paths are claimed |
 | Next | STOP — owner review for production readiness claims |
 
 ---
@@ -355,25 +378,27 @@ Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, 
 |----------|-------|
 | UI foundation | 1 (RMAP-00) |
 | Foundation | 4 (RMAP-01, 01b, 02, 03) |
-| Backend gaps | 3 (B00 staff identity; B01 price policy; B02 optional Milligram) |
+| Backend gaps | 5 (B00; B01; B02 optional Milligram; B03 COMPLETE; B04 NOT STARTED) + RMAP-TAX NOT STARTED |
 | Core React parity | 14 (RMAP-04..17 incl 12b) |
 | Extended commerce | 3 (18..20) |
-| Hardening | 4 (21..24) |
-| **Total proposed** | **29** (including optional B02 and 12b) |
+| Hardening | 5 (21..24 + RMAP-TAX) |
+| **Total proposed** | **31+** (including optional B02, 12b, B04, RMAP-TAX) |
 
 ## Backend-before-React list
 
 1. **RMAP-B00** staff existing-person link — required before RMAP-01 final validation, RMAP-01b, and RMAP-02 in Master Run 01
 2. **RMAP-B01** sale price policy — required before override UI
 3. **RMAP-B02** Milligram — only if owner approves
-4. **RMAP-B03** Sale discount / adjustment backend contract — **NOT STARTED**; requires ChatGPT authorization after RMAP-06/07 validation repair. Distinct from Today's Price, cashier override, promotions, and regulatory discounts.
+4. **RMAP-B03** Sale discount / adjustment backend contract — **COMPLETE** (backend). Discount React UX not started.
+5. **RMAP-B04** Linked ExItS buyer purchase projection — **NOT STARTED**
+6. **RMAP-TAX** Final controlled tax activation — **NOT STARTED** (after RMAP-23, before RMAP-24)
 
 ## APPROVED PROPOSED MASTER RUN 01
 
 **Name:** Foundation + Catalog/Inventory Baseline
-**Status:** **HARD STOP after RMAP-07** — RMAP-00…RMAP-07 PASS (RMAP-06/07 validation closeout complete). Next: ChatGPT review. Do **not** start RMAP-08. Do **not** start RMAP-B03 (sale discount / adjustment backend contract) without authorization.
-**Stop rule:** After package 10 (RMAP-07) → HARD STOP for Product Owner + ChatGPT review (also stop on defined hard-stop codes)
-**Do not include:** RMAP-08 (lots/expiry) in Master Run 01; RMAP-B03 discounts not started
+**Status:** **HARD STOP after RMAP-B03** — RMAP-00…RMAP-07 PASS; RMAP-B03 commercial discount backend COMPLETE. Next: ChatGPT review. Do **not** start RMAP-08, RMAP-B04, RMAP-TAX, or discount React UX.
+**Stop rule:** After Master Run packages + authorized B03 → HARD STOP for Product Owner + ChatGPT review
+**Do not include:** RMAP-08 (lots/expiry); RMAP-B04; RMAP-TAX implementation; discount UI
 **Distinction preserved:** Today's Price ≠ Cashier Price Override ≠ Commercial Discount ≠ Promotion ≠ Regulatory Discount
 **Completion report (B00):** [POS-REACT-RMAP-B00-identity-reconciliation.md](../../Reports/POS-REACT-RMAP-B00-identity-reconciliation.md)
 **Completion report (RMAP-01):** [POS-REACT-RMAP-01-account-session-parity.md](../../Reports/POS-REACT-RMAP-01-account-session-parity.md)

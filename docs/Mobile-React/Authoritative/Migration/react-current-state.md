@@ -41,7 +41,7 @@ Do not treat prior WP labels as completeness. Inventory against routes and code.
 | Sell floor | `SellFloorPage` | catalog client, cart provider | sell-floor e2e | Browse/search/categories/cart UI | ByWeight, sell units, stock gates, pay | High |
 | Catalog admin | `/catalog*` pages | `pos-catalog-client` CRUD + units + image | rmap-04/05 e2e + unit draft tests | Category/product CRUD, UOM/SellingMode/packages, SKU/barcode, concurrency | Today’s Prices/import | Medium |
 | Cart | `SessionCartProvider` | in-memory | cart tests | Session cart | Persist/outbox/server cart | High |
-| Checkout | disabled copy | no sale POST client | | Explicit non-implementation | Entire sale pipeline | Critical |
+| Checkout | disabled copy | no sale POST client | | Explicit non-implementation | Entire sale pipeline; commercial discount backend exists (RMAP-B03) but **no React discount UI** | Critical |
 | Org/staff/branches | `/org` shell + invite | experience + invite guards | RMAP-02R e2e | Admin experience; Owner invite | Full Org Web CRUD | Medium |
 | Experience model | Owner chooser; role homes | `pos-capabilities` | RMAP-02R | Admin/Ops/Sell without role mutation | Custom roles | Low |
 | Inventory/purchasing/suppliers/shifts/returns/reports/orders | — | — | | None | All | Critical |

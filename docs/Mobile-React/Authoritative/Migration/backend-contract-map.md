@@ -18,7 +18,11 @@ Maps major capabilities to current backend contracts. Status uses the Authoritat
 | Inventory tracking | POS | `InventoryAccount`, `StockMovement` | `InventoryUseCases` | `/api/v1/pos/inventory` | `inventory_accounts`, `stock_movements` | Inventory roles | xmin | InventoryAccountDomainTests | PROVEN_CURRENT | |
 | Lots / FEFO | POS | `InventoryLot` | lot allocation | `/inventory/lots` | `inventory_lots` | Inventory roles | Lot qty | InventoryLotDomainTests | PROVEN_CURRENT | |
 | Sales checkout | POS | `Sale`, `SaleLine` | `SaleUseCases` | `/api/v1/pos/sales` | `sales`, `sale_lines` | CreateSale + device/shift | Idempotency keys | SaleDomainTests | PROVEN_CURRENT | |
-| Returns | POS | `SaleReturn` | return use cases | `/api/v1/pos/sale-returns` | sale_returns* | Return roles | Concurrency | SaleReturnDomainTests | PROVEN_CURRENT | |
+| Commercial discount | POS | `SaleCommercialDiscount*` | Checkout + Quote | `/api/v1/pos/sales` + `/quote` | discount columns + `sale_commercial_discount_adjustments` | ApplyCommercialDiscount | Intent only; server money | SaleCommercialDiscountDomainTests; PosSaleCommercialDiscountApiTests | PROVEN_CURRENT | RMAP-B03; offline discount fail-closed |
+| Sale quote preview | POS | calculator | `CheckoutSale.QuoteAsync` | `POST /api/v1/pos/sales/quote` | none (non-persisting) | CreateSale (+ discount cap) | — | PosSaleCommercialDiscountApiTests | PROVEN_CURRENT | Not a recorded sale |
+| Buyer purchase projection | POS+Platform | SaleBuyerParty | — | — | — | — | — | — | PROVEN_MISSING | RMAP-B04 NOT STARTED |
+| Final tax activation | Platform+POS | capability + OperationalSetup | — | — | — | — | — | — | PROVEN_PARTIAL | RMAP-TAX NOT STARTED |
+| Returns | POS | `SaleReturn` | return use cases | `/api/v1/pos/sale-returns` | sale_returns* | Return roles | Concurrency | SaleReturnDomainTests | PROVEN_CURRENT | Refunds use net LineTotal |
 | Customers / credit | POS | Customer, CreditEntry | customer/credit use cases | `/api/v1/pos/customers` | customers, credit_* | Customer roles | Idempotent repay | credit/offline tests | PROVEN_CURRENT | |
 | Manual suppliers | POS | `Supplier` | supplier use cases | `/api/v1/pos/suppliers` | `suppliers` | Purchasing roles | | Supplier tests | PROVEN_CURRENT | |
 | Connected suppliers | POS | relationship/share/PO | ConnectedSupplier use cases | `/api/v1/pos/connected-suppliers` | connected_* tables | Org POS roles | Status machine | Connected supplier tests | PROVEN_CURRENT | EXPOSABLE≠SHARED |

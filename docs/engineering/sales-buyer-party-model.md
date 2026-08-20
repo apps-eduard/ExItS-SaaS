@@ -56,3 +56,23 @@ Org switch continues to clear SaleCart and selling/device context so Org A buyer
 ## Ownership transfer readiness
 
 Historical sales keep `OrganizationId` and buyer snapshots. Buyer Organization identity stays on `BuyerOrganizationId` / public org id, not the current owner user.
+
+## Future — Linked ExItS buyer purchase projection (RMAP-B04 — NOT STARTED)
+
+Current backend reports already defer Personal purchase history of merchant sales and B2B buyer-organization views of seller sales.
+
+**Future rule (owner-confirmed intent; not implemented):**
+
+A Completed sale with Personal (`EX-…`) or Organization (`ORG######`) `SaleBuyerParty` may be projected **read-only** into the authenticated buyer's purchase history.
+
+| Rule | Requirement |
+|------|-------------|
+| Authority | Seller `Sale` remains authoritative; do not transfer transaction ownership |
+| Scope | Personal sees only purchases linked to that Personal identity; Organization sees only purchases linked to that Organization |
+| Privacy | Seller internal notes / private customer fields not exposed |
+| Status | Void/refund status reflected |
+| Isolation | No cross-org DB access shortcut; authorization enforced before projection |
+| Review | Privacy/retention review required before implementation |
+| Documents | Transaction Summary vs future tax document wording preserved |
+
+UI may later land in RMAP-13 / RMAP-22 / Organization purchase-history surfaces. Cashier customer selection remains optional; walk-in remains valid. Buyer identity never grants seller access to Personal private data, buyer Organization POS data, membership, role, or cross-org authorization.

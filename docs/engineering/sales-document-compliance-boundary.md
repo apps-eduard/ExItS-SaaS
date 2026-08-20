@@ -78,3 +78,30 @@ Public organization ID and QR resolvers remain identity-only. They must not expo
 ## Deferred
 
 BIR rules, invoice series, TaxDocument generation, evidence verification, and confirmed regulatory field schemas remain deferred. Controlled activation steps are tracked in the [BIR activation roadmap](../compliance/bir-compliance-activation-roadmap.md). **P26-WP05** delivered integration hardening and [owner validation readiness](../validation/phase-26-owner-validation-checklist.md); Phase 26 remains **OPEN** (not closeout).
+
+## Future owner-confirmed UX states (DOCUMENT ONLY — not implemented)
+
+Desired product states for tax surfaces (RMAP-TAX; **NOT STARTED**):
+
+| State | Meaning |
+|-------|---------|
+| TAX_NOT_AVAILABLE | Default organization: no tax menu, no tax configuration UI, no tax dashboard widgets, no tax reports; checkout does not apply ExItS tax capability; customer document = **Transaction Summary** |
+| TAX_SETUP_REQUIRED | After Platform Admin compliance approval makes tax setup available (desired UX: approval surfaces setup without a second unrelated merchant switch) |
+| TAX_ACTIVE | Valid organization tax setup complete: tax configuration visible; tax-aware checkout; tax report/dashboard surfaces; compliant document capability only when separately authorized |
+| Suspended/revoked | New tax calculation disabled per authoritative capability; historical tax snapshots preserved |
+
+Commercial discounts (RMAP-B03) feed **net subtotal** into the existing tax calculator when tax is already enabled. Final legal/regulatory validation of tax + discount interaction belongs to **RMAP-TAX**, not B03.
+
+## Transaction Summary disclaimer (strengthened wording — future UI copy target)
+
+Use (or equivalent):
+
+> Transaction Summary
+>
+> This document is for business and customer record purposes only.
+> It is not a BIR-registered invoice and does not replace any invoice
+> or other document the seller may be legally required to issue.
+
+Never label non-tax-document org output as Invoice / Tax Invoice / VAT Invoice / Non-VAT Invoice / Official Receipt unless a future confirmed TaxDocument capability is explicitly authorized.
+
+ExItS tax/compliance capability is **product authorization**, not government certification. Do not claim "BIR compliant", "BIR approved", "official invoice", or "official receipt" without confirmed authorized implementation.
