@@ -51,7 +51,28 @@ Proof of reuse: SellFloorPage + SellCartPanel consume SearchField, LoadingSkelet
 
 ## UI validation
 
-Foundation components use `--exits-touch-target-min`, rounded search/filter pills, medium card radius. Sell-floor regression preserved. Representative viewport Playwright suite left to e2e harness (existing matrix 320–1440); unit coverage for search clear, toolbar, stepper, confirmation.
+Foundation components use `--exits-touch-target-min`, rounded search/filter pills, medium card radius. Sell-floor regression preserved. Unit coverage for search clear, toolbar, stepper, confirmation.
+
+### Responsive closeout (Master Run 01 Repair 02)
+
+Playwright command (client project):
+
+```
+npx playwright test e2e/rmap-00-responsive.spec.ts
+```
+
+Result: **5 passed** (4 viewports + delayed-catalog LoadingSkeleton).
+
+| Viewport | SearchField | QuantityStepper | MoneyDisplay | LoadingSkeleton | StickyActionBar | Sell/cart layout | Horizontal overflow | Search focus |
+|----------|-------------|-----------------|--------------|-----------------|-----------------|------------------|---------------------|--------------|
+| 375 × 812 | PASS (`sell-search`) | PASS (cart sheet) | PASS (`sell-product-price-*`) | PASS (delayed catalog) | PASS (`sticky-action-bar` + `sell-cart-bar`) | Phone bar + sheet | PASS (≤1px) | PASS (focused) |
+| 768 × 1024 | PASS | PASS (cart sheet) | PASS | Covered on 375 | PASS | Tablet portrait bar + sheet | PASS | PASS |
+| 1024 × 768 | PASS | PASS (landscape cart) | PASS | Covered on 375 | Hidden by landscape split (expected) | Split browse + cart | PASS | PASS |
+| 1440 × 900 | PASS | PASS (landscape cart) | PASS | Covered on 375 | Hidden by landscape split (expected) | Desktop split | PASS | PASS |
+
+Screenshots: `docs/Mobile-React/Reports/impl-pos-react-rmap-00-responsive/{375x812,768x1024,1024x768,1440x900}.png`
+
+No unexplained overflow or clipped Pay/cart actions. Landscape StickyActionBar hiding at ≥900px landscape is the existing sell-floor split, not a defect.
 
 ## Known limitations
 
@@ -69,8 +90,13 @@ Foundation components use `--exits-touch-target-min`, rounded search/filter pill
 
 ## Commits / push
 
-Recorded after commit/push in closeout.
+- Implementation (RMAP-00): `391330852918dd990c5a9053af5943cb8da91407`
+- Original docs: `c4b82ace89a1d87d14ae4dfdd31c6c2d4e8e02ae`
+- Responsive validation code: `fd19f2ecaf111ee5d1ff59581c05783cb6e0ea1f`
+- Responsive validation docs: recorded after this closeout commit
+
+**Final RMAP-00 status:** PASS (viewport evidence closed).
 
 ## Next
 
-RMAP-B00
+RMAP-B00 identity reconciliation (formal same-human link). Do not start RMAP-01 in this repair run.

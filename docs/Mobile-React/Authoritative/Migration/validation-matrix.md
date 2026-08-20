@@ -7,7 +7,7 @@ UI WPs must also satisfy [06-react-ui-ux-and-responsive-foundation.md](../06-rea
 
 | Capability | Unit Tests | Integration Tests | MAUI Regression | React Unit | React E2E | Offline | Authorization | Cross-org | Device/Browser | Owner Validation | Notes |
 |------------|------------|-------------------|-----------------|------------|-----------|---------|---------------|-----------|----------------|------------------|-------|
-| Shared UI foundation (RMAP-00) | Component tests | N/A | N/A | Vitest | Viewport E2E 375/768/1024/1440 | N/A | N/A | N/A | Phone+tablet+desktop visual | Spot-check ListToolbar | COMPLETE with `shared-ui-foundation.test.tsx`; Master Run 01 #1 |
+| Shared UI foundation (RMAP-00) | Component tests | N/A | N/A | Vitest | Viewport E2E 375/768/1024/1440 | N/A | N/A | N/A | Phone+tablet+desktop visual | Spot-check ListToolbar | COMPLETE: `shared-ui-foundation.test.tsx` + `e2e/rmap-00-responsive.spec.ts` (375×812, 768×1024, 1024×768, 1440×900; overflow/focus/SearchField/QuantityStepper/MoneyDisplay/LoadingSkeleton/StickyActionBar) |
 | Staff person-link backend (RMAP-B00) | **New** identity domain | **New** invite/accept | MAUI after B00 | N/A | N/A | N/A | Membership rules | Multi-org | N/A | Owner outcome checklist | Master Run 01 #2; schema design in-package |
 | Account/session post-B00 (RMAP-01) | Platform identity | Auth integration | Sign-in | Auth client | Playwright login | N/A | Session class | | Browser | | Master Run 01 #3; after B00 |
 | Desired staff person-link UI (RMAP-01b) | | Invite/accept API | MAUI after B00 | Invite/accept UI | E2E Personal accept + alias | N/A | Membership rules | Multi-org | Browser | Owner multi-org + removal | Master Run 01 #4 |
