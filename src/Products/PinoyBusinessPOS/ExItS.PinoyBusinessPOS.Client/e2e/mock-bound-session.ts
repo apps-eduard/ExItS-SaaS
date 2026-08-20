@@ -119,6 +119,15 @@ export async function mockBoundCashierSession(page: Page, grant: MockGrantOption
     }
 
     if (url.includes("/api/v1/platform/auth/logout") && method === "POST") {
+      const csrf = route.request().headers()["x-xsrf-token"];
+      if (!csrf) {
+        return route.fulfill({
+          status: 400,
+          contentType: "application/json",
+          body: JSON.stringify({ detail: "antiforgery token required" }),
+        });
+      }
+      loggedIn = false;
       return route.fulfill({ status: 204, body: "" });
     }
 

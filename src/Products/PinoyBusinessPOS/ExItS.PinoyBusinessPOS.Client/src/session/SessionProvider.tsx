@@ -17,23 +17,34 @@ import {
   loginWithPassword,
   logoutSession,
 } from "@/api/platform/platform-auth-client";
-import { clearPlatformAntiforgeryToken } from "@/api/platform/platform-http";
+import { clearPlatformAntiforgeryToken, PlatformApiError } from "@/api/platform/platform-http";
 
 export type SessionStatus = "loading" | "authenticated" | "unauthenticated" | "expired";
+
+export type SignOutResult =
+  { ok: true; reason: "logged_out" | "already_signed_out" } | { ok: false; detail: string };
 
 type SessionContextValue = {
   status: SessionStatus;
   session: BrowserSessionSnapshot | null;
   signIn: (usernameOrEmail: string, password: string) => Promise<boolean>;
-  signOut: () => Promise<void>;
+  signOut: () => Promise<SignOutResult>;
   refreshSession: () => Promise<SessionStatus>;
 };
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
+function clearClientSessionArtifacts(queryClient: { clear: () => void }): void {
+  queryClient.clear();
+  clearPlatformAntiforgeryToken();
+  clearPosAccessToken();
+  clearPosSessionGrant();
+}
+
 export function SessionProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const signInLock = useRef(false);
+  const signOutLock = useRef(false);
   const [status, setStatus] = useState<SessionStatus>("loading");
   const [session, setSession] = useState<BrowserSessionSnapshot | null>(null);
 
@@ -76,22 +87,38 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const signOut = useCallback(async () => {
-    await logoutSession();
-    queryClient.clear();
-    clearPlatformAntiforgeryToken();
-    clearPosAccessToken();
-    clearPosSessionGrant();
-    setSession(null);
-    setStatus("unauthenticated");
+  const signOut = useCallback(async (): Promise<SignOutResult> => {
+    if (signOutLock.current) {
+      return { ok: false, detail: "Sign out is already in progress." };
+    }
+    signOutLock.current = true;
+    try {
+      const reason = await logoutSession();
+      clearClientSessionArtifacts(queryClient);
+      setSession(null);
+      setStatus("unauthenticated");
+      return { ok: true, reason };
+    } catch (error) {
+      // Do not pretend success when the server logout mutation failed.
+      const detail =
+        error instanceof PlatformApiError
+          ? (error.problem.detail ?? error.message)
+          : "Sign out failed. Check your connection and try again.";
+      return { ok: false, detail };
+    } finally {
+      signOutLock.current = false;
+    }
   }, [queryClient]);
 
   const refreshSession = useCallback(async () => {
     const result = await fetchCurrentSession();
     setSession(result.session);
     setStatus(result.status === "expired" ? "expired" : result.status);
+    if (result.status === "unauthenticated" || result.status === "expired") {
+      clearClientSessionArtifacts(queryClient);
+    }
     return result.status === "expired" ? "expired" : result.status;
-  }, []);
+  }, [queryClient]);
 
   const value = useMemo(
     () => ({ status, session, signIn, signOut, refreshSession }),

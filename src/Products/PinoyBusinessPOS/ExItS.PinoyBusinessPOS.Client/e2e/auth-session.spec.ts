@@ -26,4 +26,56 @@ test.describe("auth session", () => {
     expect(storageScan).not.toMatch(/Bearer /i);
     expect(storageScan).not.toMatch(/in-memory-only-access-token/);
   });
+
+  test("sign out posts logout with CSRF, clears shell, and blocks protected routes", async ({
+    page,
+  }) => {
+    const logoutRequests: { method: string; csrf: string | undefined }[] = [];
+    await mockBoundCashierSession(page);
+    await page.route("**/platform-api/api/v1/platform/auth/logout", async (route) => {
+      logoutRequests.push({
+        method: route.request().method(),
+        csrf: route.request().headers()["x-xsrf-token"],
+      });
+      await route.fallback();
+    });
+
+    await signInAndBindCashier(page);
+    await expect(page.getByRole("heading", { name: "Cashier home" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Sign out" }).click();
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+    await expect(page).toHaveURL(/\/sign-in$/);
+
+    expect(logoutRequests.length).toBeGreaterThan(0);
+    expect(logoutRequests[0]?.method).toBe("POST");
+    expect(logoutRequests[0]?.csrf).toBeTruthy();
+
+    await page.goto("/sell");
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+    await expect(page).toHaveURL(/\/sign-in/);
+
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+    await expect(page.getByRole("banner")).toHaveCount(0);
+  });
+
+  test("failed logout keeps the authenticated shell and shows an error", async ({ page }) => {
+    await mockBoundCashierSession(page);
+    await page.route("**/platform-api/api/v1/platform/auth/logout", async (route) => {
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ detail: "logout unavailable" }),
+      });
+    });
+
+    await signInAndBindCashier(page);
+    await expect(page.getByRole("heading", { name: "Cashier home" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Sign out" }).click();
+    await expect(page.getByRole("alert")).toContainText(/logout unavailable|Sign out failed/i);
+    await expect(page.getByRole("heading", { name: "Cashier home" })).toBeVisible();
+    await expect(page).not.toHaveURL(/\/sign-in/);
+  });
 });

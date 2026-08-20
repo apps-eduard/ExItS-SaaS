@@ -108,11 +108,43 @@ export async function loginWithPassword(
   }
 }
 
-export async function logoutSession(): Promise<void> {
-  await platformRequest<void>({ method: "POST", path: AUTH_LOGOUT_PATH });
-  clearPlatformAntiforgeryToken();
-  clearPosAccessToken();
-  clearPosSessionGrant();
+export async function logoutSession(): Promise<"logged_out" | "already_signed_out"> {
+  const clearArtifacts = () => {
+    clearPlatformAntiforgeryToken();
+    clearPosAccessToken();
+    clearPosSessionGrant();
+  };
+
+  try {
+    await platformRequest<void>({ method: "POST", path: AUTH_LOGOUT_PATH });
+    clearArtifacts();
+    return "logged_out";
+  } catch (error) {
+    // Stale/missing session: treat as already signed out so the client can recover.
+    if (error instanceof PlatformApiError && (error.status === 401 || error.status === 403)) {
+      clearArtifacts();
+      return "already_signed_out";
+    }
+    // CSRF bootstrap/token mismatch — refresh antiforgery once and retry logout.
+    if (error instanceof PlatformApiError && (error.status === 400 || error.status === 419)) {
+      clearPlatformAntiforgeryToken();
+      try {
+        await platformRequest<void>({ method: "POST", path: AUTH_LOGOUT_PATH });
+        clearArtifacts();
+        return "logged_out";
+      } catch (retryError) {
+        if (
+          retryError instanceof PlatformApiError &&
+          (retryError.status === 401 || retryError.status === 403)
+        ) {
+          clearArtifacts();
+          return "already_signed_out";
+        }
+        throw retryError;
+      }
+    }
+    throw error;
+  }
 }
 
 /** Local-validation quick-login list — usernames/emails only; never returns passwords. */

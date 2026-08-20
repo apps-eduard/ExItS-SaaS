@@ -1,19 +1,42 @@
-import { Lock, LogOut, Settings, Trash2 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { LogOut, Settings } from "lucide-react";
+import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSession } from "@/session/SessionProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { cn } from "@/lib/cn";
 
 export function AppTopBar() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const location = useLocation();
   const { signOut } = useSession();
-  const { boundWorkspace } = useWorkspace();
+  const { boundWorkspace, clearBoundWorkspace } = useWorkspace();
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
+
+  const preferencesActive = location.pathname.startsWith("/settings/preferences");
+
+  async function handleSignOut() {
+    if (signingOut) {
+      return;
+    }
+    setSigningOut(true);
+    setSignOutError(null);
+    const result = await signOut();
+    if (!result.ok) {
+      setSignOutError(result.detail || t("topbar.signOutFailed"));
+      setSigningOut(false);
+      return;
+    }
+    clearBoundWorkspace();
+    navigate("/sign-in", { replace: true });
+  }
 
   return (
-    <header className="flex min-w-0 flex-col gap-3 border-b border-border py-4">
-      <div className="flex min-w-0 items-start justify-between gap-3">
+    <header className="flex min-w-0 flex-col gap-3 border-b border-border py-3">
+      <div className="flex min-w-0 items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <div
             className="flex size-9 shrink-0 items-center justify-center rounded-[var(--exits-radius-md)] bg-primary text-xs font-bold text-primary-foreground"
@@ -29,54 +52,51 @@ export function AppTopBar() {
               <p className="m-0 truncate text-[length:var(--exits-text-md)] font-semibold text-foreground">
                 {boundWorkspace.organizationDisplayName} · {boundWorkspace.branchName}
               </p>
-            ) : null}
+            ) : (
+              <p className="m-0 truncate text-[length:var(--exits-text-sm)] text-muted">
+                {t("topbar.noWorkspace")}
+              </p>
+            )}
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+
+        <nav className="flex shrink-0 items-center gap-1 sm:gap-2" aria-label={t("app.name")}>
           <Button
             variant="ghost"
-            size="icon"
-            disabled
-            title={t("topbar.lockDisabled")}
-            aria-label={t("topbar.lock")}
-          >
-            <Lock className="size-5" aria-hidden="true" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            disabled
-            title={t("topbar.removeDisabled")}
-            aria-label={t("topbar.remove")}
-          >
-            <Trash2 className="size-5" aria-hidden="true" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label={t("preferences.title")}
+            size="default"
+            className={cn(preferencesActive && "bg-[var(--exits-surface-muted)]")}
+            aria-current={preferencesActive ? "page" : undefined}
+            aria-label={t("topbar.preferences")}
+            title={t("topbar.preferences")}
             onClick={() => navigate("/settings/preferences")}
           >
-            <Settings className="size-5" aria-hidden="true" />
+            <Settings className="size-4" aria-hidden="true" />
+            <span className="hidden sm:inline">{t("topbar.preferences")}</span>
           </Button>
           <Button
             variant="ghost"
             size="default"
+            disabled={signingOut}
+            aria-busy={signingOut || undefined}
+            aria-label={t("topbar.signOut")}
+            title={t("topbar.signOut")}
             onClick={() => {
-              void signOut().then(() => navigate("/sign-in", { replace: true }));
+              void handleSignOut();
             }}
           >
             <LogOut className="size-4" aria-hidden="true" />
-            {t("topbar.signOut")}
+            <span className="hidden sm:inline">
+              {signingOut ? t("topbar.signingOut") : t("topbar.signOut")}
+            </span>
           </Button>
-        </div>
+        </nav>
       </div>
-      <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-        {t("topbar.pinPolicyOpen")}
-      </p>
-      <Link to="/settings/preferences" className="sr-only">
-        {t("preferences.title")}
-      </Link>
+
+      {signOutError ? (
+        <p className="m-0 text-[length:var(--exits-text-sm)] text-destructive" role="alert">
+          {signOutError}
+        </p>
+      ) : null}
     </header>
   );
 }
