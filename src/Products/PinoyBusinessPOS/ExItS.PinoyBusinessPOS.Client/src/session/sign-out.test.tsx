@@ -115,6 +115,22 @@ function createSessionFetchMock(
       } as Response;
     }
 
+    if (url.includes("/pos-api/api/v1/pos/operational-branch") && method === "PUT") {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          organizationId: orgId,
+          branchId,
+          name: "Main Branch",
+          deviceMatchesSelectedBranch: false,
+          deviceBoundBranchId: null,
+          openCashierShiftPresent: false,
+        }),
+        text: async () => "",
+      } as Response;
+    }
+
     if (url.includes("/api/v1/platform/auth/logout") && method === "POST") {
       expect(new Headers(init?.headers).get("X-XSRF-TOKEN")).toBe("csrf-token");
       if (logoutMode === "fail") {

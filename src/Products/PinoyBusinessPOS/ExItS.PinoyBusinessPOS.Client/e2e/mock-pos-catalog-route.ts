@@ -11,6 +11,21 @@ export async function mockPosCatalogApi(page: Page, options?: { productDelayMs?:
     const url = route.request().url();
     const method = route.request().method();
 
+    if (url.includes("/api/v1/pos/operational-branch") && method === "PUT") {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          organizationId: "11111111-1111-1111-1111-111111111111",
+          branchId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          name: "Main Branch",
+          deviceMatchesSelectedBranch: false,
+          deviceBoundBranchId: null,
+          openCashierShiftPresent: false,
+        }),
+      });
+    }
+
     if (!method || method !== "GET") {
       return route.fulfill({ status: 405, body: "" });
     }

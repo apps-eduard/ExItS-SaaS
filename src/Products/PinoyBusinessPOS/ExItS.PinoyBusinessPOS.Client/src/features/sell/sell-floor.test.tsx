@@ -21,6 +21,22 @@ function mockBoundCashierApis() {
     const method = init?.method ?? "GET";
 
     if (url.includes("/pos-api/")) {
+      if (url.includes("/operational-branch") && method === "PUT") {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            organizationId: orgId,
+            branchId,
+            name: "Main Branch",
+            deviceMatchesSelectedBranch: false,
+            deviceBoundBranchId: null,
+            openCashierShiftPresent: false,
+          }),
+          text: async () => "",
+        } as Response;
+      }
+
       if (url.includes("/catalog/categories")) {
         return {
           ok: true,

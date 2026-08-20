@@ -168,6 +168,26 @@ async function mockBoundOrgSession(
 
     return route.fulfill({ status: 404, contentType: "application/json", body: "{}" });
   });
+
+  await page.route("**/pos-api/**", async (route) => {
+    const url = route.request().url();
+    const method = route.request().method();
+    if (url.includes("/api/v1/pos/operational-branch") && method === "PUT") {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          organizationId: E2E_ORG_ID,
+          branchId: E2E_BRANCH_ID,
+          name: "Main Branch",
+          deviceMatchesSelectedBranch: false,
+          deviceBoundBranchId: null,
+          openCashierShiftPresent: false,
+        }),
+      });
+    }
+    return route.fulfill({ status: 404, contentType: "application/json", body: "{}" });
+  });
 }
 
 export async function mockBoundCashierSession(page: Page, grant: MockGrantOptions = {}) {

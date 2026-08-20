@@ -22,9 +22,11 @@ import {
   type SessionGrantResponse,
 } from "@/api/platform/platform-auth-client";
 import { clearPlatformAntiforgeryToken } from "@/api/platform/platform-http";
+import { selectOperationalBranch } from "@/api/pos/operational-branch-client";
 import { sessionAccountClass, isOrganizationContextLocked } from "@/session/account-class";
 import { ensureOrganizationSessionProfile } from "@/session/ensure-organization-profile";
 import { useSession } from "@/session/SessionProvider";
+import { DEFERRED_POS_DEVICE_CONTEXT, type PosDeviceContext } from "@/workspace/pos-device-context";
 import type {
   AccessibleOrganizationWorkspace,
   BoundWorkspace,
@@ -44,6 +46,8 @@ type WorkspaceContextValue = {
   routingPlan: WorkspaceRoutingPlan | null;
   boundWorkspace: BoundWorkspace | null;
   sessionGrant: SessionGrantResponse | null;
+  /** Honest device state — never invents an authorized POS terminal. */
+  posDevice: PosDeviceContext;
   accessDeniedDetail: string | null;
   bindWorkspace: (organizationId: string, branchId: string) => Promise<boolean>;
   refreshWorkspaces: () => Promise<void>;
@@ -84,6 +88,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [sessionGrant, setSessionGrantState] = useState<SessionGrantResponse | null>(() =>
     getPosSessionGrant(),
   );
+  const [posDevice] = useState<PosDeviceContext>(DEFERRED_POS_DEVICE_CONTEXT);
   const [accessDeniedDetail, setAccessDeniedDetail] = useState<string | null>(null);
 
   const clearBoundWorkspace = useCallback(() => {
@@ -100,8 +105,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
     const accountClass = sessionAccountClass(currentSession);
 
-    // Personal sessions without org context do not bind POS workspace. Eligible-org discovery
-    // still runs so owners with memberships can later ensure/select Organization (RMAP-02).
     const organizationsResult = await listEligibleOrganizations();
     if (!organizationsResult.ok) {
       setStatus("error");
@@ -131,9 +134,30 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
     setWorkspaces(accessible);
     setRoutingPlan(plan);
-    setStatus("ready");
 
-    // Personal AccountClass cannot set organization context — never auto-bind.
+    // Stale bound branch: revalidate against server-filtered Active accessible set.
+    setBoundWorkspace((current) => {
+      if (!current) {
+        setStatus("ready");
+        return current;
+      }
+      const stillValid = findWorkspaceLabel(accessible, current.organizationId, current.branchId);
+      if (!stillValid) {
+        clearPosAccessToken();
+        clearPosSessionGrant();
+        setSessionGrantState(null);
+        setAccessDeniedDetail(
+          "The previously selected branch is no longer accessible. Choose an active branch.",
+        );
+        setStatus("ready");
+        autoBindAttempted.current = false;
+        return null;
+      }
+      setStatus("bound");
+      setSessionGrantState(getPosSessionGrant());
+      return stillValid;
+    });
+
     if (accountClass === "Personal") {
       return;
     }
@@ -154,9 +178,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           organization.branches[0].branchId,
         );
         if (label) {
-          setBoundWorkspace(label);
+          setBoundWorkspace((current) => current ?? label);
           setSessionGrantState(getPosSessionGrant());
-          setStatus("bound");
+          setStatus((current) => (current === "bound" ? current : "bound"));
         }
       }
     }
@@ -179,6 +203,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         }
       }
 
+      const accessibleLabel = findWorkspaceLabel(workspaces, organizationId, branchId);
+      if (!accessibleLabel && workspaces.length > 0) {
+        setAccessDeniedDetail("That branch is not an accessible Active branch for this account.");
+        setStatus("access_denied");
+        return false;
+      }
+
       let activeSession = session;
       if (sessionAccountClass(activeSession) === "Personal") {
         setStatus("binding");
@@ -195,15 +226,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }
 
       if (sessionAccountClass(activeSession) !== "Organization") {
-        setAccessDeniedDetail(
-          "Organization workspace requires an Organization account profile.",
-        );
+        setAccessDeniedDetail("Organization workspace requires an Organization account profile.");
         setStatus("access_denied");
         return false;
       }
 
       setStatus("binding");
       setAccessDeniedDetail(null);
+      const previousBranchId = boundWorkspace?.branchId ?? null;
       const result = await bindWorkspaceWithSessionGrant(organizationId, branchId);
       if (!result.ok) {
         if (result.reason === "access_denied") {
@@ -217,28 +247,43 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         return false;
       }
 
-      const label = findWorkspaceLabel(workspaces, organizationId, branchId);
-      if (label) {
-        setBoundWorkspace(label);
-      } else {
-        setBoundWorkspace({
+      // MAUI parity: POS operational branch after Platform bind. Never invent deviceBoundBranchId.
+      const operational = await selectOperationalBranch({
+        organizationId,
+        branchId,
+        fromBranchId: previousBranchId,
+      });
+      if (
+        !operational.ok &&
+        operational.status !== 403 &&
+        operational.errorCode !== "application.capability.denied"
+      ) {
+        clearPosAccessToken();
+        clearPosSessionGrant();
+        setSessionGrantState(null);
+        setBoundWorkspace(null);
+        setAccessDeniedDetail(operational.detail ?? "Operational branch could not be selected.");
+        setStatus("access_denied");
+        return false;
+      }
+
+      const label = accessibleLabel ??
+        findWorkspaceLabel(workspaces, organizationId, branchId) ?? {
           organizationId,
           organizationDisplayName: organizationId,
           branchId,
           branchName: branchId,
-        });
-      }
+        };
+      setBoundWorkspace(label);
       setSessionGrantState(result.grant);
       setStatus("bound");
       return true;
     },
-    [refreshSession, session, workspaces],
+    [boundWorkspace?.branchId, refreshSession, session, workspaces],
   );
 
   useEffect(() => {
     if (sessionStatus !== "authenticated") {
-      // Prefer functional updates that preserve referential identity when already reset,
-      // otherwise unsigned `/sign-in` can infinite-loop on setWorkspaces([]).
       setWorkspaces((current) => (current.length === 0 ? current : []));
       setRoutingPlan((current) => (current === null ? current : null));
       setBoundWorkspace((current) => (current === null ? current : null));
@@ -275,7 +320,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (cancelled || !ok) {
         return;
       }
-      // Only boot-route from post-login landing — do not steal /org/staff/invite etc.
       if (location.pathname !== "/") {
         return;
       }
@@ -309,7 +353,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const previous = previousSessionStatus.current;
     previousSessionStatus.current = sessionStatus;
-    // Run once on transition into signed-out — not on every signed-out render.
     if (
       sessionStatus === "unauthenticated" &&
       (previous === "authenticated" || previous === "expired" || previous === "loading")
@@ -325,6 +368,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       routingPlan,
       boundWorkspace,
       sessionGrant,
+      posDevice,
       accessDeniedDetail,
       bindWorkspace,
       refreshWorkspaces,
@@ -335,6 +379,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       bindWorkspace,
       boundWorkspace,
       clearBoundWorkspace,
+      posDevice,
       refreshWorkspaces,
       routingPlan,
       sessionGrant,

@@ -108,6 +108,22 @@ function createFetchMock(options: { longNames?: boolean; unbound?: boolean } = {
       } as Response;
     }
 
+    if (url.includes("/pos-api/api/v1/pos/operational-branch") && method === "PUT") {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          organizationId: orgId,
+          branchId,
+          name: "Main Branch",
+          deviceMatchesSelectedBranch: false,
+          deviceBoundBranchId: null,
+          openCashierShiftPresent: false,
+        }),
+        text: async () => "",
+      } as Response;
+    }
+
     if (url.includes("/api/v1/platform/auth/logout") && method === "POST") {
       return { ok: true, status: 204, json: async () => null, text: async () => "" } as Response;
     }

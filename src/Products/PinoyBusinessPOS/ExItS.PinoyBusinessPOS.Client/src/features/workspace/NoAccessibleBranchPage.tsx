@@ -8,10 +8,10 @@ export function NoAccessibleBranchPage() {
   const { t } = useI18n();
 
   return (
-    <div className="flex min-w-0 flex-col gap-4">
+    <div className="flex min-w-0 flex-col gap-4" data-testid="no-accessible-branch">
       <PageHeader title={t("noLocation.title")} description={t("noLocation.lede")} />
       <EmptyState title={t("noLocation.title")} detail={t("noLocation.detail")} />
-      <Button asChild variant="ghost">
+      <Button asChild variant="ghost" className="min-h-11">
         <Link to="/settings/preferences">{t("preferences.title")}</Link>
       </Button>
     </div>
