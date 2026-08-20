@@ -42,7 +42,8 @@ public sealed record AcceptOrganizationInvitationResultDto(
     string OrganizationDisplayName,
     Guid OrganizationId,
     Guid MembershipId,
-    string Role);
+    string Role,
+    Guid? LinkedPersonalUserId = null);
 
 public sealed class OrganizationInvitationQueryService
 {
@@ -489,13 +490,47 @@ public sealed class AcceptOrganizationInvitation
         _passwordOptions = passwordOptions.Value;
     }
 
-    public async Task<ApplicationResult<AcceptOrganizationInvitationResultDto>> ExecuteAsync(
+    public Task<ApplicationResult<AcceptOrganizationInvitationResultDto>> ExecuteAsync(
         string acceptToken,
         string password,
         string? displayName = null,
         string? firstName = null,
         string? lastName = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        CompleteAsync(
+            acceptToken,
+            password,
+            authenticatedPersonalUserId: null,
+            displayName,
+            firstName,
+            lastName,
+            cancellationToken);
+
+    public Task<ApplicationResult<AcceptOrganizationInvitationResultDto>> ExecuteForAuthenticatedPersonalAsync(
+        PlatformUserId authenticatedPersonalUserId,
+        string acceptToken,
+        string password,
+        string? displayName = null,
+        string? firstName = null,
+        string? lastName = null,
+        CancellationToken cancellationToken = default) =>
+        CompleteAsync(
+            acceptToken,
+            password,
+            authenticatedPersonalUserId,
+            displayName,
+            firstName,
+            lastName,
+            cancellationToken);
+
+    private async Task<ApplicationResult<AcceptOrganizationInvitationResultDto>> CompleteAsync(
+        string acceptToken,
+        string password,
+        PlatformUserId? authenticatedPersonalUserId,
+        string? displayName,
+        string? firstName,
+        string? lastName,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(acceptToken))
         {
@@ -568,6 +603,44 @@ public sealed class AcceptOrganizationInvitation
                     "An active organization staff identity already exists for this contact email.");
             }
 
+            var existingLoginPrincipal = await _users
+                .GetByNormalizedEmailAsync(contactEmail, cancellationToken)
+                .ConfigureAwait(false);
+            PlatformUserId? linkedPersonalUserId = null;
+            if (authenticatedPersonalUserId is not null)
+            {
+                var personal = await _users
+                    .GetByIdAsync(authenticatedPersonalUserId, cancellationToken)
+                    .ConfigureAwait(false);
+                if (personal is null
+                    || personal.IsOrganizationScopedStaff
+                    || personal.Status != AccountStatus.Active
+                    || !string.Equals(personal.NormalizedEmail, contactEmail, StringComparison.Ordinal))
+                {
+                    return ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
+                        ApplicationErrorCodes.InvitationNotFound,
+                        "Invitation was not found or is no longer pending.");
+                }
+
+                var personalCredential = await _credentials
+                    .GetByUserIdAsync(personal.Id, cancellationToken)
+                    .ConfigureAwait(false);
+                if (personalCredential?.EmailVerifiedAtUtc is null)
+                {
+                    return ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
+                        ApplicationErrorCodes.InvitationPersonalEmailUnverified,
+                        "Verify your Personal email before accepting this invitation.");
+                }
+
+                linkedPersonalUserId = personal.Id;
+            }
+            else if (existingLoginPrincipal is not null && !existingLoginPrincipal.IsOrganizationScopedStaff)
+            {
+                return ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
+                    ApplicationErrorCodes.InvitationRequiresAuthenticatedPersonal,
+                    "Sign in with your Personal account to accept this invitation.");
+            }
+
             var staffLogin = await _staffLoginNames
                 .AllocateAsync(contactEmail, organization.PublicOrganizationId!, cancellationToken)
                 .ConfigureAwait(false);
@@ -592,7 +665,8 @@ public sealed class AcceptOrganizationInvitation
                 utcNow,
                 resolvedFirstName,
                 resolvedLastName,
-                createdByUserId: invitation.InvitedByUserId);
+                createdByUserId: invitation.InvitedByUserId,
+                linkedPersonalUserId: linkedPersonalUserId);
 
             await _users.AddAsync(staffUser, cancellationToken).ConfigureAwait(false);
 
@@ -670,7 +744,8 @@ public sealed class AcceptOrganizationInvitation
                     organization.DisplayName,
                     organization.Id.Value,
                     membershipResult.Value!.Id.Value,
-                    invitation.Role.ToString()));
+                    invitation.Role.ToString(),
+                    linkedPersonalUserId?.Value));
         }
         catch (DomainException ex)
         {

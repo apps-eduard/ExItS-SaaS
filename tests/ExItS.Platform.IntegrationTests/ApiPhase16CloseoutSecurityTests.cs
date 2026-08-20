@@ -277,13 +277,25 @@ public sealed class ApiPhase16CloseoutSecurityTests(PostgreSqlFixture fixture) :
             ApplicationErrorCodes.CustomerLinkRequestNotFound,
             (await customerWrong.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errorCode").GetString());
 
-        var correctAccept = await _client.PostAsJsonAsync(
+        var anonymousAccept = await _client.PostAsJsonAsync(
             "/api/v1/platform/invitations/accept",
             new { token = staffAcceptToken, password = "Correct-Horse-9!" });
-        Assert.Equal(HttpStatusCode.OK, correctAccept.StatusCode);
-        var acceptBody = await correctAccept.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(HttpStatusCode.Conflict, anonymousAccept.StatusCode);
+        Assert.Equal(
+            ApplicationErrorCodes.InvitationRequiresAuthenticatedPersonal,
+            (await anonymousAccept.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errorCode").GetString());
+
+        using var correctAccept = Authed(
+            HttpMethod.Post,
+            "/api/v1/platform/invitations/accept-as-personal",
+            inviteeToken,
+            new { token = staffAcceptToken, password = "Correct-Horse-9!" });
+        var acceptResponse = await _client.SendAsync(correctAccept);
+        Assert.Equal(HttpStatusCode.OK, acceptResponse.StatusCode);
+        var acceptBody = await acceptResponse.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Contains("@ORG", acceptBody.GetProperty("staffLogin").GetString(), StringComparison.OrdinalIgnoreCase);
-        _ = inviteeToken;
+        Assert.True(acceptBody.TryGetProperty("linkedPersonalUserId", out var linked));
+        Assert.NotEqual(Guid.Empty, linked.GetGuid());
     }
 
     [Fact]

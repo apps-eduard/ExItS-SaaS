@@ -7,6 +7,10 @@ public static class ApplicationErrorCodes
     public const string MembershipNotFound = "application.membership.not_found";
     public const string InvitationNotFound = "application.invitation.not_found";
     public const string InvitationConflict = "application.invitation.conflict";
+    public const string InvitationRequiresAuthenticatedPersonal =
+        "application.invitation.requires_authenticated_personal";
+    public const string InvitationPersonalEmailUnverified =
+        "application.invitation.personal_email_unverified";
     public const string OwnershipTransferNotFound = "application.ownership_transfer.not_found";
     public const string OwnershipTransferConflict = "application.ownership_transfer.conflict";
     public const string TaxDocumentIssuanceNotEnabled =

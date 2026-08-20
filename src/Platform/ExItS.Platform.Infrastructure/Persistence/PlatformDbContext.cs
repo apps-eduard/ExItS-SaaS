@@ -951,6 +951,17 @@ public sealed class PlatformDbContext : DbContext
                 .HasFilter("public_user_id IS NOT NULL")
                 .HasDatabaseName("ux_platform_users_public_user_id");
             entity.Property(e => e.CreatedByUserId).HasColumnName("created_by_user_id");
+            entity.Property(e => e.LinkedPersonalUserId).HasColumnName("linked_personal_user_id");
+            entity.HasIndex(e => e.LinkedPersonalUserId)
+                .HasDatabaseName("ix_platform_users_linked_personal_user_id");
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.LinkedPersonalUserId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_platform_users_linked_personal_user");
+            entity.ToTable(t => t.HasCheckConstraint(
+                "ck_platform_users_linked_personal_staff_only",
+                "linked_personal_user_id IS NULL OR (home_organization_id IS NOT NULL AND linked_personal_user_id <> id)"));
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
                 .HasColumnType("xid")

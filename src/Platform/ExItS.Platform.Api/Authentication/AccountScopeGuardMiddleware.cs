@@ -175,6 +175,11 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
                 return accountClass is AccountClass.Personal or AccountClass.Organization;
             }
 
+            if (IsPersonalStaffInvitationAcceptPath(path))
+            {
+                return accountClass is AccountClass.Personal;
+            }
+
             // Owner cancel lives under /ownership-transfers/{id}/cancel (not /organizations/...).
             if (IsOwnershipTransferCancelPath(path))
             {
@@ -198,6 +203,12 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
 
         return false;
     }
+
+    private static bool IsPersonalStaffInvitationAcceptPath(string path) =>
+        path.Equals("/api/v1/platform/invitations/accept-as-personal", StringComparison.OrdinalIgnoreCase)
+        || path.Equals(
+            "/api/v1/platform/auth/organization-invitations/accept-as-personal",
+            StringComparison.OrdinalIgnoreCase);
 
     private static bool IsOwnershipTransferRecipientPath(string path)
     {

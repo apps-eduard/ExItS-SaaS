@@ -21,5 +21,6 @@ internal sealed class PlatformUserRecord
     public string? StaffNumber { get; set; }
     public string? PublicUserId { get; set; }
     public Guid? CreatedByUserId { get; set; }
+    public Guid? LinkedPersonalUserId { get; set; }
     public uint Xmin { get; set; }
 }

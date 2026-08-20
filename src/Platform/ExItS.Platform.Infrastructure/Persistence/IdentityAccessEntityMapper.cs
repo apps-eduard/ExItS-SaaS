@@ -31,7 +31,8 @@ internal static class IdentityAccessEntityMapper
             record.CreatedAtUtc,
             record.UpdatedAtUtc,
             record.SuspendedAtUtc,
-            record.SuspensionReason);
+            record.SuspensionReason,
+            record.LinkedPersonalUserId is null ? null : PlatformUserId.From(record.LinkedPersonalUserId.Value));
 
     public static PlatformUserRecord ToRecord(PlatformUser user) =>
         new()
@@ -50,6 +51,7 @@ internal static class IdentityAccessEntityMapper
             StaffNumber = user.StaffNumber,
             PublicUserId = user.PublicUserId,
             CreatedByUserId = user.CreatedByUserId?.Value,
+            LinkedPersonalUserId = user.LinkedPersonalUserId?.Value,
             Status = user.Status.ToString(),
             CreatedAtUtc = user.CreatedAtUtc,
             UpdatedAtUtc = user.UpdatedAtUtc,
@@ -72,6 +74,7 @@ internal static class IdentityAccessEntityMapper
         record.StaffNumber = user.StaffNumber;
         record.PublicUserId = user.PublicUserId;
         record.CreatedByUserId = user.CreatedByUserId?.Value;
+        record.LinkedPersonalUserId = user.LinkedPersonalUserId?.Value;
         record.Status = user.Status.ToString();
         record.UpdatedAtUtc = user.UpdatedAtUtc;
         record.SuspendedAtUtc = user.SuspendedAtUtc;

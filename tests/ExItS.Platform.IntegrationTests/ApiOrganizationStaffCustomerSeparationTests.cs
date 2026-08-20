@@ -241,7 +241,7 @@ public sealed class ApiOrganizationStaffCustomerSeparationTests(PostgreSqlFixtur
         var (ownerId, _, _, _, ownerToken) = await SeedOrgOwnerAsync("inv");
         _ = ownerId;
         var organizationId = await ResolveSelectedOrganizationAsync(ownerToken);
-        var (personalUserId, contactEmail, _) = await SeedPersonalUserAsync("staf");
+        var (personalUserId, contactEmail, personalToken) = await SeedPersonalUserAsync("staf");
 
         using var staffInvite = Authed(
             HttpMethod.Post,
@@ -256,13 +256,26 @@ public sealed class ApiOrganizationStaffCustomerSeparationTests(PostgreSqlFixtur
             inviteBody.GetProperty("invitationType").GetString());
         var token = inviteBody.GetProperty("acceptToken").GetString();
 
-        var acceptResponse = await _client.PostAsJsonAsync(
+        var anonymousAccept = await _client.PostAsJsonAsync(
             "/api/v1/platform/invitations/accept",
             new { token, password = "Correct-Horse-9!" });
+        Assert.Equal(HttpStatusCode.Conflict, anonymousAccept.StatusCode);
+        var anonymousBody = await anonymousAccept.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(
+            ApplicationErrorCodes.InvitationRequiresAuthenticatedPersonal,
+            anonymousBody.GetProperty("errorCode").GetString());
+
+        using var acceptRequest = Authed(
+            HttpMethod.Post,
+            "/api/v1/platform/invitations/accept-as-personal",
+            personalToken,
+            new { token, password = "Correct-Horse-9!" });
+        var acceptResponse = await _client.SendAsync(acceptRequest);
         Assert.Equal(HttpStatusCode.OK, acceptResponse.StatusCode);
         var acceptBody = await acceptResponse.Content.ReadFromJsonAsync<JsonElement>();
         var staffUserId = acceptBody.GetProperty("userId").GetGuid();
         Assert.NotEqual(personalUserId, staffUserId);
+        Assert.Equal(personalUserId, acceptBody.GetProperty("linkedPersonalUserId").GetGuid());
         Assert.Contains("@ORG", acceptBody.GetProperty("staffLogin").GetString(), StringComparison.OrdinalIgnoreCase);
 
         var membersAdmin = await _admin.GetAsync(

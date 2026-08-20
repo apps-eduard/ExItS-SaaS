@@ -1,6 +1,7 @@
 @page "/personal/invitations/accept"
 @layout Layout.AuthShell
 @inject IPlatformAccessClient Platform
+@inject ICurrentUserContext CurrentUser
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
@@ -94,7 +95,9 @@
         _busy = true;
         try
         {
-            var result = await Platform.AcceptOrganizationInvitationAsync(_token.Trim(), _password);
+            var result = IsAuthenticatedPersonal
+                ? await Platform.AcceptOrganizationInvitationAsPersonalAsync(_token.Trim(), _password)
+                : await Platform.AcceptOrganizationInvitationAsync(_token.Trim(), _password);
             if (!result.IsSuccess || result.Data is null)
             {
                 _errors.Add(result.Error?.Detail ?? L["Personal_AcceptInvitationFailed"]);
@@ -113,4 +116,8 @@
     }
 
     private void GoSignIn() => Nav.NavigateTo("/signin");
+
+    private bool IsAuthenticatedPersonal =>
+        CurrentUser.IsAuthenticated
+        && string.Equals(CurrentUser.Session?.AccountClass, "Personal", StringComparison.OrdinalIgnoreCase);
 }

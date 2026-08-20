@@ -2877,6 +2877,12 @@ public sealed class AuthenticationServiceTests
             CancellationToken ct = default) =>
             Task.FromResult(ApiResult<AcceptOrganizationInvitationResultDto>.Unavailable());
 
+        public Task<ApiResult<AcceptOrganizationInvitationResultDto>> AcceptOrganizationInvitationAsPersonalAsync(
+            string token,
+            string password,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<AcceptOrganizationInvitationResultDto>.Unavailable());
+
         public Task<ApiResult<PlatformMembershipDto>> AcceptOrganizationInvitationByIdAsync(Guid invitationId, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<PlatformMembershipDto>.Unavailable());
 

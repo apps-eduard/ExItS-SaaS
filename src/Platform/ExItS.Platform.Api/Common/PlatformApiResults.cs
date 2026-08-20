@@ -166,6 +166,8 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.UtangMigrationConfirmationMismatch
             or ApplicationErrorCodes.UtangMigrationPreviewRequired
             or ApplicationErrorCodes.ProductLocalRoleGrantConflict
+            or ApplicationErrorCodes.InvitationRequiresAuthenticatedPersonal
+            or ApplicationErrorCodes.InvitationPersonalEmailUnverified
             or DomainErrorCodes.PersonalUtangAlreadyMigrated => StatusCodes.Status409Conflict,
 
         ApplicationErrorCodes.PersonalReminderRateLimited

@@ -566,6 +566,33 @@ internal static class AuthEndpoints
         })
         .AllowAnonymous();
 
+        app.MapPost("/api/v1/platform/auth/organization-invitations/accept-as-personal", async (
+            AcceptInvitationTokenRequest body,
+            AcceptOrganizationInvitation useCase,
+            HttpContext http,
+            CancellationToken ct) =>
+        {
+            if (!TryGetAuthenticatedUserId(http, out var userId))
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Authentication is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var result = await useCase
+                .ExecuteForAuthenticatedPersonalAsync(
+                    PlatformUserId.From(userId),
+                    body.Token ?? string.Empty,
+                    body.Password ?? string.Empty,
+                    body.DisplayName,
+                    body.FirstName,
+                    body.LastName,
+                    ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
         app.MapPost("/api/v1/platform/auth/organization-invitations/{invitationId:guid}/accept", async (
             Guid invitationId,
             AcceptOrganizationInvitationByIdForInvitee useCase,

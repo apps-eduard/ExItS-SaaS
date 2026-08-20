@@ -771,7 +771,8 @@ public sealed record AcceptOrganizationInvitationResultDto(
     string OrganizationDisplayName,
     Guid OrganizationId,
     Guid MembershipId,
-    string Role);
+    string Role,
+    Guid? LinkedPersonalUserId = null);
 
 public sealed record PersonalDashboardDto(
     Guid UserIdentityId,
@@ -1375,6 +1376,11 @@ public interface IPlatformAccessClient
         CancellationToken ct = default);
 
     Task<ApiResult<AcceptOrganizationInvitationResultDto>> AcceptOrganizationInvitationAsync(
+        string token,
+        string password,
+        CancellationToken ct = default);
+
+    Task<ApiResult<AcceptOrganizationInvitationResultDto>> AcceptOrganizationInvitationAsPersonalAsync(
         string token,
         string password,
         CancellationToken ct = default);

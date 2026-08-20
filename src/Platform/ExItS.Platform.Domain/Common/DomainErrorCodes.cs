@@ -44,6 +44,9 @@ public static class DomainErrorCodes
     public const string HomeOrganizationImmutable = "platform.user.home_organization.immutable";
     public const string HomeOrganizationRequired = "platform.user.home_organization.required";
     public const string StaffOrganizationSwitchDenied = "platform.user.staff_organization_switch_denied";
+    public const string PersonLinkStaffRequired = "platform.user.person_link.staff_required";
+    public const string PersonLinkImmutable = "platform.user.person_link.immutable";
+    public const string PersonLinkSelfDenied = "platform.user.person_link.self_denied";
     public const string InvalidOrganizationSlug = "platform.organization.slug.invalid";
     public const string PrimaryBusinessTypeImmutable = "platform.organization.primary_business_type.immutable";
     public const string DuplicateBusinessTypeGrant = "platform.plan_version.business_type_grant.duplicate";
