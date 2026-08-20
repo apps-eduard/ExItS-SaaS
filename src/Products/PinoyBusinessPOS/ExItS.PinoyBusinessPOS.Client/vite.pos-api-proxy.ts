@@ -1,3 +1,6 @@
+import type { ProxyOptions } from "vite";
+import { rewriteProxiedSetCookieHeaders } from "./vite.proxy-cookie";
+
 export const POS_API_PROXY_PREFIX = "/pos-api";
 export const DEFAULT_POS_API_PROXY_TARGET = "http://127.0.0.1:8092";
 export const POS_API_PROXY_TARGET_ENV = "EXITS_POS_API_PROXY_TARGET";
@@ -40,13 +43,16 @@ export function rewritePosApiProxyPath(pathname: string): string {
   return pathname;
 }
 
-export function createPosApiProxy() {
+export function createPosApiProxy(): Record<string, ProxyOptions> {
   return {
     [POS_API_PROXY_PREFIX]: {
       target: resolvePosApiProxyTarget(),
       changeOrigin: true,
       secure: false,
       cookieDomainRewrite: "",
+      configure: (proxy) => {
+        proxy.on("proxyRes", rewriteProxiedSetCookieHeaders);
+      },
       rewrite: rewritePosApiProxyPath,
     },
   };

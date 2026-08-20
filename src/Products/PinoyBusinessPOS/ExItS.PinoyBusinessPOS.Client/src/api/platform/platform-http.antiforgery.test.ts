@@ -93,4 +93,62 @@ describe("platformRequest antiforgery", () => {
       ).length,
     ).toBe(2);
   });
+
+  it("continues mutations without CSRF when antiforgery token is account-scoped away", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
+        return {
+          ok: false,
+          status: 403,
+          json: async () => ({
+            status: 403,
+            errorCode: "application.auth.account_scope_denied",
+            detail: "Account class 'Organization' is not allowed.",
+          }),
+        } as Response;
+      }
+      if (url.endsWith("/api/v1/platform/auth/organization-context")) {
+        expect(new Headers(init?.headers).get("X-XSRF-TOKEN")).toBeNull();
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ selectedOrganizationId: "org-1" }),
+        } as Response;
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await platformRequest({
+      method: "PUT",
+      path: "/api/v1/platform/auth/organization-context",
+      body: { organizationId: "org-1" },
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("continues mutations without CSRF when antiforgery token route is missing", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
+        return {
+          ok: false,
+          status: 404,
+          json: async () => ({ status: 404, title: "Not Found" }),
+        } as Response;
+      }
+      expect(new Headers(init?.headers).get("X-XSRF-TOKEN")).toBeNull();
+      return {
+        ok: true,
+        status: 204,
+        json: async () => null,
+      } as Response;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await platformRequest<void>({ method: "POST", path: "/api/v1/platform/auth/logout" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
 });

@@ -1,3 +1,6 @@
+import type { ProxyOptions } from "vite";
+import { rewriteProxiedSetCookieHeaders } from "./vite.proxy-cookie";
+
 export const PLATFORM_API_PROXY_PREFIX = "/platform-api";
 export const DEFAULT_PLATFORM_API_PROXY_TARGET = "http://127.0.0.1:8091";
 export const PLATFORM_API_PROXY_TARGET_ENV = "EXITS_PLATFORM_API_PROXY_TARGET";
@@ -42,7 +45,7 @@ export function rewritePlatformApiProxyPath(pathname: string): string {
   return pathname;
 }
 
-export function createPlatformApiProxy() {
+export function createPlatformApiProxy(): Record<string, ProxyOptions> {
   return {
     [PLATFORM_API_PROXY_PREFIX]: {
       target: resolvePlatformApiProxyTarget(),
@@ -50,6 +53,9 @@ export function createPlatformApiProxy() {
       secure: false,
       // Keep Set-Cookie host-aligned with the browser origin (127.0.0.1 or 10.0.2.2).
       cookieDomainRewrite: "",
+      configure: (proxy) => {
+        proxy.on("proxyRes", rewriteProxiedSetCookieHeaders);
+      },
       rewrite: rewritePlatformApiProxyPath,
     },
   };

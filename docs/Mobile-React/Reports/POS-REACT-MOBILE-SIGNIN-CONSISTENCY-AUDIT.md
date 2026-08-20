@@ -53,15 +53,21 @@ Evidence:
 
 ## LOGIN FAILURE ROOT CAUSE
 
-**Primary:** Emulator loading **stale JS** under a leftover service worker/cache, so login/bootstrap does not match the current cookie-session + `/platform-api` proxy contract.
+**Primary (proven with live successful login probes):** Platform API `Set-Cookie` for `.ExItS.Platform.Auth` includes the **`Secure`** flag (live-preview container is not ASP.NET “Development”, so cookies are marked Secure).
 
-**Not the cause (proven against live Vite + Host `10.0.2.2:5177`):**
+| Browser origin | HTTP + `Secure` cookie |
+|---|---|
+| `http://localhost:5177` / `http://127.0.0.1:5177` | Chrome **accepts** (localhost exception) → PC login works |
+| `http://10.0.2.2:5177` | Chrome **rejects** Secure cookie on plain HTTP → session cookie never stored → subsequent `/me` / workspace calls fail |
 
-- Proxy reachability: `POST /platform-api/.../login` returns Platform `401 login_failed` for bad credentials (proxy + Host header OK)
-- Client API base: relative `/platform-api` (same-origin; no emulator `localhost` API calls in current source)
-- Login CSRF: login uses `skipAntiforgery: true` (unchanged)
+Same React source and same login endpoint (`POST /platform-api/.../login` returns **200** for all three Host headers). The failure is **cookie acceptance**, not a second SignIn page.
 
-**Hardening added:** `cookieDomainRewrite: ""` on Platform/POS Vite proxies so `Set-Cookie` Domain does not stick to loopback host names when the browser origin is `10.0.2.2`.
+**Secondary (earlier):** Stale service worker / cache could also serve old JS; addressed separately.
+
+**Hardening:**
+
+- `cookieDomainRewrite: ""` on Platform/POS Vite proxies
+- Vite proxy strips `; Secure` from `Set-Cookie` in local HTTP proxy responses so emulator `10.0.2.2` can persist the session cookie
 
 ---
 

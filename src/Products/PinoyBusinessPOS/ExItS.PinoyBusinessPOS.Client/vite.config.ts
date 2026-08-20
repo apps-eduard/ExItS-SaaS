@@ -93,6 +93,7 @@ export default defineConfig({
       "src/**/*.test.tsx",
       "vite.platform-api-proxy.test.ts",
       "vite.pos-api-proxy.test.ts",
+      "vite.proxy-cookie.test.ts",
       "vite.block-sw-in-dev.test.ts",
     ],
   },

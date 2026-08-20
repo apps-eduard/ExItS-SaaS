@@ -165,7 +165,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           setStatus("access_denied");
           return false;
         }
-        setStatus("error");
+        // Keep the chooser mounted so the operator can retry after a bind failure.
+        setAccessDeniedDetail(result.body?.detail ?? null);
+        setStatus("ready");
         return false;
       }
 

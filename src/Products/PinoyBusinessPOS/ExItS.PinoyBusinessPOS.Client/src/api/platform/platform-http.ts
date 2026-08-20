@@ -92,6 +92,8 @@ type AntiforgeryBootstrap = {
 
 let inMemoryAntiforgeryToken: string | null = null;
 let inMemoryAntiforgeryHeaderName: string = PlatformAntiforgeryDefaults.headerName;
+/** When the Platform antiforgery endpoint is missing (404) or account-scoped away (403), skip CSRF headers. */
+let antiforgeryBootstrapState: "unknown" | "ready" | "unavailable" = "unknown";
 
 function isMutationMethod(method: string): boolean {
   return method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE";
@@ -99,6 +101,7 @@ function isMutationMethod(method: string): boolean {
 
 export function clearPlatformAntiforgeryToken(): void {
   inMemoryAntiforgeryToken = null;
+  antiforgeryBootstrapState = "unknown";
 }
 
 async function bootstrapAntiforgeryToken(signal?: AbortSignal): Promise<AntiforgeryBootstrap> {
@@ -129,14 +132,27 @@ async function bootstrapAntiforgeryToken(signal?: AbortSignal): Promise<Antiforg
   const payload = (await response.json()) as AntiforgeryBootstrap;
   inMemoryAntiforgeryHeaderName = payload.headerName || PlatformAntiforgeryDefaults.headerName;
   inMemoryAntiforgeryToken = payload.token;
+  antiforgeryBootstrapState = "ready";
   return payload;
 }
 
 async function ensureAntiforgeryToken(signal?: AbortSignal): Promise<void> {
-  if (inMemoryAntiforgeryToken) {
+  if (inMemoryAntiforgeryToken || antiforgeryBootstrapState === "unavailable") {
     return;
   }
-  await bootstrapAntiforgeryToken(signal);
+
+  try {
+    await bootstrapAntiforgeryToken(signal);
+  } catch (error) {
+    // Live-preview Platform images may omit the token route (404). Organization/Personal
+    // sessions are also blocked from /platform/antiforgery/* by account-scope (403) even
+    // though auth context mutations under /platform/auth/* remain allowed without CSRF.
+    if (error instanceof PlatformApiError && (error.status === 404 || error.status === 403)) {
+      antiforgeryBootstrapState = "unavailable";
+      return;
+    }
+    throw error;
+  }
 }
 
 export async function platformRequest<T>(options: PlatformRequestOptions): Promise<T> {

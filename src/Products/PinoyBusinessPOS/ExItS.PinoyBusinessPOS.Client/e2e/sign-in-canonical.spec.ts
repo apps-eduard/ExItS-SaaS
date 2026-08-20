@@ -63,7 +63,16 @@ test.describe("canonical sign-in", () => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto("/sign-in");
       await expect(page.getByTestId("sign-in-page")).toBeVisible();
+      await expect(page.getByTestId("sign-in-page")).toHaveAttribute(
+        "data-exits-build-mode",
+        /^(development|production)$/,
+      );
       await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+      // Playwright preview is a production build; Local Validation tools are DEV-only.
+      const buildMode = await page.getByTestId("sign-in-page").getAttribute("data-exits-build-mode");
+      if (buildMode === "development") {
+        await expect(page.getByText(/development tools/i)).toBeVisible();
+      }
       await assertNoHorizontalOverflow(page);
     });
   }
