@@ -13,20 +13,32 @@ Eliminate “stop after every WP to ask permission for the next one” once a ma
 Future implementation normally executes in **batches of ten** approved roadmap packages.
 
 ```text
-MASTER RUN A
-  RMAP-00 → RMAP-01 → … (up to 10 packages in the approved batch list)
+MASTER RUN (approved batch of ≤10)
+  package 1 → … → package ≤10
   → HARD STOP FOR PRODUCT OWNER + CHATGPT REVIEW
 
 If defects:
   → dedicated repair/reconciliation command first
 
 When repair passes / review approves:
-MASTER RUN B
+NEXT MASTER RUN
   next ≤10 packages
   → STOP FOR REVIEW
 ```
 
 Do not stop after every successful WP merely to ask permission for the next one inside an approved master run.
+
+### Approved proposed Master Run 01 (NOT STARTED)
+
+Authoritative first batch is recorded in [react-migration-roadmap.md](react-migration-roadmap.md):
+
+```text
+MASTER RUN 01 — Foundation + Catalog/Inventory Baseline
+RMAP-00 → RMAP-B00 → RMAP-01 → RMAP-01b → RMAP-02 → RMAP-03 → RMAP-04 → RMAP-05 → RMAP-06 → RMAP-07
+→ HARD STOP
+```
+
+Documenting this sequence does **not** authorize implementation. Generic batching/push/hard-stop rules above still apply.
 
 ## Per-WP Definition of Done
 
@@ -127,5 +139,6 @@ If repair is needed: a separate repair master command is issued. Only after repa
 
 - Roadmap IDs (RMAP-00, RMAP-B00, RMAP-01, …) define **what** to build and in what dependency order.
 - This protocol defines **how** approved batches execute, push, and stop.
-- Staff identity desired contract (**RMAP-B00**) must complete before React staff-identity parity that depends on the owner-desired person-link model.
+- **Master Run 01** places **RMAP-B00** before RMAP-01 / RMAP-01b / RMAP-02 so workspace/role work validates the intended identity architecture.
+- Staff identity desired contract (**RMAP-B00**) must complete before React staff-identity parity (RMAP-01b) and before treating post-B00 session/workspace behavior as final.
 - Visual packages depend on **RMAP-00** unless explicitly marked non-UI.

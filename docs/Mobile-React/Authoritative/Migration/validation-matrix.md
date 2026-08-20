@@ -7,10 +7,12 @@ UI WPs must also satisfy [06-react-ui-ux-and-responsive-foundation.md](../06-rea
 
 | Capability | Unit Tests | Integration Tests | MAUI Regression | React Unit | React E2E | Offline | Authorization | Cross-org | Device/Browser | Owner Validation | Notes |
 |------------|------------|-------------------|-----------------|------------|-----------|---------|---------------|-----------|----------------|------------------|-------|
-| Shared UI foundation (RMAP-00) | Component tests | N/A | N/A | Vitest | Viewport E2E 375/768/1024/1440 | N/A | N/A | N/A | Phone+tablet+desktop visual | Spot-check ListToolbar | REUSE before create |
-| Personal session login | Platform identity | Auth integration | Sign-in | Auth client | Playwright login | N/A | Session class | | Browser | | RMAP-01 |
-| CURRENT staff alias login | Platform identity | Auth integration | Sign-in staff | Auth client | Optional smoke | N/A | Session class | Staff lock | Browser | | Not desired person-link |
-| Desired staff person-link | **New** after RMAP-B00 | **New** | MAUI after B00 | Invite/accept UI | E2E Personal accept | N/A | Membership rules | Multi-org | Browser | Owner multi-org + removal | BLOCKED until B00 |
+| Shared UI foundation (RMAP-00) | Component tests | N/A | N/A | Vitest | Viewport E2E 375/768/1024/1440 | N/A | N/A | N/A | Phone+tablet+desktop visual | Spot-check ListToolbar | Master Run 01 #1 |
+| Staff person-link backend (RMAP-B00) | **New** identity domain | **New** invite/accept | MAUI after B00 | N/A | N/A | N/A | Membership rules | Multi-org | N/A | Owner outcome checklist | Master Run 01 #2; schema design in-package |
+| Account/session post-B00 (RMAP-01) | Platform identity | Auth integration | Sign-in | Auth client | Playwright login | N/A | Session class | | Browser | | Master Run 01 #3; after B00 |
+| Desired staff person-link UI (RMAP-01b) | | Invite/accept API | MAUI after B00 | Invite/accept UI | E2E Personal accept + alias | N/A | Membership rules | Multi-org | Browser | Owner multi-org + removal | Master Run 01 #4 |
+| Workspace/roles post-B00 (RMAP-02) | | | | Session guards | E2E denial/access | N/A | Product roles | Cross-class | Browser | Spot-check | Master Run 01 #5; not pre-B00 staff model |
+| CURRENT staff alias login (pre-B00 evidence) | Platform identity | Auth integration | Sign-in staff | | | N/A | Session class | Staff lock | Browser | | Historical CURRENT; superseded as final after B00 |
 | Account scope isolation | Domain | Middleware integration | Org switch wipe | Session guards | E2E denial | N/A | AccountScopeGuard | Cross-class API deny | Browser | Spot-check | |
 | Product units / rice pool | ProductUnitConversion, RiceSell* | API catalog/sales | Sell-as checkout | Unit math helpers | E2E multi-unit sale | LocalStore v9 | Catalog/sales roles | Org isolation | Device later | Owner rice scenario | |
 | ByWeight | WeightedSale* | Sales API | Weight dialog | Qty helpers | E2E weight sale | Snapshot fidelity | CreateSale | | Device later | | |

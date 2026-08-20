@@ -84,9 +84,9 @@ Markers appear only when evidence supports them.
 | Known evidence | `CreateOrganizationStaff`; `AcceptOrganizationInvitation` always adds new user; no `UserIdentity` / `LinkedPersonalUserId`; Personal cannot accept staff invite onto same identity; soft contact-email only |
 | Current behavior | Separate credential principal per employment; alias = staff `NormalizedEmail` |
 | Owner requirement | Personal may accept invite; same human; alias remains; multi-org isolated memberships; removal preserves Personal/other orgs |
-| Dependency impact | Blocks desired React staff-identity parity; **RMAP-B00** backend first; RMAP-01 may still cover Personal session + CURRENT login mechanics without claiming desired person-link |
-| Recommended investigation | Domain design for person/account/membership/alias under RMAP-B00; MAUI regression; then React |
-| Blocking? | **YES** for `READY_FOR_REACT_STAFF_IDENTITY_PARITY` (desired model); **NO** for Personal account/session foundation |
+| Dependency impact | Blocks RMAP-01 final validation, RMAP-01b, and RMAP-02 in Master Run 01 until PASS; architecture shape chosen inside RMAP-B00 audit (not pre-decided in docs) |
+| Recommended investigation | RMAP-B00: safest minimal design for person/account/membership/alias outcomes; MAUI regression; then RMAP-01/01b/02 |
+| Blocking? | **YES** for Master Run 01 packages after RMAP-00 that depend on post-B00 identity; **YES** for `READY_FOR_REACT_STAFF_IDENTITY_PARITY` until B00 PASS |
 
 ---
 

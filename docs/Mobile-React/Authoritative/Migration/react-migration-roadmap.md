@@ -19,7 +19,7 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 | Status | PROPOSED / NOT STARTED |
 | Objective | Inventory, reuse/extend, and fill shared mobile-first / tablet-strong / desktop-capable UI primitives and interaction standards |
 | Why next | Later visual WPs must not invent duplicate search/filter/list/form patterns |
-| Dependencies | None (may run before or parallel to RMAP-01; required before visual list/form WPs) |
+| Dependencies | None (required before visual list/form WPs; first package in Master Run 01) |
 | Backend contracts | None |
 | MAUI reference | Interaction patterns only (not Blazor ports) |
 | React starting point | `components/exits/*`, `components/ui/*`, `globals.css`, sell-floor inlines |
@@ -30,26 +30,26 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 | Tests | Component + viewport Playwright matrix (375 / 768 / 1024 / 1440) |
 | Acceptance | Shared primitives documented; ListToolbar pattern demo; UI DoD checklist published; no horizontal overflow on demo screens |
 | Docs | [06-react-ui-ux-and-responsive-foundation.md](../06-react-ui-ux-and-responsive-foundation.md) |
-| Next | RMAP-01 (session) and/or visual WPs depending on RMAP-00 |
+| Next | RMAP-B00 (Master Run 01 execution order) |
 
 ---
 
 ## Category A — FOUNDATION PARITY
 
-### RMAP-01 — Account / session parity (Personal + CURRENT auth mechanics)
+### RMAP-01 — Account / session parity (post-B00 validation in Master Run 01)
 | Field | Content |
 |-------|---------|
-| Objective | Personal email login, cookie session, profiles/session guards, CSRF, sign-out, me; may verify CURRENT staff principal login **only as CURRENT contract**, without claiming desired person-link parity |
-| Why next | Stable session foundation |
-| Dependencies | None (UI shell polish may use RMAP-00) |
-| Backend contracts | Platform auth **CURRENT** |
+| Objective | Personal email login, cookie session, profiles/session guards, CSRF, sign-out, me; final validation includes reconciled identity/session behavior after RMAP-B00 |
+| Why next | Stable session foundation on the intended identity architecture (avoids rework around duplicate-staff-principal UX) |
+| Dependencies | **RMAP-B00** (Master Run 01 order); RMAP-00 for any UI polish |
+| Backend contracts | Platform auth after RMAP-B00 PASS (not the pre-B00 duplicate-staff employment model as final) |
 | MAUI reference | `/signin`, workspace/org select |
 | React starting point | `SignInPage`, `SessionProvider`, antiforgery |
-| Owner decisions | OD-ID-02..04, OD-ID-07 (not OD-ID-01/05 desired staff link) |
-| Exclusions | Desired one-human staff identity; invite-accept-as-Personal; Offline PIN; Start a Business UI |
-| Tests | Unit + Playwright Personal login; optional CURRENT `local@ORG######` login smoke |
-| Acceptance | Personal session + AccountClass isolation; **must not** document desired staff person-link as done |
-| Next | RMAP-02; staff **desired** parity waits on RMAP-B00 → RMAP-01b |
+| Owner decisions | OD-ID-02..04, OD-ID-07; session behavior must not contradict OD-ID-01/05 after B00 |
+| Exclusions | Full staff invite/accept UX (RMAP-01b); Offline PIN; Start a Business UI |
+| Tests | Unit + Playwright Personal login; session isolation against post-B00 contract |
+| Acceptance | Personal session + AccountClass isolation; validates against post-B00 identity/session rules |
+| Next | RMAP-01b |
 
 ### RMAP-01b — React staff identity parity (desired person-link model)
 | Field | Content |
@@ -61,17 +61,17 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 | Exclusions | Implementing CURRENT duplicate-human model as final desired parity |
 | Acceptance | Matches approved person-link + alias contract; multi-org isolation; removal preserves Personal/other orgs |
 | Readiness flag | `READY_FOR_REACT_STAFF_IDENTITY_PARITY` becomes YES only after RMAP-B00 |
-| Next | RMAP-02 if not already done |
+| Next | RMAP-02 |
 
 ### RMAP-02 — Workspace / org / product-access / role guards
 | Field | Content |
 |-------|---------|
-| Objective | Org context, product access, role homes, CreateSale guard correctness |
-| Dependencies | RMAP-01; RMAP-00 if visual polish |
-| Backend | ProductLocalRoleGrant, entitlements (CURRENT) |
+| Objective | Org context, product access, role homes, CreateSale guard correctness against **post-B00** identity model |
+| Dependencies | RMAP-01, **RMAP-01b**, RMAP-00 if visual polish |
+| Backend | ProductLocalRoleGrant, entitlements; session/org rules from post-B00 contract |
 | React start | `WorkspaceProvider`, `SessionGuards`, role pages |
-| Exclusions | Org admin CRUD; desired staff invite UX (RMAP-01b) |
-| Acceptance | Wrong class/role cannot open sell; CURRENT staff lock behavior until RMAP-B00 changes it |
+| Exclusions | Org admin CRUD |
+| Acceptance | Wrong class/role cannot open sell; workspace/role guards validated using post-B00 staff/person model (not pre-B00 duplicate-staff-principal as final expected state) |
 | Next | RMAP-03 |
 
 ### RMAP-03 — Branch / device operational context
@@ -93,17 +93,18 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 | Field | Content |
 |-------|---------|
 | Status | PROPOSED / NOT STARTED |
-| Objective | Backend/domain/auth/test design implementing owner one-human staff model while preserving org-scoped login alias availability and membership isolation |
-| Why | OWNER_CONFIRMED_CHANGE; marker `ORGANIZATION_STAFF_EXISTING_PERSON_LINK_CONTRACT_MISSING` |
-| Dependencies | None (Platform identity) |
-| Backend | **NEW / CHANGING** vs P19 separate-staff-`PlatformUser` employment |
+| Objective | Backend/domain/auth/test reconciliation implementing owner **outcome** (one human not duplicated for employment; Personal may accept staff invite; org-scoped alias remains; multi-org isolation; removal preserves Personal/other orgs; org role ≠ POS role; customer ≠ staff) |
+| Why | OWNER_CONFIRMED_CHANGE; marker `ORGANIZATION_STAFF_EXISTING_PERSON_LINK_CONTRACT_MISSING`; placed early in Master Run 01 to prevent React workspace/role rework around CURRENT duplicate-staff-principal |
+| Dependencies | None (Platform identity); executes after RMAP-00 in Master Run 01 |
+| Backend | **CHANGING** vs P19 separate-staff-`PlatformUser` employment — architecture choice is **not** pre-decided here |
+| Design rule | Audit safest minimal architecture before schema/code changes. Do **not** pre-commit docs to a brand-new UserIdentity table, alias-credential table, identity-link table, multiple credentials, or another specific shape — that choice belongs to RMAP-B00 investigation |
 | MAUI | Compatibility/regression required after API change |
-| React | **RMAP-01b only after this passes** |
+| React | RMAP-01 / RMAP-01b / RMAP-02 in Master Run 01 validate against post-B00 contract |
 | Owner decisions | OD-ID-01, OD-ID-05, OD-ID-06, OD-ID-08 |
-| Exclusions | Shipping React staff invite UX that hard-codes duplicate humans as final |
+| Exclusions | Shipping React staff invite UX that hard-codes duplicate humans as final; inventing schema in docs before audit |
 | Tests | Identity unit + integration; multi-org; removal isolation; alias uniqueness |
 | Acceptance | Personal can become staff without unrelated duplicate human; alias works; Org A removal preserves Personal/Org B |
-| Next | MAUI regression (optional RMAP-B00-M) → RMAP-01b |
+| Next | RMAP-01 (Master Run 01) |
 
 ### RMAP-B01 — Sale price policy backend (BLOCKING for override UI only)
 | Field | Content |
@@ -341,19 +342,46 @@ Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, 
 
 ## Backend-before-React list
 
-1. **RMAP-B00** staff existing-person link — required before desired React staff identity parity (RMAP-01b)
+1. **RMAP-B00** staff existing-person link — required before RMAP-01 final validation, RMAP-01b, and RMAP-02 in Master Run 01
 2. **RMAP-B01** sale price policy — required before override UI
 3. **RMAP-B02** Milligram — only if owner approves
 
-## Suggested first implementation master run (NOT STARTED)
+## APPROVED PROPOSED MASTER RUN 01
 
-After Product Owner + ChatGPT approve docs:
+**Name:** Foundation + Catalog/Inventory Baseline
+**Status:** PROPOSED / NOT STARTED — documenting this batch does **not** authorize implementation
+**Stop rule:** After package 10 → HARD STOP for Product Owner + ChatGPT review
+**Do not include:** RMAP-08 (lots/expiry) in Master Run 01
+
+| # | ID | Title |
+|---|----|-------|
+| 01 | **RMAP-00** | React Shared UI/UX & Responsive Foundation |
+| 02 | **RMAP-B00** | Staff identity / existing-person link reconciliation |
+| 03 | **RMAP-01** | Account/session parity (validate post-B00) |
+| 04 | **RMAP-01b** | React staff identity parity under post-B00 contract |
+| 05 | **RMAP-02** | Workspace / organization / product-access / role guards (post-B00) |
+| 06 | **RMAP-03** | Branch / device operational context |
+| 07 | **RMAP-04** | Catalog admin parity |
+| 08 | **RMAP-05** | Base UOM + SellingMode + product units / multi-UOM |
+| 09 | **RMAP-06** | Today’s Prices |
+| 10 | **RMAP-07** | Inventory tracking + opening stock + movements |
+
+### Master Run 01 dependency intent
+
+| Package | Intent |
+|---------|--------|
+| RMAP-00 | Independent UI prerequisite; first so later visual work reuses shared components |
+| RMAP-B00 | Backend identity reconciliation early enough that session/workspace/role work validates the intended architecture |
+| RMAP-01 | Account/session parity after B00 so final validation includes reconciled identity/session behavior |
+| RMAP-01b | Explicitly depends on B00 + RMAP-01 + RMAP-00 |
+| RMAP-02 | Validates role/workspace against **post-B00** identity model — not pre-B00 duplicate-staff-principal as final |
+| RMAP-03+ | Build on reconciled identity/workspace foundation through catalog/inventory baseline |
+
+Execution order (not an inherent UI↔backend domain coupling):
 
 ```text
-MASTER RUN A (example ≤10):
-  RMAP-00 → RMAP-01 → RMAP-02 → RMAP-03 → RMAP-04 → RMAP-05 → RMAP-06 → RMAP-07 → RMAP-08 → RMAP-09
+RMAP-00 → RMAP-B00 → RMAP-01 → RMAP-01b → RMAP-02 → RMAP-03 → RMAP-04 → RMAP-05 → RMAP-06 → RMAP-07
+→ HARD STOP
 ```
 
-**RMAP-B00** may be scheduled in an earlier or parallel Platform backend master run; **RMAP-01b must not** enter a React batch before RMAP-B00 PASS.
-
-Do **not** start any package in this documentation package.
+Do **not** start any package until Product Owner + ChatGPT issue the Master Run 01 implementation command.

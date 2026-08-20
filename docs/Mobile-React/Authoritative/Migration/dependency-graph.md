@@ -81,22 +81,25 @@ Connected Organization Supplier
 ## React migration layering
 
 ```text
-RMAP-00 Shared UI/UX foundation
-  → visual WPs (lists/forms/sell/admin) depend on RMAP-00
+Visual WPs depend on RMAP-00 (UI foundation).
 
-RMAP-01 Account/session (Personal + CURRENT auth mechanics)
-  → RMAP-02 Workspace/roles
-    → RMAP-03 Branch/device
-      → catalog → UOM/units → pricing → inventory
-        → sell/cart → shift → checkout → …
-
-RMAP-B00 Staff person-link backend
-  → RMAP-01b React staff identity (desired)
-  (must not be skipped by claiming CURRENT duplicate-human staff as desired parity)
+Post-B00 identity path (Master Run 01 execution order):
+RMAP-00
+  → RMAP-B00 (staff person-link backend; outcome fixed, schema design in-package)
+    → RMAP-01 (account/session; validate post-B00)
+      → RMAP-01b (React staff identity desired)
+        → RMAP-02 (workspace/roles against post-B00)
+          → RMAP-03 (branch/device)
+            → RMAP-04 → RMAP-05 → RMAP-06 → RMAP-07
+              → (Master Run 01 HARD STOP; RMAP-08+ later)
 
 RMAP-B01 Sale price policy backend
   → RMAP-12b override UI
 ```
+
+This records the **approved first master-run execution order** to prevent known rework. It does not claim UI and identity backend are inherently coupled as a domain rule.
+
+Do **not** skip RMAP-B00 by claiming CURRENT duplicate-staff-principal as desired parity.
 
 ## Backend-gap inserts
 
@@ -107,8 +110,10 @@ BACKEND DOMAIN PACKAGE
       → REACT PACKAGE
 ```
 
-Examples: RMAP-B00 before RMAP-01b; RMAP-B01 before RMAP-12b.
+Examples: RMAP-B00 before RMAP-01/01b/02 in Master Run 01; RMAP-B01 before RMAP-12b.
 
 ## Execution protocol
 
-Approved batches execute per [master-run-execution-protocol.md](master-run-execution-protocol.md) (10-WP batches, per-WP push, hard stops, review between batches).
+Approved batches execute per [master-run-execution-protocol.md](master-run-execution-protocol.md).
+
+**Approved proposed Master Run 01:** see [react-migration-roadmap.md](react-migration-roadmap.md) § APPROVED PROPOSED MASTER RUN 01.
