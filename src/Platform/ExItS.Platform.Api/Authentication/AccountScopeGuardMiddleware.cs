@@ -80,6 +80,13 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
             return true;
         }
 
+        // Browser CSRF bootstrap must be reachable for every authenticated account class
+        // that performs cookie-session mutations (Organization staff POS bind, Personal, etc.).
+        if (path.Equals("/api/v1/platform/antiforgery/token", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
         // Authenticated commercial catalog (any account class); endpoint enforces session auth.
         if (path.StartsWith("/api/v1/commercial", StringComparison.OrdinalIgnoreCase))
         {
