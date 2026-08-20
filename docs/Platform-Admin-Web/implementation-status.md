@@ -461,6 +461,26 @@ Polish pass for read-only organization workspace: shared subscription status pre
 
 See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-14A-organization-readonly-polish.md`.
 
+## PWEB-IMPL-14B — Entitlements compact grants disclosure
+
+Status: **COMPLETE**
+
+See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-14B-entitlements-compact-grants.md`.
+
+## PWEB-IMPL-14C — Full Platform Admin navigation blueprint
+
+Status: **COMPLETE**
+
+See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-14C-navigation-blueprint.md`.
+
+## PWEB-IMPL-14D — Product-filtered Organizations foundation
+
+Status: **FOUNDATION COMPLETE / SERVER FILTER BLOCKED**
+
+Canonical UI/URL foundation for `/admin/organizations?product=<code>` is in place. Server-authoritative product filtering was **not** available on the organization list API. Blocker: `PRODUCT_ORGANIZATION_SERVER_FILTER_MISSING`. Do not treat actual product-filtered results as complete until PWEB-IMPL-14D-R1.
+
+See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-14D-product-filtered-organizations.md`.
+
 ## PWEB-IMPL-15 — Organization Activity / Audit
 
 Status: **COMPLETE** after validation
@@ -507,7 +527,7 @@ See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-15-organization-activity-audit.md
 | PWEB-IMPL-14A — Organization read-only polish | COMPLETE |
 | PWEB-IMPL-14B — Entitlements compact grants | COMPLETE |
 | PWEB-IMPL-14C — Navigation blueprint | COMPLETE |
-| PWEB-IMPL-14D — Product Organizations foundation | COMPLETE |
+| PWEB-IMPL-14D — Product Organizations foundation | FOUNDATION COMPLETE / SERVER FILTER BLOCKED |
 | PWEB-IMPL-15 — Organization Activity / Audit | COMPLETE |
 
 Stopped after PWEB-IMPL-15. Global Audit Log remains under-development.

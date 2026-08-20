@@ -81,6 +81,173 @@ function branchContext(item: OrganizationAuditRecord): string | null {
   return null;
 }
 
+function AuditFilterForm({
+  state,
+  onReplaceState,
+}: {
+  state: OrganizationAuditUrlState;
+  onReplaceState: (patch: Partial<OrganizationAuditUrlState>) => void;
+}) {
+  const { t } = usePreferences();
+  const [actorDraft, setActorDraft] = useState(state.actor);
+  const [actionDraft, setActionDraft] = useState(state.action);
+  const [targetTypeDraft, setTargetTypeDraft] = useState(state.targetType);
+  const [branchDraft, setBranchDraft] = useState(state.branchId);
+  const [fromDraft, setFromDraft] = useState(state.fromUtc);
+  const [toDraft, setToDraft] = useState(state.toUtc);
+
+  function onFilterSubmit(event: FormEvent) {
+    event.preventDefault();
+    onReplaceState({
+      actor: actorDraft.trim(),
+      action: actionDraft.trim(),
+      targetType: targetTypeDraft.trim(),
+      branchId: branchDraft.trim(),
+      fromUtc: fromDraft.trim(),
+      toUtc: toDraft.trim(),
+      page: 1,
+    });
+  }
+
+  return (
+    <form
+      className="grid gap-2 rounded-[var(--exits-density-radius)] border border-border bg-surface p-3 md:grid-cols-2 lg:grid-cols-4"
+      onSubmit={onFilterSubmit}
+    >
+      <label
+        className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted"
+        htmlFor="org-audit-from"
+      >
+        {t("organization.activity.filter.from")}
+        <Input
+          id="org-audit-from"
+          value={fromDraft}
+          onChange={(event) => setFromDraft(event.target.value)}
+          placeholder="2026-01-01T00:00:00Z"
+          name="fromUtc"
+          autoComplete="off"
+        />
+      </label>
+      <label
+        className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted"
+        htmlFor="org-audit-to"
+      >
+        {t("organization.activity.filter.to")}
+        <Input
+          id="org-audit-to"
+          value={toDraft}
+          onChange={(event) => setToDraft(event.target.value)}
+          placeholder="2026-12-31T23:59:59Z"
+          name="toUtc"
+          autoComplete="off"
+        />
+      </label>
+      <label
+        className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted"
+        htmlFor="org-audit-actor"
+      >
+        {t("organization.activity.filter.actor")}
+        <Input
+          id="org-audit-actor"
+          value={actorDraft}
+          onChange={(event) => setActorDraft(event.target.value)}
+          name="actor"
+          autoComplete="off"
+        />
+      </label>
+      <label
+        className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted"
+        htmlFor="org-audit-action"
+      >
+        {t("organization.activity.filter.action")}
+        <Input
+          id="org-audit-action"
+          value={actionDraft}
+          onChange={(event) => setActionDraft(event.target.value)}
+          name="action"
+          autoComplete="off"
+        />
+      </label>
+      <label
+        className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted"
+        htmlFor="org-audit-target-type"
+      >
+        {t("organization.activity.filter.targetType")}
+        <Input
+          id="org-audit-target-type"
+          value={targetTypeDraft}
+          onChange={(event) => setTargetTypeDraft(event.target.value)}
+          name="targetType"
+          autoComplete="off"
+        />
+      </label>
+      <label
+        className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted"
+        htmlFor="org-audit-outcome"
+      >
+        {t("organization.activity.filter.outcome")}
+        <select
+          id="org-audit-outcome"
+          className={controlClass}
+          value={state.outcome}
+          onChange={(event) =>
+            onReplaceState({
+              outcome: event.target.value as OrganizationAuditOutcome | "",
+              page: 1,
+            })
+          }
+        >
+          <option value="">{t("organization.activity.filter.outcome.all")}</option>
+          {ORGANIZATION_AUDIT_OUTCOMES.map((outcome) => (
+            <option key={outcome} value={outcome}>
+              {outcomeLabel(t, outcome)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label
+        className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted"
+        htmlFor="org-audit-branch"
+      >
+        {t("organization.activity.filter.branchId")}
+        <Input
+          id="org-audit-branch"
+          value={branchDraft}
+          onChange={(event) => setBranchDraft(event.target.value)}
+          name="branchId"
+          autoComplete="off"
+        />
+      </label>
+      <div className="flex flex-wrap items-end gap-2">
+        <Button type="submit" size="sm">
+          {t("organization.activity.filter.apply")}
+        </Button>
+        {hasActiveOrganizationAuditFilters(state) ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() =>
+              onReplaceState({
+                fromUtc: "",
+                toUtc: "",
+                actor: "",
+                action: "",
+                targetType: "",
+                outcome: "",
+                branchId: "",
+                page: 1,
+              })
+            }
+          >
+            {t("organization.activity.filter.reset")}
+          </Button>
+        ) : null}
+      </div>
+    </form>
+  );
+}
+
 export function OrganizationActivityPage() {
   const { t, language } = usePreferences();
   const params = useParams();
@@ -88,43 +255,14 @@ export function OrganizationActivityPage() {
   const showTable = useMediaQuery("(min-width: 768px)");
   const [searchParams, setSearchParams] = useSearchParams();
   const state = useMemo(() => parseOrganizationAuditSearchParams(searchParams), [searchParams]);
-  const [actorDraft, setActorDraft] = useState(state.actor);
-  const [actionDraft, setActionDraft] = useState(state.action);
-  const [targetTypeDraft, setTargetTypeDraft] = useState(state.targetType);
-  const [branchDraft, setBranchDraft] = useState(state.branchId);
-  const [fromDraft, setFromDraft] = useState(state.fromUtc);
-  const [toDraft, setToDraft] = useState(state.toUtc);
-  const [appliedFilters, setAppliedFilters] = useState({
-    actor: state.actor,
-    action: state.action,
-    targetType: state.targetType,
-    branchId: state.branchId,
-    fromUtc: state.fromUtc,
-    toUtc: state.toUtc,
-  });
-  if (
-    state.actor !== appliedFilters.actor ||
-    state.action !== appliedFilters.action ||
-    state.targetType !== appliedFilters.targetType ||
-    state.branchId !== appliedFilters.branchId ||
-    state.fromUtc !== appliedFilters.fromUtc ||
-    state.toUtc !== appliedFilters.toUtc
-  ) {
-    setAppliedFilters({
-      actor: state.actor,
-      action: state.action,
-      targetType: state.targetType,
-      branchId: state.branchId,
-      fromUtc: state.fromUtc,
-      toUtc: state.toUtc,
-    });
-    setActorDraft(state.actor);
-    setActionDraft(state.action);
-    setTargetTypeDraft(state.targetType);
-    setBranchDraft(state.branchId);
-    setFromDraft(state.fromUtc);
-    setToDraft(state.toUtc);
-  }
+  const draftSyncKey = [
+    state.actor,
+    state.action,
+    state.targetType,
+    state.branchId,
+    state.fromUtc,
+    state.toUtc,
+  ].join("\u001f");
 
   const query = useOrganizationAuditQuery(organizationId, state);
 
@@ -138,19 +276,6 @@ export function OrganizationActivityPage() {
   function replaceState(patch: Partial<OrganizationAuditUrlState>) {
     const current = parseOrganizationAuditSearchParams(new URLSearchParams(window.location.search));
     setSearchParams(organizationAuditSearchParams({ ...current, ...patch }), { replace: true });
-  }
-
-  function onFilterSubmit(event: FormEvent) {
-    event.preventDefault();
-    replaceState({
-      actor: actorDraft.trim(),
-      action: actionDraft.trim(),
-      targetType: targetTypeDraft.trim(),
-      branchId: branchDraft.trim(),
-      fromUtc: fromDraft.trim(),
-      toUtc: toDraft.trim(),
-      page: 1,
-    });
   }
 
   const totalPages = query.data
@@ -170,147 +295,7 @@ export function OrganizationActivityPage() {
         description={t("organization.activity.description")}
       />
 
-      <form
-        className="grid gap-2 rounded-[var(--exits-density-radius)] border border-border bg-surface p-3 md:grid-cols-2 lg:grid-cols-4"
-        onSubmit={onFilterSubmit}
-      >
-        <label
-          className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted"
-          htmlFor="org-audit-from"
-        >
-          {t("organization.activity.filter.from")}
-          <Input
-            id="org-audit-from"
-            value={fromDraft}
-            onChange={(event) => setFromDraft(event.target.value)}
-            placeholder="2026-01-01T00:00:00Z"
-            name="fromUtc"
-            autoComplete="off"
-          />
-        </label>
-        <label
-          className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted"
-          htmlFor="org-audit-to"
-        >
-          {t("organization.activity.filter.to")}
-          <Input
-            id="org-audit-to"
-            value={toDraft}
-            onChange={(event) => setToDraft(event.target.value)}
-            placeholder="2026-12-31T23:59:59Z"
-            name="toUtc"
-            autoComplete="off"
-          />
-        </label>
-        <label
-          className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted"
-          htmlFor="org-audit-actor"
-        >
-          {t("organization.activity.filter.actor")}
-          <Input
-            id="org-audit-actor"
-            value={actorDraft}
-            onChange={(event) => setActorDraft(event.target.value)}
-            name="actor"
-            autoComplete="off"
-          />
-        </label>
-        <label
-          className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted"
-          htmlFor="org-audit-action"
-        >
-          {t("organization.activity.filter.action")}
-          <Input
-            id="org-audit-action"
-            value={actionDraft}
-            onChange={(event) => setActionDraft(event.target.value)}
-            name="action"
-            autoComplete="off"
-          />
-        </label>
-        <label
-          className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted"
-          htmlFor="org-audit-target-type"
-        >
-          {t("organization.activity.filter.targetType")}
-          <Input
-            id="org-audit-target-type"
-            value={targetTypeDraft}
-            onChange={(event) => setTargetTypeDraft(event.target.value)}
-            name="targetType"
-            autoComplete="off"
-          />
-        </label>
-        <label
-          className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted"
-          htmlFor="org-audit-outcome"
-        >
-          {t("organization.activity.filter.outcome")}
-          <select
-            id="org-audit-outcome"
-            className={controlClass}
-            value={state.outcome}
-            onChange={(event) =>
-              replaceState({
-                outcome: event.target.value as OrganizationAuditOutcome | "",
-                page: 1,
-              })
-            }
-          >
-            <option value="">{t("organization.activity.filter.outcome.all")}</option>
-            {ORGANIZATION_AUDIT_OUTCOMES.map((outcome) => (
-              <option key={outcome} value={outcome}>
-                {outcomeLabel(t, outcome)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label
-          className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted"
-          htmlFor="org-audit-branch"
-        >
-          {t("organization.activity.filter.branchId")}
-          <Input
-            id="org-audit-branch"
-            value={branchDraft}
-            onChange={(event) => setBranchDraft(event.target.value)}
-            name="branchId"
-            autoComplete="off"
-          />
-        </label>
-        <div className="flex flex-wrap items-end gap-2">
-          <Button type="submit" size="sm">
-            {t("organization.activity.filter.apply")}
-          </Button>
-          {hasActiveOrganizationAuditFilters(state) ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setActorDraft("");
-                setActionDraft("");
-                setTargetTypeDraft("");
-                setBranchDraft("");
-                setFromDraft("");
-                setToDraft("");
-                replaceState({
-                  fromUtc: "",
-                  toUtc: "",
-                  actor: "",
-                  action: "",
-                  targetType: "",
-                  outcome: "",
-                  branchId: "",
-                  page: 1,
-                });
-              }}
-            >
-              {t("organization.activity.filter.reset")}
-            </Button>
-          ) : null}
-        </div>
-      </form>
+      <AuditFilterForm key={draftSyncKey} state={state} onReplaceState={replaceState} />
 
       {query.isPending ? (
         <div

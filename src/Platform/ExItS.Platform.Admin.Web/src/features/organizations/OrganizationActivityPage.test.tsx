@@ -157,6 +157,104 @@ describe("organization workspace activity audit", () => {
     expect(screen.queryByText("audit-secret")).not.toBeInTheDocument();
   });
 
+  it("reflects deep-link URL filters in controls", async () => {
+    stubDesktop();
+    mockAuthenticatedFetch({
+      organizationItems: [sampleOrg],
+      orgAuditItems: [auditSucceeded],
+    });
+    window.history.replaceState(
+      {},
+      "",
+      `/admin/organizations/${sampleOrg.id}/activity?actor=olivia&action=platform.auth.login_succeeded&targetType=PlatformAuthSession&fromUtc=2026-01-01T00:00:00Z&toUtc=2026-08-01T00:00:00Z&outcome=Denied&branchId=bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb&page=2`,
+    );
+    render(<App />);
+    await screen.findByRole("heading", { name: "Activity / Audit", level: 1 });
+    expect(screen.getByLabelText("Actor")).toHaveValue("olivia");
+    expect(screen.getByLabelText("Action")).toHaveValue("platform.auth.login_succeeded");
+    expect(screen.getByLabelText("Target type")).toHaveValue("PlatformAuthSession");
+    expect(screen.getByLabelText("From (UTC)")).toHaveValue("2026-01-01T00:00:00Z");
+    expect(screen.getByLabelText("To (UTC)")).toHaveValue("2026-08-01T00:00:00Z");
+    expect(screen.getByLabelText("Outcome")).toHaveValue("Denied");
+    expect(screen.getByLabelText("Branch ID")).toHaveValue("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+  });
+
+  it("keeps draft edits local until Apply, then resets page to 1", async () => {
+    stubDesktop();
+    mockAuthenticatedFetch({
+      organizationItems: [sampleOrg],
+      orgAuditItems: [auditSucceeded],
+      orgAuditTotalCount: 21,
+    });
+    window.history.replaceState(
+      {},
+      "",
+      `/admin/organizations/${sampleOrg.id}/activity?page=2&actor=old`,
+    );
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole("heading", { name: "Activity / Audit", level: 1 });
+    expect(screen.getByLabelText("Actor")).toHaveValue("old");
+    await user.clear(screen.getByLabelText("Actor"));
+    await user.type(screen.getByLabelText("Actor"), "olivia");
+    expect(window.location.search).toContain("actor=old");
+    expect(window.location.search).toContain("page=2");
+    await user.click(screen.getByRole("button", { name: "Apply filters" }));
+    await waitFor(() => {
+      expect(window.location.search).toContain("actor=olivia");
+    });
+    expect(window.location.search).not.toContain("page=2");
+    expect(window.location.search).not.toContain("actor=old");
+  });
+
+  it("resets filters and syncs drafts from the cleared URL", async () => {
+    stubDesktop();
+    mockAuthenticatedFetch({
+      organizationItems: [sampleOrg],
+      orgAuditItems: [auditSucceeded],
+    });
+    window.history.replaceState(
+      {},
+      "",
+      `/admin/organizations/${sampleOrg.id}/activity?actor=olivia&outcome=Failed`,
+    );
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole("heading", { name: "Activity / Audit", level: 1 });
+    expect(screen.getByLabelText("Actor")).toHaveValue("olivia");
+    expect(screen.getByLabelText("Outcome")).toHaveValue("Failed");
+    await user.click(screen.getByRole("button", { name: "Reset filters" }));
+    await waitFor(() => {
+      expect(window.location.search).toBe("");
+    });
+    expect(screen.getByLabelText("Actor")).toHaveValue("");
+    expect(screen.getByLabelText("Outcome")).toHaveValue("");
+  });
+
+  it("syncs drafts when search params change externally", async () => {
+    stubDesktop();
+    mockAuthenticatedFetch({
+      organizationItems: [sampleOrg],
+      orgAuditItems: [auditSucceeded],
+    });
+    window.history.replaceState({}, "", `/admin/organizations/${sampleOrg.id}/activity`);
+    render(<App />);
+    await screen.findByRole("heading", { name: "Activity / Audit", level: 1 });
+    expect(screen.getByLabelText("Actor")).toHaveValue("");
+
+    window.history.pushState(
+      {},
+      "",
+      `/admin/organizations/${sampleOrg.id}/activity?actor=jane&outcome=Succeeded`,
+    );
+    window.dispatchEvent(new PopStateEvent("popstate"));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Actor")).toHaveValue("jane");
+    });
+    expect(screen.getByLabelText("Outcome")).toHaveValue("Succeeded");
+  });
+
   it("renders mobile cards and Filipino labels", async () => {
     stubDesktop(false);
     mockAuthenticatedFetch({
