@@ -6,6 +6,7 @@ import { VitePWA } from "vite-plugin-pwa";
 import { defineConfig } from "vitest/config";
 import { createPlatformApiProxy } from "./vite.platform-api-proxy";
 import { createPosApiProxy } from "./vite.pos-api-proxy";
+import { blockServiceWorkerScriptsInDev } from "./vite.block-sw-in-dev";
 import { createPwaManifest } from "./src/pwa/pwa-manifest";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
@@ -14,6 +15,7 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    blockServiceWorkerScriptsInDev(),
     VitePWA({
       registerType: "prompt",
       injectRegister: false,
@@ -65,6 +67,8 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 5177,
     strictPort: true,
+    // Android emulator reaches the host loopback as 10.0.2.2; allow that Host header.
+    allowedHosts: ["127.0.0.1", "localhost", "10.0.2.2"],
     proxy: {
       ...createPlatformApiProxy(),
       ...createPosApiProxy(),
@@ -74,6 +78,7 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 4177,
     strictPort: true,
+    allowedHosts: ["127.0.0.1", "localhost", "10.0.2.2"],
     proxy: {
       ...createPlatformApiProxy(),
       ...createPosApiProxy(),
@@ -88,6 +93,7 @@ export default defineConfig({
       "src/**/*.test.tsx",
       "vite.platform-api-proxy.test.ts",
       "vite.pos-api-proxy.test.ts",
+      "vite.block-sw-in-dev.test.ts",
     ],
   },
 });

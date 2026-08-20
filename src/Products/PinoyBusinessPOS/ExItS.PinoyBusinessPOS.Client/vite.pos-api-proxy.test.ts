@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   POS_API_PROXY_PREFIX,
+  createPosApiProxy,
   rewritePosApiProxyPath,
   resolvePosApiProxyTarget,
 } from "./vite.pos-api-proxy";
@@ -15,5 +16,10 @@ describe("pos api proxy", () => {
       "/api/v1/pos/catalog/products",
     );
     expect(rewritePosApiProxyPath(POS_API_PROXY_PREFIX)).toBe("/");
+  });
+
+  it("rewrites Set-Cookie Domain empty for emulator hosts", () => {
+    const proxy = createPosApiProxy()[POS_API_PROXY_PREFIX];
+    expect(proxy.cookieDomainRewrite).toBe("");
   });
 });

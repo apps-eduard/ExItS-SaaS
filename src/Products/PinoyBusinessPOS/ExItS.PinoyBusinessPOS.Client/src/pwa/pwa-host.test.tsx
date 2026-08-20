@@ -4,37 +4,32 @@ import userEvent from "@testing-library/user-event";
 import { AppProviders } from "@/app/providers";
 import { POS_PWA_NEED_REFRESH_EVENT, PwaUpdateHost } from "@/pwa/PwaUpdateHost";
 
-const updateServiceWorker = vi.fn().mockResolvedValue(undefined);
+const registerSW = vi.fn();
 
 vi.mock("virtual:pwa-register", () => ({
-  registerSW: (options?: { onNeedRefresh?: () => void }) => {
-    queueMicrotask(() => options?.onNeedRefresh?.());
-    return updateServiceWorker;
-  },
+  registerSW: (options?: { onNeedRefresh?: () => void }) => registerSW(options),
 }));
 
 describe("PWA update host", () => {
   afterEach(() => {
-    updateServiceWorker.mockClear();
+    registerSW.mockClear();
   });
 
-  it("shows a user-triggered update notice and applies once", async () => {
-    const user = userEvent.setup();
+  it("does not register a service worker during Vite development", async () => {
     render(
       <AppProviders>
         <PwaUpdateHost />
       </AppProviders>,
     );
-    expect(await screen.findByRole("status")).toHaveTextContent("Update available");
-    const refresh = screen.getByRole("button", { name: "Refresh" });
-    await user.click(refresh);
-    await user.click(refresh);
     await waitFor(() => {
-      expect(updateServiceWorker).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId("pwa-update-host")).toHaveAttribute("data-ready", "true");
     });
+    expect(registerSW).not.toHaveBeenCalled();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
-  it("can surface the notice from the test refresh event", async () => {
+  it("can surface the notice from the test refresh event without registering SW in development", async () => {
+    const user = userEvent.setup();
     render(
       <AppProviders>
         <PwaUpdateHost />
@@ -42,5 +37,7 @@ describe("PWA update host", () => {
     );
     window.dispatchEvent(new Event(POS_PWA_NEED_REFRESH_EVENT));
     expect(await screen.findByRole("status")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Refresh" }));
+    expect(registerSW).not.toHaveBeenCalled();
   });
 });

@@ -22,6 +22,15 @@ export function PwaUpdateHost() {
     window.addEventListener(POS_PWA_NEED_REFRESH_EVENT, showNotice);
     setListening(true);
 
+    // Never register a service worker during Vite development — a leftover
+    // production/preview worker is cleared by recoverDevelopmentOriginFromStaleServiceWorker.
+    if (import.meta.env.DEV) {
+      return () => {
+        cancelled = true;
+        window.removeEventListener(POS_PWA_NEED_REFRESH_EVENT, showNotice);
+      };
+    }
+
     void import("virtual:pwa-register")
       .then(({ registerSW }) => {
         if (cancelled) {

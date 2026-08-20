@@ -46,6 +46,7 @@ export function createPosApiProxy() {
       target: resolvePosApiProxyTarget(),
       changeOrigin: true,
       secure: false,
+      cookieDomainRewrite: "",
       rewrite: rewritePosApiProxyPath,
     },
   };

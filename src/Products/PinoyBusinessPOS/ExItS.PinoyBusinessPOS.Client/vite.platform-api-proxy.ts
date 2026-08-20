@@ -48,6 +48,8 @@ export function createPlatformApiProxy() {
       target: resolvePlatformApiProxyTarget(),
       changeOrigin: true,
       secure: false,
+      // Keep Set-Cookie host-aligned with the browser origin (127.0.0.1 or 10.0.2.2).
+      cookieDomainRewrite: "",
       rewrite: rewritePlatformApiProxyPath,
     },
   };

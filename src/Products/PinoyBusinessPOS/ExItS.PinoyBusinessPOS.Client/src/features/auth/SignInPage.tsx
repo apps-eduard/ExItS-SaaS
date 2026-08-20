@@ -34,7 +34,10 @@ export function SignInPage() {
   }
 
   return (
-    <div className="sign-in-page mx-auto flex min-h-[100dvh] w-full min-w-0 items-center justify-center px-[max(var(--exits-page-padding),env(safe-area-inset-left))] pr-[max(var(--exits-page-padding),env(safe-area-inset-right))] py-8">
+    <div
+      className="sign-in-page mx-auto flex min-h-[100dvh] w-full min-w-0 items-center justify-center px-[max(var(--exits-page-padding),env(safe-area-inset-left))] pr-[max(var(--exits-page-padding),env(safe-area-inset-right))] py-8"
+      data-testid="sign-in-page"
+    >
       <div className="flex w-full max-w-[24rem] min-w-0 flex-col gap-5">
         <div className="flex flex-col items-center gap-3 text-center">
           <div
