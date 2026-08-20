@@ -4,6 +4,8 @@ import {
   hasActiveOrganizationFilters,
   organizationListSearchParams,
   parseOrganizationListSearchParams,
+  PRODUCT_ORGANIZATION_SERVER_FILTER_MISSING,
+  type CatalogProductOption,
 } from "@/api/organizations/organization-list-query";
 import {
   ORGANIZATION_LIST_PAGE_SIZE,
@@ -68,7 +70,17 @@ function formatInstant(value: string | undefined, language: string): string | nu
   }).format(date);
 }
 
-export function OrganizationsList({ enabled }: { enabled: boolean }) {
+export function OrganizationsList({
+  enabled,
+  catalog,
+  catalogLoading,
+  selectedProduct,
+}: {
+  enabled: boolean;
+  catalog: readonly CatalogProductOption[];
+  catalogLoading: boolean;
+  selectedProduct: CatalogProductOption | null;
+}) {
   const { t, language } = usePreferences();
   const showTable = useMediaQuery("(min-width: 768px)");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -80,6 +92,7 @@ export function OrganizationsList({ enabled }: { enabled: boolean }) {
     setSearchDraft(state.search);
   }
 
+  const productFilterBlocked = selectedProduct != null;
   const query = useOrganizationListQuery(
     {
       page: state.page,
@@ -89,7 +102,7 @@ export function OrganizationsList({ enabled }: { enabled: boolean }) {
       sortBy: state.sortBy,
       sortDesc: state.sortDesc,
     },
-    enabled,
+    enabled && !productFilterBlocked,
   );
 
   function replaceState(patch: Partial<typeof state>) {
@@ -115,7 +128,7 @@ export function OrganizationsList({ enabled }: { enabled: boolean }) {
   return (
     <div className="grid gap-3">
       <form
-        className="grid gap-2 rounded-[var(--exits-density-radius)] border border-border bg-surface p-3 md:grid-cols-[minmax(0,1fr)_10rem_10rem_9rem_auto] md:items-end"
+        className="grid gap-2 rounded-[var(--exits-density-radius)] border border-border bg-surface p-3 md:grid-cols-[minmax(0,1fr)_minmax(10rem,12rem)_10rem_10rem_9rem_auto] md:items-end"
         onSubmit={onSearchSubmit}
       >
         <label
@@ -131,6 +144,31 @@ export function OrganizationsList({ enabled }: { enabled: boolean }) {
             name="search"
             autoComplete="off"
           />
+        </label>
+        <label
+          className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted"
+          htmlFor="org-list-product"
+        >
+          {t("organizations.product")}
+          <select
+            id="org-list-product"
+            className={controlClass}
+            value={selectedProduct?.code ?? ""}
+            disabled={catalogLoading}
+            onChange={(event) =>
+              replaceState({
+                product: event.target.value,
+                page: 1,
+              })
+            }
+          >
+            <option value="">{t("organizations.product.all")}</option>
+            {catalog.map((product) => (
+              <option key={product.code} value={product.code}>
+                {product.displayName || product.code}
+              </option>
+            ))}
+          </select>
         </label>
         <label
           className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted"
@@ -225,7 +263,22 @@ export function OrganizationsList({ enabled }: { enabled: boolean }) {
         </div>
       </form>
 
-      {query.isPending ? (
+      {productFilterBlocked ? (
+        <div
+          className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-6 text-[length:var(--exits-text-sm)] text-muted"
+          role="status"
+          data-blocker={PRODUCT_ORGANIZATION_SERVER_FILTER_MISSING}
+          data-testid="product-org-filter-blocked"
+        >
+          <p className="font-medium text-foreground">{t("organizations.product.blockedTitle")}</p>
+          <p className="mt-2">{t("organizations.product.blockedBody")}</p>
+          <p className="mt-3 font-mono text-[length:var(--exits-text-xs)] text-muted">
+            {PRODUCT_ORGANIZATION_SERVER_FILTER_MISSING}
+          </p>
+        </div>
+      ) : null}
+
+      {!productFilterBlocked && query.isPending ? (
         <div
           className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-3"
           role="status"
@@ -236,7 +289,7 @@ export function OrganizationsList({ enabled }: { enabled: boolean }) {
         </div>
       ) : null}
 
-      {query.isError && diagnostic ? (
+      {!productFilterBlocked && query.isError && diagnostic ? (
         <ErrorState
           diagnostic={diagnostic}
           title={t("organizations.error")}
@@ -245,7 +298,7 @@ export function OrganizationsList({ enabled }: { enabled: boolean }) {
         />
       ) : null}
 
-      {query.data ? (
+      {!productFilterBlocked && query.data ? (
         <OrganizationResults
           items={query.data.items}
           totalCount={query.data.totalCount}

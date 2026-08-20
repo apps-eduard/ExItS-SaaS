@@ -91,6 +91,21 @@ describe("organizations list", () => {
       if (url.includes("/health")) {
         return textResponse(200, "Healthy");
       }
+      if (url.includes("/catalog/products")) {
+        return jsonResponse(200, {
+          items: [
+            {
+              id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+              code: "future-product-x",
+              displayName: "Future Product X",
+              status: "Active",
+            },
+          ],
+          totalCount: 1,
+          page: 1,
+          pageSize: 100,
+        });
+      }
       if (url.includes("/organizations")) {
         return jsonResponse(200, {
           items: [sampleOrg],
@@ -157,6 +172,21 @@ describe("organizations list", () => {
         if (url.includes("/health")) {
           return textResponse(200, "Healthy");
         }
+        if (url.includes("/catalog/products")) {
+          return jsonResponse(200, {
+            items: [
+              {
+                id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+                code: "future-product-x",
+                displayName: "Future Product X",
+                status: "Active",
+              },
+            ],
+            totalCount: 1,
+            page: 1,
+            pageSize: 100,
+          });
+        }
         if (url.includes("/organizations")) {
           if (fail) {
             return jsonResponse(500, { title: "Error", status: 500, detail: "boom" });
@@ -195,6 +225,122 @@ describe("organizations list", () => {
     expect(await screen.findByRole("heading", { name: "Mga Organisasyon" })).toBeInTheDocument();
     expect(
       screen.getByText("Pamahalaan ang mga organisasyon at status sa antas ng Platform."),
+    ).toBeInTheDocument();
+  });
+
+  it("shows product context and blocked foundation for a sanitized catalog product", async () => {
+    stubDesktop();
+    const fetchMock = mockAuthenticatedFetch({
+      organizationItems: [sampleOrg],
+      catalogProductItems: [
+        {
+          id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+          code: "future-product-x",
+          displayName: "Future Product X",
+          status: "Active",
+        },
+        {
+          id: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+          code: "pinoy-business-pos",
+          displayName: "Pinoy Business POS",
+          status: "Active",
+        },
+      ],
+    });
+    window.history.replaceState(
+      {},
+      "",
+      "/admin/organizations?product=future-product-x&search=north&status=Active&page=2",
+    );
+    render(<App />);
+    expect(
+      await screen.findByRole("heading", { name: "Organizations / Future Product X" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Product-specific organization filtering is not available yet."),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("product-org-filter-blocked")).toHaveAttribute(
+      "data-blocker",
+      "PRODUCT_ORGANIZATION_SERVER_FILTER_MISSING",
+    );
+    expect(screen.getByLabelText("Product")).toHaveValue("future-product-x");
+    expect(screen.getByLabelText("Search")).toHaveValue("north");
+    expect(screen.getByLabelText("Status")).toHaveValue("Active");
+    expect(screen.queryByText("Northwind Market")).not.toBeInTheDocument();
+
+    await waitFor(() => {
+      const orgListCalls = fetchMock.mock.calls
+        .map(([input]) => String(input))
+        .filter(
+          (url) =>
+            url.includes("/api/v1/platform/organizations") &&
+            !url.includes("/branches") &&
+            !url.includes("commercial-summary") &&
+            !/\/organizations\/[0-9a-fA-F-]{36}/.test(url),
+        );
+      expect(orgListCalls).toHaveLength(0);
+    });
+  });
+
+  it("rejects invalid product codes without product-specific API calls", async () => {
+    stubDesktop();
+    const fetchMock = mockAuthenticatedFetch({ organizationItems: [sampleOrg] });
+    window.history.replaceState({}, "", "/admin/organizations?product=not-a-real-product");
+    render(<App />);
+    expect(
+      await screen.findByText("That product is not available in the authorized catalog."),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("product-org-filter-blocked")).not.toBeInTheDocument();
+    expect(screen.queryByText("Northwind Market")).not.toBeInTheDocument();
+    await waitFor(() => {
+      const orgListCalls = fetchMock.mock.calls
+        .map(([input]) => String(input))
+        .filter(
+          (url) =>
+            url.includes("/api/v1/platform/organizations?") ||
+            url.endsWith("/api/v1/platform/organizations") ||
+            url.includes("/api/v1/platform/organizations?page="),
+        );
+      expect(orgListCalls).toHaveLength(0);
+    });
+  });
+
+  it("preserves list filters when selecting a dynamic product", async () => {
+    stubDesktop();
+    mockAuthenticatedFetch({
+      organizationItems: [sampleOrg],
+      catalogProductItems: [
+        {
+          id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+          code: "future-product-x",
+          displayName: "Future Product X",
+          status: "Active",
+        },
+      ],
+    });
+    window.history.replaceState(
+      {},
+      "",
+      "/admin/organizations?search=acme&status=Suspended&sortBy=Slug&sortDesc=true&page=2",
+    );
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole("heading", { name: /^Organizations$/ });
+    await waitFor(() => {
+      expect(screen.getByLabelText("Product")).not.toBeDisabled();
+      expect(screen.getByRole("option", { name: "Future Product X" })).toBeInTheDocument();
+    });
+    await user.selectOptions(screen.getByLabelText("Product"), "future-product-x");
+    await waitFor(() => {
+      expect(window.location.search).toContain("product=future-product-x");
+      expect(window.location.search).toContain("search=acme");
+      expect(window.location.search).toContain("status=Suspended");
+      expect(window.location.search).toContain("sortBy=Slug");
+      expect(window.location.search).toContain("sortDesc=true");
+    });
+    expect(window.location.search).not.toContain("page=2");
+    expect(
+      await screen.findByText("Product-specific organization filtering is not available yet."),
     ).toBeInTheDocument();
   });
 });

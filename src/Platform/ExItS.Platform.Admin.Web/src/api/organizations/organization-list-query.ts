@@ -14,6 +14,8 @@ export type OrganizationListUrlState = {
   status: OrganizationStatus | "";
   sortBy: OrganizationListSortBy;
   sortDesc: boolean;
+  /** Raw product query value before catalog sanitation. */
+  product: string;
 };
 
 const DEFAULT_SORT: OrganizationListSortBy = "DisplayName";
@@ -39,6 +41,7 @@ export function parseOrganizationListSearchParams(
     status: isOrganizationStatus(statusRaw) ? statusRaw : "",
     sortBy: isOrganizationSortBy(sortRaw) ? sortRaw : DEFAULT_SORT,
     sortDesc: params.get("sortDesc") === "true",
+    product: params.get("product")?.trim() ?? "",
   };
 }
 
@@ -56,10 +59,29 @@ export function organizationListSearchParams(state: OrganizationListUrlState): U
   if (state.sortDesc) {
     params.set("sortDesc", "true");
   }
+  if (state.product) {
+    params.set("product", state.product);
+  }
   if (state.page > 1) {
     params.set("page", String(state.page));
   }
   return params;
+}
+
+export type CatalogProductOption = {
+  code: string;
+  displayName: string;
+};
+
+/** Sanitize product against authorized catalog codes. Never trust arbitrary URL values. */
+export function sanitizeOrganizationListProduct(
+  product: string,
+  catalog: readonly CatalogProductOption[],
+): CatalogProductOption | null {
+  if (!product) {
+    return null;
+  }
+  return catalog.find((item) => item.code === product) ?? null;
 }
 
 export function organizationsListRequestPath(query: OrganizationListQuery): string {
@@ -76,3 +98,7 @@ export function organizationsListRequestPath(query: OrganizationListQuery): stri
 export function hasActiveOrganizationFilters(state: OrganizationListUrlState): boolean {
   return Boolean(state.search || state.status);
 }
+
+/** Recorded blocker: org list API has no authoritative product filter. */
+export const PRODUCT_ORGANIZATION_SERVER_FILTER_MISSING =
+  "PRODUCT_ORGANIZATION_SERVER_FILTER_MISSING" as const;

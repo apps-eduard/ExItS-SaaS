@@ -7,7 +7,7 @@ const enabled = process.env.PWEB_CONTAINER_SMOKE === "1";
 const password = process.env.LOCAL_VALIDATION_SHARED_PASSWORD ?? "";
 const polishScreenshotDir = resolve(
   dirname(fileURLToPath(import.meta.url)),
-  "../../../../docs/Platform-Admin-Web/Reports/impl-14b-entitlements-compact-grants",
+  "../../../../docs/Platform-Admin-Web/Reports/impl-14d-product-organizations",
 );
 
 test.describe("local-validation React container smoke", () => {
@@ -108,8 +108,44 @@ test.describe("local-validation React container smoke", () => {
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
     await expect(page.getByText("abc-sari-sari")).toBeVisible();
     await expect(page.getByRole("button", { name: /create/i })).toHaveCount(0);
+    await expect(page.locator("#org-list-product")).toBeVisible();
 
+    mkdirSync(polishScreenshotDir, { recursive: true });
     await page.setViewportSize({ width: 1440, height: 900 });
+    await page.getByRole("button", { name: "Preferences" }).click();
+    await page.getByRole("menuitem", { name: /^Light/ }).click();
+    await page.screenshot({
+      path: resolve(polishScreenshotDir, "01-all-organizations-1440x900.png"),
+      fullPage: true,
+    });
+
+    const productSelect = page.locator("#org-list-product");
+    const productOptions = await productSelect.locator("option").allTextContents();
+    const firstCatalogProduct = productOptions.find((label) => label !== "All products");
+    if (firstCatalogProduct) {
+      await productSelect.selectOption({ label: firstCatalogProduct });
+      await expect(page.getByTestId("product-org-filter-blocked")).toBeVisible();
+      await page.screenshot({
+        path: resolve(polishScreenshotDir, "02-organizations-by-product-blocked-1440x900.png"),
+        fullPage: true,
+      });
+      await page.screenshot({
+        path: resolve(polishScreenshotDir, "03-product-selector-1440x900.png"),
+        fullPage: false,
+      });
+      await page.setViewportSize({ width: 375, height: 812 });
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      );
+      expect(overflow).toBe(false);
+      await page.screenshot({
+        path: resolve(polishScreenshotDir, "04-product-organizations-375x812.png"),
+        fullPage: true,
+      });
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await productSelect.selectOption({ label: "All products" });
+    }
+
     const organizationLink = page.locator('table a[href^="/admin/organizations/"]').first();
     await expect(organizationLink).toBeVisible();
     await organizationLink.click();
@@ -125,51 +161,5 @@ test.describe("local-validation React container smoke", () => {
     await expect(workspaceNav.getByRole("link", { name: "Billing" })).toBeVisible();
     await expect(workspaceNav.getByRole("link", { name: "Activity" })).toHaveCount(0);
     await expect(workspaceNav.getByRole("link", { name: "Audit" })).toHaveCount(0);
-    await workspaceNav.getByRole("link", { name: "Entitlements" }).click();
-    await expect(page).toHaveURL(/\/admin\/organizations\/[0-9a-fA-F-]{36}\/entitlements/);
-    await expect(
-      page.getByRole("heading", { name: "Entitlements", exact: true, level: 1 }),
-    ).toBeVisible();
-    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /override/i })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /reconcile/i })).toHaveCount(0);
-    mkdirSync(polishScreenshotDir, { recursive: true });
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.getByRole("button", { name: "Preferences" }).click();
-    await page.getByRole("menuitem", { name: /^Light/ }).click();
-    await page.screenshot({
-      path: resolve(polishScreenshotDir, "01-entitlements-collapsed-1440x900-light.png"),
-      fullPage: true,
-    });
-    const showGrants = page.getByRole("button", { name: "Show grants" }).first();
-    if (await showGrants.count()) {
-      await showGrants.click();
-      await page.screenshot({
-        path: resolve(polishScreenshotDir, "03-entitlements-expanded-1440x900-light.png"),
-        fullPage: true,
-      });
-    }
-    await page.getByRole("button", { name: "Preferences" }).click();
-    await page.getByRole("menuitem", { name: /^Dark/ }).click();
-    await page.screenshot({
-      path: resolve(polishScreenshotDir, "02-entitlements-collapsed-1440x900-dark.png"),
-      fullPage: true,
-    });
-    await page.getByRole("button", { name: "Preferences" }).click();
-    await page.getByRole("menuitem", { name: /^Light/ }).click();
-    await page.setViewportSize({ width: 375, height: 812 });
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
-    );
-    expect(overflow).toBe(false);
-    await page.screenshot({
-      path: resolve(polishScreenshotDir, "04-entitlements-collapsed-375x812.png"),
-      fullPage: true,
-    });
-    await page.setViewportSize({ width: 320, height: 800 });
-    await page.screenshot({
-      path: resolve(polishScreenshotDir, "06-entitlements-expanded-320x800.png"),
-      fullPage: true,
-    });
   });
 });

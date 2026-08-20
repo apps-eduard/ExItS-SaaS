@@ -121,6 +121,17 @@ export const enMessages = {
   "shell.environment.dev": "Dev",
   "overview.description": "Monitor organizations, subscriptions and platform activity.",
   "organizations.description": "Manage organizations and Platform-level status.",
+  "organizations.product": "Product",
+  "organizations.product.all": "All products",
+  "organizations.product.description":
+    "Product-scoped organization navigation. Filtering uses the Platform product catalog.",
+  "organizations.product.invalid": "That product is not available in the authorized catalog.",
+  "organizations.product.catalogUnavailable":
+    "Product catalog could not be loaded. Open All Organizations or try again later.",
+  "organizations.product.blockedTitle":
+    "Product-specific organization filtering is not available yet.",
+  "organizations.product.blockedBody":
+    "The organization list API does not support authoritative product filtering. All Organizations remains available.",
   "organizations.search": "Search",
   "organizations.searchPlaceholder": "Organization name",
   "organizations.searchSubmit": "Search",
@@ -528,6 +539,17 @@ export const filPhMessages: Record<MessageKey, string> = {
   "overview.description":
     "Subaybayan ang mga organisasyon, subskripsyon, at aktibidad ng platform.",
   "organizations.description": "Pamahalaan ang mga organisasyon at status sa antas ng Platform.",
+  "organizations.product": "Produkto",
+  "organizations.product.all": "Lahat ng produkto",
+  "organizations.product.description":
+    "Nabigasyon ng organisasyon ayon sa produkto. Ginagamit ang Platform product catalog.",
+  "organizations.product.invalid": "Hindi available ang produktong iyon sa authorized catalog.",
+  "organizations.product.catalogUnavailable":
+    "Hindi ma-load ang product catalog. Buksan ang All Organizations o subukan ulit mamaya.",
+  "organizations.product.blockedTitle":
+    "Hindi pa available ang product-specific organization filtering.",
+  "organizations.product.blockedBody":
+    "Walang authoritative product filter ang organization list API. Available pa rin ang All Organizations.",
   "organizations.search": "Maghanap",
   "organizations.searchPlaceholder": "Pangalan ng organisasyon",
   "organizations.searchSubmit": "Maghanap",

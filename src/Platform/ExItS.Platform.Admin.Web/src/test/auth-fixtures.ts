@@ -141,254 +141,249 @@ export function mockUnauthenticatedFetch(): void {
   );
 }
 
-export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}): void {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      const path = pathnameOf(url);
-      if (url.includes("/api/v1/platform/auth/logout")) {
-        return {
-          ok: true,
-          status: 204,
-          json: async () => null,
-          text: async () => "",
-        } as Response;
-      }
-      if (url.includes("/api/v1/platform/auth/me")) {
-        return jsonResponse(200, sampleSession);
-      }
-      if (url.includes("/api/v1/platform/authorization/me")) {
-        return jsonResponse(200, {
-          ...sampleAuthorization,
-          permissions: options.permissions ?? sampleAuthorization.permissions,
+export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    const path = pathnameOf(url);
+    if (url.includes("/api/v1/platform/auth/logout")) {
+      return {
+        ok: true,
+        status: 204,
+        json: async () => null,
+        text: async () => "",
+      } as Response;
+    }
+    if (url.includes("/api/v1/platform/auth/me")) {
+      return jsonResponse(200, sampleSession);
+    }
+    if (url.includes("/api/v1/platform/authorization/me")) {
+      return jsonResponse(200, {
+        ...sampleAuthorization,
+        permissions: options.permissions ?? sampleAuthorization.permissions,
+      });
+    }
+    if (url.includes("/api/v1/platform/catalog/products")) {
+      return jsonResponse(
+        200,
+        pagedJson(
+          options.catalogProductItems ?? [
+            {
+              id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+              code: "future-product-x",
+              displayName: "Future Product X",
+              status: "Active",
+            },
+          ],
+          options.catalogProductItems?.length ?? 1,
+          100,
+        ),
+      );
+    }
+    if (path.endsWith("/health/ready") || path.endsWith("/health")) {
+      return textResponse(200, "Healthy");
+    }
+    if (
+      url.includes("/api/v1/platform/admin/organizations") &&
+      url.includes("commercial-summary")
+    ) {
+      if (options.failCommercialSummary) {
+        return jsonResponse(500, {
+          title: "Error",
+          status: 500,
+          detail: "Commercial summary failed.",
         });
       }
-      if (url.includes("/api/v1/platform/catalog/products")) {
-        return jsonResponse(
-          200,
-          pagedJson(
-            options.catalogProductItems ?? [
-              {
-                id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
-                code: "future-product-x",
-                displayName: "Future Product X",
-                status: "Active",
-              },
-            ],
-            options.catalogProductItems?.length ?? 1,
-            100,
-          ),
-        );
+      const summary = options.commercialSummary ?? {};
+      return jsonResponse(200, {
+        subscriptions: summary.subscriptions ?? [],
+        payments: summary.payments ?? [],
+        latestEntitlements: summary.latestEntitlements ?? [],
+      });
+    }
+    const branchesGet = path.match(
+      /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/branches$/,
+    );
+    if (branchesGet) {
+      if (options.forbiddenBranches) {
+        return jsonResponse(403, { title: "Forbidden", status: 403, detail: "branch-secret" });
       }
-      if (path.endsWith("/health/ready") || path.endsWith("/health")) {
-        return textResponse(200, "Healthy");
-      }
-      if (
-        url.includes("/api/v1/platform/admin/organizations") &&
-        url.includes("commercial-summary")
-      ) {
-        if (options.failCommercialSummary) {
-          return jsonResponse(500, {
-            title: "Error",
-            status: 500,
-            detail: "Commercial summary failed.",
-          });
-        }
-        const summary = options.commercialSummary ?? {};
-        return jsonResponse(200, {
-          subscriptions: summary.subscriptions ?? [],
-          payments: summary.payments ?? [],
-          latestEntitlements: summary.latestEntitlements ?? [],
+      if (options.failBranches) {
+        return jsonResponse(500, {
+          title: "Error",
+          status: 500,
+          detail: "Branch list failed.",
         });
       }
-      const branchesGet = path.match(
-        /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/branches$/,
+      return jsonResponse(200, options.branchItems ?? []);
+    }
+    const membersGet = path.match(
+      /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/members$/,
+    );
+    if (membersGet) {
+      if (options.forbiddenMembers) {
+        return jsonResponse(403, { title: "Forbidden", status: 403, detail: "member-secret" });
+      }
+      if (options.failMembers) {
+        return jsonResponse(500, {
+          title: "Error",
+          status: 500,
+          detail: "Member list failed.",
+        });
+      }
+      const items = options.memberItems ?? [];
+      return jsonResponse(
+        200,
+        pagedJson(items, options.memberTotalCount ?? items.length, items.length || 20),
       );
-      if (branchesGet) {
-        if (options.forbiddenBranches) {
-          return jsonResponse(403, { title: "Forbidden", status: 403, detail: "branch-secret" });
-        }
-        if (options.failBranches) {
-          return jsonResponse(500, {
-            title: "Error",
-            status: 500,
-            detail: "Branch list failed.",
-          });
-        }
-        return jsonResponse(200, options.branchItems ?? []);
+    }
+    const invitationsGet = path.match(
+      /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/invitations$/,
+    );
+    if (invitationsGet) {
+      if (options.forbiddenInvitations) {
+        return jsonResponse(403, {
+          title: "Forbidden",
+          status: 403,
+          detail: "invitation-secret",
+        });
       }
-      const membersGet = path.match(
-        /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/members$/,
+      if (options.failInvitations) {
+        return jsonResponse(500, {
+          title: "Error",
+          status: 500,
+          detail: "Invitation list failed.",
+        });
+      }
+      const items = options.invitationItems ?? [];
+      return jsonResponse(
+        200,
+        pagedJson(items, options.invitationTotalCount ?? items.length, items.length || 20),
       );
-      if (membersGet) {
-        if (options.forbiddenMembers) {
-          return jsonResponse(403, { title: "Forbidden", status: 403, detail: "member-secret" });
-        }
-        if (options.failMembers) {
-          return jsonResponse(500, {
-            title: "Error",
-            status: 500,
-            detail: "Member list failed.",
-          });
-        }
-        const items = options.memberItems ?? [];
-        return jsonResponse(
-          200,
-          pagedJson(items, options.memberTotalCount ?? items.length, items.length || 20),
-        );
+    }
+    const orgSubscriptionsGet = path.match(
+      /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/subscriptions$/,
+    );
+    if (orgSubscriptionsGet) {
+      if (options.forbiddenOrgSubscriptions) {
+        return jsonResponse(403, {
+          title: "Forbidden",
+          status: 403,
+          detail: "subscription-secret",
+        });
       }
-      const invitationsGet = path.match(
-        /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/invitations$/,
+      if (options.failOrgSubscriptions) {
+        return jsonResponse(500, {
+          title: "Error",
+          status: 500,
+          detail: "Subscription list failed.",
+        });
+      }
+      const items = options.orgSubscriptionItems ?? [];
+      return jsonResponse(
+        200,
+        pagedJson(items, options.orgSubscriptionTotalCount ?? items.length, items.length || 20),
       );
-      if (invitationsGet) {
-        if (options.forbiddenInvitations) {
-          return jsonResponse(403, {
-            title: "Forbidden",
-            status: 403,
-            detail: "invitation-secret",
-          });
-        }
-        if (options.failInvitations) {
-          return jsonResponse(500, {
-            title: "Error",
-            status: 500,
-            detail: "Invitation list failed.",
-          });
-        }
-        const items = options.invitationItems ?? [];
-        return jsonResponse(
-          200,
-          pagedJson(items, options.invitationTotalCount ?? items.length, items.length || 20),
-        );
+    }
+    const entitlementSnapshotsGet = path.match(
+      /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/products\/[^/]+\/entitlements\/snapshots$/,
+    );
+    if (entitlementSnapshotsGet) {
+      if (options.forbiddenEntitlementSnapshots) {
+        return jsonResponse(403, {
+          title: "Forbidden",
+          status: 403,
+          detail: "entitlement-secret",
+        });
       }
-      const orgSubscriptionsGet = path.match(
-        /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/subscriptions$/,
+      if (options.failEntitlementSnapshots) {
+        return jsonResponse(500, {
+          title: "Error",
+          status: 500,
+          detail: "Entitlement snapshot list failed.",
+        });
+      }
+      const items = options.entitlementSnapshotItems ?? [];
+      return jsonResponse(
+        200,
+        pagedJson(items, options.entitlementSnapshotTotalCount ?? items.length, items.length || 20),
       );
-      if (orgSubscriptionsGet) {
-        if (options.forbiddenOrgSubscriptions) {
-          return jsonResponse(403, {
-            title: "Forbidden",
-            status: 403,
-            detail: "subscription-secret",
-          });
-        }
-        if (options.failOrgSubscriptions) {
-          return jsonResponse(500, {
-            title: "Error",
-            status: 500,
-            detail: "Subscription list failed.",
-          });
-        }
-        const items = options.orgSubscriptionItems ?? [];
-        return jsonResponse(
-          200,
-          pagedJson(items, options.orgSubscriptionTotalCount ?? items.length, items.length || 20),
-        );
+    }
+    const orgPaymentsGet = path.match(
+      /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/payments$/,
+    );
+    if (orgPaymentsGet) {
+      if (options.forbiddenOrgPayments) {
+        return jsonResponse(403, {
+          title: "Forbidden",
+          status: 403,
+          detail: "payment-secret",
+          amount: 9999.99,
+        });
       }
-      const entitlementSnapshotsGet = path.match(
-        /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/products\/[^/]+\/entitlements\/snapshots$/,
+      if (options.failOrgPayments) {
+        return jsonResponse(500, {
+          title: "Error",
+          status: 500,
+          detail: "Payment list failed.",
+        });
+      }
+      const items = options.orgPaymentItems ?? [];
+      return jsonResponse(
+        200,
+        pagedJson(items, options.orgPaymentTotalCount ?? items.length, items.length || 20),
       );
-      if (entitlementSnapshotsGet) {
-        if (options.forbiddenEntitlementSnapshots) {
-          return jsonResponse(403, {
-            title: "Forbidden",
-            status: 403,
-            detail: "entitlement-secret",
-          });
-        }
-        if (options.failEntitlementSnapshots) {
-          return jsonResponse(500, {
-            title: "Error",
-            status: 500,
-            detail: "Entitlement snapshot list failed.",
-          });
-        }
-        const items = options.entitlementSnapshotItems ?? [];
-        return jsonResponse(
-          200,
-          pagedJson(
-            items,
-            options.entitlementSnapshotTotalCount ?? items.length,
-            items.length || 20,
-          ),
-        );
+    }
+    const organizationGet = path.match(
+      /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/,
+    );
+    if (organizationGet) {
+      if (options.forbiddenOrganization) {
+        return jsonResponse(403, { title: "Forbidden", status: 403, detail: "Forbidden." });
       }
-      const orgPaymentsGet = path.match(
-        /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/payments$/,
+      if (options.failOrganizationGet) {
+        return jsonResponse(500, {
+          title: "Error",
+          status: 500,
+          detail: "Organization load failed.",
+        });
+      }
+      const items = options.organizationItems ?? [];
+      const match = items.find((item) => item.id === organizationGet[1]);
+      if (!match) {
+        return jsonResponse(404, {
+          title: "Not Found",
+          status: 404,
+          detail: "Platform Organization was not found.",
+          errorCode: "application.organization.not_found",
+        });
+      }
+      return jsonResponse(200, match);
+    }
+    if (url.includes("/api/v1/platform/organizations")) {
+      if (options.failOrganizations) {
+        return jsonResponse(500, {
+          title: "Error",
+          status: 500,
+          detail: "Organization list failed.",
+        });
+      }
+      const items = options.organizationItems ?? [];
+      return jsonResponse(
+        200,
+        pagedJson(items, options.organizationTotalCount ?? items.length, items.length || 1),
       );
-      if (orgPaymentsGet) {
-        if (options.forbiddenOrgPayments) {
-          return jsonResponse(403, {
-            title: "Forbidden",
-            status: 403,
-            detail: "payment-secret",
-            amount: 9999.99,
-          });
-        }
-        if (options.failOrgPayments) {
-          return jsonResponse(500, {
-            title: "Error",
-            status: 500,
-            detail: "Payment list failed.",
-          });
-        }
-        const items = options.orgPaymentItems ?? [];
-        return jsonResponse(
-          200,
-          pagedJson(items, options.orgPaymentTotalCount ?? items.length, items.length || 20),
-        );
-      }
-      const organizationGet = path.match(
-        /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/,
-      );
-      if (organizationGet) {
-        if (options.forbiddenOrganization) {
-          return jsonResponse(403, { title: "Forbidden", status: 403, detail: "Forbidden." });
-        }
-        if (options.failOrganizationGet) {
-          return jsonResponse(500, {
-            title: "Error",
-            status: 500,
-            detail: "Organization load failed.",
-          });
-        }
-        const items = options.organizationItems ?? [];
-        const match = items.find((item) => item.id === organizationGet[1]);
-        if (!match) {
-          return jsonResponse(404, {
-            title: "Not Found",
-            status: 404,
-            detail: "Platform Organization was not found.",
-            errorCode: "application.organization.not_found",
-          });
-        }
-        return jsonResponse(200, match);
-      }
-      if (url.includes("/api/v1/platform/organizations")) {
-        if (options.failOrganizations) {
-          return jsonResponse(500, {
-            title: "Error",
-            status: 500,
-            detail: "Organization list failed.",
-          });
-        }
-        const items = options.organizationItems ?? [];
-        return jsonResponse(
-          200,
-          pagedJson(items, options.organizationTotalCount ?? items.length, items.length || 1),
-        );
-      }
-      if (url.includes("/api/v1/platform/subscriptions")) {
-        return jsonResponse(200, pagedJson([], 0, 1));
-      }
-      if (url.includes("/api/v1/platform/users")) {
-        return jsonResponse(200, pagedJson([], 0, 5));
-      }
-      if (url.includes("/api/v1/platform/audit")) {
-        return jsonResponse(200, pagedJson([], 0, 8));
-      }
-      return jsonResponse(404, { title: "Not Found", status: 404 });
-    }),
-  );
+    }
+    if (url.includes("/api/v1/platform/subscriptions")) {
+      return jsonResponse(200, pagedJson([], 0, 1));
+    }
+    if (url.includes("/api/v1/platform/users")) {
+      return jsonResponse(200, pagedJson([], 0, 5));
+    }
+    if (url.includes("/api/v1/platform/audit")) {
+      return jsonResponse(200, pagedJson([], 0, 8));
+    }
+    return jsonResponse(404, { title: "Not Found", status: 404 });
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
 }
