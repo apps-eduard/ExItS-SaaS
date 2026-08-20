@@ -80,5 +80,14 @@ if (
 ) {
   fail("Service worker must route /platform-api/ with NetworkOnly.");
 }
+if (!/pos-api/.test(sw)) {
+  fail("Service worker must mention /pos-api NetworkOnly routing.");
+}
+if (
+  !/includes\("\/pos-api\/"\)[\s\S]{0,200}NetworkOnly/.test(sw) &&
+  !/pos-api[\s\S]{0,200}NetworkOnly/.test(sw)
+) {
+  fail("Service worker must route /pos-api/ with NetworkOnly.");
+}
 
 process.stdout.write("PWA validation passed.\n");

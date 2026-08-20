@@ -50,7 +50,11 @@ Gate D Phase A PWA shell (`POS-REACT-IMPL-02`): `COMPLETE` on `feat/pos-react-cl
 
 Gate D browser auth / workspace (`POS-REACT-IMPL-03`): `COMPLETE` on `feat/pos-react-client`
 
-Gate D browser auth / workspace: `PARTIAL` — session + CSRF + workspace + sell-floor shell complete; catalog/cart follow IMPL-05
+Gate D sell-floor shell (`POS-REACT-IMPL-04`): `COMPLETE` on `feat/pos-react-client`
+
+Gate D catalog search + session cart (`POS-REACT-IMPL-05`): `COMPLETE in worktree (uncommitted)` on `feat/pos-react-client`
+
+Gate D browser auth / workspace: `PARTIAL` — session + CSRF + workspace + sell floor + catalog/cart complete; cash checkout follows IMPL-06
 
 MOBILE-D-060: `OPEN`
 
@@ -86,7 +90,8 @@ TYPED_CLIENT_GENERATION_CONTRACT_MISSING: `OPEN` (hand-typed Platform DTOs + val
 | POS-REACT-IMPL-01 | Complete on `feat/pos-react-client` | React client scaffold; report [POS-REACT-IMPL-01-react-client-scaffold.md](Reports/POS-REACT-IMPL-01-react-client-scaffold.md) |
 | POS-REACT-IMPL-02 | Complete on `feat/pos-react-client` | PWA static shell (Phase A); report [POS-REACT-IMPL-02-pwa-static-shell.md](Reports/POS-REACT-IMPL-02-pwa-static-shell.md) |
 | POS-REACT-IMPL-03 | Complete on `feat/pos-react-client` | Browser session + workspace resolver; report [POS-REACT-IMPL-03-browser-session-workspace.md](Reports/POS-REACT-IMPL-03-browser-session-workspace.md) |
-| POS-REACT-IMPL-04 | Complete in worktree (uncommitted) | POS sell-floor shell; report [POS-REACT-IMPL-04-sell-floor-shell.md](Reports/POS-REACT-IMPL-04-sell-floor-shell.md) |
+| POS-REACT-IMPL-04 | Complete on `feat/pos-react-client` | POS sell-floor shell; report [POS-REACT-IMPL-04-sell-floor-shell.md](Reports/POS-REACT-IMPL-04-sell-floor-shell.md) |
+| POS-REACT-IMPL-05 | Complete in worktree (uncommitted) | Catalog search + session cart; report [POS-REACT-IMPL-05-catalog-session-cart.md](Reports/POS-REACT-IMPL-05-catalog-session-cart.md) |
 
 ## Authorization gates (locked)
 

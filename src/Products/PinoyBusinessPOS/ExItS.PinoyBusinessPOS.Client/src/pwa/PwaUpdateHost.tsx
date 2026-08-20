@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { applyPwaUpdateIfAllowed } from "@/pwa/apply-pwa-update";
+import { applyPwaUpdateIfAllowed, canApplyPwaUpdate } from "@/pwa/apply-pwa-update";
 import { PwaUpdateNotice } from "@/pwa/PwaUpdateNotice";
 
 export const POS_PWA_NEED_REFRESH_EVENT = "exits-pos:pwa-need-refresh";
@@ -66,11 +66,12 @@ export function PwaUpdateHost() {
             applyingRef.current = false;
             return;
           }
-          const applied = applyPwaUpdateIfAllowed(applyUpdate);
+          const applied = applyPwaUpdateIfAllowed(applyUpdate, canApplyPwaUpdate);
           if (!applied) {
             applyingRef.current = false;
           }
         }}
+        guard={canApplyPwaUpdate}
       />
     </>
   );

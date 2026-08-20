@@ -2,7 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AppProviders } from "@/app/providers";
-import { applyPwaUpdateIfAllowed, canApplyPwaUpdate } from "@/pwa/apply-pwa-update";
+import {
+  applyPwaUpdateIfAllowed,
+  canApplyPwaUpdate,
+  registerCartLineCountGetter,
+} from "@/pwa/apply-pwa-update";
 import { PwaUpdateNotice } from "@/pwa/PwaUpdateNotice";
 import {
   createPwaManifest,
@@ -27,14 +31,25 @@ describe("PWA manifest", () => {
 });
 
 describe("PWA update apply guard", () => {
-  it("defaults to allowing the user-triggered apply because no cart exists", () => {
+  it("allows apply when the session cart is empty", () => {
+    registerCartLineCountGetter(() => 0);
     const apply = vi.fn();
     expect(canApplyPwaUpdate()).toBe(true);
     expect(applyPwaUpdateIfAllowed(apply)).toBe(true);
     expect(apply).toHaveBeenCalledTimes(1);
   });
 
+  it("blocks apply while the session cart has lines", () => {
+    registerCartLineCountGetter(() => 2);
+    const apply = vi.fn();
+    expect(canApplyPwaUpdate()).toBe(false);
+    expect(applyPwaUpdateIfAllowed(apply)).toBe(false);
+    expect(apply).not.toHaveBeenCalled();
+    registerCartLineCountGetter(null);
+  });
+
   it("can block a future unsaved cart/checkout update", () => {
+    registerCartLineCountGetter(null);
     const apply = vi.fn();
     expect(applyPwaUpdateIfAllowed(apply, () => false)).toBe(false);
     expect(apply).not.toHaveBeenCalled();

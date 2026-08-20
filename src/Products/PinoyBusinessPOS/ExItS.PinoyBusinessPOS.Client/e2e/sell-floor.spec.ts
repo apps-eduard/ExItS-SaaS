@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
 import { assertNoHorizontalOverflow } from "./helpers";
 import { mockBoundCashierSession, signInAndBindCashier } from "./mock-bound-session";
+import { mockPosCatalogApi } from "./mock-pos-catalog-route";
 
 const screenshotDir = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -17,6 +18,7 @@ test.describe("sell floor shell", () => {
 
   test.beforeEach(async ({ page }) => {
     await mockBoundCashierSession(page);
+    await mockPosCatalogApi(page);
     await signInAndBindCashier(page);
     await page.getByRole("button", { name: "Open sell floor" }).click();
     await expect(page.getByTestId("sell-floor")).toBeVisible();
