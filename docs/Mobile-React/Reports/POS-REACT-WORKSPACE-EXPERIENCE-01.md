@@ -18,11 +18,11 @@
 
 ## Docs SHA
 
-`5c10d669e681fe9e5e6242ebc6467715ff3dc0df`
+`5c10d669e681fe9e5e6242ebc6467715ff3dc0df` (content); SHA note `adbad00530f3f6804d569bdddaec57ddf370f364`
 
 ## Final HEAD
 
-`5c10d669e681fe9e5e6242ebc6467715ff3dc0df`
+`adbad00530f3f6804d569bdddaec57ddf370f364`
 
 Branch: `feat/pos-react-client`
 
