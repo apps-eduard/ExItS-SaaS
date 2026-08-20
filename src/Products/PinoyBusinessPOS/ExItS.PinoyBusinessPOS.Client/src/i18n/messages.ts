@@ -311,6 +311,43 @@ export const en = {
   "inventory.applyAdjustment": "Apply adjustment",
   "inventory.movements": "Movement history",
   "inventory.notFound": "Inventory account was not found.",
+  "inventory.openExpiring": "Expiring stock",
+  "inventory.expirationTitle": "Expiring stock",
+  "inventory.expirationLede":
+    "See expired and near-expiry lots. Write-offs stay on inventory detail.",
+  "inventory.searchExpiring": "Search expiring lots",
+  "inventory.expiryWindow": "Show window",
+  "inventory.windowExpired": "Already expired",
+  "inventory.windowDays7": "Next 7 days",
+  "inventory.windowDays14": "Next 14 days",
+  "inventory.windowDays30": "Next 30 days",
+  "inventory.expiryCounts": "Expired lots: {expired} · Near expiry lots: {near}",
+  "inventory.expirationEmpty": "No lots in this window",
+  "inventory.expirationEmptyDetail":
+    "Try another window or search, or check product inventory detail.",
+  "inventory.totalOnHand": "Total on hand",
+  "inventory.sellable": "Sellable",
+  "inventory.expiredQty": "Expired",
+  "inventory.nearExpiryQty": "Near expiry",
+  "inventory.lots": "Lots",
+  "inventory.lotsEmpty": "No lots on hand yet.",
+  "inventory.expirationDate": "Expiration date",
+  "inventory.lotNumberOptional": "Lot number (optional)",
+  "inventory.openingExpiryHint":
+    "Required when opening quantity is greater than zero for expiry-tracked products.",
+  "inventory.expirationDateRequired": "Expiration date is required for this stock change.",
+  "inventory.lotRequired": "Select a lot for this decrease.",
+  "inventory.selectLot": "Lot to decrease",
+  "inventory.selectLotPlaceholder": "Choose a lot",
+  "inventory.writeOffHint": "Use reason Expired to write off expired stock from the selected lot.",
+  "inventory.statusExpired": "Expired",
+  "inventory.statusExpiresToday": "Expires today",
+  "inventory.statusExpiresInDays": "Expires in {days} days",
+  "inventory.statusOk": "OK",
+  "catalog.tracksExpiration": "Track expiration",
+  "catalog.expirationWarningDays": "Near-expiry warning (days)",
+  "catalog.expirationWarningHint":
+    "Near-expiry lots stay sellable. Warning days only change the alert window.",
 };
 
 export const filPH: Record<keyof typeof en, string> = {
@@ -632,6 +669,44 @@ export const filPH: Record<keyof typeof en, string> = {
   "inventory.applyAdjustment": "Apply adjustment",
   "inventory.movements": "Movement history",
   "inventory.notFound": "Hindi makita ang inventory account.",
+  "inventory.openExpiring": "Expiring stock",
+  "inventory.expirationTitle": "Expiring stock",
+  "inventory.expirationLede":
+    "Tingnan ang expired at near-expiry lots. Ang write-off ay nasa inventory detail.",
+  "inventory.searchExpiring": "Maghanap ng expiring lots",
+  "inventory.expiryWindow": "Window",
+  "inventory.windowExpired": "Expired na",
+  "inventory.windowDays7": "Susunod na 7 araw",
+  "inventory.windowDays14": "Susunod na 14 araw",
+  "inventory.windowDays30": "Susunod na 30 araw",
+  "inventory.expiryCounts": "Expired lots: {expired} · Near expiry lots: {near}",
+  "inventory.expirationEmpty": "Walang lots sa window na ito",
+  "inventory.expirationEmptyDetail":
+    "Subukan ang ibang window o search, o tingnan ang product inventory detail.",
+  "inventory.totalOnHand": "Total on hand",
+  "inventory.sellable": "Sellable",
+  "inventory.expiredQty": "Expired",
+  "inventory.nearExpiryQty": "Near expiry",
+  "inventory.lots": "Lots",
+  "inventory.lotsEmpty": "Wala pang lots on hand.",
+  "inventory.expirationDate": "Expiration date",
+  "inventory.lotNumberOptional": "Lot number (opsyonal)",
+  "inventory.openingExpiryHint":
+    "Kailangan kapag ang opening quantity ay higit sa zero para sa expiry-tracked products.",
+  "inventory.expirationDateRequired": "Kailangan ang expiration date para sa stock change na ito.",
+  "inventory.lotRequired": "Pumili ng lot para sa decrease na ito.",
+  "inventory.selectLot": "Lot na babawasan",
+  "inventory.selectLotPlaceholder": "Pumili ng lot",
+  "inventory.writeOffHint":
+    "Gamitin ang reason Expired para i-write off ang expired stock mula sa selected lot.",
+  "inventory.statusExpired": "Expired",
+  "inventory.statusExpiresToday": "Expires today",
+  "inventory.statusExpiresInDays": "Expires in {days} days",
+  "inventory.statusOk": "OK",
+  "catalog.tracksExpiration": "I-track ang expiration",
+  "catalog.expirationWarningDays": "Near-expiry warning (araw)",
+  "catalog.expirationWarningHint":
+    "Nanatiling sellable ang near-expiry lots. Ang warning days ay para sa alert window lang.",
 };
 
 export type MessageKey = keyof typeof en;

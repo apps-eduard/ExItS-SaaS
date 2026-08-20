@@ -121,9 +121,19 @@ export function RoleHomeShell({
         </Button>
       ) : null}
       {canInventory ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-inventory">
-          <Link to="/inventory">{t("inventory.open")}</Link>
-        </Button>
+        <>
+          <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-inventory">
+            <Link to="/inventory">{t("inventory.open")}</Link>
+          </Button>
+          <Button
+            asChild
+            variant="ghost"
+            className="min-h-11 w-fit"
+            data-testid="open-expiring-stock-home"
+          >
+            <Link to="/inventory/expiration">{t("inventory.openExpiring")}</Link>
+          </Button>
+        </>
       ) : null}
     </div>
   );

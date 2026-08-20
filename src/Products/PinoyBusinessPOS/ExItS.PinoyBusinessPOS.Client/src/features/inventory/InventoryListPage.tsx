@@ -45,6 +45,9 @@ export function InventoryListPage() {
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="inventory-list-page">
       <PageHeader title={t("inventory.title")} description={t("inventory.lede")} />
+      <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-expiring-stock">
+        <Link to="/inventory/expiration">{t("inventory.openExpiring")}</Link>
+      </Button>
       <SearchField
         label={t("inventory.search")}
         value={search}

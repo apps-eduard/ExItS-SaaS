@@ -59,6 +59,8 @@ export type PosCatalogProductDto = {
   imageVersion?: number | null;
   imageSource?: string | null;
   units?: PosCatalogProductUnitDto[] | null;
+  tracksExpiration?: boolean;
+  expirationWarningDays?: number | null;
 };
 
 export type PosProductCategoryDto = {
@@ -106,6 +108,8 @@ export type CreatePosCatalogProductRequest = {
   sellingMode?: PosSellingModeCode | string | null;
   canBeSold?: boolean | null;
   units?: PosCatalogProductUnitInput[] | null;
+  tracksExpiration?: boolean;
+  expirationWarningDays?: number | null;
 };
 
 export type UpdatePosCatalogProductRequest = {
@@ -120,6 +124,8 @@ export type UpdatePosCatalogProductRequest = {
   sellingMode?: PosSellingModeCode | string | null;
   canBeSold?: boolean | null;
   units?: PosCatalogProductUnitInput[] | null;
+  tracksExpiration?: boolean | null;
+  expirationWarningDays?: number | null;
 };
 
 export type UpdatePosCatalogProductPriceItem = {

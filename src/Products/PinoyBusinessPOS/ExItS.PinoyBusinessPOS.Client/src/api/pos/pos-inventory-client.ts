@@ -16,6 +16,11 @@ export type PosInventoryAccountDto = {
   isLowStock: boolean;
   createdAtUtc: string;
   updatedAtUtc: string;
+  tracksExpiration?: boolean;
+  expirationWarningDays?: number | null;
+  sellableQuantity?: number | null;
+  expiredQuantity?: number | null;
+  nearExpiryQuantity?: number | null;
 };
 
 export type PosStockMovementDto = {
@@ -29,6 +34,31 @@ export type PosStockMovementDto = {
   sourceId?: string | null;
   recordedAtUtc: string;
   recordedBy: string;
+};
+
+export type PosInventoryLotDto = {
+  lotId: string;
+  productId: string;
+  branchId?: string | null;
+  lotNumber?: string | null;
+  expirationDate: string;
+  quantityOnHand: number;
+  expiryStatus: string;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+};
+
+export type PosExpiringLotDto = {
+  lotId: string;
+  productId: string;
+  productName: string;
+  sku?: string | null;
+  branchId?: string | null;
+  lotNumber?: string | null;
+  expirationDate: string;
+  quantityOnHand: number;
+  expiryStatus: string;
+  warningDays: number;
 };
 
 export type PosInventoryPagedResult = {
@@ -45,7 +75,28 @@ export type PosStockMovementPagedResult = {
   pageSize: number;
 };
 
-function appendQuery(path: string, params: Record<string, string | number | undefined>): string {
+export type PosInventoryLotPagedResult = {
+  items: PosInventoryLotDto[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+};
+
+export type PosExpiringLotPagedResult = {
+  items: PosExpiringLotDto[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  expiredCount: number;
+  nearExpiryCount: number;
+};
+
+export type PosExpiryWindow = "Expired" | "Days7" | "Days14" | "Days30";
+
+function appendQuery(
+  path: string,
+  params: Record<string, string | number | boolean | undefined>,
+): string {
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== "") {
@@ -89,7 +140,11 @@ export function getInventoryProduct(
 export function enableInventoryTracking(
   workspace: PosWorkspaceScope,
   productId: string,
-  body: { openingQuantity?: number | null } = {},
+  body: {
+    openingQuantity?: number | null;
+    expirationDate?: string | null;
+    lotNumber?: string | null;
+  } = {},
   signal?: AbortSignal,
 ): Promise<PosInventoryAccountDto> {
   return posRequest({
@@ -122,6 +177,9 @@ export function adjustInventoryStock(
     quantity: number;
     reason: string;
     productUnitId?: string | null;
+    expirationDate?: string | null;
+    lotNumber?: string | null;
+    lotId?: string | null;
   },
   signal?: AbortSignal,
 ): Promise<PosInventoryAccountDto> {
@@ -145,6 +203,47 @@ export function listInventoryMovements(
     workspace,
     signal,
     path: appendQuery(`${INVENTORY_PATH}/${productId}/movements`, {
+      page: options.page ?? 1,
+      pageSize: options.pageSize ?? 50,
+    }),
+  });
+}
+
+export function listProductLots(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  options: { includeDepleted?: boolean; page?: number; pageSize?: number } = {},
+  signal?: AbortSignal,
+): Promise<PosInventoryLotPagedResult> {
+  return posRequest({
+    method: "GET",
+    workspace,
+    signal,
+    path: appendQuery(`${INVENTORY_PATH}/${productId}/lots`, {
+      includeDepleted: options.includeDepleted ?? false,
+      page: options.page ?? 1,
+      pageSize: options.pageSize ?? 50,
+    }),
+  });
+}
+
+export function listExpiringLots(
+  workspace: PosWorkspaceScope,
+  options: {
+    window?: PosExpiryWindow | string;
+    search?: string;
+    page?: number;
+    pageSize?: number;
+  } = {},
+  signal?: AbortSignal,
+): Promise<PosExpiringLotPagedResult> {
+  return posRequest({
+    method: "GET",
+    workspace,
+    signal,
+    path: appendQuery(`${INVENTORY_PATH}/lots`, {
+      window: options.window ?? "Days30",
+      search: options.search,
       page: options.page ?? 1,
       pageSize: options.pageSize ?? 50,
     }),

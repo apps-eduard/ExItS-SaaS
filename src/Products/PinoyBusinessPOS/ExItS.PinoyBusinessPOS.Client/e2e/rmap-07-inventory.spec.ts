@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { assertMinTouchTarget, assertNoHorizontalOverflow } from "./helpers";
 import {
   E2E_ORG_ID,
+  clientNavigate,
   mockBoundCashierSession,
   mockBoundManagerSession,
   mockBoundOrgAdminSession,
@@ -277,7 +278,7 @@ test.describe("RMAP-07 inventory tracking", () => {
     await mockPosCatalogAdminApi(page);
     await mockInventoryApi(page, harness);
     await signInAndBindManager(page);
-    await page.goto(`/inventory/${MOCK_COKE_PRODUCT_ID}`);
+    await clientNavigate(page, `/inventory/${MOCK_COKE_PRODUCT_ID}`);
     await expect(page.getByTestId("inventory-detail-page")).toBeVisible();
     await page.getByRole("textbox", { name: "Quantity" }).fill("1");
     await page.getByTestId("inventory-adjust").click();
@@ -288,7 +289,7 @@ test.describe("RMAP-07 inventory tracking", () => {
     await mockBoundCashierSession(page);
     await mockPosCatalogAdminApi(page);
     await signInAndBindCashier(page);
-    await page.goto("/inventory");
+    await clientNavigate(page, "/inventory");
     await expect(page.getByTestId("inventory-view-denied")).toBeVisible();
   });
 
@@ -296,7 +297,7 @@ test.describe("RMAP-07 inventory tracking", () => {
     await mockBoundOrgAdminSession(page);
     await mockPosCatalogAdminApi(page);
     await signInAndBindOrgAdmin(page);
-    await page.goto("/inventory");
+    await clientNavigate(page, "/inventory");
     await expect(page.getByTestId("inventory-view-denied")).toBeVisible();
   });
 

@@ -57,6 +57,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
   const [barcode, setBarcode] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [canBeSold, setCanBeSold] = useState(true);
+  const [tracksExpiration, setTracksExpiration] = useState(false);
+  const [expirationWarningDays, setExpirationWarningDays] = useState("7");
   const [unitOfMeasure, setUnitOfMeasure] = useState<PosUnitOfMeasureCode>(
     DEFAULT_CATALOG_UNIT_OF_MEASURE,
   );
@@ -91,6 +93,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
     setBarcode(product.barcode ?? "");
     setCategoryId(product.categoryId ?? "");
     setCanBeSold(product.canBeSold !== false);
+    setTracksExpiration(product.tracksExpiration === true);
+    setExpirationWarningDays(String(product.expirationWarningDays ?? 7));
     setUnitOfMeasure(
       (POS_UNIT_OF_MEASURE_CODES.includes(product.unitOfMeasure as PosUnitOfMeasureCode)
         ? product.unitOfMeasure
@@ -136,6 +140,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
         unitsPayload = draftsToUnitInputs(unitDrafts);
       }
 
+      const warningDays = Number(expirationWarningDays);
       const body = {
         name: name.trim(),
         description: description.trim() || null,
@@ -147,6 +152,9 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
         sellingMode,
         canBeSold,
         units: unitsPayload,
+        tracksExpiration,
+        expirationWarningDays:
+          tracksExpiration && !Number.isNaN(warningDays) && warningDays > 0 ? warningDays : null,
       };
       if (mode === "create") {
         return createCatalogProduct(workspace, body);
@@ -313,6 +321,31 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
             />
             {t("catalog.canBeSold")}
           </label>
+
+          <label className="flex min-h-11 items-center gap-2 text-[length:var(--exits-text-sm)] font-semibold">
+            <input
+              type="checkbox"
+              data-testid="catalog-tracks-expiration"
+              checked={tracksExpiration}
+              onChange={(e) => setTracksExpiration(e.target.checked)}
+            />
+            {t("catalog.tracksExpiration")}
+          </label>
+          {tracksExpiration ? (
+            <Input
+              label={t("catalog.expirationWarningDays")}
+              name="expirationWarningDays"
+              inputMode="numeric"
+              value={expirationWarningDays}
+              onChange={(e) => setExpirationWarningDays(e.target.value)}
+              data-testid="catalog-expiration-warning-days"
+            />
+          ) : null}
+          {tracksExpiration ? (
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("catalog.expirationWarningHint")}
+            </p>
+          ) : null}
 
           <label className="flex min-h-11 items-center gap-2 text-[length:var(--exits-text-sm)] font-semibold">
             <input

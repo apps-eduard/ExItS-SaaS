@@ -15,6 +15,7 @@ import {
 import { CatalogProductsPage } from "@/features/catalog/CatalogProductsPage";
 import { TodaysPricesPage } from "@/features/catalog/TodaysPricesPage";
 import { InventoryDetailPage } from "@/features/inventory/InventoryDetailPage";
+import { InventoryExpirationPage } from "@/features/inventory/InventoryExpirationPage";
 import { InventoryListPage } from "@/features/inventory/InventoryListPage";
 import {
   CashierRoleHomePage,
@@ -207,6 +208,7 @@ export const appRoutes = [
             ),
             children: [
               { index: true, element: <InventoryListPage /> },
+              { path: "expiration", element: <InventoryExpirationPage /> },
               { path: ":productId", element: <InventoryDetailPage /> },
             ],
           },

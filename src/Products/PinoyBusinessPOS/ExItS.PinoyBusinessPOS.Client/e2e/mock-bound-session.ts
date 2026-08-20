@@ -380,7 +380,11 @@ export async function signInAndBindManager(page: Page) {
   await page.getByLabel("Email or staff login").fill("manager");
   await page.getByLabel("Password").fill("secret");
   await page.getByRole("button", { name: "Sign in" }).click();
+  await page
+    .getByTestId("workspace-destination-operations")
+    .waitFor({ state: "visible", timeout: 15000 });
   await page.getByTestId("workspace-destination-operations").click();
+  await page.getByTestId("open-inventory").waitFor({ state: "visible", timeout: 15000 });
 }
 
 export async function signInAndBindOrgAdmin(page: Page) {
