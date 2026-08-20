@@ -58,7 +58,7 @@ describe("resolveNavigation", () => {
       sections
         .find((section) => section.id === "people")
         ?.items.find((item) => item.id === "PWEB-NAV-ALL-ACCOUNTS")?.presentation,
-    ).toBe("underDevelopment");
+    ).toBe("link");
     expect(
       sections
         .find((section) => section.id === "operations")

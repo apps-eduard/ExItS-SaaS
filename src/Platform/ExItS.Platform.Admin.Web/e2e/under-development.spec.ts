@@ -96,15 +96,15 @@ test.describe("development frontend mode", () => {
     await expect(page.getByText("Development", { exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "All Organizations" })).toBeVisible();
     await expect(page.getByLabel("Test Payments. Under development")).toBeVisible();
-    await expect(page.getByLabel("All Accounts. Under development")).toBeVisible();
+    await expect(page.getByRole("link", { name: "All Accounts" })).toBeVisible();
     await expect(page.getByLabel("Event Delivery. Planned")).toBeVisible();
     await expect(page.getByRole("link", { name: "Event Delivery" })).toHaveCount(0);
   });
 });
 
-test("known /admin/users is under development", async ({ page }) => {
+test("known /admin/products is under development", async ({ page }) => {
   await mockAuthenticatedSession(page);
-  await page.goto("/admin/users");
+  await page.goto("/admin/products");
   await expect(page.getByRole("heading", { name: "Under development" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Back to Overview" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Copy diagnostics" })).toHaveCount(0);
@@ -125,7 +125,7 @@ test("production preview shows blueprint and hides Development-only tools", asyn
   await expect(page.getByRole("link", { name: "Overview" })).toBeVisible();
   await expect(page.getByRole("link", { name: "All Organizations" })).toBeVisible();
   await expect(page.getByText("Development", { exact: true })).toHaveCount(0);
-  await expect(page.getByLabel("All Accounts. Under development")).toBeVisible();
+  await expect(page.getByRole("link", { name: "All Accounts" })).toBeVisible();
   await expect(page.getByLabel("Event Delivery. Planned")).toBeVisible();
   await expect(page.getByText("Test Payments")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Future Product X" })).toBeVisible();
@@ -136,7 +136,7 @@ test("production preview shows blueprint and hides Development-only tools", asyn
 test("under-development page has no horizontal overflow at 375px", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await mockAuthenticatedSession(page);
-  await page.goto("/admin/users");
+  await page.goto("/admin/products");
   await expect(page.getByRole("heading", { name: "Under development" })).toBeVisible();
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -147,7 +147,7 @@ test("under-development page has no horizontal overflow at 375px", async ({ page
 test("under-development page has no serious accessibility violations", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await mockAuthenticatedSession(page);
-  await page.goto("/admin/users");
+  await page.goto("/admin/products");
   await expect(page.getByRole("heading", { name: "Under development" })).toBeVisible();
 
   const results = await new AxeBuilder({ page }).analyze();

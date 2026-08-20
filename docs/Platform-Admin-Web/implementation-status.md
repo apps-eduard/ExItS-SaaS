@@ -507,6 +507,14 @@ no export, no global Audit Log implementation, no backend changes.
 
 See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-15-organization-activity-audit.md`.
 
+## PWEB-IMPL-16 — Platform Users Directory
+
+Status: **COMPLETE** after validation
+
+Read-only `/admin/users` directory with URL views mapped to actual API `directory` values (`PlatformStaff`, `Organization`, `Personal`, `Unassigned`). Needs Review uses `directory=Unassigned`, not a fake account status. No mutation controls.
+
+See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-16-platform-users-directory.md`.
+
 ## Queue
 
 | Package | Status |
@@ -528,6 +536,6 @@ See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-15-organization-activity-audit.md
 | PWEB-IMPL-14B — Entitlements compact grants | COMPLETE |
 | PWEB-IMPL-14C — Navigation blueprint | COMPLETE |
 | PWEB-IMPL-14D — Product Organizations | COMPLETE |
-| PWEB-IMPL-15 — Organization Activity / Audit | COMPLETE |
+| PWEB-IMPL-16 — Platform Users Directory | COMPLETE |
 
-Stopped after PWEB-IMPL-15. Global Audit Log remains under-development. PWEB-IMPL-14D-R1 closes the organization product server filter.
+Stopped after PWEB-IMPL-16. User detail remains PWEB-17.

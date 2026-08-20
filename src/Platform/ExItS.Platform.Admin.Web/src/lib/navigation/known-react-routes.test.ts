@@ -30,12 +30,18 @@ describe("resolveKnownReactRoute", () => {
     expect(resolveKnownReactRoute({ ...loadedAuthorized, pathname: "/admin" })).toBe("implemented");
   });
 
-  it.each(["/admin/users", "/admin/products", "/admin/plans", "/admin/users?directory=platform"])(
+  it.each(["/admin/products", "/admin/plans"])(
     "treats known unimplemented pathname %s as under-development",
     (pathname) => {
       expect(resolveKnownReactRoute({ ...loadedAuthorized, pathname })).toBe("under-development");
     },
   );
+
+  it("treats /admin/users as implemented", () => {
+    expect(resolveKnownReactRoute({ ...loadedAuthorized, pathname: "/admin/users" })).toBe(
+      "implemented",
+    );
+  });
 
   it("treats /admin/organizations as implemented", () => {
     expect(resolveKnownReactRoute({ ...loadedAuthorized, pathname: "/admin/organizations" })).toBe(

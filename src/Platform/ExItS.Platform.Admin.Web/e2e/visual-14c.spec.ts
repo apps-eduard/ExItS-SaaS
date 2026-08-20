@@ -127,7 +127,7 @@ test("14C navigation blueprint screenshots", async ({ page }) => {
   if ((await peopleToggle.getAttribute("aria-expanded")) !== "true") {
     await peopleToggle.click();
   }
-  await expect(page.getByLabel("All Accounts. Under development")).toBeVisible();
+  await expect(page.getByRole("link", { name: "All Accounts" })).toBeVisible();
   await page.screenshot({
     path: resolve(screenshotDir, "03-people-section-expanded.png"),
     fullPage: true,

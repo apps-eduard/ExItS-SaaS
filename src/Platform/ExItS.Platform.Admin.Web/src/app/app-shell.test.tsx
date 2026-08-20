@@ -224,7 +224,10 @@ describe("application shell", () => {
     await screen.findByRole("heading", { name: "Overview" });
     expect(screen.getByText("Development")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "All Organizations" })).toBeInTheDocument();
-    expect(screen.getByLabelText("All Accounts. Under development")).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "All Accounts" })).toHaveAttribute(
+      "href",
+      "/admin/users",
+    );
     expect(screen.getByLabelText("Event Delivery. Planned")).toBeInTheDocument();
     expect(screen.getAllByText("Under development").length).toBeGreaterThan(0);
     expect(screen.getByLabelText("Test Payments. Under development")).toBeInTheDocument();
@@ -239,7 +242,10 @@ describe("application shell", () => {
     await screen.findByRole("heading", { name: "Overview" });
     expect(screen.queryByText("Development")).not.toBeInTheDocument();
     expect(await screen.findByRole("link", { name: "All Organizations" })).toBeInTheDocument();
-    expect(screen.getByLabelText("All Accounts. Under development")).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "All Accounts" })).toHaveAttribute(
+      "href",
+      "/admin/users",
+    );
     expect(screen.getByLabelText("Event Delivery. Planned")).toBeInTheDocument();
     expect(screen.getByLabelText("Platform Settings. Planned")).toBeInTheDocument();
     expect(screen.queryByText("Test Payments")).not.toBeInTheDocument();
@@ -249,7 +255,7 @@ describe("application shell", () => {
   it("renders Under development for known unimplemented routes and Page not found for unknown routes", async () => {
     stubDesktop(true);
     mockAuthenticatedFetch();
-    window.history.replaceState({}, "", "/admin/users");
+    window.history.replaceState({}, "", "/admin/products");
     const { unmount } = render(<App />);
     expect(await screen.findByRole("heading", { name: "Under development" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Back to Overview" })).toHaveAttribute(
@@ -259,7 +265,7 @@ describe("application shell", () => {
     expect(screen.queryByRole("button", { name: "Copy diagnostics" })).not.toBeInTheDocument();
     unmount();
 
-    window.history.replaceState({}, "", "/admin/users?directory=platform");
+    window.history.replaceState({}, "", "/admin/plans");
     const second = render(<App />);
     expect(await screen.findByRole("heading", { name: "Under development" })).toBeInTheDocument();
     second.unmount();
