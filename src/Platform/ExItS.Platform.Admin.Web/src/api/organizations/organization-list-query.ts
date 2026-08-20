@@ -92,13 +92,10 @@ export function organizationsListRequestPath(query: OrganizationListQuery): stri
     search: query.search,
     sortBy: query.sortBy,
     sortDesc: query.sortDesc === true ? true : undefined,
+    productCode: query.productCode,
   });
 }
 
 export function hasActiveOrganizationFilters(state: OrganizationListUrlState): boolean {
-  return Boolean(state.search || state.status);
+  return Boolean(state.search || state.status || state.product);
 }
-
-/** Recorded blocker: org list API has no authoritative product filter. */
-export const PRODUCT_ORGANIZATION_SERVER_FILTER_MISSING =
-  "PRODUCT_ORGANIZATION_SERVER_FILTER_MISSING" as const;

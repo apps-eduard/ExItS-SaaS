@@ -278,7 +278,7 @@ public sealed class BusinessTypeCapacityAndDowngradeTests
         public Task<PlatformOrganization?> GetByPublicOrganizationIdAsync(string publicOrganizationId, CancellationToken cancellationToken = default) =>
             Task.FromResult(_items.Values.FirstOrDefault(o => string.Equals(o.PublicOrganizationId, publicOrganizationId, StringComparison.OrdinalIgnoreCase)));
         public Task<(IReadOnlyList<PlatformOrganization> Items, int TotalCount)> ListAsync(int skip, int take, CancellationToken cancellationToken = default) => Task.FromResult<(IReadOnlyList<PlatformOrganization>, int)>((_items.Values.Skip(skip).Take(take).ToList(), _items.Count));
-        public Task<(IReadOnlyList<PlatformOrganization> Items, int TotalCount)> ListAsync(OrganizationStatus? status, string? search, OrganizationListSortBy sortBy, bool sortDescending, int skip, int take, CancellationToken cancellationToken = default) => ListAsync(skip, take, cancellationToken);
+        public Task<(IReadOnlyList<PlatformOrganization> Items, int TotalCount)> ListAsync(OrganizationStatus? status, string? search, OrganizationListSortBy sortBy, bool sortDescending, int skip, int take, ExItS.Platform.Domain.Products.ProductCode? productCode = null, CancellationToken cancellationToken = default) => ListAsync(skip, take, cancellationToken);
         public Task UpdateAsync(PlatformOrganization organization, CancellationToken cancellationToken = default) { Store(organization); return Task.CompletedTask; }
     }
 

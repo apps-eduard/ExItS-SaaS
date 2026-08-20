@@ -16,6 +16,7 @@ export const organizationListQueryKey = (query: OrganizationListQuery) =>
     query.search ?? "",
     query.sortBy ?? "DisplayName",
     query.sortDesc === true,
+    query.productCode ?? "",
   ] as const;
 
 export function useOrganizationListQuery(query: OrganizationListQuery, enabled: boolean) {

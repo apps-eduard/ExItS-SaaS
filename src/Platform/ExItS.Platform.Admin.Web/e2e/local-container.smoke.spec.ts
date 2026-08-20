@@ -7,7 +7,7 @@ const enabled = process.env.PWEB_CONTAINER_SMOKE === "1";
 const password = process.env.LOCAL_VALIDATION_SHARED_PASSWORD ?? "";
 const polishScreenshotDir = resolve(
   dirname(fileURLToPath(import.meta.url)),
-  "../../../../docs/Platform-Admin-Web/Reports/impl-14d-product-organizations",
+  "../../../../docs/Platform-Admin-Web/Reports/impl-14d-r1-product-organizations-server-filter",
 );
 
 test.describe("local-validation React container smoke", () => {
@@ -124,9 +124,9 @@ test.describe("local-validation React container smoke", () => {
     const firstCatalogProduct = productOptions.find((label) => label !== "All products");
     if (firstCatalogProduct) {
       await productSelect.selectOption({ label: firstCatalogProduct });
-      await expect(page.getByTestId("product-org-filter-blocked")).toBeVisible();
+      await expect(page.getByTestId("product-org-filter-blocked")).toHaveCount(0);
       await page.screenshot({
-        path: resolve(polishScreenshotDir, "02-organizations-by-product-blocked-1440x900.png"),
+        path: resolve(polishScreenshotDir, "02-organizations-by-product-1440x900.png"),
         fullPage: true,
       });
       await page.screenshot({

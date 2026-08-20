@@ -92,6 +92,7 @@ public sealed class GetOrganizationCatalogVisibilityTests
             bool sortDescending,
             int skip,
             int take,
+            ExItS.Platform.Domain.Products.ProductCode? productCode = null,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<(IReadOnlyList<PlatformOrganization>, int)>(([], 0));
 

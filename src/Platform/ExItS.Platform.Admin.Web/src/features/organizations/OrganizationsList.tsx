@@ -4,7 +4,6 @@ import {
   hasActiveOrganizationFilters,
   organizationListSearchParams,
   parseOrganizationListSearchParams,
-  PRODUCT_ORGANIZATION_SERVER_FILTER_MISSING,
   type CatalogProductOption,
 } from "@/api/organizations/organization-list-query";
 import {
@@ -92,7 +91,6 @@ export function OrganizationsList({
     setSearchDraft(state.search);
   }
 
-  const productFilterBlocked = selectedProduct != null;
   const query = useOrganizationListQuery(
     {
       page: state.page,
@@ -101,8 +99,9 @@ export function OrganizationsList({
       search: state.search || undefined,
       sortBy: state.sortBy,
       sortDesc: state.sortDesc,
+      productCode: selectedProduct?.code,
     },
-    enabled && !productFilterBlocked,
+    enabled,
   );
 
   function replaceState(patch: Partial<typeof state>) {
@@ -263,22 +262,7 @@ export function OrganizationsList({
         </div>
       </form>
 
-      {productFilterBlocked ? (
-        <div
-          className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-6 text-[length:var(--exits-text-sm)] text-muted"
-          role="status"
-          data-blocker={PRODUCT_ORGANIZATION_SERVER_FILTER_MISSING}
-          data-testid="product-org-filter-blocked"
-        >
-          <p className="font-medium text-foreground">{t("organizations.product.blockedTitle")}</p>
-          <p className="mt-2">{t("organizations.product.blockedBody")}</p>
-          <p className="mt-3 font-mono text-[length:var(--exits-text-xs)] text-muted">
-            {PRODUCT_ORGANIZATION_SERVER_FILTER_MISSING}
-          </p>
-        </div>
-      ) : null}
-
-      {!productFilterBlocked && query.isPending ? (
+      {query.isPending ? (
         <div
           className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-3"
           role="status"
@@ -289,7 +273,7 @@ export function OrganizationsList({
         </div>
       ) : null}
 
-      {!productFilterBlocked && query.isError && diagnostic ? (
+      {query.isError && diagnostic ? (
         <ErrorState
           diagnostic={diagnostic}
           title={t("organizations.error")}
@@ -298,27 +282,33 @@ export function OrganizationsList({
         />
       ) : null}
 
-      {!productFilterBlocked && query.data ? (
-        <OrganizationResults
-          items={query.data.items}
-          totalCount={query.data.totalCount}
-          page={state.page}
-          totalPages={totalPages}
-          filtered={hasActiveOrganizationFilters(state)}
-          language={language}
-          showTable={showTable}
-          onPage={(nextPage) => replaceState({ page: nextPage })}
-          onReset={() => {
-            setSearchDraft("");
-            replaceState({
-              page: 1,
-              search: "",
-              status: "",
-              sortBy: "DisplayName",
-              sortDesc: false,
-            });
-          }}
-        />
+      {query.data ? (
+        <div
+          data-testid={selectedProduct ? "product-org-filter-results" : undefined}
+          data-product-code={selectedProduct?.code}
+          data-total-count={String(query.data.totalCount)}
+        >
+          <OrganizationResults
+            items={query.data.items}
+            totalCount={query.data.totalCount}
+            page={state.page}
+            totalPages={totalPages}
+            filtered={hasActiveOrganizationFilters(state)}
+            language={language}
+            showTable={showTable}
+            onPage={(nextPage) => replaceState({ page: nextPage })}
+            onReset={() => {
+              setSearchDraft("");
+              replaceState({
+                page: 1,
+                search: "",
+                status: "",
+                sortBy: "DisplayName",
+                sortDesc: false,
+              });
+            }}
+          />
+        </div>
       ) : null}
     </div>
   );

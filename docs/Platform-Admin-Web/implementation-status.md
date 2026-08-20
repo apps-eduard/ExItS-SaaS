@@ -473,13 +473,13 @@ Status: **COMPLETE**
 
 See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-14C-navigation-blueprint.md`.
 
-## PWEB-IMPL-14D — Product-filtered Organizations foundation
+## PWEB-IMPL-14D — Product-filtered Organizations
 
-Status: **FOUNDATION COMPLETE / SERVER FILTER BLOCKED**
+Status: **COMPLETE** after PWEB-IMPL-14D-R1
 
-Canonical UI/URL foundation for `/admin/organizations?product=<code>` is in place. Server-authoritative product filtering was **not** available on the organization list API. Blocker: `PRODUCT_ORGANIZATION_SERVER_FILTER_MISSING`. Do not treat actual product-filtered results as complete until PWEB-IMPL-14D-R1.
+Canonical UI/URL `/admin/organizations?product=<code>` maps to server `productCode` after catalog sanitation. Server-authoritative product filtering is available via organization-level Platform subscriptions.
 
-See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-14D-product-filtered-organizations.md`.
+See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-14D-product-filtered-organizations.md` and `docs/Platform-Admin-Web/Reports/PWEB-IMPL-14D-R1-product-organizations-server-filter.md`.
 
 ## PWEB-IMPL-15 — Organization Activity / Audit
 
@@ -527,7 +527,7 @@ See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-15-organization-activity-audit.md
 | PWEB-IMPL-14A — Organization read-only polish | COMPLETE |
 | PWEB-IMPL-14B — Entitlements compact grants | COMPLETE |
 | PWEB-IMPL-14C — Navigation blueprint | COMPLETE |
-| PWEB-IMPL-14D — Product Organizations foundation | FOUNDATION COMPLETE / SERVER FILTER BLOCKED |
+| PWEB-IMPL-14D — Product Organizations | COMPLETE |
 | PWEB-IMPL-15 — Organization Activity / Audit | COMPLETE |
 
-Stopped after PWEB-IMPL-15. Global Audit Log remains under-development.
+Stopped after PWEB-IMPL-15. Global Audit Log remains under-development. PWEB-IMPL-14D-R1 closes the organization product server filter.

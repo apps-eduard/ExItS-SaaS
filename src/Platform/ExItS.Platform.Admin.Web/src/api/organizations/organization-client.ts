@@ -623,6 +623,7 @@ export function listOrganizations(
     options.search == null &&
     options.sortBy == null &&
     options.sortDesc == null &&
+    options.productCode == null &&
     (options.page == null || options.page === 1);
   const path = dashboardShaped
     ? organizationsListPath({

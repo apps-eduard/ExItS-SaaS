@@ -3,7 +3,6 @@ import {
   organizationListSearchParams,
   organizationsListRequestPath,
   parseOrganizationListSearchParams,
-  PRODUCT_ORGANIZATION_SERVER_FILTER_MISSING,
   sanitizeOrganizationListProduct,
 } from "@/api/organizations/organization-list-query";
 
@@ -54,7 +53,7 @@ describe("organization list query", () => {
     expect(state.product).toBe("");
   });
 
-  it("builds the real list path with supported server parameters and never sends product", () => {
+  it("builds the real list path with supported server parameters including productCode", () => {
     expect(
       organizationsListRequestPath({
         page: 2,
@@ -67,9 +66,13 @@ describe("organization list query", () => {
     ).toBe(
       "/api/v1/platform/organizations?page=2&pageSize=20&status=Active&search=north&sortBy=CreatedAtUtc&sortDesc=true",
     );
-    expect(PRODUCT_ORGANIZATION_SERVER_FILTER_MISSING).toBe(
-      "PRODUCT_ORGANIZATION_SERVER_FILTER_MISSING",
-    );
+    expect(
+      organizationsListRequestPath({
+        page: 1,
+        pageSize: 20,
+        productCode: "future-product-x",
+      }),
+    ).toBe("/api/v1/platform/organizations?page=1&pageSize=20&productCode=future-product-x");
   });
 
   it("sanitizes product against authorized catalog only", () => {

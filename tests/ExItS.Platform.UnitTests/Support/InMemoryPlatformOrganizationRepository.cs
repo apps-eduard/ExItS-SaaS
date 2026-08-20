@@ -1,5 +1,6 @@
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Products;
 
 namespace ExItS.Platform.UnitTests.Support;
 
@@ -45,7 +46,7 @@ internal sealed class InMemoryPlatformOrganizationRepository : IPlatformOrganiza
         int skip,
         int take,
         CancellationToken cancellationToken = default) =>
-        ListAsync(null, null, OrganizationListSortBy.DisplayName, false, skip, take, cancellationToken);
+        ListAsync(null, null, OrganizationListSortBy.DisplayName, false, skip, take, productCode: null, cancellationToken);
 
     public Task<(IReadOnlyList<PlatformOrganization> Items, int TotalCount)> ListAsync(
         OrganizationStatus? status,
@@ -54,6 +55,7 @@ internal sealed class InMemoryPlatformOrganizationRepository : IPlatformOrganiza
         bool sortDescending,
         int skip,
         int take,
+        ProductCode? productCode = null,
         CancellationToken cancellationToken = default)
     {
         IEnumerable<PlatformOrganization> query = _byId.Values;

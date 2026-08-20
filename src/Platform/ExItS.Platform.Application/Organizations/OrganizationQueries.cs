@@ -1,5 +1,6 @@
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Products;
 
 namespace ExItS.Platform.Application.Organizations;
 
@@ -55,7 +56,7 @@ public sealed class OrganizationQueryService
         int? page,
         int? pageSize,
         CancellationToken cancellationToken = default) =>
-        await ListAsync(page, pageSize, status: null, search: null, sortBy: null, sortDesc: null, cancellationToken)
+        await ListAsync(page, pageSize, status: null, search: null, sortBy: null, sortDesc: null, productCode: null, cancellationToken)
             .ConfigureAwait(false);
 
     public async Task<PagedResult<PlatformOrganizationDto>> ListAsync(
@@ -65,6 +66,18 @@ public sealed class OrganizationQueryService
         string? search,
         OrganizationListSortBy? sortBy,
         bool? sortDesc,
+        CancellationToken cancellationToken = default) =>
+        await ListAsync(page, pageSize, status, search, sortBy, sortDesc, productCode: null, cancellationToken)
+            .ConfigureAwait(false);
+
+    public async Task<PagedResult<PlatformOrganizationDto>> ListAsync(
+        int? page,
+        int? pageSize,
+        OrganizationStatus? status,
+        string? search,
+        OrganizationListSortBy? sortBy,
+        bool? sortDesc,
+        ProductCode? productCode,
         CancellationToken cancellationToken = default)
     {
         var (skip, take) = CatalogPagination.Normalize(page, pageSize);
@@ -76,6 +89,7 @@ public sealed class OrganizationQueryService
                 sortDesc ?? false,
                 skip,
                 take,
+                productCode,
                 cancellationToken)
             .ConfigureAwait(false);
         var pageNumber = Math.Max(page ?? 1, 1);

@@ -83,6 +83,7 @@ export type OrganizationListQuery = {
   search?: string;
   sortBy?: string;
   sortDesc?: boolean;
+  productCode?: string;
 };
 
 export const MEMBERSHIP_STATUSES = ["Active", "Suspended", "Removed"] as const;

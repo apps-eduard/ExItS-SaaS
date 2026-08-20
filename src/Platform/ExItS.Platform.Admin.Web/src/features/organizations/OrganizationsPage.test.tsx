@@ -228,7 +228,7 @@ describe("organizations list", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows product context and blocked foundation for a sanitized catalog product", async () => {
+  it("shows product context and server-filtered organizations for a sanitized catalog product", async () => {
     stubDesktop();
     const fetchMock = mockAuthenticatedFetch({
       organizationItems: [sampleOrg],
@@ -256,17 +256,19 @@ describe("organizations list", () => {
     expect(
       await screen.findByRole("heading", { name: "Organizations / Future Product X" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("Product-specific organization filtering is not available yet."),
-    ).toBeInTheDocument();
-    expect(screen.getByTestId("product-org-filter-blocked")).toHaveAttribute(
-      "data-blocker",
-      "PRODUCT_ORGANIZATION_SERVER_FILTER_MISSING",
+    expect(await screen.findByText("Northwind Market")).toBeInTheDocument();
+    expect(screen.getByTestId("product-org-filter-results")).toHaveAttribute(
+      "data-product-code",
+      "future-product-x",
     );
+    expect(screen.getByTestId("product-org-filter-results")).toHaveAttribute(
+      "data-total-count",
+      "1",
+    );
+    expect(screen.queryByTestId("product-org-filter-blocked")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Product")).toHaveValue("future-product-x");
     expect(screen.getByLabelText("Search")).toHaveValue("north");
     expect(screen.getByLabelText("Status")).toHaveValue("Active");
-    expect(screen.queryByText("Northwind Market")).not.toBeInTheDocument();
 
     await waitFor(() => {
       const orgListCalls = fetchMock.mock.calls
@@ -278,7 +280,10 @@ describe("organizations list", () => {
             !url.includes("commercial-summary") &&
             !/\/organizations\/[0-9a-fA-F-]{36}/.test(url),
         );
-      expect(orgListCalls).toHaveLength(0);
+      expect(orgListCalls.some((url) => url.includes("productCode=future-product-x"))).toBe(true);
+      expect(orgListCalls.some((url) => url.includes("search=north"))).toBe(true);
+      expect(orgListCalls.some((url) => url.includes("status=Active"))).toBe(true);
+      expect(orgListCalls.every((url) => !url.includes("product=future-product-x"))).toBe(true);
     });
   });
 
@@ -339,8 +344,12 @@ describe("organizations list", () => {
       expect(window.location.search).toContain("sortDesc=true");
     });
     expect(window.location.search).not.toContain("page=2");
+    expect(await screen.findByTestId("product-org-filter-results")).toHaveAttribute(
+      "data-product-code",
+      "future-product-x",
+    );
     expect(
-      await screen.findByText("Product-specific organization filtering is not available yet."),
-    ).toBeInTheDocument();
+      screen.queryByText("Product-specific organization filtering is not available yet."),
+    ).not.toBeInTheDocument();
   });
 });
