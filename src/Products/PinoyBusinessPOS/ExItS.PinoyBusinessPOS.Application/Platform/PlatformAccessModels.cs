@@ -401,7 +401,9 @@ public sealed record PlatformAuthSessionInfoDto(
     int ActiveOrganizationCount,
     Guid? AccountProfileId = null,
     string? AccountClass = null,
-    string? AllowedScope = null);
+    string? AllowedScope = null,
+    Guid? HomeOrganizationId = null,
+    bool OrganizationContextLocked = false);
 
 public sealed record PlatformLoginResultDto(
     string SessionToken,

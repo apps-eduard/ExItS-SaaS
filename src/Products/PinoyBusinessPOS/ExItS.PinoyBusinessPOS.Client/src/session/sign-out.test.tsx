@@ -52,6 +52,9 @@ function createSessionFetchMock(
           username: "cashier",
           displayName: "Cashier One",
           selectedOrganizationId: orgId,
+          accountClass: "Organization",
+          homeOrganizationId: orgId,
+          organizationContextLocked: true,
         }),
         text: async () => "",
       } as Response;

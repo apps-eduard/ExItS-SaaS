@@ -524,7 +524,9 @@ public sealed class ValidateAndRenewPlatformSession
             mfa,
             session.AccountProfileId.Value,
             session.AccountClass.ToString(),
-            session.AllowedScope.ToString()));
+            session.AllowedScope.ToString(),
+            user.HomeOrganizationId?.Value,
+            OrganizationContextLocked: user.IsOrganizationScopedStaff));
     }
 
     internal static bool ShouldPersistSlidingRenewal(

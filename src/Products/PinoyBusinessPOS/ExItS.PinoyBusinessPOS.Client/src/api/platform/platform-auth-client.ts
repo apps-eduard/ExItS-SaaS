@@ -4,6 +4,9 @@ import {
   PlatformApiError,
 } from "@/api/platform/platform-http";
 import {
+  AUTH_ACCOUNT_PROFILES_ENSURE_PATH,
+  AUTH_ACCOUNT_PROFILES_PATH,
+  AUTH_ACCOUNT_PROFILES_SELECT_PATH,
   AUTH_LOGIN_PATH,
   AUTH_LOGOUT_PATH,
   AUTH_ME_PATH,
@@ -103,6 +106,71 @@ export async function loginWithPassword(
   } catch (error) {
     if (error instanceof PlatformApiError && error.status >= 400 && error.status < 500) {
       return { ok: false };
+    }
+    throw error;
+  }
+}
+
+export type AccountProfileWire = {
+  id: string;
+  userIdentityId: string;
+  accountClass: string;
+  allowedScope: string;
+  status: string;
+};
+
+export async function listAccountProfiles(): Promise<
+  | { ok: true; profiles: AccountProfileWire[] }
+  | { ok: false; status: number; body: PlatformProblem | null }
+> {
+  try {
+    const body = await platformRequest<AccountProfileWire[]>({ path: AUTH_ACCOUNT_PROFILES_PATH });
+    return { ok: true, profiles: Array.isArray(body) ? body : [] };
+  } catch (error) {
+    if (error instanceof PlatformApiError) {
+      return { ok: false, status: error.status, body: error.problem };
+    }
+    throw error;
+  }
+}
+
+export async function selectAccountProfile(
+  accountProfileId: string,
+): Promise<
+  | { ok: true; session: BrowserSessionSnapshot }
+  | { ok: false; status: number; body: PlatformProblem | null }
+> {
+  try {
+    const body = await platformRequest<PlatformLoginWire>({
+      method: "POST",
+      path: AUTH_ACCOUNT_PROFILES_SELECT_PATH,
+      body: { accountProfileId },
+    });
+    return { ok: true, session: toBrowserSessionSnapshot(body) };
+  } catch (error) {
+    if (error instanceof PlatformApiError) {
+      return { ok: false, status: error.status, body: error.problem };
+    }
+    throw error;
+  }
+}
+
+export async function ensureAccountProfile(
+  accountClass: "Personal" | "Organization",
+): Promise<
+  | { ok: true; profile: AccountProfileWire }
+  | { ok: false; status: number; body: PlatformProblem | null }
+> {
+  try {
+    const body = await platformRequest<AccountProfileWire>({
+      method: "POST",
+      path: AUTH_ACCOUNT_PROFILES_ENSURE_PATH,
+      body: { accountClass },
+    });
+    return { ok: true, profile: body };
+  } catch (error) {
+    if (error instanceof PlatformApiError) {
+      return { ok: false, status: error.status, body: error.problem };
     }
     throw error;
   }

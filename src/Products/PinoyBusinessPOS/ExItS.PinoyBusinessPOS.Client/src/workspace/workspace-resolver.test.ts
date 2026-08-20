@@ -79,10 +79,34 @@ describe("workspace resolver AMEND-03", () => {
     );
   });
 
-  it("case E — no eligible organizations routes to personal home", () => {
+  it("case E — no eligible organizations routes to personal home for Personal class", () => {
     expect(resolveWorkspaceRoutingPlan({ organizationCount: 0, workspaces: [] }).outcome).toBe(
       "PersonalHome",
     );
+    expect(
+      resolveWorkspaceRoutingPlan({
+        organizationCount: 0,
+        workspaces: [],
+        accountClass: "Personal",
+      }).outcome,
+    ).toBe("PersonalHome");
+  });
+
+  it("case E2 — Organization/Platform with no eligible orgs does not become Personal home", () => {
+    expect(
+      resolveWorkspaceRoutingPlan({
+        organizationCount: 0,
+        workspaces: [],
+        accountClass: "Organization",
+      }).outcome,
+    ).toBe("NoAccessibleBranch");
+    expect(
+      resolveWorkspaceRoutingPlan({
+        organizationCount: 0,
+        workspaces: [],
+        accountClass: "Platform",
+      }).outcome,
+    ).toBe("NoAccessibleBranch");
   });
 
   it("treats branch status Active case-insensitively", () => {

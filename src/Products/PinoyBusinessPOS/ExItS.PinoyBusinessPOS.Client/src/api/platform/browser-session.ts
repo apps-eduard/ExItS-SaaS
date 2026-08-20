@@ -65,6 +65,9 @@ export function assertBrowserStorageHasNoBearerToken(storage: Storage): void {
 export const AUTH_LOGIN_PATH = "/api/v1/platform/auth/login";
 export const AUTH_ME_PATH = "/api/v1/platform/auth/me";
 export const AUTH_LOGOUT_PATH = "/api/v1/platform/auth/logout";
+export const AUTH_ACCOUNT_PROFILES_PATH = "/api/v1/platform/auth/account-profiles";
+export const AUTH_ACCOUNT_PROFILES_SELECT_PATH = "/api/v1/platform/auth/account-profiles/select";
+export const AUTH_ACCOUNT_PROFILES_ENSURE_PATH = "/api/v1/platform/auth/account-profiles/ensure";
 export const AUTH_ORGANIZATIONS_PATH = "/api/v1/platform/auth/organizations";
 export const AUTH_ORGANIZATION_CONTEXT_PATH = "/api/v1/platform/auth/organization-context";
 export const AUTH_TOKEN_PATH = "/api/v1/platform/auth/token";

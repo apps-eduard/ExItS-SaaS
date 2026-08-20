@@ -42,6 +42,9 @@ function createFetchMock(options: { longNames?: boolean; unbound?: boolean } = {
           displayName,
           email: "olivia@example.com",
           selectedOrganizationId: unbound ? null : orgId,
+          accountClass: unbound ? "Personal" : "Organization",
+          homeOrganizationId: unbound ? null : orgId,
+          organizationContextLocked: !unbound,
         }),
         text: async () => "",
       } as Response;

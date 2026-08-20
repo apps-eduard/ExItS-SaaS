@@ -18,6 +18,8 @@ import { WorkspaceChooserPage } from "@/features/workspace/WorkspaceChooserPage"
 import {
   GuestOnly,
   RequireCreateSale,
+  RequireOrganizationSession,
+  RequirePersonalSession,
   RequireSession,
   RequireWorkspaceBound,
   WorkspaceBootGate,
@@ -46,50 +48,81 @@ export const appRoutes = [
         ),
         children: [
           { index: true, element: <HomePage /> },
-          { path: "workspace", element: <WorkspaceChooserPage /> },
-          { path: "personal", element: <PersonalHomePage /> },
-          { path: "no-location", element: <NoAccessibleBranchPage /> },
+          {
+            path: "workspace",
+            element: (
+              <RequireOrganizationSession>
+                <WorkspaceChooserPage />
+              </RequireOrganizationSession>
+            ),
+          },
+          {
+            path: "personal",
+            element: (
+              <RequirePersonalSession>
+                <PersonalHomePage />
+              </RequirePersonalSession>
+            ),
+          },
+          {
+            path: "no-location",
+            element: (
+              <RequireOrganizationSession>
+                <NoAccessibleBranchPage />
+              </RequireOrganizationSession>
+            ),
+          },
           { path: "settings/preferences", element: <PreferencesPage /> },
           {
             path: "sell",
             element: (
-              <RequireWorkspaceBound>
-                <RequireCreateSale>
-                  <SellFloorPage />
-                </RequireCreateSale>
-              </RequireWorkspaceBound>
+              <RequireOrganizationSession>
+                <RequireWorkspaceBound>
+                  <RequireCreateSale>
+                    <SellFloorPage />
+                  </RequireCreateSale>
+                </RequireWorkspaceBound>
+              </RequireOrganizationSession>
             ),
           },
           {
             path: "role/owner",
             element: (
-              <RequireWorkspaceBound>
-                <OwnerRoleHomePage />
-              </RequireWorkspaceBound>
+              <RequireOrganizationSession>
+                <RequireWorkspaceBound>
+                  <OwnerRoleHomePage />
+                </RequireWorkspaceBound>
+              </RequireOrganizationSession>
             ),
           },
           {
             path: "role/manager",
             element: (
-              <RequireWorkspaceBound>
-                <ManagerRoleHomePage />
-              </RequireWorkspaceBound>
+              <RequireOrganizationSession>
+                <RequireWorkspaceBound>
+                  <ManagerRoleHomePage />
+                </RequireWorkspaceBound>
+              </RequireOrganizationSession>
             ),
           },
           {
             path: "role/cashier",
             element: (
-              <RequireWorkspaceBound>
-                <CashierRoleHomePage />
-              </RequireWorkspaceBound>
+              <RequireOrganizationSession>
+                <RequireWorkspaceBound>
+                  <CashierRoleHomePage />
+                </RequireWorkspaceBound>
+              </RequireOrganizationSession>
             ),
           },
           {
             path: "org",
             element: (
-              <RequireWorkspaceBound>
-                <OrgEssentialsPage />
-              </RequireWorkspaceBound>
+              <RequireOrganizationSession>
+                <RequireWorkspaceBound>
+                  <OrgEssentialsPage />
+                </RequireWorkspaceBound>
+              </RequireOrganizationSession>
             ),
           },
           { path: "*", element: <NotFoundPage /> },

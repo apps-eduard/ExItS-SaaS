@@ -22,6 +22,7 @@ import {
   type SessionGrantResponse,
 } from "@/api/platform/platform-auth-client";
 import { clearPlatformAntiforgeryToken } from "@/api/platform/platform-http";
+import { sessionAccountClass } from "@/session/account-class";
 import { useSession } from "@/session/SessionProvider";
 import type {
   AccessibleOrganizationWorkspace,
@@ -95,6 +96,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setStatus("loading");
     setAccessDeniedDetail(null);
 
+    const accountClass = sessionAccountClass(currentSession);
+
+    // Personal sessions without org context do not bind POS workspace. Eligible-org discovery
+    // still runs so owners with memberships can later ensure/select Organization (RMAP-02).
     const organizationsResult = await listEligibleOrganizations();
     if (!organizationsResult.ok) {
       setStatus("error");
@@ -119,11 +124,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     const plan = resolveWorkspaceRoutingPlan({
       organizationCount: organizationsResult.organizations.length,
       workspaces: accessible,
+      accountClass,
     });
 
     setWorkspaces(accessible);
     setRoutingPlan(plan);
     setStatus("ready");
+
+    // Personal AccountClass cannot set organization context — never auto-bind.
+    if (accountClass === "Personal") {
+      return;
+    }
 
     if (
       currentSession?.selectedOrganizationId &&
@@ -155,6 +166,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const bindWorkspace = useCallback(
     async (organizationId: string, branchId: string) => {
+      if (sessionAccountClass(session) === "Personal") {
+        setAccessDeniedDetail(
+          "Organization workspace requires an Organization account profile. Select Organization profile before binding.",
+        );
+        setStatus("access_denied");
+        return false;
+      }
+
       setStatus("binding");
       setAccessDeniedDetail(null);
       const result = await bindWorkspaceWithSessionGrant(organizationId, branchId);
@@ -186,7 +205,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setStatus("bound");
       return true;
     },
-    [workspaces],
+    [session, workspaces],
   );
 
   useEffect(() => {
@@ -211,6 +230,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (sessionStatus !== "authenticated" || status !== "ready" || boundWorkspace) {
       return;
     }
+    if (sessionAccountClass(session) === "Personal") {
+      return;
+    }
     if (!routingPlan || routingPlan.outcome !== "AutoSelect") {
       return;
     }
@@ -233,7 +255,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [bindWorkspace, boundWorkspace, navigate, routingPlan, sessionStatus, status]);
+  }, [bindWorkspace, boundWorkspace, navigate, routingPlan, session, sessionStatus, status]);
 
   const signOutReset = useCallback(() => {
     queryClient.clear();

@@ -30,8 +30,12 @@ export const en = {
   "session.loading": "Checking session…",
   "signIn.title": "Sign in",
   "signIn.lede": "Use your ExItS account to open Pinoy Business POS.",
-  "signIn.usernameLabel": "Email or username",
+  "signIn.usernameLabel": "Email or staff login",
+  "signIn.usernameHint":
+    "Personal accounts use your email. Organization staff use the staff login (for example local@ORG123456), not the contact email.",
   "signIn.passwordLabel": "Password",
+  "signIn.staffLoginHint":
+    "Staff login detected. Use the organization staff password — it is separate from any Personal password.",
   "signIn.submit": "Sign in",
   "signIn.submitting": "Signing in…",
   "signIn.error": "Sign in failed. Check your credentials and try again.",
@@ -42,6 +46,10 @@ export const en = {
     "Choose a seeded user to fill the username. Enter the password yourself.",
   "signIn.testUser": "Test user",
   "signIn.selectUser": "Select a user…",
+  "accountClass.deniedTitle": "Account type not allowed",
+  "accountClass.deniedLede": "This screen belongs to a different account class.",
+  "accountClass.deniedDetail":
+    "Sign in with the correct Personal or Organization staff account. A person-link does not share sessions or permissions.",
   "workspace.title": "Choose workspace",
   "workspace.lede": "Select the organization and branch you will operate.",
   "workspace.loading": "Loading workspaces…",
@@ -168,8 +176,12 @@ export const filPH: Record<keyof typeof en, string> = {
   "session.loading": "Sinusuri ang session…",
   "signIn.title": "Mag-sign in",
   "signIn.lede": "Gamitin ang ExItS account mo para buksan ang Pinoy Business POS.",
-  "signIn.usernameLabel": "Email o username",
+  "signIn.usernameLabel": "Email o staff login",
+  "signIn.usernameHint":
+    "Personal account: email. Organization staff: staff login (hal. local@ORG123456), hindi ang contact email.",
   "signIn.passwordLabel": "Password",
+  "signIn.staffLoginHint":
+    "Staff login ang nakita. Gamitin ang organization staff password — hiwalay ito sa Personal password.",
   "signIn.submit": "Mag-sign in",
   "signIn.submitting": "Nagsa-sign in…",
   "signIn.error": "Hindi nag-sign in. Suriin ang credentials at subukang muli.",
@@ -180,6 +192,10 @@ export const filPH: Record<keyof typeof en, string> = {
     "Pumili ng seeded user para mapunan ang username. Ikaw ang maglalagay ng password.",
   "signIn.testUser": "Test user",
   "signIn.selectUser": "Pumili ng user…",
+  "accountClass.deniedTitle": "Hindi pinapayagan ang account type",
+  "accountClass.deniedLede": "Ang screen na ito ay para sa ibang account class.",
+  "accountClass.deniedDetail":
+    "Mag-sign in gamit ang tamang Personal o Organization staff account. Ang person-link ay hindi nagbabahagi ng session o permiso.",
   "workspace.title": "Pumili ng workspace",
   "workspace.lede": "Piliin ang organization at branch na pagtatrabahuan.",
   "workspace.loading": "Naglo-load ng mga workspace…",

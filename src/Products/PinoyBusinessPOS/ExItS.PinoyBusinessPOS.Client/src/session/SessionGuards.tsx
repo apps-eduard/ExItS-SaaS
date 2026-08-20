@@ -1,9 +1,12 @@
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { canCreateSale } from "@/access/pos-capabilities";
+import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { PageHeader } from "@/components/exits/PageHeader";
 import { SellAccessDeniedPage } from "@/features/sell/SellAccessDeniedPage";
 import { useI18n } from "@/i18n/I18nProvider";
+import { sessionAccountClass, type AccountClassName } from "@/session/account-class";
 import { useSession } from "@/session/SessionProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { workspaceRouteForOutcome } from "@/workspace/workspace-resolver";
@@ -39,6 +42,51 @@ export function GuestOnly({ children }: { children: ReactNode }) {
     return <Navigate to="/" replace />;
   }
   return children;
+}
+
+/**
+ * Enforces server-reported AccountClass. Never infers class from email/username.
+ * LinkedPersonalUserId is correlation only and must not bypass this guard.
+ */
+export function RequireAccountClass({
+  allow,
+  children,
+}: {
+  allow: readonly AccountClassName[];
+  children: ReactNode;
+}) {
+  const { status, session } = useSession();
+  const { t } = useI18n();
+
+  if (status === "loading") {
+    return <SessionLoading />;
+  }
+  if (status !== "authenticated") {
+    return <Navigate to="/sign-in" replace />;
+  }
+
+  const accountClass = sessionAccountClass(session);
+  if (accountClass && allow.includes(accountClass)) {
+    return children;
+  }
+
+  return (
+    <div className="flex min-w-0 flex-col gap-4" data-testid="account-class-denied">
+      <PageHeader
+        title={t("accountClass.deniedTitle")}
+        description={t("accountClass.deniedLede")}
+      />
+      <ErrorState title={t("accountClass.deniedTitle")} detail={t("accountClass.deniedDetail")} />
+    </div>
+  );
+}
+
+export function RequirePersonalSession({ children }: { children: ReactNode }) {
+  return <RequireAccountClass allow={["Personal"]}>{children}</RequireAccountClass>;
+}
+
+export function RequireOrganizationSession({ children }: { children: ReactNode }) {
+  return <RequireAccountClass allow={["Organization"]}>{children}</RequireAccountClass>;
 }
 
 export function RequireWorkspaceBound({ children }: { children: ReactNode }) {

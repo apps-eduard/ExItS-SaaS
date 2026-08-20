@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { TestUserSelector } from "@/features/auth/TestUserSelector";
 import { useI18n } from "@/i18n/I18nProvider";
+import { looksLikeOrgScopedStaffLogin } from "@/session/account-class";
 import { useSession } from "@/session/SessionProvider";
 
 export function SignInPage() {
@@ -19,6 +20,7 @@ export function SignInPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const expired = Boolean((location.state as { expired?: boolean } | null)?.expired);
+  const staffLoginHint = looksLikeOrgScopedStaffLogin(usernameOrEmail);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -79,6 +81,17 @@ export function SignInPage() {
               onChange={(event) => setUsernameOrEmail(event.target.value)}
               required
             />
+            <p className="m-0 text-[length:var(--exits-text-sm)] leading-relaxed text-muted">
+              {t("signIn.usernameHint")}
+            </p>
+            {staffLoginHint ? (
+              <p
+                className="m-0 text-[length:var(--exits-text-sm)] leading-relaxed text-muted"
+                data-testid="staff-login-hint"
+              >
+                {t("signIn.staffLoginHint")}
+              </p>
+            ) : null}
             <Input
               label={t("signIn.passwordLabel")}
               name="password"
@@ -88,7 +101,7 @@ export function SignInPage() {
               onChange={(event) => setPassword(event.target.value)}
               required
             />
-            <Button type="submit" className="w-full" disabled={submitting}>
+            <Button type="submit" className="w-full min-h-11" disabled={submitting}>
               {submitting ? t("signIn.submitting") : t("signIn.submit")}
             </Button>
           </form>

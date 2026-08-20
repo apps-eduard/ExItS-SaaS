@@ -1,4 +1,5 @@
 import type { PlatformBranch } from "@/api/platform/platform-auth-client";
+import type { AccountClassName } from "@/session/account-class";
 import type {
   AccessibleOrganizationWorkspace,
   AccessibleWorkspaceBranch,
@@ -66,9 +67,15 @@ export function buildAccessibleWorkspaces(
 export function resolveWorkspaceRoutingPlan(input: {
   organizationCount: number;
   workspaces: AccessibleOrganizationWorkspace[];
+  accountClass?: AccountClassName | null;
 }): WorkspaceRoutingPlan {
   if (input.workspaces.length === 0) {
     if (input.organizationCount === 0) {
+      // Personal home is only for Personal AccountClass. Staff/Platform with no eligible orgs
+      // must not be treated as Personal — fail closed to no-location.
+      if (input.accountClass === "Organization" || input.accountClass === "Platform") {
+        return { outcome: "NoAccessibleBranch" };
+      }
       return { outcome: "PersonalHome" };
     }
     return { outcome: "NoAccessibleBranch" };
