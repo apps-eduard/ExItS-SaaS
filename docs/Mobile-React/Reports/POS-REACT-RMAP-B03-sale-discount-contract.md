@@ -7,7 +7,8 @@
 ## Baseline
 
 starting SHA: `27ed884df2b4862770f8da5f39d7849952f07b8e`  
-branch: `feat/pos-react-client`
+branch: `feat/pos-react-client`  
+implementation SHA: `431e51040539bb4fcaba03e935df4b46c60fed3a`
 
 ## Permanent financial distinctions
 
