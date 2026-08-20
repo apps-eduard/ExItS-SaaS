@@ -5,9 +5,9 @@ import { expect, test } from "@playwright/test";
 
 const enabled = process.env.PWEB_CONTAINER_SMOKE === "1";
 const password = process.env.LOCAL_VALIDATION_SHARED_PASSWORD ?? "";
-const billingScreenshotDir = resolve(
+const polishScreenshotDir = resolve(
   dirname(fileURLToPath(import.meta.url)),
-  "../../../../docs/Platform-Admin-Web/Reports/impl-14-organization-billing",
+  "../../../../docs/Platform-Admin-Web/Reports/impl-14a-organization-readonly-polish",
 );
 
 test.describe("local-validation React container smoke", () => {
@@ -125,31 +125,45 @@ test.describe("local-validation React container smoke", () => {
     await expect(workspaceNav.getByRole("link", { name: "Billing" })).toBeVisible();
     await expect(workspaceNav.getByRole("link", { name: "Activity" })).toHaveCount(0);
     await expect(workspaceNav.getByRole("link", { name: "Audit" })).toHaveCount(0);
-    await workspaceNav.getByRole("link", { name: "Billing" }).click();
-    await expect(page).toHaveURL(/\/admin\/organizations\/[0-9a-fA-F-]{36}\/billing/);
+    await workspaceNav.getByRole("link", { name: "Products" }).click();
+    await expect(page).toHaveURL(/\/admin\/organizations\/[0-9a-fA-F-]{36}\/products/);
     await expect(
-      page.getByRole("heading", { name: "Billing", exact: true, level: 1 }),
+      page.getByRole("heading", { name: "Products", exact: true, level: 1 }),
     ).toBeVisible();
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /record/i })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /confirm/i })).toHaveCount(0);
-    mkdirSync(billingScreenshotDir, { recursive: true });
+    await expect(page.getByRole("button", { name: /grant/i })).toHaveCount(0);
+    mkdirSync(polishScreenshotDir, { recursive: true });
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.getByRole("button", { name: "Preferences" }).click();
     await page.getByRole("menuitem", { name: /^Light/ }).click();
     await page.screenshot({
-      path: resolve(billingScreenshotDir, "01-billing-1440x900-light.png"),
+      path: resolve(polishScreenshotDir, "01-products-statuses-1440x900-light.png"),
       fullPage: true,
     });
     await page.getByRole("button", { name: "Preferences" }).click();
     await page.getByRole("menuitem", { name: /^Dark/ }).click();
     await page.screenshot({
-      path: resolve(billingScreenshotDir, "02-billing-1440x900-dark.png"),
+      path: resolve(polishScreenshotDir, "02-products-statuses-1440x900-dark.png"),
       fullPage: true,
     });
-    await page.locator("#org-billing-status").selectOption({ index: 1 });
+    await workspaceNav.getByRole("link", { name: "Entitlements" }).click();
+    await expect(page).toHaveURL(/\/admin\/organizations\/[0-9a-fA-F-]{36}\/entitlements/);
+    await expect(
+      page.getByRole("heading", { name: "Entitlements", exact: true, level: 1 }),
+    ).toBeVisible();
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /override/i })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /reconcile/i })).toHaveCount(0);
+    await page.getByRole("button", { name: "Preferences" }).click();
+    await page.getByRole("menuitem", { name: /^Light/ }).click();
     await page.screenshot({
-      path: resolve(billingScreenshotDir, "04-billing-filtered.png"),
+      path: resolve(polishScreenshotDir, "03-entitlements-grants-1440x900-light.png"),
+      fullPage: true,
+    });
+    await page.getByRole("button", { name: "Preferences" }).click();
+    await page.getByRole("menuitem", { name: /^Dark/ }).click();
+    await page.screenshot({
+      path: resolve(polishScreenshotDir, "04-entitlements-grants-1440x900-dark.png"),
       fullPage: true,
     });
     await page.getByRole("button", { name: "Preferences" }).click();
@@ -160,7 +174,12 @@ test.describe("local-validation React container smoke", () => {
     );
     expect(overflow).toBe(false);
     await page.screenshot({
-      path: resolve(billingScreenshotDir, "03-billing-375x812.png"),
+      path: resolve(polishScreenshotDir, "05-entitlements-grants-375x812.png"),
+      fullPage: true,
+    });
+    await page.setViewportSize({ width: 320, height: 800 });
+    await page.screenshot({
+      path: resolve(polishScreenshotDir, "06-entitlements-grants-320x800.png"),
       fullPage: true,
     });
   });

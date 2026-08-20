@@ -438,6 +438,29 @@ Read-only Billing at `/admin/organizations/:organizationId/billing` using org-sc
 
 See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-14-organization-billing.md`.
 
+## PWEB-IMPL-14A — Organization workspace read-only polish
+
+Status: **COMPLETE** after validation
+
+Polish pass for read-only organization workspace: shared subscription status presentation (Cancelled/Expired i18n, consistent tones), entitlement grant feature codes with Enabled/Disabled states, and regression/screenshot closeout. No backend changes. No new mutations. Activity/Audit not started.
+
+| Area | Record |
+|---|---|
+| Overview | **IMPLEMENTED** |
+| Branches | **IMPLEMENTED — READ ONLY** |
+| People/Memberships | **IMPLEMENTED — READ ONLY** |
+| Products/Access | **IMPLEMENTED — READ ONLY** |
+| Subscription | **IMPLEMENTED — READ ONLY** |
+| Entitlements | **IMPLEMENTED — READ ONLY** |
+| Billing | **IMPLEMENTED — READ ONLY** |
+| Activity/Audit | **NOT STARTED** |
+| CSRF | `BLOCKS_FUTURE_MUTATION` |
+| Social-auth token-in-URL | `BLOCKS_CUTOVER` |
+| Platform Admin | **WEB ONLY** |
+| PWA | **NOT PLANNED** |
+
+See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-14A-organization-readonly-polish.md`.
+
 ## Queue
 
 | Package | Status |
@@ -455,5 +478,6 @@ See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-14-organization-billing.md`.
 | PWEB-IMPL-12 — Organization workspace Subscriptions | COMPLETE |
 | PWEB-IMPL-13 — Organization workspace Entitlements | COMPLETE |
 | PWEB-IMPL-14 — Organization workspace Billing | COMPLETE |
+| PWEB-IMPL-14A — Organization read-only polish | COMPLETE |
 
-Stopped after PWEB-IMPL-14. PWEB-IMPL-15 (Activity/Audit) was not started.
+Stopped after PWEB-IMPL-14A3. PWEB-IMPL-15 (Activity/Audit) was not started.
