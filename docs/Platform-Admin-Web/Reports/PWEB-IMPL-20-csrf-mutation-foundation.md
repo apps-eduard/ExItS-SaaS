@@ -52,11 +52,13 @@ Unchanged policy; added PATCH to allowed methods list only.
 
 ## Compatibility checkpoints
 
+Closed by `PWEB-IMPL-20-csrf-compatibility-gate.md` (post-PWEB-20 gate):
+
 | Flag | Value |
 | --- | --- |
-| PLM_PWA_CSRF_COMPAT_REVIEW_REQUIRED | YES |
-| POS_REACT_CSRF_COMPAT_REVIEW_REQUIRED | YES |
-| Social-auth URL blocker | OPEN |
+| PLM_PWA_CSRF_COMPAT_REVIEW_REQUIRED | NO_CHANGE_REQUIRED (PLM PWA ABSENT in this tree) |
+| POS_REACT_CSRF_COMPAT_REVIEW_REQUIRED | FIX_REQUIRED_AND_COMPLETED (no POS React; Platform HttpClient cookie jar isolated) |
+| Social-auth URL blocker | OPEN / NOT_RELEVANT_TO_PWEB21 (`BLOCKS_CUTOVER` for social flow only) |
 
 ## Scope
 
