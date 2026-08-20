@@ -47,8 +47,12 @@ This report + parity/roadmap/current-state updates
 
 # GIT
 
-(filled after push)
+implementation SHA: `52c8a82c6a2c513e36628d3735419c235256b214`  
+docs/report SHA: (pending)  
+remote SHA: (pending)
 
 # FLAGS
 
-RMAP_01B_PASS=YES
+RMAP_01B_PASS=YES  
+LOCAL_EQUALS_REMOTE=PENDING  
+WORKING_TREE_CLEAN=PENDING

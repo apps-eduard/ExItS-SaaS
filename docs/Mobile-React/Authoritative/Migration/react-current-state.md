@@ -26,8 +26,8 @@ Do not treat prior WP labels as completeness. Inventory against routes and code.
 | Area | Route/components | Hooks/services/API | Tests | Implemented | Missing | Parity risk |
 |------|------------------|--------------------|-------|-------------|---------|-------------|
 | App shell | `AppShell`, `RootLayout`, top bar/account menu | layouts/components | foundation/shell tests | Shell chrome | Full MAUI hubs | Low for shell |
-| Auth | `SignInPage` | `platform-auth-client`, antiforgery | auth/e2e + RMAP-01 | Cookie login/logout/me + AccountClass | React staff-invite accept UI (RMAP-01b); register/activate parity | Medium — staff login string CURRENT |
-| Session | `SessionProvider`, `RequireAccountClass` | account-class, pos tokens | session + AccountClass tests | Session boot + class guards; `/me` lock fields | MAUI offline session | Low after RMAP-01 |
+| Auth | `SignInPage`, staff invite/accept | `platform-auth-client`, `staff-invitation-client` | auth/e2e + RMAP-01/01b | Cookie login + staff invite/accept | register/activate parity | Medium |
+| Session | `SessionProvider`, `RequireAccountClass`, `AllowInvitationAccept` | account-class | session tests | Session boot + class guards | MAUI offline session | Low |
 | Workspace | `WorkspaceProvider`, chooser | workspace-resolver, Platform APIs | workspace tests | Org/branch binding; Personal no auto-bind | Owner ensure+select Organization (RMAP-02) | Medium |
 | Shared UI kit | `components/exits`, `components/ui` | tokens in `globals.css` | `shared-ui-foundation.test.tsx` + foundation/e2e viewports | **PROVEN_CURRENT / COMPLETE** for RMAP-00 foundation primitives | Date/DateTime, Tabs, ToggleRow deferred | Low |
 | Personal | `PersonalHomePage` | AccountClass guard | RMAP-01 e2e | Class-gated Personal home | Utang, shop, explore, start business | High if claimed complete |

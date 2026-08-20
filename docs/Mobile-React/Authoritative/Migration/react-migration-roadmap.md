@@ -55,13 +55,14 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 ### RMAP-01b — React staff identity parity (desired person-link model)
 | Field | Content |
 |-------|---------|
+| Status | **COMPLETE** — [POS-REACT-RMAP-01b-staff-identity-parity.md](../../Reports/POS-REACT-RMAP-01b-staff-identity-parity.md) |
 | Objective | React UX for inviting/accepting/staff login under **owner-approved** post-RMAP-B00 contract |
 | Dependencies | **RMAP-B00** (required), RMAP-01, RMAP-00 for UI |
 | Backend | Post-RMAP-B00 contract only |
 | Owner decisions | OD-ID-01, OD-ID-05, OD-ID-06, OD-ID-08 |
-| Exclusions | Implementing CURRENT duplicate-human model as final desired parity |
+| Exclusions | Late Personal link OPEN; implementing CURRENT duplicate-human model as final desired parity |
 | Acceptance | Matches approved person-link + alias contract; multi-org isolation; removal preserves Personal/other orgs |
-| Readiness flag | `READY_FOR_REACT_STAFF_IDENTITY_PARITY` = YES after RMAP-B00 backend PASS (React UI still this WP) |
+| Readiness flag | `READY_FOR_REACT_STAFF_IDENTITY_PARITY` = YES |
 | Next | RMAP-02 |
 
 ### RMAP-02 — Workspace / org / product-access / role guards
