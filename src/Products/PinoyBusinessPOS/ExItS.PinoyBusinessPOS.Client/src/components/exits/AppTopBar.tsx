@@ -49,18 +49,45 @@ export function AppTopBar() {
           >
             E
           </div>
-          <div className="min-w-0">
-            <p className="m-0 truncate text-[length:var(--exits-text-xs)] font-semibold tracking-[0.08em] uppercase text-muted sm:text-[length:var(--exits-text-sm)]">
+          <div className="min-w-0 md:hidden">
+            {boundWorkspace ? (
+              <button
+                type="button"
+                data-testid="workspace-context-mobile"
+                className={cn(
+                  "flex min-w-0 max-w-full flex-col items-start rounded-[var(--exits-radius-md)] px-0.5 py-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  canSwitchWorkspace ? "hover:bg-[var(--exits-surface-muted)]" : "cursor-default",
+                )}
+                title={workspaceLabel ?? undefined}
+                aria-label={
+                  canSwitchWorkspace
+                    ? `${t("workspace.switch")}: ${workspaceLabel}`
+                    : (workspaceLabel ?? undefined)
+                }
+                onClick={() => {
+                  if (canSwitchWorkspace) {
+                    navigate("/workspace");
+                  }
+                }}
+                disabled={!canSwitchWorkspace}
+              >
+                <span className="m-0 w-full truncate text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+                  {boundWorkspace.organizationDisplayName}
+                </span>
+                <span className="m-0 w-full truncate text-[length:var(--exits-text-xs)] text-muted">
+                  {boundWorkspace.branchName}
+                </span>
+              </button>
+            ) : (
+              <p className="m-0 truncate text-[length:var(--exits-text-xs)] font-semibold tracking-[0.08em] uppercase text-muted sm:text-[length:var(--exits-text-sm)]">
+                {t("app.name")}
+              </p>
+            )}
+          </div>
+          <div className="hidden min-w-0 md:block">
+            <p className="m-0 truncate text-[length:var(--exits-text-sm)] font-semibold tracking-[0.08em] uppercase text-muted">
               {t("app.name")}
             </p>
-            {boundWorkspace ? (
-              <p
-                className="m-0 truncate text-[length:var(--exits-text-sm)] font-semibold text-foreground md:hidden"
-                title={workspaceLabel ?? undefined}
-              >
-                {boundWorkspace.branchName}
-              </p>
-            ) : null}
           </div>
         </div>
 

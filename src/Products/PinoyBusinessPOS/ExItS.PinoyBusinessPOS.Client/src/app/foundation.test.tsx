@@ -41,8 +41,8 @@ describe("POS React foundation", () => {
     renderAuthenticatedAt("/settings/preferences");
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Preferences" })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Language: English" })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Theme: System" })).toBeInTheDocument();
+      expect(screen.getByRole("radio", { name: "Language: English" })).toBeInTheDocument();
+      expect(screen.getByRole("radio", { name: "Theme: System" })).toBeInTheDocument();
     });
     expect(document.documentElement.lang).toBe("en");
     expect(document.documentElement.dataset.theme).toBe("system");
@@ -54,8 +54,7 @@ describe("POS React foundation", () => {
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Preferences" })).toBeInTheDocument();
     });
-    await user.click(screen.getByRole("button", { name: "Language: English" }));
-    await user.click(screen.getByRole("menuitem", { name: /Filipino/ }));
+    await user.click(screen.getByRole("radio", { name: "Language: Filipino" }));
     await waitFor(() => {
       expect(document.documentElement.lang).toBe("fil-PH");
     });
@@ -70,17 +69,13 @@ describe("POS React foundation", () => {
     renderAuthenticatedAt("/settings/preferences");
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Preferences" })).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: /Theme: System|Tema: System/ }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("radio", { name: /Theme: System|Tema: System/ })).toBeInTheDocument();
     });
-    await user.click(screen.getByRole("button", { name: /Theme: System|Tema: System/ }));
-    await user.click(screen.getByRole("menuitem", { name: /Dark/ }));
+    await user.click(screen.getByRole("radio", { name: /Theme: Dark|Tema: Dark/ }));
     await waitFor(() => {
       expect(document.documentElement.dataset.theme).toBe("dark");
     });
-    await user.click(screen.getByRole("button", { name: /Theme: Dark|Tema: Dark/ }));
-    await user.click(screen.getByRole("menuitem", { name: /Light/ }));
+    await user.click(screen.getByRole("radio", { name: /Theme: Light|Tema: Light/ }));
     await waitFor(() => {
       expect(document.documentElement.dataset.theme).toBe("light");
     });

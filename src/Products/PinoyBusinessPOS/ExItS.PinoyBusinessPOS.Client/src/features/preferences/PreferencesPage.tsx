@@ -7,16 +7,16 @@ export function PreferencesPage() {
   const { t } = useI18n();
 
   return (
-    <div className="mx-auto flex w-full max-w-lg min-w-0 flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-lg min-w-0 flex-col gap-5">
       <PageHeader title={t("preferences.title")} description={t("preferences.lede")} />
       <section
-        className="overflow-hidden rounded-[var(--exits-radius-md)] border border-border bg-surface"
+        className="rounded-[var(--exits-radius-md)] border border-border bg-surface"
         aria-labelledby="preferences-appearance"
       >
-        <div className="border-b border-border px-4 py-3">
+        <div className="border-b border-border px-4 py-3.5">
           <h2
             id="preferences-appearance"
-            className="m-0 text-[length:var(--exits-text-md)] font-semibold text-foreground"
+            className="m-0 text-[length:var(--exits-text-md)] font-semibold tracking-tight text-foreground"
           >
             {t("preferences.appearance")}
           </h2>

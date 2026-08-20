@@ -71,14 +71,11 @@ test.describe("POS React foundation", () => {
     await mockAuthenticatedSession(page);
     await page.goto("/settings/preferences");
     await expect(page.getByRole("heading", { name: "Preferences" })).toBeVisible();
-    await page.getByRole("button", { name: "Theme: System" }).click();
-    await page.getByRole("menuitem", { name: /Dark/ }).click();
+    await page.getByRole("radio", { name: "Theme: Dark" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-    await page.getByRole("button", { name: "Theme: Dark" }).click();
-    await page.getByRole("menuitem", { name: /Light/ }).click();
+    await page.getByRole("radio", { name: "Theme: Light" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-    await page.getByRole("button", { name: "Theme: Light" }).click();
-    await page.getByRole("menuitem", { name: /System/ }).click();
+    await page.getByRole("radio", { name: "Theme: System" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "system");
   });
 
@@ -86,12 +83,10 @@ test.describe("POS React foundation", () => {
     await mockAuthenticatedSession(page);
     await page.goto("/settings/preferences");
     await expect(page.getByRole("heading", { name: "Preferences" })).toBeVisible();
-    await page.getByRole("button", { name: "Language: English" }).click();
-    await page.getByRole("menuitem", { name: /Filipino/ }).click();
+    await page.getByRole("radio", { name: "Language: Filipino" }).click();
     await expect(page.locator("html")).toHaveAttribute("lang", "fil-PH");
     await expect(page.getByRole("heading", { name: "Preferences" })).toBeVisible();
-    await page.getByRole("button", { name: /Language: Filipino|Wika: Filipino/ }).click();
-    await page.getByRole("menuitem", { name: /English/ }).click();
+    await page.getByRole("radio", { name: /Language: English|Wika: English/ }).click();
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
     await expect(page.getByRole("heading", { name: "Preferences" })).toBeVisible();
   });

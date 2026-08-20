@@ -155,6 +155,9 @@ describe("account shell", () => {
     const trigger = screen.getByTestId("account-menu-trigger");
     expect(trigger).toHaveTextContent("OM");
     expect(screen.getByTestId("workspace-context")).toHaveTextContent("Kizy Store");
+    const mobileContext = screen.getByTestId("workspace-context-mobile");
+    expect(mobileContext).toHaveTextContent("Kizy Store");
+    expect(mobileContext).toHaveTextContent("Main Branch");
     expect(screen.queryByRole("button", { name: "Preferences" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Sign out" })).not.toBeInTheDocument();
 

@@ -49,16 +49,14 @@ test.describe("shell account UX evidence", () => {
     await page.getByTestId("account-menu-trigger").click();
     await page.getByRole("menuitem", { name: "Preferences" }).click();
 
-    await page.getByRole("button", { name: "Theme: System" }).click();
-    await page.getByRole("menuitem", { name: /Dark/ }).click();
+    await page.getByRole("radio", { name: "Theme: Dark" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await page.screenshot({
       path: path.join(screenshotDir, "04-desktop-preferences-1440x900-en-dark.png"),
       fullPage: true,
     });
 
-    await page.getByRole("button", { name: "Language: English" }).click();
-    await page.getByRole("menuitem", { name: /Filipino/ }).click();
+    await page.getByRole("radio", { name: "Language: Filipino" }).click();
     await expect(page.locator("html")).toHaveAttribute("lang", "fil-PH");
     await page.screenshot({
       path: path.join(screenshotDir, "05-desktop-preferences-1440x900-fil-dark.png"),
