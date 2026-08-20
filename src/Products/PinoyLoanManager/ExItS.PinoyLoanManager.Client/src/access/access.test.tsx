@@ -97,4 +97,15 @@ describe("organization product access gate", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: "Retry" }));
     expect(await screen.findByRole("heading", { name: "Pinoy Loan Manager" })).toBeInTheDocument();
   });
+
+  it("does not persist session credentials after org and product-access bootstrap", async () => {
+    stubAccessFetch();
+    renderGate();
+    await screen.findByRole("heading", { name: "Pinoy Loan Manager" });
+    const stored = JSON.stringify({
+      local: { ...window.localStorage },
+      session: { ...window.sessionStorage },
+    });
+    expect(stored).not.toMatch(/sessionToken|authorization:\s*bearer|password/i);
+  });
 });

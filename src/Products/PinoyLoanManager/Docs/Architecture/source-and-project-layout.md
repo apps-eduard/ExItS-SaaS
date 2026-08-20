@@ -1,10 +1,10 @@
 # Pinoy Loan Manager — Source and Project Layout
 
-**Status:** PLM-01 scaffold; Gates B–D2 React Client + PWA + cookie Sign In + account lifecycle
-**Implementation present:** Product shell + React Client + PWA + Sign In + Personal Register/Activate/Forgot/Reset — no lending domain; no org/product access
+**Status:** PLM-01 scaffold; Gates B–D3 React Client + PWA + cookie Sign In + account lifecycle + org/product access
+**Implementation present:** Product shell + React Client + PWA + Sign In + Personal Register/Activate/Forgot/Reset + D3 org/product-access gate — no lending domain
 **Last updated:** 2026-08-19
 
-Physical layout after **PLM-01** through **PLM-CLIENT-GATE-D2**. PLM-D-00-03 is **Closed**. PLM-D-00-09 is **Closed / Product Owner Approved**. `ExItS.PinoyLoanManager.Client` is the Browser + PWA host with same-origin `/platform-api` transport, cookie Sign In, and Personal account lifecycle. LocalStore remains **intentionally deferred** (not authorized). MAUI is not the preferred future architecture. Capacitor is not started.
+Physical layout after **PLM-01** through **PLM-CLIENT-GATE-D3**. PLM-D-00-03 is **Closed**. PLM-D-00-09 is **Closed / Product Owner Approved**. `ExItS.PinoyLoanManager.Client` is the Browser + PWA host with same-origin `/platform-api` transport, cookie Sign In, Personal account lifecycle, and the D3 organization/product-access gate. LocalStore remains **intentionally deferred** (not authorized). MAUI is not the preferred future architecture. Capacitor is not started.
 
 Related: [react-pwa-capacitor-client.md](react-pwa-capacitor-client.md), [api-and-contract-boundary.md](api-and-contract-boundary.md), [persistence-and-database-boundary.md](persistence-and-database-boundary.md), [mobile-offline-boundary.md](mobile-offline-boundary.md), [../architecture.md](../architecture.md), [../Reports/PLM-01-product-scaffold-and-isolation.md](../Reports/PLM-01-product-scaffold-and-isolation.md), [../Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md](../Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md).
 
@@ -21,7 +21,7 @@ src/Products/PinoyLoanManager/
 ├── ExItS.PinoyLoanManager.Api/               created (health only)
 ├── ExItS.PinoyLoanManager.ApiClient/         created (marker only)
 ├── ExItS.PinoyLoanManager.Web/               created (identity shell; future host/BFF)
-├── ExItS.PinoyLoanManager.Client/            created (Gates B–D2 React + PWA + Sign In + account lifecycle)
+├── ExItS.PinoyLoanManager.Client/            created (Gates B–D3 React + PWA + Sign In + account lifecycle + org/product access)
 └── ExItS.PinoyLoanManager.LocalStore/        FUTURE ONLY IF AUTHORIZED
 ```
 

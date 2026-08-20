@@ -1,5 +1,13 @@
 import { expect, test } from "@playwright/test";
-import { E2E_ORG_ALLOWED, E2E_ORG_DENIED, mockAuthenticatedSession } from "./helpers";
+import {
+  assertNoApiOrAuthTrafficInCaches,
+  assertNoSensitiveAuthMaterial,
+  assertNoSessionTokenPersistence,
+  E2E_ORG_ALLOWED,
+  E2E_ORG_DENIED,
+  inspectServiceWorkerCaches,
+  mockAuthenticatedSession,
+} from "./helpers";
 
 test.describe("organization product access gate", () => {
   test("allows workspace when product access is granted", async ({ page }) => {
@@ -8,6 +16,16 @@ test.describe("organization product access gate", () => {
     await expect(page.getByRole("heading", { name: "Pinoy Loan Manager" })).toBeVisible();
     await expect(page.getByText(E2E_ORG_ALLOWED.displayName)).toBeVisible();
     await expect(page.getByText(/Workspace is ready/i)).toBeVisible();
+    await assertNoSessionTokenPersistence(page);
+    const caches = await inspectServiceWorkerCaches(page);
+    assertNoApiOrAuthTrafficInCaches(caches.urls);
+    const storage = await page.evaluate(() =>
+      JSON.stringify({
+        local: { ...window.localStorage },
+        session: { ...window.sessionStorage },
+      }),
+    );
+    assertNoSensitiveAuthMaterial(storage);
   });
 
   test("blocks workspace when product access is denied", async ({ page }) => {

@@ -104,6 +104,7 @@ Shared contracts to load with this product:
 | `Docs/Reports/impl-gate-d2-account-lifecycle/` | Gate D2 screenshots | Complete after validation | No tokens/passwords in frames |
 | `Docs/Reports/PLM-CLIENT-GATE-D3-organization-product-access.md` | Gate D3 org discovery + product access gate | Complete after validation | Fail-closed workspace gate |
 | `Docs/Reports/impl-gate-d3-organization-product-access/` | Gate D3 screenshots | Complete after validation | Org select, denied, subscription, scope, workspace |
+| `Docs/Reports/PLM-PWA-H1-cache-storage-security.md` | PWA cache/storage security proof | Complete after validation | NetworkOnly APIs; no auth cache |
 
 ## Foundation closeout (PLM-00-WP10)
 
@@ -127,7 +128,7 @@ Shared contracts to load with this product:
 | `Docs/Phases/README.md` | Index for phase sequencing | Foundation / Planning Only | No |
 | `Docs/Reports/README.md` | Index for WP evidence | Foundation / Planning Only | No |
 | `Docs/Reports/PLM-01-product-scaffold-and-isolation.md` | PLM-01 scaffold evidence | Scaffold complete / no lending domain | Product shell |
-| `Docs/Reports/PLM-D3-PRE-product-registration-self-access.md` | Product code + Local Validation fixture + current-session access API | PLM-D3-PRE complete; Gate D3 React not started | Platform prerequisite |
+| `Docs/Reports/PLM-D3-PRE-product-registration-self-access.md` | Product code + Local Validation fixture + current-session access API | PLM-D3-PRE complete; Gate D3 React complete | Platform prerequisite |
 | `Docs/Validation/README.md` | Index for validation evidence | Foundation / Planning Only | No |
 | `Docs/Operations/README.md` | Index for operations docs | Foundation / Planning Only | No |
 

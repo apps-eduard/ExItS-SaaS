@@ -1,6 +1,11 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { assertNoHorizontalOverflow, mockAnonymousSession } from "./helpers";
+import {
+  assertNoApiOrAuthTrafficInCaches,
+  assertNoHorizontalOverflow,
+  inspectServiceWorkerCaches,
+  mockAnonymousSession,
+} from "./helpers";
 
 test.describe("PWA foundation", () => {
   test("serves a valid installable manifest and required icons", async ({ request }) => {
@@ -45,7 +50,20 @@ test.describe("PWA foundation", () => {
     expect(source).not.toMatch(
       /startsWith\("\/api\/"\)[\s\S]{0,160}(?:CacheFirst|StaleWhileRevalidate)/,
     );
+    expect(source).toMatch(/auth[\s\S]{0,160}NetworkOnly|\/\(auth\|session\)\//);
     expect(source).toMatch(/assets\/index-[A-Za-z0-9_-]+\.(js|css)/);
+  });
+
+  test("runtime Cache Storage holds the shell and never caches API or auth traffic", async ({
+    page,
+  }) => {
+    await mockAnonymousSession(page);
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
+    const caches = await inspectServiceWorkerCaches(page);
+    expect(caches.urls.length).toBeGreaterThan(0);
+    assertNoApiOrAuthTrafficInCaches(caches.urls);
+    expect(caches.indexedDbNames.join(" ")).not.toMatch(/loan|borrower|sessionToken|platform-api/i);
   });
 
   test("SPA preview fallback and refresh of / keep the product shell", async ({

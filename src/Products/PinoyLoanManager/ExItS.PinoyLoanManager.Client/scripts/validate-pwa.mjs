@@ -70,5 +70,18 @@ if (/startsWith\("\/api\/"\)[\s\S]{0,160}(?:CacheFirst|StaleWhileRevalidate)/.te
 if (/IndexedDB|idbKeyval|LocalStore/.test(sw)) {
   fail("Financial/auth IndexedDB stores are prohibited in the service worker.");
 }
+if (!/\/\(auth\|session\)\//.test(sw) && !/auth[\s\S]{0,160}NetworkOnly/.test(sw)) {
+  fail("Service worker must keep auth/session traffic NetworkOnly.");
+}
+if (!/activate-account/.test(sw) || !/reset-password/.test(sw)) {
+  fail("Service worker must exclude activation/reset navigation from stale fallback.");
+}
+if (
+  /registerRoute[\s\S]{0,240}(?:product-access|organizations)[\s\S]{0,80}(?:CacheFirst|StaleWhileRevalidate)/.test(
+    sw,
+  )
+) {
+  fail("Organization and product-access responses must not use a runtime cache.");
+}
 
 process.stdout.write("PWA validation passed.\n");

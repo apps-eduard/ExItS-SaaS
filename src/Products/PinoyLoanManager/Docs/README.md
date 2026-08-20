@@ -11,8 +11,8 @@ Always load with:
 5. The active work-package prompt/report
 6. Files required for the task only
 
-**Status:** PLM-00 accepted; PLM-01 product shell scaffolded; PLM-01A client architecture approved (PLM-D-00-09); Gates B, C, D0, D1, and D2 complete; PLM-D3-PRE complete (Gate D3 React not started)
-**Implementation present:** Product shell + React Client + online-first PWA + cookie Sign In + Personal Register/Activate/Forgot/Reset; Platform catalog code `pinoy-loan-manager` + current-session access API; no Gate D3 React org selector; no lending; no Capacitor
+**Status:** PLM-00 accepted; PLM-01 product shell scaffolded; PLM-01A client architecture approved (PLM-D-00-09); Gates B, C, D0, D1, D2, and D3 complete; PLM-D3-PRE complete
+**Implementation present:** Product shell + React Client + online-first PWA + cookie Sign In + Personal Register/Activate/Forgot/Reset + D3 org/product-access gate; Platform catalog code `pinoy-loan-manager` + current-session access API; no lending; no Capacitor
 **Documentation root:** `src/Products/PinoyLoanManager/Docs/` (D-P12-02)
 
 Pinoy Loan Manager is a **separate first-class ExItS SaaS product**, a sibling of PinoyBusinessPOS, not a POS module, feature, or database extension.

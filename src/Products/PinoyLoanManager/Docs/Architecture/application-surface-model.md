@@ -1,8 +1,8 @@
 # Pinoy Loan Manager — Application Surface Model
 
-**Status:** Agreed product direction; client strategy **PLM-D-00-09 Closed / Product Owner Approved**; Gate D2 account lifecycle present
-**Implementation present:** React Client + online-first PWA + cookie Sign In; Capacitor not started
-**Last updated:** 2026-08-19
+**Status:** Agreed product direction; client strategy **PLM-D-00-09 Closed / Product Owner Approved**; Gates B–D3 present
+**Implementation present:** React Client + online-first PWA + cookie Sign In + D3 org/product-access gate; Capacitor not started
+**Last updated:** 2026-08-20
 
 Agreed application surfaces for Pinoy Loan Manager. Capacitor is **not** created in Gate D1.
 

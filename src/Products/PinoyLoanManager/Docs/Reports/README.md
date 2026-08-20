@@ -33,5 +33,6 @@ Do not rewrite historical signed-off reports merely to erase history.
 | [PLM-CLIENT-GATE-D2-account-lifecycle-mailpit.md](PLM-CLIENT-GATE-D2-account-lifecycle-mailpit.md) | Register / Activate / Forgot / Reset; Mailpit PLM callbacks |
 | [PLM-D3-PRE-product-registration-self-access.md](PLM-D3-PRE-product-registration-self-access.md) | Product code `pinoy-loan-manager`, Local Validation fixture, current-session access API; D-P12-03 remains open |
 | [PLM-CLIENT-GATE-D3-organization-product-access.md](PLM-CLIENT-GATE-D3-organization-product-access.md) | Organization discovery, context selection, product-access gate; no lending |
+| [PLM-PWA-H1-cache-storage-security.md](PLM-PWA-H1-cache-storage-security.md) | Runtime Cache Storage + storage audit; NetworkOnly APIs |
 
 PLM-00-WP01 through PLM-00-WP09 do not add a separate report file. Completion evidence for those documentation-only packages is the git commit on `docs/plm-foundation` plus the chat completion report.
