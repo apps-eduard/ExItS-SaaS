@@ -19,6 +19,18 @@ It does **not** authorize implementation.
 - MOBILE-D-060: **OPEN**
 - Current MAUI, Organization Web, Personal Web, Platform APIs, and POS APIs: **unchanged**
 
+## Authoritative domain + migration map (current)
+
+**Use this set for CURRENT domain contracts and the dependency-ordered React roadmap.**
+Historical planning/readiness docs below remain useful history; when they conflict on current behavior, prefer Authoritative after source verification.
+
+- [Authoritative/00-README.md](Authoritative/00-README.md) — evidence hierarchy, status taxonomy, index
+- [Authoritative/Migration/capability-parity-matrix.md](Authoritative/Migration/capability-parity-matrix.md) — Backend / MAUI / React parity
+- [Authoritative/Migration/react-migration-roadmap.md](Authoritative/Migration/react-migration-roadmap.md) — proposed RMAP packages
+- [Authoritative/Migration/owner-decision-register.md](Authoritative/Migration/owner-decision-register.md) — owner-confirmed requirements vs CURRENT
+
+Baseline for the Authoritative set: branch `feat/pos-react-client` @ `721cc946d61ccb193c8c69b76b6f1ff726526270`.
+
 ## Implementation readiness (current-main refresh)
 
 Against `origin/main` `5979a9ce008bb24a3257abd28ae79bc1a5a9b569`. Does not rewrite accepted MOBILE-D decisions.

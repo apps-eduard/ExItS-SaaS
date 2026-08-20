@@ -1,0 +1,90 @@
+# Organization, Branches, Staff, and Devices
+
+## Organization profile and ownership
+
+| Concern | Authority | Status | Evidence |
+|---------|-----------|--------|----------|
+| Organization aggregate | Platform | PROVEN_CURRENT | `organizations`, `public_organization_id` (`ORG######`) |
+| Business QR / public org identity | Platform | PROVEN_CURRENT | public identity APIs + MAUI |
+| Ownership | Platform membership Owner | PROVEN_CURRENT | Start a Business; ownership transfer migrations |
+| Ownership transfer | Platform | PROVEN_CURRENT | `AddOrganizationOwnershipTransfers` + use cases |
+| Compliance profile | Platform (org) | PROVEN_CURRENT | Phase 26 foundation; transfer preserves profile |
+| Multi-org ownership | Same Personal identity, multiple Owner memberships | PROVEN_CURRENT | P25 |
+
+## Staff
+
+See [02-identity-personal-organization-lifecycle.md](02-identity-personal-organization-lifecycle.md) for org-scoped login aliases.
+
+MAUI surfaces: `/org/staff`, `/org/staff/invite`, `/org/staff/assign`.
+
+## Branches
+
+**Branch ≠ Register ≠ Device.**
+
+| Attribute | Current | Status | Evidence |
+|-----------|---------|--------|----------|
+| Branch identity | `OrganizationBranch` (Platform) | PROVEN_CURRENT | Domain + Branch APIs |
+| Main branch | `CreateMainBranch` on Start a Business; `EnsureMainBranchExists` | PROVEN_CURRENT | `StartBusinessUseCases` |
+| Org ownership | Branch belongs to organization | PROVEN_CURRENT | |
+| Address | Update branch DTO/UI | PROVEN_CURRENT | MAUI `BranchEdit.razor` |
+| Coordinates | Lat/lng on branch | PROVEN_CURRENT | BranchEdit + delivery calculator |
+| Phone | Branch contact fields | PROVEN_CURRENT | Branch update |
+| Operating hours | `GET/PUT .../operating-hours` | PROVEN_CURRENT | `BranchAndDeviceEndpoints.cs` |
+| Activation/status | Branch lifecycle + suspension-related governance | PROVEN_CURRENT / PARTIAL by feature | migrations include branch suspension |
+| POS operational branch | POS session `BranchId`; `PUT /api/v1/pos/operational-branch` | PROVEN_CURRENT | |
+| Multi-branch inventory | Branch balances / transfers | PROVEN_CURRENT | POS advanced inventory |
+
+API root: `/api/v1/platform/organizations/{organizationId}/branches`
+
+## Fulfillment and delivery configuration
+
+Dependency chain (owner-confirmed and current):
+
+```text
+Organization
+  → Branch
+    → Location + Hours + Fulfillment configuration
+      → Pickup/Delivery readiness
+        → Customer Ordering
+```
+
+| Capability | Status | Evidence |
+|------------|--------|----------|
+| Pickup enabled | PROVEN_CURRENT | fulfillment-settings |
+| Delivery enabled | PROVEN_CURRENT | fulfillment-settings / delivery-policy |
+| Fulfillment readiness | PROVEN_CURRENT | `.../fulfillment-readiness` |
+| Service radius / distance | PROVEN_CURRENT | Platform `HaversineDeliveryDistanceCalculator`; POS `StraightLineDeliveryDistance` |
+| Delivery fee preview | PROVEN_CURRENT | `.../delivery-fee-preview` |
+| Entitlement/feature gates | PROVEN_PARTIAL | capacity/feature codes interact with readiness — verify per feature code in Platform entitlements |
+| MAUI configuration | PROVEN_CURRENT | `BranchEdit.razor` fulfillment panel |
+| React configuration | MISSING | no branch admin UI |
+
+Note: Platform and POS Haversine Earth-radius constants differ slightly (`6371.0088` vs `6371.0`). Functionally aligned; treat as audit note, not a React blocker.
+
+## Devices
+
+| Concern | Authority | Status |
+|---------|-----------|--------|
+| Registered POS device | Platform `pos-devices` | PROVEN_CURRENT |
+| Registration token / recovery | Platform | PROVEN_CURRENT |
+| Device on POS session | POS session carries `PosDeviceId` | PROVEN_CURRENT |
+| Lost/revoked device | Platform revoke + POS authorization fail-closed | PROVEN_CURRENT |
+| Offline grant / PIN binding | Device-bound offline operating grant | PROVEN_CURRENT (MAUI LocalStore) |
+
+MAUI: `/devices/register`, `/organization/devices`.
+
+## Registers and shifts (POS)
+
+Documented in [POS/registers-devices-and-shifts.md](POS/registers-devices-and-shifts.md). Registers are POS stations, not branches or devices.
+
+## Notifications
+
+Unified organization notifications foundations exist (P25). Status: **PROVEN_CURRENT** in Platform/POS notification surfaces used by MAUI; **MISSING** in React.
+
+## Organization settings relevant to sales documents
+
+Compliance / sales-document capability is organization-scoped on Platform. Sale engine remains one POS Sale engine; current issued document kind is Transaction Summary (see sales-documents POS doc). TaxDocument issuance remains unavailable unless source changes.
+
+## React implications
+
+Organization/branch/device context parity is a foundation package **before** sell-floor checkout parity. React already binds workspace/branch for sell routes (`WorkspaceProvider`, `NoAccessibleBranchPage`) but does not configure branches or devices.
