@@ -7,10 +7,13 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
+import { isOrganizationContextLocked } from "@/session/account-class";
+import { useSession } from "@/session/SessionProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export function HomePage() {
   const { t } = useI18n();
+  const { session } = useSession();
   const { status, boundWorkspace, sessionGrant } = useWorkspace();
 
   if (!boundWorkspace) {
@@ -22,10 +25,21 @@ export function HomePage() {
 
   const roleHome = resolveRoleHomeRoute(sessionGrant);
 
-  return <BoundHomeRedirect roleHome={roleHome} />;
+  return (
+    <BoundHomeRedirect
+      roleHome={roleHome}
+      canSwitchWorkspace={!isOrganizationContextLocked(session)}
+    />
+  );
 }
 
-function BoundHomeRedirect({ roleHome }: { roleHome: string }) {
+function BoundHomeRedirect({
+  roleHome,
+  canSwitchWorkspace,
+}: {
+  roleHome: string;
+  canSwitchWorkspace: boolean;
+}) {
   const { t } = useI18n();
   const { boundWorkspace } = useWorkspace();
 
@@ -46,9 +60,11 @@ function BoundHomeRedirect({ roleHome }: { roleHome: string }) {
       </Card>
       <EmptyState title={t("home.emptyTitle")} detail={t("home.emptyDetail")} />
       <div className="flex flex-wrap gap-2">
-        <Button asChild variant="ghost">
-          <Link to="/workspace">{t("workspace.switch")}</Link>
-        </Button>
+        {canSwitchWorkspace ? (
+          <Button asChild variant="ghost">
+            <Link to="/workspace">{t("workspace.switch")}</Link>
+          </Button>
+        ) : null}
         <Button asChild variant="ghost">
           <Link to="/settings/preferences">{t("preferences.title")}</Link>
         </Button>

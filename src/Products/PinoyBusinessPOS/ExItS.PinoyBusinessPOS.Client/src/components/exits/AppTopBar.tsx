@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { AccountMenu } from "@/components/exits/AccountMenu";
 import { useI18n } from "@/i18n/I18nProvider";
+import { isOrganizationContextLocked } from "@/session/account-class";
 import { useSession } from "@/session/SessionProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { cn } from "@/lib/cn";
@@ -9,12 +10,13 @@ import { cn } from "@/lib/cn";
 export function AppTopBar() {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const { signOut } = useSession();
+  const { signOut, session } = useSession();
   const { boundWorkspace, clearBoundWorkspace, workspaces } = useWorkspace();
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
 
-  const canSwitchWorkspace = workspaces.length > 0;
+  const canSwitchWorkspace =
+    workspaces.length > 0 && !isOrganizationContextLocked(session);
 
   async function handleSignOut() {
     if (signingOut) {

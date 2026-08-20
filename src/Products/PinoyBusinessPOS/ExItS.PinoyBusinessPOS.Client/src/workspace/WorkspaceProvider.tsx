@@ -22,7 +22,8 @@ import {
   type SessionGrantResponse,
 } from "@/api/platform/platform-auth-client";
 import { clearPlatformAntiforgeryToken } from "@/api/platform/platform-http";
-import { sessionAccountClass } from "@/session/account-class";
+import { sessionAccountClass, isOrganizationContextLocked } from "@/session/account-class";
+import { ensureOrganizationSessionProfile } from "@/session/ensure-organization-profile";
 import { useSession } from "@/session/SessionProvider";
 import type {
   AccessibleOrganizationWorkspace,
@@ -70,7 +71,7 @@ function findWorkspaceLabel(
 }
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
-  const { status: sessionStatus, session } = useSession();
+  const { status: sessionStatus, session, refreshSession } = useSession();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
@@ -167,9 +168,35 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const bindWorkspace = useCallback(
     async (organizationId: string, branchId: string) => {
-      if (sessionAccountClass(session) === "Personal") {
+      if (isOrganizationContextLocked(session)) {
+        const homeOrg = session?.homeOrganizationId;
+        if (homeOrg && homeOrg !== organizationId) {
+          setAccessDeniedDetail(
+            "This staff account is locked to its home organization. Sign in with a different account to use another organization.",
+          );
+          setStatus("access_denied");
+          return false;
+        }
+      }
+
+      let activeSession = session;
+      if (sessionAccountClass(activeSession) === "Personal") {
+        setStatus("binding");
+        const ensured = await ensureOrganizationSessionProfile({
+          session: activeSession,
+          refreshSession,
+        });
+        if (!ensured.ok) {
+          setAccessDeniedDetail(ensured.detail);
+          setStatus("access_denied");
+          return false;
+        }
+        activeSession = ensured.session;
+      }
+
+      if (sessionAccountClass(activeSession) !== "Organization") {
         setAccessDeniedDetail(
-          "Organization workspace requires an Organization account profile. Select Organization profile before binding.",
+          "Organization workspace requires an Organization account profile.",
         );
         setStatus("access_denied");
         return false;
@@ -185,7 +212,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           setStatus("access_denied");
           return false;
         }
-        // Keep the chooser mounted so the operator can retry after a bind failure.
         setAccessDeniedDetail(result.body?.detail ?? null);
         setStatus("ready");
         return false;
@@ -206,7 +232,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setStatus("bound");
       return true;
     },
-    [session, workspaces],
+    [refreshSession, session, workspaces],
   );
 
   useEffect(() => {

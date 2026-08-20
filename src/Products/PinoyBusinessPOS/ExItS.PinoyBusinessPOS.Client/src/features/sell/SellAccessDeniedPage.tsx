@@ -8,7 +8,7 @@ export function SellAccessDeniedPage() {
   const { t } = useI18n();
 
   return (
-    <div className="flex min-w-0 flex-col gap-4">
+    <div className="flex min-w-0 flex-col gap-4" data-testid="sell-access-denied">
       <PageHeader title={t("sell.accessDeniedTitle")} description={t("sell.accessDeniedDetail")} />
       <EmptyState title={t("sell.accessDeniedTitle")} detail={t("sell.accessDeniedDetail")} />
       <Button asChild variant="ghost">
