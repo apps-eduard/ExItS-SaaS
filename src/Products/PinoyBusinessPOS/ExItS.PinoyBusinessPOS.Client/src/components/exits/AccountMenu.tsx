@@ -1,0 +1,132 @@
+import { ChevronDown, LogOut, Settings, User } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { DropdownMenu, MenuHeader, MenuItem, MenuSeparator } from "@/components/ui/dropdown-menu";
+import { useI18n } from "@/i18n/I18nProvider";
+import { useSession } from "@/session/SessionProvider";
+import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { resolveEffectivePosRoleCode } from "@/access/pos-capabilities";
+import {
+  deriveUserInitials,
+  resolveFriendlyPosRole,
+  resolveUserDisplayName,
+  resolveUserSecondaryIdentity,
+} from "@/lib/user-display";
+import { cn } from "@/lib/cn";
+
+type AccountMenuProps = {
+  signingOut: boolean;
+  onSignOut: () => void;
+  compact?: boolean;
+};
+
+export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountMenuProps) {
+  const { t } = useI18n();
+  const navigate = useNavigate();
+  const { session } = useSession();
+  const { sessionGrant, boundWorkspace } = useWorkspace();
+  const [open, setOpen] = useState(false);
+
+  const displayName = resolveUserDisplayName(session) || t("account.signedIn");
+  const secondary = resolveUserSecondaryIdentity(session);
+  const initials = deriveUserInitials(session);
+  const friendlyRole = resolveFriendlyPosRole(resolveEffectivePosRoleCode(sessionGrant));
+  const roleLabel =
+    friendlyRole === "owner"
+      ? t("account.role.owner")
+      : friendlyRole === "manager"
+        ? t("account.role.manager")
+        : friendlyRole === "cashier"
+          ? t("account.role.cashier")
+          : null;
+
+  const accountLabel = `${t("account.menu")}: ${displayName}`;
+
+  return (
+    <DropdownMenu
+      align="end"
+      open={open}
+      onOpenChange={setOpen}
+      menuLabel={accountLabel}
+      trigger={({ id, expanded, controls, onClick, onKeyDown }) => (
+        <button
+          id={id}
+          type="button"
+          data-testid="account-menu-trigger"
+          className={cn(
+            "inline-flex min-h-[var(--exits-touch-target-min)] items-center gap-2 rounded-full border border-border bg-surface px-1.5 py-1 text-foreground transition-colors duration-[var(--exits-motion-fast)] hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            expanded && "bg-[var(--exits-surface-muted)]",
+            !compact && "sm:pr-2.5",
+          )}
+          aria-haspopup="menu"
+          aria-expanded={expanded}
+          aria-controls={controls}
+          aria-label={accountLabel}
+          title={displayName}
+          onClick={onClick}
+          onKeyDown={onKeyDown}
+        >
+          <span
+            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-[length:var(--exits-text-xs)] font-bold text-primary-foreground"
+            aria-hidden="true"
+          >
+            {initials ? initials : <User className="size-4" aria-hidden="true" />}
+          </span>
+          {!compact ? (
+            <>
+              <span className="hidden max-w-[9rem] truncate text-[length:var(--exits-text-sm)] font-semibold lg:inline">
+                {displayName}
+              </span>
+              <ChevronDown
+                className="hidden size-3.5 shrink-0 text-muted sm:block"
+                aria-hidden="true"
+              />
+            </>
+          ) : null}
+        </button>
+      )}
+    >
+      <MenuHeader>
+        <p className="m-0 truncate text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+          {displayName}
+        </p>
+        {secondary ? (
+          <p className="m-0 mt-0.5 truncate text-[length:var(--exits-text-xs)] text-muted">
+            {secondary}
+          </p>
+        ) : null}
+        {roleLabel ? (
+          <p className="m-0 mt-1 truncate text-[length:var(--exits-text-xs)] font-semibold text-muted">
+            {roleLabel}
+          </p>
+        ) : null}
+        {boundWorkspace ? (
+          <p className="m-0 mt-1 truncate text-[length:var(--exits-text-xs)] text-muted sm:hidden">
+            {boundWorkspace.organizationDisplayName} · {boundWorkspace.branchName}
+          </p>
+        ) : null}
+      </MenuHeader>
+      <MenuItem
+        onSelect={() => {
+          setOpen(false);
+          navigate("/settings/preferences");
+        }}
+      >
+        <Settings className="size-4 shrink-0" aria-hidden="true" />
+        {t("topbar.preferences")}
+      </MenuItem>
+      <MenuSeparator />
+      <MenuItem
+        destructive
+        disabled={signingOut}
+        onSelect={() => {
+          setOpen(false);
+          onSignOut();
+        }}
+      >
+        <LogOut className="size-4 shrink-0" aria-hidden="true" />
+        {signingOut ? t("topbar.signingOut") : t("topbar.signOut")}
+      </MenuItem>
+    </DropdownMenu>
+  );
+}

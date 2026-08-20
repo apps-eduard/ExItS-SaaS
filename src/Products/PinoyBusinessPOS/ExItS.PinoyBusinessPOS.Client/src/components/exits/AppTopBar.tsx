@@ -1,7 +1,6 @@
-import { LogOut, Settings } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { AccountMenu } from "@/components/exits/AccountMenu";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSession } from "@/session/SessionProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -10,13 +9,12 @@ import { cn } from "@/lib/cn";
 export function AppTopBar() {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const location = useLocation();
   const { signOut } = useSession();
-  const { boundWorkspace, clearBoundWorkspace } = useWorkspace();
+  const { boundWorkspace, clearBoundWorkspace, workspaces } = useWorkspace();
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
 
-  const preferencesActive = location.pathname.startsWith("/settings/preferences");
+  const canSwitchWorkspace = workspaces.length > 0;
 
   async function handleSignOut() {
     if (signingOut) {
@@ -34,62 +32,79 @@ export function AppTopBar() {
     navigate("/sign-in", { replace: true });
   }
 
+  const workspaceLabel = boundWorkspace
+    ? `${boundWorkspace.organizationDisplayName} · ${boundWorkspace.branchName}`
+    : null;
+
   return (
-    <header className="flex min-w-0 flex-col gap-3 border-b border-border py-3">
-      <div className="flex min-w-0 items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
+    <header
+      className="flex min-w-0 flex-col gap-2 border-b border-border py-2"
+      data-testid="app-top-bar"
+    >
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_auto]">
+        <div className="flex min-w-0 items-center gap-2.5">
           <div
-            className="flex size-9 shrink-0 items-center justify-center rounded-[var(--exits-radius-md)] bg-primary text-xs font-bold text-primary-foreground"
+            className="flex size-8 shrink-0 items-center justify-center rounded-[var(--exits-radius-md)] bg-primary text-[length:var(--exits-text-xs)] font-bold text-primary-foreground sm:size-9"
             aria-hidden="true"
           >
             E
           </div>
           <div className="min-w-0">
-            <p className="m-0 truncate text-[length:var(--exits-text-sm)] font-semibold tracking-wide uppercase text-muted">
+            <p className="m-0 truncate text-[length:var(--exits-text-xs)] font-semibold tracking-[0.08em] uppercase text-muted sm:text-[length:var(--exits-text-sm)]">
               {t("app.name")}
             </p>
             {boundWorkspace ? (
-              <p className="m-0 truncate text-[length:var(--exits-text-md)] font-semibold text-foreground">
-                {boundWorkspace.organizationDisplayName} · {boundWorkspace.branchName}
+              <p
+                className="m-0 truncate text-[length:var(--exits-text-sm)] font-semibold text-foreground md:hidden"
+                title={workspaceLabel ?? undefined}
+              >
+                {boundWorkspace.branchName}
               </p>
-            ) : (
-              <p className="m-0 truncate text-[length:var(--exits-text-sm)] text-muted">
-                {t("topbar.noWorkspace")}
-              </p>
-            )}
+            ) : null}
           </div>
         </div>
 
-        <nav className="flex shrink-0 items-center gap-1 sm:gap-2" aria-label={t("app.name")}>
-          <Button
-            variant="ghost"
-            size="default"
-            className={cn(preferencesActive && "bg-[var(--exits-surface-muted)]")}
-            aria-current={preferencesActive ? "page" : undefined}
-            aria-label={t("topbar.preferences")}
-            title={t("topbar.preferences")}
-            onClick={() => navigate("/settings/preferences")}
-          >
-            <Settings className="size-4" aria-hidden="true" />
-            <span className="hidden sm:inline">{t("topbar.preferences")}</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="default"
-            disabled={signingOut}
-            aria-busy={signingOut || undefined}
-            aria-label={t("topbar.signOut")}
-            title={t("topbar.signOut")}
-            onClick={() => {
+        <div className="hidden min-w-0 justify-center md:flex">
+          {boundWorkspace ? (
+            <button
+              type="button"
+              data-testid="workspace-context"
+              className={cn(
+                "max-w-full truncate rounded-[var(--exits-radius-md)] px-2 py-1 text-center text-[length:var(--exits-text-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                canSwitchWorkspace ? "hover:bg-[var(--exits-surface-muted)]" : "cursor-default",
+              )}
+              title={workspaceLabel ?? undefined}
+              aria-label={
+                canSwitchWorkspace
+                  ? `${t("workspace.switch")}: ${workspaceLabel}`
+                  : (workspaceLabel ?? undefined)
+              }
+              onClick={() => {
+                if (canSwitchWorkspace) {
+                  navigate("/workspace");
+                }
+              }}
+              disabled={!canSwitchWorkspace}
+            >
+              <span className="font-semibold text-foreground">
+                {boundWorkspace.organizationDisplayName}
+              </span>
+              <span className="mx-1.5 text-muted">·</span>
+              <span className="text-muted">{boundWorkspace.branchName}</span>
+            </button>
+          ) : (
+            <span className="sr-only">{t("topbar.workspacePending")}</span>
+          )}
+        </div>
+
+        <div className="flex shrink-0 items-center justify-end">
+          <AccountMenu
+            signingOut={signingOut}
+            onSignOut={() => {
               void handleSignOut();
             }}
-          >
-            <LogOut className="size-4" aria-hidden="true" />
-            <span className="hidden sm:inline">
-              {signingOut ? t("topbar.signingOut") : t("topbar.signOut")}
-            </span>
-          </Button>
-        </nav>
+          />
+        </div>
       </div>
 
       {signOutError ? (

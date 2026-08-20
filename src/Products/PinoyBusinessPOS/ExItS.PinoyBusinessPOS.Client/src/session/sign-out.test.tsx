@@ -294,9 +294,11 @@ describe("sign out", () => {
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Cashier home" })).toBeInTheDocument();
     });
-    expect(screen.getByText(/Kizy Store · Main Branch/)).toBeInTheDocument();
+    expect(screen.getByTestId("workspace-context")).toHaveTextContent(/Kizy Store/);
+    expect(screen.getByTestId("account-menu-trigger")).toHaveTextContent("CO");
 
-    await user.click(screen.getByRole("button", { name: "Sign out" }));
+    await user.click(screen.getByTestId("account-menu-trigger"));
+    await user.click(screen.getByRole("menuitem", { name: "Sign out" }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Sign in" })).toBeInTheDocument();
@@ -308,8 +310,8 @@ describe("sign out", () => {
     await memoryRouter.navigate("/sell");
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Sign in" })).toBeInTheDocument();
+      expect(memoryRouter.state.location.pathname).toBe("/sign-in");
     });
-    expect(memoryRouter.state.location.pathname).toBe("/sign-in");
   });
 
   it("shell keeps authenticated content and shows an error when logout fails", async () => {
@@ -322,7 +324,8 @@ describe("sign out", () => {
       expect(screen.getByRole("heading", { name: "Cashier home" })).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole("button", { name: "Sign out" }));
+    await user.click(screen.getByTestId("account-menu-trigger"));
+    await user.click(screen.getByRole("menuitem", { name: "Sign out" }));
 
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveTextContent(/logout unavailable|Sign out failed/i);

@@ -7,7 +7,9 @@ test.describe("auth session", () => {
     await signInAndBindCashier(page);
 
     await expect(page.getByRole("heading", { name: "Cashier home" })).toBeVisible();
-    await expect(page.getByRole("banner").getByText("Kizy Store · Main Branch")).toBeVisible();
+    await expect(page.getByRole("banner").getByTestId("workspace-context")).toContainText(
+      "Kizy Store",
+    );
 
     const storageScan = await page.evaluate(() => {
       const values: string[] = [];
@@ -43,7 +45,8 @@ test.describe("auth session", () => {
     await signInAndBindCashier(page);
     await expect(page.getByRole("heading", { name: "Cashier home" })).toBeVisible();
 
-    await page.getByRole("button", { name: "Sign out" }).click();
+    await page.getByTestId("account-menu-trigger").click();
+    await page.getByRole("menuitem", { name: "Sign out" }).click();
     await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
     await expect(page).toHaveURL(/\/sign-in$/);
 
@@ -73,7 +76,8 @@ test.describe("auth session", () => {
     await signInAndBindCashier(page);
     await expect(page.getByRole("heading", { name: "Cashier home" })).toBeVisible();
 
-    await page.getByRole("button", { name: "Sign out" }).click();
+    await page.getByTestId("account-menu-trigger").click();
+    await page.getByRole("menuitem", { name: "Sign out" }).click();
     await expect(page.getByRole("alert")).toContainText(/logout unavailable|Sign out failed/i);
     await expect(page.getByRole("heading", { name: "Cashier home" })).toBeVisible();
     await expect(page).not.toHaveURL(/\/sign-in/);
