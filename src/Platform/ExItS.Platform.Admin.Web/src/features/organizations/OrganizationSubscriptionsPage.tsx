@@ -20,6 +20,10 @@ import { StatusIndicator } from "@/components/exits/StatusIndicator";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  organizationSubscriptionStatusLabel,
+  organizationSubscriptionStatusTone,
+} from "@/features/organizations/organization-subscription-status";
 import { useOrganizationSubscriptionsQuery } from "@/features/organizations/use-organization-workspace-queries";
 import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -38,34 +42,8 @@ const SORT_LABELS: Record<OrganizationSubscriptionSortBy, MessageKey> = {
   PlanDisplayName: "organization.subscriptions.sort.planDisplayName",
 };
 
-const STATUS_LABELS: Record<string, MessageKey> = {
-  Trialing: "dashboard.status.Trialing",
-  Active: "dashboard.status.Active",
-  GracePeriod: "dashboard.status.GracePeriod",
-  PastDue: "dashboard.status.PastDue",
-  Suspended: "dashboard.status.Suspended",
-};
-
 const controlClass =
   "h-[var(--exits-control-height)] min-h-[var(--exits-touch-target-min)] rounded-[var(--exits-density-radius)] border border-input bg-surface px-3 text-[length:var(--exits-text-sm)] text-foreground";
-
-function statusTone(status: string): "success" | "warning" | "danger" | "neutral" {
-  if (status === "Active") {
-    return "success";
-  }
-  if (
-    status === "Trialing" ||
-    status === "GracePeriod" ||
-    status === "PastDue" ||
-    status === "Suspended"
-  ) {
-    return "warning";
-  }
-  if (status === "Cancelled" || status === "Expired") {
-    return "danger";
-  }
-  return "neutral";
-}
 
 function formatInstant(value: string | undefined, language: string): string | null {
   if (!value) {
@@ -204,7 +182,7 @@ export function OrganizationSubscriptionsPage() {
             <option value="">{t("organization.subscriptions.status.all")}</option>
             {ORGANIZATION_SUBSCRIPTION_STATUSES.map((status) => (
               <option key={status} value={status}>
-                {STATUS_LABELS[status] ? t(STATUS_LABELS[status]!) : status}
+                {organizationSubscriptionStatusLabel(status, t)}
               </option>
             ))}
           </select>
@@ -351,10 +329,8 @@ export function OrganizationSubscriptionsPage() {
                     header: t("organization.subscriptions.column.status"),
                     cell: (item) => (
                       <StatusIndicator
-                        tone={statusTone(item.status)}
-                        label={
-                          STATUS_LABELS[item.status] ? t(STATUS_LABELS[item.status]!) : item.status
-                        }
+                        tone={organizationSubscriptionStatusTone(item.status)}
+                        label={organizationSubscriptionStatusLabel(item.status, t)}
                       />
                     ),
                   },
@@ -394,10 +370,8 @@ export function OrganizationSubscriptionsPage() {
                     </p>
                     <div className="mt-1.5">
                       <StatusIndicator
-                        tone={statusTone(item.status)}
-                        label={
-                          STATUS_LABELS[item.status] ? t(STATUS_LABELS[item.status]!) : item.status
-                        }
+                        tone={organizationSubscriptionStatusTone(item.status)}
+                        label={organizationSubscriptionStatusLabel(item.status, t)}
                       />
                     </div>
                   </li>

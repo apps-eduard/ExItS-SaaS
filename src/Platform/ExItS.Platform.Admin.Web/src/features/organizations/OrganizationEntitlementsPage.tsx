@@ -25,37 +25,14 @@ import {
 import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { usePreferences } from "@/hooks/use-preferences";
+import {
+  organizationSubscriptionStatusLabel,
+  organizationSubscriptionStatusTone,
+} from "@/features/organizations/organization-subscription-status";
 import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
-import type { MessageKey } from "@/lib/i18n/messages";
-
-const STATUS_LABELS: Record<string, MessageKey> = {
-  Active: "dashboard.status.Active",
-  Suspended: "dashboard.status.Suspended",
-  Trialing: "dashboard.status.Trialing",
-  PastDue: "dashboard.status.PastDue",
-  GracePeriod: "dashboard.status.GracePeriod",
-};
 
 const controlClass =
   "h-[var(--exits-control-height)] min-h-[var(--exits-touch-target-min)] rounded-[var(--exits-density-radius)] border border-input bg-surface px-3 text-[length:var(--exits-text-sm)] text-foreground";
-
-function statusTone(status: string): "success" | "warning" | "danger" | "neutral" {
-  if (status === "Active") {
-    return "success";
-  }
-  if (
-    status === "Suspended" ||
-    status === "Trialing" ||
-    status === "PastDue" ||
-    status === "GracePeriod"
-  ) {
-    return "warning";
-  }
-  if (status === "Cancelled" || status === "Canceled" || status === "Expired") {
-    return "danger";
-  }
-  return "neutral";
-}
 
 function formatInstant(value: string | undefined, language: string): string | null {
   if (!value) {
@@ -283,12 +260,8 @@ export function OrganizationEntitlementsPage() {
                     header: t("organization.entitlements.column.status"),
                     cell: (item) => (
                       <StatusIndicator
-                        tone={statusTone(item.subscriptionStatus)}
-                        label={
-                          STATUS_LABELS[item.subscriptionStatus]
-                            ? t(STATUS_LABELS[item.subscriptionStatus]!)
-                            : item.subscriptionStatus
-                        }
+                        tone={organizationSubscriptionStatusTone(item.subscriptionStatus)}
+                        label={organizationSubscriptionStatusLabel(item.subscriptionStatus, t)}
                       />
                     ),
                   },
@@ -326,12 +299,8 @@ export function OrganizationEntitlementsPage() {
                     </p>
                     <div className="mt-1.5">
                       <StatusIndicator
-                        tone={statusTone(item.subscriptionStatus)}
-                        label={
-                          STATUS_LABELS[item.subscriptionStatus]
-                            ? t(STATUS_LABELS[item.subscriptionStatus]!)
-                            : item.subscriptionStatus
-                        }
+                        tone={organizationSubscriptionStatusTone(item.subscriptionStatus)}
+                        label={organizationSubscriptionStatusLabel(item.subscriptionStatus, t)}
                       />
                     </div>
                   </li>

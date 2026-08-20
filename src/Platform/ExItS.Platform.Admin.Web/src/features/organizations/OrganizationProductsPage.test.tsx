@@ -100,4 +100,45 @@ describe("organization workspace products", () => {
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Copy diagnostics" })).toBeInTheDocument();
   });
+
+  it("renders canonical subscription status tones and labels", async () => {
+    stubDesktop();
+    mockAuthenticatedFetch({
+      organizationItems: [sampleOrg],
+      commercialSummary: {
+        latestEntitlements: [
+          {
+            id: "11111111-1111-1111-1111-111111111111",
+            productCode: "POS",
+            subscriptionStatus: "Cancelled",
+          },
+          {
+            id: "22222222-2222-2222-2222-222222222222",
+            productCode: "PLM",
+            subscriptionStatus: "Expired",
+          },
+          {
+            id: "33333333-3333-3333-3333-333333333333",
+            productCode: "CRM",
+            subscriptionStatus: "GracePeriod",
+          },
+          {
+            id: "44444444-4444-4444-4444-444444444444",
+            productCode: "UNK",
+            subscriptionStatus: "UnknownStatus",
+          },
+        ],
+      },
+    });
+    window.history.replaceState({}, "", `/admin/organizations/${sampleOrg.id}/products`);
+    render(<App />);
+    expect(await screen.findByText("Cancelled")).toBeInTheDocument();
+    expect(screen.getByText("Expired")).toBeInTheDocument();
+    expect(screen.getByText("Grace period")).toBeInTheDocument();
+    expect(screen.getByText("UnknownStatus")).toBeInTheDocument();
+    const dangerDots = document.querySelectorAll(".bg-destructive");
+    const warningDots = document.querySelectorAll(".bg-warning");
+    expect(dangerDots.length).toBeGreaterThanOrEqual(2);
+    expect(warningDots.length).toBeGreaterThanOrEqual(1);
+  });
 });

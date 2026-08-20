@@ -10,30 +10,12 @@ import { useOrganizationCommercialSummaryQuery } from "@/features/organizations/
 import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { usePreferences } from "@/hooks/use-preferences";
+import {
+  organizationSubscriptionStatusLabel,
+  organizationSubscriptionStatusTone,
+} from "@/features/organizations/organization-subscription-status";
 import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
-import type { MessageKey } from "@/lib/i18n/messages";
 import { useParams } from "react-router-dom";
-
-const STATUS_LABELS: Record<string, MessageKey> = {
-  Active: "dashboard.status.Active",
-  Suspended: "dashboard.status.Suspended",
-  Trialing: "dashboard.status.Trialing",
-  PastDue: "dashboard.status.PastDue",
-  GracePeriod: "dashboard.status.GracePeriod",
-};
-
-function statusTone(status: string): "success" | "warning" | "danger" | "neutral" {
-  if (status === "Active") {
-    return "success";
-  }
-  if (status === "Suspended" || status === "Trialing" || status === "PastDue") {
-    return "warning";
-  }
-  if (status === "Canceled" || status === "Expired") {
-    return "danger";
-  }
-  return "neutral";
-}
 
 function formatInstant(value: string | undefined, language: string): string | null {
   if (!value) {
@@ -128,12 +110,8 @@ export function OrganizationProductsPage() {
                   header: t("organization.products.column.status"),
                   cell: (item) => (
                     <StatusIndicator
-                      tone={statusTone(item.subscriptionStatus)}
-                      label={
-                        STATUS_LABELS[item.subscriptionStatus]
-                          ? t(STATUS_LABELS[item.subscriptionStatus]!)
-                          : item.subscriptionStatus
-                      }
+                      tone={organizationSubscriptionStatusTone(item.subscriptionStatus)}
+                      label={organizationSubscriptionStatusLabel(item.subscriptionStatus, t)}
                     />
                   ),
                 },
@@ -176,12 +154,8 @@ export function OrganizationProductsPage() {
                   </p>
                   <div className="mt-1.5 flex flex-wrap items-center gap-2">
                     <StatusIndicator
-                      tone={statusTone(item.subscriptionStatus)}
-                      label={
-                        STATUS_LABELS[item.subscriptionStatus]
-                          ? t(STATUS_LABELS[item.subscriptionStatus]!)
-                          : item.subscriptionStatus
-                      }
+                      tone={organizationSubscriptionStatusTone(item.subscriptionStatus)}
+                      label={organizationSubscriptionStatusLabel(item.subscriptionStatus, t)}
                     />
                     {item.snapshotVersion != null ? (
                       <span className="text-[length:var(--exits-text-xs)] text-muted">

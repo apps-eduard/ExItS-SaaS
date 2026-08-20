@@ -145,4 +145,33 @@ describe("organization workspace subscriptions", () => {
     expect(await screen.findByRole("heading", { name: "Page not found" })).toBeInTheDocument();
     expect(screen.queryByText("subscription-secret")).not.toBeInTheDocument();
   });
+
+  it("localizes Cancelled and Expired in fil-PH", async () => {
+    stubDesktop();
+    mockAuthenticatedFetch({
+      organizationItems: [sampleOrg],
+      orgSubscriptionItems: [
+        {
+          ...subscription,
+          id: "33333333-3333-3333-3333-333333333333",
+          status: "Cancelled",
+        },
+        {
+          ...subscription,
+          id: "44444444-4444-4444-4444-444444444444",
+          status: "Expired",
+        },
+      ],
+    });
+    window.history.replaceState({}, "", `/admin/organizations/${sampleOrg.id}/subscription`);
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole("heading", { name: "Subscription", level: 1 });
+    await user.click(screen.getByRole("button", { name: "Preferences" }));
+    await user.click(await screen.findByRole("menuitem", { name: /Filipino/i }));
+    expect(await screen.findAllByText("Nakansela")).not.toHaveLength(0);
+    expect(screen.getAllByText("Nag-expire").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Cancelled")).not.toBeInTheDocument();
+    expect(screen.queryByText("Expired")).not.toBeInTheDocument();
+  });
 });

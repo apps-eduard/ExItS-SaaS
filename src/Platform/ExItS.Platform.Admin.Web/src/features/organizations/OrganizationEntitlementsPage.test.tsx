@@ -183,4 +183,47 @@ describe("organization workspace entitlements", () => {
     expect(await screen.findByText("This list is not available.")).toBeInTheDocument();
     expect(screen.queryByText("entitlement-secret")).not.toBeInTheDocument();
   });
+
+  it("localizes Cancelled, Expired, and GracePeriod in fil-PH", async () => {
+    stubDesktop();
+    mockAuthenticatedFetch({
+      organizationItems: [sampleOrg],
+      commercialSummary: {
+        latestEntitlements: [{ id: "e1", productCode: "POS", subscriptionStatus: "Active" }],
+      },
+      entitlementSnapshotItems: [
+        {
+          ...snapshot,
+          id: "11111111-1111-1111-1111-111111111111",
+          subscriptionStatus: "Cancelled",
+        },
+        {
+          ...snapshot,
+          id: "22222222-2222-2222-2222-222222222222",
+          subscriptionStatus: "Expired",
+        },
+        {
+          ...snapshot,
+          id: "33333333-3333-3333-3333-333333333333",
+          subscriptionStatus: "GracePeriod",
+        },
+      ],
+      entitlementSnapshotTotalCount: 3,
+    });
+    window.history.replaceState(
+      {},
+      "",
+      `/admin/organizations/${sampleOrg.id}/entitlements?product=POS`,
+    );
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole("heading", { name: "Entitlements", level: 1 });
+    await user.click(screen.getByRole("button", { name: "Preferences" }));
+    await user.click(await screen.findByRole("menuitem", { name: /Filipino/i }));
+    expect(await screen.findAllByText("Nakansela")).not.toHaveLength(0);
+    expect(screen.getAllByText("Nag-expire").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Grace period").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Cancelled")).not.toBeInTheDocument();
+    expect(screen.queryByText("Expired")).not.toBeInTheDocument();
+  });
 });
