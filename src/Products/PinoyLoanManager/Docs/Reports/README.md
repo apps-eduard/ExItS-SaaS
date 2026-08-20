@@ -36,5 +36,6 @@ Do not rewrite historical signed-off reports merely to erase history.
 | [PLM-PWA-H1-cache-storage-security.md](PLM-PWA-H1-cache-storage-security.md) | Runtime Cache Storage + storage audit; NetworkOnly APIs |
 | [PLM-PWA-H2-install-update-lifecycle.md](PLM-PWA-H2-install-update-lifecycle.md) | Prompt-based PWA update lifecycle; no force refresh |
 | [PLM-PWA-H3-connectivity-fail-closed.md](PLM-PWA-H3-connectivity-fail-closed.md) | Fail-closed offline UX; no financial offline |
+| [PLM-PWA-H4-production-preview-reliability.md](PLM-PWA-H4-production-preview-reliability.md) | Production-preview PWA reliability evidence |
 
 PLM-00-WP01 through PLM-00-WP09 do not add a separate report file. Completion evidence for those documentation-only packages is the git commit on `docs/plm-foundation` plus the chat completion report.

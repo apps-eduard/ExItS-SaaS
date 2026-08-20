@@ -107,6 +107,7 @@ Shared contracts to load with this product:
 | `Docs/Reports/PLM-PWA-H1-cache-storage-security.md` | PWA cache/storage security proof | Complete after validation | NetworkOnly APIs; no auth cache |
 | `Docs/Reports/PLM-PWA-H2-install-update-lifecycle.md` | PWA install/update lifecycle | Complete after validation | User-triggered refresh |
 | `Docs/Reports/PLM-PWA-H3-connectivity-fail-closed.md` | Fail-closed connectivity UX | Complete after validation | No financial offline |
+| `Docs/Reports/PLM-PWA-H4-production-preview-reliability.md` | Production-preview PWA reliability | Complete after validation | Evidence before lending |
 
 ## Foundation closeout (PLM-00-WP10)
 
