@@ -36,6 +36,11 @@ export const en = {
   "signIn.submitting": "Signing in…",
   "signIn.error": "Sign in failed. Check your credentials and try again.",
   "signIn.expired": "Your session expired. Sign in again to continue.",
+  "signIn.localValidation": "Local validation users",
+  "signIn.localValidationHint":
+    "Choose a seeded user to fill the username. Enter the password yourself.",
+  "signIn.testUser": "Test user",
+  "signIn.selectUser": "Select a user…",
   "workspace.title": "Choose workspace",
   "workspace.lede": "Select the organization and branch you will operate.",
   "workspace.loading": "Loading workspaces…",
@@ -163,6 +168,11 @@ export const filPH: Record<keyof typeof en, string> = {
   "signIn.submitting": "Nagsa-sign in…",
   "signIn.error": "Hindi nag-sign in. Suriin ang credentials at subukang muli.",
   "signIn.expired": "Nag-expire ang session. Mag-sign in ulit para magpatuloy.",
+  "signIn.localValidation": "Local validation users",
+  "signIn.localValidationHint":
+    "Pumili ng seeded user para mapunan ang username. Ikaw ang maglalagay ng password.",
+  "signIn.testUser": "Test user",
+  "signIn.selectUser": "Pumili ng user…",
   "workspace.title": "Pumili ng workspace",
   "workspace.lede": "Piliin ang organization at branch na pagtatrabahuan.",
   "workspace.loading": "Naglo-load ng mga workspace…",

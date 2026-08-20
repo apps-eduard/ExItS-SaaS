@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { TestUserSelector } from "@/features/auth/TestUserSelector";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSession } from "@/session/SessionProvider";
 
@@ -64,6 +65,13 @@ export function SignInPage() {
           <Button type="submit" disabled={submitting}>
             {submitting ? t("signIn.submitting") : t("signIn.submit")}
           </Button>
+          <TestUserSelector
+            onSelectIdentity={(value) => {
+              setUsernameOrEmail(value);
+              setPassword("");
+              setError(null);
+            }}
+          />
         </form>
       </Card>
     </div>

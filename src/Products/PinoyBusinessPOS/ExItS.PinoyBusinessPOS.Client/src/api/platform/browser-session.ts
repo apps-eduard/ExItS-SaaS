@@ -68,6 +68,9 @@ export const AUTH_LOGOUT_PATH = "/api/v1/platform/auth/logout";
 export const AUTH_ORGANIZATIONS_PATH = "/api/v1/platform/auth/organizations";
 export const AUTH_ORGANIZATION_CONTEXT_PATH = "/api/v1/platform/auth/organization-context";
 export const AUTH_TOKEN_PATH = "/api/v1/platform/auth/token";
+export const LOCAL_VALIDATION_ENABLED_PATH = "/api/v1/platform/local-validation/enabled";
+export const LOCAL_VALIDATION_IDENTITIES_PATH =
+  "/api/v1/platform/local-validation/quick-login-identities";
 
 export const POS_PRODUCT_CODE = "pinoy-business-pos";
 

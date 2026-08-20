@@ -10,6 +10,8 @@ import {
   AUTH_ORGANIZATION_CONTEXT_PATH,
   AUTH_ORGANIZATIONS_PATH,
   AUTH_TOKEN_PATH,
+  LOCAL_VALIDATION_ENABLED_PATH,
+  LOCAL_VALIDATION_IDENTITIES_PATH,
   organizationBranchContextPath,
   organizationBranchesPath,
   POS_PRODUCT_CODE,
@@ -19,8 +21,20 @@ import {
   type PlatformLoginWire,
   type PlatformProblem,
 } from "@/api/platform/browser-session";
+import { isFrontendLocalValidationMode } from "@/api/platform/local-validation-gate";
 import { clearPosAccessToken, setPosAccessToken } from "@/api/platform/pos-access-token";
 import { clearPosSessionGrant, setPosSessionGrant } from "@/api/platform/pos-session-grant";
+
+export type QuickLoginIdentity = {
+  key?: string;
+  username?: string;
+  displayName?: string;
+  email?: string;
+  listLabel?: string;
+  organizationName?: string | null;
+  organizationRole?: string | null;
+  scopeLabel?: string | null;
+};
 
 export type EligibleOrganization = {
   organizationId: string;
@@ -99,6 +113,31 @@ export async function logoutSession(): Promise<void> {
   clearPlatformAntiforgeryToken();
   clearPosAccessToken();
   clearPosSessionGrant();
+}
+
+/** Local-validation quick-login list — usernames/emails only; never returns passwords. */
+export async function fetchLocalValidationIdentities(): Promise<QuickLoginIdentity[]> {
+  if (!isFrontendLocalValidationMode()) {
+    return [];
+  }
+
+  try {
+    const enabled = await platformRequest<boolean>({ path: LOCAL_VALIDATION_ENABLED_PATH });
+    if (enabled !== true) {
+      return [];
+    }
+  } catch {
+    return [];
+  }
+
+  try {
+    const identities = await platformRequest<QuickLoginIdentity[]>({
+      path: LOCAL_VALIDATION_IDENTITIES_PATH,
+    });
+    return Array.isArray(identities) ? identities : [];
+  } catch {
+    return [];
+  }
 }
 
 export function platformProblemDetail(body: PlatformProblem | null, fallback: string): string {
