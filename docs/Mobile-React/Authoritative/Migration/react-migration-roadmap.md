@@ -145,7 +145,7 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 | Current payments | Cash · GCash (`ManualGCash`) · Utang |
 | Future payments (infra only) | Card · provider/API GCash |
 | Exclusions | React discount UX (**RMAP-11b**); promotions; regulatory; RMAP-TAX; provider payment UX |
-| Next | HARD STOP — do not start RMAP-08 / RMAP-11b / RMAP-B04 / RMAP-TAX |
+| Next | RMAP-08 COMPLETE — next commercial UX packages remain gated |
 
 ### RMAP-B04 — Linked ExItS buyer purchase projection
 | Field | Content |
@@ -207,15 +207,19 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 | Report | [POS-REACT-RMAP-07-inventory.md](../../Reports/POS-REACT-RMAP-07-inventory.md) |
 | Shared impl SHA | `d3e4e3da` (with RMAP-06; history not rewritten) |
 | Validation repair | `cb91145b` |
-| Exclusions | Lots/expiry (RMAP-08 NOT STARTED) |
-| Next | **HARD STOP** — ChatGPT review; do not start RMAP-08; RMAP-B04 / RMAP-TAX / RMAP-11b NOT STARTED |
+| Exclusions | Lots/expiry (RMAP-08 COMPLETE) |
+| Next | RMAP-08 COMPLETE |
 
 ### RMAP-08 — Lots / expiry / FEFO (optional track)
 | Field | Content |
 |-------|---------|
-| Objective | TracksExpiration + lots + FEFO sell allocation surfaces |
+| Status | **COMPLETE** |
+| Objective | TracksExpiration + lots + expiry inventory surfaces (not checkout FEFO) |
 | Dependencies | RMAP-07, RMAP-00 |
 | Backend | CURRENT |
+| Report | [POS-REACT-RMAP-08-lots-expiry-fefo.md](../../Reports/POS-REACT-RMAP-08-lots-expiry-fefo.md) |
+| Implementation SHA | `4c38bb0e` |
+| Exclusions | Checkout FEFO allocation (RMAP-09+); Card/provider payments |
 | Owner | OD-EXP-* |
 | Next | RMAP-09 |
 
@@ -410,9 +414,10 @@ Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, 
 ## APPROVED PROPOSED MASTER RUN 01
 
 **Name:** Foundation + Catalog/Inventory Baseline
-**Status:** **HARD STOP after RMAP-B03 FINAL CLOSED** — RMAP-00…RMAP-07 PASS; commercial discount payment boundaries proven. Next: ChatGPT review. Do **not** start RMAP-08, RMAP-11b, RMAP-B04, or RMAP-TAX.
-**Stop rule:** After Master Run packages + authorized B03 closeout → HARD STOP for Product Owner + ChatGPT review
-**Do not include:** RMAP-08 (lots/expiry); RMAP-11b discount UX; RMAP-B04; RMAP-TAX implementation
+**Status:** RMAP-00…RMAP-08 PASS on inventory/expiry surfaces. Commercial discount payment boundaries proven (RMAP-B03). Next authorized package: RMAP-09 (sell floor). Do **not** start RMAP-11b, RMAP-B04, or RMAP-TAX without authorization.
+**Stop rule:** After Master Run packages + authorized B03 closeout → HARD STOP for Product Owner + ChatGPT review (historical). RMAP-08 completed after that stop when authorized.
+**Do not include (still gated):** RMAP-11b discount UX; RMAP-B04; RMAP-TAX implementation
+**Completed beyond Master Run 01 table:** RMAP-08 lots/expiry inventory surfaces (`4c38bb0e`)
 **Distinction preserved:** Today's Price ≠ Cashier Price Override ≠ Commercial Discount ≠ Promotion ≠ Regulatory Discount
 **Completion report (B00):** [POS-REACT-RMAP-B00-identity-reconciliation.md](../../Reports/POS-REACT-RMAP-B00-identity-reconciliation.md)
 **Completion report (RMAP-01):** [POS-REACT-RMAP-01-account-session-parity.md](../../Reports/POS-REACT-RMAP-01-account-session-parity.md)

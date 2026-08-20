@@ -27,10 +27,10 @@ Current Contract Status: `CURRENT` | `OWNER_CONFIRMED_CHANGE` | `MIXED` | `UNRES
 | Sale-line price override policy | Owner policy | PROVEN_MISSING | PROVEN_MISSING | MISSING | OWNER_CONFIRMED_CHANGE | BLOCKED | UD-02 / RMAP-B01 | Backend domain first | No SalePricePolicy |
 | Linked buyer purchase projection | Read-only buyer history | PROVEN_MISSING | PROVEN_MISSING | MISSING | OWNER_CONFIRMED_CHANGE (future) | N/A | RMAP-B04 NOT STARTED | Backend-first later | SaleBuyerParty counterparty only |
 | Controlled tax activation UX | TAX_NOT_AVAILABLE→ACTIVE | PROVEN_PARTIAL (capability) | PROVEN_PARTIAL | MISSING | OWNER_CONFIRMED_CHANGE (future) | N/A | RMAP-TAX NOT STARTED | After RMAP-23 | Not BIR certification |
-| Inventory default untracked | Default untracked | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Catalog, RMAP-07 | Lots RMAP-08 | CreateUntracked; validation closeout `cb91145b` |
-| Inventory track/adjust/movements | Tracked authority | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Product, RMAP-07 | Lots RMAP-08 | InventoryUseCases; validation closeout `cb91145b` |
+| Inventory default untracked | Default untracked | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Catalog, RMAP-07 | — | CreateUntracked; validation closeout `cb91145b` |
+| Inventory track/adjust/movements | Tracked authority | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Product, RMAP-07 | — | InventoryUseCases; validation closeout `cb91145b` |
 | Oversell prevention | Required | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Inventory+checkout | Enforce on checkout | insufficient_stock |
-| Expiry lots + FEFO | Optional expiry | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Tracked inventory | Later inventory WP | InventoryLotFefo |
+| Expiry lots + FEFO | Optional expiry | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT (inventory surfaces) | CURRENT | CURRENT (RMAP-08; checkout FEFO later) | Tracked inventory, RMAP-08 | Sell-floor FEFO on RMAP-09+ | InventoryLotFefo; React `4c38bb0e` |
 | Manual suppliers | Local suppliers | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Org, RMAP-00 | React supplier WP | Supplier |
 | Connected suppliers EXPOSABLE≠SHARED | Preserve | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Suppliers | After local suppliers | ConnectedSuppliers |
 | Purchasing receive-only stock | Preserve invariant | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Suppliers+inventory | React purchasing WP | GRN movements |
