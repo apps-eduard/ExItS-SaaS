@@ -1,8 +1,8 @@
 # Pinoy Loan Manager — File Manifest
 
-**Status:** PLM-01 scaffold; Gates B–D3 complete; PLM-D3-PRE Platform product registration + current-session access
-**Implementation present:** Product shell + React Client + online-first PWA + cookie Sign In + Personal account lifecycle + organization/product-access gate; Platform catalog code `pinoy-loan-manager` + Local Validation fixture + current-session access API; no lending/Capacitor
-**Current work package:** PLM-CLIENT-GATE-D3 organization discovery + product access gate
+**Status:** PLM-01 scaffold; Gates B–D3 complete; PLM-02A server access boundary foundation complete; PLM-02 in progress
+**Implementation present:** Product shell + React Client + online-first PWA + cookie Sign In + Personal account lifecycle + organization/product-access gate + fail-closed server access boundary; Platform catalog code `pinoy-loan-manager` + Local Validation fixture + current-session access API; no lending/Capacitor/persistence
+**Current work package:** PLM-02A server access boundary foundation
 
 This file is the navigation map for future Cursor work. Load this product’s `Docs/` after the shared Product Foundation reference. Do not scan PinoyBusinessPOS implementation by default.
 
@@ -104,6 +104,7 @@ Shared contracts to load with this product:
 | `Docs/Reports/impl-gate-d2-account-lifecycle/` | Gate D2 screenshots | Complete after validation | No tokens/passwords in frames |
 | `Docs/Reports/PLM-CLIENT-GATE-D3-organization-product-access.md` | Gate D3 org discovery + product access gate | Complete after validation | Fail-closed workspace gate |
 | `Docs/Reports/impl-gate-d3-organization-product-access/` | Gate D3 screenshots | Complete after validation | Org select, denied, subscription, scope, workspace |
+| `Docs/Reports/PLM-02A-server-access-boundary-foundation.md` | Server fail-closed access boundary | PLM-02A complete; D-P12-03 open | No lending/persistence |
 
 ## Foundation closeout (PLM-00-WP10)
 
