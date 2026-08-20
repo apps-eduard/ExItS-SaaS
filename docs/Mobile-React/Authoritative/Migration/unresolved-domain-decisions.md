@@ -73,6 +73,23 @@ Markers appear only when evidence supports them.
 
 ---
 
+### UD-05 — Organization staff existing-person link
+
+| Field | Value |
+|-------|-------|
+| ID | UD-05 |
+| Marker | `ORGANIZATION_STAFF_EXISTING_PERSON_LINK_CONTRACT_MISSING` |
+| Question | Exact target schema for one human with Personal + multi-org staff memberships + org-scoped aliases without duplicate humans? |
+| Why it matters | Owner forbids duplicating a human merely for employment; CURRENT creates separate staff `PlatformUser` |
+| Known evidence | `CreateOrganizationStaff`; `AcceptOrganizationInvitation` always adds new user; no `UserIdentity` / `LinkedPersonalUserId`; Personal cannot accept staff invite onto same identity; soft contact-email only |
+| Current behavior | Separate credential principal per employment; alias = staff `NormalizedEmail` |
+| Owner requirement | Personal may accept invite; same human; alias remains; multi-org isolated memberships; removal preserves Personal/other orgs |
+| Dependency impact | Blocks desired React staff-identity parity; **RMAP-B00** backend first; RMAP-01 may still cover Personal session + CURRENT login mechanics without claiming desired person-link |
+| Recommended investigation | Domain design for person/account/membership/alias under RMAP-B00; MAUI regression; then React |
+| Blocking? | **YES** for `READY_FOR_REACT_STAFF_IDENTITY_PARITY` (desired model); **NO** for Personal account/session foundation |
+
+---
+
 ## Markers explicitly not emitted
 
 | Marker | Why not emitted |

@@ -3,9 +3,14 @@
 How future parity will be proven.
 **Do not** claim Device Verified or Browser Verified from automated tests alone.
 
+UI WPs must also satisfy [06-react-ui-ux-and-responsive-foundation.md](../06-react-ui-ux-and-responsive-foundation.md) (phone / tablet / desktop + a11y).
+
 | Capability | Unit Tests | Integration Tests | MAUI Regression | React Unit | React E2E | Offline | Authorization | Cross-org | Device/Browser | Owner Validation | Notes |
 |------------|------------|-------------------|-----------------|------------|-----------|---------|---------------|-----------|----------------|------------------|-------|
-| Staff login alias | Platform identity unit | Auth integration | Sign-in staff | Auth client | Playwright login | N/A | Session class | Staff lock | Browser manual | Confirm alias format | |
+| Shared UI foundation (RMAP-00) | Component tests | N/A | N/A | Vitest | Viewport E2E 375/768/1024/1440 | N/A | N/A | N/A | Phone+tablet+desktop visual | Spot-check ListToolbar | REUSE before create |
+| Personal session login | Platform identity | Auth integration | Sign-in | Auth client | Playwright login | N/A | Session class | | Browser | | RMAP-01 |
+| CURRENT staff alias login | Platform identity | Auth integration | Sign-in staff | Auth client | Optional smoke | N/A | Session class | Staff lock | Browser | | Not desired person-link |
+| Desired staff person-link | **New** after RMAP-B00 | **New** | MAUI after B00 | Invite/accept UI | E2E Personal accept | N/A | Membership rules | Multi-org | Browser | Owner multi-org + removal | BLOCKED until B00 |
 | Account scope isolation | Domain | Middleware integration | Org switch wipe | Session guards | E2E denial | N/A | AccountScopeGuard | Cross-class API deny | Browser | Spot-check | |
 | Product units / rice pool | ProductUnitConversion, RiceSell* | API catalog/sales | Sell-as checkout | Unit math helpers | E2E multi-unit sale | LocalStore v9 | Catalog/sales roles | Org isolation | Device later | Owner rice scenario | |
 | ByWeight | WeightedSale* | Sales API | Weight dialog | Qty helpers | E2E weight sale | Snapshot fidelity | CreateSale | | Device later | | |
@@ -21,10 +26,13 @@ How future parity will be proven.
 | Customer ordering/delivery | Ordering domain | CustomerOrder API | BranchEdit+shop | | E2E pickup/delivery | OnlineRequired | Linked merchant | Cross-org | Browser + geo manual | Owner delivery setup |
 | Transaction Summary wording | SalesDocumentFoundation | | Phase26 wording guards | Copy tests | E2E disclaimer | | Compliance capability | | Browser | Never claim BIR certified |
 | Reports | Report aggregates | Reports API | Reports pages | | Smoke E2E | OnlineRequired | Viewer+ | | Browser | No fake P&L |
+| UI responsive quality | N/A | N/A | N/A | Visual regression where practical | Phone/tablet/desktop screenshots | N/A | | | **Manual owner UX review** | Poor UX = PARTIAL |
 
 ## Evidence rules
 
 1. Unit/integration green ≠ Device Verified.
 2. Playwright green ≠ production PWA offline POS.
-3. Owner Validation column is required for rice multi-unit, delivery readiness, and price-policy acceptance.
-4. Record exact test project names and commit SHAs in future WP closeouts.
+3. Playwright green ≠ Mobile/Tablet UX PASS.
+4. Owner Validation column is required for rice multi-unit, delivery readiness, price-policy acceptance, and staff person-link acceptance.
+5. Record exact test project names and commit SHAs in future WP closeouts.
+6. Master-run batches follow [master-run-execution-protocol.md](master-run-execution-protocol.md).

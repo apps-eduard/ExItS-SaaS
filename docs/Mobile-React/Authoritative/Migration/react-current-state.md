@@ -26,9 +26,10 @@ Do not treat prior WP labels as completeness. Inventory against routes and code.
 | Area | Route/components | Hooks/services/API | Tests | Implemented | Missing | Parity risk |
 |------|------------------|--------------------|-------|-------------|---------|-------------|
 | App shell | `AppShell`, `RootLayout`, top bar/account menu | layouts/components | foundation/shell tests | Shell chrome | Full MAUI hubs | Low for shell |
-| Auth | `SignInPage` | `platform-auth-client`, antiforgery | auth/e2e | Cookie login/logout/me | Staff-invite accept UX, register/activate parity | Medium — must accept staff login strings |
+| Auth | `SignInPage` | `platform-auth-client`, antiforgery | auth/e2e | Cookie login/logout/me | Desired staff person-link invite UX; register/activate parity | Medium — CURRENT staff login string may work; desired person-link BLOCKED on RMAP-B00 |
 | Session | `SessionProvider`, guards | pos-access-token, pos-session-grant | session tests | Session boot | MAUI offline session | Medium |
 | Workspace | `WorkspaceProvider`, chooser | workspace-resolver, Platform APIs | workspace tests | Org/branch binding | Start Business, multi-product depth | Medium |
+| Shared UI kit | `components/exits`, `components/ui` | tokens in `globals.css` | foundation/e2e viewports | PageHeader, states, SegmentedControl | ListToolbar, SearchField shared, EntityCard, forms kit | High for admin lists — needs RMAP-00 |
 | Personal | `PersonalHomePage` | none meaningful | | Placeholder | Utang, shop, explore, start business | High if claimed complete |
 | Sell floor | `SellFloorPage` | catalog client, cart provider | sell-floor e2e | Browse/search/categories/cart UI | ByWeight, sell units, stock gates, pay | High — looks like POS but checkout disabled |
 | Catalog admin | — | read-only `pos-catalog-client` | catalog-cart tests | Read for sell | CRUD/units/Today’s Prices/import | High |

@@ -1,18 +1,18 @@
 # Identity, Personal, and Organization Lifecycle
 
-## User identity (current)
+## User identity (CURRENT)
 
-There is **no** separate `UserIdentity` table. `PlatformUser` is the credential-bearing identity.
+There is **no** separate `UserIdentity` table/entity. `PlatformUser` is the credential-bearing principal.
 
 | Concept | Implementation | Evidence |
 |---------|----------------|----------|
-| Identity | `PlatformUser` → table `platform_users` | Platform Domain / `PlatformDbContext` |
+| Identity principal | `PlatformUser` → `platform.platform_users` | Platform Domain / `PlatformDbContext` |
 | Credentials | `PlatformUserCredential` 1:1 → `platform_user_credentials` | password hash, stamp, lockout |
 | Login key (Personal / Platform staff) | `NormalizedEmail` (unique) | real email |
 | Staff login key | `NormalizedEmail` stores synthetic `local@ORG######` | not a mailbox |
 | Staff contact | `NormalizedContactEmail` (non-unique) | recovery/contact only |
 | Home org | `HomeOrganizationId` null for Personal/Owner; set for org staff | immutable after staff create |
-| Account profiles | `AccountProfile` unique per (user, `AccountClass`) | `account_profiles` |
+| Account profiles | `AccountProfile` unique per (user, `AccountClass`); field `UserIdentityId` is typed as `PlatformUserId` | `account_profiles` |
 | Sessions | `PlatformAuthSession` bound to one profile/class | `platform_auth_sessions` |
 
 Status: **PROVEN_CURRENT**
@@ -24,112 +24,165 @@ Enum `AccountClass`: `Platform`, `Personal`, `Organization`.
 | Class | Typical identity | Session behavior |
 |-------|------------------|------------------|
 | Personal | Real-email `PlatformUser`, `HomeOrganizationId = null` | Personal API family |
-| Organization | Owner (same Personal user + Org profile) **or** staff (`CreateOrganizationStaff`) | Org context required; staff locked to home org |
+| Organization | Owner (same Personal user + Org profile) **or** staff (`CreateOrganizationStaff` = **separate** `PlatformUser`) | Org context required; staff locked to home org |
 | Platform | Platform staff (`StaffNumber` `STF-######`) | Platform Admin APIs |
 
 Evidence: `AccountClass.cs`, ADR-017, P16 WP02 report, P19 report.
 
-## Organization-scoped staff login (owner-confirmed preserved)
+---
 
-Owner requires preservation of current org-scoped staff aliases. Audit of **actual** implementation:
+## Organization staff — CURRENT model (entity-level)
 
-| Topic | Current rule |
-|-------|--------------|
-| Format | `{local}@{ORG######}` via `StaffLoginNameRules.Build` |
-| Display | `FormatForDisplay` uppercases host (`maria@ORG001842`) |
-| Local part | Derived from contact email local; alnum only; collisions `maria`, `maria1`, … |
-| Uniqueness | Case-insensitive unique on `platform_users.normalized_email` |
-| Mutability | Login is the staff identity email; not a Personal-email attach model |
-| Credential ownership | New `PlatformUser` + credential on invite accept |
-| Personal reuse | **Forbidden** for Staff/Member membership; Owner may stay on Personal identity |
-| Auth path | Login identifier → `GetByNormalizedEmailAsync` → Organization profile → `HomeOrganizationId` auto-selected; switch denied (`StaffOrganizationSwitchDenied`) |
-| Invite create | Pending invitation (org + contact email + token); **no** stub user |
-| Invite accept | Anonymous `POST /api/v1/platform/auth/organization-invitations/accept` with token + password |
-| Create invite | `POST /api/v1/organizations/{organizationId}/staff-invitations` |
-| Multi-org employment | Separate staff `PlatformUser` per employer org |
-| Revocation | Membership/invitation lifecycle (see invitation use cases); staff cannot switch org |
-| Org membership roles | `OrganizationOwner`, `OrganizationAdministrator`, `OrganizationMember` (UI often Owner/Staff) |
-| POS roles | Separate `ProductLocalRoleGrant` codes `Owner`/`Manager`/`Cashier`/`Viewer` → POS `Owner`/`StoreManager`/`Cashier`/`ReportingUser` |
+### Answers (CURRENT)
 
-Evidence:
+| Q | CURRENT answer |
+|---|----------------|
+| A. Separate human identity? | **Yes** — staff accept creates a **new** `PlatformUser` Guid, not a profile on Personal |
+| B. Same UserIdentity + second credential? | **No** — there is no `UserIdentity` entity; credential is 1:1 on the **new** staff `PlatformUser` |
+| C. Linkage to existing Personal? | **Soft only** — `NormalizedContactEmail` may equal Personal email; **no** FK / `LinkedPersonalUserId` |
+| D. Personal accept invite → same-identity Staff? | **No** — forbidden; Personal pending list empty; Staff/Member membership requires matching `HomeOrganizationId` |
+| E. Reuse vs create | Personal untouched; create staff `PlatformUser` + credential + Organization profile + membership (+ optional POS role) |
+| F. Multi-org same human | Owner: yes on one Personal user. Staff: same contact email may exist in multiple orgs as **separate** staff `PlatformUser`s |
+| G. Alias per org | **Yes** — each staff row gets its own `local@ORG######` |
+| H. Remove one membership | Membership Removed; product-access for that membership revoked; sessions cleared for that userId+org; **does not** delete `PlatformUser` |
+| I. Preserve Personal / other orgs | **Yes** — Personal and other staff rows remain Active when Org A staff suspended/deactivated |
+| J. Alias semantics | **Separate credential principal** = separate `PlatformUser` whose unique login **is** the alias (`NormalizedEmail`) + own credential — **not** alias-only on Personal |
 
-- `src/Platform/ExItS.Platform.Domain/Identity/StaffLoginNameRules.cs`
-- `PlatformUser.CreateOrganizationStaff`
-- `AcceptOrganizationInvitation` in invitation use cases
-- `tests/.../Identity/OrganizationScopedStaffIdentityTests.cs`
-- `docs/reports/P19-organization-scoped-staff-identities.md`
-- `docs/architecture/user-creation-flow-and-account-scope-rules.md` §9.1
+### CURRENT diagram
 
-Status: **PROVEN_CURRENT**
+```text
+Physical human
+ ├─ PlatformUser [Personal]  NormalizedEmail=maria@gmail.com  HomeOrg=null
+ │    ├─ PlatformUserCredential
+ │    ├─ AccountProfile(Personal)
+ │    └─ OrganizationMembership(Owner)*  (Start a Business; multi-org owner OK)
+ │
+ ├─ PlatformUser [Staff Org A]  NormalizedEmail=maria@org001842  Contact=maria@gmail.com  HomeOrg=A
+ │    ├─ PlatformUserCredential (new)
+ │    ├─ AccountProfile(Organization)
+ │    └─ OrganizationMembership(Staff)
+ │
+ └─ PlatformUser [Staff Org B]  NormalizedEmail=maria@org004911  Contact=maria@gmail.com  HomeOrg=B
+      └─ (same pattern; distinct Id)
+```
 
-### SUPERSEDED (do not reintroduce)
+### CURRENT evidence
 
-- Personal email as org-staff login
-- Auto-accept org invites onto Personal activation
+| Artifact | Path / detail |
+|----------|---------------|
+| Staff create | `PlatformUser.CreateOrganizationStaff` |
+| Alias rules | `StaffLoginNameRules.Build` / `FormatForDisplay` |
+| Accept | `AcceptOrganizationInvitation.ExecuteAsync` → always `_users.AddAsync(staffUser)` |
+| Routes | `POST /api/v1/platform/auth/organization-invitations/accept`; `POST /api/v1/platform/invitations/accept` (anonymous) |
+| Membership guard | `AddOrganizationMembership` → `HomeOrganizationRequired` for Staff/Member |
+| Personal pending | `ListPendingOrganizationInvitationsForUser` returns empty for Personal |
+| Tables | `platform_users`, `platform_user_credentials`, `account_profiles`, `organization_invitations`, `organization_memberships` |
+| Tests | `OrganizationScopedStaffIdentityTests`; suspend/deactivate Org A does not affect Personal/Org B |
+| Docs | P19 report; `user-creation-flow-and-account-scope-rules.md` §9.1 |
+
+### CURRENT classifications
+
+| Capability | Status |
+|------------|--------|
+| Org-scoped staff login alias format | **PROVEN_CURRENT** — preserve format |
+| Separate staff `PlatformUser` per employment | **PROVEN_CURRENT** |
+| Soft contact-email correlator | **PROVEN_PARTIAL** (string only) |
+| Formal person-link / Personal-accept-as-staff | **PROVEN_MISSING** |
+
+### SUPERSEDED (do not reintroduce as CURRENT)
+
+- Personal email as org-staff login without org-scoped principal
+- Auto-accept org invites onto Personal activation attaching Staff membership to Personal
 - Staff membership without matching `HomeOrganizationId`
 - Treating contact email as unique login/authorization key
+
+---
+
+## Organization staff — OWNER-CONFIRMED desired model
+
+**Classification:** `OWNER_CONFIRMED_CHANGE` relative to CURRENT separate-staff-`PlatformUser` employment model.
+
+Desired conceptual model:
+
+```text
+Verified Person / Human Identity
+├── Personal Account
+├── Organization membership: Org A
+│   └── organization-scoped login alias
+├── Organization membership: Org B
+│   └── organization-scoped login alias
+└── other authorized account profiles
+```
+
+Owner confirms:
+
+- Existing Personal user may be invited by an Organization
+- Acceptance may make that **same human** Organization Staff
+- Do **not** create an unrelated duplicate human merely because employment begins
+- Organization-specific login alias must remain available
+- Person may belong to multiple Organizations; memberships isolated
+- Removing Org A must not delete Personal Account, Org B membership, or unrelated profile data
+- Organization role ≠ POS product role
+- Customer linkage ≠ Staff membership
+
+### Desired vs CURRENT
+
+| Requirement | CURRENT | Desired |
+|-------------|---------|---------|
+| One human not duplicated for employment | Separate `PlatformUser` per staff job | One person; memberships/profiles under same human |
+| Personal can accept staff invite | Forbidden | Required |
+| Org-scoped alias | Exists as staff principal login | Must remain available (may become alias/credential under same person) |
+| Multi-org | Separate staff users per org | Same human, isolated memberships |
+| Removal isolation | Membership/user scoped; Personal preserved | Same outcome required |
+
+**Marker:** `ORGANIZATION_STAFF_EXISTING_PERSON_LINK_CONTRACT_MISSING` — warranted (no FK/person-link; Personal cannot accept onto same identity).
+
+**Roadmap:** Backend package **RMAP-B00** before React staff-identity parity that implements the desired model. See [Migration/react-migration-roadmap.md](Migration/react-migration-roadmap.md).
+
+**Readiness:** `READY_FOR_REACT_STAFF_IDENTITY_PARITY` = **NO** until RMAP-B00 completes and owner approves the resulting contract.
+
+React may still authenticate against **CURRENT** staff login strings for session/smoke testing only if a WP explicitly scopes “CURRENT staff principal login” — it must **not** claim desired person-link parity.
+
+---
 
 ## Session boundaries
 
 | Boundary | Rule | Status |
 |----------|------|--------|
-| One AccountClass per session | Fixed on session; change via profile select (new session semantics) | PROVEN_CURRENT |
+| One AccountClass per session | Fixed on session; change via profile select | PROVEN_CURRENT |
 | Org context | Only Organization sessions; membership-validated | PROVEN_CURRENT |
-| Staff lock | Cannot clear/switch away from home org | PROVEN_CURRENT |
+| Staff lock | Cannot clear/switch away from home org | PROVEN_CURRENT (CURRENT staff model) |
 | Owner multi-org | Same Personal identity; Organization session may switch owned orgs | PROVEN_CURRENT |
-| MAUI context switch | Local store wipe / cache invalidation on org switch | PROVEN_CURRENT (MAUI + architecture docs) |
+| MAUI context switch | Local store wipe / cache invalidation on org switch | PROVEN_CURRENT |
 
-Primary APIs:
-
-- `POST /api/v1/platform/auth/login`
-- Account profile list/select endpoints under platform auth
-- `PUT` organization-context endpoints
-- `GET /api/v1/platform/auth/me`
+Primary APIs: `POST /api/v1/platform/auth/login`, account-profile select, organization-context, `GET .../me`.
 
 ## Personal → Organization (Start a Business)
 
 | Step | Behavior | Status |
 |------|----------|--------|
 | Entry | Personal session `POST /api/v1/personal/start-business` | PROVEN_CURRENT |
-| Creates | Organization + main branch (+ profile seed) | PROVEN_CURRENT |
+| Creates | Organization + main branch | PROVEN_CURRENT |
 | Membership | `OrganizationOwner` on **same** Personal `PlatformUser` | PROVEN_CURRENT |
 | Profiles | Ensures Organization `AccountProfile` alongside Personal | PROVEN_CURRENT |
-| Session | Selects Organization profile + org context | PROVEN_CURRENT |
-| POS grant | Optional entitlement + `ProductLocalRoleGrant` POS Owner — **not** implied by org Owner alone | PROVEN_CURRENT |
-| Explore POS | Commercial plans `GET /api/v1/commercial/plans`; MAUI `/personal/explore-pos` | PROVEN_CURRENT |
-
-Evidence: `StartBusinessUseCases.cs`, `PersonalEndpoints.cs`, MAUI `StartBusiness.razor`.
+| POS grant | Optional entitlement + `ProductLocalRoleGrant` — not implied by org Owner alone | PROVEN_CURRENT |
+| Explore POS | `GET /api/v1/commercial/plans`; MAUI `/personal/explore-pos` | PROVEN_CURRENT |
 
 ## Hard Personal / Staff / Customer boundaries
 
-| Boundary | Current rule | Status |
-|----------|--------------|--------|
-| Staff ≠ customer | Distinct flows; customer link ≠ membership | PROVEN_CURRENT |
-| Customer link acceptance ≠ staff membership | Separate invitation/link models | PROVEN_CURRENT |
-| Personal linked customer ≠ POS role | Link grants Business Utang / storefront views, not POS roles | PROVEN_CURRENT |
-| Personal Business Utang view ≠ Personal Utang copy | Read projection; separate ledgers | PROVEN_CURRENT |
+| Boundary | Rule | Status |
+|----------|------|--------|
+| Staff ≠ customer | Distinct flows | PROVEN_CURRENT |
+| Customer link ≠ staff membership | Separate models | PROVEN_CURRENT |
+| Personal linked customer ≠ POS role | Link ≠ role grant | PROVEN_CURRENT |
+| Personal Business Utang view ≠ Personal Utang copy | Separate ledgers | PROVEN_CURRENT |
 | Org Owner ≠ automatic selling role | Requires product role grant | PROVEN_CURRENT |
-| Org management ≠ POS checkout authority | Membership vs `CreateSale` / Cashier | PROVEN_CURRENT |
 
-Evidence: `docs/architecture/personal-organization-identity-boundaries.md`, P16/P19/P24 reports, customer-link vs staff-invite use cases.
-
-## Personal surface inventory (current)
+## Personal surface inventory
 
 | Capability | Status | Evidence |
 |------------|--------|----------|
-| Personal Utang (I Lent / I Borrowed) | PROVEN_CURRENT | `/api/v1/personal/utang/*`, MAUI `/personal/utang/*` |
-| Linked merchants | PROVEN_CURRENT | Platform linked-merchants + MAUI shop |
-| Personal QR | PROVEN_CURRENT | Platform public identity APIs / MAUI |
+| Personal Utang | PROVEN_CURRENT | `/api/v1/personal/utang/*`, MAUI |
+| Linked merchants | PROVEN_CURRENT | Platform + MAUI shop |
 | Start a Business | PROVEN_CURRENT | as above |
-| React Personal home | SHELL_ONLY | `PersonalHomePage.tsx` placeholder |
-
-## React implications
-
-React account/session/workspace parity must implement:
-
-1. Cookie/browser session login for Personal **and** org-scoped staff login strings
-2. Account profile / workspace resolution
-3. Organization context binding and staff lock behavior
-4. Product access + local role before sell floor
-
-Do not invent a unified “one human / one PlatformUser for employment” model — that path is **SUPERSEDED** by P19.
+| React Personal home | SHELL_ONLY | `PersonalHomePage.tsx` |

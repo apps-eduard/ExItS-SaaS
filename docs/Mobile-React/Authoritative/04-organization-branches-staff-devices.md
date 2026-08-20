@@ -13,9 +13,17 @@
 
 ## Staff
 
-See [02-identity-personal-organization-lifecycle.md](02-identity-personal-organization-lifecycle.md) for org-scoped login aliases.
+See [02-identity-personal-organization-lifecycle.md](02-identity-personal-organization-lifecycle.md) for the **entity-level** CURRENT vs OWNER-CONFIRMED staff identity model.
 
-MAUI surfaces: `/org/staff`, `/org/staff/invite`, `/org/staff/assign`.
+| Topic | CURRENT | Owner desired |
+|-------|---------|---------------|
+| Staff principal | Separate `PlatformUser` + `local@ORG######` login | Same human as Personal; membership + org-scoped alias |
+| Personal accept invite | Forbidden | Required |
+| Alias | Staff principal login (preserve format) | Must remain available under desired person model |
+| Marker | — | `ORGANIZATION_STAFF_EXISTING_PERSON_LINK_CONTRACT_MISSING` |
+| Backend | PROVEN_CURRENT (P19 model) | **RMAP-B00** required before desired React staff parity |
+
+MAUI surfaces: `/org/staff`, `/org/staff/invite`, `/org/staff/assign` (implement CURRENT model).
 
 ## Branches
 

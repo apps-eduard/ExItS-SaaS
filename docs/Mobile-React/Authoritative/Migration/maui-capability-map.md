@@ -5,7 +5,7 @@ Offline policy: `PosOfflineCapabilityPolicy` (unknown → OnlineRequired).
 
 | Capability | MAUI Route/Page | Component/Service | Backend Route | Offline Policy | Roles | Current UX behavior | Status | Evidence | React migration notes |
 |------------|-----------------|-------------------|---------------|----------------|-------|---------------------|--------|----------|----------------------|
-| Sign-in (email + staff alias) | `/signin` | `SignIn.razor`, `IAuthenticationService` | `/api/v1/platform/auth/login` | OfflineCapable shell | n/a | Accepts real email or `local@ORG######` | PROVEN_CURRENT | Auth pages | Preserve staff login string |
+| Sign-in (email + CURRENT staff alias) | `/signin` | `SignIn.razor`, `IAuthenticationService` | `/api/v1/platform/auth/login` | OfflineCapable shell | n/a | Accepts real email or CURRENT `local@ORG######` staff principal | PROVEN_CURRENT | Auth pages | Desired person-link staff model is OWNER_CONFIRMED_CHANGE (RMAP-B00); do not treat CURRENT duplicate PlatformUser as final |
 | Workspace / org select | `/workspace-select`, `/organization-select` | workspace services | auth orgs/context | OnlineRequired | membership | Chooses profile/org | PROVEN_CURRENT | | React has workspace chooser |
 | Start a Business | `/start-business`, `/personal/explore-pos` | `StartBusiness.razor` | `/personal/start-business`, `/commercial/plans` | OnlineRequired | Personal | Plan → create org | PROVEN_CURRENT | | React MISSING |
 | Staff invite/assign | `/org/staff*` | Staff pages | staff-invitations + roles | OnlineRequired | Owner/Admin | Invite → accept creates staff identity | PROVEN_CURRENT | | React MISSING |

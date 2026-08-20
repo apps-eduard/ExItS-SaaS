@@ -61,13 +61,22 @@ Each row: Owner decision → CURRENT alignment → Action implication.
 
 | ID | Owner decision | CURRENT | Action |
 |----|----------------|---------|--------|
-| OD-ID-01 | Personal independent; can become owner/staff/customer | Aligned with P19 staff separate identity | Preserve |
+| OD-ID-01 | One human must not be duplicated merely for employment; Personal + org memberships under same person | **OWNER_CONFIRMED_CHANGE** — CURRENT creates separate staff `PlatformUser` | **RMAP-B00** before desired staff React parity |
 | OD-ID-02 | Personal initiates business journey | Start a Business CURRENT | React later |
 | OD-ID-03 | Org owns operational state | Aligned | Preserve |
-| OD-ID-04 | Same human Personal + multi-org owner | Aligned | Preserve |
-| OD-ID-05 | Staff invite can link contact email but creates org-scoped login | Aligned (separate PlatformUser) | Preserve alias format |
-| OD-ID-06 | Org-scoped login alias must be preserved | PROVEN_CURRENT | Do not redesign |
+| OD-ID-04 | Same human Personal + multi-org ownership | Aligned for Owner memberships | Preserve |
+| OD-ID-05 | Existing Personal may accept staff invite and become Org Staff on same human | **PROVEN_MISSING** (accept creates new staff user; Personal attach forbidden) | RMAP-B00; marker `ORGANIZATION_STAFF_EXISTING_PERSON_LINK_CONTRACT_MISSING` |
+| OD-ID-06 | Org-scoped login alias must remain available | Alias format PROVEN_CURRENT as staff principal login | Preserve alias availability; may change attachment under RMAP-B00 |
 | OD-ID-07 | Personal QR ≠ Business QR; ledgers distinct | Aligned | Preserve |
+| OD-ID-08 | Removing Org A must not delete Personal / Org B / unrelated profiles | PROVEN_CURRENT isolation for revoke/suspend paths | Preserve under any redesign |
+| OD-ID-09 | Org role ≠ POS role; Customer link ≠ Staff | Aligned | Preserve |
+
+## UI / RESPONSIVE
+
+| ID | Owner decision | CURRENT | Action |
+|----|----------------|---------|--------|
+| OD-UI-01 | Mobile-first, tablet-strong, desktop-capable | Partial sell-shell responsive | RMAP-00 + every UI WP DoD |
+| OD-UI-02 | UI DoD = functional + mobile + tablet + desktop + a11y + responsive + docs | Not yet enforced as Authoritative DoD | Enforce via RMAP-00 + master-run protocol |
 
 ## DELIVERY
 

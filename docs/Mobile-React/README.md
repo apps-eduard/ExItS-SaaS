@@ -25,11 +25,13 @@ It does **not** authorize implementation.
 Historical planning/readiness docs below remain useful history; when they conflict on current behavior, prefer Authoritative after source verification.
 
 - [Authoritative/00-README.md](Authoritative/00-README.md) — evidence hierarchy, status taxonomy, index
+- [Authoritative/06-react-ui-ux-and-responsive-foundation.md](Authoritative/06-react-ui-ux-and-responsive-foundation.md) — mobile-first UI DoD
 - [Authoritative/Migration/capability-parity-matrix.md](Authoritative/Migration/capability-parity-matrix.md) — Backend / MAUI / React parity
-- [Authoritative/Migration/react-migration-roadmap.md](Authoritative/Migration/react-migration-roadmap.md) — proposed RMAP packages
+- [Authoritative/Migration/react-migration-roadmap.md](Authoritative/Migration/react-migration-roadmap.md) — proposed RMAP packages (incl. RMAP-00, RMAP-B00)
+- [Authoritative/Migration/master-run-execution-protocol.md](Authoritative/Migration/master-run-execution-protocol.md) — 10-WP batches / per-WP push
 - [Authoritative/Migration/owner-decision-register.md](Authoritative/Migration/owner-decision-register.md) — owner-confirmed requirements vs CURRENT
 
-Baseline for the Authoritative set: branch `feat/pos-react-client` @ `721cc946d61ccb193c8c69b76b6f1ff726526270`.
+Baseline for the Authoritative set origin: branch `feat/pos-react-client` @ `721cc946d61ccb193c8c69b76b6f1ff726526270` (later docs commits extend Authoritative).
 
 ## Implementation readiness (current-main refresh)
 

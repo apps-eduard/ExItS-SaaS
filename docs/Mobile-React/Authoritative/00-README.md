@@ -72,6 +72,7 @@ Created under `docs/Mobile-React/Authoritative/` to match the existing `docs/Mob
 | [03-product-subscription-entitlement-lifecycle.md](03-product-subscription-entitlement-lifecycle.md) | Products, plans, subscriptions, entitlements, local roles |
 | [04-organization-branches-staff-devices.md](04-organization-branches-staff-devices.md) | Org config, branches, staff, devices, fulfillment |
 | [05-pos-domain-overview.md](05-pos-domain-overview.md) | POS bounded-context map |
+| [06-react-ui-ux-and-responsive-foundation.md](06-react-ui-ux-and-responsive-foundation.md) | Mobile-first UI DoD, shared components, ListToolbar |
 
 ### POS domain
 
@@ -105,14 +106,17 @@ Created under `docs/Mobile-React/Authoritative/` to match the existing `docs/Mob
 | [Migration/dependency-graph.md](Migration/dependency-graph.md) | Prerequisite chains |
 | [Migration/react-migration-roadmap.md](Migration/react-migration-roadmap.md) | Complete proposed WP sequence |
 | [Migration/validation-matrix.md](Migration/validation-matrix.md) | How future parity is proven |
+| [Migration/master-run-execution-protocol.md](Migration/master-run-execution-protocol.md) | 10-WP batches, per-WP push, hard stops |
 
 ## Update policy
 
 1. Update this set when backend/MAUI/React contracts change materially.
 2. Prefer amending CURRENT status from source evidence, not from aspirational plans.
 3. Record owner decisions in the Owner Decision Register; do not silently rewrite CURRENT.
-4. Future React implementation work packages **must reference** these docs (parity matrix + dependency graph + roadmap WP id).
+4. Future React implementation work packages **must reference** these docs (parity matrix + dependency graph + roadmap WP id + UI foundation + master-run protocol).
 5. Do not treat older `Implementation-Readiness/` or historical phase docs as higher authority than this set for CURRENT behavior.
+6. Do not implement desired staff person-link React UX before **RMAP-B00**.
+7. Do not bypass **RMAP-00** for visual packages unless the roadmap marks a WP non-UI.
 
 ## Related non-authoritative Mobile-React docs
 
