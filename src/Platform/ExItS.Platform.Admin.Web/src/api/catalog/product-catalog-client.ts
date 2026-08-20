@@ -1,12 +1,15 @@
 import { parsePagedResult, type PagedResult } from "@/api/platform/paged-result";
 import { platformRequest } from "@/api/platform-http";
+import { catalogProductsListRequestPath } from "@/api/catalog/product-list-query";
+import type { ProductListQuery } from "@/api/catalog/product-list-types";
 import { withQuery } from "@/lib/http/query-string";
-
 export type CatalogProduct = {
   id: string;
   code: string;
   displayName: string;
   status: string;
+  createdAtUtc?: string;
+  updatedAtUtc?: string;
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -36,6 +39,41 @@ export function mapCatalogProduct(payload: unknown): CatalogProduct | null {
     return null;
   }
   return { id, code, displayName: displayName ?? code, status };
+}
+
+function mapCatalogProductDetail(payload: unknown): CatalogProduct | null {
+  const mapped = mapCatalogProduct(payload);
+  if (!mapped) {
+    return null;
+  }
+  const record = asRecord(payload);
+  if (!record) {
+    return mapped;
+  }
+  return {
+    ...mapped,
+    createdAtUtc: readString(record, "createdAtUtc", "CreatedAtUtc"),
+    updatedAtUtc: readString(record, "updatedAtUtc", "UpdatedAtUtc"),
+  };
+}
+
+export function listCatalogProductsPage(
+  baseUrl: string,
+  options: ProductListQuery & { signal?: AbortSignal },
+): Promise<PagedResult<CatalogProduct>> {
+  return platformRequest<unknown>(baseUrl, {
+    path: catalogProductsListRequestPath(options),
+    signal: options.signal,
+  }).then((payload) => {
+    const page = parsePagedResult<unknown>(payload);
+    return {
+      ...page,
+      items: page.items.flatMap((item) => {
+        const mapped = mapCatalogProductDetail(item);
+        return mapped ? [mapped] : [];
+      }),
+    };
+  });
 }
 
 export function listCatalogProducts(
