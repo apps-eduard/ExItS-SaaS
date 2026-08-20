@@ -12,6 +12,7 @@ const IMPLEMENTED_NAV_IDS = new Set([
   "PWEB-NAV-PERSONAL-ACCOUNTS",
   "PWEB-NAV-NEEDS-REVIEW",
   "PWEB-NAV-PRODUCTS",
+  "PWEB-NAV-PLANS",
 ]);
 
 export function reactImplementationStatus(

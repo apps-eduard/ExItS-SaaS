@@ -74,7 +74,19 @@ export type AuthenticatedFetchOptions = {
     code: string;
     displayName: string;
     status: string;
+    createdAtUtc?: string;
+    updatedAtUtc?: string;
   }>;
+  catalogPlanItems?: Array<Record<string, unknown>>;
+  catalogProductPlans?: Array<Record<string, unknown>>;
+  failCatalogProductDetail?: boolean;
+  forbiddenCatalogProductDetail?: boolean;
+  notFoundCatalogProductDetail?: boolean;
+  failCatalogPlans?: boolean;
+  forbiddenCatalogPlans?: boolean;
+  failCatalogPlanDetail?: boolean;
+  forbiddenCatalogPlanDetail?: boolean;
+  notFoundCatalogPlanDetail?: boolean;
   failOrganizations?: boolean;
   failOrganizationGet?: boolean;
   failCommercialSummary?: boolean;
@@ -167,6 +179,41 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
       });
     }
     if (url.includes("/api/v1/platform/catalog/products")) {
+      const productPlansMatch = path.match(
+        /\/api\/v1\/platform\/catalog\/products\/([^/]+)\/plans$/,
+      );
+      if (productPlansMatch) {
+        return jsonResponse(200, options.catalogProductPlans ?? []);
+      }
+      const productDetailMatch = path.match(
+        /\/api\/v1\/platform\/catalog\/products\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/,
+      );
+      if (productDetailMatch) {
+        if (options.forbiddenCatalogProductDetail) {
+          return jsonResponse(403, { title: "Forbidden", status: 403 });
+        }
+        if (options.notFoundCatalogProductDetail) {
+          return jsonResponse(404, { title: "Not Found", status: 404 });
+        }
+        if (options.failCatalogProductDetail) {
+          return jsonResponse(500, { title: "Error", status: 500 });
+        }
+        const items = options.catalogProductItems ?? [
+          {
+            id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+            code: "future-product-x",
+            displayName: "Future Product X",
+            status: "Active",
+            createdAtUtc: "2026-01-01T08:00:00Z",
+            updatedAtUtc: "2026-08-01T08:00:00Z",
+          },
+        ];
+        const match = items.find((item) => item.id === productDetailMatch[1]);
+        if (!match) {
+          return jsonResponse(404, { title: "Not Found", status: 404 });
+        }
+        return jsonResponse(200, match);
+      }
       return jsonResponse(
         200,
         pagedJson(
@@ -182,6 +229,56 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
           100,
         ),
       );
+    }
+    if (url.includes("/api/v1/platform/catalog/plans")) {
+      const planDetailMatch = path.match(
+        /\/api\/v1\/platform\/catalog\/plans\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/,
+      );
+      if (planDetailMatch) {
+        if (options.forbiddenCatalogPlanDetail) {
+          return jsonResponse(403, { title: "Forbidden", status: 403 });
+        }
+        if (options.notFoundCatalogPlanDetail) {
+          return jsonResponse(404, { title: "Not Found", status: 404 });
+        }
+        if (options.failCatalogPlanDetail) {
+          return jsonResponse(500, { title: "Error", status: 500 });
+        }
+        const items = options.catalogPlanItems ?? [
+          {
+            id: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+            productCode: "future-product-x",
+            code: "starter",
+            displayName: "Starter",
+            status: "Active",
+            monthlyPrice: 999,
+            currencyCode: "PHP",
+          },
+        ];
+        const match = items.find((item) => item.id === planDetailMatch[1]);
+        if (!match) {
+          return jsonResponse(404, { title: "Not Found", status: 404 });
+        }
+        return jsonResponse(200, match);
+      }
+      if (options.forbiddenCatalogPlans) {
+        return jsonResponse(403, { title: "Forbidden", status: 403 });
+      }
+      if (options.failCatalogPlans) {
+        return jsonResponse(500, { title: "Error", status: 500 });
+      }
+      const items = options.catalogPlanItems ?? [
+        {
+          id: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+          productCode: "future-product-x",
+          code: "starter",
+          displayName: "Starter",
+          status: "Active",
+          monthlyPrice: 999,
+          currencyCode: "PHP",
+        },
+      ];
+      return jsonResponse(200, pagedJson(items, items.length, 20));
     }
     if (path.endsWith("/health/ready") || path.endsWith("/health")) {
       return textResponse(200, "Healthy");

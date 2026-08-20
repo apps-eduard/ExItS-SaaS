@@ -1,12 +1,12 @@
 import { PLATFORM_PERMISSIONS } from "@/api/authorization/authorization-types";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ProductsList } from "@/features/products/ProductsList";
+import { PlansList } from "@/features/plans/PlansList";
 import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
 import { useAuthorization } from "@/hooks/use-authorization";
 import { usePreferences } from "@/hooks/use-preferences";
 
-export function ProductsPage() {
+export function PlansPage() {
   const { t } = usePreferences();
   const authorization = useAuthorization();
   const canList =
@@ -28,8 +28,8 @@ export function ProductsPage() {
 
   return (
     <section className="grid gap-4">
-      <PageHeader title={t("nav.products")} description={t("products.description")} />
-      <ProductsList enabled={canList} />
+      <PageHeader title={t("nav.plans")} description={t("plans.description")} />
+      <PlansList enabled={canList} />
     </section>
   );
 }

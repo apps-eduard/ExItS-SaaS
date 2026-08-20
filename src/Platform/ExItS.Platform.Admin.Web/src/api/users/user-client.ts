@@ -28,7 +28,10 @@ function readStringArray(record: Record<string, unknown>, ...keys: string[]): st
   return [];
 }
 
-function readOptionalString(record: Record<string, unknown>, ...keys: string[]): string | undefined {
+function readOptionalString(
+  record: Record<string, unknown>,
+  ...keys: string[]
+): string | undefined {
   for (const key of keys) {
     const value = record[key];
     if (typeof value === "string" && value.length > 0) {

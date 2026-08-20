@@ -70,7 +70,7 @@ describe("platform product catalog", () => {
     window.history.replaceState({}, "", "/admin/products");
     render(<App />);
     expect(await screen.findByRole("heading", { name: "Products" })).toBeInTheDocument();
-    expect(await screen.findByRole("link", { name: "Future Product X" })).toHaveAttribute(
+    expect(await screen.findByRole("link", { name: "future-product-x" })).toHaveAttribute(
       "href",
       "/admin/products/11111111-1111-1111-1111-111111111111",
     );

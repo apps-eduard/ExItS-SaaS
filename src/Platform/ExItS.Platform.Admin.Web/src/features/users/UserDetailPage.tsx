@@ -105,7 +105,10 @@ function presentDetailFields(
 function assignmentRoleLabel(role: string, t: (key: MessageKey) => string): string {
   const key = `users.detail.role.${role}` as MessageKey;
   const translated = t(key);
-  return translated === key ? role : translated;
+  if (!translated || translated === key) {
+    return role;
+  }
+  return translated;
 }
 
 export function UserDetailPage() {
@@ -114,10 +117,7 @@ export function UserDetailPage() {
   const params = useParams();
   const userId = parsePlatformUserId(params.userId);
   const [searchParams, setSearchParams] = useSearchParams();
-  const assignmentState = useMemo(
-    () => parseAssignmentsSearchParams(searchParams),
-    [searchParams],
-  );
+  const assignmentState = useMemo(() => parseAssignmentsSearchParams(searchParams), [searchParams]);
   const showTable = useMediaQuery("(min-width: 768px)");
 
   const canView =
@@ -213,9 +213,7 @@ export function UserDetailPage() {
         actions={
           <StatusIndicator
             tone={statusTone(user.status)}
-            label={
-              STATUS_LABELS[user.status] ? t(STATUS_LABELS[user.status]!) : user.status
-            }
+            label={STATUS_LABELS[user.status] ? t(STATUS_LABELS[user.status]!) : user.status}
           />
         }
       />
@@ -223,7 +221,9 @@ export function UserDetailPage() {
       <DashboardSection title={t("users.detail.identity")}>
         <dl className="grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2">
           <div className="min-w-0">
-            <dt className="text-[length:var(--exits-text-xs)] text-muted">{t("users.detail.field.id")}</dt>
+            <dt className="text-[length:var(--exits-text-xs)] text-muted">
+              {t("users.detail.field.id")}
+            </dt>
             <dd className="break-all font-mono text-[length:var(--exits-text-xs)]">{user.id}</dd>
           </div>
           {detailFields.map((field) => (
@@ -277,10 +277,7 @@ export function UserDetailPage() {
               <li key={`${org.name}-${org.role ?? ""}`} className="min-w-0 break-words">
                 <span>{org.name}</span>
                 {org.roleDisplay || org.role ? (
-                  <span className="text-muted">
-                    {" "}
-                    · {org.roleDisplay ?? org.role}
-                  </span>
+                  <span className="text-muted"> · {org.roleDisplay ?? org.role}</span>
                 ) : null}
               </li>
             ))}
@@ -290,7 +287,9 @@ export function UserDetailPage() {
             {user.organizationNames.join(", ")}
           </p>
         ) : (
-          <p className="text-[length:var(--exits-text-sm)] text-muted">{t("users.detail.organizations.empty")}</p>
+          <p className="text-[length:var(--exits-text-sm)] text-muted">
+            {t("users.detail.organizations.empty")}
+          </p>
         )}
       </DashboardSection>
 
@@ -315,9 +314,7 @@ export function UserDetailPage() {
               <option value="">{t("users.status.all")}</option>
               {ASSIGNMENT_STATUSES.map((status) => (
                 <option key={status} value={status}>
-                  {ASSIGNMENT_STATUS_LABELS[status]
-                    ? t(ASSIGNMENT_STATUS_LABELS[status]!)
-                    : status}
+                  {ASSIGNMENT_STATUS_LABELS[status] ? t(ASSIGNMENT_STATUS_LABELS[status]!) : status}
                 </option>
               ))}
             </select>
@@ -411,33 +408,33 @@ export function UserDetailPage() {
                 ))}
               </ul>
             )}
-
-            {assignments.totalCount > ASSIGNMENTS_PAGE_SIZE ? (
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={assignmentState.page <= 1}
-                  onClick={() => replaceAssignmentState({ page: assignmentState.page - 1 })}
-                >
-                  {t("users.previous")}
-                </Button>
-                <span className="text-[length:var(--exits-text-sm)] text-muted">
-                  {t("users.page")} {assignmentState.page} / {assignmentTotalPages}
-                </span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={assignmentState.page >= assignmentTotalPages}
-                  onClick={() => replaceAssignmentState({ page: assignmentState.page + 1 })}
-                >
-                  {t("users.next")}
-                </Button>
-              </div>
-            ) : null}
           </>
+        ) : null}
+
+        {assignments && assignments.totalCount > ASSIGNMENTS_PAGE_SIZE ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={assignmentState.page <= 1}
+              onClick={() => replaceAssignmentState({ page: assignmentState.page - 1 })}
+            >
+              {t("users.previous")}
+            </Button>
+            <span className="text-[length:var(--exits-text-sm)] text-muted">
+              {t("users.page")} {assignmentState.page} / {assignmentTotalPages}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={assignmentState.page >= assignmentTotalPages}
+              onClick={() => replaceAssignmentState({ page: assignmentState.page + 1 })}
+            >
+              {t("users.next")}
+            </Button>
+          </div>
         ) : null}
       </DashboardSection>
     </section>

@@ -18,6 +18,9 @@ import { OrganizationOverviewPage } from "@/features/organizations/OrganizationO
 import { OrganizationsPage } from "@/features/organizations/OrganizationsPage";
 import { OrganizationWorkspaceLayout } from "@/features/organizations/OrganizationWorkspaceLayout";
 import { ProductsPage } from "@/features/products/ProductsPage";
+import { ProductDetailPage } from "@/features/products/ProductDetailPage";
+import { PlansPage } from "@/features/plans/PlansPage";
+import { PlanDetailPage } from "@/features/plans/PlanDetailPage";
 import { OverviewPage } from "@/features/overview/OverviewPage";
 import { UsersPage } from "@/features/users/UsersPage";
 import { UserDetailPage } from "@/features/users/UserDetailPage";
@@ -116,7 +119,14 @@ export function App() {
                             <Route path="*" element={<ShellCatchAllPage />} />
                           </Route>
                         </Route>
-                        <Route path="products" element={<ProductsPage />} />
+                        <Route path="products">
+                          <Route index element={<ProductsPage />} />
+                          <Route path=":productId" element={<ProductDetailPage />} />
+                        </Route>
+                        <Route path="plans">
+                          <Route index element={<PlansPage />} />
+                          <Route path=":planId" element={<PlanDetailPage />} />
+                        </Route>
                         <Route path="users">
                           <Route index element={<UsersPage />} />
                           <Route path=":userId" element={<UserDetailPage />} />

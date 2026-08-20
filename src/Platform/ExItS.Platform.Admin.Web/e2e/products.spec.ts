@@ -61,7 +61,9 @@ test("authorized product catalog is read-only", async ({ page }) => {
   await mockProducts(page);
   await page.goto("/admin/products");
   await expect(page.getByRole("heading", { name: "Products", exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Future Product X" })).toBeVisible();
+  await expect(
+    page.getByRole("table").getByRole("link", { name: "Future Product X" }),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: /create/i })).toHaveCount(0);
 });
 
@@ -75,7 +77,7 @@ test("product catalog mobile and axe", async ({ page }) => {
   await mockProducts(page);
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/admin/products");
-  await expect(page.getByRole("link", { name: "Future Product X" })).toBeVisible();
+  await expect(page.getByRole("main").getByRole("link", { name: "Future Product X" })).toBeVisible();
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );

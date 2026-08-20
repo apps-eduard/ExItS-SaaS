@@ -76,9 +76,12 @@ async function mockShell(page: Page) {
   await page.route("**/api/v1/platform/catalog/products*", async (route) => {
     await route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 100 } });
   });
-  await page.route("**/api/v1/platform/users/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", async (route) => {
-    await route.fulfill({ json: userDetail });
-  });
+  await page.route(
+    "**/api/v1/platform/users/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    async (route) => {
+      await route.fulfill({ json: userDetail });
+    },
+  );
   await page.route("**/api/v1/platform/authorization/assignments*", async (route) => {
     await route.fulfill({ json: assignments });
   });

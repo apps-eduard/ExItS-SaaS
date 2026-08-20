@@ -57,7 +57,10 @@ function stubDesktop() {
   });
 }
 
-function createFetchMock(options?: { userStatus?: number; assignments?: typeof sampleAssignments }) {
+function createFetchMock(options?: {
+  userStatus?: number;
+  assignments?: typeof sampleAssignments;
+}) {
   return vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
     if (url.includes("/auth/me")) {

@@ -1,9 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { listCatalogProductsPage } from "@/api/catalog/product-catalog-client";
-import {
-  PRODUCT_LIST_PAGE_SIZE,
-  type ProductListQuery,
-} from "@/api/catalog/product-list-types";
+import { PRODUCT_LIST_PAGE_SIZE, type ProductListQuery } from "@/api/catalog/product-list-types";
 import { env } from "@/lib/env";
 
 export const productListQueryKey = (query: ProductListQuery) =>

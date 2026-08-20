@@ -16,5 +16,7 @@ export function productsListHref(listSearch?: string): string {
   if (!listSearch) {
     return "/admin/products";
   }
-  return listSearch.startsWith("?") ? `/admin/products${listSearch}` : `/admin/products?${listSearch}`;
+  return listSearch.startsWith("?")
+    ? `/admin/products${listSearch}`
+    : `/admin/products?${listSearch}`;
 }

@@ -4,14 +4,10 @@ import { ASSIGNMENTS_PAGE_SIZE } from "@/api/authorization/assignment-types";
 import { getPlatformUser } from "@/api/users/user-client";
 import { env } from "@/lib/env";
 
-export const platformUserDetailQueryKey = (userId: string) =>
-  ["users", "detail", userId] as const;
+export const platformUserDetailQueryKey = (userId: string) => ["users", "detail", userId] as const;
 
-export const platformUserAssignmentsQueryKey = (
-  userId: string,
-  status: string,
-  page: number,
-) => ["users", "assignments", userId, status, page] as const;
+export const platformUserAssignmentsQueryKey = (userId: string, status: string, page: number) =>
+  ["users", "assignments", userId, status, page] as const;
 
 export function usePlatformUserDetailQuery(userId: string | null) {
   return useQuery({

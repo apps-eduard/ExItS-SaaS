@@ -11,7 +11,10 @@ export function UserNotFoundPage() {
 
   return (
     <section className="grid max-w-3xl gap-4">
-      <PageHeader title={t("users.detail.notFound.title")} description={t("users.detail.notFound.body")} />
+      <PageHeader
+        title={t("users.detail.notFound.title")}
+        description={t("users.detail.notFound.body")}
+      />
       <p>
         <Link className="text-primary hover:underline" to={backHref}>
           {t("users.detail.notFound.back")}

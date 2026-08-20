@@ -89,12 +89,15 @@ async function mockUsers(
   await page.route("**/api/v1/platform/catalog/products*", async (route) => {
     await route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 100 } });
   });
-  await page.route("**/api/v1/platform/users/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", async (route) => {
-    await route.fulfill({
-      status: options?.userStatus ?? 200,
-      json: userDetail,
-    });
-  });
+  await page.route(
+    "**/api/v1/platform/users/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    async (route) => {
+      await route.fulfill({
+        status: options?.userStatus ?? 200,
+        json: userDetail,
+      });
+    },
+  );
   await page.route("**/api/v1/platform/users*", async (route) => {
     await route.fulfill({ json: users });
   });

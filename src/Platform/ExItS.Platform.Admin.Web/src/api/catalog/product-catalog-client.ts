@@ -57,6 +57,23 @@ function mapCatalogProductDetail(payload: unknown): CatalogProduct | null {
   };
 }
 
+export function getCatalogProductById(
+  baseUrl: string,
+  productId: string,
+  signal?: AbortSignal,
+): Promise<CatalogProduct> {
+  return platformRequest<unknown>(baseUrl, {
+    path: `/api/v1/platform/catalog/products/${productId}`,
+    signal,
+  }).then((payload) => {
+    const mapped = mapCatalogProductDetail(payload);
+    if (!mapped) {
+      throw new Error("Invalid catalog product.");
+    }
+    return mapped;
+  });
+}
+
 export function listCatalogProductsPage(
   baseUrl: string,
   options: ProductListQuery & { signal?: AbortSignal },

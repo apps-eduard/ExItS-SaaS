@@ -255,7 +255,7 @@ describe("application shell", () => {
   it("renders Under development for known unimplemented routes and Page not found for unknown routes", async () => {
     stubDesktop(true);
     mockAuthenticatedFetch();
-    window.history.replaceState({}, "", "/admin/plans");
+    window.history.replaceState({}, "", "/admin/subscriptions");
     const { unmount } = render(<App />);
     expect(await screen.findByRole("heading", { name: "Under development" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Back to Overview" })).toHaveAttribute(
@@ -265,7 +265,7 @@ describe("application shell", () => {
     expect(screen.queryByRole("button", { name: "Copy diagnostics" })).not.toBeInTheDocument();
     unmount();
 
-    window.history.replaceState({}, "", "/admin/billing");
+    window.history.replaceState({}, "", "/admin/entitlements");
     const second = render(<App />);
     expect(await screen.findByRole("heading", { name: "Under development" })).toBeInTheDocument();
     second.unmount();
@@ -335,7 +335,7 @@ describe("application shell", () => {
   it("localizes the under-development page to Filipino", async () => {
     stubDesktop(true);
     mockAuthenticatedFetch();
-    window.history.replaceState({}, "", "/admin/plans");
+    window.history.replaceState({}, "", "/admin/subscriptions");
     const user = userEvent.setup();
     render(<App />);
     expect(await screen.findByRole("heading", { name: "Under development" })).toBeInTheDocument();
