@@ -13,6 +13,9 @@ import {
   CatalogProductEditPage,
 } from "@/features/catalog/CatalogProductFormPage";
 import { CatalogProductsPage } from "@/features/catalog/CatalogProductsPage";
+import { TodaysPricesPage } from "@/features/catalog/TodaysPricesPage";
+import { InventoryDetailPage } from "@/features/inventory/InventoryDetailPage";
+import { InventoryListPage } from "@/features/inventory/InventoryListPage";
 import {
   CashierRoleHomePage,
   ManagerRoleHomePage,
@@ -37,6 +40,7 @@ import {
   RequireOwnerRoleHome,
   RequirePersonalSession,
   RequireSession,
+  RequireViewInventory,
   RequireWorkspaceBound,
   WorkspaceBootGate,
 } from "@/session/SessionGuards";
@@ -184,8 +188,25 @@ export const appRoutes = [
             children: [
               { index: true, element: <CatalogProductsPage /> },
               { path: "categories", element: <CatalogCategoriesPage /> },
+              { path: "todays-prices", element: <TodaysPricesPage /> },
               { path: "products/new", element: <CatalogProductCreatePage /> },
               { path: "products/:productId/edit", element: <CatalogProductEditPage /> },
+            ],
+          },
+          {
+            path: "inventory",
+            element: (
+              <RequireOrganizationSession>
+                <RequireWorkspaceBound>
+                  <RequireViewInventory>
+                    <Outlet />
+                  </RequireViewInventory>
+                </RequireWorkspaceBound>
+              </RequireOrganizationSession>
+            ),
+            children: [
+              { index: true, element: <InventoryListPage /> },
+              { path: ":productId", element: <InventoryDetailPage /> },
             ],
           },
           { path: "*", element: <NotFoundPage /> },

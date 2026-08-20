@@ -148,6 +148,26 @@ export function canManageCatalog(grant: PosSessionGrantFacts | null | undefined)
   return isPosOwnerRole(grant) || isPosOperationsManager(grant);
 }
 
+/**
+ * ManageInventory UI gate — PosRoleMatrix Owner/Admin/StoreManager (+ InventoryStaff compat).
+ * Server remains authoritative.
+ */
+export function canManageInventory(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  if (isPosOwnerRole(grant) || isPosOperationsManager(grant)) {
+    return true;
+  }
+  const role = resolveEffectivePosRoleCode(grant)?.toLowerCase();
+  return role === "inventorystaff";
+}
+
+/** ViewInventory — same matrix as manage for default roles; Cashier excluded. */
+export function canViewInventory(grant: PosSessionGrantFacts | null | undefined): boolean {
+  return canManageInventory(grant);
+}
+
 /** Admin / business-management experience (Organization Web essentials in React). */
 export function canUseAdminExperience(grant: PosSessionGrantFacts | null | undefined): boolean {
   return hasOrganizationManagementAuthority(grant);

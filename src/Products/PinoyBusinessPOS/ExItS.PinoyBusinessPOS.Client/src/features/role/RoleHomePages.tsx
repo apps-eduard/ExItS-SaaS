@@ -1,6 +1,7 @@
 import {
   canCreateSale,
   canManageCatalog,
+  canViewInventory,
   canUseAdminExperience,
   canUseOperationsExperience,
   resolveEffectivePosRoleCode,
@@ -42,6 +43,7 @@ export function RoleHomeShell({
   const canOps = canUseOperationsExperience(sessionGrant);
   const canSell = canCreateSale(sessionGrant);
   const canCatalog = canManageCatalog(sessionGrant);
+  const canInventory = canViewInventory(sessionGrant);
   const securityRole = resolveEffectivePosRoleCode(sessionGrant);
 
   function startSelling() {
@@ -116,6 +118,11 @@ export function RoleHomeShell({
       {canCatalog ? (
         <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-catalog">
           <Link to="/catalog">{t("catalog.openCatalog")}</Link>
+        </Button>
+      ) : null}
+      {canInventory ? (
+        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-inventory">
+          <Link to="/inventory">{t("inventory.open")}</Link>
         </Button>
       ) : null}
     </div>

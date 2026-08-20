@@ -122,4 +122,30 @@ export type UpdatePosCatalogProductRequest = {
   units?: PosCatalogProductUnitInput[] | null;
 };
 
+export type UpdatePosCatalogProductPriceItem = {
+  productId: string;
+  sellingPrice: number;
+  expectedUpdatedAtUtc: string;
+};
+
+export type UpdatePosCatalogProductPricesRequest = {
+  items: UpdatePosCatalogProductPriceItem[];
+};
+
+export type UpdatePosCatalogProductPriceResultItem = {
+  productId: string;
+  succeeded: boolean;
+  changed: boolean;
+  product?: PosCatalogProductDto | null;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+};
+
+export type UpdatePosCatalogProductPricesResponse = {
+  results: UpdatePosCatalogProductPriceResultItem[];
+  succeededCount: number;
+  failedCount: number;
+  changedCount: number;
+};
+
 export type CatalogProductImageVariant = "thumb" | "medium";

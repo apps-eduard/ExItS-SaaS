@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { listCatalogProducts } from "@/api/pos/pos-catalog-client";
+import { listInventory } from "@/api/pos/pos-inventory-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -12,7 +12,7 @@ import { SearchField } from "@/components/exits/SearchField";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
-export function CatalogProductsPage() {
+export function InventoryListPage() {
   const { t } = useI18n();
   const { boundWorkspace } = useWorkspace();
   const [search, setSearch] = useState("");
@@ -35,10 +35,10 @@ export function CatalogProductsPage() {
   );
 
   const query = useQuery({
-    queryKey: ["catalog", "products", workspace?.organizationId, workspace?.branchId, debounced],
+    queryKey: ["inventory", workspace?.organizationId, workspace?.branchId, debounced],
     enabled: Boolean(workspace),
     queryFn: ({ signal }) =>
-      listCatalogProducts(workspace!, { search: debounced || undefined, pageSize: 50 }, signal),
+      listInventory(workspace!, { search: debounced || undefined, pageSize: 50 }, signal),
   });
 
   if (!workspace) {
@@ -46,50 +46,45 @@ export function CatalogProductsPage() {
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="catalog-products-page">
-      <PageHeader title={t("catalog.productsTitle")} description={t("catalog.productsLede")} />
-      <div className="flex flex-wrap gap-2">
-        <Button asChild className="min-h-11">
-          <Link to="/catalog/products/new">{t("catalog.newProduct")}</Link>
-        </Button>
-        <Button asChild variant="ghost" className="min-h-11">
-          <Link to="/catalog/categories">{t("catalog.categoriesTitle")}</Link>
-        </Button>
-        <Button asChild variant="ghost" className="min-h-11">
-          <Link to="/catalog/todays-prices">{t("prices.title")}</Link>
-        </Button>
-      </div>
+    <div className="flex min-w-0 flex-col gap-4" data-testid="inventory-list-page">
+      <PageHeader title={t("inventory.title")} description={t("inventory.lede")} />
       <SearchField
-        label={t("catalog.searchProducts")}
+        label={t("inventory.search")}
         value={search}
         onChange={(event) => setSearch(event.target.value)}
         onClear={() => setSearch("")}
-        placeholder={t("catalog.searchProducts")}
+        placeholder={t("inventory.search")}
       />
       {query.isLoading ? <LoadingState label={t("loading.label")} /> : null}
       {query.isError ? (
         <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
       ) : null}
       {query.isSuccess && query.data.items.length === 0 ? (
-        <EmptyState title={t("catalog.emptyProducts")} detail={t("catalog.emptyProductsDetail")} />
+        <EmptyState title={t("inventory.empty")} detail={t("inventory.emptyDetail")} />
       ) : null}
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
-        {query.data?.items.map((product) => (
-          <li key={product.productId}>
+        {query.data?.items.map((item) => (
+          <li key={item.productId}>
             <Card className="p-3">
               <Link
                 className="block min-w-0 text-foreground no-underline"
-                to={`/catalog/products/${product.productId}/edit`}
+                to={`/inventory/${item.productId}`}
+                data-testid={`inventory-row-${item.productId}`}
               >
-                <span className="block truncate font-semibold">{product.name}</span>
+                <span className="block truncate font-semibold">{item.name}</span>
                 <span className="block truncate text-[length:var(--exits-text-sm)] text-muted">
-                  {[product.sku, product.barcode].filter(Boolean).join(" · ") || product.status}
+                  {item.isTracked
+                    ? `${t("inventory.onHand")}: ${item.onHandQuantity} ${item.unitOfMeasure}`
+                    : t("inventory.notTracked")}
                 </span>
               </Link>
             </Card>
           </li>
         ))}
       </ul>
+      <Button asChild variant="ghost" className="min-h-11 w-fit">
+        <Link to="/role/manager">{t("inventory.backOps")}</Link>
+      </Button>
     </div>
   );
 }

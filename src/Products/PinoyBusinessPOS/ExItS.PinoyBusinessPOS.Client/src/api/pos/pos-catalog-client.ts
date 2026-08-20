@@ -6,6 +6,8 @@ import type {
   PosCatalogProductPagedResult,
   PosProductCategoryDto,
   PosProductCategoryPagedResult,
+  UpdatePosCatalogProductPricesRequest,
+  UpdatePosCatalogProductPricesResponse,
   UpdatePosCatalogProductRequest,
   UpdatePosProductCategoryRequest,
 } from "@/api/pos/pos-catalog-types";
@@ -241,6 +243,20 @@ export function lookupCatalogProductByBarcode(
     workspace,
     signal,
     path: `${PRODUCTS_PATH}/by-barcode/${encoded}`,
+  });
+}
+
+export function updateCatalogProductPrices(
+  workspace: PosWorkspaceScope,
+  body: UpdatePosCatalogProductPricesRequest,
+  signal?: AbortSignal,
+): Promise<UpdatePosCatalogProductPricesResponse> {
+  return posRequest({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${PRODUCTS_PATH}/prices`,
+    body,
   });
 }
 

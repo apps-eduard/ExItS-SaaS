@@ -7,7 +7,9 @@ import {
   canEnterOwnerRoleHome,
   canInviteOrganizationStaff,
   canManageCatalog,
+  canManageInventory,
   canUseAdminExperience,
+  canViewInventory,
 } from "@/access/pos-capabilities";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
@@ -230,6 +232,26 @@ export function RequireManageCatalog({ children }: { children: ReactNode }) {
 
   if (!canManageCatalog(sessionGrant)) {
     return <ExperienceAccessDeniedPage testId="catalog-manage-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireViewInventory({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canViewInventory(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="inventory-view-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireManageInventory({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canManageInventory(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="inventory-manage-denied" />;
   }
 
   return children;
