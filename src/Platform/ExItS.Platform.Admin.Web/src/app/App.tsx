@@ -19,6 +19,7 @@ import { OrganizationsPage } from "@/features/organizations/OrganizationsPage";
 import { OrganizationWorkspaceLayout } from "@/features/organizations/OrganizationWorkspaceLayout";
 import { OverviewPage } from "@/features/overview/OverviewPage";
 import { UsersPage } from "@/features/users/UsersPage";
+import { UserDetailPage } from "@/features/users/UserDetailPage";
 import { ShellCatchAllPage } from "@/features/overview/ShellCatchAllPage";
 import { AuthorizationProvider } from "@/hooks/use-authorization";
 import { DiagnosticsProvider } from "@/hooks/use-diagnostics";
@@ -114,7 +115,10 @@ export function App() {
                             <Route path="*" element={<ShellCatchAllPage />} />
                           </Route>
                         </Route>
-                        <Route path="users" element={<UsersPage />} />
+                        <Route path="users">
+                          <Route index element={<UsersPage />} />
+                          <Route path=":userId" element={<UserDetailPage />} />
+                        </Route>
                         <Route path="*" element={<ShellCatchAllPage />} />
                       </Route>
                     </Route>

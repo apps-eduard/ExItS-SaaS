@@ -39,6 +39,33 @@ export type PlatformUserListItem = {
   organizationNames: string[];
 };
 
+export type PlatformUserOrganizationItem = {
+  name: string;
+  role?: string;
+  roleDisplay?: string;
+};
+
+export type PlatformUserDetail = {
+  id: string;
+  username: string;
+  displayName: string;
+  email: string;
+  status: string;
+  createdAtUtc?: string;
+  updatedAtUtc?: string;
+  suspendedAtUtc?: string;
+  suspensionReason?: string;
+  accountClasses: string[];
+  organizationNames: string[];
+  organizations?: PlatformUserOrganizationItem[];
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  employeeCode?: string;
+  staffNumber?: string;
+  createdByUserId?: string;
+};
+
 export type UserListQuery = {
   page?: number;
   pageSize?: number;

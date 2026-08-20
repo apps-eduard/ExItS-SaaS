@@ -45,9 +45,40 @@ const users = {
   pageSize: 20,
 };
 
+const userDetail = {
+  id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+  displayName: "Olivia Mendoza",
+  username: "olivia",
+  email: "olivia@example.test",
+  status: "Active",
+  accountClasses: ["Platform"],
+  organizationNames: [],
+  firstName: "Olivia",
+  lastName: "Mendoza",
+  createdAtUtc: "2026-01-01T08:00:00Z",
+  updatedAtUtc: "2026-08-01T08:00:00Z",
+};
+
+const assignments = {
+  items: [
+    {
+      id: "11111111-1111-1111-1111-111111111111",
+      platformUserId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      role: "PlatformAdministrator",
+      status: "Active",
+      grantedByActor: "admin@example.test",
+      grantedAtUtc: "2026-08-01T08:00:00Z",
+    },
+  ],
+  totalCount: 1,
+  page: 1,
+  pageSize: 10,
+};
+
 async function mockUsers(
   page: import("@playwright/test").Page,
   permissions = authorization.permissions,
+  options?: { userStatus?: number; assignmentsEmpty?: boolean },
 ) {
   await page.route("**/api/v1/platform/auth/me", async (route) => {
     await route.fulfill({ json: session });
@@ -58,8 +89,21 @@ async function mockUsers(
   await page.route("**/api/v1/platform/catalog/products*", async (route) => {
     await route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 100 } });
   });
+  await page.route("**/api/v1/platform/users/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", async (route) => {
+    await route.fulfill({
+      status: options?.userStatus ?? 200,
+      json: userDetail,
+    });
+  });
   await page.route("**/api/v1/platform/users*", async (route) => {
     await route.fulfill({ json: users });
+  });
+  await page.route("**/api/v1/platform/authorization/assignments*", async (route) => {
+    await route.fulfill({
+      json: options?.assignmentsEmpty
+        ? { items: [], totalCount: 0, page: 1, pageSize: 10 }
+        : assignments,
+    });
   });
   await page.route("**/health/**", async (route) => {
     await route.fulfill({ contentType: "text/plain", body: "Healthy" });
@@ -114,4 +158,45 @@ test("users directory has no overflow at 375 and no serious axe issues", async (
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );
   expect(overflow).toBe(false);
+});
+
+test("user detail is read-only with assignments and no mutation controls", async ({ page }) => {
+  await mockUsers(page);
+  await page.goto("/admin/users/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+  await expect(page.getByRole("heading", { name: "Olivia Mendoza" })).toBeVisible();
+  await expect(page.getByText("Platform administrator")).toBeVisible();
+  await expect(page.getByRole("button", { name: /assign/i })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /revoke/i })).toHaveCount(0);
+});
+
+test("invalid user id shows safe not-found", async ({ page }) => {
+  await mockUsers(page);
+  await page.goto("/admin/users/not-a-guid");
+  await expect(page.getByRole("heading", { name: "Account not found" })).toBeVisible();
+});
+
+test("missing user shows safe not-found", async ({ page }) => {
+  await mockUsers(page, authorization.permissions, { userStatus: 404 });
+  await page.goto("/admin/users/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+  await expect(page.getByRole("heading", { name: "Account not found" })).toBeVisible();
+});
+
+test("unauthorized user detail fail-closes", async ({ page }) => {
+  await mockUsers(page, ["platform.permission.view_portfolio"]);
+  await page.goto("/admin/users/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+  await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
+});
+
+test("empty assignments and mobile layout on user detail", async ({ page }) => {
+  await mockUsers(page, authorization.permissions, { assignmentsEmpty: true });
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.goto("/admin/users/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+  await expect(page.getByRole("heading", { name: "Olivia Mendoza" })).toBeVisible();
+  await expect(page.getByText("No role assignments were returned.")).toBeVisible();
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  );
+  expect(overflow).toBe(false);
+  const accessibility = await new AxeBuilder({ page }).analyze();
+  expect(accessibility.violations).toEqual([]);
 });
