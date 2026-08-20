@@ -85,6 +85,18 @@ public static class DomainErrorCodes
     public const string SaleNotAwaitingPayment = "pos.sale.not_awaiting_payment";
     public const string InvalidSaleStockReservation = "pos.sale.stock_reservation.invalid";
 
+    public const string InvalidSaleDiscountAdjustmentId = "pos.sale.discount_adjustment.id.invalid";
+    public const string SaleDiscountReasonRequired = "pos.sale.discount.reason_required";
+    public const string SaleDiscountInvalidPercent = "pos.sale.discount.invalid_percent";
+    public const string SaleDiscountInvalidAmount = "pos.sale.discount.invalid_amount";
+    public const string SaleDiscountInvalidScope = "pos.sale.discount.scope.invalid";
+    public const string SaleDiscountInvalidMethod = "pos.sale.discount.method.invalid";
+    public const string SaleDiscountInvalidSource = "pos.sale.discount.source.invalid";
+    public const string SaleDiscountExceedsEligible = "pos.sale.discount.exceeds_eligible";
+    public const string SaleDiscountLineUnmatched = "pos.sale.discount.line_unmatched";
+    public const string SaleDiscountLineAmbiguous = "pos.sale.discount.line_ambiguous";
+    public const string SaleDiscountTooMany = "pos.sale.discount.too_many";
+
     public const string InvalidPaymentAttemptId = "pos.payment_attempt.id.invalid";
     public const string PaymentGatewayIdempotencyConflict =
         "pos.payment_gateway.idempotency.conflict";

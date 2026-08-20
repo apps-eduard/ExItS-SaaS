@@ -11,6 +11,7 @@ public static class PosFeatureCodes
     public const string StoreSalesView = "store-sales-view";
     public const string StoreSalesCreate = "store-sales-create";
     public const string StoreSalesVoid = "store-sales-void";
+    public const string StoreSalesApplyCommercialDiscount = "store-sales-apply-commercial-discount";
     public const string StoreInventoryView = "store-inventory-view";
     public const string StoreInventoryManage = "store-inventory-manage";
     public const string StoreExpensesView = "store-expenses-view";
@@ -87,7 +88,13 @@ public enum UtangCapability
     ManageOperationalSetup = 35,
     ViewCustomerOrders = 36,
     ManageCustomerOrders = 37,
-    PlaceCustomerOrders = 38
+    PlaceCustomerOrders = 38,
+
+    /// <summary>
+    /// Apply a manual commercial sale discount at checkout. Distinct from a price override, a
+    /// promotion, and a statutory/regulatory discount — none of which this capability grants.
+    /// </summary>
+    ApplyCommercialDiscount = 39
 }
 
 /// <summary>
@@ -175,6 +182,12 @@ public static class UtangCapabilityPolicy
             UtangCapability.VoidSale =>
                 IsFullCommercialState(status)
                 && HasFeature(grants, PosFeatureCodes.StoreSalesVoid),
+
+            // Giving money away is a full-commercial-state operation: never available on a
+            // PastDue/Cancelled/Expired continuity read-only session.
+            UtangCapability.ApplyCommercialDiscount =>
+                IsFullCommercialState(status)
+                && HasFeature(grants, PosFeatureCodes.StoreSalesApplyCommercialDiscount),
 
             UtangCapability.ViewInventory =>
                 CanEnter(status, grants) && HasFeature(grants, PosFeatureCodes.StoreInventoryView),
@@ -313,6 +326,7 @@ public static class UtangCapabilityPolicy
         PosFeatureCodes.StoreSalesView,
         PosFeatureCodes.StoreSalesCreate,
         PosFeatureCodes.StoreSalesVoid,
+        PosFeatureCodes.StoreSalesApplyCommercialDiscount,
         PosFeatureCodes.StoreInventoryView,
         PosFeatureCodes.StoreInventoryManage,
         PosFeatureCodes.StoreExpensesView,

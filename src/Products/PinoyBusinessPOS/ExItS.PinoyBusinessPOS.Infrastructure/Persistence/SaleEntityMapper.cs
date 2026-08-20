@@ -11,7 +11,10 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
 
 internal static class SaleEntityMapper
 {
-    public static Sale ToDomain(SaleRecord record, IEnumerable<SaleLineRecord> lineRecords)
+    public static Sale ToDomain(
+        SaleRecord record,
+        IEnumerable<SaleLineRecord> lineRecords,
+        IEnumerable<SaleCommercialDiscountAdjustmentRecord>? discountRecords = null)
     {
         var saleId = SaleId.From(record.Id);
         var organizationId = PosOrganizationId.From(record.OrganizationId);
@@ -35,7 +38,27 @@ internal static class SaleEntityMapper
                 l.SellingUnitId is null ? null : ProductUnitId.From(l.SellingUnitId.Value),
                 l.SellingUnitNameSnapshot,
                 l.EnteredQuantity,
-                l.MultiplierToBaseSnapshot))
+                l.MultiplierToBaseSnapshot,
+                l.GrossLineTotal,
+                l.LineDiscountAmount,
+                l.SaleDiscountAllocatedAmount))
+            .ToList();
+
+        var discounts = discountRecords?
+            .OrderBy(d => d.RecordedAtUtc)
+            .Select(d => SaleCommercialDiscountAdjustment.Rehydrate(
+                SaleCommercialDiscountAdjustmentId.From(d.Id),
+                saleId,
+                organizationId,
+                SaleCommercialDiscountRules.ParseScope(d.Scope),
+                SaleCommercialDiscountRules.ParseMethod(d.Method),
+                SaleCommercialDiscountRules.ParseSource(d.Source),
+                d.RequestedValue,
+                d.CalculatedAmount,
+                d.Reason,
+                d.SaleLineId is null ? null : SaleLineId.From(d.SaleLineId.Value),
+                d.AppliedBy,
+                d.RecordedAtUtc))
             .ToList();
 
         return Sale.Rehydrate(
@@ -68,7 +91,11 @@ internal static class SaleEntityMapper
                 record.BuyerOrganizationId,
                 record.BuyerPublicOrganizationId),
             Enum.Parse<SaleStockReservationState>(record.StockReservationState, ignoreCase: true),
-            record.BranchId is null ? null : PosBranchId.From(record.BranchId.Value));
+            record.BranchId is null ? null : PosBranchId.From(record.BranchId.Value),
+            record.GrossSubtotal,
+            record.LineDiscountTotal,
+            record.SaleDiscountTotal,
+            discounts);
     }
 
     public static SaleRecord ToRecord(Sale sale) =>
@@ -82,6 +109,10 @@ internal static class SaleEntityMapper
             Subtotal = sale.Subtotal,
             Total = sale.Total,
             TaxAmount = sale.TaxAmount,
+            GrossSubtotal = sale.GrossSubtotal,
+            LineDiscountTotal = sale.LineDiscountTotal,
+            SaleDiscountTotal = sale.SaleDiscountTotal,
+            DiscountTotal = sale.DiscountTotal,
             AmountTendered = sale.AmountTendered,
             ChangeAmount = sale.ChangeAmount,
             GcashReference = sale.GCashReference,
@@ -120,10 +151,30 @@ internal static class SaleEntityMapper
             UnitPrice = line.UnitPrice,
             Quantity = line.Quantity,
             LineTotal = line.LineTotal,
+            GrossLineTotal = line.GrossLineTotal,
+            LineDiscountAmount = line.LineDiscountAmount,
+            SaleDiscountAllocatedAmount = line.SaleDiscountAllocatedAmount,
             SellingUnitId = line.SellingUnitId?.Value,
             SellingUnitNameSnapshot = line.SellingUnitNameSnapshot,
             EnteredQuantity = line.EnteredQuantity,
             MultiplierToBaseSnapshot = line.MultiplierToBaseSnapshot
+        };
+
+    public static SaleCommercialDiscountAdjustmentRecord ToRecord(SaleCommercialDiscountAdjustment adjustment) =>
+        new()
+        {
+            Id = adjustment.Id.Value,
+            SaleId = adjustment.SaleId.Value,
+            OrganizationId = adjustment.OrganizationId.Value,
+            Scope = SaleCommercialDiscountRules.ToCode(adjustment.Scope),
+            Method = SaleCommercialDiscountRules.ToCode(adjustment.Method),
+            Source = SaleCommercialDiscountRules.ToCode(adjustment.Source),
+            RequestedValue = adjustment.RequestedValue,
+            CalculatedAmount = adjustment.CalculatedAmount,
+            Reason = adjustment.Reason,
+            SaleLineId = adjustment.SaleLineId?.Value,
+            AppliedBy = adjustment.AppliedBy,
+            RecordedAtUtc = adjustment.RecordedAtUtc
         };
 
     /// <summary>

@@ -10,6 +10,10 @@ internal sealed class SaleRecord
     public decimal Subtotal { get; set; }
     public decimal Total { get; set; }
     public decimal TaxAmount { get; set; }
+    public decimal GrossSubtotal { get; set; }
+    public decimal LineDiscountTotal { get; set; }
+    public decimal SaleDiscountTotal { get; set; }
+    public decimal DiscountTotal { get; set; }
     public decimal? AmountTendered { get; set; }
     public decimal? ChangeAmount { get; set; }
     public string? GcashReference { get; set; }

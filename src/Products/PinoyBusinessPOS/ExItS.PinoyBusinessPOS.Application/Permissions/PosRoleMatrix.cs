@@ -18,6 +18,8 @@ public static class PosRoleMatrix
         UtangCapability.ViewSales,
         UtangCapability.CreateSale,
         UtangCapability.VoidSale,
+        // Cashiers deliberately excluded: a discount is a margin decision, not a checkout step.
+        UtangCapability.ApplyCommercialDiscount,
         UtangCapability.ViewCustomersAndHistory,
         UtangCapability.CreateCustomer,
         UtangCapability.EditCustomer,
@@ -113,7 +115,11 @@ public static class PosRoleMatrix
     /// </summary>
     public static bool AllowsOrganizationManagement(bool isExactOwner, UtangCapability capability)
     {
-        if (capability is UtangCapability.CreateSale or UtangCapability.EnterPos)
+        // Checkout-only capabilities never project into Org Web management, including applying a
+        // commercial discount, which is only meaningful inside a live checkout.
+        if (capability is UtangCapability.CreateSale
+            or UtangCapability.EnterPos
+            or UtangCapability.ApplyCommercialDiscount)
         {
             return false;
         }
@@ -132,16 +138,21 @@ public static class PosRoleMatrix
         if (isExactOwner)
         {
             return OwnerCapabilities
-                .Where(c => c is not UtangCapability.CreateSale and not UtangCapability.EnterPos)
+                .Where(IsOrganizationManagementCapability)
                 .OrderBy(c => c)
                 .ToArray();
         }
 
         return StoreManagerCapabilities
-            .Where(c => c is not UtangCapability.CreateSale and not UtangCapability.EnterPos)
+            .Where(IsOrganizationManagementCapability)
             .OrderBy(c => c)
             .ToArray();
     }
+
+    private static bool IsOrganizationManagementCapability(UtangCapability capability) =>
+        capability is not UtangCapability.CreateSale
+            and not UtangCapability.EnterPos
+            and not UtangCapability.ApplyCommercialDiscount;
 
     public static bool AllowsOrganizationManagementReport(bool isExactOwner, PosOperationalReportKind kind) =>
         isExactOwner || AllowsReport(PosRole.StoreManager, kind);

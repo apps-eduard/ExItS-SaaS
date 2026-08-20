@@ -56,6 +56,8 @@ public sealed class PosDbContext : DbContext
     internal DbSet<CatalogImportItemResultRecord> CatalogImportItems => Set<CatalogImportItemResultRecord>();
     internal DbSet<SaleRecord> Sales => Set<SaleRecord>();
     internal DbSet<SaleLineRecord> SaleLines => Set<SaleLineRecord>();
+    internal DbSet<SaleCommercialDiscountAdjustmentRecord> SaleCommercialDiscountAdjustments =>
+        Set<SaleCommercialDiscountAdjustmentRecord>();
     internal DbSet<SaleNumberSequenceRecord> SaleNumberSequences => Set<SaleNumberSequenceRecord>();
     internal DbSet<CustomerOrderRecord> CustomerOrders => Set<CustomerOrderRecord>();
     internal DbSet<CustomerOrderLineRecord> CustomerOrderLines => Set<CustomerOrderLineRecord>();
@@ -875,6 +877,13 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_sales_totals_non_negative",
                     "subtotal >= 0 AND total >= 0 AND tax_amount >= 0");
+                tb.HasCheckConstraint(
+                    "ck_sales_discount_totals_non_negative",
+                    "gross_subtotal >= 0 AND line_discount_total >= 0 AND sale_discount_total >= 0 AND discount_total >= 0");
+                // Discount reconciliation: gross minus every discount is exactly the net subtotal.
+                tb.HasCheckConstraint(
+                    "ck_sales_discount_reconciliation",
+                    "discount_total = line_discount_total + sale_discount_total AND gross_subtotal - discount_total = subtotal");
                 // Voided sales must carry the full void audit; Completed/AwaitingPayment carry none of it.
                 tb.HasCheckConstraint(
                     "ck_sales_void_consistency",
@@ -908,6 +917,22 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.Subtotal).HasColumnName("subtotal").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.Total).HasColumnName("total").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.TaxAmount).HasColumnName("tax_amount").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.GrossSubtotal)
+                .HasColumnName("gross_subtotal")
+                .HasPrecision(18, 2)
+                .IsRequired();
+            entity.Property(e => e.LineDiscountTotal)
+                .HasColumnName("line_discount_total")
+                .HasPrecision(18, 2)
+                .IsRequired();
+            entity.Property(e => e.SaleDiscountTotal)
+                .HasColumnName("sale_discount_total")
+                .HasPrecision(18, 2)
+                .IsRequired();
+            entity.Property(e => e.DiscountTotal)
+                .HasColumnName("discount_total")
+                .HasPrecision(18, 2)
+                .IsRequired();
             entity.Property(e => e.AmountTendered).HasColumnName("amount_tendered").HasPrecision(18, 2);
             entity.Property(e => e.ChangeAmount).HasColumnName("change_amount").HasPrecision(18, 2);
             entity.Property(e => e.GcashReference)
@@ -1029,6 +1054,12 @@ public sealed class PosDbContext : DbContext
                     "ck_sale_lines_amounts_non_negative",
                     "unit_price >= 0 AND line_total >= 0");
                 tb.HasCheckConstraint(
+                    "ck_sale_lines_discount_amounts_non_negative",
+                    "gross_line_total >= 0 AND line_discount_amount >= 0 AND sale_discount_allocated_amount >= 0");
+                tb.HasCheckConstraint(
+                    "ck_sale_lines_discount_reconciliation",
+                    "gross_line_total - line_discount_amount - sale_discount_allocated_amount = line_total");
+                tb.HasCheckConstraint(
                     "ck_sale_lines_line_number_positive",
                     "line_number > 0");
                 tb.HasCheckConstraint(
@@ -1067,6 +1098,18 @@ public sealed class PosDbContext : DbContext
             // Measured units admit up to three decimal places; countable units stay whole.
             entity.Property(e => e.Quantity).HasColumnName("quantity").HasPrecision(18, 3).IsRequired();
             entity.Property(e => e.LineTotal).HasColumnName("line_total").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.GrossLineTotal)
+                .HasColumnName("gross_line_total")
+                .HasPrecision(18, 2)
+                .IsRequired();
+            entity.Property(e => e.LineDiscountAmount)
+                .HasColumnName("line_discount_amount")
+                .HasPrecision(18, 2)
+                .IsRequired();
+            entity.Property(e => e.SaleDiscountAllocatedAmount)
+                .HasColumnName("sale_discount_allocated_amount")
+                .HasPrecision(18, 2)
+                .IsRequired();
             entity.Property(e => e.SellingUnitId).HasColumnName("selling_unit_id");
             entity.Property(e => e.SellingUnitNameSnapshot)
                 .HasColumnName("selling_unit_name_snapshot")
@@ -1097,6 +1140,73 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_sale_lines_products");
+        });
+
+        modelBuilder.Entity<SaleCommercialDiscountAdjustmentRecord>(entity =>
+        {
+            entity.ToTable("sale_commercial_discount_adjustments", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_sale_commercial_discount_adjustments_scope",
+                    "scope IN ('Line', 'Sale')");
+                tb.HasCheckConstraint(
+                    "ck_sale_commercial_discount_adjustments_method",
+                    "method IN ('Percentage', 'FixedAmount')");
+                // Only manual commercial discounts exist. Promotions and regulatory discounts are
+                // separate concepts and must not be recorded here.
+                tb.HasCheckConstraint(
+                    "ck_sale_commercial_discount_adjustments_source",
+                    "source = 'Manual'");
+                tb.HasCheckConstraint(
+                    "ck_sale_commercial_discount_adjustments_amounts",
+                    "requested_value > 0 AND calculated_amount >= 0");
+                // A line-scoped adjustment always names its line; a sale-scoped one never does.
+                tb.HasCheckConstraint(
+                    "ck_sale_commercial_discount_adjustments_line_scope",
+                    "(scope = 'Line' AND sale_line_id IS NOT NULL) OR (scope = 'Sale' AND sale_line_id IS NULL)");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.SaleId).HasColumnName("sale_id").IsRequired();
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.Scope).HasColumnName("scope").HasMaxLength(16).IsRequired();
+            entity.Property(e => e.Method).HasColumnName("method").HasMaxLength(16).IsRequired();
+            entity.Property(e => e.Source).HasColumnName("source").HasMaxLength(16).IsRequired();
+            entity.Property(e => e.RequestedValue)
+                .HasColumnName("requested_value")
+                .HasPrecision(18, 2)
+                .IsRequired();
+            entity.Property(e => e.CalculatedAmount)
+                .HasColumnName("calculated_amount")
+                .HasPrecision(18, 2)
+                .IsRequired();
+            entity.Property(e => e.Reason)
+                .HasColumnName("reason")
+                .HasMaxLength(SaleCommercialDiscountRules.ReasonMaxLength)
+                .IsRequired();
+            entity.Property(e => e.SaleLineId).HasColumnName("sale_line_id");
+            entity.Property(e => e.AppliedBy).HasColumnName("applied_by").IsRequired();
+            entity.Property(e => e.RecordedAtUtc).HasColumnName("recorded_at_utc");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.SaleId })
+                .HasDatabaseName("ix_sale_commercial_discount_adjustments_org_sale");
+
+            entity.HasIndex(e => e.SaleLineId)
+                .HasDatabaseName("ix_sale_commercial_discount_adjustments_sale_line")
+                .HasFilter("sale_line_id IS NOT NULL");
+
+            entity.HasOne<SaleRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SaleId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_sale_commercial_discount_adjustments_sales");
+
+            entity.HasOne<SaleLineRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SaleLineId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_sale_commercial_discount_adjustments_sale_lines");
         });
 
         modelBuilder.Entity<SaleNumberSequenceRecord>(entity =>

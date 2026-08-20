@@ -19,7 +19,11 @@ namespace ExItS.PinoyBusinessPOS.Api.Sales;
 /// supply immutable line snapshots (UnitPrice/UOM/SellingMode/LineTotal); the server validates
 /// arithmetic consistency without replacing those snapshots from the live catalog. Product-Based
 /// Utang checkout also creates a linked remarks credit. Tracked inventory is deducted atomically at
-/// checkout and restored on void. No discount, tax, refund, split tender, or gateway surface exists here.
+/// checkout and restored on void. No refund, split tender, or gateway surface exists here.
+///
+/// Manual commercial discounts require <c>ApplyCommercialDiscount</c> in addition to
+/// <c>CreateSale</c>, and are rejected outright on the offline snapshot path. Promotions, statutory
+/// discounts, and price overrides are separate concepts with no surface here.
 /// </summary>
 internal static class SaleEndpoints
 {
@@ -69,11 +73,17 @@ internal static class SaleEndpoints
         {
             var isUtang = SalePaymentMethods.TryParse(body.PaymentMethod, out var method)
                 && method == SalePaymentMethod.Utang;
+            var hasDiscounts = body.Discounts is { Count: > 0 };
 
             if (isUtang)
             {
                 if (!TryAuthorize(request, access, UtangCapability.CreateSale, out var organizationId, out var problem)
-                    || !PosCommercialScope.TryAuthorize(access, UtangCapability.CreateCredit, out problem))
+                    || !PosCommercialScope.TryAuthorize(access, UtangCapability.CreateCredit, out problem)
+                    || (hasDiscounts
+                        && !PosCommercialScope.TryAuthorize(
+                            access,
+                            UtangCapability.ApplyCommercialDiscount,
+                            out problem)))
                 {
                     return problem!;
                 }
@@ -113,6 +123,7 @@ internal static class SaleEndpoints
                             body.BuyerOrganizationId,
                             body.BuyerPublicOrganizationId,
                             branchId,
+                            body.Discounts,
                             ct2),
                         SaleQueryService.Map,
                         dto => Results.Created($"/api/v1/pos/sales/{dto.SaleId:D}", dto),
@@ -120,7 +131,12 @@ internal static class SaleEndpoints
                     .ConfigureAwait(false);
             }
 
-            if (!TryAuthorize(request, access, UtangCapability.CreateSale, out var cashOrgId, out var cashProblem))
+            if (!TryAuthorize(request, access, UtangCapability.CreateSale, out var cashOrgId, out var cashProblem)
+                || (hasDiscounts
+                    && !PosCommercialScope.TryAuthorize(
+                        access,
+                        UtangCapability.ApplyCommercialDiscount,
+                        out cashProblem)))
             {
                 return cashProblem!;
             }
@@ -160,11 +176,38 @@ internal static class SaleEndpoints
                         body.BuyerOrganizationId,
                         body.BuyerPublicOrganizationId,
                         cashBranchId,
+                        body.Discounts,
                         ct2),
                     SaleQueryService.Map,
                     dto => Results.Created($"/api/v1/pos/sales/{dto.SaleId:D}", dto),
                     ct)
                 .ConfigureAwait(false);
+        });
+
+        // Preview only: prices the cart, applies commercial discount math and tax, persists nothing.
+        // Checkout revalidates independently, so a quote never authorizes the amounts it returns.
+        group.MapPost("/quote", async (
+            HttpRequest request,
+            CheckoutSaleRequest body,
+            CheckoutSale useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.CreateSale, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (body.Discounts is { Count: > 0 }
+                && !PosCommercialScope.TryAuthorize(access, UtangCapability.ApplyCommercialDiscount, out problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase
+                .QuoteAsync(organizationId, body.Lines, body.Discounts, ct)
+                .ConfigureAwait(false);
+            return PosApiResults.FromResult(result, Results.Ok);
         });
 
         group.MapGet("/{saleId:guid}", async (

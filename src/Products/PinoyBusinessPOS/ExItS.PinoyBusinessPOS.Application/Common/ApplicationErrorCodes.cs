@@ -45,6 +45,7 @@ public static class ApplicationErrorCodes
     public const string SaleSnapshotIncomplete = "pos.sale.snapshot.incomplete";
     public const string SaleSnapshotLineTotalMismatch = "pos.sale.snapshot.line_total_mismatch";
     public const string SaleSnapshotInvalid = "pos.sale.snapshot.invalid";
+    public const string SaleDiscountOfflineNotSupported = "pos.sale.discount.offline_not_supported";
     public const string SaleNumberConflict = "pos.sale.number.conflict";
     public const string CreditReversalRequiresSaleVoid = "pos.credit_entry.reversal.requires_sale_void";
     public const string SaleVoidBlockedBySubsequentUtangActivity = "pos.sale.void.blocked_by_subsequent_utang";

@@ -79,6 +79,7 @@ public static class PosRoleAssignmentMapping
         UtangCapability.ViewSales => [PosFeatureCodes.StoreSalesView],
         UtangCapability.CreateSale => [PosFeatureCodes.StoreSalesCreate],
         UtangCapability.VoidSale => [PosFeatureCodes.StoreSalesVoid],
+        UtangCapability.ApplyCommercialDiscount => [PosFeatureCodes.StoreSalesApplyCommercialDiscount],
         UtangCapability.ViewInventory => [PosFeatureCodes.StoreInventoryView],
         UtangCapability.ManageInventory => [PosFeatureCodes.StoreInventoryManage],
         UtangCapability.ViewExpenses => [PosFeatureCodes.StoreExpensesView],

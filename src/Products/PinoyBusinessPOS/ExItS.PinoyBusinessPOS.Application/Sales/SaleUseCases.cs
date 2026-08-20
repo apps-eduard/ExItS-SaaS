@@ -115,7 +115,10 @@ public sealed class SaleQueryService
                     SellingModes.ToCode(l.SellingModeSnapshot),
                     l.UnitPrice,
                     l.Quantity,
-                    l.LineTotal))
+                    l.LineTotal,
+                    l.GrossLineTotal,
+                    l.LineDiscountAmount,
+                    l.SaleDiscountAllocatedAmount))
                 .ToList(),
             sale.CustomerId?.Value,
             sale.LinkedCreditEntryId?.Value,
@@ -126,7 +129,11 @@ public sealed class SaleQueryService
             BuyerOrganizationId: sale.BuyerParty.BuyerOrganizationId,
             BuyerPublicOrganizationId: sale.BuyerParty.BuyerPublicOrganizationId,
             DocumentKind: SalesDocumentWording.TransactionSummary,
-            BranchId: sale.BranchId?.Value);
+            BranchId: sale.BranchId?.Value,
+            GrossSubtotal: sale.GrossSubtotal,
+            LineDiscountTotal: sale.LineDiscountTotal,
+            SaleDiscountTotal: sale.SaleDiscountTotal,
+            DiscountTotal: sale.DiscountTotal);
 
     private async Task<PosSaleDto> MapEnrichedAsync(Sale sale, CancellationToken cancellationToken)
     {
@@ -297,6 +304,7 @@ public sealed class CheckoutSale
         Guid? buyerOrganizationId = null,
         string? buyerPublicOrganizationId = null,
         Guid? branchId = null,
+        IReadOnlyList<CommercialDiscountIntentRequest>? discounts = null,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
@@ -445,182 +453,28 @@ public sealed class CheckoutSale
                 }
             }
 
-            if (lines is null || lines.Count == 0)
-            {
-                return ApplicationResult<Sale>.Failure(
-                    DomainErrorCodes.SaleRequiresAtLeastOneLine,
-                    "A sale must contain at least one line.");
-            }
-
-            var productIds = lines
-                .Where(l => l is not null)
-                .Select(l => CatalogProductId.From(l.ProductId))
-                .Distinct()
-                .ToList();
-            var products = await _products
-                .ListByIdsAsync(orgId, productIds, cancellationToken)
+            var resolved = await ResolveDraftsAsync(
+                    orgId,
+                    lines,
+                    clientSaleId,
+                    discounts,
+                    cancellationToken)
                 .ConfigureAwait(false);
-            var byId = products.ToDictionary(p => p.Id.Value);
-
-            var drafts = new List<SaleLineDraft>();
-            var usesTrustedSnapshots = CheckoutSaleLineSnapshots.RequestUsesTrustedSnapshots(lines);
-            if (usesTrustedSnapshots
-                && (clientSaleId is null || clientSaleId == Guid.Empty))
+            if (!resolved.IsSuccess)
             {
-                return ApplicationResult<Sale>.Failure(
-                    ApplicationErrorCodes.SaleSnapshotInvalid,
-                    "Trusted sale line snapshots require a client SaleId (offline sync). Online carts must omit snapshot fields.");
+                return ApplicationResult<Sale>.Failure(resolved.ErrorCode!, resolved.ErrorMessage!);
             }
 
-            var unitIds = lines
-                .Where(l => l?.SellingUnitId is not null)
-                .Select(l => ProductUnitId.From(l!.SellingUnitId!.Value))
-                .Distinct()
-                .ToList();
-            var unitsById = new Dictionary<Guid, CatalogProductUnit>();
-            foreach (var unitId in unitIds)
+            var drafts = resolved.Value!.Drafts;
+            var byId = resolved.Value!.ProductsById;
+
+            var intentsResult = TryParseIntents(discounts);
+            if (!intentsResult.IsSuccess)
             {
-                var unit = await _units.GetByIdAsync(orgId, unitId, cancellationToken).ConfigureAwait(false);
-                if (unit is not null)
-                {
-                    unitsById[unit.Id.Value] = unit;
-                }
+                return ApplicationResult<Sale>.Failure(intentsResult.ErrorCode!, intentsResult.ErrorMessage!);
             }
 
-            if (usesTrustedSnapshots)
-            {
-                foreach (var line in lines)
-                {
-                    if (line is null)
-                    {
-                        continue;
-                    }
-
-                    if (!byId.TryGetValue(line.ProductId, out var product))
-                    {
-                        return ApplicationResult<Sale>.Failure(
-                            ApplicationErrorCodes.SaleProductNotFound,
-                            "One or more products in the cart were not found in this organization.");
-                    }
-
-                    if (product.Status != CatalogProductStatus.Active)
-                    {
-                        return ApplicationResult<Sale>.Failure(
-                            ApplicationErrorCodes.SaleProductNotActive,
-                            $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
-                    }
-
-                    CatalogProductUnit? sellingUnit = null;
-                    if (line.SellingUnitId is not null)
-                    {
-                        unitsById.TryGetValue(line.SellingUnitId.Value, out sellingUnit);
-                    }
-
-                    var snapshotDraft = CheckoutSaleLineSnapshots.TryCreateDraftFromSnapshot(line, product, sellingUnit);
-                    if (!snapshotDraft.IsSuccess)
-                    {
-                        return ApplicationResult<Sale>.Failure(
-                            snapshotDraft.ErrorCode!,
-                            snapshotDraft.ErrorMessage!);
-                    }
-
-                    drafts.Add(snapshotDraft.Value!);
-                }
-
-                if (drafts.Count == 0)
-                {
-                    return ApplicationResult<Sale>.Failure(
-                        DomainErrorCodes.SaleRequiresAtLeastOneLine,
-                        "A sale must contain at least one line.");
-                }
-            }
-            else
-            {
-                var usesUnits = lines.Any(l => l?.SellingUnitId is not null || l?.EnteredQuantity is not null);
-                if (usesUnits)
-                {
-                    foreach (var line in lines)
-                    {
-                        if (line is null)
-                        {
-                            continue;
-                        }
-
-                        if (!byId.TryGetValue(line.ProductId, out var product))
-                        {
-                            return ApplicationResult<Sale>.Failure(
-                                ApplicationErrorCodes.SaleProductNotFound,
-                                "One or more products in the cart were not found in this organization.");
-                        }
-
-                        if (product.Status != CatalogProductStatus.Active)
-                        {
-                            return ApplicationResult<Sale>.Failure(
-                                ApplicationErrorCodes.SaleProductNotActive,
-                                $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
-                        }
-
-                        CatalogProductUnit? sellingUnit = null;
-                        if (line.SellingUnitId is not null)
-                        {
-                            unitsById.TryGetValue(line.SellingUnitId.Value, out sellingUnit);
-                        }
-
-                        var onlineDraft = CheckoutSaleLineSnapshots.TryCreateOnlineDraft(line, product, sellingUnit);
-                        if (!onlineDraft.IsSuccess)
-                        {
-                            return ApplicationResult<Sale>.Failure(onlineDraft.ErrorCode!, onlineDraft.ErrorMessage!);
-                        }
-
-                        drafts.Add(onlineDraft.Value!);
-                    }
-                }
-                else
-                {
-                    var requested = CombineRequestedQuantities(lines);
-                    if (requested.Count == 0)
-                    {
-                        return ApplicationResult<Sale>.Failure(
-                            DomainErrorCodes.SaleRequiresAtLeastOneLine,
-                            "A sale must contain at least one line.");
-                    }
-
-                    drafts = new List<SaleLineDraft>(requested.Count);
-                    foreach (var (productId, quantity) in requested)
-                    {
-                        if (!byId.TryGetValue(productId, out var product))
-                        {
-                            return ApplicationResult<Sale>.Failure(
-                                ApplicationErrorCodes.SaleProductNotFound,
-                                "One or more products in the cart were not found in this organization.");
-                        }
-
-                        if (product.Status != CatalogProductStatus.Active)
-                        {
-                            return ApplicationResult<Sale>.Failure(
-                                ApplicationErrorCodes.SaleProductNotActive,
-                                $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
-                        }
-
-                        drafts.Add(new SaleLineDraft(
-                            product.Id,
-                            product.Name,
-                            product.Sku,
-                            product.Barcode,
-                            product.UnitOfMeasure,
-                            product.SellingPrice,
-                            quantity,
-                            product.SellingMode));
-                    }
-                }
-
-                if (drafts.Count == 0)
-                {
-                    return ApplicationResult<Sale>.Failure(
-                        DomainErrorCodes.SaleRequiresAtLeastOneLine,
-                        "A sale must contain at least one line.");
-                }
-            }
+            var intents = intentsResult.Value!;
 
             var utcNow = _clock.UtcNow;
             var capturedCustomerId = linkedCustomerId;
@@ -629,8 +483,9 @@ public sealed class CheckoutSale
             var capturedActorId = actorId;
             var productsById = byId;
 
-            var previewSubtotal = SaleMoney.RoundMoney(
-                drafts.Sum(d => SaleMoney.RoundMoney(d.UnitPrice * (d.EnteredQuantity ?? d.Quantity))));
+            // Tax must be computed from the NET (post-discount) subtotal, so the discount math runs
+            // first. Sale.Checkout independently recomputes the same numbers from the same intents.
+            var discountPreview = Sale.QuoteCommercialDiscounts(orgId, drafts, intents);
 
             decimal taxAmount = 0;
             TaxPricingMode? taxPricingMode = null;
@@ -644,7 +499,7 @@ public sealed class CheckoutSale
             {
                 taxPricingMode = setup!.TaxPricingMode;
                 taxAmount = OperationalSetupTaxCalculator.ComputeTaxAmount(
-                    previewSubtotal,
+                    discountPreview.NetSubtotal,
                     setup.TaxRatePercent,
                     setup.TaxPricingMode);
             }
@@ -673,7 +528,8 @@ public sealed class CheckoutSale
                         capturedTaxAmount,
                         capturedTaxPricingMode,
                         resolvedBuyerParty,
-                        branchId is Guid saleBranch ? PosBranchId.From(saleBranch) : null),
+                        branchId is Guid saleBranch ? PosBranchId.From(saleBranch) : null,
+                        intents),
                     async (createdSale, ct) =>
                     {
                         // Electronic Card/GCash sales await payment — reserve stock until Paid/Released.
@@ -740,6 +596,347 @@ public sealed class CheckoutSale
             return ApplicationResult<Sale>.Failure(ex.ErrorCode, ex.Message);
         }
     }
+
+    /// <summary>
+    /// Prices a cart and previews commercial discounts and tax without recording anything: no sale,
+    /// no sale number, no stock movement, no credit entry. Checkout revalidates independently.
+    /// </summary>
+    public async Task<ApplicationResult<PosSaleQuoteDto>> QuoteAsync(
+        Guid organizationId,
+        IReadOnlyList<CheckoutSaleLineRequest>? lines,
+        IReadOnlyList<CommercialDiscountIntentRequest>? discounts = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var orgId = PosOrganizationId.From(organizationId);
+
+            var resolved = await ResolveDraftsAsync(orgId, lines, clientSaleId: null, discounts, cancellationToken)
+                .ConfigureAwait(false);
+            if (!resolved.IsSuccess)
+            {
+                return ApplicationResult<PosSaleQuoteDto>.Failure(resolved.ErrorCode!, resolved.ErrorMessage!);
+            }
+
+            var intentsResult = TryParseIntents(discounts);
+            if (!intentsResult.IsSuccess)
+            {
+                return ApplicationResult<PosSaleQuoteDto>.Failure(
+                    intentsResult.ErrorCode!,
+                    intentsResult.ErrorMessage!);
+            }
+
+            var drafts = resolved.Value!.Drafts;
+            var result = Sale.QuoteCommercialDiscounts(orgId, drafts, intentsResult.Value);
+
+            decimal taxAmount = 0;
+            TaxPricingMode? taxPricingMode = null;
+            var setup = await _operationalSetups
+                .GetByOrganizationIdAsync(orgId, cancellationToken)
+                .ConfigureAwait(false);
+            var taxConfigurationEnabled = await _taxConfiguration
+                .IsTaxConfigurationEnabledAsync(organizationId, cancellationToken)
+                .ConfigureAwait(false);
+            if (OperationalSetupTaxCalculator.ShouldApplyConfiguredTax(taxConfigurationEnabled, setup))
+            {
+                taxPricingMode = setup!.TaxPricingMode;
+                taxAmount = OperationalSetupTaxCalculator.ComputeTaxAmount(
+                    result.NetSubtotal,
+                    setup.TaxRatePercent,
+                    setup.TaxPricingMode);
+            }
+
+            var total = taxPricingMode == TaxPricingMode.TaxExclusive
+                ? SaleMoney.RoundMoney(result.NetSubtotal + taxAmount)
+                : result.NetSubtotal;
+
+            var quoteLines = result.Lines
+                .OrderBy(l => l.LineNumber)
+                .Select(l =>
+                {
+                    var draft = drafts[l.LineNumber - 1];
+                    return new PosSaleQuoteLineDto(
+                        l.LineNumber,
+                        draft.ProductId.Value,
+                        draft.NameSnapshot,
+                        UnitOfMeasures.ToCode(draft.UnitOfMeasureSnapshot),
+                        SellingModes.ToCode(draft.SellingModeSnapshot),
+                        draft.UnitPrice,
+                        draft.EnteredQuantity ?? draft.Quantity,
+                        l.GrossLineTotal,
+                        l.LineDiscountAmount,
+                        l.SaleDiscountAllocatedAmount,
+                        l.NetLineTotal);
+                })
+                .ToList();
+
+            return ApplicationResult<PosSaleQuoteDto>.Success(new PosSaleQuoteDto(
+                result.GrossSubtotal,
+                result.LineDiscountTotal,
+                result.SaleDiscountTotal,
+                result.DiscountTotal,
+                result.NetSubtotal,
+                taxAmount,
+                total,
+                taxPricingMode?.ToString(),
+                quoteLines,
+                result.Adjustments
+                    .Select(a => new PosSaleQuoteDiscountDto(
+                        SaleCommercialDiscountRules.ToCode(a.Scope),
+                        SaleCommercialDiscountRules.ToCode(a.Method),
+                        a.RequestedValue,
+                        a.CalculatedAmount,
+                        a.Reason,
+                        a.LineNumber))
+                    .ToList()));
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<PosSaleQuoteDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Translates client discount intents into domain intents. Only scope/method/value/reason are
+    /// read; any amount the client believes applies is ignored.
+    /// </summary>
+    private static ApplicationResult<IReadOnlyList<CommercialDiscountIntent>?> TryParseIntents(
+        IReadOnlyList<CommercialDiscountIntentRequest>? discounts)
+    {
+        if (discounts is null || discounts.Count == 0)
+        {
+            return ApplicationResult<IReadOnlyList<CommercialDiscountIntent>?>.Success(null);
+        }
+
+        var intents = new List<CommercialDiscountIntent>(discounts.Count);
+        foreach (var requested in discounts)
+        {
+            if (requested is null)
+            {
+                return ApplicationResult<IReadOnlyList<CommercialDiscountIntent>?>.Failure(
+                    DomainErrorCodes.SaleDiscountInvalidScope,
+                    "A commercial discount entry was empty.");
+            }
+
+            try
+            {
+                intents.Add(new CommercialDiscountIntent(
+                    SaleCommercialDiscountRules.ParseScope(requested.Scope),
+                    SaleCommercialDiscountRules.ParseMethod(requested.Method),
+                    requested.Value,
+                    requested.Reason,
+                    requested.ProductId is Guid productId && productId != Guid.Empty
+                        ? CatalogProductId.From(productId)
+                        : null,
+                    requested.LineNumber));
+            }
+            catch (DomainException ex)
+            {
+                return ApplicationResult<IReadOnlyList<CommercialDiscountIntent>?>.Failure(
+                    ex.ErrorCode,
+                    ex.Message);
+            }
+        }
+
+        return ApplicationResult<IReadOnlyList<CommercialDiscountIntent>?>.Success(intents);
+    }
+
+    private async Task<ApplicationResult<ResolvedCheckoutDrafts>> ResolveDraftsAsync(
+        PosOrganizationId orgId,
+        IReadOnlyList<CheckoutSaleLineRequest>? lines,
+        Guid? clientSaleId,
+        IReadOnlyList<CommercialDiscountIntentRequest>? discounts,
+        CancellationToken cancellationToken)
+    {
+        if (lines is null || lines.Count == 0)
+        {
+            return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                DomainErrorCodes.SaleRequiresAtLeastOneLine,
+                "A sale must contain at least one line.");
+        }
+
+        var productIds = lines
+            .Where(l => l is not null)
+            .Select(l => CatalogProductId.From(l.ProductId))
+            .Distinct()
+            .ToList();
+        var products = await _products
+            .ListByIdsAsync(orgId, productIds, cancellationToken)
+            .ConfigureAwait(false);
+        var byId = products.ToDictionary(p => p.Id.Value);
+
+        var drafts = new List<SaleLineDraft>();
+        var usesTrustedSnapshots = CheckoutSaleLineSnapshots.RequestUsesTrustedSnapshots(lines);
+        if (usesTrustedSnapshots
+            && (clientSaleId is null || clientSaleId == Guid.Empty))
+        {
+            return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                ApplicationErrorCodes.SaleSnapshotInvalid,
+                "Trusted sale line snapshots require a client SaleId (offline sync). Online carts must omit snapshot fields.");
+        }
+
+        // Fail closed: an offline snapshot payload arrives with client-computed line totals that were
+        // produced without any discount math, so its arithmetic and a discount request cannot both be
+        // honoured. Legacy offline sync without discounts keeps working unchanged.
+        if (usesTrustedSnapshots && discounts is { Count: > 0 })
+        {
+            return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                ApplicationErrorCodes.SaleDiscountOfflineNotSupported,
+                "Commercial discounts cannot be applied to an offline sale snapshot. Record the sale online.");
+        }
+
+        var unitIds = lines
+            .Where(l => l?.SellingUnitId is not null)
+            .Select(l => ProductUnitId.From(l!.SellingUnitId!.Value))
+            .Distinct()
+            .ToList();
+        var unitsById = new Dictionary<Guid, CatalogProductUnit>();
+        foreach (var unitId in unitIds)
+        {
+            var unit = await _units.GetByIdAsync(orgId, unitId, cancellationToken).ConfigureAwait(false);
+            if (unit is not null)
+            {
+                unitsById[unit.Id.Value] = unit;
+            }
+        }
+
+        if (usesTrustedSnapshots)
+        {
+            foreach (var line in lines)
+            {
+                if (line is null)
+                {
+                    continue;
+                }
+
+                if (!byId.TryGetValue(line.ProductId, out var product))
+                {
+                    return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                        ApplicationErrorCodes.SaleProductNotFound,
+                        "One or more products in the cart were not found in this organization.");
+                }
+
+                if (product.Status != CatalogProductStatus.Active)
+                {
+                    return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                        ApplicationErrorCodes.SaleProductNotActive,
+                        $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
+                }
+
+                CatalogProductUnit? sellingUnit = null;
+                if (line.SellingUnitId is not null)
+                {
+                    unitsById.TryGetValue(line.SellingUnitId.Value, out sellingUnit);
+                }
+
+                var snapshotDraft = CheckoutSaleLineSnapshots.TryCreateDraftFromSnapshot(line, product, sellingUnit);
+                if (!snapshotDraft.IsSuccess)
+                {
+                    return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                        snapshotDraft.ErrorCode!,
+                        snapshotDraft.ErrorMessage!);
+                }
+
+                drafts.Add(snapshotDraft.Value!);
+            }
+        }
+        else
+        {
+            var usesUnits = lines.Any(l => l?.SellingUnitId is not null || l?.EnteredQuantity is not null);
+            if (usesUnits)
+            {
+                foreach (var line in lines)
+                {
+                    if (line is null)
+                    {
+                        continue;
+                    }
+
+                    if (!byId.TryGetValue(line.ProductId, out var product))
+                    {
+                        return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                            ApplicationErrorCodes.SaleProductNotFound,
+                            "One or more products in the cart were not found in this organization.");
+                    }
+
+                    if (product.Status != CatalogProductStatus.Active)
+                    {
+                        return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                            ApplicationErrorCodes.SaleProductNotActive,
+                            $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
+                    }
+
+                    CatalogProductUnit? sellingUnit = null;
+                    if (line.SellingUnitId is not null)
+                    {
+                        unitsById.TryGetValue(line.SellingUnitId.Value, out sellingUnit);
+                    }
+
+                    var onlineDraft = CheckoutSaleLineSnapshots.TryCreateOnlineDraft(line, product, sellingUnit);
+                    if (!onlineDraft.IsSuccess)
+                    {
+                        return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                            onlineDraft.ErrorCode!,
+                            onlineDraft.ErrorMessage!);
+                    }
+
+                    drafts.Add(onlineDraft.Value!);
+                }
+            }
+            else
+            {
+                var requested = CombineRequestedQuantities(lines);
+                if (requested.Count == 0)
+                {
+                    return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                        DomainErrorCodes.SaleRequiresAtLeastOneLine,
+                        "A sale must contain at least one line.");
+                }
+
+                drafts = new List<SaleLineDraft>(requested.Count);
+                foreach (var (productId, quantity) in requested)
+                {
+                    if (!byId.TryGetValue(productId, out var product))
+                    {
+                        return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                            ApplicationErrorCodes.SaleProductNotFound,
+                            "One or more products in the cart were not found in this organization.");
+                    }
+
+                    if (product.Status != CatalogProductStatus.Active)
+                    {
+                        return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                            ApplicationErrorCodes.SaleProductNotActive,
+                            $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
+                    }
+
+                    drafts.Add(new SaleLineDraft(
+                        product.Id,
+                        product.Name,
+                        product.Sku,
+                        product.Barcode,
+                        product.UnitOfMeasure,
+                        product.SellingPrice,
+                        quantity,
+                        product.SellingMode));
+                }
+            }
+        }
+
+        if (drafts.Count == 0)
+        {
+            return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                DomainErrorCodes.SaleRequiresAtLeastOneLine,
+                "A sale must contain at least one line.");
+        }
+
+        return ApplicationResult<ResolvedCheckoutDrafts>.Success(new ResolvedCheckoutDrafts(drafts, byId));
+    }
+
+    /// <summary>Server-priced checkout lines plus the products they were priced from.</summary>
+    private sealed record ResolvedCheckoutDrafts(
+        List<SaleLineDraft> Drafts,
+        Dictionary<Guid, CatalogProduct> ProductsById);
 
     /// <summary>
     /// Folds repeated scans of the same product into a single line by summing quantities, matching

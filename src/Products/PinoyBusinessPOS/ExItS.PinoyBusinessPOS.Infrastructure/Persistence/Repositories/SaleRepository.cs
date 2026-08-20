@@ -38,8 +38,7 @@ internal sealed class SaleRepository : ISaleRepository
             return null;
         }
 
-        var lines = await LoadLinesAsync([record.Id], organizationId, cancellationToken).ConfigureAwait(false);
-        return SaleEntityMapper.ToDomain(record, lines.TryGetValue(record.Id, out var found) ? found : []);
+        return await ToDomainAsync(record, organizationId, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<Sale?> FindBySaleNumberAsync(
@@ -58,8 +57,22 @@ internal sealed class SaleRepository : ISaleRepository
             return null;
         }
 
+        return await ToDomainAsync(record, organizationId, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<Sale> ToDomainAsync(
+        SaleRecord record,
+        PosOrganizationId organizationId,
+        CancellationToken cancellationToken)
+    {
         var lines = await LoadLinesAsync([record.Id], organizationId, cancellationToken).ConfigureAwait(false);
-        return SaleEntityMapper.ToDomain(record, lines.TryGetValue(record.Id, out var found) ? found : []);
+        var discounts = await LoadDiscountsAsync([record.Id], organizationId, cancellationToken)
+            .ConfigureAwait(false);
+
+        return SaleEntityMapper.ToDomain(
+            record,
+            lines.TryGetValue(record.Id, out var foundLines) ? foundLines : [],
+            discounts.TryGetValue(record.Id, out var foundDiscounts) ? foundDiscounts : []);
     }
 
     public async Task<(IReadOnlyList<Sale> Items, int TotalCount)> ListAsync(
@@ -118,14 +131,16 @@ internal sealed class SaleRepository : ISaleRepository
             return ([], total);
         }
 
-        var lines = await LoadLinesAsync(
-                records.Select(r => r.Id).ToList(),
-                organizationId,
-                cancellationToken)
+        var saleIds = records.Select(r => r.Id).ToList();
+        var lines = await LoadLinesAsync(saleIds, organizationId, cancellationToken).ConfigureAwait(false);
+        var discounts = await LoadDiscountsAsync(saleIds, organizationId, cancellationToken)
             .ConfigureAwait(false);
 
         var sales = records
-            .Select(r => SaleEntityMapper.ToDomain(r, lines.TryGetValue(r.Id, out var found) ? found : []))
+            .Select(r => SaleEntityMapper.ToDomain(
+                r,
+                lines.TryGetValue(r.Id, out var foundLines) ? foundLines : [],
+                discounts.TryGetValue(r.Id, out var foundDiscounts) ? foundDiscounts : []))
             .ToList();
         return (sales, total);
     }
@@ -186,14 +201,16 @@ internal sealed class SaleRepository : ISaleRepository
             return [];
         }
 
-        var lines = await LoadLinesAsync(
-                records.Select(r => r.Id).ToList(),
-                organizationId,
-                cancellationToken)
+        var reportSaleIds = records.Select(r => r.Id).ToList();
+        var lines = await LoadLinesAsync(reportSaleIds, organizationId, cancellationToken).ConfigureAwait(false);
+        var discounts = await LoadDiscountsAsync(reportSaleIds, organizationId, cancellationToken)
             .ConfigureAwait(false);
 
         return records
-            .Select(r => SaleEntityMapper.ToDomain(r, lines.TryGetValue(r.Id, out var found) ? found : []))
+            .Select(r => SaleEntityMapper.ToDomain(
+                r,
+                lines.TryGetValue(r.Id, out var foundLines) ? foundLines : [],
+                discounts.TryGetValue(r.Id, out var foundDiscounts) ? foundDiscounts : []))
             .ToList();
     }
 
@@ -414,6 +431,11 @@ internal sealed class SaleRepository : ISaleRepository
                 _db.SaleLines.Add(SaleEntityMapper.ToRecord(line));
             }
 
+            foreach (var adjustment in sale.CommercialDiscounts)
+            {
+                _db.SaleCommercialDiscountAdjustments.Add(SaleEntityMapper.ToRecord(adjustment));
+            }
+
             if (afterSaleCreated is not null)
             {
                 await afterSaleCreated(sale, cancellationToken).ConfigureAwait(false);
@@ -518,6 +540,26 @@ internal sealed class SaleRepository : ISaleRepository
 
             return (long)hash;
         }
+    }
+
+    /// <summary>
+    /// Loads commercial discount audit rows for the given sales in one batched query. Undiscounted
+    /// and legacy sales simply have no rows, so the aggregate rehydrates with an empty collection.
+    /// </summary>
+    private async Task<Dictionary<Guid, List<SaleCommercialDiscountAdjustmentRecord>>> LoadDiscountsAsync(
+        IReadOnlyCollection<Guid> saleIds,
+        PosOrganizationId organizationId,
+        CancellationToken cancellationToken)
+    {
+        var records = await _db.SaleCommercialDiscountAdjustments.AsNoTracking()
+            .Where(d => d.OrganizationId == organizationId.Value && saleIds.Contains(d.SaleId))
+            .OrderBy(d => d.RecordedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return records
+            .GroupBy(d => d.SaleId)
+            .ToDictionary(g => g.Key, g => g.ToList());
     }
 
     private async Task<Dictionary<Guid, List<SaleLineRecord>>> LoadLinesAsync(
