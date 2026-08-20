@@ -33,5 +33,7 @@ boundaries, and records a dedicated planning worktree (`docs/platform-admin-web-
 - `Reports/PLATFORM-WEB-DOC-10-final-closeout.md` — final closeout report (DOC-10)
 - `Reports/PLATFORM-WEB-DOC-FINAL-AMEND-01.md` — UX/release amendment report (AMEND-01)
 - `implementation-status.md` — implementation gates and package status
+- `pweb-21-30-continuation-plan.md` — authoritative continuation plan for PWEB-IMPL-21..30 (planning only)
+- `Packages/PWEB-IMPL-21-*.md` … `Packages/PWEB-IMPL-30-*.md` — per-package specifications (not implemented)
 - `Reports/PWEB-IMPL-04C-parallel-react-local-validation-container.md` — parallel React local-validation container
 
