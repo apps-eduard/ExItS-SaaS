@@ -16,6 +16,14 @@
 
 `b92c2a14fd1ad08411b843ff5c9295bd046f6df6`
 
+## Docs SHA
+
+`5c10d669e681fe9e5e6242ebc6467715ff3dc0df`
+
+## Final HEAD
+
+`5c10d669e681fe9e5e6242ebc6467715ff3dc0df`
+
 Branch: `feat/pos-react-client`
 
 ## Discovery
