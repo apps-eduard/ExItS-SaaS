@@ -8,9 +8,9 @@ Baseline origin/main SHA: `5a9be9417b7a2217227ae93e9280102992861615`
 
 Documentation: `FINAL APPROVED` (DOC-00 … DOC-08; AMEND-01, AMEND-02, AMEND-03)
 
-React implementation: `AUTHORIZED RECOVERY THROUGH POS-REACT-IMPL-05 ON feat/pos-react-client ONLY (WP03–WP05); WP06 checkout NOT in this recovery)`
+React implementation: `RECOVERY COMPLETE THROUGH POS-REACT-IMPL-05 ON feat/pos-react-client; WP06 CHECKOUT REQUIRES SEPARATE AUTHORIZATION`
 
-PWA implementation: `PHASE A STATIC SHELL + BROWSER SESSION ON feat/pos-react-client; production rollout NOT AUTHORIZED`
+PWA implementation: `PHASE A STATIC SHELL + BROWSER SESSION + CATALOG/CART ON feat/pos-react-client; production rollout NOT AUTHORIZED`
 
 Capacitor implementation: `NOT AUTHORIZED`
 
@@ -26,15 +26,15 @@ Existing Personal Web status: `Retained / Unmodified`
 
 Existing .NET backends (Platform API + POS API + PostgreSQL): `Retained / Unmodified`
 
-Future React / PWA / Capacitor status: `Gate C scaffold + Gate D Phase A PWA + browser session/workspace on feat/pos-react-client; not on main`
+Future React / PWA / Capacitor status: `Gate C–E partial (scaffold, PWA, session, sell floor, catalog/cart) on feat/pos-react-client; cash checkout not started; not on main`
 
-React implementation presence: `Present` (foundation + static PWA shell + browser session/workspace)
+React implementation presence: `Present` (foundation + static PWA + browser session/workspace + sell floor + catalog/session cart)
 
 Capacitor implementation presence: `Absent`
 
 PWA production presence: `Absent`
 
-Queue state: `STOPPED AFTER MOBILE-REACT-DOC-MERGE-01` (planning baseline)
+Queue state: `HARD STOP AFTER WP06 READINESS AUDIT` (IMPL-06 not started)
 
 Implementation-readiness documentation queue: `STOPPED AFTER POS-REACT-READINESS-05`
 
@@ -52,9 +52,9 @@ Gate D browser auth / workspace (`POS-REACT-IMPL-03`): `COMPLETE` on `feat/pos-r
 
 Gate D sell-floor shell (`POS-REACT-IMPL-04`): `COMPLETE` on `feat/pos-react-client`
 
-Gate D catalog search + session cart (`POS-REACT-IMPL-05`): `COMPLETE in worktree (uncommitted)` on `feat/pos-react-client`
+Gate D catalog search + session cart (`POS-REACT-IMPL-05`): `COMPLETE` on `feat/pos-react-client`
 
-Gate D browser auth / workspace: `PARTIAL` — session + CSRF + workspace + sell floor + catalog/cart complete; cash checkout follows IMPL-06
+Gate E cash checkout (`POS-REACT-IMPL-06`): `NOT STARTED` — `POS_REACT_WP06_BASELINE_READY=YES` (audit only)
 
 MOBILE-D-060: `OPEN`
 
@@ -91,15 +91,16 @@ TYPED_CLIENT_GENERATION_CONTRACT_MISSING: `OPEN` (hand-typed Platform DTOs + val
 | POS-REACT-IMPL-02 | Complete on `feat/pos-react-client` | PWA static shell (Phase A); report [POS-REACT-IMPL-02-pwa-static-shell.md](Reports/POS-REACT-IMPL-02-pwa-static-shell.md) |
 | POS-REACT-IMPL-03 | Complete on `feat/pos-react-client` | Browser session + workspace resolver; report [POS-REACT-IMPL-03-browser-session-workspace.md](Reports/POS-REACT-IMPL-03-browser-session-workspace.md) |
 | POS-REACT-IMPL-04 | Complete on `feat/pos-react-client` | POS sell-floor shell; report [POS-REACT-IMPL-04-sell-floor-shell.md](Reports/POS-REACT-IMPL-04-sell-floor-shell.md) |
-| POS-REACT-IMPL-05 | Complete in worktree (uncommitted) | Catalog search + session cart; report [POS-REACT-IMPL-05-catalog-session-cart.md](Reports/POS-REACT-IMPL-05-catalog-session-cart.md) |
+| POS-REACT-IMPL-05 | Complete on `feat/pos-react-client` | Catalog search + session cart; report [POS-REACT-IMPL-05-catalog-session-cart.md](Reports/POS-REACT-IMPL-05-catalog-session-cart.md) |
+| POS-REACT-WP06 readiness | Audit only — `POS_REACT_WP06_BASELINE_READY=YES` | [POS-REACT-WP06-baseline-readiness-audit.md](Reports/POS-REACT-WP06-baseline-readiness-audit.md); IMPL-06 **not** started |
 
 ## Authorization gates (locked)
 
-The table below remains the `main` planning-baseline lock for Capacitor / MAUI retirement / merge. Product Owner recovery command authorized **POS-REACT-IMPL-03 → 05** on `feat/pos-react-client` only (WP06 checkout excluded until readiness gate). Do not merge to `main`.
+The table below remains the `main` planning-baseline lock for Capacitor / MAUI retirement / merge. Recovery delivered **POS-REACT-IMPL-03 → 05** on `feat/pos-react-client`. WP06 checkout requires a **new explicit authorization**. Do not merge to `main`.
 
 | Gate | Status |
 |---|---|
-| React mobile implementation | **PARTIAL** — Gate C–D (scaffold, PWA Phase A, browser session/workspace) on `feat/pos-react-client`; not on `main` |
+| React mobile implementation | **PARTIAL** — Gate C–E partial (through catalog/cart) on `feat/pos-react-client`; cash checkout not started; not on `main` |
 | PWA implementation / production rollout | **NOT AUTHORIZED** for production; Gate D Phase A static shell is complete on `feat/pos-react-client` |
 | Capacitor implementation / production rollout | **NOT AUTHORIZED** |
 | MAUI retirement | **NOT AUTHORIZED** |
