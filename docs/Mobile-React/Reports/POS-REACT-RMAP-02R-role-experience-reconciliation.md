@@ -46,7 +46,7 @@ Legacy `Admin` / `InventoryStaff` / `ReportingUser`: preserved for compatibility
 
 ## Reconciliation note
 
-RMAP-01b and RMAP-02 remain PASS **subject to this RMAP-02R evidence**. Prior Cashier-mocked invite success was incorrect under the locked Product Owner decision and is repaired here.
+RMAP-01b and RMAP-02 remain **PASS** after RMAP-02R. Prior Cashier-mocked invite success was incorrect under the locked Product Owner decision and is repaired here. Historical package reports retain their original evidence with RMAP-02R notes appended.
 
 ## Next
 

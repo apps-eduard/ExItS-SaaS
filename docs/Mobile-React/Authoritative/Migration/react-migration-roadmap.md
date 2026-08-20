@@ -55,7 +55,7 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 ### RMAP-01b — React staff identity parity (desired person-link model)
 | Field | Content |
 |-------|---------|
-| Status | **COMPLETE** — [POS-REACT-RMAP-01b-staff-identity-parity.md](../../Reports/POS-REACT-RMAP-01b-staff-identity-parity.md) |
+| Status | **COMPLETE** — reconciled by RMAP-02R — [POS-REACT-RMAP-01b-staff-identity-parity.md](../../Reports/POS-REACT-RMAP-01b-staff-identity-parity.md) |
 | Objective | React UX for inviting/accepting/staff login under **owner-approved** post-RMAP-B00 contract |
 | Dependencies | **RMAP-B00** (required), RMAP-01, RMAP-00 for UI |
 | Backend | Post-RMAP-B00 contract only |
@@ -69,7 +69,7 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 ### RMAP-02 — Workspace / org / product-access / role guards
 | Field | Content |
 |-------|---------|
-| Status | **COMPLETE** — [POS-REACT-RMAP-02-workspace-authorization.md](../../Reports/POS-REACT-RMAP-02-workspace-authorization.md) (subject to RMAP-02R reconciliation evidence) |
+| Status | **COMPLETE** — reconciled by RMAP-02R — [POS-REACT-RMAP-02-workspace-authorization.md](../../Reports/POS-REACT-RMAP-02-workspace-authorization.md) |
 | Objective | Org context, product access, role homes, CreateSale guard correctness against **post-B00** identity model |
 | Dependencies | RMAP-01, **RMAP-01b**, RMAP-00 if visual polish |
 | Backend | ProductLocalRoleGrant, entitlements; session/org rules from post-B00 contract |
