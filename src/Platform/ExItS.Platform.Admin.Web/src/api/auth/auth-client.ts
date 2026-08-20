@@ -1,4 +1,4 @@
-import { platformRequest } from "@/api/platform-http";
+import { clearPlatformAntiforgeryToken, platformRequest } from "@/api/platform-http";
 import type {
   AuthSession,
   LocalValidationIdentity,
@@ -39,6 +39,7 @@ export function login(
       password: request.password,
     },
     signal,
+    skipAntiforgery: true,
   }).then(omitSessionToken);
 }
 
@@ -54,6 +55,8 @@ export function logout(baseUrl: string, signal?: AbortSignal): Promise<void> {
     method: "POST",
     path: "/api/v1/platform/auth/logout",
     signal,
+  }).finally(() => {
+    clearPlatformAntiforgeryToken();
   });
 }
 

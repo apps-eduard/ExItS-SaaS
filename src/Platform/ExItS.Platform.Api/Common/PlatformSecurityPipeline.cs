@@ -119,7 +119,7 @@ internal static class PlatformSecurityPipeline
 
                 policy.WithOrigins(origins)
                     .AllowAnyHeader()
-                    .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                    .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                     .AllowCredentials();
             });
         });

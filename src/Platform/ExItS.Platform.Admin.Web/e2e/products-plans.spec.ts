@@ -152,7 +152,9 @@ test("authorized plans list is read-only", async ({ page }) => {
   await mockCatalog(page);
   await page.goto("/admin/plans");
   await expect(page.getByRole("heading", { name: "Plans & Pricing", exact: true })).toBeVisible();
-  await expect(page.getByRole("table").getByRole("link", { name: "Starter", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("table").getByRole("link", { name: "Starter", exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: /create/i })).toHaveCount(0);
 });
 

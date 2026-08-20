@@ -358,6 +358,7 @@ describe("application shell", () => {
         const url = String(input);
         if (url.includes("/auth/logout")) {
           expect(init?.method).toBe("POST");
+          expect(new Headers(init?.headers).get("X-XSRF-TOKEN")).toBe("test-antiforgery-token");
           signedOut = true;
           return {
             ok: true,
@@ -365,6 +366,9 @@ describe("application shell", () => {
             json: async () => null,
             text: async () => "",
           } as Response;
+        }
+        if (url.includes("/antiforgery/token")) {
+          return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "test-antiforgery-token" });
         }
         if (url.includes("/auth/me")) {
           if (signedOut) {

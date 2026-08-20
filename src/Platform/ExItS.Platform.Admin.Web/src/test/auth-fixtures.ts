@@ -169,6 +169,9 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
         text: async () => "",
       } as Response;
     }
+    if (url.includes("/api/v1/platform/antiforgery/token")) {
+      return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "test-antiforgery-token" });
+    }
     if (url.includes("/api/v1/platform/auth/me")) {
       return jsonResponse(200, sampleSession);
     }

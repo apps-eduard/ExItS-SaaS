@@ -1,3 +1,5 @@
+import { PlatformAntiforgeryDefaults } from "@/api/platform-antiforgery";
+
 export type PlatformProblemDetails = {
   title?: string;
   status?: number;
@@ -66,12 +68,67 @@ export type PlatformRequestOptions = {
   path: string;
   body?: unknown;
   signal?: AbortSignal;
+  skipAntiforgery?: boolean;
 };
+
+type AntiforgeryBootstrap = {
+  headerName: string;
+  token: string;
+};
+
+let inMemoryAntiforgeryToken: string | null = null;
+let inMemoryAntiforgeryHeaderName: string = PlatformAntiforgeryDefaults.headerName;
+
+function isMutationMethod(method: string): boolean {
+  return method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE";
+}
+
+export function clearPlatformAntiforgeryToken(): void {
+  inMemoryAntiforgeryToken = null;
+}
+
+async function bootstrapAntiforgeryToken(
+  baseUrl: string,
+  signal?: AbortSignal,
+): Promise<AntiforgeryBootstrap> {
+  const response = await fetch(`${baseUrl}${PlatformAntiforgeryDefaults.tokenPath}`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+      "X-Correlation-Id": createCorrelationId(),
+    },
+    signal,
+  });
+
+  if (!response.ok) {
+    let problem: PlatformProblemDetails = { status: response.status };
+    try {
+      problem = { ...problem, ...parseProblem(await response.json()) };
+    } catch {
+      // Non-JSON bootstrap failures still surface as status-only problems.
+    }
+    throw new PlatformApiError(response.status, problem);
+  }
+
+  const payload = (await response.json()) as AntiforgeryBootstrap;
+  inMemoryAntiforgeryHeaderName = payload.headerName || PlatformAntiforgeryDefaults.headerName;
+  inMemoryAntiforgeryToken = payload.token;
+  return payload;
+}
+
+async function ensureAntiforgeryToken(baseUrl: string, signal?: AbortSignal): Promise<void> {
+  if (inMemoryAntiforgeryToken) {
+    return;
+  }
+  await bootstrapAntiforgeryToken(baseUrl, signal);
+}
 
 export async function platformRequest<T>(
   baseUrl: string,
   options: PlatformRequestOptions,
 ): Promise<T> {
+  const method = options.method ?? "GET";
   const requestCorrelationId = createCorrelationId();
   const headers = new Headers({
     Accept: "application/json",
@@ -82,8 +139,15 @@ export async function platformRequest<T>(
     headers.set("Content-Type", "application/json");
   }
 
+  if (isMutationMethod(method) && !options.skipAntiforgery) {
+    await ensureAntiforgeryToken(baseUrl, options.signal);
+    if (inMemoryAntiforgeryToken) {
+      headers.set(inMemoryAntiforgeryHeaderName, inMemoryAntiforgeryToken);
+    }
+  }
+
   const response = await fetch(`${baseUrl}${options.path}`, {
-    method: options.method ?? "GET",
+    method,
     credentials: "include",
     headers,
     body: options.body === undefined ? undefined : JSON.stringify(options.body),

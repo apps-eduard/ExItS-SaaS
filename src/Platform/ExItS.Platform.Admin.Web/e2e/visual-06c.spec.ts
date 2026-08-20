@@ -48,6 +48,11 @@ function paged(items: unknown[] = [], totalCount = items.length) {
 
 async function mockShell(page: Page) {
   let authenticated = true;
+  await page.route("**/api/v1/platform/antiforgery/token", async (route) => {
+    await route.fulfill({
+      json: { headerName: "X-XSRF-TOKEN", token: "e2e-antiforgery-token" },
+    });
+  });
   await page.route("**/api/v1/platform/auth/logout", async (route) => {
     authenticated = false;
     await route.fulfill({ status: 204, body: "" });

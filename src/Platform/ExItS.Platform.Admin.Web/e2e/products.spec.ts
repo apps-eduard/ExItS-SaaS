@@ -77,7 +77,9 @@ test("product catalog mobile and axe", async ({ page }) => {
   await mockProducts(page);
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/admin/products");
-  await expect(page.getByRole("main").getByRole("link", { name: "Future Product X" })).toBeVisible();
+  await expect(
+    page.getByRole("main").getByRole("link", { name: "Future Product X" }),
+  ).toBeVisible();
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );
