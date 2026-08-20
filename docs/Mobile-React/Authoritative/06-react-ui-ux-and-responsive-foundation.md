@@ -74,6 +74,8 @@ Standardize **interaction patterns**, not genericize unrelated business-domain l
 
 Client: `ExItS.PinoyBusinessPOS.Client`
 
+**RMAP-00 foundation:** IMPLEMENTED for the shared primitives listed under EXISTS below. Sell floor is the first reuse proof (`SellFloorPage` / `SellCartPanel` consume `SearchField`, `MoneyDisplay`, `QuantityStepper`, `LoadingSkeleton`, `StickyActionBar`).
+
 ### EXISTS (reuse)
 
 | Component | Path |
@@ -84,29 +86,34 @@ Client: `ExItS.PinoyBusinessPOS.Client`
 | ErrorState | `src/components/exits/ErrorState.tsx` |
 | SegmentedControl | `src/components/ui/segmented-control.tsx` |
 | Button / Input / Card / Dropdown | `src/components/ui/*` |
-| StatusChip (partial StatusPill) | `src/components/exits/StatusChip.tsx` |
+| StatusChip / StatusPill (alias) | `src/components/exits/StatusChip.tsx` |
 | ThemeControl / LanguageControl | `src/components/exits/` |
 | AppTopBar / AccountMenu | `src/components/exits/` |
 | Tokens | `src/styles/globals.css` (`--exits-*`, Tailwind `@theme`) |
+| SearchField | `src/components/exits/SearchField.tsx` |
+| FilterButton / FilterChips / SortButton / ListToolbar | `src/components/exits/ListToolbar.tsx` |
+| EntityCard / ResponsiveEntityList | `src/components/exits/EntityCard.tsx` |
+| MoneyDisplay / QuantityDisplay / QuantityStepper | `src/components/exits/MoneyQuantity.tsx` |
+| MoneyInput / QuantityInput | `src/components/exits/MoneyQuantityInputs.tsx` |
+| LoadingSkeleton / AccessDeniedState / ConflictState / OfflineBanner / FormSection / StickyActionBar | `src/components/exits/FoundationStates.tsx` |
+| BottomSheet / ConfirmationDialog | `src/components/exits/SheetDialog.tsx` |
 
-### PARTIAL (extract/extend in RMAP-00)
+### PARTIAL (domain or prefs-specific; not RMAP-00 blockers)
 
 | Pattern | Current location |
 |---------|------------------|
-| SearchField | Inline in `SellFloorPage.tsx` |
-| FilterChips / category strip | `SellCategoryFilter.tsx` |
-| QuantityStepper | Inline in `SellCartPanel.tsx` |
-| Money formatting | `lib/format-money.ts` (helper only) |
-| LoadingSkeleton | Inline pulse placeholders on sell floor |
-| AccessDeniedState | `SellAccessDeniedPage.tsx` (page, not shared) |
-| OfflineBanner | `ConnectivityNotice.tsx` / `ConnectivityIndicator.tsx` |
-| BottomSheet / StickyActionBar | Sell cart sheet/bar inline |
-| SelectField | `settings-select.tsx` (prefs-oriented) |
-| ProductTile | Inline product buttons on sell floor |
+| SelectField (prefs) | `settings-select.tsx` (prefs-oriented; remains prefs until a shared Select is needed) |
+| ProductTile | Inline product buttons on sell floor (POS-specific) |
+| Sell category strip | `SellCategoryFilter.tsx` (domain strip; shared FilterChips available for list toolbars) |
+| ConnectivityIndicator | `ConnectivityIndicator.tsx` (shell indicator; shared OfflineBanner exists) |
 
-### MISSING (create in RMAP-00 or first consumer WP)
+### DEFERRED-TO-FIRST-CONSUMER
 
-SearchField (shared), FilterButton, SortButton, ListToolbar, EntityCard, ResponsiveEntityList, MoneyDisplay, QuantityDisplay, ConfirmationSheet/Dialog, FormSection, ToggleRow, CurrencyInput/MoneyInput, QuantityInput, Date/DateTime fields, Tabs, KpiCard, MetricStrip, Timeline, NotificationBadge, ConflictState, and remaining checklist items not listed as EXISTS/PARTIAL.
+Date/DateTime fields, Tabs, ToggleRow (settings-select remains prefs until a shared ToggleRow is needed).
+
+### MISSING (later consumer or domain WPs; not RMAP-00)
+
+KpiCard, MetricStrip, Timeline, NotificationBadge, and other domain-specific checklist items not listed as EXISTS / PARTIAL / DEFERRED-TO-FIRST-CONSUMER.
 
 ## Standard ListToolbar pattern
 
@@ -182,4 +189,4 @@ Capture screenshots/evidence into the WP report when practical. Existing Playwri
 
 ## RMAP-00 relationship
 
-[RMAP-00](Migration/react-migration-roadmap.md) establishes/reconciles shared reusable responsive components and interaction standards. Later visual WPs depend on RMAP-00 unless the roadmap explicitly states the package has no UI dependency.
+[RMAP-00](Migration/react-migration-roadmap.md) **COMPLETE** (Master Run 01): shared reusable responsive foundation primitives and interaction standards are in place. Later visual WPs must **reuse** these components unless the roadmap explicitly states the package has no UI dependency. Evidence: `shared-ui-foundation.test.tsx`; sell-floor reuse proof.

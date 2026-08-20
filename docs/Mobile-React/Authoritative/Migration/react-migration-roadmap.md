@@ -16,7 +16,7 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 ### RMAP-00 — React Shared UI/UX & Responsive Foundation
 | Field | Content |
 |-------|---------|
-| Status | PROPOSED / NOT STARTED |
+| Status | COMPLETE (Master Run 01) |
 | Objective | Inventory, reuse/extend, and fill shared mobile-first / tablet-strong / desktop-capable UI primitives and interaction standards |
 | Why next | Later visual WPs must not invent duplicate search/filter/list/form patterns |
 | Dependencies | None (required before visual list/form WPs; first package in Master Run 01) |
@@ -326,7 +326,7 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 
 ## Already shipped on branch (not re-proposed)
 
-Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, preferences — treat as **starting capital**, not sales parity and not RMAP-00 complete.
+Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, preferences — treat as **starting capital**, not sales parity. **RMAP-00** shared UI foundation is COMPLETE (reuse in later visual WPs).
 
 ## Package count (after DOCS-RECONCILIATION-01)
 
@@ -349,7 +349,7 @@ Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, 
 ## APPROVED PROPOSED MASTER RUN 01
 
 **Name:** Foundation + Catalog/Inventory Baseline
-**Status:** PROPOSED / NOT STARTED — documenting this batch does **not** authorize implementation
+**Status:** IN PROGRESS after RMAP-00 — RMAP-00 COMPLETE; remaining Master Run 01 packages not complete; whole run is **not** claimed complete
 **Stop rule:** After package 10 → HARD STOP for Product Owner + ChatGPT review
 **Do not include:** RMAP-08 (lots/expiry) in Master Run 01
 

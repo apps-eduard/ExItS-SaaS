@@ -12,7 +12,7 @@ Current Contract Status: `CURRENT` | `OWNER_CONFIRMED_CHANGE` | `MIXED` | `UNRES
 | Separate staff PlatformUser per job | P19 CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | N/A | CURRENT (may SUPERSEDE after B00) | Do not ship as final desired | — | Document until B00 | P19 |
 | Start a Business | Personal→Org Owner | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Personal session | Later foundation WP | StartBusinessUseCases |
 | Product access + local roles | Distinct from membership | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_PARTIAL | CURRENT | PARTIAL | Session/org | Harden role guards | ProductLocalRoleGrant |
-| Shared React UI foundation | Mobile-first DoD | N/A | N/A | PROVEN_PARTIAL | OWNER_CONFIRMED (UI std) | PARTIAL | RMAP-00 | Inventory + fill gaps | 06-react-ui-ux doc |
+| Shared React UI foundation | Mobile-first DoD | N/A | N/A | PROVEN_CURRENT (foundation) | OWNER_CONFIRMED (UI std) | PROVEN_CURRENT (foundation) | RMAP-00 COMPLETE | Reuse in later WPs | 06-react-ui-ux doc; shared-ui-foundation.test.tsx |
 | Branch context binding | Required for ops | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | PARTIAL (bind only) | Org | Keep; add admin later | WorkspaceProvider |
 | Branch fulfillment/delivery config | Required for delivery | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Branch, RMAP-00 | After org parity | BranchEdit, Platform APIs |
 | Catalog read (sell) | Needed for sell floor | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_PARTIAL | CURRENT | PARTIAL | Product access | Extend units/weight | pos-catalog-client |
