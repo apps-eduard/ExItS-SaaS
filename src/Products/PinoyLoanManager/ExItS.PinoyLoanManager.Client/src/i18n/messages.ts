@@ -12,6 +12,8 @@ export type MessageKey =
   | "theme.dark"
   | "pwa.updateAvailable"
   | "pwa.refresh"
+  | "connectivity.offlineTitle"
+  | "connectivity.offlineDetail"
   | "session.loading"
   | "auth.signInTitle"
   | "auth.signUpTitle"
@@ -90,6 +92,8 @@ export const en: Record<MessageKey, string> = {
   "theme.dark": "Dark",
   "pwa.updateAvailable": "Update available",
   "pwa.refresh": "Refresh",
+  "connectivity.offlineTitle": "You're offline",
+  "connectivity.offlineDetail": "Reconnect to continue.",
   "session.loading": "Loading",
   "auth.signInTitle": "Sign In",
   "auth.signUpTitle": "Create account",
@@ -173,6 +177,8 @@ export const filPH: Record<MessageKey, string> = {
   "theme.dark": "Dark",
   "pwa.updateAvailable": "May update",
   "pwa.refresh": "I-refresh",
+  "connectivity.offlineTitle": "Wala kang koneksyon",
+  "connectivity.offlineDetail": "Kumonekta ulit para magpatuloy.",
   "session.loading": "Naglo-load",
   "auth.signInTitle": "Mag-sign in",
   "auth.signUpTitle": "Gumawa ng account",
