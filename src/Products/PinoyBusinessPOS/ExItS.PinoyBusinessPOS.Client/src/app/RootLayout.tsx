@@ -1,10 +1,16 @@
 import { Outlet } from "react-router-dom";
+import { ConnectivityHost } from "@/connectivity/ConnectivityHost";
 import { AppShell } from "@/layouts/AppShell";
+import { PwaUpdateHost } from "@/pwa/PwaUpdateHost";
 
 export function RootLayout() {
   return (
-    <AppShell>
-      <Outlet />
-    </AppShell>
+    <>
+      <ConnectivityHost />
+      <PwaUpdateHost />
+      <AppShell>
+        <Outlet />
+      </AppShell>
+    </>
   );
 }

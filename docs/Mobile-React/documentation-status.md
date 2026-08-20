@@ -8,9 +8,9 @@ Baseline origin/main SHA: `5a9be9417b7a2217227ae93e9280102992861615`
 
 Documentation: `FINAL APPROVED` (DOC-00 … DOC-08; AMEND-01, AMEND-02, AMEND-03)
 
-React implementation: `AUTHORIZED FOR POS-REACT-IMPL-01 (AND POS-REACT-IMPL-02 NEXT) ON feat/pos-react-client ONLY`
+React implementation: `AUTHORIZED FOR POS-REACT-IMPL-01 AND POS-REACT-IMPL-02 ON feat/pos-react-client ONLY`
 
-PWA implementation: `AUTHORIZED FOR PHASE A STATIC SHELL (POS-REACT-IMPL-02) ON feat/pos-react-client ONLY; production rollout NOT AUTHORIZED`
+PWA implementation: `PHASE A STATIC SHELL COMPLETE ON feat/pos-react-client; production rollout NOT AUTHORIZED`
 
 Capacitor implementation: `NOT AUTHORIZED`
 
@@ -26,9 +26,9 @@ Existing Personal Web status: `Retained / Unmodified`
 
 Existing .NET backends (Platform API + POS API + PostgreSQL): `Retained / Unmodified`
 
-Future React / PWA / Capacitor status: `Foundation scaffold in progress on feat/pos-react-client; not on main`
+Future React / PWA / Capacitor status: `Gate C scaffold + Gate D Phase A PWA shell on feat/pos-react-client; not on main`
 
-React implementation presence: `Present` (Gate C foundation shell only)
+React implementation presence: `Present` (foundation + static PWA shell)
 
 Capacitor implementation presence: `Absent`
 
@@ -46,7 +46,7 @@ Implementation branch: `feat/pos-react-client` (starts at readiness tip `0954c1d
 
 Gate C scaffold (`POS-REACT-IMPL-01`): `COMPLETE` on `feat/pos-react-client`
 
-Gate D Phase A PWA shell (`POS-REACT-IMPL-02`): `NOT STARTED`
+Gate D Phase A PWA shell (`POS-REACT-IMPL-02`): `COMPLETE` on `feat/pos-react-client`
 
 Gate D full / browser auth: `BLOCKED` pending PWEB-20 compatibility review
 
@@ -54,7 +54,7 @@ MOBILE-D-060: `OPEN`
 
 PWEB20_CSRF_COMPATIBILITY_REVIEW_REQUIRED: `OPEN`
 
-PLM_PWA_PATTERN_REVIEW_REQUIRED: `OPEN`
+PLM_PWA_PATTERN_REVIEW_REQUIRED: `SATISFIED FOR ENGINEERING PATTERNS`
 
 TYPED_CLIENT_GENERATION_CONTRACT_MISSING: `OPEN`
 
@@ -82,6 +82,7 @@ TYPED_CLIENT_GENERATION_CONTRACT_MISSING: `OPEN`
 | POS-REACT-READINESS-04 | Complete | PWA / offline / device migration sequence |
 | POS-REACT-READINESS-05 | Complete | Master plan + open decisions; implementation still unauthorized |
 | POS-REACT-IMPL-01 | Complete on `feat/pos-react-client` | React client scaffold; report [POS-REACT-IMPL-01-react-client-scaffold.md](Reports/POS-REACT-IMPL-01-react-client-scaffold.md) |
+| POS-REACT-IMPL-02 | Complete on `feat/pos-react-client` | PWA static shell (Phase A); report [POS-REACT-IMPL-02-pwa-static-shell.md](Reports/POS-REACT-IMPL-02-pwa-static-shell.md) |
 
 ## Authorization gates (locked)
 
@@ -90,7 +91,7 @@ The table below remains the `main` planning-baseline lock. Product Owner authori
 | Gate | Status |
 |---|---|
 | React mobile implementation | **PARTIAL** — Gate C scaffold on `feat/pos-react-client`; not on `main` |
-| PWA implementation / production rollout | **NOT AUTHORIZED** for production; Phase A static shell is the next authorized package |
+| PWA implementation / production rollout | **NOT AUTHORIZED** for production; Gate D Phase A static shell is complete on `feat/pos-react-client` |
 | Capacitor implementation / production rollout | **NOT AUTHORIZED** |
 | MAUI retirement | **NOT AUTHORIZED** |
 | Merge to `main` | **NOT AUTHORIZED** for this implementation branch |

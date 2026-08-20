@@ -25,7 +25,7 @@ describe("POS React foundation", () => {
     renderApp();
     expect(screen.getByRole("heading", { name: "Pinoy Business POS" })).toBeInTheDocument();
     expect(screen.getByText("React client foundation")).toBeInTheDocument();
-    expect(screen.getByText("PWA foundation will be added next")).toBeInTheDocument();
+    expect(screen.getByText(/Static PWA shell is online-first/i)).toBeInTheDocument();
     const page = document.body.textContent ?? "";
     for (const phrase of forbiddenBusiness) {
       expect(page.toLowerCase()).not.toContain(phrase.toLowerCase());
@@ -51,7 +51,7 @@ describe("POS React foundation", () => {
     await user.click(screen.getByRole("radio", { name: /Filipino/ }));
     expect(document.documentElement.lang).toBe("fil-PH");
     expect(screen.getByText("Pundasyon ng React client")).toBeInTheDocument();
-    expect(screen.getByText("Idadagdag ang PWA foundation sa susunod")).toBeInTheDocument();
+    expect(screen.getByText(/Online-first ang static PWA shell/i)).toBeInTheDocument();
     const stored = JSON.parse(window.localStorage.getItem(UI_PREFERENCES_STORAGE_KEY) ?? "{}") as {
       locale?: string;
     };

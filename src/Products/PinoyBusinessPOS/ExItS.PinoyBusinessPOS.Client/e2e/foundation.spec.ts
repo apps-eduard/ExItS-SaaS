@@ -14,7 +14,7 @@ test.describe("POS React foundation", () => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "Pinoy Business POS" })).toBeVisible();
     await expect(page.getByText("React client foundation")).toBeVisible();
-    await expect(page.getByText("PWA foundation will be added next")).toBeVisible();
+    await expect(page.getByText(/Static PWA shell is online-first/i)).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
     await expect(page.locator("html")).toHaveAttribute("data-theme", "system");
   });

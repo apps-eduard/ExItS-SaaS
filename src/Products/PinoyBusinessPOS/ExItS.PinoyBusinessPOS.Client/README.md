@@ -10,7 +10,7 @@ Future Pinoy Business POS React host. Sibling of MAUI and Organization Web, not 
 - Dev: `http://127.0.0.1:5177` (`strictPort`)
 - Preview: `http://127.0.0.1:4177` (`strictPort`)
 
-This package currently ships a foundation shell only. It does not authenticate, call Platform/POS APIs, cache financial data, or include Capacitor.
+This package currently ships a foundation shell plus an online-first static PWA layer. It does not authenticate, call Platform/POS APIs, cache financial data, or include Capacitor.
 
 ```powershell
 npm ci
@@ -24,6 +24,7 @@ npm run format:check
 npm run test
 npm run build
 npm run test:e2e
+npm run test:pwa
 ```
 
 Do not start Platform API `:8091` or POS API `:8092` for this foundation. Do not modify MAUI, Organization Web, or POS backend from this client.

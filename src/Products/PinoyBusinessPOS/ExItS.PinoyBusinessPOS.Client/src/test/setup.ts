@@ -1,7 +1,11 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
-import { afterEach } from "vitest";
+import { afterEach, vi } from "vitest";
 import { UI_PREFERENCES_STORAGE_KEY } from "@/lib/preferences/ui-preferences";
+
+vi.mock("virtual:pwa-register", () => ({
+  registerSW: () => async () => undefined,
+}));
 
 afterEach(() => {
   cleanup();

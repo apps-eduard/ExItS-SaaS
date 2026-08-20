@@ -1,5 +1,4 @@
 import { Card } from "@/components/ui/card";
-import { ConnectivityIndicator } from "@/components/exits/ConnectivityIndicator";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
@@ -19,12 +18,6 @@ export function FoundationPage() {
         </p>
       </Card>
       <EmptyState title={t("empty.title")} detail={t("empty.detail")} />
-      <ConnectivityIndicator
-        online
-        onlineLabel={t("connectivity.online")}
-        offlineTitle={t("connectivity.offlineTitle")}
-        offlineDetail={t("connectivity.offlineDetail")}
-      />
     </div>
   );
 }
