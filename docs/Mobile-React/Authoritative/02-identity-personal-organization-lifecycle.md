@@ -76,7 +76,10 @@ Person-link is identity correlation only. Authorization remains staff principal 
 | Staff create | `PlatformUser.CreateOrganizationStaff` |
 | Alias rules | `StaffLoginNameRules.Build` / `FormatForDisplay` |
 | Accept (no Personal) | `AcceptOrganizationInvitation.ExecuteAsync` → new staff; `LinkedPersonalUserId` null |
-| Accept (existing Personal) | `ExecuteForAuthenticatedPersonalAsync` → new staff + `LinkedPersonalUserId` |
+| Accept (existing Personal) | `ExecuteForAuthenticatedPersonalAsync` requires **active Personal `AccountProfile`** + verified email match + token → new staff + `LinkedPersonalUserId` |
+| Anonymous gate | Requires authenticated Personal **only when** matching login principal has active Personal profile (Platform-only same email may still anonymous-accept unlinked staff) |
+| Atomicity | `ExecuteWithOrganizationLockAsync(organizationId)` — re-read invitation inside lock; outbound email after commit |
+| Audit | `platform.invitation.accepted`; when linked also `platform.user.person_link.established` (no tokens/passwords) |
 | Routes | Anonymous: `POST /api/v1/platform/invitations/accept` and `/api/v1/platform/auth/organization-invitations/accept`. Personal: `.../accept-as-personal` twins |
 | Person-link storage | `platform_users.linked_personal_user_id` (nullable, Restrict, staff-only check) |
 | Tests | `OrganizationScopedStaffIdentityTests`; staff/customer separation API tests |

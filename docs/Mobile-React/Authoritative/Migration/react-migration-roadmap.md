@@ -92,7 +92,7 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 ### RMAP-B00 — Staff identity / existing-person link reconciliation
 | Field | Content |
 |-------|---------|
-| Status | **COMPLETE** (Repair 02). Historical hard stop retained. |
+| Status | **COMPLETE** (Repair 02 + Review Repair 03). Historical hard stop retained. |
 | Objective | Backend/domain/auth/test reconciliation: Option C formal person-link + separate staff passwords; Personal may accept; alias remains real login; multi-org/removal isolation |
 | Report | [POS-REACT-RMAP-B00-identity-reconciliation.md](../../Reports/POS-REACT-RMAP-B00-identity-reconciliation.md) |
 | Next | Product Owner + ChatGPT review. Do **not** start RMAP-01 in this repair. |

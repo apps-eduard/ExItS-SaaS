@@ -4,7 +4,9 @@
 
 **Branch:** `feat/pos-react-client`
 
-**Implementation SHA:** `1cd582bac95f66101fe8e666d4dbac0b8c721e86`
+**Implementation SHA (Repair 02):** `1cd582bac95f66101fe8e666d4dbac0b8c721e86`
+
+**Review Repair 03 SHA:** `e4b04e268c3cb05dd59f62caab2d4379a8fe66a2`
 
 **Historical hard stop:** [POS-REACT-RMAP-B00-identity-hard-stop.md](POS-REACT-RMAP-B00-identity-hard-stop.md) (`RMAP_B00_CREDENTIAL_SEMANTICS_UNRESOLVED`)
 
@@ -40,18 +42,53 @@ Optional `PlatformUser.LinkedPersonalUserId` on organization-scoped staff only.
 - Check: link set ⇒ `home_organization_id IS NOT NULL` and not self
 - Index: `ix_platform_users_linked_personal_user_id`
 - Correlation only: not membership, not POS role, not session authority
+- Application also requires the link target to have an **active Personal `AccountProfile`** when the link is created
 
-Migration: `20260820182830_AddPlatformUserLinkedPersonalUserId`. Production auto-`Migrate()` remains unused.
+Migration: `20260820182830_AddPlatformUserLinkedPersonalUserId` (unchanged in Repair 03). Production auto-`Migrate()` remains unused.
 
 ## Invitation flows
 
 | Path | Endpoint | Result |
 |------|----------|--------|
 | No Personal | `POST /api/v1/platform/invitations/accept` (and auth twin) anonymous | New staff principal; `LinkedPersonalUserId` null |
-| Existing Personal | `POST /api/v1/platform/invitations/accept-as-personal` (and auth twin) | Authenticated Personal + token + new staff password → new staff principal + formal link |
-| Personal exists, anonymous accept | Same anonymous routes | `InvitationRequiresAuthenticatedPersonal` — sign in with Personal |
+| Existing Personal | `POST /api/v1/platform/invitations/accept-as-personal` (and auth twin) | Active Personal profile + token + verified email + new staff password → linked staff |
+| Active Personal exists, anonymous accept | Same anonymous routes | `InvitationRequiresAuthenticatedPersonal` |
+| Platform-only same email | Anonymous accept | Allowed; creates **unlinked** staff (Platform ≠ Personal) |
+| Unverified Personal | Authenticated accept | `InvitationPersonalEmailUnverified` |
 
-Proof required for Personal accept: valid pending token + authenticated Personal principal + verified email match + explicit accept. Wrong Personal → generic invitation not found (no account leak). Contact-email equality never creates the link.
+### Personal classification (Review Repair 03)
+
+Eligible Personal proof is **not** `!IsOrganizationScopedStaff`. Application requires:
+
+- Active `PlatformUser`
+- Active `AccountProfile` with `AccountClass.Personal`
+- Normalized login email matches invitation contact email
+- Personal credential `EmailVerifiedAtUtc` set
+- Valid pending invitation token
+
+`AccountScopeGuard` remains additional HTTP defense (Personal-only on accept-as-personal).
+
+### Atomicity (Review Repair 03)
+
+Acceptance runs under `IPlatformUnitOfWork.ExecuteWithOrganizationLockAsync(organizationId)`:
+
+1. Preliminary token lookup for organization id
+2. Organization advisory lock + transaction (PostgreSQL)
+3. Re-read pending invitation inside the lock
+4. Create staff / credential / profile / membership / optional role / person-link / mark accepted / audit
+5. Commit
+6. Outbound completion email **after** durable success
+
+Membership failure after staff create throws so the transaction rolls back (no orphan staff).
+
+### Audit (Review Repair 03)
+
+Shared application flow emits:
+
+- `platform.invitation.accepted` (always on success)
+- `platform.user.person_link.established` when `LinkedPersonalUserId` is set
+
+Actor = Personal principal when linked. Summaries include staff/Personal ids and organization context. Tokens, passwords, and hashes are excluded.
 
 ## MAUI
 
@@ -63,18 +100,18 @@ Proof required for Personal accept: valid pending token + authenticated Personal
 
 | Suite / filter | Passed | Failed | Skipped |
 |----------------|--------|--------|---------|
-| `OrganizationScopedStaffIdentityTests` | 19 | 0 | 0 |
-| `Identity\|Invitation\|CustomerLink\|AccountProfile\|Membership\|Session` | 267 | 0 | 0 |
+| `OrganizationScopedStaffIdentityTests` | 22 | 0 | 0 |
+| `Identity\|Invitation\|CustomerLink\|AccountProfile\|Membership\|Session` | 270 | 0 | 0 |
 
 ### Platform integration (Testcontainers PostgreSQL)
 
 | Suite / filter | Passed | Failed | Skipped |
 |----------------|--------|--------|---------|
-| `ApiOrganizationStaffCustomerSeparationTests` (includes authenticated Personal staff invite) | 9 | 0 | 0 |
-| `Wrong_invitation_type_accept_is_anti_enumeration_safe` + `ApiAccountScopeIsolationTests` + `ApiCredentialLifecycleTests` | 11 | 0 | 0 |
-| `ApiPhase16CloseoutSecurityTests` full class | 9 | 2 | 0 |
+| `ApiOrganizationStaffCustomerSeparationTests` (Personal accept, Platform-only email, account-scope matrix, parallel same-token) | 12 | 0 | 0 |
+| `Wrong_invitation_type_accept` + `ApiAccountScopeIsolationTests` + `ApiCredentialLifecycleTests` | 11 | 0 | 0 |
+| Phase16 baseline red (unchanged) | 0 | 2 | 0 |
 
-The two full-class failures (`Key_phase16_actions_emit_audit_records`, `Migration_replay_with_same_idempotency_key_is_safe`) failed on `POST /api/v1/personal/start-business` (NotFound). They are Start a Business / Utang migration, not invitation or person-link. The invitation case in that class (`Wrong_invitation_type_accept_is_anti_enumeration_safe`) passed in the focused rerun.
+**PREEXISTING_BASELINE_RED_START_BUSINESS:** `Key_phase16_actions_emit_audit_records` and `Migration_replay_with_same_idempotency_key_is_safe` still fail on `POST /api/v1/personal/start-business` → NotFound. Identical at Repair 03 baseline and after repair. Outside invitation/person-link scope; not fixed here.
 
 ### MAUI
 
@@ -84,7 +121,7 @@ The two full-class failures (`Key_phase16_actions_emit_audit_records`, `Migratio
 
 ### React
 
-No RMAP-01 / RMAP-01b UI started. RMAP-00 Playwright already closed out.
+No RMAP-01 / RMAP-01b UI started. RMAP-00 not re-run (unaffected).
 
 ## Markers
 
@@ -96,4 +133,4 @@ No RMAP-01 / RMAP-01b UI started. RMAP-00 Playwright already closed out.
 
 ## Next
 
-STOP for Product Owner + ChatGPT Git/diff/schema/security review. Do **not** start RMAP-01.
+STOP for Product Owner + ChatGPT final Git/diff/schema/security review of Repair 03. Do **not** start RMAP-01.
