@@ -26,7 +26,7 @@ Do not treat prior WP labels as completeness. Inventory against routes and code.
 | Area | Route/components | Hooks/services/API | Tests | Implemented | Missing | Parity risk |
 |------|------------------|--------------------|-------|-------------|---------|-------------|
 | App shell | `AppShell`, `RootLayout`, top bar/account menu | layouts/components | foundation/shell tests | Shell chrome | Full MAUI hubs | Low for shell |
-| Auth | `SignInPage` | `platform-auth-client`, antiforgery | auth/e2e | Cookie login/logout/me | Desired staff person-link invite UX; register/activate parity | Medium — CURRENT staff login string may work; desired person-link BLOCKED on RMAP-B00 |
+| Auth | `SignInPage` | `platform-auth-client`, antiforgery | auth/e2e | Cookie login/logout/me | React Personal staff-invite accept UI (RMAP-01b); register/activate parity | Medium — staff login string is CURRENT; person-link is backend PASS |
 | Session | `SessionProvider`, guards | pos-access-token, pos-session-grant | session tests | Session boot | MAUI offline session | Medium |
 | Workspace | `WorkspaceProvider`, chooser | workspace-resolver, Platform APIs | workspace tests | Org/branch binding | Start Business, multi-product depth | Medium |
 | Shared UI kit | `components/exits`, `components/ui` | tokens in `globals.css` | `shared-ui-foundation.test.tsx` + foundation/e2e viewports | **PROVEN_CURRENT / COMPLETE** for RMAP-00 foundation primitives (SearchField, ListToolbar, EntityCard, money/qty, sheets/dialogs, form/states) | Date/DateTime, Tabs, ToggleRow deferred to first consumer; domain tiles later | Low for foundation — reuse in later WPs |

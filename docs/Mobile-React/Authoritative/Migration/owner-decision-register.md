@@ -61,12 +61,12 @@ Each row: Owner decision → CURRENT alignment → Action implication.
 
 | ID | Owner decision | CURRENT | Action |
 |----|----------------|---------|--------|
-| OD-ID-01 | One human must not be duplicated merely for employment; Personal + org memberships under same person | **OWNER_CONFIRMED_CHANGE** — CURRENT creates separate staff `PlatformUser` | **RMAP-B00** before desired staff React parity |
+| OD-ID-01 | One human must not be duplicated merely for employment; Personal + org memberships under same person | **CURRENT after RMAP-B00** — separate staff principals + formal `LinkedPersonalUserId` (Option C) | React staff UI = RMAP-01b |
 | OD-ID-02 | Personal initiates business journey | Start a Business CURRENT | React later |
 | OD-ID-03 | Org owns operational state | Aligned | Preserve |
 | OD-ID-04 | Same human Personal + multi-org ownership | Aligned for Owner memberships | Preserve |
-| OD-ID-05 | Existing Personal may accept staff invite and become Org Staff on same human | **PROVEN_MISSING** (accept creates new staff user; Personal attach forbidden) | RMAP-B00; marker `ORGANIZATION_STAFF_EXISTING_PERSON_LINK_CONTRACT_MISSING` |
-| OD-ID-06 | Org-scoped login alias must remain available | Alias format PROVEN_CURRENT as staff principal login | Preserve alias availability; may change attachment under RMAP-B00 |
+| OD-ID-05 | Existing Personal may accept staff invite and become Org Staff on same human | **PROVEN_CURRENT** (new staff principal + person-link; membership stays on staff) | Marker resolved |
+| OD-ID-06 | Org-scoped login alias must remain available | Alias format PROVEN_CURRENT as **real** staff login | Preserve |
 | OD-ID-07 | Personal QR ≠ Business QR; ledgers distinct | Aligned | Preserve |
 | OD-ID-08 | Removing Org A must not delete Personal / Org B / unrelated profiles | PROVEN_CURRENT isolation for revoke/suspend paths | Preserve under any redesign |
 | OD-ID-09 | Org role ≠ POS role; Customer link ≠ Staff | Aligned | Preserve |

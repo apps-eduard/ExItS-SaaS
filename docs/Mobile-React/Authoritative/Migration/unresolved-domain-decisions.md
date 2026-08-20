@@ -73,20 +73,15 @@ Markers appear only when evidence supports them.
 
 ---
 
-### UD-06 — Staff alias credential / password semantics (RMAP-B00 blocker)
+### UD-06 — Staff alias credential / password semantics
 
 | Field | Value |
 |-------|-------|
 | ID | UD-06 |
 | Marker | `RMAP_B00_CREDENTIAL_SEMANTICS_UNRESOLVED` |
-| Question | When Personal accepts staff invite as same human, does org-scoped alias share Personal password or get a separate secret? Are lockouts/stamps shared or per-alias? Is formal person-link with separate staff principals acceptable? |
-| Why it matters | Blocks safe RMAP-B00 schema/auth design; guessing couples Personal and employment auth incorrectly or invents multi-credential model without owner approval |
-| Known evidence | Credential 1:1 `UserId`; login by `NormalizedEmail`; staff accept creates new user + new password; no LoginAlias table; OD-ID-01/05/06 do not specify password policy |
-| Current behavior | Separate staff principal = separate password |
-| Owner requirement | Same human + alias available; credential policy unspecified |
-| Dependency impact | **Blocks Master Run 01** from RMAP-B00 onward |
-| Recommended investigation | Product Owner answers A/B/C password policy + Option C acceptability; then resume RMAP-B00 |
-| Blocking? | **YES** |
+| Status | **RESOLVED** (Product Owner Repair 02) |
+| Resolution | Separate staff principals + separate passwords + independent lockout; Option C formal person-link |
+| Blocking? | **NO** |
 
 ---
 
@@ -96,14 +91,22 @@ Markers appear only when evidence supports them.
 |-------|-------|
 | ID | UD-05 |
 | Marker | `ORGANIZATION_STAFF_EXISTING_PERSON_LINK_CONTRACT_MISSING` |
-| Question | Exact target schema for one human with Personal + multi-org staff memberships + org-scoped aliases without duplicate humans? |
-| Why it matters | Owner forbids duplicating a human merely for employment; CURRENT creates separate staff `PlatformUser` |
-| Known evidence | `CreateOrganizationStaff`; `AcceptOrganizationInvitation` always adds new user; no `UserIdentity` / `LinkedPersonalUserId`; Personal cannot accept staff invite onto same identity; soft contact-email only |
-| Current behavior | Separate credential principal per employment; alias = staff `NormalizedEmail` |
-| Owner requirement | Personal may accept invite; same human; alias remains; multi-org isolated memberships; removal preserves Personal/other orgs |
-| Dependency impact | Blocks RMAP-01 final validation, RMAP-01b, and RMAP-02 in Master Run 01 until PASS; architecture shape chosen inside RMAP-B00 audit (not pre-decided in docs); additionally blocked by UD-06 credential semantics |
-| Recommended investigation | Resolve UD-06 first; then RMAP-B00 safest minimal design; MAUI regression; then RMAP-01/01b/02 |
-| Blocking? | **YES** for Master Run 01 packages after RMAP-00 that depend on post-B00 identity; **YES** for `READY_FOR_REACT_STAFF_IDENTITY_PARITY` until B00 PASS |
+| Status | **RESOLVED** (RMAP-B00) |
+| Resolution | `LinkedPersonalUserId` on org-scoped staff; authenticated Personal accept; email is not the link |
+| Blocking? | **NO** for backend; React UI is RMAP-01b |
+
+---
+
+### UD-07 — Late Personal link for standalone staff
+
+| Field | Value |
+|-------|-------|
+| ID | UD-07 |
+| Marker | `ORGANIZATION_STAFF_LATE_PERSONAL_LINK_FLOW_DEFERRED` |
+| Question | How does a standalone staff principal later formally link after the human creates Personal? |
+| Why it matters | Avoid email auto-merge of legacy/unlinked staff |
+| Current behavior | No automatic merge; unlinked staff remain valid |
+| Blocking? | **NO** for RMAP-B00 |
 
 ---
 

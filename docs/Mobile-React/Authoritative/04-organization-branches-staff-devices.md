@@ -15,13 +15,14 @@
 
 See [02-identity-personal-organization-lifecycle.md](02-identity-personal-organization-lifecycle.md) for the **entity-level** CURRENT vs OWNER-CONFIRMED staff identity model.
 
-| Topic | CURRENT | Owner desired |
-|-------|---------|---------------|
-| Staff principal | Separate `PlatformUser` + `local@ORG######` login | Same human as Personal; membership + org-scoped alias |
-| Personal accept invite | Forbidden | Required |
-| Alias | Staff principal login (preserve format) | Must remain available under desired person model |
-| Marker | — | `ORGANIZATION_STAFF_EXISTING_PERSON_LINK_CONTRACT_MISSING` |
-| Backend | PROVEN_CURRENT (P19 model) | **RMAP-B00** required before desired React staff parity |
+| Topic | CURRENT |
+|-------|---------|
+| Staff principal | Separate org-scoped `PlatformUser` + real login `local@ORG######` |
+| Personal accept invite | Authenticated Personal creates **new** staff principal + `LinkedPersonalUserId` |
+| No Personal | Anonymous accept unchanged; link absent |
+| Person-link | Correlation only; not authorization |
+| Marker | `ORGANIZATION_STAFF_EXISTING_PERSON_LINK_CONTRACT_MISSING` **RESOLVED** (RMAP-B00) |
+| Backend | PROVEN_CURRENT after RMAP-B00 |
 
 MAUI surfaces: `/org/staff`, `/org/staff/invite`, `/org/staff/assign` (implement CURRENT model).
 

@@ -60,7 +60,7 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 | Owner decisions | OD-ID-01, OD-ID-05, OD-ID-06, OD-ID-08 |
 | Exclusions | Implementing CURRENT duplicate-human model as final desired parity |
 | Acceptance | Matches approved person-link + alias contract; multi-org isolation; removal preserves Personal/other orgs |
-| Readiness flag | `READY_FOR_REACT_STAFF_IDENTITY_PARITY` becomes YES only after RMAP-B00 |
+| Readiness flag | `READY_FOR_REACT_STAFF_IDENTITY_PARITY` = YES after RMAP-B00 backend PASS (React UI still this WP) |
 | Next | RMAP-02 |
 
 ### RMAP-02 — Workspace / org / product-access / role guards
@@ -92,19 +92,10 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 ### RMAP-B00 — Staff identity / existing-person link reconciliation
 | Field | Content |
 |-------|---------|
-| Status | PROPOSED / NOT STARTED |
-| Objective | Backend/domain/auth/test reconciliation implementing owner **outcome** (one human not duplicated for employment; Personal may accept staff invite; org-scoped alias remains; multi-org isolation; removal preserves Personal/other orgs; org role ≠ POS role; customer ≠ staff) |
-| Why | OWNER_CONFIRMED_CHANGE; marker `ORGANIZATION_STAFF_EXISTING_PERSON_LINK_CONTRACT_MISSING`; placed early in Master Run 01 to prevent React workspace/role rework around CURRENT duplicate-staff-principal |
-| Dependencies | None (Platform identity); executes after RMAP-00 in Master Run 01 |
-| Backend | **CHANGING** vs P19 separate-staff-`PlatformUser` employment — architecture choice is **not** pre-decided here |
-| Design rule | Audit safest minimal architecture before schema/code changes. Do **not** pre-commit docs to a brand-new UserIdentity table, alias-credential table, identity-link table, multiple credentials, or another specific shape — that choice belongs to RMAP-B00 investigation |
-| MAUI | Compatibility/regression required after API change |
-| React | RMAP-01 / RMAP-01b / RMAP-02 in Master Run 01 validate against post-B00 contract |
-| Owner decisions | OD-ID-01, OD-ID-05, OD-ID-06, OD-ID-08 |
-| Exclusions | Shipping React staff invite UX that hard-codes duplicate humans as final; inventing schema in docs before audit |
-| Tests | Identity unit + integration; multi-org; removal isolation; alias uniqueness |
-| Acceptance | Personal can become staff without unrelated duplicate human; alias works; Org A removal preserves Personal/Org B |
-| Next | RMAP-01 (Master Run 01) |
+| Status | **COMPLETE** (Repair 02). Historical hard stop retained. |
+| Objective | Backend/domain/auth/test reconciliation: Option C formal person-link + separate staff passwords; Personal may accept; alias remains real login; multi-org/removal isolation |
+| Report | [POS-REACT-RMAP-B00-identity-reconciliation.md](../../Reports/POS-REACT-RMAP-B00-identity-reconciliation.md) |
+| Next | Product Owner + ChatGPT review. Do **not** start RMAP-01 in this repair. |
 
 ### RMAP-B01 — Sale price policy backend (BLOCKING for override UI only)
 | Field | Content |
@@ -349,10 +340,12 @@ Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, 
 ## APPROVED PROPOSED MASTER RUN 01
 
 **Name:** Foundation + Catalog/Inventory Baseline
-**Status:** **HARD STOP at RMAP-B00** — RMAP-00 PASS; `RMAP_B00_CREDENTIAL_SEMANTICS_UNRESOLVED`; packages RMAP-01…RMAP-07 not started
+**Status:** **HARD STOP after RMAP-B00 PASS** — awaiting Product Owner + ChatGPT review before RMAP-01. RMAP-00 PASS. Do not start RMAP-01…RMAP-07.
 **Stop rule:** After package 10 → HARD STOP for Product Owner + ChatGPT review (also stop on defined hard-stop codes)
 **Do not include:** RMAP-08 (lots/expiry) in Master Run 01
-**Stop report:** [POS-REACT-RMAP-B00-identity-hard-stop.md](../../Reports/POS-REACT-RMAP-B00-identity-hard-stop.md)
+**Completion report:** [POS-REACT-RMAP-B00-identity-reconciliation.md](../../Reports/POS-REACT-RMAP-B00-identity-reconciliation.md)
+
+**Historical stop:** [POS-REACT-RMAP-B00-identity-hard-stop.md](../../Reports/POS-REACT-RMAP-B00-identity-hard-stop.md)
 
 | # | ID | Title |
 |---|----|-------|

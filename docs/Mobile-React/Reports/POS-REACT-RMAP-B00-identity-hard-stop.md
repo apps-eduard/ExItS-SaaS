@@ -1,9 +1,13 @@
-# RMAP-B00 — Staff Identity Reconciliation — HARD STOP
+# RMAP-B00 — Staff Identity Reconciliation — HARD STOP (historical)
 
-**Status:** BLOCKED (before implementation)  
-**Stop code:** `RMAP_B00_CREDENTIAL_SEMANTICS_UNRESOLVED`  
+**Status:** SUPERSEDED by PASS — see [POS-REACT-RMAP-B00-identity-reconciliation.md](POS-REACT-RMAP-B00-identity-reconciliation.md)
+
+**Original stop code:** `RMAP_B00_CREDENTIAL_SEMANTICS_UNRESOLVED` (resolved by Product Owner Option C + separate staff passwords)
+
 **Baseline after RMAP-00:** `c4b82ace89a1d87d14ae4dfdd31c6c2d4e8e02ae`  
 **Branch:** `feat/pos-react-client`
+
+This document records the Master Run 01 Repair 01 hard stop. It is retained as evidence. Implementation completed in Repair 02.
 
 ## Objective (unchanged)
 

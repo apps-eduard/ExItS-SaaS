@@ -7,9 +7,9 @@ Current Contract Status: `CURRENT` | `OWNER_CONFIRMED_CHANGE` | `MIXED` | `UNRES
 | Capability | Owner Requirement | Backend | MAUI | React | Current Contract Status | React Parity Status | Dependencies | Required Action | Evidence / Notes |
 |------------|-------------------|---------|------|-------|-------------------------|---------------------|--------------|-----------------|------------------|
 | Platform/Personal/Org scope model | Preserve P16/ADR-017 sessions | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_PARTIAL | CURRENT | PARTIAL | none | RMAP-01 session parity | ADR-017, AccountScopeGuard |
-| Org-scoped staff login alias format | Preserve alias availability | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_PARTIAL | CURRENT | PARTIAL (CURRENT login) | Auth | Keep format; RMAP-B00 may reattach | StaffLoginNameRules |
-| Staff existing-person link / Personal accept | One human; Personal may accept | PROVEN_MISSING | uses CURRENT model | MISSING | OWNER_CONFIRMED_CHANGE | BLOCKED | RMAP-B00 | Backend first; marker ORGANIZATION_STAFF_EXISTING_PERSON_LINK_CONTRACT_MISSING | CreateOrganizationStaff; invite accept |
-| Separate staff PlatformUser per job | P19 CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | N/A | CURRENT (may SUPERSEDE after B00) | Do not ship as final desired | — | Document until B00 | P19 |
+| Org-scoped staff login alias format | Preserve alias availability | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_PARTIAL | CURRENT | PARTIAL (CURRENT login) | Auth | Keep format as real login | StaffLoginNameRules |
+| Staff existing-person link / Personal accept | One human proven by formal link; Personal may accept | PROVEN_CURRENT | PROVEN_CURRENT (compat) | MISSING UI (RMAP-01b) | CURRENT after RMAP-B00 | Backend PASS; React UI later | RMAP-01b | Do not start RMAP-01 until ChatGPT B00 review | LinkedPersonalUserId; accept-as-personal |
+| Separate staff PlatformUser per job | Approved Option C | PROVEN_CURRENT | PROVEN_CURRENT | N/A | CURRENT | Formal link when Personal accepts | — | Preserve isolation | P19 + RMAP-B00 |
 | Start a Business | Personal→Org Owner | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Personal session | Later foundation WP | StartBusinessUseCases |
 | Product access + local roles | Distinct from membership | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_PARTIAL | CURRENT | PARTIAL | Session/org | Harden role guards | ProductLocalRoleGrant |
 | Shared React UI foundation | Mobile-first DoD | N/A | N/A | PROVEN_CURRENT (foundation) | OWNER_CONFIRMED (UI std) | PROVEN_CURRENT (foundation) | RMAP-00 COMPLETE | Reuse in later WPs | 06-react-ui-ux doc; shared-ui-foundation.test.tsx |
@@ -53,4 +53,4 @@ Current Contract Status: `CURRENT` | `OWNER_CONFIRMED_CHANGE` | `MIXED` | `UNRES
 
 - **React Parity Status BLOCKED** means backend contract gap, not merely UI gap.
 - Prefer this matrix over old Implementation-Readiness matrices for CURRENT truth.
-- `READY_FOR_REACT_STAFF_IDENTITY_PARITY` = **NO** until RMAP-B00 PASS.
+- `READY_FOR_REACT_STAFF_IDENTITY_PARITY` = **YES** (backend RMAP-B00 PASS). React UI is RMAP-01b. Do not start RMAP-01 until ChatGPT reviews B00.

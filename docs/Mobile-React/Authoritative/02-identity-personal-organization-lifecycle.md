@@ -39,11 +39,11 @@ Evidence: `AccountClass.cs`, ADR-017, P16 WP02 report, P19 report.
 |---|----------------|
 | A. Separate human identity? | **Yes** — staff accept creates a **new** `PlatformUser` Guid, not a profile on Personal |
 | B. Same UserIdentity + second credential? | **No** — there is no `UserIdentity` entity; credential is 1:1 on the **new** staff `PlatformUser` |
-| C. Linkage to existing Personal? | **Soft only** — `NormalizedContactEmail` may equal Personal email; **no** FK / `LinkedPersonalUserId` |
-| D. Personal accept invite → same-identity Staff? | **No** — forbidden; Personal pending list empty; Staff/Member membership requires matching `HomeOrganizationId` |
-| E. Reuse vs create | Personal untouched; create staff `PlatformUser` + credential + Organization profile + membership (+ optional POS role) |
-| F. Multi-org same human | Owner: yes on one Personal user. Staff: same contact email may exist in multiple orgs as **separate** staff `PlatformUser`s |
-| G. Alias per org | **Yes** — each staff row gets its own `local@ORG######` |
+| C. Linkage to existing Personal? | **Formal when Personal accepts** — `LinkedPersonalUserId` FK on the staff principal. **Not** inferred from `NormalizedContactEmail`. Standalone/legacy staff remain unlinked (null) |
+| D. Personal accept invite → same-identity Staff? | **Creates a new staff principal** linked to Personal. Does **not** convert Personal or attach Staff membership to Personal |
+| E. Reuse vs create | Personal untouched; create staff `PlatformUser` + separate credential + Organization profile + membership (+ optional POS role) + optional person-link |
+| F. Multi-org same human | Owner: yes on one Personal user. Staff: same Personal may formally link to **separate** staff `PlatformUser`s per employer |
+| G. Alias per org | **Yes** — each staff row login **is** `local@ORG######` (not display-only) |
 | H. Remove one membership | Membership Removed; product-access for that membership revoked; sessions cleared for that userId+org; **does not** delete `PlatformUser` |
 | I. Preserve Personal / other orgs | **Yes** — Personal and other staff rows remain Active when Org A staff suspended/deactivated |
 | J. Alias semantics | **Separate credential principal** = separate `PlatformUser` whose unique login **is** the alias (`NormalizedEmail`) + own credential — **not** alias-only on Personal |
@@ -51,20 +51,23 @@ Evidence: `AccountClass.cs`, ADR-017, P16 WP02 report, P19 report.
 ### CURRENT diagram
 
 ```text
-Physical human
- ├─ PlatformUser [Personal]  NormalizedEmail=maria@gmail.com  HomeOrg=null
- │    ├─ PlatformUserCredential
- │    ├─ AccountProfile(Personal)
- │    └─ OrganizationMembership(Owner)*  (Start a Business; multi-org owner OK)
+Physical human (Paul)
+ ├─ PlatformUser [Personal]  NormalizedEmail=paul@gmail.com  HomeOrg=null
+ │    ├─ PlatformUserCredential (Personal password / lockout)
+ │    └─ AccountProfile(Personal)
  │
- ├─ PlatformUser [Staff Org A]  NormalizedEmail=maria@org001842  Contact=maria@gmail.com  HomeOrg=A
- │    ├─ PlatformUserCredential (new)
+ ├─ PlatformUser [Staff Org A]  login=paul@ORG######  Contact=paul@gmail.com
+ │    HomeOrg=A  LinkedPersonalUserId → Personal (when accepted from authenticated Personal)
+ │    ├─ PlatformUserCredential (separate staff password / lockout)
  │    ├─ AccountProfile(Organization)
  │    └─ OrganizationMembership(Staff)
  │
- └─ PlatformUser [Staff Org B]  NormalizedEmail=maria@org004911  Contact=maria@gmail.com  HomeOrg=B
-      └─ (same pattern; distinct Id)
+ └─ PlatformUser [Staff Org B]  login=paul@ORG######  Contact=paul@gmail.com
+      HomeOrg=B  LinkedPersonalUserId → same Personal
+      └─ (independent credential, membership, POS grants)
 ```
+
+Person-link is identity correlation only. Authorization remains staff principal + membership + session class + entitlements + product role.
 
 ### CURRENT evidence
 
@@ -72,8 +75,11 @@ Physical human
 |----------|---------------|
 | Staff create | `PlatformUser.CreateOrganizationStaff` |
 | Alias rules | `StaffLoginNameRules.Build` / `FormatForDisplay` |
-| Accept | `AcceptOrganizationInvitation.ExecuteAsync` → always `_users.AddAsync(staffUser)` |
-| Routes | `POST /api/v1/platform/auth/organization-invitations/accept`; `POST /api/v1/platform/invitations/accept` (anonymous) |
+| Accept (no Personal) | `AcceptOrganizationInvitation.ExecuteAsync` → new staff; `LinkedPersonalUserId` null |
+| Accept (existing Personal) | `ExecuteForAuthenticatedPersonalAsync` → new staff + `LinkedPersonalUserId` |
+| Routes | Anonymous: `POST /api/v1/platform/invitations/accept` and `/api/v1/platform/auth/organization-invitations/accept`. Personal: `.../accept-as-personal` twins |
+| Person-link storage | `platform_users.linked_personal_user_id` (nullable, Restrict, staff-only check) |
+| Tests | `OrganizationScopedStaffIdentityTests`; staff/customer separation API tests |
 | Membership guard | `AddOrganizationMembership` → `HomeOrganizationRequired` for Staff/Member |
 | Personal pending | `ListPendingOrganizationInvitationsForUser` returns empty for Personal |
 | Tables | `platform_users`, `platform_user_credentials`, `account_profiles`, `organization_invitations`, `organization_memberships` |
@@ -86,8 +92,8 @@ Physical human
 |------------|--------|
 | Org-scoped staff login alias format | **PROVEN_CURRENT** — preserve format |
 | Separate staff `PlatformUser` per employment | **PROVEN_CURRENT** |
-| Soft contact-email correlator | **PROVEN_PARTIAL** (string only) |
-| Formal person-link / Personal-accept-as-staff | **PROVEN_MISSING** |
+| Formal person-link / Personal-accept-as-staff | **PROVEN_CURRENT** (Option C: staff principal + `LinkedPersonalUserId`; not authorization) |
+| Soft contact-email correlator | **PROVEN_CURRENT** as contact/recovery only — **not** same-human proof |
 
 ### SUPERSEDED (do not reintroduce as CURRENT)
 
@@ -129,19 +135,17 @@ Owner confirms:
 
 | Requirement | CURRENT | Desired |
 |-------------|---------|---------|
-| One human not duplicated for employment | Separate `PlatformUser` per staff job | One person; memberships/profiles under same human |
-| Personal can accept staff invite | Forbidden | Required |
-| Org-scoped alias | Exists as staff principal login | Must remain available (may become alias/credential under same person) |
-| Multi-org | Separate staff users per org | Same human, isolated memberships |
-| Removal isolation | Membership/user scoped; Personal preserved | Same outcome required |
+| One human not duplicated for employment | Separate staff principals per job + formal person-link when Personal accepts | Approved Option C (not a single merged principal) |
+| Personal can accept staff invite | Authenticated Personal accept creates linked staff principal | Required — implemented |
+| Org-scoped alias | Staff principal login `local@ORG######` | Must remain the real login |
+| Multi-org | Separate staff users per org, optionally linked to same Personal | Isolated memberships |
+| Removal isolation | Membership/user scoped; Personal and other staff preserved | Same outcome required |
 
-**Marker:** `ORGANIZATION_STAFF_EXISTING_PERSON_LINK_CONTRACT_MISSING` — warranted (no FK/person-link; Personal cannot accept onto same identity).
+**Marker:** `ORGANIZATION_STAFF_EXISTING_PERSON_LINK_CONTRACT_MISSING` — **RESOLVED** (RMAP-B00). Follow-up: `ORGANIZATION_STAFF_LATE_PERSONAL_LINK_FLOW_DEFERRED` (staff who later create Personal; no email auto-merge).
 
-**Roadmap:** Backend package **RMAP-B00** before React staff-identity parity that implements the desired model. See [Migration/react-migration-roadmap.md](Migration/react-migration-roadmap.md).
+**Roadmap:** RMAP-B00 PASS. React staff-identity UI remains **RMAP-01b**. See [Migration/react-migration-roadmap.md](Migration/react-migration-roadmap.md) and [POS-REACT-RMAP-B00-identity-reconciliation.md](../Reports/POS-REACT-RMAP-B00-identity-reconciliation.md).
 
-**Readiness:** `READY_FOR_REACT_STAFF_IDENTITY_PARITY` = **NO** until RMAP-B00 completes and owner approves the resulting contract.
-
-React may still authenticate against **CURRENT** staff login strings for session/smoke testing only if a WP explicitly scopes “CURRENT staff principal login” — it must **not** claim desired person-link parity.
+**Readiness:** `READY_FOR_REACT_STAFF_IDENTITY_PARITY` = **YES** (backend contract). Do not start RMAP-01 until Product Owner + ChatGPT review this package.
 
 ---
 

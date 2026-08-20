@@ -115,7 +115,7 @@ Created under `docs/Mobile-React/Authoritative/` to match the existing `docs/Mob
 3. Record owner decisions in the Owner Decision Register; do not silently rewrite CURRENT.
 4. Future React implementation work packages **must reference** these docs (parity matrix + dependency graph + roadmap WP id + UI foundation + master-run protocol).
 5. Do not treat older `Implementation-Readiness/` or historical phase docs as higher authority than this set for CURRENT behavior.
-6. Do not implement desired staff person-link React UX before **RMAP-B00**.
+6. Do not start RMAP-01 / RMAP-01b until Product Owner + ChatGPT review RMAP-B00.
 7. Do not bypass **RMAP-00** for visual packages unless the roadmap marks a WP non-UI.
 8. First implementation batch order is **APPROVED PROPOSED MASTER RUN 01** in [Migration/react-migration-roadmap.md](Migration/react-migration-roadmap.md) (RMAP-00 → B00 → 01 → 01b → 02 → 03 → 04 → 05 → 06 → 07). Documenting it does not authorize starting implementation.
 

@@ -14,14 +14,16 @@ PlatformUser (CURRENT principal; no separate UserIdentity table)
             → ProductLocalRoleGrant
               → POS operational authorization
 
-OWNER_CONFIRMED_CHANGE (RMAP-B00):
-Verified Person / Human
-  → Personal Account
-  → Org memberships (A, B, …) each with org-scoped login alias
+RMAP-B00 CURRENT (Option C):
+Physical human
+  → Personal PlatformUser (optional)
+  → zero or more org-scoped staff PlatformUsers (login local@ORG######)
+      LinkedPersonalUserId when existing Personal accepted the invite
+      (correlation only; not authorization)
   → optional POS roles per org/product
 ```
 
-Do **not** implement React desired staff person-link UX before RMAP-B00.
+Do **not** implement React desired staff invite UX (RMAP-01b) before ChatGPT B00 review.
 
 ## Organization operations
 
@@ -35,7 +37,7 @@ Organization
           → Fulfillment readiness
               → Pickup / Delivery
                   → Customer Ordering
-  → Staff invitations → (CURRENT: separate staff PlatformUser) / (DESIRED: same-human membership + alias via RMAP-B00)
+  → Staff invitations → separate staff PlatformUser + optional LinkedPersonalUserId (RMAP-B00)
       → optional POS roles
   → Compliance / sales-document capability (Platform)
 ```
@@ -85,7 +87,7 @@ Visual WPs depend on RMAP-00 (UI foundation).
 
 Post-B00 identity path (Master Run 01 execution order):
 RMAP-00
-  → RMAP-B00 (staff person-link backend; outcome fixed, schema design in-package)
+  → RMAP-B00 (staff person-link backend; COMPLETE)
     → RMAP-01 (account/session; validate post-B00)
       → RMAP-01b (React staff identity desired)
         → RMAP-02 (workspace/roles against post-B00)
@@ -99,7 +101,7 @@ RMAP-B01 Sale price policy backend
 
 This records the **approved first master-run execution order** to prevent known rework. It does not claim UI and identity backend are inherently coupled as a domain rule.
 
-Do **not** skip RMAP-B00 by claiming CURRENT duplicate-staff-principal as desired parity.
+Do **not** skip ChatGPT B00 review before RMAP-01.
 
 ## Backend-gap inserts
 
