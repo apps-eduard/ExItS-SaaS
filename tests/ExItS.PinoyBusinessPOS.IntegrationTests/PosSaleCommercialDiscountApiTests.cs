@@ -2,9 +2,13 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ExItS.PinoyBusinessPOS.Api.Common;
+using ExItS.PinoyBusinessPOS.Api.Customers;
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Credit;
+using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using Microsoft.AspNetCore.Hosting;
@@ -31,6 +35,7 @@ public sealed class PosSaleCommercialDiscountApiTests(PosPostgreSqlFixture fixtu
     private const string Sales = "/api/v1/pos/sales";
     private const string Quote = "/api/v1/pos/sales/quote";
     private const string Products = "/api/v1/pos/catalog/products";
+    private const string Customers = "/api/v1/pos/customers";
 
     private const string Reason = "Bulk buyer courtesy";
 
@@ -38,6 +43,10 @@ public sealed class PosSaleCommercialDiscountApiTests(PosPostgreSqlFixture fixtu
     private const string ManagerGrants =
         $"{PosFeatureCodes.StoreSalesView},{PosFeatureCodes.StoreSalesCreate}," +
         $"{PosFeatureCodes.StoreSalesApplyCommercialDiscount}";
+
+    /// <summary>Manager discount grants plus linked-credit create for discounted Utang proofs.</summary>
+    private const string ManagerUtangDiscountGrants =
+        $"{ManagerGrants},{PosFeatureCodes.CustomerCreditView},{PosFeatureCodes.CustomerCreditCreate}";
 
     /// <summary>What a cashier carries: sales without the discount grant.</summary>
     private const string CashierGrants =
@@ -364,6 +373,13 @@ public sealed class PosSaleCommercialDiscountApiTests(PosPostgreSqlFixture fixtu
         var org = Guid.NewGuid();
         var product = await CreateProductAsync(client, org, "Kendi", "Piece", 1m, "disc-zero-1");
 
+        using var enable = Scoped(
+            HttpMethod.Post,
+            $"/api/v1/pos/inventory/{product.ProductId:D}/enable",
+            org);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(10m), options: JsonOptions);
+        (await client.SendAsync(enable)).EnsureSuccessStatusCode();
+
         var sale = await CheckoutAsync(
             client,
             org,
@@ -374,12 +390,198 @@ public sealed class PosSaleCommercialDiscountApiTests(PosPostgreSqlFixture fixtu
                 Discounts: [new CommercialDiscountIntentRequest("Sale", "Percentage", 100m, Reason)]),
             grants: ManagerGrants);
 
+        Assert.Equal(PosSaleOptions.CompletedStatus, sale.Status);
         Assert.Equal(3m, sale.GrossSubtotal);
         Assert.Equal(3m, sale.DiscountTotal);
         Assert.Equal(0m, sale.Subtotal);
         Assert.Equal(0m, sale.Total);
         Assert.Equal(0m, sale.AmountTendered);
         Assert.Equal(0m, sale.ChangeAmount);
+        Assert.Equal(3m, Assert.Single(sale.Lines).Quantity);
+        Assert.Equal(1m, Assert.Single(sale.Lines).UnitPrice);
+
+        // Fully discounted Cash still issues stock — Total=0 does not restore inventory.
+        using var onHand = Scoped(HttpMethod.Get, $"/api/v1/pos/inventory/{product.ProductId:D}", org);
+        using var onHandResponse = await client.SendAsync(onHand);
+        onHandResponse.EnsureSuccessStatusCode();
+        var account = await onHandResponse.Content.ReadFromJsonAsync<PosInventoryAccountDto>(JsonOptions);
+        Assert.Equal(7m, account!.OnHandQuantity);
+    }
+
+    [Fact]
+    public async Task A_full_discount_manual_gcash_completes_without_payment_attempt()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var product = await CreateProductAsync(client, org, "Sabon", "Piece", 50m, "disc-mgcash-0");
+
+        var sale = await CheckoutAsync(
+            client,
+            org,
+            new CheckoutSaleRequest(
+                [new CheckoutSaleLineRequest(product.ProductId, 2m)],
+                PosSaleOptions.ManualGCashPaymentMethod,
+                GCashReference: "GC-ZERO-1",
+                Discounts: [new CommercialDiscountIntentRequest("Sale", "Percentage", 100m, Reason)]),
+            grants: ManagerGrants);
+
+        Assert.Equal(PosSaleOptions.CompletedStatus, sale.Status);
+        Assert.Equal(PosSaleOptions.ManualGCashPaymentMethod, sale.PaymentMethod);
+        Assert.Equal(100m, sale.GrossSubtotal);
+        Assert.Equal(100m, sale.DiscountTotal);
+        Assert.Equal(0m, sale.Total);
+        Assert.Null(sale.AmountTendered);
+        Assert.Null(sale.ChangeAmount);
+
+        // Completed ManualGCash (user-facing GCash) never enters the provider PaymentAttempt path.
+        using var attempt = Scoped(
+            HttpMethod.Post,
+            $"{Sales}/{sale.SaleId:D}/payment-attempts",
+            org,
+            PosSubscriptionStatuses.Active,
+            ManagerGrants);
+        attempt.Content = JsonContent.Create(
+            new { paymentMethod = PosSaleOptions.ManualGCashPaymentMethod, idempotencyKey = "mgcash-zero-1" },
+            options: JsonOptions);
+        using var attemptResponse = await client.SendAsync(attempt);
+        Assert.True(
+            attemptResponse.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Conflict
+                or HttpStatusCode.UnprocessableEntity or HttpStatusCode.NotFound,
+            $"Unexpected payment-attempt status {attemptResponse.StatusCode}");
+    }
+
+    [Fact]
+    public async Task Discounted_utang_with_positive_amount_to_pay_reconciles_credit_to_net_total()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var product = await CreateProductAsync(client, org, "Bigas", "Kilogram", 100m, "disc-utang-pos");
+        var customer = await CreateCustomerAsync(client, org, "Rosa Discount Utang");
+        var creditEntryId = Guid.NewGuid();
+
+        using var enable = Scoped(
+            HttpMethod.Post,
+            $"/api/v1/pos/inventory/{product.ProductId:D}/enable",
+            org);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(20m), options: JsonOptions);
+        (await client.SendAsync(enable)).EnsureSuccessStatusCode();
+
+        var sale = await CheckoutAsync(
+            client,
+            org,
+            new CheckoutSaleRequest(
+                [new CheckoutSaleLineRequest(product.ProductId, 10m)],
+                PosSaleOptions.UtangPaymentMethod,
+                CustomerId: customer.CustomerId,
+                CreditEntryId: creditEntryId,
+                Discounts: [new CommercialDiscountIntentRequest("Sale", "FixedAmount", 200m, Reason)]),
+            grants: ManagerUtangDiscountGrants);
+
+        Assert.Equal(PosSaleOptions.CompletedStatus, sale.Status);
+        Assert.Equal(1000m, sale.GrossSubtotal);
+        Assert.Equal(200m, sale.DiscountTotal);
+        Assert.Equal(800m, sale.Subtotal);
+        Assert.Equal(800m, sale.Total);
+        Assert.Equal(customer.CustomerId, sale.CustomerId);
+        Assert.Equal(creditEntryId, sale.LinkedCreditEntryId);
+        Assert.Equal(100m, Assert.Single(sale.Lines).UnitPrice);
+        Assert.Equal(10m, Assert.Single(sale.Lines).Quantity);
+
+        using var creditGet = Scoped(
+            HttpMethod.Get,
+            $"/api/v1/pos/customers/{customer.CustomerId:D}/credit-entries/{creditEntryId:D}",
+            org);
+        using var creditResponse = await client.SendAsync(creditGet);
+        creditResponse.EnsureSuccessStatusCode();
+        var credit = await creditResponse.Content.ReadFromJsonAsync<CreditEntryDto>(JsonOptions);
+        Assert.Equal(800m, credit!.Amount);
+        Assert.Equal(sale.SaleId, credit.SourceSaleId);
+
+        using var onHand = Scoped(HttpMethod.Get, $"/api/v1/pos/inventory/{product.ProductId:D}", org);
+        using var onHandResponse = await client.SendAsync(onHand);
+        onHandResponse.EnsureSuccessStatusCode();
+        var account = await onHandResponse.Content.ReadFromJsonAsync<PosInventoryAccountDto>(JsonOptions);
+        Assert.Equal(10m, account!.OnHandQuantity);
+    }
+
+    [Fact]
+    public async Task Full_discount_utang_is_rejected_without_sale_or_credit()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var product = await CreateProductAsync(client, org, "Tinapay", "Piece", 25m, "disc-utang-0");
+        var customer = await CreateCustomerAsync(client, org, "Zero Debt");
+        var creditEntryId = Guid.NewGuid();
+
+        using var rejected = await PostAsync(
+            client,
+            org,
+            new CheckoutSaleRequest(
+                [new CheckoutSaleLineRequest(product.ProductId, 4m)],
+                PosSaleOptions.UtangPaymentMethod,
+                CustomerId: customer.CustomerId,
+                CreditEntryId: creditEntryId,
+                Discounts: [new CommercialDiscountIntentRequest("Sale", "Percentage", 100m, Reason)]),
+            ManagerUtangDiscountGrants);
+        Assert.Equal(HttpStatusCode.BadRequest, rejected.StatusCode);
+        Assert.Equal(DomainErrorCodes.SaleUtangTotalMustBePositive, await ReadErrorCodeAsync(rejected));
+
+        using var list = Scoped(HttpMethod.Get, $"{Sales}?page=1&pageSize=20", org);
+        using var listResponse = await client.SendAsync(list);
+        listResponse.EnsureSuccessStatusCode();
+        var page = await listResponse.Content.ReadFromJsonAsync<PagedResult<PosSaleDto>>(JsonOptions);
+        Assert.Empty(page!.Items);
+
+        using var creditGet = Scoped(
+            HttpMethod.Get,
+            $"/api/v1/pos/customers/{customer.CustomerId:D}/credit-entries/{creditEntryId:D}",
+            org);
+        using var creditResponse = await client.SendAsync(creditGet);
+        Assert.Equal(HttpStatusCode.NotFound, creditResponse.StatusCode);
+    }
+
+    [Theory]
+    [InlineData(PosSaleOptions.CardPaymentMethod)]
+    [InlineData(PosSaleOptions.GCashPaymentMethod)]
+    public async Task Full_discount_future_electronic_methods_reject_before_stuck_state(string paymentMethod)
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var product = await CreateProductAsync(client, org, "Gadget", "Piece", 500m, $"disc-elec-{paymentMethod}");
+
+        using var enable = Scoped(
+            HttpMethod.Post,
+            $"/api/v1/pos/inventory/{product.ProductId:D}/enable",
+            org);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(5m), options: JsonOptions);
+        (await client.SendAsync(enable)).EnsureSuccessStatusCode();
+
+        using var rejected = await PostAsync(
+            client,
+            org,
+            new CheckoutSaleRequest(
+                [new CheckoutSaleLineRequest(product.ProductId, 1m)],
+                paymentMethod,
+                Discounts: [new CommercialDiscountIntentRequest("Sale", "Percentage", 100m, Reason)]),
+            ManagerGrants);
+        Assert.Equal(HttpStatusCode.BadRequest, rejected.StatusCode);
+        Assert.Equal(DomainErrorCodes.SaleElectronicTotalMustBePositive, await ReadErrorCodeAsync(rejected));
+
+        using var list = Scoped(HttpMethod.Get, $"{Sales}?page=1&pageSize=20", org);
+        using var listResponse = await client.SendAsync(list);
+        listResponse.EnsureSuccessStatusCode();
+        var page = await listResponse.Content.ReadFromJsonAsync<PagedResult<PosSaleDto>>(JsonOptions);
+        Assert.Empty(page!.Items);
+
+        using var onHand = Scoped(HttpMethod.Get, $"/api/v1/pos/inventory/{product.ProductId:D}", org);
+        using var onHandResponse = await client.SendAsync(onHand);
+        onHandResponse.EnsureSuccessStatusCode();
+        var account = await onHandResponse.Content.ReadFromJsonAsync<PosInventoryAccountDto>(JsonOptions);
+        Assert.Equal(5m, account!.OnHandQuantity);
     }
 
     private static async Task<PosSaleDto> CheckoutAsync(
@@ -425,6 +627,19 @@ public sealed class PosSaleCommercialDiscountApiTests(PosPostgreSqlFixture fixtu
         var product = await response.Content.ReadFromJsonAsync<PosCatalogProductDto>(JsonOptions);
         Assert.NotNull(product);
         return product!;
+    }
+
+    private static async Task<POSCustomerDto> CreateCustomerAsync(HttpClient client, Guid org, string displayName)
+    {
+        using var request = Scoped(HttpMethod.Post, Customers, org);
+        request.Content = JsonContent.Create(
+            new CreateCustomerRequest(displayName, null, null, null),
+            options: JsonOptions);
+        using var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var customer = await response.Content.ReadFromJsonAsync<POSCustomerDto>(JsonOptions);
+        Assert.NotNull(customer);
+        return customer!;
     }
 
     private static async Task<string?> ReadErrorCodeAsync(HttpResponseMessage response)
