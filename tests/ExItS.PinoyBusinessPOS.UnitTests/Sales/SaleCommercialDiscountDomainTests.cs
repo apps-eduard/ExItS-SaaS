@@ -223,6 +223,46 @@ public sealed class SaleCommercialDiscountDomainTests
         Assert.Equal(0m, sale.Total);
         Assert.Equal(0m, sale.AmountTendered);
         Assert.Equal(0m, sale.ChangeAmount);
+        Assert.Equal(SaleStatus.Completed, sale.Status);
+    }
+
+    [Theory]
+    [InlineData(SalePaymentMethod.Card)]
+    [InlineData(SalePaymentMethod.GCash)]
+    public void Full_discount_rejects_electronic_methods_that_would_stuck_awaiting_payment(
+        SalePaymentMethod method)
+    {
+        var error = Assert.Throws<DomainException>(() => Sale.Checkout(
+            Org,
+            SaleNumbers.Format(new DateOnly(2026, 8, 21), 1),
+            method,
+            [Draft(1000m, 1m)],
+            Actor,
+            Now,
+            cashierShiftId: Shift,
+            registerId: Register,
+            commercialDiscounts: [SalePercent(100m)]));
+
+        Assert.Equal(DomainErrorCodes.SaleElectronicTotalMustBePositive, error.ErrorCode);
+    }
+
+    [Fact]
+    public void Full_discount_with_manual_gcash_completes_without_payment_attempt()
+    {
+        var sale = Sale.Checkout(
+            Org,
+            SaleNumbers.Format(new DateOnly(2026, 8, 21), 1),
+            SalePaymentMethod.ManualGCash,
+            [Draft(1000m, 1m)],
+            Actor,
+            Now,
+            cashierShiftId: Shift,
+            registerId: Register,
+            commercialDiscounts: [SalePercent(100m)]);
+
+        Assert.Equal(0m, sale.Total);
+        Assert.Equal(SaleStatus.Completed, sale.Status);
+        Assert.Equal(SaleStockReservationState.None, sale.StockReservationState);
     }
 
     [Fact]

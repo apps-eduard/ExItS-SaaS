@@ -134,6 +134,8 @@ public static class DomainErrorCodes
     public const string SaleUtangCustomerRequired = "pos.sale.utang.customer_required";
     public const string SaleUtangLinkageInvalid = "pos.sale.utang.linkage_invalid";
     public const string SaleUtangTotalMustBePositive = "pos.sale.utang.total_must_be_positive";
+    public const string SaleElectronicTotalMustBePositive =
+        "pos.sale.electronic.total_must_be_positive";
     public const string SaleCashMustNotLinkCredit = "pos.sale.cash_must_not_link_credit";
     public const string InvalidSaleBuyerParty = "pos.sale.buyer_party.invalid";
     public const string InvalidCustomerExItsIdentityLink = "pos.customer.exits_identity_link.invalid";

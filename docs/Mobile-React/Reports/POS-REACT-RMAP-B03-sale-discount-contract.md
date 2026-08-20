@@ -29,9 +29,9 @@ implementation SHA: `431e51040539bb4fcaba03e935df4b46c60fed3a`
 | Tax | `OperationalSetupTaxCalculator` on subtotal; safe when fed **post-discount net** |
 | Returns | Refund from snapshotted `UnitPrice` / `LineTotal` → **LineTotal must remain net** |
 | Offline | Snapshot fidelity requires `LineTotal == RoundMoney(UnitPrice × Qty)` without discount fields |
-| Zero total | Cash/electronic allow `Total = 0`; Utang requires `Total > 0` (unchanged) |
-| Contradictions | None requiring HARD STOP after additive design |
-| Owner decision | Not required for B03 (zero-total Utang remains existing reject) |
+| Zero total | Cash / ManualGCash allow ₱0 Completed; Utang rejects; **Card/GCash reject** (`pos.sale.electronic.total_must_be_positive`) |
+| Contradictions | None requiring HARD STOP after additive design + electronic zero-total fail-closed |
+| Owner decision | Not required (matrix documented; no ₱0 provider payment invented) |
 
 ## Discount model
 
@@ -115,6 +115,17 @@ Legacy offline without discounts: unchanged.
 | `SaleReturnDomainTests` + `OperationalSetupTaxCalculatorTests` | 8 passed |
 | MAUI SaleCartService filter | no matching tests |
 | MAUI Checkout UI string guards | 2 failed — **pre-existing**, unrelated to discount (markup/localization substrings) |
+
+## Zero-total / payment matrix (closed)
+
+| Method | Total = ₱0 after commercial discount | Result |
+|--------|--------------------------------------|--------|
+| Cash | Allowed | Completed immediately; tendered/change 0 |
+| ManualGCash | Allowed | Completed immediately (no payment attempt) |
+| Utang | Rejected | `pos.sale.utang.total_must_be_positive` |
+| Card / GCash | Rejected | `pos.sale.electronic.total_must_be_positive` |
+
+**Why Card/GCash reject:** electronic checkout creates `AwaitingPayment` + stock reservation, then payment attempts require `amount > 0`. A ₱0 Card/GCash sale would reserve stock and never be payable — fail closed at checkout instead of inventing a ₱0 provider payment.
 
 ## Explicit exclusions
 

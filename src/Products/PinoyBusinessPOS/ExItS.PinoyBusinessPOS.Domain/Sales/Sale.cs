@@ -729,6 +729,18 @@ public sealed class Sale
         CreditEntryId? linkedCreditEntryId,
         decimal total)
     {
+        // Provider-backed Card/GCash enter AwaitingPayment and create payment attempts with
+        // amount = sale.Total. Payment attempts require amount > 0. A fully discounted (₱0)
+        // electronic sale would reserve stock and then be permanently stuck — reject at checkout.
+        // Cash / ManualGCash may complete at ₱0. Utang still requires Total > 0 below.
+        if (SalePaymentMethods.IsElectronic(paymentMethod) && total <= 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.SaleElectronicTotalMustBePositive,
+                "Card and GCash checkouts require a total greater than zero. " +
+                "A fully discounted sale must use Cash or Manual GCash.");
+        }
+
         if (paymentMethod == SalePaymentMethod.Utang)
         {
             if (customerId is null)
