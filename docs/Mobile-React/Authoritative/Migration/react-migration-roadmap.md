@@ -39,15 +39,16 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 ### RMAP-01 — Account / session parity (post-B00 validation in Master Run 01)
 | Field | Content |
 |-------|---------|
+| Status | **COMPLETE** — [POS-REACT-RMAP-01-account-session-parity.md](../../Reports/POS-REACT-RMAP-01-account-session-parity.md) |
 | Objective | Personal email login, cookie session, profiles/session guards, CSRF, sign-out, me; final validation includes reconciled identity/session behavior after RMAP-B00 |
 | Why next | Stable session foundation on the intended identity architecture (avoids rework around duplicate-staff-principal UX) |
 | Dependencies | **RMAP-B00** (Master Run 01 order); RMAP-00 for any UI polish |
-| Backend contracts | Platform auth after RMAP-B00 PASS (not the pre-B00 duplicate-staff employment model as final) |
+| Backend contracts | Platform auth after RMAP-B00 PASS; `/me` now includes `homeOrganizationId` + `organizationContextLocked` |
 | MAUI reference | `/signin`, workspace/org select |
 | React starting point | `SignInPage`, `SessionProvider`, antiforgery |
 | Owner decisions | OD-ID-02..04, OD-ID-07; session behavior must not contradict OD-ID-01/05 after B00 |
 | Exclusions | Full staff invite/accept UX (RMAP-01b); Offline PIN; Start a Business UI |
-| Tests | Unit + Playwright Personal login; session isolation against post-B00 contract |
+| Tests | Unit + Playwright Personal/staff login; AccountClass denial; reload; logout/CSRF |
 | Acceptance | Personal session + AccountClass isolation; validates against post-B00 identity/session rules |
 | Next | RMAP-01b |
 
@@ -340,10 +341,11 @@ Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, 
 ## APPROVED PROPOSED MASTER RUN 01
 
 **Name:** Foundation + Catalog/Inventory Baseline
-**Status:** **HARD STOP after RMAP-B00 PASS** — awaiting Product Owner + ChatGPT review before RMAP-01. RMAP-00 PASS. Do not start RMAP-01…RMAP-07.
-**Stop rule:** After package 10 → HARD STOP for Product Owner + ChatGPT review (also stop on defined hard-stop codes)
+**Status:** **IN PROGRESS** — RMAP-00 PASS, RMAP-B00 PASS (Repair 03 APPROVED), RMAP-01 PASS. Continue Master Run 01 through RMAP-07; HARD STOP after RMAP-07.
+**Stop rule:** After package 10 (RMAP-07) → HARD STOP for Product Owner + ChatGPT review (also stop on defined hard-stop codes)
 **Do not include:** RMAP-08 (lots/expiry) in Master Run 01
-**Completion report:** [POS-REACT-RMAP-B00-identity-reconciliation.md](../../Reports/POS-REACT-RMAP-B00-identity-reconciliation.md)
+**Completion report (B00):** [POS-REACT-RMAP-B00-identity-reconciliation.md](../../Reports/POS-REACT-RMAP-B00-identity-reconciliation.md)
+**Completion report (RMAP-01):** [POS-REACT-RMAP-01-account-session-parity.md](../../Reports/POS-REACT-RMAP-01-account-session-parity.md)
 
 **Historical stop:** [POS-REACT-RMAP-B00-identity-hard-stop.md](../../Reports/POS-REACT-RMAP-B00-identity-hard-stop.md)
 

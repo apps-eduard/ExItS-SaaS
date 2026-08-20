@@ -2,7 +2,7 @@
 
 **Client:** `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client`
 **Package:** `@exits/pinoy-business-pos-client`
-**Baseline SHA:** `721cc946d61ccb193c8c69b76b6f1ff726526270`
+**Baseline SHA:** (see branch HEAD after RMAP-01)
 
 Do not treat prior WP labels as completeness. Inventory against routes and code.
 
@@ -10,15 +10,15 @@ Do not treat prior WP labels as completeness. Inventory against routes and code.
 
 | Route | Area | Status |
 |-------|------|--------|
-| `/sign-in` | Auth | COMPLETE for browser cookie login + local-validation helper |
+| `/sign-in` | Auth | COMPLETE — cookie login + Personal/staff login hints (no class inference) |
 | `/` | Home | PARTIAL shell |
-| `/workspace` | Workspace chooser | COMPLETE for current resolver scope |
-| `/personal` | Personal | SHELL_ONLY (`PersonalHomePage` placeholder) |
-| `/no-location` | Branch binding | COMPLETE for no-branch gate |
+| `/workspace` | Workspace chooser | COMPLETE for current resolver scope; Organization AccountClass required |
+| `/personal` | Personal | COMPLETE shell + RequirePersonalSession (RMAP-01) |
+| `/no-location` | Branch binding | COMPLETE for no-branch gate; Organization AccountClass required |
 | `/settings/preferences` | Preferences | PARTIAL (theme/language) |
-| `/sell` | Sell floor | PARTIAL (browse + cart; pay disabled) |
-| `/role/{owner\|manager\|cashier}` | Role homes | SHELL_ONLY / PARTIAL |
-| `/org` | Org essentials | SHELL_ONLY |
+| `/sell` | Sell floor | PARTIAL (browse + cart; pay disabled); Organization AccountClass required |
+| `/role/{owner\|manager\|cashier}` | Role homes | SHELL_ONLY / PARTIAL; Organization AccountClass required |
+| `/org` | Org essentials | SHELL_ONLY; Organization AccountClass required |
 | `*` | Not found | COMPLETE |
 
 ## Area inventory
@@ -26,18 +26,18 @@ Do not treat prior WP labels as completeness. Inventory against routes and code.
 | Area | Route/components | Hooks/services/API | Tests | Implemented | Missing | Parity risk |
 |------|------------------|--------------------|-------|-------------|---------|-------------|
 | App shell | `AppShell`, `RootLayout`, top bar/account menu | layouts/components | foundation/shell tests | Shell chrome | Full MAUI hubs | Low for shell |
-| Auth | `SignInPage` | `platform-auth-client`, antiforgery | auth/e2e | Cookie login/logout/me | React Personal staff-invite accept UI (RMAP-01b); register/activate parity | Medium — staff login string is CURRENT; person-link is backend PASS |
-| Session | `SessionProvider`, guards | pos-access-token, pos-session-grant | session tests | Session boot | MAUI offline session | Medium |
-| Workspace | `WorkspaceProvider`, chooser | workspace-resolver, Platform APIs | workspace tests | Org/branch binding | Start Business, multi-product depth | Medium |
-| Shared UI kit | `components/exits`, `components/ui` | tokens in `globals.css` | `shared-ui-foundation.test.tsx` + foundation/e2e viewports | **PROVEN_CURRENT / COMPLETE** for RMAP-00 foundation primitives (SearchField, ListToolbar, EntityCard, money/qty, sheets/dialogs, form/states) | Date/DateTime, Tabs, ToggleRow deferred to first consumer; domain tiles later | Low for foundation — reuse in later WPs |
-| Personal | `PersonalHomePage` | none meaningful | | Placeholder | Utang, shop, explore, start business | High if claimed complete |
-| Sell floor | `SellFloorPage` | catalog client, cart provider | sell-floor e2e | Browse/search/categories/cart UI | ByWeight, sell units, stock gates, pay | High — looks like POS but checkout disabled |
+| Auth | `SignInPage` | `platform-auth-client`, antiforgery | auth/e2e + RMAP-01 | Cookie login/logout/me + AccountClass | React staff-invite accept UI (RMAP-01b); register/activate parity | Medium — staff login string CURRENT |
+| Session | `SessionProvider`, `RequireAccountClass` | account-class, pos tokens | session + AccountClass tests | Session boot + class guards; `/me` lock fields | MAUI offline session | Low after RMAP-01 |
+| Workspace | `WorkspaceProvider`, chooser | workspace-resolver, Platform APIs | workspace tests | Org/branch binding; Personal no auto-bind | Owner ensure+select Organization (RMAP-02) | Medium |
+| Shared UI kit | `components/exits`, `components/ui` | tokens in `globals.css` | `shared-ui-foundation.test.tsx` + foundation/e2e viewports | **PROVEN_CURRENT / COMPLETE** for RMAP-00 foundation primitives | Date/DateTime, Tabs, ToggleRow deferred | Low |
+| Personal | `PersonalHomePage` | AccountClass guard | RMAP-01 e2e | Class-gated Personal home | Utang, shop, explore, start business | High if claimed complete |
+| Sell floor | `SellFloorPage` | catalog client, cart provider | sell-floor e2e | Browse/search/categories/cart UI | ByWeight, sell units, stock gates, pay | High |
 | Catalog admin | — | read-only `pos-catalog-client` | catalog-cart tests | Read for sell | CRUD/units/Today’s Prices/import | High |
 | Cart | `SessionCartProvider` | in-memory | cart tests | Session cart | Persist/outbox/server cart | High |
 | Checkout | disabled copy | no sale POST client | | Explicit non-implementation | Entire sale pipeline | Critical |
-| Org/staff/branches | `/org` shell | — | | Essentials placeholder | All admin | High |
+| Org/staff/branches | `/org` shell | — | | Essentials placeholder | All admin + staff invite UI | High |
 | Inventory/purchasing/suppliers/shifts/returns/reports/orders | — | — | | None | All | Critical |
-| PWA/SW | `pwa/*` | validate-pwa script | e2e pwa | Prod SW; blocked in dev | LocalStore offline ops | Medium (don’t confuse with offline POS) |
+| PWA/SW | `pwa/*` | validate-pwa script | e2e pwa | Prod SW; blocked in dev | LocalStore offline ops | Medium |
 | CSRF | `antiforgery.ts` | platform-http | antiforgery tests | Token handling | — | Low |
 | API client | Platform complete; POS catalog only | `api/platform`, `api/pos` | | Limited | Sales/inventory/customers/… clients | Critical |
 
