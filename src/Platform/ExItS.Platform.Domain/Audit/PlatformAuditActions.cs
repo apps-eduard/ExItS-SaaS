@@ -110,6 +110,8 @@ public static class PlatformAuditActions
     public const string InvitationResent = "platform.invitation.resent";
     public const string InvitationRevoked = "platform.invitation.revoked";
     public const string InvitationAccepted = "platform.invitation.accepted";
+    /// <summary>Formal same-human correlation recorded on an organization-scoped staff principal (not authorization).</summary>
+    public const string PersonLinkEstablished = "platform.user.person_link.established";
 
     public const string OwnershipTransferRequested = "platform.ownership_transfer.requested";
     public const string OwnershipTransferCancelled = "platform.ownership_transfer.cancelled";

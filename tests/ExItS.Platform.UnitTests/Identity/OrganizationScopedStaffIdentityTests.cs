@@ -3,6 +3,7 @@ using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.LocalValidation;
 using ExItS.Platform.Application.Organizations;
+using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
@@ -351,6 +352,148 @@ public sealed class OrganizationScopedStaffIdentityTests
 
         var staffAsPersonal = await login.ExecuteAsync(email, staffPassword, null, null);
         Assert.False(staffAsPersonal.IsSuccess);
+
+        Assert.Contains(
+            harness.Audit.Entries,
+            e => e.Action == PlatformAuditActions.InvitationAccepted
+                 && e.Actor == $"platform-user:{personal.Id.Value:D}"
+                 && e.OrganizationId == harness.OrgA.Id
+                 && e.Summary is not null
+                 && e.Summary.Contains(accept.Value.UserId.ToString("D"), StringComparison.Ordinal)
+                 && e.Summary.Contains(personal.Id.Value.ToString("D"), StringComparison.Ordinal)
+                 && !e.Summary.Contains(staffPassword, StringComparison.Ordinal)
+                 && !e.Summary.Contains(invite.Value.AcceptToken!, StringComparison.Ordinal));
+        Assert.Contains(
+            harness.Audit.Entries,
+            e => e.Action == PlatformAuditActions.PersonLinkEstablished
+                 && e.TargetId == accept.Value.UserId.ToString("D")
+                 && e.Actor == $"platform-user:{personal.Id.Value:D}"
+                 && e.Summary is not null
+                 && e.Summary.Contains("not authorization", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task Platform_only_same_email_allows_anonymous_accept_without_person_link()
+    {
+        var harness = await StaffInviteHarness.CreateAsync();
+        const string email = "employee@company.com";
+        var platformUser = (await new CreatePlatformUser(
+            harness.Users,
+            harness.UnitOfWork,
+            harness.Clock,
+            new SequentialPublicUserIdGenerator())
+            .ExecuteAsync("platemp", "Platform Emp", email)).Value!;
+        var credential = PlatformUserCredential.Create(
+            platformUser.Id,
+            harness.Hasher.HashPassword(StaffPassword),
+            harness.Hasher.Algorithm,
+            harness.Clock.UtcNow);
+        credential.MarkEmailVerified(harness.Clock.UtcNow);
+        await harness.Credentials.AddAsync(credential);
+        await harness.EnsureProfiles.ExecuteAsync(
+            platformUser.Id,
+            AccountClass.Platform,
+            exclusivePreferredClass: true);
+
+        Assert.Null(await harness.Profiles.GetByUserAndClassAsync(platformUser.Id, AccountClass.Personal));
+
+        var invite = await harness.CreateInvitation.ExecuteAsync(
+            harness.OrgA.Id,
+            email,
+            OrganizationRole.OrganizationMember,
+            harness.Owner.Id,
+            OrganizationRole.OrganizationOwner,
+            actorHasPlatformManageMemberships: false);
+        Assert.True(invite.IsSuccess, invite.ErrorMessage);
+
+        var accept = await harness.AcceptInvitation.ExecuteAsync(invite.Value!.AcceptToken!, StaffPassword);
+        Assert.True(accept.IsSuccess, accept.ErrorMessage);
+        Assert.Null(accept.Value!.LinkedPersonalUserId);
+        Assert.NotEqual(platformUser.Id.Value, accept.Value.UserId);
+
+        var staff = (await harness.Users.GetByIdAsync(PlatformUserId.From(accept.Value.UserId)))!;
+        Assert.Null(staff.LinkedPersonalUserId);
+        Assert.Equal(harness.OrgA.Id, staff.HomeOrganizationId);
+        Assert.DoesNotContain(
+            harness.Audit.Entries,
+            e => e.Action == PlatformAuditActions.PersonLinkEstablished);
+    }
+
+    [Fact]
+    public async Task Authenticated_platform_user_without_personal_profile_cannot_accept_as_personal()
+    {
+        var harness = await StaffInviteHarness.CreateAsync();
+        const string email = "employee@company.com";
+        var platformUser = (await new CreatePlatformUser(
+            harness.Users,
+            harness.UnitOfWork,
+            harness.Clock,
+            new SequentialPublicUserIdGenerator())
+            .ExecuteAsync("platemp2", "Platform Emp2", email)).Value!;
+        var credential = PlatformUserCredential.Create(
+            platformUser.Id,
+            harness.Hasher.HashPassword(StaffPassword),
+            harness.Hasher.Algorithm,
+            harness.Clock.UtcNow);
+        credential.MarkEmailVerified(harness.Clock.UtcNow);
+        await harness.Credentials.AddAsync(credential);
+        await harness.EnsureProfiles.ExecuteAsync(
+            platformUser.Id,
+            AccountClass.Platform,
+            exclusivePreferredClass: true);
+
+        var invite = await harness.CreateInvitation.ExecuteAsync(
+            harness.OrgA.Id,
+            email,
+            OrganizationRole.OrganizationMember,
+            harness.Owner.Id,
+            OrganizationRole.OrganizationOwner,
+            actorHasPlatformManageMemberships: false);
+
+        var denied = await harness.AcceptInvitation.ExecuteForAuthenticatedPersonalAsync(
+            platformUser.Id,
+            invite.Value!.AcceptToken!,
+            StaffPassword);
+        Assert.False(denied.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.InvitationNotFound, denied.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Unverified_personal_authenticated_accept_is_rejected()
+    {
+        var harness = await StaffInviteHarness.CreateAsync();
+        const string email = "paul@gmail.com";
+        var personal = (await new CreatePlatformUser(
+            harness.Users,
+            harness.UnitOfWork,
+            harness.Clock,
+            new SequentialPublicUserIdGenerator())
+            .ExecuteAsync("pauluv", "Paul", email)).Value!;
+        await harness.Credentials.AddAsync(PlatformUserCredential.Create(
+            personal.Id,
+            harness.Hasher.HashPassword(StaffPassword),
+            harness.Hasher.Algorithm,
+            harness.Clock.UtcNow));
+        await harness.EnsureProfiles.ExecuteAsync(personal.Id, AccountClass.Personal, exclusivePreferredClass: true);
+
+        var invite = await harness.CreateInvitation.ExecuteAsync(
+            harness.OrgA.Id,
+            email,
+            OrganizationRole.OrganizationMember,
+            harness.Owner.Id,
+            OrganizationRole.OrganizationOwner,
+            actorHasPlatformManageMemberships: false);
+
+        var anonymous = await harness.AcceptInvitation.ExecuteAsync(invite.Value!.AcceptToken!, StaffPassword);
+        Assert.False(anonymous.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.InvitationRequiresAuthenticatedPersonal, anonymous.ErrorCode);
+
+        var denied = await harness.AcceptInvitation.ExecuteForAuthenticatedPersonalAsync(
+            personal.Id,
+            invite.Value.AcceptToken!,
+            StaffPassword);
+        Assert.False(denied.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.InvitationPersonalEmailUnverified, denied.ErrorCode);
     }
 
     [Fact]
@@ -795,6 +938,8 @@ public sealed class OrganizationScopedStaffIdentityTests
         public required AssignProductLocalRole AssignRole { get; init; }
         public required InMemoryProductLocalRoleGrantRepository RoleGrants { get; init; }
         public required CapturingAuthOutboundMessageSink Messages { get; init; }
+        public required RecordingAuditWriter Audit { get; init; }
+        public required InMemoryAccountProfileRepository Profiles { get; init; }
 
         public static async Task<StaffInviteHarness> CreateAsync(bool createOrgB = false)
         {
@@ -824,6 +969,7 @@ public sealed class OrganizationScopedStaffIdentityTests
                 users, orgs, memberships, products, roleGrants, grantAccess, uow, clock);
             var hasher = new StubPasswordHasher();
             var staffLogins = new FakeStaffLoginNameAllocator(users);
+            var audit = new RecordingAuditWriter();
 
             var owner = (await new CreatePlatformUser(users, uow, clock, new SequentialPublicUserIdGenerator())
                 .ExecuteAsync("owner", "Org Owner", "owner@example.com")).Value!;
@@ -855,6 +1001,7 @@ public sealed class OrganizationScopedStaffIdentityTests
                 orgs,
                 users,
                 credentials,
+                profiles,
                 staffLogins,
                 publicOrgIds,
                 hasher,
@@ -864,6 +1011,7 @@ public sealed class OrganizationScopedStaffIdentityTests
                 messages,
                 uow,
                 clock,
+                audit,
                 Options.Create(new PlatformPasswordOptions()));
 
             return new StaffInviteHarness
@@ -887,7 +1035,9 @@ public sealed class OrganizationScopedStaffIdentityTests
                 Hasher = hasher,
                 AssignRole = assignRole,
                 RoleGrants = roleGrants,
-                Messages = messages
+                Messages = messages,
+                Audit = audit,
+                Profiles = profiles
             };
         }
 

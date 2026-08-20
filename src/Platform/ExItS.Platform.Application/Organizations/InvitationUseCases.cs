@@ -1,8 +1,10 @@
 using ExItS.Platform.Application.Access;
+using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Domain.Abstractions;
+using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
@@ -441,12 +443,17 @@ public sealed class RevokeOrganizationInvitation
     }
 }
 
+/// <summary>
+/// Accepts an organization staff invitation: anonymous (no Personal) or authenticated Personal (formal person-link).
+/// Durable mutations run under <see cref="IPlatformUnitOfWork.ExecuteWithOrganizationLockAsync"/>.
+/// </summary>
 public sealed class AcceptOrganizationInvitation
 {
     private readonly IOrganizationInvitationRepository _invitations;
     private readonly IPlatformOrganizationRepository _organizations;
     private readonly IPlatformUserRepository _users;
     private readonly IPlatformUserCredentialRepository _credentials;
+    private readonly IAccountProfileRepository _profiles;
     private readonly IStaffLoginNameAllocator _staffLoginNames;
     private readonly IPublicOrganizationIdGenerator _publicOrganizationIds;
     private readonly IPlatformPasswordHasher _hasher;
@@ -456,6 +463,7 @@ public sealed class AcceptOrganizationInvitation
     private readonly IPlatformAuthOutboundMessageSink _messages;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IAuditWriter _audit;
     private readonly PlatformPasswordOptions _passwordOptions;
 
     public AcceptOrganizationInvitation(
@@ -463,6 +471,7 @@ public sealed class AcceptOrganizationInvitation
         IPlatformOrganizationRepository organizations,
         IPlatformUserRepository users,
         IPlatformUserCredentialRepository credentials,
+        IAccountProfileRepository profiles,
         IStaffLoginNameAllocator staffLoginNames,
         IPublicOrganizationIdGenerator publicOrganizationIds,
         IPlatformPasswordHasher hasher,
@@ -472,12 +481,14 @@ public sealed class AcceptOrganizationInvitation
         IPlatformAuthOutboundMessageSink messages,
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
+        IAuditWriter audit,
         IOptions<PlatformPasswordOptions> passwordOptions)
     {
         _invitations = invitations;
         _organizations = organizations;
         _users = users;
         _credentials = credentials;
+        _profiles = profiles;
         _staffLoginNames = staffLoginNames;
         _publicOrganizationIds = publicOrganizationIds;
         _hasher = hasher;
@@ -487,6 +498,7 @@ public sealed class AcceptOrganizationInvitation
         _messages = messages;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _audit = audit;
         _passwordOptions = passwordOptions.Value;
     }
 
@@ -548,195 +560,295 @@ public sealed class AcceptOrganizationInvitation
         }
 
         var hash = OrganizationInvitation.HashToken(acceptToken);
-        var invitation = await _invitations.FindPendingByTokenHashAsync(hash, cancellationToken)
+        var preliminary = await _invitations.FindPendingByTokenHashAsync(hash, cancellationToken)
             .ConfigureAwait(false);
-        if (invitation is null)
+        if (preliminary is null)
         {
             return ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
                 ApplicationErrorCodes.InvitationNotFound,
                 "Invitation was not found or is no longer pending.");
         }
 
+        ApplicationResult<AcceptOrganizationInvitationResultDto>? outcome = null;
+        PlatformAuthOutboundMessage? outbound = null;
+
         try
         {
-            var utcNow = _clock.UtcNow;
-            if (invitation.IsExpired(utcNow))
-            {
-                invitation.MarkExpired(utcNow);
-                await _invitations.UpdateAsync(invitation, cancellationToken).ConfigureAwait(false);
-                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-                return ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
-                    DomainErrorCodes.InvitationExpired,
-                    "Invitation has expired.");
-            }
-
-            var organization = await _organizations
-                .GetByIdAsync(invitation.OrganizationId, cancellationToken)
-                .ConfigureAwait(false);
-            if (organization is null || organization.Status != OrganizationStatus.Active)
-            {
-                return ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
-                    ApplicationErrorCodes.OrganizationNotFound,
-                    "Platform Organization was not found or is not active.");
-            }
-
-            if (string.IsNullOrWhiteSpace(organization.PublicOrganizationId))
-            {
-                var publicOrgId = await _publicOrganizationIds
-                    .GenerateUniqueAsync(cancellationToken)
-                    .ConfigureAwait(false);
-                organization.AssignPublicOrganizationId(publicOrgId, utcNow);
-                await _organizations.UpdateAsync(organization, cancellationToken).ConfigureAwait(false);
-            }
-
-            var contactEmail = invitation.NormalizedEmail;
-            var existingStaff = await _users
-                .FindActiveStaffByHomeOrgAndContactEmailAsync(
-                    invitation.OrganizationId,
-                    contactEmail,
+            await _unitOfWork
+                .ExecuteWithOrganizationLockAsync(
+                    preliminary.OrganizationId.Value,
+                    async ct =>
+                    {
+                        var locked = await ExecuteLockedAsync(
+                                hash,
+                                password,
+                                authenticatedPersonalUserId,
+                                displayName,
+                                firstName,
+                                lastName,
+                                ct)
+                            .ConfigureAwait(false);
+                        outcome = locked.Result;
+                        outbound = locked.Outbound;
+                    },
                     cancellationToken)
                 .ConfigureAwait(false);
-            if (existingStaff is not null)
-            {
-                return ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
-                    ApplicationErrorCodes.MembershipConflict,
-                    "An active organization staff identity already exists for this contact email.");
-            }
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(ex.ErrorCode, ex.Message);
+        }
 
-            var existingLoginPrincipal = await _users
-                .GetByNormalizedEmailAsync(contactEmail, cancellationToken)
-                .ConfigureAwait(false);
-            PlatformUserId? linkedPersonalUserId = null;
-            if (authenticatedPersonalUserId is not null)
-            {
-                var personal = await _users
-                    .GetByIdAsync(authenticatedPersonalUserId, cancellationToken)
-                    .ConfigureAwait(false);
-                if (personal is null
-                    || personal.IsOrganizationScopedStaff
-                    || personal.Status != AccountStatus.Active
-                    || !string.Equals(personal.NormalizedEmail, contactEmail, StringComparison.Ordinal))
-                {
-                    return ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
-                        ApplicationErrorCodes.InvitationNotFound,
-                        "Invitation was not found or is no longer pending.");
-                }
+        if (outcome is null)
+        {
+            return ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
+                ApplicationErrorCodes.DomainViolation,
+                "Invitation acceptance could not be completed.");
+        }
 
-                var personalCredential = await _credentials
-                    .GetByUserIdAsync(personal.Id, cancellationToken)
-                    .ConfigureAwait(false);
-                if (personalCredential?.EmailVerifiedAtUtc is null)
-                {
-                    return ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
-                        ApplicationErrorCodes.InvitationPersonalEmailUnverified,
-                        "Verify your Personal email before accepting this invitation.");
-                }
+        if (outcome.IsSuccess && outbound is not null)
+        {
+            await _messages.PublishAsync(outbound, cancellationToken).ConfigureAwait(false);
+        }
 
-                linkedPersonalUserId = personal.Id;
-            }
-            else if (existingLoginPrincipal is not null && !existingLoginPrincipal.IsOrganizationScopedStaff)
-            {
-                return ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
-                    ApplicationErrorCodes.InvitationRequiresAuthenticatedPersonal,
-                    "Sign in with your Personal account to accept this invitation.");
-            }
+        return outcome;
+    }
 
-            var staffLogin = await _staffLoginNames
-                .AllocateAsync(contactEmail, organization.PublicOrganizationId!, cancellationToken)
-                .ConfigureAwait(false);
-            var username = await AllocateUniqueUsernameAsync(
-                    StaffLoginNameRules.DeriveUsername(staffLogin),
-                    cancellationToken)
-                .ConfigureAwait(false);
+    private sealed record LockedAcceptOutcome(
+        ApplicationResult<AcceptOrganizationInvitationResultDto> Result,
+        PlatformAuthOutboundMessage? Outbound);
 
-            var resolvedDisplayName = !string.IsNullOrWhiteSpace(displayName)
-                ? displayName.Trim()
-                : invitation.InviteeDisplayName
-                  ?? ResolveInviteDisplayName(invitation.FirstName, invitation.LastName, contactEmail);
-            var resolvedFirstName = firstName ?? invitation.FirstName;
-            var resolvedLastName = lastName ?? invitation.LastName;
+    private async Task<LockedAcceptOutcome> ExecuteLockedAsync(
+        string tokenHash,
+        string password,
+        PlatformUserId? authenticatedPersonalUserId,
+        string? displayName,
+        string? firstName,
+        string? lastName,
+        CancellationToken cancellationToken)
+    {
+        var invitation = await _invitations.FindPendingByTokenHashAsync(tokenHash, cancellationToken)
+            .ConfigureAwait(false);
+        if (invitation is null)
+        {
+            return new LockedAcceptOutcome(
+                ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
+                    ApplicationErrorCodes.InvitationNotFound,
+                    "Invitation was not found or is no longer pending."),
+                Outbound: null);
+        }
 
-            var staffUser = PlatformUser.CreateOrganizationStaff(
-                username,
-                staffLogin,
-                contactEmail,
-                invitation.OrganizationId,
-                resolvedDisplayName,
-                utcNow,
-                resolvedFirstName,
-                resolvedLastName,
-                createdByUserId: invitation.InvitedByUserId,
-                linkedPersonalUserId: linkedPersonalUserId);
-
-            await _users.AddAsync(staffUser, cancellationToken).ConfigureAwait(false);
-
-            var passwordHash = _hasher.HashPassword(password);
-            var credential = PlatformUserCredential.Create(
-                staffUser.Id,
-                passwordHash,
-                _hasher.Algorithm,
-                utcNow);
-            // Contact email was delivered the invite; treat as verified for staff login activation.
-            credential.MarkEmailVerified(utcNow);
-            await _credentials.AddAsync(credential, cancellationToken).ConfigureAwait(false);
-            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-            await _ensureProfiles
-                .ExecuteAsync(
-                    staffUser.Id,
-                    AccountClass.Organization,
-                    exclusivePreferredClass: true,
-                    cancellationToken: cancellationToken)
-                .ConfigureAwait(false);
-
-            var membershipResult = await _addMembership
-                .ExecuteAsync(
-                    invitation.OrganizationId,
-                    staffUser.Id,
-                    invitation.Role,
-                    exclusiveOrganizationProfile: true,
-                    cancellationToken)
-                .ConfigureAwait(false);
-            if (!membershipResult.IsSuccess)
-            {
-                return ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
-                    membershipResult.ErrorCode!,
-                    membershipResult.ErrorMessage!);
-            }
-
-            if (!string.IsNullOrWhiteSpace(invitation.ProductRole))
-            {
-                await _assignProductLocalRole
-                    .ExecuteAsync(
-                        invitation.OrganizationId,
-                        staffUser.Id,
-                        ProductCode.PinoyBusinessPos,
-                        invitation.ProductRole,
-                        invitation.InvitedByUserId ?? staffUser.Id,
-                        reason: "organization staff invitation product role",
-                        cancellationToken: cancellationToken)
-                    .ConfigureAwait(false);
-            }
-
-            invitation.Accept(staffUser.Id, contactEmail, utcNow);
+        var utcNow = _clock.UtcNow;
+        if (invitation.IsExpired(utcNow))
+        {
+            invitation.MarkExpired(utcNow);
             await _invitations.UpdateAsync(invitation, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return new LockedAcceptOutcome(
+                ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
+                    DomainErrorCodes.InvitationExpired,
+                    "Invitation has expired."),
+                Outbound: null);
+        }
 
-            var staffLoginDisplay = StaffLoginNameRules.FormatForDisplay(staffUser.NormalizedEmail);
-            await _messages.PublishAsync(
-                new PlatformAuthOutboundMessage(
-                    PlatformAuthOutboundMessageKinds.OrganizationStaffInvitationAccepted,
-                    staffUser.Id.Value,
+        var organization = await _organizations
+            .GetByIdAsync(invitation.OrganizationId, cancellationToken)
+            .ConfigureAwait(false);
+        if (organization is null || organization.Status != OrganizationStatus.Active)
+        {
+            return new LockedAcceptOutcome(
+                ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
+                    ApplicationErrorCodes.OrganizationNotFound,
+                    "Platform Organization was not found or is not active."),
+                Outbound: null);
+        }
+
+        if (string.IsNullOrWhiteSpace(organization.PublicOrganizationId))
+        {
+            var publicOrgId = await _publicOrganizationIds
+                .GenerateUniqueAsync(cancellationToken)
+                .ConfigureAwait(false);
+            organization.AssignPublicOrganizationId(publicOrgId, utcNow);
+            await _organizations.UpdateAsync(organization, cancellationToken).ConfigureAwait(false);
+        }
+
+        var contactEmail = invitation.NormalizedEmail;
+        var existingStaff = await _users
+            .FindActiveStaffByHomeOrgAndContactEmailAsync(
+                invitation.OrganizationId,
+                contactEmail,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (existingStaff is not null)
+        {
+            return new LockedAcceptOutcome(
+                ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
+                    ApplicationErrorCodes.MembershipConflict,
+                    "An active organization staff identity already exists for this contact email."),
+                Outbound: null);
+        }
+
+        var existingLoginPrincipal = await _users
+            .GetByNormalizedEmailAsync(contactEmail, cancellationToken)
+            .ConfigureAwait(false);
+        PlatformUserId? linkedPersonalUserId = null;
+        if (authenticatedPersonalUserId is not null)
+        {
+            var personalProof = await ProveEligiblePersonalForInvitationAsync(
+                    authenticatedPersonalUserId,
                     contactEmail,
-                    OpaqueToken: string.Empty,
-                    ExpiresAtUtc: utcNow,
-                    OrganizationName: organization.DisplayName,
-                    RoleDisplay: OrganizationRoleDisplay.ToDisplayLabel(invitation.Role),
-                    ContactEmail: contactEmail,
-                    StaffLogin: staffLoginDisplay),
-                cancellationToken).ConfigureAwait(false);
+                    cancellationToken)
+                .ConfigureAwait(false);
+            if (personalProof.Failure is not null)
+            {
+                return new LockedAcceptOutcome(personalProof.Failure, Outbound: null);
+            }
 
-            return ApplicationResult<AcceptOrganizationInvitationResultDto>.Success(
+            linkedPersonalUserId = personalProof.PersonalUserId;
+        }
+        else if (existingLoginPrincipal is not null
+                 && await HasActivePersonalAccountProfileAsync(existingLoginPrincipal.Id, cancellationToken)
+                     .ConfigureAwait(false))
+        {
+            return new LockedAcceptOutcome(
+                ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
+                    ApplicationErrorCodes.InvitationRequiresAuthenticatedPersonal,
+                    "Sign in with your Personal account to accept this invitation."),
+                Outbound: null);
+        }
+
+        var staffLogin = await _staffLoginNames
+            .AllocateAsync(contactEmail, organization.PublicOrganizationId!, cancellationToken)
+            .ConfigureAwait(false);
+        var username = await AllocateUniqueUsernameAsync(
+                StaffLoginNameRules.DeriveUsername(staffLogin),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        var resolvedDisplayName = !string.IsNullOrWhiteSpace(displayName)
+            ? displayName.Trim()
+            : invitation.InviteeDisplayName
+              ?? ResolveInviteDisplayName(invitation.FirstName, invitation.LastName, contactEmail);
+        var resolvedFirstName = firstName ?? invitation.FirstName;
+        var resolvedLastName = lastName ?? invitation.LastName;
+
+        var staffUser = PlatformUser.CreateOrganizationStaff(
+            username,
+            staffLogin,
+            contactEmail,
+            invitation.OrganizationId,
+            resolvedDisplayName,
+            utcNow,
+            resolvedFirstName,
+            resolvedLastName,
+            createdByUserId: invitation.InvitedByUserId,
+            linkedPersonalUserId: linkedPersonalUserId);
+
+        await _users.AddAsync(staffUser, cancellationToken).ConfigureAwait(false);
+
+        var passwordHash = _hasher.HashPassword(password);
+        var credential = PlatformUserCredential.Create(
+            staffUser.Id,
+            passwordHash,
+            _hasher.Algorithm,
+            utcNow);
+        // Contact email was delivered the invite; treat as verified for staff login activation.
+        credential.MarkEmailVerified(utcNow);
+        await _credentials.AddAsync(credential, cancellationToken).ConfigureAwait(false);
+        await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        await _ensureProfiles
+            .ExecuteAsync(
+                staffUser.Id,
+                AccountClass.Organization,
+                exclusivePreferredClass: true,
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+
+        var membershipResult = await _addMembership
+            .ExecuteAsync(
+                invitation.OrganizationId,
+                staffUser.Id,
+                invitation.Role,
+                exclusiveOrganizationProfile: true,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (!membershipResult.IsSuccess)
+        {
+            // Abort org-lock transaction — do not leave orphan staff/credential.
+            throw new DomainException(
+                membershipResult.ErrorCode!,
+                membershipResult.ErrorMessage!);
+        }
+
+        if (!string.IsNullOrWhiteSpace(invitation.ProductRole))
+        {
+            await _assignProductLocalRole
+                .ExecuteAsync(
+                    invitation.OrganizationId,
+                    staffUser.Id,
+                    ProductCode.PinoyBusinessPos,
+                    invitation.ProductRole,
+                    invitation.InvitedByUserId ?? staffUser.Id,
+                    reason: "organization staff invitation product role",
+                    cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        invitation.Accept(staffUser.Id, contactEmail, utcNow);
+        await _invitations.UpdateAsync(invitation, cancellationToken).ConfigureAwait(false);
+
+        var staffLoginDisplay = StaffLoginNameRules.FormatForDisplay(staffUser.NormalizedEmail);
+        var actorIdentifier = linkedPersonalUserId is not null
+            ? $"platform-user:{linkedPersonalUserId.Value:D}"
+            : $"platform-user:{staffUser.Id.Value:D}";
+
+        await _audit.WriteAsync(
+            actorIdentifier,
+            AuditActorType.PlatformUser,
+            PlatformAuditActions.InvitationAccepted,
+            nameof(OrganizationInvitation),
+            invitation.Id.Value.ToString("D"),
+            AuditOutcome.Succeeded,
+            organizationId: invitation.OrganizationId,
+            summary: linkedPersonalUserId is null
+                ? $"Organization staff invitation accepted. StaffUserId={staffUser.Id.Value:D}."
+                : $"Organization staff invitation accepted by Personal principal. StaffUserId={staffUser.Id.Value:D}; LinkedPersonalUserId={linkedPersonalUserId.Value:D}.",
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        if (linkedPersonalUserId is not null)
+        {
+            await _audit.WriteAsync(
+                $"platform-user:{linkedPersonalUserId.Value:D}",
+                AuditActorType.PlatformUser,
+                PlatformAuditActions.PersonLinkEstablished,
+                nameof(PlatformUser),
+                staffUser.Id.Value.ToString("D"),
+                AuditOutcome.Succeeded,
+                organizationId: invitation.OrganizationId,
+                summary: $"Formal same-human person-link established. StaffUserId={staffUser.Id.Value:D}; LinkedPersonalUserId={linkedPersonalUserId.Value:D}. Correlation only; not authorization.",
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        var outbound = new PlatformAuthOutboundMessage(
+            PlatformAuthOutboundMessageKinds.OrganizationStaffInvitationAccepted,
+            staffUser.Id.Value,
+            contactEmail,
+            OpaqueToken: string.Empty,
+            ExpiresAtUtc: utcNow,
+            OrganizationName: organization.DisplayName,
+            RoleDisplay: OrganizationRoleDisplay.ToDisplayLabel(invitation.Role),
+            ContactEmail: contactEmail,
+            StaffLogin: staffLoginDisplay);
+
+        return new LockedAcceptOutcome(
+            ApplicationResult<AcceptOrganizationInvitationResultDto>.Success(
                 new AcceptOrganizationInvitationResultDto(
                     staffUser.Id.Value,
                     staffLoginDisplay,
@@ -745,12 +857,56 @@ public sealed class AcceptOrganizationInvitation
                     organization.Id.Value,
                     membershipResult.Value!.Id.Value,
                     invitation.Role.ToString(),
-                    linkedPersonalUserId?.Value));
-        }
-        catch (DomainException ex)
+                    linkedPersonalUserId?.Value)),
+            outbound);
+    }
+
+    private async Task<(ApplicationResult<AcceptOrganizationInvitationResultDto>? Failure, PlatformUserId? PersonalUserId)>
+        ProveEligiblePersonalForInvitationAsync(
+            PlatformUserId authenticatedPersonalUserId,
+            string invitationContactEmail,
+            CancellationToken cancellationToken)
+    {
+        var personal = await _users
+            .GetByIdAsync(authenticatedPersonalUserId, cancellationToken)
+            .ConfigureAwait(false);
+        if (personal is null
+            || personal.IsOrganizationScopedStaff
+            || personal.Status != AccountStatus.Active
+            || !string.Equals(personal.NormalizedEmail, invitationContactEmail, StringComparison.Ordinal)
+            || !await HasActivePersonalAccountProfileAsync(personal.Id, cancellationToken).ConfigureAwait(false))
         {
-            return ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(ex.ErrorCode, ex.Message);
+            // Generic not-found: do not leak whether another Personal account exists.
+            return (
+                ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
+                    ApplicationErrorCodes.InvitationNotFound,
+                    "Invitation was not found or is no longer pending."),
+                null);
         }
+
+        var personalCredential = await _credentials
+            .GetByUserIdAsync(personal.Id, cancellationToken)
+            .ConfigureAwait(false);
+        if (personalCredential?.EmailVerifiedAtUtc is null)
+        {
+            return (
+                ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
+                    ApplicationErrorCodes.InvitationPersonalEmailUnverified,
+                    "Verify your Personal email before accepting this invitation."),
+                null);
+        }
+
+        return (null, personal.Id);
+    }
+
+    private async Task<bool> HasActivePersonalAccountProfileAsync(
+        PlatformUserId userId,
+        CancellationToken cancellationToken)
+    {
+        var profile = await _profiles
+            .GetByUserAndClassAsync(userId, AccountClass.Personal, cancellationToken)
+            .ConfigureAwait(false);
+        return profile is not null && profile.IsActive;
     }
 
     private async Task<string> AllocateUniqueUsernameAsync(

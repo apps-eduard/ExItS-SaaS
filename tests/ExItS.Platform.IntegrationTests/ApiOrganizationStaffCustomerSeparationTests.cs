@@ -628,4 +628,180 @@ public sealed class ApiOrganizationStaffCustomerSeparationTests(PostgreSqlFixtur
         var acceptBody = await acceptResponse.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(ApplicationErrorCodes.CustomerLinkRequestNotFound, acceptBody.GetProperty("errorCode").GetString());
     }
+
+    [Fact]
+    public async Task Accept_as_personal_account_scope_matrix_and_wrong_personal()
+    {
+        var (ownerId, _, _, _, ownerToken) = await SeedOrgOwnerAsync("asm");
+        _ = ownerId;
+        var organizationId = await ResolveSelectedOrganizationAsync(ownerToken);
+        var (personalUserId, contactEmail, personalToken) = await SeedPersonalUserAsync("asmp");
+        var (_, wrongEmail, wrongToken) = await SeedPersonalUserAsync("asmw");
+        _ = wrongEmail;
+
+        using var staffInvite = Authed(
+            HttpMethod.Post,
+            $"/api/v1/organizations/{organizationId}/staff-invitations",
+            ownerToken,
+            new { email = contactEmail, role = "OrganizationMember" });
+        var inviteResponse = await _client.SendAsync(staffInvite);
+        Assert.Equal(HttpStatusCode.Created, inviteResponse.StatusCode);
+        var token = (await inviteResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("acceptToken").GetString()!;
+
+        var unauth = await _client.PostAsJsonAsync(
+            "/api/v1/platform/invitations/accept-as-personal",
+            new { token, password = "Correct-Horse-9!" });
+        Assert.Equal(HttpStatusCode.Unauthorized, unauth.StatusCode);
+
+        var (platformUserId, platformUsername, platformPassword) =
+            await PlatformIntegrationTestUsers.CreatePlatformStaffWithPasswordAsync(_admin, "asmpf");
+        _ = platformUserId;
+        var platformLogin = await _client.PostAsJsonAsync(
+            "/api/v1/platform/auth/login",
+            new { usernameOrEmail = platformUsername, password = platformPassword });
+        platformLogin.EnsureSuccessStatusCode();
+        var platformToken = (await platformLogin.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("sessionToken").GetString()!;
+        using var platformReq = Authed(
+            HttpMethod.Post,
+            "/api/v1/platform/invitations/accept-as-personal",
+            platformToken,
+            new { token, password = "Correct-Horse-9!" });
+        var platformDenied = await _client.SendAsync(platformReq);
+        Assert.Equal(HttpStatusCode.Forbidden, platformDenied.StatusCode);
+        Assert.Equal(
+            ApplicationErrorCodes.AccountScopeDenied,
+            (await platformDenied.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errorCode").GetString());
+
+        var (_, _, staffLogin, staffPassword, _) =
+            await PlatformIntegrationTestUsers.SeedOrgMemberViaInvitationAsync(_admin, _client, "asmorg");
+        var orgLogin = await _client.PostAsJsonAsync(
+            "/api/v1/platform/auth/login",
+            new { usernameOrEmail = staffLogin, password = staffPassword });
+        orgLogin.EnsureSuccessStatusCode();
+        var orgToken = (await orgLogin.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("sessionToken").GetString()!;
+        using var orgReq = Authed(
+            HttpMethod.Post,
+            "/api/v1/platform/invitations/accept-as-personal",
+            orgToken,
+            new { token, password = "Correct-Horse-9!" });
+        var orgDenied = await _client.SendAsync(orgReq);
+        Assert.Equal(HttpStatusCode.Forbidden, orgDenied.StatusCode);
+        Assert.Equal(
+            ApplicationErrorCodes.AccountScopeDenied,
+            (await orgDenied.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errorCode").GetString());
+
+        using var wrongReq = Authed(
+            HttpMethod.Post,
+            "/api/v1/platform/invitations/accept-as-personal",
+            wrongToken,
+            new { token, password = "Correct-Horse-9!" });
+        var wrongDenied = await _client.SendAsync(wrongReq);
+        Assert.Equal(HttpStatusCode.NotFound, wrongDenied.StatusCode);
+        Assert.Equal(
+            ApplicationErrorCodes.InvitationNotFound,
+            (await wrongDenied.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errorCode").GetString());
+
+        using var okReq = Authed(
+            HttpMethod.Post,
+            "/api/v1/platform/invitations/accept-as-personal",
+            personalToken,
+            new { token, password = "Correct-Horse-9!" });
+        var ok = await _client.SendAsync(okReq);
+        Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
+        var okBody = await ok.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(personalUserId, okBody.GetProperty("linkedPersonalUserId").GetGuid());
+
+        var audit = await _admin.GetAsync(
+            $"/api/v1/platform/audit?action=platform.user.person_link.established&organizationId={organizationId:D}&page=1&pageSize=20");
+        Assert.Equal(HttpStatusCode.OK, audit.StatusCode);
+        var auditBody = await audit.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(
+            auditBody.GetProperty("totalCount").GetInt32() >= 1
+            || auditBody.GetProperty("items").GetArrayLength() >= 1);
+        var summary = auditBody.GetProperty("items")[0].GetProperty("summary").GetString() ?? string.Empty;
+        Assert.DoesNotContain("Correct-Horse", summary, StringComparison.Ordinal);
+        Assert.DoesNotContain(token, summary, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Platform_only_same_email_anonymous_accept_creates_unlinked_staff()
+    {
+        var (ownerId, _, _, _, ownerToken) = await SeedOrgOwnerAsync("pls");
+        _ = ownerId;
+        var organizationId = await ResolveSelectedOrganizationAsync(ownerToken);
+        var (platformUserId, platformUsername, platformPassword) =
+            await PlatformIntegrationTestUsers.CreatePlatformStaffWithPasswordAsync(_admin, "pls");
+        var platformEmail = $"{platformUsername}@example.com";
+
+        using var staffInvite = Authed(
+            HttpMethod.Post,
+            $"/api/v1/organizations/{organizationId}/staff-invitations",
+            ownerToken,
+            new { email = platformEmail, role = "OrganizationMember" });
+        var inviteResponse = await _client.SendAsync(staffInvite);
+        Assert.Equal(HttpStatusCode.Created, inviteResponse.StatusCode);
+        var token = (await inviteResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("acceptToken").GetString()!;
+
+        var accept = await _client.PostAsJsonAsync(
+            "/api/v1/platform/invitations/accept",
+            new { token, password = "Correct-Horse-9!" });
+        Assert.Equal(HttpStatusCode.OK, accept.StatusCode);
+        var body = await accept.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.NotEqual(platformUserId, body.GetProperty("userId").GetGuid());
+        Assert.True(
+            !body.TryGetProperty("linkedPersonalUserId", out var linked)
+            || linked.ValueKind == JsonValueKind.Null);
+        _ = platformPassword;
+    }
+
+    [Fact]
+    public async Task Parallel_same_token_accept_creates_exactly_one_staff_principal()
+    {
+        var (ownerId, _, _, _, ownerToken) = await SeedOrgOwnerAsync("par");
+        _ = ownerId;
+        var organizationId = await ResolveSelectedOrganizationAsync(ownerToken);
+        var contactEmail = $"{Unique("parc")}@example.com";
+
+        using var staffInvite = Authed(
+            HttpMethod.Post,
+            $"/api/v1/organizations/{organizationId}/staff-invitations",
+            ownerToken,
+            new { email = contactEmail, role = "OrganizationMember", productRole = "Cashier" });
+        var inviteResponse = await _client.SendAsync(staffInvite);
+        Assert.Equal(HttpStatusCode.Created, inviteResponse.StatusCode);
+        var token = (await inviteResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("acceptToken").GetString()!;
+
+        using var clientA = _factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
+        using var clientB = _factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
+        var payload = new { token, password = "Correct-Horse-9!" };
+        var taskA = clientA.PostAsJsonAsync("/api/v1/platform/invitations/accept", payload);
+        var taskB = clientB.PostAsJsonAsync("/api/v1/platform/invitations/accept", payload);
+        await Task.WhenAll(taskA, taskB);
+        using var responseA = await taskA;
+        using var responseB = await taskB;
+
+        var statuses = new[] { responseA.StatusCode, responseB.StatusCode };
+        Assert.Contains(HttpStatusCode.OK, statuses);
+        Assert.Single(statuses, s => s == HttpStatusCode.OK);
+        Assert.Contains(
+            statuses,
+            s => s is HttpStatusCode.NotFound or HttpStatusCode.Conflict or HttpStatusCode.BadRequest);
+
+        var membersAdmin = await _admin.GetAsync(
+            $"/api/v1/platform/organizations/{organizationId}/members?page=1&pageSize=50");
+        membersAdmin.EnsureSuccessStatusCode();
+        var staffMembers = (await membersAdmin.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("items").EnumerateArray()
+            .Where(i => i.GetProperty("role").GetString() == "OrganizationMember")
+            .ToList();
+        Assert.Single(staffMembers);
+
+        var staffUserId = staffMembers[0].GetProperty("userId").GetGuid();
+        var userAdmin = await _admin.GetAsync($"/api/v1/platform/users/{staffUserId}");
+        userAdmin.EnsureSuccessStatusCode();
+        var userBody = await userAdmin.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains("@ORG", userBody.GetProperty("email").GetString(), StringComparison.OrdinalIgnoreCase);
+    }
 }
