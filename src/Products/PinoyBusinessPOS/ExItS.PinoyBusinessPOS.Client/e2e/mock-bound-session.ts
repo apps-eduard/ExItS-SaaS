@@ -40,7 +40,11 @@ function sessionBody(opts: SessionClassOptions) {
   };
 }
 
-export async function mockBoundCashierSession(page: Page, grant: MockGrantOptions = {}) {
+async function mockBoundOrgSession(
+  page: Page,
+  sessionOpts: SessionClassOptions,
+  grant: MockGrantOptions = {},
+) {
   const {
     mappedPosRoleCode = "Cashier",
     productLocalRoleCode = "Cashier",
@@ -52,10 +56,11 @@ export async function mockBoundCashierSession(page: Page, grant: MockGrantOption
   let loggedIn = false;
   const session = sessionBody({
     accountClass: "Organization",
-    username: "cashier",
-    displayName: "Cashier One",
-    email: "cashier@ORG000001",
-    organizationContextLocked: true,
+    username: sessionOpts.username ?? "cashier",
+    displayName: sessionOpts.displayName ?? "Cashier One",
+    email: sessionOpts.email ?? "cashier@ORG000001",
+    organizationContextLocked: sessionOpts.organizationContextLocked ?? true,
+    homeOrganizationId: sessionOpts.homeOrganizationId,
   });
 
   await page.route("**/platform-api/**", async (route) => {
@@ -165,6 +170,83 @@ export async function mockBoundCashierSession(page: Page, grant: MockGrantOption
   });
 }
 
+export async function mockBoundCashierSession(page: Page, grant: MockGrantOptions = {}) {
+  await mockBoundOrgSession(
+    page,
+    {
+      username: "cashier",
+      displayName: "Cashier One",
+      email: "cashier@ORG000001",
+      organizationContextLocked: true,
+    },
+    {
+      mappedPosRoleCode: "Cashier",
+      productLocalRoleCode: "Cashier",
+      organizationManagementAuthority: false,
+      membershipRole: "OrganizationMember",
+      ...grant,
+    },
+  );
+}
+
+export async function mockBoundOwnerSession(page: Page, grant: MockGrantOptions = {}) {
+  await mockBoundOrgSession(
+    page,
+    {
+      username: "owner",
+      displayName: "Owner One",
+      email: "owner@example.com",
+      organizationContextLocked: false,
+    },
+    {
+      mappedPosRoleCode: "Owner",
+      productLocalRoleCode: "Owner",
+      organizationManagementAuthority: true,
+      membershipRole: "OrganizationOwner",
+      ...grant,
+    },
+  );
+}
+
+export async function mockBoundManagerSession(page: Page, grant: MockGrantOptions = {}) {
+  await mockBoundOrgSession(
+    page,
+    {
+      username: "manager",
+      displayName: "Manager One",
+      email: "manager@ORG000001",
+      organizationContextLocked: true,
+    },
+    {
+      mappedPosRoleCode: "StoreManager",
+      productLocalRoleCode: "Manager",
+      organizationManagementAuthority: false,
+      membershipRole: "OrganizationMember",
+      ...grant,
+    },
+  );
+}
+
+export async function mockBoundOrgAdminSession(page: Page, grant: MockGrantOptions = {}) {
+  await mockBoundOrgSession(
+    page,
+    {
+      username: "orgadmin",
+      displayName: "Org Admin",
+      email: "admin@ORG000001",
+      organizationContextLocked: true,
+    },
+    {
+      mappedPosRoleCode: null,
+      productLocalRoleCode: null,
+      organizationManagementAuthority: true,
+      membershipRole: "OrganizationAdministrator",
+      productAccessAllowed: true,
+      ...grant,
+    },
+  );
+}
+
 /** Personal AccountClass session with no eligible organizations. */
 export async function mockPersonalSession(page: Page) {
   let loggedIn = false;
@@ -246,6 +328,27 @@ export async function signInAndBindCashier(page: Page) {
   await page.getByRole("button", { name: "Sign in" }).click();
 }
 
+export async function signInAndBindOwner(page: Page) {
+  await page.goto("/sign-in");
+  await page.getByLabel("Email or staff login").fill("owner");
+  await page.getByLabel("Password").fill("secret");
+  await page.getByRole("button", { name: "Sign in" }).click();
+}
+
+export async function signInAndBindManager(page: Page) {
+  await page.goto("/sign-in");
+  await page.getByLabel("Email or staff login").fill("manager");
+  await page.getByLabel("Password").fill("secret");
+  await page.getByRole("button", { name: "Sign in" }).click();
+}
+
+export async function signInAndBindOrgAdmin(page: Page) {
+  await page.goto("/sign-in");
+  await page.getByLabel("Email or staff login").fill("orgadmin");
+  await page.getByLabel("Password").fill("secret");
+  await page.getByRole("button", { name: "Sign in" }).click();
+}
+
 export async function signInAsPersonal(page: Page) {
   await page.goto("/sign-in");
   await page.getByLabel("Email or staff login").fill("paul@gmail.com");
@@ -258,4 +361,11 @@ export async function signInAsStaffLogin(page: Page) {
   await page.getByLabel("Email or staff login").fill("paul@ORG907757");
   await page.getByLabel("Password").fill("staff-secret");
   await page.getByRole("button", { name: "Sign in" }).click();
+}
+
+export async function clientNavigate(page: Page, path: string) {
+  await page.evaluate((next) => {
+    window.history.pushState({}, "", next);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }, path);
 }

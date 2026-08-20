@@ -1,10 +1,17 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  canCreateSale,
+  canUseAdminExperience,
+  canUseOperationsExperience,
+  resolveEffectivePosRoleCode,
+} from "@/access/pos-capabilities";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSellingMode } from "@/selling/SellingModeProvider";
+import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type RoleHomeShellProps = {
   titleKey: "role.ownerTitle" | "role.managerTitle" | "role.cashierTitle";
@@ -13,6 +20,7 @@ type RoleHomeShellProps = {
   bodyKey: "role.ownerBody" | "role.managerBody" | "role.cashierBody";
   returnRoute: string;
   primarySell?: boolean;
+  showExperienceChooser?: boolean;
 };
 
 export function RoleHomeShell({
@@ -22,10 +30,17 @@ export function RoleHomeShell({
   bodyKey,
   returnRoute,
   primarySell = false,
+  showExperienceChooser = false,
 }: RoleHomeShellProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { enter } = useSellingMode();
+  const { sessionGrant } = useWorkspace();
+
+  const canAdmin = canUseAdminExperience(sessionGrant);
+  const canOps = canUseOperationsExperience(sessionGrant);
+  const canSell = canCreateSale(sessionGrant);
+  const securityRole = resolveEffectivePosRoleCode(sessionGrant);
 
   function startSelling() {
     enter(returnRoute);
@@ -38,17 +53,63 @@ export function RoleHomeShell({
       <StatusChip tone="success">{t(badgeKey)}</StatusChip>
       <Card>
         <p className="m-0 text-[length:var(--exits-text-md)]">{t(bodyKey)}</p>
-      </Card>
-      <div className="flex flex-wrap gap-2">
-        <Button type="button" variant={primarySell ? "default" : "ghost"} onClick={startSelling}>
-          {primarySell ? t("role.openSellFloor") : t("role.startSelling")}
-        </Button>
-        {primarySell ? (
-          <Button type="button" variant="ghost" onClick={() => navigate("/workspace")}>
-            {t("workspace.switch")}
-          </Button>
+        {securityRole ? (
+          <p
+            className="mt-3 mb-0 text-[length:var(--exits-text-sm)] text-muted"
+            data-testid="security-role-label"
+          >
+            {t("experience.securityRole")}: {securityRole}
+          </p>
         ) : null}
-      </div>
+      </Card>
+
+      {showExperienceChooser ? (
+        <div
+          className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3"
+          data-testid="owner-experience-chooser"
+          role="group"
+          aria-label={t("experience.chooserLabel")}
+        >
+          {canAdmin ? (
+            <Button asChild className="min-h-11 w-full">
+              <Link to="/org">{t("experience.manageBusiness")}</Link>
+            </Button>
+          ) : null}
+          {canOps ? (
+            <Button asChild variant="ghost" className="min-h-11 w-full">
+              <Link to="/role/manager">{t("experience.operations")}</Link>
+            </Button>
+          ) : null}
+          {canSell ? (
+            <Button type="button" className="min-h-11 w-full" onClick={startSelling}>
+              {t("experience.startSelling")}
+            </Button>
+          ) : null}
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {canSell ? (
+            <Button
+              type="button"
+              className="min-h-11"
+              variant={primarySell ? "default" : "ghost"}
+              onClick={startSelling}
+            >
+              {primarySell ? t("role.openSellFloor") : t("role.startSelling")}
+            </Button>
+          ) : null}
+          {primarySell ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="min-h-11"
+              onClick={() => navigate("/workspace")}
+            >
+              {t("workspace.switch")}
+            </Button>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }
@@ -61,6 +122,7 @@ export function OwnerRoleHomePage() {
       badgeKey="role.ownerBadge"
       bodyKey="role.ownerBody"
       returnRoute="/role/owner"
+      showExperienceChooser
     />
   );
 }

@@ -1,9 +1,17 @@
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { canCreateSale } from "@/access/pos-capabilities";
+import {
+  canCreateSale,
+  canEnterCashierRoleHome,
+  canEnterManagerRoleHome,
+  canEnterOwnerRoleHome,
+  canInviteOrganizationStaff,
+  canUseAdminExperience,
+} from "@/access/pos-capabilities";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { ExperienceAccessDeniedPage } from "@/features/role/ExperienceAccessDeniedPage";
 import { SellAccessDeniedPage } from "@/features/sell/SellAccessDeniedPage";
 import { useI18n } from "@/i18n/I18nProvider";
 import { sessionAccountClass, type AccountClassName } from "@/session/account-class";
@@ -152,6 +160,57 @@ export function RequireCreateSale({ children }: { children: ReactNode }) {
 
   if (!canCreateSale(sessionGrant)) {
     return <SellAccessDeniedPage />;
+  }
+
+  return children;
+}
+
+/** Organization Web / admin experience — Owner or OrganizationAdministrator, not POS Manager alone. */
+export function RequireAdminExperience({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canUseAdminExperience(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="admin-experience-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireInviteStaff({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canInviteOrganizationStaff(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="staff-invite-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireOwnerRoleHome({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canEnterOwnerRoleHome(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="owner-role-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireManagerRoleHome({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canEnterManagerRoleHome(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="manager-role-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireCashierRoleHome({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canEnterCashierRoleHome(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="cashier-role-denied" />;
   }
 
   return children;

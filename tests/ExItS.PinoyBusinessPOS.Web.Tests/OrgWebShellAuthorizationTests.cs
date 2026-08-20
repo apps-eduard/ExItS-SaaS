@@ -12,6 +12,7 @@ public sealed class OrgWebShellAuthorizationTests
     {
         var shell = new OrgWebShellState { MembershipRole = "OrganizationOwner" };
         Assert.True(shell.CanAccessOrganizationWeb);
+        Assert.True(shell.HasOrganizationManagementAuthority);
         Assert.True(shell.CanSee("overview"));
         Assert.True(shell.CanSee("profile"));
         Assert.True(shell.CanSee("branches"));
@@ -23,7 +24,7 @@ public sealed class OrgWebShellAuthorizationTests
     }
 
     [Fact]
-    public void StoreManager_sees_day_to_day_not_owner_only()
+    public void StoreManager_alone_is_denied_organization_web_admin_host()
     {
         var shell = new OrgWebShellState
         {
@@ -38,19 +39,44 @@ public sealed class OrgWebShellAuthorizationTests
                 nameof(UtangCapability.ViewShifts),
                 nameof(UtangCapability.ViewRegisters),
                 nameof(UtangCapability.ViewCustomersAndHistory),
-                nameof(UtangCapability.ViewOperationalSetup)
+                nameof(UtangCapability.ViewOperationalSetup),
+                nameof(UtangCapability.CreateSale),
+                nameof(UtangCapability.ManageInventory)
             ]
         };
 
+        Assert.True(shell.IsPosOperationsManager);
+        Assert.False(shell.HasOrganizationManagementAuthority);
+        Assert.False(shell.CanAccessOrganizationWeb);
+        Assert.False(shell.CanSee("overview"));
+        Assert.False(shell.CanSee("branches"));
+        Assert.False(shell.CanSee("staff"));
+        Assert.False(shell.CanSee("products"));
+        Assert.False(shell.CanSee("reports"));
+    }
+
+    [Fact]
+    public void OrganizationAdministrator_sees_day_to_day_admin_not_owner_only()
+    {
+        var shell = new OrgWebShellState
+        {
+            MembershipRole = "OrganizationAdministrator",
+            PosRole = null,
+            AllowedCapabilities =
+            [
+                nameof(UtangCapability.ViewDashboard),
+                nameof(UtangCapability.ViewCatalog)
+            ]
+        };
+
+        Assert.True(shell.IsOrganizationAdministrator);
+        Assert.True(shell.HasOrganizationManagementAuthority);
+        Assert.False(shell.IsPosOperationsManager);
         Assert.True(shell.CanAccessOrganizationWeb);
-        Assert.True(shell.IsOrgManager);
         Assert.True(shell.CanSee("overview"));
         Assert.True(shell.CanSee("branches"));
         Assert.True(shell.CanSee("staff"));
-        Assert.True(shell.CanSee("products"));
-        Assert.True(shell.CanSee("reports"));
         Assert.False(shell.CanSee("ownership-transfer"));
-        Assert.False(shell.CanSee("sales-documents"));
         Assert.False(shell.CanSee("subscription"));
     }
 

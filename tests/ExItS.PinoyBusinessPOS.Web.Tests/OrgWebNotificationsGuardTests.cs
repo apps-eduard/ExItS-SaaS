@@ -50,7 +50,9 @@ public sealed class OrgWebNotificationsGuardTests
     public void Shell_allows_owner_and_manager_notifications_and_compact_overview_banner()
     {
         var shell = File.ReadAllText(Path.Combine(WebProject(), "Services", "WebHostServices.cs"));
-        Assert.Contains("\"notifications\" => IsOrgOwner || IsOrgManager", shell, StringComparison.Ordinal);
+        Assert.Contains("\"notifications\" => orgAdmin", shell, StringComparison.Ordinal);
+        Assert.Contains("HasOrganizationManagementAuthority", shell, StringComparison.Ordinal);
+        Assert.Contains("IsPosOperationsManager", shell, StringComparison.Ordinal);
 
         var overview = File.ReadAllText(Path.Combine(WebProject(),
             "Components", "Pages", "Overview.razor"));

@@ -169,24 +169,35 @@ export const en = {
   "role.ownerTitle": "Owner home",
   "role.ownerLede": "Organization essentials and POS operations entry.",
   "role.ownerBadge": "Owner",
-  "role.ownerBody": "Start selling opens the sell floor without changing your POS role assignment.",
+  "role.ownerBody":
+    "Choose Manage business, Operations, or Start selling. Your Owner security role does not change.",
   "role.managerTitle": "Manager home",
   "role.managerLede": "Daily store operations and selling entry.",
   "role.managerBadge": "Manager",
-  "role.managerBody": "Use Start selling for tablet or desktop checkout when authorized.",
+  "role.managerBody":
+    "Operations only by default. Start selling opens the sell floor when CreateSale is allowed — your Manager role does not change.",
   "role.cashierTitle": "Cashier home",
   "role.cashierLede": "Shift-ready selling entry for checkout staff.",
   "role.cashierBadge": "Cashier",
   "role.cashierBody":
-    "Open sell floor to scan and build a sale. Shifts and registers arrive in later packages.",
+    "Open sell floor to scan and build a sale. Admin and manager experiences are not available.",
   "org.title": "Organization essentials",
-  "org.lede": "You have organization access without an assigned POS role.",
-  "org.badge": "No POS role",
+  "org.lede": "Business management for organization owners and delegated administrators.",
+  "org.badge": "Admin",
   "org.body":
-    "Assign an Owner, Manager, or Cashier POS role to sell from this client. Organization Web remains the place for heavy administration.",
+    "Organization Web / admin experience is separate from POS Manager operations. Invite staff requires Owner membership authority.",
   "org.noPayChrome": "Pay and sell-floor checkout are not shown here.",
-  "org.emptyTitle": "POS role required",
-  "org.emptyDetail": "Ask an organization owner to assign a POS role before selling.",
+  "org.emptyTitle": "Admin experience",
+  "org.emptyDetail":
+    "Assign Owner, Manager, or Cashier POS roles for selling. Heavy administration stays on this surface.",
+  "experience.deniedTitle": "Experience not available",
+  "experience.deniedDetail":
+    "Your account does not have authority for this screen. Security role is unchanged.",
+  "experience.chooserLabel": "Owner experience",
+  "experience.manageBusiness": "Manage business",
+  "experience.operations": "Operations",
+  "experience.startSelling": "Start selling",
+  "experience.securityRole": "Security role",
 };
 
 export const filPH: Record<keyof typeof en, string> = {
@@ -363,25 +374,34 @@ export const filPH: Record<keyof typeof en, string> = {
   "role.ownerLede": "Organization essentials at entry sa POS operations.",
   "role.ownerBadge": "Owner",
   "role.ownerBody":
-    "Ang Start selling ay bubuksan ang sell floor nang hindi binabago ang POS role assignment mo.",
+    "Pumili ng Manage business, Operations, o Start selling. Hindi nagbabago ang Owner security role.",
   "role.managerTitle": "Manager home",
   "role.managerLede": "Araw-araw na store operations at selling entry.",
   "role.managerBadge": "Manager",
   "role.managerBody":
-    "Gamitin ang Start selling para sa tablet o desktop checkout kapag awtorisado.",
+    "Operations lang by default. Ang Start selling ay bubuksan ang sell floor kapag allowed ang CreateSale — hindi nagbabago ang Manager role.",
   "role.cashierTitle": "Cashier home",
   "role.cashierLede": "Shift-ready selling entry para sa checkout staff.",
   "role.cashierBadge": "Cashier",
   "role.cashierBody":
-    "Buksan ang sell floor para mag-scan at magbuo ng sale. Darating ang shifts at registers sa susunod na packages.",
+    "Buksan ang sell floor para mag-scan at magbuo ng sale. Hindi available ang admin at manager experiences.",
   "org.title": "Organization essentials",
-  "org.lede": "May organization access ka nang walang assigned POS role.",
-  "org.badge": "Walang POS role",
+  "org.lede": "Business management para sa organization owners at delegated administrators.",
+  "org.badge": "Admin",
   "org.body":
-    "Magtalaga ng Owner, Manager, o Cashier POS role para magbenta mula sa client na ito. Organization Web pa rin ang para sa mabibigat na admin.",
+    "Hiwalay ang Organization Web / admin experience sa POS Manager operations. Kailangan ng Owner membership authority para mag-invite ng staff.",
   "org.noPayChrome": "Hindi ipinapakita dito ang Pay at sell-floor checkout.",
-  "org.emptyTitle": "Kailangan ng POS role",
-  "org.emptyDetail": "Hilingin sa organization owner na magtalaga ng POS role bago magbenta.",
+  "org.emptyTitle": "Admin experience",
+  "org.emptyDetail":
+    "Magtalaga ng Owner, Manager, o Cashier POS roles para magbenta. Dito nananatili ang mabibigat na administration.",
+  "experience.deniedTitle": "Hindi available ang experience",
+  "experience.deniedDetail":
+    "Walang authority ang account mo para sa screen na ito. Hindi nagbabago ang security role.",
+  "experience.chooserLabel": "Owner experience",
+  "experience.manageBusiness": "I-manage ang business",
+  "experience.operations": "Operations",
+  "experience.startSelling": "Magsimulang magbenta",
+  "experience.securityRole": "Security role",
 };
 
 export type MessageKey = keyof typeof en;

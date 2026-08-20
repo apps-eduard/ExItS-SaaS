@@ -1,5 +1,15 @@
 import { expect, test } from "@playwright/test";
-import { mockBoundCashierSession, mockPersonalSession, signInAndBindCashier, signInAsPersonal } from "./mock-bound-session";
+import {
+  clientNavigate,
+  mockBoundCashierSession,
+  mockBoundManagerSession,
+  mockBoundOwnerSession,
+  mockPersonalSession,
+  signInAndBindCashier,
+  signInAndBindManager,
+  signInAndBindOwner,
+  signInAsPersonal,
+} from "./mock-bound-session";
 
 test.describe("RMAP-01b staff identity flows", () => {
   test.use({ serviceWorkers: "block" });
@@ -124,8 +134,8 @@ test.describe("RMAP-01b staff identity flows", () => {
     await expect(page.getByTestId("account-class-denied")).toBeVisible();
   });
 
-  test("org staff invite form creates invitation and shows accept path", async ({ page }) => {
-    await mockBoundCashierSession(page);
+  test("Owner can create staff invitation through invite UI", async ({ page }) => {
+    await mockBoundOwnerSession(page);
     await page.route("**/platform-api/api/v1/platform/organizations/*/invitations", async (route) => {
       if (route.request().method() === "POST") {
         return route.fulfill({
@@ -144,18 +154,33 @@ test.describe("RMAP-01b staff identity flows", () => {
       return route.fulfill({ status: 404, body: "{}" });
     });
 
-    await signInAndBindCashier(page);
-    await expect(page.getByRole("heading", { name: "Cashier home" })).toBeVisible();
-    // Client-side navigate — full page.goto re-runs workspace auto-bind race in preview.
-    await page.evaluate(() => {
-      window.history.pushState({}, "", "/org/staff/invite");
-      window.dispatchEvent(new PopStateEvent("popstate"));
-    });
+    await signInAndBindOwner(page);
+    await expect(page.getByRole("heading", { name: "Owner home" })).toBeVisible();
+    await page.getByRole("link", { name: "Manage business" }).click();
+    await expect(page.getByTestId("org-essentials-page")).toBeVisible();
+    await page.getByRole("link", { name: "Invite staff" }).click();
     await expect(page.getByTestId("staff-invite-page")).toBeVisible();
-    await expect(page).toHaveURL(/\/org\/staff\/invite/);
     await page.getByLabel("Contact / recovery email").fill("newhire@example.com");
     await page.getByRole("button", { name: "Create invitation" }).click();
     await expect(page.getByTestId("staff-invite-created")).toBeVisible();
     await expect(page.getByText(/one-shot-token/)).toBeVisible();
+  });
+
+  test("Cashier cannot open staff invite route", async ({ page }) => {
+    await mockBoundCashierSession(page);
+    await signInAndBindCashier(page);
+    await expect(page.getByRole("heading", { name: "Cashier home" })).toBeVisible();
+    await clientNavigate(page, "/org/staff/invite");
+    await expect(page.getByTestId("admin-experience-denied")).toBeVisible();
+    await expect(page.getByTestId("staff-invite-page")).toHaveCount(0);
+  });
+
+  test("Manager cannot open staff invite route", async ({ page }) => {
+    await mockBoundManagerSession(page);
+    await signInAndBindManager(page);
+    await expect(page.getByRole("heading", { name: "Manager home" })).toBeVisible();
+    await clientNavigate(page, "/org/staff/invite");
+    await expect(page.getByTestId("admin-experience-denied")).toBeVisible();
+    await expect(page.getByTestId("staff-invite-page")).toHaveCount(0);
   });
 });

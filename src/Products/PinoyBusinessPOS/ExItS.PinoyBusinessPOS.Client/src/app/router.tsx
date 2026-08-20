@@ -21,23 +21,18 @@ import { AppShell } from "@/layouts/AppShell";
 import {
   AllowInvitationAccept,
   GuestOnly,
+  RequireAdminExperience,
+  RequireCashierRoleHome,
   RequireCreateSale,
+  RequireInviteStaff,
+  RequireManagerRoleHome,
   RequireOrganizationSession,
+  RequireOwnerRoleHome,
   RequirePersonalSession,
   RequireSession,
   RequireWorkspaceBound,
   WorkspaceBootGate,
 } from "@/session/SessionGuards";
-
-function OrganizationWorkspaceOutlet() {
-  return (
-    <RequireOrganizationSession>
-      <RequireWorkspaceBound>
-        <Outlet />
-      </RequireWorkspaceBound>
-    </RequireOrganizationSession>
-  );
-}
 
 export const appRoutes = [
   {
@@ -114,7 +109,9 @@ export const appRoutes = [
             element: (
               <RequireOrganizationSession>
                 <RequireWorkspaceBound>
-                  <OwnerRoleHomePage />
+                  <RequireOwnerRoleHome>
+                    <OwnerRoleHomePage />
+                  </RequireOwnerRoleHome>
                 </RequireWorkspaceBound>
               </RequireOrganizationSession>
             ),
@@ -124,7 +121,9 @@ export const appRoutes = [
             element: (
               <RequireOrganizationSession>
                 <RequireWorkspaceBound>
-                  <ManagerRoleHomePage />
+                  <RequireManagerRoleHome>
+                    <ManagerRoleHomePage />
+                  </RequireManagerRoleHome>
                 </RequireWorkspaceBound>
               </RequireOrganizationSession>
             ),
@@ -134,17 +133,34 @@ export const appRoutes = [
             element: (
               <RequireOrganizationSession>
                 <RequireWorkspaceBound>
-                  <CashierRoleHomePage />
+                  <RequireCashierRoleHome>
+                    <CashierRoleHomePage />
+                  </RequireCashierRoleHome>
                 </RequireWorkspaceBound>
               </RequireOrganizationSession>
             ),
           },
           {
             path: "org",
-            element: <OrganizationWorkspaceOutlet />,
+            element: (
+              <RequireOrganizationSession>
+                <RequireWorkspaceBound>
+                  <RequireAdminExperience>
+                    <Outlet />
+                  </RequireAdminExperience>
+                </RequireWorkspaceBound>
+              </RequireOrganizationSession>
+            ),
             children: [
               { index: true, element: <OrgEssentialsPage /> },
-              { path: "staff/invite", element: <OrgStaffInvitePage /> },
+              {
+                path: "staff/invite",
+                element: (
+                  <RequireInviteStaff>
+                    <OrgStaffInvitePage />
+                  </RequireInviteStaff>
+                ),
+              },
             ],
           },
           { path: "*", element: <NotFoundPage /> },

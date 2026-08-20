@@ -9,11 +9,22 @@ export type PosSessionGrantFacts = Pick<
   | "organizationManagementAuthority"
 >;
 
+/** Default POS sell-floor roles (Owner / Manager / Cashier). Legacy Admin kept for compat. */
 const SELL_FLOOR_ROLE_CODES = new Set(["owner", "admin", "storemanager", "cashier", "manager"]);
+
+export type PosExperienceMode = "admin" | "operations" | "selling";
 
 export function normalizeRoleCode(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
+}
+
+function roleEquals(value: string | null | undefined, expected: string): boolean {
+  const normalized = normalizeRoleCode(value);
+  return (
+    normalized != null &&
+    normalized.localeCompare(expected, undefined, { sensitivity: "accent" }) === 0
+  );
 }
 
 /** Prefer mapped POS role; fall back to Platform product-local role (Manager → StoreManager). */
@@ -41,6 +52,68 @@ export function resolveEffectivePosRoleCode(
   return local;
 }
 
+export function isOrganizationOwnerMembership(
+  grant: PosSessionGrantFacts | null | undefined,
+): boolean {
+  return roleEquals(grant?.membershipRole, "OrganizationOwner");
+}
+
+export function isOrganizationAdministratorMembership(
+  grant: PosSessionGrantFacts | null | undefined,
+): boolean {
+  return roleEquals(grant?.membershipRole, "OrganizationAdministrator");
+}
+
+/**
+ * Admin-side organization management (Owner or OrganizationAdministrator).
+ * Independent of POS StoreManager / Manager.
+ */
+export function hasOrganizationManagementAuthority(
+  grant: PosSessionGrantFacts | null | undefined,
+): boolean {
+  if (!grant) {
+    return false;
+  }
+  if (grant.organizationManagementAuthority === true) {
+    return true;
+  }
+  return isOrganizationOwnerMembership(grant) || isOrganizationAdministratorMembership(grant);
+}
+
+/**
+ * Staff invite — matches Platform EnsureCanManageMemberships org path:
+ * OrganizationOwner membership only (not POS Manager, not Administrator alone).
+ */
+export function canInviteOrganizationStaff(
+  grant: PosSessionGrantFacts | null | undefined,
+): boolean {
+  return isOrganizationOwnerMembership(grant);
+}
+
+export function isPosOwnerRole(grant: PosSessionGrantFacts | null | undefined): boolean {
+  const role = resolveEffectivePosRoleCode(grant);
+  if (!role) {
+    return false;
+  }
+  const lower = role.toLowerCase();
+  return lower === "owner" || lower === "admin";
+}
+
+/** POS StoreManager / Manager — operations, not Organization Web admin. */
+export function isPosOperationsManager(grant: PosSessionGrantFacts | null | undefined): boolean {
+  const role = resolveEffectivePosRoleCode(grant);
+  if (!role) {
+    return false;
+  }
+  const lower = role.toLowerCase();
+  return lower === "storemanager" || lower === "manager";
+}
+
+export function isPosCashierRole(grant: PosSessionGrantFacts | null | undefined): boolean {
+  const role = resolveEffectivePosRoleCode(grant);
+  return role != null && role.toLowerCase() === "cashier";
+}
+
 function isSellFloorPosRole(roleCode: string | null): boolean {
   if (!roleCode) {
     return false;
@@ -62,8 +135,65 @@ export function canCreateSale(grant: PosSessionGrantFacts | null | undefined): b
   return canEnterSellFloor(grant);
 }
 
+/** Admin / business-management experience (Organization Web essentials in React). */
+export function canUseAdminExperience(grant: PosSessionGrantFacts | null | undefined): boolean {
+  return hasOrganizationManagementAuthority(grant);
+}
+
+/** Manager-style operations experience. */
+export function canUseOperationsExperience(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  return isPosOwnerRole(grant) || isPosOperationsManager(grant);
+}
+
+/** Cashier / selling experience — CreateSale / EnterPos via role matrix. */
+export function canUseSellingExperience(grant: PosSessionGrantFacts | null | undefined): boolean {
+  return canCreateSale(grant);
+}
+
+export function canEnterOwnerRoleHome(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  return isPosOwnerRole(grant);
+}
+
+export function canEnterManagerRoleHome(grant: PosSessionGrantFacts | null | undefined): boolean {
+  return canUseOperationsExperience(grant);
+}
+
+export function canEnterCashierRoleHome(grant: PosSessionGrantFacts | null | undefined): boolean {
+  return canUseSellingExperience(grant);
+}
+
+/**
+ * Whether the principal may intentionally select an experience mode.
+ * Does not mutate security role — presentation only.
+ */
+export function canSelectExperienceMode(
+  grant: PosSessionGrantFacts | null | undefined,
+  mode: PosExperienceMode,
+): boolean {
+  switch (mode) {
+    case "admin":
+      return canUseAdminExperience(grant);
+    case "operations":
+      return canUseOperationsExperience(grant);
+    case "selling":
+      return canUseSellingExperience(grant);
+    default:
+      return false;
+  }
+}
+
 export function resolveRoleHomeRoute(grant: PosSessionGrantFacts | null | undefined): string {
   if (!grant?.productAccessAllowed) {
+    // Admin-only (management authority, no POS sell role) still lands on /org.
+    if (canUseAdminExperience(grant)) {
+      return "/org";
+    }
     return "/";
   }
 
@@ -83,12 +213,7 @@ export function resolveRoleHomeRoute(grant: PosSessionGrantFacts | null | undefi
     }
   }
 
-  if (
-    grant.organizationManagementAuthority ||
-    normalizeRoleCode(grant.membershipRole)?.localeCompare("OrganizationOwner", undefined, {
-      sensitivity: "accent",
-    }) === 0
-  ) {
+  if (canUseAdminExperience(grant)) {
     return "/org";
   }
 
