@@ -21,6 +21,7 @@ import {
   type PlatformLoginWire,
   type PlatformProblem,
 } from "@/api/platform-auth/browser-session";
+import { clearPlatformAntiforgeryToken } from "@/api/platform-auth/platform-antiforgery";
 import { isFrontendLocalValidationMode } from "@/api/platform-auth/local-validation-gate";
 
 export type QuickLoginIdentity = {
@@ -61,7 +62,11 @@ export async function loginWithPassword(
 }
 
 export async function logoutSession(): Promise<void> {
-  await platformApiJson(AUTH_LOGOUT_PATH, { method: "POST" });
+  try {
+    await platformApiJson(AUTH_LOGOUT_PATH, { method: "POST" });
+  } finally {
+    clearPlatformAntiforgeryToken();
+  }
 }
 
 export async function fetchLocalValidationIdentities(): Promise<QuickLoginIdentity[]> {

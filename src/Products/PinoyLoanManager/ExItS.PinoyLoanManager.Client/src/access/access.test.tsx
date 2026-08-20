@@ -5,6 +5,7 @@ import { Route, Routes } from "react-router-dom";
 import { HomePage } from "@/features/home/HomePage";
 import { AppShell } from "@/layouts/AppShell";
 import { ORG_ALLOWED, ORG_DENIED, stubAccessFetch } from "@/test/access-mocks";
+import { clearPlatformAntiforgeryToken } from "@/api/platform-auth/platform-antiforgery";
 import { renderWithAccessGate } from "@/test/render";
 
 function renderGate() {
@@ -20,6 +21,7 @@ function renderGate() {
 describe("organization product access gate", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    clearPlatformAntiforgeryToken();
   });
 
   it("allows workspace entry when product access is granted", async () => {

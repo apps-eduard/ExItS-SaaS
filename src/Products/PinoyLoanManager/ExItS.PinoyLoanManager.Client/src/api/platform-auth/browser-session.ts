@@ -1,3 +1,12 @@
+import {
+  getRememberedAntiforgeryHeader,
+  isAntiforgeryExemptPath,
+  isMutationMethod,
+  PlatformAntiforgeryDefaults,
+  rememberAntiforgeryBootstrap,
+  type AntiforgeryBootstrap,
+} from "@/api/platform-auth/platform-antiforgery";
+
 export const PLATFORM_API_BASE_PATH = "/platform-api";
 
 const ABSOLUTE_API_PATTERN = /^https?:\/\//i;
@@ -77,16 +86,62 @@ export type PlatformProblem = {
   detail?: string;
 };
 
+export type PlatformApiJsonInit = RequestInit & {
+  /** When true, skip PWEB-20 antiforgery bootstrap (login/register exempt paths also skip). */
+  skipAntiforgery?: boolean;
+};
+
+async function bootstrapAntiforgeryToken(signal?: AbortSignal): Promise<void> {
+  const response = await fetch(platformApiUrl(PlatformAntiforgeryDefaults.tokenPath), {
+    method: "GET",
+    credentials: "include",
+    headers: { Accept: "application/json" },
+    signal,
+  });
+  if (!response.ok) {
+    throw new Error(`Platform antiforgery bootstrap failed (${response.status}).`);
+  }
+  const text = await response.text();
+  const payload = (text ? JSON.parse(text) : null) as AntiforgeryBootstrap | null;
+  if (!payload?.token || typeof payload.token !== "string") {
+    throw new Error("Platform antiforgery bootstrap returned no token.");
+  }
+  rememberAntiforgeryBootstrap({
+    headerName: payload.headerName || PlatformAntiforgeryDefaults.headerName,
+    token: payload.token,
+  });
+}
+
+async function ensureAntiforgeryToken(signal?: AbortSignal): Promise<void> {
+  if (getRememberedAntiforgeryHeader()) {
+    return;
+  }
+  await bootstrapAntiforgeryToken(signal);
+}
+
 export async function platformApiJson<T>(
   path: string,
-  init?: RequestInit,
+  init?: PlatformApiJsonInit,
 ): Promise<{ status: number; body: T | null }> {
-  const headers = new Headers(init?.headers);
+  const { skipAntiforgery, ...requestInit } = init ?? {};
+  const method = (requestInit.method ?? "GET").toUpperCase();
+  const headers = new Headers(requestInit.headers);
   if (!headers.has("Accept")) {
     headers.set("Accept", "application/json");
   }
+
+  if (isMutationMethod(method) && !skipAntiforgery && !isAntiforgeryExemptPath(path)) {
+    await ensureAntiforgeryToken(
+      requestInit.signal instanceof AbortSignal ? requestInit.signal : undefined,
+    );
+    const antiforgery = getRememberedAntiforgeryHeader();
+    if (antiforgery) {
+      headers.set(antiforgery.headerName, antiforgery.token);
+    }
+  }
+
   const response = await fetch(platformApiUrl(path), {
-    ...init,
+    ...requestInit,
     credentials: "include",
     headers,
   });

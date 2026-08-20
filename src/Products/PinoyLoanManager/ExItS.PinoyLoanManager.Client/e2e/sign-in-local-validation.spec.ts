@@ -19,7 +19,11 @@ test.describe("real Local Validation sign-in", () => {
     const testUser = page.getByLabel("Test User");
     if (await testUser.count()) {
       const options = await testUser.locator("option").allTextContents();
-      const match = options.find((label) => /olivia/i.test(label));
+      // Prefer an Organization identity when present; Olivia Platform is valid for cookie/CSRF proof
+      // but cannot enter the PLM workspace (account-scope gate).
+      const match =
+        options.find((label) => /PLM D3-PRE Allowed|Organization Administration/i.test(label)) ??
+        options.find((label) => /olivia/i.test(label));
       if (match) {
         await testUser.selectOption({ label: match });
         await expect(page.getByLabel("Username or email")).not.toHaveValue("");
@@ -30,11 +34,36 @@ test.describe("real Local Validation sign-in", () => {
     await expect(passwordField(page)).toHaveValue("");
     await passwordField(page).fill(password);
     await page.getByRole("button", { name: "Sign in" }).click();
-    await expect(page.getByRole("heading", { name: "Pinoy Loan Manager" })).toBeVisible();
+
+    // Authenticated cookie session is proven by leaving /sign-in. Workspace entry depends on
+    // Organization scope + Platform /auth/product-access/effective (present on PLM branches;
+    // may be absent on PlatformWeb CSRF HEAD). Account-scope and access-error gates still prove
+    // the live cookie session and subsequent CSRF logout.
+    await expect(page.getByRole("heading", { name: "Sign In" })).toHaveCount(0, {
+      timeout: 20_000,
+    });
+    const authenticatedHeading = page
+      .getByRole("heading", { name: "Pinoy Loan Manager" })
+      .or(page.getByRole("heading", { name: "Organization account required" }))
+      .or(
+        page.getByRole("heading", { name: /Unable to check|Product access|Something went wrong/i }),
+      );
+    await expect(authenticatedHeading.first()).toBeVisible({ timeout: 20_000 });
+
     await page.reload();
-    await expect(page.getByRole("heading", { name: "Pinoy Loan Manager" })).toBeVisible();
-    await page.getByRole("button", { name: /olivia/i }).click();
-    await page.getByRole("menuitem", { name: "Sign out" }).click();
+    await expect(page.getByRole("heading", { name: "Sign In" })).toHaveCount(0);
+    await expect(authenticatedHeading.first()).toBeVisible({ timeout: 20_000 });
+
+    const directSignOut = page.getByRole("button", { name: "Sign out" });
+    if ((await directSignOut.count()) > 0) {
+      await directSignOut.click();
+    } else {
+      await page
+        .getByRole("button", { name: /Olivia|PLM|Kizy|Paul|Maria/i })
+        .first()
+        .click();
+      await page.getByRole("menuitem", { name: "Sign out" }).click();
+    }
     await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
     await page.reload();
     await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();

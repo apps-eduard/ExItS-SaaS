@@ -13,10 +13,17 @@ import { GuestOnly, RequireSession } from "@/session/SessionGuards";
 import { SessionProvider } from "@/session/SessionProvider";
 import { stubAccessFetch } from "@/test/access-mocks";
 import { jsonResponse } from "@/test/render";
+import { clearPlatformAntiforgeryToken } from "@/api/platform-auth/platform-antiforgery";
 
 function mockUnauthenticated() {
   vi.stubGlobal("fetch", (input: RequestInfo | URL) => {
     const url = String(input);
+    if (url.includes("/antiforgery/token")) {
+      return jsonResponse(200, {
+        headerName: "X-XSRF-TOKEN",
+        token: "test-csrf-token",
+      });
+    }
     if (url.includes("/auth/me")) {
       return jsonResponse(401, { errorCode: "application.auth.session_invalid" });
     }
@@ -65,6 +72,7 @@ function renderRoutes(route: string) {
 describe("sign-in session UX", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    clearPlatformAntiforgeryToken();
   });
 
   it("redirects unauthenticated users to /sign-in", async () => {

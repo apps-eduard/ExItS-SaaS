@@ -42,6 +42,13 @@ export function stubAccessFetch(options: AccessMockOptions = {}) {
   vi.stubGlobal("fetch", (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
 
+    if (url.includes("/antiforgery/token")) {
+      return jsonResponse(200, {
+        headerName: "X-XSRF-TOKEN",
+        token: "test-csrf-token",
+      });
+    }
+
     if (url.includes("/local-validation/enabled")) {
       return jsonResponse(200, false);
     }
@@ -71,6 +78,7 @@ export function stubAccessFetch(options: AccessMockOptions = {}) {
     }
 
     if (url.includes("/auth/logout")) {
+      expect(new Headers(init?.headers).get("X-XSRF-TOKEN")).toBe("test-csrf-token");
       signedIn = false;
       return jsonResponse(204, null);
     }
@@ -86,6 +94,7 @@ export function stubAccessFetch(options: AccessMockOptions = {}) {
 
     if (url.includes("/auth/organization-context")) {
       expect(init?.method).toBe("PUT");
+      expect(new Headers(init?.headers).get("X-XSRF-TOKEN")).toBe("test-csrf-token");
       const body = JSON.parse(String(init?.body)) as { organizationId?: string };
       expect(body.organizationId).toBeTruthy();
       return jsonResponse(200, {

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { isFrontendLocalValidationMode } from "@/api/platform-auth/local-validation-gate";
+import { clearPlatformAntiforgeryToken } from "@/api/platform-auth/platform-antiforgery";
 import {
   fetchLocalValidationIdentities,
   loginWithPassword,
@@ -19,6 +20,7 @@ describe("local validation gate", () => {
 describe("platform auth client", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    clearPlatformAntiforgeryToken();
   });
 
   it("posts the login contract and strips sessionToken", async () => {
@@ -105,8 +107,13 @@ describe("platform auth client", () => {
 
   it("sets organization context from the session cookie only", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-      expect(String(input)).toBe("/platform-api/api/v1/platform/auth/organization-context");
+      const url = String(input);
+      if (url.endsWith("/api/v1/platform/antiforgery/token")) {
+        return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "csrf-token" });
+      }
+      expect(url).toBe("/platform-api/api/v1/platform/auth/organization-context");
       expect(init?.method).toBe("PUT");
+      expect(new Headers(init?.headers).get("X-XSRF-TOKEN")).toBe("csrf-token");
       expect(JSON.parse(String(init?.body))).toEqual({
         organizationId: "11111111-1111-4111-8111-111111111111",
       });

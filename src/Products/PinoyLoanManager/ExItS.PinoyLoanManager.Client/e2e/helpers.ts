@@ -68,6 +68,17 @@ export async function mockOrganizationProductAccess(
     const url = route.request().url();
     const method = route.request().method();
 
+    if (url.includes("/antiforgery/token") && method === "GET") {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          headerName: "X-XSRF-TOKEN",
+          token: "e2e-csrf-token",
+        }),
+      });
+    }
+
     if (url.includes("/auth/me")) {
       if (!state.signedIn) {
         return route.fulfill({
@@ -118,6 +129,7 @@ export async function mockOrganizationProductAccess(
     }
 
     if (url.includes("/auth/logout") && method === "POST") {
+      expect(route.request().headers()["x-xsrf-token"]).toBe("e2e-csrf-token");
       state.signedIn = false;
       return route.fulfill({ status: 204, body: "" });
     }
@@ -131,6 +143,7 @@ export async function mockOrganizationProductAccess(
     }
 
     if (url.includes("/auth/organization-context") && method === "PUT") {
+      expect(route.request().headers()["x-xsrf-token"]).toBe("e2e-csrf-token");
       const body = route.request().postDataJSON() as { organizationId?: string };
       state.selectedOrganizationId = body.organizationId ?? null;
       return route.fulfill({
@@ -187,8 +200,26 @@ export async function assertNoHorizontalOverflow(page: Page) {
   expect(overflow).toBeLessThanOrEqual(1);
 }
 
+export async function mockAntiforgeryToken(page: Page) {
+  await page.unroute("**/platform-api/api/v1/platform/antiforgery/token").catch(() => undefined);
+  await page.route("**/platform-api/api/v1/platform/antiforgery/token", (route) => {
+    if (route.request().method() !== "GET") {
+      return route.continue();
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        headerName: "X-XSRF-TOKEN",
+        token: "e2e-csrf-token",
+      }),
+    });
+  });
+}
+
 export async function mockAnonymousSession(page: Page) {
   await page.unroute(PLATFORM_ROUTE).catch(() => undefined);
+  await mockAntiforgeryToken(page);
   await page.route("**/platform-api/api/v1/platform/auth/me", (route) =>
     route.fulfill({
       status: 401,

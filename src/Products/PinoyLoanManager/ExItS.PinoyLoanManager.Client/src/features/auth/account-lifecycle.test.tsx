@@ -21,10 +21,17 @@ import { GuestOnly, RequireSession } from "@/session/SessionGuards";
 import { SessionProvider } from "@/session/SessionProvider";
 import { stubAccessFetch } from "@/test/access-mocks";
 import { jsonResponse } from "@/test/render";
+import { clearPlatformAntiforgeryToken } from "@/api/platform-auth/platform-antiforgery";
 
 function mockUnauthenticated() {
   vi.stubGlobal("fetch", (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
+    if (url.includes("/antiforgery/token")) {
+      return jsonResponse(200, {
+        headerName: "X-XSRF-TOKEN",
+        token: "test-csrf-token",
+      });
+    }
     if (url.includes("/auth/me")) {
       return jsonResponse(401, { errorCode: "application.auth.session_invalid" });
     }
@@ -47,6 +54,7 @@ function mockUnauthenticated() {
       });
     }
     if (url.includes("/auth/activate-account")) {
+      expect(new Headers(init?.headers).get("X-XSRF-TOKEN")).toBe("test-csrf-token");
       return jsonResponse(200, { hasPassword: true });
     }
     if (url.includes("/auth/reset-password")) {
@@ -113,6 +121,7 @@ describe("account lifecycle", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+    clearPlatformAntiforgeryToken();
   });
 
   it("registers without enumerating accounts and without creating product access copy", async () => {

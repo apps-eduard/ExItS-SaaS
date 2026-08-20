@@ -67,7 +67,19 @@ test.describe("browser auth transport", () => {
     expect(meAfterReload.ok()).toBeTruthy();
     await assertNoSessionTokenPersistence(page);
 
-    const logout = await page.request.post(logoutPath);
+    const antiforgery = await page.request.get("/platform-api/api/v1/platform/antiforgery/token");
+    const logoutHeaders: Record<string, string> = {};
+    if (antiforgery.ok()) {
+      const csrf = (await antiforgery.json()) as { headerName?: string; token?: string };
+      expect(csrf.headerName).toBe("X-XSRF-TOKEN");
+      expect(csrf.token).toBeTruthy();
+      logoutHeaders["X-XSRF-TOKEN"] = csrf.token!;
+    } else {
+      // Local Platform on this worktree may predate PWEB-20 antiforgery (404).
+      expect(antiforgery.status()).toBe(404);
+    }
+
+    const logout = await page.request.post(logoutPath, { headers: logoutHeaders });
     expect(logout.status()).toBeGreaterThanOrEqual(200);
     expect(logout.status()).toBeLessThan(300);
 
