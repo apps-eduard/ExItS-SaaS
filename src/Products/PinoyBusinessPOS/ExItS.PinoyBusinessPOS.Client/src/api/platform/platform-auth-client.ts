@@ -20,6 +20,7 @@ import {
   type PlatformProblem,
 } from "@/api/platform/browser-session";
 import { clearPosAccessToken, setPosAccessToken } from "@/api/platform/pos-access-token";
+import { clearPosSessionGrant, setPosSessionGrant } from "@/api/platform/pos-session-grant";
 
 export type EligibleOrganization = {
   organizationId: string;
@@ -46,6 +47,9 @@ export type SessionGrantResponse = {
   productAccessAllowed: boolean;
   productAccessReasonCode?: string | null;
   organizationManagementAuthority?: boolean;
+  mappedPosRoleCode?: string | null;
+  productLocalRoleCode?: string | null;
+  membershipRole?: string | null;
 };
 
 export async function fetchCurrentSession(): Promise<{
@@ -94,6 +98,7 @@ export async function logoutSession(): Promise<void> {
   await platformRequest<void>({ method: "POST", path: AUTH_LOGOUT_PATH });
   clearPlatformAntiforgeryToken();
   clearPosAccessToken();
+  clearPosSessionGrant();
 }
 
 export function platformProblemDetail(body: PlatformProblem | null, fallback: string): string {
@@ -222,11 +227,13 @@ export async function bindWorkspaceWithSessionGrant(
   const grantResult = await issueSessionGrant(organizationId);
   if (!grantResult.ok) {
     clearPosAccessToken();
+    clearPosSessionGrant();
     return { ok: false, reason: "grant", status: grantResult.status, body: grantResult.body };
   }
 
   if (!grantResult.grant.productAccessAllowed) {
     clearPosAccessToken();
+    clearPosSessionGrant();
     return {
       ok: false,
       reason: "access_denied",
@@ -239,5 +246,6 @@ export async function bindWorkspaceWithSessionGrant(
   }
 
   setPosAccessToken(grantResult.grant.accessToken);
+  setPosSessionGrant(grantResult.grant);
   return { ok: true, grant: grantResult.grant };
 }

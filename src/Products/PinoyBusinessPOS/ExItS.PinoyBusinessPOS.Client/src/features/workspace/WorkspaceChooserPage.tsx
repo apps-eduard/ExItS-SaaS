@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { resolveRoleHomeRoute } from "@/access/pos-capabilities";
+import { getPosSessionGrant } from "@/api/platform/pos-session-grant";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -43,7 +45,7 @@ export function WorkspaceChooserPage() {
       setError(t("accessDenied.detail"));
       return;
     }
-    navigate("/", { replace: true });
+    navigate(resolveRoleHomeRoute(getPosSessionGrant()), { replace: true });
   }
 
   return (

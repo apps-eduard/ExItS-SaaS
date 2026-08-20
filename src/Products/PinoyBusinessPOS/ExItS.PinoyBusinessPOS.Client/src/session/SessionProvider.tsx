@@ -11,6 +11,7 @@ import {
 } from "react";
 import type { BrowserSessionSnapshot } from "@/api/platform/browser-session";
 import { clearPosAccessToken } from "@/api/platform/pos-access-token";
+import { clearPosSessionGrant } from "@/api/platform/pos-session-grant";
 import {
   fetchCurrentSession,
   loginWithPassword,
@@ -80,6 +81,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     queryClient.clear();
     clearPlatformAntiforgeryToken();
     clearPosAccessToken();
+    clearPosSessionGrant();
     setSession(null);
     setStatus("unauthenticated");
   }, [queryClient]);

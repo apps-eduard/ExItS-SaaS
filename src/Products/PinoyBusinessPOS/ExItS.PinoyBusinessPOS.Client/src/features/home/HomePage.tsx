@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
+import { resolveRoleHomeRoute } from "@/access/pos-capabilities";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -10,7 +11,7 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export function HomePage() {
   const { t } = useI18n();
-  const { status, boundWorkspace } = useWorkspace();
+  const { status, boundWorkspace, sessionGrant } = useWorkspace();
 
   if (!boundWorkspace) {
     if (status === "loading" || status === "binding" || status === "idle" || status === "ready") {
@@ -19,11 +20,24 @@ export function HomePage() {
     return <EmptyState title={t("home.emptyTitle")} detail={t("workspace.lede")} />;
   }
 
+  const roleHome = resolveRoleHomeRoute(sessionGrant);
+
+  return <BoundHomeRedirect roleHome={roleHome} />;
+}
+
+function BoundHomeRedirect({ roleHome }: { roleHome: string }) {
+  const { t } = useI18n();
+  const { boundWorkspace } = useWorkspace();
+
+  if (roleHome !== "/" && boundWorkspace) {
+    return <Navigate to={roleHome} replace />;
+  }
+
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <PageHeader
         title={t("home.title")}
-        description={`${boundWorkspace.organizationDisplayName} · ${boundWorkspace.branchName}`}
+        description={`${boundWorkspace!.organizationDisplayName} · ${boundWorkspace!.branchName}`}
       />
       <StatusChip tone="success">{t("home.badge")}</StatusChip>
       <Card>

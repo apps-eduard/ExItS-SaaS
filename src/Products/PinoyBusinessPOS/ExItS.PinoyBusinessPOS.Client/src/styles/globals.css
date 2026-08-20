@@ -90,6 +90,7 @@
   --exits-text-lg: 1rem;
   --exits-text-xl: 1.25rem;
   --exits-motion-fast: 140ms;
+  --exits-motion-normal: 220ms;
   --exits-touch-target-min: 3rem;
   --exits-control-height: 2.75rem;
   --exits-page-padding: 1rem;
@@ -155,4 +156,30 @@ body {
   overflow: visible;
   clip: auto;
   white-space: normal;
+}
+
+/* POS-REACT-IMPL-04 sell-floor responsive layout */
+@media (min-width: 900px) and (orientation: landscape) {
+  .sell-floor-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+    gap: var(--exits-space-4);
+    align-items: stretch;
+  }
+
+  .sell-cart-landscape {
+    display: flex !important;
+  }
+
+  .sell-cart-bar,
+  .sell-cart-sheet,
+  .sell-cart-sheet-backdrop {
+    display: none !important;
+  }
+}
+
+@media not all and (min-width: 900px) and (orientation: landscape) {
+  .sell-cart-landscape {
+    display: none !important;
+  }
 }

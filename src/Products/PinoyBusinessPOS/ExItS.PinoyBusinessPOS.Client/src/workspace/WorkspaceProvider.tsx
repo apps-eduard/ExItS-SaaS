@@ -12,11 +12,14 @@ import {
 import { useNavigate } from "react-router-dom";
 import type { BrowserSessionSnapshot } from "@/api/platform/browser-session";
 import { clearPosAccessToken } from "@/api/platform/pos-access-token";
+import { clearPosSessionGrant, getPosSessionGrant } from "@/api/platform/pos-session-grant";
+import { resolveRoleHomeRoute } from "@/access/pos-capabilities";
 import {
   bindWorkspaceWithSessionGrant,
   listEligibleOrganizations,
   listOrganizationBranches,
   type PlatformBranch,
+  type SessionGrantResponse,
 } from "@/api/platform/platform-auth-client";
 import { clearPlatformAntiforgeryToken } from "@/api/platform/platform-http";
 import { useSession } from "@/session/SessionProvider";
@@ -38,6 +41,7 @@ type WorkspaceContextValue = {
   workspaces: AccessibleOrganizationWorkspace[];
   routingPlan: WorkspaceRoutingPlan | null;
   boundWorkspace: BoundWorkspace | null;
+  sessionGrant: SessionGrantResponse | null;
   accessDeniedDetail: string | null;
   bindWorkspace: (organizationId: string, branchId: string) => Promise<boolean>;
   refreshWorkspaces: () => Promise<void>;
@@ -74,11 +78,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [workspaces, setWorkspaces] = useState<AccessibleOrganizationWorkspace[]>([]);
   const [routingPlan, setRoutingPlan] = useState<WorkspaceRoutingPlan | null>(null);
   const [boundWorkspace, setBoundWorkspace] = useState<BoundWorkspace | null>(null);
+  const [sessionGrant, setSessionGrantState] = useState<SessionGrantResponse | null>(() =>
+    getPosSessionGrant(),
+  );
   const [accessDeniedDetail, setAccessDeniedDetail] = useState<string | null>(null);
 
   const clearBoundWorkspace = useCallback(() => {
     setBoundWorkspace(null);
+    setSessionGrantState(null);
     clearPosAccessToken();
+    clearPosSessionGrant();
     autoBindAttempted.current = false;
   }, []);
 
@@ -133,6 +142,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         );
         if (label) {
           setBoundWorkspace(label);
+          setSessionGrantState(getPosSessionGrant());
           setStatus("bound");
         }
       }
@@ -170,6 +180,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           branchName: branchId,
         });
       }
+      setSessionGrantState(result.grant);
       setStatus("bound");
       return true;
     },
@@ -210,7 +221,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (cancelled || !ok) {
         return;
       }
-      navigate("/", { replace: true });
+      const grant = getPosSessionGrant();
+      navigate(resolveRoleHomeRoute(grant), { replace: true });
     });
 
     return () => {
@@ -222,6 +234,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     queryClient.clear();
     clearPlatformAntiforgeryToken();
     clearPosAccessToken();
+    clearPosSessionGrant();
     clearBoundWorkspace();
   }, [clearBoundWorkspace, queryClient]);
 
@@ -237,6 +250,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       workspaces,
       routingPlan,
       boundWorkspace,
+      sessionGrant,
       accessDeniedDetail,
       bindWorkspace,
       refreshWorkspaces,
@@ -249,6 +263,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       clearBoundWorkspace,
       refreshWorkspaces,
       routingPlan,
+      sessionGrant,
       status,
       workspaces,
     ],

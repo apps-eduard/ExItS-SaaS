@@ -6,9 +6,22 @@ import { HomePage } from "@/features/home/HomePage";
 import { NotFoundPage } from "@/features/not-found/NotFoundPage";
 import { PersonalHomePage } from "@/features/personal/PersonalHomePage";
 import { PreferencesPage } from "@/features/preferences/PreferencesPage";
+import { OrgEssentialsPage } from "@/features/role/OrgEssentialsPage";
+import {
+  CashierRoleHomePage,
+  ManagerRoleHomePage,
+  OwnerRoleHomePage,
+} from "@/features/role/RoleHomePages";
+import { SellFloorPage } from "@/features/sell/SellFloorPage";
 import { NoAccessibleBranchPage } from "@/features/workspace/NoAccessibleBranchPage";
 import { WorkspaceChooserPage } from "@/features/workspace/WorkspaceChooserPage";
-import { GuestOnly, RequireSession, WorkspaceBootGate } from "@/session/SessionGuards";
+import {
+  GuestOnly,
+  RequireCreateSale,
+  RequireSession,
+  RequireWorkspaceBound,
+  WorkspaceBootGate,
+} from "@/session/SessionGuards";
 
 export const appRoutes = [
   {
@@ -37,6 +50,48 @@ export const appRoutes = [
           { path: "personal", element: <PersonalHomePage /> },
           { path: "no-location", element: <NoAccessibleBranchPage /> },
           { path: "settings/preferences", element: <PreferencesPage /> },
+          {
+            path: "sell",
+            element: (
+              <RequireWorkspaceBound>
+                <RequireCreateSale>
+                  <SellFloorPage />
+                </RequireCreateSale>
+              </RequireWorkspaceBound>
+            ),
+          },
+          {
+            path: "role/owner",
+            element: (
+              <RequireWorkspaceBound>
+                <OwnerRoleHomePage />
+              </RequireWorkspaceBound>
+            ),
+          },
+          {
+            path: "role/manager",
+            element: (
+              <RequireWorkspaceBound>
+                <ManagerRoleHomePage />
+              </RequireWorkspaceBound>
+            ),
+          },
+          {
+            path: "role/cashier",
+            element: (
+              <RequireWorkspaceBound>
+                <CashierRoleHomePage />
+              </RequireWorkspaceBound>
+            ),
+          },
+          {
+            path: "org",
+            element: (
+              <RequireWorkspaceBound>
+                <OrgEssentialsPage />
+              </RequireWorkspaceBound>
+            ),
+          },
           { path: "*", element: <NotFoundPage /> },
         ],
       },

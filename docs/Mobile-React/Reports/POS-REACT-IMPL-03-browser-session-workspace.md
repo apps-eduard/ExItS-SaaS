@@ -1,1 +1,137 @@
-# POS-REACT-IMPL-03 — Browser Session + Workspace Resolver**Package:** POS-REACT-IMPL-03**Worktree:** `ExItS-SaaS-pos-react-client` (`feat/pos-react-client`)**Client root:** `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/`**Status:** Complete on `feat/pos-react-client`**Expected commit:** `feat(pos-react): add browser session and workspace resolver`---## Delivered capability- Vite `/platform-api` dev/preview proxy to loopback Platform API (`8091` default via `EXITS_PLATFORM_API_PROXY_TARGET`)- PWEB-20 browser CSRF contract against Platform API through relative `/platform-api`- Cookie-backed browser session (`credentials: "include"`) with in-memory CSRF and in-memory POS bearer from session grant- AMEND-03 workspace resolver and boot routing (`PersonalHome`, `AutoSelect`, `ShowChooser`, `NoAccessibleBranch`)- Routes: `/sign-in`, `/workspace`, `/personal`, `/no-location`, `/settings/preferences`, authenticated `/`- `AppTopBar` chrome with org/branch context, preferences link, sign out; disabled lock/remove placeholders- Connectivity + PWA update hosts remain available on guest sign-in (mounted above auth gate)---## PWEB-20 CSRF contract| Item | Value ||---|---|| Token path | `GET /api/v1/platform/antiforgery/token` (via `/platform-api` proxy) || Request header | `X-XSRF-TOKEN` || Cookie pairing | Platform session cookie transport (HttpOnly session cookie set by login); CSRF token held **in memory only** || Mutation rule | Bootstrap CSRF before first POST/PUT/PATCH/DELETE; attach header on mutations || Login exception | `POST /api/v1/platform/auth/login` uses `skipAntiforgery: true` || Logout | Clears in-memory CSRF token |Implementation: `src/api/platform/antiforgery.ts`, `src/api/platform/platform-http.ts`.---## Session and token storage policy| Artifact | Storage ||---|---|| Platform session cookie | HttpOnly cookie (server-managed) || `sessionToken` wire field | Stripped from browser snapshots; **never** written to `localStorage` / `sessionStorage` / IndexedDB || CSRF token | In-memory module only || POS `accessToken` (session grant) | In-memory module only (`src/api/platform/pos-access-token.ts`) |---## Product access (cashier path)- Uses session grant: `POST /api/v1/platform/auth/token` with `{ grantType: "session", organizationId, productCode: "pinoy-business-pos" }`- Bind gate: `productAccessAllowed === true` required; otherwise workspace bind fails and access denied UI is shown- **Does not** call ManageProductAccess-gated `/api/v1/platform/access/evaluate` for cashiers on this tip---## AMEND-03 routing matrix| Case | Condition | Outcome ||---|---|---|| A | 1 org, 1 Active branch | `AutoSelect` → bind → `/` || B | 1 org, 2+ Active branches | `/workspace` chooser || C | 2+ orgs with Active branches | `/workspace` chooser || D | Orgs exist, zero Active branches | `/no-location` || E | Zero eligible organizations | `/personal` |Active branch filter: case-insensitive `"Active"` status (matches MAUI `OwnerAccessibleBranchResolver`).---## MOBILE-D-060**Left OPEN.** Lock/Remove controls in `AppTopBar` are disabled placeholders only. No PIN enrollment, offline PIN, or device removal behavior was invented.---## Ports (unchanged)| Mode | Host | Port ||---|---|---|| Vite dev | `127.0.0.1` | `5177` || Vite preview | `127.0.0.1` | `4177` || Platform API proxy target | loopback | `8091` default |---## Explicit exclusions- Sell floor, catalog, cart, cash checkout (WP04/05/06)- MAUI, Platform C#, POS API C#, PLM, `.Web` changes- `/pos-api/` proxy (deferred to catalog package)- Persisting Bearer/sessionToken in ordinary browser storage- Closing MOBILE-D-060 PIN policy---## Validation evidence| Command | Result ||---|---|| `npm run typecheck` | PASS || `npm run lint` | PASS (0 errors; react-refresh warnings only) || `npm run format:check` | PASS || `npm run test` | PASS — 39 Vitest tests || `npm run build` / `npm run test:pwa` | PASS || `npm run test:e2e` | PASS — 24 Playwright tests |---## Tests added/updated- Vitest: `workspace-resolver.test.ts` (AMEND-03 cases A–E)- Vitest: `platform-http.antiforgery.test.ts` (CSRF on mutation, login skip)- Vitest: `browser-session.test.ts` (sessionToken strip + storage guard)- Vitest: `foundation.test.tsx` (preferences route for locale/theme)- Playwright: `e2e/auth-session.spec.ts` (mocked login + storage scan)- Playwright: updated foundation/connectivity/pwa specs for auth-gated routes + `/platform-api` NetworkOnly---## Key files| Area | Path ||---|---|| Proxy | `vite.platform-api-proxy.ts`, `vite.config.ts` || Platform HTTP/CSRF | `src/api/platform/*` || Session | `src/session/*` || Workspace | `src/workspace/*` || UI | `src/components/exits/AppTopBar.tsx`, `src/features/*` || PWA guard | `scripts/validate-pwa.mjs` |## Next package`POS-REACT-IMPL-04` — POS sell-floor shell (`feat(pos-react): add pos sell-floor shell`). No cash checkout.
+# POS-REACT-IMPL-03 — Browser Session + Workspace Resolver
+
+**Package:** POS-REACT-IMPL-03  
+**Worktree:** `ExItS-SaaS-pos-react-client` (`feat/pos-react-client`)  
+**Client root:** `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/`  
+**Status:** Complete on `feat/pos-react-client`  
+**Commit:** `d1c35bdcbae88c5bcde1c3302f4e7986abb7b82c`  
+**Expected commit message:** `feat(pos-react): add browser session and workspace resolver`
+
+---
+
+## Delivered capability
+
+- Vite `/platform-api` dev/preview proxy to loopback Platform API (`8091` default via `EXITS_PLATFORM_API_PROXY_TARGET`)
+- PWEB-20 browser CSRF contract against Platform API through relative `/platform-api`
+- Cookie-backed browser session (`credentials: "include"`) with in-memory CSRF and in-memory POS bearer from session grant
+- AMEND-03 workspace resolver and boot routing (`PersonalHome`, `AutoSelect`, `ShowChooser`, `NoAccessibleBranch`)
+- Routes: `/sign-in`, `/workspace`, `/personal`, `/no-location`, `/settings/preferences`, authenticated `/`
+- `AppTopBar` chrome with org/branch context, preferences link, sign out; disabled lock/remove placeholders
+- Connectivity + PWA update hosts remain available on guest sign-in (mounted above auth gate)
+
+---
+
+## PWEB-20 CSRF contract
+
+| Item | Value |
+|---|---|
+| Token path | `GET /api/v1/platform/antiforgery/token` (via `/platform-api` proxy) |
+| Request header | `X-XSRF-TOKEN` |
+| Cookie pairing | Platform session cookie transport (HttpOnly session cookie set by login); CSRF token held **in memory only** |
+| Mutation rule | Bootstrap CSRF before first POST/PUT/PATCH/DELETE; attach header on mutations |
+| Login exception | `POST /api/v1/platform/auth/login` uses `skipAntiforgery: true` |
+| Logout | Clears in-memory CSRF token |
+
+Implementation: `src/api/platform/antiforgery.ts`, `src/api/platform/platform-http.ts`.
+
+---
+
+## Session and token storage policy
+
+| Artifact | Storage |
+|---|---|
+| Platform session cookie | HttpOnly cookie (server-managed) |
+| `sessionToken` wire field | Stripped from browser snapshots; **never** written to `localStorage` / `sessionStorage` / IndexedDB |
+| CSRF token | In-memory module only |
+| POS `accessToken` (session grant) | In-memory module only (`src/api/platform/pos-access-token.ts`) |
+
+---
+
+## Product access (cashier path)
+
+- Uses session grant: `POST /api/v1/platform/auth/token` with `{ grantType: "session", organizationId, productCode: "pinoy-business-pos" }`
+- Bind gate: `productAccessAllowed === true` required; otherwise workspace bind fails and access denied UI is shown
+- **Does not** call ManageProductAccess-gated `/api/v1/platform/access/evaluate` for cashiers on this tip
+
+---
+
+## AMEND-03 routing matrix
+
+| Case | Condition | Outcome |
+|---|---|---|
+| A | 1 org, 1 Active branch | `AutoSelect` → bind → role home (WP04+) / `/` (WP03) |
+| B | 1 org, 2+ Active branches | `/workspace` chooser |
+| C | 2+ orgs with Active branches | `/workspace` chooser |
+| D | Orgs exist, zero Active branches | `/no-location` |
+| E | Zero eligible organizations | `/personal` |
+
+Active branch filter: case-insensitive `"Active"` status (matches MAUI `OwnerAccessibleBranchResolver`).
+
+---
+
+## MOBILE-D-060
+
+**Left OPEN.** Lock/Remove controls in `AppTopBar` are disabled placeholders only. No PIN enrollment, offline PIN, or device removal behavior was invented.
+
+---
+
+## Ports (unchanged)
+
+| Mode | Host | Port |
+|---|---|---|
+| Vite dev | `127.0.0.1` | `5177` |
+| Vite preview | `127.0.0.1` | `4177` |
+| Platform API proxy target | loopback | `8091` default |
+
+---
+
+## Explicit exclusions
+
+- Sell floor, catalog, cart, cash checkout (WP04/05/06)
+- MAUI, Platform C#, POS API C#, PLM, `.Web` changes
+- `/pos-api/` proxy (deferred to catalog package)
+- Persisting Bearer/sessionToken in ordinary browser storage
+- Closing MOBILE-D-060 PIN policy
+
+---
+
+## Validation evidence
+
+| Command | Result |
+|---|---|
+| `npm run typecheck` | PASS |
+| `npm run lint` | PASS (0 errors; react-refresh warnings only) |
+| `npm run format:check` | PASS |
+| `npm run test` | PASS — 39 Vitest tests |
+| `npm run build` / `npm run test:pwa` | PASS |
+| `npm run test:e2e` | PASS — 24 Playwright tests |
+
+---
+
+## Tests added/updated
+
+- Vitest: `workspace-resolver.test.ts` (AMEND-03 cases A–E)
+- Vitest: `platform-http.antiforgery.test.ts` (CSRF on mutation, login skip)
+- Vitest: `browser-session.test.ts` (sessionToken strip + storage guard)
+- Vitest: `foundation.test.tsx` (preferences route for locale/theme)
+- Playwright: `e2e/auth-session.spec.ts` (mocked login + storage scan)
+- Playwright: updated foundation/connectivity/pwa specs for auth-gated routes + `/platform-api` NetworkOnly
+
+---
+
+## Key files
+
+| Area | Path |
+|---|---|
+| Proxy | `vite.platform-api-proxy.ts`, `vite.config.ts` |
+| Platform HTTP/CSRF | `src/api/platform/*` |
+| Session | `src/session/*` |
+| Workspace | `src/workspace/*` |
+| UI | `src/components/exits/AppTopBar.tsx`, `src/features/*` |
+| PWA guard | `scripts/validate-pwa.mjs` |
+
+---
+
+## Next package
+
+`POS-REACT-IMPL-04` — POS sell-floor shell (`feat(pos-react): add pos sell-floor shell`). No cash checkout.

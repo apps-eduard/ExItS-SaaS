@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
+import { canCreateSale } from "@/access/pos-capabilities";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { SellAccessDeniedPage } from "@/features/sell/SellAccessDeniedPage";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSession } from "@/session/SessionProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -64,5 +66,15 @@ export function WorkspaceBootGate({ children }: { children: ReactNode }) {
   if (sessionStatus === "authenticated" && (status === "loading" || status === "binding")) {
     return <SessionLoading />;
   }
+  return children;
+}
+
+export function RequireCreateSale({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canCreateSale(sessionGrant)) {
+    return <SellAccessDeniedPage />;
+  }
+
   return children;
 }
