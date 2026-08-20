@@ -68,12 +68,13 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 ### RMAP-02 — Workspace / org / product-access / role guards
 | Field | Content |
 |-------|---------|
+| Status | **COMPLETE** — [POS-REACT-RMAP-02-workspace-authorization.md](../../Reports/POS-REACT-RMAP-02-workspace-authorization.md) |
 | Objective | Org context, product access, role homes, CreateSale guard correctness against **post-B00** identity model |
 | Dependencies | RMAP-01, **RMAP-01b**, RMAP-00 if visual polish |
 | Backend | ProductLocalRoleGrant, entitlements; session/org rules from post-B00 contract |
 | React start | `WorkspaceProvider`, `SessionGuards`, role pages |
 | Exclusions | Org admin CRUD |
-| Acceptance | Wrong class/role cannot open sell; workspace/role guards validated using post-B00 staff/person model (not pre-B00 duplicate-staff-principal as final expected state) |
+| Acceptance | Wrong class/role cannot open sell; workspace/role guards validated using post-B00 staff/person model |
 | Next | RMAP-03 |
 
 ### RMAP-03 — Branch / device operational context
