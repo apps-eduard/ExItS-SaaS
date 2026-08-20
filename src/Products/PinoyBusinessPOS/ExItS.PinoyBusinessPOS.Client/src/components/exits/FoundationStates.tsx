@@ -4,7 +4,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 
 export function LoadingSkeleton({ count = 3, className }: { count?: number; className?: string }) {
   return (
-    <div className={cn("grid gap-3", className)} aria-hidden="true">
+    <div className={cn("grid gap-3", className)} aria-hidden="true" data-testid="loading-skeleton">
       {Array.from({ length: count }).map((_, index) => (
         <div
           key={index}

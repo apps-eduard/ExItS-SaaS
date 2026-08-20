@@ -61,7 +61,7 @@ export function QuantityStepper({
   className?: string;
 }) {
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div className={cn("flex items-center gap-2", className)} data-testid="quantity-stepper">
       <Button
         type="button"
         variant="ghost"

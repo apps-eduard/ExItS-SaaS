@@ -6,7 +6,7 @@ import {
   mockCokeProduct,
 } from "./mock-pos-catalog";
 
-export async function mockPosCatalogApi(page: Page) {
+export async function mockPosCatalogApi(page: Page, options?: { productDelayMs?: number }) {
   await page.route("**/pos-api/**", async (route) => {
     const url = route.request().url();
     const method = route.request().method();
@@ -56,6 +56,9 @@ export async function mockPosCatalogApi(page: Page) {
     }
 
     if (url.includes("/api/v1/pos/catalog/products")) {
+      if (options?.productDelayMs) {
+        await new Promise((resolve) => setTimeout(resolve, options.productDelayMs));
+      }
       return route.fulfill({
         status: 200,
         contentType: "application/json",

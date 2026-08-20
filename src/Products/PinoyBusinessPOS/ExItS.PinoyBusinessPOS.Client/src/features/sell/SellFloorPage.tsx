@@ -262,7 +262,11 @@ export function SellFloorPage() {
                 <span className="line-clamp-2 text-[length:var(--exits-text-sm)] font-semibold">
                   {product.name}
                 </span>
-                <MoneyDisplay amount={product.sellingPrice} className="text-muted" />
+                <MoneyDisplay
+                  amount={product.sellingPrice}
+                  className="text-muted"
+                  testId={`sell-product-price-${product.productId}`}
+                />
               </button>
             ))}
           </div>
