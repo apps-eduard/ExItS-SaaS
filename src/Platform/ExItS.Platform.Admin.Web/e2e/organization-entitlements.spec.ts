@@ -134,6 +134,8 @@ test("entitlement navigation, product selector, and no mutations", async ({ page
   ).toBeVisible();
   await expect(page).toHaveURL(/product=POS/);
   await expect(page.getByText("starter")).toBeVisible();
+  await expect(page.getByText("pos.checkout")).toBeVisible();
+  await expect(page.getByText("Enabled")).toBeVisible();
   await expect(page.getByRole("button", { name: /override/i })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /reconcile/i })).toHaveCount(0);
   await page.locator("#org-entitlement-product").selectOption("PLM");

@@ -6,8 +6,8 @@ import {
   parseOrganizationEntitlementSearchParams,
   sanitizeEntitlementProduct,
   uniqueEntitlementProductOptions,
+  type EntitlementGrant,
   type EntitlementProductOption,
-  type EntitlementSnapshot,
   type OrganizationEntitlementUrlState,
 } from "@/api/organizations/entitlement-list-query";
 import { parseOrganizationId } from "@/api/organizations/organization-id";
@@ -17,6 +17,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusIndicator } from "@/components/exits/StatusIndicator";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   useOrganizationCommercialSummaryQuery,
@@ -30,6 +31,7 @@ import {
   organizationSubscriptionStatusTone,
 } from "@/features/organizations/organization-subscription-status";
 import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
+import type { MessageKey } from "@/lib/i18n/messages";
 
 const controlClass =
   "h-[var(--exits-control-height)] min-h-[var(--exits-touch-target-min)] rounded-[var(--exits-density-radius)] border border-input bg-surface px-3 text-[length:var(--exits-text-sm)] text-foreground";
@@ -52,11 +54,45 @@ function productLabel(option: EntitlementProductOption): string {
   return option.productDisplayName || option.productCode;
 }
 
-function grantSummary(item: EntitlementSnapshot): string {
-  if (item.grants.length === 0) {
-    return "—";
+function EntitlementGrantList({
+  grants,
+  t,
+}: {
+  grants: EntitlementGrant[];
+  t: (key: MessageKey) => string;
+}) {
+  if (grants.length === 0) {
+    return (
+      <span className="text-[length:var(--exits-text-xs)] text-muted">
+        {t("organization.entitlements.grant.noGrants")}
+      </span>
+    );
   }
-  return String(item.grants.length);
+
+  return (
+    <ul className="grid gap-1">
+      {grants.map((grant) => (
+        <li key={grant.featureCode} className="flex flex-wrap items-center gap-1.5">
+          <span className="break-all font-mono text-[length:var(--exits-text-xs)]">
+            {grant.featureCode}
+          </span>
+          <Badge tone={grant.enabled ? "success" : "neutral"}>
+            {grant.enabled
+              ? t("organization.entitlements.grant.enabled")
+              : t("organization.entitlements.grant.disabled")}
+          </Badge>
+          {grant.numericLimit != null ? (
+            <span className="text-[length:var(--exits-text-xs)] text-muted">
+              {t("organization.entitlements.grant.limit").replace(
+                "{value}",
+                String(grant.numericLimit),
+              )}
+            </span>
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 function isForbidden(error: unknown): boolean {
@@ -273,7 +309,7 @@ export function OrganizationEntitlementsPage() {
                   {
                     id: "grants",
                     header: t("organization.entitlements.column.grants"),
-                    cell: (item) => grantSummary(item),
+                    cell: (item) => <EntitlementGrantList grants={item.grants} t={t} />,
                   },
                 ]}
                 rows={snapshotsQuery.data.items}
@@ -302,6 +338,14 @@ export function OrganizationEntitlementsPage() {
                         tone={organizationSubscriptionStatusTone(item.subscriptionStatus)}
                         label={organizationSubscriptionStatusLabel(item.subscriptionStatus, t)}
                       />
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-[length:var(--exits-text-xs)] font-medium text-muted">
+                        {t("organization.entitlements.column.grants")}
+                      </p>
+                      <div className="mt-1">
+                        <EntitlementGrantList grants={item.grants} t={t} />
+                      </div>
                     </div>
                   </li>
                 ))

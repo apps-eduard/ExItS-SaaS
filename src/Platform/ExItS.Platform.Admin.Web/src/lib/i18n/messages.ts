@@ -303,6 +303,10 @@ export const enMessages = {
   "organization.entitlements.column.status": "Subscription status",
   "organization.entitlements.column.generated": "Generated",
   "organization.entitlements.column.grants": "Grants",
+  "organization.entitlements.grant.enabled": "Enabled",
+  "organization.entitlements.grant.disabled": "Disabled",
+  "organization.entitlements.grant.noGrants": "No grants",
+  "organization.entitlements.grant.limit": "Limit {value}",
   "organization.billing.title": "Billing",
   "organization.billing.description":
     "Platform SaaS payments for this organization. Not POS sales, tenders, cash, or loan collections.",
@@ -702,6 +706,10 @@ export const filPhMessages: Record<MessageKey, string> = {
   "organization.entitlements.column.status": "Katayuan ng subskripsyon",
   "organization.entitlements.column.generated": "Nabuo",
   "organization.entitlements.column.grants": "Mga grant",
+  "organization.entitlements.grant.enabled": "Naka-enable",
+  "organization.entitlements.grant.disabled": "Naka-disable",
+  "organization.entitlements.grant.noGrants": "Walang grant",
+  "organization.entitlements.grant.limit": "Limit {value}",
   "organization.billing.title": "Pagsingil",
   "organization.billing.description":
     "Mga bayad sa Platform SaaS para sa organisasyong ito. Hindi POS sales, tender, cash, o loan collections.",

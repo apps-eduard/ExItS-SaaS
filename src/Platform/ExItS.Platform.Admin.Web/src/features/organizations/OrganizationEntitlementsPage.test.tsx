@@ -47,6 +47,21 @@ function stubDesktop() {
   });
 }
 
+function stubMobile() {
+  vi.spyOn(window, "matchMedia").mockImplementation((query: string) => {
+    return {
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => true,
+    } as MediaQueryList;
+  });
+}
+
 describe("organization workspace entitlements", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -81,6 +96,8 @@ describe("organization workspace entitlements", () => {
       await screen.findByRole("heading", { name: "Entitlements", level: 1 }),
     ).toBeInTheDocument();
     expect(await screen.findByText("starter")).toBeInTheDocument();
+    expect(screen.getByText("pos.checkout")).toBeInTheDocument();
+    expect(screen.getByText("Enabled")).toBeInTheDocument();
     expect(screen.getByText("4")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /override/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /reconcile/i })).not.toBeInTheDocument();
@@ -225,5 +242,62 @@ describe("organization workspace entitlements", () => {
     expect(screen.getAllByText("Grace period").length).toBeGreaterThan(0);
     expect(screen.queryByText("Cancelled")).not.toBeInTheDocument();
     expect(screen.queryByText("Expired")).not.toBeInTheDocument();
+  });
+
+  it("shows grant feature codes with enabled and disabled states", async () => {
+    stubDesktop();
+    mockAuthenticatedFetch({
+      organizationItems: [sampleOrg],
+      commercialSummary: {
+        latestEntitlements: [{ id: "e1", productCode: "POS", subscriptionStatus: "Active" }],
+      },
+      entitlementSnapshotItems: [
+        {
+          ...snapshot,
+          grants: [
+            { featureCode: "pos.checkout", enabled: true, numericLimit: 5 },
+            { featureCode: "pos.reports", enabled: false },
+          ],
+        },
+        {
+          ...snapshot,
+          id: "22222222-2222-2222-2222-222222222222",
+          grants: [],
+        },
+      ],
+      entitlementSnapshotTotalCount: 2,
+    });
+    window.history.replaceState(
+      {},
+      "",
+      `/admin/organizations/${sampleOrg.id}/entitlements?product=POS`,
+    );
+    render(<App />);
+    expect(await screen.findByText("pos.checkout")).toBeInTheDocument();
+    expect(screen.getByText("pos.reports")).toBeInTheDocument();
+    expect(screen.getByText("Enabled")).toBeInTheDocument();
+    expect(screen.getByText("Disabled")).toBeInTheDocument();
+    expect(screen.getByText("Limit 5")).toBeInTheDocument();
+    expect(screen.getByText("No grants")).toBeInTheDocument();
+  });
+
+  it("shows grants on mobile cards", async () => {
+    stubMobile();
+    mockAuthenticatedFetch({
+      organizationItems: [sampleOrg],
+      commercialSummary: {
+        latestEntitlements: [{ id: "e1", productCode: "POS", subscriptionStatus: "Active" }],
+      },
+      entitlementSnapshotItems: [snapshot],
+    });
+    window.history.replaceState(
+      {},
+      "",
+      `/admin/organizations/${sampleOrg.id}/entitlements?product=POS`,
+    );
+    render(<App />);
+    expect(await screen.findByText("pos.checkout")).toBeInTheDocument();
+    expect(screen.getByText("Enabled")).toBeInTheDocument();
+    expect(screen.getAllByText("Grants").length).toBeGreaterThan(0);
   });
 });
