@@ -8,15 +8,15 @@ Baseline origin/main SHA: `5a9be9417b7a2217227ae93e9280102992861615`
 
 Documentation: `FINAL APPROVED` (DOC-00 … DOC-08; AMEND-01, AMEND-02, AMEND-03)
 
-React implementation: `NOT AUTHORIZED`
+React implementation: `AUTHORIZED FOR POS-REACT-IMPL-01 (AND POS-REACT-IMPL-02 NEXT) ON feat/pos-react-client ONLY`
 
-PWA implementation: `NOT AUTHORIZED`
+PWA implementation: `AUTHORIZED FOR PHASE A STATIC SHELL (POS-REACT-IMPL-02) ON feat/pos-react-client ONLY; production rollout NOT AUTHORIZED`
 
 Capacitor implementation: `NOT AUTHORIZED`
 
 MAUI retirement: `NOT AUTHORIZED`
 
-Merge: `PERFORMED` (`MOBILE-REACT-DOC-MERGE-01`)
+Merge: `PERFORMED` (`MOBILE-REACT-DOC-MERGE-01`) — implementation branch is **not** merged to `main`
 
 Existing MAUI status: `Retained / Unmodified`
 
@@ -26,9 +26,9 @@ Existing Personal Web status: `Retained / Unmodified`
 
 Existing .NET backends (Platform API + POS API + PostgreSQL): `Retained / Unmodified`
 
-Future React / PWA / Capacitor status: `Documentation Only`
+Future React / PWA / Capacitor status: `Foundation scaffold in progress on feat/pos-react-client; not on main`
 
-React implementation presence: `Absent`
+React implementation presence: `Present` (Gate C foundation shell only)
 
 Capacitor implementation presence: `Absent`
 
@@ -41,6 +41,14 @@ Implementation-readiness documentation queue: `STOPPED AFTER POS-REACT-READINESS
 Readiness branch: `docs/pos-react-implementation-readiness`
 
 Readiness evidence SHA: `5979a9ce008bb24a3257abd28ae79bc1a5a9b569`
+
+Implementation branch: `feat/pos-react-client` (starts at readiness tip `0954c1d11e5b9130f8411afb3f086c7e116d76ff`)
+
+Gate C scaffold (`POS-REACT-IMPL-01`): `COMPLETE` on `feat/pos-react-client`
+
+Gate D Phase A PWA shell (`POS-REACT-IMPL-02`): `NOT STARTED`
+
+Gate D full / browser auth: `BLOCKED` pending PWEB-20 compatibility review
 
 MOBILE-D-060: `OPEN`
 
@@ -73,19 +81,21 @@ TYPED_CLIENT_GENERATION_CONTRACT_MISSING: `OPEN`
 | POS-REACT-READINESS-03 | Complete | API + auth + browser security readiness |
 | POS-REACT-READINESS-04 | Complete | PWA / offline / device migration sequence |
 | POS-REACT-READINESS-05 | Complete | Master plan + open decisions; implementation still unauthorized |
+| POS-REACT-IMPL-01 | Complete on `feat/pos-react-client` | React client scaffold; report [POS-REACT-IMPL-01-react-client-scaffold.md](Reports/POS-REACT-IMPL-01-react-client-scaffold.md) |
 
 ## Authorization gates (locked)
 
+The table below remains the `main` planning-baseline lock. Product Owner authorized **POS-REACT-IMPL-01** and **POS-REACT-IMPL-02** only on `feat/pos-react-client`. Do not merge to `main`. Do not start POS-REACT-IMPL-03. Capacitor, Android, and MAUI retirement remain unauthorized.
+
 | Gate | Status |
 |---|---|
-| React mobile implementation | **NOT AUTHORIZED** |
-| PWA implementation / production rollout | **NOT AUTHORIZED** |
+| React mobile implementation | **PARTIAL** — Gate C scaffold on `feat/pos-react-client`; not on `main` |
+| PWA implementation / production rollout | **NOT AUTHORIZED** for production; Phase A static shell is the next authorized package |
 | Capacitor implementation / production rollout | **NOT AUTHORIZED** |
 | MAUI retirement | **NOT AUTHORIZED** |
-| Merge to `main` | **PERFORMED** (`MOBILE-REACT-DOC-MERGE-01`) — does **not** authorize implementation |
+| Merge to `main` | **NOT AUTHORIZED** for this implementation branch |
 | Merge of `docs/pos-react-implementation-readiness` | **NOT AUTHORIZED** |
-| Documentation approval | Does **not** authorize React, PWA, Capacitor, or MAUI retirement |
 
-Do not scaffold React, add Capacitor, add a PWA service worker, add Node dependencies, or modify MAUI.
+Do not add Capacitor, do not modify MAUI, and do not invent browser authentication in this queue.
 
 MOBILE-D-060 remains **Open**. Do not rewrite [DOC-08 closeout](Reports/MOBILE-REACT-DOC-08-final-closeout.md) as if it originally contained AMEND decisions or this merge.
