@@ -104,7 +104,7 @@ Owners use the React browser session (cookie) + session-grant Bearer for POS. Br
 ## Final SHA
 
 - Implementation: `4701a4a9b4fd50374e31779bcfd6809e319bee1a`
-- Docs: _(see following docs commit)_
+- Docs: `0cf803e45f0f2471dbf1042a01fa2b75ae8c048c` (this report; SHA note may trail by one docs commit)
 
 ## Flags
 
