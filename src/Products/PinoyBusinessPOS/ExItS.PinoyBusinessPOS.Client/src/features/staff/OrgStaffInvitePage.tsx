@@ -49,7 +49,10 @@ export function OrgStaffInvitePage() {
     const acceptPath = `/personal/invitations/accept?token=${encodeURIComponent(createdToken)}`;
     return (
       <div className="flex min-w-0 flex-col gap-4" data-testid="staff-invite-created">
-        <PageHeader title={t("staffInvite.createdTitle")} description={t("staffInvite.createdLede")} />
+        <PageHeader
+          title={t("staffInvite.createdTitle")}
+          description={t("staffInvite.createdLede")}
+        />
         <StatusChip tone="success">{t("staffInvite.createdBadge")}</StatusChip>
         <Card className="flex flex-col gap-3">
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">

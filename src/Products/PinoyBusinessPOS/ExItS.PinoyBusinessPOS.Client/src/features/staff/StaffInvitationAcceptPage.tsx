@@ -68,7 +68,10 @@ export function StaffInvitationAcceptPage() {
   if (success) {
     return (
       <div className="flex min-w-0 flex-col gap-4" data-testid="staff-accept-success">
-        <PageHeader title={t("staffAccept.successTitle")} description={t("staffAccept.successLede")} />
+        <PageHeader
+          title={t("staffAccept.successTitle")}
+          description={t("staffAccept.successLede")}
+        />
         <StatusChip tone="success">{t("staffAccept.successBadge")}</StatusChip>
         <Card className="flex flex-col gap-3">
           <p className="m-0">

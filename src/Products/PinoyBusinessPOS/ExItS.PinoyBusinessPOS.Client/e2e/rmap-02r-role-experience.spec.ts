@@ -6,7 +6,6 @@ import {
   mockBoundOrgAdminSession,
   mockBoundOwnerSession,
   signInAndBindCashier,
-  signInAndBindManager,
   signInAndBindOrgAdmin,
   signInAndBindOwner,
 } from "./mock-bound-session";

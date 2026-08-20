@@ -69,7 +69,9 @@ test.describe("canonical sign-in", () => {
       );
       await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
       // Playwright preview is a production build; Local Validation tools are DEV-only.
-      const buildMode = await page.getByTestId("sign-in-page").getAttribute("data-exits-build-mode");
+      const buildMode = await page
+        .getByTestId("sign-in-page")
+        .getAttribute("data-exits-build-mode");
       if (buildMode === "development") {
         await expect(page.getByText(/development tools/i)).toBeVisible();
       }

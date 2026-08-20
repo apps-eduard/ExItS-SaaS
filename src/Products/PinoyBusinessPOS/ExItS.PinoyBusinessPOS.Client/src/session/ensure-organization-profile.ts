@@ -18,10 +18,7 @@ function isActiveProfile(status: string): boolean {
 export async function ensureOrganizationSessionProfile(input: {
   session: BrowserSessionSnapshot | null;
   refreshSession: () => Promise<unknown>;
-}): Promise<
-  | { ok: true; session: BrowserSessionSnapshot }
-  | { ok: false; detail: string }
-> {
+}): Promise<{ ok: true; session: BrowserSessionSnapshot } | { ok: false; detail: string }> {
   const currentClass = sessionAccountClass(input.session);
   if (currentClass === "Organization") {
     return { ok: true, session: input.session! };
