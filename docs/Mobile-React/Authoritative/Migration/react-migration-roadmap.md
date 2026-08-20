@@ -133,6 +133,16 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 | Blocking? | NO for core parity |
 | Next | Catalog UOM picker update if approved |
 
+### RMAP-B03 — Sale discount / adjustment backend contract
+| Field | Content |
+|-------|---------|
+| Status | **NOT STARTED** |
+| Objective | Backend-first commercial sale discount / adjustment contract |
+| Blocking? | YES for discount UI |
+| Authorization | Requires ChatGPT / Product Owner after RMAP-06/07 validation closeout |
+| Distinct from | Today's Price · Cashier Price Override · Promotion · Regulatory Discount |
+| Next | Do not implement until authorized |
+
 ---
 
 ## Category C — REACT PARITY (core POS)
@@ -167,20 +177,24 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 ### RMAP-06 — Today’s Prices
 | Field | Content |
 |-------|---------|
-| Status | **COMPLETE** |
+| Status | **COMPLETE — validation closeout complete** |
 | Objective | Bulk current selling price updates with concurrency |
 | Report | [POS-REACT-RMAP-06-todays-prices.md](../../Reports/POS-REACT-RMAP-06-todays-prices.md) |
-| Exclusions | Cashier override (RMAP-B01) |
-| Next | RMAP-07 |
+| Shared impl SHA | `d3e4e3da` (with RMAP-07; history not rewritten) |
+| Validation repair | `cb91145b` |
+| Exclusions | Cashier override (RMAP-B01); commercial discount (RMAP-B03 NOT STARTED) |
+| Next | RMAP-07 COMPLETE — ChatGPT review / HARD STOP |
 
 ### RMAP-07 — Inventory tracking + movements + opening stock
 | Field | Content |
 |-------|---------|
-| Status | **COMPLETE** |
+| Status | **COMPLETE — validation closeout complete** |
 | Objective | Enable/disable tracking, opening, adjustments, on-hand, movements, oversell |
 | Report | [POS-REACT-RMAP-07-inventory.md](../../Reports/POS-REACT-RMAP-07-inventory.md) |
-| Exclusions | Lots/expiry (RMAP-08) |
-| Next | **HARD STOP** — do not start RMAP-08 |
+| Shared impl SHA | `d3e4e3da` (with RMAP-06; history not rewritten) |
+| Validation repair | `cb91145b` |
+| Exclusions | Lots/expiry (RMAP-08 NOT STARTED) |
+| Next | **HARD STOP** — ChatGPT review; do not start RMAP-08; RMAP-B03 Sale discount/adjustment backend contract NOT STARTED |
 
 ### RMAP-08 — Lots / expiry / FEFO (optional track)
 | Field | Content |
@@ -352,13 +366,15 @@ Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, 
 1. **RMAP-B00** staff existing-person link — required before RMAP-01 final validation, RMAP-01b, and RMAP-02 in Master Run 01
 2. **RMAP-B01** sale price policy — required before override UI
 3. **RMAP-B02** Milligram — only if owner approves
+4. **RMAP-B03** Sale discount / adjustment backend contract — **NOT STARTED**; requires ChatGPT authorization after RMAP-06/07 validation repair. Distinct from Today's Price, cashier override, promotions, and regulatory discounts.
 
 ## APPROVED PROPOSED MASTER RUN 01
 
 **Name:** Foundation + Catalog/Inventory Baseline
-**Status:** **IN PROGRESS** — RMAP-00 PASS, RMAP-B00 PASS (Repair 03 APPROVED), RMAP-01 PASS. Continue Master Run 01 through RMAP-07; HARD STOP after RMAP-07.
+**Status:** **HARD STOP after RMAP-07** — RMAP-00…RMAP-07 PASS (RMAP-06/07 validation closeout complete). Next: ChatGPT review. Do **not** start RMAP-08. Do **not** start RMAP-B03 (sale discount / adjustment backend contract) without authorization.
 **Stop rule:** After package 10 (RMAP-07) → HARD STOP for Product Owner + ChatGPT review (also stop on defined hard-stop codes)
-**Do not include:** RMAP-08 (lots/expiry) in Master Run 01
+**Do not include:** RMAP-08 (lots/expiry) in Master Run 01; RMAP-B03 discounts not started
+**Distinction preserved:** Today's Price ≠ Cashier Price Override ≠ Commercial Discount ≠ Promotion ≠ Regulatory Discount
 **Completion report (B00):** [POS-REACT-RMAP-B00-identity-reconciliation.md](../../Reports/POS-REACT-RMAP-B00-identity-reconciliation.md)
 **Completion report (RMAP-01):** [POS-REACT-RMAP-01-account-session-parity.md](../../Reports/POS-REACT-RMAP-01-account-session-parity.md)
 
