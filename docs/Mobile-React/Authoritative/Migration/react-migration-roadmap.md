@@ -349,9 +349,10 @@ Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, 
 ## APPROVED PROPOSED MASTER RUN 01
 
 **Name:** Foundation + Catalog/Inventory Baseline
-**Status:** IN PROGRESS after RMAP-00 — RMAP-00 COMPLETE; remaining Master Run 01 packages not complete; whole run is **not** claimed complete
-**Stop rule:** After package 10 → HARD STOP for Product Owner + ChatGPT review
+**Status:** **HARD STOP at RMAP-B00** — RMAP-00 PASS; `RMAP_B00_CREDENTIAL_SEMANTICS_UNRESOLVED`; packages RMAP-01…RMAP-07 not started
+**Stop rule:** After package 10 → HARD STOP for Product Owner + ChatGPT review (also stop on defined hard-stop codes)
 **Do not include:** RMAP-08 (lots/expiry) in Master Run 01
+**Stop report:** [POS-REACT-RMAP-B00-identity-hard-stop.md](../../Reports/POS-REACT-RMAP-B00-identity-hard-stop.md)
 
 | # | ID | Title |
 |---|----|-------|
