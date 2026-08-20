@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import {
   ORGANIZATION_ENTITLEMENT_PAGE_SIZE,
@@ -17,7 +17,6 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusIndicator } from "@/components/exits/StatusIndicator";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   useOrganizationCommercialSummaryQuery,
@@ -54,11 +53,71 @@ function productLabel(option: EntitlementProductOption): string {
   return option.productDisplayName || option.productCode;
 }
 
-function EntitlementGrantList({
+function grantCounts(grants: EntitlementGrant[]): { enabled: number; disabled: number } {
+  let enabled = 0;
+  let disabled = 0;
+  for (const grant of grants) {
+    if (grant.enabled) {
+      enabled += 1;
+    } else {
+      disabled += 1;
+    }
+  }
+  return { enabled, disabled };
+}
+
+function grantSummaryLabel(grants: EntitlementGrant[], t: (key: MessageKey) => string): string {
+  const { enabled, disabled } = grantCounts(grants);
+  return t("organization.entitlements.grant.summary")
+    .replace("{enabled}", String(enabled))
+    .replace("{disabled}", String(disabled));
+}
+
+function EntitlementGrantDetails({
   grants,
   t,
 }: {
   grants: EntitlementGrant[];
+  t: (key: MessageKey) => string;
+}) {
+  return (
+    <ul className="grid gap-1.5">
+      {grants.map((grant) => (
+        <li
+          key={grant.featureCode}
+          className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[length:var(--exits-text-xs)]"
+        >
+          <span className="break-all font-mono text-foreground">{grant.featureCode}</span>
+          <span className={grant.enabled ? "text-muted" : "font-medium text-foreground"}>
+            {grant.enabled
+              ? t("organization.entitlements.grant.enabled")
+              : t("organization.entitlements.grant.disabled")}
+          </span>
+          {grant.numericLimit != null ? (
+            <span className="text-muted">
+              {t("organization.entitlements.grant.limit").replace(
+                "{value}",
+                String(grant.numericLimit),
+              )}
+            </span>
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function EntitlementGrantDisclosure({
+  grants,
+  expanded,
+  onToggle,
+  panelId,
+  t,
+}: {
+  grants: EntitlementGrant[];
+  expanded: boolean;
+  onToggle: () => void;
+  panelId: string;
   t: (key: MessageKey) => string;
 }) {
   if (grants.length === 0) {
@@ -70,28 +129,24 @@ function EntitlementGrantList({
   }
 
   return (
-    <ul className="grid gap-1">
-      {grants.map((grant) => (
-        <li key={grant.featureCode} className="flex flex-wrap items-center gap-1.5">
-          <span className="break-all font-mono text-[length:var(--exits-text-xs)]">
-            {grant.featureCode}
-          </span>
-          <Badge tone={grant.enabled ? "success" : "neutral"}>
-            {grant.enabled
-              ? t("organization.entitlements.grant.enabled")
-              : t("organization.entitlements.grant.disabled")}
-          </Badge>
-          {grant.numericLimit != null ? (
-            <span className="text-[length:var(--exits-text-xs)] text-muted">
-              {t("organization.entitlements.grant.limit").replace(
-                "{value}",
-                String(grant.numericLimit),
-              )}
-            </span>
-          ) : null}
-        </li>
-      ))}
-    </ul>
+    <div className="grid gap-1">
+      <p className="text-[length:var(--exits-text-xs)] text-muted">
+        {grantSummaryLabel(grants, t)}
+      </p>
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        className="h-auto min-h-8 w-fit justify-start px-0 font-medium text-primary hover:bg-transparent hover:underline"
+        aria-expanded={expanded}
+        aria-controls={panelId}
+        onClick={onToggle}
+      >
+        {expanded
+          ? t("organization.entitlements.grant.hide")
+          : t("organization.entitlements.grant.show")}
+      </Button>
+    </div>
   );
 }
 
@@ -105,6 +160,7 @@ export function OrganizationEntitlementsPage() {
   const organizationId = parseOrganizationId(params.organizationId);
   const showTable = useMediaQuery("(min-width: 768px)");
   const [searchParams, setSearchParams] = useSearchParams();
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const state = useMemo(
     () => parseOrganizationEntitlementSearchParams(searchParams),
     [searchParams],
@@ -115,6 +171,12 @@ export function OrganizationEntitlementsPage() {
     [commercialQuery.data],
   );
   const sanitizedProduct = sanitizeEntitlementProduct(state.product, products);
+  const expansionScope = `${sanitizedProduct ?? ""}:${state.page}`;
+  const [activeExpansionScope, setActiveExpansionScope] = useState(expansionScope);
+  if (activeExpansionScope !== expansionScope) {
+    setActiveExpansionScope(expansionScope);
+    setExpandedIds(new Set());
+  }
   const snapshotsQuery = useOrganizationEntitlementSnapshotsQuery(
     organizationId,
     sanitizedProduct,
@@ -141,6 +203,18 @@ export function OrganizationEntitlementsPage() {
     );
     setSearchParams(organizationEntitlementSearchParams({ ...current, ...patch }), {
       replace: true,
+    });
+  }
+
+  function toggleExpanded(id: string) {
+    setExpandedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
     });
   }
 
@@ -309,10 +383,25 @@ export function OrganizationEntitlementsPage() {
                   {
                     id: "grants",
                     header: t("organization.entitlements.column.grants"),
-                    cell: (item) => <EntitlementGrantList grants={item.grants} t={t} />,
+                    cell: (item) => (
+                      <EntitlementGrantDisclosure
+                        grants={item.grants}
+                        expanded={expandedIds.has(item.id)}
+                        onToggle={() => toggleExpanded(item.id)}
+                        panelId={`entitlement-grants-${item.id}`}
+                        t={t}
+                      />
+                    ),
                   },
                 ]}
                 rows={snapshotsQuery.data.items}
+                expandedContent={(item) =>
+                  item.grants.length > 0 && expandedIds.has(item.id) ? (
+                    <div id={`entitlement-grants-${item.id}`} className="px-1">
+                      <EntitlementGrantDetails grants={item.grants} t={t} />
+                    </div>
+                  ) : null
+                }
               />
             </div>
           ) : (
@@ -322,33 +411,48 @@ export function OrganizationEntitlementsPage() {
                   {t("organization.entitlements.empty")}
                 </li>
               ) : (
-                snapshotsQuery.data.items.map((item) => (
-                  <li
-                    key={item.id}
-                    className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-3 py-2.5"
-                  >
-                    <p className="font-medium">
-                      {t("organization.entitlements.column.revision")} {item.snapshotVersion}
-                    </p>
-                    <p className="mt-0.5 break-words text-[length:var(--exits-text-xs)] text-muted">
-                      {item.planCode}
-                    </p>
-                    <div className="mt-1.5">
-                      <StatusIndicator
-                        tone={organizationSubscriptionStatusTone(item.subscriptionStatus)}
-                        label={organizationSubscriptionStatusLabel(item.subscriptionStatus, t)}
-                      />
-                    </div>
-                    <div className="mt-2">
-                      <p className="text-[length:var(--exits-text-xs)] font-medium text-muted">
-                        {t("organization.entitlements.column.grants")}
+                snapshotsQuery.data.items.map((item) => {
+                  const panelId = `entitlement-grants-${item.id}`;
+                  const expanded = expandedIds.has(item.id);
+                  return (
+                    <li
+                      key={item.id}
+                      className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-3 py-2.5"
+                    >
+                      <p className="font-medium">
+                        {t("organization.entitlements.column.revision")} {item.snapshotVersion}
                       </p>
-                      <div className="mt-1">
-                        <EntitlementGrantList grants={item.grants} t={t} />
+                      <p className="mt-0.5 break-words text-[length:var(--exits-text-xs)] text-muted">
+                        {item.planCode}
+                      </p>
+                      <div className="mt-1.5">
+                        <StatusIndicator
+                          tone={organizationSubscriptionStatusTone(item.subscriptionStatus)}
+                          label={organizationSubscriptionStatusLabel(item.subscriptionStatus, t)}
+                        />
                       </div>
-                    </div>
-                  </li>
-                ))
+                      <div className="mt-2">
+                        <p className="text-[length:var(--exits-text-xs)] font-medium text-muted">
+                          {t("organization.entitlements.column.grants")}
+                        </p>
+                        <div className="mt-1">
+                          <EntitlementGrantDisclosure
+                            grants={item.grants}
+                            expanded={expanded}
+                            onToggle={() => toggleExpanded(item.id)}
+                            panelId={panelId}
+                            t={t}
+                          />
+                        </div>
+                        {item.grants.length > 0 && expanded ? (
+                          <div id={panelId} className="mt-2 border-t border-border/70 pt-2">
+                            <EntitlementGrantDetails grants={item.grants} t={t} />
+                          </div>
+                        ) : null}
+                      </div>
+                    </li>
+                  );
+                })
               )}
             </ul>
           )}

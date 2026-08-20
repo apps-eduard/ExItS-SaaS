@@ -306,6 +306,9 @@ export const enMessages = {
   "organization.entitlements.grant.enabled": "Enabled",
   "organization.entitlements.grant.disabled": "Disabled",
   "organization.entitlements.grant.noGrants": "No grants",
+  "organization.entitlements.grant.summary": "{enabled} enabled · {disabled} disabled",
+  "organization.entitlements.grant.show": "Show grants",
+  "organization.entitlements.grant.hide": "Hide grants",
   "organization.entitlements.grant.limit": "Limit {value}",
   "organization.billing.title": "Billing",
   "organization.billing.description":
@@ -709,6 +712,9 @@ export const filPhMessages: Record<MessageKey, string> = {
   "organization.entitlements.grant.enabled": "Naka-enable",
   "organization.entitlements.grant.disabled": "Naka-disable",
   "organization.entitlements.grant.noGrants": "Walang grant",
+  "organization.entitlements.grant.summary": "{enabled} naka-enable · {disabled} naka-disable",
+  "organization.entitlements.grant.show": "Ipakita ang mga grant",
+  "organization.entitlements.grant.hide": "Itago ang mga grant",
   "organization.entitlements.grant.limit": "Limit {value}",
   "organization.billing.title": "Pagsingil",
   "organization.billing.description":

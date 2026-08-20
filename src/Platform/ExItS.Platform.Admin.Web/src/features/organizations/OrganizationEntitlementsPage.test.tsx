@@ -96,8 +96,9 @@ describe("organization workspace entitlements", () => {
       await screen.findByRole("heading", { name: "Entitlements", level: 1 }),
     ).toBeInTheDocument();
     expect(await screen.findByText("starter")).toBeInTheDocument();
-    expect(screen.getByText("pos.checkout")).toBeInTheDocument();
-    expect(screen.getByText("Enabled")).toBeInTheDocument();
+    expect(screen.getByText("1 enabled · 0 disabled")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show grants" })).toBeInTheDocument();
+    expect(screen.queryByText("pos.checkout")).not.toBeInTheDocument();
     expect(screen.getByText("4")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /override/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /reconcile/i })).not.toBeInTheDocument();
@@ -272,13 +273,23 @@ describe("organization workspace entitlements", () => {
       "",
       `/admin/organizations/${sampleOrg.id}/entitlements?product=POS`,
     );
+    const user = userEvent.setup();
     render(<App />);
-    expect(await screen.findByText("pos.checkout")).toBeInTheDocument();
+    expect(await screen.findByText("1 enabled · 1 disabled")).toBeInTheDocument();
+    expect(screen.getByText("No grants")).toBeInTheDocument();
+    expect(screen.queryByText("pos.checkout")).not.toBeInTheDocument();
+    const showButton = screen.getByRole("button", { name: "Show grants" });
+    expect(showButton).toHaveAttribute("aria-expanded", "false");
+    await user.click(showButton);
+    expect(screen.getByRole("button", { name: "Hide grants" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(screen.getByText("pos.checkout")).toBeInTheDocument();
     expect(screen.getByText("pos.reports")).toBeInTheDocument();
     expect(screen.getByText("Enabled")).toBeInTheDocument();
     expect(screen.getByText("Disabled")).toBeInTheDocument();
     expect(screen.getByText("Limit 5")).toBeInTheDocument();
-    expect(screen.getByText("No grants")).toBeInTheDocument();
   });
 
   it("shows grants on mobile cards", async () => {
@@ -295,9 +306,13 @@ describe("organization workspace entitlements", () => {
       "",
       `/admin/organizations/${sampleOrg.id}/entitlements?product=POS`,
     );
+    const user = userEvent.setup();
     render(<App />);
-    expect(await screen.findByText("pos.checkout")).toBeInTheDocument();
-    expect(screen.getByText("Enabled")).toBeInTheDocument();
+    expect(await screen.findByText("1 enabled · 0 disabled")).toBeInTheDocument();
     expect(screen.getAllByText("Grants").length).toBeGreaterThan(0);
+    expect(screen.queryByText("pos.checkout")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Show grants" }));
+    expect(screen.getByText("pos.checkout")).toBeInTheDocument();
+    expect(screen.getByText("Enabled")).toBeInTheDocument();
   });
 });
