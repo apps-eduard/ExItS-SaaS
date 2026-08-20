@@ -311,7 +311,7 @@ describe("sign out", () => {
     const { memoryRouter } = renderCashierHome();
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Cashier home" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Sell floor" })).toBeInTheDocument();
     });
     expect(screen.getByTestId("workspace-context")).toHaveTextContent(/Kizy Store/);
     expect(screen.getByTestId("account-menu-trigger")).toHaveTextContent("CO");
@@ -340,7 +340,7 @@ describe("sign out", () => {
     renderCashierHome();
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Cashier home" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Sell floor" })).toBeInTheDocument();
     });
 
     await user.click(screen.getByTestId("account-menu-trigger"));
@@ -349,7 +349,7 @@ describe("sign out", () => {
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveTextContent(/logout unavailable|Sign out failed/i);
     });
-    expect(screen.getByRole("heading", { name: "Cashier home" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Sell floor" })).toBeInTheDocument();
     expect(getPosAccessToken()).toBe("in-memory-only-access-token");
   });
 });

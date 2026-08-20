@@ -153,6 +153,14 @@ async function mockBoundOrgSession(
       });
     }
 
+    if (url.includes(`/organizations/${E2E_ORG_ID}/members`) && method === "GET") {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ items: [], totalCount: 0 }),
+      });
+    }
+
     if (url.includes("/api/v1/platform/auth/logout") && method === "POST") {
       const csrf = route.request().headers()["x-xsrf-token"];
       if (!csrf) {
@@ -346,6 +354,18 @@ export async function signInAndBindCashier(page: Page) {
   await page.getByLabel("Email or staff login").fill("cashier");
   await page.getByLabel("Password").fill("secret");
   await page.getByRole("button", { name: "Sign in" }).click();
+  const sellFloor = page.getByRole("heading", { name: "Sell floor" });
+  const startSelling = page.getByTestId("workspace-destination-start_selling");
+  const chooser = page.getByRole("heading", { name: "Choose workspace" });
+  await Promise.race([
+    sellFloor.waitFor({ state: "visible", timeout: 15000 }),
+    startSelling.waitFor({ state: "visible", timeout: 15000 }),
+    chooser.waitFor({ state: "visible", timeout: 15000 }),
+  ]);
+  if (await startSelling.isVisible().catch(() => false)) {
+    await startSelling.click();
+    await sellFloor.waitFor({ state: "visible", timeout: 15000 });
+  }
 }
 
 export async function signInAndBindOwner(page: Page) {
@@ -360,6 +380,7 @@ export async function signInAndBindManager(page: Page) {
   await page.getByLabel("Email or staff login").fill("manager");
   await page.getByLabel("Password").fill("secret");
   await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByTestId("workspace-destination-operations").click();
 }
 
 export async function signInAndBindOrgAdmin(page: Page) {
@@ -367,6 +388,26 @@ export async function signInAndBindOrgAdmin(page: Page) {
   await page.getByLabel("Email or staff login").fill("orgadmin");
   await page.getByLabel("Password").fill("secret");
   await page.getByRole("button", { name: "Sign in" }).click();
+  const orgPage = page.getByTestId("org-essentials-page");
+  const manage = page.getByTestId("workspace-destination-manage_business");
+  await Promise.race([
+    orgPage.waitFor({ state: "visible", timeout: 15000 }),
+    manage.waitFor({ state: "visible", timeout: 15000 }),
+  ]);
+  if (await manage.isVisible().catch(() => false)) {
+    await manage.click();
+  }
+  await orgPage.waitFor({ state: "visible", timeout: 15000 });
+}
+
+/** After Owner lands on the experience chooser, bind Operations (branch-scoped). */
+export async function chooseOwnerOperations(page: Page) {
+  await page.getByTestId("workspace-destination-operations").click();
+}
+
+/** After Owner lands on the experience chooser, bind Manage Business (org-level). */
+export async function chooseOwnerManageBusiness(page: Page) {
+  await page.getByTestId("workspace-destination-manage_business").click();
 }
 
 export async function signInAsPersonal(page: Page) {

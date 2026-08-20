@@ -90,10 +90,10 @@ test.describe("RMAP-03 branch / device operational context", () => {
     await expect(page.getByTestId("no-accessible-branch")).toBeVisible();
   });
 
-  test("single Active branch auto-binds and keeps device deferred", async ({ page }) => {
+  test("single Active branch auto-binds Start Selling for cashier", async ({ page }) => {
     await mockBoundCashierSession(page);
     await signInAndBindCashier(page);
-    await expect(page.getByRole("heading", { name: "Cashier home" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sell floor" })).toBeVisible();
     await expect(page.getByTestId("workspace-context")).toContainText("Main Branch");
   });
 
@@ -192,7 +192,7 @@ test.describe("RMAP-03 branch / device operational context", () => {
   test("logout clears bound workspace context", async ({ page }) => {
     await mockBoundCashierSession(page);
     await signInAndBindCashier(page);
-    await expect(page.getByRole("heading", { name: "Cashier home" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sell floor" })).toBeVisible();
     await page.getByRole("button", { name: /Account menu/i }).click();
     await page.getByRole("menuitem", { name: /Sign out/i }).click();
     await expect(page).toHaveURL(/\/sign-in/);

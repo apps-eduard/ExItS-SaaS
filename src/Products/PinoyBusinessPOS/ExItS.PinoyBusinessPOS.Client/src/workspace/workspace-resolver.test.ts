@@ -29,15 +29,29 @@ function branch(
 }
 
 describe("workspace resolver AMEND-03", () => {
-  it("case A — single org and single Active branch auto-selects", () => {
+  it("case A — single org and single Active branch shows chooser until destination probe", () => {
     const workspaces = buildAccessibleWorkspaces(
-      [{ organizationId: orgA, displayName: "Kizy Store" }],
+      [{ organizationId: orgA, displayName: "Store" }],
       new Map([[orgA, [branch(mainA, orgA, "Main Branch", true)]]]),
     );
     const plan = resolveWorkspaceRoutingPlan({ organizationCount: 1, workspaces });
-    expect(plan.outcome).toBe("AutoSelect");
-    expect(plan.autoOrganizationId).toBe(orgA);
-    expect(plan.autoBranchId).toBe(mainA);
+    expect(plan.outcome).toBe("ShowChooser");
+  });
+
+  it("includes Owner/Admin orgs with no Active branches for Manage Business", () => {
+    const workspaces = buildAccessibleWorkspaces(
+      [
+        {
+          organizationId: orgA,
+          displayName: "Admin Org",
+          membershipRole: "OrganizationAdministrator",
+        },
+      ],
+      new Map([[orgA, []]]),
+      { includeManagementOrgsWithoutBranches: true },
+    );
+    expect(workspaces).toHaveLength(1);
+    expect(workspaces[0].branches).toHaveLength(0);
   });
 
   it("case B — single org with multiple Active branches shows chooser", () => {

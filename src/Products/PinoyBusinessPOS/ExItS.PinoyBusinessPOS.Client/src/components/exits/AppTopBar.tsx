@@ -15,8 +15,7 @@ export function AppTopBar() {
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
 
-  const canSwitchWorkspace =
-    workspaces.length > 0 && !isOrganizationContextLocked(session);
+  const canSwitchWorkspace = workspaces.length > 0 && !isOrganizationContextLocked(session);
 
   async function handleSignOut() {
     if (signingOut) {
@@ -35,7 +34,9 @@ export function AppTopBar() {
   }
 
   const workspaceLabel = boundWorkspace
-    ? `${boundWorkspace.organizationDisplayName} · ${boundWorkspace.branchName}`
+    ? boundWorkspace.branchName
+      ? `${boundWorkspace.organizationDisplayName} · ${boundWorkspace.branchName}`
+      : boundWorkspace.organizationDisplayName
     : null;
 
   return (
@@ -77,7 +78,7 @@ export function AppTopBar() {
                   {boundWorkspace.organizationDisplayName}
                 </span>
                 <span className="m-0 w-full truncate text-[length:var(--exits-text-xs)] text-muted">
-                  {boundWorkspace.branchName}
+                  {boundWorkspace.branchName ?? t("experience.manageBusiness")}
                 </span>
               </button>
             ) : (
@@ -118,8 +119,12 @@ export function AppTopBar() {
               <span className="font-semibold text-foreground">
                 {boundWorkspace.organizationDisplayName}
               </span>
-              <span className="mx-1.5 text-muted">·</span>
-              <span className="text-muted">{boundWorkspace.branchName}</span>
+              {boundWorkspace.branchName ? (
+                <>
+                  <span className="mx-1.5 text-muted">·</span>
+                  <span className="text-muted">{boundWorkspace.branchName}</span>
+                </>
+              ) : null}
             </button>
           ) : (
             <span className="sr-only">{t("topbar.workspacePending")}</span>

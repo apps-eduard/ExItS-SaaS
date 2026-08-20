@@ -14,7 +14,9 @@ import {
 test.describe("RMAP-01b staff identity flows", () => {
   test.use({ serviceWorkers: "block" });
 
-  test("anonymous accept success shows staff login distinct from contact email", async ({ page }) => {
+  test("anonymous accept success shows staff login distinct from contact email", async ({
+    page,
+  }) => {
     await page.route("**/platform-api/**", async (route) => {
       const url = route.request().url();
       const method = route.request().method();
@@ -102,22 +104,25 @@ test.describe("RMAP-01b staff identity flows", () => {
 
   test("Personal accept uses accept-as-personal and shows linked success", async ({ page }) => {
     await mockPersonalSession(page);
-    await page.route("**/platform-api/api/v1/platform/auth/organization-invitations/accept-as-personal", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          userId: "55555555-5555-5555-5555-555555555555",
-          staffLogin: "paul@ORG907757",
-          contactEmail: "paul@gmail.com",
-          organizationDisplayName: "Org A",
-          organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-          membershipId: "66666666-6666-6666-6666-666666666666",
-          role: "OrganizationMember",
-          linkedPersonalUserId: "77777777-7777-7777-7777-777777777777",
-        }),
-      });
-    });
+    await page.route(
+      "**/platform-api/api/v1/platform/auth/organization-invitations/accept-as-personal",
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            userId: "55555555-5555-5555-5555-555555555555",
+            staffLogin: "paul@ORG907757",
+            contactEmail: "paul@gmail.com",
+            organizationDisplayName: "Org A",
+            organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            membershipId: "66666666-6666-6666-6666-666666666666",
+            role: "OrganizationMember",
+            linkedPersonalUserId: "77777777-7777-7777-7777-777777777777",
+          }),
+        });
+      },
+    );
 
     await signInAsPersonal(page);
     await page.goto("/personal/invitations/accept?token=personal-token");
@@ -136,27 +141,29 @@ test.describe("RMAP-01b staff identity flows", () => {
 
   test("Owner can create staff invitation through invite UI", async ({ page }) => {
     await mockBoundOwnerSession(page);
-    await page.route("**/platform-api/api/v1/platform/organizations/*/invitations", async (route) => {
-      if (route.request().method() === "POST") {
-        return route.fulfill({
-          status: 201,
-          contentType: "application/json",
-          body: JSON.stringify({
-            id: "inv-1",
-            organizationId: "11111111-1111-1111-1111-111111111111",
-            email: "newhire@example.com",
-            role: "OrganizationMember",
-            status: "Pending",
-            acceptToken: "one-shot-token",
-          }),
-        });
-      }
-      return route.fulfill({ status: 404, body: "{}" });
-    });
+    await page.route(
+      "**/platform-api/api/v1/platform/organizations/*/invitations",
+      async (route) => {
+        if (route.request().method() === "POST") {
+          return route.fulfill({
+            status: 201,
+            contentType: "application/json",
+            body: JSON.stringify({
+              id: "inv-1",
+              organizationId: "11111111-1111-1111-1111-111111111111",
+              email: "newhire@example.com",
+              role: "OrganizationMember",
+              status: "Pending",
+              acceptToken: "one-shot-token",
+            }),
+          });
+        }
+        return route.fulfill({ status: 404, body: "{}" });
+      },
+    );
 
     await signInAndBindOwner(page);
-    await expect(page.getByRole("heading", { name: "Owner home" })).toBeVisible();
-    await page.getByRole("link", { name: "Manage business" }).click();
+    await page.getByTestId("workspace-destination-manage_business").click();
     await expect(page.getByTestId("org-essentials-page")).toBeVisible();
     await page.getByRole("link", { name: "Invite staff" }).click();
     await expect(page.getByTestId("staff-invite-page")).toBeVisible();
@@ -169,7 +176,7 @@ test.describe("RMAP-01b staff identity flows", () => {
   test("Cashier cannot open staff invite route", async ({ page }) => {
     await mockBoundCashierSession(page);
     await signInAndBindCashier(page);
-    await expect(page.getByRole("heading", { name: "Cashier home" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sell floor" })).toBeVisible();
     await clientNavigate(page, "/org/staff/invite");
     await expect(page.getByTestId("admin-experience-denied")).toBeVisible();
     await expect(page.getByTestId("staff-invite-page")).toHaveCount(0);

@@ -9,15 +9,16 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import type { BrowserSessionSnapshot } from "@/api/platform/browser-session";
 import { clearPosAccessToken } from "@/api/platform/pos-access-token";
 import { clearPosSessionGrant, getPosSessionGrant } from "@/api/platform/pos-session-grant";
-import { resolveRoleHomeRoute } from "@/access/pos-capabilities";
 import {
+  bindOrganizationManagementGrant,
   bindWorkspaceWithSessionGrant,
   listEligibleOrganizations,
   listOrganizationBranches,
+  probeOrganizationSessionGrant,
   type PlatformBranch,
   type SessionGrantResponse,
 } from "@/api/platform/platform-auth-client";
@@ -40,6 +41,11 @@ import {
   classifyWorkspaceBindFailure,
   type WorkspaceBindFailureKind,
 } from "@/workspace/workspace-bind-error";
+import {
+  resolveDestinationRouting,
+  type WorkspaceDestination,
+} from "@/workspace/workspace-destinations";
+import type { WorkingExperience } from "@/workspace/working-experience";
 
 export type WorkspaceStatus =
   "idle" | "loading" | "ready" | "binding" | "bound" | "access_denied" | "error";
@@ -50,33 +56,69 @@ type WorkspaceContextValue = {
   routingPlan: WorkspaceRoutingPlan | null;
   boundWorkspace: BoundWorkspace | null;
   sessionGrant: SessionGrantResponse | null;
+  /** Authoritative grants probed per org for destination visibility (may be unbound). */
+  grantByOrganizationId: ReadonlyMap<string, SessionGrantResponse | null>;
   /** Honest device state — never invents an authorized POS terminal. */
   posDevice: PosDeviceContext;
   accessDeniedDetail: string | null;
   /** Classified bind failure for user-facing copy (null when no denial). */
   bindFailureKind: WorkspaceBindFailureKind | null;
+  /** @deprecated Prefer bindDestination — kept for legacy callers. */
   bindWorkspace: (organizationId: string, branchId: string) => Promise<boolean>;
+  bindDestination: (destination: WorkspaceDestination) => Promise<boolean>;
+  ensureOrganizationGrantHint: (organizationId: string) => Promise<SessionGrantResponse | null>;
   refreshWorkspaces: () => Promise<void>;
   clearBoundWorkspace: () => void;
 };
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 
-function findWorkspaceLabel(
+function findBranchLabel(
   workspaces: AccessibleOrganizationWorkspace[],
   organizationId: string,
   branchId: string,
-): BoundWorkspace | null {
+): { organizationDisplayName: string; branchName: string } | null {
   const organization = workspaces.find((item) => item.organizationId === organizationId);
   const branch = organization?.branches.find((item) => item.branchId === branchId);
   if (!organization || !branch) {
     return null;
   }
   return {
-    organizationId: organization.organizationId,
     organizationDisplayName: organization.displayName,
-    branchId: branch.branchId,
     branchName: branch.name,
+  };
+}
+
+function findOrganizationLabel(
+  workspaces: AccessibleOrganizationWorkspace[],
+  organizationId: string,
+): string | null {
+  return workspaces.find((item) => item.organizationId === organizationId)?.displayName ?? null;
+}
+
+function boundFromDestination(
+  destination: WorkspaceDestination,
+  workspaces: AccessibleOrganizationWorkspace[],
+): BoundWorkspace {
+  const orgName =
+    findOrganizationLabel(workspaces, destination.organizationId) ??
+    destination.organizationDisplayName;
+  if (destination.branchId) {
+    const labels = findBranchLabel(workspaces, destination.organizationId, destination.branchId);
+    return {
+      organizationId: destination.organizationId,
+      organizationDisplayName: labels?.organizationDisplayName ?? orgName,
+      branchId: destination.branchId,
+      branchName: labels?.branchName ?? destination.branchName ?? destination.branchId,
+      experience: destination.experience,
+    };
+  }
+  return {
+    organizationId: destination.organizationId,
+    organizationDisplayName: orgName,
+    branchId: null,
+    branchName: null,
+    experience: destination.experience,
   };
 }
 
@@ -84,16 +126,22 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { status: sessionStatus, session, refreshSession } = useSession();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const location = useLocation();
-  const autoBindAttempted = useRef(false);
+  const autoDestinationAttempted = useRef(false);
 
   const [status, setStatus] = useState<WorkspaceStatus>("idle");
   const [workspaces, setWorkspaces] = useState<AccessibleOrganizationWorkspace[]>([]);
   const [routingPlan, setRoutingPlan] = useState<WorkspaceRoutingPlan | null>(null);
   const [boundWorkspace, setBoundWorkspace] = useState<BoundWorkspace | null>(null);
+  const boundWorkspaceRef = useRef<BoundWorkspace | null>(null);
+  boundWorkspaceRef.current = boundWorkspace;
   const [sessionGrant, setSessionGrantState] = useState<SessionGrantResponse | null>(() =>
     getPosSessionGrant(),
   );
+  const [grantByOrganizationId, setGrantByOrganizationId] = useState<
+    Map<string, SessionGrantResponse | null>
+  >(() => new Map());
+  const grantByOrganizationIdRef = useRef(grantByOrganizationId);
+  grantByOrganizationIdRef.current = grantByOrganizationId;
   const [posDevice] = useState<PosDeviceContext>(DEFERRED_POS_DEVICE_CONTEXT);
   const [accessDeniedDetail, setAccessDeniedDetail] = useState<string | null>(null);
   const [bindFailureKind, setBindFailureKind] = useState<WorkspaceBindFailureKind | null>(null);
@@ -103,8 +151,52 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setSessionGrantState(null);
     clearPosAccessToken();
     clearPosSessionGrant();
-    autoBindAttempted.current = false;
+    autoDestinationAttempted.current = false;
   }, []);
+
+  const denyBind = useCallback(
+    (
+      kind: WorkspaceBindFailureKind,
+      technicalDetail: string | null,
+      detailKey:
+        | "accessDenied.detail"
+        | "accessDenied.sessionExpired"
+        | "accessDenied.staffOrgLock"
+        | "accessDenied.branchNotAccessible"
+        | "accessDenied.profileRequired"
+        | "accessDenied.serviceUnavailable"
+        | "accessDenied.generic",
+    ) => {
+      setBindFailureKind(kind);
+      setAccessDeniedDetail(detailKey);
+      if (technicalDetail) {
+        console.warn("[workspace-bind]", kind, technicalDetail);
+      }
+    },
+    [],
+  );
+
+  const ensureOrganizationSession = useCallback(async () => {
+    let activeSession = session;
+    if (sessionAccountClass(activeSession) === "Personal") {
+      const ensured = await ensureOrganizationSessionProfile({
+        session: activeSession,
+        refreshSession,
+      });
+      if (!ensured.ok) {
+        denyBind("profile_required", ensured.detail, "accessDenied.profileRequired");
+        setStatus("access_denied");
+        return null;
+      }
+      activeSession = ensured.session;
+    }
+    if (sessionAccountClass(activeSession) !== "Organization") {
+      denyBind("profile_required", null, "accessDenied.profileRequired");
+      setStatus("access_denied");
+      return null;
+    }
+    return activeSession;
+  }, [denyBind, refreshSession, session]);
 
   const loadWorkspaces = useCallback(async (currentSession: BrowserSessionSnapshot | null) => {
     setStatus("loading");
@@ -133,6 +225,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     const accessible = buildAccessibleWorkspaces(
       organizationsResult.organizations,
       branchesByOrganizationId,
+      { includeManagementOrgsWithoutBranches: true },
     );
     const plan = resolveWorkspaceRoutingPlan({
       organizationCount: organizationsResult.organizations.length,
@@ -143,155 +236,211 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setWorkspaces(accessible);
     setRoutingPlan(plan);
 
-    // Stale bound branch: revalidate against server-filtered Active accessible set.
-    setBoundWorkspace((current) => {
-      if (!current) {
-        setStatus("ready");
-        return current;
-      }
-      const stillValid = findWorkspaceLabel(accessible, current.organizationId, current.branchId);
-      if (!stillValid) {
-        clearPosAccessToken();
-        clearPosSessionGrant();
-        setSessionGrantState(null);
-        setAccessDeniedDetail(
-          "The previously selected branch is no longer accessible. Choose an active branch.",
-        );
-        setStatus("ready");
-        autoBindAttempted.current = false;
-        return null;
-      }
-      setStatus("bound");
-      setSessionGrantState(getPosSessionGrant());
-      return stillValid;
-    });
+    const nextGrants = new Map<string, SessionGrantResponse | null>();
 
-    if (accountClass === "Personal") {
-      return;
+    // Single-org: probe grant for smart destination routing (no branch inventing).
+    if (accessible.length === 1 && accountClass !== "Personal") {
+      const only = accessible[0];
+      const probed = await probeOrganizationSessionGrant(only.organizationId);
+      nextGrants.set(only.organizationId, probed.ok ? probed.grant : null);
     }
 
-    if (
-      currentSession?.selectedOrganizationId &&
-      accessible.some(
-        (workspace) => workspace.organizationId === currentSession.selectedOrganizationId,
-      )
-    ) {
-      const organization = accessible.find(
-        (workspace) => workspace.organizationId === currentSession.selectedOrganizationId,
+    setGrantByOrganizationId(nextGrants);
+
+    const previousBound = boundWorkspaceRef.current;
+    let resolvedBound: BoundWorkspace | null = null;
+    let resolvedStatus: WorkspaceStatus = "ready";
+    let denial: string | null = null;
+    let keepGrant = false;
+
+    if (previousBound) {
+      const orgStillPresent = accessible.some(
+        (workspace) => workspace.organizationId === previousBound.organizationId,
       );
-      if (organization && organization.branches.length === 1) {
-        const label = findWorkspaceLabel(
+      if (!orgStillPresent) {
+        denial = "The previously selected workspace is no longer accessible. Choose again.";
+        autoDestinationAttempted.current = false;
+      } else if (previousBound.branchId) {
+        const branchStillValid = findBranchLabel(
           accessible,
-          organization.organizationId,
-          organization.branches[0].branchId,
+          previousBound.organizationId,
+          previousBound.branchId,
         );
-        if (label) {
-          setBoundWorkspace((current) => current ?? label);
-          setSessionGrantState(getPosSessionGrant());
-          setStatus((current) => (current === "bound" ? current : "bound"));
+        if (!branchStillValid) {
+          denial =
+            "The previously selected branch is no longer accessible. Choose an active branch.";
+          autoDestinationAttempted.current = false;
+        } else {
+          resolvedBound = {
+            ...previousBound,
+            organizationDisplayName: branchStillValid.organizationDisplayName,
+            branchName: branchStillValid.branchName,
+          };
+          resolvedStatus = "bound";
+          keepGrant = true;
         }
+      } else {
+        resolvedBound = {
+          ...previousBound,
+          organizationDisplayName:
+            findOrganizationLabel(accessible, previousBound.organizationId) ??
+            previousBound.organizationDisplayName,
+        };
+        resolvedStatus = "bound";
+        keepGrant = true;
       }
     }
+
+    if (denial) {
+      clearPosAccessToken();
+      clearPosSessionGrant();
+      setSessionGrantState(null);
+      setAccessDeniedDetail(denial);
+    } else if (keepGrant) {
+      setSessionGrantState(getPosSessionGrant());
+      setAccessDeniedDetail(null);
+    }
+
+    setBoundWorkspace(resolvedBound);
+    setStatus(resolvedStatus);
   }, []);
 
   const refreshWorkspaces = useCallback(async () => {
     await loadWorkspaces(session);
   }, [loadWorkspaces, session]);
 
-  const bindWorkspace = useCallback(
-    async (organizationId: string, branchId: string) => {
-      const deny = (
-        kind: WorkspaceBindFailureKind,
-        technicalDetail: string | null,
-        detailKey:
-          | "accessDenied.detail"
-          | "accessDenied.sessionExpired"
-          | "accessDenied.staffOrgLock"
-          | "accessDenied.branchNotAccessible"
-          | "accessDenied.profileRequired"
-          | "accessDenied.serviceUnavailable"
-          | "accessDenied.generic",
-      ) => {
-        setBindFailureKind(kind);
-        // Store detailKey; WorkspaceChooserPage resolves via i18n. Keep technical in console.
-        setAccessDeniedDetail(detailKey);
-        if (technicalDetail) {
-          console.warn("[workspace-bind]", kind, technicalDetail);
-        }
-      };
-
-      if (isOrganizationContextLocked(session)) {
-        const homeOrg = session?.homeOrganizationId;
-        if (homeOrg && homeOrg !== organizationId) {
-          deny("staff_org_lock", null, "accessDenied.staffOrgLock");
-          setStatus("access_denied");
-          return false;
-        }
-      }
-
-      const accessibleLabel = findWorkspaceLabel(workspaces, organizationId, branchId);
-      if (!accessibleLabel && workspaces.length > 0) {
-        deny("branch_not_accessible", null, "accessDenied.branchNotAccessible");
-        setStatus("access_denied");
-        return false;
+  const ensureOrganizationGrantHint = useCallback(
+    async (organizationId: string) => {
+      if (grantByOrganizationIdRef.current.has(organizationId)) {
+        return grantByOrganizationIdRef.current.get(organizationId) ?? null;
       }
 
       let activeSession = session;
       if (sessionAccountClass(activeSession) === "Personal") {
-        setStatus("binding");
-        setBindFailureKind(null);
-        setAccessDeniedDetail(null);
         const ensured = await ensureOrganizationSessionProfile({
           session: activeSession,
           refreshSession,
         });
         if (!ensured.ok) {
-          deny("profile_required", ensured.detail, "accessDenied.profileRequired");
-          setStatus("access_denied");
-          return false;
+          setGrantByOrganizationId((prev) => {
+            const next = new Map(prev);
+            next.set(organizationId, null);
+            return next;
+          });
+          return null;
         }
         activeSession = ensured.session;
       }
 
       if (sessionAccountClass(activeSession) !== "Organization") {
-        deny("profile_required", null, "accessDenied.profileRequired");
-        setStatus("access_denied");
-        return false;
+        setGrantByOrganizationId((prev) => {
+          const next = new Map(prev);
+          next.set(organizationId, null);
+          return next;
+        });
+        return null;
+      }
+
+      const probed = await probeOrganizationSessionGrant(organizationId);
+      const grant = probed.ok ? probed.grant : null;
+      setGrantByOrganizationId((prev) => {
+        const next = new Map(prev);
+        next.set(organizationId, grant);
+        return next;
+      });
+      return grant;
+    },
+    [refreshSession, session],
+  );
+
+  const bindDestination = useCallback(
+    async (destination: WorkspaceDestination) => {
+      if (isOrganizationContextLocked(session)) {
+        const homeOrg = session?.homeOrganizationId;
+        if (homeOrg && homeOrg !== destination.organizationId) {
+          denyBind("staff_org_lock", null, "accessDenied.staffOrgLock");
+          setStatus("access_denied");
+          return false;
+        }
+      }
+
+      if (destination.branchId) {
+        const accessible = findBranchLabel(
+          workspaces,
+          destination.organizationId,
+          destination.branchId,
+        );
+        if (!accessible && workspaces.length > 0) {
+          denyBind("branch_not_accessible", null, "accessDenied.branchNotAccessible");
+          setStatus("access_denied");
+          return false;
+        }
       }
 
       setStatus("binding");
-      setAccessDeniedDetail(null);
       setBindFailureKind(null);
+      setAccessDeniedDetail(null);
+
+      const activeSession = await ensureOrganizationSession();
+      if (!activeSession) {
+        return false;
+      }
+
       const previousBranchId = boundWorkspace?.branchId ?? null;
-      const result = await bindWorkspaceWithSessionGrant(organizationId, branchId);
-      if (!result.ok) {
-        if (result.reason === "access_denied") {
+
+      if (destination.experience === "manage_business") {
+        const result = await bindOrganizationManagementGrant(destination.organizationId);
+        if (!result.ok) {
           const classified = classifyWorkspaceBindFailure({
-            reason: "access_denied",
+            reason: result.reason,
             status: result.status,
             errorCode: result.body?.errorCode,
             detail: result.body?.detail,
           });
-          deny(classified.kind, classified.technicalDetail, classified.detailKey);
+          denyBind(classified.kind, classified.technicalDetail, classified.detailKey);
           setBoundWorkspace(null);
-          setStatus("access_denied");
+          setStatus(classified.kind === "product_access_denied" ? "access_denied" : "ready");
           return false;
         }
+        setBoundWorkspace(boundFromDestination(destination, workspaces));
+        setSessionGrantState(result.grant);
+        setGrantByOrganizationId((prev) => {
+          const next = new Map(prev);
+          next.set(destination.organizationId, result.grant);
+          return next;
+        });
+        setBindFailureKind(null);
+        setAccessDeniedDetail(null);
+        setStatus("bound");
+        return true;
+      }
+
+      if (!destination.branchId) {
+        denyBind("branch_not_accessible", null, "accessDenied.branchNotAccessible");
+        setStatus("access_denied");
+        return false;
+      }
+
+      const result = await bindWorkspaceWithSessionGrant(
+        destination.organizationId,
+        destination.branchId,
+      );
+      if (!result.ok) {
         const classified = classifyWorkspaceBindFailure({
           reason: result.reason,
           status: result.status,
           errorCode: result.body?.errorCode,
           detail: result.body?.detail,
         });
-        deny(classified.kind, classified.technicalDetail, classified.detailKey);
+        denyBind(classified.kind, classified.technicalDetail, classified.detailKey);
+        setBoundWorkspace(null);
         setStatus(classified.kind === "product_access_denied" ? "access_denied" : "ready");
         return false;
       }
 
-      // MAUI parity: POS operational branch after Platform bind. Never invent deviceBoundBranchId.
       const operational = await selectOperationalBranch({
-        organizationId,
-        branchId,
+        organizationId: destination.organizationId,
+        branchId: destination.branchId,
         fromBranchId: previousBranchId,
       });
       if (
@@ -308,26 +457,41 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         clearPosSessionGrant();
         setSessionGrantState(null);
         setBoundWorkspace(null);
-        deny(classified.kind, classified.technicalDetail, classified.detailKey);
+        denyBind(classified.kind, classified.technicalDetail, classified.detailKey);
         setStatus(classified.kind === "product_access_denied" ? "access_denied" : "ready");
         return false;
       }
 
-      const label = accessibleLabel ??
-        findWorkspaceLabel(workspaces, organizationId, branchId) ?? {
-          organizationId,
-          organizationDisplayName: organizationId,
-          branchId,
-          branchName: branchId,
-        };
-      setBoundWorkspace(label);
+      setBoundWorkspace(boundFromDestination(destination, workspaces));
       setSessionGrantState(result.grant);
+      setGrantByOrganizationId((prev) => {
+        const next = new Map(prev);
+        next.set(destination.organizationId, result.grant);
+        return next;
+      });
       setBindFailureKind(null);
       setAccessDeniedDetail(null);
       setStatus("bound");
       return true;
     },
-    [boundWorkspace?.branchId, refreshSession, session, workspaces],
+    [boundWorkspace?.branchId, denyBind, ensureOrganizationSession, session, workspaces],
+  );
+
+  const bindWorkspace = useCallback(
+    async (organizationId: string, branchId: string) => {
+      const experience: WorkingExperience = "start_selling";
+      return bindDestination({
+        organizationId,
+        organizationDisplayName:
+          findOrganizationLabel(workspaces, organizationId) ?? organizationId,
+        branchId,
+        branchName: findBranchLabel(workspaces, organizationId, branchId)?.branchName ?? branchId,
+        experience,
+        route: "/sell",
+        labelKey: "experience.startSelling",
+      });
+    },
+    [bindDestination, workspaces],
   );
 
   useEffect(() => {
@@ -338,8 +502,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setAccessDeniedDetail((current) => (current === null ? current : null));
       setBindFailureKind((current) => (current === null ? current : null));
       setSessionGrantState((current) => (current === null ? current : null));
+      setGrantByOrganizationId((current) => (current.size === 0 ? current : new Map()));
       setStatus((current) => (current === "idle" ? current : "idle"));
-      autoBindAttempted.current = false;
+      autoDestinationAttempted.current = false;
       return;
     }
 
@@ -354,40 +519,44 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (sessionAccountClass(session) === "Personal") {
       return;
     }
-    if (!routingPlan || routingPlan.outcome !== "AutoSelect") {
+    if (workspaces.length !== 1) {
       return;
     }
-    if (!routingPlan.autoOrganizationId || !routingPlan.autoBranchId) {
+    if (autoDestinationAttempted.current) {
       return;
     }
-    if (autoBindAttempted.current) {
-      return;
-    }
-    autoBindAttempted.current = true;
 
-    void bindWorkspace(routingPlan.autoOrganizationId, routingPlan.autoBranchId).then((ok) => {
+    const onlyOrg = workspaces[0];
+    const grant = grantByOrganizationId.get(onlyOrg.organizationId) ?? null;
+    const routing = resolveDestinationRouting({
+      workspaces,
+      grantByOrganizationId: new Map([[onlyOrg.organizationId, grant]]),
+    });
+
+    if (routing.outcome !== "AutoDestination") {
+      return;
+    }
+
+    autoDestinationAttempted.current = true;
+    void bindDestination(routing.destination).then((ok) => {
       if (cancelled || !ok) {
         return;
       }
-      if (location.pathname !== "/") {
-        return;
-      }
-      const grant = getPosSessionGrant();
-      navigate(resolveRoleHomeRoute(grant), { replace: true });
+      navigate(routing.destination.route, { replace: true });
     });
 
     return () => {
       cancelled = true;
     };
   }, [
-    bindWorkspace,
+    bindDestination,
     boundWorkspace,
-    location.pathname,
+    grantByOrganizationId,
     navigate,
-    routingPlan,
     session,
     sessionStatus,
     status,
+    workspaces,
   ]);
 
   const signOutReset = useCallback(() => {
@@ -417,19 +586,25 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       routingPlan,
       boundWorkspace,
       sessionGrant,
+      grantByOrganizationId,
       posDevice,
       accessDeniedDetail,
       bindFailureKind,
       bindWorkspace,
+      bindDestination,
+      ensureOrganizationGrantHint,
       refreshWorkspaces,
       clearBoundWorkspace,
     }),
     [
       accessDeniedDetail,
+      bindDestination,
       bindFailureKind,
       bindWorkspace,
       boundWorkspace,
       clearBoundWorkspace,
+      ensureOrganizationGrantHint,
+      grantByOrganizationId,
       posDevice,
       refreshWorkspaces,
       routingPlan,

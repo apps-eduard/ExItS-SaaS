@@ -53,7 +53,7 @@ export function SellFloorPage() {
 
   const debouncedSearch = useDebouncedValue(searchTerm, SEARCH_DEBOUNCE_MS);
   const workspaceScope = useMemo(() => {
-    if (!boundWorkspace) {
+    if (!boundWorkspace?.branchId) {
       return null;
     }
     return {

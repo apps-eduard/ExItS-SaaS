@@ -122,6 +122,29 @@ function mockBoundCashierApis() {
       } as Response;
     }
 
+    if (url.includes("/api/v1/platform/auth/organization-context") && method === "PUT") {
+      return { ok: true, status: 204, json: async () => null, text: async () => "" } as Response;
+    }
+
+    if (url.includes(`/organizations/${orgId}/branch-context`) && method === "PUT") {
+      return { ok: true, status: 204, json: async () => null, text: async () => "" } as Response;
+    }
+
+    if (url.includes("/api/v1/platform/auth/token") && method === "POST") {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          accessToken: "in-memory-only",
+          productAccessAllowed: true,
+          mappedPosRoleCode: "Cashier",
+          productLocalRoleCode: "Cashier",
+          membershipRole: "OrganizationMember",
+        }),
+        text: async () => "",
+      } as Response;
+    }
+
     return {
       ok: false,
       status: 404,

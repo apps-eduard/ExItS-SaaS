@@ -34,7 +34,7 @@ test.describe("RMAP-01 account / session parity", () => {
     ).toBeVisible();
   });
 
-  test("staff @ORG login hint appears and Organization session binds cashier home", async ({
+  test("staff @ORG login hint appears and Organization session binds Sell floor", async ({
     page,
   }) => {
     await mockBoundCashierSession(page);
@@ -45,13 +45,13 @@ test.describe("RMAP-01 account / session parity", () => {
     await page.getByLabel("Password").fill("staff-secret");
     await page.getByRole("button", { name: "Sign in" }).click();
 
-    await expect(page.getByRole("heading", { name: "Cashier home" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sell floor" })).toBeVisible();
   });
 
   test("Organization session is denied Personal-only surface", async ({ page }) => {
     await mockBoundCashierSession(page);
     await signInAndBindCashier(page);
-    await expect(page.getByRole("heading", { name: "Cashier home" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sell floor" })).toBeVisible();
 
     await page.goto("/personal");
     await expect(page.getByTestId("account-class-denied")).toBeVisible();

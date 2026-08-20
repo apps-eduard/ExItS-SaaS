@@ -1,5 +1,5 @@
 export type WorkspaceRoutingOutcome =
-  "PersonalHome" | "AutoSelect" | "ShowChooser" | "NoAccessibleBranch";
+  "PersonalHome" | "AutoSelect" | "ShowChooser" | "NoAccessibleBranch" | "AutoDestination";
 
 export type AccessibleWorkspaceBranch = {
   branchId: string;
@@ -12,6 +12,7 @@ export type AccessibleWorkspaceBranch = {
 export type AccessibleOrganizationWorkspace = {
   organizationId: string;
   displayName: string;
+  membershipRole?: string | null;
   branches: AccessibleWorkspaceBranch[];
 };
 
@@ -24,6 +25,8 @@ export type WorkspaceRoutingPlan = {
 export type BoundWorkspace = {
   organizationId: string;
   organizationDisplayName: string;
-  branchId: string;
-  branchName: string;
+  /** Null when bound for organization-level Manage Business only. */
+  branchId: string | null;
+  branchName: string | null;
+  experience: import("@/workspace/working-experience").WorkingExperience;
 };

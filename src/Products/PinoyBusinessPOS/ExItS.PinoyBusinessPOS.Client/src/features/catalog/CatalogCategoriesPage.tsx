@@ -27,11 +27,8 @@ export function CatalogCategoriesPage() {
   const [error, setError] = useState<string | null>(null);
   const workspace = useMemo(
     () =>
-      boundWorkspace
-        ? {
-            organizationId: boundWorkspace.organizationId,
-            branchId: boundWorkspace.branchId,
-          }
+      boundWorkspace?.branchId
+        ? { organizationId: boundWorkspace.organizationId, branchId: boundWorkspace.branchId }
         : null,
     [boundWorkspace],
   );

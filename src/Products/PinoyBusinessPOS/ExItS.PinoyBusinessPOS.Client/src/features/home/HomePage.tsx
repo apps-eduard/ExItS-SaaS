@@ -1,5 +1,4 @@
 import { Navigate, Link } from "react-router-dom";
-import { resolveRoleHomeRoute } from "@/access/pos-capabilities";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -10,11 +9,12 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { isOrganizationContextLocked } from "@/session/account-class";
 import { useSession } from "@/session/SessionProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { workingExperienceRoute } from "@/workspace/working-experience";
 
 export function HomePage() {
   const { t } = useI18n();
   const { session } = useSession();
-  const { status, boundWorkspace, sessionGrant } = useWorkspace();
+  const { status, boundWorkspace } = useWorkspace();
 
   if (!boundWorkspace) {
     if (status === "loading" || status === "binding" || status === "idle" || status === "ready") {
@@ -23,35 +23,37 @@ export function HomePage() {
     return <EmptyState title={t("home.emptyTitle")} detail={t("workspace.lede")} />;
   }
 
-  const roleHome = resolveRoleHomeRoute(sessionGrant);
-
   return (
     <BoundHomeRedirect
-      roleHome={roleHome}
+      experienceRoute={workingExperienceRoute(boundWorkspace.experience)}
       canSwitchWorkspace={!isOrganizationContextLocked(session)}
     />
   );
 }
 
 function BoundHomeRedirect({
-  roleHome,
+  experienceRoute,
   canSwitchWorkspace,
 }: {
-  roleHome: string;
+  experienceRoute: string;
   canSwitchWorkspace: boolean;
 }) {
   const { t } = useI18n();
   const { boundWorkspace } = useWorkspace();
 
-  if (roleHome !== "/" && boundWorkspace) {
-    return <Navigate to={roleHome} replace />;
+  if (experienceRoute !== "/" && boundWorkspace) {
+    return <Navigate to={experienceRoute} replace />;
   }
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <PageHeader
         title={t("home.title")}
-        description={`${boundWorkspace!.organizationDisplayName} · ${boundWorkspace!.branchName}`}
+        description={
+          boundWorkspace!.branchName
+            ? `${boundWorkspace!.organizationDisplayName} · ${boundWorkspace!.branchName}`
+            : boundWorkspace!.organizationDisplayName
+        }
       />
       <StatusChip tone="success">{t("home.badge")}</StatusChip>
       <Card>

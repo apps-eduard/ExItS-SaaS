@@ -168,7 +168,7 @@ describe("account shell", () => {
     renderAt("/role/cashier");
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Cashier home" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Sell floor" })).toBeInTheDocument();
     });
 
     const trigger = screen.getByTestId("account-menu-trigger");
@@ -198,7 +198,7 @@ describe("account shell", () => {
     renderAt("/role/cashier");
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Cashier home" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Sell floor" })).toBeInTheDocument();
       expect(screen.getByTestId("account-menu-trigger")).toBeInTheDocument();
     });
 
@@ -226,7 +226,7 @@ describe("account shell", () => {
     renderAt("/role/cashier");
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Cashier home" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Sell floor" })).toBeInTheDocument();
       expect(screen.getByTestId("account-menu-trigger")).toBeInTheDocument();
       expect(screen.getByTestId("workspace-context")).toBeInTheDocument();
     });

@@ -1,4 +1,4 @@
-import { ChevronDown, LogOut, Settings, User } from "lucide-react";
+import { Building2, ChevronDown, LogOut, RefreshCw, Settings, User } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DropdownMenu, MenuHeader, MenuItem, MenuSeparator } from "@/components/ui/dropdown-menu";
@@ -20,11 +20,29 @@ type AccountMenuProps = {
   compact?: boolean;
 };
 
+function experienceLabel(
+  experience: string | undefined,
+  t: (
+    key: "experience.manageBusiness" | "experience.operations" | "experience.startSelling",
+  ) => string,
+): string | null {
+  if (experience === "manage_business") {
+    return t("experience.manageBusiness");
+  }
+  if (experience === "operations") {
+    return t("experience.operations");
+  }
+  if (experience === "start_selling") {
+    return t("experience.startSelling");
+  }
+  return null;
+}
+
 export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountMenuProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { session } = useSession();
-  const { sessionGrant, boundWorkspace } = useWorkspace();
+  const { sessionGrant, boundWorkspace, clearBoundWorkspace } = useWorkspace();
   const [open, setOpen] = useState(false);
 
   const displayName = resolveUserDisplayName(session) || t("account.signedIn");
@@ -39,6 +57,7 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
         : friendlyRole === "cashier"
           ? t("account.role.cashier")
           : null;
+  const currentExperience = experienceLabel(boundWorkspace?.experience, t);
 
   const accountLabel = `${t("account.menu")}: ${displayName}`;
 
@@ -101,11 +120,44 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
           </p>
         ) : null}
         {boundWorkspace ? (
-          <p className="m-0 mt-1 truncate text-[length:var(--exits-text-xs)] text-muted sm:hidden">
-            {boundWorkspace.organizationDisplayName} · {boundWorkspace.branchName}
-          </p>
+          <div className="mt-1 space-y-0.5 text-[length:var(--exits-text-xs)] text-muted">
+            <p className="m-0 truncate">
+              {boundWorkspace.organizationDisplayName}
+              {boundWorkspace.branchName ? ` · ${boundWorkspace.branchName}` : ""}
+            </p>
+            {currentExperience ? (
+              <p className="m-0 truncate">
+                {t("experience.current")}: {currentExperience}
+              </p>
+            ) : null}
+          </div>
         ) : null}
       </MenuHeader>
+      {boundWorkspace ? (
+        <>
+          <MenuItem
+            onSelect={() => {
+              setOpen(false);
+              clearBoundWorkspace();
+              navigate("/workspace");
+            }}
+          >
+            <Building2 className="size-4 shrink-0" aria-hidden="true" />
+            {t("workspace.switch")}
+          </MenuItem>
+          <MenuItem
+            onSelect={() => {
+              setOpen(false);
+              clearBoundWorkspace();
+              navigate("/workspace");
+            }}
+          >
+            <RefreshCw className="size-4 shrink-0" aria-hidden="true" />
+            {t("workspace.switchExperience")}
+          </MenuItem>
+          <MenuSeparator />
+        </>
+      ) : null}
       <MenuItem
         onSelect={() => {
           setOpen(false);

@@ -390,3 +390,77 @@ export async function bindWorkspaceWithSessionGrant(
   setPosSessionGrant(grantResult.grant);
   return { ok: true, grant: grantResult.grant };
 }
+
+/**
+ * Organization-level management bind: org context + session grant, no branch.
+ * Allows Owner/OrgAdmin management authority even when ProductAccess is not for selling.
+ */
+export async function bindOrganizationManagementGrant(organizationId: string): Promise<
+  | { ok: true; grant: SessionGrantResponse }
+  | {
+      ok: false;
+      reason: "context" | "grant" | "access_denied";
+      status: number;
+      body: PlatformProblem | null;
+    }
+> {
+  const orgContext = await setOrganizationContext(organizationId);
+  if (!orgContext.ok) {
+    return { ok: false, reason: "context", status: orgContext.status, body: orgContext.body };
+  }
+
+  const grantResult = await issueSessionGrant(organizationId);
+  if (!grantResult.ok) {
+    clearPosAccessToken();
+    clearPosSessionGrant();
+    return { ok: false, reason: "grant", status: grantResult.status, body: grantResult.body };
+  }
+
+  const grant = grantResult.grant;
+  const hasManagement =
+    grant.organizationManagementAuthority === true ||
+    grant.membershipRole?.localeCompare("OrganizationOwner", undefined, {
+      sensitivity: "accent",
+    }) === 0 ||
+    grant.membershipRole?.localeCompare("OrganizationAdministrator", undefined, {
+      sensitivity: "accent",
+    }) === 0;
+
+  if (!grant.productAccessAllowed && !hasManagement) {
+    clearPosAccessToken();
+    clearPosSessionGrant();
+    return {
+      ok: false,
+      reason: "access_denied",
+      status: 403,
+      body: {
+        errorCode: "application.auth.product_access_denied",
+        detail: grant.productAccessReasonCode ?? undefined,
+      },
+    };
+  }
+
+  setPosAccessToken(grant.accessToken);
+  setPosSessionGrant(grant);
+  return { ok: true, grant };
+}
+
+/** Probe grant for destination UI without requiring ProductAccess (management may still qualify). */
+export async function probeOrganizationSessionGrant(
+  organizationId: string,
+): Promise<
+  | { ok: true; grant: SessionGrantResponse }
+  | { ok: false; status: number; body: PlatformProblem | null }
+> {
+  const orgContext = await setOrganizationContext(organizationId);
+  if (!orgContext.ok) {
+    return { ok: false, status: orgContext.status, body: orgContext.body };
+  }
+
+  const grantResult = await issueSessionGrant(organizationId);
+  if (!grantResult.ok) {
+    return { ok: false, status: grantResult.status, body: grantResult.body };
+  }
+
+  return { ok: true, grant: grantResult.grant };
+}

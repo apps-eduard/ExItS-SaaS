@@ -31,11 +31,8 @@ export function InventoryDetailPage() {
 
   const workspace = useMemo(
     () =>
-      boundWorkspace
-        ? {
-            organizationId: boundWorkspace.organizationId,
-            branchId: boundWorkspace.branchId,
-          }
+      boundWorkspace?.branchId
+        ? { organizationId: boundWorkspace.organizationId, branchId: boundWorkspace.branchId }
         : null,
     [boundWorkspace],
   );

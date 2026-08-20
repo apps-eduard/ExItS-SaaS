@@ -139,12 +139,32 @@ export function RequireWorkspaceBound({ children }: { children: ReactNode }) {
   if (status === "loading" || status === "binding" || status === "idle") {
     return <SessionLoading />;
   }
+  // Branch-scoped surfaces prefer a branch; org-only Manage Business still reaches
+  // capability guards (CreateSale / catalog) so denials stay explicit.
   if (boundWorkspace) {
     return children;
   }
-  // AutoSelect bind is in flight via WorkspaceProvider — keep deep links (e.g. /catalog)
-  // from being redirected to `/` then role-home before the deny/allow guard can run.
-  if (routingPlan?.outcome === "AutoSelect") {
+  // Auto destination bind is in flight via WorkspaceProvider.
+  if (routingPlan?.outcome === "AutoSelect" || routingPlan?.outcome === "AutoDestination") {
+    return <SessionLoading />;
+  }
+  if (routingPlan) {
+    return <Navigate to={workspaceRouteForOutcome(routingPlan.outcome)} replace />;
+  }
+  return <Navigate to="/workspace" replace />;
+}
+
+/** Organization-level Manage Business — branch optional. */
+export function RequireOrganizationBound({ children }: { children: ReactNode }) {
+  const { status, boundWorkspace, routingPlan } = useWorkspace();
+
+  if (status === "loading" || status === "binding" || status === "idle") {
+    return <SessionLoading />;
+  }
+  if (boundWorkspace?.organizationId) {
+    return children;
+  }
+  if (routingPlan?.outcome === "AutoSelect" || routingPlan?.outcome === "AutoDestination") {
     return <SessionLoading />;
   }
   if (routingPlan) {

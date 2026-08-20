@@ -42,21 +42,38 @@ export function mapActiveBranches(branches: PlatformBranch[]): AccessibleWorkspa
 }
 
 export function buildAccessibleWorkspaces(
-  organizations: Array<{ organizationId: string; displayName: string }>,
+  organizations: Array<{
+    organizationId: string;
+    displayName: string;
+    membershipRole?: string | null;
+  }>,
   branchesByOrganizationId: ReadonlyMap<string, PlatformBranch[]>,
+  options?: { includeManagementOrgsWithoutBranches?: boolean },
 ): AccessibleOrganizationWorkspace[] {
   const workspaces: AccessibleOrganizationWorkspace[] = [];
+  const includeEmpty = options?.includeManagementOrgsWithoutBranches === true;
 
   for (const organization of organizations) {
     const branches = mapActiveBranches(
       branchesByOrganizationId.get(organization.organizationId) ?? [],
     );
-    if (branches.length === 0) {
+    const membershipRole = organization.membershipRole ?? null;
+    const isManagementMembership =
+      membershipRole != null &&
+      (membershipRole.localeCompare("OrganizationOwner", undefined, {
+        sensitivity: "accent",
+      }) === 0 ||
+        membershipRole.localeCompare("OrganizationAdministrator", undefined, {
+          sensitivity: "accent",
+        }) === 0);
+
+    if (branches.length === 0 && !(includeEmpty && isManagementMembership)) {
       continue;
     }
     workspaces.push({
       organizationId: organization.organizationId,
       displayName: organization.displayName,
+      membershipRole,
       branches,
     });
   }
@@ -81,15 +98,9 @@ export function resolveWorkspaceRoutingPlan(input: {
     return { outcome: "NoAccessibleBranch" };
   }
 
-  if (input.workspaces.length === 1 && input.workspaces[0].branches.length === 1) {
-    const only = input.workspaces[0];
-    return {
-      outcome: "AutoSelect",
-      autoOrganizationId: only.organizationId,
-      autoBranchId: only.branches[0].branchId,
-    };
-  }
-
+  // Do not AutoSelect on one-org/one-branch alone — Owner still has multiple experiences
+  // (Manage Business / Operations / Start Selling). Destination smart-routing runs after
+  // an authoritative session-grant probe in WorkspaceProvider.
   return { outcome: "ShowChooser" };
 }
 
@@ -102,6 +113,7 @@ export function workspaceRouteForOutcome(outcome: WorkspaceRoutingPlan["outcome"
     case "NoAccessibleBranch":
       return "/no-location";
     case "AutoSelect":
+    case "AutoDestination":
       return "/";
     default:
       return "/";

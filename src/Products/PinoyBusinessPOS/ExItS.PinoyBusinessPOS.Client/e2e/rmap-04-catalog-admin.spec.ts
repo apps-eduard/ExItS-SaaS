@@ -49,7 +49,7 @@ test.describe("RMAP-04 catalog admin parity", () => {
     await mockBoundCashierSession(page);
     await mockPosCatalogAdminApi(page);
     await signInAndBindCashier(page);
-    await expect(page.getByRole("heading", { name: "Cashier home" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sell floor" })).toBeVisible();
     await expect(page.getByTestId("open-catalog")).toHaveCount(0);
     await page.goto("/catalog");
     await expect(page).toHaveURL(/\/catalog$/);
@@ -60,6 +60,7 @@ test.describe("RMAP-04 catalog admin parity", () => {
     await mockBoundOwnerSession(page);
     await mockPosCatalogAdminApi(page);
     await signInAndBindOwner(page);
+    await page.getByTestId("workspace-destination-operations").click();
     await page.getByTestId("open-catalog").click();
     await page.getByText("Coke 330ml").click();
     await expect(page.getByTestId("catalog-product-form")).toBeVisible();

@@ -25,7 +25,7 @@ describe("RMAP-03 branch / device context", () => {
     expect(plan.outcome).toBe("NoAccessibleBranch");
   });
 
-  it("auto-selects a single Active branch", () => {
+  it("defers single Active branch auto-select to destination probe", () => {
     const branches = new Map<string, PlatformBranch[]>([
       [
         "org-1",
@@ -50,8 +50,7 @@ describe("RMAP-03 branch / device context", () => {
       workspaces,
       accountClass: "Organization",
     });
-    expect(plan.outcome).toBe("AutoSelect");
-    expect(plan.autoBranchId).toBe("branch-1");
+    expect(plan.outcome).toBe("ShowChooser");
   });
 
   it("shows chooser for multiple Active branches", () => {

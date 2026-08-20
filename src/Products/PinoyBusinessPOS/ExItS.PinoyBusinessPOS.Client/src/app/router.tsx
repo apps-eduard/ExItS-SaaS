@@ -42,6 +42,7 @@ import {
   RequireSession,
   RequireViewInventory,
   RequireWorkspaceBound,
+  RequireOrganizationBound,
   WorkspaceBootGate,
 } from "@/session/SessionGuards";
 
@@ -155,11 +156,11 @@ export const appRoutes = [
             path: "org",
             element: (
               <RequireOrganizationSession>
-                <RequireWorkspaceBound>
+                <RequireOrganizationBound>
                   <RequireAdminExperience>
                     <Outlet />
                   </RequireAdminExperience>
-                </RequireWorkspaceBound>
+                </RequireOrganizationBound>
               </RequireOrganizationSession>
             ),
             children: [
