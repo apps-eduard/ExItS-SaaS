@@ -105,6 +105,7 @@ Shared contracts to load with this product:
 | `Docs/Reports/PLM-CLIENT-GATE-D3-organization-product-access.md` | Gate D3 org discovery + product access gate | Complete after validation | Fail-closed workspace gate |
 | `Docs/Reports/impl-gate-d3-organization-product-access/` | Gate D3 screenshots | Complete after validation | Org select, denied, subscription, scope, workspace |
 | `Docs/Reports/PLM-PWA-H1-cache-storage-security.md` | PWA cache/storage security proof | Complete after validation | NetworkOnly APIs; no auth cache |
+| `Docs/Reports/PLM-PWA-H2-install-update-lifecycle.md` | PWA install/update lifecycle | Complete after validation | User-triggered refresh |
 
 ## Foundation closeout (PLM-00-WP10)
 

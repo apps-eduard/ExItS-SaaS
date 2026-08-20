@@ -40,6 +40,12 @@ describe("PWA update apply", () => {
     expect(applyPwaUpdateIfAllowed(apply)).toBe(true);
     expect(apply).toHaveBeenCalledTimes(1);
   });
+
+  it("defaults to allowing the user-triggered apply", () => {
+    const apply = vi.fn();
+    expect(applyPwaUpdateIfAllowed(apply)).toBe(true);
+    expect(apply).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("PWA update notice", () => {
@@ -64,6 +70,7 @@ describe("PWA update notice", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Update available");
     await user.click(screen.getByRole("button", { name: "Refresh" }));
     expect(onRefresh).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: "Refresh" })).toHaveClass("focus-visible:ring-2");
   });
 
   it("shows Filipino copy", () => {
