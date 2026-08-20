@@ -5,18 +5,30 @@
 
 ## Boundary
 
-Organization Web (`:8093`) is the **business management center**.
+Organization Web (`:8093`) is the **ADMIN / business management** host.
+
+**RMAP-02R:** POS `StoreManager` / Manager is **operations**, not automatic Organization Web admin.
+
+**DEFAULT POS ROLES (product UX):** Owner / Manager / Cashier.
+
+| Dimension | Meaning |
+|---|---|
+| Organization Owner membership | Admin-side authority (Organization Web allowed) |
+| OrganizationAdministrator membership | Explicit delegated admin-side authority (Organization Web allowed per permissions) |
+| POS StoreManager / Manager | Strong POS **operations**; **not** Organization Web admin by itself |
+| POS Cashier | Limited operations; Organization Web denied |
+| Experience mode (React) | Presentation only — does **not** mutate security role |
 
 **P28-WP15A:** Full organization governance on Web does **not** require selecting the Primary branch. On Mobile, organization-wide governance entry points target **Primary/Main workspace** only; branch operations use exact selected branch context. See [organization-branch-capability-matrix.md](organization-branch-capability-matrix.md).
 
-| Allowed | Denied |
+| Allowed (admin host) | Denied (admin host) |
 |---|---|
 | Organization Owner | Cashier (POS checkout role) |
-| Organization Manager (`OrganizationAdministrator` membership or `StoreManager` POS role) | Ordinary POS-only / device-only identities |
-| InventoryStaff / ReportingUser (limited nav) | Personal-only users without org membership |
+| OrganizationAdministrator (explicit admin membership) | POS StoreManager / Manager **alone** (use React/PWA POS operations) |
+| InventoryStaff / ReportingUser (limited nav; legacy/compat) | Ordinary POS-only / device-only identities without org-management membership |
 | | Cart / checkout / barcode selling / payment taking |
 
-Selling remains on PinoyBusinessPOS MAUI. Walk-in POS current branch is selected on the mobile app (`SelectedBranchId`); Organization Web manages all locations and does not host checkout or operational branch switching.
+Selling remains on PinoyBusinessPOS MAUI / React POS client. Walk-in POS current branch is selected on the mobile app (`SelectedBranchId`); Organization Web manages all locations and does not host checkout or operational branch switching.
 
 ## Session / identity (runtime)
 
@@ -42,37 +54,41 @@ Development Quick Login one-click auto-auth is **removed** from Admin picker and
 
 ## Role matrix (UI gate + existing server permissions)
 
-| Area | Owner | Manager | Cashier |
-|---|---|---|---|
-| Overview | Yes | Yes | Denied (host) |
-| Business profile | Yes | No (Owner-class only) | Denied |
-| Branches | Yes | Yes | Denied |
-| Devices / registers | Yes | Yes | Denied |
-| Staff / roles | Yes | Yes | Denied |
-| Customers | Yes | Yes | Denied |
-| Catalog / inventory | Yes | Yes | Denied |
-| Sales history / reports | Yes | Yes | Denied |
-| Shifts (read/audit) | Yes | Yes | Denied |
-| Operational settings | Yes | Yes | Denied |
-| Tax settings (when Platform-enabled) | Yes | Yes | Denied |
-| Sales documents / Owner education | Exact Owner | No | Denied |
-| Ownership transfer | Exact Owner | No | Denied |
-| Notifications (org inbox) | Yes (Owner) | Yes (Administrator / Manager) | Denied |
-| Subscription | Exact Owner | No | Denied |
-| POS checkout / CreateSale | **No** (unless separate product-local selling role) | Only if POS role allows | Per Cashier POS role |
+**Columns:** Organization Owner membership | OrganizationAdministrator membership | POS StoreManager (ops — Org Web denied alone) | Cashier
 
-Server APIs remain authoritative (`OrganizationManagementAuthority` + `PosRoleMatrix`, Platform membership). Nav hide is not sufficient; Cashier is blocked in `MainLayout` via `CanAccessOrganizationWeb`.
+| Area | Owner | Org Administrator | StoreManager alone | Cashier |
+|---|---|---|---|---|
+| Overview | Yes | Yes | Denied (host) | Denied (host) |
+| Business profile | Yes | No (Owner-class only) | Denied | Denied |
+| Branches | Yes | Yes | Denied | Denied |
+| Devices / registers | Yes | Yes | Denied | Denied |
+| Staff / roles | Yes | Yes (nav); invite mutations Owner-only per Platform guard | Denied | Denied |
+| Customers | Yes | Yes | Denied | Denied |
+| Catalog / inventory | Yes | Yes | Denied | Denied |
+| Sales history / reports | Yes | Yes | Denied | Denied |
+| Shifts (read/audit) | Yes | Yes | Denied | Denied |
+| Operational settings | Yes | Yes | Denied | Denied |
+| Tax settings (when Platform-enabled) | Yes | Yes | Denied | Denied |
+| Sales documents / Owner education | Exact Owner | No | Denied | Denied |
+| Ownership transfer | Exact Owner | No | Denied | Denied |
+| Notifications (org inbox) | Yes | Yes | Denied | Denied |
+| Subscription | Exact Owner | No | Denied | Denied |
+| POS checkout / CreateSale | Via POS Owner role in React/MAUI | No unless separate POS selling role | Yes (POS ops client) | Per Cashier POS role |
+
+Server APIs remain authoritative (`OrganizationManagementAuthority` + `PosRoleMatrix`, Platform membership). Nav hide is not sufficient; Cashier and StoreManager-alone are blocked in `MainLayout` via `CanAccessOrganizationWeb`.
 
 ### Effective authority dimensions (do not mix)
 
-| Dimension | Organization Owner | Organization Manager | Cashier |
-|---|---|---|---|
-| Organization Web management | **FULL** (membership) | Day-to-day subset | **NONE** (host denied) |
-| POS management APIs | Full management projection (no automatic checkout) | Manager subset | Denied |
-| POS checkout (`CreateSale` / `EnterPos`) | None unless product-local selling role | Only if role allows | Per POS role |
-| Platform operator (`view_portfolio`, etc.) | None unless separately Platform staff | None | None |
+| Dimension | Organization Owner | OrganizationAdministrator | POS StoreManager | Cashier |
+|---|---|---|---|---|
+| Organization Web management | **FULL** (membership) | Day-to-day admin subset | **NONE** (host denied alone) | **NONE** |
+| POS management APIs | Full management projection | Admin projection | Ops via POS client | Limited |
+| POS checkout (`CreateSale` / `EnterPos`) | Per POS Owner role | Only if separate POS role | Yes (PosRoleMatrix) | Per POS role |
+| Platform operator (`view_portfolio`, etc.) | None unless separately Platform staff | None | None | None |
 
 **Invariant:** Platform `OrganizationOwner` membership ≠ automatic POS Cashier/Owner checkout role. Token issue may set `OrganizationManagementAuthority=true` for Owner/Administrator **from membership alone** (commercial entitlement is a separate paid-feature gate) when product-local role is missing — Org Web Bearer binds; checkout remains denied until a product-local selling role is assigned.
+
+**Invariant (RMAP-02R):** `OrganizationAdministrator` ≠ POS `StoreManager`. They are separate authority dimensions.
 
 ### Session grant / Bearer (Owner fix)
 

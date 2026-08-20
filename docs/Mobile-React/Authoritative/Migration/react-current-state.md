@@ -17,8 +17,9 @@ Do not treat prior WP labels as completeness. Inventory against routes and code.
 | `/no-location` | Branch binding | COMPLETE for no-branch gate; Organization AccountClass required |
 | `/settings/preferences` | Preferences | PARTIAL (theme/language) |
 | `/sell` | Sell floor | PARTIAL (browse + cart; pay disabled); Organization AccountClass required |
-| `/role/{owner\|manager\|cashier}` | Role homes | SHELL_ONLY / PARTIAL; Organization AccountClass required |
-| `/org` | Org essentials | SHELL_ONLY; Organization AccountClass required |
+| `/role/{owner\|manager\|cashier}` | Role homes | COMPLETE for experience eligibility (RMAP-02R); Organization AccountClass required |
+| `/org` | Org essentials | Admin experience only (Owner/OrganizationAdministrator); invite Owner-only (RMAP-02R) |
+| `/org/staff/invite` | Staff invite | Owner membership authority required (RMAP-02R) |
 | `*` | Not found | COMPLETE |
 
 ## Area inventory
@@ -35,7 +36,8 @@ Do not treat prior WP labels as completeness. Inventory against routes and code.
 | Catalog admin | — | read-only `pos-catalog-client` | catalog-cart tests | Read for sell | CRUD/units/Today’s Prices/import | High |
 | Cart | `SessionCartProvider` | in-memory | cart tests | Session cart | Persist/outbox/server cart | High |
 | Checkout | disabled copy | no sale POST client | | Explicit non-implementation | Entire sale pipeline | Critical |
-| Org/staff/branches | `/org` shell | — | | Essentials placeholder | All admin + staff invite UI | High |
+| Org/staff/branches | `/org` shell + invite | experience + invite guards | RMAP-02R e2e | Admin experience; Owner invite | Full Org Web CRUD | Medium |
+| Experience model | Owner chooser; role homes | `pos-capabilities` | RMAP-02R | Admin/Ops/Sell without role mutation | Custom roles | Low |
 | Inventory/purchasing/suppliers/shifts/returns/reports/orders | — | — | | None | All | Critical |
 | PWA/SW | `pwa/*` | validate-pwa script | e2e pwa | Prod SW; blocked in dev | LocalStore offline ops | Medium |
 | CSRF | `antiforgery.ts` | platform-http | antiforgery tests | Token handling | — | Low |

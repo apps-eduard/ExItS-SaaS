@@ -63,25 +63,36 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 | Exclusions | Late Personal link OPEN; implementing CURRENT duplicate-human model as final desired parity |
 | Acceptance | Matches approved person-link + alias contract; multi-org isolation; removal preserves Personal/other orgs |
 | Readiness flag | `READY_FOR_REACT_STAFF_IDENTITY_PARITY` = YES |
+| Reconciliation | Invite authority corrected in **RMAP-02R** (Owner membership; Manager/Cashier denied) |
 | Next | RMAP-02 |
 
 ### RMAP-02 — Workspace / org / product-access / role guards
 | Field | Content |
 |-------|---------|
-| Status | **COMPLETE** — [POS-REACT-RMAP-02-workspace-authorization.md](../../Reports/POS-REACT-RMAP-02-workspace-authorization.md) |
+| Status | **COMPLETE** — [POS-REACT-RMAP-02-workspace-authorization.md](../../Reports/POS-REACT-RMAP-02-workspace-authorization.md) (subject to RMAP-02R reconciliation evidence) |
 | Objective | Org context, product access, role homes, CreateSale guard correctness against **post-B00** identity model |
 | Dependencies | RMAP-01, **RMAP-01b**, RMAP-00 if visual polish |
 | Backend | ProductLocalRoleGrant, entitlements; session/org rules from post-B00 contract |
 | React start | `WorkspaceProvider`, `SessionGuards`, role pages |
 | Exclusions | Org admin CRUD |
 | Acceptance | Wrong class/role cannot open sell; workspace/role guards validated using post-B00 staff/person model |
+| Reconciliation | Experience vs role model locked in **RMAP-02R** |
+| Next | RMAP-02R |
+
+### RMAP-02R — Role / experience authority reconciliation
+| Field | Content |
+|-------|---------|
+| Status | **COMPLETE** — [POS-REACT-RMAP-02R-role-experience-reconciliation.md](../../Reports/POS-REACT-RMAP-02R-role-experience-reconciliation.md) |
+| Objective | Lock Owner/Manager/Cashier product model; separate Organization admin from POS operations; experience switch without role mutation |
+| Dependencies | RMAP-02 |
+| Acceptance | StoreManager alone denied Org Web; invite Owner-only; Owner Admin/Ops/Sell experiences; Manager Ops+Sell; Cashier Sell only |
 | Next | RMAP-03 |
 
 ### RMAP-03 — Branch / device operational context
 | Field | Content |
 |-------|---------|
 | Objective | Bound branch (and device where required) for POS ops |
-| Dependencies | RMAP-02 |
+| Dependencies | RMAP-02R |
 | Backend | Platform branches/devices; POS operational-branch (CURRENT) |
 | React start | workspace branch binding, `NoAccessibleBranchPage` |
 | Exclusions | Full branch fulfillment admin (RMAP-18) |
@@ -378,7 +389,7 @@ Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, 
 Execution order (not an inherent UI↔backend domain coupling):
 
 ```text
-RMAP-00 → RMAP-B00 → RMAP-01 → RMAP-01b → RMAP-02 → RMAP-03 → RMAP-04 → RMAP-05 → RMAP-06 → RMAP-07
+RMAP-00 → RMAP-B00 → RMAP-01 → RMAP-01b → RMAP-02 → RMAP-02R → RMAP-03 → RMAP-04 → RMAP-05 → RMAP-06 → RMAP-07
 → HARD STOP
 ```
 
