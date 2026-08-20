@@ -189,11 +189,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (sessionStatus !== "authenticated") {
-      setWorkspaces([]);
-      setRoutingPlan(null);
-      setBoundWorkspace(null);
-      setAccessDeniedDetail(null);
-      setStatus("idle");
+      // Prefer functional updates that preserve referential identity when already reset,
+      // otherwise unsigned `/sign-in` can infinite-loop on setWorkspaces([]).
+      setWorkspaces((current) => (current.length === 0 ? current : []));
+      setRoutingPlan((current) => (current === null ? current : null));
+      setBoundWorkspace((current) => (current === null ? current : null));
+      setAccessDeniedDetail((current) => (current === null ? current : null));
+      setSessionGrantState((current) => (current === null ? current : null));
+      setStatus((current) => (current === "idle" ? current : "idle"));
       autoBindAttempted.current = false;
       return;
     }
@@ -238,8 +241,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     clearBoundWorkspace();
   }, [clearBoundWorkspace, queryClient]);
 
+  const previousSessionStatus = useRef(sessionStatus);
   useEffect(() => {
-    if (sessionStatus === "unauthenticated") {
+    const previous = previousSessionStatus.current;
+    previousSessionStatus.current = sessionStatus;
+    // Run once on transition into signed-out — not on every signed-out render.
+    if (
+      sessionStatus === "unauthenticated" &&
+      (previous === "authenticated" || previous === "expired" || previous === "loading")
+    ) {
       signOutReset();
     }
   }, [sessionStatus, signOutReset]);

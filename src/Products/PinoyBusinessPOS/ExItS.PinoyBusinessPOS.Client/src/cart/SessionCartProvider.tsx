@@ -82,7 +82,8 @@ export function SessionCartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clear = useCallback(() => {
-    setLines([]);
+    // Bail out when already empty — a fresh `[]` would re-render forever via lifecycle effects.
+    setLines((current) => (current.length === 0 ? current : []));
   }, []);
 
   const lineCount = useMemo(() => lines.reduce((total, line) => total + line.quantity, 0), [lines]);

@@ -6,12 +6,13 @@ import { useSession } from "@/session/SessionProvider";
 export function SessionCartLifecycle() {
   const { status } = useSession();
   const cart = useSessionCartOptional();
+  const clearCart = cart?.clear;
 
   useEffect(() => {
     if (status === "unauthenticated" || status === "expired") {
-      cart?.clear();
+      clearCart?.();
     }
-  }, [cart, status]);
+  }, [clearCart, status]);
 
   return null;
 }
