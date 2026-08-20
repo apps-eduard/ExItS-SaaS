@@ -36,6 +36,10 @@ import {
   buildAccessibleWorkspaces,
   resolveWorkspaceRoutingPlan,
 } from "@/workspace/workspace-resolver";
+import {
+  classifyWorkspaceBindFailure,
+  type WorkspaceBindFailureKind,
+} from "@/workspace/workspace-bind-error";
 
 export type WorkspaceStatus =
   "idle" | "loading" | "ready" | "binding" | "bound" | "access_denied" | "error";
@@ -49,6 +53,8 @@ type WorkspaceContextValue = {
   /** Honest device state — never invents an authorized POS terminal. */
   posDevice: PosDeviceContext;
   accessDeniedDetail: string | null;
+  /** Classified bind failure for user-facing copy (null when no denial). */
+  bindFailureKind: WorkspaceBindFailureKind | null;
   bindWorkspace: (organizationId: string, branchId: string) => Promise<boolean>;
   refreshWorkspaces: () => Promise<void>;
   clearBoundWorkspace: () => void;
@@ -90,6 +96,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   );
   const [posDevice] = useState<PosDeviceContext>(DEFERRED_POS_DEVICE_CONTEXT);
   const [accessDeniedDetail, setAccessDeniedDetail] = useState<string | null>(null);
+  const [bindFailureKind, setBindFailureKind] = useState<WorkspaceBindFailureKind | null>(null);
 
   const clearBoundWorkspace = useCallback(() => {
     setBoundWorkspace(null);
@@ -102,6 +109,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const loadWorkspaces = useCallback(async (currentSession: BrowserSessionSnapshot | null) => {
     setStatus("loading");
     setAccessDeniedDetail(null);
+    setBindFailureKind(null);
 
     const accountClass = sessionAccountClass(currentSession);
 
@@ -192,12 +200,30 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const bindWorkspace = useCallback(
     async (organizationId: string, branchId: string) => {
+      const deny = (
+        kind: WorkspaceBindFailureKind,
+        technicalDetail: string | null,
+        detailKey:
+          | "accessDenied.detail"
+          | "accessDenied.sessionExpired"
+          | "accessDenied.staffOrgLock"
+          | "accessDenied.branchNotAccessible"
+          | "accessDenied.profileRequired"
+          | "accessDenied.serviceUnavailable"
+          | "accessDenied.generic",
+      ) => {
+        setBindFailureKind(kind);
+        // Store detailKey; WorkspaceChooserPage resolves via i18n. Keep technical in console.
+        setAccessDeniedDetail(detailKey);
+        if (technicalDetail) {
+          console.warn("[workspace-bind]", kind, technicalDetail);
+        }
+      };
+
       if (isOrganizationContextLocked(session)) {
         const homeOrg = session?.homeOrganizationId;
         if (homeOrg && homeOrg !== organizationId) {
-          setAccessDeniedDetail(
-            "This staff account is locked to its home organization. Sign in with a different account to use another organization.",
-          );
+          deny("staff_org_lock", null, "accessDenied.staffOrgLock");
           setStatus("access_denied");
           return false;
         }
@@ -205,7 +231,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
       const accessibleLabel = findWorkspaceLabel(workspaces, organizationId, branchId);
       if (!accessibleLabel && workspaces.length > 0) {
-        setAccessDeniedDetail("That branch is not an accessible Active branch for this account.");
+        deny("branch_not_accessible", null, "accessDenied.branchNotAccessible");
         setStatus("access_denied");
         return false;
       }
@@ -213,12 +239,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       let activeSession = session;
       if (sessionAccountClass(activeSession) === "Personal") {
         setStatus("binding");
+        setBindFailureKind(null);
+        setAccessDeniedDetail(null);
         const ensured = await ensureOrganizationSessionProfile({
           session: activeSession,
           refreshSession,
         });
         if (!ensured.ok) {
-          setAccessDeniedDetail(ensured.detail);
+          deny("profile_required", ensured.detail, "accessDenied.profileRequired");
           setStatus("access_denied");
           return false;
         }
@@ -226,24 +254,37 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }
 
       if (sessionAccountClass(activeSession) !== "Organization") {
-        setAccessDeniedDetail("Organization workspace requires an Organization account profile.");
+        deny("profile_required", null, "accessDenied.profileRequired");
         setStatus("access_denied");
         return false;
       }
 
       setStatus("binding");
       setAccessDeniedDetail(null);
+      setBindFailureKind(null);
       const previousBranchId = boundWorkspace?.branchId ?? null;
       const result = await bindWorkspaceWithSessionGrant(organizationId, branchId);
       if (!result.ok) {
         if (result.reason === "access_denied") {
-          setAccessDeniedDetail(result.body?.detail ?? null);
+          const classified = classifyWorkspaceBindFailure({
+            reason: "access_denied",
+            status: result.status,
+            errorCode: result.body?.errorCode,
+            detail: result.body?.detail,
+          });
+          deny(classified.kind, classified.technicalDetail, classified.detailKey);
           setBoundWorkspace(null);
           setStatus("access_denied");
           return false;
         }
-        setAccessDeniedDetail(result.body?.detail ?? null);
-        setStatus("ready");
+        const classified = classifyWorkspaceBindFailure({
+          reason: result.reason,
+          status: result.status,
+          errorCode: result.body?.errorCode,
+          detail: result.body?.detail,
+        });
+        deny(classified.kind, classified.technicalDetail, classified.detailKey);
+        setStatus(classified.kind === "product_access_denied" ? "access_denied" : "ready");
         return false;
       }
 
@@ -258,12 +299,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         operational.status !== 403 &&
         operational.errorCode !== "application.capability.denied"
       ) {
+        const classified = classifyWorkspaceBindFailure({
+          status: operational.status,
+          errorCode: operational.errorCode,
+          detail: operational.detail,
+        });
         clearPosAccessToken();
         clearPosSessionGrant();
         setSessionGrantState(null);
         setBoundWorkspace(null);
-        setAccessDeniedDetail(operational.detail ?? "Operational branch could not be selected.");
-        setStatus("access_denied");
+        deny(classified.kind, classified.technicalDetail, classified.detailKey);
+        setStatus(classified.kind === "product_access_denied" ? "access_denied" : "ready");
         return false;
       }
 
@@ -276,6 +322,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         };
       setBoundWorkspace(label);
       setSessionGrantState(result.grant);
+      setBindFailureKind(null);
+      setAccessDeniedDetail(null);
       setStatus("bound");
       return true;
     },
@@ -288,6 +336,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setRoutingPlan((current) => (current === null ? current : null));
       setBoundWorkspace((current) => (current === null ? current : null));
       setAccessDeniedDetail((current) => (current === null ? current : null));
+      setBindFailureKind((current) => (current === null ? current : null));
       setSessionGrantState((current) => (current === null ? current : null));
       setStatus((current) => (current === "idle" ? current : "idle"));
       autoBindAttempted.current = false;
@@ -370,12 +419,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       sessionGrant,
       posDevice,
       accessDeniedDetail,
+      bindFailureKind,
       bindWorkspace,
       refreshWorkspaces,
       clearBoundWorkspace,
     }),
     [
       accessDeniedDetail,
+      bindFailureKind,
       bindWorkspace,
       boundWorkspace,
       clearBoundWorkspace,

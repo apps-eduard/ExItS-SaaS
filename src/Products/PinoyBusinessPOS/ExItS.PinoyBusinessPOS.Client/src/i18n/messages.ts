@@ -128,8 +128,20 @@ export const en = {
   "topbar.preferences": "Preferences",
   "topbar.workspacePending": "Workspace not bound yet",
   "accessDenied.title": "Product access denied",
-  "accessDenied.detail":
-    "This organization is not entitled to Pinoy Business POS for your account.",
+  "accessDenied.detail": "You don't have access to Pinoy Business POS for this business.",
+  "accessDenied.sessionTitle": "Session expired",
+  "accessDenied.sessionExpired": "Your session has expired. Please sign in again.",
+  "accessDenied.serviceTitle": "Temporarily unavailable",
+  "accessDenied.serviceUnavailable":
+    "Pinoy Business POS could not finish opening this workspace. Try again in a moment.",
+  "accessDenied.branchTitle": "Branch unavailable",
+  "accessDenied.staffOrgLock":
+    "This staff account is locked to its home organization. Sign in with a different account to use another organization.",
+  "accessDenied.branchNotAccessible":
+    "That branch is not an accessible Active branch for this account.",
+  "accessDenied.profileRequired":
+    "Organization workspace requires an Organization account profile.",
+  "accessDenied.generic": "This workspace could not be opened. Try again or sign in again.",
   "home.title": "Workspace ready",
   "home.lede": "Foundation continues after browser session and workspace binding.",
   "home.badge": "Ready",
@@ -421,8 +433,20 @@ export const filPH: Record<keyof typeof en, string> = {
   "topbar.preferences": "Preferences",
   "topbar.workspacePending": "Hindi pa naka-bind ang workspace",
   "accessDenied.title": "Tinanggihan ang product access",
-  "accessDenied.detail":
-    "Walang Pinoy Business POS entitlement ang organization na ito para sa account mo.",
+  "accessDenied.detail": "Wala kang access sa Pinoy Business POS para sa negosyong ito.",
+  "accessDenied.sessionTitle": "Nag-expire ang session",
+  "accessDenied.sessionExpired": "Nag-expire ang session mo. Mag-sign in ulit.",
+  "accessDenied.serviceTitle": "Pansamantalang hindi available",
+  "accessDenied.serviceUnavailable":
+    "Hindi matapos buksan ng Pinoy Business POS ang workspace na ito. Subukan ulit sandali.",
+  "accessDenied.branchTitle": "Hindi available ang branch",
+  "accessDenied.staffOrgLock":
+    "Naka-lock ang staff account na ito sa home organization nito. Mag-sign in gamit ang ibang account para sa ibang organization.",
+  "accessDenied.branchNotAccessible":
+    "Hindi accessible Active branch ang branch na iyon para sa account na ito.",
+  "accessDenied.profileRequired":
+    "Kailangan ng Organization account profile ang organization workspace.",
+  "accessDenied.generic": "Hindi mabuksan ang workspace na ito. Subukan ulit o mag-sign in muli.",
   "home.title": "Handa na ang workspace",
   "home.lede": "Magpapatuloy ang foundation pagkatapos ng browser session at workspace binding.",
   "home.badge": "Handa",

@@ -18,6 +18,15 @@ internal static class PosOrganizationScope
         organizationId = default;
         problem = null;
 
+        if (IsIntrospectionUnavailable(request.HttpContext))
+        {
+            problem = PosApiResults.Problem(
+                ApplicationErrorCodes.PlatformAuthUnavailable,
+                "Authentication service is temporarily unavailable. Try again shortly.",
+                StatusCodes.Status503ServiceUnavailable);
+            return false;
+        }
+
         if (IsBearerDenied(request.HttpContext))
         {
             problem = PosApiResults.Problem(
@@ -65,6 +74,15 @@ internal static class PosOrganizationScope
     {
         actorId = default;
         problem = null;
+
+        if (IsIntrospectionUnavailable(request.HttpContext))
+        {
+            problem = PosApiResults.Problem(
+                ApplicationErrorCodes.PlatformAuthUnavailable,
+                "Authentication service is temporarily unavailable. Try again shortly.",
+                StatusCodes.Status503ServiceUnavailable);
+            return false;
+        }
 
         if (IsBearerDenied(request.HttpContext))
         {
@@ -146,6 +164,10 @@ internal static class PosOrganizationScope
 
     private static bool IsBearerDenied(HttpContext context) =>
         context.Items.TryGetValue(PosAuthItems.Denied, out var denied) && denied is true;
+
+    private static bool IsIntrospectionUnavailable(HttpContext context) =>
+        context.Items.TryGetValue(PosAuthItems.IntrospectionUnavailable, out var unavailable)
+        && unavailable is true;
 
     private static bool TryGetBearerUserId(HttpContext context, out Guid userId)
     {

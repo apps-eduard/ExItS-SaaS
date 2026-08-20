@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
 namespace ExItS.PinoyBusinessPOS.Api.Common;
@@ -29,6 +30,15 @@ internal sealed class PlatformTokenIntrospectionClient(
         request.Content = JsonContent.Create(new { token = (string?)null }, options: JsonOptions);
 
         using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        // Non-success is infrastructure (rate limit / Platform down), not proof the token is inactive.
+        // Treating 429/5xx as Inactive falsely denies Owners with valid ProductAccess.
+        if ((int)response.StatusCode == StatusCodes.Status429TooManyRequests
+            || (int)response.StatusCode >= StatusCodes.Status500InternalServerError)
+        {
+            throw new HttpRequestException(
+                $"Platform token introspection unavailable ({(int)response.StatusCode}).");
+        }
+
         if (!response.IsSuccessStatusCode)
         {
             return Inactive();

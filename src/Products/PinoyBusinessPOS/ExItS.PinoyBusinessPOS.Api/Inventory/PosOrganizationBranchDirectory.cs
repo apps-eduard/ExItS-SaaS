@@ -71,17 +71,7 @@ internal sealed class PosOrganizationBranchDirectory(
         using var platformRequest = new HttpRequestMessage(
             HttpMethod.Get,
             $"api/v1/platform/organizations/{organizationId:D}/branches");
-        var source = httpContextAccessor.HttpContext?.Request;
-        if (source is not null)
-        {
-            foreach (var name in new[] { "Authorization", "X-ExItS-Session-Token", "X-Dev-Platform-User-Id" })
-            {
-                if (source.Headers.TryGetValue(name, out var value))
-                {
-                    platformRequest.Headers.TryAddWithoutValidation(name, value.ToArray());
-                }
-            }
-        }
+        PlatformCallerCredentialForwarder.CopyTo(httpContextAccessor.HttpContext?.Request, platformRequest);
 
         try
         {
@@ -148,17 +138,7 @@ internal sealed class PosOrganizationBranchDirectory(
         using var platformRequest = new HttpRequestMessage(
             HttpMethod.Get,
             $"api/v1/platform/organizations/{organizationId:D}/branches");
-        var source = httpContextAccessor.HttpContext?.Request;
-        if (source is not null)
-        {
-            foreach (var name in new[] { "Authorization", "X-ExItS-Session-Token", "X-Dev-Platform-User-Id" })
-            {
-                if (source.Headers.TryGetValue(name, out var value))
-                {
-                    platformRequest.Headers.TryAddWithoutValidation(name, value.ToArray());
-                }
-            }
-        }
+        PlatformCallerCredentialForwarder.CopyTo(httpContextAccessor.HttpContext?.Request, platformRequest);
 
         try
         {
@@ -207,17 +187,7 @@ internal sealed class PosOrganizationBranchDirectory(
         using var platformRequest = new HttpRequestMessage(
             HttpMethod.Get,
             $"api/v1/platform/organizations/{organizationId:D}/branches");
-        var source = httpContextAccessor.HttpContext?.Request;
-        if (source is not null)
-        {
-            foreach (var name in new[] { "Authorization", "X-ExItS-Session-Token", "X-Dev-Platform-User-Id" })
-            {
-                if (source.Headers.TryGetValue(name, out var value))
-                {
-                    platformRequest.Headers.TryAddWithoutValidation(name, value.ToArray());
-                }
-            }
-        }
+        PlatformCallerCredentialForwarder.CopyTo(httpContextAccessor.HttpContext?.Request, platformRequest);
 
         try
         {

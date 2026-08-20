@@ -95,6 +95,8 @@ export async function loginWithPassword(
   usernameOrEmail: string,
   password: string,
 ): Promise<{ ok: true; session: BrowserSessionSnapshot } | { ok: false }> {
+  clearPosAccessToken();
+  clearPosSessionGrant();
   try {
     const body = await platformRequest<PlatformLoginWire>({
       method: "POST",

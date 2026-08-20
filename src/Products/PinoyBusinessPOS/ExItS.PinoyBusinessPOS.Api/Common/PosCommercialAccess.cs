@@ -36,6 +36,14 @@ internal static class PosCommercialScope
             return;
         }
 
+        // Infrastructure introspection failure — fail closed without forging Dev grants.
+        if (request.HttpContext.Items.TryGetValue(PosAuthItems.IntrospectionUnavailable, out var unavailable)
+            && unavailable is true)
+        {
+            accessor.Current = PosCommercialAccess.Unknown;
+            return;
+        }
+
         var isDevLike = PosDevelopmentEnvironment.IsApprovedDevelopmentEnvironment(environment);
 
         // Outside Development/Testing, commercial headers are ignored and access fails closed.

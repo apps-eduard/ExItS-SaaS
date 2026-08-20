@@ -29,7 +29,8 @@ internal sealed class PosPlatformBearerMiddleware(RequestDelegate next)
         }
         catch
         {
-            context.Items[PosAuthItems.Denied] = true;
+            // Infrastructure failure — do not claim the bearer is inactive.
+            context.Items[PosAuthItems.IntrospectionUnavailable] = true;
             await next(context).ConfigureAwait(false);
             return;
         }

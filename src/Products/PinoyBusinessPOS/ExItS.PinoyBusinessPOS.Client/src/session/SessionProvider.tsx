@@ -69,23 +69,28 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signIn = useCallback(async (usernameOrEmail: string, password: string) => {
-    if (signInLock.current) {
-      return false;
-    }
-    signInLock.current = true;
-    try {
-      const result = await loginWithPassword(usernameOrEmail, password);
-      if (!result.ok) {
+  const signIn = useCallback(
+    async (usernameOrEmail: string, password: string) => {
+      if (signInLock.current) {
         return false;
       }
-      setSession(result.session);
-      setStatus("authenticated");
-      return true;
-    } finally {
-      signInLock.current = false;
-    }
-  }, []);
+      signInLock.current = true;
+      try {
+        // Prevent prior POS bearer/grant from leaking into the next login principal.
+        clearClientSessionArtifacts(queryClient);
+        const result = await loginWithPassword(usernameOrEmail, password);
+        if (!result.ok) {
+          return false;
+        }
+        setSession(result.session);
+        setStatus("authenticated");
+        return true;
+      } finally {
+        signInLock.current = false;
+      }
+    },
+    [queryClient],
+  );
 
   const signOut = useCallback(async (): Promise<SignOutResult> => {
     if (signOutLock.current) {

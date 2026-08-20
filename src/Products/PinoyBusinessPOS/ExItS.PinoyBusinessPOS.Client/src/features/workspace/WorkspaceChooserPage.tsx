@@ -10,14 +10,16 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { workspaceBindFailureTitleKey } from "@/workspace/workspace-bind-error";
+import type { MessageKey } from "@/i18n/messages";
 
 export function WorkspaceChooserPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const { status, workspaces, accessDeniedDetail, bindWorkspace } = useWorkspace();
+  const { status, workspaces, accessDeniedDetail, bindFailureKind, bindWorkspace } = useWorkspace();
   const [expandedOrgId, setExpandedOrgId] = useState<string | null>(null);
   const [bindingId, setBindingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [localErrorKey, setLocalErrorKey] = useState<MessageKey | null>(null);
 
   if (status === "loading" || status === "binding") {
     return <LoadingState label={t("workspace.loading")} />;
@@ -38,24 +40,27 @@ export function WorkspaceChooserPage() {
 
   async function selectBranch(organizationId: string, branchId: string) {
     setBindingId(`${organizationId}:${branchId}`);
-    setError(null);
+    setLocalErrorKey(null);
     const ok = await bindWorkspace(organizationId, branchId);
     setBindingId(null);
     if (!ok) {
-      setError(t("accessDenied.detail"));
+      setLocalErrorKey("accessDenied.generic");
       return;
     }
+    setLocalErrorKey(null);
     navigate(resolveRoleHomeRoute(getPosSessionGrant()), { replace: true });
   }
+
+  const failureTitleKey = bindFailureKind
+    ? workspaceBindFailureTitleKey(bindFailureKind)
+    : "accessDenied.title";
+  const failureDetailKey = (accessDeniedDetail as MessageKey | null) ?? localErrorKey;
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <PageHeader title={t("workspace.title")} description={t("workspace.lede")} />
-      {accessDeniedDetail || error ? (
-        <ErrorState
-          title={t("accessDenied.title")}
-          detail={accessDeniedDetail ?? error ?? t("accessDenied.detail")}
-        />
+      {failureDetailKey ? (
+        <ErrorState title={t(failureTitleKey)} detail={t(failureDetailKey)} />
       ) : null}
       <div className="flex flex-col gap-3" role="list">
         {workspaces.map((organization) => {
