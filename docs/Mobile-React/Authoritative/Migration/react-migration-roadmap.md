@@ -155,13 +155,13 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 ### RMAP-05 — Base UOM + SellingMode + product units
 | Field | Content |
 |-------|---------|
+| Status | **COMPLETE** |
 | Objective | Base UOM, ByWeight, Purchase/Sell units, MultiplierToBase, independent unit prices |
 | Dependencies | RMAP-04, RMAP-00 |
 | Backend | CURRENT multi-UOM |
-| MAUI | ProductUnitDraft, sell-as dialogs |
-| Owner | OD-UOM-02..08 |
+| React | Product form UOM/mode/packages |
+| Report | [POS-REACT-RMAP-05-product-units.md](../../Reports/POS-REACT-RMAP-05-product-units.md) |
 | Exclusions | Milligram unless RMAP-B02; Open Sack workflow |
-| Acceptance | Rice-style shared pool configurable end-to-end in React admin |
 | Next | RMAP-06 |
 
 ### RMAP-06 — Today’s Prices

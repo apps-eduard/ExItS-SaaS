@@ -20,7 +20,7 @@ Current Contract Status: `CURRENT` | `OWNER_CONFIRMED_CHANGE` | `MIXED` | `UNRES
 | Catalog admin CRUD | Owner/Manager | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Catalog, RMAP-00, RMAP-04 | Units/prices next | CatalogEndpoints + `/catalog*` |
 | UOM enum | Controlled list | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_PARTIAL | CURRENT | PARTIAL | Catalog | Surface enum | UnitOfMeasure.cs |
 | ByWeight selling | Required | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | UOM, RMAP-00 | React sell WP | SellingMode |
-| Multi-UOM shared pool (rice etc.) | Required | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Product units | Migrate CURRENT contract | CatalogProductUnit |
+| Multi-UOM shared pool (rice etc.) | Required | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Product units, RMAP-05 | Prices next | CatalogProductUnit |
 | Milligram UOM | Decision item | PROVEN_MISSING | PROVEN_MISSING | MISSING | UNRESOLVED | N/A | UD-01 | Owner decision; optional backend | No enum member |
 | Today’s Prices | Daily price change | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Catalog admin, RMAP-00 | React pricing WP | prices endpoint |
 | Sale-line price override policy | Owner policy | PROVEN_MISSING | PROVEN_MISSING | MISSING | OWNER_CONFIRMED_CHANGE | BLOCKED | UD-02 backend | Backend domain first | No SalePricePolicy |

@@ -36,7 +36,7 @@ Do not treat prior WP labels as completeness. Inventory against routes and code.
 | Shared UI kit | `components/exits`, `components/ui` | tokens in `globals.css` | `shared-ui-foundation.test.tsx` + foundation/e2e viewports | **PROVEN_CURRENT / COMPLETE** for RMAP-00 foundation primitives | Date/DateTime, Tabs, ToggleRow deferred | Low |
 | Personal | `PersonalHomePage` | AccountClass guard | RMAP-01 e2e | Class-gated Personal home | Utang, shop, explore, start business | High if claimed complete |
 | Sell floor | `SellFloorPage` | catalog client, cart provider | sell-floor e2e | Browse/search/categories/cart UI | ByWeight, sell units, stock gates, pay | High |
-| Catalog admin | `/catalog*` pages | `pos-catalog-client` CRUD + image | rmap-04 e2e + admin client tests | Category/product CRUD, SKU/barcode, flags, image, concurrency | Units/Today’s Prices/import | Medium |
+| Catalog admin | `/catalog*` pages | `pos-catalog-client` CRUD + units + image | rmap-04/05 e2e + unit draft tests | Category/product CRUD, UOM/SellingMode/packages, SKU/barcode, concurrency | Today’s Prices/import | Medium |
 | Cart | `SessionCartProvider` | in-memory | cart tests | Session cart | Persist/outbox/server cart | High |
 | Checkout | disabled copy | no sale POST client | | Explicit non-implementation | Entire sale pipeline | Critical |
 | Org/staff/branches | `/org` shell + invite | experience + invite guards | RMAP-02R e2e | Admin experience; Owner invite | Full Org Web CRUD | Medium |
