@@ -23,6 +23,7 @@ type SessionContextValue = {
   session: BrowserSessionSnapshot | null;
   signIn: (usernameOrEmail: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
+  refreshSession: () => Promise<SessionStatus>;
 };
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -79,9 +80,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setStatus("unauthenticated");
   }, [queryClient]);
 
+  const refreshSession = useCallback(async () => {
+    const result = await fetchCurrentSession();
+    setSession(result.session);
+    setStatus(result.status);
+    return result.status;
+  }, []);
+
   const value = useMemo(
-    () => ({ status, session, signIn, signOut }),
-    [session, signIn, signOut, status],
+    () => ({ status, session, signIn, signOut, refreshSession }),
+    [refreshSession, session, signIn, signOut, status],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

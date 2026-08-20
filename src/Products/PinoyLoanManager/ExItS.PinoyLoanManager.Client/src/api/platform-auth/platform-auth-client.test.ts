@@ -76,4 +76,72 @@ describe("platform auth client", () => {
     vi.stubGlobal("fetch", fetchMock);
     await expect(registerPersonalAccount("Pat", "pat@example.com")).resolves.toEqual({ ok: true });
   });
+
+  it("lists eligible organizations without sending browser authority ids", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("/platform-api/api/v1/platform/auth/organizations");
+      expect(init?.credentials).toBe("include");
+      return jsonResponse(200, [
+        {
+          organizationId: "11111111-1111-4111-8111-111111111111",
+          displayName: "ABC Sari-Sari Store",
+          slug: "abc-sari-sari",
+        },
+      ]);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { listEligibleOrganizations } = await import("@/api/platform-auth/platform-auth-client");
+    await expect(listEligibleOrganizations()).resolves.toEqual({
+      ok: true,
+      organizations: [
+        {
+          organizationId: "11111111-1111-4111-8111-111111111111",
+          displayName: "ABC Sari-Sari Store",
+          slug: "abc-sari-sari",
+        },
+      ],
+    });
+  });
+
+  it("sets organization context from the session cookie only", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("/platform-api/api/v1/platform/auth/organization-context");
+      expect(init?.method).toBe("PUT");
+      expect(JSON.parse(String(init?.body))).toEqual({
+        organizationId: "11111111-1111-4111-8111-111111111111",
+      });
+      return jsonResponse(200, null);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { setOrganizationContext } = await import("@/api/platform-auth/platform-auth-client");
+    await expect(setOrganizationContext("11111111-1111-4111-8111-111111111111")).resolves.toEqual({
+      ok: true,
+    });
+  });
+
+  it("evaluates current-session product access without userId or organizationId query params", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      expect(url).toBe(
+        "/platform-api/api/v1/platform/auth/product-access/effective?productCode=pinoy-loan-manager",
+      );
+      expect(init?.credentials).toBe("include");
+      return jsonResponse(200, {
+        allowed: true,
+        reasonCode: "allowed",
+        productCode: "pinoy-loan-manager",
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { evaluateCurrentSessionProductAccess } =
+      await import("@/api/platform-auth/platform-auth-client");
+    await expect(evaluateCurrentSessionProductAccess("pinoy-loan-manager")).resolves.toEqual({
+      ok: true,
+      access: {
+        allowed: true,
+        reasonCode: "allowed",
+        productCode: "pinoy-loan-manager",
+      },
+    });
+  });
 });

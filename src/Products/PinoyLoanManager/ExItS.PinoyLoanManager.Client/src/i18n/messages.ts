@@ -57,13 +57,30 @@ export type MessageKey =
   | "auth.tokenInvalid"
   | "auth.tokenExpired"
   | "auth.activationFailed"
-  | "auth.resetFailed";
+  | "auth.resetFailed"
+  | "home.workspaceReady"
+  | "access.selectTitle"
+  | "access.selectDescription"
+  | "access.noOrgTitle"
+  | "access.noOrgDescription"
+  | "access.accountScopeTitle"
+  | "access.accountScopeDescription"
+  | "access.deniedTitle"
+  | "access.deniedDescription"
+  | "access.deniedAssignment"
+  | "access.subscriptionTitle"
+  | "access.subscriptionDescription"
+  | "access.errorTitle"
+  | "access.errorDescription"
+  | "access.retry"
+  | "access.switchOrganization";
 
 export const en: Record<MessageKey, string> = {
   "app.name": "Pinoy Loan Manager",
   "app.skipToContent": "Skip to content",
   "home.title": "Pinoy Loan Manager",
   "home.tagline": "Lending operations for your organization.",
+  "home.workspaceReady": "Workspace is ready. Lending operations are not available in this gate.",
   "locale.label": "Language",
   "locale.en": "English",
   "locale.filPH": "Filipino",
@@ -119,6 +136,26 @@ export const en: Record<MessageKey, string> = {
   "auth.tokenExpired": "This link has expired. Request a new email to continue.",
   "auth.activationFailed": "Activation could not be completed.",
   "auth.resetFailed": "Password reset could not be completed.",
+  "access.selectTitle": "Choose organization",
+  "access.selectDescription": "Select the organization you want to use with Pinoy Loan Manager.",
+  "access.noOrgTitle": "No organization access",
+  "access.noOrgDescription":
+    "This account is not a member of an organization that can use Pinoy Loan Manager.",
+  "access.accountScopeTitle": "Organization account required",
+  "access.accountScopeDescription":
+    "Pinoy Loan Manager needs an Organization account session. Platform and Personal sessions cannot enter the workspace.",
+  "access.deniedTitle": "No Pinoy Loan Manager access",
+  "access.deniedDescription":
+    "Your organization session does not currently have Pinoy Loan Manager product access.",
+  "access.deniedAssignment":
+    "This organization session does not have a Pinoy Loan Manager product-access assignment.",
+  "access.subscriptionTitle": "Subscription inactive",
+  "access.subscriptionDescription":
+    "The Pinoy Loan Manager subscription for this organization is not eligible.",
+  "access.errorTitle": "Could not check access",
+  "access.errorDescription": "Product access could not be verified. Try again.",
+  "access.retry": "Retry",
+  "access.switchOrganization": "Switch organization",
 };
 
 export const filPH: Record<MessageKey, string> = {
@@ -126,6 +163,7 @@ export const filPH: Record<MessageKey, string> = {
   "app.skipToContent": "Laktawan papunta sa nilalaman",
   "home.title": "Pinoy Loan Manager",
   "home.tagline": "Mga operasyon ng pagpapautang para sa iyong organisasyon.",
+  "home.workspaceReady": "Handa na ang workspace. Wala pang lending operations sa gate na ito.",
   "locale.label": "Wika",
   "locale.en": "English",
   "locale.filPH": "Filipino",
@@ -181,6 +219,27 @@ export const filPH: Record<MessageKey, string> = {
   "auth.tokenExpired": "Nag-expire na ang link. Humiling ng bagong email.",
   "auth.activationFailed": "Hindi natapos ang activation.",
   "auth.resetFailed": "Hindi natapos ang pag-reset ng password.",
+  "access.selectTitle": "Pumili ng organisasyon",
+  "access.selectDescription":
+    "Piliin ang organisasyon na gusto mong gamitin sa Pinoy Loan Manager.",
+  "access.noOrgTitle": "Walang access sa organisasyon",
+  "access.noOrgDescription":
+    "Hindi miyembro ang account na ito ng organisasyong maaaring gumamit ng Pinoy Loan Manager.",
+  "access.accountScopeTitle": "Kailangan ang Organization account",
+  "access.accountScopeDescription":
+    "Kailangan ng Pinoy Loan Manager ang Organization account session. Hindi maaaring pumasok ang Platform o Personal session.",
+  "access.deniedTitle": "Walang Pinoy Loan Manager access",
+  "access.deniedDescription":
+    "Walang Pinoy Loan Manager product access ang organization session na ito sa ngayon.",
+  "access.deniedAssignment":
+    "Walang Pinoy Loan Manager product-access assignment ang organization session na ito.",
+  "access.subscriptionTitle": "Hindi active ang subscription",
+  "access.subscriptionDescription":
+    "Hindi eligible ang Pinoy Loan Manager subscription para sa organisasyong ito.",
+  "access.errorTitle": "Hindi ma-verify ang access",
+  "access.errorDescription": "Hindi ma-verify ang product access. Subukang muli.",
+  "access.retry": "Subukan muli",
+  "access.switchOrganization": "Magpalit ng organisasyon",
 };
 
 export const catalogs: Record<"en" | "fil-PH", Record<MessageKey, string>> = {

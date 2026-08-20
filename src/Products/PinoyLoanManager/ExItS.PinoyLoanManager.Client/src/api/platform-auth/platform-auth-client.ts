@@ -1,9 +1,14 @@
 import {
+  AUTH_ACCOUNT_PROFILES_PATH,
+  AUTH_ACCOUNT_PROFILE_SELECT_PATH,
   AUTH_ACTIVATE_PATH,
   AUTH_FORGOT_PASSWORD_PATH,
   AUTH_LOGIN_PATH,
   AUTH_LOGOUT_PATH,
   AUTH_ME_PATH,
+  AUTH_ORGANIZATIONS_PATH,
+  AUTH_ORGANIZATION_CONTEXT_PATH,
+  AUTH_PRODUCT_ACCESS_EFFECTIVE_PATH,
   AUTH_REGISTER_PATH,
   AUTH_RESET_PASSWORD_PATH,
   LOCAL_VALIDATION_ENABLED_PATH,
@@ -135,6 +140,101 @@ export async function resetPasswordWithToken(
   });
   if (status >= 200 && status < 300) {
     return { ok: true };
+  }
+  return { ok: false, status, body };
+}
+
+export type EligibleOrganization = {
+  organizationId: string;
+  displayName: string;
+  slug: string;
+  membershipRole?: string;
+  membershipId?: string;
+};
+
+export type AccountProfile = {
+  id: string;
+  accountClass?: string;
+  status?: string;
+};
+
+export type EffectiveProductAccess = {
+  allowed: boolean;
+  reasonCode?: string;
+  userId?: string;
+  organizationId?: string;
+  productCode?: string;
+  subscriptionStatus?: string | null;
+};
+
+export async function listEligibleOrganizations(): Promise<
+  | { ok: true; organizations: EligibleOrganization[] }
+  | { ok: false; status: number; body: PlatformProblem | null }
+> {
+  const { status, body } = await platformApiJson<EligibleOrganization[] | PlatformProblem>(
+    AUTH_ORGANIZATIONS_PATH,
+  );
+  if (status >= 200 && status < 300 && Array.isArray(body)) {
+    return { ok: true, organizations: body };
+  }
+  return { ok: false, status, body: (body as PlatformProblem | null) ?? null };
+}
+
+export async function setOrganizationContext(
+  organizationId: string,
+): Promise<{ ok: true } | { ok: false; status: number; body: PlatformProblem | null }> {
+  const { status, body } = await platformApiJson<PlatformProblem>(AUTH_ORGANIZATION_CONTEXT_PATH, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ organizationId }),
+  });
+  if (status >= 200 && status < 300) {
+    return { ok: true };
+  }
+  return { ok: false, status, body };
+}
+
+export async function listAccountProfiles(): Promise<AccountProfile[]> {
+  const { status, body } = await platformApiJson<AccountProfile[]>(AUTH_ACCOUNT_PROFILES_PATH);
+  if (status >= 200 && status < 300 && Array.isArray(body)) {
+    return body;
+  }
+  return [];
+}
+
+export async function selectAccountProfile(
+  accountProfileId: string,
+): Promise<{ ok: true; session: BrowserSessionSnapshot } | { ok: false }> {
+  const { status, body } = await platformApiJson<PlatformLoginWire>(
+    AUTH_ACCOUNT_PROFILE_SELECT_PATH,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accountProfileId }),
+    },
+  );
+  if (status >= 200 && status < 300 && body) {
+    return { ok: true, session: toBrowserSessionSnapshot(body) };
+  }
+  return { ok: false };
+}
+
+export async function evaluateCurrentSessionProductAccess(
+  productCode: string,
+): Promise<
+  | { ok: true; access: EffectiveProductAccess }
+  | { ok: false; status: number; body: PlatformProblem | null }
+> {
+  if (/[?&](userId|organizationId)=/i.test(productCode)) {
+    throw new Error("Product access must not include userId or organizationId.");
+  }
+  const path = `${AUTH_PRODUCT_ACCESS_EFFECTIVE_PATH}?productCode=${encodeURIComponent(productCode)}`;
+  if (/[?&](userId|organizationId)=/i.test(path)) {
+    throw new Error("Product access request must not bind userId or organizationId.");
+  }
+  const { status, body } = await platformApiJson<EffectiveProductAccess & PlatformProblem>(path);
+  if (status >= 200 && status < 300 && body && typeof body.allowed === "boolean") {
+    return { ok: true, access: body };
   }
   return { ok: false, status, body };
 }

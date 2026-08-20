@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { useProductAccess } from "@/access/ProductAccessProvider";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSession } from "@/session/SessionProvider";
@@ -15,10 +16,14 @@ function initials(displayName?: string, username?: string) {
 export function AccountMenu() {
   const { t } = useI18n();
   const { session, signOut } = useSession();
+  const { organizations, selectedOrganization, selectOrganization, switching } = useProductAccess();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
   const label = session?.displayName || session?.username || t("app.name");
+  const switchable = organizations.filter(
+    (organization) => organization.organizationId !== selectedOrganization?.organizationId,
+  );
 
   useEffect(() => {
     if (!open) {
@@ -57,6 +62,34 @@ export function AccountMenu() {
             <p className="mt-1 mb-0 truncate text-[length:var(--exits-text-xs)] text-muted">
               {session.username}
             </p>
+          ) : null}
+          {selectedOrganization ? (
+            <p className="mt-2 mb-0 truncate text-[length:var(--exits-text-xs)] text-muted">
+              {selectedOrganization.displayName}
+            </p>
+          ) : null}
+          {switchable.length > 0 ? (
+            <div className="mt-3 flex flex-col gap-1">
+              <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold text-muted">
+                {t("access.switchOrganization")}
+              </p>
+              {switchable.map((organization) => (
+                <Button
+                  key={organization.organizationId}
+                  type="button"
+                  variant="ghost"
+                  className="w-full justify-start"
+                  role="menuitem"
+                  disabled={switching}
+                  onClick={() => {
+                    setOpen(false);
+                    void selectOrganization(organization.organizationId);
+                  }}
+                >
+                  {organization.displayName}
+                </Button>
+              ))}
+            </div>
           ) : null}
           <Button
             type="button"

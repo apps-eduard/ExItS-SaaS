@@ -4,6 +4,8 @@ import { ActivateAccountPage } from "@/features/auth/ActivateAccountPage";
 import { ForgotPasswordPage } from "@/features/auth/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/features/auth/ResetPasswordPage";
 import { SignUpPage } from "@/features/auth/SignUpPage";
+import { ProductAccessProvider } from "@/access/ProductAccessProvider";
+import { RequireProductAccess } from "@/access/RequireProductAccess";
 import { HomePage } from "@/features/home/HomePage";
 import { SignInPage } from "@/features/sign-in/SignInPage";
 import { AppShell } from "@/layouts/AppShell";
@@ -49,7 +51,11 @@ export const router = createBrowserRouter([
         path: "/",
         element: (
           <RequireSession>
-            <AppShell />
+            <ProductAccessProvider>
+              <RequireProductAccess>
+                <AppShell />
+              </RequireProductAccess>
+            </ProductAccessProvider>
           </RequireSession>
         ),
         children: [{ index: true, element: <HomePage /> }],

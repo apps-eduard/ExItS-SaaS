@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { ProductAccessProvider } from "@/access/ProductAccessProvider";
+import { RequireProductAccess } from "@/access/RequireProductAccess";
 import { AppProviders } from "@/app/providers";
 import { ActivateAccountPage } from "@/features/auth/ActivateAccountPage";
 import { ForgotPasswordPage } from "@/features/auth/ForgotPasswordPage";
@@ -17,6 +19,7 @@ import { AppShell } from "@/layouts/AppShell";
 import { UI_PREFERENCES_STORAGE_KEY } from "@/lib/preferences/ui-preferences";
 import { GuestOnly, RequireSession } from "@/session/SessionGuards";
 import { SessionProvider } from "@/session/SessionProvider";
+import { stubAccessFetch } from "@/test/access-mocks";
 import { jsonResponse } from "@/test/render";
 
 function mockUnauthenticated() {
@@ -89,7 +92,11 @@ function renderAuth(route: string) {
               path="/"
               element={
                 <RequireSession>
-                  <AppShell />
+                  <ProductAccessProvider>
+                    <RequireProductAccess>
+                      <AppShell />
+                    </RequireProductAccess>
+                  </ProductAccessProvider>
                 </RequireSession>
               }
             >
@@ -196,13 +203,7 @@ describe("account lifecycle", () => {
   });
 
   it("redirects authenticated users away from sign-up and forgot-password", async () => {
-    vi.stubGlobal("fetch", (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes("/auth/me")) {
-        return jsonResponse(200, { username: "olivia", displayName: "Olivia Mendoza" });
-      }
-      return jsonResponse(404, null);
-    });
+    stubAccessFetch({ displayName: "Olivia Mendoza", username: "olivia" });
     renderAuth("/sign-up");
     expect(await screen.findByRole("heading", { name: "Pinoy Loan Manager" })).toBeInTheDocument();
     renderAuth("/forgot-password");

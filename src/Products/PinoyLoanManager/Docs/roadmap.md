@@ -7,8 +7,8 @@
 |---|---|
 | Product | Pinoy Loan Manager |
 | Current phase | PLM-01 Product Scaffold & Isolation (complete); PLM-01A client architecture (this package) |
-| Current work package | PLM-D3-PRE product registration + current-session product access |
-| Status | PLM-00 accepted; PLM-01 scaffolded; PLM-01A approved; Gates B, C, D0, D1, and D2 complete; PLM-D3-PRE complete; Gate D3 React **NOT COMPLETE**; Gate E and PLM-02 not started |
+| Current work package | PLM-CLIENT-GATE-D3 organization discovery + product access gate |
+| Status | PLM-00 accepted; PLM-01 scaffolded; PLM-01A approved; Gates B, C, D0, D1, D2, and D3 complete; PLM-D3-PRE complete; Gate E and PLM-02 not started |
 
 ## Phase objective
 
@@ -121,9 +121,9 @@ Does **not** replace the core business roadmap above. Detail: [Architecture/reac
 | PLM-CLIENT-GATE D0 Browser session auth transport | **Complete** |
 | PLM-CLIENT-GATE D1 Sign In / session UI + Local Validation Test User | **Complete** |
 | PLM-CLIENT-GATE D2 Register/Activate/Forgot/Reset + Mailpit callback routing | **Complete** |
-| PLM-D3-PRE Product registration + session-bound access prerequisite | **Complete** (this package) |
-| PLM-CLIENT-GATE D3 Auth + org/product access | **BLOCKER RESOLUTION IN PROGRESS / NOT COMPLETE** — do not start React org selector until reviewed |
-| PLM-CLIENT-GATE E First lending slice + visual review | **NOT STARTED** |
+| PLM-D3-PRE Product registration + session-bound access prerequisite | **Complete** |
+| PLM-CLIENT-GATE D3 Auth + org/product access | **Complete** |
+| PLM-CLIENT-GATE E First lending slice + visual review | **NOT STARTED** — requires real authorized lending API |
 | PLM-CLIENT-GATE F Responsive/field workflows | Not started |
 | PLM-CLIENT-GATE G Capacitor Android shell | Not started |
 | PLM-CLIENT-GATE H Physical Android validation | Not started |
@@ -134,9 +134,9 @@ Offline financial operation remains **PLM-13**.
 
 ## Exact next package
 
-**STOPPED AFTER PLM-D3-PRE.** Do not automatically resume Gate D3 React (organization selector / product-access UI). Do not start Gate E, Capacitor, or PLM-02 from this package.
+**STOPPED AFTER PLM-CLIENT-GATE-D3.** Gate E prerequisite: confirm a real authorized lending API exists in PLM Domain/Application/Api. If none exists, stop with `REAL_LENDING_CONTRACT_MISSING`. Do not start Capacitor or PLM-02 from this package.
 
-Recommended later order when separately authorized: remaining Gate D3 org/product access UI, then PLM-02.
+Recommended later order when separately authorized: Gate E (if lending contract exists), then PLM-02.
 
 PLM-02 still consumes Platform actor/org/product access without Platform table reads. Do not invent D-P12-03.
 

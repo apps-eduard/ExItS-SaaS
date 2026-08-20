@@ -6,17 +6,12 @@ import { Route, Routes } from "react-router-dom";
 import { HomePage } from "@/features/home/HomePage";
 import { AppShell } from "@/layouts/AppShell";
 import { UI_PREFERENCES_STORAGE_KEY } from "@/lib/preferences/ui-preferences";
-import { jsonResponse, renderWithSession } from "@/test/render";
+import { ORG_ALLOWED, stubAccessFetch } from "@/test/access-mocks";
+import { renderWithAccessGate } from "@/test/render";
 
 function renderApp(ui: ReactElement = <HomePage />) {
-  vi.stubGlobal("fetch", (input: RequestInfo | URL) => {
-    const url = String(input);
-    if (url.includes("/auth/me")) {
-      return jsonResponse(200, { username: "olivia", displayName: "Olivia Mendoza" });
-    }
-    return jsonResponse(404, null);
-  });
-  return renderWithSession(
+  stubAccessFetch();
+  return renderWithAccessGate(
     <Routes>
       <Route element={<AppShell />}>
         <Route path="/" element={ui} />
@@ -31,10 +26,14 @@ describe("product home", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
-  it("renders the product surface without demo or package copy", () => {
+
+  it("renders the product surface without demo or package copy", async () => {
     renderApp();
-    expect(screen.getByRole("heading", { name: "Pinoy Loan Manager" })).toBeInTheDocument();
-    expect(screen.getByText(/Lending operations for your organization/i)).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Pinoy Loan Manager" })).toBeInTheDocument();
+    expect(
+      screen.getByText(/Workspace is ready. Lending operations are not available in this gate./i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(ORG_ALLOWED.displayName)).toBeInTheDocument();
     const page = document.body.textContent ?? "";
     for (const phrase of forbidden) {
       expect(page).not.toMatch(new RegExp(phrase, "i"));
@@ -45,6 +44,7 @@ describe("product home", () => {
   it("starts with English and System and persists language and theme", async () => {
     const user = userEvent.setup();
     renderApp();
+    await screen.findByRole("heading", { name: "Pinoy Loan Manager" });
     expect(document.documentElement.lang).toBe("en");
     expect(document.documentElement.dataset.theme).toBe("system");
 
@@ -53,7 +53,7 @@ describe("product home", () => {
 
     await user.click(screen.getByRole("radio", { name: "Filipino" }));
     expect(document.documentElement.lang).toBe("fil-PH");
-    expect(screen.getByText(/Mga operasyon ng pagpapautang/i)).toBeInTheDocument();
+    expect(screen.getByText(/Handa na ang workspace/i)).toBeInTheDocument();
 
     const stored = JSON.parse(window.localStorage.getItem(UI_PREFERENCES_STORAGE_KEY) ?? "{}") as {
       theme?: string;
@@ -66,6 +66,7 @@ describe("product home", () => {
   it("moves keyboard focus onto a language control", async () => {
     const user = userEvent.setup();
     renderApp();
+    await screen.findByRole("heading", { name: "Pinoy Loan Manager" });
     const english = screen.getByRole("radio", { name: "English" });
     await user.tab();
     await user.tab();

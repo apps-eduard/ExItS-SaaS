@@ -19,6 +19,12 @@ export type PlatformLoginWire = {
   email?: string;
   expiresAtUtc?: string;
   absoluteExpiresAtUtc?: string;
+  selectedOrganizationId?: string | null;
+  selectedOrganizationDisplayName?: string | null;
+  organizationSelectionState?: string;
+  accountClass?: string | null;
+  homeOrganizationId?: string | null;
+  organizationContextLocked?: boolean;
   sessionToken?: string;
 };
 
@@ -50,7 +56,16 @@ export const AUTH_REGISTER_PATH = "/api/v1/platform/auth/register";
 export const AUTH_ACTIVATE_PATH = "/api/v1/platform/auth/activate-account";
 export const AUTH_FORGOT_PASSWORD_PATH = "/api/v1/platform/auth/forgot-password";
 export const AUTH_RESET_PASSWORD_PATH = "/api/v1/platform/auth/reset-password";
+export const AUTH_ORGANIZATIONS_PATH = "/api/v1/platform/auth/organizations";
+export const AUTH_ORGANIZATION_CONTEXT_PATH = "/api/v1/platform/auth/organization-context";
+export const AUTH_PRODUCT_ACCESS_EFFECTIVE_PATH = "/api/v1/platform/auth/product-access/effective";
+export const AUTH_ACCOUNT_PROFILES_PATH = "/api/v1/platform/auth/account-profiles";
+export const AUTH_ACCOUNT_PROFILE_SELECT_PATH = "/api/v1/platform/auth/account-profiles/select";
 export const PLM_PUBLIC_SURFACE = "pinoy-loan-manager";
+export const PLM_PRODUCT_CODE = "pinoy-loan-manager";
+export const ACCOUNT_SCOPE_DENIED_ERROR_CODE = "application.auth.account_scope_denied";
+export const ORGANIZATION_CONTEXT_REQUIRED_ERROR_CODE =
+  "application.auth.organization_context_required";
 export const LOCAL_VALIDATION_ENABLED_PATH = "/api/v1/platform/local-validation/enabled";
 export const LOCAL_VALIDATION_IDENTITIES_PATH =
   "/api/v1/platform/local-validation/quick-login-identities";

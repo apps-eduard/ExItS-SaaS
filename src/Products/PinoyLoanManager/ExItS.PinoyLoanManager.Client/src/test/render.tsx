@@ -1,6 +1,8 @@
 import type { ReactElement } from "react";
 import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { ProductAccessProvider } from "@/access/ProductAccessProvider";
+import { RequireProductAccess } from "@/access/RequireProductAccess";
 import { AppProviders } from "@/app/providers";
 import { SessionProvider } from "@/session/SessionProvider";
 
@@ -21,6 +23,20 @@ export function renderWithSession(ui: ReactElement, { route = "/" }: { route?: s
     <AppProviders>
       <MemoryRouter initialEntries={[route]}>
         <SessionProvider>{ui}</SessionProvider>
+      </MemoryRouter>
+    </AppProviders>,
+  );
+}
+
+export function renderWithAccessGate(ui: ReactElement, { route = "/" }: { route?: string } = {}) {
+  return render(
+    <AppProviders>
+      <MemoryRouter initialEntries={[route]}>
+        <SessionProvider>
+          <ProductAccessProvider>
+            <RequireProductAccess>{ui}</RequireProductAccess>
+          </ProductAccessProvider>
+        </SessionProvider>
       </MemoryRouter>
     </AppProviders>,
   );

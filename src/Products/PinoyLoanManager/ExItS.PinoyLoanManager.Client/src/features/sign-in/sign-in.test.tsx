@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { ProductAccessProvider } from "@/access/ProductAccessProvider";
+import { RequireProductAccess } from "@/access/RequireProductAccess";
 import { AppProviders } from "@/app/providers";
 import { HomePage } from "@/features/home/HomePage";
 import { SignInPage } from "@/features/sign-in/SignInPage";
@@ -9,6 +11,7 @@ import { AppShell } from "@/layouts/AppShell";
 import { UI_PREFERENCES_STORAGE_KEY } from "@/lib/preferences/ui-preferences";
 import { GuestOnly, RequireSession } from "@/session/SessionGuards";
 import { SessionProvider } from "@/session/SessionProvider";
+import { stubAccessFetch } from "@/test/access-mocks";
 import { jsonResponse } from "@/test/render";
 
 function mockUnauthenticated() {
@@ -42,7 +45,11 @@ function renderRoutes(route: string) {
               path="/"
               element={
                 <RequireSession>
-                  <AppShell />
+                  <ProductAccessProvider>
+                    <RequireProductAccess>
+                      <AppShell />
+                    </RequireProductAccess>
+                  </ProductAccessProvider>
                 </RequireSession>
               }
             >
@@ -67,13 +74,7 @@ describe("sign-in session UX", () => {
   });
 
   it("bootstraps an authenticated cookie session onto the landing", async () => {
-    vi.stubGlobal("fetch", (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes("/auth/me")) {
-        return jsonResponse(200, { username: "olivia", displayName: "Olivia Mendoza" });
-      }
-      return jsonResponse(404, null);
-    });
+    stubAccessFetch({ displayName: "Olivia Mendoza", username: "olivia" });
     renderRoutes("/");
     expect(await screen.findByRole("heading", { name: "Pinoy Loan Manager" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Olivia Mendoza" })).toBeInTheDocument();
@@ -117,7 +118,28 @@ describe("sign-in session UX", () => {
         return jsonResponse(200, false);
       }
       if (url.includes("/auth/login")) {
-        return jsonResponse(200, { username: "olivia", displayName: "Olivia Mendoza" });
+        return jsonResponse(200, {
+          username: "olivia",
+          displayName: "Olivia Mendoza",
+          accountClass: "Organization",
+          selectedOrganizationId: "11111111-1111-4111-8111-111111111111",
+        });
+      }
+      if (url.includes("/auth/organizations")) {
+        return jsonResponse(200, [
+          {
+            organizationId: "11111111-1111-4111-8111-111111111111",
+            displayName: "ABC Sari-Sari Store",
+            slug: "abc-sari-sari",
+          },
+        ]);
+      }
+      if (url.includes("/auth/product-access/effective")) {
+        return jsonResponse(200, {
+          allowed: true,
+          reasonCode: "allowed",
+          productCode: "pinoy-loan-manager",
+        });
       }
       return jsonResponse(404, null);
     });
@@ -147,7 +169,32 @@ describe("sign-in session UX", () => {
       }
       if (url.includes("/auth/login")) {
         loginCalls += 1;
-        return jsonResponse(200, { username: "olivia", displayName: "Olivia" }, 80);
+        return jsonResponse(
+          200,
+          {
+            username: "olivia",
+            displayName: "Olivia Mendoza",
+            accountClass: "Organization",
+            selectedOrganizationId: "11111111-1111-4111-8111-111111111111",
+          },
+          80,
+        );
+      }
+      if (url.includes("/auth/organizations")) {
+        return jsonResponse(200, [
+          {
+            organizationId: "11111111-1111-4111-8111-111111111111",
+            displayName: "ABC Sari-Sari Store",
+            slug: "abc-sari-sari",
+          },
+        ]);
+      }
+      if (url.includes("/auth/product-access/effective")) {
+        return jsonResponse(200, {
+          allowed: true,
+          reasonCode: "allowed",
+          productCode: "pinoy-loan-manager",
+        });
       }
       return jsonResponse(404, null);
     });
@@ -163,33 +210,14 @@ describe("sign-in session UX", () => {
   });
 
   it("redirects authenticated users away from /sign-in", async () => {
-    vi.stubGlobal("fetch", (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes("/auth/me")) {
-        return jsonResponse(200, { username: "olivia", displayName: "Olivia Mendoza" });
-      }
-      return jsonResponse(404, null);
-    });
+    stubAccessFetch({ displayName: "Olivia Mendoza", username: "olivia" });
     renderRoutes("/sign-in");
     expect(await screen.findByRole("heading", { name: "Pinoy Loan Manager" })).toBeInTheDocument();
   });
 
   it("signs out and stays signed out", async () => {
     const user = userEvent.setup();
-    let signedIn = true;
-    vi.stubGlobal("fetch", (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes("/auth/me")) {
-        return signedIn
-          ? jsonResponse(200, { username: "olivia", displayName: "Olivia Mendoza" })
-          : jsonResponse(401, { errorCode: "application.auth.session_invalid" });
-      }
-      if (url.includes("/auth/logout")) {
-        signedIn = false;
-        return jsonResponse(204, null);
-      }
-      return jsonResponse(404, null);
-    });
+    stubAccessFetch({ displayName: "Olivia Mendoza", username: "olivia" });
     renderRoutes("/");
     await user.click(await screen.findByRole("button", { name: "Olivia Mendoza" }));
     await user.click(screen.getByRole("menuitem", { name: "Sign out" }));
