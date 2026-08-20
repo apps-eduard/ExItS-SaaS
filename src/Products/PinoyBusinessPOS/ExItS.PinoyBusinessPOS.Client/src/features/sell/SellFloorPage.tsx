@@ -12,6 +12,7 @@ import { useSessionCart } from "@/cart/SessionCartProvider";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SellCartPanel } from "@/features/sell/SellCartPanel";
+import { SellCategoryFilter } from "@/features/sell/SellCategoryFilter";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatCartSummary, formatPeso } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
@@ -221,45 +222,13 @@ export function SellFloorPage() {
             </p>
           ) : null}
 
-          <div
-            data-testid="sell-categories"
-            className="flex flex-wrap gap-2"
-            role="list"
-            aria-label={t("sell.categoriesLabel")}
-          >
-            <button
-              type="button"
-              role="listitem"
-              className={cn(
-                "rounded-full border px-3 py-1.5 text-[length:var(--exits-text-sm)] font-semibold transition-colors",
-                activeCategory === "all"
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-surface text-foreground hover:bg-[var(--exits-surface-muted)]",
-              )}
-              aria-pressed={activeCategory === "all"}
-              onClick={() => setActiveCategory("all")}
-            >
-              {t("sell.categoryAll")}
-            </button>
-            {(categoriesQuery.data?.items ?? []).map((category) => (
-              <button
-                key={category.categoryId}
-                type="button"
-                role="listitem"
-                data-testid={`sell-category-${category.categoryId}`}
-                className={cn(
-                  "rounded-full border px-3 py-1.5 text-[length:var(--exits-text-sm)] font-semibold transition-colors",
-                  activeCategory === category.categoryId
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-surface text-foreground hover:bg-[var(--exits-surface-muted)]",
-                )}
-                aria-pressed={activeCategory === category.categoryId}
-                onClick={() => setActiveCategory(category.categoryId)}
-              >
-                {category.name}
-              </button>
-            ))}
-          </div>
+          <SellCategoryFilter
+            categories={categoriesQuery.data?.items ?? []}
+            activeCategoryId={activeCategory}
+            allLabel={t("sell.categoryAll")}
+            listLabel={t("sell.categoriesLabel")}
+            onSelect={setActiveCategory}
+          />
 
           <div
             data-testid="sell-products"

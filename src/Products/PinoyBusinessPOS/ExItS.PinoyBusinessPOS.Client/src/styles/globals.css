@@ -183,3 +183,35 @@ body {
     display: none !important;
   }
 }
+
+/* Sell-floor categories: one horizontal strip (swipe) instead of wrapped chip clouds. */
+.sell-categories-track {
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.sell-categories-track::-webkit-scrollbar {
+  height: 4px;
+}
+
+.sell-categories-track::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--exits-border) 80%, transparent);
+  border-radius: 999px;
+}
+
+.sell-categories {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 0.75rem,
+    #000 calc(100% - 0.75rem),
+    transparent
+  );
+}
+
+@supports not (mask-image: linear-gradient(to right, #000, #000)) {
+  .sell-categories {
+    mask-image: none;
+  }
+}

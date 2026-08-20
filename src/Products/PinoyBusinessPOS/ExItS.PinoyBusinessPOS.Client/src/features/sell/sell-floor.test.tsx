@@ -137,6 +137,7 @@ describe("SellFloorPage", () => {
 
     expect(screen.getByTestId("sell-search")).toBeInTheDocument();
     expect(screen.getByTestId("sell-categories")).toBeInTheDocument();
+    expect(screen.getByTestId("sell-category-active")).toHaveTextContent("All");
     expect(screen.getByTestId("sell-products")).toBeInTheDocument();
     expect(screen.getByTestId("sell-cart-landscape")).toBeInTheDocument();
     expect(screen.getByTestId("sell-cart-bar")).toBeInTheDocument();
