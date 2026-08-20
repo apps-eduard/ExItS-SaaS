@@ -12,9 +12,8 @@ Do not treat prior WP labels as completeness. Inventory against routes and code.
 |-------|------|--------|
 | `/sign-in` | Auth | COMPLETE — cookie login + Personal/staff login hints (no class inference) |
 | `/` | Home | PARTIAL shell |
-| `/workspace` | Workspace chooser | COMPLETE for current resolver scope; Organization AccountClass required |
-| `/personal` | Personal | COMPLETE shell + RequirePersonalSession (RMAP-01) |
-| `/no-location` | Branch binding | COMPLETE for no-branch gate; Organization AccountClass required |
+| `/no-location` | Branch binding | COMPLETE — zero Active accessible branches (RMAP-03) |
+| `/workspace` | Workspace chooser | COMPLETE — multi Active branch chooser (RMAP-03) |
 | `/settings/preferences` | Preferences | PARTIAL (theme/language) |
 | `/sell` | Sell floor | PARTIAL (browse + cart; pay disabled); Organization AccountClass required |
 | `/role/{owner\|manager\|cashier}` | Role homes | COMPLETE for experience eligibility (RMAP-02R); Organization AccountClass required |

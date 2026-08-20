@@ -69,6 +69,6 @@ Invite authority was corrected under the locked Product Owner role/experience mo
 - RMAP-01b remains **PASS** after RMAP-02R reconciliation.
 - Historical package docs close SHA (post-RMAP-01b): `3263d6a4`
 - RMAP-02R implementation SHA: `b209fd7a422cbcde8ae3ec47c0560f83d786f905`
-- RMAP-02R reconciliation docs SHA: pending until Review Repair 01 commit
+- RMAP-02R reconciliation docs SHA: `77888cbfcccaf384838a50186e4b352dceee79f6`
 
 See [POS-REACT-RMAP-02R-role-experience-reconciliation.md](POS-REACT-RMAP-02R-role-experience-reconciliation.md).

@@ -13,6 +13,7 @@ UI WPs must also satisfy [06-react-ui-ux-and-responsive-foundation.md](../06-rea
 | Desired staff person-link UI (RMAP-01b) | | Invite/accept API | MAUI after B00 | Invite/accept UI | E2E Personal accept + alias | N/A | Membership rules | Multi-org | Browser | PASS | Master Run 01 #4 |
 | Workspace/roles post-B00 (RMAP-02) | | | | Session guards | E2E denial/access | N/A | Product roles | Cross-class | Browser | Spot-check | Master Run 01 #5; reconciled by RMAP-02R |
 | Role/experience reconciliation (RMAP-02R) | OrgWebShell + PosRoleMatrix | | | pos-capabilities | E2E Owner/Manager/Cashier/admin | N/A | Admin≠Ops | | Browser + viewports | PASS | Experience ≠ role mutation; StoreManager Org Web denied |
+| Branch/device context (RMAP-03) | OperationalBranch | | | workspace + deferred device | E2E zero/one/multi/no-location | N/A | Bound org+branch | HomeOrg lock | Browser + viewports | PASS | Device not invented |
 | CURRENT staff alias login (pre-B00 evidence) | Platform identity | Auth integration | Sign-in staff | | | N/A | Session class | Staff lock | Browser | | Historical CURRENT; superseded as final after B00 |
 | Account scope isolation | Domain | Middleware integration | Org switch wipe | Session guards | E2E denial | N/A | AccountScopeGuard | Cross-class API deny | Browser | Spot-check | |
 | Product units / rice pool | ProductUnitConversion, RiceSell* | API catalog/sales | Sell-as checkout | Unit math helpers | E2E multi-unit sale | LocalStore v9 | Catalog/sales roles | Org isolation | Device later | Owner rice scenario | |

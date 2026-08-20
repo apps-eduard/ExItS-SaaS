@@ -91,12 +91,13 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 ### RMAP-03 — Branch / device operational context
 | Field | Content |
 |-------|---------|
-| Objective | Bound branch (and device where required) for POS ops |
+| Status | **COMPLETE** — [POS-REACT-RMAP-03-branch-device-context.md](../../Reports/POS-REACT-RMAP-03-branch-device-context.md) |
+| Objective | Bound branch, and device where genuinely required, for POS operations |
 | Dependencies | RMAP-02R |
 | Backend | Platform branches/devices; POS operational-branch (CURRENT) |
-| React start | workspace branch binding, `NoAccessibleBranchPage` |
-| Exclusions | Full branch fulfillment admin (RMAP-18) |
-| Acceptance | No accessible branch → blocked; bound context on POS calls |
+| React start | workspace branch binding, `NoAccessibleBranchPage`, operational-branch after bind |
+| Exclusions | Full branch fulfillment admin (RMAP-18); inventing browser PosDevice |
+| Acceptance | No accessible branch → blocked; bound context on POS calls; device deferred honestly |
 | Next | RMAP-04 |
 
 ---
