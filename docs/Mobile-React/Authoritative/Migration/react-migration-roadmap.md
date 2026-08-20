@@ -98,7 +98,9 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 | React start | workspace branch binding, `NoAccessibleBranchPage`, operational-branch after bind |
 | Exclusions | Full branch fulfillment admin (RMAP-18); inventing browser PosDevice |
 | Acceptance | No accessible branch → blocked; bound context on POS calls; device deferred honestly |
-| Next | RMAP-04 |
+| Status | **COMPLETE** |
+| Report | [POS-REACT-RMAP-03-branch-device-context.md](../../Reports/POS-REACT-RMAP-03-branch-device-context.md) |
+| Next | RMAP-04 (COMPLETE) → RMAP-05 |
 
 ---
 
@@ -140,14 +142,14 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 ### RMAP-04 — Catalog admin parity
 | Field | Content |
 |-------|---------|
+| Status | **COMPLETE** |
 | Objective | Categories/products CRUD, flags, images, SKU/barcode |
 | Dependencies | RMAP-03, **RMAP-00** |
 | Backend | CURRENT |
 | MAUI | `/catalog*` |
-| React start | extend beyond read-only catalog client |
-| Owner | OD-UOM-01 |
-| UI DoD | Phone/tablet/desktop list+form patterns |
-| Exclusions | Global import advanced jobs can follow RMAP-04b |
+| React | `/catalog*` admin pages + ManageCatalog gate |
+| Report | [POS-REACT-RMAP-04-catalog-admin-parity.md](../../Reports/POS-REACT-RMAP-04-catalog-admin-parity.md) |
+| Exclusions | Global import advanced jobs can follow RMAP-04b; UOM/prices/inventory deferred |
 | Next | RMAP-05 |
 
 ### RMAP-05 — Base UOM + SellingMode + product units

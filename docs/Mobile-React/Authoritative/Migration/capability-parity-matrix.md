@@ -17,7 +17,7 @@ Current Contract Status: `CURRENT` | `OWNER_CONFIRMED_CHANGE` | `MIXED` | `UNRES
 | Branch context binding | Required for ops | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT (RMAP-03) | CURRENT | PASS | Org | Device deferred | WorkspaceProvider + operational-branch |
 | Branch fulfillment/delivery config | Required for delivery | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Branch, RMAP-00 | After org parity | BranchEdit, Platform APIs |
 | Catalog read (sell) | Needed for sell floor | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_PARTIAL | CURRENT | PARTIAL | Product access | Extend units/weight | pos-catalog-client |
-| Catalog admin CRUD | Owner/Manager | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Catalog, RMAP-00 | React admin WP | CatalogEndpoints |
+| Catalog admin CRUD | Owner/Manager | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Catalog, RMAP-00, RMAP-04 | Units/prices next | CatalogEndpoints + `/catalog*` |
 | UOM enum | Controlled list | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_PARTIAL | CURRENT | PARTIAL | Catalog | Surface enum | UnitOfMeasure.cs |
 | ByWeight selling | Required | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | UOM, RMAP-00 | React sell WP | SellingMode |
 | Multi-UOM shared pool (rice etc.) | Required | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Product units | Migrate CURRENT contract | CatalogProductUnit |

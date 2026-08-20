@@ -19,6 +19,10 @@ Do not treat prior WP labels as completeness. Inventory against routes and code.
 | `/role/{owner\|manager\|cashier}` | Role homes | COMPLETE for experience eligibility (RMAP-02R); Organization AccountClass required |
 | `/org` | Org essentials | Admin experience only (Owner/OrganizationAdministrator); invite Owner-only (RMAP-02R) |
 | `/org/staff/invite` | Staff invite | Owner membership authority required (RMAP-02R) |
+| `/catalog` | Catalog products | COMPLETE admin list (RMAP-04); ManageCatalog gated |
+| `/catalog/categories` | Categories | COMPLETE CRUD-lite (RMAP-04) |
+| `/catalog/products/new` | Product create | COMPLETE core fields (RMAP-04); UOM/price editors deferred |
+| `/catalog/products/:productId/edit` | Product edit | COMPLETE core fields + image + concurrency (RMAP-04) |
 | `*` | Not found | COMPLETE |
 
 ## Area inventory
@@ -32,7 +36,7 @@ Do not treat prior WP labels as completeness. Inventory against routes and code.
 | Shared UI kit | `components/exits`, `components/ui` | tokens in `globals.css` | `shared-ui-foundation.test.tsx` + foundation/e2e viewports | **PROVEN_CURRENT / COMPLETE** for RMAP-00 foundation primitives | Date/DateTime, Tabs, ToggleRow deferred | Low |
 | Personal | `PersonalHomePage` | AccountClass guard | RMAP-01 e2e | Class-gated Personal home | Utang, shop, explore, start business | High if claimed complete |
 | Sell floor | `SellFloorPage` | catalog client, cart provider | sell-floor e2e | Browse/search/categories/cart UI | ByWeight, sell units, stock gates, pay | High |
-| Catalog admin | — | read-only `pos-catalog-client` | catalog-cart tests | Read for sell | CRUD/units/Today’s Prices/import | High |
+| Catalog admin | `/catalog*` pages | `pos-catalog-client` CRUD + image | rmap-04 e2e + admin client tests | Category/product CRUD, SKU/barcode, flags, image, concurrency | Units/Today’s Prices/import | Medium |
 | Cart | `SessionCartProvider` | in-memory | cart tests | Session cart | Persist/outbox/server cart | High |
 | Checkout | disabled copy | no sale POST client | | Explicit non-implementation | Entire sale pipeline | Critical |
 | Org/staff/branches | `/org` shell + invite | experience + invite guards | RMAP-02R e2e | Admin experience; Owner invite | Full Org Web CRUD | Medium |
