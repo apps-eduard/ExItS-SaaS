@@ -11,10 +11,14 @@ import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
 import { useSessionCart } from "@/cart/SessionCartProvider";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { SearchField } from "@/components/exits/SearchField";
+import { LoadingSkeleton } from "@/components/exits/FoundationStates";
+import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
+import { StickyActionBar } from "@/components/exits/FoundationStates";
 import { SellCartPanel } from "@/features/sell/SellCartPanel";
 import { SellCategoryFilter } from "@/features/sell/SellCategoryFilter";
 import { useI18n } from "@/i18n/I18nProvider";
-import { formatCartSummary, formatPeso } from "@/lib/format-money";
+import { formatCartSummary } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
 import { useSellingMode } from "@/selling/SellingModeProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -194,23 +198,23 @@ export function SellFloorPage() {
 
       <div className="sell-floor-layout min-h-0 min-w-0 flex-1">
         <section className="sell-floor-browse flex min-h-0 min-w-0 flex-col gap-3">
-          <label className="flex min-w-0 flex-col gap-1">
-            <span className="sr-only">{t("sell.searchLabel")}</span>
-            <input
-              data-testid="sell-search"
-              type="search"
-              autoFocus
-              autoComplete="off"
-              spellCheck={false}
-              value={searchTerm}
-              onChange={(event) => {
-                lastExactScanRef.current = null;
-                setSearchTerm(event.target.value);
-              }}
-              placeholder={t("sell.searchPlaceholder")}
-              className="h-[var(--exits-control-height)] min-h-[var(--exits-touch-target-min)] w-full rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 text-[length:var(--exits-text-md)] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </label>
+          <SearchField
+            data-testid="sell-search"
+            label={t("sell.searchLabel")}
+            autoFocus
+            autoComplete="off"
+            spellCheck={false}
+            value={searchTerm}
+            onChange={(event) => {
+              lastExactScanRef.current = null;
+              setSearchTerm(event.target.value);
+            }}
+            onClear={() => {
+              lastExactScanRef.current = null;
+              setSearchTerm("");
+            }}
+            placeholder={t("sell.searchPlaceholder")}
+          />
 
           {searchError ? (
             <p
@@ -235,15 +239,11 @@ export function SellFloorPage() {
             className="grid min-h-[12rem] flex-1 grid-cols-2 gap-3 rounded-[var(--exits-radius-lg)] border border-border bg-[var(--exits-surface-muted)] p-4 sm:grid-cols-3 lg:grid-cols-4"
             aria-label={t("sell.productsLabel")}
           >
-            {productsLoading
-              ? Array.from({ length: 6 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="animate-pulse rounded-[var(--exits-radius-md)] bg-surface"
-                    aria-hidden="true"
-                  />
-                ))
-              : null}
+            {productsLoading ? (
+              <div className="col-span-full">
+                <LoadingSkeleton count={6} className="grid grid-cols-2 gap-3 sm:grid-cols-3" />
+              </div>
+            ) : null}
 
             {!productsLoading && displayedProducts.length === 0 ? (
               <p className="col-span-full m-0 text-center text-[length:var(--exits-text-sm)] text-muted">
@@ -262,9 +262,7 @@ export function SellFloorPage() {
                 <span className="line-clamp-2 text-[length:var(--exits-text-sm)] font-semibold">
                   {product.name}
                 </span>
-                <span className="text-[length:var(--exits-text-sm)] text-muted">
-                  {formatPeso(product.sellingPrice)}
-                </span>
+                <MoneyDisplay amount={product.sellingPrice} className="text-muted" />
               </button>
             ))}
           </div>
@@ -286,19 +284,21 @@ export function SellFloorPage() {
         </aside>
       </div>
 
-      <button
-        type="button"
-        data-testid="sell-cart-bar"
-        className="sell-cart-bar sticky bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 mt-4 flex w-full items-center justify-between gap-3 rounded-[var(--exits-radius-lg)] border border-border bg-surface px-4 py-3 shadow-[0_-4px_24px_rgba(0,0,0,0.08)]"
-        onClick={() => setCartSheetOpen(true)}
-        aria-expanded={cartSheetOpen}
-        aria-controls="sell-cart-sheet-panel"
-      >
-        <span className="text-[length:var(--exits-text-sm)] font-semibold">{cartSummary}</span>
-        <span className="text-[length:var(--exits-text-sm)] text-muted">
-          {t("sell.cartBarHint")}
-        </span>
-      </button>
+      <StickyActionBar className="sell-cart-bar">
+        <button
+          type="button"
+          data-testid="sell-cart-bar"
+          className="flex w-full items-center justify-between gap-3 text-left"
+          onClick={() => setCartSheetOpen(true)}
+          aria-expanded={cartSheetOpen}
+          aria-controls="sell-cart-sheet-panel"
+        >
+          <span className="text-[length:var(--exits-text-sm)] font-semibold">{cartSummary}</span>
+          <span className="text-[length:var(--exits-text-sm)] text-muted">
+            {t("sell.cartBarHint")}
+          </span>
+        </button>
+      </StickyActionBar>
 
       {cartSheetOpen ? (
         <div

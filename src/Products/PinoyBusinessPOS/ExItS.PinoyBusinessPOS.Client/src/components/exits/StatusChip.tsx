@@ -5,7 +5,7 @@ export function StatusChip({
   tone = "info",
 }: {
   children: string;
-  tone?: "info" | "success" | "warning";
+  tone?: "info" | "success" | "warning" | "danger";
 }) {
   return (
     <span
@@ -14,9 +14,13 @@ export function StatusChip({
         tone === "success" && "bg-[color-mix(in_srgb,var(--exits-success)_16%,transparent)]",
         tone === "warning" && "bg-[color-mix(in_srgb,var(--exits-warning)_16%,transparent)]",
         tone === "info" && "bg-[color-mix(in_srgb,var(--exits-info)_16%,transparent)]",
+        tone === "danger" && "bg-[color-mix(in_srgb,var(--exits-danger)_16%,transparent)]",
       )}
     >
       {children}
     </span>
   );
 }
+
+/** Alias for StatusChip — same pill status treatment. */
+export const StatusPill = StatusChip;

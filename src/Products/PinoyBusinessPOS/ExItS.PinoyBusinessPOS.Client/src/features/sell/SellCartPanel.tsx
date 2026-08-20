@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import type { SessionCartLine } from "@/cart/SessionCartProvider";
+import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
 import { useI18n } from "@/i18n/I18nProvider";
-import { formatCartSummary, formatPeso } from "@/lib/format-money";
+import { formatCartSummary } from "@/lib/format-money";
 
 type SellCartPanelProps = {
   lines: SessionCartLine[];
@@ -63,9 +64,7 @@ export function SellCartPanel({
                   {line.sku ? (
                     <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{line.sku}</p>
                   ) : null}
-                  <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                    {formatPeso(line.unitPrice)}
-                  </p>
+                  <MoneyDisplay amount={line.unitPrice} className="text-muted font-normal" />
                 </div>
                 <Button
                   type="button"
@@ -76,34 +75,16 @@ export function SellCartPanel({
                   {t("sell.cartRemove")}
                 </Button>
               </div>
-              <div className="mt-2 flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="border border-border"
-                  aria-label={t("sell.cartDecrease")}
-                  onClick={() => onDecrement(line.productId)}
-                >
-                  −
-                </Button>
-                <span
-                  data-testid={`sell-cart-qty-${line.productId}`}
-                  className="min-w-[2rem] text-center text-[length:var(--exits-text-sm)] font-semibold"
-                >
-                  {line.quantity}
-                </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="border border-border"
-                  aria-label={t("sell.cartIncrease")}
-                  onClick={() => onIncrement(line.productId)}
-                >
-                  +
-                </Button>
-                <span className="ml-auto text-[length:var(--exits-text-sm)] font-semibold">
-                  {formatPeso(line.unitPrice * line.quantity)}
-                </span>
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <QuantityStepper
+                  value={line.quantity}
+                  valueTestId={`sell-cart-qty-${line.productId}`}
+                  decreaseLabel={t("sell.cartDecrease")}
+                  increaseLabel={t("sell.cartIncrease")}
+                  onDecrement={() => onDecrement(line.productId)}
+                  onIncrement={() => onIncrement(line.productId)}
+                />
+                <MoneyDisplay amount={line.unitPrice * line.quantity} />
               </div>
             </li>
           ))}
@@ -116,7 +97,7 @@ export function SellCartPanel({
             data-testid="sell-cart-subtotal"
             className="m-0 text-[length:var(--exits-text-sm)] font-semibold"
           >
-            {t("sell.cartSubtotalLabel")}: {formatPeso(subtotal)}
+            {t("sell.cartSubtotalLabel")}: <MoneyDisplay amount={subtotal} />
           </p>
         ) : null}
         <Button
