@@ -95,11 +95,11 @@ test.describe("local-validation React container smoke", () => {
     await expect(
       page
         .getByRole("navigation", { name: "Primary" })
-        .getByRole("link", { name: "Organizations" }),
+        .getByRole("link", { name: "All Organizations" }),
     ).toBeVisible();
     await page
       .getByRole("navigation", { name: "Primary" })
-      .getByRole("link", { name: "Organizations" })
+      .getByRole("link", { name: "All Organizations" })
       .click();
     await expect(page).toHaveURL(/\/admin\/organizations/);
     await expect(

@@ -15,6 +15,11 @@ export type ResolveNavigationInput = {
   developmentToolsAllowed: boolean;
 };
 
+export type CatalogNavProduct = {
+  code: string;
+  displayName: string;
+};
+
 export function isNavItemAuthorized(
   item: NavigationItemDefinition,
   input: ResolveNavigationInput,
@@ -33,6 +38,9 @@ export function isNavItemAuthorized(
 }
 
 function presentationFor(item: NavigationItemDefinition): ResolvedNavigationItem["presentation"] {
+  if (item.kind === "group") {
+    return "group";
+  }
   if (item.lifecycle === "PLANNED_DISABLED") {
     return "planned";
   }
@@ -45,17 +53,18 @@ function presentationFor(item: NavigationItemDefinition): ResolvedNavigationItem
   return "link";
 }
 
-function isMigrationOrPlanningPresentation(
-  presentation: ResolvedNavigationItem["presentation"],
-): boolean {
-  return (
-    presentation === "underDevelopment" || presentation === "planned" || presentation === "context"
-  );
+export function catalogProductNavId(productCode: string): string {
+  return `PWEB-NAV-ORG-BY-PRODUCT:${productCode}`;
 }
 
-export function resolveNavigation(input: ResolveNavigationInput): ResolvedNavigationSection[] {
-  const developmentItems: ResolvedNavigationItem[] = [];
+export function catalogProductNavHref(productCode: string): string {
+  return `/admin/organizations?product=${encodeURIComponent(productCode)}`;
+}
 
+export function resolveNavigation(
+  input: ResolveNavigationInput,
+  catalogProducts: readonly CatalogNavProduct[] = [],
+): ResolvedNavigationSection[] {
   const sections = navigationRegistry
     .slice()
     .sort((a, b) => a.order - b.order)
@@ -72,30 +81,33 @@ export function resolveNavigation(input: ResolveNavigationInput): ResolvedNaviga
           }
 
           const resolved: ResolvedNavigationItem = {
-            ...item,
+            id: item.id,
+            labelKey: item.labelKey,
+            icon: item.icon,
+            href: item.href,
             presentation: presentationFor(item),
           };
 
-          if (isMigrationOrPlanningPresentation(resolved.presentation)) {
-            if (input.developmentToolsAllowed) {
-              developmentItems.push(resolved);
-            }
-            return [];
+          if (item.id === "PWEB-NAV-BY-PRODUCT") {
+            resolved.children = catalogProducts.map((product) => ({
+              id: catalogProductNavId(product.code),
+              label: product.displayName || product.code,
+              icon: "package",
+              href: catalogProductNavHref(product.code),
+              presentation: "link" as const,
+            }));
           }
 
           return [resolved];
         });
       return { id: section.id, labelKey: section.labelKey, items };
     })
-    .filter((section) => section.id !== "development" && section.items.length > 0);
-
-  if (developmentItems.length > 0) {
-    sections.push({
-      id: "development",
-      labelKey: "nav.group.development",
-      items: developmentItems,
+    .filter((section) => {
+      if (section.id === "development") {
+        return input.developmentToolsAllowed && section.items.length > 0;
+      }
+      return section.items.length > 0;
     });
-  }
 
   return sections;
 }

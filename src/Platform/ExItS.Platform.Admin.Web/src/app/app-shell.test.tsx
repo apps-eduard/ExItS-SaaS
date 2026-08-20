@@ -54,7 +54,7 @@ describe("application shell", () => {
     expect(screen.getAllByText("Home").length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("navigation", { name: "Breadcrumb" })).toBeInTheDocument();
-    expect(await screen.findByRole("link", { name: "Organizations" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "All Organizations" })).toBeInTheDocument();
   });
 
   it("does not flash privileged navigation while authorization is loading", async () => {
@@ -78,10 +78,10 @@ describe("application shell", () => {
     window.history.replaceState({}, "", "/admin");
     render(<App />);
     expect(await screen.findByRole("heading", { name: "Overview" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Organizations" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "All Organizations" })).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Organizations. Under development")).not.toBeInTheDocument();
     resolveAuthz?.(jsonResponse(200, sampleAuthorization));
-    expect(await screen.findByRole("link", { name: "Organizations" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "All Organizations" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Organizations. Under development")).not.toBeInTheDocument();
   });
 
@@ -104,7 +104,7 @@ describe("application shell", () => {
     render(<App />);
     expect(await screen.findByRole("heading", { name: "Overview" })).toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.queryByRole("link", { name: "Organizations" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: "All Organizations" })).not.toBeInTheDocument();
       expect(screen.queryByLabelText("Organizations. Under development")).not.toBeInTheDocument();
     });
   });
@@ -215,7 +215,7 @@ describe("application shell", () => {
     expect(screen.queryByRole("link", { name: "Test Payments" })).not.toBeInTheDocument();
   });
 
-  it("shows authorized under-development items in Development and keeps them non-navigable", async () => {
+  it("shows authorized under-development items in-place and Development only for DEV_TEST_ONLY", async () => {
     stubDesktop(true);
     vi.spyOn(developmentTools, "areDevelopmentToolsAllowed").mockReturnValue(true);
     mockAuthenticatedFetch();
@@ -223,15 +223,14 @@ describe("application shell", () => {
     render(<App />);
     await screen.findByRole("heading", { name: "Overview" });
     expect(screen.getByText("Development")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Organizations" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "All Organizations" })).toBeInTheDocument();
     expect(screen.getByLabelText("All Accounts. Under development")).toBeInTheDocument();
     expect(screen.getByLabelText("Event Delivery. Planned")).toBeInTheDocument();
     expect(screen.getAllByText("Under development").length).toBeGreaterThan(0);
-    expect(screen.queryByLabelText("Organizations. Under development")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Organizations/ })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Test Payments. Under development")).toBeInTheDocument();
   });
 
-  it("hides under-development migration items in production-shaped modes", async () => {
+  it("keeps blueprint under-development items without Development tools, and hides DEV_TEST_ONLY", async () => {
     stubDesktop(true);
     vi.spyOn(developmentTools, "areDevelopmentToolsAllowed").mockReturnValue(false);
     mockAuthenticatedFetch();
@@ -239,10 +238,10 @@ describe("application shell", () => {
     render(<App />);
     await screen.findByRole("heading", { name: "Overview" });
     expect(screen.queryByText("Development")).not.toBeInTheDocument();
-    expect(await screen.findByRole("link", { name: "Organizations" })).toBeInTheDocument();
-    expect(screen.queryByLabelText("Organizations. Under development")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Event Delivery. Planned")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Platform Settings. Planned")).not.toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "All Organizations" })).toBeInTheDocument();
+    expect(screen.getByLabelText("All Accounts. Under development")).toBeInTheDocument();
+    expect(screen.getByLabelText("Event Delivery. Planned")).toBeInTheDocument();
+    expect(screen.getByLabelText("Platform Settings. Planned")).toBeInTheDocument();
     expect(screen.queryByText("Test Payments")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Overview" })).toBeInTheDocument();
   });

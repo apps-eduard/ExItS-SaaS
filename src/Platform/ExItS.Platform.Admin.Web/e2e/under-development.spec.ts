@@ -42,6 +42,29 @@ async function mockAuthenticatedSession(page: import("@playwright/test").Page) {
   await page.route("**/api/v1/platform/authorization/me", async (route) => {
     await route.fulfill({ json: authorization });
   });
+  await page.route("**/api/v1/platform/catalog/products*", async (route) => {
+    await route.fulfill({
+      json: {
+        items: [
+          {
+            id: "11111111-1111-1111-1111-111111111111",
+            code: "future-product-x",
+            displayName: "Future Product X",
+            status: "Active",
+          },
+          {
+            id: "22222222-2222-2222-2222-222222222222",
+            code: "pinoy-business-pos",
+            displayName: "Pinoy Business POS",
+            status: "Active",
+          },
+        ],
+        totalCount: 2,
+        page: 1,
+        pageSize: 100,
+      },
+    });
+  });
   await page.route("**/api/v1/platform/organizations*", async (route) => {
     await route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 1 } });
   });
@@ -65,17 +88,17 @@ async function mockAuthenticatedSession(page: import("@playwright/test").Page) {
 test.describe("development frontend mode", () => {
   test.use({ baseURL: "http://127.0.0.1:4174" });
 
-  test("Development section shows authorized under-development entries", async ({ page }) => {
+  test("Development section shows DEV_TEST_ONLY only", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await mockAuthenticatedSession(page);
     await page.goto("/admin");
     await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
     await expect(page.getByText("Development", { exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Organizations" })).toBeVisible();
-    await expect(page.getByLabel("Organizations. Under development")).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "All Organizations" })).toBeVisible();
+    await expect(page.getByLabel("Test Payments. Under development")).toBeVisible();
+    await expect(page.getByLabel("All Accounts. Under development")).toBeVisible();
     await expect(page.getByLabel("Event Delivery. Planned")).toBeVisible();
     await expect(page.getByRole("link", { name: "Event Delivery" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /Event Delivery/ })).toHaveCount(0);
   });
 });
 
@@ -94,19 +117,20 @@ test("unknown platform route remains page not found", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Under development" })).toHaveCount(0);
 });
 
-test("production preview hides migration-status navigation entries", async ({ page }) => {
+test("production preview shows blueprint and hides Development-only tools", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await mockAuthenticatedSession(page);
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Overview" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Organizations" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "All Organizations" })).toBeVisible();
   await expect(page.getByText("Development", { exact: true })).toHaveCount(0);
-  await expect(page.getByLabel("Organizations. Under development")).toHaveCount(0);
-  await expect(page.getByText("Under development")).toHaveCount(0);
-  await expect(page.getByText("Event Delivery")).toHaveCount(0);
-  await expect(page.getByText("Platform Settings")).toHaveCount(0);
+  await expect(page.getByLabel("All Accounts. Under development")).toBeVisible();
+  await expect(page.getByLabel("Event Delivery. Planned")).toBeVisible();
   await expect(page.getByText("Test Payments")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Future Product X" })).toBeVisible();
+  await page.getByRole("link", { name: "Future Product X" }).click();
+  await expect(page).toHaveURL(/product=future-product-x/);
 });
 
 test("under-development page has no horizontal overflow at 375px", async ({ page }) => {

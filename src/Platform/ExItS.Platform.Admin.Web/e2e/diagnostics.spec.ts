@@ -42,7 +42,7 @@ test("authorization 500 stays fail-closed and exposes copyable diagnostics", asy
 
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Organizations" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "All Organizations" })).toHaveCount(0);
   await expect(page.getByRole("alert")).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Copy diagnostics" })).toBeVisible();
 

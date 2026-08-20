@@ -75,7 +75,7 @@ test("authenticated shell is usable on desktop and has no serious accessibility 
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Overview" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Organizations" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "All Organizations" })).toBeVisible();
   await expect(page.getByText("Development Tools")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Account menu" })).toBeVisible();
   await expect(page.getByText("OM", { exact: true })).toBeVisible();

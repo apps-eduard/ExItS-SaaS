@@ -22,12 +22,11 @@ describe("resolveNavigation", () => {
       developmentToolsAllowed: true,
     });
     expect(itemIds(sections)).toEqual(["PWEB-NAV-OVERVIEW"]);
-    expect(itemIds(sections)).not.toContain("PWEB-NAV-ORGANIZATIONS");
+    expect(itemIds(sections)).not.toContain("PWEB-NAV-ALL-ORGANIZATIONS");
     expect(itemIds(sections)).not.toContain("PWEB-NAV-EVENT-DELIVERY");
-    expect(itemIds(sections)).not.toContain("PWEB-NAV-PLATFORM-SETTINGS");
   });
 
-  it("hides unauthorized migration and planned items when permission state is loaded", () => {
+  it("hides unauthorized items when permission state is loaded", () => {
     const sections = resolveNavigation({
       permissionStatus: "loaded",
       hasAnyPermission: () => false,
@@ -35,52 +34,85 @@ describe("resolveNavigation", () => {
       developmentToolsAllowed: true,
     });
     expect(itemIds(sections)).toEqual(["PWEB-NAV-OVERVIEW"]);
-    expect(itemIds(sections)).not.toContain("PWEB-NAV-ORGANIZATIONS");
+    expect(itemIds(sections)).not.toContain("PWEB-NAV-ALL-ORGANIZATIONS");
     expect(itemIds(sections)).not.toContain("PWEB-NAV-EVENT-DELIVERY");
-    expect(itemIds(sections)).not.toContain("PWEB-NAV-PLATFORM-SETTINGS");
     expect(itemIds(sections)).not.toContain("PWEB-NAV-TEST-PAYMENTS");
   });
 
-  it("keeps production-shaped navigation implemented-only for a fully authorized actor", () => {
+  it("keeps under-development and planned items in canonical sections without Development tools", () => {
     const sections = resolveNavigation({
       permissionStatus: "loaded",
       hasAnyPermission: () => true,
       isPlatformAdministrator: true,
       developmentToolsAllowed: false,
     });
-    expect(itemIds(sections)).toEqual(["PWEB-NAV-OVERVIEW", "PWEB-NAV-ORGANIZATIONS"]);
-    expect(itemIds(sections)).not.toContain("PWEB-NAV-EVENT-DELIVERY");
-    expect(itemIds(sections)).not.toContain("PWEB-NAV-PLATFORM-SETTINGS");
+    expect(itemIds(sections)).toContain("PWEB-NAV-OVERVIEW");
+    expect(itemIds(sections)).toContain("PWEB-NAV-ALL-ORGANIZATIONS");
+    expect(itemIds(sections)).toContain("PWEB-NAV-BY-PRODUCT");
+    expect(itemIds(sections)).toContain("PWEB-NAV-ALL-ACCOUNTS");
+    expect(itemIds(sections)).toContain("PWEB-NAV-EVENT-DELIVERY");
+    expect(itemIds(sections)).toContain("PWEB-NAV-PLATFORM-SETTINGS");
     expect(itemIds(sections)).not.toContain("PWEB-NAV-TEST-PAYMENTS");
     expect(sections.some((section) => section.id === "development")).toBe(false);
+    expect(
+      sections
+        .find((section) => section.id === "people")
+        ?.items.find((item) => item.id === "PWEB-NAV-ALL-ACCOUNTS")?.presentation,
+    ).toBe("underDevelopment");
+    expect(
+      sections
+        .find((section) => section.id === "operations")
+        ?.items.find((item) => item.id === "PWEB-NAV-EVENT-DELIVERY")?.presentation,
+    ).toBe("planned");
   });
 
-  it("relocates authorized migration and planned items under Development when tools are allowed", () => {
+  it("keeps Development section for DEV_TEST_ONLY only when tools are allowed", () => {
     const sections = resolveNavigation({
       permissionStatus: "loaded",
       hasAnyPermission: () => true,
       isPlatformAdministrator: true,
       developmentToolsAllowed: true,
     });
-    const items = sections.flatMap((section) => section.items);
-    expect(items.find((item) => item.id === "PWEB-NAV-OVERVIEW")?.presentation).toBe("link");
-    expect(items.find((item) => item.id === "PWEB-NAV-ORGANIZATIONS")?.presentation).toBe("link");
-    expect(sections.find((section) => section.id === "home")?.items.map((item) => item.id)).toEqual(
-      ["PWEB-NAV-OVERVIEW"],
-    );
-    expect(
-      sections.find((section) => section.id === "organizations")?.items.map((item) => item.id),
-    ).toEqual(["PWEB-NAV-ORGANIZATIONS"]);
-    expect(developmentItem(sections, "PWEB-NAV-ORGANIZATIONS")).toBeUndefined();
     expect(developmentItem(sections, "PWEB-NAV-TEST-PAYMENTS")?.presentation).toBe(
       "underDevelopment",
     );
-    expect(developmentItem(sections, "PWEB-NAV-EVENT-DELIVERY")?.presentation).toBe("planned");
-    expect(developmentItem(sections, "PWEB-NAV-PLATFORM-SETTINGS")?.presentation).toBe("planned");
+    expect(developmentItem(sections, "PWEB-NAV-EVENT-DELIVERY")).toBeUndefined();
+    expect(developmentItem(sections, "PWEB-NAV-ALL-ACCOUNTS")).toBeUndefined();
+    expect(
+      sections.find((section) => section.id === "people")?.items.map((item) => item.id),
+    ).toContain("PWEB-NAV-ALL-ACCOUNTS");
+  });
+
+  it("injects dynamic By Product children from catalog without hardcoding names", () => {
+    const sections = resolveNavigation(
+      {
+        permissionStatus: "loaded",
+        hasAnyPermission: () => true,
+        isPlatformAdministrator: false,
+        developmentToolsAllowed: false,
+      },
+      [
+        { code: "future-product-x", displayName: "Future Product X" },
+        { code: "pinoy-business-pos", displayName: "Pinoy Business POS" },
+      ],
+    );
+    const byProduct = sections
+      .find((section) => section.id === "organizations")
+      ?.items.find((item) => item.id === "PWEB-NAV-BY-PRODUCT");
+    expect(byProduct?.presentation).toBe("group");
+    expect(byProduct?.children?.map((child) => child.id)).toEqual([
+      "PWEB-NAV-ORG-BY-PRODUCT:future-product-x",
+      "PWEB-NAV-ORG-BY-PRODUCT:pinoy-business-pos",
+    ]);
+    expect(byProduct?.children?.[0]?.label).toBe("Future Product X");
+    expect(byProduct?.children?.[0]?.href).toBe("/admin/organizations?product=future-product-x");
+    expect(
+      navigationRegistry.some((section) => JSON.stringify(section).includes("Future Product")),
+    ).toBe(false);
   });
 
   it.each(["development", "test", "testing"] as const)(
-    "shows authorized under-development and planned items for frontend mode %s",
+    "shows DEV_TEST_ONLY for frontend mode %s",
     (mode) => {
       expect(areDevelopmentToolsAllowed(mode)).toBe(true);
       const sections = resolveNavigation({
@@ -89,38 +121,16 @@ describe("resolveNavigation", () => {
         isPlatformAdministrator: true,
         developmentToolsAllowed: areDevelopmentToolsAllowed(mode),
       });
-      expect(developmentItem(sections, "PWEB-NAV-ORGANIZATIONS")).toBeUndefined();
-      expect(itemIds(sections)).toContain("PWEB-NAV-ORGANIZATIONS");
-      expect(developmentItem(sections, "PWEB-NAV-EVENT-DELIVERY")?.presentation).toBe("planned");
-      expect(developmentItem(sections, "PWEB-NAV-PLATFORM-SETTINGS")?.presentation).toBe("planned");
-    },
-  );
-
-  it.each(["production", "staging", "preview", "qa", "uat", "unknown"] as const)(
-    "hides planned and under-development migration items for frontend mode %s",
-    (mode) => {
-      expect(areDevelopmentToolsAllowed(mode)).toBe(false);
-      const sections = resolveNavigation({
-        permissionStatus: "loaded",
-        hasAnyPermission: () => true,
-        isPlatformAdministrator: true,
-        developmentToolsAllowed: areDevelopmentToolsAllowed(mode),
-      });
-      expect(itemIds(sections)).toEqual(["PWEB-NAV-OVERVIEW", "PWEB-NAV-ORGANIZATIONS"]);
-      expect(itemIds(sections)).not.toContain("PWEB-NAV-EVENT-DELIVERY");
-      expect(itemIds(sections)).not.toContain("PWEB-NAV-PLATFORM-SETTINGS");
-      expect(itemIds(sections)).not.toContain("PWEB-NAV-TEST-PAYMENTS");
-      expect(sections.some((section) => section.id === "development")).toBe(false);
+      expect(developmentItem(sections, "PWEB-NAV-TEST-PAYMENTS")).toBeDefined();
     },
   );
 
   it("preserves canonical lifecycle metadata independently of presentation", () => {
     const items = navigationRegistry.flatMap((section) => section.items);
-    expect(items.find((item) => item.id === "PWEB-NAV-ORGANIZATIONS")?.lifecycle).toBe("AVAILABLE");
-    expect(items.find((item) => item.id === "PWEB-NAV-EVENT-DELIVERY")?.lifecycle).toBe(
-      "PLANNED_DISABLED",
+    expect(items.find((item) => item.id === "PWEB-NAV-ALL-ORGANIZATIONS")?.lifecycle).toBe(
+      "AVAILABLE",
     );
-    expect(items.find((item) => item.id === "PWEB-NAV-PLATFORM-SETTINGS")?.lifecycle).toBe(
+    expect(items.find((item) => item.id === "PWEB-NAV-EVENT-DELIVERY")?.lifecycle).toBe(
       "PLANNED_DISABLED",
     );
   });

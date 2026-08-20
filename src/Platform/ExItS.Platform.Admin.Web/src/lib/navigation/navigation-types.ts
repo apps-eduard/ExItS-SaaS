@@ -16,6 +16,8 @@ export type NavigationItemDefinition = {
   lifecycle: NavigationLifecycle;
   permission: PermissionRequirement;
   order: number;
+  /** Structural group (e.g. By Product) — children are injected at resolve/render time. */
+  kind?: "link" | "group";
 };
 
 export type NavigationSectionDefinition = {
@@ -25,8 +27,15 @@ export type NavigationSectionDefinition = {
   items: NavigationItemDefinition[];
 };
 
-export type ResolvedNavigationItem = NavigationItemDefinition & {
-  presentation: "link" | "planned" | "context" | "underDevelopment";
+export type ResolvedNavigationItem = {
+  id: string;
+  labelKey?: MessageKey;
+  /** Runtime label for dynamic catalog children (not i18n keys). */
+  label?: string;
+  icon: string;
+  href?: string;
+  presentation: "link" | "planned" | "context" | "underDevelopment" | "group";
+  children?: ResolvedNavigationItem[];
 };
 
 export type ResolvedNavigationSection = {

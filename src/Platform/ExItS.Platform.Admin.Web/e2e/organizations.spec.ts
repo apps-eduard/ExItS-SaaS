@@ -116,8 +116,8 @@ test("authorized organizations list is implemented and has no mutation controls"
   await page.setViewportSize({ width: 1440, height: 900 });
   await mockSession(page);
   await page.goto("/admin");
-  await expect(page.getByRole("link", { name: "Organizations" })).toBeVisible();
-  await page.getByRole("link", { name: "Organizations" }).click();
+  await expect(page.getByRole("link", { name: "All Organizations" })).toBeVisible();
+  await page.getByRole("link", { name: "All Organizations" }).click();
   await expect(page).toHaveURL(/\/admin\/organizations/);
   await expect(
     page.getByRole("heading", { name: "Organizations", exact: true, level: 1 }),
@@ -135,7 +135,7 @@ test("unauthorized organizations route fail-closes", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Organizations", exact: true, level: 1 }),
   ).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Organizations" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "All Organizations" })).toHaveCount(0);
 });
 
 test("search, status, sort, and pagination update the server query and URL", async ({ page }) => {

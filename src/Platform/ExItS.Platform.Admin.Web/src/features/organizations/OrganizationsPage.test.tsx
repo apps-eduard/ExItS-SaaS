@@ -64,7 +64,7 @@ describe("organizations list", () => {
     mockAuthenticatedFetch();
     window.history.replaceState({}, "", "/admin");
     const { unmount } = render(<App />);
-    expect(await screen.findByRole("link", { name: "Organizations" })).toHaveAttribute(
+    expect(await screen.findByRole("link", { name: "All Organizations" })).toHaveAttribute(
       "href",
       "/admin/organizations",
     );
@@ -75,7 +75,7 @@ describe("organizations list", () => {
     render(<App />);
     expect(await screen.findByRole("heading", { name: "Page not found" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Organizations" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Organizations" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "All Organizations" })).not.toBeInTheDocument();
   });
 
   it("maps search, status, sort, and pagination to server parameters", async () => {

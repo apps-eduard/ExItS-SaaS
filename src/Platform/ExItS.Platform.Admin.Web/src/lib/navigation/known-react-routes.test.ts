@@ -17,7 +17,7 @@ describe("react implementation status", () => {
       .find((item) => item.id === "PWEB-NAV-OVERVIEW");
     const organizations = navigationRegistry
       .flatMap((section) => section.items)
-      .find((item) => item.id === "PWEB-NAV-ORGANIZATIONS");
+      .find((item) => item.id === "PWEB-NAV-ALL-ORGANIZATIONS");
     expect(overview?.lifecycle).toBe("AVAILABLE");
     expect(organizations?.lifecycle).toBe("AVAILABLE");
     expect(reactImplementationStatus(overview!)).toBe("IMPLEMENTED");

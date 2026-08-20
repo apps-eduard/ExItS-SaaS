@@ -69,6 +69,12 @@ function pathnameOf(url: string): string {
 
 export type AuthenticatedFetchOptions = {
   permissions?: string[];
+  catalogProductItems?: Array<{
+    id: string;
+    code: string;
+    displayName: string;
+    status: string;
+  }>;
   failOrganizations?: boolean;
   failOrganizationGet?: boolean;
   failCommercialSummary?: boolean;
@@ -157,6 +163,23 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}):
           ...sampleAuthorization,
           permissions: options.permissions ?? sampleAuthorization.permissions,
         });
+      }
+      if (url.includes("/api/v1/platform/catalog/products")) {
+        return jsonResponse(
+          200,
+          pagedJson(
+            options.catalogProductItems ?? [
+              {
+                id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+                code: "future-product-x",
+                displayName: "Future Product X",
+                status: "Active",
+              },
+            ],
+            options.catalogProductItems?.length ?? 1,
+            100,
+          ),
+        );
       }
       if (path.endsWith("/health/ready") || path.endsWith("/health")) {
         return textResponse(200, "Healthy");

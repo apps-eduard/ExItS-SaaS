@@ -127,7 +127,10 @@ describe("Overview dashboard", () => {
     await screen.findByRole("heading", { name: "Organizations" });
     await waitFor(() => {
       const urls = vi.mocked(fetch).mock.calls.map(([input]) => String(input));
-      const dataUrls = urls.filter((url) => url.includes("/api/v1/platform/"));
+      const dataUrls = urls.filter(
+        (url) =>
+          url.includes("/api/v1/platform/") && !url.includes("/catalog/products"),
+      );
       expect(dataUrls.some((url) => url.includes("pageSize=100"))).toBe(false);
       expect(dataUrls.some((url) => url.includes("pageSize=1000"))).toBe(false);
       expect(

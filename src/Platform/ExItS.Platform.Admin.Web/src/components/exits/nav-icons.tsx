@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   Activity,
   AlertCircle,
+  Boxes,
   Box,
   Building,
   Building2,
@@ -32,6 +33,7 @@ const icons: Record<string, LucideIcon> = {
   activity: Activity,
   "alert-circle": AlertCircle,
   box: Box,
+  boxes: Boxes,
   building: Building,
   "building-2": Building2,
   "check-square": CheckSquare,
