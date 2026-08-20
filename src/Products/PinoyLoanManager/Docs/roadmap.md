@@ -7,8 +7,8 @@
 |---|---|
 | Product | Pinoy Loan Manager |
 | Current phase | PLM-01 Product Scaffold & Isolation (complete); PLM-01A client architecture (this package) |
-| Current work package | PLM-CLIENT-GATE-D3 organization discovery + product access gate |
-| Status | PLM-00 accepted; PLM-01 scaffolded; PLM-01A approved; Gates B, C, D0, D1, D2, and D3 complete; PLM-D3-PRE complete; Gate E and PLM-02 not started |
+| Current work package | PLM-02A server access boundary foundation |
+| Status | PLM-00 accepted; PLM-01 scaffolded; PLM-01A approved; Gates B–D3 complete; PLM-D3-PRE complete; PLM-02A complete; PLM-02 in progress (D-P12-03 open); Gate E blocked (`REAL_LENDING_CONTRACT_MISSING`) |
 
 ## Phase objective
 
@@ -59,7 +59,7 @@ PLM-00 documentation phase is complete. PLM-01 scaffold is complete. PLM-01A is 
 |---|---|
 | PLM-01 Product Scaffold & Isolation | **Complete** (shell) |
 | PLM-01A React / PWA / Capacitor client architecture | **Complete** (documentation; Gate A) |
-| PLM-02 Identity / Organization / Product Access | Not started |
+| PLM-02 Identity / Organization / Product Access | **IN PROGRESS** — PLM-02A complete; transport integration pending D-P12-03 |
 | PLM-03 Loan Product Authorization | Not started |
 | PLM-04 Borrower Foundation | Not started |
 | PLM-05 Loan Product Configuration | Not started |
@@ -123,7 +123,7 @@ Does **not** replace the core business roadmap above. Detail: [Architecture/reac
 | PLM-CLIENT-GATE D2 Register/Activate/Forgot/Reset + Mailpit callback routing | **Complete** |
 | PLM-D3-PRE Product registration + session-bound access prerequisite | **Complete** |
 | PLM-CLIENT-GATE D3 Auth + org/product access | **Complete** |
-| PLM-CLIENT-GATE E First lending slice + visual review | **NOT STARTED** — requires real authorized lending API |
+| PLM-CLIENT-GATE E First lending slice + visual review | **BLOCKED** — `REAL_LENDING_CONTRACT_MISSING` |
 | PLM-CLIENT-GATE F Responsive/field workflows | Not started |
 | PLM-CLIENT-GATE G Capacitor Android shell | Not started |
 | PLM-CLIENT-GATE H Physical Android validation | Not started |
@@ -134,9 +134,11 @@ Offline financial operation remains **PLM-13**.
 
 ## Exact next package
 
-**STOPPED AFTER PLM-CLIENT-GATE-D3.** Gate E prerequisite: confirm a real authorized lending API exists in PLM Domain/Application/Api. If none exists, stop with `REAL_LENDING_CONTRACT_MISSING`. Do not start Capacitor or PLM-02 from this package.
+**STOPPED AFTER PLM-02A.** Do not start PLM-02B, PLM-03, PLM-04, Capacitor, or Client Gate E from this package. Do not merge `main`.
 
-Recommended later order when separately authorized: Gate E (if lending contract exists), then PLM-02.
+PLM-02A delivered the fail-closed server access boundary. PLM-02 remains **IN PROGRESS** until D-P12-03 provides an approved trusted context transport. Gate E remains blocked: `REAL_LENDING_CONTRACT_MISSING`.
+
+Recommended later order when separately authorized: remaining PLM-02 transport integration (after D-P12-03), then PLM-03+.
 
 PLM-02 still consumes Platform actor/org/product access without Platform table reads. Do not invent D-P12-03.
 

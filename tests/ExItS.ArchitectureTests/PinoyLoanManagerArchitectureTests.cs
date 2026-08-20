@@ -105,6 +105,82 @@ public sealed class PinoyLoanManagerArchitectureTests
                         && !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)));
     }
 
+    [Fact]
+    public void Domain_sources_do_not_reference_platform_pos_or_aspnet_transport()
+    {
+        AssertSourceFilesAvoid(
+            Path.Combine(FindRepositoryRoot(), "src", "Products", "PinoyLoanManager", "ExItS.PinoyLoanManager.Domain"),
+            "ExItS.Platform",
+            "PinoyBusinessPOS",
+            "Microsoft.AspNetCore",
+            "Microsoft.EntityFrameworkCore",
+            "Npgsql",
+            "HttpContext",
+            "DbContext");
+    }
+
+    [Fact]
+    public void Application_sources_do_not_reference_platform_infrastructure_pos_or_aspnet_transport()
+    {
+        AssertSourceFilesAvoid(
+            Path.Combine(FindRepositoryRoot(), "src", "Products", "PinoyLoanManager", "ExItS.PinoyLoanManager.Application"),
+            "ExItS.Platform.Infrastructure",
+            "PinoyBusinessPOS",
+            "Microsoft.AspNetCore",
+            "Microsoft.EntityFrameworkCore",
+            "Npgsql",
+            "HttpContext",
+            "DbContext");
+    }
+
+    [Fact]
+    public void Api_sources_do_not_reference_pos_platform_infrastructure_or_ef()
+    {
+        AssertSourceFilesAvoid(
+            Path.Combine(FindRepositoryRoot(), "src", "Products", "PinoyLoanManager", "ExItS.PinoyLoanManager.Api"),
+            "PinoyBusinessPOS",
+            "ExItS.Platform.Infrastructure",
+            "Microsoft.EntityFrameworkCore",
+            "Npgsql",
+            "DbContext");
+    }
+
+    [Fact]
+    public void Plm_product_identity_matches_final_catalog_code_without_platform_domain_reference()
+    {
+        var root = FindRepositoryRoot();
+        var identityPath = Path.Combine(
+            root,
+            "src",
+            "Products",
+            "PinoyLoanManager",
+            "ExItS.PinoyLoanManager.Domain",
+            "Access",
+            "PlmProductIdentity.cs");
+        Assert.True(File.Exists(identityPath), identityPath);
+        var text = File.ReadAllText(identityPath);
+        Assert.Contains("pinoy-loan-manager", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("ExItS.Platform", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("ProductCode.PinoyLoanManager", text, StringComparison.Ordinal);
+    }
+
+    private static void AssertSourceFilesAvoid(string projectRoot, params string[] forbidden)
+    {
+        Assert.True(Directory.Exists(projectRoot), projectRoot);
+        var files = Directory.GetFiles(projectRoot, "*.cs", SearchOption.AllDirectories)
+            .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
+                        && !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase));
+
+        foreach (var file in files)
+        {
+            var text = File.ReadAllText(file);
+            foreach (var token in forbidden)
+            {
+                Assert.DoesNotContain(token, text, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+    }
+
     private static string FindRepositoryRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);

@@ -13,4 +13,8 @@
     <ProjectReference Include="..\ExItS.PinoyLoanManager.Infrastructure\ExItS.PinoyLoanManager.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="ExItS.PinoyLoanManager.UnitTests" />
+  </ItemGroup>
+
 </Project>
