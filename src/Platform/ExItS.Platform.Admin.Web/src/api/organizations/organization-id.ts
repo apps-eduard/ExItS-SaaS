@@ -35,12 +35,20 @@ export const ORGANIZATION_WORKSPACE_SECTIONS = [
   "subscription",
   "entitlements",
   "billing",
+  "activity",
 ] as const;
 
 export type OrganizationWorkspaceSection = (typeof ORGANIZATION_WORKSPACE_SECTIONS)[number];
 
 export type OrganizationWorkspaceNavSection =
-  "overview" | "branches" | "people" | "products" | "subscription" | "entitlements" | "billing";
+  | "overview"
+  | "branches"
+  | "people"
+  | "products"
+  | "subscription"
+  | "entitlements"
+  | "billing"
+  | "activity";
 
 export function parseOrganizationWorkspaceSection(
   pathname: string,

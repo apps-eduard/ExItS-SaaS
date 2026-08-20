@@ -159,7 +159,6 @@ test.describe("local-validation React container smoke", () => {
     await expect(workspaceNav.getByRole("link", { name: "Subscription" })).toBeVisible();
     await expect(workspaceNav.getByRole("link", { name: "Entitlements" })).toBeVisible();
     await expect(workspaceNav.getByRole("link", { name: "Billing" })).toBeVisible();
-    await expect(workspaceNav.getByRole("link", { name: "Activity" })).toHaveCount(0);
-    await expect(workspaceNav.getByRole("link", { name: "Audit" })).toHaveCount(0);
+    await expect(workspaceNav.getByRole("link", { name: "Activity / Audit" })).toBeVisible();
   });
 });

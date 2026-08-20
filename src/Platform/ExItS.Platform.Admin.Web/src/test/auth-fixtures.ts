@@ -118,6 +118,10 @@ export type AuthenticatedFetchOptions = {
   forbiddenOrgPayments?: boolean;
   orgPaymentItems?: Array<Record<string, unknown>>;
   orgPaymentTotalCount?: number;
+  failOrgAudit?: boolean;
+  forbiddenOrgAudit?: boolean;
+  orgAuditItems?: Array<Record<string, unknown>>;
+  orgAuditTotalCount?: number;
 };
 
 export function mockUnauthenticatedFetch(): void {
@@ -331,6 +335,30 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
       return jsonResponse(
         200,
         pagedJson(items, options.orgPaymentTotalCount ?? items.length, items.length || 20),
+      );
+    }
+    const orgAuditGet = path.match(
+      /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/audit$/,
+    );
+    if (orgAuditGet) {
+      if (options.forbiddenOrgAudit) {
+        return jsonResponse(403, {
+          title: "Forbidden",
+          status: 403,
+          detail: "audit-secret",
+        });
+      }
+      if (options.failOrgAudit) {
+        return jsonResponse(500, {
+          title: "Error",
+          status: 500,
+          detail: "Organization audit list failed.",
+        });
+      }
+      const items = options.orgAuditItems ?? [];
+      return jsonResponse(
+        200,
+        pagedJson(items, options.orgAuditTotalCount ?? items.length, items.length || 20),
       );
     }
     const organizationGet = path.match(

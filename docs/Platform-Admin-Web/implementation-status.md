@@ -461,6 +461,32 @@ Polish pass for read-only organization workspace: shared subscription status pre
 
 See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-14A-organization-readonly-polish.md`.
 
+## PWEB-IMPL-15 — Organization Activity / Audit
+
+Status: **COMPLETE** after validation
+
+Read-only organization workspace Activity / Audit tab backed by
+`GET /api/v1/platform/organizations/{organizationId}/audit` with supported
+server filters only. Reuses dashboard audit presentation helpers. No mutations,
+no export, no global Audit Log implementation, no backend changes.
+
+| Area | Record |
+|---|---|
+| Overview | **IMPLEMENTED** |
+| Branches | **IMPLEMENTED — READ ONLY** |
+| People/Memberships | **IMPLEMENTED — READ ONLY** |
+| Products/Access | **IMPLEMENTED — READ ONLY** |
+| Subscription | **IMPLEMENTED — READ ONLY** |
+| Entitlements | **IMPLEMENTED — READ ONLY** |
+| Billing | **IMPLEMENTED — READ ONLY** |
+| Activity/Audit | **IMPLEMENTED — READ ONLY** |
+| CSRF | `BLOCKS_FUTURE_MUTATION` |
+| Social-auth token-in-URL | `BLOCKS_CUTOVER` |
+| Platform Admin | **WEB ONLY** |
+| PWA | **NOT PLANNED** |
+
+See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-15-organization-activity-audit.md`.
+
 ## Queue
 
 | Package | Status |
@@ -479,5 +505,9 @@ See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-14A-organization-readonly-polish.
 | PWEB-IMPL-13 — Organization workspace Entitlements | COMPLETE |
 | PWEB-IMPL-14 — Organization workspace Billing | COMPLETE |
 | PWEB-IMPL-14A — Organization read-only polish | COMPLETE |
+| PWEB-IMPL-14B — Entitlements compact grants | COMPLETE |
+| PWEB-IMPL-14C — Navigation blueprint | COMPLETE |
+| PWEB-IMPL-14D — Product Organizations foundation | COMPLETE |
+| PWEB-IMPL-15 — Organization Activity / Audit | COMPLETE |
 
-Stopped after PWEB-IMPL-14A3. PWEB-IMPL-15 (Activity/Audit) was not started.
+Stopped after PWEB-IMPL-15. Global Audit Log remains under-development.

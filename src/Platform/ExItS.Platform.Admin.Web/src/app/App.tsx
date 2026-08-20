@@ -11,6 +11,7 @@ import { OrganizationBranchesPage } from "@/features/organizations/OrganizationB
 import { OrganizationPeoplePage } from "@/features/organizations/OrganizationPeoplePage";
 import { OrganizationProductsPage } from "@/features/organizations/OrganizationProductsPage";
 import { OrganizationBillingPage } from "@/features/organizations/OrganizationBillingPage";
+import { OrganizationActivityPage } from "@/features/organizations/OrganizationActivityPage";
 import { OrganizationEntitlementsPage } from "@/features/organizations/OrganizationEntitlementsPage";
 import { OrganizationSubscriptionsPage } from "@/features/organizations/OrganizationSubscriptionsPage";
 import { OrganizationOverviewPage } from "@/features/organizations/OrganizationOverviewPage";
@@ -108,6 +109,7 @@ export function App() {
                             />
                             <Route path="entitlements" element={<OrganizationEntitlementsPage />} />
                             <Route path="billing" element={<OrganizationBillingPage />} />
+                            <Route path="activity" element={<OrganizationActivityPage />} />
                             <Route path="*" element={<ShellCatchAllPage />} />
                           </Route>
                         </Route>

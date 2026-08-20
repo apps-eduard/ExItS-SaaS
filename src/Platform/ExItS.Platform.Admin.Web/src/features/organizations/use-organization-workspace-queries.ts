@@ -7,9 +7,11 @@ import {
   listOrganizationInvitations,
   listOrganizationMembers,
   listOrganizationPayments,
+  listOrganizationAuditRecords,
   listOrganizationSubscriptions,
 } from "@/api/organizations/organization-client";
 import type { OrganizationBillingUrlState } from "@/api/organizations/billing-list-query";
+import type { OrganizationAuditUrlState } from "@/api/organizations/organization-audit-list-query";
 import { ORGANIZATION_PEOPLE_PAGE_SIZE } from "@/api/organizations/organization-types";
 import { ORGANIZATION_ENTITLEMENT_PAGE_SIZE } from "@/api/organizations/entitlement-list-query";
 import type { OrganizationSubscriptionUrlState } from "@/api/organizations/subscription-list-query";
@@ -163,5 +165,35 @@ export function useOrganizationPaymentsQuery(
     enabled: organizationId != null,
     queryFn: ({ signal }) =>
       listOrganizationPayments(env.platformApiBaseUrl, organizationId!, state, signal),
+  });
+}
+
+export const organizationAuditQueryKey = (
+  organizationId: string,
+  state: OrganizationAuditUrlState,
+) =>
+  [
+    "organizations",
+    "audit",
+    organizationId,
+    state.fromUtc,
+    state.toUtc,
+    state.actor,
+    state.action,
+    state.targetType,
+    state.outcome,
+    state.branchId,
+    state.page,
+  ] as const;
+
+export function useOrganizationAuditQuery(
+  organizationId: string | null,
+  state: OrganizationAuditUrlState,
+) {
+  return useQuery({
+    queryKey: organizationAuditQueryKey(organizationId ?? "", state),
+    enabled: organizationId != null,
+    queryFn: ({ signal }) =>
+      listOrganizationAuditRecords(env.platformApiBaseUrl, organizationId!, state, signal),
   });
 }

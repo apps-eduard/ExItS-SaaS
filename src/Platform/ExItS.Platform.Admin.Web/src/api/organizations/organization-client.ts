@@ -12,6 +12,11 @@ import {
   type OrganizationPayment,
 } from "@/api/organizations/billing-list-query";
 import {
+  organizationAuditRequestPath,
+  type OrganizationAuditRecord,
+  type OrganizationAuditUrlState,
+} from "@/api/organizations/organization-audit-list-query";
+import {
   organizationEntitlementSnapshotsRequestPath,
   type EntitlementGrant,
   type EntitlementSnapshot,
@@ -569,6 +574,43 @@ export function listOrganizationPayments(
     return {
       ...page,
       items: page.items.map(mapOrganizationPayment),
+    };
+  });
+}
+
+function mapOrganizationAuditRecord(payload: unknown): OrganizationAuditRecord {
+  const record = asRecord(payload) ?? {};
+  return {
+    id: readString(record, "id", "Id") ?? "",
+    occurredAtUtc: readString(record, "occurredAtUtc", "OccurredAtUtc") ?? "",
+    actorIdentifier: readString(record, "actorIdentifier", "ActorIdentifier") ?? "",
+    actorType: readString(record, "actorType", "ActorType") ?? "",
+    actionCode: readString(record, "actionCode", "ActionCode") ?? "",
+    targetType: readString(record, "targetType", "TargetType") ?? "",
+    targetId: readString(record, "targetId", "TargetId") ?? "",
+    organizationId: readString(record, "organizationId", "OrganizationId"),
+    productCode: readString(record, "productCode", "ProductCode"),
+    correlationId: readString(record, "correlationId", "CorrelationId"),
+    outcome: readString(record, "outcome", "Outcome") ?? "",
+    reason: readString(record, "reason", "Reason"),
+    summary: readString(record, "summary", "Summary"),
+  };
+}
+
+export function listOrganizationAuditRecords(
+  baseUrl: string,
+  organizationId: string,
+  state: OrganizationAuditUrlState,
+  signal?: AbortSignal,
+): Promise<PagedResult<OrganizationAuditRecord>> {
+  return platformRequest<unknown>(baseUrl, {
+    path: organizationAuditRequestPath(organizationId, state),
+    signal,
+  }).then((payload) => {
+    const page = parsePagedResult<unknown>(payload);
+    return {
+      ...page,
+      items: page.items.map(mapOrganizationAuditRecord).filter((item) => item.id.length > 0),
     };
   });
 }
