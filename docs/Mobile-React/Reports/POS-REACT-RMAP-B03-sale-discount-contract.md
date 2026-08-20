@@ -2,7 +2,9 @@
 
 ## Status
 
-**COMPLETE** (backend contract only)
+**FINAL CLOSED** (backend contract + payment-boundary closeout)
+
+Closeout report: [POS-REACT-RMAP-B03-final-closeout.md](./POS-REACT-RMAP-B03-final-closeout.md)
 
 ## Baseline
 
@@ -116,31 +118,46 @@ Legacy offline without discounts: unchanged.
 | MAUI SaleCartService filter | no matching tests |
 | MAUI Checkout UI string guards | 2 failed — **pre-existing**, unrelated to discount (markup/localization substrings) |
 
+## Current payment product rule
+
+| User-facing | Internal domain | Status |
+|-------------|-----------------|--------|
+| Cash | `Cash` | CURRENT |
+| GCash | `ManualGCash` | CURRENT (manual confirmation) |
+| Utang | `Utang` | CURRENT |
+| — | `Card` | FUTURE provider infrastructure only |
+| — | `GCash` (provider/API) | FUTURE provider infrastructure only |
+
+Do not label ordinary checkout UX as “ManualGCash”. Do not expose Card / provider GCash as current React checkout choices.
+
 ## Zero-total / payment matrix (closed)
 
 | Method | Total = ₱0 after commercial discount | Result |
 |--------|--------------------------------------|--------|
 | Cash | Allowed | Completed immediately; tendered/change 0 |
-| ManualGCash | Allowed | Completed immediately (no payment attempt) |
+| GCash (ManualGCash) | Allowed | Completed immediately (no payment attempt) |
 | Utang | Rejected | `pos.sale.utang.total_must_be_positive` |
-| Card / GCash | Rejected | `pos.sale.electronic.total_must_be_positive` |
+| Card / provider GCash | Rejected | `pos.sale.electronic.total_must_be_positive` |
 
-**Why Card/GCash reject:** electronic checkout creates `AwaitingPayment` + stock reservation, then payment attempts require `amount > 0`. A ₱0 Card/GCash sale would reserve stock and never be payable — fail closed at checkout instead of inventing a ₱0 provider payment.
+**Positive discounted Utang:** remaining Amount to Pay > ₱0 is **supported**. Linked credit amount must equal net `Sale.Total` (not GrossSubtotal). Proven in closeout API tests.
+
+**Why Card/provider GCash reject:** electronic checkout creates `AwaitingPayment` + stock reservation, then payment attempts require `amount > 0`. A ₱0 Card/provider-GCash sale would reserve stock and never be payable — fail closed at checkout. This is defensive backend safety, not a current product feature claim.
 
 ## Explicit exclusions
 
-- React discount UX (future RMAP-09b)
+- React discount UX (future **RMAP-11b**, after checkout)
 - RMAP-08 lots/expiry
 - RMAP-B04 buyer purchase projection (documented NOT STARTED)
 - RMAP-TAX final controlled tax activation (documented NOT STARTED)
 - Promotions, coupons, regulatory discounts
 - Cashier configurable limits / approval workflow
+- Card / provider GCash checkout UX
 
 ## Related future packages
 
 - **RMAP-B04** — Linked ExItS buyer purchase projection — NOT STARTED  
 - **RMAP-TAX** — Final controlled tax activation — NOT STARTED (after RMAP-23, before RMAP-24)  
-- **RMAP-09b** — Discount UX — not started  
+- **RMAP-11b** — Commercial Discount UX — defined; not started (depends on RMAP-11 Checkout)
 
 ## Legal / compliance language
 
@@ -148,4 +165,4 @@ ExItS does not determine a merchant's legal BIR obligations. Transaction Summary
 
 ## Next
 
-**HARD STOP.** Do not start RMAP-08, RMAP-B04, RMAP-TAX, or React discount UI.
+**HARD STOP.** Do not start RMAP-08, RMAP-11b, RMAP-B04, RMAP-TAX, or React discount UI.

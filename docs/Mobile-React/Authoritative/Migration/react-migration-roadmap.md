@@ -136,13 +136,16 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 ### RMAP-B03 — Sale discount / adjustment backend contract
 | Field | Content |
 |-------|---------|
-| Status | **COMPLETE** (backend only) |
+| Status | **FINAL CLOSED** (backend + payment-boundary closeout) |
 | Objective | Backend-first commercial sale discount / adjustment contract |
 | Blocking? | YES for discount UI |
 | Report | [POS-REACT-RMAP-B03-sale-discount-contract.md](../../Reports/POS-REACT-RMAP-B03-sale-discount-contract.md) |
+| Closeout | [POS-REACT-RMAP-B03-final-closeout.md](../../Reports/POS-REACT-RMAP-B03-final-closeout.md) |
 | Distinct from | Today's Price · Cashier Price Override · Promotion · Regulatory Discount |
-| Exclusions | React discount UX; promotions; regulatory; RMAP-TAX |
-| Next | HARD STOP — do not start RMAP-08 / RMAP-B04 / RMAP-TAX / discount UI |
+| Current payments | Cash · GCash (`ManualGCash`) · Utang |
+| Future payments (infra only) | Card · provider/API GCash |
+| Exclusions | React discount UX (**RMAP-11b**); promotions; regulatory; RMAP-TAX; provider payment UX |
+| Next | HARD STOP — do not start RMAP-08 / RMAP-11b / RMAP-B04 / RMAP-TAX |
 
 ### RMAP-B04 — Linked ExItS buyer purchase projection
 | Field | Content |
@@ -193,7 +196,7 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 | Report | [POS-REACT-RMAP-06-todays-prices.md](../../Reports/POS-REACT-RMAP-06-todays-prices.md) |
 | Shared impl SHA | `d3e4e3da` (with RMAP-07; history not rewritten) |
 | Validation repair | `cb91145b` |
-| Exclusions | Cashier override (RMAP-B01); commercial discount UX deferred (backend RMAP-B03 COMPLETE) |
+| Exclusions | Cashier override (RMAP-B01); commercial discount UX deferred to **RMAP-11b** (backend RMAP-B03 FINAL CLOSED) |
 | Next | RMAP-07 COMPLETE — ChatGPT review / HARD STOP |
 
 ### RMAP-07 — Inventory tracking + movements + opening stock
@@ -205,7 +208,7 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 | Shared impl SHA | `d3e4e3da` (with RMAP-06; history not rewritten) |
 | Validation repair | `cb91145b` |
 | Exclusions | Lots/expiry (RMAP-08 NOT STARTED) |
-| Next | **HARD STOP** — ChatGPT review; do not start RMAP-08; RMAP-B04 / RMAP-TAX NOT STARTED; discount UX not started |
+| Next | **HARD STOP** — ChatGPT review; do not start RMAP-08; RMAP-B04 / RMAP-TAX / RMAP-11b NOT STARTED |
 
 ### RMAP-08 — Lots / expiry / FEFO (optional track)
 | Field | Content |
@@ -239,14 +242,25 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 | Objective | POST sales with snapshots; cash path; inventory effects; idempotency; Transaction Summary wording |
 | Dependencies | RMAP-09, RMAP-10, RMAP-07, RMAP-00 |
 | Backend | CURRENT |
-| Exclusions | Offline outbox (RMAP-21); price override (needs RMAP-B01); TaxDocument |
+| Current payment labels | Cash · GCash · Utang (GCash maps to internal `ManualGCash`) |
+| Exclusions | Offline outbox (RMAP-21); price override (needs RMAP-B01); TaxDocument; Card/provider GCash UX; commercial discount UX (**RMAP-11b**) |
 | Acceptance | Completes sale online; tracked stock cannot oversell; document = Transaction Summary |
+| Next | RMAP-11b |
+
+### RMAP-11b — Commercial Discount UX
+| Field | Content |
+|-------|---------|
+| Status | **NOT STARTED** (roadmap definition only) |
+| Objective | Expose the authoritative RMAP-B03 commercial discount contract in React checkout |
+| Dependencies | RMAP-11, RMAP-B03 FINAL CLOSED, RMAP-00 |
+| Scope | Line + sale discount; percent + fixed; required reason; server quote/preview; Owner/Manager auth; Cashier denied by default; friendly Gross/Discount/Amount to Pay wording |
+| Exclusions | Price override (RMAP-12b / B01); promotions/coupons; regulatory Senior/PWD discounts; RMAP-TAX; Card/provider-payment implementation |
 | Next | RMAP-12 |
 
 ### RMAP-12 — Payments expansion + void
 | Field | Content |
 |-------|---------|
-| Objective | ManualGCash/Utang online paths; void |
+| Objective | Current GCash (`ManualGCash`) / Utang online paths; void; preserve future Card/provider GCash infra without making them current UX |
 | Dependencies | RMAP-11, RMAP-00 |
 | Next | RMAP-13 |
 
@@ -389,16 +403,16 @@ Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, 
 1. **RMAP-B00** staff existing-person link — required before RMAP-01 final validation, RMAP-01b, and RMAP-02 in Master Run 01
 2. **RMAP-B01** sale price policy — required before override UI
 3. **RMAP-B02** Milligram — only if owner approves
-4. **RMAP-B03** Sale discount / adjustment backend contract — **COMPLETE** (backend). Discount React UX not started.
+4. **RMAP-B03** Sale discount / adjustment backend contract — **FINAL CLOSED**. Discount React UX = **RMAP-11b** (not started).
 5. **RMAP-B04** Linked ExItS buyer purchase projection — **NOT STARTED**
 6. **RMAP-TAX** Final controlled tax activation — **NOT STARTED** (after RMAP-23, before RMAP-24)
 
 ## APPROVED PROPOSED MASTER RUN 01
 
 **Name:** Foundation + Catalog/Inventory Baseline
-**Status:** **HARD STOP after RMAP-B03** — RMAP-00…RMAP-07 PASS; RMAP-B03 commercial discount backend COMPLETE. Next: ChatGPT review. Do **not** start RMAP-08, RMAP-B04, RMAP-TAX, or discount React UX.
-**Stop rule:** After Master Run packages + authorized B03 → HARD STOP for Product Owner + ChatGPT review
-**Do not include:** RMAP-08 (lots/expiry); RMAP-B04; RMAP-TAX implementation; discount UI
+**Status:** **HARD STOP after RMAP-B03 FINAL CLOSED** — RMAP-00…RMAP-07 PASS; commercial discount payment boundaries proven. Next: ChatGPT review. Do **not** start RMAP-08, RMAP-11b, RMAP-B04, or RMAP-TAX.
+**Stop rule:** After Master Run packages + authorized B03 closeout → HARD STOP for Product Owner + ChatGPT review
+**Do not include:** RMAP-08 (lots/expiry); RMAP-11b discount UX; RMAP-B04; RMAP-TAX implementation
 **Distinction preserved:** Today's Price ≠ Cashier Price Override ≠ Commercial Discount ≠ Promotion ≠ Regulatory Discount
 **Completion report (B00):** [POS-REACT-RMAP-B00-identity-reconciliation.md](../../Reports/POS-REACT-RMAP-B00-identity-reconciliation.md)
 **Completion report (RMAP-01):** [POS-REACT-RMAP-01-account-session-parity.md](../../Reports/POS-REACT-RMAP-01-account-session-parity.md)

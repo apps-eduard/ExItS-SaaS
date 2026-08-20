@@ -57,7 +57,7 @@ Required sell-floor regions (current MAUI landscape reference, ≥ ~900px landsc
 | Categories | Filter browse only; never clears the cart |
 | Product grid / search | Barcode-first; search is secondary |
 | Persistent cart | Lines, qty, totals, remove; always visible in landscape |
-| Checkout / payment | Cash, manual GCash, customer-credit per business rules |
+| Checkout / payment | Cash, GCash (internal ManualGCash), Utang per business rules |
 
 Also:
 
@@ -215,28 +215,48 @@ Leaving the sell floor with a non-empty cart should confirm. Category change, se
 | Payment | Customer |
 |---|---|
 | Cash | Optional unless a later approved store rule requires it |
-| Manual GCash | Optional unless a later approved store rule requires it; GCash **reference is required** |
-| Customer credit / Utang | **Required**; blocked when commercial capability `customer-credit-create` (or successor) forbids new credit |
+| GCash (internal ManualGCash) | Optional unless a later approved store rule requires it; GCash **reference is required** |
+| Utang | **Required**; blocked when commercial capability `customer-credit-create` (or successor) forbids new credit |
 
 Do not invent unnamed “customer required for every sale” rules.
 
 ### 6.5 Payment boundaries (do not expand)
 
-Planning UX for this package is the current retail set:
+**CURRENT** React/POS checkout labels (user-facing):
 
-| Method | Meaning | UX notes |
-|---|---|---|
-| **Cash** | Tendered / change | Offline cash checkout only when existing offline policy allows |
-| **Manual GCash** | Operator-confirmed transfer; reference required; **not** a gateway verification | Do not collect GCash PIN/OTP/account secrets |
-| **Customer credit (Utang)** | Product-based credit when entitled | Online-required in current selling UI; do not invent offline Utang checkout here |
+| User label | Internal domain | Meaning | UX notes |
+|---|---|---|---|
+| **Cash** | `Cash` | Tendered / change | Offline cash checkout only when existing offline policy allows |
+| **GCash** | `ManualGCash` | Operator-confirmed transfer; reference required; **not** a gateway verification | Show “GCash”, not “ManualGCash”; do not collect PIN/OTP/account secrets |
+| **Utang** | `Utang` | Product-based customer credit when entitled | Online-required in current selling UI; do not invent offline Utang checkout here |
+
+**FUTURE** (backend enum / infra may exist; **not** current checkout choices):
+
+| Domain | Meaning |
+|---|---|
+| `Card` | Provider/API-backed card flow |
+| `GCash` (provider/API) | Provider/API-backed GCash flow |
 
 Also preserved:
 
 - Exactly one payment method per simple sale (no split tender in this UX)
 - Platform SaaS GCash ≠ POS retail GCash
 - No live card/CVV collection in this planning package
+- Commercial discount React UX is **RMAP-11b** (after checkout), not cart-only work
 
-Current MAUI also has **simulated** Card and electronic GCash checkout (P19 `FakePaymentGateway`; no live provider). This DOC does **not** make those a required future visual design, does not claim production gateway support, and does not add new wallets, cards, or refund-to-original-channel.
+### 6.5.1 Friendly money wording
+
+| Domain / API | User UI |
+|---|---|
+| GrossSubtotal | Total Amount |
+| DiscountTotal | Discount |
+| Total | Amount to Pay |
+| AmountTendered | Cash Received |
+| ChangeAmount | Change |
+
+Do not show ordinary users terms such as Amount Tendered, Net Subtotal, Commercial Adjustment, or Settlement Amount unless a specialized admin/accounting screen requires them.
+
+Current MAUI also has **simulated** Card and electronic (provider) GCash checkout (P19 `FakePaymentGateway`; no live provider). Those remain **future** payment features — not current React checkout options — and this DOC does not claim production gateway support.
 
 ### 6.6 Confirmation, receipt, sync
 
