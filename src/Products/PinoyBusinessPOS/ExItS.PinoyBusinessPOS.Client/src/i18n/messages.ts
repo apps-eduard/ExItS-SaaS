@@ -231,6 +231,24 @@ export const en = {
   "catalog.openCatalog": "Catalog",
   "catalog.conflict": "This product was changed elsewhere. Reload and try again.",
   "catalog.saved": "Saved",
+  "catalog.baseUnit": "Base unit of measure",
+  "catalog.sellingMode": "Selling mode",
+  "catalog.sellingModePerItem": "Per item / package",
+  "catalog.sellingModeByWeight": "By weight (per kilogram)",
+  "catalog.baseSellingPrice": "Base selling price",
+  "catalog.configurePackages": "Configure purchase and sell packages",
+  "catalog.packagesLede":
+    "All packages share one base inventory pool. Multiplier converts entered quantity to base units.",
+  "catalog.unitDisplayName": "Package name",
+  "catalog.unitShortLabel": "Short label",
+  "catalog.multiplierToBase": "Multiplier to base",
+  "catalog.unitSellingPrice": "Sell unit price",
+  "catalog.allowsCustomQuantity": "Allow custom quantity (measured)",
+  "catalog.addPurchaseUnit": "Add purchase package",
+  "catalog.addSellUnit": "Add sell package",
+  "catalog.removeUnit": "Remove",
+  "catalog.byWeightRequiresKg": "By weight requires base unit Kilogram.",
+  "catalog.invalidPrice": "Enter a valid non-negative price.",
 };
 
 export const filPH: Record<keyof typeof en, string> = {
@@ -468,6 +486,24 @@ export const filPH: Record<keyof typeof en, string> = {
   "catalog.openCatalog": "Catalog",
   "catalog.conflict": "Binago ang product sa ibang lugar. I-reload at subukan ulit.",
   "catalog.saved": "Na-save",
+  "catalog.baseUnit": "Base unit of measure",
+  "catalog.sellingMode": "Paraan ng pagbenta",
+  "catalog.sellingModePerItem": "Per item / package",
+  "catalog.sellingModeByWeight": "By weight (per kilogram)",
+  "catalog.baseSellingPrice": "Base selling price",
+  "catalog.configurePackages": "I-configure ang purchase at sell packages",
+  "catalog.packagesLede":
+    "Isang base inventory pool ang lahat ng packages. Ang multiplier ang nagko-convert papunta sa base units.",
+  "catalog.unitDisplayName": "Pangalan ng package",
+  "catalog.unitShortLabel": "Short label",
+  "catalog.multiplierToBase": "Multiplier to base",
+  "catalog.unitSellingPrice": "Sell unit price",
+  "catalog.allowsCustomQuantity": "Payagan ang custom quantity (measured)",
+  "catalog.addPurchaseUnit": "Magdagdag ng purchase package",
+  "catalog.addSellUnit": "Magdagdag ng sell package",
+  "catalog.removeUnit": "Alisin",
+  "catalog.byWeightRequiresKg": "Kailangan ng Kilogram ang by weight.",
+  "catalog.invalidPrice": "Maglagay ng valid na non-negative price.",
 };
 
 export type MessageKey = keyof typeof en;

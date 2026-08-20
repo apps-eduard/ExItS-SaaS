@@ -220,6 +220,7 @@ export async function mockPosCatalogAdminApi(page: Page) {
         sellingPrice?: number;
         sellingMode?: string;
         canBeSold?: boolean;
+        units?: unknown[];
       };
       if (body.sku && products.some((p) => p.sku === body.sku)) {
         return route.fulfill({
@@ -236,10 +237,11 @@ export async function mockPosCatalogAdminApi(page: Page) {
         barcode: body.barcode ?? null,
         categoryId: body.categoryId ?? MOCK_DRINKS_CATEGORY_ID,
         unitOfMeasure: body.unitOfMeasure ?? "Piece",
-        sellingMode: body.sellingMode ?? "ByUnit",
+        sellingMode: body.sellingMode ?? "PerItem",
         sellingPrice: body.sellingPrice ?? 0,
         status: "Active",
         canBeSold: body.canBeSold !== false,
+        units: body.units ?? [],
         createdAtUtc: new Date().toISOString(),
         updatedAtUtc: new Date().toISOString(),
       } as MutableProduct;

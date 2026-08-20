@@ -1,8 +1,44 @@
 /** Hand-typed POS catalog DTOs — TYPED_CLIENT_GENERATION_CONTRACT_MISSING remains open. */
 
-/** API create still requires UOM + price; RMAP-04 UI sends defaults (editors deferred to RMAP-05/06). */
-export const DEFAULT_CATALOG_UNIT_OF_MEASURE = "Piece";
-export const DEFAULT_CATALOG_SELLING_PRICE = 0;
+import {
+  DEFAULT_CATALOG_SELLING_MODE,
+  DEFAULT_CATALOG_SELLING_PRICE,
+  DEFAULT_CATALOG_UNIT_OF_MEASURE,
+  type PosProductUnitKind,
+  type PosSellingModeCode,
+  type PosUnitOfMeasureCode,
+} from "@/api/pos/pos-catalog-options";
+
+export {
+  DEFAULT_CATALOG_SELLING_MODE,
+  DEFAULT_CATALOG_SELLING_PRICE,
+  DEFAULT_CATALOG_UNIT_OF_MEASURE,
+};
+
+export type PosCatalogProductUnitDto = {
+  unitId: string;
+  productId: string;
+  kind: string;
+  displayName: string;
+  shortLabel: string;
+  multiplierToBase: number;
+  sellingPrice?: number | null;
+  allowsCustomQuantity: boolean;
+  isActive: boolean;
+  sortOrder: number;
+};
+
+export type PosCatalogProductUnitInput = {
+  kind: PosProductUnitKind | string;
+  displayName: string;
+  shortLabel: string;
+  multiplierToBase: number;
+  sellingPrice?: number | null;
+  allowsCustomQuantity?: boolean;
+  sortOrder?: number;
+  /** Prefer omit on update replace — server soft-deactivates then inserts. */
+  unitId?: string | null;
+};
 
 export type PosCatalogProductDto = {
   productId: string;
@@ -22,6 +58,7 @@ export type PosCatalogProductDto = {
   hasImage?: boolean;
   imageVersion?: number | null;
   imageSource?: string | null;
+  units?: PosCatalogProductUnitDto[] | null;
 };
 
 export type PosProductCategoryDto = {
@@ -59,28 +96,30 @@ export type UpdatePosProductCategoryRequest = {
 
 export type CreatePosCatalogProductRequest = {
   name: string;
-  unitOfMeasure: string;
+  unitOfMeasure: PosUnitOfMeasureCode | string;
   sellingPrice: number;
   description?: string | null;
   sku?: string | null;
   barcode?: string | null;
   categoryId?: string | null;
   productId?: string | null;
-  sellingMode?: string | null;
+  sellingMode?: PosSellingModeCode | string | null;
   canBeSold?: boolean | null;
+  units?: PosCatalogProductUnitInput[] | null;
 };
 
 export type UpdatePosCatalogProductRequest = {
   name: string;
-  unitOfMeasure: string;
+  unitOfMeasure: PosUnitOfMeasureCode | string;
   sellingPrice: number;
   description?: string | null;
   sku?: string | null;
   barcode?: string | null;
   categoryId?: string | null;
   expectedUpdatedAtUtc?: string | null;
-  sellingMode?: string | null;
+  sellingMode?: PosSellingModeCode | string | null;
   canBeSold?: boolean | null;
+  units?: PosCatalogProductUnitInput[] | null;
 };
 
 export type CatalogProductImageVariant = "thumb" | "medium";

@@ -28,17 +28,19 @@ describe("pos-catalog-client admin", () => {
           const body = JSON.parse(String(init?.body));
           expect(body.unitOfMeasure).toBe("Piece");
           expect(body.sellingPrice).toBe(0);
+          expect(body.sellingMode).toBe("PerItem");
           return new Response(
             JSON.stringify({
               productId: "pppppppp-pppp-pppp-pppp-pppppppppppp",
               organizationId: workspace.organizationId,
               name: body.name,
               unitOfMeasure: body.unitOfMeasure,
-              sellingMode: body.sellingMode ?? "ByUnit",
+              sellingMode: body.sellingMode ?? "PerItem",
               sellingPrice: body.sellingPrice,
               status: "Active",
               createdAtUtc: "2026-01-01T00:00:00Z",
               updatedAtUtc: "2026-01-01T00:00:00Z",
+              units: body.units ?? [],
             }),
             { status: 201, headers: { "Content-Type": "application/json" } },
           );
@@ -73,6 +75,7 @@ describe("pos-catalog-client admin", () => {
       name: "Test",
       unitOfMeasure: "Piece",
       sellingPrice: 0,
+      sellingMode: "PerItem",
       canBeSold: true,
     });
     expect(product.productId).toBeTruthy();
