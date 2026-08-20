@@ -1,14 +1,13 @@
 import { Outlet } from "react-router-dom";
-import { ConnectivityHost } from "@/connectivity/ConnectivityHost";
+import { AppTopBar } from "@/components/exits/AppTopBar";
 import { AppShell } from "@/layouts/AppShell";
-import { PwaUpdateHost } from "@/pwa/PwaUpdateHost";
+import { WorkspaceBootNavigator } from "@/workspace/WorkspaceBootNavigator";
 
 export function RootLayout() {
   return (
     <>
-      <ConnectivityHost />
-      <PwaUpdateHost />
-      <AppShell>
+      <WorkspaceBootNavigator />
+      <AppShell header={<AppTopBar />}>
         <Outlet />
       </AppShell>
     </>

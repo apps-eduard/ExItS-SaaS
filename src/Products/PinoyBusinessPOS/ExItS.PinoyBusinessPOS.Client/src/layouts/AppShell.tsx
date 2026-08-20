@@ -1,9 +1,7 @@
 import type { ReactNode } from "react";
-import { LanguageControl } from "@/components/exits/LanguageControl";
-import { ThemeControl } from "@/components/exits/ThemeControl";
 import { useI18n } from "@/i18n/I18nProvider";
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, header }: { children: ReactNode; header?: ReactNode }) {
   const { t } = useI18n();
 
   return (
@@ -14,15 +12,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         {t("app.skipToContent")}
       </a>
-      <header className="flex min-w-0 flex-col gap-4 border-b border-border py-4 sm:flex-row sm:items-start sm:justify-between">
-        <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold tracking-wide uppercase text-muted">
-          {t("app.name")}
-        </p>
-        <div className="flex min-w-0 flex-col gap-3 sm:max-w-md sm:items-stretch">
-          <LanguageControl />
-          <ThemeControl />
-        </div>
-      </header>
+      {header}
       <main id="main-content" className="flex min-w-0 flex-1 flex-col gap-4 pt-6" tabIndex={-1}>
         {children}
       </main>

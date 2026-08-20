@@ -13,15 +13,25 @@ const screenshotDir = path.resolve(
   "../../../../../docs/Mobile-React/Reports/impl-pos-react-02-pwa-static-shell",
 );
 
+async function mockUnauthenticated(page: import("@playwright/test").Page) {
+  await page.route("**/platform-api/**", async (route) => {
+    if (route.request().url().includes("/auth/me")) {
+      return route.fulfill({ status: 401, contentType: "application/json", body: "{}" });
+    }
+    return route.fulfill({ status: 404, contentType: "application/json", body: "{}" });
+  });
+}
+
 test.describe("PWA static shell evidence", () => {
   test.beforeAll(() => {
     mkdirSync(screenshotDir, { recursive: true });
   });
 
   test("01 online shell 375 and 03 update available", async ({ page }) => {
+    await mockUnauthenticated(page);
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Pinoy Business POS" })).toBeVisible();
+    await page.goto("/sign-in");
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
     await waitForServiceWorker(page);
     await inspectServiceWorkerCaches(page);
     await assertNoHorizontalOverflow(page);
@@ -39,9 +49,10 @@ test.describe("PWA static shell evidence", () => {
   });
 
   test("02 offline shell 375", async ({ page }) => {
+    await mockUnauthenticated(page);
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Pinoy Business POS" })).toBeVisible();
+    await page.goto("/sign-in");
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
     await waitForServiceWorker(page);
     await page.context().setOffline(true);
     await expect(page.getByTestId("connectivity-notice")).toBeVisible();
@@ -53,9 +64,10 @@ test.describe("PWA static shell evidence", () => {
   });
 
   test("04-05 online and offline desktop 1440", async ({ page }) => {
+    await mockUnauthenticated(page);
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Pinoy Business POS" })).toBeVisible();
+    await page.goto("/sign-in");
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
     await waitForServiceWorker(page);
     await assertNoHorizontalOverflow(page);
     await page.screenshot({

@@ -7,6 +7,15 @@ import {
   waitForServiceWorker,
 } from "./helpers";
 
+async function mockUnauthenticated(page: import("@playwright/test").Page) {
+  await page.route("**/platform-api/**", async (route) => {
+    if (route.request().url().includes("/auth/me")) {
+      return route.fulfill({ status: 401, contentType: "application/json", body: "{}" });
+    }
+    return route.fulfill({ status: 404, contentType: "application/json", body: "{}" });
+  });
+}
+
 test.describe("PWA static shell", () => {
   test("serves a valid installable manifest and required icons", async ({ request }) => {
     const response = await request.get("/manifest.webmanifest");
@@ -48,14 +57,16 @@ test.describe("PWA static shell", () => {
     expect(source).not.toMatch(/BackgroundSyncPlugin|workbox-background-sync/);
     expect(source).toMatch(/auth[\s\S]{0,160}NetworkOnly|\/\(auth\|session\)\//);
     expect(source).toMatch(/assets\/index-[A-Za-z0-9_-]+\.(js|css)/);
-    expect(source).not.toMatch(/platform-api/);
+    expect(source).toMatch(/platform-api/);
+    expect(source).toMatch(/platform-api[\s\S]{0,200}NetworkOnly/);
   });
 
   test("runtime Cache Storage holds the shell and never caches API or auth traffic", async ({
     page,
   }) => {
-    await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Pinoy Business POS" })).toBeVisible();
+    await mockUnauthenticated(page);
+    await page.goto("/sign-in");
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
     const caches = await inspectServiceWorkerCaches(page);
     expect(caches.urls.length).toBeGreaterThan(0);
     assertNoApiOrAuthTrafficInCaches(caches.urls);
@@ -65,9 +76,10 @@ test.describe("PWA static shell", () => {
   });
 
   test("registers a service worker and keeps the foundation shell", async ({ page }) => {
+    await mockUnauthenticated(page);
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Pinoy Business POS" })).toBeVisible();
+    await page.goto("/sign-in");
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
     await waitForServiceWorker(page);
     const registered = await page.evaluate(async () => {
       const registration = await navigator.serviceWorker.ready;
@@ -82,9 +94,10 @@ test.describe("PWA static shell", () => {
   });
 
   test("axe has no serious or critical violations with the PWA shell", async ({ page }) => {
+    await mockUnauthenticated(page);
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Pinoy Business POS" })).toBeVisible();
+    await page.goto("/sign-in");
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
     const results = await new AxeBuilder({ page }).analyze();
     const serious = results.violations.filter(
       (violation) => violation.impact === "serious" || violation.impact === "critical",

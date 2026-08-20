@@ -7,8 +7,11 @@ vi.mock("virtual:pwa-register", () => ({
   registerSW: () => async () => undefined,
 }));
 
-afterEach(() => {
+afterEach(async () => {
   cleanup();
+  // Let React Router finish any aborted navigations before the next test stubs fetch.
+  await Promise.resolve();
+  vi.unstubAllGlobals();
   window.localStorage.removeItem(UI_PREFERENCES_STORAGE_KEY);
   document.documentElement.dataset.theme = "system";
   document.documentElement.lang = "en";

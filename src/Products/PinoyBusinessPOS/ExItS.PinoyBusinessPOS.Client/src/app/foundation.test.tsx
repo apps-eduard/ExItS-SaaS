@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useQueryClient } from "@tanstack/react-query";
-import { renderApp, renderAt } from "@/test/render";
+import { renderApp, renderAt, renderAuthenticatedAt } from "@/test/render";
 import { UI_PREFERENCES_STORAGE_KEY } from "@/lib/preferences/ui-preferences";
 
 const forbiddenBusiness = [
@@ -21,11 +21,11 @@ function QueryProbe() {
 }
 
 describe("POS React foundation", () => {
-  it("renders the foundation shell without privileged or financial content", () => {
-    renderApp();
-    expect(screen.getByRole("heading", { name: "Pinoy Business POS" })).toBeInTheDocument();
-    expect(screen.getByText("React client foundation")).toBeInTheDocument();
-    expect(screen.getByText(/Static PWA shell is online-first/i)).toBeInTheDocument();
+  it("renders the sign-in shell without privileged or financial content", async () => {
+    renderAt("/sign-in");
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Sign in" })).toBeInTheDocument();
+    });
     const page = document.body.textContent ?? "";
     for (const phrase of forbiddenBusiness) {
       expect(page.toLowerCase()).not.toContain(phrase.toLowerCase());
@@ -37,49 +37,69 @@ describe("POS React foundation", () => {
     expect(screen.getByTestId("query-client-ready")).toHaveTextContent("ready");
   });
 
-  it("defaults to English and System theme", () => {
-    renderApp();
+  it("defaults to English and System theme on preferences", async () => {
+    renderAuthenticatedAt("/settings/preferences");
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Preferences" })).toBeInTheDocument();
+      expect(screen.getByRole("radio", { name: /English/ })).toHaveAttribute(
+        "aria-checked",
+        "true",
+      );
+      expect(screen.getByRole("radio", { name: /System/ })).toHaveAttribute("aria-checked", "true");
+    });
     expect(document.documentElement.lang).toBe("en");
     expect(document.documentElement.dataset.theme).toBe("system");
-    expect(screen.getByRole("radio", { name: /English/ })).toHaveAttribute("aria-checked", "true");
-    expect(screen.getByRole("radio", { name: /System/ })).toHaveAttribute("aria-checked", "true");
   });
 
-  it("switches to Filipino and persists locale", async () => {
+  it("switches to Filipino and persists locale from preferences", async () => {
     const user = userEvent.setup();
-    renderApp();
-    await user.click(screen.getByRole("radio", { name: /Filipino/ }));
-    expect(document.documentElement.lang).toBe("fil-PH");
-    expect(screen.getByText("Pundasyon ng React client")).toBeInTheDocument();
-    expect(screen.getByText(/Online-first ang static PWA shell/i)).toBeInTheDocument();
+    renderAuthenticatedAt("/settings/preferences");
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Preferences" })).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole("radio", { name: "Filipino" }));
+    await waitFor(() => {
+      expect(document.documentElement.lang).toBe("fil-PH");
+    });
     const stored = JSON.parse(window.localStorage.getItem(UI_PREFERENCES_STORAGE_KEY) ?? "{}") as {
       locale?: string;
     };
     expect(stored.locale).toBe("fil-PH");
   });
 
-  it("switches Light and Dark preferences globally", async () => {
+  it("switches Light and Dark preferences globally from preferences", async () => {
     const user = userEvent.setup();
-    renderApp();
-    await user.click(screen.getByRole("radio", { name: /Dark/ }));
-    expect(document.documentElement.dataset.theme).toBe("dark");
-    await user.click(screen.getByRole("radio", { name: /Light/ }));
-    expect(document.documentElement.dataset.theme).toBe("light");
+    renderAuthenticatedAt("/settings/preferences");
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Preferences" })).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole("radio", { name: "Dark" }));
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe("dark");
+    });
+    await user.click(screen.getByRole("radio", { name: "Light" }));
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe("light");
+    });
     const stored = JSON.parse(window.localStorage.getItem(UI_PREFERENCES_STORAGE_KEY) ?? "{}") as {
       theme?: string;
     };
     expect(stored.theme).toBe("light");
   });
 
-  it("renders a 404 route without business screens", () => {
-    renderAt("/this-route-does-not-exist");
-    expect(screen.getByRole("heading", { name: "Page not found" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Back to foundation" })).toHaveAttribute("href", "/");
+  it("renders a 404 route without business screens", async () => {
+    renderAuthenticatedAt("/this-route-does-not-exist");
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Page not found" })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Back to home" })).toHaveAttribute("href", "/");
+    });
   });
 
-  it("uses a min-width-safe shell structure", () => {
-    const { container } = renderApp();
+  it("uses a min-width-safe shell structure", async () => {
+    const { container } = renderAt("/sign-in");
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Sign in" })).toBeInTheDocument();
+    });
     expect(container.querySelector(".min-w-0")).not.toBeNull();
-    expect(container.querySelector(".overflow-x-hidden")).not.toBeNull();
   });
 });

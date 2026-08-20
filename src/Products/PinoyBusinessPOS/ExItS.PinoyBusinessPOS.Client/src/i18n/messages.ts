@@ -1,33 +1,4 @@
-export type MessageKey =
-  | "app.name"
-  | "app.skipToContent"
-  | "foundation.title"
-  | "foundation.lede"
-  | "foundation.next"
-  | "foundation.scope"
-  | "locale.label"
-  | "locale.en"
-  | "locale.filPH"
-  | "theme.label"
-  | "theme.system"
-  | "theme.light"
-  | "theme.dark"
-  | "status.foundation"
-  | "empty.title"
-  | "empty.detail"
-  | "error.title"
-  | "error.detail"
-  | "loading.label"
-  | "connectivity.online"
-  | "connectivity.offlineTitle"
-  | "connectivity.offlineDetail"
-  | "pwa.updateAvailable"
-  | "pwa.refresh"
-  | "notFound.title"
-  | "notFound.detail"
-  | "notFound.home";
-
-export const en: Record<MessageKey, string> = {
+export const en = {
   "app.name": "Pinoy Business POS",
   "app.skipToContent": "Skip to content",
   "foundation.title": "Pinoy Business POS",
@@ -55,10 +26,56 @@ export const en: Record<MessageKey, string> = {
   "pwa.refresh": "Refresh",
   "notFound.title": "Page not found",
   "notFound.detail": "That route is not part of this foundation.",
-  "notFound.home": "Back to foundation",
+  "notFound.home": "Back to home",
+  "session.loading": "Checking session…",
+  "signIn.title": "Sign in",
+  "signIn.lede": "Use your ExItS account to open Pinoy Business POS.",
+  "signIn.usernameLabel": "Email or username",
+  "signIn.passwordLabel": "Password",
+  "signIn.submit": "Sign in",
+  "signIn.submitting": "Signing in…",
+  "signIn.error": "Sign in failed. Check your credentials and try again.",
+  "signIn.expired": "Your session expired. Sign in again to continue.",
+  "workspace.title": "Choose workspace",
+  "workspace.lede": "Select the organization and branch you will operate.",
+  "workspace.loading": "Loading workspaces…",
+  "workspace.loadError": "Workspace data could not be loaded.",
+  "workspace.branchesLabel": "active branches",
+  "workspace.switch": "Switch workspace",
+  "personal.title": "Personal home",
+  "personal.lede": "You are signed in without an organization workspace.",
+  "personal.badge": "Personal",
+  "personal.body": "Start a Business and organization features continue on authorized surfaces.",
+  "personal.emptyTitle": "No business workspace",
+  "personal.emptyDetail":
+    "When you join or create a business, workspace selection will appear here.",
+  "noLocation.title": "No accessible branch",
+  "noLocation.lede": "Your memberships do not include an active branch for POS.",
+  "noLocation.detail":
+    "Ask an organization owner to activate a branch or assign you to an accessible location.",
+  "preferences.title": "Preferences",
+  "preferences.lede": "Language and theme apply across the signed-in client.",
+  "topbar.signOut": "Sign out",
+  "topbar.lock": "Lock",
+  "topbar.remove": "Remove device",
+  "topbar.lockDisabled": "PIN lock policy is not implemented (MOBILE-D-060 open).",
+  "topbar.removeDisabled": "Device removal policy is not implemented (MOBILE-D-060 open).",
+  "topbar.pinPolicyOpen": "Offline PIN lock/remove controls remain open per MOBILE-D-060.",
+  "accessDenied.title": "Product access denied",
+  "accessDenied.detail":
+    "This organization is not entitled to Pinoy Business POS for your account.",
+  "home.title": "Workspace ready",
+  "home.lede": "Foundation continues after browser session and workspace binding.",
+  "home.badge": "Ready",
+  "home.body":
+    "Browser session, CSRF, and workspace binding are active. Selling flows are not in this package.",
+  "home.scope":
+    "Sell floor, catalog, cart, and checkout remain excluded until authorized work packages.",
+  "home.emptyTitle": "Foundation continues",
+  "home.emptyDetail": "Later packages will add POS operations on top of this shell.",
 };
 
-export const filPH: Record<MessageKey, string> = {
+export const filPH: Record<keyof typeof en, string> = {
   "app.name": "Pinoy Business POS",
   "app.skipToContent": "Laktawan papunta sa nilalaman",
   "foundation.title": "Pinoy Business POS",
@@ -87,8 +104,56 @@ export const filPH: Record<MessageKey, string> = {
   "pwa.refresh": "I-refresh",
   "notFound.title": "Hindi nahanap ang page",
   "notFound.detail": "Hindi kasama ang route na iyon sa foundation na ito.",
-  "notFound.home": "Bumalik sa foundation",
+  "notFound.home": "Bumalik sa home",
+  "session.loading": "Sinusuri ang session…",
+  "signIn.title": "Mag-sign in",
+  "signIn.lede": "Gamitin ang ExItS account mo para buksan ang Pinoy Business POS.",
+  "signIn.usernameLabel": "Email o username",
+  "signIn.passwordLabel": "Password",
+  "signIn.submit": "Mag-sign in",
+  "signIn.submitting": "Nagsa-sign in…",
+  "signIn.error": "Hindi nag-sign in. Suriin ang credentials at subukang muli.",
+  "signIn.expired": "Nag-expire ang session. Mag-sign in ulit para magpatuloy.",
+  "workspace.title": "Pumili ng workspace",
+  "workspace.lede": "Piliin ang organization at branch na pagtatrabahuan.",
+  "workspace.loading": "Naglo-load ng mga workspace…",
+  "workspace.loadError": "Hindi ma-load ang workspace data.",
+  "workspace.branchesLabel": "active na branch",
+  "workspace.switch": "Magpalit ng workspace",
+  "personal.title": "Personal home",
+  "personal.lede": "Naka-sign in ka nang walang organization workspace.",
+  "personal.badge": "Personal",
+  "personal.body": "Ang Start a Business at organization features ay nasa awtorisadong surfaces.",
+  "personal.emptyTitle": "Walang business workspace",
+  "personal.emptyDetail":
+    "Kapag sumali o gumawa ka ng negosyo, lalabas dito ang workspace selection.",
+  "noLocation.title": "Walang accessible na branch",
+  "noLocation.lede": "Walang active branch sa memberships mo para sa POS.",
+  "noLocation.detail":
+    "Hilingin sa organization owner na i-activate ang branch o italaga ka sa accessible na location.",
+  "preferences.title": "Preferences",
+  "preferences.lede": "Ang wika at tema ay para sa buong signed-in client.",
+  "topbar.signOut": "Mag-sign out",
+  "topbar.lock": "I-lock",
+  "topbar.remove": "Alisin ang device",
+  "topbar.lockDisabled": "Hindi pa implemented ang PIN lock policy (MOBILE-D-060 open).",
+  "topbar.removeDisabled": "Hindi pa implemented ang device removal policy (MOBILE-D-060 open).",
+  "topbar.pinPolicyOpen": "Bukas pa ang offline PIN lock/remove controls ayon sa MOBILE-D-060.",
+  "accessDenied.title": "Tinanggihan ang product access",
+  "accessDenied.detail":
+    "Walang Pinoy Business POS entitlement ang organization na ito para sa account mo.",
+  "home.title": "Handa na ang workspace",
+  "home.lede": "Magpapatuloy ang foundation pagkatapos ng browser session at workspace binding.",
+  "home.badge": "Handa",
+  "home.body":
+    "Aktibo ang browser session, CSRF, at workspace binding. Wala pang selling flows sa package na ito.",
+  "home.scope":
+    "Excluded pa ang sell floor, catalog, cart, at checkout hanggang sa awtorisadong work packages.",
+  "home.emptyTitle": "Magpapatuloy ang foundation",
+  "home.emptyDetail": "Magdadagdag ang susunod na packages ng POS operations sa shell na ito.",
 };
+
+export type MessageKey = keyof typeof en;
 
 export const catalogs = {
   en,

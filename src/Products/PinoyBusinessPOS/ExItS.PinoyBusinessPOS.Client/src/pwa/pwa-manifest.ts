@@ -13,10 +13,11 @@ export const PWA_ICON_FILES = [
   "icon-512-maskable.png",
 ] as const;
 
-/** Same-origin API prefix. Production Platform/POS reverse-proxy aliases are not configured in this package. */
+/** Same-origin API prefixes kept NetworkOnly in the service worker. */
 export const PWA_API_PATH_PATTERN = /\/api\//;
+export const PWA_PLATFORM_API_PATH_PATTERN = /\/platform-api\//;
 
-/** Generic auth/session path protection. No auth client is implemented in this package. */
+/** Generic auth/session path protection. */
 export const PWA_AUTH_PATH_PATTERN = /\/(auth|session)\//i;
 
 export function createPwaManifest() {

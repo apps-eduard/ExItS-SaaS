@@ -71,10 +71,14 @@ if (
 ) {
   fail("Business API responses must not use a runtime cache.");
 }
-if (/platform-api/.test(sw)) {
-  fail(
-    "This package has not configured a Platform/POS proxy alias. Do not invent /platform-api routing in the service worker.",
-  );
+if (!/platform-api/.test(sw)) {
+  fail("Service worker must mention /platform-api NetworkOnly routing.");
+}
+if (
+  !/includes\("\/platform-api\/"\)[\s\S]{0,200}NetworkOnly/.test(sw) &&
+  !/platform-api[\s\S]{0,200}NetworkOnly/.test(sw)
+) {
+  fail("Service worker must route /platform-api/ with NetworkOnly.");
 }
 
 process.stdout.write("PWA validation passed.\n");

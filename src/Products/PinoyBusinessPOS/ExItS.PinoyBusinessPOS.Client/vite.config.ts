@@ -4,6 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { defineConfig } from "vitest/config";
+import { createPlatformApiProxy } from "./vite.platform-api-proxy";
 import { createPwaManifest } from "./src/pwa/pwa-manifest";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
@@ -29,11 +30,13 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest,woff,woff2}"],
         navigateFallback: "index.html",
-        navigateFallbackDenylist: [/^\/api\//],
+        navigateFallbackDenylist: [/^\/api\//, /\/platform-api\//],
         runtimeCaching: [
           {
             urlPattern: ({ url }) =>
-              url.pathname.startsWith("/api/") || /\/(auth|session)\//i.test(url.pathname),
+              url.pathname.startsWith("/api/") ||
+              url.pathname.includes("/platform-api/") ||
+              /\/(auth|session)\//i.test(url.pathname),
             handler: "NetworkOnly",
           },
           {
@@ -60,15 +63,17 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 5177,
     strictPort: true,
+    proxy: createPlatformApiProxy(),
   },
   preview: {
     host: "127.0.0.1",
     port: 4177,
     strictPort: true,
+    proxy: createPlatformApiProxy(),
   },
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
-    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx", "vite.platform-api-proxy.test.ts"],
   },
 });
