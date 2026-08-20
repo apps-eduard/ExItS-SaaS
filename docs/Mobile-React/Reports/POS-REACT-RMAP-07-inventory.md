@@ -6,7 +6,7 @@
 
 ## Baseline
 
-starting SHA: (post RMAP-06 docs)
+starting SHA: `ae614cab6cc7ca43d3eff1d829d3840e7ba3606a` (post RMAP-05; RMAP-06/07 shipped together after RMAP-05)
 
 ## Contract review
 
