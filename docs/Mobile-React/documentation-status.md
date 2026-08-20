@@ -34,9 +34,21 @@ Capacitor implementation presence: `Absent`
 
 PWA production presence: `Absent`
 
-Queue state: `STOPPED AFTER MOBILE-REACT-DOC-MERGE-01`
+Queue state: `STOPPED AFTER MOBILE-REACT-DOC-MERGE-01` (planning baseline)
+
+Implementation-readiness documentation queue: `STOPPED AFTER POS-REACT-READINESS-05`
+
+Readiness branch: `docs/pos-react-implementation-readiness`
+
+Readiness evidence SHA: `5979a9ce008bb24a3257abd28ae79bc1a5a9b569`
 
 MOBILE-D-060: `OPEN`
+
+PWEB20_CSRF_COMPATIBILITY_REVIEW_REQUIRED: `OPEN`
+
+PLM_PWA_PATTERN_REVIEW_REQUIRED: `OPEN`
+
+TYPED_CLIENT_GENERATION_CONTRACT_MISSING: `OPEN`
 
 ## DOC queue
 
@@ -56,6 +68,11 @@ MOBILE-D-060: `OPEN`
 | MOBILE-REACT-DOC-AMEND-03 | Approved | Smart workspace + product context; AppTopBar shared context |
 | Product Owner approval | Recorded | [MOBILE-REACT-DOC-APPROVAL-record.md](Reports/MOBILE-REACT-DOC-APPROVAL-record.md) |
 | MOBILE-REACT-DOC-MERGE-01 | Complete | Approved planning baseline merged to `main` |
+| POS-REACT-READINESS-01 | Complete | Current MAUI implementation refresh vs `5979a9ce` |
+| POS-REACT-READINESS-02 | Complete | Feature parity + UX migration matrix |
+| POS-REACT-READINESS-03 | Complete | API + auth + browser security readiness |
+| POS-REACT-READINESS-04 | Complete | PWA / offline / device migration sequence |
+| POS-REACT-READINESS-05 | Complete | Master plan + open decisions; implementation still unauthorized |
 
 ## Authorization gates (locked)
 
@@ -66,6 +83,7 @@ MOBILE-D-060: `OPEN`
 | Capacitor implementation / production rollout | **NOT AUTHORIZED** |
 | MAUI retirement | **NOT AUTHORIZED** |
 | Merge to `main` | **PERFORMED** (`MOBILE-REACT-DOC-MERGE-01`) — does **not** authorize implementation |
+| Merge of `docs/pos-react-implementation-readiness` | **NOT AUTHORIZED** |
 | Documentation approval | Does **not** authorize React, PWA, Capacitor, or MAUI retirement |
 
 Do not scaffold React, add Capacitor, add a PWA service worker, add Node dependencies, or modify MAUI.

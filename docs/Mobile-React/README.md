@@ -10,19 +10,27 @@ It does **not** authorize implementation.
 ## Status
 
 - Planning documentation: **FINAL APPROVED** (DOC-00 … DOC-08; AMEND-01, AMEND-02, AMEND-03)
+- Implementation-readiness documentation: **COMPLETE** on `docs/pos-react-implementation-readiness` (does **not** authorize implementation)
 - React mobile implementation: **NOT AUTHORIZED**
 - MAUI retirement: **NOT AUTHORIZED**
 - PWA production rollout: **NOT AUTHORIZED**
 - Capacitor production rollout: **NOT AUTHORIZED**
-- Merge to `main`: **PERFORMED** (`MOBILE-REACT-DOC-MERGE-01`) — does **not** authorize implementation
+- Merge to `main`: **PERFORMED** (`MOBILE-REACT-DOC-MERGE-01`) for the planning baseline — does **not** authorize implementation. This readiness branch is **not** authorized to merge to `main`.
 - MOBILE-D-060: **OPEN**
 - Current MAUI, Organization Web, Personal Web, Platform APIs, and POS APIs: **unchanged**
 
-## Worktree
+## Implementation readiness (current-main refresh)
+
+Against `origin/main` `5979a9ce008bb24a3257abd28ae79bc1a5a9b569`. Does not rewrite accepted MOBILE-D decisions.
+
+- [Implementation-Readiness/](Implementation-Readiness/) — current MAUI refresh, parity matrix, API/auth, PWA/offline/device sequence, master plan, open decisions
+- [Reports/POS-REACT-READINESS-05-final-master-plan.md](Reports/POS-REACT-READINESS-05-final-master-plan.md) — readiness closeout
+
+## Historical planning worktree
 
 - Branch: `docs/mobile-react-foundation`
 - Worktree: `C:/Users/speed/Desktop/ExItS-SaaS-Mobile`
-- Baseline `origin/main`: `5a9be9417b7a2217227ae93e9280102992861615`
+- Baseline `origin/main` at planning time: `5a9be9417b7a2217227ae93e9280102992861615`
 
 ## Contents
 
@@ -41,6 +49,17 @@ It does **not** authorize implementation.
 - [Reports/MOBILE-REACT-DOC-AMEND-03-smart-workspace-product-context.md](Reports/MOBILE-REACT-DOC-AMEND-03-smart-workspace-product-context.md) — AMEND-03 smart workspace + product launch context
 - [Reports/MOBILE-REACT-DOC-APPROVAL-record.md](Reports/MOBILE-REACT-DOC-APPROVAL-record.md) — Product Owner documentation approval (merge still awaiting authorization)
 - [Reports/MOBILE-REACT-DOC-MERGE-01-approved-planning-baseline.md](Reports/MOBILE-REACT-DOC-MERGE-01-approved-planning-baseline.md) — merge of approved planning baseline to `main`
+- [Implementation-Readiness/01-current-maui-implementation-refresh.md](Implementation-Readiness/01-current-maui-implementation-refresh.md) — current-main MAUI audit refresh
+- [Implementation-Readiness/02-feature-parity-matrix.md](Implementation-Readiness/02-feature-parity-matrix.md) — feature parity + first slice
+- [Implementation-Readiness/03-api-auth-security-readiness.md](Implementation-Readiness/03-api-auth-security-readiness.md) — API/auth/CORS/PWEB-20
+- [Implementation-Readiness/04-pwa-offline-device-migration.md](Implementation-Readiness/04-pwa-offline-device-migration.md) — PWA Phase A / offline Phase B / devices
+- [Implementation-Readiness/05-implementation-master-plan.md](Implementation-Readiness/05-implementation-master-plan.md) — gates C–K package map
+- [Implementation-Readiness/06-open-decisions-and-blockers.md](Implementation-Readiness/06-open-decisions-and-blockers.md) — unresolved items
+- [Reports/POS-REACT-READINESS-01-current-state-refresh.md](Reports/POS-REACT-READINESS-01-current-state-refresh.md)
+- [Reports/POS-REACT-READINESS-02-feature-parity.md](Reports/POS-REACT-READINESS-02-feature-parity.md)
+- [Reports/POS-REACT-READINESS-03-api-auth-security.md](Reports/POS-REACT-READINESS-03-api-auth-security.md)
+- [Reports/POS-REACT-READINESS-04-pwa-offline-device.md](Reports/POS-REACT-READINESS-04-pwa-offline-device.md)
+- [Reports/POS-REACT-READINESS-05-final-master-plan.md](Reports/POS-REACT-READINESS-05-final-master-plan.md)
 
 ## Canonical rule
 
