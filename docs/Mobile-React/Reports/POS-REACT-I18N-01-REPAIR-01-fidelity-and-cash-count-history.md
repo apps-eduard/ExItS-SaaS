@@ -7,8 +7,9 @@
 | Flag | Value |
 |------|-------|
 | `I18N_01_IMPLEMENTATION` | PASS (repair) |
-| `I18N_TRANSLATION_FIDELITY` | **CLOSED** |
-| `SHIFT_CASH_COUNT_HISTORY_REACT` | **CLOSED** |
+| `I18N_TRANSLATION_FIDELITY` | **CLOSED** (technical; native review PENDING — see Repair 02) |
+| `SHIFT_CASH_COUNT_HISTORY_REACT` | Superseded by Repair 02 semantics closeout |
+| `I18N_NATIVE_SPEAKER_REVIEW` | PENDING |
 | `CASH_POLICY_BACKEND` | PASS (unchanged) |
 | `RMAP_B05_AUTHORIZED` | NO |
 | `RMAP_15_AUTHORIZED` | NO |
