@@ -289,6 +289,7 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 |-------|---------|
 | Objective | Current GCash (`ManualGCash`) / Utang online paths; void; preserve future Card/provider GCash infra without making them current UX |
 | Dependencies | RMAP-11, RMAP-00 |
+| Status | **COMPLETE** — report [POS-REACT-RMAP-12-payments-void.md](../../Reports/POS-REACT-RMAP-12-payments-void.md) |
 | Next | RMAP-13 |
 
 ### RMAP-12b — Cashier price override UI (only after RMAP-B01)
@@ -437,10 +438,10 @@ Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, 
 ## APPROVED PROPOSED MASTER RUN 01
 
 **Name:** Foundation + Catalog/Inventory Baseline
-**Status:** RMAP-00…RMAP-11b PASS (sell-floor/cart + register/open-shift readiness + browser PosDevice + online cash checkout + commercial discount UX). Next authorized package: RMAP-12 when authorized.
+**Status:** RMAP-00…RMAP-12 PASS (sell-floor/cart + register/open-shift readiness + browser PosDevice + online checkout Cash/GCash/Utang + commercial discount UX + void). Next authorized package: RMAP-13 when authorized.
 **Stop rule:** After Master Run packages + authorized B03 closeout → HARD STOP for Product Owner + ChatGPT review (historical). RMAP-08/09 completed after that stop when authorized.
 **Do not include (still gated):** RMAP-B04; RMAP-TAX implementation
-**Completed beyond Master Run 01 table:** RMAP-08 lots/expiry inventory surfaces; RMAP-09 sell floor + session cart; RMAP-10 registers + open shift gate; RMAP-10b browser POS device authorization; RMAP-11 online cash checkout; RMAP-11b commercial discount UX
+**Completed beyond Master Run 01 table:** RMAP-08 lots/expiry inventory surfaces; RMAP-09 sell floor + session cart; RMAP-10 registers + open shift gate; RMAP-10b browser POS device authorization; RMAP-11 online cash checkout; RMAP-11b commercial discount UX; RMAP-12 current payments (Cash/GCash/Utang) + void
 **Distinction preserved:** Today's Price ≠ Cashier Price Override ≠ Commercial Discount ≠ Promotion ≠ Regulatory Discount
 **Completion report (B00):** [POS-REACT-RMAP-B00-identity-reconciliation.md](../../Reports/POS-REACT-RMAP-B00-identity-reconciliation.md)
 **Completion report (RMAP-01):** [POS-REACT-RMAP-01-account-session-parity.md](../../Reports/POS-REACT-RMAP-01-account-session-parity.md)
