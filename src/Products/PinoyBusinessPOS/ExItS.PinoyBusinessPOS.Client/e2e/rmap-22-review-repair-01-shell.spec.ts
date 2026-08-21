@@ -157,9 +157,12 @@ test.describe("RMAP-22 Review Repair 01 Personal shell", () => {
     await expect(page.getByTestId("shell-connection-button-status")).toContainText(
       /Online|Offline/,
     );
+    await expect(page.getByTestId("shell-connection-button-sync-status")).toBeVisible();
+    // Empty outbox may honestly show "All changes synced". Do not invent waiting counts.
     await expect(page.getByTestId("shell-connection-button-panel")).not.toContainText(
-      /All changes synced|pending|Last synced/i,
+      /\d+ changes waiting|Offline · \d+ waiting/i,
     );
+    await expect(page.getByTestId("shell-connection-button-last-synced")).toHaveCount(0);
     if (await page.getByTestId("shell-connection-button-refresh").isVisible()) {
       await page.getByTestId("shell-connection-button-refresh").click();
     }
