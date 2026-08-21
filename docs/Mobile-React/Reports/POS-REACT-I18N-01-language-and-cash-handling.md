@@ -2,11 +2,13 @@
 
 ## Status
 
-**PASS**
+**PASS** (Repair 01 applied — see `POS-REACT-I18N-01-REPAIR-01-fidelity-and-cash-count-history.md`)
 
 | Flag | Value |
 |------|-------|
 | `I18N_01_PASS` | YES |
+| `I18N_TRANSLATION_FIDELITY` | CLOSED |
+| `SHIFT_CASH_COUNT_HISTORY_REACT` | CLOSED |
 | `CASH_DENOMINATION_POLICY_CLOSEOUT` | YES |
 | `DEFAULT_DENOMINATION_001_REMOVED` | YES |
 | `OPENING_COUNT_DEFAULT_OPTIONAL` | YES |
@@ -58,6 +60,7 @@ Product search placeholder (EN): “Search by product name, barcode, or SKU”
 - Optional: skip count / manual total
 - Required: cannot finish without count
 - Empty denominations: friendly empty state + manual total
+- Shift detail: expandable opening/closing denomination **history** from stored shift lines (Repair 01)
 
 ### Backend (additive)
 
