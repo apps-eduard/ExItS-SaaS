@@ -39,4 +39,4 @@ API: `/api/v1/pos/cashier-shifts`
 
 ## React
 
-Register list + open/close shift UX and open-shift **checkout readiness gate**: **PROVEN_CURRENT** (RMAP-10). Browser may open shift without inventing `PosDevice`. Money/sale device authorization remains deferred (`moneyPostReady` false) until RMAP-11+ contracts a real device path. Sale POST is **not** implemented in RMAP-10.
+Register list + open/close shift UX and open-shift **checkout readiness gate**: **PROVEN_CURRENT** (RMAP-10). Browser PosDevice registration/authorization: **PROVEN_CURRENT** (RMAP-10b) via durable installation identity, `/org/devices`, `/devices/register`, Platform authorize, and `X-Pos-Installation-Device-Id`. `moneyPostReady` is true only when shift gate is ready **and** the browser device is authorized for the selected branch. Sale POST remains **RMAP-11**.

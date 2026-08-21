@@ -79,8 +79,10 @@ Note: Platform and POS Haversine Earth-radius constants differ slightly (`6371.0
 | Device on POS session | POS session carries `PosDeviceId` | PROVEN_CURRENT |
 | Lost/revoked device | Platform revoke + POS authorization fail-closed | PROVEN_CURRENT |
 | Offline grant / PIN binding | Device-bound offline operating grant | PROVEN_CURRENT (MAUI LocalStore) |
+| Browser/PWA durable install id + register/redeem/authorize | Platform + React | PROVEN_CURRENT (RMAP-10b) |
 
 MAUI: `/devices/register`, `/organization/devices`.
+React: `/devices/register`, `/org/devices` (RMAP-10b).
 
 ## Registers and shifts (POS)
 
@@ -96,4 +98,4 @@ Compliance / sales-document capability is organization-scoped on Platform. Sale 
 
 ## React implications
 
-Organization/branch/device context parity is a foundation package **before** sell-floor checkout parity. React already binds workspace/branch for sell routes (`WorkspaceProvider`, `NoAccessibleBranchPage`) but does not configure branches or devices.
+Organization/branch/device context parity is a foundation package **before** sell-floor checkout parity. React binds workspace/branch for sell routes (`WorkspaceProvider`, `NoAccessibleBranchPage`) and, as of RMAP-10b, registers/authorizes browser PosDevices without inventing terminals. Branch admin configuration UI remains MISSING.
