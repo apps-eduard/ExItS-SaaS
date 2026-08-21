@@ -34,4 +34,4 @@ Tests: ConnectedSuppliers unit tests, LocalStore connected supplier tests, MAUI 
 
 ## React
 
-**PARTIAL** — RMAP-15 manual suppliers + RMAP-16 connected suppliers (relationship/share/catalog/links). Purchasing PO receive remains RMAP-17.
+**PARTIAL** — RMAP-15 manual suppliers + RMAP-16 connected suppliers (relationship/share/catalog/links) + RMAP-17 buyer purchasing/receive/direct purchase. Seller connected PO inbox remains deferred.

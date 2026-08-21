@@ -39,7 +39,7 @@ Purchasing admin OnlineRequired; `/purchasing/new` Queueable in policy matrix; l
 ## MAUI / React
 
 MAUI: `/purchasing*`, connected incoming orders.
-React: **MISSING**.
+React: **PARTIAL** — RMAP-17 buyer PO/GRN/direct purchase; seller connected incoming PO inbox remains deferred.
 
 ## Tests
 
