@@ -211,29 +211,44 @@ export function PersonalNotificationsPage() {
         />
       ) : (
         <ul className="m-0 flex list-none flex-col gap-2 p-0">
-          {query.data.map((item) => (
-            <li
-              key={item.id}
-              className="rounded-[var(--exits-radius-md)] border border-border px-3 py-3"
-            >
-              <p className="m-0 font-semibold">{item.title}</p>
-              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{item.preview}</p>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                {new Date(item.createdAtUtc).toLocaleString()}
-                {item.isRead ? "" : ` · ${t("personal.social.unread")}`}
-              </p>
-              {!item.isRead ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="mt-2 min-h-11"
-                  onClick={() => markRead.mutate(item.id)}
-                >
-                  {t("personal.social.markRead")}
-                </Button>
-              ) : null}
-            </li>
-          ))}
+          {query.data.map((item) => {
+            const isCustomerLink =
+              item.relatedType.localeCompare("CustomerLinkRequest", undefined, {
+                sensitivity: "accent",
+              }) === 0;
+            return (
+              <li
+                key={item.id}
+                className="rounded-[var(--exits-radius-md)] border border-border px-3 py-3"
+              >
+                <p className="m-0 font-semibold">{item.title}</p>
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{item.preview}</p>
+                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                  {new Date(item.createdAtUtc).toLocaleString()}
+                  {item.isRead ? "" : ` · ${t("personal.social.unread")}`}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {isCustomerLink ? (
+                    <Button asChild className="min-h-11" data-testid="notification-open-customer-links">
+                      <Link to="/personal/customer-links">
+                        {t("personal.customerLinks.title")}
+                      </Link>
+                    </Button>
+                  ) : null}
+                  {!item.isRead ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="min-h-11"
+                      onClick={() => markRead.mutate(item.id)}
+                    >
+                      {t("personal.social.markRead")}
+                    </Button>
+                  ) : null}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

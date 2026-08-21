@@ -40,9 +40,14 @@ export function LinkedMerchantsPage() {
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="linked-merchants-page">
       <PageHeader title={t("personal.merchantsTitle")} description={t("personal.merchantsLede")} />
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/personal/orders">{t("personal.myOrdersLink")}</Link>
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button asChild variant="ghost" className="min-h-11 w-fit">
+          <Link to="/personal/orders">{t("personal.myOrdersLink")}</Link>
+        </Button>
+        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-customer-links">
+          <Link to="/personal/customer-links">{t("personal.customerLinks.title")}</Link>
+        </Button>
+      </div>
       {items.length === 0 ? (
         <EmptyState
           title={t("personal.merchantsEmptyTitle")}

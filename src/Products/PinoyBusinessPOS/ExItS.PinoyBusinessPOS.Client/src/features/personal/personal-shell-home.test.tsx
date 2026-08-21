@@ -75,6 +75,29 @@ function createPersonalFetchMock() {
       } as Response;
     }
 
+    if (url.includes("/api/v1/personal/linked-merchants")) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          items: [],
+          totalCount: 0,
+          page: 1,
+          pageSize: 50,
+        }),
+        text: async () => "",
+      } as Response;
+    }
+
+    if (url.includes("/api/v1/personal/customer-link-requests")) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => [],
+        text: async () => "",
+      } as Response;
+    }
+
     return {
       ok: false,
       status: 404,
@@ -127,6 +150,37 @@ describe("Personal shell and home (RMAP-22B)", () => {
     expect(screen.getByTestId("personal-quick-actions")).toBeInTheDocument();
     expect(screen.getByTestId("personal-qa-lent")).toBeInTheDocument();
     expect(screen.getByTestId("personal-stat-people")).toHaveTextContent("2");
+  });
+
+  it("opens Stores and customer link requests under Personal More", async () => {
+    vi.stubGlobal("fetch", createPersonalFetchMock());
+    renderAt("/personal/more");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("personal-more-page")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("more-open-stores")).toBeInTheDocument();
+    expect(screen.getByTestId("more-open-customer-links")).toBeInTheDocument();
+    expect(screen.getByTestId("more-open-orders")).toBeInTheDocument();
+  });
+
+  it("renders Stores and customer links routes inside Personal shell", async () => {
+    vi.stubGlobal("fetch", createPersonalFetchMock());
+    renderAt("/personal/linked-merchants");
+    await waitFor(() => {
+      expect(screen.getByTestId("linked-merchants-page")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("personal-shell")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Stores" })).toBeInTheDocument();
+  });
+
+  it("renders pending customer link requests page", async () => {
+    vi.stubGlobal("fetch", createPersonalFetchMock());
+    renderAt("/personal/customer-links");
+    await waitFor(() => {
+      expect(screen.getByTestId("personal-customer-links-page")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("personal-shell")).toBeInTheDocument();
   });
 
   it("denies Personal routes for organization staff principals", async () => {

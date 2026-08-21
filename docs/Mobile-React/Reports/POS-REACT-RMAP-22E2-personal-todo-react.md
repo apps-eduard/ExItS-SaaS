@@ -32,4 +32,4 @@ Native-speaker certification: **PENDING**
 
 ## Next
 
-**RMAP-22F — Customer linking + Stores + ordering + My Orders** (do not start until authorized)
+**RMAP-22F — Customer linking + Stores + ordering + My Orders** — see `POS-REACT-RMAP-22F-personal-stores-ordering.md`

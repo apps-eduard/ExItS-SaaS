@@ -47,6 +47,14 @@ export function PersonalMorePage() {
           asChild
           variant="ghost"
           className="min-h-11 justify-start"
+          data-testid="more-open-customer-links"
+        >
+          <Link to="/personal/customer-links">{t("personal.customerLinks.title")}</Link>
+        </Button>
+        <Button
+          asChild
+          variant="ghost"
+          className="min-h-11 justify-start"
           data-testid="more-open-invitations"
         >
           <Link to="/personal/utang/invitations">{t("personal.social.invitationsTitle")}</Link>
