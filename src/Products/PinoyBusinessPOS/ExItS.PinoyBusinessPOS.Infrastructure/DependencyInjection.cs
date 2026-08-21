@@ -50,6 +50,7 @@ public static class DependencyInjection
         services.AddSingleton<IProductImageObjectStore, LocalFileProductImageStore>();
         services.AddScoped<ICatalogImportJobRepository, CatalogImportJobRepository>();
         services.AddScoped<ISaleRepository, SaleRepository>();
+        services.AddScoped<ISaleMutationLock, PosSaleMutationLock>();
         services.AddScoped<ICustomerOrderRepository, CustomerOrderRepository>();
         services.AddScoped<ICustomerOrderStockService, CustomerOrderStockService>();
         services.AddScoped<ISaleReturnRepository, SaleReturnRepository>();

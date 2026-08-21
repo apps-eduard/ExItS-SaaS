@@ -161,6 +161,7 @@ public sealed class ProcessSaleReturn
 {
     private readonly ISaleReturnRepository _returns;
     private readonly ISaleRepository _sales;
+    private readonly ISaleMutationLock _saleMutationLock;
     private readonly ICashierShiftRepository _shifts;
     private readonly ICreditEntryRepository _credits;
     private readonly IOutstandingBalanceService _outstanding;
@@ -171,6 +172,7 @@ public sealed class ProcessSaleReturn
     public ProcessSaleReturn(
         ISaleReturnRepository returns,
         ISaleRepository sales,
+        ISaleMutationLock saleMutationLock,
         ICashierShiftRepository shifts,
         ICreditEntryRepository credits,
         IOutstandingBalanceService outstanding,
@@ -180,6 +182,7 @@ public sealed class ProcessSaleReturn
     {
         _returns = returns;
         _sales = sales;
+        _saleMutationLock = saleMutationLock;
         _shifts = shifts;
         _credits = credits;
         _outstanding = outstanding;
@@ -205,110 +208,150 @@ public sealed class ProcessSaleReturn
                 "An actor identifier is required to process a return.");
         }
 
+        if (lines is null || lines.Count == 0)
+        {
+            return ApplicationResult<SaleReturn>.Failure(
+                DomainErrorCodes.SaleReturnRequiresAtLeastOneLine,
+                "A return must contain at least one line.");
+        }
+
         var orgId = PosOrganizationId.From(organizationId);
         var id = SaleId.From(saleId);
+        var lineDrafts = lines
+            .Select(l => new SaleReturnLineDraft(
+                SaleLineId.From(l.SaleLineId),
+                l.Quantity,
+                RestockDispositions.Parse(l.RestockDisposition),
+                l.LineReason))
+            .ToList();
 
         try
         {
-            if (clientReturnId is not null)
+            PersistenceConflictException? lastConflict = null;
+            for (var attempt = 0; attempt < 8; attempt++)
             {
-                var existing = await _returns
-                    .GetByIdAsync(orgId, SaleReturnId.From(clientReturnId.Value), cancellationToken)
-                    .ConfigureAwait(false);
-                if (existing is not null)
+                try
                 {
-                    return ApplicationResult<SaleReturn>.Success(existing);
-                }
-            }
-
-            if (lines is null || lines.Count == 0)
-            {
-                return ApplicationResult<SaleReturn>.Failure(
-                    DomainErrorCodes.SaleReturnRequiresAtLeastOneLine,
-                    "A return must contain at least one line.");
-            }
-
-            var sale = await _sales.GetByIdAsync(orgId, id, cancellationToken).ConfigureAwait(false);
-            if (sale is null)
-            {
-                return ApplicationResult<SaleReturn>.Failure(
-                    ApplicationErrorCodes.SaleNotFound,
-                    "Sale was not found.");
-            }
-
-            CashierShiftId? linkedShiftId = null;
-            RegisterId? refundRegisterId = null;
-            if (sale.PaymentMethod == SalePaymentMethod.Cash)
-            {
-                var openShift = await _shifts
-                    .FindOpenForActorAsync(orgId, actorId, cancellationToken)
-                    .ConfigureAwait(false);
-                if (openShift is null)
-                {
-                    return ApplicationResult<SaleReturn>.Failure(
-                        ApplicationErrorCodes.CashierShiftNoOpenShift,
-                        "Cash refunds require an open cashier shift for this actor.");
-                }
-
-                linkedShiftId = openShift.Id;
-                refundRegisterId = openShift.RegisterId;
-            }
-
-            var lineDrafts = lines
-                .Select(l => new SaleReturnLineDraft(
-                    SaleLineId.From(l.SaleLineId),
-                    l.Quantity,
-                    RestockDispositions.Parse(l.RestockDisposition),
-                    l.LineReason))
-                .ToList();
-
-            var prior = await _returns
-                .GetPriorTotalsBySaleLineAsync(orgId, id, cancellationToken)
-                .ConfigureAwait(false);
-
-            var utcNow = _clock.UtcNow;
-            var capturedSale = sale;
-            var capturedPrior = prior.ToDictionary(
-                kvp => kvp.Key,
-                kvp => (kvp.Value.ReturnedQuantity, kvp.Value.RefundedAmount));
-            var capturedShiftId = linkedShiftId;
-            var capturedRefundRegisterId = refundRegisterId;
-            var capturedActorId = actorId;
-
-            var saleReturn = await _returns
-                .CreateAsync(
-                    orgId,
-                    ReturnNumbers.BusinessDateOf(utcNow),
-                    returnNumber => SaleReturn.CreateCompleted(
-                        orgId,
-                        returnNumber,
-                        capturedSale,
-                        lineDrafts,
-                        capturedPrior,
-                        reason,
-                        capturedActorId,
-                        utcNow,
-                        capturedShiftId,
-                        capturedRefundRegisterId,
-                        notes: notes,
-                        id: clientReturnId is null ? null : SaleReturnId.From(clientReturnId.Value)),
-                    async (created, ct) =>
-                    {
-                        await _returnStock
-                            .RestockForReturnAsync(orgId, created, capturedSale, capturedActorId, utcNow, ct)
-                            .ConfigureAwait(false);
-
-                        if (capturedSale.PaymentMethod == SalePaymentMethod.Utang)
+                    return await _unitOfWork
+                        .ExecuteInSerializableTransactionAsync(async ct =>
                         {
-                            await ApplyUtangRefundAsync(orgId, capturedSale, created, ct).ConfigureAwait(false);
-                        }
+                            await _saleMutationLock.AcquireAsync(orgId, id, ct).ConfigureAwait(false);
 
-                        await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
-                    },
-                    cancellationToken)
-                .ConfigureAwait(false);
+                            if (clientReturnId is not null)
+                            {
+                                var existing = await _returns
+                                    .GetByIdAsync(orgId, SaleReturnId.From(clientReturnId.Value), ct)
+                                    .ConfigureAwait(false);
+                                if (existing is not null)
+                                {
+                                    return ApplicationResult<SaleReturn>.Success(existing);
+                                }
+                            }
 
-            return ApplicationResult<SaleReturn>.Success(saleReturn);
+                            var sale = await _sales.GetByIdAsync(orgId, id, ct).ConfigureAwait(false);
+                            if (sale is null)
+                            {
+                                return ApplicationResult<SaleReturn>.Failure(
+                                    ApplicationErrorCodes.SaleNotFound,
+                                    "Sale was not found.");
+                            }
+
+                            if (sale.Status != SaleStatus.Completed)
+                            {
+                                return ApplicationResult<SaleReturn>.Failure(
+                                    DomainErrorCodes.SaleReturnSaleNotReturnable,
+                                    "Only completed sales can be returned.");
+                            }
+
+                            CashierShiftId? linkedShiftId = null;
+                            RegisterId? refundRegisterId = null;
+                            if (sale.PaymentMethod == SalePaymentMethod.Cash)
+                            {
+                                var openShift = await _shifts
+                                    .FindOpenForActorAsync(orgId, actorId, ct)
+                                    .ConfigureAwait(false);
+                                if (openShift is null)
+                                {
+                                    return ApplicationResult<SaleReturn>.Failure(
+                                        ApplicationErrorCodes.CashierShiftNoOpenShift,
+                                        "Cash refunds require an open cashier shift for this actor.");
+                                }
+
+                                linkedShiftId = openShift.Id;
+                                refundRegisterId = openShift.RegisterId;
+                            }
+
+                            // Authoritative prior totals — must be read after the shared sale mutation lock.
+                            var prior = await _returns
+                                .GetPriorTotalsBySaleLineAsync(orgId, id, ct)
+                                .ConfigureAwait(false);
+
+                            var utcNow = _clock.UtcNow;
+                            var capturedSale = sale;
+                            var capturedPrior = prior.ToDictionary(
+                                kvp => kvp.Key,
+                                kvp => (kvp.Value.ReturnedQuantity, kvp.Value.RefundedAmount));
+                            var capturedShiftId = linkedShiftId;
+                            var capturedRefundRegisterId = refundRegisterId;
+                            var capturedActorId = actorId;
+
+                            var saleReturn = await _returns
+                                .CreateAsync(
+                                    orgId,
+                                    ReturnNumbers.BusinessDateOf(utcNow),
+                                    returnNumber => SaleReturn.CreateCompleted(
+                                        orgId,
+                                        returnNumber,
+                                        capturedSale,
+                                        lineDrafts,
+                                        capturedPrior,
+                                        reason,
+                                        capturedActorId,
+                                        utcNow,
+                                        capturedShiftId,
+                                        capturedRefundRegisterId,
+                                        notes: notes,
+                                        id: clientReturnId is null
+                                            ? null
+                                            : SaleReturnId.From(clientReturnId.Value)),
+                                    async (created, afterCt) =>
+                                    {
+                                        await _returnStock
+                                            .RestockForReturnAsync(
+                                                orgId,
+                                                created,
+                                                capturedSale,
+                                                capturedActorId,
+                                                utcNow,
+                                                afterCt)
+                                            .ConfigureAwait(false);
+
+                                        if (capturedSale.PaymentMethod == SalePaymentMethod.Utang)
+                                        {
+                                            await ApplyUtangRefundAsync(orgId, capturedSale, created, afterCt)
+                                                .ConfigureAwait(false);
+                                        }
+
+                                        await _unitOfWork.SaveChangesAsync(afterCt).ConfigureAwait(false);
+                                    },
+                                    ct)
+                                .ConfigureAwait(false);
+
+                            return ApplicationResult<SaleReturn>.Success(saleReturn);
+                        }, cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                catch (PersistenceConflictException ex)
+                {
+                    // Serializable SSI can abort a waiter that began before the lock holder committed.
+                    // Retry with a fresh snapshot after the advisory lock serializes mutations.
+                    lastConflict = ex;
+                }
+            }
+
+            return ApplicationResult<SaleReturn>.Failure(
+                lastConflict!.ErrorCode,
+                lastConflict.Message);
         }
         catch (DomainException ex)
         {
