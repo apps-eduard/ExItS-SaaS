@@ -44,7 +44,7 @@ starting SHA: `4db1f09f` (Master Run 02 tip after RMAP-10b; verified green)
 
 ## Implementation SHA
 
-`a43d26b8` (feat); docs _(this commit)_
+`a43d26b8` (feat); docs `3d9615eb`
 
 ## Validation
 

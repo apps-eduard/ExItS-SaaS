@@ -19,7 +19,7 @@
 | RMAP-09 (prior + review repair) | PASS | `ae433fd2` / repair `1771aa0c` | `31adf35b` / repair `6aa0d48b` |
 | RMAP-10 | PASS | `356cdfde` | `d39776ff` |
 | RMAP-10b | PASS | `d48da9a8` | `e356ee16` |
-| RMAP-11 | PASS | `a43d26b8` | _(docs commit)_ |
+| RMAP-11 | PASS | `a43d26b8` | `3d9615eb` |
 
 ## Former blocker — CLEARED
 
@@ -43,4 +43,4 @@ Do **not** invent devices, add Development money bypass, or start RMAP-11b/12 wi
 
 ## Final HEAD
 
-_(filled after docs push)_
+`3d9615eb8db89f98ce74be4885535da7f1fc8642` (= `origin/feat/pos-react-client` after hash sync)
