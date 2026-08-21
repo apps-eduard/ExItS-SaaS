@@ -2,7 +2,7 @@
 
 ## Status
 
-**RMAP-14 PASS.** React returns / refunds UI complete (`RMAP_14_FINAL=APPROVED`). Master Run 02 package sequence through RMAP-14 is closed. **HARD STOP** before RMAP-15.
+**RMAP-14 PASS.** React returns / refunds UI complete (`RMAP_14_FINAL=APPROVED`). Master Run 02 package sequence through RMAP-14 is closed. **I18N-01 PASS** (Philippine locales + cash handling policy closeout). **HARD STOP** before RMAP-15.
 
 ## Baseline
 
@@ -30,6 +30,7 @@
 | Review Repair 01 | **PASS** | commits 1–2 | commit 3 (`2364727c`) |
 | Review Repair 02 | **PASS** | sale mutation lock + concurrency tests | docs commit |
 | RMAP-14 | **PASS** | `21d1aa3a` | docs commit |
+| I18N-01 | **PASS** | see I18N-01 report | see I18N-01 report |
 
 ## Former blockers
 
