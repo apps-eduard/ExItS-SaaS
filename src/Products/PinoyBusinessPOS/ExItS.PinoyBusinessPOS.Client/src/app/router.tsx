@@ -5,6 +5,14 @@ import { SignInPage } from "@/features/auth/SignInPage";
 import { HomePage } from "@/features/home/HomePage";
 import { NotFoundPage } from "@/features/not-found/NotFoundPage";
 import { PersonalHomePage } from "@/features/personal/PersonalHomePage";
+import {
+  PersonalMorePage,
+  PersonalStartBusinessPlaceholderPage,
+  PersonalTodoHubPage,
+  PersonalUtangHubPage,
+  PersonalUtangSectionPlaceholder,
+} from "@/features/personal/PersonalHubPages";
+import { PersonalShell } from "@/features/personal/PersonalShell";
 import { LinkedMerchantsPage } from "@/features/customer-ordering/LinkedMerchantsPage";
 import { MerchantShopPage } from "@/features/customer-ordering/MerchantShopPage";
 import { MerchantCheckoutPage } from "@/features/customer-ordering/MerchantCheckoutPage";
@@ -163,11 +171,48 @@ export const appRoutes = [
             path: "personal",
             element: (
               <RequirePersonalSession>
-                <Outlet />
+                <PersonalShell />
               </RequirePersonalSession>
             ),
             children: [
               { index: true, element: <PersonalHomePage /> },
+              { path: "utang", element: <PersonalUtangHubPage /> },
+              {
+                path: "utang/people",
+                element: (
+                  <PersonalUtangSectionPlaceholder
+                    titleKey="personal.utang.people"
+                    detailKey="personal.utang.sectionComing"
+                    testId="personal-utang-people-placeholder"
+                  />
+                ),
+              },
+              {
+                path: "utang/lent",
+                element: (
+                  <PersonalUtangSectionPlaceholder
+                    titleKey="personal.utang.lent"
+                    detailKey="personal.utang.sectionComing"
+                    testId="personal-utang-lent-placeholder"
+                  />
+                ),
+              },
+              {
+                path: "utang/owe",
+                element: (
+                  <PersonalUtangSectionPlaceholder
+                    titleKey="personal.utang.owe"
+                    detailKey="personal.utang.sectionComing"
+                    testId="personal-utang-owe-placeholder"
+                  />
+                ),
+              },
+              { path: "todo", element: <PersonalTodoHubPage /> },
+              { path: "more", element: <PersonalMorePage /> },
+              {
+                path: "start-business",
+                element: <PersonalStartBusinessPlaceholderPage />,
+              },
               { path: "linked-merchants", element: <LinkedMerchantsPage /> },
               {
                 path: "linked-merchants/:organizationId/shop",
