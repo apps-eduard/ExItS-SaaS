@@ -262,12 +262,14 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 ### RMAP-11 — Checkout / sale (online cash first)
 | Field | Content |
 |-------|---------|
+| Status | **COMPLETE** |
 | Objective | POST sales with snapshots; cash path; inventory effects; idempotency; Transaction Summary wording |
 | Dependencies | RMAP-09, RMAP-10, RMAP-10b, RMAP-07, RMAP-00 |
 | Backend | CURRENT |
 | Current payment labels | Cash · GCash · Utang (GCash maps to internal `ManualGCash`) |
 | Exclusions | Offline outbox (RMAP-21); price override (needs RMAP-B01); TaxDocument; Card/provider GCash UX; commercial discount UX (**RMAP-11b**) |
 | Acceptance | Completes sale online; tracked stock cannot oversell; document = Transaction Summary |
+| Report | [POS-REACT-RMAP-11-checkout-sale.md](../../Reports/POS-REACT-RMAP-11-checkout-sale.md) |
 | Next | RMAP-11b |
 
 ### RMAP-11b — Commercial Discount UX
@@ -433,10 +435,10 @@ Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, 
 ## APPROVED PROPOSED MASTER RUN 01
 
 **Name:** Foundation + Catalog/Inventory Baseline
-**Status:** RMAP-00…RMAP-10b PASS (sell-floor/cart + register/open-shift readiness + browser PosDevice contract). Commercial discount payment boundaries proven (RMAP-B03). Next authorized package: RMAP-11 (checkout / sale) using registered browser installation + authorize header. Do **not** start RMAP-11b, RMAP-B04, or RMAP-TAX without authorization.
+**Status:** RMAP-00…RMAP-11 PASS (sell-floor/cart + register/open-shift readiness + browser PosDevice + online cash checkout). Commercial discount payment boundaries proven (RMAP-B03). Next authorized package: RMAP-11b (commercial discount UX) or RMAP-12 when authorized.
 **Stop rule:** After Master Run packages + authorized B03 closeout → HARD STOP for Product Owner + ChatGPT review (historical). RMAP-08/09 completed after that stop when authorized.
 **Do not include (still gated):** RMAP-11b discount UX; RMAP-B04; RMAP-TAX implementation
-**Completed beyond Master Run 01 table:** RMAP-08 lots/expiry inventory surfaces; RMAP-09 sell floor + session cart; RMAP-10 registers + open shift gate; RMAP-10b browser POS device authorization
+**Completed beyond Master Run 01 table:** RMAP-08 lots/expiry inventory surfaces; RMAP-09 sell floor + session cart; RMAP-10 registers + open shift gate; RMAP-10b browser POS device authorization; RMAP-11 online cash checkout
 **Distinction preserved:** Today's Price ≠ Cashier Price Override ≠ Commercial Discount ≠ Promotion ≠ Regulatory Discount
 **Completion report (B00):** [POS-REACT-RMAP-B00-identity-reconciliation.md](../../Reports/POS-REACT-RMAP-B00-identity-reconciliation.md)
 **Completion report (RMAP-01):** [POS-REACT-RMAP-01-account-session-parity.md](../../Reports/POS-REACT-RMAP-01-account-session-parity.md)

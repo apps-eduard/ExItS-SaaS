@@ -2,7 +2,7 @@
 
 ## Status
 
-**RMAP-10b COMPLETE** — browser PosDevice contract cleared. Ready for authorized RMAP-11.
+**RMAP-11 COMPLETE** — online cash checkout via authorized browser PosDevice. Ready for authorized RMAP-11b / RMAP-12.
 
 ## Baseline
 
@@ -19,28 +19,28 @@
 | RMAP-09 (prior + review repair) | PASS | `ae433fd2` / repair `1771aa0c` | `31adf35b` / repair `6aa0d48b` |
 | RMAP-10 | PASS | `356cdfde` | `d39776ff` |
 | RMAP-10b | PASS | `d48da9a8` | `e356ee16` |
+| RMAP-11 | PASS | `a43d26b8` | _(docs commit)_ |
 
 ## Former blocker — CLEARED
 
 **Code:** `RMAP11_BROWSER_DEVICE_CONTRACT_GAP` → **CLEARED** by RMAP-10b.
 
-**Evidence after RMAP-10b:**
+**Evidence after RMAP-11:**
 
-- Durable browser installation id (`exits.pos-client.installation-device-id.v1`) survives logout.
-- Platform register / redeem / authorize wired in React; POS HTTP attaches `X-Pos-Installation-Device-Id` when available.
-- `moneyPostReady` requires authorized matching device + open shift gate (no invented terminal; no Dev bypass).
-- Sale POST still excluded until RMAP-11.
+- Durable browser installation id + authorize + `X-Pos-Installation-Device-Id` on sale POST.
+- `moneyPostReady` required for Pay → cash checkout (no invented terminal; no Dev bypass).
+- Online Cash `POST /api/v1/pos/sales` with client `saleId` idempotency; Transaction Summary wording (not Invoice).
 
 ## Not started
 
-RMAP-11, RMAP-11b, RMAP-12, RMAP-13, RMAP-14, RMAP-15+, RMAP-B01, RMAP-12b, RMAP-B04, RMAP-TAX, provider payments, Owner Personal switcher.
+RMAP-11b, RMAP-12, RMAP-13, RMAP-14, RMAP-15+, RMAP-B01, RMAP-12b, RMAP-B04, RMAP-TAX, provider payments, Owner Personal switcher.
 
 ## Exact next
 
-**RMAP-11 — Checkout / sale (online cash first)** using the contracted browser PosDevice path.
+**RMAP-11b — Commercial Discount UX** when authorized (or RMAP-12 payments expansion).
 
-Do **not** invent devices, add Development money bypass, or start RMAP-11b without authorization.
+Do **not** invent devices, add Development money bypass, or start RMAP-11b/12 without authorization.
 
 ## Final HEAD
 
-`7295f2cc028066a36d838453a192841f70f9914f` (= `origin/feat/pos-react-client`)
+_(filled after docs push)_
