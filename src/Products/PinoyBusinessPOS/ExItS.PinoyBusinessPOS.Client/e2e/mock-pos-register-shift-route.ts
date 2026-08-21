@@ -15,6 +15,31 @@ export type MockShiftState = {
   openingCashCountMode?: "Optional" | "Required";
   closingCashCountMode?: "Optional" | "Required";
   denominations?: Array<{ value: number; isEnabled?: boolean }>;
+  /** Optional closed-shift history fixture for detail/summary GET. */
+  history?: {
+    openingCashCounted?: boolean;
+    openingCashAmount?: number;
+    closingCashAmount?: number | null;
+    closingCashCountState?: string | null;
+    openingDenominationLines?: Array<{
+      denominationValue: number;
+      quantity: number;
+      lineTotal?: number;
+    }>;
+    closingDenominationLines?: Array<{
+      denominationValue: number;
+      quantity: number;
+      lineTotal?: number;
+    }>;
+    cashSalesTotal?: number;
+    cashRefundsTotal?: number;
+    totalCashIn?: number;
+    totalCashOut?: number;
+    expectedCashAmount?: number;
+    cashVarianceAmount?: number | null;
+    gCashSalesTotal?: number;
+    utangSalesTotal?: number;
+  };
 };
 
 function openShiftBody(
@@ -77,11 +102,19 @@ export async function mockPosRegisterShiftApi(
     }));
 
   function shiftBody(opts: { status?: string; registerId?: string | null } = {}) {
+    const history = state.history;
     return {
       ...openShiftBody(opts),
+      openingCashAmount: history?.openingCashAmount ?? 500,
+      openingCashCounted: history?.openingCashCounted ?? true,
       effectiveCashCountMode: shiftClosingMode,
       effectiveOpeningCashCountMode: shiftOpeningMode,
       effectiveClosingCashCountMode: shiftClosingMode,
+      closingCashAmount: history?.closingCashAmount ?? null,
+      closingCashCountState: history?.closingCashCountState ?? null,
+      cashVarianceAmount: history?.cashVarianceAmount ?? null,
+      openingDenominationLines: history?.openingDenominationLines ?? [],
+      closingDenominationLines: history?.closingDenominationLines ?? [],
     };
   }
 
@@ -277,37 +310,47 @@ export async function mockPosRegisterShiftApi(
       if (!state.openShift) {
         return route.fulfill({ status: 404, contentType: "application/json", body: "{}" });
       }
+      // Keep /current as Open when a history fixture is under test so the hub can link
+      // into detail; the detail GET returns the closed historical snapshot.
+      const forHub = state.history
+        ? shiftBody({
+            status: "Open",
+            registerId: state.missingRegister ? null : E2E_REGISTER_ID,
+          })
+        : shiftBody({
+            status: state.closedShift ? "Closed" : "Open",
+            registerId: state.missingRegister ? null : E2E_REGISTER_ID,
+          });
       return route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify(
-          shiftBody({
-            status: state.closedShift ? "Closed" : "Open",
-            registerId: state.missingRegister ? null : E2E_REGISTER_ID,
-          }),
-        ),
+        body: JSON.stringify(forHub),
       });
     }
 
     if (url.includes(`/cashier-shifts/${E2E_SHIFT_ID}/summary`) && method === "GET") {
+      const history = state.history;
       return route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
           shiftId: E2E_SHIFT_ID,
           shiftNumber: "S-1001",
-          status: state.closedShift ? "Closed" : "Open",
-          openingCashAmount: 500,
-          openingCashCounted: true,
+          status: state.history || state.closedShift ? "Closed" : "Open",
+          openingCashAmount: history?.openingCashAmount ?? 500,
+          openingCashCounted: history?.openingCashCounted ?? true,
           effectiveCashCountMode: shiftClosingMode,
-          netCashSales: 0,
-          cashSalesTotal: 0,
-          gCashSalesTotal: 0,
-          utangSalesTotal: 0,
-          cashRefundsTotal: 0,
-          totalCashIn: 0,
-          totalCashOut: 0,
-          expectedCashAmount: 500,
+          netCashSales: history?.cashSalesTotal ?? 0,
+          cashSalesTotal: history?.cashSalesTotal ?? 0,
+          gCashSalesTotal: history?.gCashSalesTotal ?? 0,
+          utangSalesTotal: history?.utangSalesTotal ?? 0,
+          cashRefundsTotal: history?.cashRefundsTotal ?? 0,
+          totalCashIn: history?.totalCashIn ?? 0,
+          totalCashOut: history?.totalCashOut ?? 0,
+          expectedCashAmount: history?.expectedCashAmount ?? 500,
+          closingCashAmount: history?.closingCashAmount ?? null,
+          cashVarianceAmount: history?.cashVarianceAmount ?? null,
+          closingCashCountState: history?.closingCashCountState ?? null,
           completedCashCount: 0,
           voidedCashCount: 0,
           completedGCashCount: 0,
@@ -318,12 +361,13 @@ export async function mockPosRegisterShiftApi(
     }
 
     if (url.includes(`/cashier-shifts/${E2E_SHIFT_ID}`) && method === "GET") {
+      const detailStatus = state.history || state.closedShift ? "Closed" : "Open";
       return route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify(
           shiftBody({
-            status: state.closedShift ? "Closed" : "Open",
+            status: detailStatus,
             registerId: state.missingRegister ? null : E2E_REGISTER_ID,
           }),
         ),

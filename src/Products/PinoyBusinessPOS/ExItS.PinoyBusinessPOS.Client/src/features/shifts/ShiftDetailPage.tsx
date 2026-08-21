@@ -18,10 +18,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
-import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { StatusChip } from "@/components/exits/StatusChip";
-import { CashCountHistoryBlock } from "@/features/shifts/CashCountHistoryBlock";
 import { DenominationCountHelper } from "@/features/shifts/DenominationCountHelper";
+import { ShiftCashHistoryPanel } from "@/features/shifts/ShiftCashHistoryPanel";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -66,7 +65,11 @@ export function ShiftDetailPage() {
 
   const denomsQuery = useQuery({
     queryKey: ["pos-cash-denominations", workspaceScope?.organizationId],
-    enabled: workspaceScope !== null && canManage,
+    enabled:
+      workspaceScope !== null &&
+      canManage &&
+      Boolean(shiftQuery.data) &&
+      isOpenCashierShift(shiftQuery.data),
     queryFn: ({ signal }) => listCashDenominations(workspaceScope!, signal),
   });
 
@@ -100,13 +103,12 @@ export function ShiftDetailPage() {
   const summary = summaryQuery.data;
   const open = isOpenCashierShift(shift);
   const closed = !open;
-  const closingMode = shift.effectiveClosingCashCountMode?.trim() || shift.effectiveCashCountMode;
-  const closingRequired = resolveCashCountRequired(closingMode);
+  const closingModeLive =
+    shift.effectiveClosingCashCountMode?.trim() || shift.effectiveCashCountMode;
+  const closingRequired = resolveCashCountRequired(closingModeLive);
   const enabledDenoms = (denomsQuery.data ?? [])
     .filter((d) => d.isEnabled)
     .map((d) => ({ value: d.value, label: d.displayLabel }));
-  const openingLines = shift.openingDenominationLines ?? [];
-  const closingLines = shift.closingDenominationLines ?? [];
 
   async function onClose(skipClosingCash = false) {
     if (!canManage || !open || saving) {
@@ -163,56 +165,7 @@ export function ShiftDetailPage() {
         </StatusChip>
       </div>
 
-      <Card className="flex flex-col gap-3">
-        <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="shift-register-label">
-          <span className="font-semibold">{t("shift.registerSection")}: </span>
-          {shift.registerCode
-            ? `${shift.registerCode} — ${shift.registerName ?? ""}`
-            : t("shift.noRegisterOnShift")}
-        </p>
-
-        <CashCountHistoryBlock
-          testId="shift-opening-history"
-          label={t("shift.openingCashLabel")}
-          amount={shift.openingCashAmount}
-          lines={shift.openingCashCounted ? openingLines : []}
-          breakdownLabel={t("shift.viewOpeningDenominationBreakdown")}
-        />
-
-        {summary ? (
-          <p
-            className="mb-0 text-[length:var(--exits-text-sm)] text-muted"
-            data-testid="shift-expected-cash"
-          >
-            {t("shift.expectedCashLabel")}: <MoneyDisplay amount={summary.expectedCashAmount} />
-          </p>
-        ) : null}
-
-        {closed && shift.closingCashAmount != null ? (
-          <CashCountHistoryBlock
-            testId="shift-closing-history"
-            label={t("shift.countedCash")}
-            amount={shift.closingCashAmount}
-            lines={closingLines}
-            breakdownLabel={t("shift.viewDenominationBreakdown")}
-          />
-        ) : null}
-
-        {closed && shift.cashVarianceAmount != null ? (
-          <p className="mb-0 text-[length:var(--exits-text-sm)]" data-testid="shift-cash-variance">
-            {t("shift.cashVariance")}: <MoneyDisplay amount={shift.cashVarianceAmount} />
-          </p>
-        ) : null}
-
-        {closed && shift.closingNotes ? (
-          <p
-            className="mb-0 text-[length:var(--exits-text-sm)] text-muted"
-            data-testid="shift-closing-notes-readonly"
-          >
-            {t("shift.closingNotesLabel")}: {shift.closingNotes}
-          </p>
-        ) : null}
-      </Card>
+      <ShiftCashHistoryPanel shift={shift} summary={summary} closed={closed} />
 
       {open && canManage ? (
         <Card data-testid="shift-close-panel">
