@@ -1,8 +1,20 @@
 # Personal React/PWA Implementation Roadmap (RMAP-22)
 
-**Status:** Authoritative execution plan for Personal Master Run 01  
-**Branch:** `feat/pos-react-client`  
+**Status:** Authoritative execution plan for Personal Master Run 01 — **APPROVED** (`RMAP_22_PERSONAL_MASTER_RUN_01=APPROVED`)
+**Branch:** `feat/pos-react-client`
 **Start SHA:** `584004b98bd6bc360dc0edfec89e6445cc920e43` (`PERSONAL_MASTER_RUN_01_START_SHA`)
+
+## Review Repair 01 (shell notifications + connection)
+
+After Master Run 01 visual review:
+
+- Personal notification bell + unread badge (Personal-context only)
+- Unread / All notifications views
+- Honest **Connection** control (Online/Offline + Refresh data)
+- **RMAP-21** will later upgrade Connection → **Connection & Sync** with real outbox/sync state
+- Organization notification React contract: **GAP** (do not invent); basic Connection may be shared
+
+See [POS-REACT-RMAP-22-REVIEW-REPAIR-01-shell-notifications-connection.md](../../Reports/POS-REACT-RMAP-22-REVIEW-REPAIR-01-shell-notifications-connection.md).
 
 ## Product Owner execution-order decision
 

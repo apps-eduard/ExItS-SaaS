@@ -5,6 +5,18 @@
 **Primary product decision:** **Personal Utang is the main Personal feature.**  
 **New first-class requirement:** **Personal To-dos** (private-by-default; new domain — see implementation roadmap).
 
+## Personal shell (top bar)
+
+```text
+[ Identity ]     [ Connection ] [ Notifications ] [ Menu ]
+```
+
+- **Notifications:** first-class top-bar entry (bell + unread badge from Personal notification list).
+- **Connection:** real browser/application Online / Offline indication + **Refresh data** (query invalidation). Not “Connection & Sync”.
+- **Connection & Sync:** deferred to **RMAP-21** when LocalStore/outbox exist. Do not claim “All changes synced” until then.
+
+`RMAP_22_PERSONAL_MASTER_RUN_01=APPROVED`
+
 ## Relationship to other docs
 
 | Document | Role |
