@@ -25,6 +25,8 @@ import {
 import { RegistersListPage } from "@/features/registers/RegistersListPage";
 import { DeviceRegisterPage } from "@/features/devices/DeviceRegisterPage";
 import { OrgPosDevicesPage } from "@/features/devices/OrgPosDevicesPage";
+import { CheckoutCashPage } from "@/features/checkout/CheckoutCashPage";
+import { TransactionSummaryPage } from "@/features/checkout/TransactionSummaryPage";
 import { SellFloorPage } from "@/features/sell/SellFloorPage";
 import { ShiftDetailPage } from "@/features/shifts/ShiftDetailPage";
 import { ShiftOpenPage } from "@/features/shifts/ShiftOpenPage";
@@ -120,11 +122,16 @@ export const appRoutes = [
               <RequireOrganizationSession>
                 <RequireWorkspaceBound>
                   <RequireCreateSale>
-                    <SellFloorPage />
+                    <Outlet />
                   </RequireCreateSale>
                 </RequireWorkspaceBound>
               </RequireOrganizationSession>
             ),
+            children: [
+              { index: true, element: <SellFloorPage /> },
+              { path: "checkout", element: <CheckoutCashPage /> },
+              { path: "sales/:saleId/summary", element: <TransactionSummaryPage /> },
+            ],
           },
           {
             path: "role/owner",

@@ -29,6 +29,7 @@ import { SellCategoryFilter } from "@/features/sell/SellCategoryFilter";
 import { SellCustomQuantityDialog } from "@/features/sell/SellCustomQuantityDialog";
 import { SellUnitEntryDialog } from "@/features/sell/SellUnitEntryDialog";
 import { SellWeightEntryDialog } from "@/features/sell/SellWeightEntryDialog";
+import { canCreateSale } from "@/access/pos-capabilities";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatCartSummary } from "@/lib/format-money";
@@ -72,9 +73,10 @@ export function SellFloorPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { returnRoute, exit } = useSellingMode();
-  const { boundWorkspace } = useWorkspace();
+  const { boundWorkspace, sessionGrant } = useWorkspace();
   const cart = useSessionCart();
   const { readiness, hasOpenShift, currentShift } = useShiftContext();
+  const allowCreateSale = canCreateSale(sessionGrant);
 
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
@@ -442,6 +444,7 @@ export function SellFloorPage() {
     onEditCustomQuantity: handleEditCustomQuantity,
     onClear: cart.clear,
     checkoutReadiness: readiness,
+    canCreateSale: allowCreateSale,
   };
 
   return (

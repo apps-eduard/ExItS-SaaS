@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { lineAmount, type SessionCartLine } from "@/cart/SessionCartProvider";
 import { formatQuantityDisplay, isByWeightSellingMode } from "@/cart/sell-cart-helpers";
@@ -25,6 +25,8 @@ type SellCartPanelProps = {
   /** Disambiguates duplicate landscape + sheet markup (ids / optional test prefix). */
   panelId?: string;
   checkoutReadiness?: CheckoutShiftReadiness;
+  /** CreateSale capability — required with moneyPostReady to enable Pay. */
+  canCreateSale?: boolean;
 };
 
 export function SellCartPanel({
@@ -42,12 +44,16 @@ export function SellCartPanel({
   onClose,
   panelId = "cart",
   checkoutReadiness,
+  canCreateSale = false,
 }: SellCartPanelProps) {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const summary = formatCartSummary(lineCount, subtotal);
   const shiftGateReady = checkoutReadiness?.shiftGateReady === true;
+  const moneyPostReady = checkoutReadiness?.moneyPostReady === true;
   const readinessStatus = checkoutReadiness?.status ?? "loading";
+  const payEnabled = lines.length > 0 && moneyPostReady && canCreateSale;
 
   return (
     <>
@@ -213,17 +219,19 @@ export function SellCartPanel({
             className="mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted"
             data-testid="checkout-readiness-detail"
           >
-            {shiftGateReady
-              ? t("sell.checkoutReadinessReady")
-              : readinessStatus === "blocked_denied"
-                ? t("sell.checkoutReadinessDenied")
-                : readinessStatus === "blocked_closed"
-                  ? t("sell.checkoutReadinessClosed")
-                  : readinessStatus === "blocked_no_register"
-                    ? t("sell.checkoutReadinessNoRegister")
-                    : readinessStatus === "loading"
-                      ? t("loading.label")
-                      : t("sell.checkoutReadinessBlocked")}
+            {moneyPostReady
+              ? t("sell.checkoutReadinessMoneyReady")
+              : shiftGateReady
+                ? t("sell.checkoutReadinessNeedsDevice")
+                : readinessStatus === "blocked_denied"
+                  ? t("sell.checkoutReadinessDenied")
+                  : readinessStatus === "blocked_closed"
+                    ? t("sell.checkoutReadinessClosed")
+                    : readinessStatus === "blocked_no_register"
+                      ? t("sell.checkoutReadinessNoRegister")
+                      : readinessStatus === "loading"
+                        ? t("loading.label")
+                        : t("sell.checkoutReadinessBlocked")}
           </p>
           {!shiftGateReady &&
           readinessStatus !== "loading" &&
@@ -235,6 +243,16 @@ export function SellCartPanel({
               data-testid="sell-open-shift-cta"
             >
               <Link to="/shifts/open">{t("shift.openTitle")}</Link>
+            </Button>
+          ) : null}
+          {shiftGateReady && !moneyPostReady ? (
+            <Button
+              asChild
+              variant="ghost"
+              className="mt-2 min-h-11 w-full"
+              data-testid="sell-register-device-cta"
+            >
+              <Link to="/devices/register">{t("checkout.registerDevice")}</Link>
             </Button>
           ) : null}
           {shiftGateReady ? (
@@ -251,14 +269,35 @@ export function SellCartPanel({
         <Button
           data-testid="sell-pay"
           type="button"
-          disabled
-          title={shiftGateReady ? t("sell.payAwaitingSalePost") : t("sell.payDisabledNeedsShift")}
+          disabled={!payEnabled}
+          title={
+            payEnabled
+              ? t("sell.payReadyTitle")
+              : !canCreateSale
+                ? t("sell.payDisabledTitle")
+                : !moneyPostReady
+                  ? shiftGateReady
+                    ? t("sell.payDisabledNeedsDevice")
+                    : t("sell.payDisabledNeedsShift")
+                  : t("sell.payDisabledEmpty")
+          }
           className="w-full"
+          onClick={() => {
+            if (payEnabled) {
+              navigate("/sell/checkout");
+            }
+          }}
         >
           {lineCount > 0 ? `${t("sell.payWithItems")} (${lineCount})` : t("sell.pay")}
         </Button>
         <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-          {shiftGateReady ? t("sell.payShiftReadyNotPosted") : t("sell.payNotReady")}
+          {payEnabled
+            ? t("sell.payReadyHint")
+            : moneyPostReady
+              ? t("sell.payAddItems")
+              : shiftGateReady
+                ? t("sell.payNeedsDevice")
+                : t("sell.payNotReady")}
         </p>
       </div>
 
