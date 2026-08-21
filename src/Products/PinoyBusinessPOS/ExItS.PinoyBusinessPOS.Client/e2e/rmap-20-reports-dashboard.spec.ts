@@ -221,28 +221,32 @@ test.describe("RMAP-20 reports + management dashboard", () => {
     await expect(page.getByTestId("kpi-today-sales")).toBeVisible();
     await expect(page.getByTestId("report-timezone-note")).toBeVisible();
     await expect(page.getByTestId("report-branch-filter")).toBeVisible();
-    await expect(page.getByTestId("dashboard-no-pnl")).toBeVisible();
-    await expect(page.getByTestId("dashboard-export-deferred")).toBeVisible();
+    await expect(page.getByTestId("dashboard-no-pnl")).toHaveCount(0);
+    await expect(page.getByTestId("dashboard-export-deferred")).toHaveCount(0);
+    await expect(
+      page.getByText(/RMAP_TAX_AUTHORIZED|RMAP-B04|contracts are not proven/i),
+    ).toHaveCount(0);
+    await expect(page.getByText(/ManualGCash/i)).toHaveCount(0);
 
     await page.getByTestId("report-preset-thisMonth").click();
     await expect(page.getByTestId("report-active-range")).toContainText("2026-08-01");
 
     await clientNavigate(page, "/reports");
     await expect(page.getByTestId("reports-hub-page")).toBeVisible();
-    await expect(page.getByTestId("reports-no-tax")).toBeVisible();
-    await expect(page.getByTestId("reports-no-pnl")).toBeVisible();
-    await expect(page.getByTestId("reports-no-buyer-projection")).toBeVisible();
+    await expect(page.getByTestId("reports-no-tax")).toHaveCount(0);
+    await expect(page.getByTestId("reports-no-pnl")).toHaveCount(0);
+    await expect(page.getByTestId("reports-no-buyer-projection")).toHaveCount(0);
+    await expect(page.getByTestId("reports-export-deferred")).toHaveCount(0);
     await expect(page.getByTestId("report-link-sales-summary")).toBeVisible();
     await expect(page.getByTestId("report-link-tax")).toHaveCount(0);
     await expect(page.getByTestId("report-link-pnl")).toHaveCount(0);
     await expect(
       page.locator(
-        'a[href*="/tax"], a[href*="/vat"], a[href*="/bir"], a[href*="/pnl"], a[href*="profit-loss"]',
+        'a[href*="/tax"], a[href*="/vat"], a[href*="/bir"], a[href*="/pnl"], a[href*="profit-loss"], a[href*="purchase-history"]',
       ),
     ).toHaveCount(0);
-    await expect(page.getByTestId("reports-no-tax")).toContainText("RMAP_TAX_AUTHORIZED=NO");
-    await expect(page.getByTestId("reports-no-pnl")).toBeVisible();
-    await expect(page.getByTestId("reports-no-buyer-projection")).toContainText("RMAP-B04");
+    await expect(page.getByText(/RMAP_TAX_AUTHORIZED|RMAP-B04|Tax \/ VAT \/ BIR/i)).toHaveCount(0);
+    await expect(page.getByText(/backend supports|contracts are not proven/i)).toHaveCount(0);
 
     await page.getByTestId("report-link-sales-summary").click();
     await expect(page.getByTestId("operational-report-page")).toBeVisible();
@@ -255,6 +259,7 @@ test.describe("RMAP-20 reports + management dashboard", () => {
     await expect(page.getByTestId("report-results")).toContainText("Cash");
     await expect(page.getByTestId("report-results")).toContainText("GCash");
     await expect(page.getByTestId("report-results")).toContainText("Utang");
+    await expect(page.getByText(/ManualGCash/i)).toHaveCount(0);
 
     expect(orgHeaders.length).toBeGreaterThan(0);
   });
@@ -325,7 +330,8 @@ test.describe("RMAP-20 reports + management dashboard", () => {
       }
       await clientNavigate(page, "/reports");
       await expect(page.getByTestId("reports-hub-page")).toBeVisible();
-      await expect(page.getByTestId("reports-no-tax")).toBeVisible();
+      await expect(page.getByTestId("report-link-sales-summary")).toBeVisible();
+      await expect(page.getByText(/RMAP_TAX_AUTHORIZED|RMAP-B04/i)).toHaveCount(0);
     }
   });
 });

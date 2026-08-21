@@ -752,7 +752,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "connected.requestConnection": "Kumonekta sa negosyo",
   "connected.requestTitle": "Humiling ng koneksyon",
   "connected.requestHelp":
-    "Ilagay ang Business QR o ORG###### ng supplier. Hindi tinatanggap ang Guid lang.",
+    "Ilagay ang Business QR o ID ng organisasyon (ORG######) ng supplier. Hindi tinatanggap ang bare ID lang.",
   "connected.businessQrOrOrgId": "Business QR o organization ID",
   "connected.businessQrHint": "ORG###### o teksto ng Business QR",
   "connected.sendRequest": "Ipadala ang kahilingan",
@@ -760,7 +760,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "connected.requestSent": "Naipadala ang kahilingan. Hintayin ang pagtanggap ng supplier.",
   "connected.requestFailed": "Hindi maipadala ang kahilingan sa koneksyon.",
   "connected.qrRequired": "Maglagay ng Business QR o ORG######.",
-  "connected.guidRejected": "Hindi tinatanggap ang Guid lang. Gamitin ang Business QR o ORG######.",
+  "connected.guidRejected":
+    "Ilagay ang Business QR o ID ng organisasyon (ORG######). Hindi tinatanggap ang bare ID lang.",
   "connected.incomingRequests": "Papasok na kahilingan",
   "connected.incomingCompact": "Papasok na kahilingan ({count})",
   "connected.incomingTitle": "Papasok na kahilingan sa koneksyon",
@@ -1441,15 +1442,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "reports.emptyTitle": "No rows",
   "reports.emptyDetail": "No data for this period.",
   "reports.unknownSupplier": "Supplier",
-  "reports.noTaxNav":
-    "Tax / VAT / BIR report navigation is not available (RMAP_TAX_AUTHORIZED=NO).",
-  "reports.noFakePl":
-    "No profit & loss, COGS, or inventory valuation — those contracts are not proven.",
-  "reports.noBuyerProjection":
-    "Buyer purchase-history projection is not part of seller reports (RMAP-B04).",
-  "reports.exportDeferred": "File export is deferred until the backend supports it safely.",
   "reports.commercialDiscountUnavailable":
-    "Period commercial-discount totals are not in the report contract — not invented here.",
+    "Hindi pa available ang kabuuang commercial discount para sa panahong ito.",
   "reports.metric.gross": "Gross",
   "reports.metric.net": "Net",
   "reports.metric.voids": "Voids",

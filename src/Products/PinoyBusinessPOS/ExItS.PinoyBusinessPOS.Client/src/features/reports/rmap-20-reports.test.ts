@@ -104,3 +104,37 @@ describe("pos-reporting-client paths", () => {
     expect(BUYER_PURCHASE_PROJECTION_PATH_MARKERS.some((m) => m.includes("purchase"))).toBe(true);
   });
 });
+
+describe("report user-facing terminology boundary", () => {
+  it("keeps ManualGCash labeled as GCash", () => {
+    expect(formatReportPaymentMethod("ManualGCash")).toBe("GCash");
+  });
+
+  it("does not expose roadmap/developer wording in normal message catalogs", async () => {
+    const { catalogs } = await import("@/i18n/messages");
+    const forbidden = [
+      "RMAP_TAX_AUTHORIZED",
+      "RMAP-B04",
+      "contracts are not proven",
+      "backend supports",
+      "deferred until the backend",
+      "purchase-history projection",
+      "not invented here",
+      "report contract",
+    ];
+    for (const [locale, catalog] of Object.entries(catalogs)) {
+      for (const [key, value] of Object.entries(catalog)) {
+        for (const needle of forbidden) {
+          expect(value, `${locale}:${key}`).not.toContain(needle);
+        }
+        expect(value, `${locale}:${key}`).not.toContain("ManualGCash");
+      }
+      expect(catalog["connected.guidRejected"], `${locale}:connected.guidRejected`).not.toMatch(
+        /\bGuid\b/,
+      );
+      expect(catalog["connected.requestHelp"], `${locale}:connected.requestHelp`).not.toMatch(
+        /\bGuid\b/,
+      );
+    }
+  });
+});

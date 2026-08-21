@@ -88,26 +88,6 @@ export function ReportsHubPage() {
           </Button>
         </section>
       ) : null}
-
-      {/* Explicit non-claims — no tax / P&L / buyer purchase projection nav */}
-      <p className="m-0 text-[length:var(--exits-text-xs)] text-muted" data-testid="reports-no-tax">
-        {t("reports.noTaxNav")}
-      </p>
-      <p className="m-0 text-[length:var(--exits-text-xs)] text-muted" data-testid="reports-no-pnl">
-        {t("reports.noFakePl")}
-      </p>
-      <p
-        className="m-0 text-[length:var(--exits-text-xs)] text-muted"
-        data-testid="reports-no-buyer-projection"
-      >
-        {t("reports.noBuyerProjection")}
-      </p>
-      <p
-        className="m-0 text-[length:var(--exits-text-xs)] text-muted"
-        data-testid="reports-export-deferred"
-      >
-        {t("reports.exportDeferred")}
-      </p>
     </div>
   );
 }

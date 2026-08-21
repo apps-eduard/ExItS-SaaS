@@ -274,19 +274,6 @@ export function ManagementDashboardPage() {
           </>
         ) : null}
       </Card>
-
-      <p
-        className="m-0 text-[length:var(--exits-text-xs)] text-muted"
-        data-testid="dashboard-no-pnl"
-      >
-        {t("reports.noFakePl")}
-      </p>
-      <p
-        className="m-0 text-[length:var(--exits-text-xs)] text-muted"
-        data-testid="dashboard-export-deferred"
-      >
-        {t("reports.exportDeferred")}
-      </p>
     </div>
   );
 }

@@ -220,11 +220,6 @@ export function ClassicReportPage() {
           </ul>
         ) : null}
       </Card>
-
-      <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("reports.noFakePl")}</p>
-      <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-        {t("reports.exportDeferred")}
-      </p>
     </div>
   );
 }

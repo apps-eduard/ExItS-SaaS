@@ -569,7 +569,10 @@ test.describe("RMAP-16 connected suppliers", () => {
     await expect(page.getByTestId("connected-request-page")).toBeVisible();
     await page.getByTestId("connected-request-input").fill("11111111-1111-1111-1111-111111111111");
     await page.getByTestId("connected-request-send").click();
-    await expect(page.getByTestId("connected-request-error")).toContainText(/Guid/i);
+    await expect(page.getByTestId("connected-request-error")).toContainText(
+      /Business QR|organization ID|raw ID|ORG######/i,
+    );
+    await expect(page.getByTestId("connected-request-error")).not.toContainText(/Guid/i);
 
     await page.getByTestId("connected-request-input").fill("ORG000042");
     await page.getByTestId("connected-request-send").click();

@@ -764,7 +764,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "connected.requestConnection": "I-konek ang negosyo",
   "connected.requestTitle": "Hangyo og koneksyon",
   "connected.requestHelp":
-    "Isulod ang Business QR o ORG###### sa supplier. Dili dawaton ang Guid lang.",
+    "Isulod ang Business QR o organization ID (ORG######) sa supplier. Dili dawaton ang bare ID lang.",
   "connected.businessQrOrOrgId": "Business QR o organization ID",
   "connected.businessQrHint": "ORG###### o teksto sa Business QR",
   "connected.sendRequest": "Ipadala ang hangyo",
@@ -772,7 +772,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "connected.requestSent": "Napadala ang hangyo. Hulat nga modawat ang supplier.",
   "connected.requestFailed": "Dili mapadala ang hangyo sa koneksyon.",
   "connected.qrRequired": "Isulod ang Business QR o ORG######.",
-  "connected.guidRejected": "Dili dawaton ang Guid lang. Gamita ang Business QR o ORG######.",
+  "connected.guidRejected":
+    "Isulod ang Business QR o organization ID (ORG######). Dili dawaton ang bare ID lang.",
   "connected.incomingRequests": "Umaabot nga hangyo",
   "connected.incomingCompact": "Umaabot nga hangyo ({count})",
   "connected.incomingTitle": "Umaabot nga hangyo sa koneksyon",
@@ -1444,15 +1445,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "reports.emptyTitle": "No rows",
   "reports.emptyDetail": "No data for this period.",
   "reports.unknownSupplier": "Supplier",
-  "reports.noTaxNav":
-    "Tax / VAT / BIR report navigation is not available (RMAP_TAX_AUTHORIZED=NO).",
-  "reports.noFakePl":
-    "No profit & loss, COGS, or inventory valuation — those contracts are not proven.",
-  "reports.noBuyerProjection":
-    "Buyer purchase-history projection is not part of seller reports (RMAP-B04).",
-  "reports.exportDeferred": "File export is deferred until the backend supports it safely.",
   "reports.commercialDiscountUnavailable":
-    "Period commercial-discount totals are not in the report contract — not invented here.",
+    "Wala pa ang commercial discount totals para niining panahona.",
   "reports.metric.gross": "Gross",
   "reports.metric.net": "Net",
   "reports.metric.voids": "Voids",

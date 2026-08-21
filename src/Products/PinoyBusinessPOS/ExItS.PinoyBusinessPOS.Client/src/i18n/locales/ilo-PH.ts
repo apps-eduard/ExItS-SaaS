@@ -768,7 +768,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "connected.requestConnection": "Ikonekta ti negosio",
   "connected.requestTitle": "Agkiddaw iti koneksion",
   "connected.requestHelp":
-    "Ikabil ti Business QR wenno ORG###### ti supplier. Saan a maawat ti Guid laeng.",
+    "Ikabil ti Business QR wenno organization ID (ORG######) ti supplier. Saan a maawat ti bare ID laeng.",
   "connected.businessQrOrOrgId": "Business QR wenno organization ID",
   "connected.businessQrHint": "ORG###### wenno teksto ti Business QR",
   "connected.sendRequest": "Ipatulod ti kiddaw",
@@ -776,7 +776,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "connected.requestSent": "Naitulod ti kiddaw. Urayen a mangawat ti supplier.",
   "connected.requestFailed": "Saan a maitulod ti kiddaw ti koneksion.",
   "connected.qrRequired": "Ikabil ti Business QR wenno ORG######.",
-  "connected.guidRejected": "Saan a maawat ti Guid laeng. Usaren ti Business QR wenno ORG######.",
+  "connected.guidRejected":
+    "Ikabil ti Business QR wenno organization ID (ORG######). Saan a maawat ti bare ID laeng.",
   "connected.incomingRequests": "Agdama a kiddaw",
   "connected.incomingCompact": "Agdama a kiddaw ({count})",
   "connected.incomingTitle": "Agdama a kiddaw ti koneksion",
@@ -1449,15 +1450,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "reports.emptyTitle": "No rows",
   "reports.emptyDetail": "No data for this period.",
   "reports.unknownSupplier": "Supplier",
-  "reports.noTaxNav":
-    "Tax / VAT / BIR report navigation is not available (RMAP_TAX_AUTHORIZED=NO).",
-  "reports.noFakePl":
-    "No profit & loss, COGS, or inventory valuation — those contracts are not proven.",
-  "reports.noBuyerProjection":
-    "Buyer purchase-history projection is not part of seller reports (RMAP-B04).",
-  "reports.exportDeferred": "File export is deferred until the backend supports it safely.",
   "reports.commercialDiscountUnavailable":
-    "Period commercial-discount totals are not in the report contract — not invented here.",
+    "Saan pay a magun-od ti commercial discount totals para iti daytoy a panawen.",
   "reports.metric.gross": "Gross",
   "reports.metric.net": "Net",
   "reports.metric.voids": "Voids",

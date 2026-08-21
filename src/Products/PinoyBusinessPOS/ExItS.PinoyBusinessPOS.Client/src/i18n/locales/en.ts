@@ -727,7 +727,7 @@ export const en = {
   "connected.requestConnection": "Connect a business",
   "connected.requestTitle": "Request connection",
   "connected.requestHelp":
-    "Enter the supplier Business QR payload or ORG###### public ID. A Guid alone is not accepted.",
+    "Enter the supplier Business QR or organization ID (ORG######). A raw ID alone is not accepted.",
   "connected.businessQrOrOrgId": "Business QR or organization ID",
   "connected.businessQrHint": "ORG###### or Business QR text",
   "connected.sendRequest": "Send request",
@@ -735,7 +735,8 @@ export const en = {
   "connected.requestSent": "Connection request sent. Waiting for the supplier to accept.",
   "connected.requestFailed": "Could not send the connection request.",
   "connected.qrRequired": "Enter a Business QR or ORG###### ID.",
-  "connected.guidRejected": "A Guid alone is not accepted. Use Business QR or ORG######.",
+  "connected.guidRejected":
+    "Enter a Business QR or organization ID (ORG######). A raw ID alone is not accepted.",
   "connected.incomingRequests": "Incoming requests",
   "connected.incomingCompact": "Incoming requests ({count})",
   "connected.incomingTitle": "Incoming connection requests",
@@ -1401,15 +1402,8 @@ export const en = {
   "reports.emptyTitle": "No rows",
   "reports.emptyDetail": "No data for this period.",
   "reports.unknownSupplier": "Supplier",
-  "reports.noTaxNav":
-    "Tax / VAT / BIR report navigation is not available (RMAP_TAX_AUTHORIZED=NO).",
-  "reports.noFakePl":
-    "No profit & loss, COGS, or inventory valuation — those contracts are not proven.",
-  "reports.noBuyerProjection":
-    "Buyer purchase-history projection is not part of seller reports (RMAP-B04).",
-  "reports.exportDeferred": "File export is deferred until the backend supports it safely.",
   "reports.commercialDiscountUnavailable":
-    "Period commercial-discount totals are not in the report contract — not invented here.",
+    "Commercial discount totals for this period aren't available yet.",
   "reports.metric.gross": "Gross",
   "reports.metric.net": "Net",
   "reports.metric.voids": "Voids",
