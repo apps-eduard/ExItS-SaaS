@@ -907,6 +907,14 @@ export const iloPH: Record<keyof typeof en, string> = {
     "Saan a makatipig daytoy a browser iti durable installation id. I-enable ti storage ken padasen manen.",
   "devices.defaultBrowserName": "Browser POS",
   "devices.noOrganization": "I-bind una ti organization workspace.",
+  "devices.removeDevice": "Ikkaten ti device",
+  "devices.removeTitle": "Ikkaten daytoy a device?",
+  "devices.removeConfirm": "Ikkaten ti device",
+  "devices.removing": "Maiikkaten…",
+  "devices.remove.warning":
+    "Saanen a mapalubosan daytoy a device nga agilako iti POS ken saanen nga agusaren ti maysa kadagiti active device slots mo.",
+  "devices.remove.warningCurrentDevice":
+    "Daytoy ti device nga us-usarem ita. No ikkaten, saan ka a makailako ditoy agingga a irehistrom manen.",
   "devices.revoke": "I-revoke",
   "devices.revokeTitle": "I-revoke ti POS device",
   "devices.revokeReasonLabel": "Rason",

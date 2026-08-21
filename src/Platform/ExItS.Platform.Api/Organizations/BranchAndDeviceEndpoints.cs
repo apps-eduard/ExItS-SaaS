@@ -452,6 +452,16 @@ internal static class BranchAndDeviceEndpoints
             var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
             return denied ?? Results.Ok(await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), ct).ConfigureAwait(false));
         });
+        // Governing/support history including revoked — not the normal customer Device Management list.
+        root.MapGet("/pos-devices/history", async (Guid organizationId, ListAllDevices useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
+        {
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(
+                organizationId,
+                PlatformAuditActions.PlatformAccessChecked,
+                ct).ConfigureAwait(false);
+            if (denied is not null) return denied;
+            return Results.Ok(await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), ct).ConfigureAwait(false));
+        });
         root.MapGet("/pos-devices/capacity", async (Guid organizationId, GetDeviceCapacity useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
         {
             var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);

@@ -76,7 +76,6 @@ export function OrgPosDevicesPage() {
   const [revokePasswordVisible, setRevokePasswordVisible] = useState(false);
   const [revokeError, setRevokeError] = useState<string | null>(null);
   const [revokedCurrentDevice, setRevokedCurrentDevice] = useState(false);
-  const [copiedDeviceId, setCopiedDeviceId] = useState<string | null>(null);
 
   const localInstallationId = useMemo(
     () => posDevice.installationDeviceId ?? peekDurableInstallationDeviceId(),
@@ -124,7 +123,10 @@ export function OrgPosDevicesPage() {
 
   const capacity = formatPosDeviceCapacity(capacityQuery.data);
   const capacityBlocked = capacity?.kind === "finite" && capacity.atLimit;
-  const devices = useMemo(() => devicesQuery.data ?? [], [devicesQuery.data]);
+  const devices = useMemo(
+    () => (devicesQuery.data ?? []).filter((device) => device.status === "Active"),
+    [devicesQuery.data],
+  );
 
   const currentBrowser = useMemo(
     () =>
@@ -288,18 +290,6 @@ export function OrgPosDevicesPage() {
     setActionError(null);
     if (branchId && !registerBranchId) {
       setRegisterBranchId(branchId);
-    }
-  }
-
-  async function copyInstallationId(installationDeviceId: string) {
-    try {
-      await navigator.clipboard.writeText(installationDeviceId);
-      setCopiedDeviceId(installationDeviceId);
-      window.setTimeout(() => {
-        setCopiedDeviceId((current) => (current === installationDeviceId ? null : current));
-      }, 2000);
-    } catch {
-      setActionError(t("devices.copyFailed"));
     }
   }
 
@@ -530,7 +520,6 @@ export function OrgPosDevicesPage() {
           const modelLine = formatDeviceModelLine(device.platform, device.model);
           const lastUsed = formatTimestamp(device.lastSeenAtUtc);
           const registered = formatTimestamp(device.registeredAtUtc);
-          const revoked = formatTimestamp(device.revokedAtUtc);
 
           return (
             <li key={device.id}>
@@ -542,13 +531,7 @@ export function OrgPosDevicesPage() {
                       <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold wrap-break-word">
                         {device.friendlyName}
                       </p>
-                      <StatusChip tone={device.status === "Active" ? "success" : "warning"}>
-                        {device.status === "Active"
-                          ? t("devices.status.active")
-                          : device.status === "Revoked"
-                            ? t("devices.status.revoked")
-                            : device.status}
-                      </StatusChip>
+                      <StatusChip tone="success">{t("devices.status.active")}</StatusChip>
                       {isCurrent ? (
                         <span data-testid={`device-this-device-${device.id}`}>
                           <StatusChip tone="info">{t("devices.thisDevice")}</StatusChip>
@@ -576,12 +559,6 @@ export function OrgPosDevicesPage() {
                           <dd className="m-0">{registered}</dd>
                         </>
                       ) : null}
-                      {revoked ? (
-                        <>
-                          <dt className="m-0">{t("devices.revokedOn")}</dt>
-                          <dd className="m-0">{revoked}</dd>
-                        </>
-                      ) : null}
                       {device.appVersion ? (
                         <>
                           <dt className="m-0">{t("devices.appVersion")}</dt>
@@ -589,51 +566,7 @@ export function OrgPosDevicesPage() {
                         </>
                       ) : null}
                     </dl>
-                    <details className="mt-2 text-[length:var(--exits-text-xs)] text-muted">
-                      <summary className="cursor-pointer select-none">
-                        {t("devices.technicalDetails")}
-                      </summary>
-                      <div className="mt-2 flex flex-col gap-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span>{t("devices.installationIdLabel")}</span>
-                          <code className="break-all rounded bg-[var(--exits-surface-muted)] px-2 py-1">
-                            {device.installationDeviceId}
-                          </code>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            className="min-h-11"
-                            data-testid={`device-copy-id-${device.id}`}
-                            onClick={() => void copyInstallationId(device.installationDeviceId)}
-                          >
-                            {copiedDeviceId === device.installationDeviceId
-                              ? t("devices.copied")
-                              : t("devices.copyInstallationId")}
-                          </Button>
-                        </div>
-                        <p className="m-0">
-                          {t("devices.platformLabel")}: {device.platform || "—"}
-                        </p>
-                        <p className="m-0">
-                          {t("devices.modelLabel")}: {device.model || "—"}
-                        </p>
-                        <p className="m-0">
-                          {t("devices.appVersion")}: {device.appVersion || "—"}
-                        </p>
-                        <p className="m-0 break-all">
-                          {t("devices.registeredOn")}: {device.registeredAtUtc || "—"}
-                        </p>
-                        <p className="m-0 break-all">
-                          {t("devices.lastUsed")}: {device.lastSeenAtUtc || "—"}
-                        </p>
-                        {device.revokedAtUtc ? (
-                          <p className="m-0 break-all">
-                            {t("devices.revokedOn")}: {device.revokedAtUtc}
-                          </p>
-                        ) : null}
-                      </div>
-                    </details>
-                    {device.status === "Active" ? (
+                    {canManage && device.status === "Active" ? (
                       <Button
                         type="button"
                         variant="ghost"
@@ -641,7 +574,7 @@ export function OrgPosDevicesPage() {
                         data-testid={`device-revoke-${device.id}`}
                         onClick={() => openRevoke(device)}
                       >
-                        {t("devices.revoke")}
+                        {t("devices.removeDevice")}
                       </Button>
                     ) : null}
                   </div>
@@ -666,7 +599,7 @@ export function OrgPosDevicesPage() {
         onClose={closeRevoke}
         panelId="devices-revoke-panel"
         testId="devices-revoke-panel"
-        title={t("devices.revokeTitle")}
+        title={t("devices.removeTitle")}
         closeLabel={t("devices.closeSheet")}
       >
         {revokeTarget ? (
@@ -685,8 +618,8 @@ export function OrgPosDevicesPage() {
                   data-testid="devices-revoke-warning"
                 >
                   {revokeTargetIsCurrent
-                    ? t("devices.revoke.warningCurrentDevice")
-                    : t("devices.revoke.warning")}
+                    ? t("devices.remove.warningCurrentDevice")
+                    : t("devices.remove.warning")}
                 </p>
               </div>
             </div>
@@ -750,7 +683,7 @@ export function OrgPosDevicesPage() {
                 }
                 onClick={() => revokeMutation.mutate()}
               >
-                {revokeMutation.isPending ? t("devices.revoking") : t("devices.revokeConfirm")}
+                {revokeMutation.isPending ? t("devices.removing") : t("devices.removeConfirm")}
               </Button>
               <Button
                 type="button"

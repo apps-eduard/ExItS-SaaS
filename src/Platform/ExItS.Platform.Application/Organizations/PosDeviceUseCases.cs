@@ -87,6 +87,14 @@ public sealed class RegisterCurrentDevice(
 
 public sealed class ListDevices(IPosDeviceRepository devices)
 {
+    /// <summary>Customer Device Management — active POS devices only.</summary>
+    public async Task<IReadOnlyList<PosDeviceDto>> ExecuteAsync(PlatformOrganizationId organizationId, CancellationToken cancellationToken = default) =>
+        (await devices.ListActiveByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false)).Select(DeviceMapper.ToDto).ToList();
+}
+
+/// <summary>Audit/support — all devices including revoked. Does not delete history.</summary>
+public sealed class ListAllDevices(IPosDeviceRepository devices)
+{
     public async Task<IReadOnlyList<PosDeviceDto>> ExecuteAsync(PlatformOrganizationId organizationId, CancellationToken cancellationToken = default) =>
         (await devices.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false)).Select(DeviceMapper.ToDto).ToList();
 }

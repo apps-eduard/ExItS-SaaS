@@ -183,11 +183,35 @@ describe("OrgPosDevicesPage this-device awareness", () => {
     expect(screen.getByTestId("devices-this-browser")).toHaveAttribute("data-state", "active");
   });
 
+  it("hides revoked devices from the normal active list", async () => {
+    listPosDevices.mockResolvedValue({
+      ok: true,
+      value: [
+        deviceDto({ id: CURRENT_DEVICE_ID, status: "Active", friendlyName: "Shop PC" }),
+        deviceDto({
+          id: OTHER_DEVICE_ID,
+          status: "Revoked",
+          friendlyName: "Old Phone",
+          revokedAtUtc: "2026-08-22T02:00:00Z",
+          installationDeviceId: "other-install",
+        }),
+      ],
+    });
+
+    renderPage();
+
+    expect(await screen.findByTestId(`device-row-${CURRENT_DEVICE_ID}`)).toBeVisible();
+    expect(screen.queryByTestId(`device-row-${OTHER_DEVICE_ID}`)).toBeNull();
+    expect(screen.getByTestId(`device-revoke-${CURRENT_DEVICE_ID}`)).toHaveTextContent(
+      /remove device/i,
+    );
+  });
+
   it("keeps register hidden behind an explicit action when this browser is revoked", async () => {
     registrationStatus = "revoked";
     listPosDevices.mockResolvedValue({
       ok: true,
-      value: [deviceDto({ status: "Revoked", revokedAtUtc: "2026-08-22T02:00:00Z" })],
+      value: [],
     });
     renderPage();
 
@@ -298,11 +322,13 @@ describe("OrgPosDevicesPage revoke governance", () => {
     renderPage();
 
     const user = await openRevokeSheet(OTHER_DEVICE_ID);
-    expect(screen.getByTestId("devices-revoke-warning")).not.toHaveTextContent(/using now/i);
+    expect(screen.getByTestId("devices-revoke-warning")).not.toHaveTextContent(
+      /currently using/i,
+    );
     await user.click(screen.getByTestId("devices-revoke-cancel"));
 
     await openRevokeSheet(CURRENT_DEVICE_ID);
-    expect(screen.getByTestId("devices-revoke-warning")).toHaveTextContent(/using now/i);
+    expect(screen.getByTestId("devices-revoke-warning")).toHaveTextContent(/currently using/i);
   });
 
   it("uses a masked password field bound to the current-password autofill slot", async () => {

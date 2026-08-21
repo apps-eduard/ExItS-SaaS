@@ -221,6 +221,7 @@ builder.Services.AddScoped<UpdateBranchFulfillmentSettings>();
 builder.Services.AddScoped<SetBranchOnlineOrdersPaused>();
 builder.Services.AddScoped<EnsureMainBranchExists>();
 builder.Services.AddScoped<ListDevices>();
+builder.Services.AddScoped<ListAllDevices>();
 builder.Services.AddScoped<RegisterCurrentDevice>();
 builder.Services.AddScoped<RenameDevice>();
 builder.Services.AddScoped<RevokeDevice>();

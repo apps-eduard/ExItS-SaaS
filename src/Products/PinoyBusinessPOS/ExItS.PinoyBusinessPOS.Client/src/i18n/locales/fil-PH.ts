@@ -890,6 +890,14 @@ export const filPH: Record<keyof typeof en, string> = {
     "Hindi makapag-store ang browser na ito ng durable installation id. I-enable ang storage at subukan ulit.",
   "devices.defaultBrowserName": "Browser POS",
   "devices.noOrganization": "I-bind muna ang organization workspace.",
+  "devices.removeDevice": "Alisin ang device",
+  "devices.removeTitle": "Alisin ang device na ito?",
+  "devices.removeConfirm": "Alisin ang device",
+  "devices.removing": "Inaalis…",
+  "devices.remove.warning":
+    "Hindi na papayagan ang device na ito na magbenta sa POS at hindi na nito gagamitin ang isa sa iyong active device slots.",
+  "devices.remove.warningCurrentDevice":
+    "Ito ang device na ginagamit mo ngayon. Kapag inalis, hindi ka makakapagbenta dito hanggang irehistro mo ulit.",
   "devices.revoke": "I-revoke",
   "devices.revokeTitle": "I-revoke ang POS device",
   "devices.revokeReasonLabel": "Reason",

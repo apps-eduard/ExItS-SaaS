@@ -903,6 +903,14 @@ export const cebPH: Record<keyof typeof en, string> = {
     "Dili makatipig kini nga browser og durable installation id. I-enable ang storage ug sulayi pag-usab.",
   "devices.defaultBrowserName": "Browser POS",
   "devices.noOrganization": "I-bind una ang organization workspace.",
+  "devices.removeDevice": "Kuhaa ang device",
+  "devices.removeTitle": "Kuhaa kini nga device?",
+  "devices.removeConfirm": "Kuhaa ang device",
+  "devices.removing": "Ginakuha…",
+  "devices.remove.warning":
+    "Dili na tugotan kini nga device nga mobaligya sa POS ug dili na kini mogamit og usa sa imong active device slots.",
+  "devices.remove.warningCurrentDevice":
+    "Kini ang device nga imong gigamit karon. Kung kuhaon, dili ka makabaligya dinhi hangtod irehistro nimo pag-usab.",
   "devices.revoke": "I-revoke",
   "devices.revokeTitle": "I-revoke ang POS device",
   "devices.revokeReasonLabel": "Rason",

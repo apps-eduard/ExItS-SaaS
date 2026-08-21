@@ -860,11 +860,19 @@ export const en = {
   "devices.codeReady": "Share this one-time code with staff. It expires soon.",
   "devices.openRedeem": "Register with a code",
   "devices.loadError": "Could not load POS devices.",
-  "devices.empty": "No POS devices registered yet.",
+  "devices.empty": "No active POS devices yet. Register this device to start selling.",
   "devices.identityUnavailable":
     "This browser cannot store a durable installation id. Enable storage and try again.",
   "devices.defaultBrowserName": "Browser POS",
   "devices.noOrganization": "Bind an organization workspace first.",
+  "devices.removeDevice": "Remove device",
+  "devices.removeTitle": "Remove this device?",
+  "devices.removeConfirm": "Remove device",
+  "devices.removing": "Removing…",
+  "devices.remove.warning":
+    "This device will no longer be allowed to perform POS sales and will stop using one of your active device slots.",
+  "devices.remove.warningCurrentDevice":
+    "This is the device you are currently using. Removing it will disable POS sales here until you register it again.",
   "devices.revoke": "Revoke",
   "devices.revokeTitle": "Revoke POS device",
   "devices.revokeReasonLabel": "Reason",

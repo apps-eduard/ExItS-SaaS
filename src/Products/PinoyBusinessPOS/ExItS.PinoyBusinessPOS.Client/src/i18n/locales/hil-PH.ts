@@ -906,6 +906,14 @@ export const hilPH: Record<keyof typeof en, string> = {
     "Indi makatipig ini nga browser sang durable installation id. I-enable ang storage kag tilawi liwat.",
   "devices.defaultBrowserName": "Browser POS",
   "devices.noOrganization": "I-bind una ang organization workspace.",
+  "devices.removeDevice": "Kuhaa ang device",
+  "devices.removeTitle": "Kuhaa ini nga device?",
+  "devices.removeConfirm": "Kuhaa ang device",
+  "devices.removing": "Ginakuha…",
+  "devices.remove.warning":
+    "Indi na pagatugutan ini nga device magbaligya sa POS kag indi na ini maggamit sang isa sa imo active device slots.",
+  "devices.remove.warningCurrentDevice":
+    "Ini ang device nga ginagamit mo subong. Kung kuhaon, indi ka makabaligya diri hasta irehistro mo liwat.",
   "devices.revoke": "I-revoke",
   "devices.revokeTitle": "I-revoke ang POS device",
   "devices.revokeReasonLabel": "Rason",

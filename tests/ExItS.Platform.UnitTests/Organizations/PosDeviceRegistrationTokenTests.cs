@@ -405,6 +405,12 @@ public sealed class PosDeviceRegistrationTokenTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<PosDevice>>(_items.Where(x => x.OrganizationId == organizationId).ToList());
 
+        public Task<IReadOnlyList<PosDevice>> ListActiveByOrganizationAsync(
+            PlatformOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<PosDevice>>(
+                _items.Where(x => x.OrganizationId == organizationId && x.Status == PosDeviceStatus.Active).ToList());
+
         public Task<int> CountActiveAsync(
             PlatformOrganizationId organizationId,
             CancellationToken cancellationToken = default) =>
