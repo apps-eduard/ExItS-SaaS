@@ -336,7 +336,7 @@ export function BranchFulfillmentEditPage() {
     }
   }
 
-  async function useGpsOnce() {
+  async function captureGpsOnce() {
     if (gpsBusy) {
       return;
     }
@@ -586,7 +586,7 @@ export function BranchFulfillmentEditPage() {
             variant="ghost"
             className="min-h-11"
             disabled={gpsBusy || busy}
-            onClick={() => void useGpsOnce()}
+            onClick={() => void captureGpsOnce()}
             data-testid="branch-gps-assist"
           >
             {gpsBusy ? t("branches.gpsWorking") : t("branches.gpsAssist")}
