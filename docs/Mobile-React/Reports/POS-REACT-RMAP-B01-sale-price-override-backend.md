@@ -2,7 +2,7 @@
 
 ## Status
 
-**BACKEND IMPLEMENTED** (Domain + API + persistence + tests). React UI (**RMAP-12b**) is **not** in this package.
+**BACKEND IMPLEMENTED** (Domain + API + persistence + tests). React UI delivered in **[POS-REACT-RMAP-12b-price-override.md](./POS-REACT-RMAP-12b-price-override.md)**.
 
 ## Locked PO policy (authoritative — supersedes CashierAdjustable)
 

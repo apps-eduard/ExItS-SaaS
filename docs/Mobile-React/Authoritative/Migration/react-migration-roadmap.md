@@ -125,7 +125,7 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 
 | Field        | Content                                                             |
 | ------------ | ------------------------------------------------------------------- |
-| Status       | **BACKEND IMPLEMENTED** (React RMAP-12b not started)                |
+| Status       | **BACKEND IMPLEMENTED** — React RMAP-12b **COMPLETE** (see RMAP-12b report)                |
 | Objective    | Domain+API+tests for role-gated override, ≤100% manager ceiling, reason, audit |
 | Why          | Locked PO policy (Cashier DENY / Manager ≤100% / Owner unlimited); CashierAdjustable **SUPERSEDED** |
 | Dependencies | Catalog product model                                               |
@@ -317,12 +317,13 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 
 ### RMAP-12b — Cashier price override UI (only after RMAP-B01)
 
-| Field        | Content                                        |
-| ------------ | ---------------------------------------------- |
-| Objective    | Policy-gated override + reason + audit display |
-| Dependencies | RMAP-B01, RMAP-11, RMAP-00                     |
-| Owner        | OD-PRICE-02..05                                |
-| Next         | RMAP-13                                        |
+| Field        | Content                                                                                                                      |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| Objective    | Policy-gated override + reason + audit display                                                                               |
+| Dependencies | RMAP-B01, RMAP-11, RMAP-00                                                                                                   |
+| Owner        | OD-PRICE-02..05                                                                                                              |
+| Status       | **COMPLETE** — report [POS-REACT-RMAP-12b-price-override.md](../../Reports/POS-REACT-RMAP-12b-price-override.md)             |
+| Next         | Do **not** start B04/B05/RMAP-21/TAX until authorized                                                                        |
 
 ### RMAP-13 — Customers + Business Utang
 

@@ -19,7 +19,7 @@
 | Concept | Meaning | CURRENT |
 |---------|---------|---------|
 | **Change current selling price** | Updates catalog/unit price for future transactions | PROVEN_CURRENT (Today’s Prices / product edit) |
-| **Sale-line price override** | Exceptional per-sale unit price; never rewrites catalog | PROVEN_CURRENT backend (RMAP-B01); React UI still RMAP-12b |
+| **Sale-line price override** | Exceptional per-sale unit price; never rewrites catalog | PROVEN_CURRENT (RMAP-B01 backend + RMAP-12b React UI) |
 
 ## LOCKED PO POLICY (authoritative — supersedes CashierAdjustable)
 
@@ -56,4 +56,4 @@ Sale payloads snapshot unit price; override intents on trusted offline snapshots
 
 ## React
 
-No override UI yet (RMAP-12b). Cart uses catalog prices; override is backend-gated.
+No Fixed/CashierAdjustable product policy. Cart may carry a pending **Change price** intent (RMAP-12b); server quote/checkout remains authoritative and never rewrites catalog Today's Price.

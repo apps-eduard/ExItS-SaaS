@@ -27,7 +27,7 @@ UI WPs must also satisfy [06-react-ui-ux-and-responsive-foundation.md](../06-rea
 | ByWeight | WeightedSale* | Sales API | Weight dialog | Qty helpers + RMAP-09 weight dialog | E2E weight cart (RMAP-09); sale later | Snapshot fidelity | CreateSale | | Device later | | Pay excluded on RMAP-09 |
 | Product units / rice pool | ProductUnitConversion, RiceSell* | API catalog/sales | Sell-as checkout | Unit math helpers + RMAP-09 unit picker | E2E multi-unit cart (RMAP-09); sale later | LocalStore v9 | Catalog/sales roles | Org isolation | Device later | Owner rice scenario | Checkout next |
 | Today’s Prices | CatalogDomain UpdateSellingPrice | PosCatalogTodaysPricesApi | Todays Prices page | Price form | E2E update+sell | N/A | Manager/Owner | | Browser | | |
-| Price override policy | Domain `SalePriceOverride*` | API quote/checkout | MAUI optional | RMAP-12b UI | E2E after RMAP-12b | N/A | Cashier DENY; Manager ≤100%; Owner unlimited | | Browser | Locked PO matrix | Backend DONE; UI on RMAP-12b |
+| Price override policy | Domain `SalePriceOverride*` | API quote/checkout | MAUI optional | RMAP-12b UI | E2E RMAP-12b | N/A | Cashier DENY; Manager ≤100%; Owner unlimited | | Browser | Locked PO matrix | Backend + React UI DONE |
 | Inventory untracked/tracked | InventoryAccountDomain | Inventory API | Inventory pages | | E2E enable+opening | OnlineRequired | Inventory roles | | Browser | | |
 | Oversell | Sale/inventory unit | Sales API | Checkout stock UI | | E2E insufficient stock | Offline tracked rules | | | Device later | | |
 | Lots/FEFO | InventoryLotDomain 13/13 | PosInventoryLotApi 4/4 | Expiration UI | lot-status helpers | E2E rmap-08 7/7 | | ViewInventory | | Browser | | Checkout FEFO later |

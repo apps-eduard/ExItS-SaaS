@@ -34,7 +34,7 @@ Markers appear only when evidence supports them.
 | Known evidence | RMAP-B01 backend: `SalePriceOverride*`, feature codes `store-sales-override-price` (+ `-unlimited`) |
 | Current behavior | Quote/checkout apply overrides to draft UnitPrice; catalog SellingPrice / Today's Price untouched |
 | Dependency impact | Unblocks React override UI (**RMAP-12b**); does **not** require Fixed/CashierAdjustable product fields |
-| Blocking? | **NO** for backend; RMAP-12b still pending for React UX |
+| Blocking? | **NO** for backend; React UX delivered in **RMAP-12b** |
 
 ---
 
