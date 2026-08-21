@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using ExItS.Platform.Api.Common;
+using ExItS.Platform.Api.Identity;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.GlobalCatalog;
 using ExItS.Platform.Application.Identity;
@@ -7,6 +8,7 @@ using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Personal;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
+using Microsoft.Extensions.Options;
 
 namespace ExItS.Platform.Api.Personal;
 
@@ -377,6 +379,8 @@ internal static class PersonalEndpoints
             HttpContext http,
             StartBusinessRequest body,
             StartBusinessForPersonalUser startBusiness,
+            IOptions<PlatformSessionOptions> sessionOptions,
+            IHostEnvironment env,
             CancellationToken ct) =>
         {
             if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
@@ -400,7 +404,23 @@ internal static class PersonalEndpoints
                 http.Connection.RemoteIpAddress?.ToString(),
                 http.Request.Headers.UserAgent.ToString(),
                 ct).ConfigureAwait(false);
-            return PlatformApiResults.FromResult(result, dto => Results.Created($"/api/v1/organizations/{dto.OrganizationId}", dto));
+
+            // Start-business rotates the opaque session (Personal → Organization). Browser
+            // clients must receive the new HttpOnly cookie; otherwise /auth/me stays on the revoked token.
+            return PlatformApiResults.FromResult(result, dto =>
+            {
+                if (!string.IsNullOrWhiteSpace(dto.SessionToken) && dto.ExpiresAtUtc is { } expiresAtUtc)
+                {
+                    AuthEndpoints.AppendSessionCookie(
+                        http,
+                        dto.SessionToken,
+                        expiresAtUtc,
+                        sessionOptions.Value,
+                        env);
+                }
+
+                return Results.Created($"/api/v1/organizations/{dto.OrganizationId}", dto);
+            });
         });
 
         // Active Platform Business Types for Start Business (Personal scope; no org entitlement filter).

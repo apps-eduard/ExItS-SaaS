@@ -70,7 +70,9 @@ public sealed record StartBusinessResultDto(
     bool PosOwnerRoleGranted,
     string ProductCode,
     Guid? PrimaryBusinessTypeId = null,
-    Guid? PrimaryBranchId = null);
+    Guid? PrimaryBranchId = null,
+    /// <summary>Idle expiry of the rotated Organization session (cookie refresh for browser clients).</summary>
+    DateTimeOffset? ExpiresAtUtc = null);
 
 public sealed class StartBusinessForPersonalUser
 {
@@ -670,7 +672,8 @@ public sealed class StartBusinessForPersonalUser
             PosOwnerRoleGranted: ownerRoleGranted,
             ProductCode: productCode,
             PrimaryBusinessTypeId: organization.PrimaryBusinessTypeId?.Value,
-            PrimaryBranchId: mainBranch.Id.Value));
+            PrimaryBranchId: mainBranch.Id.Value,
+            ExpiresAtUtc: login.ExpiresAtUtc));
     }
 
     private async Task<ApplicationResult<StartBusinessResultDto>> ResumeExistingStartBusinessAsync(
@@ -783,7 +786,8 @@ public sealed class StartBusinessForPersonalUser
             PosOwnerRoleGranted: ownerRoleGranted,
             ProductCode: productCode,
             PrimaryBusinessTypeId: organization.PrimaryBusinessTypeId?.Value,
-            PrimaryBranchId: (await _branches.GetPrimaryAsync(organization.Id, cancellationToken).ConfigureAwait(false))?.Id.Value));
+            PrimaryBranchId: (await _branches.GetPrimaryAsync(organization.Id, cancellationToken).ConfigureAwait(false))?.Id.Value,
+            ExpiresAtUtc: login.ExpiresAtUtc));
     }
 
     private sealed record CatalogSelection(PlanId PlanId, PlanVersionId PlanVersionId, TrialDefinitionId? TrialDefinitionId);

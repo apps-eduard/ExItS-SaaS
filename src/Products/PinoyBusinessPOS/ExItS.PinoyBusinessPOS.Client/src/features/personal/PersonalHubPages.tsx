@@ -97,24 +97,9 @@ export function PersonalMorePage() {
           className="min-h-11 justify-start"
           data-testid="more-open-start-business"
         >
-          <Link to="/personal/start-business">{t("personal.more.startBusiness")}</Link>
+          <Link to="/personal/explore-pos">{t("personal.more.startBusiness")}</Link>
         </Button>
       </div>
-    </div>
-  );
-}
-
-export function PersonalStartBusinessPlaceholderPage() {
-  const { t } = useI18n();
-  return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="personal-start-business-placeholder">
-      <PageHeader
-        title={t("personal.more.startBusiness")}
-        description={t("personal.more.startBusinessComing")}
-      />
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/personal/more">{t("personal.more.back")}</Link>
-      </Button>
     </div>
   );
 }

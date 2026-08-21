@@ -1,9 +1,14 @@
-import { Building2, ChevronDown, LogOut, RefreshCw, Settings, User } from "lucide-react";
+import { Building2, ChevronDown, Home, LogOut, RefreshCw, Settings, User } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DropdownMenu, MenuHeader, MenuItem, MenuSeparator } from "@/components/ui/dropdown-menu";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSession } from "@/session/SessionProvider";
+import {
+  isOrganizationContextLocked,
+  sessionAccountClass,
+} from "@/session/account-class";
+import { ensurePersonalSessionProfile } from "@/session/ensure-personal-profile";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { resolveEffectivePosRoleCode } from "@/access/pos-capabilities";
 import {
@@ -41,9 +46,10 @@ function experienceLabel(
 export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountMenuProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const { session } = useSession();
+  const { session, refreshSession } = useSession();
   const { sessionGrant, boundWorkspace, clearBoundWorkspace } = useWorkspace();
   const [open, setOpen] = useState(false);
+  const [switchingPersonal, setSwitchingPersonal] = useState(false);
 
   const displayName = resolveUserDisplayName(session) || t("account.signedIn");
   const secondary = resolveUserSecondaryIdentity(session);
@@ -58,8 +64,25 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
           ? t("account.role.cashier")
           : null;
   const currentExperience = experienceLabel(boundWorkspace?.experience, t);
+  const canReturnToPersonal =
+    sessionAccountClass(session) === "Organization" && !isOrganizationContextLocked(session);
 
   const accountLabel = `${t("account.menu")}: ${displayName}`;
+
+  const switchToPersonal = async () => {
+    if (switchingPersonal) return;
+    setSwitchingPersonal(true);
+    try {
+      const result = await ensurePersonalSessionProfile({ session, refreshSession });
+      if (!result.ok) {
+        return;
+      }
+      clearBoundWorkspace();
+      navigate("/personal", { replace: true });
+    } finally {
+      setSwitchingPersonal(false);
+    }
+  };
 
   return (
     <DropdownMenu
@@ -154,6 +177,21 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
           >
             <RefreshCw className="size-4 shrink-0" aria-hidden="true" />
             {t("workspace.switchExperience")}
+          </MenuItem>
+          <MenuSeparator />
+        </>
+      ) : null}
+      {canReturnToPersonal ? (
+        <>
+          <MenuItem
+            disabled={switchingPersonal}
+            onSelect={() => {
+              setOpen(false);
+              void switchToPersonal();
+            }}
+          >
+            <Home className="size-4 shrink-0" aria-hidden="true" />
+            {switchingPersonal ? t("account.switchingPersonal") : t("account.switchToPersonal")}
           </MenuItem>
           <MenuSeparator />
         </>

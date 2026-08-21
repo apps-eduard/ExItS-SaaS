@@ -162,6 +162,143 @@ describe("Personal shell and home (RMAP-22B)", () => {
     expect(screen.getByTestId("more-open-stores")).toBeInTheDocument();
     expect(screen.getByTestId("more-open-customer-links")).toBeInTheDocument();
     expect(screen.getByTestId("more-open-orders")).toBeInTheDocument();
+    expect(screen.getByTestId("more-open-start-business")).toBeInTheDocument();
+  });
+
+  it("renders Explore POS plans inside Personal shell", async () => {
+    const base = createPersonalFetchMock();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("/api/v1/commercial/plans")) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => [
+              {
+                Id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                ProductCode: "pinoy-business-pos",
+                Code: "business",
+                DisplayName: "Business",
+                Status: "Active",
+                CreatedAtUtc: "2026-01-01T00:00:00Z",
+                UpdatedAtUtc: "2026-01-01T00:00:00Z",
+                PlanKey: "business",
+                MaxBranches: 3,
+                MaxActiveStaff: 10,
+                MaxActivePosDevices: 2,
+                MaxActiveBusinessTypes: 2,
+                CustomerCreditEnabled: true,
+                AdvancedReportsEnabled: false,
+                ExportEnabled: false,
+                TrialAllowed: true,
+                DefaultTrialDays: 14,
+                SortOrder: 20,
+                MonthlyPrice: 999,
+                AnnualPrice: 9990,
+                CurrencyCode: "PHP",
+              },
+            ],
+            text: async () => "",
+          } as Response;
+        }
+        return base(input);
+      }),
+    );
+
+    renderAt("/personal/explore-pos");
+    await waitFor(() => {
+      expect(screen.getByTestId("personal-explore-pos-page")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("personal-shell")).toBeInTheDocument();
+    expect(screen.getByTestId("explore-plan-business")).toBeInTheDocument();
+    expect(screen.getByTestId("explore-start-trial-business")).toBeInTheDocument();
+  });
+
+  it("renders Start Business form without user-facing slug field", async () => {
+    const base = createPersonalFetchMock();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("/api/v1/commercial/plans")) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => [
+              {
+                Id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                ProductCode: "pinoy-business-pos",
+                Code: "business",
+                DisplayName: "Business",
+                Status: "Active",
+                CreatedAtUtc: "2026-01-01T00:00:00Z",
+                UpdatedAtUtc: "2026-01-01T00:00:00Z",
+                PlanKey: "business",
+                MaxBranches: 3,
+                MaxActiveStaff: 10,
+                MaxActivePosDevices: 2,
+                MaxActiveBusinessTypes: 2,
+                CustomerCreditEnabled: true,
+                AdvancedReportsEnabled: false,
+                ExportEnabled: false,
+                TrialAllowed: true,
+                DefaultTrialDays: 14,
+                SortOrder: 20,
+                MonthlyPrice: 999,
+                AnnualPrice: 9990,
+                CurrencyCode: "PHP",
+              },
+            ],
+            text: async () => "",
+          } as Response;
+        }
+        if (url.includes("/api/v1/personal/onboarding/business-types")) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => [
+              {
+                Id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+                Code: "retail",
+                Name: "General Retail",
+                Description: null,
+                Status: "Active",
+                SortOrder: 10,
+              },
+            ],
+            text: async () => "",
+          } as Response;
+        }
+        if (url.includes("/api/v1/personal/profile")) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              UserIdentityId: personalUserId,
+              AccountProfileId: personalProfileId,
+              Username: "ana",
+              DisplayName: "Ana Reyes",
+              Email: "ana@example.com",
+              AccountClass: "Personal",
+              Status: "Active",
+              Phone: null,
+            }),
+            text: async () => "",
+          } as Response;
+        }
+        return base(input);
+      }),
+    );
+
+    renderAt("/personal/start-business?planKey=business&trial=1&payNow=0");
+    await waitFor(() => {
+      expect(screen.getByTestId("personal-start-business-page")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("start-business-display-name")).toBeInTheDocument();
+    expect(screen.getByTestId("start-business-submit")).toBeInTheDocument();
+    expect(screen.queryByTestId("start-business-slug")).not.toBeInTheDocument();
   });
 
   it("renders Stores and customer links routes inside Personal shell", async () => {

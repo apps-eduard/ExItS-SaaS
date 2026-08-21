@@ -7,9 +7,10 @@ import { NotFoundPage } from "@/features/not-found/NotFoundPage";
 import { PersonalHomePage } from "@/features/personal/PersonalHomePage";
 import {
   PersonalMorePage,
-  PersonalStartBusinessPlaceholderPage,
   PersonalUtangHubPage,
 } from "@/features/personal/PersonalHubPages";
+import { PersonalExplorePosPage } from "@/features/personal/start-business/PersonalExplorePosPage";
+import { PersonalStartBusinessPage } from "@/features/personal/start-business/PersonalStartBusinessPage";
 import { PersonalShell } from "@/features/personal/PersonalShell";
 import {
   PersonalInvitationsPage,
@@ -213,9 +214,10 @@ export const appRoutes = [
               { path: "todo", element: <PersonalTodoHubPage /> },
               { path: "todo/:todoId", element: <PersonalTodoDetailPage /> },
               { path: "more", element: <PersonalMorePage /> },
+              { path: "explore-pos", element: <PersonalExplorePosPage /> },
               {
                 path: "start-business",
-                element: <PersonalStartBusinessPlaceholderPage />,
+                element: <PersonalStartBusinessPage />,
               },
               { path: "customer-links", element: <PersonalCustomerLinksPage /> },
               { path: "linked-merchants", element: <LinkedMerchantsPage /> },
