@@ -9,6 +9,7 @@ import {
   type CachedPersonalContactRecord,
   type CachedPersonalEntryRecord,
   type CachedPersonalRelationshipRecord,
+  type CachedPersonalTodoRecord,
   type OfflineOperationRecord,
   type OfflineScopeKind,
   type SellReadinessSnapshotRecord,
@@ -81,6 +82,13 @@ interface OfflineDbSchema extends DBSchema {
     value: CachedPersonalEntryRecord;
     indexes: {
       byRelationship: string;
+    };
+  };
+  personalTodos: {
+    key: string;
+    value: CachedPersonalTodoRecord;
+    indexes: {
+      byStatus: string;
     };
   };
 }
@@ -165,6 +173,10 @@ export async function openOfflineDatabase(
       if (!db.objectStoreNames.contains("personalEntries")) {
         const entries = db.createObjectStore("personalEntries", { keyPath: "entryId" });
         entries.createIndex("byRelationship", "relationshipId");
+      }
+      if (!db.objectStoreNames.contains("personalTodos")) {
+        const todos = db.createObjectStore("personalTodos", { keyPath: "todoId" });
+        todos.createIndex("byStatus", "status");
       }
     },
   });

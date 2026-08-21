@@ -15,6 +15,9 @@ import type { MessageKey } from "@/i18n/messages";
  * RMAP-21F adds the Personal Utang acts that involve somebody other than the person holding the
  * device: linking a contact to a real ExItS account, inviting or accepting a shared debt, sending
  * a reminder, and correcting a balance against a version this device may no longer be showing.
+ *
+ * RMAP-21G adds To-do sharing, which the platform API does not expose at all — there is no route to
+ * prove safe, so a device must never pretend it granted anybody access.
  */
 export const ONLINE_REQUIRED_CODES = {
   GCashCheckout: "online_required.gcash_checkout",
@@ -32,6 +35,7 @@ export const ONLINE_REQUIRED_CODES = {
   PersonalUtangInvite: "online_required.personal_utang_invite",
   PersonalUtangReminder: "online_required.personal_utang_reminder",
   PersonalUtangAdjustment: "online_required.personal_utang_adjustment",
+  PersonalTodoShare: "online_required.personal_todo_share",
 } as const;
 
 export type OnlineRequiredCode = (typeof ONLINE_REQUIRED_CODES)[keyof typeof ONLINE_REQUIRED_CODES];
@@ -52,6 +56,7 @@ const DETAIL_KEYS: Record<OnlineRequiredCode, MessageKey> = {
   [ONLINE_REQUIRED_CODES.PersonalUtangInvite]: "offline.requiredPersonalUtangInvite",
   [ONLINE_REQUIRED_CODES.PersonalUtangReminder]: "offline.requiredPersonalUtangReminder",
   [ONLINE_REQUIRED_CODES.PersonalUtangAdjustment]: "offline.requiredPersonalUtangAdjustment",
+  [ONLINE_REQUIRED_CODES.PersonalTodoShare]: "offline.requiredPersonalTodoShare",
 };
 
 export function onlineRequiredDetailKey(code: OnlineRequiredCode): MessageKey {

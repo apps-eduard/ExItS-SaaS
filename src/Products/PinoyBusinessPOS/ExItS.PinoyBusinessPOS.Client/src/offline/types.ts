@@ -1,7 +1,7 @@
 import type { PosCatalogProductDto, PosProductCategoryDto } from "@/api/pos/pos-catalog-types";
 
-/** v4 adds the encrypted Personal Utang projections (RMAP-21F). */
-export const OFFLINE_SCHEMA_VERSION = 4 as const;
+/** v5 adds the private-by-default Personal To-do store (RMAP-21G). */
+export const OFFLINE_SCHEMA_VERSION = 5 as const;
 
 /** Written to `meta` on open so a Personal write can refuse an Organization database. */
 export const OFFLINE_SCOPE_KIND_META_KEY = "scopeKind" as const;
@@ -131,6 +131,29 @@ export type CachedPersonalEntryRecord = {
   serverId: string | null;
   origin: "Server" | "Local";
   occurredAtUtc: string;
+  cachedAtUtc: string;
+  ciphertext: ArrayBuffer;
+  iv: ArrayBuffer;
+};
+
+/**
+ * Personal To-do (RMAP-21G).
+ *
+ * A To-do is private by default: the title, notes, due and reminder times, priority and every
+ * related-entity pointer live inside the AES-GCM body. Only the local id, the lifecycle status, the
+ * row version and the sync bookkeeping are readable, which is what the agenda tabs and the outbox
+ * need in order to work without decrypting anything.
+ */
+export type CachedPersonalTodoRecord = {
+  todoId: string;
+  serverId: string | null;
+  origin: "Server" | "Local";
+  status: string;
+  /** Server row version, or null for a To-do that has only ever existed on this device. */
+  version: number | null;
+  /** True while a local edit or transition is still queued. */
+  pendingLocalChange: boolean;
+  updatedAtUtc: string;
   cachedAtUtc: string;
   ciphertext: ArrayBuffer;
   iv: ArrayBuffer;

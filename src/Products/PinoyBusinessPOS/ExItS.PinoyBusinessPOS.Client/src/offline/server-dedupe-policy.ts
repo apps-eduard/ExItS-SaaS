@@ -15,6 +15,12 @@
 export type ServerDedupeMode =
   /** Server matches a replay on `Idempotency-Key` + client entity id. Auto-retry is safe. */
   | "idempotency-key"
+  /**
+   * The request assigns a state on a row addressed by its own id, so a replay converges on the
+   * same result instead of adding a second row. Auto-retry is safe even without an idempotency
+   * store — worst case the server answers "already completed" (RMAP-21G).
+   */
+  | "target-state"
   /** No server dedupe. A replay may duplicate, so an ambiguous failure needs a human. */
   | "none";
 
@@ -25,14 +31,38 @@ export const PERSONAL_OPERATION_TYPES = {
   EntryRecord: "personal.utang.entry.record",
 } as const;
 
+/** Personal To-do operation types (RMAP-21G). */
+export const PERSONAL_TODO_OPERATION_TYPES = {
+  TodoCreate: "personal.todo.create",
+  TodoUpdate: "personal.todo.update",
+  TodoComplete: "personal.todo.complete",
+  TodoReopen: "personal.todo.reopen",
+  TodoCancel: "personal.todo.cancel",
+} as const;
+
 const NO_SERVER_DEDUPE = new Set<string>([
   PERSONAL_OPERATION_TYPES.ContactCreate,
   PERSONAL_OPERATION_TYPES.RelationshipCreate,
   PERSONAL_OPERATION_TYPES.EntryRecord,
+  // The server mints the To-do id, so a replayed create makes a second To-do.
+  PERSONAL_TODO_OPERATION_TYPES.TodoCreate,
+]);
+
+const TARGET_STATE = new Set<string>([
+  PERSONAL_TODO_OPERATION_TYPES.TodoUpdate,
+  PERSONAL_TODO_OPERATION_TYPES.TodoComplete,
+  PERSONAL_TODO_OPERATION_TYPES.TodoReopen,
+  PERSONAL_TODO_OPERATION_TYPES.TodoCancel,
 ]);
 
 export function serverDedupeMode(operationType: string): ServerDedupeMode {
-  return NO_SERVER_DEDUPE.has(operationType) ? "none" : "idempotency-key";
+  if (NO_SERVER_DEDUPE.has(operationType)) {
+    return "none";
+  }
+  if (TARGET_STATE.has(operationType)) {
+    return "target-state";
+  }
+  return "idempotency-key";
 }
 
 /** Failure the processor observed for one attempt, before deciding the next queue state. */
@@ -55,7 +85,7 @@ export function mayAutoRetry(operationType: string, failure: AttemptFailureKind)
     return true;
   }
   if (failure === "ambiguous-transport") {
-    return serverDedupeMode(operationType) === "idempotency-key";
+    return serverDedupeMode(operationType) !== "none";
   }
   return false;
 }

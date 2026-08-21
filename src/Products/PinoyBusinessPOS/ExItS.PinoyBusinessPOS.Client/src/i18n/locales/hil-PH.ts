@@ -93,6 +93,15 @@ export const hilPH: Record<keyof typeof en, string> = {
   "offline.personalEnqueueFailed": "Wala ini natipigan sa device. Tilawi liwat.",
   "offline.personalOwnerUnknown":
     "Buksan ang Utang isa ka beses samtang online, dayon mahimo na offline.",
+  "offline.requiredPersonalTodoShare": "Kinahanglan internet sa pag-share sang to-do.",
+  "offline.todoCachedNotice":
+    "Gina-tipigan nga to-do ang ginapakita. Maga-refresh kon makakonektar liwat.",
+  "offline.todoWillQueue":
+    "Offline ka. Magapabilin ini nga to-do sa device tubtob makakonektar ka.",
+  "offline.todoEnqueueFailed": "Wala natipigan ang to-do sa device. Tilawi liwat.",
+  "offline.todoNotCached": "Wala ini nga to-do natipigan sa device.",
+  "offline.todoNoReminders":
+    "Ang ExItS ang magapadala sang pahanumdom, gani maga-abot ini kon makakonektar liwat.",
   "offline.cachedCustomersNotice":
     "Gina-tipigan nga customer ang ginapakita. Maga-refresh ang balanse kon makakonektar liwat.",
   "offline.cachedBalanceNotice": "Gina-tipigan nga balanse. Maga-refresh kon makakonektar liwat.",

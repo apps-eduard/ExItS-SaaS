@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -23,8 +23,25 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
+import { createSecureMutationId } from "@/lib/secure-mutation-id";
+import { useOfflineSync } from "@/offline/OfflineSyncProvider";
+import { usePersonalOfflineContext } from "@/offline/personal-offline-context";
+import {
+  cachePersonalTodo,
+  cachePersonalTodos,
+  getCachedPersonalTodo,
+  listCachedPersonalTodos,
+  type CachedPersonalTodo,
+} from "@/offline/personal-todo-cache";
+import {
+  enqueuePersonalTodoCreate,
+  enqueuePersonalTodoTransition,
+  enqueuePersonalTodoUpdate,
+  type PersonalTodoTransition,
+} from "@/offline/personal-todo-offline";
 
 const TABS: { id: TodoAgendaTab; labelKey: MessageKey }[] = [
   { id: "today", labelKey: "personal.todo.filterToday" },
@@ -71,6 +88,35 @@ function mutationErrorMessage(error: unknown, t: (key: MessageKey) => string): s
   if (isTodoConcurrencyConflict(error)) return t("personal.todo.concurrencyConflict");
   if (error instanceof PlatformApiError) return error.message;
   return t("personal.todo.genericError");
+}
+
+function offlineErrorMessage(error: unknown, t: (key: MessageKey) => string): string {
+  const code = (error as { code?: string } | null)?.code;
+  return code === "offline.personal.todo.not_cached"
+    ? t("offline.todoNotCached")
+    : t("offline.todoEnqueueFailed");
+}
+
+/** Marks a to-do whose local change is still waiting in the outbox. */
+function WaitingChip({ pending }: { pending: boolean }) {
+  const { t } = useI18n();
+  if (!pending) return null;
+  return (
+    <span className="text-[length:var(--exits-text-xs)] text-muted" data-testid="todo-waiting-chip">
+      {t("offline.personalWaitingBadge")}
+    </span>
+  );
+}
+
+function OfflineNotice({ message }: { message: string }) {
+  return (
+    <p
+      className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+      data-testid="todo-offline-notice"
+    >
+      {message}
+    </p>
+  );
 }
 
 type TodoFormState = {
@@ -225,23 +271,80 @@ function TodoFormFields({
 export function PersonalTodoHubPage() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
+  const online = useBrowserOnline();
+  const offline = usePersonalOfflineContext();
+  const { refreshCounts } = useOfflineSync();
   const [tab, setTab] = useState<TodoAgendaTab>("today");
   const [form, setForm] = useState<TodoFormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
+  const [cachedTodos, setCachedTodos] = useState<CachedPersonalTodo[]>([]);
+  const [cacheEpoch, setCacheEpoch] = useState(0);
 
   const todosQuery = useQuery({
     queryKey: ["personal", "todos"],
     queryFn: ({ signal }) => listPersonalTodos(signal),
+    enabled: online,
   });
 
+  useEffect(() => {
+    if (!offline || !todosQuery.data) {
+      return;
+    }
+    void cachePersonalTodos(offline.db, offline.scopeBinding, todosQuery.data);
+  }, [offline, todosQuery.data]);
+
+  useEffect(() => {
+    if (!offline) {
+      return;
+    }
+    let cancelled = false;
+    void listCachedPersonalTodos(offline.db, offline.scopeBinding).then((rows) => {
+      if (!cancelled) {
+        setCachedTodos(rows);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [cacheEpoch, offline, todosQuery.dataUpdatedAt]);
+
+  const usingCache = !online || todosQuery.isError;
+
+  const createOffline = async () => {
+    if (!offline) {
+      throw new Error("offline-unavailable");
+    }
+    const id = createSecureMutationId();
+    if (!id.ok) {
+      throw new Error("id-unavailable");
+    }
+    await enqueuePersonalTodoCreate({
+      db: offline.db,
+      scopeBinding: offline.scopeBinding,
+      userId: offline.userId,
+      todoId: id.id,
+      todo: toRequestBody(form),
+      ownerUserIdentityId: offline.userId,
+    });
+    await refreshCounts();
+    setCacheEpoch((epoch) => epoch + 1);
+  };
+
   const createMutation = useMutation({
-    mutationFn: () => createPersonalTodo(toRequestBody(form)),
+    mutationFn: async () => {
+      if (!online) {
+        await createOffline();
+        return;
+      }
+      await createPersonalTodo(toRequestBody(form));
+    },
     onSuccess: async () => {
       setForm(emptyForm());
       setFormError(null);
       await queryClient.invalidateQueries({ queryKey: ["personal", "todos"] });
     },
-    onError: (error) => setFormError(mutationErrorMessage(error, t)),
+    onError: (error) =>
+      setFormError(online ? mutationErrorMessage(error, t) : offlineErrorMessage(error, t)),
   });
 
   const actionMutation = useMutation({
@@ -249,31 +352,65 @@ export function PersonalTodoHubPage() {
       action,
       todo,
     }: {
-      action: "complete" | "reopen" | "cancel";
+      action: PersonalTodoTransition;
       todo: PersonalTodoDto;
     }) => {
+      if (!online) {
+        if (!offline) {
+          throw new Error("offline-unavailable");
+        }
+        const id = createSecureMutationId();
+        if (!id.ok) {
+          throw new Error("id-unavailable");
+        }
+        const cached = cachedTodos.find((row) => row.id === todo.id);
+        await enqueuePersonalTodoTransition({
+          db: offline.db,
+          scopeBinding: offline.scopeBinding,
+          userId: offline.userId,
+          operationId: id.id,
+          todoId: todo.id,
+          todoIsLocal: cached?.serverId == null,
+          dependsOnTodoOperationId: cached?.serverId == null ? todo.id : null,
+          transition: action,
+        });
+        await refreshCounts();
+        setCacheEpoch((epoch) => epoch + 1);
+        return;
+      }
       const body = { expectedVersion: todo.version };
-      if (action === "complete") return completePersonalTodo(todo.id, body);
-      if (action === "reopen") return reopenPersonalTodo(todo.id, body);
-      return cancelPersonalTodo(todo.id, body);
+      if (action === "complete") {
+        await completePersonalTodo(todo.id, body);
+        return;
+      }
+      if (action === "reopen") {
+        await reopenPersonalTodo(todo.id, body);
+        return;
+      }
+      await cancelPersonalTodo(todo.id, body);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["personal", "todos"] });
     },
+    onError: (error) =>
+      setFormError(online ? mutationErrorMessage(error, t) : offlineErrorMessage(error, t)),
   });
 
-  const filtered = useMemo(() => {
-    if (!todosQuery.data) return [];
-    return filterTodosByTab(todosQuery.data, tab);
-  }, [todosQuery.data, tab]);
+  const todos: CachedPersonalTodo[] | PersonalTodoDto[] = usingCache
+    ? cachedTodos
+    : (todosQuery.data ?? []);
 
-  const counts = useMemo(
-    () => (todosQuery.data ? summarizeTodoCounts(todosQuery.data) : null),
-    [todosQuery.data],
+  const filtered = useMemo(() => filterTodosByTab([...todos], tab), [todos, tab]);
+  const counts = useMemo(() => summarizeTodoCounts([...todos]), [todos]);
+  const pendingById = useMemo(
+    () => new Set(cachedTodos.filter((row) => row.pendingLocalChange).map((row) => row.id)),
+    [cachedTodos],
   );
 
-  if (todosQuery.isPending) return <LoadingSkeleton label={t("personal.todo.loading")} />;
-  if (todosQuery.isError) {
+  if (online && todosQuery.isPending) {
+    return <LoadingSkeleton label={t("personal.todo.loading")} />;
+  }
+  if (online && todosQuery.isError && cachedTodos.length === 0) {
     return (
       <div className="flex flex-col gap-3">
         <ErrorState
@@ -290,6 +427,8 @@ export function PersonalTodoHubPage() {
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="personal-todo-hub">
       <PageHeader title={t("personal.todo.title")} description={t("personal.todo.lede")} />
+
+      {usingCache ? <OfflineNotice message={t("offline.todoCachedNotice")} /> : null}
 
       <div
         className="flex flex-wrap gap-2"
@@ -343,6 +482,12 @@ export function PersonalTodoHubPage() {
           {t("personal.todo.createTitle")}
         </h2>
         <TodoFormFields form={form} setForm={setForm} idPrefix="todo-create" />
+        {!online ? (
+          <>
+            <OfflineNotice message={t("offline.todoWillQueue")} />
+            {form.reminderAtLocal ? <OfflineNotice message={t("offline.todoNoReminders")} /> : null}
+          </>
+        ) : null}
         {formError ? (
           <p
             role="alert"
@@ -354,7 +499,7 @@ export function PersonalTodoHubPage() {
         <Button
           type="submit"
           className="min-h-11"
-          disabled={createMutation.isPending}
+          disabled={createMutation.isPending || (!online && !offline)}
           data-testid="todo-create-submit"
         >
           {t("personal.todo.add")}
@@ -390,6 +535,7 @@ export function PersonalTodoHubPage() {
                       {item.notes}
                     </p>
                   ) : null}
+                  <WaitingChip pending={pendingById.has(item.id)} />
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {item.status === "Open" ? (
@@ -398,7 +544,7 @@ export function PersonalTodoHubPage() {
                         type="button"
                         className="min-h-11"
                         data-testid={`todo-complete-${item.id}`}
-                        disabled={actionMutation.isPending}
+                        disabled={actionMutation.isPending || (!online && !offline)}
                         onClick={() => actionMutation.mutate({ action: "complete", todo: item })}
                       >
                         {t("personal.todo.complete")}
@@ -408,7 +554,7 @@ export function PersonalTodoHubPage() {
                         variant="ghost"
                         className="min-h-11"
                         data-testid={`todo-cancel-${item.id}`}
-                        disabled={actionMutation.isPending}
+                        disabled={actionMutation.isPending || (!online && !offline)}
                         onClick={() => actionMutation.mutate({ action: "cancel", todo: item })}
                       >
                         {t("personal.todo.cancel")}
@@ -420,7 +566,7 @@ export function PersonalTodoHubPage() {
                       type="button"
                       className="min-h-11"
                       data-testid={`todo-reopen-${item.id}`}
-                      disabled={actionMutation.isPending}
+                      disabled={actionMutation.isPending || (!online && !offline)}
                       onClick={() => actionMutation.mutate({ action: "reopen", todo: item })}
                     >
                       {t("personal.todo.reopen")}
@@ -444,34 +590,95 @@ export function PersonalTodoDetailPage() {
   const { todoId = "" } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const online = useBrowserOnline();
+  const offline = usePersonalOfflineContext();
+  const { refreshCounts } = useOfflineSync();
   const [form, setForm] = useState<TodoFormState | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
+  const [cachedTodo, setCachedTodo] = useState<CachedPersonalTodo | null>(null);
+  const [cacheEpoch, setCacheEpoch] = useState(0);
 
   const todoQuery = useQuery({
     queryKey: ["personal", "todos", todoId],
     queryFn: ({ signal }) => getPersonalTodo(todoId, signal),
-    enabled: Boolean(todoId),
+    enabled: Boolean(todoId) && online,
   });
+
+  useEffect(() => {
+    if (!offline || !todoQuery.data) {
+      return;
+    }
+    void cachePersonalTodo(offline.db, offline.scopeBinding, todoQuery.data);
+  }, [offline, todoQuery.data]);
+
+  useEffect(() => {
+    if (!offline || !todoId) {
+      return;
+    }
+    let cancelled = false;
+    void getCachedPersonalTodo(offline.db, offline.scopeBinding, todoId).then((row) => {
+      if (!cancelled) {
+        setCachedTodo(row);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [cacheEpoch, offline, todoId, todoQuery.dataUpdatedAt]);
+
+  const usingCache = !online || todoQuery.isError;
 
   const invalidate = async () => {
     await queryClient.invalidateQueries({ queryKey: ["personal", "todos"] });
     await queryClient.invalidateQueries({ queryKey: ["personal", "todos", todoId] });
   };
 
+  const requireOfflineIds = () => {
+    if (!offline) {
+      throw new Error("offline-unavailable");
+    }
+    const id = createSecureMutationId();
+    if (!id.ok) {
+      throw new Error("id-unavailable");
+    }
+    return { offline, operationId: id.id };
+  };
+
   const saveMutation = useMutation({
-    mutationFn: ({ current, next }: { current: PersonalTodoDto; next: TodoFormState }) =>
-      updatePersonalTodo(current.id, {
+    mutationFn: async ({ current, next }: { current: PersonalTodoDto; next: TodoFormState }) => {
+      if (!online) {
+        const { offline: ctx, operationId } = requireOfflineIds();
+        const isLocal = cachedTodo?.serverId == null;
+        await enqueuePersonalTodoUpdate({
+          db: ctx.db,
+          scopeBinding: ctx.scopeBinding,
+          userId: ctx.userId,
+          operationId,
+          todoId: current.id,
+          todoIsLocal: isLocal,
+          dependsOnTodoOperationId: isLocal ? current.id : null,
+          todo: toRequestBody(next),
+          // The server still owns the version, so a stale offline edit is still rejectable.
+          expectedVersion: cachedTodo?.version ?? null,
+        });
+        await refreshCounts();
+        setCacheEpoch((epoch) => epoch + 1);
+        return;
+      }
+      await updatePersonalTodo(current.id, {
         ...toRequestBody(next),
         expectedVersion: current.version,
-      }),
+      });
+    },
     onSuccess: async () => {
       setEditing(false);
       setForm(null);
       setFormError(null);
       await invalidate();
     },
-    onError: (error) => setFormError(mutationErrorMessage(error, t)),
+    onError: (error) =>
+      setFormError(online ? mutationErrorMessage(error, t) : offlineErrorMessage(error, t)),
   });
 
   const actionMutation = useMutation({
@@ -479,27 +686,53 @@ export function PersonalTodoDetailPage() {
       action,
       todo,
     }: {
-      action: "complete" | "reopen" | "cancel";
+      action: PersonalTodoTransition;
       todo: PersonalTodoDto;
     }) => {
+      if (!online) {
+        const { offline: ctx, operationId } = requireOfflineIds();
+        const isLocal = cachedTodo?.serverId == null;
+        await enqueuePersonalTodoTransition({
+          db: ctx.db,
+          scopeBinding: ctx.scopeBinding,
+          userId: ctx.userId,
+          operationId,
+          todoId: todo.id,
+          todoIsLocal: isLocal,
+          dependsOnTodoOperationId: isLocal ? todo.id : null,
+          transition: action,
+        });
+        await refreshCounts();
+        setCacheEpoch((epoch) => epoch + 1);
+        return;
+      }
       const body = { expectedVersion: todo.version };
-      if (action === "complete") return completePersonalTodo(todo.id, body);
-      if (action === "reopen") return reopenPersonalTodo(todo.id, body);
-      return cancelPersonalTodo(todo.id, body);
+      if (action === "complete") {
+        await completePersonalTodo(todo.id, body);
+        return;
+      }
+      if (action === "reopen") {
+        await reopenPersonalTodo(todo.id, body);
+        return;
+      }
+      await cancelPersonalTodo(todo.id, body);
     },
     onSuccess: async () => {
       await invalidate();
     },
-    onError: (error) => setFormError(mutationErrorMessage(error, t)),
+    onError: (error) =>
+      setFormError(online ? mutationErrorMessage(error, t) : offlineErrorMessage(error, t)),
   });
 
-  if (todoQuery.isPending) return <LoadingSkeleton label={t("personal.todo.loading")} />;
-  if (todoQuery.isError || !todoQuery.data) {
+  if (online && todoQuery.isPending) return <LoadingSkeleton label={t("personal.todo.loading")} />;
+
+  const todo: PersonalTodoDto | null = usingCache ? cachedTodo : (todoQuery.data ?? null);
+  if (!todo) {
     return (
       <div className="flex flex-col gap-3">
         <ErrorState
           title={t("personal.todo.loadErrorTitle")}
-          detail={t("personal.todo.loadErrorDetail")}
+          detail={usingCache ? t("offline.todoNotCached") : t("personal.todo.loadErrorDetail")}
         />
         <Button asChild variant="ghost" className="min-h-11 w-fit">
           <Link to="/personal/todo">{t("personal.todo.back")}</Link>
@@ -508,8 +741,8 @@ export function PersonalTodoDetailPage() {
     );
   }
 
-  const todo = todoQuery.data;
   const activeForm = form ?? formFromTodo(todo);
+  const offlineBlocked = !online && !offline;
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="personal-todo-detail">
@@ -518,10 +751,13 @@ export function PersonalTodoDetailPage() {
         <Link to="/personal/todo">{t("personal.todo.back")}</Link>
       </Button>
 
+      {usingCache ? <OfflineNotice message={t("offline.todoCachedNotice")} /> : null}
+
       <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
         {t("personal.todo.status")}: {t(statusLabelKey(todo.status))} ·{" "}
         {t(priorityLabelKey(todo.priority))}
       </p>
+      <WaitingChip pending={cachedTodo?.pendingLocalChange === true} />
 
       {editing ? (
         <form
@@ -543,6 +779,7 @@ export function PersonalTodoDetailPage() {
             }}
             idPrefix="todo-edit"
           />
+          {!online ? <OfflineNotice message={t("offline.todoWillQueue")} /> : null}
           {formError ? (
             <p
               role="alert"
@@ -555,7 +792,7 @@ export function PersonalTodoDetailPage() {
             <Button
               type="submit"
               className="min-h-11"
-              disabled={saveMutation.isPending}
+              disabled={saveMutation.isPending || offlineBlocked}
               data-testid="todo-edit-save"
             >
               {t("personal.todo.save")}
@@ -583,9 +820,13 @@ export function PersonalTodoDetailPage() {
               : t("personal.todo.noDue")}
           </p>
           {todo.reminderAtUtc ? (
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {t("personal.todo.reminderAt")}: {new Date(todo.reminderAtUtc).toLocaleString()}
-            </p>
+            <>
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("personal.todo.reminderAt")}: {new Date(todo.reminderAtUtc).toLocaleString()}
+              </p>
+              {/* The device never raises a reminder itself, so say who does. */}
+              {!online ? <OfflineNotice message={t("offline.todoNoReminders")} /> : null}
+            </>
           ) : null}
           {todo.relatedEntityType ? (
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
@@ -608,7 +849,7 @@ export function PersonalTodoDetailPage() {
                   type="button"
                   className="min-h-11"
                   data-testid="todo-detail-complete"
-                  disabled={actionMutation.isPending}
+                  disabled={actionMutation.isPending || offlineBlocked}
                   onClick={() => actionMutation.mutate({ action: "complete", todo })}
                 >
                   {t("personal.todo.complete")}
@@ -618,7 +859,7 @@ export function PersonalTodoDetailPage() {
                   variant="ghost"
                   className="min-h-11"
                   data-testid="todo-detail-cancel"
-                  disabled={actionMutation.isPending}
+                  disabled={actionMutation.isPending || offlineBlocked}
                   onClick={() => actionMutation.mutate({ action: "cancel", todo })}
                 >
                   {t("personal.todo.cancel")}
@@ -630,7 +871,7 @@ export function PersonalTodoDetailPage() {
                 type="button"
                 className="min-h-11"
                 data-testid="todo-detail-reopen"
-                disabled={actionMutation.isPending}
+                disabled={actionMutation.isPending || offlineBlocked}
                 onClick={() => actionMutation.mutate({ action: "reopen", todo })}
               >
                 {t("personal.todo.reopen")}

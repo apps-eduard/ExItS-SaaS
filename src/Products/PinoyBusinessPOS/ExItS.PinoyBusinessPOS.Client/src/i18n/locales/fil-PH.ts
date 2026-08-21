@@ -92,6 +92,15 @@ export const filPH: Record<keyof typeof en, string> = {
   "offline.personalEnqueueFailed": "Hindi ito naimbak sa device. Subukan muli.",
   "offline.personalOwnerUnknown":
     "Buksan ang Utang minsan habang online, pagkatapos ay puwede nang offline.",
+  "offline.requiredPersonalTodoShare": "Kailangan ng internet para i-share ang to-do.",
+  "offline.todoCachedNotice":
+    "Nakaimbak na to-do ang nakikita. Magre-refresh kapag nakakonekta muli.",
+  "offline.todoWillQueue":
+    "Offline ka. Mananatili ang to-do na ito sa device hangga't hindi ka nakakonekta.",
+  "offline.todoEnqueueFailed": "Hindi naimbak ang to-do sa device. Subukan muli.",
+  "offline.todoNotCached": "Hindi nakaimbak sa device ang to-do na ito.",
+  "offline.todoNoReminders":
+    "Ang ExItS ang nagpapadala ng paalala, kaya darating ito kapag nakakonekta muli.",
   "offline.cachedCustomersNotice":
     "Nakaimbak na customer ang nakikita. Magre-refresh ang balanse kapag nakakonekta muli.",
   "offline.cachedBalanceNotice": "Nakaimbak na balanse. Magre-refresh kapag nakakonekta muli.",

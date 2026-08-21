@@ -97,6 +97,13 @@ export const en = {
     "You are offline. Saving keeps this entry on this device until you reconnect.",
   "offline.personalEnqueueFailed": "Could not save this on this device. Try again.",
   "offline.personalOwnerUnknown": "Open Utang once while online, then you can add utang offline.",
+  "offline.requiredPersonalTodoShare": "Sharing a to-do needs internet.",
+  "offline.todoCachedNotice": "Showing saved to-dos. They refresh when you reconnect.",
+  "offline.todoWillQueue":
+    "You are offline. Saving keeps this to-do on this device until you reconnect.",
+  "offline.todoEnqueueFailed": "Could not save this to-do on this device. Try again.",
+  "offline.todoNotCached": "This to-do is not saved on this device.",
+  "offline.todoNoReminders": "Reminders are sent by ExItS, so they arrive when you reconnect.",
   "shell.notifications.label": "Notifications",
   "shell.notifications.unreadLabel": "Notifications, {count} unread",
   "pwa.updateAvailable": "Update available",

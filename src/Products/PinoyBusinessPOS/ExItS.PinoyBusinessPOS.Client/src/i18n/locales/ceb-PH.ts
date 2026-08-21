@@ -92,6 +92,14 @@ export const cebPH: Record<keyof typeof en, string> = {
   "offline.personalEnqueueFailed": "Wala kini natipigan sa device. Sulayi pag-usab.",
   "offline.personalOwnerUnknown":
     "Ablihi ang Utang usa ka higayon samtang online, dayon mahimo na offline.",
+  "offline.requiredPersonalTodoShare": "Kinahanglan internet sa pag-share sa to-do.",
+  "offline.todoCachedNotice": "Gitipigan nga to-do ang gipakita. Mag-refresh kon makakonektar na.",
+  "offline.todoWillQueue":
+    "Offline ka. Magpabilin kini nga to-do sa device hangtod makakonektar ka.",
+  "offline.todoEnqueueFailed": "Wala natipigan ang to-do sa device. Sulayi pag-usab.",
+  "offline.todoNotCached": "Wala kini nga to-do natipigan sa device.",
+  "offline.todoNoReminders":
+    "Ang ExItS ang magpadala sa pahinumdom, busa moabot kini kon makakonektar na.",
   "offline.cachedCustomersNotice":
     "Gitipigan nga customer ang gipakita. Mag-refresh ang balanse kon makakonektar na.",
   "offline.cachedBalanceNotice": "Gitipigan nga balanse. Mag-refresh kon makakonektar na.",

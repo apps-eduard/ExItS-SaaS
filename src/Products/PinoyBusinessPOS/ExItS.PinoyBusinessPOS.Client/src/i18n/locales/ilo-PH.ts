@@ -92,6 +92,14 @@ export const iloPH: Record<keyof typeof en, string> = {
   "offline.personalEnqueueFailed": "Saan a naidulin iti device. Padasen manen.",
   "offline.personalOwnerUnknown":
     "Lukatan ti Utang maminsan bayat nga online, kalpasanna mabalin nga offline.",
+  "offline.requiredPersonalTodoShare": "Masapul ti internet no i-share ti to-do.",
+  "offline.todoCachedNotice": "Naidulin a to-do ti maipakita. Ag-refresh no makakonekta manen.",
+  "offline.todoWillQueue":
+    "Offline ka. Agtalinaed daytoy a to-do iti device agingga a makakonekta ka.",
+  "offline.todoEnqueueFailed": "Saan a naidulin ti to-do iti device. Padasen manen.",
+  "offline.todoNotCached": "Saan a naidulin iti device daytoy a to-do.",
+  "offline.todoNoReminders":
+    "Ti ExItS ti mangipatulod ti palagip, isu nga sumangpet no makakonekta manen.",
   "offline.cachedCustomersNotice":
     "Naidulin a customer ti maipakita. Ag-refresh ti balanse no makakonekta manen.",
   "offline.cachedBalanceNotice": "Naidulin a balanse. Ag-refresh no makakonekta manen.",

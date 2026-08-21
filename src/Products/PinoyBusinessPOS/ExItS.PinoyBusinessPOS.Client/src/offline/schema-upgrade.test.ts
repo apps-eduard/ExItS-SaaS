@@ -46,6 +46,7 @@ describe("RMAP-21E offline schema upgrade", () => {
     expect(upgraded.version).toBe(OFFLINE_SCHEMA_VERSION);
     expect([...upgraded.objectStoreNames]).toContain("customers");
     expect([...upgraded.objectStoreNames]).toContain("personalContacts");
+    expect([...upgraded.objectStoreNames]).toContain("personalTodos");
 
     const queued = await listOutbox(upgraded);
     expect(queued.map((row) => row.operationId)).toEqual(["legacy-operation"]);
