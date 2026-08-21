@@ -32,6 +32,9 @@ import { DeviceRegisterPage } from "@/features/devices/DeviceRegisterPage";
 import { OrgPosDevicesPage } from "@/features/devices/OrgPosDevicesPage";
 import { CheckoutCashPage } from "@/features/checkout/CheckoutCashPage";
 import { TransactionSummaryPage } from "@/features/checkout/TransactionSummaryPage";
+import { ProcessReturnPage } from "@/features/returns/ProcessReturnPage";
+import { ReturnDetailPage } from "@/features/returns/ReturnDetailPage";
+import { ReturnsHubPage } from "@/features/returns/ReturnsHubPage";
 import { SellFloorPage } from "@/features/sell/SellFloorPage";
 import { ShiftDetailPage } from "@/features/shifts/ShiftDetailPage";
 import { ShiftOpenPage } from "@/features/shifts/ShiftOpenPage";
@@ -56,11 +59,13 @@ import {
   RequireOrganizationSession,
   RequireOwnerRoleHome,
   RequirePersonalSession,
+  RequireProcessReturn,
   RequireRecordRepayment,
   RequireSession,
   RequireViewCustomers,
   RequireViewInventory,
   RequireViewRegisters,
+  RequireViewReturns,
   RequireViewShifts,
   RequireViewStatement,
   RequireWorkspaceBound,
@@ -331,6 +336,30 @@ export const appRoutes = [
                   </RequireViewStatement>
                 ),
               },
+            ],
+          },
+          {
+            path: "returns",
+            element: (
+              <RequireOrganizationSession>
+                <RequireWorkspaceBound>
+                  <RequireViewReturns>
+                    <Outlet />
+                  </RequireViewReturns>
+                </RequireWorkspaceBound>
+              </RequireOrganizationSession>
+            ),
+            children: [
+              { index: true, element: <ReturnsHubPage /> },
+              {
+                path: "sale/:saleId",
+                element: (
+                  <RequireProcessReturn>
+                    <ProcessReturnPage />
+                  </RequireProcessReturn>
+                ),
+              },
+              { path: ":returnId", element: <ReturnDetailPage /> },
             ],
           },
           { path: "*", element: <NotFoundPage /> },

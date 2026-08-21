@@ -231,6 +231,33 @@ export function canViewStatement(grant: PosSessionGrantFacts | null | undefined)
 }
 
 /**
+ * ViewReturns UI gate — PosRoleMatrix Owner/Admin/StoreManager/Cashier (+ ReportingUser).
+ * Cashier may view history but must not process returns.
+ * Server remains authoritative via store-returns-view.
+ */
+export function canViewReturns(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  if (isPosOwnerRole(grant) || isPosOperationsManager(grant) || isPosCashierRole(grant)) {
+    return true;
+  }
+  const role = resolveEffectivePosRoleCode(grant)?.toLowerCase();
+  return role === "reportinguser";
+}
+
+/**
+ * ProcessReturn UI gate — Owner/Admin/StoreManager only. Cashier DENY.
+ * Server remains authoritative via store-returns-manage.
+ */
+export function canProcessReturn(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  return isPosOwnerRole(grant) || isPosOperationsManager(grant);
+}
+
+/**
  * UI gate for catalog administration (ManageCatalog).
  * Mirrors PosRoleMatrix: Owner/Admin/StoreManager (+ Manager alias).
  * OrganizationAdministrator alone does NOT imply ManageCatalog.

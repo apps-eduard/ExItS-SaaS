@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { canVoidSale } from "@/access/pos-capabilities";
+import { canProcessReturn, canVoidSale } from "@/access/pos-capabilities";
 import {
   formatPaymentMethodLabel,
   getSale,
@@ -40,6 +40,7 @@ export function TransactionSummaryPage() {
       : null;
 
   const allowVoid = canVoidSale(sessionGrant);
+  const allowProcessReturn = canProcessReturn(sessionGrant);
 
   const saleQuery = useQuery({
     queryKey: ["pos-sale", workspaceScope?.organizationId, workspaceScope?.branchId, saleId],
@@ -269,6 +270,12 @@ export function TransactionSummaryPage() {
         >
           {t("summary.voidDenied")}
         </p>
+      ) : null}
+
+      {!isVoided && allowProcessReturn ? (
+        <Button asChild className="min-h-11 w-fit" data-testid="summary-return-items">
+          <Link to={`/returns/sale/${sale.saleId}`}>{t("returns.returnItems")}</Link>
+        </Button>
       ) : null}
 
       <Button asChild className="min-h-11 w-fit" data-testid="summary-new-sale">

@@ -13,6 +13,7 @@ import {
   canManageCatalog,
   canManageRegisters,
   canManageShifts,
+  canProcessReturn,
   canRecordRepayment,
   canSelectExperienceMode,
   canUseAdminExperience,
@@ -20,6 +21,7 @@ import {
   canUseSellingExperience,
   canViewCustomers,
   canViewRegisters,
+  canViewReturns,
   canViewShifts,
   canViewStatement,
   canVoidSale,
@@ -268,5 +270,39 @@ describe("pos-capabilities", () => {
     expect(canViewStatement(manager)).toBe(true);
     expect(canViewStatement(reporting)).toBe(true);
     expect(canViewStatement(cashier)).toBe(false);
+  });
+
+  it("ViewReturns includes Cashier; ProcessReturn is Owner/Manager only", () => {
+    const owner = grant({
+      mappedPosRoleCode: "Owner",
+      productLocalRoleCode: "Owner",
+      membershipRole: "OrganizationOwner",
+      organizationManagementAuthority: true,
+    });
+    const manager = grant({
+      mappedPosRoleCode: "StoreManager",
+      productLocalRoleCode: "Manager",
+      membershipRole: "OrganizationMember",
+    });
+    const cashier = grant({
+      mappedPosRoleCode: "Cashier",
+      productLocalRoleCode: "Cashier",
+      membershipRole: "OrganizationMember",
+    });
+    const reporting = grant({
+      mappedPosRoleCode: "ReportingUser",
+      productLocalRoleCode: "ReportingUser",
+      membershipRole: "OrganizationMember",
+    });
+
+    expect(canViewReturns(owner)).toBe(true);
+    expect(canViewReturns(manager)).toBe(true);
+    expect(canViewReturns(cashier)).toBe(true);
+    expect(canViewReturns(reporting)).toBe(true);
+
+    expect(canProcessReturn(owner)).toBe(true);
+    expect(canProcessReturn(manager)).toBe(true);
+    expect(canProcessReturn(cashier)).toBe(false);
+    expect(canProcessReturn(reporting)).toBe(false);
   });
 });

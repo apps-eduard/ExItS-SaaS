@@ -11,11 +11,13 @@ import {
   canManageCatalog,
   canManageInventory,
   canManageShifts,
+  canProcessReturn,
   canRecordRepayment,
   canUseAdminExperience,
   canViewCustomers,
   canViewInventory,
   canViewRegisters,
+  canViewReturns,
   canViewShifts,
   canViewStatement,
 } from "@/access/pos-capabilities";
@@ -360,6 +362,26 @@ export function RequireViewStatement({ children }: { children: ReactNode }) {
 
   if (!canViewStatement(sessionGrant)) {
     return <ExperienceAccessDeniedPage testId="customers-statement-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireViewReturns({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canViewReturns(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="returns-view-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireProcessReturn({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canProcessReturn(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="returns-process-denied" />;
   }
 
   return children;
