@@ -200,6 +200,13 @@ public static class DomainErrorCodes
     public const string PersonalReminderRateLimited = "platform.personal.reminder.rate_limited";
     public const string PersonalReminderUnauthorized = "platform.personal.reminder.unauthorized";
 
+    public const string InvalidPersonalTodoId = "platform.personal.todo.id.invalid";
+    public const string InvalidPersonalTodo = "platform.personal.todo.invalid";
+    public const string InvalidPersonalTodoTitle = "platform.personal.todo.title.invalid";
+    public const string InvalidPersonalTodoStatusTransition = "platform.personal.todo.status.invalid_transition";
+    public const string PersonalTodoUnauthorized = "platform.personal.todo.unauthorized";
+    public const string PersonalTodoConcurrencyConflict = "platform.personal.todo.concurrency_conflict";
+
     public const string InvalidPersonalNotificationId = "platform.personal.notification.id.invalid";
 
     public const string InvalidBusinessCustomerId = "platform.business_customer.id.invalid";

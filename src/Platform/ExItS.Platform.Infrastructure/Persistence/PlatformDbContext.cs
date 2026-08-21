@@ -124,6 +124,7 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<PersonalRewardBalanceRecord> PersonalRewardBalances => Set<PersonalRewardBalanceRecord>();
     internal DbSet<PersonalRewardTransactionRecord> PersonalRewardTransactions => Set<PersonalRewardTransactionRecord>();
     internal DbSet<PersonalRewardClaimRecord> PersonalRewardClaims => Set<PersonalRewardClaimRecord>();
+    internal DbSet<PersonalTodoRecord> PersonalTodos => Set<PersonalTodoRecord>();
     internal DbSet<ComplianceRequirementRecord> ComplianceRequirements => Set<ComplianceRequirementRecord>();
     internal DbSet<ComplianceEvidenceRecord> ComplianceEvidence => Set<ComplianceEvidenceRecord>();
     internal DbSet<ProcessingSystemRecordEntity> ProcessingSystems => Set<ProcessingSystemRecordEntity>();
@@ -2324,6 +2325,43 @@ public sealed class PlatformDbContext : DbContext
             entity.HasOne<PlatformUserRecord>()
                 .WithMany()
                 .HasForeignKey(e => e.PersonalUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PersonalTodoRecord>(entity =>
+        {
+            entity.ToTable("personal_todos");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OwnerUserIdentityId).HasColumnName("owner_user_identity_id");
+            entity.Property(e => e.Title).HasColumnName("title").HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Notes).HasColumnName("notes").HasMaxLength(2000);
+            entity.Property(e => e.DueAtUtc).HasColumnName("due_at_utc");
+            entity.Property(e => e.ReminderAtUtc).HasColumnName("reminder_at_utc");
+            entity.Property(e => e.Priority).HasColumnName("priority").HasMaxLength(16).IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(16).IsRequired();
+            entity.Property(e => e.RelatedEntityType).HasColumnName("related_entity_type").HasMaxLength(64);
+            entity.Property(e => e.RelatedEntityId).HasColumnName("related_entity_id");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.CompletedAtUtc).HasColumnName("completed_at_utc");
+            entity.Property(e => e.Version).HasColumnName("version").IsConcurrencyToken();
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => e.OwnerUserIdentityId)
+                .HasDatabaseName("ix_personal_todos_owner_user_identity_id");
+            entity.HasIndex(e => new { e.OwnerUserIdentityId, e.Status })
+                .HasDatabaseName("ix_personal_todos_owner_status");
+            entity.HasIndex(e => new { e.OwnerUserIdentityId, e.DueAtUtc })
+                .HasDatabaseName("ix_personal_todos_owner_due");
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OwnerUserIdentityId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

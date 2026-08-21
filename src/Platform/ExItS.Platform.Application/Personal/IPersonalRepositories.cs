@@ -80,6 +80,19 @@ public interface IPersonalUtangInvitationRepository
     Task UpdateAsync(PersonalUtangInvitation invitation, CancellationToken cancellationToken = default);
 }
 
+public interface IPersonalTodoRepository
+{
+    Task<PersonalTodo?> GetByIdAsync(PersonalTodoId id, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PersonalTodo>> ListByOwnerAsync(
+        PlatformUserId ownerUserIdentityId,
+        CancellationToken cancellationToken = default);
+
+    Task AddAsync(PersonalTodo todo, CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(PersonalTodo todo, CancellationToken cancellationToken = default);
+}
+
 public interface IPersonalReminderRepository
 {
     Task<PersonalReminder?> GetByIdAsync(PersonalReminderId id, CancellationToken cancellationToken = default);
