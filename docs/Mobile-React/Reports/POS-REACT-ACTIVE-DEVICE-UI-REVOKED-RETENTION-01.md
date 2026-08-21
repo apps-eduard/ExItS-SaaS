@@ -1,10 +1,10 @@
-﻿# POS React — Active Device UI + Revoked Device Audit Retention
+# POS React — Active Device UI + Revoked Device Audit Retention
 
 **Status:** `AWAITING_PRODUCT_OWNER_CHATGPT_REVIEW`  
 **Branch:** `feat/pos-react-client`  
 **Starting HEAD:** `d52f224fc099c18c8dba88b3f1deca047eac467c`  
 **Implementation HEAD:** `9ad0723e`  
-**Final HEAD:** `899deb3eb88c7b3e9abdec4e02f1a6c7578db0b0`
+**Final HEAD:** `7ff5c91f054c5abe904e5dc0d5f6e46d5ee9e890`
 
 ## Canonical rules delivered
 
