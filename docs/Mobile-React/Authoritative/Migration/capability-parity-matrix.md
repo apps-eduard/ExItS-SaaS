@@ -34,9 +34,9 @@ Current Contract Status: `CURRENT` | `OWNER_CONFIRMED_CHANGE` | `MIXED` | `UNRES
 | Manual suppliers | Local suppliers | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Org, RMAP-00 | React supplier WP | Supplier |
 | Connected suppliers EXPOSABLE≠SHARED | Preserve | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Suppliers | After local suppliers | ConnectedSuppliers |
 | Purchasing receive-only stock | Preserve invariant | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Suppliers+inventory | React purchasing WP | GRN movements |
-| Registers | Station mgmt | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Branch | Before shift UX | Register |
+| Registers | Station mgmt | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT (list + available-for-shift) | CURRENT | CURRENT (RMAP-10; view list; CRUD admin deferred) | Branch | Checkout next | Register |
 | Devices | Device auth | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_PARTIAL (deferred) | CURRENT | PARTIAL — no browser PosDevice | Org | Later device contract | Honest deferred; money APIs server-gated |
-| Shifts | Cash authority | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Register/device | Gate checkout | CashierShift |
+| Shifts | Cash authority | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT (open/close + readiness gate) | CURRENT | CURRENT (RMAP-10; sale POST = RMAP-11) | Register; device not required to open | Sale POST next | CashierShift |
 | Sell floor browse | Required | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT (RMAP-09) | Catalog, RMAP-00 | Checkout next | SellFloorPage |
 | Cart | Required | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT (RMAP-09; session only) | Sell floor | Checkout next | SessionCart |
 | Checkout/sale | Required | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Shift+cart+inventory | Major React WP | SaleUseCases |

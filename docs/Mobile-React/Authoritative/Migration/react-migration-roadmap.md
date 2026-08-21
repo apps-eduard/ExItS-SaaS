@@ -233,14 +233,18 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 | Report | [POS-REACT-RMAP-09-sell-floor-cart.md](../../Reports/POS-REACT-RMAP-09-sell-floor-cart.md) |
 | Implementation SHA | `ae433fd2` |
 | Exclusions | Pay/checkout; FEFO allocation; camera barcode (deferred) |
-| Next | RMAP-10 |
+| Next | RMAP-10 COMPLETE |
 
 ### RMAP-10 — Registers + open shift gate
 | Field | Content |
 |-------|---------|
-| Objective | Register awareness + open shift required for checkout |
-| Dependencies | RMAP-03, RMAP-00 |
+| Status | **COMPLETE** |
+| Objective | Register awareness + open shift required for checkout readiness |
+| Dependencies | RMAP-03, RMAP-00, RMAP-09 |
 | Backend | CURRENT |
+| React | `/registers`, `/shifts*`, `ShiftContextProvider`, checkout readiness gate (Pay still disabled) |
+| Report | [POS-REACT-RMAP-10-register-shift.md](../../Reports/POS-REACT-RMAP-10-register-shift.md) |
+| Exclusions | Sale POST (RMAP-11); inventing PosDevice; register CRUD admin UX |
 | Next | RMAP-11 |
 
 ### RMAP-11 — Checkout / sale (online cash first)
@@ -417,11 +421,10 @@ Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, 
 ## APPROVED PROPOSED MASTER RUN 01
 
 **Name:** Foundation + Catalog/Inventory Baseline
-**Status:** RMAP-00…RMAP-09 PASS on sell-floor/cart parity (units/weight/stock; Pay still disabled). Commercial discount payment boundaries proven (RMAP-B03). Next authorized package: RMAP-10 (registers + shift gate). Do **not** start RMAP-11b, RMAP-B04, or RMAP-TAX without authorization.
+**Status:** RMAP-00…RMAP-10 PASS (sell-floor/cart + register/open-shift readiness gate; Pay still disabled; PosDevice not invented). Commercial discount payment boundaries proven (RMAP-B03). Next authorized package: RMAP-11 (checkout / sale). Do **not** start RMAP-11b, RMAP-B04, or RMAP-TAX without authorization.
 **Stop rule:** After Master Run packages + authorized B03 closeout → HARD STOP for Product Owner + ChatGPT review (historical). RMAP-08/09 completed after that stop when authorized.
 **Do not include (still gated):** RMAP-11b discount UX; RMAP-B04; RMAP-TAX implementation
-**Completed beyond Master Run 01 table:** RMAP-08 lots/expiry inventory surfaces (`4c38bb0e`); RMAP-09 sell floor + session cart
-**Distinction preserved:** Today's Price ≠ Cashier Price Override ≠ Commercial Discount ≠ Promotion ≠ Regulatory Discount
+**Completed beyond Master Run 01 table:** RMAP-08 lots/expiry inventory surfaces; RMAP-09 sell floor + session cart; RMAP-10 registers + open shift gate**Distinction preserved:** Today's Price ≠ Cashier Price Override ≠ Commercial Discount ≠ Promotion ≠ Regulatory Discount
 **Completion report (B00):** [POS-REACT-RMAP-B00-identity-reconciliation.md](../../Reports/POS-REACT-RMAP-B00-identity-reconciliation.md)
 **Completion report (RMAP-01):** [POS-REACT-RMAP-01-account-session-parity.md](../../Reports/POS-REACT-RMAP-01-account-session-parity.md)
 

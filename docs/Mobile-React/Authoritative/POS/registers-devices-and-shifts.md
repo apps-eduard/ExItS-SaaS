@@ -39,4 +39,4 @@ API: `/api/v1/pos/cashier-shifts`
 
 ## React
 
-Workspace may bind branch/device context for session; register/shift management and open-shift gate for checkout: **MISSING** / not enforced for disabled checkout.
+Register list + open/close shift UX and open-shift **checkout readiness gate**: **PROVEN_CURRENT** (RMAP-10). Browser may open shift without inventing `PosDevice`. Money/sale device authorization remains deferred (`moneyPostReady` false) until RMAP-11+ contracts a real device path. Sale POST is **not** implemented in RMAP-10.

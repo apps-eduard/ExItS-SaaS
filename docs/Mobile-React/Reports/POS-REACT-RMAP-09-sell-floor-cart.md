@@ -80,4 +80,4 @@ Responsive matrix:
 
 ## Next
 
-RMAP-10 — Registers + open shift gate. Do not fake checkout success from the sell floor.
+RMAP-10 — Registers + open shift gate — **COMPLETE**. Next: RMAP-11 checkout/sale. Do not fake checkout success from the sell floor.

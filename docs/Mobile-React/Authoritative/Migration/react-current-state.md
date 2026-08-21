@@ -15,7 +15,7 @@ Do not treat prior WP labels as completeness. Inventory against routes and code.
 | `/no-location` | Branch binding | COMPLETE — zero Active accessible branches (RMAP-03) |
 | `/workspace` | Workspace chooser | COMPLETE — multi Active branch chooser (RMAP-03) |
 | `/settings/preferences` | Preferences | PARTIAL (theme/language) |
-| `/sell` | Sell floor | PARTIAL (browse + cart; pay disabled); Organization AccountClass required |
+| `/sell` | Sell floor | PARTIAL (browse + cart + shift readiness; pay disabled); Organization AccountClass required |
 | `/role/{owner\|manager\|cashier}` | Role homes | COMPLETE for experience eligibility (RMAP-02R); Organization AccountClass required |
 | `/org` | Org essentials | Admin experience only (Owner/OrganizationAdministrator); invite Owner-only (RMAP-02R) |
 | `/org/staff/invite` | Staff invite | Owner membership authority required (RMAP-02R) |
@@ -26,6 +26,10 @@ Do not treat prior WP labels as completeness. Inventory against routes and code.
 | `/catalog/todays-prices` | Today's Prices | COMPLETE bulk price update (RMAP-06) — validation closeout complete |
 | `/inventory` | Inventory list | COMPLETE tracking list (RMAP-07) — validation closeout complete; Not tracked language |
 | `/inventory/:productId` | Inventory detail | COMPLETE enable/adjust/movements (RMAP-07) — validation closeout complete; lots excluded |
+| `/registers` | Registers list | COMPLETE view (RMAP-10); ManageRegisters CRUD deferred |
+| `/shifts` | Shifts hub | COMPLETE current + readiness (RMAP-10) |
+| `/shifts/open` | Open shift | COMPLETE register + opening cash (RMAP-10); no PosDevice invented |
+| `/shifts/:shiftId` | Shift detail / close | COMPLETE close + summary (RMAP-10) |
 | `*` | Not found | COMPLETE |
 
 ## Area inventory
@@ -38,16 +42,17 @@ Do not treat prior WP labels as completeness. Inventory against routes and code.
 | Workspace | `WorkspaceProvider`, chooser | workspace-resolver, Platform APIs | workspace tests | Org/branch binding; Personal no auto-bind | Owner ensure+select Organization (RMAP-02) | Medium |
 | Shared UI kit | `components/exits`, `components/ui` | tokens in `globals.css` | `shared-ui-foundation.test.tsx` + foundation/e2e viewports | **PROVEN_CURRENT / COMPLETE** for RMAP-00 foundation primitives | Date/DateTime, Tabs, ToggleRow deferred | Low |
 | Personal | `PersonalHomePage` | AccountClass guard | RMAP-01 e2e | Class-gated Personal home | Utang, shop, explore, start business | High if claimed complete |
-| Sell floor | `SellFloorPage` | catalog client, cart provider | sell-floor + rmap-09 e2e | Browse/search/categories/units/weight/cart UI | Pay/checkout; camera barcode | Medium |
+| Sell floor | `SellFloorPage` | catalog client, cart provider, shift readiness | sell-floor + rmap-09/10 e2e | Browse/search/categories/units/weight/cart + shift banner | Pay/checkout; camera barcode | Medium |
 | Catalog admin | `/catalog*` pages | `pos-catalog-client` CRUD + units + image | rmap-04/05 e2e + unit draft tests | Category/product CRUD, UOM/SellingMode/packages, SKU/barcode, concurrency | Today’s Prices/import | Medium |
 | Cart | `SessionCartProvider` | in-memory | cart tests | Session cart with units/weight | Persist/outbox/server cart | Medium |
-| Checkout | disabled copy | no sale POST client | | Explicit non-implementation | Entire sale pipeline; commercial discount backend exists (RMAP-B03) but **no React discount UI** | Critical |
+| Registers / shifts | `/registers`, `/shifts*` | registers/shifts/setup clients; ShiftContextProvider | rmap-10 e2e + readiness unit | Open/close shift; readiness gate; view registers | Register CRUD admin; sale POST | Low for gate; Medium for money |
+| Checkout | disabled copy + readiness | no sale POST client | readiness unit + rmap-10 | Shift gate proven; Pay disabled | Entire sale pipeline; commercial discount UX | Critical |
 | Org/staff/branches | `/org` shell + invite | experience + invite guards | RMAP-02R e2e | Admin experience; Owner invite | Full Org Web CRUD | Medium |
 | Experience model | Owner chooser; role homes | `pos-capabilities` | RMAP-02R | Admin/Ops/Sell without role mutation | Custom roles | Low |
-| Inventory/purchasing/suppliers/shifts/returns/reports/orders | — | — | | None | All | Critical |
+| Inventory/purchasing/suppliers/returns/reports/orders | inventory + expiry | inventory client | rmap-07/08 | Inventory + lots surfaces | Purchasing/suppliers/returns/reports/orders | Critical |
 | PWA/SW | `pwa/*` | validate-pwa script | e2e pwa | Prod SW; blocked in dev | LocalStore offline ops | Medium |
 | CSRF | `antiforgery.ts` | platform-http | antiforgery tests | Token handling | — | Low |
-| API client | Platform complete; POS catalog only | `api/platform`, `api/pos` | | Limited | Sales/inventory/customers/… clients | Critical |
+| API client | Platform + POS catalog/inventory/registers/shifts | `api/platform`, `api/pos` | | Growing POS surface | Sales/customers/… clients | Medium |
 
 ## Explicit non-claims
 
