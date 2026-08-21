@@ -38,7 +38,7 @@ public sealed class PosCashierShiftCashCountApiTests(PosPostgreSqlFixture fixtur
     private static readonly Guid Cashier = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
     [Fact]
-    public async Task New_organization_defaults_to_required_cash_count()
+    public async Task New_organization_defaults_to_optional_cash_count()
     {
         await using var factory = new PosApiFactory(fixture.ConnectionString);
         var client = factory.CreateClient();
@@ -48,13 +48,17 @@ public sealed class PosCashierShiftCashCountApiTests(PosPostgreSqlFixture fixtur
         using var response = await client.SendAsync(get);
         response.EnsureSuccessStatusCode();
         var setup = await response.Content.ReadFromJsonAsync<PosOperationalSetupDto>(JsonOptions);
-        Assert.Equal(nameof(CashCountMode.Required), setup!.CashCountMode);
+        Assert.Equal(nameof(CashCountMode.Optional), setup!.CashCountMode);
+        Assert.Equal(nameof(CashCountMode.Optional), setup.OpeningCashCountMode);
+        Assert.Equal(nameof(CashCountMode.Optional), setup.ClosingCashCountMode);
 
         await CompleteSetupAsync(client, org, CashCountMode.Required);
         using var getCompleted = Scoped(HttpMethod.Get, Setup, org);
         using var completedResponse = await client.SendAsync(getCompleted);
         var completed = await completedResponse.Content.ReadFromJsonAsync<PosOperationalSetupDto>(JsonOptions);
         Assert.Equal(nameof(CashCountMode.Required), completed!.CashCountMode);
+        Assert.Equal(nameof(CashCountMode.Required), completed.OpeningCashCountMode);
+        Assert.Equal(nameof(CashCountMode.Required), completed.ClosingCashCountMode);
 
         using var off = Scoped(HttpMethod.Post, $"{Setup}/complete", org);
         off.Content = JsonContent.Create(

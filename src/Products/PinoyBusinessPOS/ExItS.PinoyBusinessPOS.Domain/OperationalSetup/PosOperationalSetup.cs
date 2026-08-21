@@ -38,7 +38,10 @@ public sealed class PosOperationalSetup
     public string? BusinessAddress { get; private set; }
     public string? ContactPhone { get; private set; }
     public RegisterId? DefaultRegisterId { get; private set; }
+    /// <summary>Mirrors <see cref="OpeningCashCountMode"/> for API / storage back-compat.</summary>
     public CashCountMode CashCountMode { get; private set; }
+    public CashCountMode OpeningCashCountMode { get; private set; }
+    public CashCountMode ClosingCashCountMode { get; private set; }
     public bool IsCompleted { get; private set; }
     public DateTimeOffset? CompletedAtUtc { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
@@ -57,7 +60,8 @@ public sealed class PosOperationalSetup
         string? businessAddress,
         string? contactPhone,
         RegisterId? defaultRegisterId,
-        CashCountMode cashCountMode,
+        CashCountMode openingCashCountMode,
+        CashCountMode closingCashCountMode,
         bool isCompleted,
         DateTimeOffset? completedAtUtc,
         DateTimeOffset createdAtUtc,
@@ -75,7 +79,9 @@ public sealed class PosOperationalSetup
         BusinessAddress = businessAddress;
         ContactPhone = contactPhone;
         DefaultRegisterId = defaultRegisterId;
-        CashCountMode = cashCountMode;
+        OpeningCashCountMode = openingCashCountMode;
+        ClosingCashCountMode = closingCashCountMode;
+        CashCountMode = openingCashCountMode;
         IsCompleted = isCompleted;
         CompletedAtUtc = completedAtUtc;
         CreatedAtUtc = createdAtUtc;
@@ -99,7 +105,8 @@ public sealed class PosOperationalSetup
             null,
             null,
             null,
-            CashCountMode.Required,
+            CashCountModes.Default,
+            CashCountModes.Default,
             isCompleted: false,
             completedAtUtc: null,
             utcNow,
@@ -124,8 +131,17 @@ public sealed class PosOperationalSetup
         Guid createdBy,
         DateTimeOffset updatedAtUtc,
         Guid updatedBy,
-        CashCountMode cashCountMode = CashCountMode.Required) =>
-        new(
+        CashCountMode? cashCountMode = null,
+        CashCountMode? openingCashCountMode = null,
+        CashCountMode? closingCashCountMode = null)
+    {
+        var (opening, closing) = ResolveModes(
+            cashCountMode,
+            openingCashCountMode,
+            closingCashCountMode,
+            whenMissingOpening: CashCountModes.Default,
+            whenMissingClosing: CashCountModes.Default);
+        return new(
             organizationId,
             storeDisplayName,
             currencyCode,
@@ -136,13 +152,15 @@ public sealed class PosOperationalSetup
             businessAddress,
             contactPhone,
             defaultRegisterId,
-            cashCountMode,
+            opening,
+            closing,
             isCompleted,
             completedAtUtc,
             createdAtUtc,
             createdBy,
             updatedAtUtc,
             updatedBy);
+    }
 
     public void Complete(
         string storeDisplayName,
@@ -156,7 +174,9 @@ public sealed class PosOperationalSetup
         RegisterId defaultRegisterId,
         Guid actorId,
         DateTimeOffset utcNow,
-        CashCountMode cashCountMode = CashCountMode.Required)
+        CashCountMode? cashCountMode = null,
+        CashCountMode? openingCashCountMode = null,
+        CashCountMode? closingCashCountMode = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(actorId);
@@ -172,7 +192,7 @@ public sealed class PosOperationalSetup
         DefaultRegisterId = defaultRegisterId ?? throw new DomainException(
             DomainErrorCodes.OperationalSetupDefaultRegisterRequired,
             "A default register is required to complete operational setup.");
-        CashCountMode = cashCountMode;
+        ApplyModes(cashCountMode, openingCashCountMode, closingCashCountMode, replaceMissingWithDefaults: true);
         IsCompleted = true;
         CompletedAtUtc = utcNow;
         UpdatedAtUtc = utcNow;
@@ -190,7 +210,9 @@ public sealed class PosOperationalSetup
         string? contactPhone,
         Guid actorId,
         DateTimeOffset utcNow,
-        CashCountMode? cashCountMode = null)
+        CashCountMode? cashCountMode = null,
+        CashCountMode? openingCashCountMode = null,
+        CashCountMode? closingCashCountMode = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(actorId);
@@ -210,9 +232,9 @@ public sealed class PosOperationalSetup
         ReceiptFooter = NormalizeOptional(receiptFooter, ReceiptFooterMaxLength, DomainErrorCodes.InvalidOperationalSetupReceiptFooter);
         BusinessAddress = NormalizeOptional(businessAddress, BusinessAddressMaxLength, DomainErrorCodes.InvalidOperationalSetupBusinessAddress);
         ContactPhone = NormalizeOptional(contactPhone, ContactPhoneMaxLength, DomainErrorCodes.InvalidOperationalSetupContactPhone);
-        if (cashCountMode is not null)
+        if (cashCountMode is not null || openingCashCountMode is not null || closingCashCountMode is not null)
         {
-            CashCountMode = cashCountMode.Value;
+            ApplyModes(cashCountMode, openingCashCountMode, closingCashCountMode, replaceMissingWithDefaults: false);
         }
 
         UpdatedAtUtc = utcNow;
@@ -226,6 +248,44 @@ public sealed class PosOperationalSetup
         DefaultRegisterId = registerId;
         UpdatedAtUtc = utcNow;
         UpdatedBy = actorId;
+    }
+
+    private void ApplyModes(
+        CashCountMode? cashCountMode,
+        CashCountMode? openingCashCountMode,
+        CashCountMode? closingCashCountMode,
+        bool replaceMissingWithDefaults)
+    {
+        var (opening, closing) = ResolveModes(
+            cashCountMode,
+            openingCashCountMode,
+            closingCashCountMode,
+            whenMissingOpening: replaceMissingWithDefaults ? CashCountModes.Default : OpeningCashCountMode,
+            whenMissingClosing: replaceMissingWithDefaults ? CashCountModes.Default : ClosingCashCountMode);
+        OpeningCashCountMode = opening;
+        ClosingCashCountMode = closing;
+        CashCountMode = opening;
+    }
+
+    /// <summary>
+    /// When only legacy <paramref name="cashCountMode"/> is provided, both opening and closing use it.
+    /// Explicit opening/closing values win over the legacy value for their side.
+    /// </summary>
+    internal static (CashCountMode Opening, CashCountMode Closing) ResolveModes(
+        CashCountMode? cashCountMode,
+        CashCountMode? openingCashCountMode,
+        CashCountMode? closingCashCountMode,
+        CashCountMode whenMissingOpening,
+        CashCountMode whenMissingClosing)
+    {
+        if (cashCountMode is not null && openingCashCountMode is null && closingCashCountMode is null)
+        {
+            return (cashCountMode.Value, cashCountMode.Value);
+        }
+
+        return (
+            openingCashCountMode ?? cashCountMode ?? whenMissingOpening,
+            closingCashCountMode ?? cashCountMode ?? whenMissingClosing);
     }
 
     private static string NormalizeStoreDisplayName(string? name)

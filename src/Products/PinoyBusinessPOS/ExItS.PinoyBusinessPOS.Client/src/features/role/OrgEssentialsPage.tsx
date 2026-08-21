@@ -43,6 +43,11 @@ export function OrgEssentialsPage() {
             <Link to="/org/devices">{t("devices.listTitle")}</Link>
           </Button>
         ) : null}
+        {canDevices ? (
+          <Button asChild variant="ghost" className="min-h-11" data-testid="open-cash-handling">
+            <Link to="/org/cash-handling">{t("org.cashHandlingLink")}</Link>
+          </Button>
+        ) : null}
         {canCatalog ? (
           <Button asChild variant="ghost" className="min-h-11" data-testid="open-catalog">
             <Link to="/catalog">{t("catalog.openCatalog")}</Link>

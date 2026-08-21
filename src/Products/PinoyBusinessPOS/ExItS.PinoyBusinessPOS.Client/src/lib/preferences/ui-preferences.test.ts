@@ -22,4 +22,14 @@ describe("ui preferences", () => {
     expect(UI_PREFERENCES_STORAGE_KEY).toBe("exits.pos-client.ui-preferences.v1");
     expect(UI_PREFERENCES_STORAGE_KEY).not.toMatch(/token|session|auth/i);
   });
+
+  it("accepts Philippine locales and rejects unknown ones", () => {
+    expect(parseUiPreferences(JSON.stringify({ theme: "light", locale: "ceb-PH" }))).toEqual({
+      theme: "light",
+      locale: "ceb-PH",
+    });
+    expect(parseUiPreferences(JSON.stringify({ theme: "light", locale: "ar" }))).toEqual(
+      defaultUiPreferences,
+    );
+  });
 });

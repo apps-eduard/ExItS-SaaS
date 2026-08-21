@@ -108,7 +108,7 @@ public sealed class CashierShiftQueryService
             shift.ExpectedCashAmountSnapshot,
             shift.CashVarianceAmount,
             shift.Status == CashierShiftStatus.Closed
-                ? CashCountModes.ClosingState(shift.EffectiveCashCountMode, shift.ClosingCashAmount)
+                ? CashCountModes.ClosingState(shift.EffectiveClosingCashCountMode, shift.ClosingCashAmount)
                 : null,
             salesTotals.CompletedCashCount,
             salesTotals.VoidedCashCount,
@@ -116,7 +116,9 @@ public sealed class CashierShiftQueryService
             salesTotals.CompletedUtangCount,
             movements.Select(MapMovement).ToList(),
             shift.OpeningDenominationLines.Select(CashDenominationMapper.Map).ToList(),
-            shift.ClosingDenominationLines.Select(CashDenominationMapper.Map).ToList());
+            shift.ClosingDenominationLines.Select(CashDenominationMapper.Map).ToList(),
+            shift.EffectiveOpeningCashCountMode.ToString(),
+            shift.EffectiveClosingCashCountMode.ToString());
     }
 
     public static PosCashierShiftDto Map(CashierShift shift) =>
@@ -142,7 +144,7 @@ public sealed class CashierShiftQueryService
             shift.ExpectedCashAmountSnapshot,
             shift.CashVarianceAmount,
             shift.Status == CashierShiftStatus.Closed
-                ? CashCountModes.ClosingState(shift.EffectiveCashCountMode, shift.ClosingCashAmount)
+                ? CashCountModes.ClosingState(shift.EffectiveClosingCashCountMode, shift.ClosingCashAmount)
                 : null,
             shift.ClosingNotes,
             shift.ClosedAtUtc,
@@ -152,7 +154,9 @@ public sealed class CashierShiftQueryService
             shift.CreatedAtUtc,
             shift.UpdatedAtUtc,
             shift.OpeningDenominationLines.Select(CashDenominationMapper.Map).ToList(),
-            shift.ClosingDenominationLines.Select(CashDenominationMapper.Map).ToList());
+            shift.ClosingDenominationLines.Select(CashDenominationMapper.Map).ToList(),
+            shift.EffectiveOpeningCashCountMode.ToString(),
+            shift.EffectiveClosingCashCountMode.ToString());
 
     private async Task<PosCashierShiftDto> MapAsync(CashierShift shift, CancellationToken cancellationToken)
     {
@@ -255,7 +259,8 @@ public sealed class OpenCashierShift
             var utcNow = _clock.UtcNow;
             var date = businessDate ?? CashierShiftNumbers.BusinessDateOf(utcNow);
             var setup = await _setups.GetByOrganizationIdAsync(orgId, cancellationToken).ConfigureAwait(false);
-            var cashCountMode = CashCountModes.ForNewShift(setup?.CashCountMode ?? CashCountMode.Required);
+            var openingMode = CashCountModes.ForNewShift(setup?.OpeningCashCountMode ?? CashCountModes.Default);
+            var closingMode = CashCountModes.ForNewShift(setup?.ClosingCashCountMode ?? CashCountModes.Default);
             var openingLines = CashDenominationMapper.ParseSubmittedLines(denominationLines, openingCashAmount);
             if (openingLines.Count > 0)
             {
@@ -280,7 +285,8 @@ public sealed class OpenCashierShift
                         openingCashAmount,
                         utcNow,
                         date,
-                        cashCountMode: cashCountMode,
+                        openingCashCountMode: openingMode,
+                        closingCashCountMode: closingMode,
                         openingDenominationLines: openingLines),
                     cancellationToken)
                 .ConfigureAwait(false);

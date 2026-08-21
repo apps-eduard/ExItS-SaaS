@@ -2833,6 +2833,12 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_cashier_shifts_cash_count_mode",
                     "effective_cash_count_mode IN ('Off', 'Optional', 'Required')");
+                tb.HasCheckConstraint(
+                    "ck_cashier_shifts_opening_cash_count_mode",
+                    "effective_opening_cash_count_mode IN ('Off', 'Optional', 'Required')");
+                tb.HasCheckConstraint(
+                    "ck_cashier_shifts_closing_cash_count_mode",
+                    "effective_closing_cash_count_mode IN ('Off', 'Optional', 'Required')");
             });
 
             entity.HasKey(e => e.Id);
@@ -2850,7 +2856,17 @@ public sealed class PosDbContext : DbContext
                 .HasColumnName("effective_cash_count_mode")
                 .HasMaxLength(16)
                 .IsRequired()
-                .HasDefaultValue("Required");
+                .HasDefaultValue("Optional");
+            entity.Property(e => e.EffectiveOpeningCashCountMode)
+                .HasColumnName("effective_opening_cash_count_mode")
+                .HasMaxLength(16)
+                .IsRequired()
+                .HasDefaultValue("Optional");
+            entity.Property(e => e.EffectiveClosingCashCountMode)
+                .HasColumnName("effective_closing_cash_count_mode")
+                .HasMaxLength(16)
+                .IsRequired()
+                .HasDefaultValue("Optional");
             entity.Property(e => e.OpeningCashCounted)
                 .HasColumnName("opening_cash_counted")
                 .IsRequired()
@@ -3094,6 +3110,12 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_operational_setups_cash_count_mode",
                     "cash_count_mode IN ('Optional', 'Required')");
+                tb.HasCheckConstraint(
+                    "ck_operational_setups_opening_cash_count_mode",
+                    "opening_cash_count_mode IN ('Optional', 'Required')");
+                tb.HasCheckConstraint(
+                    "ck_operational_setups_closing_cash_count_mode",
+                    "closing_cash_count_mode IN ('Optional', 'Required')");
             });
 
             entity.HasKey(e => e.OrganizationId);
@@ -3131,7 +3153,17 @@ public sealed class PosDbContext : DbContext
                 .HasColumnName("cash_count_mode")
                 .HasMaxLength(16)
                 .IsRequired()
-                .HasDefaultValue("Required");
+                .HasDefaultValue("Optional");
+            entity.Property(e => e.OpeningCashCountMode)
+                .HasColumnName("opening_cash_count_mode")
+                .HasMaxLength(16)
+                .IsRequired()
+                .HasDefaultValue("Optional");
+            entity.Property(e => e.ClosingCashCountMode)
+                .HasColumnName("closing_cash_count_mode")
+                .HasMaxLength(16)
+                .IsRequired()
+                .HasDefaultValue("Optional");
             entity.Property(e => e.IsCompleted).HasColumnName("is_completed").IsRequired();
             entity.Property(e => e.CompletedAtUtc).HasColumnName("completed_at_utc");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");

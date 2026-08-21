@@ -3,7 +3,7 @@ import { z } from "zod";
 export const UI_PREFERENCES_STORAGE_KEY = "exits.pos-client.ui-preferences.v1";
 
 export const themePreferenceSchema = z.enum(["system", "light", "dark"]);
-export const localePreferenceSchema = z.enum(["en", "fil-PH"]);
+export const localePreferenceSchema = z.enum(["en", "fil-PH", "ceb-PH", "ilo-PH", "hil-PH"]);
 
 export const uiPreferencesSchema = z.object({
   theme: themePreferenceSchema,
@@ -47,5 +47,5 @@ export function applyTheme(theme: ThemePreference): void {
 }
 
 export function applyLocale(locale: LocalePreference): void {
-  document.documentElement.lang = locale === "fil-PH" ? "fil-PH" : "en";
+  document.documentElement.lang = locale;
 }

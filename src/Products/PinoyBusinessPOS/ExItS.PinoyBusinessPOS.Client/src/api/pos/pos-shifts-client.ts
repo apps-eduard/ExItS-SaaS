@@ -22,6 +22,8 @@ export type PosCashierShiftDto = {
   openingCashAmount: number;
   openingCashCounted: boolean;
   effectiveCashCountMode: string;
+  effectiveOpeningCashCountMode?: string | null;
+  effectiveClosingCashCountMode?: string | null;
   openedAtUtc: string;
   openedBy: string;
   closingCashAmount?: number | null;

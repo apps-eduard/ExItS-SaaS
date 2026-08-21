@@ -47,29 +47,30 @@ else
             <h2 class="pos-setup__panel-title">@L["Setup_CashCount"]</h2>
         </div>
         <div class="pos-setup__fields">
-            <div class="pos-setup__policy" role="radiogroup" aria-label="@L["Setup_CashCount"]">
+            <div class="pos-setup__policy" role="group" aria-label="@L["Setup_CashCountOpening"]">
+                <p class="pos-setup__panel-hint">@L["Setup_CashCountOpening"]</p>
                 <button type="button"
-                        class="pos-setup__policy-card @(_cashCountMode == CashCountRequired ? "pos-setup__policy-card--selected" : null)"
-                        role="radio"
-                        aria-checked="@(_cashCountMode == CashCountRequired)"
+                        class="pos-setup__policy-card @(_requireOpening ? "pos-setup__policy-card--selected" : null)"
+                        aria-pressed="@_requireOpening"
                         disabled="@readOnly"
-                        @onclick="() => SetCashCountMode(CashCountRequired)">
+                        @onclick="() => SetRequireOpening(!_requireOpening)">
                     <span class="pos-setup__policy-kicker">
-                        <span class="pos-setup__policy-title">@L["Setup_CashCountRequiredTitle"]</span>
-                        <span class="pos-setup__policy-badge">@L["Setup_CashCountRecommended"]</span>
+                        <span class="pos-setup__policy-title">@L["Setup_CashCountRequireOpening"]</span>
                     </span>
-                    <span class="pos-setup__policy-copy">@L["Setup_CashCountHelpRequired"]</span>
+                    <span class="pos-setup__policy-copy">@L["Setup_CashCountRequireOpeningHelp"]</span>
                 </button>
+            </div>
+            <div class="pos-setup__policy" role="group" aria-label="@L["Setup_CashCountClosing"]">
+                <p class="pos-setup__panel-hint">@L["Setup_CashCountClosing"]</p>
                 <button type="button"
-                        class="pos-setup__policy-card @(_cashCountMode == CashCountOptional ? "pos-setup__policy-card--selected" : null)"
-                        role="radio"
-                        aria-checked="@(_cashCountMode == CashCountOptional)"
+                        class="pos-setup__policy-card @(_requireClosing ? "pos-setup__policy-card--selected" : null)"
+                        aria-pressed="@_requireClosing"
                         disabled="@readOnly"
-                        @onclick="() => SetCashCountMode(CashCountOptional)">
+                        @onclick="() => SetRequireClosing(!_requireClosing)">
                     <span class="pos-setup__policy-kicker">
-                        <span class="pos-setup__policy-title">@L["Setup_CashCountOptional"]</span>
+                        <span class="pos-setup__policy-title">@L["Setup_CashCountRequireClosing"]</span>
                     </span>
-                    <span class="pos-setup__policy-copy">@L["Setup_CashCountHelpOptional"]</span>
+                    <span class="pos-setup__policy-copy">@L["Setup_CashCountRequireClosingHelp"]</span>
                 </button>
             </div>
             <p class="pos-setup__callout">@L["Setup_CashCountSnapshotHint"]</p>
@@ -144,7 +145,8 @@ else
     private bool _saving;
     private bool _isOffline;
     private PosOperationalSetupDto? _setup;
-    private string _cashCountMode = CashCountRequired;
+    private bool _requireOpening;
+    private bool _requireClosing;
     private string _currencyCode = "PHP";
     private decimal? _newDenominationValue;
     private bool _newDenominationInvalid;
@@ -194,10 +196,12 @@ else
     {
         _setup = setup;
         _currencyCode = setup.CurrencyCode;
-        _cashCountMode = string.Equals(setup.CashCountMode, "Off", StringComparison.OrdinalIgnoreCase)
-            ? CashCountOptional
-            : string.IsNullOrWhiteSpace(setup.CashCountMode) ? CashCountRequired : setup.CashCountMode;
+        _requireOpening = IsRequiredMode(setup.OpeningCashCountMode ?? setup.CashCountMode);
+        _requireClosing = IsRequiredMode(setup.ClosingCashCountMode ?? setup.CashCountMode);
     }
+
+    private static bool IsRequiredMode(string? mode) =>
+        string.Equals(mode, CashCountRequired, StringComparison.OrdinalIgnoreCase);
 
     private async Task LoadDenominationsAsync()
     {
@@ -208,14 +212,25 @@ else
         }
     }
 
-    private void SetCashCountMode(string mode)
+    private void SetRequireOpening(bool required)
     {
         if (_isOffline)
         {
             return;
         }
 
-        _cashCountMode = mode;
+        _requireOpening = required;
+        _okMessage = null;
+    }
+
+    private void SetRequireClosing(bool required)
+    {
+        if (_isOffline)
+        {
+            return;
+        }
+
+        _requireClosing = required;
         _okMessage = null;
     }
 
@@ -302,6 +317,8 @@ else
                 return;
             }
 
+            var openingMode = _requireOpening ? CashCountRequired : CashCountOptional;
+            var closingMode = _requireClosing ? CashCountRequired : CashCountOptional;
             var result = await SetupClient.UpdateAsync(new UpdateOperationalSetupRequest(
                 _setup.StoreDisplayName,
                 _setup.CurrencyCode,
@@ -312,7 +329,9 @@ else
                 _setup.ReceiptFooter,
                 _setup.BusinessAddress,
                 _setup.ContactPhone,
-                _cashCountMode));
+                CashCountMode: null,
+                OpeningCashCountMode: openingMode,
+                ClosingCashCountMode: closingMode));
 
             if (!result.IsSuccess || result.Data is null)
             {

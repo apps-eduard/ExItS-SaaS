@@ -5,15 +5,22 @@ import { canManageShifts, canViewShifts } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
 import {
   getOperationalSetup,
-  resolveOpeningCashRequired,
+  listCashDenominations,
+  resolveCashCountRequired,
+  resolveOpeningCashCountMode,
   resolveOpeningCashVisible,
 } from "@/api/pos/pos-operational-setup-client";
 import { listRegistersAvailableForShift } from "@/api/pos/pos-registers-client";
-import { getCurrentCashierShift, openCashierShift } from "@/api/pos/pos-shifts-client";
+import {
+  getCurrentCashierShift,
+  openCashierShift,
+  type CashCountDenominationLineDto,
+} from "@/api/pos/pos-shifts-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
+import { DenominationCountHelper } from "@/features/shifts/DenominationCountHelper";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -39,6 +46,7 @@ export function ShiftOpenPage() {
 
   const [selectedRegisterId, setSelectedRegisterId] = useState<string>("");
   const [openingCash, setOpeningCash] = useState<string>("");
+  const [denomLines, setDenomLines] = useState<CashCountDenominationLineDto[]>([]);
   const [openingCashError, setOpeningCashError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -55,15 +63,28 @@ export function ShiftOpenPage() {
     queryFn: ({ signal }) => getOperationalSetup(workspaceScope!, signal),
   });
 
+  const denomsQuery = useQuery({
+    queryKey: ["pos-cash-denominations", workspaceScope?.organizationId],
+    enabled: workspaceScope !== null && canManage,
+    queryFn: ({ signal }) => listCashDenominations(workspaceScope!, signal),
+  });
+
   const registers = useMemo(() => registersQuery.data ?? [], [registersQuery.data]);
-  const cashCountMode = setupQuery.data?.cashCountMode ?? "Required";
+  const openingMode = resolveOpeningCashCountMode(setupQuery.data);
   const currencyCode = setupQuery.data?.currencyCode ?? "PHP";
-  const showOpeningCash = resolveOpeningCashVisible(cashCountMode);
-  const openingRequired = resolveOpeningCashRequired(cashCountMode);
+  const showOpeningCash = resolveOpeningCashVisible(openingMode);
+  const openingRequired = resolveCashCountRequired(openingMode);
+  const enabledDenoms = useMemo(
+    () =>
+      (denomsQuery.data ?? [])
+        .filter((d) => d.isEnabled)
+        .map((d) => ({ value: d.value, label: d.displayLabel })),
+    [denomsQuery.data],
+  );
 
   useEffect(() => {
     if (registers.length === 1) {
-      setSelectedRegisterId(registers[0].registerId);
+      setSelectedRegisterId(registers[0]!.registerId);
     }
   }, [registers]);
 
@@ -146,6 +167,7 @@ export function ShiftOpenPage() {
       const opened = await openCashierShift(workspaceScope!, {
         registerId: selectedRegisterId,
         openingCashAmount: amount,
+        denominationLines: amount !== null && denomLines.length > 0 ? denomLines : null,
       });
       await refresh();
       navigate(`/shifts/${opened.shiftId}`, { replace: true });
@@ -203,18 +225,9 @@ export function ShiftOpenPage() {
         ) : registers.length === 0 ? (
           <p
             className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-muted"
-            data-testid="shift-no-register"
+            data-testid="shift-open-no-register"
           >
             {t("shift.noRegisterMessage")}
-          </p>
-        ) : registers.length === 1 ? (
-          <p
-            className="mb-0 mt-2 text-[length:var(--exits-text-sm)]"
-            data-testid="shift-register-single"
-          >
-            <span className="font-semibold">{registers[0].registerCode}</span>
-            {" — "}
-            {registers[0].name}
           </p>
         ) : (
           <label className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
@@ -246,6 +259,17 @@ export function ShiftOpenPage() {
               ? t("shift.openingCashHelpRequired")
               : t("shift.openingCashHelpOptional")}
           </p>
+          <div className="mt-3">
+            <DenominationCountHelper
+              denominations={enabledDenoms}
+              currencyCode={currencyCode}
+              total={openingCash}
+              onTotalChange={setOpeningCash}
+              onLinesChange={setDenomLines}
+              disabled={saving}
+              testIdPrefix="opening-denom"
+            />
+          </div>
           <label className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
             <span>
               {t("shift.openingCashLabel")} ({currencyCode})
@@ -258,7 +282,10 @@ export function ShiftOpenPage() {
               step="0.01"
               className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
               value={openingCash}
-              onChange={(event) => setOpeningCash(event.target.value)}
+              onChange={(event) => {
+                setOpeningCash(event.target.value);
+                setDenomLines([]);
+              }}
             />
           </label>
           {openingCashError ? (

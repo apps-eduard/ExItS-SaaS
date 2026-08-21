@@ -73,7 +73,8 @@ function parseProblem(payload: unknown): PosProblemDetails {
 
 export type PosWorkspaceScope = {
   organizationId: string;
-  branchId: string;
+  /** Optional for organization-level Manage Business APIs. */
+  branchId?: string | null;
 };
 
 export type PosRequestOptions = {
@@ -95,8 +96,11 @@ function buildPosHeaders(
     Accept: accept,
     "X-Correlation-Id": requestCorrelationId,
     "X-Pos-Organization-Id": workspace.organizationId,
-    "X-Pos-Branch-Id": workspace.branchId,
   });
+
+  if (workspace.branchId) {
+    headers.set("X-Pos-Branch-Id", workspace.branchId);
+  }
 
   const accessToken = getPosAccessToken();
   if (accessToken) {

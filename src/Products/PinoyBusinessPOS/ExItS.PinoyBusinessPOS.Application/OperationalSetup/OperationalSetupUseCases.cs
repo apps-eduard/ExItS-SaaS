@@ -28,7 +28,9 @@ public sealed record PosOperationalSetupDto(
     Guid CreatedBy,
     DateTimeOffset UpdatedAtUtc,
     Guid UpdatedBy,
-    bool TaxConfigurationEnabled = false);
+    bool TaxConfigurationEnabled = false,
+    string? OpeningCashCountMode = null,
+    string? ClosingCashCountMode = null);
 
 public sealed record CompleteOperationalSetupRequest(
     string StoreDisplayName,
@@ -39,7 +41,9 @@ public sealed record CompleteOperationalSetupRequest(
     string? ReceiptFooter = null,
     string? BusinessAddress = null,
     string? ContactPhone = null,
-    string? CashCountMode = null);
+    string? CashCountMode = null,
+    string? OpeningCashCountMode = null,
+    string? ClosingCashCountMode = null);
 
 public sealed record UpdateOperationalSetupRequest(
     string StoreDisplayName,
@@ -51,7 +55,9 @@ public sealed record UpdateOperationalSetupRequest(
     string? ReceiptFooter = null,
     string? BusinessAddress = null,
     string? ContactPhone = null,
-    string? CashCountMode = null);
+    string? CashCountMode = null,
+    string? OpeningCashCountMode = null,
+    string? ClosingCashCountMode = null);
 
 public static class OperationalSetupMapper
 {
@@ -76,7 +82,9 @@ public static class OperationalSetupMapper
             setup.CreatedBy,
             setup.UpdatedAtUtc,
             setup.UpdatedBy,
-            taxConfigurationEnabled);
+            taxConfigurationEnabled,
+            setup.OpeningCashCountMode.ToString(),
+            setup.ClosingCashCountMode.ToString());
 
     public static PosOperationalSetupDto MapIncompleteDefaults(
         Guid organizationId,
@@ -86,6 +94,33 @@ public static class OperationalSetupMapper
         Map(
             PosOperationalSetup.CreateIncomplete(PosOrganizationId.From(organizationId), actorId, utcNow),
             taxConfigurationEnabled);
+
+    internal static (CashCountMode? Legacy, CashCountMode? Opening, CashCountMode? Closing) ParseRequestedModes(
+        string? cashCountMode,
+        string? openingCashCountMode,
+        string? closingCashCountMode)
+    {
+        CashCountMode? legacy = null;
+        CashCountMode? opening = null;
+        CashCountMode? closing = null;
+
+        if (!string.IsNullOrWhiteSpace(cashCountMode))
+        {
+            legacy = CashCountModes.ParseConfigurable(cashCountMode);
+        }
+
+        if (!string.IsNullOrWhiteSpace(openingCashCountMode))
+        {
+            opening = CashCountModes.ParseConfigurable(openingCashCountMode);
+        }
+
+        if (!string.IsNullOrWhiteSpace(closingCashCountMode))
+        {
+            closing = CashCountModes.ParseConfigurable(closingCashCountMode);
+        }
+
+        return (legacy, opening, closing);
+    }
 }
 
 public sealed class GetOperationalSetupQuery
@@ -219,6 +254,11 @@ public sealed class CompleteOperationalSetup
             var defaultRegister = await EnsureDefaultRegisterAsync(org, actorId, utcNow, cancellationToken)
                 .ConfigureAwait(false);
 
+            var (legacyMode, openingMode, closingMode) = OperationalSetupMapper.ParseRequestedModes(
+                request.CashCountMode,
+                request.OpeningCashCountMode,
+                request.ClosingCashCountMode);
+
             setup.Complete(
                 request.StoreDisplayName,
                 request.CurrencyCode,
@@ -231,7 +271,9 @@ public sealed class CompleteOperationalSetup
                 defaultRegister.Id,
                 actorId,
                 utcNow,
-                CashCountModes.ParseConfigurable(request.CashCountMode));
+                cashCountMode: legacyMode,
+                openingCashCountMode: openingMode,
+                closingCashCountMode: closingMode);
 
             if (isNew)
             {
@@ -375,6 +417,11 @@ public sealed class UpdateOperationalSetup
                 taxRate = setup.TaxRatePercent;
             }
 
+            var (legacyMode, openingMode, closingMode) = OperationalSetupMapper.ParseRequestedModes(
+                request.CashCountMode,
+                request.OpeningCashCountMode,
+                request.ClosingCashCountMode);
+
             setup.Update(
                 request.StoreDisplayName,
                 request.CurrencyCode,
@@ -386,7 +433,9 @@ public sealed class UpdateOperationalSetup
                 request.ContactPhone,
                 actorId,
                 _clock.GetUtcNow(),
-                CashCountModes.ParseConfigurable(request.CashCountMode, CashCountModes.ForNewShift(setup.CashCountMode)));
+                cashCountMode: legacyMode,
+                openingCashCountMode: openingMode,
+                closingCashCountMode: closingMode);
 
             await _setups.UpdateAsync(setup, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

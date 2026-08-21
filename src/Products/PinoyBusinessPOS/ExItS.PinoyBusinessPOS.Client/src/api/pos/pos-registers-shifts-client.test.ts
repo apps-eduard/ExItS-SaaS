@@ -104,6 +104,7 @@ describe("pos-registers-client / pos-shifts-client", () => {
     expect(resolveOpeningCashVisible("Optional")).toBe(true);
     expect(resolveOpeningCashVisible("Off")).toBe(false);
     expect(resolveOpeningCashRequired("Required")).toBe(true);
+    expect(resolveOpeningCashRequired("")).toBe(false);
   });
 
   it("treats current shift 404 as null", async () => {

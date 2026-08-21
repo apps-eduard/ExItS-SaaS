@@ -15,18 +15,22 @@ public sealed class PosOperationalSetupCashCountTests
     private static readonly DateTimeOffset Now = new(2026, 8, 13, 8, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public void New_organization_defaults_to_required_cash_count()
+    public void New_organization_defaults_to_optional_cash_count()
     {
         var setup = PosOperationalSetup.CreateIncomplete(Org, Actor, Now);
-        Assert.Equal(CashCountMode.Required, setup.CashCountMode);
+        Assert.Equal(CashCountMode.Optional, setup.CashCountMode);
+        Assert.Equal(CashCountMode.Optional, setup.OpeningCashCountMode);
+        Assert.Equal(CashCountMode.Optional, setup.ClosingCashCountMode);
     }
 
     [Fact]
-    public void Complete_without_mode_keeps_required_default()
+    public void Complete_without_mode_keeps_optional_default()
     {
         var setup = PosOperationalSetup.CreateIncomplete(Org, Actor, Now);
         setup.Complete("Sari-Sari", "PHP", TaxPricingMode.TaxExclusive, 12m, null, null, null, null, Register, Actor, Now);
-        Assert.Equal(CashCountMode.Required, setup.CashCountMode);
+        Assert.Equal(CashCountMode.Optional, setup.CashCountMode);
+        Assert.Equal(CashCountMode.Optional, setup.OpeningCashCountMode);
+        Assert.Equal(CashCountMode.Optional, setup.ClosingCashCountMode);
     }
 
     [Fact]
@@ -49,6 +53,31 @@ public sealed class PosOperationalSetupCashCountTests
         var setup = PosOperationalSetup.CreateIncomplete(Org, Actor, Now);
         setup.Complete("Sari-Sari", "PHP", TaxPricingMode.TaxExclusive, 0m, null, null, null, null, Register, Actor, Now, CashCountMode.Optional);
         setup.Update("Sari-Sari", "PHP", TaxPricingMode.TaxExclusive, 0m, null, null, null, null, Actor, Now.AddMinutes(1), CashCountMode.Required);
+        Assert.Equal(CashCountMode.Required, setup.CashCountMode);
+        Assert.Equal(CashCountMode.Required, setup.OpeningCashCountMode);
+        Assert.Equal(CashCountMode.Required, setup.ClosingCashCountMode);
+    }
+
+    [Fact]
+    public void Update_can_set_opening_and_closing_independently()
+    {
+        var setup = PosOperationalSetup.CreateIncomplete(Org, Actor, Now);
+        setup.Complete("Sari-Sari", "PHP", TaxPricingMode.TaxExclusive, 0m, null, null, null, null, Register, Actor, Now);
+        setup.Update(
+            "Sari-Sari",
+            "PHP",
+            TaxPricingMode.TaxExclusive,
+            0m,
+            null,
+            null,
+            null,
+            null,
+            Actor,
+            Now.AddMinutes(1),
+            openingCashCountMode: CashCountMode.Required,
+            closingCashCountMode: CashCountMode.Optional);
+        Assert.Equal(CashCountMode.Required, setup.OpeningCashCountMode);
+        Assert.Equal(CashCountMode.Optional, setup.ClosingCashCountMode);
         Assert.Equal(CashCountMode.Required, setup.CashCountMode);
     }
 

@@ -2,12 +2,67 @@ import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { posRequest } from "@/api/pos/pos-http";
 
 const SETUP_PATH = "/api/v1/pos/operational-setup";
+const DENOMINATIONS_PATH = `${SETUP_PATH}/cash-denominations`;
 
 export type PosOperationalSetupDto = {
   organizationId: string;
-  isComplete: boolean;
+  storeDisplayName: string;
   currencyCode: string;
+  taxPricingMode: string;
+  taxRatePercent: number;
+  receiptHeader?: string | null;
+  receiptFooter?: string | null;
+  businessAddress?: string | null;
+  contactPhone?: string | null;
+  defaultRegisterId?: string | null;
   cashCountMode: string;
+  openingCashCountMode?: string | null;
+  closingCashCountMode?: string | null;
+  isComplete: boolean;
+  isCompleted?: boolean;
+  completedAtUtc?: string | null;
+  createdAtUtc: string;
+  createdBy: string;
+  updatedAtUtc: string;
+  updatedBy: string;
+  taxConfigurationEnabled?: boolean;
+};
+
+export type OrganizationCashDenominationDto = {
+  denominationId: string;
+  organizationId: string;
+  value: number;
+  displayLabel?: string | null;
+  isEnabled: boolean;
+  sortOrder: number;
+  updatedAtUtc: string;
+};
+
+export type CashDenominationWriteDto = {
+  value: number;
+  isEnabled?: boolean;
+  sortOrder?: number;
+  displayLabel?: string | null;
+  denominationId?: string | null;
+};
+
+export type UpdateOperationalSetupRequest = {
+  storeDisplayName: string;
+  currencyCode: string;
+  taxPricingMode: string;
+  taxRatePercent: number;
+  expectedUpdatedAtUtc: string;
+  receiptHeader?: string | null;
+  receiptFooter?: string | null;
+  businessAddress?: string | null;
+  contactPhone?: string | null;
+  cashCountMode?: string | null;
+  openingCashCountMode?: string | null;
+  closingCashCountMode?: string | null;
+};
+
+export type ReplaceCashDenominationsRequest = {
+  items: CashDenominationWriteDto[];
 };
 
 /** Cash count policy for open/close shift — ViewOperationalSetup. */
@@ -23,11 +78,73 @@ export function getOperationalSetup(
   });
 }
 
-export function resolveOpeningCashRequired(cashCountMode: string | null | undefined): boolean {
+export function updateOperationalSetup(
+  workspace: PosWorkspaceScope,
+  body: UpdateOperationalSetupRequest,
+  signal?: AbortSignal,
+): Promise<PosOperationalSetupDto> {
+  return posRequest({
+    method: "PUT",
+    workspace,
+    signal,
+    path: SETUP_PATH,
+    body,
+  });
+}
+
+export function listCashDenominations(
+  workspace: PosWorkspaceScope,
+  signal?: AbortSignal,
+): Promise<OrganizationCashDenominationDto[]> {
+  return posRequest({
+    method: "GET",
+    workspace,
+    signal,
+    path: DENOMINATIONS_PATH,
+  });
+}
+
+export function replaceCashDenominations(
+  workspace: PosWorkspaceScope,
+  body: ReplaceCashDenominationsRequest,
+  signal?: AbortSignal,
+): Promise<OrganizationCashDenominationDto[]> {
+  return posRequest({
+    method: "PUT",
+    workspace,
+    signal,
+    path: DENOMINATIONS_PATH,
+    body,
+  });
+}
+
+export function resolveSetupCompleted(setup: PosOperationalSetupDto | null | undefined): boolean {
+  return Boolean(setup?.isComplete || setup?.isCompleted);
+}
+
+export function resolveOpeningCashCountMode(
+  setup: PosOperationalSetupDto | null | undefined,
+): string {
+  return setup?.openingCashCountMode?.trim() || setup?.cashCountMode?.trim() || "Optional";
+}
+
+export function resolveClosingCashCountMode(
+  setup: PosOperationalSetupDto | null | undefined,
+): string {
+  return setup?.closingCashCountMode?.trim() || setup?.cashCountMode?.trim() || "Optional";
+}
+
+/** Required when mode is Required. Empty/missing defaults to Optional (not required). */
+export function resolveCashCountRequired(cashCountMode: string | null | undefined): boolean {
   if (!cashCountMode || cashCountMode.trim().length === 0) {
-    return true;
+    return false;
   }
   return cashCountMode.localeCompare("Required", undefined, { sensitivity: "accent" }) === 0;
+}
+
+/** @deprecated Prefer resolveCashCountRequired with opening mode. */
+export function resolveOpeningCashRequired(cashCountMode: string | null | undefined): boolean {
+  return resolveCashCountRequired(cashCountMode);
 }
 
 export function resolveOpeningCashVisible(cashCountMode: string | null | undefined): boolean {
@@ -35,4 +152,11 @@ export function resolveOpeningCashVisible(cashCountMode: string | null | undefin
     return true;
   }
   return cashCountMode.localeCompare("Off", undefined, { sensitivity: "accent" }) !== 0;
+}
+
+export function formatDenominationValue(value: number): string {
+  if (Number.isInteger(value)) {
+    return String(value);
+  }
+  return value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
 }

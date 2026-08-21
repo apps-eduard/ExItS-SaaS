@@ -12,6 +12,9 @@ export type MockShiftState = {
   wrongBranchOnOpen?: boolean;
   /** Reject open when X-Pos-Organization-Id does not match E2E_ORG_ID. */
   wrongOrgOnOpen?: boolean;
+  openingCashCountMode?: "Optional" | "Required";
+  closingCashCountMode?: "Optional" | "Required";
+  denominations?: Array<{ value: number; isEnabled?: boolean }>;
 };
 
 function openShiftBody(
@@ -33,6 +36,8 @@ function openShiftBody(
     openingCashAmount: 500,
     openingCashCounted: true,
     effectiveCashCountMode: "Required",
+    effectiveOpeningCashCountMode: "Required",
+    effectiveClosingCashCountMode: "Required",
     openedAtUtc: "2026-08-21T01:00:00Z",
     openedBy: "dddddddd-dddd-dddd-dddd-dddddddddddd",
     createdAtUtc: "2026-08-21T01:00:00Z",
@@ -49,6 +54,36 @@ export async function mockPosRegisterShiftApi(
   initial: MockShiftState = { openShift: false },
 ) {
   let state: MockShiftState = { ...initial };
+  let shiftOpeningMode = state.openingCashCountMode ?? "Required";
+  let shiftClosingMode = state.closingCashCountMode ?? "Required";
+  let denoms =
+    state.denominations?.map((d, index) => ({
+      denominationId: `dddddddd-dddd-dddd-dddd-dddddddddd${String(index).padStart(2, "0")}`,
+      organizationId: E2E_ORG_ID,
+      value: d.value,
+      displayLabel: null,
+      isEnabled: d.isEnabled !== false,
+      sortOrder: index,
+      updatedAtUtc: "2026-01-01T00:00:00Z",
+    })) ??
+    [1000, 500, 200, 100, 50, 20, 10, 5, 1, 0.25, 0.1, 0.05].map((value, index) => ({
+      denominationId: `dddddddd-dddd-dddd-dddd-dddddddddd${String(index).padStart(2, "0")}`,
+      organizationId: E2E_ORG_ID,
+      value,
+      displayLabel: null,
+      isEnabled: true,
+      sortOrder: index,
+      updatedAtUtc: "2026-01-01T00:00:00Z",
+    }));
+
+  function shiftBody(opts: { status?: string; registerId?: string | null } = {}) {
+    return {
+      ...openShiftBody(opts),
+      effectiveCashCountMode: shiftClosingMode,
+      effectiveOpeningCashCountMode: shiftOpeningMode,
+      effectiveClosingCashCountMode: shiftClosingMode,
+    };
+  }
 
   await page.route("**/pos-api/api/v1/pos/**", async (route) => {
     const url = route.request().url();
@@ -127,19 +162,113 @@ export async function mockPosRegisterShiftApi(
       });
     }
 
+    if (url.includes("/operational-setup/cash-denominations") && method === "GET") {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(denoms),
+      });
+    }
+
+    if (url.includes("/operational-setup/cash-denominations") && method === "PUT") {
+      const body = route.request().postDataJSON() as {
+        items?: Array<{
+          value: number;
+          isEnabled?: boolean;
+          sortOrder?: number;
+          denominationId?: string | null;
+        }>;
+      };
+      denoms = (body.items ?? []).map((item, index) => ({
+        denominationId:
+          item.denominationId ||
+          `eeeeeeee-eeee-eeee-eeee-eeeeeeeeee${String(index).padStart(2, "0")}`,
+        organizationId: E2E_ORG_ID,
+        value: item.value,
+        displayLabel: null,
+        isEnabled: item.isEnabled !== false,
+        sortOrder: item.sortOrder ?? index,
+        updatedAtUtc: "2026-01-01T00:00:00Z",
+      }));
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(denoms),
+      });
+    }
+
     if (
       url.includes("/operational-setup") &&
       method === "GET" &&
       !url.includes("cash-denominations")
     ) {
+      const opening = state.openingCashCountMode ?? "Required";
+      const closing = state.closingCashCountMode ?? "Required";
       return route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
           organizationId: E2E_ORG_ID,
-          isComplete: true,
+          storeDisplayName: "Demo Store",
           currencyCode: "PHP",
-          cashCountMode: "Required",
+          taxPricingMode: "TaxExclusive",
+          taxRatePercent: 0,
+          receiptHeader: null,
+          receiptFooter: null,
+          businessAddress: null,
+          contactPhone: null,
+          defaultRegisterId: E2E_REGISTER_ID,
+          cashCountMode: opening,
+          openingCashCountMode: opening,
+          closingCashCountMode: closing,
+          isComplete: true,
+          isCompleted: true,
+          completedAtUtc: "2026-01-01T00:00:00Z",
+          createdAtUtc: "2026-01-01T00:00:00Z",
+          createdBy: E2E_ORG_ID,
+          updatedAtUtc: "2026-01-01T00:00:00Z",
+          updatedBy: E2E_ORG_ID,
+        }),
+      });
+    }
+
+    if (
+      url.includes("/operational-setup") &&
+      method === "PUT" &&
+      !url.includes("cash-denominations")
+    ) {
+      const body = route.request().postDataJSON() as {
+        openingCashCountMode?: string;
+        closingCashCountMode?: string;
+        cashCountMode?: string;
+      };
+      state = {
+        ...state,
+        openingCashCountMode:
+          (body.openingCashCountMode as "Optional" | "Required") || state.openingCashCountMode,
+        closingCashCountMode:
+          (body.closingCashCountMode as "Optional" | "Required") || state.closingCashCountMode,
+      };
+      const opening = state.openingCashCountMode ?? "Optional";
+      const closing = state.closingCashCountMode ?? "Optional";
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          organizationId: E2E_ORG_ID,
+          storeDisplayName: "Demo Store",
+          currencyCode: "PHP",
+          taxPricingMode: "TaxExclusive",
+          taxRatePercent: 0,
+          cashCountMode: opening,
+          openingCashCountMode: opening,
+          closingCashCountMode: closing,
+          isComplete: true,
+          isCompleted: true,
+          createdAtUtc: "2026-01-01T00:00:00Z",
+          createdBy: E2E_ORG_ID,
+          updatedAtUtc: "2026-01-02T00:00:00Z",
+          updatedBy: E2E_ORG_ID,
         }),
       });
     }
@@ -152,7 +281,7 @@ export async function mockPosRegisterShiftApi(
         status: 200,
         contentType: "application/json",
         body: JSON.stringify(
-          openShiftBody({
+          shiftBody({
             status: state.closedShift ? "Closed" : "Open",
             registerId: state.missingRegister ? null : E2E_REGISTER_ID,
           }),
@@ -170,7 +299,7 @@ export async function mockPosRegisterShiftApi(
           status: state.closedShift ? "Closed" : "Open",
           openingCashAmount: 500,
           openingCashCounted: true,
-          effectiveCashCountMode: "Required",
+          effectiveCashCountMode: shiftClosingMode,
           netCashSales: 0,
           cashSalesTotal: 0,
           gCashSalesTotal: 0,
@@ -193,7 +322,7 @@ export async function mockPosRegisterShiftApi(
         status: 200,
         contentType: "application/json",
         body: JSON.stringify(
-          openShiftBody({
+          shiftBody({
             status: state.closedShift ? "Closed" : "Open",
             registerId: state.missingRegister ? null : E2E_REGISTER_ID,
           }),
@@ -225,11 +354,13 @@ export async function mockPosRegisterShiftApi(
         });
       }
 
+      shiftOpeningMode = state.openingCashCountMode ?? "Optional";
+      shiftClosingMode = state.closingCashCountMode ?? "Optional";
       state = { ...state, openShift: true, closedShift: false, missingRegister: false };
       return route.fulfill({
         status: 201,
         contentType: "application/json",
-        body: JSON.stringify(openShiftBody()),
+        body: JSON.stringify(shiftBody()),
       });
     }
 
@@ -249,6 +380,17 @@ export async function mockPosRegisterShiftApi(
   return {
     setState(next: Partial<MockShiftState>) {
       state = { ...state, ...next };
+      if (next.denominations) {
+        denoms = next.denominations.map((d, index) => ({
+          denominationId: `dddddddd-dddd-dddd-dddd-dddddddddd${String(index).padStart(2, "0")}`,
+          organizationId: E2E_ORG_ID,
+          value: d.value,
+          displayLabel: null,
+          isEnabled: d.isEnabled !== false,
+          sortOrder: index,
+          updatedAtUtc: "2026-01-01T00:00:00Z",
+        }));
+      }
     },
   };
 }

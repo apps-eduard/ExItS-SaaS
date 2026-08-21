@@ -40,7 +40,9 @@ public sealed record PosCashierShiftDto(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc,
     IReadOnlyList<CashCountDenominationLineDto>? OpeningDenominationLines = null,
-    IReadOnlyList<CashCountDenominationLineDto>? ClosingDenominationLines = null);
+    IReadOnlyList<CashCountDenominationLineDto>? ClosingDenominationLines = null,
+    string? EffectiveOpeningCashCountMode = null,
+    string? EffectiveClosingCashCountMode = null);
 
 public sealed record PosCashierShiftSummaryDto(
     Guid ShiftId,
@@ -67,7 +69,9 @@ public sealed record PosCashierShiftSummaryDto(
     int CompletedUtangCount,
     IReadOnlyList<PosCashierShiftMovementDto> Movements,
     IReadOnlyList<CashCountDenominationLineDto>? OpeningDenominationLines = null,
-    IReadOnlyList<CashCountDenominationLineDto>? ClosingDenominationLines = null);
+    IReadOnlyList<CashCountDenominationLineDto>? ClosingDenominationLines = null,
+    string? EffectiveOpeningCashCountMode = null,
+    string? EffectiveClosingCashCountMode = null);
 
 public sealed record OpenCashierShiftRequest(
     Guid RegisterId,

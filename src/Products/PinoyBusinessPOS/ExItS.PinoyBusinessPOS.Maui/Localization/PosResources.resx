@@ -6016,6 +6016,24 @@
   <data name="Setup_CashCountSnapshotHint" xml:space="preserve">
     <value>Changes apply to the next shift. An already-open shift keeps the policy it started with.</value>
   </data>
+  <data name="Setup_CashCountOpening" xml:space="preserve">
+    <value>Opening count</value>
+  </data>
+  <data name="Setup_CashCountClosing" xml:space="preserve">
+    <value>Closing count</value>
+  </data>
+  <data name="Setup_CashCountRequireOpening" xml:space="preserve">
+    <value>Require opening cash count</value>
+  </data>
+  <data name="Setup_CashCountRequireClosing" xml:space="preserve">
+    <value>Require closing cash count</value>
+  </data>
+  <data name="Setup_CashCountRequireOpeningHelp" xml:space="preserve">
+    <value>Cashiers must count drawer cash before the shift becomes active.</value>
+  </data>
+  <data name="Setup_CashCountRequireClosingHelp" xml:space="preserve">
+    <value>Cashiers must count drawer cash before the shift can close.</value>
+  </data>
   <data name="Setup_Denominations" xml:space="preserve">
     <value>Cash denominations</value>
   </data>
