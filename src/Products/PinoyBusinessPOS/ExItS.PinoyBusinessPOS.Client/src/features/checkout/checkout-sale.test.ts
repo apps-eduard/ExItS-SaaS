@@ -107,6 +107,27 @@ describe("mapCheckoutSaleErrorKey", () => {
     ).toBe("checkout.errorDiscountDenied");
     expect(
       mapCheckoutSaleErrorKey(
+        new PosApiError(403, {
+          errorCode: "pos.sale.price_override.exceeds_manager_limit",
+          detail: "That price is above your allowed limit.",
+        }),
+      ),
+    ).toBe("checkout.errorOverrideAboveLimit");
+    expect(
+      mapCheckoutSaleErrorKey(
+        new PosApiError(400, { errorCode: "pos.sale.price_override.invalid_amount" }),
+      ),
+    ).toBe("checkout.errorOverrideInvalid");
+    expect(
+      mapCheckoutSaleErrorKey(
+        new PosApiError(403, {
+          errorCode: "application.auth.capability.denied",
+          detail: "OverrideSalePrice is required.",
+        }),
+      ),
+    ).toBe("checkout.errorOverrideDenied");
+    expect(
+      mapCheckoutSaleErrorKey(
         new PosApiError(400, { errorCode: "pos.sale.gcash_reference.invalid" }),
       ),
     ).toBe("checkout.errorGCashReference");

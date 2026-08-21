@@ -244,6 +244,20 @@ export const en = {
   "sell.weightErrorPrecision": "Use up to 3 decimal places for kg, or whole grams.",
   "sell.weightErrorInvalid": "That weight is not valid.",
   "sell.editWeight": "Edit",
+  "sell.changePrice": "Change price",
+  "sell.priceOverrideTitle": "Change selling price",
+  "sell.priceOverrideCurrent": "Current price",
+  "sell.priceOverrideNew": "New price",
+  "sell.priceOverrideReason": "Reason",
+  "sell.priceOverrideReasonRequired": "A reason is required before changing the price.",
+  "sell.priceOverrideInvalid": "Enter a valid price with up to 2 decimal places.",
+  "sell.priceOverrideZero": "Use a discount if you want to make this item free.",
+  "sell.priceOverrideAboveLimit":
+    "That price is above your allowed limit. Ask an owner, or choose a price within 100% of the current price.",
+  "sell.priceOverrideApply": "Apply",
+  "sell.priceOverrideUseRegular": "Use regular price",
+  "sell.priceChanged": "Price changed",
+  "sell.regularPrice": "Regular price",
   "sell.cartClear": "Clear",
   "sell.cartClearTitle": "Clear cart?",
   "sell.cartClearDetail": "Remove all lines from this session cart.",
@@ -302,6 +316,8 @@ export const en = {
   "checkout.discountAdd": "Add discount",
   "checkout.discountRemove": "Remove",
   "checkout.discountEmpty": "No discounts added.",
+  "checkout.priceOverrideNote":
+    "Price changes on this sale are separate from commercial discounts and Today's Prices.",
   "checkout.shiftHint": "Shift {shift} · Register {register}",
   "checkout.cashReceived": "Cash received",
   "checkout.change": "Change",
@@ -316,6 +332,15 @@ export const en = {
   "checkout.errorProductAccess": "Product access was denied for this sale.",
   "checkout.errorDiscountDenied":
     "You cannot apply a commercial discount with this role. Ask an owner or manager.",
+  "checkout.errorOverrideDenied":
+    "You cannot change selling prices with this role. Ask an owner or manager.",
+  "checkout.errorOverrideAboveLimit":
+    "That price is above your allowed limit. Ask an owner, or choose a price within 100% of the current price.",
+  "checkout.errorOverrideInvalid":
+    "Use a discount if you want to make this item free. Otherwise enter a positive selling price.",
+  "checkout.errorOverrideReasonRequired": "A reason is required before changing the price.",
+  "checkout.errorOverrideStaleBaseline":
+    "The catalog price changed since this price change was prepared. Clear and set the price again.",
   "checkout.errorCreditDenied": "You cannot create Utang credit with this role.",
   "checkout.errorVoidDenied": "You cannot void sales with this role. Ask an owner or manager.",
   "checkout.errorNoShift": "No open cashier shift. Open a shift, then retry.",
@@ -360,6 +385,9 @@ export const en = {
   "summary.voidDenied": "Only an owner or manager can void this sale.",
   "summary.voidedBanner": "This sale was voided.",
   "summary.voidReasonLabel": "Reason",
+  "summary.regularPrice": "Regular price",
+  "summary.sellingPrice": "Selling price",
+  "summary.priceOverrideReason": "Reason",
   "role.startSelling": "Start selling",
   "role.openSellFloor": "Open sell floor",
   "role.ownerTitle": "Owner home",

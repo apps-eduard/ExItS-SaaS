@@ -7,7 +7,39 @@ export type PosSessionGrantFacts = Pick<
   | "productLocalRoleCode"
   | "membershipRole"
   | "organizationManagementAuthority"
+  | "featureCodes"
+  | "grantedFeatureCodes"
 >;
+
+/** Platform feature codes for sale-line price override (RMAP-B01 / RMAP-12b). */
+export const FEATURE_OVERRIDE_SALE_PRICE = "store-sales-override-price";
+export const FEATURE_OVERRIDE_SALE_PRICE_UNLIMITED = "store-sales-override-price-unlimited";
+
+function collectGrantFeatureCodes(
+  grant: PosSessionGrantFacts | null | undefined,
+): Set<string> | null {
+  if (!grant) {
+    return null;
+  }
+  const codes = [...(grant.featureCodes ?? []), ...(grant.grantedFeatureCodes ?? [])]
+    .map((code) => code.trim().toLowerCase())
+    .filter((code) => code.length > 0);
+  if (codes.length === 0) {
+    return null;
+  }
+  return new Set(codes);
+}
+
+function grantHasFeatureCode(
+  grant: PosSessionGrantFacts | null | undefined,
+  featureCode: string,
+): boolean | null {
+  const codes = collectGrantFeatureCodes(grant);
+  if (!codes) {
+    return null;
+  }
+  return codes.has(featureCode.toLowerCase());
+}
 
 /** Default POS sell-floor roles (Owner / Manager / Cashier). Legacy Admin kept for compat. */
 const SELL_FLOOR_ROLE_CODES = new Set(["owner", "admin", "storemanager", "cashier", "manager"]);
@@ -147,6 +179,41 @@ export function canApplyCommercialDiscount(
     return false;
   }
   return isPosOwnerRole(grant) || isPosOperationsManager(grant);
+}
+
+/**
+ * OverrideSalePrice UI gate — mirrors PosRoleMatrix (Cashier DENY; Manager/Owner allow).
+ * Prefers session feature codes when present; otherwise mapped role + productAccess.
+ * Experience ≠ authority — server still enforces OverrideSalePrice on quote/checkout.
+ */
+export function canOverrideSalePrice(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  const fromFeatures = grantHasFeatureCode(grant, FEATURE_OVERRIDE_SALE_PRICE);
+  if (fromFeatures != null) {
+    return (
+      fromFeatures || grantHasFeatureCode(grant, FEATURE_OVERRIDE_SALE_PRICE_UNLIMITED) === true
+    );
+  }
+  return isPosOwnerRole(grant) || isPosOperationsManager(grant);
+}
+
+/**
+ * OverrideSalePriceUnlimited UI gate — Owner/Admin Owner-equivalent only.
+ * Prefers session feature codes when present. Manager never unlimited via role matrix.
+ */
+export function canOverrideSalePriceUnlimited(
+  grant: PosSessionGrantFacts | null | undefined,
+): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  const fromFeatures = grantHasFeatureCode(grant, FEATURE_OVERRIDE_SALE_PRICE_UNLIMITED);
+  if (fromFeatures != null) {
+    return fromFeatures;
+  }
+  return isPosOwnerRole(grant);
 }
 
 /**

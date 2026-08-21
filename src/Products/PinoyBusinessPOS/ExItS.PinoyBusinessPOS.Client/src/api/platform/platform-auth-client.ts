@@ -67,6 +67,13 @@ export type SessionGrantResponse = {
   mappedPosRoleCode?: string | null;
   productLocalRoleCode?: string | null;
   membershipRole?: string | null;
+  /**
+   * Optional feature / capability codes from the session grant (when the platform emits them).
+   * Prefer these over role heuristics when present. Known override codes:
+   * `store-sales-override-price`, `store-sales-override-price-unlimited`.
+   */
+  featureCodes?: string[] | null;
+  grantedFeatureCodes?: string[] | null;
 };
 
 export async function fetchCurrentSession(): Promise<{

@@ -260,6 +260,20 @@ export const iloPH: Record<keyof typeof en, string> = {
   "sell.weightErrorPrecision": "Agingga iti 3 decimal places para iti kg, wenno sibubukel a grams.",
   "sell.weightErrorInvalid": "Saan a valid dayta a weight.",
   "sell.editWeight": "Sukatan",
+  "sell.changePrice": "Sukatan ti presyo",
+  "sell.priceOverrideTitle": "Sukatan ti selling price",
+  "sell.priceOverrideCurrent": "Agdama a presyo",
+  "sell.priceOverrideNew": "Baro a presyo",
+  "sell.priceOverrideReason": "Rason",
+  "sell.priceOverrideReasonRequired": "Masapul ti rason sakbay a sukatan ti presyo.",
+  "sell.priceOverrideInvalid": "Isurat iti valid a presyo agingga iti 2 decimal places.",
+  "sell.priceOverrideZero": "Usaren ti diskwento no kayatmo a libre daytoy nga item.",
+  "sell.priceOverrideAboveLimit":
+    "Nalabsan ti maipalubos a limit dayta a presyo. Pangayo iti owner, wenno agpili iti presyo iti uneg ti 100% ti agdama a presyo.",
+  "sell.priceOverrideApply": "I-apply",
+  "sell.priceOverrideUseRegular": "Usaren ti regular a presyo",
+  "sell.priceChanged": "Nasukatan ti presyo",
+  "sell.regularPrice": "Regular a presyo",
   "sell.cartClear": "Dalusan",
   "sell.cartClearTitle": "Dalusan ti cart?",
   "sell.cartClearDetail": "Ikkaten amin a lines iti daytoy a session cart.",
@@ -323,6 +337,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "checkout.discountAdd": "Manginayon iti diskwento",
   "checkout.discountRemove": "Ikkaten",
   "checkout.discountEmpty": "Awan ti nadugti a diskwento.",
+  "checkout.priceOverrideNote":
+    "Ti panagsukat ti presyo iti daytoy a sale ket naisina manipud iti commercial diskwento ken Today's Prices.",
   "checkout.shiftHint": "Shift {shift} · Register {register}",
   "checkout.cashReceived": "Nadawat a cash",
   "checkout.change": "Sukli",
@@ -339,6 +355,15 @@ export const iloPH: Record<keyof typeof en, string> = {
   "checkout.errorProductAccess": "Naiparit ti product access iti daytoy a sale.",
   "checkout.errorDiscountDenied":
     "Saan a a maka-apply iti commercial diskwento iti daytoy a role. Pangayo iti owner wenno manager.",
+  "checkout.errorOverrideDenied":
+    "Saan mo a masukatan ti selling price iti daytoy a role. Pangayo iti owner wenno manager.",
+  "checkout.errorOverrideAboveLimit":
+    "Nalabsan ti maipalubos a limit dayta a presyo. Pangayo iti owner, wenno agpili iti presyo iti uneg ti 100% ti agdama a presyo.",
+  "checkout.errorOverrideInvalid":
+    "Usaren ti diskwento no kayatmo a libre daytoy nga item. No saan, isurat iti positive a selling price.",
+  "checkout.errorOverrideReasonRequired": "Masapul ti rason sakbay a sukatan ti presyo.",
+  "checkout.errorOverrideStaleBaseline":
+    "Nagbaliw ti catalog price manipud idi naisagana daytoy a panagsukat ti presyo. Dalusan ken itakder manen ti presyo.",
   "checkout.errorCreditDenied": "Saan a a makahimo iti Utti credit iti daytoy a role.",
   "checkout.errorVoidDenied":
     "Saan a a maka-void iti sales iti daytoy a role. Pangayo iti owner wenno manager.",
@@ -387,6 +412,9 @@ export const iloPH: Record<keyof typeof en, string> = {
   "summary.voidDenied": "Owner wenno manager lti ti maka-void iti daytoy a sale.",
   "summary.voidedBanner": "Na-void daytoy a sale.",
   "summary.voidReasonLabel": "Rason",
+  "summary.regularPrice": "Regular a presyo",
+  "summary.sellingPrice": "Selling price",
+  "summary.priceOverrideReason": "Rason",
   "role.startSelling": "Sugdi ti panagilako",
   "role.openSellFloor": "Lukatan ti sell floor",
   "role.ownerTitle": "Owner home",

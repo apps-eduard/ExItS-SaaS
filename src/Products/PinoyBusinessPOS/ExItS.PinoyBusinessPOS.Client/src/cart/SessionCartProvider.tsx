@@ -18,6 +18,13 @@ import {
 } from "@/cart/sell-cart-helpers";
 import { registerCartLineCountGetter } from "@/pwa/apply-pwa-update";
 
+export type SessionCartLinePriceOverride = {
+  requestedUnitPrice: number;
+  reason: string;
+  /** Catalog unit price when the override was applied (ExpectedBaselineUnitPrice). */
+  expectedBaselineUnitPrice: number;
+};
+
 export type SessionCartLine = {
   /** Stable key: productId + selected sell unit (or base). */
   lineKey: string;
@@ -28,16 +35,18 @@ export type SessionCartLine = {
   productUnitId: string | null;
   unitLabel: string;
   multiplierToBase: number;
-  /** Catalog price for the selected sell unit (client preview only). */
+  /** Catalog price for the selected sell unit (client preview / override baseline only). */
   unitPrice: number;
   /**
    * Cashier-entered quantity: count for PerItem / pack units, kilograms for ByWeight.
-   * Line amount = quantity × unitPrice.
+   * Line amount = quantity × effective unit price (override or catalog).
    */
   quantity: number;
   baseUnitOfMeasure: string;
   /** When false (and not ByWeight), quantity must be a whole number. */
   allowsCustomQuantity: boolean;
+  /** Pending per-sale price override — never mutates catalog / Today's Price. */
+  priceOverride?: SessionCartLinePriceOverride | null;
 };
 
 export type AddCartLineOptions = {
@@ -63,6 +72,7 @@ type SessionCartContextValue = {
   clear: () => void;
   getLine: (lineKey: string) => SessionCartLine | undefined;
   getEnteredQuantity: (productId: string, productUnitId: string | null) => number;
+  setLinePriceOverride: (lineKey: string, override: SessionCartLinePriceOverride | null) => void;
 };
 
 const SessionCartContext = createContext<SessionCartContextValue | null>(null);
@@ -152,7 +162,10 @@ export function SessionCartProvider({ children }: { children: ReactNode }) {
           return current.filter((_, index) => index !== existingIndex);
         }
         const refreshed = toCartLine(product, nextQty, unit);
-        return current.map((line, index) => (index === existingIndex ? refreshed : line));
+        const preserved = current[existingIndex]!.priceOverride;
+        return current.map((line, index) =>
+          index === existingIndex ? { ...refreshed, priceOverride: preserved ?? null } : line,
+        );
       }
       return [...current, toCartLine(product, delta, unit)];
     });
@@ -216,6 +229,17 @@ export function SessionCartProvider({ children }: { children: ReactNode }) {
     setLines((current) => current.filter((line) => line.lineKey !== lineKey));
   }, []);
 
+  const setLinePriceOverride = useCallback(
+    (lineKey: string, override: SessionCartLinePriceOverride | null) => {
+      setLines((current) =>
+        current.map((line) =>
+          line.lineKey === lineKey ? { ...line, priceOverride: override } : line,
+        ),
+      );
+    },
+    [],
+  );
+
   const clear = useCallback(() => {
     setLines((current) => (current.length === 0 ? current : []));
   }, []);
@@ -240,7 +264,7 @@ export function SessionCartProvider({ children }: { children: ReactNode }) {
   );
 
   const subtotal = useMemo(
-    () => roundMoney(lines.reduce((total, line) => total + line.unitPrice * line.quantity, 0)),
+    () => roundMoney(lines.reduce((total, line) => total + lineAmount(line), 0)),
     [lines],
   );
 
@@ -266,6 +290,7 @@ export function SessionCartProvider({ children }: { children: ReactNode }) {
       clear,
       getLine,
       getEnteredQuantity,
+      setLinePriceOverride,
     }),
     [
       addLine,
@@ -279,6 +304,7 @@ export function SessionCartProvider({ children }: { children: ReactNode }) {
       lines,
       quantityTotal,
       removeLine,
+      setLinePriceOverride,
       setLineQuantity,
       subtotal,
     ],
@@ -299,6 +325,10 @@ export function useSessionCartOptional(): SessionCartContextValue | null {
   return useContext(SessionCartContext);
 }
 
+export function effectiveUnitPrice(line: SessionCartLine): number {
+  return line.priceOverride?.requestedUnitPrice ?? line.unitPrice;
+}
+
 export function lineAmount(line: SessionCartLine): number {
-  return roundMoney(line.unitPrice * line.quantity);
+  return roundMoney(effectiveUnitPrice(line) * line.quantity);
 }

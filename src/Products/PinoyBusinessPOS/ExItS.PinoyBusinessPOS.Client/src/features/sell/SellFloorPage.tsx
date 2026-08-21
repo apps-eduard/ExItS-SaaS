@@ -27,9 +27,14 @@ import { StickyActionBar } from "@/components/exits/FoundationStates";
 import { SellCartPanel } from "@/features/sell/SellCartPanel";
 import { SellCategoryFilter } from "@/features/sell/SellCategoryFilter";
 import { SellCustomQuantityDialog } from "@/features/sell/SellCustomQuantityDialog";
+import { SellPriceOverrideDialog } from "@/features/sell/SellPriceOverrideDialog";
 import { SellUnitEntryDialog } from "@/features/sell/SellUnitEntryDialog";
 import { SellWeightEntryDialog } from "@/features/sell/SellWeightEntryDialog";
-import { canCreateSale } from "@/access/pos-capabilities";
+import {
+  canCreateSale,
+  canOverrideSalePrice,
+  canOverrideSalePriceUnlimited,
+} from "@/access/pos-capabilities";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatCartSummary } from "@/lib/format-money";
@@ -77,6 +82,8 @@ export function SellFloorPage() {
   const cart = useSessionCart();
   const { readiness, hasOpenShift, currentShift } = useShiftContext();
   const allowCreateSale = canCreateSale(sessionGrant);
+  const allowOverrideSalePrice = canOverrideSalePrice(sessionGrant);
+  const allowOverrideUnlimited = canOverrideSalePriceUnlimited(sessionGrant);
 
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
@@ -87,6 +94,7 @@ export function SellFloorPage() {
   const [unitEntry, setUnitEntry] = useState<PendingUnitEntry | null>(null);
   const [weightEntry, setWeightEntry] = useState<PendingWeightEntry | null>(null);
   const [customQtyEntry, setCustomQtyEntry] = useState<PendingCustomQuantityEntry | null>(null);
+  const [priceOverrideLine, setPriceOverrideLine] = useState<SessionCartLine | null>(null);
   const lastExactScanRef = useRef<string | null>(null);
 
   const debouncedSearch = useDebouncedValue(searchTerm, SEARCH_DEBOUNCE_MS);
@@ -432,6 +440,10 @@ export function SellFloorPage() {
     [openCustomQuantityEntry, synthesizeLineProduct],
   );
 
+  const handleChangePrice = useCallback((line: SessionCartLine) => {
+    setPriceOverrideLine(line);
+  }, []);
+
   const cartPanelProps = {
     lines: cart.lines,
     lineCount: cart.lineCount,
@@ -442,9 +454,11 @@ export function SellFloorPage() {
     onSetQuantity: cart.setLineQuantity,
     onEditWeight: handleEditWeight,
     onEditCustomQuantity: handleEditCustomQuantity,
+    onChangePrice: allowOverrideSalePrice ? handleChangePrice : undefined,
     onClear: cart.clear,
     checkoutReadiness: readiness,
     canCreateSale: allowCreateSale,
+    canOverrideSalePrice: allowOverrideSalePrice,
   };
 
   return (
@@ -704,6 +718,33 @@ export function SellFloorPage() {
           }
         }}
         onConfirm={handleCustomQuantityConfirm}
+      />
+
+      <SellPriceOverrideDialog
+        open={priceOverrideLine != null}
+        productName={priceOverrideLine?.name ?? ""}
+        currentUnitPrice={priceOverrideLine?.unitPrice ?? 0}
+        initialRequestedUnitPrice={priceOverrideLine?.priceOverride?.requestedUnitPrice ?? null}
+        initialReason={priceOverrideLine?.priceOverride?.reason ?? null}
+        allowUnlimited={allowOverrideUnlimited}
+        onCancel={() => setPriceOverrideLine(null)}
+        onUseRegularPrice={() => {
+          if (priceOverrideLine) {
+            cart.setLinePriceOverride(priceOverrideLine.lineKey, null);
+            setPriceOverrideLine(null);
+          }
+        }}
+        onApply={(requestedUnitPrice, reason) => {
+          if (!priceOverrideLine) {
+            return;
+          }
+          cart.setLinePriceOverride(priceOverrideLine.lineKey, {
+            requestedUnitPrice,
+            reason,
+            expectedBaselineUnitPrice: priceOverrideLine.unitPrice,
+          });
+          setPriceOverrideLine(null);
+        }}
       />
     </div>
   );

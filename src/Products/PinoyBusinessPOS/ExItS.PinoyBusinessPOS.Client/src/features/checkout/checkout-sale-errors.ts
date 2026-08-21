@@ -25,11 +25,46 @@ export function mapCheckoutSaleErrorKey(error: unknown): MessageKey {
 
   if (
     code.includes("apply_commercial_discount") ||
-    (code.includes("discount") && (error.status === 403 || detail.includes("denied"))) ||
+    (code.includes("discount") &&
+      !code.includes("price_override") &&
+      (error.status === 403 || detail.includes("denied"))) ||
     (code.includes("capability.denied") && detail.includes("commercial discount")) ||
     (code.includes("capability.denied") && detail.includes("applycommercialdiscount"))
   ) {
     return "checkout.errorDiscountDenied";
+  }
+
+  if (
+    code.includes("price_override.exceeds_manager_limit") ||
+    detail.includes("above your allowed limit") ||
+    detail.includes("exceeds the manager")
+  ) {
+    return "checkout.errorOverrideAboveLimit";
+  }
+
+  if (
+    code.includes("price_override.invalid_amount") ||
+    (code.includes("price_override") && detail.includes("positive"))
+  ) {
+    return "checkout.errorOverrideInvalid";
+  }
+
+  if (code.includes("price_override.reason_required")) {
+    return "checkout.errorOverrideReasonRequired";
+  }
+
+  if (code.includes("price_override.stale_baseline")) {
+    return "checkout.errorOverrideStaleBaseline";
+  }
+
+  if (
+    code.includes("price_override.offline_not_supported") ||
+    code.includes("overridesaleprice") ||
+    (code.includes("capability.denied") &&
+      (detail.includes("overridesaleprice") || detail.includes("override sale price"))) ||
+    (code.includes("price_override") && (error.status === 403 || detail.includes("denied")))
+  ) {
+    return "checkout.errorOverrideDenied";
   }
 
   if (

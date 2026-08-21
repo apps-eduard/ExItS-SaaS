@@ -179,17 +179,38 @@ export function TransactionSummaryPage() {
         </dl>
 
         <ul className="mb-0 mt-4 list-none space-y-2 border-t border-border pt-3 p-0">
-          {sale.lines.map((line) => (
-            <li
-              key={line.saleLineId}
-              className="flex items-start justify-between gap-2 text-[length:var(--exits-text-sm)]"
-            >
-              <span className="min-w-0 truncate">
-                {line.name} × {line.quantity} {line.unitOfMeasure}
-              </span>
-              <MoneyDisplay amount={line.lineTotal} />
-            </li>
-          ))}
+          {sale.lines.map((line) => {
+            const override = sale.priceOverrides?.find(
+              (item) => item.lineNumber === line.lineNumber,
+            );
+            return (
+              <li
+                key={line.saleLineId}
+                className="flex items-start justify-between gap-2 text-[length:var(--exits-text-sm)]"
+                data-testid={`summary-line-${line.lineNumber}`}
+              >
+                <span className="min-w-0">
+                  <span className="truncate">
+                    {line.name} × {line.quantity} {line.unitOfMeasure}
+                  </span>
+                  {override ? (
+                    <span
+                      className="mt-0.5 block text-[length:var(--exits-text-xs)] text-muted"
+                      data-testid={`summary-line-price-changed-${line.lineNumber}`}
+                    >
+                      {t("sell.priceChanged")} · {t("summary.regularPrice")}: ₱
+                      {override.baselineUnitPrice.toFixed(2)} · {t("summary.sellingPrice")}: ₱
+                      {override.appliedUnitPrice.toFixed(2)}
+                      {override.reason
+                        ? ` · ${t("summary.priceOverrideReason")}: ${override.reason}`
+                        : null}
+                    </span>
+                  ) : null}
+                </span>
+                <MoneyDisplay amount={line.lineTotal} />
+              </li>
+            );
+          })}
         </ul>
 
         <div className="mt-4 space-y-1 border-t border-border pt-3 text-[length:var(--exits-text-sm)]">

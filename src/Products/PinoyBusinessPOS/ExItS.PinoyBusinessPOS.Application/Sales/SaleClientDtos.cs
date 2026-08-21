@@ -67,7 +67,8 @@ public sealed record PosSaleDto(
     decimal GrossSubtotal = 0m,
     decimal LineDiscountTotal = 0m,
     decimal SaleDiscountTotal = 0m,
-    decimal DiscountTotal = 0m);
+    decimal DiscountTotal = 0m,
+    List<PosSaleQuotePriceOverrideDto>? PriceOverrides = null);
 
 /// <summary>
 /// One requested checkout line.

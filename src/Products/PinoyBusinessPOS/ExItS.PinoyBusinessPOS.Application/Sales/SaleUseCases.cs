@@ -133,7 +133,22 @@ public sealed class SaleQueryService
             GrossSubtotal: sale.GrossSubtotal,
             LineDiscountTotal: sale.LineDiscountTotal,
             SaleDiscountTotal: sale.SaleDiscountTotal,
-            DiscountTotal: sale.DiscountTotal);
+            DiscountTotal: sale.DiscountTotal,
+            PriceOverrides: sale.PriceOverrides.Count == 0
+                ? null
+                : sale.PriceOverrides
+                    .Select(o =>
+                    {
+                        var line = sale.Lines.FirstOrDefault(l => l.Id == o.SaleLineId);
+                        return new PosSaleQuotePriceOverrideDto(
+                            line?.LineNumber ?? 0,
+                            o.BaselineUnitPrice,
+                            o.AppliedUnitPrice,
+                            o.Reason);
+                    })
+                    .Where(o => o.LineNumber > 0)
+                    .OrderBy(o => o.LineNumber)
+                    .ToList());
 
     private async Task<PosSaleDto> MapEnrichedAsync(Sale sale, CancellationToken cancellationToken)
     {

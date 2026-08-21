@@ -259,6 +259,20 @@ export const hilPH: Record<keyof typeof en, string> = {
   "sell.weightErrorPrecision": "Hasta 3 decimal places para sa kg, ukon bilog nga grams.",
   "sell.weightErrorInvalid": "Indi valid ina nga weight.",
   "sell.editWeight": "Islan",
+  "sell.changePrice": "Islan ang presyo",
+  "sell.priceOverrideTitle": "Islan ang selling price",
+  "sell.priceOverrideCurrent": "Karon nga presyo",
+  "sell.priceOverrideNew": "Bag-o nga presyo",
+  "sell.priceOverrideReason": "Rason",
+  "sell.priceOverrideReasonRequired": "Kinahanglan sang rason antes mag-islan sang presyo.",
+  "sell.priceOverrideInvalid": "Butangi sang valid nga presyo hasta 2 decimal places.",
+  "sell.priceOverrideZero": "Gamita ang diskwento kung gusto mo himuon nga libre ini nga item.",
+  "sell.priceOverrideAboveLimit":
+    "Sobrado sa imo ginatugot nga limit ang sina nga presyo. Pangayo sa owner, ukon pilia ang presyo sulod sa 100% sang karon nga presyo.",
+  "sell.priceOverrideApply": "I-apply",
+  "sell.priceOverrideUseRegular": "Gamita ang regular nga presyo",
+  "sell.priceChanged": "Gin-islan ang presyo",
+  "sell.regularPrice": "Regular nga presyo",
   "sell.cartClear": "Hawanan",
   "sell.cartClearTitle": "Hawanan ang cart?",
   "sell.cartClearDetail": "Kuhaa ang tanan nga lines sa sini nga session cart.",
@@ -322,6 +336,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "checkout.discountAdd": "Magdugang sang diskwento",
   "checkout.discountRemove": "Kuhaa",
   "checkout.discountEmpty": "Wala sing nadugang nga diskwento.",
+  "checkout.priceOverrideNote":
+    "Ang pag-islan sang presyo sa sini nga sale lain sa commercial diskwento kag Today's Prices.",
   "checkout.shiftHint": "Shift {shift} · Register {register}",
   "checkout.cashReceived": "Nadawat nga cash",
   "checkout.change": "Sukli",
@@ -338,6 +354,15 @@ export const hilPH: Record<keyof typeof en, string> = {
   "checkout.errorProductAccess": "Ginaindian ang product access sa sini nga sale.",
   "checkout.errorDiscountDenied":
     "Indi ka maka-apply sang commercial diskwento sa sini nga role. Pangayo sa owner ukon manager.",
+  "checkout.errorOverrideDenied":
+    "Indi mo maislan ang selling price sa sini nga role. Pangayo sa owner ukon manager.",
+  "checkout.errorOverrideAboveLimit":
+    "Sobrado sa imo ginatugot nga limit ang sina nga presyo. Pangayo sa owner, ukon pilia ang presyo sulod sa 100% sang karon nga presyo.",
+  "checkout.errorOverrideInvalid":
+    "Gamita ang diskwento kung gusto mo himuon nga libre ini nga item. Kon indi, butangi sang positibo nga selling price.",
+  "checkout.errorOverrideReasonRequired": "Kinahanglan sang rason antes mag-islan sang presyo.",
+  "checkout.errorOverrideStaleBaseline":
+    "Nagbaylo ang catalog price sukot ginsag-om ini nga pag-islan sang presyo. Hawanan kag itakda liwat ang presyo.",
   "checkout.errorCreditDenied": "Indi ka makahimo sang Utang credit sa sini nga role.",
   "checkout.errorVoidDenied":
     "Indi ka maka-void sang sales sa sini nga role. Pangayo sa owner ukon manager.",
@@ -386,6 +411,9 @@ export const hilPH: Record<keyof typeof en, string> = {
   "summary.voidDenied": "Owner ukon manager lang ang maka-void sa sini nga sale.",
   "summary.voidedBanner": "Na-void ini nga sale.",
   "summary.voidReasonLabel": "Rason",
+  "summary.regularPrice": "Regular nga presyo",
+  "summary.sellingPrice": "Selling price",
+  "summary.priceOverrideReason": "Rason",
   "role.startSelling": "Sugdi ang pagbaligya",
   "role.openSellFloor": "Buksan ang sell floor",
   "role.ownerTitle": "Owner home",

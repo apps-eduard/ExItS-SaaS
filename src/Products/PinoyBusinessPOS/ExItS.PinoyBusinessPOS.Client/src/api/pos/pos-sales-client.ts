@@ -33,6 +33,15 @@ export const commercialDiscountIntentRequestSchema = z.object({
   lineNumber: z.number().int().positive().optional(),
 });
 
+/** Per-sale unit-price override intent (RMAP-B01 / RMAP-12b). Server resolves baseline. */
+export const salePriceOverrideIntentRequestSchema = z.object({
+  requestedUnitPrice: z.number(),
+  reason: z.string().min(1),
+  productId: guidSchema.optional(),
+  lineNumber: z.number().int().positive().optional(),
+  expectedBaselineUnitPrice: z.number().optional(),
+});
+
 export const checkoutSaleRequestSchema = z.object({
   lines: z.array(checkoutSaleLineRequestSchema).min(1),
   paymentMethod: checkoutPaymentMethodSchema,
@@ -47,15 +56,17 @@ export const checkoutSaleRequestSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
   discounts: z.array(commercialDiscountIntentRequestSchema).optional(),
+  priceOverrides: z.array(salePriceOverrideIntentRequestSchema).optional(),
 });
 
-/** Quote uses the same line/discount contract; tender/saleId/shift are not required. */
+/** Quote uses the same line/discount/override contract; tender/saleId/shift are not required. */
 export const quoteSaleRequestSchema = z.object({
   lines: z.array(checkoutSaleLineRequestSchema).min(1),
   paymentMethod: checkoutPaymentMethodSchema.optional(),
   amountTendered: z.number().optional(),
   customerId: guidSchema.optional(),
   discounts: z.array(commercialDiscountIntentRequestSchema).optional(),
+  priceOverrides: z.array(salePriceOverrideIntentRequestSchema).optional(),
 });
 
 export const voidSaleRequestSchema = z.object({
@@ -64,6 +75,7 @@ export const voidSaleRequestSchema = z.object({
 
 export type CheckoutSaleLineRequest = z.infer<typeof checkoutSaleLineRequestSchema>;
 export type CommercialDiscountIntentRequest = z.infer<typeof commercialDiscountIntentRequestSchema>;
+export type SalePriceOverrideIntentRequest = z.infer<typeof salePriceOverrideIntentRequestSchema>;
 export type CheckoutSaleRequest = z.infer<typeof checkoutSaleRequestSchema>;
 export type QuoteSaleRequest = z.infer<typeof quoteSaleRequestSchema>;
 export type VoidSaleRequest = z.infer<typeof voidSaleRequestSchema>;
@@ -83,6 +95,13 @@ export const posSaleLineDtoSchema = z.object({
   grossLineTotal: z.number().optional(),
   lineDiscountAmount: z.number().optional(),
   saleDiscountAllocatedAmount: z.number().optional(),
+});
+
+export const posSaleQuotePriceOverrideDtoSchema = z.object({
+  lineNumber: z.number(),
+  baselineUnitPrice: z.number(),
+  appliedUnitPrice: z.number(),
+  reason: z.string(),
 });
 
 export const posSaleDtoSchema = z.object({
@@ -120,10 +139,12 @@ export const posSaleDtoSchema = z.object({
   discountTotal: z.number().optional(),
   lineDiscountTotal: z.number().optional(),
   saleDiscountTotal: z.number().optional(),
+  priceOverrides: z.array(posSaleQuotePriceOverrideDtoSchema).optional(),
 });
 
 export type PosSaleLineDto = z.infer<typeof posSaleLineDtoSchema>;
 export type PosSaleDto = z.infer<typeof posSaleDtoSchema>;
+export type PosSaleQuotePriceOverrideDto = z.infer<typeof posSaleQuotePriceOverrideDtoSchema>;
 
 export const posSaleQuoteLineDtoSchema = z.object({
   lineNumber: z.number(),
@@ -137,6 +158,7 @@ export const posSaleQuoteLineDtoSchema = z.object({
   lineDiscountAmount: z.number(),
   saleDiscountAllocatedAmount: z.number(),
   lineTotal: z.number(),
+  baselineUnitPrice: z.number().nullable().optional(),
 });
 
 export const posSaleQuoteDiscountDtoSchema = z.object({
@@ -159,6 +181,7 @@ export const posSaleQuoteDtoSchema = z.object({
   taxPricingMode: z.string().nullable().optional(),
   lines: z.array(posSaleQuoteLineDtoSchema),
   discounts: z.array(posSaleQuoteDiscountDtoSchema),
+  priceOverrides: z.array(posSaleQuotePriceOverrideDtoSchema).nullable().optional(),
 });
 
 export type PosSaleQuoteLineDto = z.infer<typeof posSaleQuoteLineDtoSchema>;
@@ -231,10 +254,35 @@ function serializeDiscounts(
   });
 }
 
+function serializePriceOverrides(
+  overrides: SalePriceOverrideIntentRequest[] | undefined,
+): Record<string, unknown>[] | undefined {
+  if (!overrides || overrides.length === 0) {
+    return undefined;
+  }
+  return overrides.map((item) => {
+    const entry: Record<string, unknown> = {
+      requestedUnitPrice: item.requestedUnitPrice,
+      reason: item.reason,
+    };
+    if (item.productId) {
+      entry.productId = item.productId;
+    }
+    if (item.lineNumber !== undefined) {
+      entry.lineNumber = item.lineNumber;
+    }
+    if (item.expectedBaselineUnitPrice !== undefined) {
+      entry.expectedBaselineUnitPrice = item.expectedBaselineUnitPrice;
+    }
+    return entry;
+  });
+}
+
 /**
  * Online checkout for Cash / ManualGCash / Utang.
  * Omit snapshot fields; server prices from live catalog.
  * Optional commercial discount intents (RMAP-11b) — server recomputes all money.
+ * Optional priceOverrides (RMAP-12b) — server applies before discounts; never mutates catalog.
  * Never send Card or provider GCash from this client.
  */
 export async function checkoutSale(
@@ -270,6 +318,11 @@ export async function checkoutSale(
     payload.discounts = discounts;
   }
 
+  const priceOverrides = serializePriceOverrides(validated.priceOverrides);
+  if (priceOverrides) {
+    payload.priceOverrides = priceOverrides;
+  }
+
   const raw = await posRequest<unknown>({
     method: "POST",
     workspace,
@@ -281,7 +334,7 @@ export async function checkoutSale(
 }
 
 /**
- * Non-persisting authoritative checkout quote (RMAP-B03 / RMAP-11b).
+ * Non-persisting authoritative checkout quote (RMAP-B03 / RMAP-11b / RMAP-12b).
  * Never mutates UnitPrice client-side; never treats quote as authorization to record.
  */
 export async function quoteSale(
@@ -303,6 +356,10 @@ export async function quoteSale(
   const discounts = serializeDiscounts(validated.discounts);
   if (discounts) {
     payload.discounts = discounts;
+  }
+  const priceOverrides = serializePriceOverrides(validated.priceOverrides);
+  if (priceOverrides) {
+    payload.priceOverrides = priceOverrides;
   }
 
   const raw = await posRequest<unknown>({

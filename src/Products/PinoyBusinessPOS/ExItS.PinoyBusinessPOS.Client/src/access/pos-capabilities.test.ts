@@ -21,6 +21,8 @@ import {
   canUseOperationsExperience,
   canUseSellingExperience,
   canManageSuppliers,
+  canOverrideSalePrice,
+  canOverrideSalePriceUnlimited,
   canViewCustomers,
   canViewCustomerOrders,
   canManageCustomerOrders,
@@ -205,6 +207,55 @@ describe("pos-capabilities", () => {
     expect(canApplyCommercialDiscount(manager)).toBe(true);
     expect(canApplyCommercialDiscount(cashier)).toBe(false);
     expect(canApplyCommercialDiscount(orgAdmin)).toBe(false);
+  });
+
+  it("OverrideSalePrice mirrors PosRoleMatrix and prefers feature codes when present", () => {
+    const owner = grant({
+      mappedPosRoleCode: "Owner",
+      productLocalRoleCode: "Owner",
+      membershipRole: "OrganizationOwner",
+      organizationManagementAuthority: true,
+    });
+    const manager = grant({
+      mappedPosRoleCode: "StoreManager",
+      productLocalRoleCode: "Manager",
+      membershipRole: "OrganizationMember",
+    });
+    const cashier = grant({
+      mappedPosRoleCode: "Cashier",
+      productLocalRoleCode: "Cashier",
+      membershipRole: "OrganizationMember",
+    });
+    const orgAdmin = grant({
+      membershipRole: "OrganizationAdministrator",
+      organizationManagementAuthority: true,
+      mappedPosRoleCode: null,
+      productLocalRoleCode: null,
+      productAccessAllowed: true,
+    });
+    const cashierWithFeature = grant({
+      mappedPosRoleCode: "Cashier",
+      productLocalRoleCode: "Cashier",
+      membershipRole: "OrganizationMember",
+      featureCodes: ["store-sales-override-price"],
+    });
+    const managerUnlimitedFeature = grant({
+      mappedPosRoleCode: "StoreManager",
+      productLocalRoleCode: "Manager",
+      membershipRole: "OrganizationMember",
+      featureCodes: ["store-sales-override-price-unlimited"],
+    });
+
+    expect(canOverrideSalePrice(owner)).toBe(true);
+    expect(canOverrideSalePriceUnlimited(owner)).toBe(true);
+    expect(canOverrideSalePrice(manager)).toBe(true);
+    expect(canOverrideSalePriceUnlimited(manager)).toBe(false);
+    expect(canOverrideSalePrice(cashier)).toBe(false);
+    expect(canOverrideSalePriceUnlimited(cashier)).toBe(false);
+    expect(canOverrideSalePrice(orgAdmin)).toBe(false);
+    expect(canOverrideSalePrice(cashierWithFeature)).toBe(true);
+    expect(canOverrideSalePriceUnlimited(cashierWithFeature)).toBe(false);
+    expect(canOverrideSalePriceUnlimited(managerUnlimitedFeature)).toBe(true);
   });
 
   it("VoidSale / ViewCustomers / CreateCredit mirror PosRoleMatrix gaps", () => {

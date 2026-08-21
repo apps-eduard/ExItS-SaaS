@@ -259,6 +259,20 @@ export const cebPH: Record<keyof typeof en, string> = {
   "sell.weightErrorPrecision": "Hangtod 3 decimal places para sa kg, o tibuok grams.",
   "sell.weightErrorInvalid": "Dili valid kana nga weight.",
   "sell.editWeight": "Usba",
+  "sell.changePrice": "Usba ang presyo",
+  "sell.priceOverrideTitle": "Usba ang selling price",
+  "sell.priceOverrideCurrent": "Karon nga presyo",
+  "sell.priceOverrideNew": "Bag-ong presyo",
+  "sell.priceOverrideReason": "Rason",
+  "sell.priceOverrideReasonRequired": "Kinahanglan og rason sa wala pa usba ang presyo.",
+  "sell.priceOverrideInvalid": "Butangi og valid nga presyo hangtod 2 decimal places.",
+  "sell.priceOverrideZero": "Gamita ang diskwento kung gusto nimo himoon nga libre kini nga item.",
+  "sell.priceOverrideAboveLimit":
+    "Labaw sa imong gitugot nga limit ang maong presyo. Pangayo sa owner, o pilia ang presyo sulod sa 100% sa kasamtangang presyo.",
+  "sell.priceOverrideApply": "I-apply",
+  "sell.priceOverrideUseRegular": "Gamita ang regular nga presyo",
+  "sell.priceChanged": "Gibag-o ang presyo",
+  "sell.regularPrice": "Regular nga presyo",
   "sell.cartClear": "Hawanan",
   "sell.cartClearTitle": "Hawanan ang cart?",
   "sell.cartClearDetail": "Kuhaa ang tanang lines niining session cart.",
@@ -321,6 +335,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "checkout.discountAdd": "Pagdugang og diskwento",
   "checkout.discountRemove": "Kuhaa",
   "checkout.discountEmpty": "Walay nadugang nga diskwento.",
+  "checkout.priceOverrideNote":
+    "Ang pagbag-o sa presyo niining sale lahi sa commercial diskwento ug Today's Prices.",
   "checkout.shiftHint": "Shift {shift} · Register {register}",
   "checkout.cashReceived": "Nadawat nga cash",
   "checkout.change": "Sukli",
@@ -337,6 +353,15 @@ export const cebPH: Record<keyof typeof en, string> = {
   "checkout.errorProductAccess": "Gidili ang product access niining sale.",
   "checkout.errorDiscountDenied":
     "Dili ka maka-apply og commercial diskwento niining role. Pangayo sa owner o manager.",
+  "checkout.errorOverrideDenied":
+    "Dili nimo mausab ang selling price niining role. Pangayo sa owner o manager.",
+  "checkout.errorOverrideAboveLimit":
+    "Labaw sa imong gitugot nga limit ang maong presyo. Pangayo sa owner, o pilia ang presyo sulod sa 100% sa kasamtangang presyo.",
+  "checkout.errorOverrideInvalid":
+    "Gamita ang diskwento kung gusto nimo himoon nga libre kini nga item. Kon dili, butangi og positibong selling price.",
+  "checkout.errorOverrideReasonRequired": "Kinahanglan og rason sa wala pa usba ang presyo.",
+  "checkout.errorOverrideStaleBaseline":
+    "Nagbag-o ang catalog price sukad giandam kini nga pagbag-o sa presyo. Hawani ug itakda pag-usab ang presyo.",
   "checkout.errorCreditDenied": "Dili ka makahimo og Utang credit niining role.",
   "checkout.errorVoidDenied":
     "Dili ka maka-void og sales niining role. Pangayo sa owner o manager.",
@@ -385,6 +410,9 @@ export const cebPH: Record<keyof typeof en, string> = {
   "summary.voidDenied": "Owner o manager lang ang maka-void niining sale.",
   "summary.voidedBanner": "Na-void kini nga sale.",
   "summary.voidReasonLabel": "Rason",
+  "summary.regularPrice": "Regular nga presyo",
+  "summary.sellingPrice": "Selling price",
+  "summary.priceOverrideReason": "Rason",
   "role.startSelling": "Sugdi ang pagbaligya",
   "role.openSellFloor": "Ablihi ang sell floor",
   "role.ownerTitle": "Owner home",

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { lineAmount, type SessionCartLine } from "@/cart/SessionCartProvider";
+import { effectiveUnitPrice, lineAmount, type SessionCartLine } from "@/cart/SessionCartProvider";
 import { formatQuantityDisplay, isByWeightSellingMode } from "@/cart/sell-cart-helpers";
 import { ConfirmationDialog } from "@/components/exits/SheetDialog";
 import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
@@ -19,6 +19,7 @@ type SellCartPanelProps = {
   onSetQuantity: (lineKey: string, quantity: number) => void;
   onEditWeight: (line: SessionCartLine) => void;
   onEditCustomQuantity?: (line: SessionCartLine) => void;
+  onChangePrice?: (line: SessionCartLine) => void;
   onClear: () => void;
   showClose?: boolean;
   onClose?: () => void;
@@ -27,6 +28,8 @@ type SellCartPanelProps = {
   checkoutReadiness?: CheckoutShiftReadiness;
   /** CreateSale capability — required with moneyPostReady to enable Pay. */
   canCreateSale?: boolean;
+  /** OverrideSalePrice UI gate — Change price action only when true. */
+  canOverrideSalePrice?: boolean;
 };
 
 export function SellCartPanel({
@@ -39,12 +42,14 @@ export function SellCartPanel({
   onSetQuantity,
   onEditWeight,
   onEditCustomQuantity,
+  onChangePrice,
   onClear,
   showClose = false,
   onClose,
   panelId = "cart",
   checkoutReadiness,
   canCreateSale = false,
+  canOverrideSalePrice = false,
 }: SellCartPanelProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -93,7 +98,9 @@ export function SellCartPanel({
             const byWeight = isByWeightSellingMode(line.sellingMode);
             const customMeasured = line.allowsCustomQuantity && !byWeight;
             const wholeOnly = !line.allowsCustomQuantity && !byWeight;
+            const sellingPrice = effectiveUnitPrice(line);
             const amount = lineAmount(line);
+            const hasOverride = Boolean(line.priceOverride);
             return (
               <li
                 key={line.lineKey}
@@ -110,13 +117,29 @@ export function SellCartPanel({
                         {line.sku}
                       </p>
                     ) : null}
+                    {hasOverride ? (
+                      <p
+                        data-testid={`sell-cart-price-changed-${line.lineKey}`}
+                        className="m-0 text-[length:var(--exits-text-xs)] font-medium text-[var(--exits-accent,var(--exits-primary))]"
+                      >
+                        {t("sell.priceChanged")}
+                      </p>
+                    ) : null}
                     <p className="m-0 break-words text-[length:var(--exits-text-xs)] text-muted">
                       {t("sell.linePreview")
                         .replace("{qty}", formatQuantityDisplay(line.quantity))
                         .replace("{unit}", line.unitLabel)
-                        .replace("{price}", line.unitPrice.toFixed(2))
+                        .replace("{price}", sellingPrice.toFixed(2))
                         .replace("{amount}", amount.toFixed(2))}
                     </p>
+                    {hasOverride ? (
+                      <p
+                        data-testid={`sell-cart-regular-price-${line.lineKey}`}
+                        className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+                      >
+                        {t("sell.regularPrice")}: ₱{line.unitPrice.toFixed(2)}
+                      </p>
+                    ) : null}
                   </div>
                   <Button
                     type="button"
@@ -192,6 +215,19 @@ export function SellCartPanel({
                     testId={`sell-cart-amount-${line.lineKey}`}
                   />
                 </div>
+                {canOverrideSalePrice && onChangePrice ? (
+                  <div className="mt-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="min-h-11 border border-border"
+                      data-testid={`sell-cart-change-price-${line.lineKey}`}
+                      onClick={() => onChangePrice(line)}
+                    >
+                      {t("sell.changePrice")}
+                    </Button>
+                  </div>
+                ) : null}
               </li>
             );
           })}

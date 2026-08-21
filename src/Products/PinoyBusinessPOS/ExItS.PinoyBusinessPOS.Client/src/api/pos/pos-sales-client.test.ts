@@ -177,6 +177,113 @@ describe("pos-sales-client", () => {
     expect(String(vi.mocked(fetch).mock.calls[1][0])).toContain("/sales/quote");
   });
 
+  it("posts and quotes priceOverrides with baseline/applied parse", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify(
+            saleJson({
+              total: 90,
+              subtotal: 90,
+              priceOverrides: [
+                {
+                  lineNumber: 1,
+                  baselineUnitPrice: 100,
+                  appliedUnitPrice: 90,
+                  reason: "Price match",
+                },
+              ],
+              lines: [
+                {
+                  saleLineId: "99999999-9999-4999-8999-999999999999",
+                  productId,
+                  lineNumber: 1,
+                  name: "Coke",
+                  sku: "COKE-330",
+                  unitOfMeasure: "pc",
+                  sellingMode: "PerItem",
+                  unitPrice: 90,
+                  quantity: 1,
+                  lineTotal: 90,
+                },
+              ],
+            }),
+          ),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify(
+            quoteJson({
+              grossSubtotal: 90,
+              discountTotal: 0,
+              saleDiscountTotal: 0,
+              subtotal: 90,
+              total: 90,
+              discounts: [],
+              priceOverrides: [
+                {
+                  lineNumber: 1,
+                  baselineUnitPrice: 100,
+                  appliedUnitPrice: 90,
+                  reason: "Price match",
+                },
+              ],
+              lines: [
+                {
+                  lineNumber: 1,
+                  productId,
+                  name: "Coke",
+                  unitOfMeasure: "pc",
+                  sellingMode: "PerItem",
+                  unitPrice: 90,
+                  quantity: 1,
+                  grossLineTotal: 90,
+                  lineDiscountAmount: 0,
+                  saleDiscountAllocatedAmount: 0,
+                  lineTotal: 90,
+                  baselineUnitPrice: 100,
+                },
+              ],
+            }),
+          ),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      );
+
+    const priceOverrides = [
+      {
+        requestedUnitPrice: 90,
+        reason: "Price match",
+        lineNumber: 1,
+        expectedBaselineUnitPrice: 100,
+      },
+    ];
+
+    const sale = await checkoutSale(workspace, {
+      lines: [{ productId, quantity: 1 }],
+      paymentMethod: "Cash",
+      amountTendered: 90,
+      saleId,
+      shiftId,
+      priceOverrides,
+    });
+    expect(sale.priceOverrides?.[0]?.appliedUnitPrice).toBe(90);
+    const checkoutBody = JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]?.body));
+    expect(checkoutBody.priceOverrides).toEqual(priceOverrides);
+    expect(checkoutBody.lines[0].unitPrice).toBeUndefined();
+
+    const quote = await quoteSale(workspace, {
+      lines: [{ productId, quantity: 1 }],
+      paymentMethod: "Cash",
+      priceOverrides,
+    });
+    expect(quote.priceOverrides?.[0]?.baselineUnitPrice).toBe(100);
+    expect(quote.lines[0]?.baselineUnitPrice).toBe(100);
+    expect(quote.lines[0]?.unitPrice).toBe(90);
+  });
+
   it("includes sellingUnitId and enteredQuantity when provided", async () => {
     const unitId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
     vi.mocked(fetch).mockResolvedValueOnce(

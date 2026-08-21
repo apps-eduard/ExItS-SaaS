@@ -4,6 +4,7 @@ import {
   canApplyCommercialDiscount,
   canCreateCredit,
   canCreateSale,
+  canOverrideSalePrice,
   canViewCustomers,
 } from "@/access/pos-capabilities";
 import { listCustomers, searchCheckoutCustomers } from "@/api/pos/pos-customers-client";
@@ -14,6 +15,7 @@ import {
   type CheckoutPaymentMethod,
   type CommercialDiscountIntentRequest,
   type PosSaleQuoteDto,
+  type SalePriceOverrideIntentRequest,
 } from "@/api/pos/pos-sales-client";
 import { roundMoney } from "@/cart/sell-cart-helpers";
 import { lineAmount, useSessionCart } from "@/cart/SessionCartProvider";
@@ -23,6 +25,7 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
 import { mapCartLinesToCheckoutRequest } from "@/features/checkout/map-cart-to-checkout";
+import { mapCartPriceOverridesToRequest } from "@/features/checkout/map-cart-price-overrides";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
 import { useI18n } from "@/i18n/I18nProvider";
 import { isPosDeviceReadyForMoney } from "@/workspace/pos-device-context";
@@ -138,6 +141,7 @@ export function CheckoutCashPage() {
 
   const allowSale = canCreateSale(sessionGrant);
   const allowDiscount = canApplyCommercialDiscount(sessionGrant);
+  const allowOverride = canOverrideSalePrice(sessionGrant);
   const allowViewCustomers = canViewCustomers(sessionGrant);
   const allowCreateCredit = canCreateCredit(sessionGrant);
   /** Cashier Utang may use narrow checkout-search; management list still requires ViewCustomers. */
@@ -166,6 +170,14 @@ export function CheckoutCashPage() {
     [appliedDiscounts],
   );
   const discountSignature = useMemo(() => JSON.stringify(discountIntents), [discountIntents]);
+  const priceOverrideIntents = useMemo(
+    () => (allowOverride ? mapCartPriceOverridesToRequest(cart.lines) : []),
+    [allowOverride, cart.lines],
+  );
+  const priceOverrideSignature = useMemo(
+    () => JSON.stringify(priceOverrideIntents),
+    [priceOverrideIntents],
+  );
   const cartSignature = useMemo(
     () =>
       JSON.stringify(
@@ -173,6 +185,7 @@ export function CheckoutCashPage() {
           productId: line.productId,
           quantity: line.quantity,
           productUnitId: line.productUnitId,
+          priceOverride: line.priceOverride ?? null,
         })),
       ),
     [cart.lines],
@@ -230,12 +243,14 @@ export function CheckoutCashPage() {
       setQuoteLoading(true);
       setQuoteError(null);
       const intents = JSON.parse(discountSignature) as CommercialDiscountIntentRequest[];
+      const overrides = JSON.parse(priceOverrideSignature) as SalePriceOverrideIntentRequest[];
       void quoteSale(
         workspaceScope,
         {
           lines: mapCartLinesToCheckoutRequest(cart.lines),
           paymentMethod: "Cash",
           discounts: allowDiscount && intents.length > 0 ? intents : undefined,
+          priceOverrides: allowOverride && overrides.length > 0 ? overrides : undefined,
         },
         controller.signal,
       )
@@ -259,8 +274,18 @@ export function CheckoutCashPage() {
       controller.abort();
       window.clearTimeout(timer);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- cartSignature/discountSignature track content without array-identity thrash
-  }, [allowDiscount, cartSignature, deviceReady, discountSignature, moneyReady, t, workspaceScope]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- cartSignature/discountSignature/priceOverrideSignature track content without array-identity thrash
+  }, [
+    allowDiscount,
+    allowOverride,
+    cartSignature,
+    deviceReady,
+    discountSignature,
+    moneyReady,
+    priceOverrideSignature,
+    t,
+    workspaceScope,
+  ]);
 
   useEffect(() => {
     if (paymentChoice !== "Cash" || !quote) {
@@ -497,6 +522,8 @@ export function CheckoutCashPage() {
             }
           : {}),
         discounts: allowDiscount && discountIntents.length > 0 ? discountIntents : undefined,
+        priceOverrides:
+          allowOverride && priceOverrideIntents.length > 0 ? priceOverrideIntents : undefined,
       });
       completedRef.current = true;
       cart.clear();
@@ -543,14 +570,34 @@ export function CheckoutCashPage() {
             <li
               key={line.lineKey}
               className="flex items-start justify-between gap-2 text-[length:var(--exits-text-sm)]"
+              data-testid={`checkout-line-${line.lineKey}`}
             >
-              <span className="min-w-0 truncate">
-                {index + 1}. {line.name} × {line.quantity} {line.unitLabel}
+              <span className="min-w-0">
+                <span className="truncate">
+                  {index + 1}. {line.name} × {line.quantity} {line.unitLabel}
+                </span>
+                {line.priceOverride ? (
+                  <span
+                    className="mt-0.5 block text-[length:var(--exits-text-xs)] text-muted"
+                    data-testid={`checkout-line-price-changed-${line.lineKey}`}
+                  >
+                    {t("sell.priceChanged")} · {t("sell.regularPrice")}: ₱
+                    {line.unitPrice.toFixed(2)}
+                  </span>
+                ) : null}
               </span>
               <MoneyDisplay amount={lineAmount(line)} />
             </li>
           ))}
         </ul>
+        {priceOverrideIntents.length > 0 ? (
+          <p
+            data-testid="checkout-price-override-note"
+            className="mb-0 mt-3 text-[length:var(--exits-text-xs)] text-muted"
+          >
+            {t("checkout.priceOverrideNote")}
+          </p>
+        ) : null}
         {currentShift ? (
           <p className="mb-0 mt-3 text-[length:var(--exits-text-xs)] text-muted">
             {t("checkout.shiftHint")

@@ -252,6 +252,20 @@ export const filPH: Record<keyof typeof en, string> = {
   "sell.weightErrorPrecision": "Hanggang 3 decimal places para sa kg, o buong grams.",
   "sell.weightErrorInvalid": "Hindi valid ang bigat na iyan.",
   "sell.editWeight": "I-edit",
+  "sell.changePrice": "Palitan ang presyo",
+  "sell.priceOverrideTitle": "Palitan ang selling price",
+  "sell.priceOverrideCurrent": "Kasalukuyang presyo",
+  "sell.priceOverrideNew": "Bagong presyo",
+  "sell.priceOverrideReason": "Dahilan",
+  "sell.priceOverrideReasonRequired": "Kailangan ng dahilan bago palitan ang presyo.",
+  "sell.priceOverrideInvalid": "Maglagay ng valid na presyo hanggang 2 decimal places.",
+  "sell.priceOverrideZero": "Gumamit ng diskwento kung gusto mong gawing libre ang item na ito.",
+  "sell.priceOverrideAboveLimit":
+    "Lampas sa pinapayagang limit ang presyong iyon. Magtanong sa owner, o pumili ng presyo sa loob ng 100% ng kasalukuyang presyo.",
+  "sell.priceOverrideApply": "I-apply",
+  "sell.priceOverrideUseRegular": "Gamitin ang regular na presyo",
+  "sell.priceChanged": "Binago ang presyo",
+  "sell.regularPrice": "Regular na presyo",
   "sell.cartClear": "I-clear",
   "sell.cartClearTitle": "I-clear ang cart?",
   "sell.cartClearDetail": "Alisin ang lahat ng lines sa session cart na ito.",
@@ -313,6 +327,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "checkout.discountAdd": "Idagdag ang diskwento",
   "checkout.discountRemove": "Alisin",
   "checkout.discountEmpty": "Walang idinagdag na diskwento.",
+  "checkout.priceOverrideNote":
+    "Ang pagbabago ng presyo sa sale na ito ay hiwalay sa commercial discount at Today's Prices.",
   "checkout.shiftHint": "Shift {shift} · Register {register}",
   "checkout.cashReceived": "Cash na natanggap",
   "checkout.change": "Sukli",
@@ -327,6 +343,15 @@ export const filPH: Record<keyof typeof en, string> = {
   "checkout.errorProductAccess": "Tinanggihan ang product access para sa sale na ito.",
   "checkout.errorDiscountDenied":
     "Hindi ka maaaring mag-apply ng commercial discount sa role na ito. Humingi sa owner o manager.",
+  "checkout.errorOverrideDenied":
+    "Hindi mo maaaring palitan ang selling price sa role na ito. Magtanong sa owner o manager.",
+  "checkout.errorOverrideAboveLimit":
+    "Lampas sa pinapayagang limit ang presyong iyon. Magtanong sa owner, o pumili ng presyo sa loob ng 100% ng kasalukuyang presyo.",
+  "checkout.errorOverrideInvalid":
+    "Gumamit ng diskwento kung gusto mong gawing libre ang item na ito. Kung hindi, maglagay ng positibong selling price.",
+  "checkout.errorOverrideReasonRequired": "Kailangan ng dahilan bago palitan ang presyo.",
+  "checkout.errorOverrideStaleBaseline":
+    "Nagbago ang catalog price mula nang ihanda ang pagbabago ng presyo. I-clear at itakda ulit ang presyo.",
   "checkout.errorCreditDenied": "Hindi ka makakagawa ng Utang credit sa role na ito.",
   "checkout.errorVoidDenied":
     "Hindi ka makakapag-void ng sales sa role na ito. Magtanong sa owner o manager.",
@@ -374,6 +399,9 @@ export const filPH: Record<keyof typeof en, string> = {
   "summary.voidDenied": "Owner o manager lang ang puwedeng mag-void ng sale na ito.",
   "summary.voidedBanner": "Na-void ang sale na ito.",
   "summary.voidReasonLabel": "Dahilan",
+  "summary.regularPrice": "Regular na presyo",
+  "summary.sellingPrice": "Selling price",
+  "summary.priceOverrideReason": "Dahilan",
   "role.startSelling": "Magsimulang magbenta",
   "role.openSellFloor": "Buksan ang sell floor",
   "role.ownerTitle": "Owner home",
