@@ -55,6 +55,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "offline.cashOnlyTitle": "Offline · Cash lamang",
   "offline.cashOnlyDetail":
     "Maaari kang tumapos ng Cash na bentahan kahit offline. Nakaimbak sa device na ito at magsi-sync kapag nakakonekta muli.",
+  "offline.priceRefreshRequiredTitle": "Kailangang i-refresh ang mga presyo",
+  "offline.priceRefreshRequired": "Kumonekta muna para ma-refresh ang mga presyo bago magbenta.",
   "offline.blockedDiscount": "Alisin ang diskwento para matapos ang bentang ito offline.",
   "offline.blockedPriceOverride":
     "Gamitin ang regular na presyo para matapos ang bentang ito offline.",

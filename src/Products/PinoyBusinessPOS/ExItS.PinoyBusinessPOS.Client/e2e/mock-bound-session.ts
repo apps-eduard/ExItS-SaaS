@@ -3,6 +3,9 @@ import { expect, type Page } from "@playwright/test";
 export const E2E_ORG_ID = "11111111-1111-1111-1111-111111111111";
 export const E2E_BRANCH_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 export const E2E_HOME_ORG_ID = E2E_ORG_ID;
+/** The real login wire carries the platform user id; offline LocalStore scoping needs it. */
+export const E2E_USER_ID = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+export const E2E_PERSONAL_USER_ID = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 
 type MockGrantOptions = {
   mappedPosRoleCode?: string | null;
@@ -14,6 +17,7 @@ type MockGrantOptions = {
 
 type SessionClassOptions = {
   accountClass?: "Personal" | "Organization" | "Platform";
+  userId?: string;
   username?: string;
   displayName?: string;
   email?: string;
@@ -26,6 +30,10 @@ function sessionBody(opts: SessionClassOptions) {
   const accountClass = opts.accountClass ?? "Organization";
   return {
     sessionId: "22222222-2222-2222-2222-222222222222",
+    // Production /auth/login and /auth/me both carry userId (PlatformLoginResultDto /
+    // PlatformAuthSessionInfoDto). The offline LocalStore is scoped by it, so a fixture that
+    // omitted it would silently exercise a no-offline-store path that no real session hits.
+    userId: opts.userId ?? (accountClass === "Personal" ? E2E_PERSONAL_USER_ID : E2E_USER_ID),
     username: opts.username ?? "cashier",
     displayName: opts.displayName ?? "Cashier One",
     email: opts.email ?? opts.username ?? "cashier",

@@ -6,6 +6,7 @@ import {
   type CachedCatalogProductRecord,
   type CachedCustomerCreditRecord,
   type CachedCustomerRecord,
+  type CachedOfflinePriceAuthorityRecord,
   type CachedPersonalContactRecord,
   type CachedPersonalEntryRecord,
   type CachedPersonalRelationshipRecord,
@@ -50,6 +51,13 @@ interface OfflineDbSchema extends DBSchema {
   catalogCategories: {
     key: string;
     value: CachedCatalogCategoryRecord;
+  };
+  priceAuthorities: {
+    key: string;
+    value: CachedOfflinePriceAuthorityRecord;
+    indexes: {
+      byProduct: string;
+    };
   };
   sellReadiness: {
     key: string;
@@ -150,6 +158,10 @@ export async function openOfflineDatabase(
       }
       if (!db.objectStoreNames.contains("catalogCategories")) {
         db.createObjectStore("catalogCategories", { keyPath: "categoryId" });
+      }
+      if (!db.objectStoreNames.contains("priceAuthorities")) {
+        const authorities = db.createObjectStore("priceAuthorities", { keyPath: "leaseKey" });
+        authorities.createIndex("byProduct", "productId");
       }
       if (!db.objectStoreNames.contains("sellReadiness")) {
         db.createObjectStore("sellReadiness", { keyPath: "key" });

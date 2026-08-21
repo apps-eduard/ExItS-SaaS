@@ -55,6 +55,9 @@ export const cebPH: Record<keyof typeof en, string> = {
   "offline.cashOnlyTitle": "Offline · Cash lang",
   "offline.cashOnlyDetail":
     "Makahuman ka og Cash nga baligya bisan offline. Gitipigan sa device ug maga-sync kon makakonektar na.",
+  "offline.priceRefreshRequiredTitle": "Kinahanglan i-refresh ang mga presyo",
+  "offline.priceRefreshRequired":
+    "Kumonektar una aron ma-refresh ang mga presyo sa dili pa mobaligya.",
   "offline.blockedDiscount": "Kuhaa ang diskwento aron mahuman kini nga baligya offline.",
   "offline.blockedPriceOverride":
     "Gamita ang regular nga presyo aron mahuman kini nga baligya offline.",

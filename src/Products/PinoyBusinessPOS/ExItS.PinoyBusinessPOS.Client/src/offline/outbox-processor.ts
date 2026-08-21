@@ -69,6 +69,64 @@ function extractServerEntityId(responseBody: unknown, fallback: string): string 
   return fallback;
 }
 
+function roundMoney(amount: number): number {
+  const sign = amount < 0 ? -1 : 1;
+  return (sign * Math.round(Math.abs(amount) * 100)) / 100;
+}
+
+/**
+ * The total this device committed to when it took the customer's cash, or null when the queued
+ * body carries no per-line amounts (an older RMAP-21D sale, or any non-sale operation).
+ */
+function committedSaleTotal(envelope: QueuedRequestEnvelope): number | null {
+  const body = envelope.body;
+  if (typeof body !== "object" || body === null) {
+    return null;
+  }
+  const lines = (body as Record<string, unknown>).lines;
+  if (!Array.isArray(lines) || lines.length === 0) {
+    return null;
+  }
+
+  let total = 0;
+  for (const line of lines) {
+    if (typeof line !== "object" || line === null) {
+      return null;
+    }
+    const lineTotal = (line as Record<string, unknown>).lineTotal;
+    if (typeof lineTotal !== "number" || !Number.isFinite(lineTotal)) {
+      return null;
+    }
+    total = roundMoney(total + lineTotal);
+  }
+  return total;
+}
+
+function serverSaleTotal(responseBody: unknown): number | null {
+  if (typeof responseBody !== "object" || responseBody === null) {
+    return null;
+  }
+  const total = (responseBody as Record<string, unknown>).total;
+  return typeof total === "number" && Number.isFinite(total) ? total : null;
+}
+
+/**
+ * RMAP-21 Review Repair 01: an offline Cash sale is only Succeeded when the server recorded the
+ * amount the customer actually paid.
+ *
+ * The price lease is supposed to make these equal. If they ever diverge the sale is flagged for a
+ * person rather than quietly marked done, because the difference is the gap between the receipt in
+ * the customer's hand and the books.
+ */
+function totalsDisagree(envelope: QueuedRequestEnvelope, responseBody: unknown): boolean {
+  const committed = committedSaleTotal(envelope);
+  const recorded = serverSaleTotal(responseBody);
+  if (committed === null || recorded === null) {
+    return false;
+  }
+  return Math.abs(committed - recorded) > 0.005;
+}
+
 function classifyHttpStatus(status: number): {
   queueState: OfflineQueueState;
   failureCode: string;
@@ -247,6 +305,16 @@ export async function processNextOutboxOperation(
     );
     if (claimed.entityLocalId) {
       await rememberEntityMapping(db, claimed.entityLocalId, serverId, claimed.operationType);
+    }
+    if (totalsDisagree(resolvedFinal.envelope, responseBody)) {
+      await setOperationState(db, claimed.operationId, {
+        queueState: "Conflict",
+        failureCode: "offline.sale.total_mismatch",
+        failureSummary: "The recorded sale total does not match the amount collected",
+        serverReference: serverId,
+        entityServerId: serverId,
+      });
+      return { status: "failed", operationId: claimed.operationId, queueState: "Conflict" };
     }
     await setOperationState(db, claimed.operationId, {
       queueState: "Succeeded",

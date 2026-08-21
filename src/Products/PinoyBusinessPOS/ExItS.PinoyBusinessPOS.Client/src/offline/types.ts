@@ -1,7 +1,8 @@
 import type { PosCatalogProductDto, PosProductCategoryDto } from "@/api/pos/pos-catalog-types";
+import type { OfflinePriceAuthority } from "@/api/pos/pos-offline-price-authority-client";
 
-/** v5 adds the private-by-default Personal To-do store (RMAP-21G). */
-export const OFFLINE_SCHEMA_VERSION = 5 as const;
+/** v6 adds the server-signed offline price lease store (RMAP-21 Review Repair 01). */
+export const OFFLINE_SCHEMA_VERSION = 6 as const;
 
 /** Written to `meta` on open so a Personal write can refuse an Organization database. */
 export const OFFLINE_SCOPE_KIND_META_KEY = "scopeKind" as const;
@@ -67,6 +68,23 @@ export type CachedCatalogCategoryRecord = {
   categoryId: string;
   cachedAtUtc: string;
   category: PosProductCategoryDto;
+};
+
+/**
+ * A server-signed offline price lease (RMAP-21 Review Repair 01).
+ *
+ * Stored as plaintext for the same reason catalog rows are: a lease is a shelf price the cashier
+ * can already read on screen, and it authorizes nothing on its own — the signature is what the
+ * server checks, and this device cannot produce one. Nothing here is money that has been taken.
+ */
+export type CachedOfflinePriceAuthorityRecord = {
+  /** `productId::sellingUnitId|base` — one lease per sellable line shape. */
+  leaseKey: string;
+  productId: string;
+  sellingUnitId: string | null;
+  cachedAtUtc: string;
+  expiresAtUtc: string;
+  authority: OfflinePriceAuthority;
 };
 
 /**

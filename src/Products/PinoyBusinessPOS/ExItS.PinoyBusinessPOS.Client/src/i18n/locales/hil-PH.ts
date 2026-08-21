@@ -56,6 +56,9 @@ export const hilPH: Record<keyof typeof en, string> = {
   "offline.cashOnlyTitle": "Offline · Cash lang",
   "offline.cashOnlyDetail":
     "Sarang mo matapos ang Cash nga baligya bisan offline. Gina-tipigan sa device kag maga-sync kon makakonektar liwat.",
+  "offline.priceRefreshRequiredTitle": "Kinahanglan i-refresh ang mga presyo",
+  "offline.priceRefreshRequired":
+    "Magkonektar anay agod ma-refresh ang mga presyo antes magbaligya.",
   "offline.blockedDiscount": "Kuhaa ang diskwento agod matapos ini nga baligya offline.",
   "offline.blockedPriceOverride":
     "Gamita ang regular nga presyo agod matapos ini nga baligya offline.",

@@ -6,12 +6,16 @@ import { decryptPayload, deriveScopeKeyFromBinding } from "@/offline/crypto";
 import { openOfflineDatabase, organizationScopeKey } from "@/offline/db";
 import { listOutbox, listSafeOutboxMetadata } from "@/offline/outbox";
 import { OFFLINE_SCHEMA_VERSION } from "@/offline/types";
+import { mockLeasedCheckoutLine, mockPriceAuthority } from "@/test/mock-price-authority";
 
 const productId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 const shiftId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const organizationId = "11111111-1111-4111-8111-111111111111";
 const branchId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const installationDeviceId = "22222222-2222-4222-8222-222222222222";
+
+const authority = mockPriceAuthority({ productId, organizationId, branchId, unitPrice: 12.5 });
+const leasedLine = mockLeasedCheckoutLine(authority, 2);
 
 async function openScopedDb(userId: string) {
   const scopeBinding = organizationScopeKey({
@@ -39,14 +43,14 @@ function baseInput(
     installationDeviceId,
     saleId,
     shiftId,
-    lines: [{ productId, quantity: 2 }],
+    lines: [leasedLine],
     amountTendered: 50,
   };
 }
 
 describe("RMAP-21D offline Cash sale enqueue", () => {
-  it("keeps the Sell stores intact after the RMAP-21G schema bump", async () => {
-    expect(OFFLINE_SCHEMA_VERSION).toBe(5);
+  it("keeps the Sell stores intact after the price-lease schema bump", async () => {
+    expect(OFFLINE_SCHEMA_VERSION).toBe(6);
     const { db } = await openScopedDb("user-schema");
     expect([...db.objectStoreNames].sort()).toEqual([
       "catalogCategories",
@@ -60,6 +64,7 @@ describe("RMAP-21D offline Cash sale enqueue", () => {
       "personalEntries",
       "personalRelationships",
       "personalTodos",
+      "priceAuthorities",
       "sellReadiness",
     ]);
     db.close();
@@ -91,7 +96,29 @@ describe("RMAP-21D offline Cash sale enqueue", () => {
       `Organization|sale.checkout|${saleId}`,
     );
     expect(JSON.parse(new TextDecoder().decode(plaintext))).toEqual({
-      lines: [{ productId, quantity: 2 }],
+      lines: [
+        {
+          productId,
+          quantity: 2,
+          unitPriceSnapshot: 12.5,
+          unitOfMeasure: "Piece",
+          sellingMode: "PerItem",
+          lineTotal: 25,
+          offlinePriceAuthority: {
+            authorityId: authority.authorityId,
+            organizationId,
+            productId,
+            signature: authority.signature,
+            issuedAtUtc: authority.issuedAtUtc,
+            expiresAtUtc: authority.expiresAtUtc,
+            unitPrice: 12.5,
+            unitOfMeasure: "Piece",
+            sellingMode: "PerItem",
+            branchId,
+            sellingUnitId: null,
+          },
+        },
+      ],
       paymentMethod: "Cash",
       saleId,
       shiftId,
@@ -149,6 +176,80 @@ describe("RMAP-21D offline Cash sale enqueue", () => {
     await expect(enqueueOfflineCashSale({ ...base, amountTendered: -1 })).rejects.toMatchObject({
       code: "offline.sale.tender_invalid",
     });
+
+    expect(await listOutbox(db)).toHaveLength(0);
+    db.close();
+  });
+
+  it("refuses to queue a line the server never leased a price for", async () => {
+    const userId = "user-unleased";
+    const saleId = "dddddddd-dddd-4ddd-8ddd-ddddddddddd4";
+    const { db, scopeBinding } = await openScopedDb(userId);
+    const base = baseInput(db, scopeBinding, userId, saleId);
+
+    await expect(
+      enqueueOfflineCashSale({ ...base, lines: [{ productId, quantity: 2 }] }),
+    ).rejects.toMatchObject({ code: "offline.sale.price_authority_required" });
+
+    // One leased line does not license the unleased one beside it.
+    await expect(
+      enqueueOfflineCashSale({
+        ...base,
+        lines: [leasedLine, { productId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1", quantity: 1 }],
+      }),
+    ).rejects.toMatchObject({ code: "offline.sale.price_authority_required" });
+
+    expect(await listOutbox(db)).toHaveLength(0);
+    db.close();
+  });
+
+  it("refuses to queue a lease whose window has already closed", async () => {
+    const userId = "user-expired";
+    const saleId = "dddddddd-dddd-4ddd-8ddd-ddddddddddd5";
+    const { db, scopeBinding } = await openScopedDb(userId);
+    const yesterday = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    const expired = mockPriceAuthority({
+      productId,
+      organizationId,
+      branchId,
+      issuedAtUtc: yesterday.toISOString(),
+      expiresAtUtc: new Date(yesterday.getTime() + 8 * 60 * 60 * 1000).toISOString(),
+    });
+
+    await expect(
+      enqueueOfflineCashSale({
+        ...baseInput(db, scopeBinding, userId, saleId),
+        lines: [mockLeasedCheckoutLine(expired, 1)],
+      }),
+    ).rejects.toMatchObject({ code: "offline.sale.price_authority_expired" });
+
+    expect(await listOutbox(db)).toHaveLength(0);
+    db.close();
+  });
+
+  it("refuses to queue amounts the device edited away from the lease", async () => {
+    const userId = "user-edited";
+    const saleId = "dddddddd-dddd-4ddd-8ddd-ddddddddddd6";
+    const { db, scopeBinding } = await openScopedDb(userId);
+    const base = baseInput(db, scopeBinding, userId, saleId);
+
+    await expect(
+      enqueueOfflineCashSale({
+        ...base,
+        lines: [{ ...leasedLine, unitPriceSnapshot: 1 }],
+      }),
+    ).rejects.toMatchObject({ code: "offline.sale.price_authority_line_mismatch" });
+
+    await expect(
+      enqueueOfflineCashSale({ ...base, lines: [{ ...leasedLine, lineTotal: 1 }] }),
+    ).rejects.toMatchObject({ code: "offline.sale.price_authority_line_mismatch" });
+
+    await expect(
+      enqueueOfflineCashSale({
+        ...base,
+        lines: [{ ...leasedLine, productId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1" }],
+      }),
+    ).rejects.toMatchObject({ code: "offline.sale.price_authority_line_mismatch" });
 
     expect(await listOutbox(db)).toHaveLength(0);
     db.close();

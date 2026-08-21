@@ -52,6 +52,8 @@ export const en = {
   "offline.cashOnlyTitle": "Offline · Cash only",
   "offline.cashOnlyDetail":
     "You can finish Cash sales while offline. They are saved on this device and sync when you reconnect.",
+  "offline.priceRefreshRequiredTitle": "Prices need refreshing",
+  "offline.priceRefreshRequired": "Connect to refresh prices before selling.",
   "offline.blockedDiscount": "Remove the discount to finish this sale offline.",
   "offline.blockedPriceOverride": "Use the regular price to finish this sale offline.",
   "offline.enqueueFailed": "Could not save this sale on this device. Try again.",

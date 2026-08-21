@@ -55,6 +55,9 @@ export const iloPH: Record<keyof typeof en, string> = {
   "offline.cashOnlyTitle": "Offline · Cash laeng",
   "offline.cashOnlyDetail":
     "Mabalinmo a leppasen ti Cash a panaglako uray offline. Naidulin iti daytoy a device ken ag-sync no makakonekta manen.",
+  "offline.priceRefreshRequiredTitle": "Masapul a ma-refresh dagiti presio",
+  "offline.priceRefreshRequired":
+    "Agkonektaka pay tapno ma-refresh dagiti presio sakbay ti panaglako.",
   "offline.blockedDiscount": "Ikkaten ti diskuento tapno malpas daytoy a panaglako nga offline.",
   "offline.blockedPriceOverride":
     "Usaren ti regular a presio tapno malpas daytoy a panaglako nga offline.",

@@ -21,11 +21,40 @@ export type CheckoutPaymentMethod = z.infer<typeof checkoutPaymentMethodSchema>;
 export const GCASH_REFERENCE_MAX_LENGTH = 64;
 export const VOID_REASON_MAX_LENGTH = 512;
 
+/**
+ * A server-signed offline price lease, replayed verbatim (RMAP-21 Review Repair 01).
+ *
+ * The client never edits these fields: `signature` covers all of them, and the server prices the
+ * line from the lease rather than from anything else the line carries.
+ */
+export const offlinePriceAuthorityTokenSchema = z.object({
+  authorityId: guidSchema,
+  organizationId: guidSchema,
+  productId: guidSchema,
+  signature: z.string().min(1),
+  issuedAtUtc: z.string().min(1),
+  expiresAtUtc: z.string().min(1),
+  unitPrice: z.number(),
+  unitOfMeasure: z.string().min(1),
+  sellingMode: z.string().min(1),
+  branchId: guidSchema.nullable().optional(),
+  sellingUnitId: guidSchema.nullable().optional(),
+});
+
 export const checkoutSaleLineRequestSchema = z.object({
   productId: guidSchema,
   quantity: z.number(),
   sellingUnitId: guidSchema.optional(),
   enteredQuantity: z.number().optional(),
+  /**
+   * Offline Cash only. Sent alongside the lease so the queued sale and the paper receipt carry the
+   * same amounts; the server treats them as claims to check against the lease, never as prices.
+   */
+  unitPriceSnapshot: z.number().optional(),
+  unitOfMeasure: z.string().optional(),
+  sellingMode: z.string().optional(),
+  lineTotal: z.number().optional(),
+  offlinePriceAuthority: offlinePriceAuthorityTokenSchema.optional(),
 });
 
 export const commercialDiscountIntentRequestSchema = z.object({
@@ -78,6 +107,7 @@ export const voidSaleRequestSchema = z.object({
 });
 
 export type CheckoutSaleLineRequest = z.infer<typeof checkoutSaleLineRequestSchema>;
+export type OfflinePriceAuthorityToken = z.infer<typeof offlinePriceAuthorityTokenSchema>;
 export type CommercialDiscountIntentRequest = z.infer<typeof commercialDiscountIntentRequestSchema>;
 export type SalePriceOverrideIntentRequest = z.infer<typeof salePriceOverrideIntentRequestSchema>;
 export type CheckoutSaleRequest = z.infer<typeof checkoutSaleRequestSchema>;
@@ -230,6 +260,34 @@ function serializeLines(lines: CheckoutSaleLineRequest[]): Record<string, unknow
     }
     if (line.enteredQuantity !== undefined) {
       entry.enteredQuantity = line.enteredQuantity;
+    }
+    if (line.offlinePriceAuthority) {
+      const lease = line.offlinePriceAuthority;
+      entry.offlinePriceAuthority = {
+        authorityId: lease.authorityId,
+        organizationId: lease.organizationId,
+        productId: lease.productId,
+        signature: lease.signature,
+        issuedAtUtc: lease.issuedAtUtc,
+        expiresAtUtc: lease.expiresAtUtc,
+        unitPrice: lease.unitPrice,
+        unitOfMeasure: lease.unitOfMeasure,
+        sellingMode: lease.sellingMode,
+        branchId: lease.branchId ?? null,
+        sellingUnitId: lease.sellingUnitId ?? null,
+      };
+      if (line.unitPriceSnapshot !== undefined) {
+        entry.unitPriceSnapshot = line.unitPriceSnapshot;
+      }
+      if (line.unitOfMeasure) {
+        entry.unitOfMeasure = line.unitOfMeasure;
+      }
+      if (line.sellingMode) {
+        entry.sellingMode = line.sellingMode;
+      }
+      if (line.lineTotal !== undefined) {
+        entry.lineTotal = line.lineTotal;
+      }
     }
     return entry;
   });

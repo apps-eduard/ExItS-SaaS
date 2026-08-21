@@ -25,14 +25,21 @@ import { OnlineRequiredCard } from "@/components/exits/OnlineRequiredCard";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
-import { mapCartLinesToCheckoutRequest } from "@/features/checkout/map-cart-to-checkout";
+import {
+  mapCartLinesToCheckoutRequest,
+  mapCartLinesToOfflineCheckoutRequest,
+} from "@/features/checkout/map-cart-to-checkout";
 import { mapCartPriceOverridesToRequest } from "@/features/checkout/map-cart-price-overrides";
 import { useSellOfflineReadiness } from "@/features/sell/use-sell-offline-readiness";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
 import { useI18n } from "@/i18n/I18nProvider";
-import { enqueueOfflineCashSale } from "@/offline/cash-sale-offline";
+import { enqueueOfflineCashSale, OfflineCashSaleRejectedError } from "@/offline/cash-sale-offline";
 import { useOfflineSync } from "@/offline/OfflineSyncProvider";
 import { ONLINE_REQUIRED_CODES } from "@/offline/online-required";
+import {
+  loadUsablePriceAuthorities,
+  type PriceAuthorityLookup,
+} from "@/offline/price-authority-cache";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type DiscountScope = CommercialDiscountIntentRequest["scope"];
@@ -128,6 +135,7 @@ export function CheckoutCashPage() {
   const [discountReason, setDiscountReason] = useState("");
   const [discountLineNumber, setDiscountLineNumber] = useState(1);
   const [discountFormError, setDiscountFormError] = useState<string | null>(null);
+  const [priceAuthorities, setPriceAuthorities] = useState<PriceAuthorityLookup | null>(null);
   const [quote, setQuote] = useState<PosSaleQuoteDto | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
@@ -207,9 +215,49 @@ export function CheckoutCashPage() {
   const offlineBlocked = offlineDiscountBlocked || offlineOverrideBlocked;
   const showDiscountPanel = allowDiscount && online;
   const offlineContext = sellReadiness.offlineContext;
+  const offlineDb = offlineContext?.db ?? null;
 
-  const amountToPay = quote?.total ?? cart.subtotal;
-  const totalAmount = quote?.grossSubtotal ?? cart.subtotal;
+  /**
+   * Offline price leases (RMAP-21 Review Repair 01). While offline the cart is priced by leases the
+   * server signed before the network dropped, so the amount the customer pays is the amount the
+   * server will record — reconnecting cannot reprice a sale that has already been paid for.
+   */
+  useEffect(() => {
+    if (online || !offlineDb) {
+      setPriceAuthorities(null);
+      return;
+    }
+    let cancelled = false;
+    void loadUsablePriceAuthorities(offlineDb)
+      .then((loaded) => {
+        if (!cancelled) {
+          setPriceAuthorities(loaded);
+        }
+      })
+      .catch(() => {
+        // An unreadable lease cache must block the sale, not price it from the device.
+        if (!cancelled) {
+          setPriceAuthorities(new Map());
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [offlineDb, online]);
+
+  const offlineMapping = useMemo(() => {
+    if (online || !priceAuthorities) {
+      return null;
+    }
+    return mapCartLinesToOfflineCheckoutRequest(cart.lines, priceAuthorities);
+  }, [cart.lines, online, priceAuthorities]);
+
+  const offlinePricesLoading = !online && priceAuthorities === null;
+  const offlinePriceGateBlocked = offlineMapping !== null && !offlineMapping.ok;
+  const offlineLeaseTotal = offlineMapping?.ok === true ? offlineMapping.total : null;
+
+  const amountToPay = quote?.total ?? offlineLeaseTotal ?? cart.subtotal;
+  const totalAmount = quote?.grossSubtotal ?? offlineLeaseTotal ?? cart.subtotal;
   const discountTotal = quote?.discountTotal ?? 0;
   const zeroTotal = amountToPay <= 1e-9;
   const parsedTender = zeroTotal ? 0 : parseCashTender(cashReceived);
@@ -548,6 +596,10 @@ export function CheckoutCashPage() {
       setSubmitError(t("offline.cashOnlyDetail"));
       return;
     }
+    if (!online && (offlinePricesLoading || !offlineMapping?.ok)) {
+      setSubmitError(t("offline.priceRefreshRequired"));
+      return;
+    }
     if (paymentChoice === "Cash" && !zeroTotal && (parsedTender === null || !tenderOk)) {
       setSubmitError(t("checkout.tenderInvalid"));
       return;
@@ -578,8 +630,8 @@ export function CheckoutCashPage() {
 
     if (!online) {
       try {
-        if (!offlineContext) {
-          setSubmitError(t("offline.enqueueFailed"));
+        if (!offlineContext || offlineMapping?.ok !== true) {
+          setSubmitError(t("offline.priceRefreshRequired"));
           return;
         }
         await enqueueOfflineCashSale({
@@ -592,7 +644,7 @@ export function CheckoutCashPage() {
           posDeviceId: offlineContext.posDeviceId,
           saleId,
           shiftId,
-          lines,
+          lines: offlineMapping.lines,
           amountTendered: zeroTotal ? 0 : Number((parsedTender as number).toFixed(2)),
         });
         await refreshCounts();
@@ -600,8 +652,11 @@ export function CheckoutCashPage() {
         cart.clear();
         attemptSaleIdRef.current = newSaleId();
         navigate(`/sell/offline-queued/${saleId}`, { replace: true });
-      } catch {
-        setSubmitError(t("offline.enqueueFailed"));
+      } catch (error) {
+        const leaseRejected =
+          error instanceof OfflineCashSaleRejectedError &&
+          error.code.startsWith("offline.sale.price_authority");
+        setSubmitError(t(leaseRejected ? "offline.priceRefreshRequired" : "offline.enqueueFailed"));
       } finally {
         submittingRef.current = false;
         setSaving(false);
@@ -650,6 +705,8 @@ export function CheckoutCashPage() {
     offlineBlocked ||
     (online && (!quote || Boolean(quoteError))) ||
     (!online && !offlineContext) ||
+    offlinePricesLoading ||
+    offlinePriceGateBlocked ||
     !tenderOk ||
     !gcashRefOk ||
     utangBlockedZero ||
@@ -668,6 +725,17 @@ export function CheckoutCashPage() {
           </p>
           <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
             {t("offline.cashOnlyDetail")}
+          </p>
+        </Card>
+      ) : null}
+
+      {offlinePriceGateBlocked ? (
+        <Card data-testid="checkout-offline-price-authority-required">
+          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("offline.priceRefreshRequiredTitle")}
+          </p>
+          <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">
+            {t("offline.priceRefreshRequired")}
           </p>
         </Card>
       ) : null}

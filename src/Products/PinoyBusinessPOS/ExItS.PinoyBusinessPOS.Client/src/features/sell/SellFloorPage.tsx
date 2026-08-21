@@ -50,6 +50,7 @@ import {
   listCachedCatalogProducts,
   replaceCatalogCache,
 } from "@/offline/catalog-cache";
+import { refreshPriceAuthoritiesForProducts } from "@/offline/price-authority-refresh";
 import { useSellOfflineReadiness } from "@/features/sell/use-sell-offline-readiness";
 import { useSellingMode } from "@/selling/SellingModeProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -188,6 +189,26 @@ export function SellFloorPage() {
       // A cache write failure must never interrupt selling.
     });
   }, [activeCategory, browseCategories, browseProducts, offlineDb, online]);
+
+  /**
+   * Lease the price of everything just cached (RMAP-21 Review Repair 01), so an offline Cash sale
+   * is priced by something the server signed rather than by this device's memory of a shelf price.
+   */
+  useEffect(() => {
+    if (!online || !offlineDb || !workspaceScope || !browseProducts) {
+      return;
+    }
+    const controller = new AbortController();
+    void refreshPriceAuthoritiesForProducts(
+      offlineDb,
+      workspaceScope,
+      browseProducts,
+      controller.signal,
+    ).catch(() => {
+      // No lease simply means no offline sale for that product; selling online is unaffected.
+    });
+    return () => controller.abort();
+  }, [browseProducts, offlineDb, online, workspaceScope]);
 
   useEffect(() => {
     if (online || !offlineDb) {
