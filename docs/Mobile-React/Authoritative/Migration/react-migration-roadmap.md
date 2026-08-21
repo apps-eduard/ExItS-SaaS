@@ -313,14 +313,15 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 |-------|---------|
 | Objective | Partial returns, restock, inventory restore |
 | Dependencies | RMAP-11, RMAP-00 |
-| Status | **NOT PASS** — `BACKEND_READY=YES` / `REACT_UI_STARTED=NO`; concurrency gaps CLOSED ([report](../../Reports/POS-REACT-RMAP-14-returns-refunds.md); [Repair 01](../../Reports/POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-01.md); [Repair 02](../../Reports/POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-02.md)). |
-| Next | Start RMAP-14 React returns UI only. Do **not** start RMAP-15 until RMAP-14 PASS. |
+| Status | **COMPLETE** — `RMAP_14_FINAL=APPROVED`; React UI started; concurrency gaps CLOSED ([report](../../Reports/POS-REACT-RMAP-14-returns-refunds.md)). |
+| Next | **HARD STOP.** Do **not** start RMAP-15 until `RMAP_15_AUTHORIZED=YES`. |
 
 ### RMAP-15 — Manual suppliers
 | Field | Content |
 |-------|---------|
 | Objective | Supplier CRUD |
 | Dependencies | RMAP-03, RMAP-00 |
+| Status | **NOT AUTHORIZED** (`RMAP_15_AUTHORIZED=NO`) |
 | Next | RMAP-16 |
 
 ### RMAP-16 — Connected suppliers
@@ -440,10 +441,10 @@ Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, 
 ## APPROVED PROPOSED MASTER RUN 01
 
 **Name:** Foundation + Catalog/Inventory Baseline
-**Status:** RMAP-00…RMAP-13 PASS. Master Run 02 Review Repair 01 closed expiry-return + refund + checkout-search + summary wording. Review Repair 02 closed return/void concurrency (`RMAP14_RETURN_CONCURRENCY_GAP` / `RMAP14_RETURN_VOID_RACE_GAP`). RMAP-14 **backend ready**; React UI **not started** (`REACT_UI_STARTED=NO`). Do not start RMAP-15 until RMAP-14 PASS.
-**Stop rule:** After Master Run packages + authorized B03 closeout → HARD STOP for Product Owner + ChatGPT review (historical). RMAP-08/09 completed after that stop when authorized.
-**Do not include (still gated):** RMAP-B04; RMAP-TAX implementation
-**Completed beyond Master Run 01 table:** RMAP-08 lots/expiry inventory surfaces; RMAP-09 sell floor + session cart; RMAP-10 registers + open shift gate; RMAP-10b browser POS device authorization; RMAP-11 online cash checkout; RMAP-11b commercial discount UX; RMAP-12 current payments (Cash/GCash/Utang) + void; RMAP-13 customers + Business Utang
+**Status:** RMAP-00…RMAP-14 PASS. Master Run 02 Review Repair 01/02 closed expiry-return, refund fidelity, and return/void concurrency. RMAP-14 React returns/refunds **COMPLETE** (`RMAP_14_FINAL=APPROVED`, `REACT_UI_STARTED=YES`). **HARD STOP** — do not start RMAP-15 (`RMAP_15_AUTHORIZED=NO`).
+**Stop rule:** After Master Run packages + authorized B03 closeout → HARD STOP for Product Owner + ChatGPT review (historical). RMAP-08/09 completed after that stop when authorized. After RMAP-14 → HARD STOP again pending RMAP-15 authorization.
+**Do not include (still gated):** RMAP-15; RMAP-B01; RMAP-B04; RMAP-TAX implementation
+**Completed beyond Master Run 01 table:** RMAP-08 lots/expiry inventory surfaces; RMAP-09 sell floor + session cart; RMAP-10 registers + open shift gate; RMAP-10b browser POS device authorization; RMAP-11 online cash checkout; RMAP-11b commercial discount UX; RMAP-12 current payments (Cash/GCash/Utang) + void; RMAP-13 customers + Business Utang; RMAP-14 returns / refunds
 **Distinction preserved:** Today's Price ≠ Cashier Price Override ≠ Commercial Discount ≠ Promotion ≠ Regulatory Discount
 **Completion report (B00):** [POS-REACT-RMAP-B00-identity-reconciliation.md](../../Reports/POS-REACT-RMAP-B00-identity-reconciliation.md)
 **Completion report (RMAP-01):** [POS-REACT-RMAP-01-account-session-parity.md](../../Reports/POS-REACT-RMAP-01-account-session-parity.md)

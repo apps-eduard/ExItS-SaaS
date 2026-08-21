@@ -2,64 +2,75 @@
 
 ## Status
 
-**NOT PASS** — backend ready for React restart; React UI not started.
+**PASS** — React returns / refunds UI delivered against the repaired backend contract.
 
 | Flag | Value |
 |------|-------|
 | `RMAP14_BACKEND_CONTRACT_REPAIRED` | YES |
 | `RMAP14_BACKEND_READY_FOR_REACT_RESTART` | YES |
 | `BACKEND_READY` | YES |
-| `REACT_UI_STARTED` / `RMAP14_REACT_UI_NOT_STARTED` | NO / YES |
-| `RMAP14_RETURN_CONCURRENCY_GAP` | **CLOSED** ([Review Repair 02](./POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-02.md)) |
-| `RMAP14_RETURN_VOID_RACE_GAP` | **CLOSED** ([Review Repair 02](./POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-02.md)) |
-| Former code `RMAP14_EXPIRY_RETURN_CONTRACT_GAP` | **CLEARED** by Master Run 02 Review Repair 01 |
+| `REACT_UI_STARTED` / `RMAP14_REACT_UI_NOT_STARTED` | **YES** / NO |
+| `RMAP14_RETURN_CONCURRENCY_GAP` | **CLOSED** |
+| `RMAP14_RETURN_VOID_RACE_GAP` | **CLOSED** |
+| `RMAP_14_FINAL` | **APPROVED** |
+| `RMAP_15_AUTHORIZED` | **NO** |
+| `RMAP_B01_AUTHORIZED` | NO |
+| `RMAP_12B_AUTHORIZED` | NO |
+| `RMAP_B04_AUTHORIZED` | NO |
+| `RMAP_TAX_AUTHORIZED` | NO |
+| `PRODUCTION_CUTOVER` | NO |
 
 ## Baseline
 
 | Item | Value |
 |------|-------|
-| Hard-stop docs HEAD | `a7e1322e` |
+| Starting HEAD | `85dba1e81e7b8e8c30ff3077cceffd2cc521cfe3` |
+| Branch | `feat/pos-react-client` |
+| Run ID | `POS-REACT-RMAP-14-FINAL` |
 | Repair 01 | [POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-01.md](./POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-01.md) |
 | Repair 02 | [POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-02.md](./POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-02.md) |
-| Branch | `feat/pos-react-client` |
 
-## Backend contract (repaired)
+## Delivered React capability
 
-### Expiry partial return restock
+- Typed client: `pos-sale-returns-client.ts` — refundable GET, list/get returns, POST create with optional `returnId`
+- Optional **Estimated refund** helper from refundable NET fields only (cumulative proportional); POST `totalRefundAmount` always wins
+- Capabilities: `canViewReturns` (includes Cashier), `canProcessReturn` (Owner/Manager only)
+- Guards: `RequireViewReturns`, `RequireProcessReturn`
+- Routes: `/returns`, `/returns/sale/:saleId`, `/returns/:returnId`
+- Role home **Returns** link (ViewReturns)
+- Transaction Summary **Return items** CTA when `canProcessReturn` and sale not voided
+- UX: search by transaction number, quantity steppers / ByWeight decimals, Return all, Put back in stock / Do not return to stock, required reason, confirmation, success wording for Cash / GCash / Utang
+- Stale/409: refresh refundable, clear over-max qty, user re-confirms (no silent clamp)
+- Cash no open shift: friendly block (not treated as stale concurrency)
+- No lot selection; no Invoice labels; Cashier cannot ProcessReturn
+- i18n `returns.*` en + fil-PH
 
-`SaleReturnStockService` + `InventoryLotStockService.RestoreForSaleReturnAsync`:
+## Tests
 
-- Aggregate `ReturnToStock` by product; org account + branch delta on `originalSale.BranchId`
-- For `TracksExpiration`: restore only to original sale-consumed lots, earliest expiration first, net of prior `SaleReturnRestock` lot movements
-- Lot movement: `SaleReturnRestock` / `SourceType=SaleReturn` / `SourceId=saleReturnId`
-- Historical account restock without lot evidence → fail closed `RMAP14_EXPIRY_RETURN_HISTORY_RECONCILIATION_GAP`
-- `DoNotRestock`: no account/branch/lot deltas
-- Idempotent on same return id
+| Suite | Result |
+|-------|--------|
+| Vitest (client, caps, estimate, quantity, guards) | PASS |
+| Playwright `rmap-14-returns-refunds.spec.ts` matrix A–N + responsive 375/768/1024/1440 | PASS |
+| Regression rmap-11, 11b, 12, 13 | PASS |
+| format:check / typecheck / lint / build | PASS |
 
-### Discounted partial refund NET fidelity
+## Backend contract (unchanged)
 
-`SaleReturnRefundable.ComputeRefundAmount` uses cumulative net `LineTotal` allocation (never `UnitPrice`); final slice absorbs remainder.
-
-### Utang return
-
-`ReduceForSaleReturn` path; `CreditEntryEntityMapper.ApplyToRecord` persists `Amount` (Repair 02).
-
-### Sale mutation concurrency (Repair 02)
-
-- Shared `ISaleMutationLock` / `pg_advisory_xact_lock` on OrganizationId+SaleId inside serializable txn for `ProcessSaleReturn` and `VoidSale`
-- Prior return totals read **after** lock (TOCTOU closed)
-- Real PostgreSQL Barrier concurrency suite A–I
+- `GET /api/v1/pos/sale-returns/refundable/{saleId}`
+- `POST /api/v1/pos/sale-returns` `{ saleId, reason, lines[{saleLineId,quantity,restockDisposition,lineReason?}], notes?, returnId? }`
+- `RestockDisposition`: `ReturnToStock` \| `DoNotRestock`
+- List/get returns; ProcessReturn Owner/Manager; ViewReturns includes Cashier
+- Device header via `pos-http`; concurrency gaps remain CLOSED from Review Repair 02
 
 ## Exclusions / not delivered
 
-- Partial/full return **React** UI
-- Refund amount UX
-- Inventory restore UX
-- Any React return POST
-- Lot invent / fake restore
-- New DB migration
-- RMAP-15
+- RMAP-15+
+- RMAP-B01 / RMAP-12b / RMAP-B04 / RMAP-TAX
+- Offline returns
+- Lot invent / fake restore / provider GCash
+- New DB migration / backend redesign
+- Invoice / Official Receipt labeling
 
 ## Exact next
 
-Implement **RMAP-14 React returns UI only** against this contract. Do not start RMAP-15 until RMAP-14 PASS.
+**HARD STOP.** Product Owner + ChatGPT review. Do **not** start RMAP-15 until authorized (`RMAP_15_AUTHORIZED=NO`).
