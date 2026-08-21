@@ -23,6 +23,8 @@ import {
   OwnerRoleHomePage,
 } from "@/features/role/RoleHomePages";
 import { RegistersListPage } from "@/features/registers/RegistersListPage";
+import { DeviceRegisterPage } from "@/features/devices/DeviceRegisterPage";
+import { OrgPosDevicesPage } from "@/features/devices/OrgPosDevicesPage";
 import { SellFloorPage } from "@/features/sell/SellFloorPage";
 import { ShiftDetailPage } from "@/features/shifts/ShiftDetailPage";
 import { ShiftOpenPage } from "@/features/shifts/ShiftOpenPage";
@@ -181,7 +183,18 @@ export const appRoutes = [
                   </RequireInviteStaff>
                 ),
               },
+              { path: "devices", element: <OrgPosDevicesPage /> },
             ],
+          },
+          {
+            path: "devices/register",
+            element: (
+              <RequireOrganizationSession>
+                <RequireOrganizationBound>
+                  <DeviceRegisterPage />
+                </RequireOrganizationBound>
+              </RequireOrganizationSession>
+            ),
           },
           {
             path: "catalog",

@@ -7,6 +7,7 @@ import {
   canViewShifts,
   canUseAdminExperience,
   canUseOperationsExperience,
+  hasOrganizationManagementAuthority,
   resolveEffectivePosRoleCode,
 } from "@/access/pos-capabilities";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,7 @@ export function RoleHomeShell({
   const canShifts = canViewShifts(sessionGrant);
   const canOpenShift = canManageShifts(sessionGrant);
   const canRegisters = canViewRegisters(sessionGrant);
+  const canDevices = hasOrganizationManagementAuthority(sessionGrant);
   const securityRole = resolveEffectivePosRoleCode(sessionGrant);
 
   function startSelling() {
@@ -136,6 +138,14 @@ export function RoleHomeShell({
           <Link to="/registers">{t("register.listTitle")}</Link>
         </Button>
       ) : null}
+      {canDevices ? (
+        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-org-devices">
+          <Link to="/org/devices">{t("devices.listTitle")}</Link>
+        </Button>
+      ) : null}
+      <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-device-register">
+        <Link to="/devices/register">{t("devices.redeemTitle")}</Link>
+      </Button>
       {canCatalog ? (
         <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-catalog">
           <Link to="/catalog">{t("catalog.openCatalog")}</Link>

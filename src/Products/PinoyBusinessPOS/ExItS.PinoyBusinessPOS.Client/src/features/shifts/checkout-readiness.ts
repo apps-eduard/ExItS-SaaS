@@ -4,8 +4,8 @@ import type { PosDeviceContext } from "@/workspace/pos-device-context";
 import { isPosDeviceReadyForMoney } from "@/workspace/pos-device-context";
 
 /**
- * RMAP-10 shift gate for checkout readiness (prepares RMAP-11).
- * Does not invent PosDevice — money POST remains separately gated.
+ * RMAP-10 / RMAP-10b shift + device gate for checkout readiness (prepares RMAP-11).
+ * moneyPostReady requires open shift AND authorized matching PosDevice — never invented.
  */
 export type CheckoutShiftReadinessStatus =
   | "loading"
@@ -22,8 +22,7 @@ export type CheckoutShiftReadiness = {
   /** True when open shift + register satisfy the sale domain shift gate. */
   shiftGateReady: boolean;
   /**
-   * True only when shift gate is ready AND a contracted PosDevice exists.
-   * Always false while browser device identity remains deferred (RMAP-03).
+   * True only when shift gate is ready AND PosDevice is authorized for the selected branch.
    */
   moneyPostReady: boolean;
 };

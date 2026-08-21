@@ -34,6 +34,13 @@ public sealed class RegisterCurrentDevice(
 
         if (existing is not null && existing.Status == PosDeviceStatus.Active)
         {
+            if (existing.BranchId != branch.Id)
+            {
+                return ApplicationResult<PosDeviceDto>.Failure(
+                    ApplicationErrorCodes.PosDeviceBranchConflict,
+                    "This POS installation is already registered to another branch. It cannot be moved silently.");
+            }
+
             try { existing.TouchLastSeen(clock.UtcNow); }
             catch (DomainException ex) { return ApplicationResult<PosDeviceDto>.Failure(ex.ErrorCode, ex.Message); }
             await devices.UpdateAsync(existing, cancellationToken).ConfigureAwait(false);
@@ -52,6 +59,14 @@ public sealed class RegisterCurrentDevice(
         {
             if (existing is not null)
             {
+                // Revoked devices keep their original BranchId; refuse silent rebinding.
+                if (existing.BranchId != branch.Id)
+                {
+                    return ApplicationResult<PosDeviceDto>.Failure(
+                        ApplicationErrorCodes.PosDeviceBranchConflict,
+                        "This POS installation is already registered to another branch. It cannot be moved silently.");
+                }
+
                 existing.Reactivate(clock.UtcNow);
                 device = existing;
                 await devices.UpdateAsync(device, cancellationToken).ConfigureAwait(false);

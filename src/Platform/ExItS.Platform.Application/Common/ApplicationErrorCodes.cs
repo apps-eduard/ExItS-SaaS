@@ -210,6 +210,8 @@ public static class ApplicationErrorCodes
         "application.plan_change.business_type_capacity_blocked";
     public const string PosDeviceNotAuthorized = "application.pos_device.not_authorized";
     public const string PosDeviceRevoked = "application.pos_device.revoked";
+    /// <summary>Active installation is already bound to a different branch; no silent move.</summary>
+    public const string PosDeviceBranchConflict = "application.pos_device.branch_conflict";
     public const string PosDeviceRegistrationTokenNotFound =
         "application.pos_device.registration_token.not_found";
     public const string PosDeviceRegistrationTokenExpired =

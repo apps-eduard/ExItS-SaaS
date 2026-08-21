@@ -3,6 +3,7 @@ import {
   canCreateSale,
   canInviteOrganizationStaff,
   canManageCatalog,
+  hasOrganizationManagementAuthority,
 } from "@/access/pos-capabilities";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,6 +19,7 @@ export function OrgEssentialsPage() {
   const canInvite = canInviteOrganizationStaff(sessionGrant);
   const canSell = canCreateSale(sessionGrant);
   const canCatalog = canManageCatalog(sessionGrant);
+  const canDevices = hasOrganizationManagementAuthority(sessionGrant);
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="org-essentials-page">
@@ -34,6 +36,11 @@ export function OrgEssentialsPage() {
         {canInvite ? (
           <Button asChild className="min-h-11">
             <Link to="/org/staff/invite">{t("staffInvite.title")}</Link>
+          </Button>
+        ) : null}
+        {canDevices ? (
+          <Button asChild className="min-h-11" data-testid="open-org-devices">
+            <Link to="/org/devices">{t("devices.listTitle")}</Link>
           </Button>
         ) : null}
         {canCatalog ? (

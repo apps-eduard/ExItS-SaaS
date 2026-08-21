@@ -42,6 +42,8 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.ProductEntryDenied
             or ApplicationErrorCodes.ProductLocalRoleMissing
             or ApplicationErrorCodes.BranchAccessDenied
+            or ApplicationErrorCodes.PosDeviceNotAuthorized
+            or ApplicationErrorCodes.PosDeviceRevoked
             or ApplicationErrorCodes.PersonalUtangUnauthorized
             or DomainErrorCodes.PersonalReminderUnauthorized
             or DomainErrorCodes.CustomerToStaffConversionDenied
@@ -92,7 +94,8 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.UtangMigrationBatchNotFound
             or ApplicationErrorCodes.BusinessTypeActivationNotFound => StatusCodes.Status404NotFound,
 
-        ApplicationErrorCodes.SlugConflict
+        ApplicationErrorCodes.PosDeviceBranchConflict
+            or ApplicationErrorCodes.SlugConflict
             or ApplicationErrorCodes.EmailConflict
             or ApplicationErrorCodes.UsernameConflict
             or ApplicationErrorCodes.MembershipConflict

@@ -161,6 +161,31 @@ async function mockBoundOrgSession(
       });
     }
 
+    // Default: browser installation is not registered (honest fail-closed for money).
+    if (url.includes(`/organizations/${E2E_ORG_ID}/pos-devices/authorize`) && method === "POST") {
+      return route.fulfill({
+        status: 403,
+        contentType: "application/json",
+        body: JSON.stringify({
+          detail: "This POS installation is not registered.",
+          errorCode: "application.pos_device.not_authorized",
+        }),
+      });
+    }
+
+    if (
+      url.includes(`/organizations/${E2E_ORG_ID}/pos-devices`) &&
+      !url.includes("authorize") &&
+      !url.includes("registration-tokens") &&
+      method === "GET"
+    ) {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: "[]",
+      });
+    }
+
     if (url.includes("/api/v1/platform/auth/logout") && method === "POST") {
       const csrf = route.request().headers()["x-xsrf-token"];
       if (!csrf) {

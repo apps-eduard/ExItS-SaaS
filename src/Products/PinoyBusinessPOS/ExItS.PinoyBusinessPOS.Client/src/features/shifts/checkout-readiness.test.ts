@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { evaluateCheckoutShiftReadiness } from "@/features/shifts/checkout-readiness";
 import type { PosCashierShiftDto } from "@/api/pos/pos-shifts-client";
-import { DEFERRED_POS_DEVICE_CONTEXT } from "@/workspace/pos-device-context";
+import {
+  DEFERRED_POS_DEVICE_CONTEXT,
+  authorizedPosDeviceContext,
+  unregisteredPosDeviceContext,
+} from "@/workspace/pos-device-context";
 
 function shift(partial: Partial<PosCashierShiftDto>): PosCashierShiftDto {
   return {
@@ -49,6 +53,36 @@ describe("evaluateCheckoutShiftReadiness", () => {
     expect(result.shiftGateReady).toBe(true);
     expect(result.moneyPostReady).toBe(false);
     expect(result.registerId).toBe("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+  });
+
+  it("sets moneyPostReady only when authorized matching device is present", () => {
+    const result = evaluateCheckoutShiftReadiness({
+      loading: false,
+      canViewShifts: true,
+      currentShift: shift({ status: "Open" }),
+      posDevice: authorizedPosDeviceContext({
+        installationDeviceId: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+        posDeviceId: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+        registeredBranchId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      }),
+    });
+    expect(result.status).toBe("ready");
+    expect(result.shiftGateReady).toBe(true);
+    expect(result.moneyPostReady).toBe(true);
+  });
+
+  it("keeps moneyPostReady false when device is unregistered", () => {
+    const result = evaluateCheckoutShiftReadiness({
+      loading: false,
+      canViewShifts: true,
+      currentShift: shift({ status: "Open" }),
+      posDevice: unregisteredPosDeviceContext(
+        "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+        "Not registered",
+      ),
+    });
+    expect(result.shiftGateReady).toBe(true);
+    expect(result.moneyPostReady).toBe(false);
   });
 
   it("blocks closed shift", () => {

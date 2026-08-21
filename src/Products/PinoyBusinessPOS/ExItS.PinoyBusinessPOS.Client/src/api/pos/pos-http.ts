@@ -1,5 +1,6 @@
 import { getPosAccessToken } from "@/api/platform/pos-access-token";
 import { createCorrelationId } from "@/api/platform/platform-http";
+import { getDurableInstallationDeviceId } from "@/workspace/browser-installation-identity";
 
 export const POS_API_BASE_PATH = "/pos-api";
 
@@ -101,6 +102,12 @@ function buildPosHeaders(
   if (accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`);
   }
+
+  const installation = getDurableInstallationDeviceId();
+  if (installation.ok) {
+    headers.set("X-Pos-Installation-Device-Id", installation.installationDeviceId);
+  }
+
   return headers;
 }
 

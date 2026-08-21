@@ -27,7 +27,8 @@ import { selectOperationalBranch } from "@/api/pos/operational-branch-client";
 import { sessionAccountClass, isOrganizationContextLocked } from "@/session/account-class";
 import { ensureOrganizationSessionProfile } from "@/session/ensure-organization-profile";
 import { useSession } from "@/session/SessionProvider";
-import { DEFERRED_POS_DEVICE_CONTEXT, type PosDeviceContext } from "@/workspace/pos-device-context";
+import { INITIAL_POS_DEVICE_CONTEXT, type PosDeviceContext } from "@/workspace/pos-device-context";
+import { hydratePosDeviceContext } from "@/workspace/hydrate-pos-device";
 import type {
   AccessibleOrganizationWorkspace,
   BoundWorkspace,
@@ -60,6 +61,8 @@ type WorkspaceContextValue = {
   grantByOrganizationId: ReadonlyMap<string, SessionGrantResponse | null>;
   /** Honest device state — never invents an authorized POS terminal. */
   posDevice: PosDeviceContext;
+  /** Re-run durable identity + Platform authorize for the bound org/branch. */
+  refreshPosDevice: (options?: { branchId?: string | null }) => Promise<void>;
   accessDeniedDetail: string | null;
   /** Classified bind failure for user-facing copy (null when no denial). */
   bindFailureKind: WorkspaceBindFailureKind | null;
@@ -142,9 +145,39 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   >(() => new Map());
   const grantByOrganizationIdRef = useRef(grantByOrganizationId);
   grantByOrganizationIdRef.current = grantByOrganizationId;
-  const [posDevice] = useState<PosDeviceContext>(DEFERRED_POS_DEVICE_CONTEXT);
+  const [posDevice, setPosDevice] = useState<PosDeviceContext>(INITIAL_POS_DEVICE_CONTEXT);
   const [accessDeniedDetail, setAccessDeniedDetail] = useState<string | null>(null);
   const [bindFailureKind, setBindFailureKind] = useState<WorkspaceBindFailureKind | null>(null);
+
+  const refreshPosDevice = useCallback(
+    async (options?: { branchId?: string | null }) => {
+      const bound = boundWorkspaceRef.current;
+      if (sessionStatus !== "authenticated") {
+        setPosDevice(INITIAL_POS_DEVICE_CONTEXT);
+        return;
+      }
+      setPosDevice((current) => ({
+        ...current,
+        status: "loading",
+        registrationStatus: "loading",
+        detail: "Resolving browser POS installation identity…",
+      }));
+      const next = await hydratePosDeviceContext({
+        organizationId: bound?.organizationId,
+        branchId: options?.branchId !== undefined ? options.branchId : bound?.branchId,
+      });
+      setPosDevice(next);
+    },
+    [sessionStatus],
+  );
+
+  useEffect(() => {
+    if (sessionStatus !== "authenticated") {
+      setPosDevice(INITIAL_POS_DEVICE_CONTEXT);
+      return;
+    }
+    void refreshPosDevice();
+  }, [boundWorkspace?.organizationId, boundWorkspace?.branchId, refreshPosDevice, sessionStatus]);
 
   const clearBoundWorkspace = useCallback(() => {
     setBoundWorkspace(null);
@@ -152,6 +185,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     clearPosAccessToken();
     clearPosSessionGrant();
     autoDestinationAttempted.current = false;
+    // Intentionally do not clear durable installation device id (RMAP-10b).
   }, []);
 
   const denyBind = useCallback(
@@ -588,6 +622,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       sessionGrant,
       grantByOrganizationId,
       posDevice,
+      refreshPosDevice,
       accessDeniedDetail,
       bindFailureKind,
       bindWorkspace,
@@ -606,6 +641,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       ensureOrganizationGrantHint,
       grantByOrganizationId,
       posDevice,
+      refreshPosDevice,
       refreshWorkspaces,
       routingPlan,
       sessionGrant,
