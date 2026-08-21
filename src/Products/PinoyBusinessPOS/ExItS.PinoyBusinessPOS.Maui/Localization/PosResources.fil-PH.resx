@@ -8828,7 +8828,7 @@
     <value>Paunawa</value>
   </data>
   <data name="SalesDocument_DisclaimerBody" xml:space="preserve">
-    <value>Ang buod ng transaksyong ito ay ginawa ng ExItS para sa rekord ng negosyo at customer. Hindi ito inilalarawan ng ExItS bilang tax invoice na awtorisado ng BIR.</value>
+    <value>Ang dokumentong ito ay para lamang sa rekord ng negosyo at customer. Hindi ito BIR-registered invoice at hindi nito pinapalitan ang anumang invoice o iba pang dokumento na maaaring legal na kailanganin ng nagbebenta. Hindi tinutukoy ng ExItS ang legal na obligasyon sa BIR invoicing ng nagbebenta.</value>
   </data>
   <data name="SalesDocument_TaxDocumentUnavailable" xml:space="preserve">
     <value>Hindi available ang pag-isyu ng tax document para sa organisasyong ito.</value>

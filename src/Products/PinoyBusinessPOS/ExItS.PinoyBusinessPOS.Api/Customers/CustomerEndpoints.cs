@@ -61,6 +61,40 @@ internal static class CustomerEndpoints
             return Results.Ok(result);
         });
 
+        group.MapGet("/checkout-search", async (
+            HttpRequest request,
+            string? search,
+            int? page,
+            int? pageSize,
+            POSCustomerQueryService queries,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            // Cashier may search for Utang checkout; does not require ViewCustomersAndHistory.
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.CreateSale, out problem))
+            {
+                return problem!;
+            }
+
+            if (string.IsNullOrWhiteSpace(search))
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.CheckoutCustomerSearchRequired,
+                    "Checkout customer search requires a non-blank search term.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            var result = await queries
+                .SearchForCheckoutAsync(organizationId, search.Trim(), page, pageSize, ct)
+                .ConfigureAwait(false);
+            return Results.Ok(result);
+        });
+
         group.MapPost("/", async (
             HttpRequest request,
             CreateCustomerRequest body,

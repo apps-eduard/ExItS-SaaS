@@ -220,6 +220,55 @@ export async function listCustomers(
   return posCustomerPagedResultSchema.parse(raw);
 }
 
+export const checkoutCustomerSearchItemSchema = z.object({
+  customerId: guidSchema,
+  displayName: z.string(),
+  mobileNumber: z.string().nullable().optional(),
+  status: z.string(),
+});
+
+export const checkoutCustomerSearchResultSchema = z.object({
+  items: z.array(checkoutCustomerSearchItemSchema),
+  totalCount: z.number(),
+  page: z.number(),
+  pageSize: z.number(),
+});
+
+export type CheckoutCustomerSearchItem = z.infer<typeof checkoutCustomerSearchItemSchema>;
+export type CheckoutCustomerSearchResult = z.infer<typeof checkoutCustomerSearchResultSchema>;
+
+/**
+ * Narrow Active-only checkout customer search.
+ * Requires CreateSale (Cashier allowed). Does not require ViewCustomersAndHistory.
+ * Search term must be non-blank; pageSize capped at 20 server-side.
+ */
+export async function searchCheckoutCustomers(
+  workspace: PosWorkspaceScope,
+  options: {
+    search: string;
+    page?: number;
+    pageSize?: number;
+  },
+  signal?: AbortSignal,
+): Promise<CheckoutCustomerSearchResult> {
+  const search = options.search.trim();
+  if (!search) {
+    return { items: [], totalCount: 0, page: 1, pageSize: Math.min(options.pageSize ?? 20, 20) };
+  }
+
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: appendQuery(`${CUSTOMERS_PATH}/checkout-search`, {
+      search,
+      page: options.page ?? 1,
+      pageSize: Math.min(options.pageSize ?? 20, 20),
+    }),
+  });
+  return checkoutCustomerSearchResultSchema.parse(raw);
+}
+
 export async function getCustomer(
   workspace: PosWorkspaceScope,
   customerId: string,

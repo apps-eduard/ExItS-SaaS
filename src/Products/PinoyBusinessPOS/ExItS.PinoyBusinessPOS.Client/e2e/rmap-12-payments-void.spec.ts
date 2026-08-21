@@ -97,9 +97,43 @@ function baseSale(paymentMethod: string, extra: Record<string, unknown> = {}) {
   };
 }
 
-async function mockCustomersApi(page: import("@playwright/test").Page, allow: boolean) {
+async function mockCustomersApi(page: import("@playwright/test").Page, allowFullList: boolean) {
   await page.route("**/pos-api/api/v1/pos/customers**", async (route) => {
-    if (!allow) {
+    const pathname = new URL(route.request().url()).pathname.replace(/\/$/, "");
+    const method = route.request().method();
+
+    if (method === "GET" && pathname.endsWith("/customers/checkout-search")) {
+      const search = new URL(route.request().url()).searchParams.get("search") ?? "";
+      if (!search.trim()) {
+        return route.fulfill({
+          status: 400,
+          contentType: "application/json",
+          body: JSON.stringify({
+            detail: "Checkout customer search requires a non-blank search term.",
+            errorCode: "pos.customer.checkout_search.required",
+          }),
+        });
+      }
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          items: [
+            {
+              customerId: CUSTOMER_ID,
+              displayName: "Juan Dela Cruz",
+              mobileNumber: "09171234567",
+              status: "Active",
+            },
+          ],
+          totalCount: 1,
+          page: 1,
+          pageSize: 20,
+        }),
+      });
+    }
+
+    if (!allowFullList) {
       return route.fulfill({
         status: 403,
         contentType: "application/json",
@@ -351,23 +385,62 @@ test.describe("RMAP-12 payments + void", () => {
     expect(state.posts).toHaveLength(0);
   });
 
-  test("Cashier Utang shows customer permission gap; no capability bypass", async ({ page }) => {
+  test("Cashier Utang uses checkout-search without ViewCustomers", async ({ page }) => {
     await seedInstallationId(page);
     await mockBoundCashierSession(page);
     await mockAuthorizedDevice(page);
     await mockPosCatalogApi(page);
     await mockPosRegisterShiftApi(page, { openShift: true });
-    await mockPosSalesApi(page);
+    const state = await mockPosSalesApi(page);
     await mockCustomersApi(page, false);
 
     await signInAndBindCashier(page);
     await clientNavigate(page, "/sell");
     await addCokeAndOpenCheckout(page);
     await page.getByTestId("checkout-pay-utang").click();
-    await expect(page.getByTestId("checkout-utang-customer-denied")).toBeVisible();
-    await expect(page.getByTestId("checkout-customer-search")).toHaveCount(0);
-    await expect(page.getByTestId("checkout-confirm")).toBeDisabled();
+    await expect(page.getByTestId("checkout-utang-customer-denied")).toHaveCount(0);
+    await expect(page.getByTestId("checkout-customer-search")).toBeVisible();
+    await page.getByTestId("checkout-customer-search").fill("Juan");
+    await expect(page.getByTestId(`checkout-customer-${CUSTOMER_ID}`)).toBeVisible();
+    await page.getByTestId(`checkout-customer-${CUSTOMER_ID}`).click();
+    await expect(page.getByTestId("checkout-customer-selected")).toBeVisible();
+    await page.getByTestId("checkout-confirm").click();
+    await expect(page.getByTestId("transaction-summary-page")).toBeVisible();
+    expect(state.posts[0]?.paymentMethod).toBe("Utang");
+    expect(state.posts[0]?.customerId).toBe(CUSTOMER_ID);
+
+    await clientNavigate(page, "/customers");
+    await expect(page.getByTestId("customers-view-denied")).toBeVisible();
   });
+
+  for (const viewport of [
+    { width: 375, height: 812 },
+    { width: 768, height: 1024 },
+    { width: 1024, height: 768 },
+    { width: 1440, height: 900 },
+  ] as const) {
+    test(`Cashier Utang checkout customer UI usable at ${viewport.width}x${viewport.height}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await seedInstallationId(page);
+      await mockBoundCashierSession(page);
+      await mockAuthorizedDevice(page);
+      await mockPosCatalogApi(page);
+      await mockPosRegisterShiftApi(page, { openShift: true });
+      await mockPosSalesApi(page);
+      await mockCustomersApi(page, false);
+
+      await signInAndBindCashier(page);
+      await clientNavigate(page, "/sell");
+      await addCokeAndOpenCheckout(page);
+      await page.getByTestId("checkout-pay-utang").click();
+      await expect(page.getByTestId("checkout-customer-search")).toBeVisible();
+      await page.getByTestId("checkout-customer-search").fill("Juan");
+      await expect(page.getByTestId("checkout-customer-list")).toBeVisible();
+      await assertNoHorizontalOverflow(page);
+    });
+  }
 
   test("Owner can void; Cashier cannot", async ({ page }) => {
     await seedInstallationId(page);

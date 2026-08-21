@@ -11,6 +11,7 @@ import {
   listCustomerLedger,
   listCustomers,
   reactivateCustomer,
+  searchCheckoutCustomers,
   updateCustomer,
 } from "@/api/pos/pos-customers-client";
 
@@ -62,6 +63,35 @@ describe("pos-customers-client", () => {
     expect(url).toContain("/api/v1/pos/customers");
     expect(url).toContain("status=Active");
     expect(url).toContain("search=Juan");
+  });
+
+  it("searches checkout customers with narrow DTO path", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse({
+        items: [
+          {
+            customerId,
+            displayName: "Juan Dela Cruz",
+            mobileNumber: "09171234567",
+            status: "Active",
+          },
+        ],
+        totalCount: 1,
+        page: 1,
+        pageSize: 20,
+      }),
+    );
+
+    const blank = await searchCheckoutCustomers(workspace, { search: "  " });
+    expect(blank.items).toEqual([]);
+    expect(fetch).not.toHaveBeenCalled();
+
+    const page = await searchCheckoutCustomers(workspace, { search: "Juan", pageSize: 50 });
+    expect(page.items[0]?.displayName).toBe("Juan Dela Cruz");
+    const url = String(vi.mocked(fetch).mock.calls[0][0]);
+    expect(url).toContain("/api/v1/pos/customers/checkout-search");
+    expect(url).toContain("search=Juan");
+    expect(url).toContain("pageSize=20");
   });
 
   it("gets, creates, updates, and toggles customer lifecycle", async () => {

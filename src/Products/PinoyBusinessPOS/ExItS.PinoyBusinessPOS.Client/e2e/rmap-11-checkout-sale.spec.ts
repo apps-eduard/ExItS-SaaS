@@ -264,7 +264,7 @@ test.describe("RMAP-11 checkout cash sale", () => {
 
     await expect(page.getByTestId("transaction-summary-page")).toBeVisible();
     await expect(page.getByTestId("transaction-summary-disclaimer")).toContainText(
-      "BIR-authorized tax invoice",
+      "not a BIR-registered invoice",
     );
     await expect(page.getByRole("heading", { name: "Transaction Summary" })).toBeVisible();
     await expect(page.getByRole("heading", { name: /^Invoice$/i })).toHaveCount(0);

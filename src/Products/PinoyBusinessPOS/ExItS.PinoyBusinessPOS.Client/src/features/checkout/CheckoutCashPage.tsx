@@ -6,7 +6,7 @@ import {
   canCreateSale,
   canViewCustomers,
 } from "@/access/pos-capabilities";
-import { listCustomers, type PosCustomerListItem } from "@/api/pos/pos-customers-client";
+import { listCustomers, searchCheckoutCustomers } from "@/api/pos/pos-customers-client";
 import {
   checkoutSale,
   GCASH_REFERENCE_MAX_LENGTH,
@@ -33,6 +33,13 @@ type DiscountMethod = CommercialDiscountIntentRequest["method"];
 type UiPaymentChoice = "Cash" | "GCash" | "Utang";
 
 type AppliedDiscount = CommercialDiscountIntentRequest & { localId: string };
+
+type CheckoutCustomerOption = {
+  customerId: string;
+  displayName: string;
+  mobileNumber?: string | null;
+  status: string;
+};
 
 function newSaleId(): string {
   return crypto.randomUUID();
@@ -97,9 +104,9 @@ export function CheckoutCashPage() {
   const [cashReceived, setCashReceived] = useState("");
   const [gcashReference, setGcashReference] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
-  const [customers, setCustomers] = useState<PosCustomerListItem[]>([]);
+  const [customers, setCustomers] = useState<CheckoutCustomerOption[]>([]);
   const [customersLoading, setCustomersLoading] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<PosCustomerListItem | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<CheckoutCustomerOption | null>(null);
   const [dueDate, setDueDate] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -133,6 +140,8 @@ export function CheckoutCashPage() {
   const allowDiscount = canApplyCommercialDiscount(sessionGrant);
   const allowViewCustomers = canViewCustomers(sessionGrant);
   const allowCreateCredit = canCreateCredit(sessionGrant);
+  /** Cashier Utang may use narrow checkout-search; management list still requires ViewCustomers. */
+  const allowCheckoutCustomerSearch = allowSale;
   const moneyReady = readiness.moneyPostReady === true;
   const deviceReady = isPosDeviceReadyForMoney(posDevice);
   const apiPaymentMethod = toApiPaymentMethod(paymentChoice);
@@ -192,9 +201,11 @@ export function CheckoutCashPage() {
     (gcashRefTrimmed.length > 0 && gcashRefTrimmed.length <= GCASH_REFERENCE_MAX_LENGTH);
 
   const utangBlockedZero = paymentChoice === "Utang" && zeroTotal;
-  const utangNeedsCustomerLookup = paymentChoice === "Utang" && !allowViewCustomers;
+  const utangNeedsCustomerLookup =
+    paymentChoice === "Utang" && !(allowCheckoutCustomerSearch && allowCreateCredit);
   const utangCustomerOk =
-    paymentChoice !== "Utang" || (allowViewCustomers && selectedCustomer != null);
+    paymentChoice !== "Utang" ||
+    (allowCheckoutCustomerSearch && allowCreateCredit && selectedCustomer != null);
   const utangCreditOk = paymentChoice !== "Utang" || allowCreateCredit;
 
   useEffect(() => {
@@ -276,23 +287,53 @@ export function CheckoutCashPage() {
   }, [amountToPay, paymentChoice, quote, zeroTotal]);
 
   useEffect(() => {
-    if (!allowViewCustomers || !workspaceScope) {
+    if (!workspaceScope) {
       return;
     }
-    if (paymentChoice !== "Utang" && paymentChoice !== "Cash" && paymentChoice !== "GCash") {
+    const isUtang = paymentChoice === "Utang";
+    const isOptionalCashCustomer =
+      (paymentChoice === "Cash" || paymentChoice === "GCash") && allowViewCustomers;
+    if (!isUtang && !isOptionalCashCustomer) {
       return;
     }
+    if (isUtang && !(allowCheckoutCustomerSearch && allowCreateCredit)) {
+      return;
+    }
+
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
+      const trimmed = customerSearch.trim();
+      // Checkout-search requires non-blank search; Owner/Manager full list may load without search.
+      if (isUtang && !allowViewCustomers && !trimmed) {
+        setCustomers([]);
+        setCustomersLoading(false);
+        return;
+      }
+
       setCustomersLoading(true);
-      void listCustomers(
-        workspaceScope,
-        { status: "Active", search: customerSearch.trim() || undefined, pageSize: 20 },
-        controller.signal,
-      )
-        .then((page) => {
+      const load = allowViewCustomers
+        ? listCustomers(
+            workspaceScope,
+            { status: "Active", search: trimmed || undefined, pageSize: 20 },
+            controller.signal,
+          ).then((page) =>
+            page.items.map((c) => ({
+              customerId: c.customerId,
+              displayName: c.displayName,
+              mobileNumber: c.mobileNumber,
+              status: c.status,
+            })),
+          )
+        : searchCheckoutCustomers(
+            workspaceScope,
+            { search: trimmed, pageSize: 20 },
+            controller.signal,
+          ).then((page) => page.items);
+
+      void load
+        .then((items) => {
           if (!controller.signal.aborted) {
-            setCustomers(page.items);
+            setCustomers(items);
             setCustomersLoading(false);
           }
         })
@@ -308,7 +349,14 @@ export function CheckoutCashPage() {
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [allowViewCustomers, customerSearch, paymentChoice, workspaceScope]);
+  }, [
+    allowCheckoutCustomerSearch,
+    allowCreateCredit,
+    allowViewCustomers,
+    customerSearch,
+    paymentChoice,
+    workspaceScope,
+  ]);
 
   function addDiscount() {
     setDiscountFormError(null);

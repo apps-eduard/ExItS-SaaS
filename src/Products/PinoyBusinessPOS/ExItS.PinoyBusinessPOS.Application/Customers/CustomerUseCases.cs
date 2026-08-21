@@ -83,6 +83,40 @@ public sealed class POSCustomerQueryService
             take);
     }
 
+    /// <summary>
+    /// Narrow Active-only customer search for checkout (CreateSale). pageSize capped at 20.
+    /// </summary>
+    public async Task<CheckoutCustomerSearchResult> SearchForCheckoutAsync(
+        Guid organizationId,
+        string search,
+        int? page,
+        int? pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var take = Math.Clamp(pageSize ?? 20, 1, 20);
+        var pageNumber = Math.Max(page ?? 1, 1);
+        var skip = (pageNumber - 1) * take;
+        var (items, total) = await _customers
+            .ListAsync(
+                PosOrganizationId.From(organizationId),
+                CustomerStatus.Active,
+                search,
+                skip,
+                take,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return new CheckoutCustomerSearchResult(
+            items.Select(c => new CheckoutCustomerSearchItemDto(
+                c.Id.Value,
+                c.DisplayName,
+                c.MobileNumber,
+                c.Status.ToString())).ToList(),
+            total,
+            pageNumber,
+            take);
+    }
+
     public async Task<CustomerSyncPageDto> ListForSyncAsync(
         Guid organizationId,
         DateTimeOffset? sinceUtc,

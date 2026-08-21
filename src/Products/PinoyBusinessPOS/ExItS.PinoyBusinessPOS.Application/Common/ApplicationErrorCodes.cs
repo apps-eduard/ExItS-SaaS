@@ -3,6 +3,7 @@ namespace ExItS.PinoyBusinessPOS.Application.Common;
 public static class ApplicationErrorCodes
 {
     public const string CustomerNotFound = "pos.customer.not_found";
+    public const string CheckoutCustomerSearchRequired = "pos.customer.checkout_search.required";
     public const string LinkedCustomerNotFound = "pos.linked_customer.not_found";
     public const string LinkedCustomerDenied = "pos.linked_customer.denied";
     public const string ExtendedHistoryRequired = "pos.personal.extended_history_required";
