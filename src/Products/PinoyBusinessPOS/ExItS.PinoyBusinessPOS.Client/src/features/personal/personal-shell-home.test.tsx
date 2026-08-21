@@ -98,6 +98,15 @@ function createPersonalFetchMock() {
       } as Response;
     }
 
+    if (url.includes("/api/v1/personal/notifications")) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => [],
+        text: async () => "",
+      } as Response;
+    }
+
     return {
       ok: false,
       status: 404,
@@ -133,6 +142,9 @@ describe("Personal shell and home (RMAP-22B)", () => {
     });
     expect(screen.getByTestId("personal-bottom-nav")).toBeInTheDocument();
     expect(screen.queryByTestId("app-top-bar")).not.toBeInTheDocument();
+    expect(screen.getByTestId("shell-connection-button")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-notification-bell")).toBeInTheDocument();
+    expect(screen.queryByTestId("personal-notification-bell-badge")).not.toBeInTheDocument();
     expect(screen.getByTestId("personal-nav-home")).toBeInTheDocument();
     expect(screen.getByTestId("personal-nav-utang")).toBeInTheDocument();
     expect(screen.getByTestId("personal-nav-todo")).toBeInTheDocument();

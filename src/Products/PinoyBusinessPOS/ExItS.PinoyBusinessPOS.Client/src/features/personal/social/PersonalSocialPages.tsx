@@ -21,6 +21,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { PERSONAL_NOTIFICATIONS_QUERY_KEY } from "@/features/personal/personal-notifications";
 import { useI18n } from "@/i18n/I18nProvider";
 
 export function PersonalInvitationsPage() {
@@ -177,14 +178,15 @@ export function PersonalUtangInviteAcceptPage() {
 export function PersonalNotificationsPage() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
+  const [tab, setTab] = useState<"unread" | "all">("unread");
   const query = useQuery({
-    queryKey: ["personal", "notifications"],
+    queryKey: PERSONAL_NOTIFICATIONS_QUERY_KEY,
     queryFn: ({ signal }) => listPersonalNotifications(signal),
   });
   const markRead = useMutation({
     mutationFn: (id: string) => markPersonalNotificationRead(id),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["personal", "notifications"] });
+      await queryClient.invalidateQueries({ queryKey: PERSONAL_NOTIFICATIONS_QUERY_KEY });
     },
   });
 
@@ -198,20 +200,60 @@ export function PersonalNotificationsPage() {
     );
   }
 
+  const items = query.data;
+  const visible = tab === "unread" ? items.filter((item) => !item.isRead) : items;
+
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="personal-notifications-page">
       <PageHeader
         title={t("personal.social.notificationsTitle")}
         description={t("personal.social.notificationsLede")}
       />
-      {query.data.length === 0 ? (
+      <div
+        className="grid grid-cols-2 gap-2"
+        role="tablist"
+        aria-label={t("personal.social.notificationsTitle")}
+      >
+        <Button
+          type="button"
+          role="tab"
+          aria-selected={tab === "unread"}
+          variant={tab === "unread" ? "default" : "ghost"}
+          className="min-h-11"
+          data-testid="notifications-tab-unread"
+          onClick={() => setTab("unread")}
+        >
+          {t("personal.social.tabUnread")}
+        </Button>
+        <Button
+          type="button"
+          role="tab"
+          aria-selected={tab === "all"}
+          variant={tab === "all" ? "default" : "ghost"}
+          className="min-h-11"
+          data-testid="notifications-tab-all"
+          onClick={() => setTab("all")}
+        >
+          {t("personal.social.tabAll")}
+        </Button>
+      </div>
+
+      {visible.length === 0 ? (
         <EmptyState
-          title={t("personal.social.notificationsEmptyTitle")}
-          detail={t("personal.social.notificationsEmptyDetail")}
+          title={
+            tab === "unread"
+              ? t("personal.social.unreadEmptyTitle")
+              : t("personal.social.notificationsEmptyTitle")
+          }
+          detail={
+            tab === "unread"
+              ? t("personal.social.unreadEmptyDetail")
+              : t("personal.social.notificationsEmptyDetail")
+          }
         />
       ) : (
-        <ul className="m-0 flex list-none flex-col gap-2 p-0">
-          {query.data.map((item) => {
+        <ul className="m-0 flex list-none flex-col gap-2 p-0" data-testid="notifications-list">
+          {visible.map((item) => {
             const isCustomerLink =
               item.relatedType.localeCompare("CustomerLinkRequest", undefined, {
                 sensitivity: "accent",
@@ -219,6 +261,8 @@ export function PersonalNotificationsPage() {
             return (
               <li
                 key={item.id}
+                data-testid={`notification-row-${item.id}`}
+                data-read={item.isRead ? "true" : "false"}
                 className="rounded-[var(--exits-radius-md)] border border-border px-3 py-3"
               >
                 <p className="m-0 font-semibold">{item.title}</p>
@@ -242,6 +286,7 @@ export function PersonalNotificationsPage() {
                       type="button"
                       variant="ghost"
                       className="min-h-11"
+                      data-testid={`notification-mark-read-${item.id}`}
                       onClick={() => markRead.mutate(item.id)}
                     >
                       {t("personal.social.markRead")}

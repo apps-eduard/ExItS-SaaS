@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { AccountMenu } from "@/components/exits/AccountMenu";
+import { ShellConnectionButton } from "@/components/exits/ShellConnectionButton";
 import { useI18n } from "@/i18n/I18nProvider";
 import { isOrganizationContextLocked } from "@/session/account-class";
 import { useSession } from "@/session/SessionProvider";
@@ -131,7 +132,8 @@ export function AppTopBar() {
           )}
         </div>
 
-        <div className="flex shrink-0 items-center justify-end">
+        <div className="flex shrink-0 items-center justify-end gap-0.5">
+          <ShellConnectionButton testId="org-shell-connection-button" />
           <AccountMenu
             signingOut={signingOut}
             onSignOut={() => {

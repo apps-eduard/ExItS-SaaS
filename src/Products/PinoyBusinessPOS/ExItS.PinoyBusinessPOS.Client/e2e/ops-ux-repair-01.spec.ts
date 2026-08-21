@@ -1,4 +1,4 @@
-﻿import { expect, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { assertNoHorizontalOverflow } from "./helpers";
 import {
   mockBoundCashierSession,
@@ -25,7 +25,7 @@ const FIXED_INSTALL_ID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
 test.describe("POS OPERATIONS UX REPAIR 01", () => {
   test.use({ serviceWorkers: "block" });
 
-  test("cashier unregistered â†’ device readiness, no admin controls", async ({ page }) => {
+  test("cashier unregistered -> device readiness, no admin controls", async ({ page }) => {
     await seedInstallationId(page);
     await mockBoundCashierSession(page);
     await mockPosCatalogApi(page);
@@ -49,7 +49,7 @@ test.describe("POS OPERATIONS UX REPAIR 01", () => {
     await expect(page.getByTestId("devices-create-code")).toHaveCount(0);
   });
 
-  test("authorized device + no shift â†’ shift readiness", async ({ page }) => {
+  test("authorized device + no shift -> shift readiness", async ({ page }) => {
     await mockBoundCashierSession(page);
     await mockPosCatalogApi(page);
     await seedInstallationId(page);
@@ -65,7 +65,7 @@ test.describe("POS OPERATIONS UX REPAIR 01", () => {
     await expect(page.getByTestId("sell-readiness-shift")).toBeVisible();
   });
 
-  test("authorized + open shift â†’ Sell opens", async ({ page }) => {
+  test("authorized + open shift -> Sell opens", async ({ page }) => {
     await mockBoundCashierSession(page);
     await mockPosCatalogApi(page);
     await prepareSellReady(page);
