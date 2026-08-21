@@ -735,6 +735,8 @@ export const en = {
   "returns.errorOffline": "Returns need an internet connection.",
   "returns.errorStale": "This transaction changed. Review the updated returnable items.",
   "returns.errorNoShift": "Open a cashier shift before giving a cash refund.",
+  "returns.errorSecureId":
+    "This browser could not create a secure transaction ID. Reload the app or use a supported browser before processing the return.",
 };
 
 export const filPH: Record<keyof typeof en, string> = {
@@ -1497,6 +1499,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "returns.errorOffline": "Kailangan ng internet connection ang returns.",
   "returns.errorStale": "Nagbago ang transaction. I-review ang updated na returnable items.",
   "returns.errorNoShift": "Mag-open muna ng cashier shift bago magbigay ng cash refund.",
+  "returns.errorSecureId":
+    "Hindi makagawa ang browser ng secure transaction ID. I-reload ang app o gumamit ng supported browser bago mag-process ng return.",
 };
 
 export type MessageKey = keyof typeof en;

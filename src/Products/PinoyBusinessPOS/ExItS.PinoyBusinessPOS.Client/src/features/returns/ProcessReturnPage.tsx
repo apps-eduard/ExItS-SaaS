@@ -23,6 +23,7 @@ import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity"
 import { PageHeader } from "@/components/exits/PageHeader";
 import { isByWeightSellingMode } from "@/cart/sell-cart-helpers";
 import { describeReturnError } from "@/features/returns/return-errors";
+import { resolveReturnMutationId } from "@/features/returns/return-mutation-id";
 import {
   clampReturnQuantity,
   formatReturnQuantityDisplay,
@@ -38,13 +39,6 @@ type LineDraft = {
 };
 
 type Step = "edit" | "confirm" | "success";
-
-function newReturnId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return "00000000-0000-4000-8000-000000000000";
-}
 
 export function ProcessReturnPage() {
   const { t } = useI18n();
@@ -179,8 +173,21 @@ export function ProcessReturnPage() {
       return;
     }
 
-    const returnId = pendingReturnId ?? newReturnId();
-    setPendingReturnId(returnId);
+    const resolved = resolveReturnMutationId(pendingReturnId);
+    if (!resolved.ok) {
+      setError(t("returns.errorSecureId"));
+      return;
+    }
+
+    setPendingReturnId(resolved.id);
+    await submitReturn(resolved.id, trimmedReason);
+  }
+
+  async function submitReturn(returnId: string, trimmedReason: string) {
+    if (!workspace || !saleId || !refundable) {
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
 
