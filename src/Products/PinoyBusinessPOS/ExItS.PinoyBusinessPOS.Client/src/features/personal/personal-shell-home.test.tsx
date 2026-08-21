@@ -66,6 +66,15 @@ function createPersonalFetchMock() {
       } as Response;
     }
 
+    if (url.includes("/api/v1/personal/todos")) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => [],
+        text: async () => "",
+      } as Response;
+    }
+
     return {
       ok: false,
       status: 404,

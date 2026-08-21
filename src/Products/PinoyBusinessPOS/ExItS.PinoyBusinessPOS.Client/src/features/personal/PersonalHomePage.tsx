@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getPersonalDashboard } from "@/api/platform/personal-dashboard-client";
+import { listPersonalTodos, summarizeTodoCounts } from "@/api/platform/personal-todo-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -14,6 +15,10 @@ export function PersonalHomePage() {
   const dashboardQuery = useQuery({
     queryKey: ["personal", "dashboard"],
     queryFn: ({ signal }) => getPersonalDashboard(signal),
+  });
+  const todosQuery = useQuery({
+    queryKey: ["personal", "todos"],
+    queryFn: ({ signal }) => listPersonalTodos(signal),
   });
 
   if (dashboardQuery.isPending) {
@@ -97,12 +102,49 @@ export function PersonalHomePage() {
       ) : null}
 
       <section aria-label={t("personal.home.todoSummary")} data-testid="personal-todo-summary">
-        <h2 className="m-0 mb-1 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+        <h2 className="m-0 mb-2 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
           {t("personal.home.todoSummary")}
         </h2>
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-          {t("personal.home.todoSoon")}
-        </p>
+        {todosQuery.isPending ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("personal.todo.loading")}</p>
+        ) : todosQuery.isError ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("personal.home.todoUnavailable")}
+          </p>
+        ) : (
+          (() => {
+            const counts = summarizeTodoCounts(todosQuery.data);
+            if (counts.open === 0 && counts.completed === 0) {
+              return (
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("personal.home.todoEmpty")}
+                </p>
+              );
+            }
+            return (
+              <div className="grid min-w-0 grid-cols-3 gap-2" data-testid="personal-todo-counts">
+                <SummaryTile label={t("personal.todo.countToday")} testId="personal-todo-stat-today">
+                  <span className="text-[length:var(--exits-text-lg)] font-semibold">
+                    {counts.today}
+                  </span>
+                </SummaryTile>
+                <SummaryTile
+                  label={t("personal.todo.countOverdue")}
+                  testId="personal-todo-stat-overdue"
+                >
+                  <span className="text-[length:var(--exits-text-lg)] font-semibold">
+                    {counts.overdue}
+                  </span>
+                </SummaryTile>
+                <SummaryTile label={t("personal.todo.countOpen")} testId="personal-todo-stat-open">
+                  <span className="text-[length:var(--exits-text-lg)] font-semibold">
+                    {counts.open}
+                  </span>
+                </SummaryTile>
+              </div>
+            );
+          })()
+        )}
       </section>
     </div>
   );

@@ -34,15 +34,6 @@ export function PersonalUtangHubPage() {
   );
 }
 
-export function PersonalTodoHubPage() {
-  const { t } = useI18n();
-  return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="personal-todo-hub">
-      <PageHeader title={t("personal.todo.title")} description={t("personal.todo.lede")} />
-    </div>
-  );
-}
-
 export function PersonalMorePage() {
   const { t } = useI18n();
   return (

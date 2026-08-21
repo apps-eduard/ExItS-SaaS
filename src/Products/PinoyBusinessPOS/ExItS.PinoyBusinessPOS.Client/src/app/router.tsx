@@ -8,7 +8,6 @@ import { PersonalHomePage } from "@/features/personal/PersonalHomePage";
 import {
   PersonalMorePage,
   PersonalStartBusinessPlaceholderPage,
-  PersonalTodoHubPage,
   PersonalUtangHubPage,
 } from "@/features/personal/PersonalHubPages";
 import { PersonalShell } from "@/features/personal/PersonalShell";
@@ -18,6 +17,10 @@ import {
   PersonalNotificationsPage,
   PersonalUtangInviteAcceptPage,
 } from "@/features/personal/social/PersonalSocialPages";
+import {
+  PersonalTodoDetailPage,
+  PersonalTodoHubPage,
+} from "@/features/personal/todo/PersonalTodoPages";
 import {
   PersonalContactsPage,
   PersonalLentPage,
@@ -207,6 +210,7 @@ export const appRoutes = [
               { path: "notifications", element: <PersonalNotificationsPage /> },
               { path: "my-qr", element: <PersonalMyQrPage /> },
               { path: "todo", element: <PersonalTodoHubPage /> },
+              { path: "todo/:todoId", element: <PersonalTodoDetailPage /> },
               { path: "more", element: <PersonalMorePage /> },
               {
                 path: "start-business",
