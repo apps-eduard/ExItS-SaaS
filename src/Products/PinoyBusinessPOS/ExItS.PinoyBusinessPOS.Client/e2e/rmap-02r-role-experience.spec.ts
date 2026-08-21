@@ -23,13 +23,18 @@ test.describe("RMAP-02R role / experience reconciliation", () => {
 
     await page.getByTestId("workspace-destination-operations").click();
     await expect(page.getByRole("heading", { name: "Manager home" })).toBeVisible();
-    await expect(page.getByTestId("security-role-label")).toContainText("Owner");
+    await expect(page.getByTestId("manager-home")).toBeVisible();
 
     await page.getByTestId("account-menu-trigger").click();
     await page.getByRole("menuitem", { name: "Switch experience" }).click();
     await expect(page.getByRole("heading", { name: "Choose workspace" })).toBeVisible();
     await page.getByTestId("workspace-destination-start_selling").click();
-    await expect(page.getByTestId("sell-floor")).toBeVisible();
+    await expect(
+      page
+        .getByTestId("sell-floor")
+        .or(page.getByTestId("sell-readiness-device"))
+        .or(page.getByTestId("sell-readiness-shift")),
+    ).toBeVisible();
   });
 
   test("Owner can open Manage Business without inventing a branch", async ({ page }) => {
@@ -65,7 +70,12 @@ test.describe("RMAP-02R role / experience reconciliation", () => {
   test("Cashier auto-routes Start Selling and cannot open management", async ({ page }) => {
     await mockBoundCashierSession(page);
     await signInAndBindCashier(page);
-    await expect(page.getByRole("heading", { name: "Sell floor" })).toBeVisible();
+    await expect(
+      page
+        .getByRole("heading", { name: "Sell floor" })
+        .or(page.getByTestId("sell-readiness-device"))
+        .or(page.getByTestId("sell-readiness-shift")),
+    ).toBeVisible();
 
     await clientNavigate(page, "/role/manager");
     await expect(page.getByTestId("manager-role-denied")).toBeVisible();

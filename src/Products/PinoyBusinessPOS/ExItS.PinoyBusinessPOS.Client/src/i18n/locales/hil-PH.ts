@@ -692,6 +692,12 @@ export const hilPH: Record<keyof typeof en, string> = {
   "role.cashierBadge": "Cashier",
   "role.cashierBody":
     "Entry sa pagbaligya uban ang kaugalingong shift. Buksan ang imo shift, dayon gamita ang sell floor.",
+  "role.section.quickActions": "Madasig nga aksyon",
+  "role.section.operations": "Operations",
+  "role.section.devices": "Mga device",
+  "role.section.insights": "Insights",
+  "role.startSellingHint":
+    "Mabuksan ang sell floor kung tugutan ang CreateSale. Indi mausab ang Manager role.",
   "shift.hubTitle": "Mga shift",
   "shift.hubLede":
     "Buksan kag nasirado ang imo cashier shift. Kinahanglan sang bukas nga shift ang checkout.",

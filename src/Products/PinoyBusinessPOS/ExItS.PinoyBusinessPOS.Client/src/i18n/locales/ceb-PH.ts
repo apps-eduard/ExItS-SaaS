@@ -689,6 +689,12 @@ export const cebPH: Record<keyof typeof en, string> = {
   "role.cashierBadge": "Cashier",
   "role.cashierBody":
     "Entry sa pagbaligya uban ang kaugalingong shift. Ablihi ang imong shift, dayon gamita ang sell floor.",
+  "role.section.quickActions": "Paspas nga aksyon",
+  "role.section.operations": "Operations",
+  "role.section.devices": "Mga device",
+  "role.section.insights": "Insights",
+  "role.startSellingHint":
+    "Moabli ang sell floor kung tugotan ang CreateSale. Dili mausab ang Manager role.",
   "shift.hubTitle": "Mga shift",
   "shift.hubLede":
     "Ablihi ug sirado ang imong cashier shift. Kinahanglan og abierto nga shift ang checkout.",

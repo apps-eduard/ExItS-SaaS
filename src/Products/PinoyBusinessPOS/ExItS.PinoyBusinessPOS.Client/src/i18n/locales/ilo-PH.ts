@@ -692,6 +692,12 @@ export const iloPH: Record<keyof typeof en, string> = {
   "role.cashierBadge": "Cashier",
   "role.cashierBody":
     "Entry iti panagilako uban ti kaugalingong shift. Lukatan ti ti shift, dayon gamita ti sell floor.",
+  "role.section.quickActions": "Napardas nga aksion",
+  "role.section.operations": "Operations",
+  "role.section.devices": "Dagiti device",
+  "role.section.insights": "Insights",
+  "role.startSellingHint":
+    "Malukatan ti sell floor no mapalubosan ti CreateSale. Saan a mausab ti Manager role.",
   "shift.hubTitle": "Dagiti shift",
   "shift.hubLede":
     "Lukatan ken nairikep ti ti cashier shift. Masapul ti nakalukat a shift ti checkout.",

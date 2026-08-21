@@ -1,5 +1,4 @@
 import type { LucideIcon } from "lucide-react";
-import { ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/cn";
 
@@ -13,7 +12,7 @@ export type ActionCardProps = {
 };
 
 /**
- * Flat navigational action tile — icon + title + chevron, entire card clickable.
+ * Flat navigational action tile — icon left, title + subtitle stacked on the right.
  */
 export function ActionCard({
   to,
@@ -28,13 +27,11 @@ export function ActionCard({
       to={to}
       data-testid={testId}
       className={cn(
-        "group flex min-h-[4.5rem] min-w-0 items-center gap-3 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-3 text-foreground no-underline shadow-[0_1px_2px_color-mix(in_srgb,var(--exits-foreground)_6%,transparent)] transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "flex min-h-11 min-w-0 items-start gap-2.5 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-3 text-foreground no-underline shadow-[0_1px_2px_color-mix(in_srgb,var(--exits-foreground)_6%,transparent)] transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         className,
       )}
     >
-      <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-[var(--exits-radius-md)] bg-[var(--exits-surface-muted)] text-primary">
-        <Icon className="size-5" aria-hidden />
-      </span>
+      <Icon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
       <span className="min-w-0 flex-1">
         <span className="block text-[length:var(--exits-text-sm)] font-semibold wrap-break-word">
           {title}
@@ -45,10 +42,6 @@ export function ActionCard({
           </span>
         ) : null}
       </span>
-      <ChevronRight
-        className="size-5 shrink-0 text-muted group-hover:text-foreground"
-        aria-hidden
-      />
     </Link>
   );
 }

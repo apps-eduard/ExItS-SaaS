@@ -138,10 +138,12 @@ import {
   RequireOrganizationBound,
   WorkspaceBootGate,
 } from "@/session/SessionGuards";
+import { RouteErrorPage } from "@/diagnostics/RouteErrorPage";
 
 export const appRoutes = [
   {
     element: <SessionWorkspaceRoot />,
+    errorElement: <RouteErrorPage />,
     children: [
       {
         path: "/sign-in",

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Gauge, MonitorSmartphone } from "lucide-react";
 import { hasOrganizationManagementAuthority } from "@/access/pos-capabilities";
 import {
   createPosDeviceRegistrationToken,
@@ -182,22 +183,30 @@ export function OrgPosDevicesPage() {
   }
 
   return (
-    <div data-testid="org-devices-page" className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("devices.listTitle")} description={t("devices.listLede")} />
+    <div
+      data-testid="org-devices-page"
+      className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-4"
+    >
+      <PageHeader title={t("devices.listTitle")} />
 
       {capacity ? (
         <Card data-testid="devices-capacity">
-          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-            {t("devices.capacity.activeOfAllowed")
-              .replace("{used}", capacity.used.toLocaleString())
-              .replace("{allowed}", capacity.allowed.toLocaleString())}
-          </p>
-          <p className="mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
-            {t("devices.capacity.available").replace(
-              "{available}",
-              capacity.available.toLocaleString(),
-            )}
-          </p>
+          <div className="flex items-start gap-2.5">
+            <Gauge className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                {t("devices.capacity.activeOfAllowed")
+                  .replace("{used}", capacity.used.toLocaleString())
+                  .replace("{allowed}", capacity.allowed.toLocaleString())}
+              </p>
+              <p className="mb-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
+                {t("devices.capacity.available").replace(
+                  "{available}",
+                  capacity.available.toLocaleString(),
+                )}
+              </p>
+            </div>
+          </div>
           <div
             className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--exits-surface-muted)]"
             role="progressbar"
@@ -225,13 +234,23 @@ export function OrgPosDevicesPage() {
       ) : null}
 
       <Card data-testid="devices-this-browser">
-        <p className="m-0 font-semibold">{t("devices.thisBrowserTitle")}</p>
-        <p className="mt-2 mb-0 text-[length:var(--exits-text-sm)] text-muted">
-          {posDevice.detail}
-        </p>
-        <p className="mt-2 mb-0 text-[length:var(--exits-text-sm)]" data-testid="devices-status">
-          {t("devices.statusLabel")}: {posDevice.registrationStatus}
-        </p>
+        <div className="flex items-start gap-2.5">
+          <MonitorSmartphone className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+          <div className="min-w-0 flex-1">
+            <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+              {t("devices.thisBrowserTitle")}
+            </p>
+            <p className="mt-0.5 mb-0 text-[length:var(--exits-text-xs)] text-muted">
+              {posDevice.detail}
+            </p>
+            <p
+              className="mt-0.5 mb-0 text-[length:var(--exits-text-xs)] text-muted"
+              data-testid="devices-status"
+            >
+              {t("devices.statusLabel")}: {posDevice.registrationStatus}
+            </p>
+          </div>
+        </div>
         <label className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
           {t("devices.deviceNameLabel")}
           <input
@@ -312,52 +331,57 @@ export function OrgPosDevicesPage() {
         {(devicesQuery.data ?? []).map((device) => (
           <li key={device.id}>
             <Card data-testid={`device-row-${device.id}`}>
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="m-0 font-semibold">{device.friendlyName}</p>
-                  <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+              <div className="flex items-start gap-2.5">
+                <MonitorSmartphone className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold wrap-break-word">
+                      {device.friendlyName}
+                    </p>
+                    <StatusChip tone={device.status === "Active" ? "success" : "info"}>
+                      {device.status}
+                    </StatusChip>
+                  </div>
+                  <p className="mb-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
                     {branchNameById.get(device.branchId) ?? t("devices.branchFallback")}
                   </p>
+                  <details className="mt-2 text-[length:var(--exits-text-xs)] text-muted">
+                    <summary className="cursor-pointer select-none">
+                      {t("devices.installationIdDetails")}
+                    </summary>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <code className="break-all rounded bg-[var(--exits-surface-muted)] px-2 py-1">
+                        {device.installationDeviceId}
+                      </code>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="min-h-11"
+                        data-testid={`device-copy-id-${device.id}`}
+                        onClick={() => void copyInstallationId(device.installationDeviceId)}
+                      >
+                        {copiedDeviceId === device.installationDeviceId
+                          ? t("devices.copied")
+                          : t("devices.copyInstallationId")}
+                      </Button>
+                    </div>
+                  </details>
+                  {device.status === "Active" ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="mt-2 min-h-11 px-0"
+                      data-testid={`device-revoke-${device.id}`}
+                      onClick={() => {
+                        setRevokeTarget(device);
+                        setRevokeReason("");
+                      }}
+                    >
+                      {t("devices.revoke")}
+                    </Button>
+                  ) : null}
                 </div>
-                <StatusChip tone={device.status === "Active" ? "success" : "info"}>
-                  {device.status}
-                </StatusChip>
               </div>
-              <details className="mt-2 text-[length:var(--exits-text-xs)] text-muted">
-                <summary className="cursor-pointer select-none">
-                  {t("devices.installationIdDetails")}
-                </summary>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <code className="break-all rounded bg-[var(--exits-surface-muted)] px-2 py-1">
-                    {device.installationDeviceId}
-                  </code>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="min-h-11"
-                    data-testid={`device-copy-id-${device.id}`}
-                    onClick={() => void copyInstallationId(device.installationDeviceId)}
-                  >
-                    {copiedDeviceId === device.installationDeviceId
-                      ? t("devices.copied")
-                      : t("devices.copyInstallationId")}
-                  </Button>
-                </div>
-              </details>
-              {device.status === "Active" ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="mt-2 min-h-11"
-                  data-testid={`device-revoke-${device.id}`}
-                  onClick={() => {
-                    setRevokeTarget(device);
-                    setRevokeReason("");
-                  }}
-                >
-                  {t("devices.revoke")}
-                </Button>
-              ) : null}
             </Card>
           </li>
         ))}
@@ -374,10 +398,17 @@ export function OrgPosDevicesPage() {
 
       {revokeTarget ? (
         <Card data-testid="devices-revoke-panel">
-          <p className="m-0 font-semibold">{t("devices.revokeTitle")}</p>
-          <p className="mt-2 mb-0 text-[length:var(--exits-text-sm)] text-muted">
-            {revokeTarget.friendlyName}
-          </p>
+          <div className="flex items-start gap-2.5">
+            <MonitorSmartphone className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                {t("devices.revokeTitle")}
+              </p>
+              <p className="mt-0.5 mb-0 text-[length:var(--exits-text-xs)] text-muted">
+                {revokeTarget.friendlyName}
+              </p>
+            </div>
+          </div>
           <label className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
             {t("devices.revokeReasonLabel")}
             <input

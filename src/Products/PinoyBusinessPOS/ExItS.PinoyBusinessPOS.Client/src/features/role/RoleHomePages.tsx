@@ -1,4 +1,23 @@
 import {
+  ArrowLeftRight,
+  BarChart3,
+  Boxes,
+  ClipboardList,
+  Clock3,
+  LayoutDashboard,
+  MapPin,
+  MonitorSmartphone,
+  Package,
+  PackagePlus,
+  Receipt,
+  RefreshCw,
+  ShoppingCart,
+  Truck,
+  Users,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
+import {
   canAccessReportsHub,
   canCreateSale,
   canManageCatalog,
@@ -20,6 +39,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { RoleActionTile } from "@/components/exits/RoleActionTile";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSellingMode } from "@/selling/SellingModeProvider";
@@ -34,7 +54,73 @@ type RoleHomeShellProps = {
   returnRoute: string;
   primarySell?: boolean;
   showExperienceChooser?: boolean;
+  /** Owner-dashboard-style sections + icon-left tiles (Manager home). */
+  dashboardGuide?: boolean;
 };
+
+type TileDef = {
+  key: string;
+  label: string;
+  icon: LucideIcon;
+  testId?: string;
+  primary?: boolean;
+  to?: string;
+  onClick?: () => void;
+};
+
+function Section({
+  title,
+  children,
+  testId,
+}: {
+  title: string;
+  children: ReactNode;
+  testId?: string;
+}) {
+  return (
+    <section className="flex min-w-0 flex-col gap-2" data-testid={testId}>
+      <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+        {title}
+      </h2>
+      {children}
+    </section>
+  );
+}
+
+function TileGrid({ tiles }: { tiles: TileDef[] }) {
+  if (tiles.length === 0) {
+    return null;
+  }
+  return (
+    <div className="grid min-w-0 grid-cols-2 gap-2" role="group">
+      {tiles.map((tile, index) => {
+        const fullWidth = tiles.length === 1 || (tiles.length % 2 === 1 && index === tiles.length - 1);
+        const tileClassName = fullWidth ? "col-span-2" : undefined;
+        return tile.onClick ? (
+          <RoleActionTile
+            key={tile.key}
+            label={tile.label}
+            icon={tile.icon}
+            testId={tile.testId}
+            primary={tile.primary}
+            onClick={tile.onClick}
+            className={tileClassName}
+          />
+        ) : (
+          <RoleActionTile
+            key={tile.key}
+            label={tile.label}
+            icon={tile.icon}
+            testId={tile.testId}
+            primary={tile.primary}
+            to={tile.to!}
+            className={tileClassName}
+          />
+        );
+      })}
+    </div>
+  );
+}
 
 export function RoleHomeShell({
   titleKey,
@@ -44,6 +130,7 @@ export function RoleHomeShell({
   returnRoute,
   primarySell = false,
   showExperienceChooser = false,
+  dashboardGuide = false,
 }: RoleHomeShellProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -71,6 +158,211 @@ export function RoleHomeShell({
   function startSelling() {
     enter(returnRoute);
     navigate("/sell");
+  }
+
+  const quickTiles: TileDef[] = [];
+  if (canSell) {
+    quickTiles.push({
+      key: "sell",
+      label: primarySell ? t("role.openSellFloor") : t("role.startSelling"),
+      icon: ShoppingCart,
+      testId: "role-start-selling",
+      primary: true,
+      onClick: startSelling,
+    });
+  }
+  if (primarySell) {
+    quickTiles.push({
+      key: "workspace",
+      label: t("workspace.switch"),
+      icon: ArrowLeftRight,
+      testId: "role-switch-workspace",
+      onClick: () => navigate("/workspace"),
+    });
+  }
+
+  const operationTiles: TileDef[] = [];
+  if (canShifts) {
+    operationTiles.push({
+      key: "shifts",
+      label: t("shift.hubTitle"),
+      icon: RefreshCw,
+      testId: "open-shifts",
+      to: "/shifts",
+    });
+  }
+  if (canOpenShift) {
+    operationTiles.push({
+      key: "open-shift",
+      label: t("shift.openTitle"),
+      icon: Clock3,
+      testId: "open-shift-open",
+      to: "/shifts/open",
+    });
+  }
+  if (canRegisters) {
+    operationTiles.push({
+      key: "registers",
+      label: t("register.listTitle"),
+      icon: LayoutDashboard,
+      testId: "open-registers",
+      to: "/registers",
+    });
+  }
+  if (canCatalog) {
+    operationTiles.push({
+      key: "catalog",
+      label: t("catalog.openCatalog"),
+      icon: Package,
+      testId: "open-catalog",
+      to: "/catalog",
+    });
+  }
+  if (canInventory) {
+    operationTiles.push({
+      key: "inventory",
+      label: t("inventory.open"),
+      icon: Boxes,
+      testId: "open-inventory",
+      to: "/inventory",
+    });
+    operationTiles.push({
+      key: "expiring",
+      label: t("inventory.openExpiring"),
+      icon: ClipboardList,
+      testId: "open-expiring-stock-home",
+      to: "/inventory/expiration",
+    });
+  }
+  if (canPurchasing) {
+    operationTiles.push({
+      key: "purchasing",
+      label: t("purchasing.open"),
+      icon: PackagePlus,
+      testId: "open-purchasing",
+      to: "/purchasing",
+    });
+  }
+  if (canSuppliers) {
+    operationTiles.push({
+      key: "suppliers",
+      label: t("suppliers.open"),
+      icon: Truck,
+      testId: "open-suppliers",
+      to: "/suppliers",
+    });
+  }
+  if (canCustomers) {
+    operationTiles.push({
+      key: "customers",
+      label: t("customers.open"),
+      icon: Users,
+      testId: "open-customers",
+      to: "/customers",
+    });
+  }
+  if (canCustomerOrders) {
+    operationTiles.push({
+      key: "orders",
+      label: t("orders.openQueue"),
+      icon: ClipboardList,
+      testId: "open-customer-orders",
+      to: "/orders",
+    });
+  }
+  if (canReturns) {
+    operationTiles.push({
+      key: "returns",
+      label: t("returns.open"),
+      icon: Receipt,
+      testId: "open-returns",
+      to: "/returns",
+    });
+  }
+
+  const insightTiles: TileDef[] = [];
+  if (canDashboard) {
+    insightTiles.push({
+      key: "dashboard",
+      label: t("dashboard.open"),
+      icon: BarChart3,
+      testId: "open-dashboard",
+      to: "/dashboard",
+    });
+  }
+  if (canReports) {
+    insightTiles.push({
+      key: "reports",
+      label: t("reports.open"),
+      icon: BarChart3,
+      testId: "open-reports",
+      to: "/reports",
+    });
+  }
+
+  const deviceTiles: TileDef[] = [];
+  if (canDevices) {
+    deviceTiles.push({
+      key: "devices",
+      label: t("devices.listTitle"),
+      icon: MonitorSmartphone,
+      testId: "open-org-devices",
+      to: "/org/devices",
+    });
+    deviceTiles.push({
+      key: "branches",
+      label: t("org.branchesLink"),
+      icon: MapPin,
+      testId: "open-branch-fulfillment",
+      to: "/org/branches",
+    });
+  }
+  deviceTiles.push({
+    key: "register-browser",
+    label: t("devices.redeemTitle"),
+    icon: MonitorSmartphone,
+    testId: "open-device-register",
+    to: "/devices/register",
+  });
+
+  if (dashboardGuide) {
+    return (
+      <div
+        className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-5"
+        data-testid="manager-home"
+      >
+        <PageHeader title={t(titleKey)} description={t(ledeKey)} />
+
+        {quickTiles.length > 0 ? (
+          <Section title={t("role.section.quickActions")} testId="manager-quick-actions">
+            <TileGrid tiles={quickTiles} />
+            {canSell ? (
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                {t("role.startSellingHint")}
+              </p>
+            ) : null}
+          </Section>
+        ) : null}
+
+        {operationTiles.length > 0 ? (
+          <Section title={t("role.section.operations")} testId="manager-operations">
+            <TileGrid tiles={operationTiles} />
+          </Section>
+        ) : null}
+
+        {deviceTiles.length > 0 ? (
+          <Section title={t("role.section.devices")} testId="manager-devices">
+            <TileGrid tiles={deviceTiles} />
+          </Section>
+        ) : null}
+
+        {insightTiles.length > 0 ? (
+          <Section title={t("role.section.insights")} testId="manager-insights">
+            <TileGrid tiles={insightTiles} />
+          </Section>
+        ) : null}
+      </div>
+    );
   }
 
   return (
@@ -255,6 +547,7 @@ export function ManagerRoleHomePage() {
       badgeKey="role.managerBadge"
       bodyKey="role.managerBody"
       returnRoute="/role/manager"
+      dashboardGuide
     />
   );
 }

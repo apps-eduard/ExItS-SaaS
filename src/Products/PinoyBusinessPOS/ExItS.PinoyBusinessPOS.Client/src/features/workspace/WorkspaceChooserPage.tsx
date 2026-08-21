@@ -1,4 +1,11 @@
-import { ChevronDown, ChevronRight } from "lucide-react";
+import {
+  BriefcaseBusiness,
+  ChevronDown,
+  ChevronRight,
+  LayoutGrid,
+  ShoppingCart,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -23,6 +30,7 @@ import {
   type WorkspaceDestination,
 } from "@/workspace/workspace-destinations";
 import type { AccessibleOrganizationWorkspace } from "@/workspace/types";
+import type { WorkingExperience } from "@/workspace/working-experience";
 
 function membershipRoleLabel(
   role: string | null | undefined,
@@ -40,6 +48,16 @@ function membershipRoleLabel(
   return null;
 }
 
+function destinationIcon(experience: WorkingExperience): LucideIcon {
+  if (experience === "manage_business") {
+    return BriefcaseBusiness;
+  }
+  if (experience === "start_selling") {
+    return ShoppingCart;
+  }
+  return LayoutGrid;
+}
+
 export function WorkspaceChooserPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -52,6 +70,7 @@ export function WorkspaceChooserPage() {
     grantByOrganizationId,
     ensureOrganizationGrantHint,
   } = useWorkspace();
+  const canCollapseOrgs = workspaces.length > 1;
   const [expandedOrgId, setExpandedOrgId] = useState<string | null>(() =>
     workspaces.length === 1 ? (workspaces[0]?.organizationId ?? null) : null,
   );
@@ -140,7 +159,7 @@ export function WorkspaceChooserPage() {
   const failureDetailKey = (accessDeniedDetail as MessageKey | null) ?? localErrorKey;
 
   return (
-    <div className="mx-auto flex w-full max-w-xl min-w-0 flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-4">
       <PageHeader title={t("workspace.title")} description={t("workspace.experienceLede")} />
       {failureDetailKey ? (
         <ErrorState title={t(failureTitleKey)} detail={t(failureDetailKey)} />
@@ -150,7 +169,8 @@ export function WorkspaceChooserPage() {
           <OrganizationWorkspaceCard
             key={organization.organizationId}
             organization={organization}
-            expanded={expandedOrgId === organization.organizationId}
+            expanded={!canCollapseOrgs || expandedOrgId === organization.organizationId}
+            canCollapse={canCollapseOrgs}
             onToggle={() =>
               setExpandedOrgId(
                 expandedOrgId === organization.organizationId ? null : organization.organizationId,
@@ -173,6 +193,7 @@ export function WorkspaceChooserPage() {
 function OrganizationWorkspaceCard({
   organization,
   expanded,
+  canCollapse,
   onToggle,
   grant,
   grantLoading,
@@ -184,6 +205,7 @@ function OrganizationWorkspaceCard({
 }: {
   organization: AccessibleOrganizationWorkspace;
   expanded: boolean;
+  canCollapse: boolean;
   onToggle: () => void;
   grant: ReturnType<typeof useWorkspace>["sessionGrant"];
   grantLoading: boolean;
@@ -206,37 +228,45 @@ function OrganizationWorkspaceCard({
       ? t("workspace.branchCountOne")
       : t("workspace.branchCountMany").replace("{count}", String(organization.branches.length));
 
+  const headerContent = (
+    <span className="min-w-0">
+      <span className="block truncate text-[length:var(--exits-text-md)] font-semibold">
+        {organization.displayName}
+      </span>
+      <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[length:var(--exits-text-sm)] text-muted">
+        <span>{branchCountLabel}</span>
+        {membershipLabel ? (
+          <>
+            <span aria-hidden="true">·</span>
+            <span>{membershipLabel}</span>
+          </>
+        ) : null}
+      </span>
+    </span>
+  );
+
   return (
     <Card className="overflow-hidden p-0" role="listitem">
-      <button
-        type="button"
-        className="flex min-h-11 w-full items-center justify-between gap-3 border-0 bg-transparent px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-        aria-expanded={expanded}
-        onClick={onToggle}
-      >
-        <span className="min-w-0">
-          <span className="block truncate text-[length:var(--exits-text-md)] font-semibold">
-            {organization.displayName}
-          </span>
-          <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[length:var(--exits-text-sm)] text-muted">
-            <span>{branchCountLabel}</span>
-            {membershipLabel ? (
-              <>
-                <span aria-hidden="true">·</span>
-                <span>{membershipLabel}</span>
-              </>
-            ) : null}
-          </span>
-        </span>
-        {expanded ? (
-          <ChevronDown className="size-5 shrink-0 text-muted" aria-hidden="true" />
-        ) : (
-          <ChevronRight className="size-5 shrink-0 text-muted" aria-hidden="true" />
-        )}
-      </button>
+      {canCollapse ? (
+        <button
+          type="button"
+          className="flex min-h-11 w-full items-center justify-between gap-3 border-0 bg-transparent px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+          aria-expanded={expanded}
+          onClick={onToggle}
+        >
+          {headerContent}
+          {expanded ? (
+            <ChevronDown className="size-5 shrink-0 text-muted" aria-hidden="true" />
+          ) : (
+            <ChevronRight className="size-5 shrink-0 text-muted" aria-hidden="true" />
+          )}
+        </button>
+      ) : (
+        <div className="px-4 py-3">{headerContent}</div>
+      )}
 
       {expanded ? (
-        <div className="border-t border-border px-4 py-3">
+        <div className={cn("px-4 py-3", canCollapse && "border-t border-border")}>
           {!grant && grantLoading ? (
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
               {t("workspace.loadingDestinations")}
@@ -266,7 +296,7 @@ function OrganizationWorkspaceCard({
                       ))}
                     </ul>
                   ) : null}
-                  <DestinationButton
+                  <DestinationTile
                     destination={manageBusiness}
                     bindingKey={bindingKey}
                     onSelect={onSelectDestination}
@@ -284,7 +314,7 @@ function OrganizationWorkspaceCard({
                   >
                     {t("workspace.branches")}
                   </h3>
-                  <ul className="m-0 flex list-none flex-col gap-3 p-0">
+                  <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2">
                     {organization.branches.map((branch) => {
                       const branchDestinations = destinations.filter(
                         (d) => d.branchId === branch.branchId,
@@ -298,7 +328,11 @@ function OrganizationWorkspaceCard({
                             }) === 0,
                         ) ?? [];
                       return (
-                        <li key={branch.branchId} className="min-w-0">
+                        <li
+                          key={branch.branchId}
+                          className="min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-3"
+                          data-testid={`workspace-branch-${branch.branchId}`}
+                        >
                           <p className="m-0 truncate font-semibold">{branch.name}</p>
                           {staffForBranch.length > 0 ? (
                             <ul className="mb-2 mt-1 list-none space-y-0.5 p-0">
@@ -313,9 +347,14 @@ function OrganizationWorkspaceCard({
                             </ul>
                           ) : null}
                           {branchDestinations.length > 0 ? (
-                            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            <div
+                              className={cn(
+                                "mt-3 grid gap-2",
+                                branchDestinations.length === 1 ? "grid-cols-1" : "grid-cols-2",
+                              )}
+                            >
                               {branchDestinations.map((destination) => (
-                                <DestinationButton
+                                <DestinationTile
                                   key={`${destination.experience}:${destination.branchId}`}
                                   destination={destination}
                                   bindingKey={bindingKey}
@@ -345,7 +384,7 @@ function OrganizationWorkspaceCard({
   );
 }
 
-function DestinationButton({
+function DestinationTile({
   destination,
   bindingKey,
   onSelect,
@@ -360,16 +399,40 @@ function DestinationButton({
 }) {
   const key = `${destination.organizationId}:${destination.experience}:${destination.branchId ?? "org"}`;
   const busy = bindingKey === key;
+  const Icon = destinationIcon(destination.experience);
+  const label = busy ? t("workspace.opening") : t(destination.labelKey);
+
+  if (primary) {
+    return (
+      <Button
+        type="button"
+        variant="default"
+        className="min-h-11 w-full justify-center gap-2"
+        disabled={busy || bindingKey != null}
+        onClick={() => onSelect(destination)}
+        data-testid={`workspace-destination-${destination.experience}`}
+      >
+        <Icon className="size-4 shrink-0" aria-hidden />
+        {label}
+      </Button>
+    );
+  }
+
   return (
-    <Button
+    <button
       type="button"
-      variant={primary ? "default" : "ghost"}
-      className={cn("min-h-11 w-full justify-center")}
       disabled={busy || bindingKey != null}
       onClick={() => onSelect(destination)}
       data-testid={`workspace-destination-${destination.experience}`}
+      aria-label={label}
+      className={cn(
+        "inline-flex min-h-11 w-full items-center gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2.5 text-left text-foreground transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60",
+      )}
     >
-      {busy ? t("workspace.opening") : t(destination.labelKey)}
-    </Button>
+      <Icon className="size-5 shrink-0 text-primary" aria-hidden />
+      <span className="min-w-0 text-[length:var(--exits-text-sm)] font-semibold wrap-break-word">
+        {label}
+      </span>
+    </button>
   );
 }

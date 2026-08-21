@@ -664,6 +664,12 @@ export const en = {
   "role.cashierLede": "Shift-ready selling entry for checkout staff.",
   "role.cashierBadge": "Cashier",
   "role.cashierBody": "Selling entry with own shift. Open your shift, then use the sell floor.",
+  "role.section.quickActions": "Quick actions",
+  "role.section.operations": "Operations",
+  "role.section.devices": "Devices",
+  "role.section.insights": "Insights",
+  "role.startSellingHint":
+    "Opens the sell floor when CreateSale is allowed. Your Manager role does not change.",
   "shift.hubTitle": "Shifts",
   "shift.hubLede": "Open and close your cashier shift. Checkout needs an open shift.",
   "shift.openTitle": "Open shift",

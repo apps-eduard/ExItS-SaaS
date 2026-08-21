@@ -679,6 +679,12 @@ export const filPH: Record<keyof typeof en, string> = {
   "role.cashierBadge": "Cashier",
   "role.cashierBody":
     "Selling entry na may sariling shift. Mag-open ng shift, tapos gamitin ang sell floor.",
+  "role.section.quickActions": "Mabilis na aksyon",
+  "role.section.operations": "Operations",
+  "role.section.devices": "Mga device",
+  "role.section.insights": "Insights",
+  "role.startSellingHint":
+    "Binubuksan ang sell floor kapag allowed ang CreateSale. Hindi nagbabago ang Manager role.",
   "shift.hubTitle": "Mga shift",
   "shift.hubLede": "Mag-open at mag-close ng cashier shift. Kailangan ng open shift ang checkout.",
   "shift.openTitle": "Open shift",

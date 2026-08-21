@@ -14,10 +14,7 @@ import {
   hasOrganizationManagementAuthority,
 } from "@/access/pos-capabilities";
 import { ActionCard } from "@/components/exits/ActionCard";
-import { Card } from "@/components/ui/card";
-import { EmptyState } from "@/components/exits/EmptyState";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -102,24 +99,25 @@ export function OrgEssentialsPage() {
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="org-essentials-page">
       <PageHeader title={t("org.title")} description={t("org.lede")} />
-      <StatusChip tone="warning">{t("org.badge")}</StatusChip>
-      <Card>
-        <p className="m-0 text-[length:var(--exits-text-md)]">{t("org.body")}</p>
-        <p className="mt-3 mb-0 text-[length:var(--exits-text-sm)] text-muted">
-          {t("org.noPayChrome")}
-        </p>
-      </Card>
-      <EmptyState title={t("org.emptyTitle")} detail={t("org.emptyDetail")} />
 
       {operations.length > 0 ? (
         <section className="flex flex-col gap-2" data-testid="org-group-operations">
           <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted">
             {t("org.group.operations")}
           </h2>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {operations.map((action) => (
-              <ActionCard key={action.to} {...action} />
-            ))}
+          <div className="grid grid-cols-2 gap-3">
+            {operations.map((action, index) => {
+              const fullWidth =
+                operations.length === 1 ||
+                (operations.length % 2 === 1 && index === operations.length - 1);
+              return (
+                <ActionCard
+                  key={action.to}
+                  {...action}
+                  className={fullWidth ? "col-span-2" : undefined}
+                />
+              );
+            })}
           </div>
         </section>
       ) : null}
@@ -129,10 +127,19 @@ export function OrgEssentialsPage() {
           <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted">
             {t("org.group.administration")}
           </h2>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {administration.map((action) => (
-              <ActionCard key={action.to} {...action} />
-            ))}
+          <div className="grid grid-cols-2 gap-3">
+            {administration.map((action, index) => {
+              const fullWidth =
+                administration.length === 1 ||
+                (administration.length % 2 === 1 && index === administration.length - 1);
+              return (
+                <ActionCard
+                  key={action.to}
+                  {...action}
+                  className={fullWidth ? "col-span-2" : undefined}
+                />
+              );
+            })}
           </div>
         </section>
       ) : null}
@@ -141,10 +148,19 @@ export function OrgEssentialsPage() {
         <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted">
           {t("org.group.workspace")}
         </h2>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {workspace.map((action) => (
-            <ActionCard key={action.to} {...action} />
-          ))}
+        <div className="grid grid-cols-2 gap-3">
+          {workspace.map((action, index) => {
+            const fullWidth =
+              workspace.length === 1 ||
+              (workspace.length % 2 === 1 && index === workspace.length - 1);
+            return (
+              <ActionCard
+                key={action.to}
+                {...action}
+                className={fullWidth ? "col-span-2" : undefined}
+              />
+            );
+          })}
         </div>
       </section>
     </div>
