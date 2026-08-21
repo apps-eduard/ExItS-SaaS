@@ -17,6 +17,10 @@ import { appRoutes } from "@/app/router";
 
 const orgId = "11111111-1111-1111-1111-111111111111";
 const branchId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+const installId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+const deviceId = "ffffffff-ffff-4fff-8fff-ffffffffffff";
+const shiftId = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+const registerId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 
 function mockBoundCashierApis() {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -32,9 +36,35 @@ function mockBoundCashierApis() {
             organizationId: orgId,
             branchId,
             name: "Main Branch",
-            deviceMatchesSelectedBranch: false,
-            deviceBoundBranchId: null,
-            openCashierShiftPresent: false,
+            deviceMatchesSelectedBranch: true,
+            deviceBoundBranchId: branchId,
+            openCashierShiftPresent: true,
+          }),
+          text: async () => "",
+        } as Response;
+      }
+
+      if (url.includes("/cashier-shifts/current") && method === "GET") {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            shiftId,
+            organizationId: orgId,
+            shiftNumber: "S-1",
+            status: "Open",
+            actorId: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+            registerId,
+            registerCode: "REG-1",
+            registerName: "Front",
+            businessDate: "2026-08-21",
+            openingCashAmount: 100,
+            openingCashCounted: true,
+            effectiveCashCountMode: "Required",
+            openedAtUtc: "2026-08-21T01:00:00Z",
+            openedBy: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+            createdAtUtc: "2026-08-21T01:00:00Z",
+            updatedAtUtc: "2026-08-21T01:00:00Z",
           }),
           text: async () => "",
         } as Response;
@@ -62,6 +92,19 @@ function mockBoundCashierApis() {
         ok: false,
         status: 404,
         json: async () => ({ detail: "not mocked" }),
+        text: async () => "",
+      } as Response;
+    }
+
+    if (url.includes("/pos-devices/authorize") && method === "POST") {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          posDeviceId: deviceId,
+          branchId,
+          installationDeviceId: installId,
+        }),
         text: async () => "",
       } as Response;
     }
@@ -159,6 +202,7 @@ function mockBoundCashierApis() {
 
 describe("SellFloorPage", () => {
   beforeEach(() => {
+    window.localStorage.setItem("exits.pos-client.installation-device-id.v1", installId);
     setPosSessionGrant({
       accessToken: "in-memory-only",
       productAccessAllowed: true,
@@ -185,8 +229,9 @@ describe("SellFloorPage", () => {
     expect(screen.getByTestId("sell-category-active")).toHaveTextContent("All");
     expect(screen.getByTestId("sell-products")).toBeInTheDocument();
     expect(screen.getByTestId("sell-cart-landscape")).toBeInTheDocument();
-    expect(screen.getByTestId("sell-cart-bar")).toBeInTheDocument();
+    expect(screen.queryByTestId("sell-cart-bar")).not.toBeInTheDocument();
     expect(screen.getByTestId("sell-cart-sheet")).toBeInTheDocument();
+    expect(screen.queryByTestId("checkout-readiness")).not.toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`)).toBeInTheDocument();
@@ -197,6 +242,25 @@ describe("SellFloorPage", () => {
     for (const button of payButtons) {
       expect(button).toBeDisabled();
     }
+  });
+
+  it("shows floating cart bar after adding a line", async () => {
+    const user = userEvent.setup();
+    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
+    render(
+      <AppProviders>
+        <RouterProvider router={memoryRouter} />
+      </AppProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`));
+    await waitFor(() => {
+      expect(screen.getByTestId("sell-cart-bar")).toBeInTheDocument();
+    });
   });
 
   it("adds to cart and keeps lines when switching category", async () => {

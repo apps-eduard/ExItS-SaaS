@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { canManageShifts, canViewShifts } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
@@ -28,6 +28,8 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 export function ShiftOpenPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const fromSell = searchParams.get("from") === "sell";
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const { refresh } = useShiftContext();
 
@@ -160,7 +162,7 @@ export function ShiftOpenPage() {
       const existing = await getCurrentCashierShift(workspaceScope!);
       if (existing && existing.status.toLowerCase() === "open") {
         await refresh();
-        navigate(`/shifts/${existing.shiftId}`, { replace: true });
+        navigate(fromSell ? "/sell" : `/shifts/${existing.shiftId}`, { replace: true });
         return;
       }
 
@@ -170,7 +172,7 @@ export function ShiftOpenPage() {
         denominationLines: amount !== null && denomLines.length > 0 ? denomLines : null,
       });
       await refresh();
-      navigate(`/shifts/${opened.shiftId}`, { replace: true });
+      navigate(fromSell ? "/sell" : `/shifts/${opened.shiftId}`, { replace: true });
     } catch (error) {
       const message =
         error instanceof PosApiError

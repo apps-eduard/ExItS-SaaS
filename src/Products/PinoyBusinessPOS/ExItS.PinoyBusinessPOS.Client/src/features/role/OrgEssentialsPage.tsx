@@ -1,11 +1,19 @@
-import { Link } from "react-router-dom";
+import {
+  ArrowLeftRight,
+  Banknote,
+  MapPin,
+  MonitorSmartphone,
+  Package,
+  ShoppingCart,
+  UserPlus,
+} from "lucide-react";
 import {
   canCreateSale,
   canInviteOrganizationStaff,
   canManageCatalog,
   hasOrganizationManagementAuthority,
 } from "@/access/pos-capabilities";
-import { Button } from "@/components/ui/button";
+import { ActionCard } from "@/components/exits/ActionCard";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -21,6 +29,76 @@ export function OrgEssentialsPage() {
   const canCatalog = canManageCatalog(sessionGrant);
   const canDevices = hasOrganizationManagementAuthority(sessionGrant);
 
+  const operations = [
+    canSell
+      ? {
+          to: "/sell",
+          title: t("experience.startSelling"),
+          subtitle: t("org.action.startSellingDetail"),
+          icon: ShoppingCart,
+          testId: "open-start-selling",
+        }
+      : null,
+    canDevices
+      ? {
+          to: "/org/cash-handling",
+          title: t("org.cashHandlingLink"),
+          subtitle: t("org.cashHandlingLinkDetail"),
+          icon: Banknote,
+          testId: "open-cash-handling",
+        }
+      : null,
+    canDevices
+      ? {
+          to: "/org/branches",
+          title: t("org.branchesLink"),
+          subtitle: t("org.action.branchesDetail"),
+          icon: MapPin,
+          testId: "open-branch-fulfillment",
+        }
+      : null,
+    canCatalog
+      ? {
+          to: "/catalog",
+          title: t("catalog.openCatalog"),
+          subtitle: t("org.action.catalogDetail"),
+          icon: Package,
+          testId: "open-catalog",
+        }
+      : null,
+  ].filter((item): item is NonNullable<typeof item> => item != null);
+
+  const administration = [
+    canInvite
+      ? {
+          to: "/org/staff/invite",
+          title: t("staffInvite.title"),
+          subtitle: t("org.action.inviteDetail"),
+          icon: UserPlus,
+          testId: "open-staff-invite",
+        }
+      : null,
+    canDevices
+      ? {
+          to: "/org/devices",
+          title: t("devices.listTitle"),
+          subtitle: t("org.action.devicesDetail"),
+          icon: MonitorSmartphone,
+          testId: "open-org-devices",
+        }
+      : null,
+  ].filter((item): item is NonNullable<typeof item> => item != null);
+
+  const workspace = [
+    {
+      to: "/workspace",
+      title: t("workspace.switch"),
+      subtitle: t("org.action.workspaceDetail"),
+      icon: ArrowLeftRight,
+      testId: "open-switch-workspace",
+    },
+  ];
+
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="org-essentials-page">
       <PageHeader title={t("org.title")} description={t("org.lede")} />
@@ -32,46 +110,43 @@ export function OrgEssentialsPage() {
         </p>
       </Card>
       <EmptyState title={t("org.emptyTitle")} detail={t("org.emptyDetail")} />
-      <div className="flex flex-wrap gap-2">
-        {canInvite ? (
-          <Button asChild className="min-h-11">
-            <Link to="/org/staff/invite">{t("staffInvite.title")}</Link>
-          </Button>
-        ) : null}
-        {canDevices ? (
-          <Button asChild className="min-h-11" data-testid="open-org-devices">
-            <Link to="/org/devices">{t("devices.listTitle")}</Link>
-          </Button>
-        ) : null}
-        {canDevices ? (
-          <Button asChild variant="ghost" className="min-h-11" data-testid="open-cash-handling">
-            <Link to="/org/cash-handling">{t("org.cashHandlingLink")}</Link>
-          </Button>
-        ) : null}
-        {canDevices ? (
-          <Button
-            asChild
-            variant="ghost"
-            className="min-h-11"
-            data-testid="open-branch-fulfillment"
-          >
-            <Link to="/org/branches">{t("org.branchesLink")}</Link>
-          </Button>
-        ) : null}
-        {canCatalog ? (
-          <Button asChild variant="ghost" className="min-h-11" data-testid="open-catalog">
-            <Link to="/catalog">{t("catalog.openCatalog")}</Link>
-          </Button>
-        ) : null}
-        {canSell ? (
-          <Button asChild variant="ghost" className="min-h-11">
-            <Link to="/sell">{t("experience.startSelling")}</Link>
-          </Button>
-        ) : null}
-        <Button asChild variant="ghost" className="min-h-11">
-          <Link to="/workspace">{t("workspace.switch")}</Link>
-        </Button>
-      </div>
+
+      {operations.length > 0 ? (
+        <section className="flex flex-col gap-2" data-testid="org-group-operations">
+          <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted">
+            {t("org.group.operations")}
+          </h2>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {operations.map((action) => (
+              <ActionCard key={action.to} {...action} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {administration.length > 0 ? (
+        <section className="flex flex-col gap-2" data-testid="org-group-administration">
+          <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted">
+            {t("org.group.administration")}
+          </h2>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {administration.map((action) => (
+              <ActionCard key={action.to} {...action} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <section className="flex flex-col gap-2" data-testid="org-group-workspace">
+        <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted">
+          {t("org.group.workspace")}
+        </h2>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {workspace.map((action) => (
+            <ActionCard key={action.to} {...action} />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

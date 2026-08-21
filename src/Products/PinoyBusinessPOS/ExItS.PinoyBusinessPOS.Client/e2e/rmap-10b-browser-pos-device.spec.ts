@@ -224,6 +224,9 @@ test.describe("RMAP-10b browser POS device", () => {
       timeout: 10000,
     });
     await expect(page.getByTestId(`device-row-${DEVICE_ID}`)).toBeVisible();
+    await expect(page.getByTestId("devices-capacity")).toBeVisible();
+    await expect(page.getByTestId("devices-capacity")).toContainText("1 of 5");
+    await expect(page.getByTestId("devices-capacity-bar")).toBeVisible();
   });
 
   test("owner can create registration code and staff can redeem without camera", async ({
@@ -251,9 +254,14 @@ test.describe("RMAP-10b browser POS device", () => {
     await clientNavigate(page, "/devices/register");
     await expect(page.getByTestId("device-register-page")).toBeVisible();
     await page.getByTestId("device-redeem-code").fill("e2e-registration-token-one-time");
-    await page.getByTestId("device-redeem-branch").selectOption(E2E_BRANCH_ID);
+    await expect(page.getByTestId("device-redeem-branch-locked")).toBeVisible();
     await page.getByTestId("device-redeem-submit").click();
-    await expect(page.getByTestId("device-redeem-success")).toBeVisible();
+    // Successful redeem returns to /sell readiness (device → shift → sell).
+    await expect(
+      page.getByTestId("sell-readiness-shift").or(page.getByTestId("sell-floor")),
+    ).toBeVisible({
+      timeout: 15000,
+    });
   });
 
   test("installation id survives logout simulation", async ({ page }) => {
@@ -272,7 +280,7 @@ test.describe("RMAP-10b browser POS device", () => {
     expect(after).toBe(FIXED_INSTALL_ID);
   });
 
-  test("unauthorized device keeps sell pay disabled", async ({ page }) => {
+  test("unauthorized device blocks Sell before Pay", async ({ page }) => {
     await seedInstallationId(page);
     await mockBoundCashierSession(page);
     await mockPosDevicesApi(page, { authorized: false });
@@ -313,7 +321,10 @@ test.describe("RMAP-10b browser POS device", () => {
     });
     await signInAndBindCashier(page);
     await clientNavigate(page, "/sell");
-    await expect(page.getByTestId("sell-pay").first()).toBeDisabled();
+    await expect(page.getByTestId("sell-readiness-device")).toBeVisible();
+    await expect(page.getByTestId("sell-floor")).toHaveCount(0);
+    await expect(page.getByTestId("sell-readiness-register")).toBeVisible();
+    await expect(page.getByTestId("sell-readiness-manage-devices")).toHaveCount(0);
   });
 
   for (const viewport of VIEWPORTS) {

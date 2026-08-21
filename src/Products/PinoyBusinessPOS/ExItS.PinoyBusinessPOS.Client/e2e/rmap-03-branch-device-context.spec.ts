@@ -4,6 +4,7 @@ import {
   E2E_ORG_ID,
   mockBoundCashierSession,
   signInAndBindCashier,
+  expectSellEntryVisible,
 } from "./mock-bound-session";
 
 test.describe("RMAP-03 branch / device operational context", () => {
@@ -93,7 +94,7 @@ test.describe("RMAP-03 branch / device operational context", () => {
   test("single Active branch auto-binds Start Selling for cashier", async ({ page }) => {
     await mockBoundCashierSession(page);
     await signInAndBindCashier(page);
-    await expect(page.getByRole("heading", { name: "Sell floor" })).toBeVisible();
+    await expectSellEntryVisible(page);
     await expect(page.getByTestId("workspace-context")).toContainText("Main Branch");
   });
 
@@ -192,7 +193,7 @@ test.describe("RMAP-03 branch / device operational context", () => {
   test("logout clears bound workspace context", async ({ page }) => {
     await mockBoundCashierSession(page);
     await signInAndBindCashier(page);
-    await expect(page.getByRole("heading", { name: "Sell floor" })).toBeVisible();
+    await expectSellEntryVisible(page);
     await page.getByRole("button", { name: /Account menu/i }).click();
     await page.getByRole("menuitem", { name: /Sign out/i }).click();
     await expect(page).toHaveURL(/\/sign-in/);

@@ -10,6 +10,7 @@ import {
   MOCK_SNACKS_CATEGORY_ID,
 } from "./mock-pos-catalog";
 import { mockPosCatalogApi } from "./mock-pos-catalog-route";
+import { prepareSellReady } from "./mock-sell-ready";
 
 const screenshotDir = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -24,13 +25,13 @@ test.describe("sell floor catalog and session cart", () => {
   test.beforeEach(async ({ page }) => {
     await mockBoundCashierSession(page);
     await mockPosCatalogApi(page);
+    await prepareSellReady(page);
     await signInAndBindCashier(page);
-    await page.getByRole("button", { name: "Open sell floor" }).click();
     await expect(page.getByTestId("sell-floor")).toBeVisible();
     await expect(page.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`)).toBeVisible();
   });
 
-  test("tablet landscape adds to cart, keeps lines on category change, pay stays disabled", async ({
+  test("tablet landscape adds to cart, keeps lines on category change, pay enabled when ready", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1024, height: 768 });
@@ -47,7 +48,7 @@ test.describe("sell floor catalog and session cart", () => {
     await expect(
       landscapeCart.getByTestId(`sell-cart-line-${MOCK_COKE_PRODUCT_ID}::base`),
     ).toBeVisible();
-    await expect(landscapeCart.getByTestId("sell-pay")).toBeDisabled();
+    await expect(landscapeCart.getByTestId("sell-pay")).toBeEnabled();
     await assertNoHorizontalOverflow(page);
     await page.screenshot({
       path: path.join(screenshotDir, "01-sell-floor-cart-tablet-1024x768.png"),

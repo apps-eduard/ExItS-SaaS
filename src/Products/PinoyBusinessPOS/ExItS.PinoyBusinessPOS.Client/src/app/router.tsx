@@ -70,7 +70,7 @@ import { TransactionSummaryPage } from "@/features/checkout/TransactionSummaryPa
 import { ProcessReturnPage } from "@/features/returns/ProcessReturnPage";
 import { ReturnDetailPage } from "@/features/returns/ReturnDetailPage";
 import { ReturnsHubPage } from "@/features/returns/ReturnsHubPage";
-import { SellFloorPage } from "@/features/sell/SellFloorPage";
+import { SellReadinessGate } from "@/features/sell/SellReadinessGate";
 import { ShiftDetailPage } from "@/features/shifts/ShiftDetailPage";
 import { ShiftOpenPage } from "@/features/shifts/ShiftOpenPage";
 import { ShiftsHubPage } from "@/features/shifts/ShiftsHubPage";
@@ -251,7 +251,7 @@ export const appRoutes = [
               </RequireOrganizationSession>
             ),
             children: [
-              { index: true, element: <SellFloorPage /> },
+              { index: true, element: <SellReadinessGate /> },
               { path: "checkout", element: <CheckoutCashPage /> },
               { path: "sales/:saleId/summary", element: <TransactionSummaryPage /> },
             ],

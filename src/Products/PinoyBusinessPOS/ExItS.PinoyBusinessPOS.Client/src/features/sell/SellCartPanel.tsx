@@ -6,8 +6,11 @@ import { formatQuantityDisplay, isByWeightSellingMode } from "@/cart/sell-cart-h
 import { ConfirmationDialog } from "@/components/exits/SheetDialog";
 import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
 import type { CheckoutShiftReadiness } from "@/features/shifts/checkout-readiness";
+import type { MidSessionSellBlock } from "@/features/sell/sell-readiness";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatCartSummary } from "@/lib/format-money";
+
+export type MidSessionBlockProp = MidSessionSellBlock["kind"];
 
 type SellCartPanelProps = {
   lines: SessionCartLine[];
@@ -30,7 +33,31 @@ type SellCartPanelProps = {
   canCreateSale?: boolean;
   /** OverrideSalePrice UI gate — Change price action only when true. */
   canOverrideSalePrice?: boolean;
+  /**
+   * Compact mid-session warning after Sell opened.
+   * Prefer explicit value from evaluateMidSessionSellBlock; falls back from readiness.
+   */
+  midSessionBlock?: MidSessionBlockProp;
 };
+
+function deriveMidSessionBlock(
+  explicit: MidSessionBlockProp | undefined,
+  checkoutReadiness: CheckoutShiftReadiness | undefined,
+): MidSessionBlockProp {
+  if (explicit !== undefined) {
+    return explicit;
+  }
+  if (!checkoutReadiness || checkoutReadiness.status === "loading") {
+    return "none";
+  }
+  if (checkoutReadiness.moneyPostReady) {
+    return "none";
+  }
+  if (!checkoutReadiness.shiftGateReady) {
+    return "shift_lost";
+  }
+  return "device_lost";
+}
 
 export function SellCartPanel({
   lines,
@@ -50,6 +77,7 @@ export function SellCartPanel({
   checkoutReadiness,
   canCreateSale = false,
   canOverrideSalePrice = false,
+  midSessionBlock: midSessionBlockProp,
 }: SellCartPanelProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -57,7 +85,8 @@ export function SellCartPanel({
   const summary = formatCartSummary(lineCount, subtotal);
   const shiftGateReady = checkoutReadiness?.shiftGateReady === true;
   const moneyPostReady = checkoutReadiness?.moneyPostReady === true;
-  const readinessStatus = checkoutReadiness?.status ?? "loading";
+  const midSessionBlock = deriveMidSessionBlock(midSessionBlockProp, checkoutReadiness);
+  const showMidSessionWarning = midSessionBlock !== "none" && !moneyPostReady;
   const payEnabled = lines.length > 0 && moneyPostReady && canCreateSale;
 
   return (
@@ -243,65 +272,39 @@ export function SellCartPanel({
             {t("sell.cartSubtotalLabel")}: <MoneyDisplay amount={subtotal} />
           </p>
         ) : null}
-        <div
-          data-testid="checkout-readiness"
-          data-readiness={readinessStatus}
-          className="rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] p-3"
-        >
-          <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold">
-            {t("sell.checkoutReadinessLabel")}
-          </p>
-          <p
-            className="mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted"
-            data-testid="checkout-readiness-detail"
+        {showMidSessionWarning ? (
+          <div
+            data-testid="sell-mid-session-warning"
+            data-block={midSessionBlock}
+            className="rounded-[var(--exits-radius-md)] border border-[var(--exits-danger)]/40 bg-[var(--exits-surface-muted)] p-3"
+            role="alert"
           >
-            {moneyPostReady
-              ? t("sell.checkoutReadinessMoneyReady")
-              : shiftGateReady
-                ? t("sell.checkoutReadinessNeedsDevice")
-                : readinessStatus === "blocked_denied"
-                  ? t("sell.checkoutReadinessDenied")
-                  : readinessStatus === "blocked_closed"
-                    ? t("sell.checkoutReadinessClosed")
-                    : readinessStatus === "blocked_no_register"
-                      ? t("sell.checkoutReadinessNoRegister")
-                      : readinessStatus === "loading"
-                        ? t("loading.label")
-                        : t("sell.checkoutReadinessBlocked")}
-          </p>
-          {!shiftGateReady &&
-          readinessStatus !== "loading" &&
-          readinessStatus !== "blocked_denied" ? (
-            <Button
-              asChild
-              variant="ghost"
-              className="mt-2 min-h-11 w-full"
-              data-testid="sell-open-shift-cta"
-            >
-              <Link to="/shifts/open">{t("shift.openTitle")}</Link>
-            </Button>
-          ) : null}
-          {shiftGateReady && !moneyPostReady ? (
-            <Button
-              asChild
-              variant="ghost"
-              className="mt-2 min-h-11 w-full"
-              data-testid="sell-register-device-cta"
-            >
-              <Link to="/devices/register">{t("checkout.registerDevice")}</Link>
-            </Button>
-          ) : null}
-          {shiftGateReady ? (
-            <Button
-              asChild
-              variant="ghost"
-              className="mt-2 min-h-11 w-full"
-              data-testid="sell-view-shift-cta"
-            >
-              <Link to="/shifts">{t("shift.hubTitle")}</Link>
-            </Button>
-          ) : null}
-        </div>
+            <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+              {midSessionBlock === "device_lost"
+                ? t("sell.midSession.deviceLost")
+                : t("sell.midSession.shiftLost")}
+            </p>
+            {midSessionBlock === "device_lost" ? (
+              <Button
+                asChild
+                variant="ghost"
+                className="mt-2 min-h-11 w-full"
+                data-testid="sell-mid-session-register"
+              >
+                <Link to="/devices/register?from=sell">{t("sell.midSession.fixDevice")}</Link>
+              </Button>
+            ) : (
+              <Button
+                asChild
+                variant="ghost"
+                className="mt-2 min-h-11 w-full"
+                data-testid="sell-mid-session-open-shift"
+              >
+                <Link to="/shifts/open?from=sell">{t("sell.midSession.openShift")}</Link>
+              </Button>
+            )}
+          </div>
+        ) : null}
         <Button
           data-testid="sell-pay"
           type="button"

@@ -158,13 +158,39 @@ body {
   white-space: normal;
 }
 
-/* POS-REACT-IMPL-04 sell-floor responsive layout */
+/* POS-REACT-IMPL-04 / UX REPAIR 01 sell-floor responsive layout */
+.sell-cart-landscape {
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100dvh - 6rem);
+  overflow: hidden;
+}
+
+.sell-cart-floating {
+  position: fixed;
+  left: max(0.75rem, env(safe-area-inset-left));
+  right: max(0.75rem, env(safe-area-inset-right));
+  bottom: max(0.75rem, env(safe-area-inset-bottom));
+  z-index: 25;
+  display: flex;
+  min-height: 3.25rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-radius: var(--exits-radius-lg);
+  border: 1px solid var(--exits-border);
+  background: var(--exits-surface);
+  padding: 0.75rem 1rem;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.1);
+  text-align: left;
+}
+
 @media (min-width: 900px) and (orientation: landscape) {
   .sell-floor-layout {
     display: grid;
     grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
     gap: var(--exits-space-4);
-    align-items: stretch;
+    align-items: start;
   }
 
   .sell-cart-landscape {
@@ -172,6 +198,7 @@ body {
   }
 
   .sell-cart-bar,
+  .sell-cart-floating,
   .sell-cart-sheet,
   .sell-cart-sheet-backdrop {
     display: none !important;

@@ -221,7 +221,7 @@ async function addCokeAndOpenCheckout(page: import("@playwright/test").Page) {
 test.describe("RMAP-11 checkout cash sale", () => {
   test.use({ serviceWorkers: "block" });
 
-  test("pay stays disabled without authorized device even with open shift", async ({ page }) => {
+  test("unauthorized device blocks Sell before Pay", async ({ page }) => {
     await seedInstallationId(page);
     await mockBoundCashierSession(page);
     await mockPosCatalogApi(page);
@@ -238,8 +238,8 @@ test.describe("RMAP-11 checkout cash sale", () => {
     });
     await signInAndBindCashier(page);
     await clientNavigate(page, "/sell");
-    await page.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`).click();
-    await expect(page.getByTestId("sell-pay").first()).toBeDisabled();
+    await expect(page.getByTestId("sell-readiness-device")).toBeVisible();
+    await expect(page.getByTestId("sell-floor")).toHaveCount(0);
   });
 
   test("cash sale success clears cart and shows Transaction Summary disclaimer", async ({

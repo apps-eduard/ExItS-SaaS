@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 export const E2E_ORG_ID = "11111111-1111-1111-1111-111111111111";
 export const E2E_BRANCH_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -377,22 +377,46 @@ export async function mockStaffOrgSession(page: Page, grant: MockGrantOptions = 
   await mockBoundCashierSession(page, grant);
 }
 
+export async function waitForSellEntry(page: Page) {
+  const sellFloor = page.getByTestId("sell-floor");
+  const readinessDevice = page.getByTestId("sell-readiness-device");
+  const readinessShift = page.getByTestId("sell-readiness-shift");
+  await Promise.race([
+    sellFloor.waitFor({ state: "visible", timeout: 15000 }),
+    readinessDevice.waitFor({ state: "visible", timeout: 15000 }),
+    readinessShift.waitFor({ state: "visible", timeout: 15000 }),
+  ]);
+}
+
+export async function expectSellEntryVisible(page: Page) {
+  await expect(
+    page
+      .getByTestId("sell-floor")
+      .or(page.getByTestId("sell-readiness-device"))
+      .or(page.getByTestId("sell-readiness-shift")),
+  ).toBeVisible({ timeout: 15000 });
+}
+
 export async function signInAndBindCashier(page: Page) {
   await page.goto("/sign-in");
   await page.getByLabel("Email or staff login").fill("cashier");
   await page.getByLabel("Password").fill("secret");
   await page.getByRole("button", { name: "Sign in" }).click();
-  const sellFloor = page.getByRole("heading", { name: "Sell floor" });
+  const sellFloor = page.getByTestId("sell-floor");
+  const readinessDevice = page.getByTestId("sell-readiness-device");
+  const readinessShift = page.getByTestId("sell-readiness-shift");
   const startSelling = page.getByTestId("workspace-destination-start_selling");
   const chooser = page.getByRole("heading", { name: "Choose workspace" });
   await Promise.race([
     sellFloor.waitFor({ state: "visible", timeout: 15000 }),
+    readinessDevice.waitFor({ state: "visible", timeout: 15000 }),
+    readinessShift.waitFor({ state: "visible", timeout: 15000 }),
     startSelling.waitFor({ state: "visible", timeout: 15000 }),
     chooser.waitFor({ state: "visible", timeout: 15000 }),
   ]);
   if (await startSelling.isVisible().catch(() => false)) {
     await startSelling.click();
-    await sellFloor.waitFor({ state: "visible", timeout: 15000 });
+    await waitForSellEntry(page);
   }
 }
 

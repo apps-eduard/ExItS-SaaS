@@ -10,6 +10,10 @@ import { clearPlatformAntiforgeryToken } from "@/api/platform/platform-http";
 
 const orgId = "11111111-1111-1111-1111-111111111111";
 const branchId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+const installId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+const deviceId = "ffffffff-ffff-4fff-8fff-ffffffffffff";
+const shiftId = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+const registerId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 
 function createFetchMock(options: { longNames?: boolean; unbound?: boolean } = {}) {
   const longNames = options.longNames ?? false;
@@ -22,6 +26,63 @@ function createFetchMock(options: { longNames?: boolean; unbound?: boolean } = {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const method = init?.method ?? "GET";
+
+    if (url.includes("/pos-devices/authorize") && method === "POST") {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          posDeviceId: deviceId,
+          branchId,
+          installationDeviceId: installId,
+        }),
+        text: async () => "",
+      } as Response;
+    }
+
+    if (url.includes("/cashier-shifts/current") && method === "GET") {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          shiftId,
+          organizationId: orgId,
+          shiftNumber: "S-1",
+          status: "Open",
+          actorId: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+          registerId,
+          registerCode: "REG-1",
+          registerName: "Front",
+          businessDate: "2026-08-21",
+          openingCashAmount: 100,
+          openingCashCounted: true,
+          effectiveCashCountMode: "Required",
+          openedAtUtc: "2026-08-21T01:00:00Z",
+          openedBy: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+          createdAtUtc: "2026-08-21T01:00:00Z",
+          updatedAtUtc: "2026-08-21T01:00:00Z",
+        }),
+        text: async () => "",
+      } as Response;
+    }
+
+    if (url.includes("/catalog/categories")) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ items: [], totalCount: 0, page: 1, pageSize: 50 }),
+        text: async () => "",
+      } as Response;
+    }
+
+    if (url.includes("/catalog/products")) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ items: [], totalCount: 0, page: 1, pageSize: 50 }),
+        text: async () => "",
+      } as Response;
+    }
 
     if (url.includes("/api/v1/platform/antiforgery/token")) {
       return {
@@ -148,6 +209,7 @@ function renderAt(path: string) {
 
 describe("account shell", () => {
   beforeEach(() => {
+    window.localStorage.setItem("exits.pos-client.installation-device-id.v1", installId);
     setPosAccessToken("in-memory-only-access-token");
     setPosSessionGrant({
       accessToken: "in-memory-only-access-token",

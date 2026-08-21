@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { ShoppingCart } from "lucide-react";
 import { resolveCatalogLookup } from "@/api/pos/catalog-lookup";
 import {
   CATALOG_BROWSE_PAGE_SIZE,
@@ -23,11 +24,11 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
-import { StickyActionBar } from "@/components/exits/FoundationStates";
 import { SellCartPanel } from "@/features/sell/SellCartPanel";
 import { SellCategoryFilter } from "@/features/sell/SellCategoryFilter";
 import { SellCustomQuantityDialog } from "@/features/sell/SellCustomQuantityDialog";
 import { SellPriceOverrideDialog } from "@/features/sell/SellPriceOverrideDialog";
+import { evaluateMidSessionSellBlock } from "@/features/sell/sell-readiness";
 import { SellUnitEntryDialog } from "@/features/sell/SellUnitEntryDialog";
 import { SellWeightEntryDialog } from "@/features/sell/SellWeightEntryDialog";
 import {
@@ -78,9 +79,13 @@ export function SellFloorPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { returnRoute, exit } = useSellingMode();
-  const { boundWorkspace, sessionGrant } = useWorkspace();
+  const { boundWorkspace, sessionGrant, posDevice } = useWorkspace();
   const cart = useSessionCart();
   const { readiness, hasOpenShift, currentShift } = useShiftContext();
+  const midSessionBlock = evaluateMidSessionSellBlock({
+    posDevice,
+    shiftReadiness: readiness,
+  });
   const allowCreateSale = canCreateSale(sessionGrant);
   const allowOverrideSalePrice = canOverrideSalePrice(sessionGrant);
   const allowOverrideUnlimited = canOverrideSalePriceUnlimited(sessionGrant);
@@ -459,7 +464,10 @@ export function SellFloorPage() {
     checkoutReadiness: readiness,
     canCreateSale: allowCreateSale,
     canOverrideSalePrice: allowOverrideSalePrice,
+    midSessionBlock: midSessionBlock.kind,
   };
+
+  const showFloatingCart = cart.lineCount > 0 && !cartSheetOpen;
 
   return (
     <div
@@ -481,38 +489,45 @@ export function SellFloorPage() {
         </Button>
       </div>
 
-      <div
-        data-testid="sell-shift-banner"
-        className="mb-4 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] p-3"
-      >
-        {hasOpenShift && currentShift ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)]">
-            {t("sell.shiftOpenBanner")
-              .replace("{shift}", currentShift.shiftNumber)
-              .replace(
-                "{register}",
-                currentShift.registerCode
-                  ? `${currentShift.registerCode} — ${currentShift.registerName ?? ""}`
-                  : t("shift.noRegisterOnShift"),
-              )}
-          </p>
-        ) : (
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="m-0 text-[length:var(--exits-text-sm)]">{t("sell.shiftClosedBanner")}</p>
-            <Button
-              asChild
-              variant="ghost"
-              className="min-h-11"
-              data-testid="sell-banner-open-shift"
-            >
-              <Link to="/shifts/open">{t("shift.openTitle")}</Link>
-            </Button>
-          </div>
-        )}
-      </div>
+      {midSessionBlock.kind === "shift_lost" ||
+      (!hasOpenShift && midSessionBlock.kind !== "none") ? (
+        <div
+          data-testid="sell-shift-banner"
+          className="mb-4 inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border border-border bg-[var(--exits-surface-muted)] px-3 py-1.5"
+        >
+          <span className="text-[length:var(--exits-text-xs)]">{t("sell.shiftClosedBanner")}</span>
+          <Button
+            asChild
+            variant="ghost"
+            className="min-h-9 px-2 text-[length:var(--exits-text-xs)]"
+            data-testid="sell-banner-open-shift"
+          >
+            <Link to="/shifts/open?from=sell">{t("shift.openTitle")}</Link>
+          </Button>
+        </div>
+      ) : hasOpenShift && currentShift ? (
+        <p
+          data-testid="sell-shift-chip"
+          className="mb-3 m-0 text-[length:var(--exits-text-xs)] text-muted"
+        >
+          {t("sell.shiftOpenBanner")
+            .replace("{shift}", currentShift.shiftNumber)
+            .replace(
+              "{register}",
+              currentShift.registerCode
+                ? `${currentShift.registerCode} — ${currentShift.registerName ?? ""}`
+                : t("shift.noRegisterOnShift"),
+            )}
+        </p>
+      ) : null}
 
       <div className="sell-floor-layout min-h-0 min-w-0 flex-1">
-        <section className="sell-floor-browse flex min-h-0 min-w-0 flex-col gap-3">
+        <section
+          className={cn(
+            "sell-floor-browse flex min-h-0 min-w-0 flex-col gap-3",
+            showFloatingCart && "pb-[calc(5.5rem+env(safe-area-inset-bottom))]",
+          )}
+        >
           <SearchField
             data-testid="sell-search"
             label={t("sell.searchLabel")}
@@ -551,7 +566,7 @@ export function SellFloorPage() {
 
           <div
             data-testid="sell-products"
-            className="grid min-h-[12rem] flex-1 grid-cols-2 gap-3 rounded-[var(--exits-radius-lg)] border border-border bg-[var(--exits-surface-muted)] p-4 sm:grid-cols-3 lg:grid-cols-4"
+            className="grid min-h-[12rem] content-start items-start grid-cols-2 gap-3 rounded-[var(--exits-radius-lg)] border border-border bg-[var(--exits-surface-muted)] p-4 sm:grid-cols-3 lg:grid-cols-4"
             aria-label={t("sell.productsLabel")}
           >
             {productsLoading ? (
@@ -581,7 +596,7 @@ export function SellFloorPage() {
                   key={product.productId}
                   type="button"
                   data-testid={`sell-product-${product.productId}`}
-                  className="flex min-h-[6rem] min-w-0 flex-col items-start justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface p-3 text-left transition-colors hover:border-primary"
+                  className="flex min-h-[6rem] min-w-0 flex-col items-start justify-between gap-2 self-start rounded-[var(--exits-radius-md)] border border-border bg-surface p-3 text-left transition-colors hover:border-primary"
                   onClick={() => beginAddProduct(product)}
                 >
                   <span className="line-clamp-2 break-words text-[length:var(--exits-text-sm)] font-semibold">
@@ -630,23 +645,29 @@ export function SellFloorPage() {
         </aside>
       </div>
 
-      <StickyActionBar className="sell-cart-bar">
+      {showFloatingCart ? (
         <button
           type="button"
           data-testid="sell-cart-bar"
-          className="flex w-full min-w-0 items-center justify-between gap-3 text-left"
+          className="sell-cart-floating sell-cart-bar"
           onClick={() => setCartSheetOpen(true)}
           aria-expanded={cartSheetOpen}
           aria-controls="sell-cart-sheet-panel"
         >
-          <span className="min-w-0 truncate text-[length:var(--exits-text-sm)] font-semibold">
-            {cartSummary}
+          <span className="inline-flex min-w-0 items-center gap-2">
+            <ShoppingCart className="size-5 shrink-0" aria-hidden />
+            <span className="min-w-0 truncate text-[length:var(--exits-text-sm)] font-semibold">
+              {t("sell.floatingCartSummary")
+                .replace("{count}", String(cart.lineCount))
+                .replace("{subtotal}", cart.subtotal.toFixed(2))}
+            </span>
           </span>
-          <span className="shrink-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("sell.cartBarHint")}
+          <span className="shrink-0 text-[length:var(--exits-text-sm)] font-medium">
+            {t("sell.floatingCartView")}
           </span>
+          <span className="sr-only">{cartSummary}</span>
         </button>
-      </StickyActionBar>
+      ) : null}
 
       {cartSheetOpen ? (
         <div

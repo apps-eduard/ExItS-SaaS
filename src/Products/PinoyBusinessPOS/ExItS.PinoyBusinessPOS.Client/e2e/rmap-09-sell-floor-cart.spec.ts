@@ -12,6 +12,7 @@ import {
   MOCK_RICE_SACK_UNIT_ID,
 } from "./mock-pos-catalog";
 import { mockPosCatalogApi } from "./mock-pos-catalog-route";
+import { prepareSellReady } from "./mock-sell-ready";
 
 const VIEWPORTS = [
   { width: 375, height: 812 },
@@ -20,19 +21,13 @@ const VIEWPORTS = [
   { width: 1440, height: 900 },
 ] as const;
 
-async function mockNoOpenShift(page: import("@playwright/test").Page) {
-  await page.route("**/cashier-shifts/current**", async (route) => {
-    await route.fulfill({ status: 404, contentType: "application/json", body: "{}" });
-  });
-}
-
 test.describe("RMAP-09 sell floor and session cart parity", () => {
   test.use({ serviceWorkers: "block" });
 
   test.beforeEach(async ({ page }) => {
     await mockBoundCashierSession(page);
-    await mockNoOpenShift(page);
     await mockPosCatalogApi(page);
+    await prepareSellReady(page);
     await signInAndBindCashier(page);
     await expect(page.getByTestId("sell-floor")).toBeVisible();
   });
@@ -50,7 +45,7 @@ test.describe("RMAP-09 sell floor and session cart parity", () => {
       cart.getByTestId(`sell-cart-line-${MOCK_RICE_PRODUCT_ID}::${MOCK_RICE_SACK_UNIT_ID}`),
     ).toBeVisible();
     await expect(cart.getByTestId("sell-cart-subtotal")).toContainText("2,600");
-    await expect(cart.getByTestId("sell-pay")).toBeDisabled();
+    await expect(cart.getByTestId("sell-pay")).toBeEnabled();
   });
 
   test("single normal sell unit adds with unit identity and price 95 not 100", async ({ page }) => {
@@ -138,13 +133,17 @@ test.describe("RMAP-09 sell floor and session cart parity", () => {
 
       if (viewport.width >= 900) {
         await expect(page.getByTestId("sell-cart-landscape")).toBeVisible();
+        await page.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`).click();
+        await expect(page.getByTestId("sell-pay").first()).toBeEnabled();
       } else {
+        await page.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`).click();
+        await expect(page.getByTestId("sell-cart-bar")).toBeVisible();
         await page.getByTestId("sell-cart-bar").click();
         await expect(page.getByTestId("sell-cart-sheet")).toBeVisible();
+        await expect(page.getByTestId("sell-pay").first()).toBeEnabled();
       }
 
       await assertNoHorizontalOverflow(page);
-      await expect(page.getByTestId("sell-pay").first()).toBeDisabled();
     });
   }
 });

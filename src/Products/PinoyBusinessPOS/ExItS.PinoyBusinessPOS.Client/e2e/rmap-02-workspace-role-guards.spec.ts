@@ -4,6 +4,7 @@ import {
   mockPersonalSession,
   signInAndBindCashier,
   signInAsPersonal,
+  expectSellEntryVisible,
 } from "./mock-bound-session";
 
 test.describe("RMAP-02 workspace / role guards", () => {
@@ -19,7 +20,7 @@ test.describe("RMAP-02 workspace / role guards", () => {
   test("locked Organization staff workspace control is not a switch action", async ({ page }) => {
     await mockBoundCashierSession(page);
     await signInAndBindCashier(page);
-    await expect(page.getByRole("heading", { name: "Sell floor" })).toBeVisible();
+    await expectSellEntryVisible(page);
     const context = page.getByTestId("workspace-context");
     await expect(context).toBeVisible();
     await expect(context).toBeDisabled();
@@ -34,7 +35,6 @@ test.describe("RMAP-02 workspace / role guards", () => {
     });
     await signInAndBindCashier(page);
     await expect(page.getByRole("heading", { name: "Choose workspace" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Sell floor" })).toHaveCount(0);
     await expect(page.getByTestId("sell-floor")).toHaveCount(0);
   });
 });
