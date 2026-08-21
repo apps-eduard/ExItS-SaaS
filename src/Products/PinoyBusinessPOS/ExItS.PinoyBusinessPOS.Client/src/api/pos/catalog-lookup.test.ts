@@ -26,7 +26,7 @@ describe("resolveCatalogLookup", () => {
     vi.restoreAllMocks();
   });
 
-  it("tries barcode, then sku, then name search", async () => {
+  it("tries sku then name search for typed text without calling barcode", async () => {
     const calls: string[] = [];
     vi.stubGlobal(
       "fetch",
@@ -35,12 +35,7 @@ describe("resolveCatalogLookup", () => {
         calls.push(url);
 
         if (url.includes("/by-barcode/")) {
-          return {
-            ok: false,
-            status: 404,
-            json: async () => ({ detail: "not found" }),
-            text: async () => "",
-          } as Response;
+          throw new Error("barcode lookup must not run for typed SKU text");
         }
 
         if (url.includes("/by-sku/")) {
@@ -68,10 +63,8 @@ describe("resolveCatalogLookup", () => {
       expect(result.product.productId).toBe(coke.productId);
     }
 
-    expect(calls.some((url) => url.includes("/by-barcode/"))).toBe(true);
-    expect(calls.findIndex((url) => url.includes("/by-barcode/"))).toBeLessThan(
-      calls.findIndex((url) => url.includes("/by-sku/")),
-    );
+    expect(calls.some((url) => url.includes("/by-barcode/"))).toBe(false);
+    expect(calls.some((url) => url.includes("/by-sku/"))).toBe(true);
   });
 
   it("returns unknown barcode error without falling through to name search", async () => {
@@ -95,6 +88,55 @@ describe("resolveCatalogLookup", () => {
     expect(result.kind).toBe("empty");
     if (result.kind === "empty") {
       expect(result.unknownBarcode).toBe(true);
+    }
+  });
+
+  it("falls back to name search when sku misses for a typed letter", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("/by-barcode/")) {
+          throw new Error("barcode lookup must not run for a single typed letter");
+        }
+
+        if (url.includes("/by-sku/")) {
+          return {
+            ok: false,
+            status: 404,
+            json: async () => ({ detail: "not found" }),
+            text: async () => "",
+          } as Response;
+        }
+
+        if (url.includes("/catalog/products?") && url.includes("search=s")) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              items: [coke],
+              totalCount: 1,
+              page: 1,
+              pageSize: 24,
+            }),
+            text: async () => "",
+          } as Response;
+        }
+
+        return {
+          ok: false,
+          status: 404,
+          json: async () => ({ detail: "not mocked" }),
+          text: async () => "",
+        } as Response;
+      }),
+    );
+
+    const result = await resolveCatalogLookup(workspace, "s");
+    expect(result.kind).toBe("search");
+    if (result.kind === "search") {
+      expect(result.products).toHaveLength(1);
+      expect(result.products[0]?.name).toBe("Coke");
     }
   });
 
@@ -140,6 +182,41 @@ describe("resolveCatalogLookup", () => {
     if (result.kind === "search") {
       expect(result.products).toHaveLength(1);
       expect(result.products[0]?.name).toBe("Coke");
+    }
+  });
+
+  it("treats barcode validation 400 as an unknown scan, not a connection error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("/by-barcode/")) {
+          return {
+            ok: false,
+            status: 400,
+            json: async () => ({
+              detail: "Barcode check digit is invalid",
+              errorCode: "pos.product.barcode.invalid",
+            }),
+            text: async () => "",
+          } as Response;
+        }
+        if (url.includes("/by-sku/")) {
+          return {
+            ok: false,
+            status: 404,
+            json: async () => ({ detail: "not found" }),
+            text: async () => "",
+          } as Response;
+        }
+        throw new Error("name search must not run for invalid barcode scan");
+      }),
+    );
+
+    const result = await resolveCatalogLookup(workspace, "4006381333931");
+    expect(result.kind).toBe("empty");
+    if (result.kind === "empty") {
+      expect(result.unknownBarcode).toBe(true);
     }
   });
 });

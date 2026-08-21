@@ -32,7 +32,10 @@ export function SearchField({
         />
         <input
           id={fieldId}
-          type="search"
+          // Use text (not search): browsers draw a native clear "x" that duplicates our button.
+          type="text"
+          inputMode="search"
+          enterKeyHint="search"
           value={value}
           className={cn(
             "h-[var(--exits-control-height)] min-h-[var(--exits-touch-target-min)] w-full rounded-full border border-border bg-surface py-2 pr-10 pl-10 text-[length:var(--exits-text-md)] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring",

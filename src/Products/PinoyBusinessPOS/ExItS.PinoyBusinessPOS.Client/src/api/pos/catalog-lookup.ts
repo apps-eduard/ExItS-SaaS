@@ -13,9 +13,20 @@ export type CatalogLookupResult =
   | { kind: "search"; products: PosCatalogProductDto[]; unknownBarcode?: boolean }
   | { kind: "empty"; unknownBarcode?: boolean };
 
+/** GS1-style scan: long digit-only payload. Name search must not hit /by-barcode. */
 export function looksLikeBarcodeScan(value: string): boolean {
   const trimmed = value.trim();
   return /^\d{8,}$/.test(trimmed);
+}
+
+function isLookupMiss(error: unknown): boolean {
+  return (
+    error instanceof PosApiError &&
+    (error.status === 404 ||
+      error.status === 400 ||
+      error.errorCode === "pos.product.barcode.invalid" ||
+      error.errorCode === "pos.product.sku.invalid")
+  );
 }
 
 export async function resolveCatalogLookup(
@@ -31,14 +42,19 @@ export async function resolveCatalogLookup(
 
   let unknownBarcode = false;
 
-  try {
-    const product = await lookupCatalogProductByBarcode(workspace, term, signal);
-    return { kind: "exact", product, matchedBy: "barcode" };
-  } catch (error) {
-    if (error instanceof PosApiError && error.status === 404 && looksLikeBarcodeScan(term)) {
-      unknownBarcode = true;
-    } else if (!(error instanceof PosApiError) || error.status !== 404) {
-      throw error;
+  // Only call barcode for digit scans. Typed letters like "s" return HTTP 400
+  // ("Barcode must contain digits only") and must fall through to name search.
+  if (looksLikeBarcodeScan(term)) {
+    try {
+      const product = await lookupCatalogProductByBarcode(workspace, term, signal);
+      return { kind: "exact", product, matchedBy: "barcode" };
+    } catch (error) {
+      if (isLookupMiss(error)) {
+        // 404 or validation 400 — still a scan miss, not a connection failure.
+        unknownBarcode = true;
+      } else {
+        throw error;
+      }
     }
   }
 
@@ -46,7 +62,7 @@ export async function resolveCatalogLookup(
     const product = await lookupCatalogProductBySku(workspace, term, signal);
     return { kind: "exact", product, matchedBy: "sku" };
   } catch (error) {
-    if (!(error instanceof PosApiError) || error.status !== 404) {
+    if (!isLookupMiss(error)) {
       throw error;
     }
   }
