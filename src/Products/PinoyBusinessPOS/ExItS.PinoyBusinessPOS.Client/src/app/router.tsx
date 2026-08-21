@@ -14,6 +14,11 @@ import {
 } from "@/features/catalog/CatalogProductFormPage";
 import { CatalogProductsPage } from "@/features/catalog/CatalogProductsPage";
 import { TodaysPricesPage } from "@/features/catalog/TodaysPricesPage";
+import { CustomerDetailPage } from "@/features/customers/CustomerDetailPage";
+import { CustomerCreatePage, CustomerEditPage } from "@/features/customers/CustomerFormPage";
+import { CustomerRepayPage } from "@/features/customers/CustomerRepayPage";
+import { CustomerStatementPage } from "@/features/customers/CustomerStatementPage";
+import { CustomersListPage } from "@/features/customers/CustomersListPage";
 import { InventoryDetailPage } from "@/features/inventory/InventoryDetailPage";
 import { InventoryExpirationPage } from "@/features/inventory/InventoryExpirationPage";
 import { InventoryListPage } from "@/features/inventory/InventoryListPage";
@@ -41,7 +46,9 @@ import {
   GuestOnly,
   RequireAdminExperience,
   RequireCashierRoleHome,
+  RequireCreateCustomer,
   RequireCreateSale,
+  RequireEditCustomer,
   RequireInviteStaff,
   RequireManageCatalog,
   RequireManageShifts,
@@ -49,10 +56,13 @@ import {
   RequireOrganizationSession,
   RequireOwnerRoleHome,
   RequirePersonalSession,
+  RequireRecordRepayment,
   RequireSession,
+  RequireViewCustomers,
   RequireViewInventory,
   RequireViewRegisters,
   RequireViewShifts,
+  RequireViewStatement,
   RequireWorkspaceBound,
   RequireOrganizationBound,
   WorkspaceBootGate,
@@ -274,6 +284,54 @@ export const appRoutes = [
                 </RequireWorkspaceBound>
               </RequireOrganizationSession>
             ),
+          },
+          {
+            path: "customers",
+            element: (
+              <RequireOrganizationSession>
+                <RequireWorkspaceBound>
+                  <RequireViewCustomers>
+                    <Outlet />
+                  </RequireViewCustomers>
+                </RequireWorkspaceBound>
+              </RequireOrganizationSession>
+            ),
+            children: [
+              { index: true, element: <CustomersListPage /> },
+              {
+                path: "new",
+                element: (
+                  <RequireCreateCustomer>
+                    <CustomerCreatePage />
+                  </RequireCreateCustomer>
+                ),
+              },
+              { path: ":customerId", element: <CustomerDetailPage /> },
+              {
+                path: ":customerId/edit",
+                element: (
+                  <RequireEditCustomer>
+                    <CustomerEditPage />
+                  </RequireEditCustomer>
+                ),
+              },
+              {
+                path: ":customerId/repay",
+                element: (
+                  <RequireRecordRepayment>
+                    <CustomerRepayPage />
+                  </RequireRecordRepayment>
+                ),
+              },
+              {
+                path: ":customerId/statement",
+                element: (
+                  <RequireViewStatement>
+                    <CustomerStatementPage />
+                  </RequireViewStatement>
+                ),
+              },
+            ],
           },
           { path: "*", element: <NotFoundPage /> },
         ],

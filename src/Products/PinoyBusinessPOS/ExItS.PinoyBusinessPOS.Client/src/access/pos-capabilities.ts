@@ -189,6 +189,48 @@ export function canCreateCredit(grant: PosSessionGrantFacts | null | undefined):
 }
 
 /**
+ * CreateCustomer UI gate — PosRoleMatrix Owner/Admin/StoreManager.
+ * Cashier / ReportingUser DENY. Server remains authoritative.
+ */
+export function canCreateCustomer(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  return isPosOwnerRole(grant) || isPosOperationsManager(grant);
+}
+
+/**
+ * EditCustomer UI gate — same matrix as CreateCustomer (deactivate/reactivate included).
+ */
+export function canEditCustomer(grant: PosSessionGrantFacts | null | undefined): boolean {
+  return canCreateCustomer(grant);
+}
+
+/**
+ * RecordRepayment UI gate — Owner/Admin/StoreManager. Cashier DENY.
+ */
+export function canRecordRepayment(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  return isPosOwnerRole(grant) || isPosOperationsManager(grant);
+}
+
+/**
+ * ViewGenerateStatement UI gate — Owner/Admin/StoreManager (+ ReportingUser).
+ */
+export function canViewStatement(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  if (isPosOwnerRole(grant) || isPosOperationsManager(grant)) {
+    return true;
+  }
+  const role = resolveEffectivePosRoleCode(grant)?.toLowerCase();
+  return role === "reportinguser";
+}
+
+/**
  * UI gate for catalog administration (ManageCatalog).
  * Mirrors PosRoleMatrix: Owner/Admin/StoreManager (+ Manager alias).
  * OrganizationAdministrator alone does NOT imply ManageCatalog.

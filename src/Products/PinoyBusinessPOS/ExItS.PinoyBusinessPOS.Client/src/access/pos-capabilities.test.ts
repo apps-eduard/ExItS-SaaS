@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   canApplyCommercialDiscount,
   canCreateCredit,
+  canCreateCustomer,
   canCreateSale,
+  canEditCustomer,
   canEnterCashierRoleHome,
   canEnterManagerRoleHome,
   canEnterOwnerRoleHome,
@@ -11,6 +13,7 @@ import {
   canManageCatalog,
   canManageRegisters,
   canManageShifts,
+  canRecordRepayment,
   canSelectExperienceMode,
   canUseAdminExperience,
   canUseOperationsExperience,
@@ -18,6 +21,7 @@ import {
   canViewCustomers,
   canViewRegisters,
   canViewShifts,
+  canViewStatement,
   canVoidSale,
   hasOrganizationManagementAuthority,
   isPosOperationsManager,
@@ -222,5 +226,47 @@ describe("pos-capabilities", () => {
     expect(canCreateCredit(owner)).toBe(true);
     expect(canCreateCredit(manager)).toBe(true);
     expect(canCreateCredit(cashier)).toBe(true);
+  });
+
+  it("CreateCustomer / EditCustomer / RecordRepayment / ViewStatement mirror PosRoleMatrix", () => {
+    const owner = grant({
+      mappedPosRoleCode: "Owner",
+      productLocalRoleCode: "Owner",
+      membershipRole: "OrganizationOwner",
+      organizationManagementAuthority: true,
+    });
+    const manager = grant({
+      mappedPosRoleCode: "StoreManager",
+      productLocalRoleCode: "Manager",
+      membershipRole: "OrganizationMember",
+    });
+    const cashier = grant({
+      mappedPosRoleCode: "Cashier",
+      productLocalRoleCode: "Cashier",
+      membershipRole: "OrganizationMember",
+    });
+    const reporting = grant({
+      mappedPosRoleCode: "ReportingUser",
+      productLocalRoleCode: "ReportingUser",
+      membershipRole: "OrganizationMember",
+    });
+
+    expect(canCreateCustomer(owner)).toBe(true);
+    expect(canCreateCustomer(manager)).toBe(true);
+    expect(canCreateCustomer(cashier)).toBe(false);
+    expect(canCreateCustomer(reporting)).toBe(false);
+
+    expect(canEditCustomer(owner)).toBe(true);
+    expect(canEditCustomer(cashier)).toBe(false);
+
+    expect(canRecordRepayment(owner)).toBe(true);
+    expect(canRecordRepayment(manager)).toBe(true);
+    expect(canRecordRepayment(cashier)).toBe(false);
+    expect(canRecordRepayment(reporting)).toBe(false);
+
+    expect(canViewStatement(owner)).toBe(true);
+    expect(canViewStatement(manager)).toBe(true);
+    expect(canViewStatement(reporting)).toBe(true);
+    expect(canViewStatement(cashier)).toBe(false);
   });
 });

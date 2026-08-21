@@ -276,7 +276,10 @@ export function CheckoutCashPage() {
   }, [amountToPay, paymentChoice, quote, zeroTotal]);
 
   useEffect(() => {
-    if (paymentChoice !== "Utang" || !allowViewCustomers || !workspaceScope) {
+    if (!allowViewCustomers || !workspaceScope) {
+      return;
+    }
+    if (paymentChoice !== "Utang" && paymentChoice !== "Cash" && paymentChoice !== "GCash") {
       return;
     }
     const controller = new AbortController();
@@ -439,10 +442,10 @@ export function CheckoutCashPage() {
         ...(paymentChoice === "GCash" && !zeroTotal && gcashRefTrimmed
           ? { gCashReference: gcashRefTrimmed.slice(0, GCASH_REFERENCE_MAX_LENGTH) }
           : {}),
-        ...(paymentChoice === "Utang" && selectedCustomer
+        ...(selectedCustomer && (paymentChoice === "Utang" || allowViewCustomers)
           ? {
               customerId: selectedCustomer.customerId,
-              ...(dueDate.trim() ? { dueDate: dueDate.trim() } : {}),
+              ...(paymentChoice === "Utang" && dueDate.trim() ? { dueDate: dueDate.trim() } : {}),
             }
           : {}),
         discounts: allowDiscount && discountIntents.length > 0 ? discountIntents : undefined,
@@ -824,6 +827,81 @@ export function CheckoutCashPage() {
           <p className="mb-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
             {t("checkout.gcashReferenceHint")}
           </p>
+        </Card>
+      ) : null}
+
+      {(paymentChoice === "Cash" || paymentChoice === "GCash") && allowViewCustomers ? (
+        <Card data-testid="checkout-optional-customer-panel">
+          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+            {t("checkout.optionalCustomerHint")}
+          </p>
+          <label
+            className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+            htmlFor="checkout-optional-customer-search"
+          >
+            {t("checkout.optionalCustomerSearch")}
+            <input
+              id="checkout-optional-customer-search"
+              data-testid="checkout-optional-customer-search"
+              type="search"
+              value={customerSearch}
+              disabled={saving}
+              className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+              onChange={(event) => setCustomerSearch(event.target.value)}
+            />
+          </label>
+          {selectedCustomer ? (
+            <div
+              data-testid="checkout-customer-selected"
+              className="mt-3 flex items-center justify-between gap-2 text-[length:var(--exits-text-sm)]"
+            >
+              <span>
+                {t("checkout.utangCustomer")}: <strong>{selectedCustomer.displayName}</strong>
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                className="min-h-9"
+                data-testid="checkout-customer-clear"
+                disabled={saving}
+                onClick={() => setSelectedCustomer(null)}
+              >
+                {t("checkout.customerClear")}
+              </Button>
+            </div>
+          ) : null}
+          {customersLoading ? (
+            <p className="mb-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
+              {t("checkout.customerLoading")}
+            </p>
+          ) : customers.length === 0 ? (
+            <p
+              data-testid="checkout-customer-empty"
+              className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-muted"
+            >
+              {t("checkout.customerEmpty")}
+            </p>
+          ) : (
+            <ul className="mb-0 mt-2 list-none space-y-1 p-0" data-testid="checkout-customer-list">
+              {customers.map((customer) => (
+                <li key={customer.customerId}>
+                  <Button
+                    type="button"
+                    variant={
+                      selectedCustomer?.customerId === customer.customerId ? "default" : "ghost"
+                    }
+                    className="min-h-11 w-full justify-start"
+                    data-testid={`checkout-customer-${customer.customerId}`}
+                    disabled={saving}
+                    onClick={() => setSelectedCustomer(customer)}
+                  >
+                    {customer.displayName}
+                    {customer.mobileNumber ? ` · ${customer.mobileNumber}` : ""}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
       ) : null}
 

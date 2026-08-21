@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import {
+  canCreateCustomer,
   canCreateSale,
+  canEditCustomer,
   canEnterCashierRoleHome,
   canEnterManagerRoleHome,
   canEnterOwnerRoleHome,
@@ -9,10 +11,13 @@ import {
   canManageCatalog,
   canManageInventory,
   canManageShifts,
+  canRecordRepayment,
   canUseAdminExperience,
+  canViewCustomers,
   canViewInventory,
   canViewRegisters,
   canViewShifts,
+  canViewStatement,
 } from "@/access/pos-capabilities";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
@@ -305,6 +310,56 @@ export function RequireViewRegisters({ children }: { children: ReactNode }) {
 
   if (!canViewRegisters(sessionGrant)) {
     return <ExperienceAccessDeniedPage testId="registers-view-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireViewCustomers({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canViewCustomers(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="customers-view-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireCreateCustomer({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canCreateCustomer(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="customers-create-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireEditCustomer({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canEditCustomer(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="customers-edit-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireRecordRepayment({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canRecordRepayment(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="customers-repay-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireViewStatement({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canViewStatement(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="customers-statement-denied" />;
   }
 
   return children;
