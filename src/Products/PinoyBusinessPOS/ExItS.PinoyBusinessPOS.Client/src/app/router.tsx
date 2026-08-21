@@ -10,9 +10,14 @@ import {
   PersonalStartBusinessPlaceholderPage,
   PersonalTodoHubPage,
   PersonalUtangHubPage,
-  PersonalUtangSectionPlaceholder,
 } from "@/features/personal/PersonalHubPages";
 import { PersonalShell } from "@/features/personal/PersonalShell";
+import {
+  PersonalContactsPage,
+  PersonalLentPage,
+  PersonalOwePage,
+  PersonalRelationshipDetailPage,
+} from "@/features/personal/utang/PersonalUtangPages";
 import { LinkedMerchantsPage } from "@/features/customer-ordering/LinkedMerchantsPage";
 import { MerchantShopPage } from "@/features/customer-ordering/MerchantShopPage";
 import { MerchantCheckoutPage } from "@/features/customer-ordering/MerchantCheckoutPage";
@@ -177,35 +182,12 @@ export const appRoutes = [
             children: [
               { index: true, element: <PersonalHomePage /> },
               { path: "utang", element: <PersonalUtangHubPage /> },
+              { path: "utang/people", element: <PersonalContactsPage /> },
+              { path: "utang/lent", element: <PersonalLentPage /> },
+              { path: "utang/owe", element: <PersonalOwePage /> },
               {
-                path: "utang/people",
-                element: (
-                  <PersonalUtangSectionPlaceholder
-                    titleKey="personal.utang.people"
-                    detailKey="personal.utang.sectionComing"
-                    testId="personal-utang-people-placeholder"
-                  />
-                ),
-              },
-              {
-                path: "utang/lent",
-                element: (
-                  <PersonalUtangSectionPlaceholder
-                    titleKey="personal.utang.lent"
-                    detailKey="personal.utang.sectionComing"
-                    testId="personal-utang-lent-placeholder"
-                  />
-                ),
-              },
-              {
-                path: "utang/owe",
-                element: (
-                  <PersonalUtangSectionPlaceholder
-                    titleKey="personal.utang.owe"
-                    detailKey="personal.utang.sectionComing"
-                    testId="personal-utang-owe-placeholder"
-                  />
-                ),
+                path: "utang/relationships/:relationshipId",
+                element: <PersonalRelationshipDetailPage />,
               },
               { path: "todo", element: <PersonalTodoHubPage /> },
               { path: "more", element: <PersonalMorePage /> },

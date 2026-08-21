@@ -30,29 +30,6 @@ export function PersonalUtangHubPage() {
           <Link to="/personal/utang/owe">{t("personal.utang.owe")}</Link>
         </Button>
       </div>
-      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-        {t("personal.utang.coming")}
-      </p>
-    </div>
-  );
-}
-
-export function PersonalUtangSectionPlaceholder({
-  titleKey,
-  detailKey,
-  testId,
-}: {
-  titleKey: "personal.utang.people" | "personal.utang.lent" | "personal.utang.owe";
-  detailKey: "personal.utang.sectionComing";
-  testId: string;
-}) {
-  const { t } = useI18n();
-  return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid={testId}>
-      <PageHeader title={t(titleKey)} description={t(detailKey)} />
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/personal/utang">{t("personal.utang.back")}</Link>
-      </Button>
     </div>
   );
 }
