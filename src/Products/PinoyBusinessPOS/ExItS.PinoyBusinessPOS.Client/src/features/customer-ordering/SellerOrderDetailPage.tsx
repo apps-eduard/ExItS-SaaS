@@ -1,0 +1,284 @@
+import { useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { canManageCustomerOrders } from "@/access/pos-capabilities";
+import {
+  acceptSellerCustomerOrder,
+  completeSellerCustomerOrder,
+  getSellerCustomerOrder,
+  markCollectedSellerCustomerOrder,
+  markDeliveredSellerCustomerOrder,
+  markOutForDeliverySellerCustomerOrder,
+  markReadySellerCustomerOrder,
+  rejectSellerCustomerOrder,
+  sellerWorkspace,
+  startPreparingSellerCustomerOrder,
+} from "@/api/pos/pos-customer-orders-client";
+import { PosApiError } from "@/api/pos/pos-http";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { ErrorState } from "@/components/exits/ErrorState";
+import { LoadingState } from "@/components/exits/LoadingState";
+import { PageHeader } from "@/components/exits/PageHeader";
+import { StatusChip } from "@/components/exits/StatusChip";
+import {
+  availableSellerActions,
+  displayOrderStatusKey,
+  type SellerOrderAction,
+} from "@/features/customer-ordering/seller-order-actions";
+import { useI18n } from "@/i18n/I18nProvider";
+import type { MessageKey } from "@/i18n/messages";
+import { useWorkspace } from "@/workspace/WorkspaceProvider";
+
+function money(n: number): string {
+  return `₱${n.toFixed(2)}`;
+}
+
+const REJECT_REASONS = [
+  "OutOfStock",
+  "StoreTooBusy",
+  "DeliveryUnavailable",
+  "UnableToFulfill",
+  "Other",
+] as const;
+
+export function SellerOrderDetailPage() {
+  const { t } = useI18n();
+  const { orderId = "" } = useParams();
+  const { boundWorkspace, sessionGrant } = useWorkspace();
+  const canManage = canManageCustomerOrders(sessionGrant);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showReject, setShowReject] = useState(false);
+  const [rejectReason, setRejectReason] = useState<string>("UnableToFulfill");
+  const [rejectNotes, setRejectNotes] = useState("");
+
+  const workspace = useMemo(
+    () =>
+      boundWorkspace
+        ? sellerWorkspace(boundWorkspace.organizationId, boundWorkspace.branchId)
+        : null,
+    [boundWorkspace],
+  );
+
+  const query = useQuery({
+    queryKey: ["seller-order", workspace?.organizationId, orderId],
+    enabled: Boolean(workspace) && Boolean(orderId),
+    queryFn: ({ signal }) => getSellerCustomerOrder(workspace!, orderId, signal),
+  });
+
+  async function runAction(action: SellerOrderAction) {
+    if (!workspace || !canManage || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const runners: Record<Exclude<SellerOrderAction, "Reject">, () => Promise<unknown>> = {
+        Accept: () => acceptSellerCustomerOrder(workspace, orderId),
+        StartPreparing: () => startPreparingSellerCustomerOrder(workspace, orderId),
+        MarkReady: () => markReadySellerCustomerOrder(workspace, orderId),
+        OutForDelivery: () => markOutForDeliverySellerCustomerOrder(workspace, orderId),
+        MarkDelivered: () => markDeliveredSellerCustomerOrder(workspace, orderId),
+        MarkCollected: () => markCollectedSellerCustomerOrder(workspace, orderId),
+        Complete: () => completeSellerCustomerOrder(workspace, orderId),
+      };
+      if (action === "Reject") {
+        setShowReject(true);
+        setBusy(false);
+        return;
+      }
+      await runners[action]();
+      await query.refetch();
+    } catch (err) {
+      setError(
+        err instanceof PosApiError
+          ? (err.problem.detail ?? err.message)
+          : err instanceof Error
+            ? err.message
+            : t("orders.error"),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function confirmReject() {
+    if (!workspace || !canManage) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await rejectSellerCustomerOrder(workspace, orderId, {
+        reason: rejectReason,
+        notes: rejectNotes.trim() || null,
+      });
+      setShowReject(false);
+      await query.refetch();
+    } catch (err) {
+      setError(
+        err instanceof PosApiError
+          ? (err.problem.detail ?? err.message)
+          : err instanceof Error
+            ? err.message
+            : t("orders.error"),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function actionLabel(action: SellerOrderAction): string {
+    switch (action) {
+      case "Accept":
+        return t("orders.accept");
+      case "Reject":
+        return t("orders.reject");
+      case "StartPreparing":
+        return t("orders.startPreparing");
+      case "MarkReady":
+        return query.data?.fulfillmentType.toLowerCase() === "pickup"
+          ? t("orders.readyForPickup")
+          : t("orders.markReady");
+      case "OutForDelivery":
+        return t("orders.outForDelivery");
+      case "MarkDelivered":
+        return t("orders.markDelivered");
+      case "MarkCollected":
+        return t("orders.markCollected");
+      case "Complete":
+        return t("orders.complete");
+      default:
+        return action;
+    }
+  }
+
+  if (!workspace || query.isLoading) {
+    return <LoadingState label={t("loading.label")} />;
+  }
+
+  if (query.isError || !query.data) {
+    return (
+      <div className="flex min-w-0 flex-col gap-4">
+        <ErrorState title={t("orders.notFound")} detail={t("orders.notFoundHelp")} />
+        <Button asChild className="min-h-11 w-fit">
+          <Link to="/orders">{t("orders.backToQueue")}</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  const order = query.data;
+  const actions = availableSellerActions(order);
+
+  return (
+    <div className="flex min-w-0 flex-col gap-4" data-testid="seller-order-detail-page">
+      <PageHeader
+        title={`#${order.orderNumber}`}
+        description={`${order.customerDisplayName} · ${order.fulfillmentType}`}
+      />
+      <StatusChip tone="info">{t(displayOrderStatusKey(order) as MessageKey)}</StatusChip>
+      <Button asChild variant="ghost" className="min-h-11 w-fit">
+        <Link to="/orders">{t("orders.backToQueue")}</Link>
+      </Button>
+      {error ? <ErrorState title={t("orders.error")} detail={error} /> : null}
+
+      <Card className="grid gap-2 text-[length:var(--exits-text-sm)]" data-testid="order-facts">
+        <div>
+          {t("orders.branch")}: <strong>{order.branchNameSnapshot}</strong>
+        </div>
+        <div>
+          {t("orders.paymentMethod")}: <strong>{order.paymentMethod}</strong>
+        </div>
+        <div>
+          {t("orders.paymentStatus")}: <strong>{order.paymentStatus}</strong>
+        </div>
+      </Card>
+
+      {order.delivery ? (
+        <Card data-testid="seller-delivery">
+          <p className="m-0 font-semibold">{t("orders.deliveryAddress")}</p>
+          <p className="m-0">{order.delivery.recipientName}</p>
+          <p className="m-0">{order.delivery.addressLine1}</p>
+          <p className="m-0 text-muted">
+            {t("orders.deliveryFee")}: {money(order.delivery.finalDeliveryFee)}
+          </p>
+        </Card>
+      ) : null}
+
+      <Card className="flex flex-col gap-2" data-testid="seller-order-lines">
+        {order.lines.map((line) => (
+          <div key={line.lineId} className="flex justify-between gap-2">
+            <span>
+              {line.nameSnapshot} × {line.quantity}
+            </span>
+            <strong>{money(line.lineTotal)}</strong>
+          </div>
+        ))}
+        <div className="flex justify-between">
+          <span>{t("orders.total")}</span>
+          <strong>{money(order.total)}</strong>
+        </div>
+      </Card>
+
+      {showReject ? (
+        <Card className="flex flex-col gap-3" data-testid="reject-panel">
+          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+            <span>{t("orders.rejectReason")}</span>
+            <select
+              className="min-h-11 rounded border px-3"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+            >
+              {REJECT_REASONS.map((r) => (
+                <option key={r} value={r}>
+                  {t(`orders.reject${r}` as MessageKey)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+            <span>{t("orders.rejectNotes")}</span>
+            <input
+              className="min-h-11 rounded border px-3"
+              value={rejectNotes}
+              onChange={(e) => setRejectNotes(e.target.value)}
+            />
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={busy}
+              onClick={() => setShowReject(false)}
+            >
+              {t("orders.cancel")}
+            </Button>
+            <Button
+              type="button"
+              className="min-h-11"
+              data-testid="confirm-reject"
+              disabled={busy || !canManage}
+              onClick={() => void confirmReject()}
+            >
+              {t("orders.reject")}
+            </Button>
+          </div>
+        </Card>
+      ) : (
+        <div className="flex flex-wrap gap-2" data-testid="seller-order-actions">
+          {actions.map((action) => (
+            <Button
+              key={action}
+              type="button"
+              className="min-h-11"
+              variant={action === "Reject" ? "ghost" : "default"}
+              data-testid={`seller-action-${action.toLowerCase()}`}
+              disabled={busy || !canManage}
+              onClick={() => void runAction(action)}
+            >
+              {actionLabel(action)}
+            </Button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

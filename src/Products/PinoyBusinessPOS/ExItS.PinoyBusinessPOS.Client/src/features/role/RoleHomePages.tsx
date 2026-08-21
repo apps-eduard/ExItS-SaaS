@@ -3,6 +3,7 @@ import {
   canManageCatalog,
   canManageShifts,
   canViewCustomers,
+  canViewCustomerOrders,
   canViewInventory,
   canViewPurchasing,
   canViewRegisters,
@@ -56,6 +57,7 @@ export function RoleHomeShell({
   const canOpenShift = canManageShifts(sessionGrant);
   const canRegisters = canViewRegisters(sessionGrant);
   const canCustomers = canViewCustomers(sessionGrant);
+  const canCustomerOrders = canViewCustomerOrders(sessionGrant);
   const canSuppliers = canViewSuppliers(sessionGrant);
   const canPurchasing = canViewPurchasing(sessionGrant) || canViewInventory(sessionGrant);
   const canReturns = canViewReturns(sessionGrant);
@@ -187,6 +189,16 @@ export function RoleHomeShell({
       {canCustomers ? (
         <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-customers">
           <Link to="/customers">{t("customers.open")}</Link>
+        </Button>
+      ) : null}
+      {canCustomerOrders ? (
+        <Button
+          asChild
+          variant="ghost"
+          className="min-h-11 w-fit"
+          data-testid="open-customer-orders"
+        >
+          <Link to="/orders">{t("orders.openQueue")}</Link>
         </Button>
       ) : null}
       {canSuppliers ? (

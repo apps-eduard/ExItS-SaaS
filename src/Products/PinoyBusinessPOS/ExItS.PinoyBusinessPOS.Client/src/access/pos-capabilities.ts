@@ -314,6 +314,32 @@ export function canProcessReturn(grant: PosSessionGrantFacts | null | undefined)
 }
 
 /**
+ * ViewCustomerOrders UI gate — PosRoleMatrix Owner/Admin/StoreManager (+ ReportingUser).
+ * Cashier DENY. Server remains authoritative via StoreCustomerOrdering.
+ */
+export function canViewCustomerOrders(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  if (isPosOwnerRole(grant) || isPosOperationsManager(grant)) {
+    return true;
+  }
+  const role = resolveEffectivePosRoleCode(grant)?.toLowerCase();
+  return role === "reportinguser";
+}
+
+/**
+ * ManageCustomerOrders UI gate — Owner/Admin/StoreManager only. Cashier DENY.
+ * Server remains authoritative via StoreCustomerOrdering + StoreDeliveryOrders.
+ */
+export function canManageCustomerOrders(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  return isPosOwnerRole(grant) || isPosOperationsManager(grant);
+}
+
+/**
  * UI gate for catalog administration (ManageCatalog).
  * Mirrors PosRoleMatrix: Owner/Admin/StoreManager (+ Manager alias).
  * OrganizationAdministrator alone does NOT imply ManageCatalog.

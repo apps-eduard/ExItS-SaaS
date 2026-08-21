@@ -5,6 +5,13 @@ import { SignInPage } from "@/features/auth/SignInPage";
 import { HomePage } from "@/features/home/HomePage";
 import { NotFoundPage } from "@/features/not-found/NotFoundPage";
 import { PersonalHomePage } from "@/features/personal/PersonalHomePage";
+import { LinkedMerchantsPage } from "@/features/customer-ordering/LinkedMerchantsPage";
+import { MerchantShopPage } from "@/features/customer-ordering/MerchantShopPage";
+import { MerchantCheckoutPage } from "@/features/customer-ordering/MerchantCheckoutPage";
+import { MyOrdersPage } from "@/features/customer-ordering/MyOrdersPage";
+import { MyOrderDetailPage } from "@/features/customer-ordering/MyOrderDetailPage";
+import { SellerOrdersPage } from "@/features/customer-ordering/SellerOrdersPage";
+import { SellerOrderDetailPage } from "@/features/customer-ordering/SellerOrderDetailPage";
 import { PreferencesPage } from "@/features/preferences/PreferencesPage";
 import { CashHandlingSettingsPage } from "@/features/settings/CashHandlingSettingsPage";
 import { BranchFulfillmentEditPage } from "@/features/branches/BranchFulfillmentEditPage";
@@ -88,6 +95,7 @@ import {
   RequireRecordRepayment,
   RequireSession,
   RequireViewCustomers,
+  RequireViewCustomerOrders,
   RequireViewInventory,
   RequireViewPurchasing,
   RequireViewRegisters,
@@ -145,9 +153,23 @@ export const appRoutes = [
             path: "personal",
             element: (
               <RequirePersonalSession>
-                <PersonalHomePage />
+                <Outlet />
               </RequirePersonalSession>
             ),
+            children: [
+              { index: true, element: <PersonalHomePage /> },
+              { path: "linked-merchants", element: <LinkedMerchantsPage /> },
+              {
+                path: "linked-merchants/:organizationId/shop",
+                element: <MerchantShopPage />,
+              },
+              {
+                path: "linked-merchants/:organizationId/shop/checkout",
+                element: <MerchantCheckoutPage />,
+              },
+              { path: "orders", element: <MyOrdersPage /> },
+              { path: "orders/:orderId", element: <MyOrderDetailPage /> },
+            ],
           },
           {
             path: "no-location",
@@ -553,6 +575,22 @@ export const appRoutes = [
                 ),
               },
               { path: ":returnId", element: <ReturnDetailPage /> },
+            ],
+          },
+          {
+            path: "orders",
+            element: (
+              <RequireOrganizationSession>
+                <RequireWorkspaceBound>
+                  <RequireViewCustomerOrders>
+                    <Outlet />
+                  </RequireViewCustomerOrders>
+                </RequireWorkspaceBound>
+              </RequireOrganizationSession>
+            ),
+            children: [
+              { index: true, element: <SellerOrdersPage /> },
+              { path: ":orderId", element: <SellerOrderDetailPage /> },
             ],
           },
           { path: "*", element: <NotFoundPage /> },

@@ -13,6 +13,10 @@ export const OFFLINE_OPERATION_TYPES = {
   SaleReturnCreate: "sale_return.create",
   PurchaseOrderSubmit: "purchase_order.submit",
   PurchaseOrderReceive: "purchase_order.receive",
+  CustomerOrderPlace: "customer_order.place",
+  CustomerOrderAccept: "customer_order.accept",
+  CustomerOrderReject: "customer_order.reject",
+  CustomerOrderComplete: "customer_order.complete",
 } as const;
 
 function guidToN(guid: string): string {

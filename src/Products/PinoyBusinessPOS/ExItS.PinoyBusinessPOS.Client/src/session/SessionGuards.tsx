@@ -16,6 +16,8 @@ import {
   canProcessReturn,
   canRecordRepayment,
   canUseAdminExperience,
+  canViewCustomerOrders,
+  canManageCustomerOrders,
   canViewCustomers,
   canViewInventory,
   canViewPurchasing,
@@ -441,6 +443,26 @@ export function RequireProcessReturn({ children }: { children: ReactNode }) {
 
   if (!canProcessReturn(sessionGrant)) {
     return <ExperienceAccessDeniedPage testId="returns-process-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireViewCustomerOrders({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canViewCustomerOrders(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="customer-orders-view-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireManageCustomerOrders({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canManageCustomerOrders(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="customer-orders-manage-denied" />;
   }
 
   return children;
