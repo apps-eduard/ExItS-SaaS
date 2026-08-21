@@ -47,6 +47,30 @@ export const hilPH: Record<keyof typeof en, string> = {
   "offline.internetRequiredTitle": "Kinahanglan ang internet",
   "offline.internetRequiredDetail": "Kinahanglan sang internet connection ang aksyon.",
   "offline.tryAgain": "Sulayi liwat",
+  "offline.requiredGCash": "Kinahanglan sang internet ang GCash.",
+  "offline.requiredUtang": "Kinahanglan sang internet ang utang.",
+  "offline.requiredDiscount": "Kinahanglan sang internet ang diskwento.",
+  "offline.requiredPriceOverride": "Kinahanglan sang internet ang pagbag-o sang presyo.",
+  "offline.requiredOpenShift": "Kinahanglan sang internet ang pagbukas sang shift.",
+  "offline.requiredDeviceRegister": "Kinahanglan sang internet ang pagparehistro sini nga device.",
+  "offline.cashOnlyTitle": "Offline · Cash lang",
+  "offline.cashOnlyDetail":
+    "Sarang mo matapos ang Cash nga baligya bisan offline. Gina-tipigan sa device kag maga-sync kon makakonektar liwat.",
+  "offline.blockedDiscount": "Kuhaa ang diskwento agod matapos ini nga baligya offline.",
+  "offline.blockedPriceOverride":
+    "Gamita ang regular nga presyo agod matapos ini nga baligya offline.",
+  "offline.enqueueFailed": "Indi na-tipigan ini nga baligya sa device. Sulayi liwat.",
+  "offline.notReady":
+    "Kinahanglan sang device kag bukas nga shift nga nakumpirmar samtang online antes makabaligya offline.",
+  "offline.queuedTitle": "Na-tipigan ang baligya sa sini nga device",
+  "offline.queuedDetail": "Wala pa ini na-rekord sa server.",
+  "offline.queuedPending":
+    "Awtomatiko nga maga-sync ini nga Cash nga baligya kon magbalik ang internet.",
+  "offline.queuedReference": "Reperensiya sang device: {reference}",
+  "offline.queuedNewSale": "Bag-o nga baligya",
+  "offline.cachedCatalogNotice":
+    "Gina-tipigan nga produkto ang ginapakita. Maga-refresh ang presyo kon makakonektar liwat.",
+  "offline.shiftContinued": "Offline · nagapadayon ang shift {shift}",
   "shell.notifications.label": "Mga pahibalo",
   "shell.notifications.unreadLabel": "Mga pahibalo, {count} wala pa nabasa",
   "pwa.updateAvailable": "May update",

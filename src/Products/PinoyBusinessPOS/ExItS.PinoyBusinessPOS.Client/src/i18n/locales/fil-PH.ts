@@ -46,6 +46,30 @@ export const filPH: Record<keyof typeof en, string> = {
   "offline.internetRequiredTitle": "Kailangan ng internet",
   "offline.internetRequiredDetail": "Kailangan ng internet connection ang aksyong ito.",
   "offline.tryAgain": "Subukan muli",
+  "offline.requiredGCash": "Kailangan ng internet ang GCash.",
+  "offline.requiredUtang": "Kailangan ng internet ang utang.",
+  "offline.requiredDiscount": "Kailangan ng internet ang diskwento.",
+  "offline.requiredPriceOverride": "Kailangan ng internet ang pagbabago ng presyo.",
+  "offline.requiredOpenShift": "Kailangan ng internet ang pagbukas ng shift.",
+  "offline.requiredDeviceRegister": "Kailangan ng internet ang pagrehistro ng device na ito.",
+  "offline.cashOnlyTitle": "Offline · Cash lamang",
+  "offline.cashOnlyDetail":
+    "Maaari kang tumapos ng Cash na bentahan kahit offline. Nakaimbak sa device na ito at magsi-sync kapag nakakonekta muli.",
+  "offline.blockedDiscount": "Alisin ang diskwento para matapos ang bentang ito offline.",
+  "offline.blockedPriceOverride":
+    "Gamitin ang regular na presyo para matapos ang bentang ito offline.",
+  "offline.enqueueFailed": "Hindi nai-save ang bentang ito sa device. Subukan muli.",
+  "offline.notReady":
+    "Kailangan ng device at bukas na shift na nakumpirma habang online bago makapag-offline na bentahan.",
+  "offline.queuedTitle": "Nakaimbak ang benta sa device na ito",
+  "offline.queuedDetail": "Hindi pa ito naitala sa server.",
+  "offline.queuedPending":
+    "Awtomatikong magsi-sync ang Cash na bentang ito kapag bumalik ang internet.",
+  "offline.queuedReference": "Reperensiya ng device: {reference}",
+  "offline.queuedNewSale": "Bagong benta",
+  "offline.cachedCatalogNotice":
+    "Nakaimbak na produkto ang nakikita. Magre-refresh ang presyo kapag nakakonekta muli.",
+  "offline.shiftContinued": "Offline · nagpapatuloy ang shift {shift}",
   "shell.notifications.label": "Mga abiso",
   "shell.notifications.unreadLabel": "Mga abiso, {count} hindi pa nabasa",
   "pwa.updateAvailable": "May update",

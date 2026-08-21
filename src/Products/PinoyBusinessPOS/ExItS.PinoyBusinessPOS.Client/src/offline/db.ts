@@ -1,8 +1,11 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import {
   OFFLINE_SCHEMA_VERSION,
+  type CachedCatalogCategoryRecord,
+  type CachedCatalogProductRecord,
   type OfflineOperationRecord,
   type OfflineScopeKind,
+  type SellReadinessSnapshotRecord,
 } from "@/offline/types";
 
 export type OfflineMetaRecord = {
@@ -32,6 +35,18 @@ interface OfflineDbSchema extends DBSchema {
       serverId: string | null;
       entityType: string;
     };
+  };
+  catalogProducts: {
+    key: string;
+    value: CachedCatalogProductRecord;
+  };
+  catalogCategories: {
+    key: string;
+    value: CachedCatalogCategoryRecord;
+  };
+  sellReadiness: {
+    key: string;
+    value: SellReadinessSnapshotRecord;
   };
 }
 
@@ -74,8 +89,40 @@ export async function openOfflineDatabase(
       if (!db.objectStoreNames.contains("entityMap")) {
         db.createObjectStore("entityMap", { keyPath: "mapKey" });
       }
+      if (!db.objectStoreNames.contains("catalogProducts")) {
+        db.createObjectStore("catalogProducts", { keyPath: "productId" });
+      }
+      if (!db.objectStoreNames.contains("catalogCategories")) {
+        db.createObjectStore("catalogCategories", { keyPath: "categoryId" });
+      }
+      if (!db.objectStoreNames.contains("sellReadiness")) {
+        db.createObjectStore("sellReadiness", { keyPath: "key" });
+      }
     },
   });
+}
+
+const sharedConnections = new Map<string, Promise<OfflineDb>>();
+
+/**
+ * One connection per scope for the lifetime of the tab.
+ * Screens must not close a database the Connection & Sync shell is still reading.
+ */
+export function openSharedOfflineDatabase(
+  scope: OfflineScopeKind,
+  scopeKey: string,
+): Promise<OfflineDb> {
+  const name = databaseName(scope, scopeKey);
+  const existing = sharedConnections.get(name);
+  if (existing) {
+    return existing;
+  }
+  const opening = openOfflineDatabase(scope, scopeKey).catch((error: unknown) => {
+    sharedConnections.delete(name);
+    throw error;
+  });
+  sharedConnections.set(name, opening);
+  return opening;
 }
 
 export async function putMeta(db: OfflineDb, key: string, value: string): Promise<void> {

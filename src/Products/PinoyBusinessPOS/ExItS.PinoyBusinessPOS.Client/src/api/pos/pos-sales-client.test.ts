@@ -8,6 +8,7 @@ import {
   voidSale,
 } from "@/api/pos/pos-sales-client";
 import { PosApiError } from "@/api/pos/pos-http";
+import { sha256Hex } from "@/api/pos/pos-mutation-idempotency";
 
 const workspace = {
   organizationId: "11111111-1111-1111-1111-111111111111",
@@ -124,6 +125,30 @@ describe("pos-sales-client", () => {
     expect(body.lines[0]).toEqual({ productId, quantity: 1 });
     expect(body.lines[0].unitPriceSnapshot).toBeUndefined();
     expect(body.discounts).toBeUndefined();
+  });
+
+  it("sends sale idempotency headers keyed on saleId with the payload hash", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify(saleJson()), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await checkoutSale(workspace, {
+      lines: [{ productId, quantity: 1 }],
+      paymentMethod: "Cash",
+      amountTendered: 50,
+      saleId,
+      shiftId,
+    });
+
+    const [, init] = vi.mocked(fetch).mock.calls[0];
+    const headers = new Headers(init?.headers);
+    expect(headers.get("Idempotency-Key")).toBe(saleId.replace(/-/g, ""));
+    expect(headers.get("X-Pos-Operation-Id")).toBe(saleId);
+    expect(headers.get("X-Pos-Operation-Type")).toBe("sale.checkout");
+    expect(headers.get("X-Pos-Payload-Hash")).toBe(await sha256Hex(String(init?.body ?? "")));
   });
 
   it("includes commercial discount intents on checkout and quote", async () => {

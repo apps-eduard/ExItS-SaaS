@@ -1,4 +1,7 @@
-export const OFFLINE_SCHEMA_VERSION = 1 as const;
+import type { PosCatalogProductDto, PosProductCategoryDto } from "@/api/pos/pos-catalog-types";
+
+/** v2 adds the read-only Sell catalog cache and the Sell readiness snapshot (RMAP-21D). */
+export const OFFLINE_SCHEMA_VERSION = 2 as const;
 
 export type OfflineScopeKind = "Personal" | "Organization";
 
@@ -42,6 +45,34 @@ export type OfflineOperationRecord = {
   /** AES-GCM envelope — never log plaintext. */
   ciphertext: ArrayBuffer;
   iv: ArrayBuffer;
+};
+
+/**
+ * Read-only Sell reference data. Catalog rows are not money, tender, or PHI, so they are
+ * cached as plaintext; anything that posts money still goes through the encrypted outbox.
+ */
+export type CachedCatalogProductRecord = {
+  productId: string;
+  cachedAtUtc: string;
+  product: PosCatalogProductDto;
+};
+
+export type CachedCatalogCategoryRecord = {
+  categoryId: string;
+  cachedAtUtc: string;
+  category: PosProductCategoryDto;
+};
+
+export const SELL_READINESS_SNAPSHOT_KEY = "sell-readiness" as const;
+
+/** Last-good device/shift readiness, so a warm session can keep selling Cash offline. */
+export type SellReadinessSnapshotRecord = {
+  key: string;
+  deviceReady: boolean;
+  moneyPostReady: boolean;
+  shiftId: string | null;
+  openShiftNumber: string | null;
+  capturedAt: string;
 };
 
 export type OfflineQueueCounts = {

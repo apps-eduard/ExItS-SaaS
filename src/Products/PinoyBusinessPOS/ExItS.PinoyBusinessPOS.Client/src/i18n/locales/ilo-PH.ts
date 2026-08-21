@@ -46,6 +46,30 @@ export const iloPH: Record<keyof typeof en, string> = {
   "offline.internetRequiredTitle": "Masapul ti internet",
   "offline.internetRequiredDetail": "Masapul ti internet connection daytoy nga aksion.",
   "offline.tryAgain": "Padasen manen",
+  "offline.requiredGCash": "Masapul ti internet ti GCash.",
+  "offline.requiredUtang": "Masapul ti internet ti utang.",
+  "offline.requiredDiscount": "Masapul ti internet ti diskuento.",
+  "offline.requiredPriceOverride": "Masapul ti internet ti panagbaliw ti presio.",
+  "offline.requiredOpenShift": "Masapul ti internet ti panaglukat ti shift.",
+  "offline.requiredDeviceRegister": "Masapul ti internet ti panagrehistro daytoy a device.",
+  "offline.cashOnlyTitle": "Offline · Cash laeng",
+  "offline.cashOnlyDetail":
+    "Mabalinmo a leppasen ti Cash a panaglako uray offline. Naidulin iti daytoy a device ken ag-sync no makakonekta manen.",
+  "offline.blockedDiscount": "Ikkaten ti diskuento tapno malpas daytoy a panaglako nga offline.",
+  "offline.blockedPriceOverride":
+    "Usaren ti regular a presio tapno malpas daytoy a panaglako nga offline.",
+  "offline.enqueueFailed": "Saan a naidulin daytoy a panaglako iti device. Padasen manen.",
+  "offline.notReady":
+    "Masapul ti device ken nakalukat a shift a napasingkedan bayat ti online sakbay ti offline a panaglako.",
+  "offline.queuedTitle": "Naidulin ti panaglako iti daytoy a device",
+  "offline.queuedDetail": "Saan pay a nairekord iti server.",
+  "offline.queuedPending":
+    "Awtomatiko nga ag-sync daytoy a Cash a panaglako no agsubli ti internet.",
+  "offline.queuedReference": "Reperensia ti device: {reference}",
+  "offline.queuedNewSale": "Baro a panaglako",
+  "offline.cachedCatalogNotice":
+    "Naidulin a produkto ti maipakita. Ag-refresh ti presio no makakonekta manen.",
+  "offline.shiftContinued": "Offline · agtultuloy ti shift {shift}",
   "shell.notifications.label": "Dagiti pakaammo",
   "shell.notifications.unreadLabel": "Dagiti pakaammo, {count} saan pay a nabasa",
   "pwa.updateAvailable": "Adda ti update",

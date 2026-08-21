@@ -70,6 +70,7 @@ import { TransactionSummaryPage } from "@/features/checkout/TransactionSummaryPa
 import { ProcessReturnPage } from "@/features/returns/ProcessReturnPage";
 import { ReturnDetailPage } from "@/features/returns/ReturnDetailPage";
 import { ReturnsHubPage } from "@/features/returns/ReturnsHubPage";
+import { OfflineSaleQueuedPage } from "@/features/sell/OfflineSaleQueuedPage";
 import { SellReadinessGate } from "@/features/sell/SellReadinessGate";
 import { ShiftDetailPage } from "@/features/shifts/ShiftDetailPage";
 import { ShiftOpenPage } from "@/features/shifts/ShiftOpenPage";
@@ -255,6 +256,7 @@ export const appRoutes = [
             children: [
               { index: true, element: <SellReadinessGate /> },
               { path: "checkout", element: <CheckoutCashPage /> },
+              { path: "offline-queued/:saleId", element: <OfflineSaleQueuedPage /> },
               { path: "sales/:saleId/summary", element: <TransactionSummaryPage /> },
             ],
           },

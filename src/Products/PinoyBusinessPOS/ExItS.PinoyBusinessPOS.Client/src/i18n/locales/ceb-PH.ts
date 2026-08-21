@@ -46,6 +46,30 @@ export const cebPH: Record<keyof typeof en, string> = {
   "offline.internetRequiredTitle": "Kinahanglan ang internet",
   "offline.internetRequiredDetail": "Kinahanglan og internet connection ang aksyon.",
   "offline.tryAgain": "Sulayi pag-usab",
+  "offline.requiredGCash": "Kinahanglan og internet ang GCash.",
+  "offline.requiredUtang": "Kinahanglan og internet ang utang.",
+  "offline.requiredDiscount": "Kinahanglan og internet ang diskwento.",
+  "offline.requiredPriceOverride": "Kinahanglan og internet ang pag-usab sa presyo.",
+  "offline.requiredOpenShift": "Kinahanglan og internet ang pag-abli sa shift.",
+  "offline.requiredDeviceRegister": "Kinahanglan og internet ang pagparehistro niini nga device.",
+  "offline.cashOnlyTitle": "Offline · Cash lang",
+  "offline.cashOnlyDetail":
+    "Makahuman ka og Cash nga baligya bisan offline. Gitipigan sa device ug maga-sync kon makakonektar na.",
+  "offline.blockedDiscount": "Kuhaa ang diskwento aron mahuman kini nga baligya offline.",
+  "offline.blockedPriceOverride":
+    "Gamita ang regular nga presyo aron mahuman kini nga baligya offline.",
+  "offline.enqueueFailed": "Wala matipigan kini nga baligya sa device. Sulayi pag-usab.",
+  "offline.notReady":
+    "Kinahanglan og device ug abli nga shift nga nakonpirmar samtang online una makabaligya offline.",
+  "offline.queuedTitle": "Natipigan ang baligya sa device",
+  "offline.queuedDetail": "Wala pa kini narekord sa server.",
+  "offline.queuedPending":
+    "Awtomatiko nga maga-sync kini nga Cash nga baligya kon mobalik ang internet.",
+  "offline.queuedReference": "Reperensiya sa device: {reference}",
+  "offline.queuedNewSale": "Bag-ong baligya",
+  "offline.cachedCatalogNotice":
+    "Gitipigan nga produkto ang gipakita. Mag-refresh ang presyo kon makakonektar na.",
+  "offline.shiftContinued": "Offline · nagpadayon ang shift {shift}",
   "shell.notifications.label": "Mga pahibalo",
   "shell.notifications.unreadLabel": "Mga pahibalo, {count} wala pa mabasa",
   "pwa.updateAvailable": "Adunay update",

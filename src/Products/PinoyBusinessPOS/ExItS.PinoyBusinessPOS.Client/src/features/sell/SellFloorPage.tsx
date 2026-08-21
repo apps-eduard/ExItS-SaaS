@@ -8,7 +8,11 @@ import {
   listCatalogCategories,
   listCatalogProducts,
 } from "@/api/pos/pos-catalog-client";
-import type { PosCatalogProductDto, PosCatalogProductUnitDto } from "@/api/pos/pos-catalog-types";
+import type {
+  PosCatalogProductDto,
+  PosCatalogProductUnitDto,
+  PosProductCategoryDto,
+} from "@/api/pos/pos-catalog-types";
 import { getInventoryProduct } from "@/api/pos/pos-inventory-client";
 import {
   activeSellUnits,
@@ -36,10 +40,17 @@ import {
   canOverrideSalePrice,
   canOverrideSalePriceUnlimited,
 } from "@/access/pos-capabilities";
+import type { CheckoutShiftReadiness } from "@/features/shifts/checkout-readiness";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatCartSummary } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
+import {
+  listCachedCatalogCategories,
+  listCachedCatalogProducts,
+  replaceCatalogCache,
+} from "@/offline/catalog-cache";
+import { useSellOfflineReadiness } from "@/features/sell/use-sell-offline-readiness";
 import { useSellingMode } from "@/selling/SellingModeProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -82,10 +93,28 @@ export function SellFloorPage() {
   const { boundWorkspace, sessionGrant, posDevice } = useWorkspace();
   const cart = useSessionCart();
   const { readiness, hasOpenShift, currentShift } = useShiftContext();
-  const midSessionBlock = evaluateMidSessionSellBlock({
-    posDevice,
-    shiftReadiness: readiness,
-  });
+  const sellReadiness = useSellOfflineReadiness();
+  /**
+   * A warm offline session keeps the device and shift it already proved while online.
+   * Mid-session warnings would otherwise fire on every offline render even though the
+   * cashier never lost the device or closed the shift.
+   */
+  const continuedOffline = sellReadiness.fromSnapshot;
+  const midSessionBlock = continuedOffline
+    ? ({ kind: "none" } as const)
+    : evaluateMidSessionSellBlock({
+        posDevice,
+        shiftReadiness: readiness,
+      });
+  const effectiveReadiness: CheckoutShiftReadiness = continuedOffline
+    ? {
+        status: "ready",
+        shiftId: sellReadiness.shiftId,
+        registerId: null,
+        shiftGateReady: true,
+        moneyPostReady: sellReadiness.moneyPostReady,
+      }
+    : readiness;
   const allowCreateSale = canCreateSale(sessionGrant);
   const allowOverrideSalePrice = canOverrideSalePrice(sessionGrant);
   const allowOverrideUnlimited = canOverrideSalePriceUnlimited(sessionGrant);
@@ -135,6 +164,51 @@ export function SellFloorPage() {
         signal,
       ),
   });
+
+  const online = sellReadiness.online;
+  const offlineDb = sellReadiness.offlineContext?.db ?? null;
+  const [cachedProducts, setCachedProducts] = useState<PosCatalogProductDto[]>([]);
+  const [cachedCategories, setCachedCategories] = useState<PosProductCategoryDto[]>([]);
+
+  const browseProducts = browseQuery.data?.items;
+  const browseCategories = categoriesQuery.data?.items;
+
+  /**
+   * Write-through only: a successful online browse of the full catalog is the single source of
+   * the offline cache. Nothing else may create catalog rows on this device.
+   */
+  useEffect(() => {
+    if (!online || !offlineDb || !browseProducts || !browseCategories) {
+      return;
+    }
+    if (activeCategory !== "all") {
+      return;
+    }
+    void replaceCatalogCache(offlineDb, browseProducts, browseCategories).catch(() => {
+      // A cache write failure must never interrupt selling.
+    });
+  }, [activeCategory, browseCategories, browseProducts, offlineDb, online]);
+
+  useEffect(() => {
+    if (online || !offlineDb) {
+      return;
+    }
+    let cancelled = false;
+    void Promise.all([
+      listCachedCatalogProducts(offlineDb),
+      listCachedCatalogCategories(offlineDb),
+    ]).then(([products, categories]) => {
+      if (!cancelled) {
+        setCachedProducts(products);
+        setCachedCategories(categories);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [offlineDb, online]);
+
+  const usingCachedCatalog = !online && cachedProducts.length > 0;
 
   const stockProductId =
     unitEntry?.product.productId ??
@@ -309,11 +383,36 @@ export function SellFloorPage() {
   }, [activeCategory, beginAddProduct, debouncedSearch, t, workspaceScope]);
 
   const displayedProducts = useMemo(() => {
-    if (debouncedSearch.trim()) {
-      return lookupProducts;
+    const term = debouncedSearch.trim().toLowerCase();
+    if (term) {
+      if (lookupProducts.length > 0 || !usingCachedCatalog) {
+        return lookupProducts;
+      }
+      return cachedProducts.filter(
+        (item) =>
+          item.canBeSold !== false &&
+          (item.name.toLowerCase().includes(term) ||
+            item.sku?.toLowerCase() === term ||
+            item.barcode?.toLowerCase() === term),
+      );
     }
-    return (browseQuery.data?.items ?? []).filter((item) => item.canBeSold !== false);
-  }, [browseQuery.data?.items, debouncedSearch, lookupProducts]);
+    const live = (browseProducts ?? []).filter((item) => item.canBeSold !== false);
+    if (live.length > 0 || !usingCachedCatalog) {
+      return live;
+    }
+    return cachedProducts.filter(
+      (item) =>
+        item.canBeSold !== false &&
+        (activeCategory === "all" || item.categoryId === activeCategory),
+    );
+  }, [
+    activeCategory,
+    browseProducts,
+    cachedProducts,
+    debouncedSearch,
+    lookupProducts,
+    usingCachedCatalog,
+  ]);
 
   const productsLoading =
     (debouncedSearch.trim() ? lookupLoading : browseQuery.isLoading) &&
@@ -461,7 +560,7 @@ export function SellFloorPage() {
     onEditCustomQuantity: handleEditCustomQuantity,
     onChangePrice: allowOverrideSalePrice ? handleChangePrice : undefined,
     onClear: cart.clear,
-    checkoutReadiness: readiness,
+    checkoutReadiness: effectiveReadiness,
     canCreateSale: allowCreateSale,
     canOverrideSalePrice: allowOverrideSalePrice,
     midSessionBlock: midSessionBlock.kind,
@@ -489,8 +588,17 @@ export function SellFloorPage() {
         </Button>
       </div>
 
-      {midSessionBlock.kind === "shift_lost" ||
-      (!hasOpenShift && midSessionBlock.kind !== "none") ? (
+      {continuedOffline ? (
+        sellReadiness.openShiftNumber ? (
+          <p
+            data-testid="sell-offline-shift-chip"
+            className="mb-3 m-0 text-[length:var(--exits-text-xs)] text-muted"
+          >
+            {t("offline.shiftContinued").replace("{shift}", sellReadiness.openShiftNumber)}
+          </p>
+        ) : null
+      ) : midSessionBlock.kind === "shift_lost" ||
+        (!hasOpenShift && midSessionBlock.kind !== "none") ? (
         <div
           data-testid="sell-shift-banner"
           className="mb-4 inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border border-border bg-[var(--exits-surface-muted)] px-3 py-1.5"
@@ -546,7 +654,16 @@ export function SellFloorPage() {
             placeholder={t("sell.searchPlaceholder")}
           />
 
-          {searchError ? (
+          {usingCachedCatalog ? (
+            <p
+              data-testid="sell-offline-catalog-notice"
+              className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+            >
+              {t("offline.cachedCatalogNotice")}
+            </p>
+          ) : null}
+
+          {searchError && !usingCachedCatalog ? (
             <p
               data-testid="sell-search-error"
               role="alert"
@@ -557,7 +674,11 @@ export function SellFloorPage() {
           ) : null}
 
           <SellCategoryFilter
-            categories={categoriesQuery.data?.items ?? []}
+            categories={
+              (browseCategories ?? []).length > 0 || !usingCachedCatalog
+                ? (browseCategories ?? [])
+                : cachedCategories
+            }
             activeCategoryId={activeCategory}
             allLabel={t("sell.categoryAll")}
             listLabel={t("sell.categoriesLabel")}

@@ -5,9 +5,15 @@ import { hasOrganizationManagementAuthority } from "@/access/pos-capabilities";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
+import { OnlineRequiredCard } from "@/components/exits/OnlineRequiredCard";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { ONLINE_REQUIRED_CODES } from "@/offline/online-required";
 import { SellFloorPage } from "@/features/sell/SellFloorPage";
-import { evaluateSellEntryReadiness } from "@/features/sell/sell-readiness";
+import {
+  evaluateSellEntryReadiness,
+  type SellEntryReadiness,
+} from "@/features/sell/sell-readiness";
+import { useSellOfflineReadiness } from "@/features/sell/use-sell-offline-readiness";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -16,13 +22,25 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
  * Device → Shift → Sell gate. Does not replace server money-post authority.
  * Once Sell has been entered, mid-session device/shift loss stays on SellFloor
  * (compact cart warning) instead of remounting the pre-sell gate.
+ *
+ * Offline, the live device authorize and shift read cannot run, so the last-good readiness
+ * snapshot (written while online and ready) reopens the warm session instead of demanding a
+ * device registration or a shift open that both need the server.
  */
 export function SellReadinessGate() {
   const { t } = useI18n();
   const { boundWorkspace, posDevice, sessionGrant } = useWorkspace();
   const { readiness } = useShiftContext();
+  const sellReadiness = useSellOfflineReadiness();
   const canManageDevices = hasOrganizationManagementAuthority(sessionGrant);
-  const entry = evaluateSellEntryReadiness({ posDevice, shiftReadiness: readiness });
+  const entry: SellEntryReadiness = sellReadiness.fromSnapshot
+    ? {
+        kind: "ready",
+        deviceReady: true,
+        shiftReady: true,
+        moneyPostReady: sellReadiness.moneyPostReady,
+      }
+    : evaluateSellEntryReadiness({ posDevice, shiftReadiness: readiness });
   const branchLabel = boundWorkspace?.branchName ?? t("devices.branchFallback");
   const [sellEntered, setSellEntered] = useState(false);
 
@@ -54,10 +72,17 @@ export function SellReadinessGate() {
               {t("sell.readiness.deviceHelp")}
             </p>
           </div>
-          <Button asChild className="min-h-11" data-testid="sell-readiness-register">
-            <Link to="/devices/register?from=sell">{t("sell.readiness.registerBrowser")}</Link>
-          </Button>
-          {canManageDevices ? (
+          {sellReadiness.online ? (
+            <Button asChild className="min-h-11" data-testid="sell-readiness-register">
+              <Link to="/devices/register?from=sell">{t("sell.readiness.registerBrowser")}</Link>
+            </Button>
+          ) : (
+            <OnlineRequiredCard
+              testId="sell-readiness-offline-required"
+              code={ONLINE_REQUIRED_CODES.DeviceRegister}
+            />
+          )}
+          {canManageDevices && sellReadiness.online ? (
             <Button
               asChild
               variant="ghost"
@@ -86,9 +111,16 @@ export function SellReadinessGate() {
               {t("sell.readiness.shiftHelp")}
             </p>
           </div>
-          <Button asChild className="min-h-11" data-testid="sell-readiness-open-shift">
-            <Link to="/shifts/open?from=sell">{t("sell.readiness.openShift")}</Link>
-          </Button>
+          {sellReadiness.online ? (
+            <Button asChild className="min-h-11" data-testid="sell-readiness-open-shift">
+              <Link to="/shifts/open?from=sell">{t("sell.readiness.openShift")}</Link>
+            </Button>
+          ) : (
+            <OnlineRequiredCard
+              testId="sell-readiness-offline-required"
+              code={ONLINE_REQUIRED_CODES.OpenShift}
+            />
+          )}
         </Card>
       </div>
     );

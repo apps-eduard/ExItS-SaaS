@@ -35,6 +35,14 @@ export async function sha256Hex(payload: string): Promise<string> {
     .join("");
 }
 
+/**
+ * Idempotency key for an entity id, in the same `N` format the server matches.
+ * Offline queued operations must reuse this so a replayed sale is deduplicated.
+ */
+export function posIdempotencyKeyForEntity(entityId: string): string {
+  return guidToN(entityId);
+}
+
 /** Build idempotency headers matching MAUI PosMutationIdempotencyHelper.BuildHeaders(entityId, json, opType). */
 export async function buildPosMutationIdempotencyHeaders(
   entityId: string,

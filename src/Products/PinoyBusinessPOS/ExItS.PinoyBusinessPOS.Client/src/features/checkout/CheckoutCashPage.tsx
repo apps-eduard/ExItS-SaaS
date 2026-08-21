@@ -21,14 +21,18 @@ import { roundMoney } from "@/cart/sell-cart-helpers";
 import { lineAmount, useSessionCart } from "@/cart/SessionCartProvider";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { OnlineRequiredCard } from "@/components/exits/OnlineRequiredCard";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
 import { mapCartLinesToCheckoutRequest } from "@/features/checkout/map-cart-to-checkout";
 import { mapCartPriceOverridesToRequest } from "@/features/checkout/map-cart-price-overrides";
+import { useSellOfflineReadiness } from "@/features/sell/use-sell-offline-readiness";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
 import { useI18n } from "@/i18n/I18nProvider";
-import { isPosDeviceReadyForMoney } from "@/workspace/pos-device-context";
+import { enqueueOfflineCashSale } from "@/offline/cash-sale-offline";
+import { useOfflineSync } from "@/offline/OfflineSyncProvider";
+import { ONLINE_REQUIRED_CODES } from "@/offline/online-required";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type DiscountScope = CommercialDiscountIntentRequest["scope"];
@@ -99,9 +103,12 @@ function confirmLabelKey(
 export function CheckoutCashPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const { boundWorkspace, sessionGrant, posDevice } = useWorkspace();
+  const { boundWorkspace, sessionGrant } = useWorkspace();
   const cart = useSessionCart();
   const { readiness, currentShift, refresh } = useShiftContext();
+  const sellReadiness = useSellOfflineReadiness();
+  const { refreshCounts } = useOfflineSync();
+  const online = sellReadiness.online;
 
   const [paymentChoice, setPaymentChoice] = useState<UiPaymentChoice>("Cash");
   const [cashReceived, setCashReceived] = useState("");
@@ -114,6 +121,7 @@ export function CheckoutCashPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [appliedDiscounts, setAppliedDiscounts] = useState<AppliedDiscount[]>([]);
+  const [discountsDroppedOffline, setDiscountsDroppedOffline] = useState(false);
   const [discountScope, setDiscountScope] = useState<DiscountScope>("Sale");
   const [discountMethod, setDiscountMethod] = useState<DiscountMethod>("Percentage");
   const [discountValue, setDiscountValue] = useState("");
@@ -146,8 +154,10 @@ export function CheckoutCashPage() {
   const allowCreateCredit = canCreateCredit(sessionGrant);
   /** Cashier Utang may use narrow checkout-search; management list still requires ViewCustomers. */
   const allowCheckoutCustomerSearch = allowSale;
-  const moneyReady = readiness.moneyPostReady === true;
-  const deviceReady = isPosDeviceReadyForMoney(posDevice);
+  const moneyReady = sellReadiness.moneyPostReady === true;
+  const deviceReady = sellReadiness.deviceReady;
+  const shiftGateReady = sellReadiness.shiftGateReady;
+  const shiftId = sellReadiness.shiftId;
   const apiPaymentMethod = toApiPaymentMethod(paymentChoice);
 
   const discountIntents = useMemo(
@@ -191,6 +201,13 @@ export function CheckoutCashPage() {
     [cart.lines],
   );
 
+  /** Offline keeps Cash only: no provider reference, no live credit decision, no server money math. */
+  const offlineDiscountBlocked = !online && discountIntents.length > 0;
+  const offlineOverrideBlocked = !online && priceOverrideIntents.length > 0;
+  const offlineBlocked = offlineDiscountBlocked || offlineOverrideBlocked;
+  const showDiscountPanel = allowDiscount && online;
+  const offlineContext = sellReadiness.offlineContext;
+
   const amountToPay = quote?.total ?? cart.subtotal;
   const totalAmount = quote?.grossSubtotal ?? cart.subtotal;
   const discountTotal = quote?.discountTotal ?? 0;
@@ -222,7 +239,7 @@ export function CheckoutCashPage() {
   const utangCreditOk = paymentChoice !== "Utang" || allowCreateCredit;
 
   useEffect(() => {
-    if (!moneyReady || !deviceReady || !readiness.shiftGateReady) {
+    if (!moneyReady || !deviceReady || !shiftGateReady) {
       return;
     }
     if (completedRef.current) {
@@ -231,10 +248,38 @@ export function CheckoutCashPage() {
     if (cart.lineCount === 0 && !saving) {
       navigate("/sell", { replace: true });
     }
-  }, [cart.lineCount, deviceReady, moneyReady, navigate, readiness.shiftGateReady, saving]);
+  }, [cart.lineCount, deviceReady, moneyReady, navigate, saving, shiftGateReady]);
+
+  /**
+   * Offline has no provider reference and no live credit decision, so Cash is the only choice.
+   * A quote captured before the network dropped is discarded — offline money falls back to the
+   * cart subtotal, and the server still recomputes every amount when the sale syncs.
+   *
+   * Discount intents are dropped rather than kept: only the server quote ever applied them, so
+   * holding them while charging the undiscounted subtotal would show the cashier a discount the
+   * customer is not getting. The drop is announced, never silent.
+   */
+  useEffect(() => {
+    if (online) {
+      setDiscountsDroppedOffline(false);
+      return;
+    }
+    setPaymentChoice("Cash");
+    setSelectedCustomer(null);
+    setQuote(null);
+    setQuoteError(null);
+    setQuoteLoading(false);
+    setAppliedDiscounts((current) => {
+      if (current.length === 0) {
+        return current;
+      }
+      setDiscountsDroppedOffline(true);
+      return [];
+    });
+  }, [online]);
 
   useEffect(() => {
-    if (!workspaceScope || cart.lineCount === 0 || !moneyReady || !deviceReady) {
+    if (!online || !workspaceScope || cart.lineCount === 0 || !moneyReady || !deviceReady) {
       return;
     }
 
@@ -282,13 +327,14 @@ export function CheckoutCashPage() {
     deviceReady,
     discountSignature,
     moneyReady,
+    online,
     priceOverrideSignature,
     t,
     workspaceScope,
   ]);
 
   useEffect(() => {
-    if (paymentChoice !== "Cash" || !quote) {
+    if (paymentChoice !== "Cash" || (!quote && online)) {
       return;
     }
     if (zeroTotal) {
@@ -309,10 +355,10 @@ export function CheckoutCashPage() {
       lastSeededTotalRef.current = amountToPay;
       tenderEditedRef.current = false;
     }
-  }, [amountToPay, paymentChoice, quote, zeroTotal]);
+  }, [amountToPay, online, paymentChoice, quote, zeroTotal]);
 
   useEffect(() => {
-    if (!workspaceScope) {
+    if (!online || !workspaceScope) {
       return;
     }
     const isUtang = paymentChoice === "Utang";
@@ -379,6 +425,7 @@ export function CheckoutCashPage() {
     allowCreateCredit,
     allowViewCustomers,
     customerSearch,
+    online,
     paymentChoice,
     workspaceScope,
   ]);
@@ -430,29 +477,44 @@ export function CheckoutCashPage() {
     );
   }
 
-  if (!moneyReady || !deviceReady || !readiness.shiftGateReady || !readiness.shiftId) {
+  if (!moneyReady || !deviceReady || !shiftGateReady || !shiftId) {
     const deviceBlocked = !deviceReady;
     return (
       <div data-testid="checkout-blocked" className="flex min-w-0 flex-col gap-4">
         <PageHeader title={t("checkout.title")} description={t("checkout.blockedLede")} />
         <Card data-testid="checkout-gate-message">
           <p className="m-0 text-[length:var(--exits-text-sm)]">
-            {deviceBlocked
-              ? t("checkout.blockedDevice")
-              : readiness.status === "blocked_no_shift" || readiness.status === "blocked_closed"
-                ? t("checkout.blockedShift")
-                : t("checkout.blockedGeneric")}
+            {!online
+              ? t("offline.notReady")
+              : deviceBlocked
+                ? t("checkout.blockedDevice")
+                : readiness.status === "blocked_no_shift" || readiness.status === "blocked_closed"
+                  ? t("checkout.blockedShift")
+                  : t("checkout.blockedGeneric")}
           </p>
+          {!online ? (
+            <OnlineRequiredCard
+              className="mt-3"
+              testId="checkout-offline-gate-required"
+              code={
+                deviceBlocked
+                  ? ONLINE_REQUIRED_CODES.DeviceRegister
+                  : ONLINE_REQUIRED_CODES.OpenShift
+              }
+            />
+          ) : null}
           <div className="mt-3 flex flex-wrap gap-2">
-            {deviceBlocked ? (
-              <Button asChild className="min-h-11" data-testid="checkout-register-device">
-                <Link to="/devices/register">{t("checkout.registerDevice")}</Link>
-              </Button>
-            ) : (
-              <Button asChild className="min-h-11" data-testid="checkout-open-shift">
-                <Link to="/shifts/open">{t("shift.openTitle")}</Link>
-              </Button>
-            )}
+            {online ? (
+              deviceBlocked ? (
+                <Button asChild className="min-h-11" data-testid="checkout-register-device">
+                  <Link to="/devices/register">{t("checkout.registerDevice")}</Link>
+                </Button>
+              ) : (
+                <Button asChild className="min-h-11" data-testid="checkout-open-shift">
+                  <Link to="/shifts/open">{t("shift.openTitle")}</Link>
+                </Button>
+              )
+            ) : null}
             <Button asChild variant="ghost" className="min-h-11">
               <Link to="/sell">{t("checkout.backToCart")}</Link>
             </Button>
@@ -467,11 +529,23 @@ export function CheckoutCashPage() {
   }
 
   async function onConfirm() {
-    if (submittingRef.current || saving || !workspaceScope || !readiness.shiftId) {
+    if (submittingRef.current || saving || !workspaceScope || !shiftId) {
       return;
     }
-    if (quoteError || !quote) {
+    if (online && (quoteError || !quote)) {
       setSubmitError(quoteError ?? t("checkout.quoteError"));
+      return;
+    }
+    if (offlineDiscountBlocked) {
+      setSubmitError(t("offline.blockedDiscount"));
+      return;
+    }
+    if (offlineOverrideBlocked) {
+      setSubmitError(t("offline.blockedPriceOverride"));
+      return;
+    }
+    if (!online && paymentChoice !== "Cash") {
+      setSubmitError(t("offline.cashOnlyDetail"));
       return;
     }
     if (paymentChoice === "Cash" && !zeroTotal && (parsedTender === null || !tenderOk)) {
@@ -502,13 +576,46 @@ export function CheckoutCashPage() {
     const saleId = attemptSaleIdRef.current;
     const lines = mapCartLinesToCheckoutRequest(cart.lines);
 
+    if (!online) {
+      try {
+        if (!offlineContext) {
+          setSubmitError(t("offline.enqueueFailed"));
+          return;
+        }
+        await enqueueOfflineCashSale({
+          db: offlineContext.db,
+          scopeBinding: offlineContext.scopeBinding,
+          userId: offlineContext.userId,
+          organizationId: offlineContext.organizationId,
+          branchId: offlineContext.branchId,
+          installationDeviceId: offlineContext.installationDeviceId,
+          posDeviceId: offlineContext.posDeviceId,
+          saleId,
+          shiftId,
+          lines,
+          amountTendered: zeroTotal ? 0 : Number((parsedTender as number).toFixed(2)),
+        });
+        await refreshCounts();
+        completedRef.current = true;
+        cart.clear();
+        attemptSaleIdRef.current = newSaleId();
+        navigate(`/sell/offline-queued/${saleId}`, { replace: true });
+      } catch {
+        setSubmitError(t("offline.enqueueFailed"));
+      } finally {
+        submittingRef.current = false;
+        setSaving(false);
+      }
+      return;
+    }
+
     try {
       await refresh();
       const sale = await checkoutSale(workspaceScope, {
         lines,
         paymentMethod: apiPaymentMethod,
         saleId,
-        shiftId: readiness.shiftId,
+        shiftId,
         ...(paymentChoice === "Cash"
           ? { amountTendered: zeroTotal ? 0 : Number((parsedTender as number).toFixed(2)) }
           : {}),
@@ -540,8 +647,9 @@ export function CheckoutCashPage() {
   const confirmDisabled =
     saving ||
     cart.lineCount === 0 ||
-    !quote ||
-    Boolean(quoteError) ||
+    offlineBlocked ||
+    (online && (!quote || Boolean(quoteError))) ||
+    (!online && !offlineContext) ||
     !tenderOk ||
     !gcashRefOk ||
     utangBlockedZero ||
@@ -552,6 +660,31 @@ export function CheckoutCashPage() {
   return (
     <div data-testid="checkout-cash-page" className="flex min-w-0 flex-col gap-4">
       <PageHeader title={t("checkout.title")} description={t("checkout.cashLede")} />
+
+      {!online ? (
+        <Card data-testid="checkout-offline-cash-notice">
+          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("offline.cashOnlyTitle")}
+          </p>
+          <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+            {t("offline.cashOnlyDetail")}
+          </p>
+        </Card>
+      ) : null}
+
+      {!online && (discountsDroppedOffline || offlineDiscountBlocked) ? (
+        <OnlineRequiredCard
+          testId="checkout-offline-discount-blocked"
+          code={ONLINE_REQUIRED_CODES.CommercialDiscount}
+        />
+      ) : null}
+
+      {offlineOverrideBlocked ? (
+        <OnlineRequiredCard
+          testId="checkout-offline-price-override-blocked"
+          code={ONLINE_REQUIRED_CODES.PriceOverride}
+        />
+      ) : null}
 
       {submitError ? (
         <Card data-testid="checkout-error">
@@ -630,7 +763,7 @@ export function CheckoutCashPage() {
               className="min-h-11"
               data-testid={`checkout-pay-${value.toLowerCase()}`}
               aria-pressed={paymentChoice === value}
-              disabled={saving}
+              disabled={saving || (!online && value !== "Cash")}
               onClick={() => {
                 setPaymentChoice(value);
                 setSubmitError(null);
@@ -640,6 +773,14 @@ export function CheckoutCashPage() {
             </Button>
           ))}
         </div>
+        {!online ? (
+          <p
+            data-testid="checkout-offline-method-hint"
+            className="mb-0 mt-2 text-[length:var(--exits-text-xs)] text-muted"
+          >
+            {t("offline.requiredGCash")} {t("offline.requiredUtang")}
+          </p>
+        ) : null}
         {/* Prove Card / provider GCash are not offered */}
         <span data-testid="checkout-no-card" className="sr-only">
           no-card
@@ -649,7 +790,7 @@ export function CheckoutCashPage() {
         </span>
       </Card>
 
-      {allowDiscount ? (
+      {showDiscountPanel ? (
         <Card data-testid="checkout-discount-panel">
           <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
             {t("checkout.discountSection")}
@@ -925,7 +1066,7 @@ export function CheckoutCashPage() {
         </Card>
       ) : null}
 
-      {(paymentChoice === "Cash" || paymentChoice === "GCash") && allowViewCustomers ? (
+      {(paymentChoice === "Cash" || paymentChoice === "GCash") && allowViewCustomers && online ? (
         <Card data-testid="checkout-optional-customer-panel">
           <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
             {t("checkout.optionalCustomerHint")}

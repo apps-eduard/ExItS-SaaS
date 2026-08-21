@@ -1,6 +1,10 @@
 import { z } from "zod";
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { posRequest } from "@/api/pos/pos-http";
+import {
+  buildPosMutationIdempotencyHeaders,
+  OFFLINE_OPERATION_TYPES,
+} from "@/api/pos/pos-mutation-idempotency";
 
 const SALES_PATH = "/api/v1/pos/sales";
 const QUOTE_PATH = "/api/v1/pos/sales/quote";
@@ -279,17 +283,10 @@ function serializePriceOverrides(
 }
 
 /**
- * Online checkout for Cash / ManualGCash / Utang.
- * Omit snapshot fields; server prices from live catalog.
- * Optional commercial discount intents (RMAP-11b) — server recomputes all money.
- * Optional priceOverrides (RMAP-12b) — server applies before discounts; never mutates catalog.
- * Never send Card or provider GCash from this client.
+ * Wire body for POST /api/v1/pos/sales.
+ * Shared with the offline outbox so a queued sale replays the exact online contract.
  */
-export async function checkoutSale(
-  workspace: PosWorkspaceScope,
-  body: CheckoutSaleRequest,
-  signal?: AbortSignal,
-): Promise<PosSaleDto> {
+export function buildCheckoutSalePayload(body: CheckoutSaleRequest): Record<string, unknown> {
   const validated = checkoutSaleRequestSchema.parse(body);
   const payload: Record<string, unknown> = {
     lines: serializeLines(validated.lines),
@@ -323,12 +320,39 @@ export async function checkoutSale(
     payload.priceOverrides = priceOverrides;
   }
 
+  return payload;
+}
+
+/**
+ * Online checkout for Cash / ManualGCash / Utang.
+ * Omit snapshot fields; server prices from live catalog.
+ * Optional commercial discount intents (RMAP-11b) — server recomputes all money.
+ * Optional priceOverrides (RMAP-12b) — server applies before discounts; never mutates catalog.
+ * Never send Card or provider GCash from this client.
+ * Sends sale idempotency headers keyed on saleId so an online retry and a replayed
+ * offline queued sale collapse to one recorded sale.
+ */
+export async function checkoutSale(
+  workspace: PosWorkspaceScope,
+  body: CheckoutSaleRequest,
+  signal?: AbortSignal,
+): Promise<PosSaleDto> {
+  const validated = checkoutSaleRequestSchema.parse(body);
+  const payload = buildCheckoutSalePayload(validated);
+  const payloadJson = JSON.stringify(payload);
+  const headers = await buildPosMutationIdempotencyHeaders(
+    validated.saleId,
+    payloadJson,
+    OFFLINE_OPERATION_TYPES.SaleCheckout,
+  );
+
   const raw = await posRequest<unknown>({
     method: "POST",
     workspace,
     signal,
     path: SALES_PATH,
     body: payload,
+    headers,
   });
   return parseSale(raw);
 }
