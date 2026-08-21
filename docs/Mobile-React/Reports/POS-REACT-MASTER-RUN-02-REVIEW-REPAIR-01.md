@@ -55,7 +55,7 @@ Updated EN (and fil-PH equivalent) to the three-part business/BIR disclaimer acr
 |---|-----|---------|
 | 1 | `39247c4e` | `fix(pos): harden partial return inventory and refund contracts` |
 | 2 | `a55ca1af` | `fix(pos-react): close checkout customer and summary review findings` |
-| 3 | `89e8aeae` | `docs(pos-react): record master run 02 review repair` |
+| 3 | `2364727c` | `docs(pos-react): record master run 02 review repair` |
 
 ## RMAP-14 status (unchanged for React)
 

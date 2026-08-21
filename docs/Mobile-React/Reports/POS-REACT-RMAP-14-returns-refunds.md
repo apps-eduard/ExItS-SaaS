@@ -2,12 +2,16 @@
 
 ## Status
 
-**NOT PASS** — backend contract repaired; React UI not started.
+**NOT PASS** — backend ready for React restart; React UI not started.
 
 | Flag | Value |
 |------|-------|
 | `RMAP14_BACKEND_CONTRACT_REPAIRED` | YES |
-| `RMAP14_REACT_UI_NOT_STARTED` | YES |
+| `RMAP14_BACKEND_READY_FOR_REACT_RESTART` | YES |
+| `BACKEND_READY` | YES |
+| `REACT_UI_STARTED` / `RMAP14_REACT_UI_NOT_STARTED` | NO / YES |
+| `RMAP14_RETURN_CONCURRENCY_GAP` | **CLOSED** ([Review Repair 02](./POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-02.md)) |
+| `RMAP14_RETURN_VOID_RACE_GAP` | **CLOSED** ([Review Repair 02](./POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-02.md)) |
 | Former code `RMAP14_EXPIRY_RETURN_CONTRACT_GAP` | **CLEARED** by Master Run 02 Review Repair 01 |
 
 ## Baseline
@@ -15,7 +19,8 @@
 | Item | Value |
 |------|-------|
 | Hard-stop docs HEAD | `a7e1322e` |
-| Repair | [POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-01.md](./POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-01.md) |
+| Repair 01 | [POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-01.md](./POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-01.md) |
+| Repair 02 | [POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-02.md](./POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-02.md) |
 | Branch | `feat/pos-react-client` |
 
 ## Backend contract (repaired)
@@ -37,7 +42,13 @@
 
 ### Utang return
 
-`ReduceForSaleReturn` path unchanged — not the former stopper.
+`ReduceForSaleReturn` path; `CreditEntryEntityMapper.ApplyToRecord` persists `Amount` (Repair 02).
+
+### Sale mutation concurrency (Repair 02)
+
+- Shared `ISaleMutationLock` / `pg_advisory_xact_lock` on OrganizationId+SaleId inside serializable txn for `ProcessSaleReturn` and `VoidSale`
+- Prior return totals read **after** lock (TOCTOU closed)
+- Real PostgreSQL Barrier concurrency suite A–I
 
 ## Exclusions / not delivered
 

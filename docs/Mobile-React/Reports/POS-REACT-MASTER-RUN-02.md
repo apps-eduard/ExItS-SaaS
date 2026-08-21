@@ -2,7 +2,7 @@
 
 ## Status
 
-**Review Repair 01 COMPLETE.** RMAP-14 **backend contract repaired**; React returns UI **not started** (`RMAP14_REACT_UI_NOT_STARTED`). Master Run 02 Resume still blocked on RMAP-14 package PASS.
+**Review Repair 02 COMPLETE.** RMAP-14 **backend ready for React restart** (`RMAP14_BACKEND_READY_FOR_REACT_RESTART=YES`); React returns UI **not started** (`RMAP14_REACT_UI_NOT_STARTED`). Master Run 02 Resume still blocked on RMAP-14 package PASS.
 
 ## Baseline
 
@@ -10,7 +10,8 @@
 |------|-------|
 | Resume starting SHA | `4db1f09fb2eba3d494144cd693a7ecd1143b08cf` |
 | Branch | `feat/pos-react-client` |
-| Review repair | [POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-01.md](./POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-01.md) |
+| Review repair 01 | [POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-01.md](./POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-01.md) |
+| Review repair 02 | [POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-02.md](./POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-02.md) |
 
 ## Completed in this master run
 
@@ -24,8 +25,9 @@
 | RMAP-11b | PASS | `f9fd88a4` | `47af61a3` |
 | RMAP-12 | PASS (+ checkout-search repair) | `7dcd3ab5` | see Review Repair 01 |
 | RMAP-13 | PASS | `adf634ee` | `08ba616c` |
-| Review Repair 01 | **PASS** | commits 1–2 | commit 3 |
-| RMAP-14 | **NOT PASS** — backend repaired; React UI not started | — | [POS-REACT-RMAP-14-returns-refunds.md](./POS-REACT-RMAP-14-returns-refunds.md) |
+| Review Repair 01 | **PASS** | commits 1–2 | commit 3 (`2364727c`) |
+| Review Repair 02 | **PASS** | sale mutation lock + concurrency tests | docs commit |
+| RMAP-14 | **NOT PASS** — backend ready; React UI not started | — | [POS-REACT-RMAP-14-returns-refunds.md](./POS-REACT-RMAP-14-returns-refunds.md) |
 
 ## Former blockers
 
@@ -33,13 +35,18 @@
 |------|--------|
 | `RMAP11_BROWSER_DEVICE_CONTRACT_GAP` | CLEARED by RMAP-10b |
 | `RMAP14_EXPIRY_RETURN_CONTRACT_GAP` | **CLEARED** by Review Repair 01 (`RestoreForSaleReturnAsync` + net refund fidelity) |
+| `RMAP14_RETURN_CONCURRENCY_GAP` | **CLEARED** by Review Repair 02 (shared sale advisory lock) |
+| `RMAP14_RETURN_VOID_RACE_GAP` | **CLEARED** by Review Repair 02 |
 
 ## Active package state — RMAP-14
 
 | Flag | Value |
 |------|-------|
 | `RMAP14_BACKEND_CONTRACT_REPAIRED` | YES |
+| `RMAP14_BACKEND_READY_FOR_REACT_RESTART` | YES |
 | `RMAP14_REACT_UI_NOT_STARTED` | YES |
+| `RMAP14_RETURN_CONCURRENCY_GAP` | CLOSED |
+| `RMAP14_RETURN_VOID_RACE_GAP` | CLOSED |
 | Package PASS | **NO** |
 
 ## Not started
@@ -48,4 +55,4 @@ RMAP-14 React UI, RMAP-15+, RMAP-B01, RMAP-12b, RMAP-B04, RMAP-TAX, provider pay
 
 ## Exact next
 
-Start **RMAP-14 React returns / refunds UI only** against the repaired backend. Do **not** start RMAP-15 until RMAP-14 PASS.
+Start **RMAP-14 React returns / refunds UI only** against the concurrency-safe backend. Do **not** start RMAP-15 until RMAP-14 PASS.
