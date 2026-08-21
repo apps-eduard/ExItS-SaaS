@@ -562,11 +562,12 @@ public sealed class SaleDomainTests
                  {
                      "Stock", "QuantityOnHand", "Inventory", "Vat",
                      "Refund", "Tip", "Fee",
-                     // Promotions, statutory discounts, and price overrides remain out of scope.
-                     "PromotionId", "PromoCode", "RegulatoryDiscountKind", "PriceOverride"
+                     "PromotionId", "PromoCode", "RegulatoryDiscountKind"
                  })
         {
             Assert.DoesNotContain(forbidden, names);
         }
+
+        Assert.Contains("PriceOverrides", names);
     }
 }

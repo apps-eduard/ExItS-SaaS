@@ -7,8 +7,9 @@ namespace ExItS.ArchitectureTests;
 /// refunds, split tender, and real GCash APIs in Sales. Offline cash capture lives
 /// in LocalStore/Maui outbox — not in Domain/Application Sales use cases.
 ///
-/// Manual commercial sale discounts (RMAP-B03) are in scope. Rule-driven promotions, statutory /
-/// regulatory discounts, and cashier price overrides are not, and remain guarded below.
+/// Manual commercial sale discounts (RMAP-B03) and sale-line unit-price overrides (RMAP-B01) are in
+/// scope. Rule-driven promotions and statutory / regulatory discounts are not, and remain guarded
+/// below. Authorized override types use the <c>SalePriceOverride*</c> prefix consistently.
 /// </summary>
 public sealed class PosSalesScopeArchitectureTests
 {
@@ -22,7 +23,6 @@ public sealed class PosSalesScopeArchitectureTests
         "PromoCode",
         "RegulatoryDiscount",
         "StatutoryDiscount",
-        "PriceOverride",
         "RefundId",
         "SaleRefund",
         "SaleReturn",
@@ -52,6 +52,15 @@ public sealed class PosSalesScopeArchitectureTests
     }
 
     [Fact]
+    public void Sales_slice_hosts_SalePriceOverride_types_for_RMAP_B01()
+    {
+        var domainSales = Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Domain"), "Sales");
+        Assert.True(File.Exists(Path.Combine(domainSales, "SalePriceOverride.cs")));
+        Assert.True(File.Exists(Path.Combine(domainSales, "SalePriceOverrideAdjustment.cs")));
+        Assert.True(File.Exists(Path.Combine(domainSales, "SalePriceOverrideApplier.cs")));
+    }
+
+    [Fact]
     public void Sales_domain_stays_persistence_and_http_independent()
     {
         var domain = Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Domain"), "Sales");
@@ -78,9 +87,10 @@ public sealed class PosSalesScopeArchitectureTests
         Assert.Contains("\"sale_number_sequences\"", context, StringComparison.Ordinal);
         Assert.Contains("\"payment_attempts\"", context, StringComparison.Ordinal);
         Assert.Contains("\"sale_commercial_discount_adjustments\"", context, StringComparison.Ordinal);
+        Assert.Contains("\"sale_price_override_adjustments\"", context, StringComparison.Ordinal);
 
         // A generic discounts/promotions table stays out of scope: only the commercial discount
-        // audit trail above exists, and it hangs off a recorded sale.
+        // and sale price override audit trails above exist, and they hang off a recorded sale.
         foreach (var table in new[]
                  {
                      "\"carts\"", "\"taxes\"", "\"discounts\"", "\"promotions\"", "\"sale_refunds\"",

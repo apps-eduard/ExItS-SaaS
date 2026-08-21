@@ -20,6 +20,8 @@ public static class PosRoleMatrix
         UtangCapability.VoidSale,
         // Cashiers deliberately excluded: a discount is a margin decision, not a checkout step.
         UtangCapability.ApplyCommercialDiscount,
+        // Manager may override within ≤100% deviation; unlimited remains Owner/Admin only.
+        UtangCapability.OverrideSalePrice,
         UtangCapability.ViewCustomersAndHistory,
         UtangCapability.CreateCustomer,
         UtangCapability.EditCustomer,
@@ -116,10 +118,12 @@ public static class PosRoleMatrix
     public static bool AllowsOrganizationManagement(bool isExactOwner, UtangCapability capability)
     {
         // Checkout-only capabilities never project into Org Web management, including applying a
-        // commercial discount, which is only meaningful inside a live checkout.
+        // commercial discount or sale price override, which are only meaningful inside a live checkout.
         if (capability is UtangCapability.CreateSale
             or UtangCapability.EnterPos
-            or UtangCapability.ApplyCommercialDiscount)
+            or UtangCapability.ApplyCommercialDiscount
+            or UtangCapability.OverrideSalePrice
+            or UtangCapability.OverrideSalePriceUnlimited)
         {
             return false;
         }
@@ -152,7 +156,9 @@ public static class PosRoleMatrix
     private static bool IsOrganizationManagementCapability(UtangCapability capability) =>
         capability is not UtangCapability.CreateSale
             and not UtangCapability.EnterPos
-            and not UtangCapability.ApplyCommercialDiscount;
+            and not UtangCapability.ApplyCommercialDiscount
+            and not UtangCapability.OverrideSalePrice
+            and not UtangCapability.OverrideSalePriceUnlimited;
 
     public static bool AllowsOrganizationManagementReport(bool isExactOwner, PosOperationalReportKind kind) =>
         isExactOwner || AllowsReport(PosRole.StoreManager, kind);

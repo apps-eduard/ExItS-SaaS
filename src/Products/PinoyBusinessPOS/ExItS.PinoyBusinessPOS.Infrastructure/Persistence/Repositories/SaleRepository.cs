@@ -68,11 +68,14 @@ internal sealed class SaleRepository : ISaleRepository
         var lines = await LoadLinesAsync([record.Id], organizationId, cancellationToken).ConfigureAwait(false);
         var discounts = await LoadDiscountsAsync([record.Id], organizationId, cancellationToken)
             .ConfigureAwait(false);
+        var priceOverrides = await LoadPriceOverridesAsync([record.Id], organizationId, cancellationToken)
+            .ConfigureAwait(false);
 
         return SaleEntityMapper.ToDomain(
             record,
             lines.TryGetValue(record.Id, out var foundLines) ? foundLines : [],
-            discounts.TryGetValue(record.Id, out var foundDiscounts) ? foundDiscounts : []);
+            discounts.TryGetValue(record.Id, out var foundDiscounts) ? foundDiscounts : [],
+            priceOverrides.TryGetValue(record.Id, out var foundOverrides) ? foundOverrides : []);
     }
 
     public async Task<(IReadOnlyList<Sale> Items, int TotalCount)> ListAsync(
@@ -135,12 +138,15 @@ internal sealed class SaleRepository : ISaleRepository
         var lines = await LoadLinesAsync(saleIds, organizationId, cancellationToken).ConfigureAwait(false);
         var discounts = await LoadDiscountsAsync(saleIds, organizationId, cancellationToken)
             .ConfigureAwait(false);
+        var priceOverrides = await LoadPriceOverridesAsync(saleIds, organizationId, cancellationToken)
+            .ConfigureAwait(false);
 
         var sales = records
             .Select(r => SaleEntityMapper.ToDomain(
                 r,
                 lines.TryGetValue(r.Id, out var foundLines) ? foundLines : [],
-                discounts.TryGetValue(r.Id, out var foundDiscounts) ? foundDiscounts : []))
+                discounts.TryGetValue(r.Id, out var foundDiscounts) ? foundDiscounts : [],
+                priceOverrides.TryGetValue(r.Id, out var foundOverrides) ? foundOverrides : []))
             .ToList();
         return (sales, total);
     }
@@ -205,12 +211,15 @@ internal sealed class SaleRepository : ISaleRepository
         var lines = await LoadLinesAsync(reportSaleIds, organizationId, cancellationToken).ConfigureAwait(false);
         var discounts = await LoadDiscountsAsync(reportSaleIds, organizationId, cancellationToken)
             .ConfigureAwait(false);
+        var priceOverrides = await LoadPriceOverridesAsync(reportSaleIds, organizationId, cancellationToken)
+            .ConfigureAwait(false);
 
         return records
             .Select(r => SaleEntityMapper.ToDomain(
                 r,
                 lines.TryGetValue(r.Id, out var foundLines) ? foundLines : [],
-                discounts.TryGetValue(r.Id, out var foundDiscounts) ? foundDiscounts : []))
+                discounts.TryGetValue(r.Id, out var foundDiscounts) ? foundDiscounts : [],
+                priceOverrides.TryGetValue(r.Id, out var foundOverrides) ? foundOverrides : []))
             .ToList();
     }
 
@@ -436,6 +445,11 @@ internal sealed class SaleRepository : ISaleRepository
                 _db.SaleCommercialDiscountAdjustments.Add(SaleEntityMapper.ToRecord(adjustment));
             }
 
+            foreach (var adjustment in sale.PriceOverrides)
+            {
+                _db.SalePriceOverrideAdjustments.Add(SaleEntityMapper.ToRecord(adjustment));
+            }
+
             if (afterSaleCreated is not null)
             {
                 await afterSaleCreated(sale, cancellationToken).ConfigureAwait(false);
@@ -552,6 +566,26 @@ internal sealed class SaleRepository : ISaleRepository
         CancellationToken cancellationToken)
     {
         var records = await _db.SaleCommercialDiscountAdjustments.AsNoTracking()
+            .Where(d => d.OrganizationId == organizationId.Value && saleIds.Contains(d.SaleId))
+            .OrderBy(d => d.RecordedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return records
+            .GroupBy(d => d.SaleId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+    }
+
+    /// <summary>
+    /// Loads sale price override audit rows for the given sales. Sales without overrides (including
+    /// all pre-RMAP-B01 history) rehydrate with an empty collection.
+    /// </summary>
+    private async Task<Dictionary<Guid, List<SalePriceOverrideAdjustmentRecord>>> LoadPriceOverridesAsync(
+        IReadOnlyCollection<Guid> saleIds,
+        PosOrganizationId organizationId,
+        CancellationToken cancellationToken)
+    {
+        var records = await _db.SalePriceOverrideAdjustments.AsNoTracking()
             .Where(d => d.OrganizationId == organizationId.Value && saleIds.Contains(d.SaleId))
             .OrderBy(d => d.RecordedAtUtc)
             .ToListAsync(cancellationToken)

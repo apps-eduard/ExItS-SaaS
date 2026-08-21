@@ -97,6 +97,17 @@ public static class DomainErrorCodes
     public const string SaleDiscountLineAmbiguous = "pos.sale.discount.line_ambiguous";
     public const string SaleDiscountTooMany = "pos.sale.discount.too_many";
 
+    public const string InvalidSalePriceOverrideAdjustmentId =
+        "pos.sale.price_override_adjustment.id.invalid";
+    public const string SalePriceOverrideReasonRequired = "pos.sale.price_override.reason_required";
+    public const string SalePriceOverrideInvalidAmount = "pos.sale.price_override.invalid_amount";
+    public const string SalePriceOverrideExceedsManagerLimit =
+        "pos.sale.price_override.exceeds_manager_limit";
+    public const string SalePriceOverrideStaleBaseline = "pos.sale.price_override.stale_baseline";
+    public const string SalePriceOverrideLineUnmatched = "pos.sale.price_override.line_unmatched";
+    public const string SalePriceOverrideLineAmbiguous = "pos.sale.price_override.line_ambiguous";
+    public const string SalePriceOverrideTooMany = "pos.sale.price_override.too_many";
+
     public const string InvalidPaymentAttemptId = "pos.payment_attempt.id.invalid";
     public const string PaymentGatewayIdempotencyConflict =
         "pos.payment_gateway.idempotency.conflict";

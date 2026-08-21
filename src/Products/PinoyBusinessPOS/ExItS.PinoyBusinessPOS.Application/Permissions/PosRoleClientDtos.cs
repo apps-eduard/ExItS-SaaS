@@ -80,6 +80,8 @@ public static class PosRoleAssignmentMapping
         UtangCapability.CreateSale => [PosFeatureCodes.StoreSalesCreate],
         UtangCapability.VoidSale => [PosFeatureCodes.StoreSalesVoid],
         UtangCapability.ApplyCommercialDiscount => [PosFeatureCodes.StoreSalesApplyCommercialDiscount],
+        UtangCapability.OverrideSalePrice => [PosFeatureCodes.StoreSalesOverridePrice],
+        UtangCapability.OverrideSalePriceUnlimited => [PosFeatureCodes.StoreSalesOverridePriceUnlimited],
         UtangCapability.ViewInventory => [PosFeatureCodes.StoreInventoryView],
         UtangCapability.ManageInventory => [PosFeatureCodes.StoreInventoryManage],
         UtangCapability.ViewExpenses => [PosFeatureCodes.StoreExpensesView],

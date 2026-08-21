@@ -110,7 +110,8 @@ public sealed record CheckoutSaleRequest(
     string? BuyerPersonalPublicUserId = null,
     Guid? BuyerOrganizationId = null,
     string? BuyerPublicOrganizationId = null,
-    List<CommercialDiscountIntentRequest>? Discounts = null);
+    List<CommercialDiscountIntentRequest>? Discounts = null,
+    List<SalePriceOverrideIntentRequest>? PriceOverrides = null);
 
 /// <summary>
 /// One requested manual commercial discount. The client sends intent only — scope, method, value and
@@ -128,6 +129,19 @@ public sealed record CommercialDiscountIntentRequest(
     Guid? ProductId = null,
     int? LineNumber = null);
 
+/// <summary>
+/// One requested per-sale unit-price override. The client sends the requested unit price and reason;
+/// the server resolves the baseline from the live catalog (or trusted offline snapshot path, which
+/// rejects overrides) and never rewrites catalog SellingPrice. Optional
+/// <c>ExpectedBaselineUnitPrice</c> fails closed on stale catalog prices.
+/// </summary>
+public sealed record SalePriceOverrideIntentRequest(
+    decimal RequestedUnitPrice,
+    string Reason,
+    Guid? ProductId = null,
+    int? LineNumber = null,
+    decimal? ExpectedBaselineUnitPrice = null);
+
 /// <summary>Per-line breakdown of a non-persisted checkout quote.</summary>
 public sealed record PosSaleQuoteLineDto(
     int LineNumber,
@@ -140,7 +154,8 @@ public sealed record PosSaleQuoteLineDto(
     decimal GrossLineTotal,
     decimal LineDiscountAmount,
     decimal SaleDiscountAllocatedAmount,
-    decimal LineTotal);
+    decimal LineTotal,
+    decimal? BaselineUnitPrice = null);
 
 /// <summary>One applied discount in a quote: what was asked for and what it came to in pesos.</summary>
 public sealed record PosSaleQuoteDiscountDto(
@@ -150,6 +165,13 @@ public sealed record PosSaleQuoteDiscountDto(
     decimal CalculatedAmount,
     string Reason,
     int? LineNumber);
+
+/// <summary>One applied price override in a quote: baseline vs applied unit price.</summary>
+public sealed record PosSaleQuotePriceOverrideDto(
+    int LineNumber,
+    decimal BaselineUnitPrice,
+    decimal AppliedUnitPrice,
+    string Reason);
 
 /// <summary>
 /// Non-persisted checkout preview. Nothing is recorded, no stock moves, no sale number is allocated.
@@ -165,7 +187,8 @@ public sealed record PosSaleQuoteDto(
     decimal Total,
     string? TaxPricingMode,
     List<PosSaleQuoteLineDto> Lines,
-    List<PosSaleQuoteDiscountDto> Discounts);
+    List<PosSaleQuoteDiscountDto> Discounts,
+    List<PosSaleQuotePriceOverrideDto>? PriceOverrides = null);
 
 public sealed record VoidSaleRequest(string Reason);
 

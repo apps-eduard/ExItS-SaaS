@@ -305,6 +305,8 @@ public sealed class CheckoutSale
         string? buyerPublicOrganizationId = null,
         Guid? branchId = null,
         IReadOnlyList<CommercialDiscountIntentRequest>? discounts = null,
+        IReadOnlyList<SalePriceOverrideIntentRequest>? priceOverrides = null,
+        bool allowUnlimitedSalePriceOverride = false,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
@@ -458,6 +460,7 @@ public sealed class CheckoutSale
                     lines,
                     clientSaleId,
                     discounts,
+                    priceOverrides,
                     cancellationToken)
                 .ConfigureAwait(false);
             if (!resolved.IsSuccess)
@@ -476,6 +479,17 @@ public sealed class CheckoutSale
 
             var intents = intentsResult.Value!;
 
+            var overrideIntentsResult = TryParsePriceOverrideIntents(priceOverrides);
+            if (!overrideIntentsResult.IsSuccess)
+            {
+                return ApplicationResult<Sale>.Failure(
+                    overrideIntentsResult.ErrorCode!,
+                    overrideIntentsResult.ErrorMessage!);
+            }
+
+            var overrideIntents = overrideIntentsResult.Value!;
+            var allowUnlimited = allowUnlimitedSalePriceOverride;
+
             var utcNow = _clock.UtcNow;
             var capturedCustomerId = linkedCustomerId;
             var capturedCreditEntryId = linkedCreditEntryId;
@@ -483,9 +497,14 @@ public sealed class CheckoutSale
             var capturedActorId = actorId;
             var productsById = byId;
 
-            // Tax must be computed from the NET (post-discount) subtotal, so the discount math runs
-            // first. Sale.Checkout independently recomputes the same numbers from the same intents.
-            var discountPreview = Sale.QuoteCommercialDiscounts(orgId, drafts, intents);
+            // Tax must be computed from the NET (post-discount) subtotal, so override + discount math
+            // runs first. Sale.Checkout independently recomputes the same numbers from the same intents.
+            var moneyPreview = Sale.QuoteCheckoutMoney(
+                orgId,
+                drafts,
+                intents,
+                overrideIntents,
+                allowUnlimited);
 
             decimal taxAmount = 0;
             TaxPricingMode? taxPricingMode = null;
@@ -499,7 +518,7 @@ public sealed class CheckoutSale
             {
                 taxPricingMode = setup!.TaxPricingMode;
                 taxAmount = OperationalSetupTaxCalculator.ComputeTaxAmount(
-                    discountPreview.NetSubtotal,
+                    moneyPreview.Discounts.NetSubtotal,
                     setup.TaxRatePercent,
                     setup.TaxPricingMode);
             }
@@ -529,7 +548,9 @@ public sealed class CheckoutSale
                         capturedTaxPricingMode,
                         resolvedBuyerParty,
                         branchId is Guid saleBranch ? PosBranchId.From(saleBranch) : null,
-                        intents),
+                        intents,
+                        overrideIntents,
+                        allowUnlimited),
                     async (createdSale, ct) =>
                     {
                         // Electronic Card/GCash sales await payment — reserve stock until Paid/Released.
@@ -598,20 +619,29 @@ public sealed class CheckoutSale
     }
 
     /// <summary>
-    /// Prices a cart and previews commercial discounts and tax without recording anything: no sale,
-    /// no sale number, no stock movement, no credit entry. Checkout revalidates independently.
+    /// Prices a cart and previews price overrides, commercial discounts, and tax without recording
+    /// anything: no sale, no sale number, no stock movement, no credit entry. Checkout revalidates
+    /// independently.
     /// </summary>
     public async Task<ApplicationResult<PosSaleQuoteDto>> QuoteAsync(
         Guid organizationId,
         IReadOnlyList<CheckoutSaleLineRequest>? lines,
         IReadOnlyList<CommercialDiscountIntentRequest>? discounts = null,
+        IReadOnlyList<SalePriceOverrideIntentRequest>? priceOverrides = null,
+        bool allowUnlimitedSalePriceOverride = false,
         CancellationToken cancellationToken = default)
     {
         try
         {
             var orgId = PosOrganizationId.From(organizationId);
 
-            var resolved = await ResolveDraftsAsync(orgId, lines, clientSaleId: null, discounts, cancellationToken)
+            var resolved = await ResolveDraftsAsync(
+                    orgId,
+                    lines,
+                    clientSaleId: null,
+                    discounts,
+                    priceOverrides,
+                    cancellationToken)
                 .ConfigureAwait(false);
             if (!resolved.IsSuccess)
             {
@@ -626,8 +656,21 @@ public sealed class CheckoutSale
                     intentsResult.ErrorMessage!);
             }
 
-            var drafts = resolved.Value!.Drafts;
-            var result = Sale.QuoteCommercialDiscounts(orgId, drafts, intentsResult.Value);
+            var overrideIntentsResult = TryParsePriceOverrideIntents(priceOverrides);
+            if (!overrideIntentsResult.IsSuccess)
+            {
+                return ApplicationResult<PosSaleQuoteDto>.Failure(
+                    overrideIntentsResult.ErrorCode!,
+                    overrideIntentsResult.ErrorMessage!);
+            }
+
+            var baselineDrafts = resolved.Value!.Drafts;
+            var money = Sale.QuoteCheckoutMoney(
+                orgId,
+                baselineDrafts,
+                intentsResult.Value,
+                overrideIntentsResult.Value,
+                allowUnlimitedSalePriceOverride);
 
             decimal taxAmount = 0;
             TaxPricingMode? taxPricingMode = null;
@@ -641,20 +684,23 @@ public sealed class CheckoutSale
             {
                 taxPricingMode = setup!.TaxPricingMode;
                 taxAmount = OperationalSetupTaxCalculator.ComputeTaxAmount(
-                    result.NetSubtotal,
+                    money.Discounts.NetSubtotal,
                     setup.TaxRatePercent,
                     setup.TaxPricingMode);
             }
 
             var total = taxPricingMode == TaxPricingMode.TaxExclusive
-                ? SaleMoney.RoundMoney(result.NetSubtotal + taxAmount)
-                : result.NetSubtotal;
+                ? SaleMoney.RoundMoney(money.Discounts.NetSubtotal + taxAmount)
+                : money.Discounts.NetSubtotal;
 
-            var quoteLines = result.Lines
+            var overridesByLine = money.PriceOverrides.Adjustments.ToDictionary(a => a.LineNumber);
+
+            var quoteLines = money.Discounts.Lines
                 .OrderBy(l => l.LineNumber)
                 .Select(l =>
                 {
-                    var draft = drafts[l.LineNumber - 1];
+                    var draft = money.PricedDrafts[l.LineNumber - 1];
+                    var baseline = baselineDrafts[l.LineNumber - 1].UnitPrice;
                     return new PosSaleQuoteLineDto(
                         l.LineNumber,
                         draft.ProductId.Value,
@@ -666,21 +712,22 @@ public sealed class CheckoutSale
                         l.GrossLineTotal,
                         l.LineDiscountAmount,
                         l.SaleDiscountAllocatedAmount,
-                        l.NetLineTotal);
+                        l.NetLineTotal,
+                        BaselineUnitPrice: overridesByLine.ContainsKey(l.LineNumber) ? baseline : null);
                 })
                 .ToList();
 
             return ApplicationResult<PosSaleQuoteDto>.Success(new PosSaleQuoteDto(
-                result.GrossSubtotal,
-                result.LineDiscountTotal,
-                result.SaleDiscountTotal,
-                result.DiscountTotal,
-                result.NetSubtotal,
+                money.Discounts.GrossSubtotal,
+                money.Discounts.LineDiscountTotal,
+                money.Discounts.SaleDiscountTotal,
+                money.Discounts.DiscountTotal,
+                money.Discounts.NetSubtotal,
                 taxAmount,
                 total,
                 taxPricingMode?.ToString(),
                 quoteLines,
-                result.Adjustments
+                money.Discounts.Adjustments
                     .Select(a => new PosSaleQuoteDiscountDto(
                         SaleCommercialDiscountRules.ToCode(a.Scope),
                         SaleCommercialDiscountRules.ToCode(a.Method),
@@ -688,6 +735,13 @@ public sealed class CheckoutSale
                         a.CalculatedAmount,
                         a.Reason,
                         a.LineNumber))
+                    .ToList(),
+                money.PriceOverrides.Adjustments
+                    .Select(a => new PosSaleQuotePriceOverrideDto(
+                        a.LineNumber,
+                        a.BaselineUnitPrice,
+                        a.AppliedUnitPrice,
+                        a.Reason))
                     .ToList()));
         }
         catch (DomainException ex)
@@ -741,11 +795,43 @@ public sealed class CheckoutSale
         return ApplicationResult<IReadOnlyList<CommercialDiscountIntent>?>.Success(intents);
     }
 
+    private static ApplicationResult<IReadOnlyList<SalePriceOverrideIntent>?> TryParsePriceOverrideIntents(
+        IReadOnlyList<SalePriceOverrideIntentRequest>? priceOverrides)
+    {
+        if (priceOverrides is null || priceOverrides.Count == 0)
+        {
+            return ApplicationResult<IReadOnlyList<SalePriceOverrideIntent>?>.Success(null);
+        }
+
+        var intents = new List<SalePriceOverrideIntent>(priceOverrides.Count);
+        foreach (var requested in priceOverrides)
+        {
+            if (requested is null)
+            {
+                return ApplicationResult<IReadOnlyList<SalePriceOverrideIntent>?>.Failure(
+                    DomainErrorCodes.SalePriceOverrideLineUnmatched,
+                    "A sale price override entry was empty.");
+            }
+
+            intents.Add(new SalePriceOverrideIntent(
+                requested.RequestedUnitPrice,
+                requested.Reason,
+                requested.ProductId is Guid productId && productId != Guid.Empty
+                    ? CatalogProductId.From(productId)
+                    : null,
+                requested.LineNumber,
+                requested.ExpectedBaselineUnitPrice));
+        }
+
+        return ApplicationResult<IReadOnlyList<SalePriceOverrideIntent>?>.Success(intents);
+    }
+
     private async Task<ApplicationResult<ResolvedCheckoutDrafts>> ResolveDraftsAsync(
         PosOrganizationId orgId,
         IReadOnlyList<CheckoutSaleLineRequest>? lines,
         Guid? clientSaleId,
         IReadOnlyList<CommercialDiscountIntentRequest>? discounts,
+        IReadOnlyList<SalePriceOverrideIntentRequest>? priceOverrides,
         CancellationToken cancellationToken)
     {
         if (lines is null || lines.Count == 0)
@@ -783,6 +869,15 @@ public sealed class CheckoutSale
             return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
                 ApplicationErrorCodes.SaleDiscountOfflineNotSupported,
                 "Commercial discounts cannot be applied to an offline sale snapshot. Record the sale online.");
+        }
+
+        // Fail closed: offline snapshots also cannot carry unit-price overrides (same arithmetic
+        // fidelity constraint as commercial discounts).
+        if (usesTrustedSnapshots && priceOverrides is { Count: > 0 })
+        {
+            return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                ApplicationErrorCodes.SalePriceOverrideOfflineNotSupported,
+                "Sale price overrides cannot be applied to an offline sale snapshot. Record the sale online.");
         }
 
         var unitIds = lines

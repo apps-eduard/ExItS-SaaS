@@ -58,6 +58,9 @@ public sealed class PosDbContext : DbContext
     internal DbSet<SaleLineRecord> SaleLines => Set<SaleLineRecord>();
     internal DbSet<SaleCommercialDiscountAdjustmentRecord> SaleCommercialDiscountAdjustments =>
         Set<SaleCommercialDiscountAdjustmentRecord>();
+
+    internal DbSet<SalePriceOverrideAdjustmentRecord> SalePriceOverrideAdjustments =>
+        Set<SalePriceOverrideAdjustmentRecord>();
     internal DbSet<SaleNumberSequenceRecord> SaleNumberSequences => Set<SaleNumberSequenceRecord>();
     internal DbSet<CustomerOrderRecord> CustomerOrders => Set<CustomerOrderRecord>();
     internal DbSet<CustomerOrderLineRecord> CustomerOrderLines => Set<CustomerOrderLineRecord>();
@@ -1207,6 +1210,54 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.SaleLineId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("fk_sale_commercial_discount_adjustments_sale_lines");
+        });
+
+        modelBuilder.Entity<SalePriceOverrideAdjustmentRecord>(entity =>
+        {
+            entity.ToTable("sale_price_override_adjustments", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_sale_price_override_adjustments_prices",
+                    "baseline_unit_price >= 0 AND applied_unit_price > 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.SaleId).HasColumnName("sale_id").IsRequired();
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.SaleLineId).HasColumnName("sale_line_id").IsRequired();
+            entity.Property(e => e.BaselineUnitPrice)
+                .HasColumnName("baseline_unit_price")
+                .HasPrecision(18, 2)
+                .IsRequired();
+            entity.Property(e => e.AppliedUnitPrice)
+                .HasColumnName("applied_unit_price")
+                .HasPrecision(18, 2)
+                .IsRequired();
+            entity.Property(e => e.Reason)
+                .HasColumnName("reason")
+                .HasMaxLength(SalePriceOverrideRules.ReasonMaxLength)
+                .IsRequired();
+            entity.Property(e => e.AppliedBy).HasColumnName("applied_by").IsRequired();
+            entity.Property(e => e.RecordedAtUtc).HasColumnName("recorded_at_utc");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.SaleId })
+                .HasDatabaseName("ix_sale_price_override_adjustments_org_sale");
+
+            entity.HasIndex(e => e.SaleLineId)
+                .HasDatabaseName("ix_sale_price_override_adjustments_sale_line");
+
+            entity.HasOne<SaleRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SaleId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_sale_price_override_adjustments_sales");
+
+            entity.HasOne<SaleLineRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SaleLineId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_sale_price_override_adjustments_sale_lines");
         });
 
         modelBuilder.Entity<SaleNumberSequenceRecord>(entity =>

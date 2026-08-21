@@ -23,8 +23,9 @@ namespace ExItS.PinoyBusinessPOS.Domain.Sales;
 ///
 /// Commercial discounts (RMAP-B03) are additive and money-only: <see cref="GrossSubtotal"/> keeps the
 /// pre-discount amount, <see cref="Subtotal"/> stays the net pre-tax base, and tax is computed from
-/// the net subtotal. Promotions, statutory/regulatory discounts, and cashier price overrides remain
-/// separate concepts that this type does not model.
+/// the net subtotal. Sale price overrides (RMAP-B01) change line <see cref="SaleLine.UnitPrice"/>
+/// only for the recorded sale — never catalog SellingPrice / Today's Price — and run before
+/// commercial discounts. Promotions and statutory/regulatory discounts remain separate concepts.
 /// </summary>
 public sealed class Sale
 {
@@ -35,6 +36,7 @@ public sealed class Sale
 
     private readonly List<SaleLine> _lines;
     private readonly List<SaleCommercialDiscountAdjustment> _commercialDiscounts;
+    private readonly List<SalePriceOverrideAdjustment> _priceOverrides;
 
     public SaleId Id { get; }
     public PosOrganizationId OrganizationId { get; }
@@ -122,6 +124,12 @@ public sealed class Sale
     /// </summary>
     public IReadOnlyList<SaleCommercialDiscountAdjustment> CommercialDiscounts => _commercialDiscounts;
 
+    /// <summary>
+    /// Audit snapshots of per-sale unit-price overrides applied at checkout — one per requested intent.
+    /// Empty when no override was applied (including legacy sales).
+    /// </summary>
+    public IReadOnlyList<SalePriceOverrideAdjustment> PriceOverrides => _priceOverrides;
+
     private Sale(
         SaleId id,
         PosOrganizationId organizationId,
@@ -151,7 +159,8 @@ public sealed class Sale
         DateTimeOffset updatedAtUtc,
         List<SaleLine> lines,
         SaleStockReservationState stockReservationState,
-        List<SaleCommercialDiscountAdjustment> commercialDiscounts)
+        List<SaleCommercialDiscountAdjustment> commercialDiscounts,
+        List<SalePriceOverrideAdjustment> priceOverrides)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -183,16 +192,20 @@ public sealed class Sale
         StockReservationState = stockReservationState;
         _lines = lines;
         _commercialDiscounts = commercialDiscounts;
+        _priceOverrides = priceOverrides;
     }
 
     /// <summary>
     /// Records a completed sale from validated snapshot line drafts. The sale number is allocated
     /// server-side before this call; clients never supply one.
     ///
-    /// When <paramref name="commercialDiscounts"/> is supplied, this method recomputes every peso from
-    /// the intents independently of anything the application layer already quoted, so a stale or
-    /// tampered quote can never decide the recorded amounts. <paramref name="taxAmount"/> must already
-    /// have been computed from the net (post-discount) subtotal.
+    /// Order of money operations is fixed: apply optional per-sale unit-price overrides to draft
+    /// UnitPrice → build lines → apply commercial discounts on GrossLineTotal. When
+    /// <paramref name="commercialDiscounts"/> or <paramref name="priceOverrides"/> are supplied,
+    /// this method recomputes every peso from the intents independently of anything the application
+    /// layer already quoted. <paramref name="taxAmount"/> must already have been computed from the
+    /// net (post-discount) subtotal. <paramref name="allowUnlimitedSalePriceOverride"/> selects the
+    /// manager deviation ceiling versus Owner-unlimited positive prices.
     /// </summary>
     public static Sale Checkout(
         PosOrganizationId organizationId,
@@ -212,7 +225,9 @@ public sealed class Sale
         TaxPricingMode? taxPricingMode = null,
         SaleBuyerParty? buyerParty = null,
         PosBranchId? branchId = null,
-        IReadOnlyList<CommercialDiscountIntent>? commercialDiscounts = null)
+        IReadOnlyList<CommercialDiscountIntent>? commercialDiscounts = null,
+        IReadOnlyList<SalePriceOverrideIntent>? priceOverrides = null,
+        bool allowUnlimitedSalePriceOverride = false)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(recordedBy);
@@ -236,7 +251,14 @@ public sealed class Sale
         var saleId = id ?? SaleId.New();
         var normalizedNumber = SaleNumbers.Normalize(saleNumber);
 
-        var saleLines = BuildLines(saleId, organizationId, lines);
+        var overrideResult = SalePriceOverrideApplier.Apply(
+            lines,
+            priceOverrides,
+            allowUnlimitedSalePriceOverride
+                ? null
+                : SalePriceOverrideRules.ManagerMaxDeviationRatio);
+
+        var saleLines = BuildLines(saleId, organizationId, overrideResult.Drafts);
 
         var grossSubtotal = SaleMoney.RoundMoney(saleLines.Sum(l => l.GrossLineTotal));
         if (grossSubtotal > MaxTotal)
@@ -263,6 +285,18 @@ public sealed class Sale
                 organizationId,
                 draft,
                 lineId,
+                recordedBy,
+                utcNow));
+        }
+
+        var priceOverrideAdjustments = new List<SalePriceOverrideAdjustment>(overrideResult.Adjustments.Count);
+        foreach (var draft in overrideResult.Adjustments)
+        {
+            priceOverrideAdjustments.Add(SalePriceOverrideAdjustment.Create(
+                saleId,
+                organizationId,
+                draft,
+                saleLines[draft.LineNumber - 1].Id,
                 recordedBy,
                 utcNow));
         }
@@ -330,14 +364,47 @@ public sealed class Sale
             utcNow,
             saleLines,
             SaleStockReservationState.None,
-            discountAdjustments);
+            discountAdjustments,
+            priceOverrideAdjustments);
     }
 
     /// <summary>
-    /// Runs the exact line-building and discount math <see cref="Checkout"/> would run, without
-    /// creating or persisting a sale. Used by the quote endpoint so an operator can preview a
-    /// discount before committing. A quote is advisory only: checkout recomputes from scratch and
-    /// may legitimately reject or produce different numbers if prices or the cart changed.
+    /// Runs the exact line-building, price-override, and discount math <see cref="Checkout"/> would
+    /// run, without creating or persisting a sale. Used by the quote endpoint so an operator can
+    /// preview overrides and discounts before committing. A quote is advisory only: checkout
+    /// recomputes from scratch and may legitimately reject or produce different numbers if prices
+    /// or the cart changed.
+    /// </summary>
+    public static SaleQuoteMoneyResult QuoteCheckoutMoney(
+        PosOrganizationId organizationId,
+        IReadOnlyList<SaleLineDraft> lines,
+        IReadOnlyList<CommercialDiscountIntent>? commercialDiscounts = null,
+        IReadOnlyList<SalePriceOverrideIntent>? priceOverrides = null,
+        bool allowUnlimitedSalePriceOverride = false)
+    {
+        EnsureLineCount(lines);
+
+        var overrideResult = SalePriceOverrideApplier.Apply(
+            lines,
+            priceOverrides,
+            allowUnlimitedSalePriceOverride
+                ? null
+                : SalePriceOverrideRules.ManagerMaxDeviationRatio);
+
+        var saleLines = BuildLines(SaleId.New(), organizationId, overrideResult.Drafts);
+        var grossSubtotal = SaleMoney.RoundMoney(saleLines.Sum(l => l.GrossLineTotal));
+        if (grossSubtotal > MaxTotal)
+        {
+            throw new DomainException(DomainErrorCodes.SaleTotalTooLarge, "The sale total is too large.");
+        }
+
+        var discountResult = SaleCommercialDiscountCalculator.Apply(ToDiscountBases(saleLines), commercialDiscounts);
+        return new SaleQuoteMoneyResult(overrideResult, discountResult, overrideResult.Drafts);
+    }
+
+    /// <summary>
+    /// Discount-only quote used by callers that already applied price overrides to the drafts.
+    /// Prefer <see cref="QuoteCheckoutMoney"/> when both override and discount intents are present.
     /// </summary>
     public static SaleCommercialDiscountResult QuoteCommercialDiscounts(
         PosOrganizationId organizationId,
@@ -470,7 +537,8 @@ public sealed class Sale
         decimal? grossSubtotal = null,
         decimal lineDiscountTotal = 0m,
         decimal saleDiscountTotal = 0m,
-        IEnumerable<SaleCommercialDiscountAdjustment>? commercialDiscounts = null) =>
+        IEnumerable<SaleCommercialDiscountAdjustment>? commercialDiscounts = null,
+        IEnumerable<SalePriceOverrideAdjustment>? priceOverrides = null) =>
         new(
             id,
             organizationId,
@@ -502,7 +570,8 @@ public sealed class Sale
             updatedAtUtc,
             lines.OrderBy(l => l.LineNumber).ToList(),
             stockReservationState,
-            commercialDiscounts?.ToList() ?? []);
+            commercialDiscounts?.ToList() ?? [],
+            priceOverrides?.ToList() ?? []);
 
     /// <summary>
     /// Marks inventory as reserved for an electronic sale awaiting payment.

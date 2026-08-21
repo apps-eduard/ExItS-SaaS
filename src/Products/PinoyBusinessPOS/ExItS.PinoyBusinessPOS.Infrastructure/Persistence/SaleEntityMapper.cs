@@ -14,7 +14,8 @@ internal static class SaleEntityMapper
     public static Sale ToDomain(
         SaleRecord record,
         IEnumerable<SaleLineRecord> lineRecords,
-        IEnumerable<SaleCommercialDiscountAdjustmentRecord>? discountRecords = null)
+        IEnumerable<SaleCommercialDiscountAdjustmentRecord>? discountRecords = null,
+        IEnumerable<SalePriceOverrideAdjustmentRecord>? priceOverrideRecords = null)
     {
         var saleId = SaleId.From(record.Id);
         var organizationId = PosOrganizationId.From(record.OrganizationId);
@@ -61,6 +62,20 @@ internal static class SaleEntityMapper
                 d.RecordedAtUtc))
             .ToList();
 
+        var priceOverrides = priceOverrideRecords?
+            .OrderBy(d => d.RecordedAtUtc)
+            .Select(d => SalePriceOverrideAdjustment.Rehydrate(
+                SalePriceOverrideAdjustmentId.From(d.Id),
+                saleId,
+                organizationId,
+                SaleLineId.From(d.SaleLineId),
+                d.BaselineUnitPrice,
+                d.AppliedUnitPrice,
+                d.Reason,
+                d.AppliedBy,
+                d.RecordedAtUtc))
+            .ToList();
+
         return Sale.Rehydrate(
             saleId,
             organizationId,
@@ -95,7 +110,8 @@ internal static class SaleEntityMapper
             record.GrossSubtotal,
             record.LineDiscountTotal,
             record.SaleDiscountTotal,
-            discounts);
+            discounts,
+            priceOverrides);
     }
 
     public static SaleRecord ToRecord(Sale sale) =>
@@ -173,6 +189,20 @@ internal static class SaleEntityMapper
             CalculatedAmount = adjustment.CalculatedAmount,
             Reason = adjustment.Reason,
             SaleLineId = adjustment.SaleLineId?.Value,
+            AppliedBy = adjustment.AppliedBy,
+            RecordedAtUtc = adjustment.RecordedAtUtc
+        };
+
+    public static SalePriceOverrideAdjustmentRecord ToRecord(SalePriceOverrideAdjustment adjustment) =>
+        new()
+        {
+            Id = adjustment.Id.Value,
+            SaleId = adjustment.SaleId.Value,
+            OrganizationId = adjustment.OrganizationId.Value,
+            SaleLineId = adjustment.SaleLineId.Value,
+            BaselineUnitPrice = adjustment.BaselineUnitPrice,
+            AppliedUnitPrice = adjustment.AppliedUnitPrice,
+            Reason = adjustment.Reason,
             AppliedBy = adjustment.AppliedBy,
             RecordedAtUtc = adjustment.RecordedAtUtc
         };
