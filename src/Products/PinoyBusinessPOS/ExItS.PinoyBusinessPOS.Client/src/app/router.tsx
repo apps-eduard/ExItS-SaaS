@@ -49,6 +49,15 @@ import { ConnectedBuyersPage } from "@/features/suppliers/ConnectedBuyersPage";
 import { ConnectedSharedProductsPage } from "@/features/suppliers/ConnectedSharedProductsPage";
 import { ConnectedCatalogPage } from "@/features/suppliers/ConnectedCatalogPage";
 import { LinkedProductsPage } from "@/features/suppliers/LinkedProductsPage";
+import { PurchasingHubPage } from "@/features/purchasing/PurchasingHubPage";
+import { PurchaseOrdersListPage } from "@/features/purchasing/PurchaseOrdersListPage";
+import { PurchaseOrderCreatePage } from "@/features/purchasing/PurchaseOrderCreatePage";
+import { PurchaseOrderDetailPage } from "@/features/purchasing/PurchaseOrderDetailPage";
+import { PurchaseOrderReceivePage } from "@/features/purchasing/PurchaseOrderReceivePage";
+import { ReceivableOrdersPage } from "@/features/purchasing/ReceivableOrdersPage";
+import { ReceiveStockPage } from "@/features/purchasing/ReceiveStockPage";
+import { DirectPurchasesListPage } from "@/features/purchasing/DirectPurchasesListPage";
+import { DirectPurchaseDetailPage } from "@/features/purchasing/DirectPurchaseDetailPage";
 import { OrgStaffInvitePage } from "@/features/staff/OrgStaffInvitePage";
 import { StaffInvitationAcceptPage } from "@/features/staff/StaffInvitationAcceptPage";
 import { NoAccessibleBranchPage } from "@/features/workspace/NoAccessibleBranchPage";
@@ -64,6 +73,8 @@ import {
   RequireEditCustomer,
   RequireInviteStaff,
   RequireManageCatalog,
+  RequireManageInventory,
+  RequireManagePurchasing,
   RequireManageShifts,
   RequireManageSuppliers,
   RequireManagerRoleHome,
@@ -71,6 +82,7 @@ import {
   RequireOwnerRoleHome,
   RequirePersonalSession,
   RequireProcessReturn,
+  RequirePurchasingHubAccess,
   RequireRecordRepayment,
   RequireSession,
   RequireViewCustomers,
@@ -432,6 +444,85 @@ export const appRoutes = [
                   <RequireManageSuppliers>
                     <SupplierEditPage />
                   </RequireManageSuppliers>
+                ),
+              },
+            ],
+          },
+          {
+            path: "purchasing",
+            element: (
+              <RequireOrganizationSession>
+                <RequireWorkspaceBound>
+                  <RequirePurchasingHubAccess>
+                    <Outlet />
+                  </RequirePurchasingHubAccess>
+                </RequireWorkspaceBound>
+              </RequireOrganizationSession>
+            ),
+            children: [
+              { index: true, element: <PurchasingHubPage /> },
+              {
+                path: "orders",
+                element: (
+                  <RequireViewPurchasing>
+                    <PurchaseOrdersListPage />
+                  </RequireViewPurchasing>
+                ),
+              },
+              {
+                path: "new",
+                element: (
+                  <RequireManagePurchasing>
+                    <PurchaseOrderCreatePage />
+                  </RequireManagePurchasing>
+                ),
+              },
+              {
+                path: "receipts",
+                element: (
+                  <RequireViewPurchasing>
+                    <ReceivableOrdersPage />
+                  </RequireViewPurchasing>
+                ),
+              },
+              {
+                path: "receive-stock",
+                element: (
+                  <RequireManageInventory>
+                    <ReceiveStockPage />
+                  </RequireManageInventory>
+                ),
+              },
+              {
+                path: "direct-purchases",
+                element: (
+                  <RequireViewInventory>
+                    <DirectPurchasesListPage />
+                  </RequireViewInventory>
+                ),
+              },
+              {
+                path: "direct-purchases/:receiptId",
+                element: (
+                  <RequireViewInventory>
+                    <DirectPurchaseDetailPage />
+                  </RequireViewInventory>
+                ),
+              },
+              {
+                path: ":purchaseOrderId",
+                element: (
+                  <RequireViewPurchasing>
+                    <PurchaseOrderDetailPage />
+                  </RequireViewPurchasing>
+                ),
+              },
+              {
+                path: ":purchaseOrderId/receive",
+                element: (
+                  <RequireManagePurchasing>
+                    <PurchaseOrderReceivePage />
+                  </RequireManagePurchasing>
                 ),
               },
             ],

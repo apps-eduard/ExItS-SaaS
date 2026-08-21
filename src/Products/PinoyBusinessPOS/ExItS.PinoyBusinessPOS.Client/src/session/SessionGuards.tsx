@@ -411,6 +411,21 @@ export function RequireManagePurchasing({ children }: { children: ReactNode }) {
   return children;
 }
 
+/** Hub entry: ViewPurchasing OR ManageInventory OR ViewSuppliers (MAUI PurchasingHub). */
+export function RequirePurchasingHubAccess({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (
+    !canViewPurchasing(sessionGrant) &&
+    !canManageInventory(sessionGrant) &&
+    !canViewSuppliers(sessionGrant)
+  ) {
+    return <ExperienceAccessDeniedPage testId="purchasing-hub-denied" />;
+  }
+
+  return children;
+}
+
 export function RequireViewReturns({ children }: { children: ReactNode }) {
   const { sessionGrant } = useWorkspace();
 

@@ -85,6 +85,8 @@ export type PosRequestOptions = {
   formData?: FormData;
   signal?: AbortSignal;
   workspace: PosWorkspaceScope;
+  /** Extra headers (e.g. Idempotency-Key / X-Pos-Payload-Hash for mutations). */
+  headers?: Record<string, string>;
 };
 
 function buildPosHeaders(
@@ -134,6 +136,14 @@ export async function posRequest<T>(options: PosRequestOptions): Promise<T> {
   const method = options.method ?? "GET";
   const requestCorrelationId = createCorrelationId();
   const headers = buildPosHeaders(options.workspace, requestCorrelationId, "application/json");
+
+  if (options.headers) {
+    for (const [key, value] of Object.entries(options.headers)) {
+      if (value) {
+        headers.set(key, value);
+      }
+    }
+  }
 
   let body: BodyInit | undefined;
   if (options.formData !== undefined) {
