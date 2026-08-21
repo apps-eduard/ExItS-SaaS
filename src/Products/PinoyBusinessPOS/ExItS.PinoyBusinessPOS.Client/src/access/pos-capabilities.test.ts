@@ -7,10 +7,14 @@ import {
   canEnterSellFloor,
   canInviteOrganizationStaff,
   canManageCatalog,
+  canManageRegisters,
+  canManageShifts,
   canSelectExperienceMode,
   canUseAdminExperience,
   canUseOperationsExperience,
   canUseSellingExperience,
+  canViewRegisters,
+  canViewShifts,
   hasOrganizationManagementAuthority,
   isPosOperationsManager,
   resolveEffectivePosRoleCode,
@@ -137,5 +141,20 @@ describe("pos-capabilities", () => {
 
     expect(canEnterSellFloor(denied)).toBe(false);
     expect(resolveRoleHomeRoute(denied)).toBe("/");
+  });
+
+  it("allows cashier ManageShifts without admin or register manage", () => {
+    const cashier = grant({
+      mappedPosRoleCode: "Cashier",
+      productLocalRoleCode: "Cashier",
+      membershipRole: "OrganizationMember",
+    });
+
+    expect(canManageShifts(cashier)).toBe(true);
+    expect(canViewShifts(cashier)).toBe(true);
+    expect(canViewRegisters(cashier)).toBe(true);
+    expect(canManageRegisters(cashier)).toBe(false);
+    expect(canUseAdminExperience(cashier)).toBe(false);
+    expect(canManageCatalog(cashier)).toBe(false);
   });
 });

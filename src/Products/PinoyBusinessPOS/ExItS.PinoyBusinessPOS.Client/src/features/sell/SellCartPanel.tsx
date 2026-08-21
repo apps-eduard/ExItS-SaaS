@@ -225,13 +225,25 @@ export function SellCartPanel({
                       ? t("loading.label")
                       : t("sell.checkoutReadinessBlocked")}
           </p>
-          {!shiftGateReady && readinessStatus !== "loading" && readinessStatus !== "blocked_denied" ? (
-            <Button asChild variant="ghost" className="mt-2 min-h-11 w-full" data-testid="sell-open-shift-cta">
+          {!shiftGateReady &&
+          readinessStatus !== "loading" &&
+          readinessStatus !== "blocked_denied" ? (
+            <Button
+              asChild
+              variant="ghost"
+              className="mt-2 min-h-11 w-full"
+              data-testid="sell-open-shift-cta"
+            >
               <Link to="/shifts/open">{t("shift.openTitle")}</Link>
             </Button>
           ) : null}
           {shiftGateReady ? (
-            <Button asChild variant="ghost" className="mt-2 min-h-11 w-full" data-testid="sell-view-shift-cta">
+            <Button
+              asChild
+              variant="ghost"
+              className="mt-2 min-h-11 w-full"
+              data-testid="sell-view-shift-cta"
+            >
               <Link to="/shifts">{t("shift.hubTitle")}</Link>
             </Button>
           ) : null}
@@ -240,9 +252,7 @@ export function SellCartPanel({
           data-testid="sell-pay"
           type="button"
           disabled
-          title={
-            shiftGateReady ? t("sell.payAwaitingSalePost") : t("sell.payDisabledNeedsShift")
-          }
+          title={shiftGateReady ? t("sell.payAwaitingSalePost") : t("sell.payDisabledNeedsShift")}
           className="w-full"
         >
           {lineCount > 0 ? `${t("sell.payWithItems")} (${lineCount})` : t("sell.pay")}

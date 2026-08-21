@@ -22,7 +22,11 @@ import {
   ManagerRoleHomePage,
   OwnerRoleHomePage,
 } from "@/features/role/RoleHomePages";
+import { RegistersListPage } from "@/features/registers/RegistersListPage";
 import { SellFloorPage } from "@/features/sell/SellFloorPage";
+import { ShiftDetailPage } from "@/features/shifts/ShiftDetailPage";
+import { ShiftOpenPage } from "@/features/shifts/ShiftOpenPage";
+import { ShiftsHubPage } from "@/features/shifts/ShiftsHubPage";
 import { OrgStaffInvitePage } from "@/features/staff/OrgStaffInvitePage";
 import { StaffInvitationAcceptPage } from "@/features/staff/StaffInvitationAcceptPage";
 import { NoAccessibleBranchPage } from "@/features/workspace/NoAccessibleBranchPage";
@@ -36,12 +40,15 @@ import {
   RequireCreateSale,
   RequireInviteStaff,
   RequireManageCatalog,
+  RequireManageShifts,
   RequireManagerRoleHome,
   RequireOrganizationSession,
   RequireOwnerRoleHome,
   RequirePersonalSession,
   RequireSession,
   RequireViewInventory,
+  RequireViewRegisters,
+  RequireViewShifts,
   RequireWorkspaceBound,
   RequireOrganizationBound,
   WorkspaceBootGate,
@@ -211,6 +218,42 @@ export const appRoutes = [
               { path: "expiration", element: <InventoryExpirationPage /> },
               { path: ":productId", element: <InventoryDetailPage /> },
             ],
+          },
+          {
+            path: "shifts",
+            element: (
+              <RequireOrganizationSession>
+                <RequireWorkspaceBound>
+                  <RequireViewShifts>
+                    <Outlet />
+                  </RequireViewShifts>
+                </RequireWorkspaceBound>
+              </RequireOrganizationSession>
+            ),
+            children: [
+              { index: true, element: <ShiftsHubPage /> },
+              {
+                path: "open",
+                element: (
+                  <RequireManageShifts>
+                    <ShiftOpenPage />
+                  </RequireManageShifts>
+                ),
+              },
+              { path: ":shiftId", element: <ShiftDetailPage /> },
+            ],
+          },
+          {
+            path: "registers",
+            element: (
+              <RequireOrganizationSession>
+                <RequireWorkspaceBound>
+                  <RequireViewRegisters>
+                    <RegistersListPage />
+                  </RequireViewRegisters>
+                </RequireWorkspaceBound>
+              </RequireOrganizationSession>
+            ),
           },
           { path: "*", element: <NotFoundPage /> },
         ],

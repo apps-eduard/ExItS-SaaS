@@ -1,7 +1,10 @@
 import {
   canCreateSale,
   canManageCatalog,
+  canManageShifts,
   canViewInventory,
+  canViewRegisters,
+  canViewShifts,
   canUseAdminExperience,
   canUseOperationsExperience,
   resolveEffectivePosRoleCode,
@@ -44,6 +47,9 @@ export function RoleHomeShell({
   const canSell = canCreateSale(sessionGrant);
   const canCatalog = canManageCatalog(sessionGrant);
   const canInventory = canViewInventory(sessionGrant);
+  const canShifts = canViewShifts(sessionGrant);
+  const canOpenShift = canManageShifts(sessionGrant);
+  const canRegisters = canViewRegisters(sessionGrant);
   const securityRole = resolveEffectivePosRoleCode(sessionGrant);
 
   function startSelling() {
@@ -115,6 +121,21 @@ export function RoleHomeShell({
         </div>
       )}
 
+      {canShifts ? (
+        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-shifts">
+          <Link to="/shifts">{t("shift.hubTitle")}</Link>
+        </Button>
+      ) : null}
+      {canOpenShift ? (
+        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-shift-open">
+          <Link to="/shifts/open">{t("shift.openTitle")}</Link>
+        </Button>
+      ) : null}
+      {canRegisters ? (
+        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-registers">
+          <Link to="/registers">{t("register.listTitle")}</Link>
+        </Button>
+      ) : null}
       {canCatalog ? (
         <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-catalog">
           <Link to="/catalog">{t("catalog.openCatalog")}</Link>

@@ -53,7 +53,10 @@ export function SellCustomQuantityDialog({
 
   const unitPrice = product ? resolveSellUnitPrice(product, unit) : 0;
   const unitLabel =
-    unit?.shortLabel?.trim() || unit?.displayName || product?.unitOfMeasure || t("sell.quantityLabel");
+    unit?.shortLabel?.trim() ||
+    unit?.displayName ||
+    product?.unitOfMeasure ||
+    t("sell.quantityLabel");
   const editing = initialQuantity != null && initialQuantity > 0;
 
   const parsed = useMemo(() => {

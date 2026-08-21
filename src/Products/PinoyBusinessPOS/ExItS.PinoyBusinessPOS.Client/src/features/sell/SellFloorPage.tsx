@@ -187,8 +187,7 @@ export function SellFloorPage() {
       unit: PosCatalogProductUnitDto,
       initialQuantity?: number | null,
     ) => {
-      const existing =
-        initialQuantity ?? cart.getEnteredQuantity(product.productId, unit.unitId);
+      const existing = initialQuantity ?? cart.getEnteredQuantity(product.productId, unit.unitId);
       setCustomQtyEntry({
         product,
         unit,
@@ -483,7 +482,12 @@ export function SellFloorPage() {
         ) : (
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="m-0 text-[length:var(--exits-text-sm)]">{t("sell.shiftClosedBanner")}</p>
-            <Button asChild variant="ghost" className="min-h-11" data-testid="sell-banner-open-shift">
+            <Button
+              asChild
+              variant="ghost"
+              className="min-h-11"
+              data-testid="sell-banner-open-shift"
+            >
               <Link to="/shifts/open">{t("shift.openTitle")}</Link>
             </Button>
           </div>

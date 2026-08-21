@@ -194,7 +194,8 @@ export const en = {
   "sell.checkoutReadinessBlocked": "No open shift. Open a shift to continue toward checkout.",
   "sell.checkoutReadinessDenied": "Shift access is not allowed for this account.",
   "sell.checkoutReadinessClosed": "Shift is closed. Open a new shift to continue.",
-  "sell.checkoutReadinessNoRegister": "Open shift is missing a register. Re-open on an Active register.",
+  "sell.checkoutReadinessNoRegister":
+    "Open shift is missing a register. Re-open on an Active register.",
   "sell.shiftOpenBanner": "Open shift {shift} on {register}.",
   "sell.shiftClosedBanner": "No open shift. Open a shift before checkout.",
   "sell.exitSelling": "Exit selling",
@@ -254,8 +255,7 @@ export const en = {
   "role.cashierTitle": "Cashier home",
   "role.cashierLede": "Shift-ready selling entry for checkout staff.",
   "role.cashierBadge": "Cashier",
-  "role.cashierBody":
-    "Selling entry with own shift. Open your shift, then use the sell floor.",
+  "role.cashierBody": "Selling entry with own shift. Open your shift, then use the sell floor.",
   "shift.hubTitle": "Shifts",
   "shift.hubLede": "Open and close your cashier shift. Checkout needs an open shift.",
   "shift.openTitle": "Open shift",
@@ -304,7 +304,8 @@ export const en = {
   "register.listTitle": "Registers",
   "register.listLede": "POS stations for opening shifts. Not a branch or device.",
   "register.deniedDetail": "Register access is not allowed for this account.",
-  "register.viewOnly": "You can view registers. Creating or editing registers needs manager access.",
+  "register.viewOnly":
+    "You can view registers. Creating or editing registers needs manager access.",
   "register.loadError": "Could not load registers.",
   "register.empty": "No registers yet.",
   "register.hasOpenShift": "Has open shift",
@@ -647,13 +648,16 @@ export const filPH: Record<keyof typeof en, string> = {
   "sell.payDisabledNeedsShift": "Mag-open muna ng shift bago ang checkout.",
   "sell.payAwaitingSalePost": "May open shift. Hindi pa available ang sale checkout.",
   "sell.payNotReady": "Mag-open ng shift para ihanda ang checkout. Susunod ang sale posting.",
-  "sell.payShiftReadyNotPosted": "Handa na ang shift. Hindi pa nai-post ang sale checkout sa package na ito.",
+  "sell.payShiftReadyNotPosted":
+    "Handa na ang shift. Hindi pa nai-post ang sale checkout sa package na ito.",
   "sell.checkoutReadinessLabel": "Checkout readiness",
   "sell.checkoutReadinessReady": "May open shift at register — handa para sa susunod na checkout.",
-  "sell.checkoutReadinessBlocked": "Walang open shift. Mag-open ng shift para magpatuloy sa checkout.",
+  "sell.checkoutReadinessBlocked":
+    "Walang open shift. Mag-open ng shift para magpatuloy sa checkout.",
   "sell.checkoutReadinessDenied": "Hindi allowed ang shift access para sa account na ito.",
   "sell.checkoutReadinessClosed": "Sarado na ang shift. Mag-open ng bagong shift.",
-  "sell.checkoutReadinessNoRegister": "Walang register ang open shift. Mag-open ulit sa Active register.",
+  "sell.checkoutReadinessNoRegister":
+    "Walang register ang open shift. Mag-open ulit sa Active register.",
   "sell.shiftOpenBanner": "Open shift {shift} sa {register}.",
   "sell.shiftClosedBanner": "Walang open shift. Mag-open muna bago ang checkout.",
   "sell.exitSelling": "Lumabas sa pagbebenta",
@@ -763,7 +767,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "register.listTitle": "Mga register",
   "register.listLede": "Mga POS station para sa pag-open ng shift. Hindi branch o device.",
   "register.deniedDetail": "Hindi allowed ang register access para sa account na ito.",
-  "register.viewOnly": "Makikita mo ang registers. Kailangan ng manager access para gumawa o mag-edit.",
+  "register.viewOnly":
+    "Makikita mo ang registers. Kailangan ng manager access para gumawa o mag-edit.",
   "register.loadError": "Hindi ma-load ang registers.",
   "register.empty": "Wala pang registers.",
   "register.hasOpenShift": "May open shift",

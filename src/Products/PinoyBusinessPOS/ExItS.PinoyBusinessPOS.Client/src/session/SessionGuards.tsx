@@ -8,8 +8,11 @@ import {
   canInviteOrganizationStaff,
   canManageCatalog,
   canManageInventory,
+  canManageShifts,
   canUseAdminExperience,
   canViewInventory,
+  canViewRegisters,
+  canViewShifts,
 } from "@/access/pos-capabilities";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
@@ -272,6 +275,36 @@ export function RequireManageInventory({ children }: { children: ReactNode }) {
 
   if (!canManageInventory(sessionGrant)) {
     return <ExperienceAccessDeniedPage testId="inventory-manage-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireViewShifts({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canViewShifts(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="shifts-view-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireManageShifts({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canManageShifts(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="shifts-manage-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireViewRegisters({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canViewRegisters(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="registers-view-denied" />;
   }
 
   return children;

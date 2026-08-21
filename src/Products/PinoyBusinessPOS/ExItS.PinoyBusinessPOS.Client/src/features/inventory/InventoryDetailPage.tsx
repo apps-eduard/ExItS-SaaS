@@ -81,13 +81,7 @@ export function InventoryDetailPage() {
   });
 
   const lotsQuery = useInfiniteQuery({
-    queryKey: [
-      "inventory",
-      "lots",
-      workspace?.organizationId,
-      workspace?.branchId,
-      productId,
-    ],
+    queryKey: ["inventory", "lots", workspace?.organizationId, workspace?.branchId, productId],
     enabled: Boolean(workspace) && Boolean(productId) && tracksExpiration,
     initialPageParam: 1,
     queryFn: ({ pageParam, signal }) =>

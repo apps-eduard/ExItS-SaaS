@@ -168,6 +168,52 @@ export function canViewInventory(grant: PosSessionGrantFacts | null | undefined)
   return canManageInventory(grant);
 }
 
+/**
+ * ViewShifts UI gate — PosRoleMatrix Owner/Admin/StoreManager/Cashier (+ ReportingUser).
+ * Server remains authoritative via store-shifts-view.
+ */
+export function canViewShifts(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  if (isPosOwnerRole(grant) || isPosOperationsManager(grant) || isPosCashierRole(grant)) {
+    return true;
+  }
+  const role = resolveEffectivePosRoleCode(grant)?.toLowerCase();
+  return role === "reportinguser";
+}
+
+/**
+ * ManageShifts (open/close) — Owner/Admin/StoreManager/Cashier.
+ * Cashier keeps own-shift manage without admin/catalog powers.
+ */
+export function canManageShifts(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  return isPosOwnerRole(grant) || isPosOperationsManager(grant) || isPosCashierRole(grant);
+}
+
+/** ViewRegisters — Owner/Admin/StoreManager/Cashier/InventoryStaff/ReportingUser. */
+export function canViewRegisters(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  if (isPosOwnerRole(grant) || isPosOperationsManager(grant) || isPosCashierRole(grant)) {
+    return true;
+  }
+  const role = resolveEffectivePosRoleCode(grant)?.toLowerCase();
+  return role === "inventorystaff" || role === "reportinguser";
+}
+
+/** ManageRegisters (CRUD) — Owner/Admin/StoreManager only; Cashier excluded. */
+export function canManageRegisters(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  return isPosOwnerRole(grant) || isPosOperationsManager(grant);
+}
+
 /** Admin / business-management experience (Organization Web essentials in React). */
 export function canUseAdminExperience(grant: PosSessionGrantFacts | null | undefined): boolean {
   return hasOrganizationManagementAuthority(grant);

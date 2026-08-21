@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import { SessionCartLifecycle } from "@/cart/SessionCartLifecycle";
 import { SessionCartProvider } from "@/cart/SessionCartProvider";
 import { ConnectivityHost } from "@/connectivity/ConnectivityHost";
+import { ShiftContextProvider } from "@/features/shifts/ShiftContextProvider";
 import { PwaUpdateHost } from "@/pwa/PwaUpdateHost";
 import { SellingModeLifecycle } from "@/selling/SellingModeLifecycle";
 import { SellingModeProvider } from "@/selling/SellingModeProvider";
@@ -12,15 +13,17 @@ export function SessionWorkspaceRoot() {
   return (
     <SessionProvider>
       <WorkspaceProvider>
-        <SessionCartProvider>
-          <SellingModeProvider>
-            <SellingModeLifecycle />
-            <SessionCartLifecycle />
-            <ConnectivityHost />
-            <PwaUpdateHost />
-            <Outlet />
-          </SellingModeProvider>
-        </SessionCartProvider>
+        <ShiftContextProvider>
+          <SessionCartProvider>
+            <SellingModeProvider>
+              <SellingModeLifecycle />
+              <SessionCartLifecycle />
+              <ConnectivityHost />
+              <PwaUpdateHost />
+              <Outlet />
+            </SellingModeProvider>
+          </SessionCartProvider>
+        </ShiftContextProvider>
       </WorkspaceProvider>
     </SessionProvider>
   );
