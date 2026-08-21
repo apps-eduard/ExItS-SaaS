@@ -609,6 +609,26 @@ export function SellFloorPage() {
         </Button>
       </div>
 
+      {!continuedOffline && midSessionBlock.kind === "device_lost" ? (
+        <div
+          role="status"
+          data-testid="sell-view-only-banner"
+          className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] px-3 py-2"
+        >
+          <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
+            {t("sell.viewOnlyBanner")}
+          </p>
+          <Button
+            asChild
+            variant="ghost"
+            className="min-h-11"
+            data-testid="sell-view-only-register"
+          >
+            <Link to="/devices/register?from=sell">{t("sell.readiness.registerDevice")}</Link>
+          </Button>
+        </div>
+      ) : null}
+
       {continuedOffline ? (
         sellReadiness.openShiftNumber ? (
           <p

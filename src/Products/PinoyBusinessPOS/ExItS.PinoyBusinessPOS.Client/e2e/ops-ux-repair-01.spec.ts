@@ -25,27 +25,26 @@ const FIXED_INSTALL_ID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
 test.describe("POS OPERATIONS UX REPAIR 01", () => {
   test.use({ serviceWorkers: "block" });
 
-  test("cashier unregistered -> device readiness, no admin controls", async ({ page }) => {
+  test("cashier unregistered -> view-only sell, register CTA, no admin controls", async ({
+    page,
+  }) => {
     await seedInstallationId(page);
     await mockBoundCashierSession(page);
     await mockPosCatalogApi(page);
     await mockPosRegisterShiftApi(page, { openShift: true });
     await signInAndBindCashier(page);
 
-    await expect(page.getByTestId("sell-readiness-device")).toBeVisible();
-    await expect(page.getByTestId("sell-floor")).toHaveCount(0);
-    await expect(page.getByTestId("sell-readiness-register")).toBeVisible();
-    await expect(page.getByTestId("sell-readiness-register")).toContainText(
-      "Register this browser",
-    );
+    await expect(page.getByTestId("sell-floor")).toBeVisible();
+    await expect(page.getByTestId("sell-view-only-banner")).toBeVisible();
+    await expect(page.getByTestId("sell-view-only-register")).toContainText("Register this device");
     await expect(page.getByTestId("sell-readiness-manage-devices")).toHaveCount(0);
     await expect(page.getByTestId("devices-create-code")).toHaveCount(0);
     await expect(page.getByText("Revoke", { exact: false })).toHaveCount(0);
 
-    await page.getByTestId("sell-readiness-register").click();
+    await page.getByTestId("sell-view-only-register").click();
     await expect(page.getByTestId("device-register-page")).toBeVisible();
-    await expect(page.getByTestId("device-redeem-branch-locked")).toBeVisible();
-    await expect(page.getByText("Revoke", { exact: false })).toHaveCount(0);
+    await expect(page.getByTestId("devices-register-submit")).toBeVisible();
+    await expect(page.getByTestId("device-redeem-code")).toHaveCount(0);
     await expect(page.getByTestId("devices-create-code")).toHaveCount(0);
   });
 

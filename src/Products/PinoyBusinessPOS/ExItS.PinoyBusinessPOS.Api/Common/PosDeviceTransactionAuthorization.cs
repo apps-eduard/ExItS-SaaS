@@ -30,7 +30,7 @@ internal sealed class PosDeviceTransactionAuthorizer(
 
     public async Task<IResult?> EnsureAuthorizedAsync(HttpRequest request, Guid organizationId, CancellationToken ct)
     {
-        var deviceId = request.Headers[DeviceHeaderName].FirstOrDefault()?.Trim();
+            var deviceId = request.Headers[DeviceHeaderName].FirstOrDefault()?.Trim();
         if (string.IsNullOrWhiteSpace(deviceId))
         {
             // Integration WebApplicationFactory has no Platform device service. Production and real
@@ -40,7 +40,9 @@ internal sealed class PosDeviceTransactionAuthorizer(
                 return null;
             }
 
-            return Denied("application.pos_device.not_authorized", "A registered POS installation device is required.");
+            return Denied(
+                "application.pos_device.registration_required",
+                "Register this device before executing POS sales.");
         }
 
         if (client.BaseAddress is null)
@@ -76,11 +78,19 @@ internal sealed class PosDeviceTransactionAuthorizer(
 
             var errorCode = await ReadErrorCodeAsync(response, ct).ConfigureAwait(false);
             if (response.StatusCode == HttpStatusCode.Forbidden
-                && errorCode is "application.pos_device.not_authorized" or "application.pos_device.revoked")
+                && errorCode is "application.pos_device.not_authorized"
+                    or "application.pos_device.revoked"
+                    or "application.pos_device.registration_required")
             {
-                return Denied(errorCode, errorCode == "application.pos_device.revoked"
-                    ? "This POS device has been revoked."
-                    : "This POS device is not authorized for transactions.");
+                return Denied(
+                    errorCode,
+                    errorCode switch
+                    {
+                        "application.pos_device.revoked" => "This POS device has been revoked.",
+                        "application.pos_device.registration_required" =>
+                            "Register this device before executing POS sales.",
+                        _ => "This POS device is not authorized for transactions.",
+                    });
             }
 
             // Do not disguise a Platform outage as a device rejection. The mobile client must retain

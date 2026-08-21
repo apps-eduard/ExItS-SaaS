@@ -43,6 +43,7 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.ProductLocalRoleMissing
             or ApplicationErrorCodes.BranchAccessDenied
             or ApplicationErrorCodes.PosDeviceNotAuthorized
+            or ApplicationErrorCodes.PosDeviceRegistrationRequired
             or ApplicationErrorCodes.PosDeviceRevoked
             or ApplicationErrorCodes.PersonalUtangUnauthorized
             or ApplicationErrorCodes.PersonalTodoUnauthorized

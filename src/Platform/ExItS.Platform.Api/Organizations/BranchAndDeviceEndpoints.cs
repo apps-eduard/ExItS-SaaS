@@ -460,7 +460,10 @@ internal static class BranchAndDeviceEndpoints
         });
         root.MapPost("/pos-devices/register", async (Guid organizationId, RegisterPosDeviceRequest body, RegisterCurrentDevice useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
         {
-            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, PlatformAuditActions.PosDeviceRegistered, ct).ConfigureAwait(false);
+            // Any active org member may register *this* installation for POS execution.
+            // Capacity and branch rules stay authoritative in RegisterCurrentDevice.
+            // Governing-admin-only create-token remains for MAUI compatibility.
+            var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
             if (denied is not null) return denied;
             var result = await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId),
                 new(body.BranchId, body.InstallationDeviceId ?? string.Empty, body.FriendlyName ?? string.Empty, body.Platform, body.Model, body.AppVersion), ct).ConfigureAwait(false);

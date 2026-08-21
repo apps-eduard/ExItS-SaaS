@@ -9,6 +9,7 @@ export function BottomSheet({
   children,
   panelId,
   testId = "bottom-sheet",
+  closeLabel = "Close",
 }: {
   open: boolean;
   onClose: () => void;
@@ -16,6 +17,7 @@ export function BottomSheet({
   children: ReactNode;
   panelId: string;
   testId?: string;
+  closeLabel?: string;
 }) {
   return (
     <>
@@ -43,7 +45,7 @@ export function BottomSheet({
           <div className="flex items-center justify-between gap-3">
             <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">{title}</h2>
             <Button type="button" variant="ghost" onClick={onClose}>
-              Close
+              {closeLabel}
             </Button>
           </div>
         ) : null}

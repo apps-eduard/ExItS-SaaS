@@ -135,7 +135,7 @@ public sealed class AuthorizeForTransactions(IPosDeviceRepository devices)
         PosDevice? device;
         try { device = await devices.GetByInstallationDeviceIdAsync(organizationId, installationDeviceId, cancellationToken).ConfigureAwait(false); }
         catch (DomainException ex) { return ApplicationResult<PosDeviceAuthorizationDto>.Failure(ApplicationErrorCodes.PosDeviceNotAuthorized, ex.Message); }
-        if (device is null) return ApplicationResult<PosDeviceAuthorizationDto>.Failure(ApplicationErrorCodes.PosDeviceNotAuthorized, "This POS installation is not registered.");
+        if (device is null) return ApplicationResult<PosDeviceAuthorizationDto>.Failure(ApplicationErrorCodes.PosDeviceRegistrationRequired, "This POS installation is not registered for sales.");
         if (device.Status == PosDeviceStatus.Revoked) return ApplicationResult<PosDeviceAuthorizationDto>.Failure(ApplicationErrorCodes.PosDeviceRevoked, "This POS device has been revoked.");
         if (expectedBranchId is not null && device.BranchId != expectedBranchId)
             return ApplicationResult<PosDeviceAuthorizationDto>.Failure(ApplicationErrorCodes.PosDeviceNotAuthorized, "This device is not authorized for the selected branch.");

@@ -10,6 +10,7 @@ import {
   chooseOwnerManageBusiness,
   clientNavigate,
 } from "./mock-bound-session";
+import { mockPosRegisterShiftApi } from "./mock-pos-register-shift-route";
 
 // Prefer manage-business bind for /org/devices; register uses explicit branch select.
 
@@ -229,34 +230,17 @@ test.describe("RMAP-10b browser POS device", () => {
     await expect(page.getByTestId("devices-capacity-bar")).toBeVisible();
   });
 
-  test("owner can create registration code and staff can redeem without camera", async ({
-    page,
-  }) => {
+  test("staff registers this device directly without a registration code", async ({ page }) => {
     await seedInstallationId(page);
-    await mockBoundOwnerSession(page);
-    const devicesApi = await mockPosDevicesApi(page);
-    await signInAndBindOwner(page);
-    await chooseOwnerManageBusiness(page);
-    await expect(page.getByTestId("org-essentials-page")).toBeVisible();
-    await page.getByTestId("open-org-devices").click();
-    await expect(page.getByTestId("org-devices-page")).toBeVisible();
-    await page.getByTestId("devices-create-code").click();
-    await expect(page.getByTestId("devices-created-code")).toContainText(
-      "e2e-registration-token-one-time",
-    );
-    expect(devicesApi.getToken()).toBe("e2e-registration-token-one-time");
-
     await mockBoundCashierSession(page);
-    await mockPosDevicesApi(page, {
-      lastRegistrationToken: "e2e-registration-token-one-time",
-    });
+    await mockPosDevicesApi(page);
+    await mockPosRegisterShiftApi(page, { openShift: true });
     await signInAndBindCashier(page);
     await clientNavigate(page, "/devices/register");
     await expect(page.getByTestId("device-register-page")).toBeVisible();
-    await page.getByTestId("device-redeem-code").fill("e2e-registration-token-one-time");
-    await expect(page.getByTestId("device-redeem-branch-locked")).toBeVisible();
-    await page.getByTestId("device-redeem-submit").click();
-    // Successful redeem returns to /sell readiness (device → shift → sell).
+    await expect(page.getByTestId("device-redeem-code")).toHaveCount(0);
+    await expect(page.getByTestId("devices-create-code")).toHaveCount(0);
+    await page.getByTestId("devices-register-submit").click();
     await expect(
       page.getByTestId("sell-readiness-shift").or(page.getByTestId("sell-floor")),
     ).toBeVisible({
@@ -321,10 +305,10 @@ test.describe("RMAP-10b browser POS device", () => {
     });
     await signInAndBindCashier(page);
     await clientNavigate(page, "/sell");
-    await expect(page.getByTestId("sell-readiness-device")).toBeVisible();
-    await expect(page.getByTestId("sell-floor")).toHaveCount(0);
-    await expect(page.getByTestId("sell-readiness-register")).toBeVisible();
-    await expect(page.getByTestId("sell-readiness-manage-devices")).toHaveCount(0);
+    await expect(page.getByTestId("sell-floor")).toBeVisible();
+    await expect(page.getByTestId("sell-view-only-banner")).toBeVisible();
+    await expect(page.getByTestId("sell-pay").first()).toBeDisabled();
+    await expect(page.getByTestId("devices-create-code")).toHaveCount(0);
   });
 
   for (const viewport of VIEWPORTS) {

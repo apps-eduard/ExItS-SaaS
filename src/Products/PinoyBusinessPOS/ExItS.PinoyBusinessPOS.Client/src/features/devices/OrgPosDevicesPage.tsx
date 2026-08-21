@@ -1,39 +1,87 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Gauge, MonitorSmartphone } from "lucide-react";
+import {
+  CircleAlert,
+  Gauge,
+  Monitor,
+  MonitorSmartphone,
+  ShieldAlert,
+  Smartphone,
+  Tablet,
+  type LucideIcon,
+} from "lucide-react";
 import { hasOrganizationManagementAuthority } from "@/access/pos-capabilities";
 import {
-  createPosDeviceRegistrationToken,
+  issuePosDeviceRevokeStepUp,
+  type GovernanceStepUpFailureReason,
+} from "@/api/platform/governance-step-up-client";
+import { getPlatformCredentialStatus } from "@/api/platform/platform-credentials-client";
+import {
   getPosDeviceCapacity,
   listPosDevices,
   registerPosDevice,
   revokePosDevice,
   type PosDeviceDto,
 } from "@/api/platform/pos-devices-client";
-import { getDurableInstallationDeviceId } from "@/workspace/browser-installation-identity";
+import {
+  getDurableInstallationDeviceId,
+  peekDurableInstallationDeviceId,
+} from "@/workspace/browser-installation-identity";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { BottomSheet } from "@/components/exits/SheetDialog";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { formatPosDeviceCapacity } from "@/features/devices/device-capacity";
+import {
+  browserRegistrationMetadata,
+  deviceIconKind,
+  formatDeviceModelLine,
+  formatRelativeOrDate,
+  isCurrentDevice,
+  resolveCurrentBrowserState,
+  suggestFriendlyName,
+  type DeviceIconKind,
+} from "@/features/devices/device-presentation";
+import { usePreferences } from "@/hooks/usePreferences";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
+const MIN_REVOKE_REASON_LENGTH = 8;
+
+const DEVICE_ICONS: Record<DeviceIconKind, LucideIcon> = {
+  phone: Smartphone,
+  tablet: Tablet,
+  desktop: Monitor,
+  browser: MonitorSmartphone,
+};
+
 export function OrgPosDevicesPage() {
   const { t } = useI18n();
+  const { preferences } = usePreferences();
   const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant, workspaces, posDevice, refreshPosDevice } = useWorkspace();
   const canManage = hasOrganizationManagementAuthority(sessionGrant);
   const organizationId = boundWorkspace?.organizationId ?? null;
-  const [deviceName, setDeviceName] = useState("This browser");
+
+  const [deviceName, setDeviceName] = useState(() => suggestFriendlyName());
   const [registerBranchId, setRegisterBranchId] = useState(boundWorkspace?.branchId ?? "");
+  const [registerFormOpen, setRegisterFormOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [createdToken, setCreatedToken] = useState<string | null>(null);
-  const [revokeReason, setRevokeReason] = useState("");
   const [revokeTarget, setRevokeTarget] = useState<PosDeviceDto | null>(null);
+  const [revokeReason, setRevokeReason] = useState("");
+  const [revokePassword, setRevokePassword] = useState("");
+  const [revokePasswordVisible, setRevokePasswordVisible] = useState(false);
+  const [revokeError, setRevokeError] = useState<string | null>(null);
+  const [revokedCurrentDevice, setRevokedCurrentDevice] = useState(false);
   const [copiedDeviceId, setCopiedDeviceId] = useState<string | null>(null);
+
+  const localInstallationId = useMemo(
+    () => posDevice.installationDeviceId ?? peekDurableInstallationDeviceId(),
+    [posDevice.installationDeviceId],
+  );
 
   const branches = useMemo(() => {
     if (!organizationId) {
@@ -75,21 +123,64 @@ export function OrgPosDevicesPage() {
   });
 
   const capacity = formatPosDeviceCapacity(capacityQuery.data);
+  const capacityBlocked = capacity?.kind === "finite" && capacity.atLimit;
+  const devices = useMemo(() => devicesQuery.data ?? [], [devicesQuery.data]);
+
+  const currentBrowser = useMemo(
+    () =>
+      resolveCurrentBrowserState({
+        devices,
+        localInstallationId,
+        registrationStatus: posDevice.registrationStatus,
+      }),
+    [devices, localInstallationId, posDevice.registrationStatus],
+  );
+
+  const showRegisterForm = currentBrowser.state === "unregistered" || registerFormOpen;
+
+  function formatTimestamp(value: string | null | undefined): string | null {
+    return formatRelativeOrDate(value, new Date(), preferences.locale);
+  }
+
+  function stepUpMessage(reason: GovernanceStepUpFailureReason): string {
+    switch (reason) {
+      case "password_required":
+        return t("devices.revoke.passwordRequired");
+      case "wrong_password":
+        return t("devices.revoke.wrongPassword");
+      case "expired":
+        return t("devices.revoke.expired");
+      case "consumed":
+        return t("devices.revoke.consumed");
+      case "invalid_scope":
+        return t("devices.revoke.invalidScope");
+      case "not_allowed":
+        return t("devices.revoke.notAllowed");
+      default:
+        return t("devices.revoke.unavailable");
+    }
+  }
 
   const registerMutation = useMutation({
     mutationFn: async () => {
       if (!organizationId || !registerBranchId) {
         throw new Error(t("devices.branchRequired"));
       }
+      if (capacityBlocked) {
+        throw new Error(t("devices.capacity.limitReachedDetail"));
+      }
       const identity = getDurableInstallationDeviceId();
       if (!identity.ok) {
         throw new Error(t("devices.identityUnavailable"));
       }
+      const metadata = browserRegistrationMetadata();
       const result = await registerPosDevice(organizationId, {
         branchId: registerBranchId,
         installationDeviceId: identity.installationDeviceId,
         friendlyName: deviceName.trim() || t("devices.defaultBrowserName"),
-        platform: "Browser",
+        platform: metadata.platform,
+        model: metadata.model,
+        appVersion: metadata.appVersion,
       });
       if (!result.ok) {
         throw new Error(result.body?.detail ?? t("devices.registerError"));
@@ -98,6 +189,8 @@ export function OrgPosDevicesPage() {
     },
     onSuccess: async () => {
       setActionError(null);
+      setRevokedCurrentDevice(false);
+      setRegisterFormOpen(false);
       await queryClient.invalidateQueries({ queryKey: ["platform-pos-devices", organizationId] });
       await queryClient.invalidateQueries({
         queryKey: ["platform-pos-devices-capacity", organizationId],
@@ -109,45 +202,56 @@ export function OrgPosDevicesPage() {
     },
   });
 
-  const tokenMutation = useMutation({
-    mutationFn: async () => {
-      if (!organizationId) {
-        throw new Error(t("devices.noOrganization"));
-      }
-      const result = await createPosDeviceRegistrationToken(organizationId);
-      if (!result.ok) {
-        throw new Error(result.body?.detail ?? t("devices.tokenError"));
-      }
-      return result.value;
-    },
-    onSuccess: (token) => {
-      setActionError(null);
-      setCreatedToken(token.token);
-    },
-    onError: (error: Error) => {
-      setActionError(error.message);
-    },
-  });
-
   const revokeMutation = useMutation({
     mutationFn: async () => {
       if (!organizationId || !revokeTarget) {
         throw new Error(t("devices.revokeError"));
       }
+
       const reason = revokeReason.trim();
-      if (!reason) {
-        throw new Error(t("devices.revokeReasonRequired"));
+      if (reason.length < MIN_REVOKE_REASON_LENGTH) {
+        throw new Error(t("devices.revoke.reasonTooShort"));
       }
-      const result = await revokePosDevice(organizationId, revokeTarget.id, { reason });
+      if (!revokePassword.trim()) {
+        throw new Error(t("devices.revoke.passwordRequired"));
+      }
+
+      const credential = await getPlatformCredentialStatus();
+      if (!credential.ok) {
+        throw new Error(t("devices.revoke.credentialCheckFailed"));
+      }
+      if (!credential.value.hasPassword) {
+        // No self-service password bootstrap exists in this client — stay honest and stop here.
+        throw new Error(t("devices.revoke.noPassword"));
+      }
+
+      const stepUp = await issuePosDeviceRevokeStepUp(
+        organizationId,
+        revokeTarget.id,
+        revokePassword,
+      );
+      if (!stepUp.ok) {
+        throw new Error(stepUpMessage(stepUp.reason));
+      }
+
+      const wasCurrentDevice = isCurrentDevice(revokeTarget, localInstallationId);
+      const result = await revokePosDevice(organizationId, revokeTarget.id, {
+        reason,
+        stepUpToken: stepUp.value.stepUpToken,
+      });
       if (!result.ok) {
         throw new Error(result.body?.detail ?? t("devices.revokeError"));
       }
-      return result.value;
+      return { wasCurrentDevice };
     },
-    onSuccess: async () => {
+    onSuccess: async ({ wasCurrentDevice }) => {
       setActionError(null);
+      setRevokeError(null);
       setRevokeTarget(null);
       setRevokeReason("");
+      // Revoking never re-registers: the owner must ask for this browser explicitly.
+      setRevokedCurrentDevice(wasCurrentDevice);
+      setRegisterFormOpen(false);
       await queryClient.invalidateQueries({ queryKey: ["platform-pos-devices", organizationId] });
       await queryClient.invalidateQueries({
         queryKey: ["platform-pos-devices-capacity", organizationId],
@@ -155,9 +259,37 @@ export function OrgPosDevicesPage() {
       await refreshPosDevice();
     },
     onError: (error: Error) => {
-      setActionError(error.message);
+      setRevokeError(error.message);
+    },
+    onSettled: () => {
+      setRevokePassword("");
+      setRevokePasswordVisible(false);
     },
   });
+
+  function openRevoke(device: PosDeviceDto) {
+    setRevokeTarget(device);
+    setRevokeReason("");
+    setRevokePassword("");
+    setRevokePasswordVisible(false);
+    setRevokeError(null);
+  }
+
+  function closeRevoke() {
+    setRevokeTarget(null);
+    setRevokeReason("");
+    setRevokePassword("");
+    setRevokePasswordVisible(false);
+    setRevokeError(null);
+  }
+
+  function openRegisterForm(branchId: string | null) {
+    setRegisterFormOpen(true);
+    setActionError(null);
+    if (branchId && !registerBranchId) {
+      setRegisterBranchId(branchId);
+    }
+  }
 
   async function copyInstallationId(installationDeviceId: string) {
     try {
@@ -182,12 +314,17 @@ export function OrgPosDevicesPage() {
     );
   }
 
+  const revokeTargetIsCurrent = revokeTarget
+    ? isCurrentDevice(revokeTarget, localInstallationId)
+    : false;
+  const revokeReasonTooShort = revokeReason.trim().length < MIN_REVOKE_REASON_LENGTH;
+
   return (
     <div
       data-testid="org-devices-page"
       className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-4"
     >
-      <PageHeader title={t("devices.listTitle")} />
+      <PageHeader title={t("devices.listTitle")} description={t("devices.listLede")} />
 
       {capacity ? (
         <Card data-testid="devices-capacity">
@@ -233,89 +370,148 @@ export function OrgPosDevicesPage() {
         </Card>
       ) : null}
 
-      <Card data-testid="devices-this-browser">
+      <Card data-testid="devices-this-browser" data-state={currentBrowser.state}>
         <div className="flex items-start gap-2.5">
           <MonitorSmartphone className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
           <div className="min-w-0 flex-1">
-            <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-              {t("devices.thisBrowserTitle")}
-            </p>
-            <p className="mt-0.5 mb-0 text-[length:var(--exits-text-xs)] text-muted">
-              {posDevice.detail}
-            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                {currentBrowser.state === "active"
+                  ? t("devices.currentDevice.activeTitle")
+                  : currentBrowser.state === "revoked"
+                    ? t("devices.currentDevice.revokedTitle")
+                    : t("devices.currentDevice.unregisteredTitle")}
+              </p>
+              <StatusChip tone="info">{t("devices.thisDevice")}</StatusChip>
+              {currentBrowser.state === "active" ? (
+                <StatusChip tone="success">{t("devices.status.active")}</StatusChip>
+              ) : null}
+              {currentBrowser.state === "revoked" ? (
+                <StatusChip tone="warning">{t("devices.status.revoked")}</StatusChip>
+              ) : null}
+            </div>
+            {currentBrowser.state === "active" ? (
+              <p className="mt-0.5 mb-0 text-[length:var(--exits-text-xs)] text-muted">
+                {t("devices.currentDevice.activeDetail").replace(
+                  "{branch}",
+                  branchNameById.get(currentBrowser.device?.branchId ?? "") ??
+                    boundWorkspace?.branchName ??
+                    t("devices.branchFallback"),
+                )}
+              </p>
+            ) : null}
+            {currentBrowser.state === "revoked" ? (
+              <p
+                className="mt-0.5 mb-0 text-[length:var(--exits-text-xs)] text-muted"
+                data-testid="devices-this-browser-revoked"
+              >
+                {t("devices.currentDevice.revokedDetail")}
+              </p>
+            ) : null}
+            {currentBrowser.state === "unregistered" ? (
+              <p className="mt-0.5 mb-0 text-[length:var(--exits-text-xs)] text-muted">
+                {posDevice.detail}
+              </p>
+            ) : null}
             <p
               className="mt-0.5 mb-0 text-[length:var(--exits-text-xs)] text-muted"
               data-testid="devices-status"
             >
               {t("devices.statusLabel")}: {posDevice.registrationStatus}
             </p>
+            {currentBrowser.device ? (
+              <p className="mt-0.5 mb-0 text-[length:var(--exits-text-xs)] text-muted">
+                {formatDeviceModelLine(currentBrowser.device.platform, currentBrowser.device.model)}
+              </p>
+            ) : null}
           </div>
         </div>
-        <label className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-          {t("devices.deviceNameLabel")}
-          <input
-            className="min-h-11 rounded border border-[var(--exits-border)] bg-transparent px-3"
-            data-testid="devices-name-input"
-            value={deviceName}
-            onChange={(event) => setDeviceName(event.target.value)}
-          />
-        </label>
-        <label className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-          {t("devices.branchLabel")}
-          <select
-            className="min-h-11 rounded border border-[var(--exits-border)] bg-transparent px-3"
-            data-testid="devices-branch-select"
-            value={registerBranchId}
-            onChange={(event) => setRegisterBranchId(event.target.value)}
+
+        {revokedCurrentDevice ? (
+          <p
+            className="mt-3 mb-0 text-[length:var(--exits-text-sm)]"
+            data-testid="devices-revoked-current-notice"
           >
-            <option value="">{t("devices.branchPlaceholder")}</option>
-            {branches.map((branch) => (
-              <option key={branch.branchId} value={branch.branchId}>
-                {branch.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Button
-            type="button"
-            className="min-h-11"
-            data-testid="devices-register-browser"
-            disabled={
-              registerMutation.isPending || (capacity?.kind === "finite" && capacity.atLimit)
-            }
-            onClick={() => registerMutation.mutate()}
-          >
-            {registerMutation.isPending ? t("devices.registering") : t("devices.registerBrowser")}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            className="min-h-11"
-            data-testid="devices-create-code"
-            disabled={tokenMutation.isPending}
-            onClick={() => tokenMutation.mutate()}
-          >
-            {tokenMutation.isPending ? t("devices.creatingCode") : t("devices.createCode")}
-          </Button>
-        </div>
-        {createdToken ? (
-          <div className="mt-3" data-testid="devices-created-code">
-            <p className="m-0 text-[length:var(--exits-text-sm)]">{t("devices.codeReady")}</p>
-            <code className="mt-2 block break-all rounded bg-[var(--exits-surface-muted)] p-2 text-[length:var(--exits-text-sm)]">
-              {createdToken}
-            </code>
+            {t("devices.revoke.successCurrentDevice")}
+          </p>
+        ) : null}
+
+        {currentBrowser.state !== "unregistered" && !registerFormOpen ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {currentBrowser.state === "revoked" ? (
+              <Button
+                type="button"
+                className="min-h-11"
+                data-testid="devices-register-again"
+                onClick={() => openRegisterForm(currentBrowser.device?.branchId ?? null)}
+              >
+                {t("devices.currentDevice.registerAgain")}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {showRegisterForm ? (
+          <div data-testid="devices-register-form">
+            <label className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              {t("devices.deviceNameLabel")}
+              <input
+                className="min-h-11 rounded border border-[var(--exits-border)] bg-transparent px-3"
+                data-testid="devices-name-input"
+                value={deviceName}
+                onChange={(event) => setDeviceName(event.target.value)}
+              />
+            </label>
+            <label className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              {t("devices.branchLabel")}
+              <select
+                className="min-h-11 rounded border border-[var(--exits-border)] bg-transparent px-3"
+                data-testid="devices-branch-select"
+                value={registerBranchId}
+                onChange={(event) => setRegisterBranchId(event.target.value)}
+              >
+                <option value="">{t("devices.branchPlaceholder")}</option>
+                {branches.map((branch) => (
+                  <option key={branch.branchId} value={branch.branchId}>
+                    {branch.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {capacityBlocked ? (
+              <p
+                className="mt-3 mb-0 text-[length:var(--exits-text-xs)] text-muted"
+                data-testid="devices-register-blocked"
+              >
+                {t("devices.capacity.limitReachedDetail")}
+              </p>
+            ) : null}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                className="min-h-11"
+                data-testid="devices-register-browser"
+                disabled={registerMutation.isPending || capacityBlocked}
+                onClick={() => registerMutation.mutate()}
+              >
+                {registerMutation.isPending
+                  ? t("devices.registering")
+                  : t("devices.registerThisDevice")}
+              </Button>
+            </div>
           </div>
         ) : null}
       </Card>
 
       {actionError ? (
-        <p
-          className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+        <div
+          role="alert"
+          className="flex gap-3 rounded-[var(--exits-radius-md)] border border-destructive bg-[var(--exits-surface)] px-4 py-3"
           data-testid="devices-action-error"
         >
-          {actionError}
-        </p>
+          <CircleAlert className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden />
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-destructive">{actionError}</p>
+        </div>
       ) : null}
 
       {devicesQuery.isLoading ? <LoadingSkeleton label={t("loading.label")} /> : null}
@@ -328,66 +524,135 @@ export function OrgPosDevicesPage() {
       ) : null}
 
       <ul className="m-0 flex list-none flex-col gap-2 p-0" data-testid="devices-list">
-        {(devicesQuery.data ?? []).map((device) => (
-          <li key={device.id}>
-            <Card data-testid={`device-row-${device.id}`}>
-              <div className="flex items-start gap-2.5">
-                <MonitorSmartphone className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold wrap-break-word">
-                      {device.friendlyName}
+        {devices.map((device) => {
+          const Icon = DEVICE_ICONS[deviceIconKind(device.platform, device.model)];
+          const isCurrent = isCurrentDevice(device, localInstallationId);
+          const modelLine = formatDeviceModelLine(device.platform, device.model);
+          const lastUsed = formatTimestamp(device.lastSeenAtUtc);
+          const registered = formatTimestamp(device.registeredAtUtc);
+          const revoked = formatTimestamp(device.revokedAtUtc);
+
+          return (
+            <li key={device.id}>
+              <Card data-testid={`device-row-${device.id}`} data-current-device={isCurrent}>
+                <div className="flex items-start gap-2.5">
+                  <Icon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold wrap-break-word">
+                        {device.friendlyName}
+                      </p>
+                      <StatusChip tone={device.status === "Active" ? "success" : "warning"}>
+                        {device.status === "Active"
+                          ? t("devices.status.active")
+                          : device.status === "Revoked"
+                            ? t("devices.status.revoked")
+                            : device.status}
+                      </StatusChip>
+                      {isCurrent ? (
+                        <span data-testid={`device-this-device-${device.id}`}>
+                          <StatusChip tone="info">{t("devices.thisDevice")}</StatusChip>
+                        </span>
+                      ) : null}
+                    </div>
+                    {modelLine ? (
+                      <p className="mb-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
+                        {modelLine}
+                      </p>
+                    ) : null}
+                    <p className="mb-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
+                      {branchNameById.get(device.branchId) ?? t("devices.branchFallback")}
                     </p>
-                    <StatusChip tone={device.status === "Active" ? "success" : "info"}>
-                      {device.status}
-                    </StatusChip>
-                  </div>
-                  <p className="mb-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
-                    {branchNameById.get(device.branchId) ?? t("devices.branchFallback")}
-                  </p>
-                  <details className="mt-2 text-[length:var(--exits-text-xs)] text-muted">
-                    <summary className="cursor-pointer select-none">
-                      {t("devices.installationIdDetails")}
-                    </summary>
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <code className="break-all rounded bg-[var(--exits-surface-muted)] px-2 py-1">
-                        {device.installationDeviceId}
-                      </code>
+                    <dl className="m-0 mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[length:var(--exits-text-xs)] text-muted">
+                      {lastUsed ? (
+                        <>
+                          <dt className="m-0">{t("devices.lastUsed")}</dt>
+                          <dd className="m-0">{lastUsed}</dd>
+                        </>
+                      ) : null}
+                      {registered ? (
+                        <>
+                          <dt className="m-0">{t("devices.registeredOn")}</dt>
+                          <dd className="m-0">{registered}</dd>
+                        </>
+                      ) : null}
+                      {revoked ? (
+                        <>
+                          <dt className="m-0">{t("devices.revokedOn")}</dt>
+                          <dd className="m-0">{revoked}</dd>
+                        </>
+                      ) : null}
+                      {device.appVersion ? (
+                        <>
+                          <dt className="m-0">{t("devices.appVersion")}</dt>
+                          <dd className="m-0">{device.appVersion}</dd>
+                        </>
+                      ) : null}
+                    </dl>
+                    <details className="mt-2 text-[length:var(--exits-text-xs)] text-muted">
+                      <summary className="cursor-pointer select-none">
+                        {t("devices.technicalDetails")}
+                      </summary>
+                      <div className="mt-2 flex flex-col gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span>{t("devices.installationIdLabel")}</span>
+                          <code className="break-all rounded bg-[var(--exits-surface-muted)] px-2 py-1">
+                            {device.installationDeviceId}
+                          </code>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="min-h-11"
+                            data-testid={`device-copy-id-${device.id}`}
+                            onClick={() => void copyInstallationId(device.installationDeviceId)}
+                          >
+                            {copiedDeviceId === device.installationDeviceId
+                              ? t("devices.copied")
+                              : t("devices.copyInstallationId")}
+                          </Button>
+                        </div>
+                        <p className="m-0">
+                          {t("devices.platformLabel")}: {device.platform || "—"}
+                        </p>
+                        <p className="m-0">
+                          {t("devices.modelLabel")}: {device.model || "—"}
+                        </p>
+                        <p className="m-0">
+                          {t("devices.appVersion")}: {device.appVersion || "—"}
+                        </p>
+                        <p className="m-0 break-all">
+                          {t("devices.registeredOn")}: {device.registeredAtUtc || "—"}
+                        </p>
+                        <p className="m-0 break-all">
+                          {t("devices.lastUsed")}: {device.lastSeenAtUtc || "—"}
+                        </p>
+                        {device.revokedAtUtc ? (
+                          <p className="m-0 break-all">
+                            {t("devices.revokedOn")}: {device.revokedAtUtc}
+                          </p>
+                        ) : null}
+                      </div>
+                    </details>
+                    {device.status === "Active" ? (
                       <Button
                         type="button"
                         variant="ghost"
-                        className="min-h-11"
-                        data-testid={`device-copy-id-${device.id}`}
-                        onClick={() => void copyInstallationId(device.installationDeviceId)}
+                        className="mt-2 min-h-11 px-0"
+                        data-testid={`device-revoke-${device.id}`}
+                        onClick={() => openRevoke(device)}
                       >
-                        {copiedDeviceId === device.installationDeviceId
-                          ? t("devices.copied")
-                          : t("devices.copyInstallationId")}
+                        {t("devices.revoke")}
                       </Button>
-                    </div>
-                  </details>
-                  {device.status === "Active" ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="mt-2 min-h-11 px-0"
-                      data-testid={`device-revoke-${device.id}`}
-                      onClick={() => {
-                        setRevokeTarget(device);
-                        setRevokeReason("");
-                      }}
-                    >
-                      {t("devices.revoke")}
-                    </Button>
-                  ) : null}
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-            </Card>
-          </li>
-        ))}
+              </Card>
+            </li>
+          );
+        })}
       </ul>
 
-      {(devicesQuery.data?.length ?? 0) === 0 && !devicesQuery.isLoading ? (
+      {devices.length === 0 && !devicesQuery.isLoading ? (
         <p
           className="m-0 text-[length:var(--exits-text-sm)] text-muted"
           data-testid="devices-empty"
@@ -396,49 +661,110 @@ export function OrgPosDevicesPage() {
         </p>
       ) : null}
 
-      {revokeTarget ? (
-        <Card data-testid="devices-revoke-panel">
-          <div className="flex items-start gap-2.5">
-            <MonitorSmartphone className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
-            <div className="min-w-0 flex-1">
-              <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-                {t("devices.revokeTitle")}
-              </p>
-              <p className="mt-0.5 mb-0 text-[length:var(--exits-text-xs)] text-muted">
-                {revokeTarget.friendlyName}
-              </p>
+      <BottomSheet
+        open={revokeTarget !== null}
+        onClose={closeRevoke}
+        panelId="devices-revoke-panel"
+        testId="devices-revoke-panel"
+        title={t("devices.revokeTitle")}
+        closeLabel={t("devices.closeSheet")}
+      >
+        {revokeTarget ? (
+          <div className="flex min-w-0 flex-col gap-3 overflow-y-auto">
+            <div className="flex items-start gap-2.5">
+              <ShieldAlert
+                className="mt-0.5 size-5 shrink-0 text-[var(--exits-warning)]"
+                aria-hidden
+              />
+              <div className="min-w-0 flex-1">
+                <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold wrap-break-word">
+                  {revokeTarget.friendlyName}
+                </p>
+                <p
+                  className="mt-0.5 mb-0 text-[length:var(--exits-text-xs)] text-muted"
+                  data-testid="devices-revoke-warning"
+                >
+                  {revokeTargetIsCurrent
+                    ? t("devices.revoke.warningCurrentDevice")
+                    : t("devices.revoke.warning")}
+                </p>
+              </div>
             </div>
-          </div>
-          <label className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            {t("devices.revokeReasonLabel")}
-            <input
-              className="min-h-11 rounded border border-[var(--exits-border)] bg-transparent px-3"
-              data-testid="devices-revoke-reason"
-              value={revokeReason}
-              onChange={(event) => setRevokeReason(event.target.value)}
-            />
-          </label>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button
-              type="button"
-              className="min-h-11"
-              data-testid="devices-revoke-confirm"
-              disabled={revokeMutation.isPending}
-              onClick={() => revokeMutation.mutate()}
-            >
-              {revokeMutation.isPending ? t("devices.revoking") : t("devices.revokeConfirm")}
-            </Button>
+
+            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              {t("devices.revokeReasonLabel")}
+              <input
+                className="min-h-11 rounded border border-[var(--exits-border)] bg-transparent px-3"
+                data-testid="devices-revoke-reason"
+                value={revokeReason}
+                minLength={MIN_REVOKE_REASON_LENGTH}
+                onChange={(event) => setRevokeReason(event.target.value)}
+              />
+              <span className="text-[length:var(--exits-text-xs)] text-muted">
+                {t("devices.revoke.reasonHint")}
+              </span>
+            </label>
+
+            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              {t("devices.revoke.passwordLabel")}
+              <input
+                className="min-h-11 rounded border border-[var(--exits-border)] bg-transparent px-3"
+                data-testid="devices-revoke-password"
+                type={revokePasswordVisible ? "text" : "password"}
+                autoComplete="current-password"
+                value={revokePassword}
+                onChange={(event) => setRevokePassword(event.target.value)}
+              />
+              <span className="text-[length:var(--exits-text-xs)] text-muted">
+                {t("devices.revoke.passwordHint")}
+              </span>
+            </label>
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
-              onClick={() => setRevokeTarget(null)}
+              className="min-h-11 w-fit px-0"
+              data-testid="devices-revoke-password-toggle"
+              onClick={() => setRevokePasswordVisible((visible) => !visible)}
             >
-              {t("devices.cancel")}
+              {revokePasswordVisible
+                ? t("devices.revoke.hidePassword")
+                : t("devices.revoke.showPassword")}
             </Button>
+
+            {revokeError ? (
+              <p
+                className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+                data-testid="devices-revoke-error"
+              >
+                {revokeError}
+              </p>
+            ) : null}
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                className="min-h-11"
+                data-testid="devices-revoke-confirm"
+                disabled={
+                  revokeMutation.isPending || revokeReasonTooShort || !revokePassword.trim()
+                }
+                onClick={() => revokeMutation.mutate()}
+              >
+                {revokeMutation.isPending ? t("devices.revoking") : t("devices.revokeConfirm")}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="min-h-11"
+                data-testid="devices-revoke-cancel"
+                onClick={closeRevoke}
+              >
+                {t("devices.cancel")}
+              </Button>
+            </div>
           </div>
-        </Card>
-      ) : null}
+        ) : null}
+      </BottomSheet>
 
       <div className="flex flex-wrap gap-2">
         <Button asChild variant="ghost" className="min-h-11">

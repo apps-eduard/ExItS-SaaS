@@ -884,6 +884,14 @@ export const iloPH: Record<keyof typeof en, string> = {
   "devices.branchLabel": "Branch",
   "devices.branchPlaceholder": "Agpili iti branch…",
   "devices.branchRequired": "Agpili iti branch para iti daytoy a POS device.",
+  "devices.registerThisDevice": "Irehistro daytoy a device",
+  "devices.registerTitle": "Irehistro daytoy a device",
+  "devices.registerLede":
+    "Irehistro daytoy a telepono, tablet, laptop, wenno computer sakbay a mabalinna ti agilako iti POS.",
+  "devices.registerHint":
+    "Ti panag-sign in ket saan nga agusar iti device slot. Ti registration ti agusar — ket agtalinaed iti daytoy a device kadagiti tab ken reload.",
+  "devices.manageDevices": "Taripatoen dagiti device",
+  "devices.branchLocked": "Branch: {branch}",
   "devices.registerBrowser": "I-register daytoy a browser",
   "devices.registering": "Gina-register…",
   "devices.registerError": "Saan a ma-register daytoy a browser.",
@@ -931,6 +939,50 @@ export const iloPH: Record<keyof typeof en, string> = {
   "devices.copyInstallationId": "Kopiaen ti id",
   "devices.copied": "Nakopia",
   "devices.copyFailed": "Saan a makopia ti installation id.",
+  "devices.closeSheet": "Irikep",
+  "devices.thisDevice": "Daytoy a device",
+  "devices.status.active": "Aktibo",
+  "devices.status.revoked": "Nabawi",
+  "devices.currentDevice.activeTitle": "Nakarehistro daytoy a device",
+  "devices.currentDevice.activeDetail": "Makalako daytoy a browser manipud iti {branch}.",
+  "devices.currentDevice.revokedTitle": "Nabawi daytoy a device",
+  "devices.currentDevice.revokedDetail":
+    "Saan a makalako daytoy a browser agingga a saanmo nga irehistro manen.",
+  "devices.currentDevice.registerAgain": "Irehistro manen daytoy a browser",
+  "devices.currentDevice.unregisteredTitle": "Irehistro daytoy a browser",
+  "devices.lastUsed": "Naudi a nausar",
+  "devices.registeredOn": "Nairehistro",
+  "devices.revokedOn": "Nabawi",
+  "devices.appVersion": "Bersion ti app",
+  "devices.technicalDetails": "Teknikal a detalye",
+  "devices.platformLabel": "Platform",
+  "devices.modelLabel": "Modelo",
+  "devices.installationIdLabel": "Installation ID",
+  "devices.revoke.reasonHint": "Uray kasano ket 8 a karakter. Mairekord daytoy iti audit trail.",
+  "devices.revoke.reasonTooShort":
+    "Mangikabil iti saan a nababbaba ngem 8 a karakter a rason ti panagbawi.",
+  "devices.revoke.passwordLabel": "Ti agdama a password mo",
+  "devices.revoke.passwordHint":
+    "Patalgedam a sika daytoy. Saan a maidulin ti password mo iti daytoy a device.",
+  "devices.revoke.passwordRequired": "Ikabil ti agdama a password mo tapno agtuloy.",
+  "devices.revoke.showPassword": "Ipakita ti password",
+  "devices.revoke.hidePassword": "Ilemmeng ti password",
+  "devices.revoke.warning":
+    "No mabawi, saanton a makalako daytoy a device. Masapul nga irehistro manen dagiti staff.",
+  "devices.revoke.warningCurrentDevice":
+    "Daytoy ti browser nga us-usarem ita. No mabawi, dagus a ma-block ti panaglako ditoy ken masapul nga irehistro mo manen.",
+  "devices.revoke.noPassword":
+    "Awan pay ti password ti account mo, isu a saan a mapatalged ditoy daytoy nga aksion. Ipatungpal iti platform administrator ti setup ti account mo.",
+  "devices.revoke.credentialCheckFailed":
+    "Saan a masukimat ti account mo sakbay ti panagbawi. Padasen manen iti mabiit.",
+  "devices.revoke.wrongPassword": "Saan nga umanay ti password. Padasen manen.",
+  "devices.revoke.expired": "Nag-expire ti pammatalged. Ikabil manen ti password mo.",
+  "devices.revoke.consumed": "Naaramaten dayta a pammatalged. Ikabil manen ti password mo.",
+  "devices.revoke.invalidScope": "Saan nga umanay iti device daytoy a pammatalged. Padasen manen.",
+  "devices.revoke.notAllowed": "Saanka a mapalubosan a mangbawi iti daytoy a device.",
+  "devices.revoke.unavailable": "Saan a mapatalged ti password mo ita. Padasen manen iti mabiit.",
+  "devices.revoke.successCurrentDevice":
+    "Nabawi daytoy a browser. Irehistro manen no nakasaganaka a maglako ditoy.",
   "org.group.operations": "Dagiti operasion",
   "org.group.administration": "Administrasion",
   "org.group.workspace": "Lugar a trabaho",
@@ -946,7 +998,15 @@ export const iloPH: Record<keyof typeof en, string> = {
     "Masapul a mairehistro daytoy a browser sakbay a mangrugi ka nga aglako idiay {branch}.",
   "sell.readiness.deviceHelp":
     "Agdamag iti registration code iti akinkukua wenno admin, ket irehistro daytoy a browser para iti napili a sanga.",
+  "sell.readiness.registerDevice": "Irehistro daytoy a device",
+  "sell.viewOnlyBanner": "View only — Irehistro daytoy a device tapno agilako",
   "sell.readiness.registerBrowser": "Irehistro daytoy a browser",
+  "sell.readiness.deviceRevokedTitle": "Nabawi daytoy a device",
+  "sell.readiness.deviceRevokedDetail":
+    "Nabawi daytoy a browser para iti {branch}, isu a naserraan ti panaglako ditoy.",
+  "sell.readiness.deviceRevokedHelp":
+    "Saan a kusto nga agsubli ti rehistro. Irehistro manen daytoy a browser, wenno dumawat iti registration code iti owner wenno admin mo.",
+  "sell.readiness.manageDevices": "Idauluan dagiti POS device",
   "sell.readiness.shiftTitle": "Masapul a malukatan ti shift",
   "sell.readiness.shiftDetail": "Lukatan umuna ti shift sakbay a mangrugi nga aglako.",
   "sell.readiness.shiftHelp":

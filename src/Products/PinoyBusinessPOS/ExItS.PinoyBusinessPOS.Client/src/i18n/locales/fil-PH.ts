@@ -868,6 +868,14 @@ export const filPH: Record<keyof typeof en, string> = {
   "devices.branchLabel": "Branch",
   "devices.branchPlaceholder": "Pumili ng branch…",
   "devices.branchRequired": "Pumili ng branch para sa POS device na ito.",
+  "devices.registerThisDevice": "Irehistro ang device na ito",
+  "devices.registerTitle": "Irehistro ang device na ito",
+  "devices.registerLede":
+    "Irehistro ang telepono, tablet, laptop, o computer na ito bago ito makapagbenta sa POS.",
+  "devices.registerHint":
+    "Ang pag-sign in ay hindi gumagamit ng device slot. Ang registration ang gumagamit — at nananatili ito sa device na ito sa mga tab at reload.",
+  "devices.manageDevices": "Pamahalaan ang mga device",
+  "devices.branchLocked": "Branch: {branch}",
   "devices.registerBrowser": "I-register ang browser na ito",
   "devices.registering": "Nire-register…",
   "devices.registerError": "Hindi ma-register ang browser na ito.",
@@ -915,6 +923,50 @@ export const filPH: Record<keyof typeof en, string> = {
   "devices.copyInstallationId": "Kopyahin ang id",
   "devices.copied": "Nakopya",
   "devices.copyFailed": "Hindi makopya ang installation id.",
+  "devices.closeSheet": "Isara",
+  "devices.thisDevice": "Ang device na ito",
+  "devices.status.active": "Aktibo",
+  "devices.status.revoked": "Nabawi",
+  "devices.currentDevice.activeTitle": "Nakarehistro ang device na ito",
+  "devices.currentDevice.activeDetail": "Puwedeng magbenta ang browser na ito sa {branch}.",
+  "devices.currentDevice.revokedTitle": "Nabawi ang device na ito",
+  "devices.currentDevice.revokedDetail":
+    "Hindi makakabenta ang browser na ito hangga't hindi mo ito nairerehistro ulit.",
+  "devices.currentDevice.registerAgain": "Irehistro ulit ang browser na ito",
+  "devices.currentDevice.unregisteredTitle": "Irehistro ang browser na ito",
+  "devices.lastUsed": "Huling ginamit",
+  "devices.registeredOn": "Nairehistro",
+  "devices.revokedOn": "Nabawi",
+  "devices.appVersion": "Bersyon ng app",
+  "devices.technicalDetails": "Teknikal na detalye",
+  "devices.platformLabel": "Platform",
+  "devices.modelLabel": "Modelo",
+  "devices.installationIdLabel": "Installation ID",
+  "devices.revoke.reasonHint": "Hindi bababa sa 8 karakter. Naitatala ito sa audit trail.",
+  "devices.revoke.reasonTooShort":
+    "Maglagay ng hindi bababa sa 8 karakter na dahilan ng pag-revoke.",
+  "devices.revoke.passwordLabel": "Ang kasalukuyan mong password",
+  "devices.revoke.passwordHint":
+    "Kumpirmahin na ikaw nga ito. Hindi iniimbak ang password mo sa device na ito.",
+  "devices.revoke.passwordRequired": "Ilagay ang kasalukuyan mong password para magpatuloy.",
+  "devices.revoke.showPassword": "Ipakita ang password",
+  "devices.revoke.hidePassword": "Itago ang password",
+  "devices.revoke.warning":
+    "Kapag na-revoke, hindi na makakabenta ang device na ito. Kailangan itong irehistro ulit ng staff.",
+  "devices.revoke.warningCurrentDevice":
+    "Ito ang browser na ginagamit mo ngayon. Kapag na-revoke, agad na maha-block ang pagbebenta rito at kailangan mo itong irehistro ulit.",
+  "devices.revoke.noPassword":
+    "Wala pang password ang account mo, kaya hindi makumpirma rito ang aksyong ito. Ipatapos sa platform administrator ang setup ng account mo.",
+  "devices.revoke.credentialCheckFailed":
+    "Hindi masuri ang account mo bago mag-revoke. Subukan ulit maya-maya.",
+  "devices.revoke.wrongPassword": "Hindi tugma ang password. Subukan ulit.",
+  "devices.revoke.expired": "Nag-expire ang kumpirmasyon. Ilagay ulit ang password mo.",
+  "devices.revoke.consumed": "Nagamit na ang kumpirmasyong iyon. Ilagay ulit ang password mo.",
+  "devices.revoke.invalidScope": "Hindi tugma sa device ang kumpirmasyong ito. Subukan ulit.",
+  "devices.revoke.notAllowed": "Wala kang pahintulot na i-revoke ang device na ito.",
+  "devices.revoke.unavailable": "Hindi makumpirma ang password mo ngayon. Subukan ulit maya-maya.",
+  "devices.revoke.successCurrentDevice":
+    "Na-revoke ang browser na ito. Irehistro ulit kapag handa ka nang magbenta rito.",
   "org.group.operations": "Mga operasyon",
   "org.group.administration": "Administrasyon",
   "org.group.workspace": "Workspace",
@@ -930,7 +982,15 @@ export const filPH: Record<keyof typeof en, string> = {
     "Kailangang i-register ang browser na ito bago ka makapagsimulang magbenta sa {branch}.",
   "sell.readiness.deviceHelp":
     "Humingi ng registration code sa owner o admin, tapos i-register ang browser na ito para sa napiling branch.",
+  "sell.readiness.registerDevice": "Irehistro ang device na ito",
+  "sell.viewOnlyBanner": "View only — Irehistro ang device na ito para makapagbenta",
   "sell.readiness.registerBrowser": "I-register ang browser na ito",
+  "sell.readiness.deviceRevokedTitle": "Nabawi ang device na ito",
+  "sell.readiness.deviceRevokedDetail":
+    "Nabawi ang browser na ito para sa {branch}, kaya naka-block ang pagbebenta rito.",
+  "sell.readiness.deviceRevokedHelp":
+    "Hindi kusang bumabalik ang rehistro. Irehistro ulit ang browser na ito, o humingi ng registration code sa owner o admin mo.",
+  "sell.readiness.manageDevices": "Pamahalaan ang mga POS device",
   "sell.readiness.shiftTitle": "Kailangan mag-open ng shift",
   "sell.readiness.shiftDetail": "Mag-open muna ng shift bago magsimulang magbenta.",
   "sell.readiness.shiftHelp": "Kailangan ng open shift bago ka makabuo at makapagbayad ng benta.",

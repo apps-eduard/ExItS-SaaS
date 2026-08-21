@@ -57,7 +57,7 @@ describe("evaluateSellEntryReadiness", () => {
     ).toBe("loading");
   });
 
-  it("requires device before shift", () => {
+  it("uses view_only for unregistered devices so catalog browsing can continue", () => {
     const result = evaluateSellEntryReadiness({
       posDevice: unregisteredPosDeviceContext(
         "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
@@ -65,9 +65,21 @@ describe("evaluateSellEntryReadiness", () => {
       ),
       shiftReadiness: readyShift,
     });
-    expect(result.kind).toBe("device_required");
+    expect(result.kind).toBe("view_only");
     expect(result.deviceReady).toBe(false);
     expect(result.moneyPostReady).toBe(false);
+  });
+
+  it("keeps device_required when view-only is disabled", () => {
+    const result = evaluateSellEntryReadiness({
+      posDevice: unregisteredPosDeviceContext(
+        "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+        "unregistered",
+      ),
+      shiftReadiness: readyShift,
+      allowViewOnlyWithoutDevice: false,
+    });
+    expect(result.kind).toBe("device_required");
   });
 
   it("requires open shift after device is ready", () => {

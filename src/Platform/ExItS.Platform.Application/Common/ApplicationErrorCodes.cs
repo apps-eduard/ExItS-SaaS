@@ -211,6 +211,11 @@ public static class ApplicationErrorCodes
     public const string PlanDowngradeBlockedByBusinessTypeCapacity =
         "application.plan_change.business_type_capacity_blocked";
     public const string PosDeviceNotAuthorized = "application.pos_device.not_authorized";
+    /// <summary>
+    /// Endpoint is authenticated but has no active POS device registration for sales execution.
+    /// Distinct from revoked; login/management may continue.
+    /// </summary>
+    public const string PosDeviceRegistrationRequired = "application.pos_device.registration_required";
     public const string PosDeviceRevoked = "application.pos_device.revoked";
     /// <summary>Active installation is already bound to a different branch; no silent move.</summary>
     public const string PosDeviceBranchConflict = "application.pos_device.branch_conflict";

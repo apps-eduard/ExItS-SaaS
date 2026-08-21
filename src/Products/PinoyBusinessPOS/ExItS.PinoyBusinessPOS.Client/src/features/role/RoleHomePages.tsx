@@ -319,7 +319,7 @@ export function RoleHomeShell({
   }
   deviceTiles.push({
     key: "register-browser",
-    label: t("devices.redeemTitle"),
+    label: t("devices.registerThisDevice"),
     icon: MonitorSmartphone,
     testId: "open-device-register",
     to: "/devices/register",
@@ -460,7 +460,7 @@ export function RoleHomeShell({
         </Button>
       ) : null}
       <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-device-register">
-        <Link to="/devices/register">{t("devices.redeemTitle")}</Link>
+        <Link to="/devices/register">{t("devices.registerThisDevice")}</Link>
       </Button>
       {canCatalog ? (
         <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-catalog">

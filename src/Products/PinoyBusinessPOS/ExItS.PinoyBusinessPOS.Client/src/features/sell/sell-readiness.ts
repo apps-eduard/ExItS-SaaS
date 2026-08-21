@@ -3,8 +3,10 @@ import { isPosDeviceReadyForMoney, type PosDeviceContext } from "@/workspace/pos
 
 /**
  * Pre-Sell readiness (Device → Shift → Sell). UI gate only — server remains authority.
+ * `view_only` allows catalog browsing when the endpoint is not registered for POS sales.
  */
-export type SellEntryReadinessKind = "loading" | "device_required" | "shift_required" | "ready";
+export type SellEntryReadinessKind =
+  "loading" | "device_required" | "view_only" | "shift_required" | "ready";
 
 export type SellEntryReadiness = {
   kind: SellEntryReadinessKind;
@@ -16,6 +18,8 @@ export type SellEntryReadiness = {
 export function evaluateSellEntryReadiness(input: {
   posDevice: PosDeviceContext | null | undefined;
   shiftReadiness: CheckoutShiftReadiness;
+  /** When true, unregistered endpoints may browse Sell in view-only mode. */
+  allowViewOnlyWithoutDevice?: boolean;
 }): SellEntryReadiness {
   const deviceLoading =
     input.posDevice == null ||
@@ -34,6 +38,14 @@ export function evaluateSellEntryReadiness(input: {
 
   const deviceReady = isPosDeviceReadyForMoney(input.posDevice);
   if (!deviceReady) {
+    if (input.allowViewOnlyWithoutDevice !== false) {
+      return {
+        kind: "view_only",
+        deviceReady: false,
+        shiftReady: input.shiftReadiness.shiftGateReady,
+        moneyPostReady: false,
+      };
+    }
     return {
       kind: "device_required",
       deviceReady: false,

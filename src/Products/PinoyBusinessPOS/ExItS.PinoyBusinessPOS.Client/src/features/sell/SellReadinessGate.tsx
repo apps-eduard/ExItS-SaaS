@@ -20,12 +20,7 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 /**
  * Device → Shift → Sell gate. Does not replace server money-post authority.
- * Once Sell has been entered, mid-session device/shift loss stays on SellFloor
- * (compact cart warning) instead of remounting the pre-sell gate.
- *
- * Offline, the live device authorize and shift read cannot run, so the last-good readiness
- * snapshot (written while online and ready) reopens the warm session instead of demanding a
- * device registration or a shift open that both need the server.
+ * Unregistered endpoints may browse Sell in view-only mode; execution stays blocked.
  */
 export function SellReadinessGate() {
   const { t } = useI18n();
@@ -40,12 +35,16 @@ export function SellReadinessGate() {
         shiftReady: true,
         moneyPostReady: sellReadiness.moneyPostReady,
       }
-    : evaluateSellEntryReadiness({ posDevice, shiftReadiness: readiness });
+    : evaluateSellEntryReadiness({
+        posDevice,
+        shiftReadiness: readiness,
+        allowViewOnlyWithoutDevice: true,
+      });
   const branchLabel = boundWorkspace?.branchName ?? t("devices.branchFallback");
   const [sellEntered, setSellEntered] = useState(false);
 
   useEffect(() => {
-    if (entry.kind === "ready") {
+    if (entry.kind === "ready" || entry.kind === "view_only") {
       setSellEntered(true);
     }
   }, [entry.kind]);
@@ -59,22 +58,33 @@ export function SellReadinessGate() {
   }
 
   if (entry.kind === "device_required") {
+    const revoked = posDevice.registrationStatus === "revoked";
     return (
-      <div className="flex min-w-0 flex-col gap-4" data-testid="sell-readiness-device">
+      <div
+        className="flex min-w-0 flex-col gap-4"
+        data-testid="sell-readiness-device"
+        data-device-state={revoked ? "revoked" : "unregistered"}
+      >
         <PageHeader
-          title={t("sell.readiness.deviceTitle")}
-          description={t("sell.readiness.deviceDetail").replace("{branch}", branchLabel)}
+          title={revoked ? t("sell.readiness.deviceRevokedTitle") : t("sell.readiness.deviceTitle")}
+          description={(revoked
+            ? t("sell.readiness.deviceRevokedDetail")
+            : t("sell.readiness.deviceDetail")
+          ).replace("{branch}", branchLabel)}
         />
         <Card className="flex flex-col gap-3 p-4">
           <div className="flex items-start gap-3">
             <MonitorSmartphone className="mt-0.5 size-6 shrink-0 text-primary" aria-hidden />
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {t("sell.readiness.deviceHelp")}
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+              data-testid="sell-readiness-device-help"
+            >
+              {revoked ? t("sell.readiness.deviceRevokedHelp") : t("sell.readiness.deviceHelp")}
             </p>
           </div>
           {sellReadiness.online ? (
             <Button asChild className="min-h-11" data-testid="sell-readiness-register">
-              <Link to="/devices/register?from=sell">{t("sell.readiness.registerBrowser")}</Link>
+              <Link to="/devices/register?from=sell">{t("sell.readiness.registerDevice")}</Link>
             </Button>
           ) : (
             <OnlineRequiredCard
@@ -89,7 +99,7 @@ export function SellReadinessGate() {
               className="min-h-11"
               data-testid="sell-readiness-manage-devices"
             >
-              <Link to="/org/devices">{t("devices.listTitle")}</Link>
+              <Link to="/org/devices">{t("sell.readiness.manageDevices")}</Link>
             </Button>
           ) : null}
         </Card>
@@ -111,16 +121,9 @@ export function SellReadinessGate() {
               {t("sell.readiness.shiftHelp")}
             </p>
           </div>
-          {sellReadiness.online ? (
-            <Button asChild className="min-h-11" data-testid="sell-readiness-open-shift">
-              <Link to="/shifts/open?from=sell">{t("sell.readiness.openShift")}</Link>
-            </Button>
-          ) : (
-            <OnlineRequiredCard
-              testId="sell-readiness-offline-required"
-              code={ONLINE_REQUIRED_CODES.OpenShift}
-            />
-          )}
+          <Button asChild className="min-h-11" data-testid="sell-readiness-open-shift">
+            <Link to="/shifts">{t("sell.readiness.openShift")}</Link>
+          </Button>
         </Card>
       </div>
     );

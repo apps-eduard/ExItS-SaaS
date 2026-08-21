@@ -880,6 +880,14 @@ export const cebPH: Record<keyof typeof en, string> = {
   "devices.branchLabel": "Branch",
   "devices.branchPlaceholder": "Pagpili og branch…",
   "devices.branchRequired": "Pagpili og branch para niining POS device.",
+  "devices.registerThisDevice": "Irehistro kini nga device",
+  "devices.registerTitle": "Irehistro kini nga device",
+  "devices.registerLede":
+    "Irehistro kini nga telepono, tablet, laptop, o computer sa dili pa kini makabaligya sa POS.",
+  "devices.registerHint":
+    "Ang pag-sign in dili mogamit og device slot. Ang registration ang mogamit — ug magpabilin kini niini nga device sa mga tab ug reload.",
+  "devices.manageDevices": "Dumala ang mga device",
+  "devices.branchLocked": "Branch: {branch}",
   "devices.registerBrowser": "I-register kini nga browser",
   "devices.registering": "Gina-register…",
   "devices.registerError": "Dili ma-register kini nga browser.",
@@ -927,6 +935,51 @@ export const cebPH: Record<keyof typeof en, string> = {
   "devices.copyInstallationId": "Kopyaha ang id",
   "devices.copied": "Nakopya na",
   "devices.copyFailed": "Dili makopya ang installation id.",
+  "devices.closeSheet": "Sirad-i",
+  "devices.thisDevice": "Kini nga device",
+  "devices.status.active": "Aktibo",
+  "devices.status.revoked": "Gibawi",
+  "devices.currentDevice.activeTitle": "Narehistro kini nga device",
+  "devices.currentDevice.activeDetail": "Makabaligya kini nga browser gikan sa {branch}.",
+  "devices.currentDevice.revokedTitle": "Gibawi kini nga device",
+  "devices.currentDevice.revokedDetail":
+    "Dili makabaligya kini nga browser hangtod nga imo kining irehistro pag-usab.",
+  "devices.currentDevice.registerAgain": "Irehistro pag-usab kini nga browser",
+  "devices.currentDevice.unregisteredTitle": "Irehistro kini nga browser",
+  "devices.lastUsed": "Katapusang gigamit",
+  "devices.registeredOn": "Narehistro",
+  "devices.revokedOn": "Gibawi",
+  "devices.appVersion": "Bersyon sa app",
+  "devices.technicalDetails": "Teknikal nga detalye",
+  "devices.platformLabel": "Plataporma",
+  "devices.modelLabel": "Modelo",
+  "devices.installationIdLabel": "Installation ID",
+  "devices.revoke.reasonHint": "Labing menos 8 ka karakter. Marekord kini sa audit trail.",
+  "devices.revoke.reasonTooShort": "Pagbutang ug labing menos 8 ka karakter nga rason sa pagbawi.",
+  "devices.revoke.passwordLabel": "Imong kasamtangang password",
+  "devices.revoke.passwordHint":
+    "Kumpirmaha nga ikaw gyud kini. Ang imong password wala gitipigan niini nga device.",
+  "devices.revoke.passwordRequired": "Isulod ang imong kasamtangang password aron makapadayon.",
+  "devices.revoke.showPassword": "Ipakita ang password",
+  "devices.revoke.hidePassword": "Itago ang password",
+  "devices.revoke.warning":
+    "Kon mabawi, dili na makabaligya kini nga device. Kinahanglan kining irehistro pag-usab sa staff.",
+  "devices.revoke.warningCurrentDevice":
+    "Kini ang browser nga imong gigamit karon. Kon mabawi, dihadiha ma-block ang pagbaligya dinhi ug kinahanglan nimo kining irehistro pag-usab.",
+  "devices.revoke.noPassword":
+    "Wala pay password ang imong account, mao nga dili makumpirma dinhi kini nga aksyon. Pahumana sa platform administrator ang setup sa imong account.",
+  "devices.revoke.credentialCheckFailed":
+    "Dili masusi ang imong account sa dili pa mobawi. Sulayi pag-usab karon dayon.",
+  "devices.revoke.wrongPassword": "Wala mohaum ang password. Sulayi pag-usab.",
+  "devices.revoke.expired": "Nag-expire ang kumpirmasyon. Isulod pag-usab ang imong password.",
+  "devices.revoke.consumed":
+    "Nagamit na kana nga kumpirmasyon. Isulod pag-usab ang imong password.",
+  "devices.revoke.invalidScope": "Wala mohaum sa device kini nga kumpirmasyon. Sulayi pag-usab.",
+  "devices.revoke.notAllowed": "Wala ka gitugotan sa pagbawi niini nga device.",
+  "devices.revoke.unavailable":
+    "Dili makumpirma ang imong password karon. Sulayi pag-usab karon dayon.",
+  "devices.revoke.successCurrentDevice":
+    "Gibawi kini nga browser. Irehistro pag-usab kon andam ka na nga mobaligya dinhi.",
   "org.group.operations": "Mga operasyon",
   "org.group.administration": "Administrasyon",
   "org.group.workspace": "Lugar sa trabaho",
@@ -942,7 +995,15 @@ export const cebPH: Record<keyof typeof en, string> = {
     "Kinahanglan irehistro kini nga browser sa dili pa ka makasugod og baligya sa {branch}.",
   "sell.readiness.deviceHelp":
     "Pangayo og registration code sa tag-iya o admin, dayon irehistro kini nga browser para sa gipili nga sanga.",
+  "sell.readiness.registerDevice": "Irehistro kini nga device",
+  "sell.viewOnlyBanner": "View only — Irehistro kini nga device aron makabaligya",
   "sell.readiness.registerBrowser": "Irehistro kini nga browser",
+  "sell.readiness.deviceRevokedTitle": "Gibawi kini nga device",
+  "sell.readiness.deviceRevokedDetail":
+    "Gibawi kini nga browser para sa {branch}, mao nga na-block ang pagbaligya dinhi.",
+  "sell.readiness.deviceRevokedHelp":
+    "Dili mobalik ang rehistro sa iyang kaugalingon. Irehistro pag-usab kini nga browser, o pangayo ug registration code sa imong owner o admin.",
+  "sell.readiness.manageDevices": "Dumalaha ang mga POS device",
   "sell.readiness.shiftTitle": "Gikinahanglan ang pag-abli og shift",
   "sell.readiness.shiftDetail": "Ablihi una ang shift sa dili pa magsugod og baligya.",
   "sell.readiness.shiftHelp":
