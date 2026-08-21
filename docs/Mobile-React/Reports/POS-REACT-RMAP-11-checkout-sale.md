@@ -19,7 +19,7 @@ starting SHA: `4db1f09f` (Master Run 02 tip after RMAP-10b; verified green)
 | Shift | `shiftId` from open shift (`ShiftContext`) |
 | Headers | Org, branch, Bearer, `X-Pos-Installation-Device-Id` via central `pos-http` |
 | Document | Transaction Summary only — never Invoice |
-| Disclaimer | `SalesDocumentWording` / MAUI `SalesDocument_DisclaimerBody` |
+| Disclaimer | Three-part business/BIR wording (`SalesDocumentWording` / MAUI / React en+fil-PH). Updated in Master Run 02 Review Repair 01. |
 | Gate | Pay enabled only when cart nonempty **and** `moneyPostReady` **and** `canCreateSale` |
 | Fail closed | Checkout blocked without authorized device / open shift |
 

@@ -313,8 +313,8 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 |-------|---------|
 | Objective | Partial returns, restock, inventory restore |
 | Dependencies | RMAP-11, RMAP-00 |
-| Status | **HARD STOP** — `RMAP14_EXPIRY_RETURN_CONTRACT_GAP` ([report](../../Reports/POS-REACT-RMAP-14-returns-refunds.md)). Return restock does not restore FEFO lots; React returns withheld. |
-| Next | Backend expiry-return contract authorization → restart RMAP-14 only. Do **not** start RMAP-15 until RMAP-14 PASS. |
+| Status | **NOT PASS** — `RMAP14_BACKEND_CONTRACT_REPAIRED` / `RMAP14_REACT_UI_NOT_STARTED` ([report](../../Reports/POS-REACT-RMAP-14-returns-refunds.md); [Review Repair 01](../../Reports/POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-01.md)). |
+| Next | Start RMAP-14 React returns UI only. Do **not** start RMAP-15 until RMAP-14 PASS. |
 
 ### RMAP-15 — Manual suppliers
 | Field | Content |
@@ -440,7 +440,7 @@ Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, 
 ## APPROVED PROPOSED MASTER RUN 01
 
 **Name:** Foundation + Catalog/Inventory Baseline
-**Status:** RMAP-00…RMAP-13 PASS. Master Run 02 Resume **HARD STOP** at RMAP-14 (`RMAP14_EXPIRY_RETURN_CONTRACT_GAP`). Do not start RMAP-15 until RMAP-14 PASS.
+**Status:** RMAP-00…RMAP-13 PASS. Master Run 02 Review Repair 01 closed expiry-return + refund + checkout-search + summary wording. RMAP-14 **backend repaired**; React UI **not started** (`RMAP14_REACT_UI_NOT_STARTED`). Do not start RMAP-15 until RMAP-14 PASS.
 **Stop rule:** After Master Run packages + authorized B03 closeout → HARD STOP for Product Owner + ChatGPT review (historical). RMAP-08/09 completed after that stop when authorized.
 **Do not include (still gated):** RMAP-B04; RMAP-TAX implementation
 **Completed beyond Master Run 01 table:** RMAP-08 lots/expiry inventory surfaces; RMAP-09 sell floor + session cart; RMAP-10 registers + open shift gate; RMAP-10b browser POS device authorization; RMAP-11 online cash checkout; RMAP-11b commercial discount UX; RMAP-12 current payments (Cash/GCash/Utang) + void; RMAP-13 customers + Business Utang

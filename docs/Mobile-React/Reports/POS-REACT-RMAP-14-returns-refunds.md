@@ -2,60 +2,53 @@
 
 ## Status
 
-**HARD STOP — NOT STARTED (implementation withheld)**
+**NOT PASS** — backend contract repaired; React UI not started.
 
-**Code:** `RMAP14_EXPIRY_RETURN_CONTRACT_GAP`
+| Flag | Value |
+|------|-------|
+| `RMAP14_BACKEND_CONTRACT_REPAIRED` | YES |
+| `RMAP14_REACT_UI_NOT_STARTED` | YES |
+| Former code `RMAP14_EXPIRY_RETURN_CONTRACT_GAP` | **CLEARED** by Master Run 02 Review Repair 01 |
 
 ## Baseline
 
 | Item | Value |
 |------|-------|
-| Starting HEAD (this package attempt) | `08ba616c` (RMAP-13 complete) |
+| Hard-stop docs HEAD | `a7e1322e` |
+| Repair | [POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-01.md](./POS-REACT-MASTER-RUN-02-REVIEW-REPAIR-01.md) |
 | Branch | `feat/pos-react-client` |
 
-## HARD STOP finding
+## Backend contract (repaired)
 
-### `RMAP14_EXPIRY_RETURN_CONTRACT_GAP` — PROVEN
+### Expiry partial return restock
 
-Return restock (`SaleReturnStockService.RestockForReturnAsync`) increases the organization `InventoryAccount` on-hand via `StockMovement.SaleReturnRestock` only.
+`SaleReturnStockService` + `InventoryLotStockService.RestoreForSaleReturnAsync`:
 
-For products with `TracksExpiration`:
+- Aggregate `ReturnToStock` by product; org account + branch delta on `originalSale.BranchId`
+- For `TracksExpiration`: restore only to original sale-consumed lots, earliest expiration first, net of prior `SaleReturnRestock` lot movements
+- Lot movement: `SaleReturnRestock` / `SourceType=SaleReturn` / `SourceId=saleReturnId`
+- Historical account restock without lot evidence → fail closed `RMAP14_EXPIRY_RETURN_HISTORY_RECONCILIATION_GAP`
+- `DoNotRestock`: no account/branch/lot deltas
+- Idempotent on same return id
 
-- Sale checkout consumes lots via FEFO (`ConsumeFefoAsync`).
-- Void restores original consumed lots via `RestoreSourceAsync` (`SaleVoidRestoration`).
-- **Return does not call `RestoreSourceAsync` (or any lot restore).** It does not invent a new lot either.
+### Discounted partial refund NET fidelity
 
-Result: account quantity and lot ledger diverge after a return of an expiration-tracked product. React must not ship returns against that contract.
+`SaleReturnRefundable.ComputeRefundAmount` uses cumulative net `LineTotal` allocation (never `UnitPrice`); final slice absorbs remainder.
 
-Package rule: do **not** invent a new lot, expiration date, or fake original lot. Closing this gap requires an Owner-authorized backend contract (likely mirroring void’s source restore for proportional return quantities) — not React-only UX.
+### Utang return
 
-### `RMAP14_UTANG_RETURN_RECONCILIATION_GAP` — NOT proven
-
-Utang sale returns authoritatively reduce linked credit (`ReduceForSaleReturn`). Refund method is locked to the sale payment method. No ambiguous Cash-refund-leaving-debt path.
-
-## What was inspected
-
-| Area | Path / note |
-|------|-------------|
-| Return API | `POST /api/v1/pos/sale-returns`, refundable sale GET |
-| Restock | `SaleReturnStockService.cs` — account only |
-| Void lot restore | `InventoryUseCases` + `RestoreSourceAsync` |
-| Utang return | `SaleReturnUseCases.ApplyUtangRefundAsync` |
-| React | No sale-returns client/UI (correctly withheld) |
+`ReduceForSaleReturn` path unchanged — not the former stopper.
 
 ## Exclusions / not delivered
 
-- Partial/full return UI
+- Partial/full return **React** UI
 - Refund amount UX
 - Inventory restore UX
 - Any React return POST
 - Lot invent / fake restore
 - New DB migration
+- RMAP-15
 
 ## Exact next
 
-Owner / ChatGPT must authorize a backend fix for expiration-aware return restock (or an explicit alternate safe contract).
-
-Then restart **RMAP-14 only** — do not reopen RMAP-11…RMAP-13 unless a regression is proven.
-
-Do **not** start RMAP-15, RMAP-B01, RMAP-12b, RMAP-B04, RMAP-TAX, or provider payments.
+Implement **RMAP-14 React returns UI only** against this contract. Do not start RMAP-15 until RMAP-14 PASS.

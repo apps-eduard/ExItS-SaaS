@@ -17,22 +17,22 @@ starting SHA: `47af61a3` (Master Run 02 tip after RMAP-11b; verified clean)
 | Zero total | Cash / ManualGCash allowed; UI “No payment required”; GCash reference **not** forced |
 | Utang | `customerId` required; optional `dueDate` (`YYYY-MM-DD`); no tender; reject when Amount to Pay ≤ 0; debt = net Amount to Pay; CreateSale + CreateCredit |
 | Void | `POST /api/v1/pos/sales/{saleId}/void` `{ reason }` — Owner/Admin/Manager (`VoidSale`); Utang also needs `ReverseCredit`; Cashier cannot void |
-| Customers | `GET /api/v1/pos/customers?status=Active&search=` requires `ViewCustomersAndHistory` |
+| Customers | Full list requires `ViewCustomersAndHistory`. Checkout Utang uses narrow `GET /api/v1/pos/customers/checkout-search` (`CreateSale`; Cashier allowed). |
 
-## Cashier customer gap (pre-existing — not changed)
+## Cashier checkout customer search (Review Repair 01)
 
-`PosRoleMatrix` grants Cashier **CreateCredit** but **not** `ViewCustomersAndHistory`.
+`PosRoleMatrix` still grants Cashier **CreateCredit** but **not** `ViewCustomersAndHistory`.
 
-React behavior (no matrix mutation / no capability bypass):
+React + API (no matrix mutation):
 
-- Customer search only when `canViewCustomers`
-- Cashier selecting Utang sees a clear message that looking up customers requires Manager/Owner permission; confirm stays disabled
-- Owner / Manager Utang works end-to-end with Active customer picker
+- Cashier Utang uses `searchCheckoutCustomers` → `/customers/checkout-search` (Active, nonblank search, pageSize ≤ 20, narrow DTO)
+- Owner / Manager may use full list **or** checkout-search
+- Cashier remains denied `/customers` management (`RequireViewCustomers`)
 
 ## Implementation
 
 - `pos-sales-client.ts` — Cash / ManualGCash / Utang checkout payload; `voidSale`; `formatPaymentMethodLabel`
-- `pos-customers-client.ts` — minimal Active list/search
+- `pos-customers-client.ts` — Active list/search + `searchCheckoutCustomers`
 - `pos-capabilities.ts` — `canVoidSale`, `canViewCustomers`, `canCreateCredit`
 - `CheckoutCashPage` — payment selector + method panels (file name retained for route stability)
 - `TransactionSummaryPage` — void panel for authorized roles; GCash label (not ManualGCash)

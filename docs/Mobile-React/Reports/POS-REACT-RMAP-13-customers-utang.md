@@ -15,7 +15,7 @@ starting SHA: `17569653` (feat/pos-react-client tip after RMAP-12; verified clea
 | Customers | List/search/create/edit/deactivate/reactivate via `/api/v1/pos/customers` |
 | Business Utang | Credit summary, credit entries, repayments, ledger, statement |
 | Wording | **Amount owed**, **Payment**, **Remaining balance** (not engineering jargon) |
-| Checkout | Cash/GCash optional customer; Utang still requires customer |
+| Checkout | Cash/GCash optional customer (`ViewCustomersAndHistory`); Utang requires customer — Cashier uses narrow checkout-search (Review Repair 01) |
 | Discounted Utang | Credit amount displayed from server equals net **Amount to Pay** |
 | Link status | Read-only ExItS Personal link chip when `linkedPersonalPublicUserId` present |
 | Capabilities | `canCreateCustomer`, `canEditCustomer`, `canRecordRepayment`, `canViewStatement` (+ existing `canViewCustomers`) |
