@@ -71,10 +71,31 @@ public sealed record PosSaleDto(
     List<PosSaleQuotePriceOverrideDto>? PriceOverrides = null);
 
 /// <summary>
+/// A server-signed offline price lease presented back at checkout.
+/// The client stores and replays it verbatim; it cannot mint or edit one, because
+/// <c>Signature</c> covers every field here plus the organization, branch and product binding.
+/// </summary>
+public sealed record OfflinePriceAuthorityToken(
+    Guid AuthorityId,
+    Guid OrganizationId,
+    Guid ProductId,
+    string Signature,
+    DateTimeOffset IssuedAtUtc,
+    DateTimeOffset ExpiresAtUtc,
+    decimal UnitPrice,
+    string UnitOfMeasure,
+    string SellingMode,
+    Guid? BranchId = null,
+    Guid? SellingUnitId = null);
+
+/// <summary>
 /// One requested checkout line.
 /// Online carts may send ProductId + Quantity only; the server then prices from the live catalog.
-/// Offline cash sync (payload_version ≥ 2) must also send immutable snapshots so the server
-/// validates arithmetic without replacing UnitPrice / UOM / SellingMode from the live catalog.
+///
+/// Offline React Cash sync sends <see cref="OfflinePriceAuthority"/>: a lease the server itself
+/// signed, so the recorded price is server-authoritative even though the sale happened offline.
+/// The legacy MAUI offline path (payload_version ≥ 2) instead sends immutable client snapshots,
+/// whose arithmetic is validated but whose price the server has to take on trust.
 /// </summary>
 public sealed record CheckoutSaleLineRequest(
     Guid ProductId,
@@ -87,7 +108,8 @@ public sealed record CheckoutSaleLineRequest(
     string? SkuSnapshot = null,
     string? BarcodeSnapshot = null,
     Guid? SellingUnitId = null,
-    decimal? EnteredQuantity = null);
+    decimal? EnteredQuantity = null,
+    OfflinePriceAuthorityToken? OfflinePriceAuthority = null);
 
 /// <summary>
 /// Checkout request. The cart itself is never persisted server-side; it exists only in the client

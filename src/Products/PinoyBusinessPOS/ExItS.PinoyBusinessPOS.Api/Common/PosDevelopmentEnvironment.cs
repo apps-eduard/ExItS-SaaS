@@ -1,4 +1,5 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Offline;
 
 namespace ExItS.PinoyBusinessPOS.Api.Common;
 
@@ -43,6 +44,25 @@ internal static class PosProductionSecurityGuard
         {
             throw new InvalidOperationException(
                 "Production must not use the documented development database password.");
+        }
+
+        // An offline price lease is only as trustworthy as its signing key: with the published
+        // development key, any device could mint its own prices.
+        var priceAuthorityKey = builder.Configuration[
+            $"{OfflinePriceAuthorityOptions.SectionName}:{nameof(OfflinePriceAuthorityOptions.PriceAuthoritySigningKey)}"];
+        if (string.IsNullOrWhiteSpace(priceAuthorityKey))
+        {
+            throw new InvalidOperationException(
+                "Production requires PosOffline:PriceAuthoritySigningKey from an approved secure configuration provider.");
+        }
+
+        if (string.Equals(
+                priceAuthorityKey.Trim(),
+                OfflinePriceAuthorityOptions.DevelopmentSigningKey,
+                StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "Production must not use the documented development offline price authority signing key.");
         }
 
         var allowedHosts = builder.Configuration["AllowedHosts"];

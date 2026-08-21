@@ -4,6 +4,7 @@ using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
+using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Application.OperationalSetup;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
@@ -273,6 +274,7 @@ public sealed class CheckoutSale
     private readonly ICashierShiftRepository _shifts;
     private readonly IPosOperationalSetupRepository _operationalSetups;
     private readonly IOrganizationTaxConfigurationCapabilityReader _taxConfiguration;
+    private readonly IOfflinePriceAuthorityService _priceAuthorities;
     private readonly IClock _clock;
 
     public CheckoutSale(
@@ -286,8 +288,10 @@ public sealed class CheckoutSale
         ICashierShiftRepository shifts,
         IPosOperationalSetupRepository operationalSetups,
         IOrganizationTaxConfigurationCapabilityReader taxConfiguration,
+        IOfflinePriceAuthorityService priceAuthorities,
         IClock clock)
     {
+        _priceAuthorities = priceAuthorities;
         _sales = sales;
         _products = products;
         _units = units;
@@ -476,6 +480,8 @@ public sealed class CheckoutSale
                     clientSaleId,
                     discounts,
                     priceOverrides,
+                    branchId,
+                    allowOfflinePriceAuthorities: true,
                     cancellationToken)
                 .ConfigureAwait(false);
             if (!resolved.IsSuccess)
@@ -656,6 +662,8 @@ public sealed class CheckoutSale
                     clientSaleId: null,
                     discounts,
                     priceOverrides,
+                    branchId: null,
+                    allowOfflinePriceAuthorities: false,
                     cancellationToken)
                 .ConfigureAwait(false);
             if (!resolved.IsSuccess)
@@ -847,6 +855,8 @@ public sealed class CheckoutSale
         Guid? clientSaleId,
         IReadOnlyList<CommercialDiscountIntentRequest>? discounts,
         IReadOnlyList<SalePriceOverrideIntentRequest>? priceOverrides,
+        Guid? branchId,
+        bool allowOfflinePriceAuthorities,
         CancellationToken cancellationToken)
     {
         if (lines is null || lines.Count == 0)
@@ -867,7 +877,39 @@ public sealed class CheckoutSale
         var byId = products.ToDictionary(p => p.Id.Value);
 
         var drafts = new List<SaleLineDraft>();
-        var usesTrustedSnapshots = CheckoutSaleLineSnapshots.RequestUsesTrustedSnapshots(lines);
+        var usesPriceAuthorities = CheckoutSaleLineAuthorities.RequestUsesOfflinePriceAuthorities(lines);
+        if (usesPriceAuthorities && !allowOfflinePriceAuthorities)
+        {
+            return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                ApplicationErrorCodes.OfflinePriceAuthorityOnlineNotSupported,
+                "Offline price authorities are accepted at checkout only; an online quote prices from the live catalog.");
+        }
+
+        if (usesPriceAuthorities && (clientSaleId is null || clientSaleId == Guid.Empty))
+        {
+            return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                ApplicationErrorCodes.OfflinePriceAuthorityRequestInvalid,
+                "An offline authority sale must carry the client SaleId it was queued under.");
+        }
+
+        // The lease path fails closed the same way the snapshot path does: neither carries the
+        // server-side discount or override math that would be needed to honour these intents.
+        if (usesPriceAuthorities && discounts is { Count: > 0 })
+        {
+            return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                ApplicationErrorCodes.SaleDiscountOfflineNotSupported,
+                "Commercial discounts cannot be applied to an offline sale. Record the sale online.");
+        }
+
+        if (usesPriceAuthorities && priceOverrides is { Count: > 0 })
+        {
+            return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                ApplicationErrorCodes.SalePriceOverrideOfflineNotSupported,
+                "Sale price overrides cannot be applied to an offline sale. Record the sale online.");
+        }
+
+        var usesTrustedSnapshots = !usesPriceAuthorities
+            && CheckoutSaleLineSnapshots.RequestUsesTrustedSnapshots(lines);
         if (usesTrustedSnapshots
             && (clientSaleId is null || clientSaleId == Guid.Empty))
         {
@@ -910,7 +952,53 @@ public sealed class CheckoutSale
             }
         }
 
-        if (usesTrustedSnapshots)
+        if (usesPriceAuthorities)
+        {
+            foreach (var line in lines)
+            {
+                if (line is null)
+                {
+                    continue;
+                }
+
+                if (!byId.TryGetValue(line.ProductId, out var product))
+                {
+                    return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                        ApplicationErrorCodes.SaleProductNotFound,
+                        "One or more products in the cart were not found in this organization.");
+                }
+
+                if (product.Status != CatalogProductStatus.Active)
+                {
+                    return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                        ApplicationErrorCodes.SaleProductNotActive,
+                        $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
+                }
+
+                CatalogProductUnit? authoritySellingUnit = null;
+                if (line.SellingUnitId is not null)
+                {
+                    unitsById.TryGetValue(line.SellingUnitId.Value, out authoritySellingUnit);
+                }
+
+                var authorityDraft = CheckoutSaleLineAuthorities.TryCreateDraftFromAuthority(
+                    line,
+                    product,
+                    authoritySellingUnit,
+                    _priceAuthorities,
+                    orgId.Value,
+                    branchId);
+                if (!authorityDraft.IsSuccess)
+                {
+                    return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                        authorityDraft.ErrorCode!,
+                        authorityDraft.ErrorMessage!);
+                }
+
+                drafts.Add(authorityDraft.Value!);
+            }
+        }
+        else if (usesTrustedSnapshots)
         {
             foreach (var line in lines)
             {

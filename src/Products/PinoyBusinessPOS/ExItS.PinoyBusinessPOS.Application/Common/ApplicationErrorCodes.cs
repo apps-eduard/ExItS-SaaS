@@ -51,6 +51,17 @@ public static class ApplicationErrorCodes
     public const string SalePriceOverrideOfflineNotSupported =
         "pos.sale.price_override.offline_not_supported";
     public const string SaleNumberConflict = "pos.sale.number.conflict";
+    public const string OfflinePriceAuthorityRequestInvalid = "pos.offline_price_authority.request.invalid";
+    public const string OfflinePriceAuthorityTampered = "pos.offline_price_authority.tampered";
+    public const string OfflinePriceAuthorityExpired = "pos.offline_price_authority.expired";
+    public const string OfflinePriceAuthorityWrongOrganization = "pos.offline_price_authority.wrong_organization";
+    public const string OfflinePriceAuthorityWrongBranch = "pos.offline_price_authority.wrong_branch";
+    public const string OfflinePriceAuthorityWrongProduct = "pos.offline_price_authority.wrong_product";
+    public const string OfflinePriceAuthorityRequiredOnEveryLine =
+        "pos.offline_price_authority.required_on_every_line";
+    public const string OfflinePriceAuthorityLineMismatch = "pos.offline_price_authority.line_mismatch";
+    public const string OfflinePriceAuthorityOnlineNotSupported =
+        "pos.offline_price_authority.online_not_supported";
     public const string CreditReversalRequiresSaleVoid = "pos.credit_entry.reversal.requires_sale_void";
     public const string SaleVoidBlockedBySubsequentUtangActivity = "pos.sale.void.blocked_by_subsequent_utang";
 
