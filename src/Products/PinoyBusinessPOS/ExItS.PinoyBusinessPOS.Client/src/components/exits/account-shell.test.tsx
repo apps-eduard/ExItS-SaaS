@@ -190,6 +190,11 @@ describe("account shell", () => {
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Preferences" })).toBeInTheDocument();
     });
+
+    await user.click(screen.getByTestId("preferences-close"));
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Sell floor" })).toBeInTheDocument();
+    });
   });
 
   it("closes the account menu on Escape", async () => {

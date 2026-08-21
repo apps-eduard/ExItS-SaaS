@@ -138,6 +138,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "preferences.title": "Mga setting",
   "preferences.lede": "Mga setting sang pulong kag hitsura para sa sini nga device.",
   "preferences.appearance": "Hitsura",
+  "preferences.close": "Siraduhan ang preferences",
   "account.menu": "Account menu",
   "account.signedIn": "Naka-sign in",
   "account.role.owner": "Owner",

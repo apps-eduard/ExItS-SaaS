@@ -137,6 +137,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "preferences.title": "Mga setting",
   "preferences.lede": "Mga setting sa pinulongan ug hitsura para niining device.",
   "preferences.appearance": "Hitsura",
+  "preferences.close": "Isira ang preferences",
   "account.menu": "Account menu",
   "account.signedIn": "Naka-sign in",
   "account.role.owner": "Owner",

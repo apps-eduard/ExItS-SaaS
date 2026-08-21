@@ -132,6 +132,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "preferences.title": "Preferences",
   "preferences.lede": "Mga preference sa wika at itsura para sa device na ito.",
   "preferences.appearance": "Itsura",
+  "preferences.close": "Isara ang preferences",
   "account.menu": "Account menu",
   "account.signedIn": "Naka-sign in",
   "account.role.owner": "Owner",

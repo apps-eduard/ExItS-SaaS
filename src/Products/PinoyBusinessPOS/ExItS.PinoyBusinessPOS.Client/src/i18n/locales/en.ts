@@ -128,6 +128,7 @@ export const en = {
   "preferences.title": "Preferences",
   "preferences.lede": "Language and appearance preferences for this device.",
   "preferences.appearance": "Appearance",
+  "preferences.close": "Close preferences",
   "account.menu": "Account menu",
   "account.signedIn": "Signed in",
   "account.role.owner": "Owner",

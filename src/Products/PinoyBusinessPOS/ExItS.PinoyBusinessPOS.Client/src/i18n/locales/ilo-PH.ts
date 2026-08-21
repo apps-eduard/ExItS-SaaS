@@ -138,6 +138,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "preferences.title": "Dagiti kaykayat",
   "preferences.lede": "Dagiti kaykayat iti pagsasao ken langa para iti daytoy a device.",
   "preferences.appearance": "Langa",
+  "preferences.close": "Irikep ti preferences",
   "account.menu": "Account menu",
   "account.signedIn": "Naka-sign in",
   "account.role.owner": "Owner",
