@@ -13,29 +13,29 @@ Organization
 
 ## CURRENT — Platform branch fulfillment
 
-| Capability | Status | Evidence |
-|------------|--------|----------|
-| Pickup / delivery flags | PROVEN_CURRENT | fulfillment-settings |
-| Readiness calculation | PROVEN_CURRENT | fulfillment-readiness |
+| Capability                    | Status         | Evidence                              |
+| ----------------------------- | -------------- | ------------------------------------- |
+| Pickup / delivery flags       | PROVEN_CURRENT | fulfillment-settings                  |
+| Readiness calculation         | PROVEN_CURRENT | fulfillment-readiness                 |
 | Delivery policy / fee preview | PROVEN_CURRENT | delivery-policy, delivery-fee-preview |
-| Operating hours impact | PROVEN_CURRENT | operating-hours + readiness |
-| Haversine serviceability | PROVEN_CURRENT | Platform + POS distance calculators |
+| Operating hours impact        | PROVEN_CURRENT | operating-hours + readiness           |
+| Haversine serviceability      | PROVEN_CURRENT | Platform + POS distance calculators   |
 
 MAUI configuration: `BranchEdit.razor`. React configuration: **PARTIAL** — RMAP-18 branch fulfillment admin (address/coords/hours/pickup/delivery/readiness).
 
 ## CURRENT — Customer ordering (POS)
 
-| Capability | Status | Evidence |
-|------------|--------|----------|
-| Storefront exposure | PROVEN_CURRENT | CustomerOrderEndpoints storefront |
-| Linked merchant requirement | PROVEN_CURRENT | Personal linked-merchants shop |
-| Cart / quote / stock revalidation | PROVEN_CURRENT | quote + reservation semantics |
-| Pickup / delivery | PROVEN_CURRENT | order fulfillment modes |
-| Manual payment methods | PROVEN_CURRENT | order payment fields |
-| Merchant acceptance / lifecycle | PROVEN_CURRENT | seller orders MAUI `/orders*` |
-| Customer tracking / cancellation / notifications | PROVEN_CURRENT | buyer `/personal/orders*` + notifications |
-| Inventory reservation | PROVEN_CURRENT | `ReservedQuantity` |
-| Offline | OnlineRequired residual | policy fail-closed |
+| Capability                                       | Status                  | Evidence                                  |
+| ------------------------------------------------ | ----------------------- | ----------------------------------------- |
+| Storefront exposure                              | PROVEN_CURRENT          | CustomerOrderEndpoints storefront         |
+| Linked merchant requirement                      | PROVEN_CURRENT          | Personal linked-merchants shop            |
+| Cart / quote / stock revalidation                | PROVEN_CURRENT          | quote + reservation semantics             |
+| Pickup / delivery                                | PROVEN_CURRENT          | order fulfillment modes                   |
+| Manual payment methods                           | PROVEN_CURRENT          | order payment fields                      |
+| Merchant acceptance / lifecycle                  | PROVEN_CURRENT          | seller orders MAUI `/orders*`             |
+| Customer tracking / cancellation / notifications | PROVEN_CURRENT          | buyer `/personal/orders*` + notifications |
+| Inventory reservation                            | PROVEN_CURRENT          | `ReservedQuantity`                        |
+| Offline                                          | OnlineRequired residual | policy fail-closed                        |
 
 APIs:
 
@@ -44,7 +44,7 @@ APIs:
 
 ## React
 
-Entire ordering/delivery/storefront: **MISSING**.
+Entire ordering/delivery/storefront: **COMPLETE** (RMAP-19 React — linked merchants + seller queue; no B05 public slug landing).
 
 ## OWNER-CONFIRMED
 
