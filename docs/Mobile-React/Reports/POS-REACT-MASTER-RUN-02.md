@@ -43,4 +43,4 @@ Do **not** invent devices, add Development money bypass, or start RMAP-11b witho
 
 ## Final HEAD
 
-`6e7153edbdb9d2bc49457615d226cef432a2f10f` (= `origin/feat/pos-react-client`)
+`7295f2cc028066a36d838453a192841f70f9914f` (= `origin/feat/pos-react-client`)
