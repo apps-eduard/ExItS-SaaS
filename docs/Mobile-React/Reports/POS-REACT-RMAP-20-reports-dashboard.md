@@ -17,9 +17,14 @@
 | `RMAP_20_E2E` | PASS |
 | `RMAP_20_TYPECHECK` | PASS |
 | `RMAP_20_NATIVE_SPEAKER` | PENDING |
-| Tax UI exposed | **NO** |
-| Fake P&L | **NO** |
-| Buyer purchase projection | **NO** |
+| Tax UI exposed | **NO** (hidden — no unavailable placeholder) |
+| Fake P&L | **NO** (unsupported reports absent from nav) |
+| Buyer purchase projection | **NO** (not in seller reports) |
+| `RMAP20_USER_TERMINOLOGY_BOUNDARY` | **PASS** |
+| `RMAP20_TAX_NOT_AVAILABLE_HIDDEN` | **PASS** |
+| `RMAP20_B04_NOT_EXPOSED` | **PASS** |
+| `RMAP20_NO_FAKE_PNL` | **PASS** |
+| `RMAP20_MANUAL_GCASH_UI_LEAK` | **NO** |
 | `RMAP_TAX_AUTHORIZED` | **NO** |
 | `RMAP_B04_AUTHORIZED` | **NO** |
 | `HARD_STOP` | YES — do **not** start RMAP-21 |
@@ -32,11 +37,11 @@
 | Date range | Explicit `fromDate`/`toDate` (`yyyy-MM-dd`); presets Today / Yesterday / This week / This month / Custom; UTC calendar-day membership per `ReportDateRange` |
 | Branch | Bound branch shown + workspace switch; totals remain **organization-wide** (server does not branch-filter these aggregates) |
 | Sales metrics | Gross, voids, returns, Net, Cash / GCash / Utang from proven DTOs — **not** tax terminology |
-| Commercial discounts | Period commercial-discount totals are **not** in report DTOs — UI states unavailable; **not invented** |
-| Export | Deferred footnote only (MAUI parity) — no unsafe client export |
-| Tax / VAT / BIR | No nav, widgets, or report routes (`RMAP_TAX_AUTHORIZED=NO`) |
-| Fake P&L / COGS / valuation | Not claimed / not linked |
-| Buyer purchase projection | Not implemented (`RMAP_B04_AUTHORIZED=NO`) |
+| Commercial discounts | Period commercial-discount totals are **not** in report DTOs — ordinary “not available yet” wording; **not invented** |
+| Export | Not shown (backend export not available) — no developer “deferred” footnote |
+| Tax / VAT / BIR | No nav, widgets, placeholders, or report routes (`TAX_NOT_AVAILABLE`) |
+| Fake P&L / COGS / valuation | Not claimed / not linked / not advertised |
+| Buyer purchase projection | Not implemented / not advertised |
 | Capabilities | `ViewDashboard` / `ViewReports` Owner/Admin/StoreManager/ReportingUser (+ org management); Cashier DENY dashboard/sales; Cashier may open shifts reports; InventoryStaff inventory/purchasing subset |
 | Offline | OnlineRequired residual |
 | Locales | en, fil-PH, ceb-PH, ilo-PH, hil-PH |
