@@ -49,7 +49,7 @@ Browser/PWA now has a contracted PosDevice path: durable installation identity +
 
 ## Implementation SHA
 
-`d48da9a8` (feat); docs commit on `feat/pos-react-client` (see Master Run 02 Final HEAD)
+`d48da9a8` (feat); docs `e356ee16`
 
 ## Validation
 
