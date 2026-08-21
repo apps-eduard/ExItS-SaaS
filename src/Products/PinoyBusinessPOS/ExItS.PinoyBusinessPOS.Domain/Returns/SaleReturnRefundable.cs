@@ -3,8 +3,8 @@ using ExItS.PinoyBusinessPOS.Domain.Sales;
 namespace ExItS.PinoyBusinessPOS.Domain.Returns;
 
 /// <summary>
-/// Refundable quantity and amount helpers for partial returns. Money fidelity prefers remaining
-/// line total minus prior refunds for the last partial return on a line.
+/// Refundable quantity and amount helpers for partial returns. Money uses net
+/// <see cref="SaleLine.LineTotal"/> cumulative allocation — never <see cref="SaleLine.UnitPrice"/>.
 /// </summary>
 public static class SaleReturnRefundable
 {
@@ -15,8 +15,9 @@ public static class SaleReturnRefundable
         SaleMoney.RoundMoney(saleLine.LineTotal - previouslyRefundedAmount);
 
     /// <summary>
-    /// Computes refund for a return line. When returning all remaining quantity, uses the remaining
-    /// refundable amount so cumulative refunds never exceed the original line total.
+    /// Computes refund for a return line from net line total proportional to cumulative returned qty.
+    /// The final slice sets cumulative refund equal to <see cref="SaleLine.LineTotal"/> so remainder
+    /// rounding is absorbed without using unit price.
     /// </summary>
     public static decimal ComputeRefundAmount(
         SaleLine saleLine,
@@ -24,21 +25,21 @@ public static class SaleReturnRefundable
         decimal previouslyReturnedQuantity,
         decimal previouslyRefundedAmount)
     {
-        var remainingQty = RefundableQuantity(saleLine, previouslyReturnedQuantity);
-        var remainingAmount = RefundableAmount(saleLine, previouslyRefundedAmount);
+        var totalQty = saleLine.Quantity;
+        var netLineTotal = saleLine.LineTotal;
+        var previousQty = previouslyReturnedQuantity;
+        var newCumulativeQty = previousQty + quantityReturned;
 
-        if (quantityReturned >= remainingQty)
+        decimal targetCumulative;
+        if (newCumulativeQty >= totalQty)
         {
-            return remainingAmount;
+            targetCumulative = netLineTotal;
+        }
+        else
+        {
+            targetCumulative = SaleMoney.RoundMoney(netLineTotal * newCumulativeQty / totalQty);
         }
 
-        // Pack-priced lines: UnitPrice is per entered sell unit; quantityReturned is base inventory.
-        if (saleLine.MultiplierToBaseSnapshot is > 0m and not 1m)
-        {
-            var enteredReturned = quantityReturned / saleLine.MultiplierToBaseSnapshot.Value;
-            return SaleMoney.RoundMoney(enteredReturned * saleLine.UnitPrice);
-        }
-
-        return SaleMoney.RoundMoney(quantityReturned * saleLine.UnitPrice);
+        return SaleMoney.RoundMoney(targetCumulative - previouslyRefundedAmount);
     }
 }

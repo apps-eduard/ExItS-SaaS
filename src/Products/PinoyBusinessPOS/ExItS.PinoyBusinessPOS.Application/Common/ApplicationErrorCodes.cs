@@ -112,6 +112,15 @@ public static class ApplicationErrorCodes
     public const string SaleReturnNotFound = "pos.sale_return.not_found";
     public const string SaleReturnNumberConflict = "pos.sale_return.number.conflict";
     public const string SaleVoidBlockedByReturns = "pos.sale.void.blocked_by_returns";
+    /// <summary>
+    /// Prior ReturnToStock account restock exists for an expiration-tracked product without lot
+    /// SaleReturnRestock evidence — cannot safely allocate further lot restores.
+    /// </summary>
+    public const string ExpiryReturnHistoryReconciliationGap =
+        "RMAP14_EXPIRY_RETURN_HISTORY_RECONCILIATION_GAP";
+    public const string SaleReturnBranchRequired = "pos.sale_return.branch_required";
+    public const string SaleReturnLotRestoreInsufficient =
+        "pos.sale_return.lot_restore.insufficient";
 
     public const string RegisterNotFound = "pos.register.not_found";
     public const string RegisterNameConflict = "pos.register.name.conflict";

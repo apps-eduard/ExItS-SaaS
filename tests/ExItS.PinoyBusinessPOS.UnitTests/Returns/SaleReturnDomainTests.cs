@@ -26,6 +26,42 @@ public sealed class SaleReturnDomainTests
     }
 
     [Fact]
+    public void Net_refund_follows_cumulative_line_total_not_unit_price()
+    {
+        // qty 10, net LineTotal 80 (e.g. discounted) — never 10×UnitPrice
+        var sale = CompletedCashSale(quantity: 10m, unitPrice: 10m, lineTotalOverride: 80m);
+        var line = sale.Lines.Single();
+
+        var first = SaleReturnRefundable.ComputeRefundAmount(line, 3m, 0m, 0m);
+        Assert.Equal(24m, first); // Round(80 * 3/10)
+
+        var second = SaleReturnRefundable.ComputeRefundAmount(line, 3m, 3m, 24m);
+        Assert.Equal(24m, second); // Round(80 * 6/10) - 24
+
+        var final = SaleReturnRefundable.ComputeRefundAmount(line, 4m, 6m, 48m);
+        Assert.Equal(32m, final); // 80 - 48
+        Assert.Equal(80m, first + second + final);
+    }
+
+    [Fact]
+    public void Net_refund_centavo_slices_absorb_remainder_on_final()
+    {
+        // qty 3, net 10.00 — proportional rounds, final slice equals LineTotal
+        var sale = CompletedCashSale(quantity: 3m, unitPrice: 4m, lineTotalOverride: 10m);
+        var line = sale.Lines.Single();
+
+        var a = SaleReturnRefundable.ComputeRefundAmount(line, 1m, 0m, 0m);
+        Assert.Equal(3.33m, a); // Round(10 * 1/3)
+
+        var b = SaleReturnRefundable.ComputeRefundAmount(line, 1m, 1m, 3.33m);
+        Assert.Equal(3.34m, b); // Round(10 * 2/3) - 3.33 = 6.67 - 3.33
+
+        var c = SaleReturnRefundable.ComputeRefundAmount(line, 1m, 2m, 6.67m);
+        Assert.Equal(3.33m, c); // 10.00 - 6.67
+        Assert.Equal(10.00m, a + b + c);
+    }
+
+    [Fact]
     public void Over_return_quantity_is_rejected()
     {
         var sale = CompletedCashSale(quantity: 2m, unitPrice: 5m);
@@ -80,21 +116,26 @@ public sealed class SaleReturnDomainTests
         Assert.Throws<DomainException>(act);
     }
 
-    private static Sale CompletedCashSale(decimal quantity, decimal unitPrice)
+    private static Sale CompletedCashSale(decimal quantity, decimal unitPrice, decimal? lineTotalOverride = null)
     {
         var saleId = SaleId.New();
-        var line = SaleLine.Create(
+        var gross = SaleMoney.RoundMoney(unitPrice * quantity);
+        var net = lineTotalOverride ?? gross;
+        var line = SaleLine.Rehydrate(
+            SaleLineId.New(),
             saleId,
             Org,
+            CatalogProductId.New(),
             1,
-            new SaleLineDraft(
-                CatalogProductId.New(),
-                "Widget",
-                "W-1",
-                null,
-                UnitOfMeasure.Piece,
-                unitPrice,
-                quantity));
+            "Widget",
+            "W-1",
+            null,
+            UnitOfMeasure.Piece,
+            unitPrice,
+            quantity,
+            net,
+            grossLineTotal: gross,
+            lineDiscountAmount: SaleMoney.RoundMoney(gross - net));
 
         return Sale.Rehydrate(
             saleId,
@@ -102,10 +143,10 @@ public sealed class SaleReturnDomainTests
             "SALE-20260731-000001",
             SaleStatus.Completed,
             SalePaymentMethod.Cash,
-            line.LineTotal,
-            line.LineTotal,
+            net,
+            net,
             0m,
-            line.LineTotal,
+            net,
             0m,
             null,
             Now,
