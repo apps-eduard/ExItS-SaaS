@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { assertMinTouchTarget, assertNoHorizontalOverflow } from "./helpers";
 import {
+  clientNavigate,
   mockBoundCashierSession,
   mockBoundManagerSession,
   mockBoundOrgAdminSession,
@@ -201,7 +202,7 @@ test.describe("RMAP-06 today's prices", () => {
     await mockBoundCashierSession(page);
     await mockPosCatalogAdminApi(page);
     await signInAndBindCashier(page);
-    await page.goto("/catalog/todays-prices");
+    await clientNavigate(page, "/catalog/todays-prices");
     await expect(page.getByTestId("catalog-manage-denied")).toBeVisible();
   });
 
@@ -209,7 +210,7 @@ test.describe("RMAP-06 today's prices", () => {
     await mockBoundOrgAdminSession(page);
     await mockPosCatalogAdminApi(page);
     await signInAndBindOrgAdmin(page);
-    await page.goto("/catalog/todays-prices");
+    await clientNavigate(page, "/catalog/todays-prices");
     await expect(page.getByTestId("catalog-manage-denied")).toBeVisible();
   });
 

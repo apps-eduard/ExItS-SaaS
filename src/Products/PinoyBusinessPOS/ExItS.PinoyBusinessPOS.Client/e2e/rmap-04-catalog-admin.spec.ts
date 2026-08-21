@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { assertNoHorizontalOverflow } from "./helpers";
 import {
+  clientNavigate,
   mockBoundCashierSession,
   mockBoundManagerSession,
   mockBoundOwnerSession,
@@ -51,7 +52,8 @@ test.describe("RMAP-04 catalog admin parity", () => {
     await signInAndBindCashier(page);
     await expect(page.getByRole("heading", { name: "Sell floor" })).toBeVisible();
     await expect(page.getByTestId("open-catalog")).toHaveCount(0);
-    await page.goto("/catalog");
+    // Keep SPA session/workspace bind — full page.goto remounts and drops in-memory bind.
+    await clientNavigate(page, "/catalog");
     await expect(page).toHaveURL(/\/catalog$/);
     await expect(page.getByTestId("catalog-manage-denied")).toBeVisible();
   });
