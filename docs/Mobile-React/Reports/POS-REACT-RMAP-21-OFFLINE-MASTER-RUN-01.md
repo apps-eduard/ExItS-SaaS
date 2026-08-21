@@ -24,7 +24,8 @@
 | Item | SHA |
 | --- | --- |
 | Starting SHA | `86ded4380c6c1d45ef89ef08855c20fb00f17d38` |
-| Ending SHA | `5ef9109a71a8ffea5dc1ddc372f03da04a19394b` |
+| Implementation ending SHA (21H) | `30312ec4fe0d7318ef8e693f86c358af01f71662` |
+| Docs tip (master report + roadmap) | `12f46dbf5e248c16beb01186cd6ad1871c3fc410` |
 | Branch | `feat/pos-react-client` |
 | Worktree | `C:\Users\speed\Desktop\ExItS-SaaS-pos-react-client` |
 
