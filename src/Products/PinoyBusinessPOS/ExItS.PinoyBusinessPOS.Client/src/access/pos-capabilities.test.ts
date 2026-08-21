@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  canApplyCommercialDiscount,
   canCreateSale,
   canEnterCashierRoleHome,
   canEnterManagerRoleHome,
@@ -156,5 +157,36 @@ describe("pos-capabilities", () => {
     expect(canManageRegisters(cashier)).toBe(false);
     expect(canUseAdminExperience(cashier)).toBe(false);
     expect(canManageCatalog(cashier)).toBe(false);
+  });
+
+  it("ApplyCommercialDiscount allows Owner/Manager and denies Cashier and OrgAdmin alone", () => {
+    const owner = grant({
+      mappedPosRoleCode: "Owner",
+      productLocalRoleCode: "Owner",
+      membershipRole: "OrganizationOwner",
+      organizationManagementAuthority: true,
+    });
+    const manager = grant({
+      mappedPosRoleCode: "StoreManager",
+      productLocalRoleCode: "Manager",
+      membershipRole: "OrganizationMember",
+    });
+    const cashier = grant({
+      mappedPosRoleCode: "Cashier",
+      productLocalRoleCode: "Cashier",
+      membershipRole: "OrganizationMember",
+    });
+    const orgAdmin = grant({
+      membershipRole: "OrganizationAdministrator",
+      organizationManagementAuthority: true,
+      mappedPosRoleCode: null,
+      productLocalRoleCode: null,
+      productAccessAllowed: true,
+    });
+
+    expect(canApplyCommercialDiscount(owner)).toBe(true);
+    expect(canApplyCommercialDiscount(manager)).toBe(true);
+    expect(canApplyCommercialDiscount(cashier)).toBe(false);
+    expect(canApplyCommercialDiscount(orgAdmin)).toBe(false);
   });
 });

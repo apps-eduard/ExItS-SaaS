@@ -24,6 +24,15 @@ export function mapCheckoutSaleErrorKey(error: unknown): MessageKey {
   }
 
   if (
+    code.includes("apply_commercial_discount") ||
+    (code.includes("discount") && (error.status === 403 || detail.includes("denied"))) ||
+    (code.includes("capability.denied") && detail.includes("commercial discount")) ||
+    (code.includes("capability.denied") && detail.includes("applycommercialdiscount"))
+  ) {
+    return "checkout.errorDiscountDenied";
+  }
+
+  if (
     code.includes("product_access") ||
     code === "application.auth.product_access_denied" ||
     code.includes("capability.denied") ||

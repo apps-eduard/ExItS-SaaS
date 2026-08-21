@@ -136,6 +136,20 @@ export function canCreateSale(grant: PosSessionGrantFacts | null | undefined): b
 }
 
 /**
+ * ApplyCommercialDiscount UI gate — Owner/Admin/StoreManager (+ Manager alias).
+ * Cashier DENY. OrganizationAdministrator alone DENY (no POS discount role).
+ * Server remains authoritative when discount intents are present.
+ */
+export function canApplyCommercialDiscount(
+  grant: PosSessionGrantFacts | null | undefined,
+): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  return isPosOwnerRole(grant) || isPosOperationsManager(grant);
+}
+
+/**
  * UI gate for catalog administration (ManageCatalog).
  * Mirrors PosRoleMatrix: Owner/Admin/StoreManager (+ Manager alias).
  * OrganizationAdministrator alone does NOT imply ManageCatalog.

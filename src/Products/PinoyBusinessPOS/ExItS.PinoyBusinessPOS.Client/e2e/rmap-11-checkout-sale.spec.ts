@@ -66,6 +66,38 @@ async function mockPosSalesApi(page: import("@playwright/test").Page, opts: Sale
     const headers = route.request().headers();
     const pathname = new URL(url).pathname.replace(/\/$/, "");
 
+    if (method === "POST" && pathname.endsWith("/sales/quote")) {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          grossSubtotal: 25,
+          lineDiscountTotal: 0,
+          saleDiscountTotal: 0,
+          discountTotal: 0,
+          subtotal: 25,
+          taxAmount: 0,
+          total: 25,
+          lines: [
+            {
+              lineNumber: 1,
+              productId: MOCK_COKE_PRODUCT_ID,
+              name: "Coca-Cola 330ml",
+              unitOfMeasure: "pc",
+              sellingMode: "PerItem",
+              unitPrice: 25,
+              quantity: 1,
+              grossLineTotal: 25,
+              lineDiscountAmount: 0,
+              saleDiscountAllocatedAmount: 0,
+              lineTotal: 25,
+            },
+          ],
+          discounts: [],
+        }),
+      });
+    }
+
     if (method === "POST" && pathname.endsWith("/sales")) {
       const body = route.request().postDataJSON() as Record<string, unknown>;
       posts.push({ body, headers });
@@ -223,8 +255,10 @@ test.describe("RMAP-11 checkout cash sale", () => {
     await clientNavigate(page, "/sell");
     await addCokeAndOpenCheckout(page);
 
-    await expect(page.getByTestId("checkout-total")).toContainText("25");
+    await expect(page.getByTestId("checkout-amount-to-pay")).toContainText("25");
+    await expect(page.getByTestId("checkout-cash-received")).toHaveValue("25.00");
     await page.getByTestId("checkout-cash-received").fill("50");
+    await expect(page.getByTestId("checkout-cash-received")).toHaveValue("50");
     await expect(page.getByTestId("checkout-change")).toContainText("25");
     await page.getByTestId("checkout-confirm").click();
 
@@ -317,6 +351,37 @@ test.describe("RMAP-11 checkout cash sale", () => {
             ],
             shiftId: E2E_SHIFT_ID,
             documentKind: "TransactionSummary",
+          }),
+        });
+      }
+      if (route.request().method() === "POST" && pathname.endsWith("/sales/quote")) {
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            grossSubtotal: 25,
+            lineDiscountTotal: 0,
+            saleDiscountTotal: 0,
+            discountTotal: 0,
+            subtotal: 25,
+            taxAmount: 0,
+            total: 25,
+            lines: [
+              {
+                lineNumber: 1,
+                productId: MOCK_COKE_PRODUCT_ID,
+                name: "Coca-Cola 330ml",
+                unitOfMeasure: "pc",
+                sellingMode: "PerItem",
+                unitPrice: 25,
+                quantity: 1,
+                grossLineTotal: 25,
+                lineDiscountAmount: 0,
+                saleDiscountAllocatedAmount: 0,
+                lineTotal: 25,
+              },
+            ],
+            discounts: [],
           }),
         });
       }

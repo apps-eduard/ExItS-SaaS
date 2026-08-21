@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { checkoutSale, getSale, listSales } from "@/api/pos/pos-sales-client";
+import { checkoutSale, getSale, listSales, quoteSale } from "@/api/pos/pos-sales-client";
 import { PosApiError } from "@/api/pos/pos-http";
 
 const workspace = {
@@ -47,6 +47,43 @@ function saleJson(extra: Record<string, unknown> = {}) {
   };
 }
 
+function quoteJson(extra: Record<string, unknown> = {}) {
+  return {
+    grossSubtotal: 25,
+    lineDiscountTotal: 0,
+    saleDiscountTotal: 2.5,
+    discountTotal: 2.5,
+    subtotal: 22.5,
+    taxAmount: 0,
+    total: 22.5,
+    lines: [
+      {
+        lineNumber: 1,
+        productId,
+        name: "Coke",
+        unitOfMeasure: "pc",
+        sellingMode: "PerItem",
+        unitPrice: 25,
+        quantity: 1,
+        grossLineTotal: 25,
+        lineDiscountAmount: 0,
+        saleDiscountAllocatedAmount: 2.5,
+        lineTotal: 22.5,
+      },
+    ],
+    discounts: [
+      {
+        scope: "Sale",
+        method: "Percentage",
+        requestedValue: 10,
+        calculatedAmount: 2.5,
+        reason: "Bulk buyer courtesy",
+      },
+    ],
+    ...extra,
+  };
+}
+
 describe("pos-sales-client", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
@@ -80,6 +117,57 @@ describe("pos-sales-client", () => {
     expect(body.lines[0]).toEqual({ productId, quantity: 1 });
     expect(body.lines[0].unitPriceSnapshot).toBeUndefined();
     expect(body.discounts).toBeUndefined();
+  });
+
+  it("includes commercial discount intents on checkout and quote", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify(saleJson({ grossSubtotal: 25, discountTotal: 2.5, total: 22.5 })),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(quoteJson()), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+
+    const discounts = [
+      {
+        scope: "Sale" as const,
+        method: "Percentage" as const,
+        value: 10,
+        reason: "Bulk buyer courtesy",
+      },
+    ];
+
+    await checkoutSale(workspace, {
+      lines: [{ productId, quantity: 1 }],
+      paymentMethod: "Cash",
+      amountTendered: 25,
+      saleId,
+      shiftId,
+      discounts,
+    });
+
+    const checkoutBody = JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]?.body));
+    expect(checkoutBody.discounts).toEqual(discounts);
+    expect(checkoutBody.lines[0].unitPrice).toBeUndefined();
+
+    const quote = await quoteSale(workspace, {
+      lines: [{ productId, quantity: 1 }],
+      paymentMethod: "Cash",
+      discounts,
+    });
+    expect(quote.grossSubtotal).toBe(25);
+    expect(quote.discountTotal).toBe(2.5);
+    expect(quote.total).toBe(22.5);
+    expect(String(vi.mocked(fetch).mock.calls[1][0])).toContain("/sales/quote");
   });
 
   it("includes sellingUnitId and enteredQuantity when provided", async () => {
@@ -151,5 +239,30 @@ describe("pos-sales-client", () => {
         shiftId,
       }),
     ).rejects.toBeInstanceOf(PosApiError);
+  });
+
+  it("surfaces cashier discount denial as PosApiError", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          detail: "ApplyCommercialDiscount is required.",
+          errorCode: "application.auth.capability.denied",
+        }),
+        { status: 403, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    await expect(
+      checkoutSale(workspace, {
+        lines: [{ productId, quantity: 1 }],
+        paymentMethod: "Cash",
+        amountTendered: 25,
+        saleId,
+        shiftId,
+        discounts: [
+          { scope: "Sale", method: "Percentage", value: 10, reason: "Should be rejected" },
+        ],
+      }),
+    ).rejects.toMatchObject({ status: 403 });
   });
 });

@@ -97,5 +97,13 @@ describe("mapCheckoutSaleErrorKey", () => {
         new PosApiError(400, { errorCode: "pos.sale.amount_tendered.below_total" }),
       ),
     ).toBe("checkout.errorInsufficientTender");
+    expect(
+      mapCheckoutSaleErrorKey(
+        new PosApiError(403, {
+          errorCode: "application.auth.capability.denied",
+          detail: "ApplyCommercialDiscount is required.",
+        }),
+      ),
+    ).toBe("checkout.errorDiscountDenied");
   });
 });

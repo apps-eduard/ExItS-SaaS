@@ -3,6 +3,7 @@ import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { posRequest } from "@/api/pos/pos-http";
 
 const SALES_PATH = "/api/v1/pos/sales";
+const QUOTE_PATH = "/api/v1/pos/sales/quote";
 
 /** .NET Guid strings are not always RFC UUID version-nibble compliant. */
 const guidSchema = z
@@ -16,6 +17,15 @@ export const checkoutSaleLineRequestSchema = z.object({
   enteredQuantity: z.number().optional(),
 });
 
+export const commercialDiscountIntentRequestSchema = z.object({
+  scope: z.enum(["Line", "Sale"]),
+  method: z.enum(["Percentage", "FixedAmount"]),
+  value: z.number(),
+  reason: z.string().min(1),
+  productId: guidSchema.optional(),
+  lineNumber: z.number().int().positive().optional(),
+});
+
 export const checkoutSaleRequestSchema = z.object({
   lines: z.array(checkoutSaleLineRequestSchema).min(1),
   paymentMethod: z.literal("Cash"),
@@ -23,10 +33,22 @@ export const checkoutSaleRequestSchema = z.object({
   saleId: guidSchema,
   shiftId: guidSchema,
   customerId: guidSchema.optional(),
+  discounts: z.array(commercialDiscountIntentRequestSchema).optional(),
+});
+
+/** Quote uses the same line/discount contract; tender/saleId/shift are not required. */
+export const quoteSaleRequestSchema = z.object({
+  lines: z.array(checkoutSaleLineRequestSchema).min(1),
+  paymentMethod: z.literal("Cash"),
+  amountTendered: z.number().optional(),
+  customerId: guidSchema.optional(),
+  discounts: z.array(commercialDiscountIntentRequestSchema).optional(),
 });
 
 export type CheckoutSaleLineRequest = z.infer<typeof checkoutSaleLineRequestSchema>;
+export type CommercialDiscountIntentRequest = z.infer<typeof commercialDiscountIntentRequestSchema>;
 export type CheckoutSaleRequest = z.infer<typeof checkoutSaleRequestSchema>;
+export type QuoteSaleRequest = z.infer<typeof quoteSaleRequestSchema>;
 
 export const posSaleLineDtoSchema = z.object({
   saleLineId: guidSchema,
@@ -78,10 +100,52 @@ export const posSaleDtoSchema = z.object({
   branchId: guidSchema.nullable().optional(),
   grossSubtotal: z.number().optional(),
   discountTotal: z.number().optional(),
+  lineDiscountTotal: z.number().optional(),
+  saleDiscountTotal: z.number().optional(),
 });
 
 export type PosSaleLineDto = z.infer<typeof posSaleLineDtoSchema>;
 export type PosSaleDto = z.infer<typeof posSaleDtoSchema>;
+
+export const posSaleQuoteLineDtoSchema = z.object({
+  lineNumber: z.number(),
+  productId: guidSchema,
+  name: z.string(),
+  unitOfMeasure: z.string(),
+  sellingMode: z.string(),
+  unitPrice: z.number(),
+  quantity: z.number(),
+  grossLineTotal: z.number(),
+  lineDiscountAmount: z.number(),
+  saleDiscountAllocatedAmount: z.number(),
+  lineTotal: z.number(),
+});
+
+export const posSaleQuoteDiscountDtoSchema = z.object({
+  scope: z.string(),
+  method: z.string(),
+  requestedValue: z.number(),
+  calculatedAmount: z.number(),
+  reason: z.string(),
+  lineNumber: z.number().nullable().optional(),
+});
+
+export const posSaleQuoteDtoSchema = z.object({
+  grossSubtotal: z.number(),
+  lineDiscountTotal: z.number(),
+  saleDiscountTotal: z.number(),
+  discountTotal: z.number(),
+  subtotal: z.number(),
+  taxAmount: z.number(),
+  total: z.number(),
+  taxPricingMode: z.string().nullable().optional(),
+  lines: z.array(posSaleQuoteLineDtoSchema),
+  discounts: z.array(posSaleQuoteDiscountDtoSchema),
+});
+
+export type PosSaleQuoteLineDto = z.infer<typeof posSaleQuoteLineDtoSchema>;
+export type PosSaleQuoteDiscountDto = z.infer<typeof posSaleQuoteDiscountDtoSchema>;
+export type PosSaleQuoteDto = z.infer<typeof posSaleQuoteDtoSchema>;
 
 export const posSalePagedResultSchema = z.object({
   items: z.array(posSaleDtoSchema),
@@ -110,9 +174,49 @@ function parseSale(payload: unknown): PosSaleDto {
   return posSaleDtoSchema.parse(payload);
 }
 
+function serializeLines(lines: CheckoutSaleLineRequest[]): Record<string, unknown>[] {
+  return lines.map((line) => {
+    const entry: Record<string, unknown> = {
+      productId: line.productId,
+      quantity: line.quantity,
+    };
+    if (line.sellingUnitId) {
+      entry.sellingUnitId = line.sellingUnitId;
+    }
+    if (line.enteredQuantity !== undefined) {
+      entry.enteredQuantity = line.enteredQuantity;
+    }
+    return entry;
+  });
+}
+
+function serializeDiscounts(
+  discounts: CommercialDiscountIntentRequest[] | undefined,
+): Record<string, unknown>[] | undefined {
+  if (!discounts || discounts.length === 0) {
+    return undefined;
+  }
+  return discounts.map((discount) => {
+    const entry: Record<string, unknown> = {
+      scope: discount.scope,
+      method: discount.method,
+      value: discount.value,
+      reason: discount.reason,
+    };
+    if (discount.productId) {
+      entry.productId = discount.productId;
+    }
+    if (discount.lineNumber !== undefined) {
+      entry.lineNumber = discount.lineNumber;
+    }
+    return entry;
+  });
+}
+
 /**
  * Online cash checkout. Omit snapshot fields; server prices from live catalog.
- * Do not send discounts (RMAP-11b), ManualGCash/Utang/Card (RMAP-12).
+ * Optional commercial discount intents (RMAP-11b) — server recomputes all money.
+ * Do not send ManualGCash/Utang/Card (RMAP-12).
  */
 export async function checkoutSale(
   workspace: PosWorkspaceScope,
@@ -121,19 +225,7 @@ export async function checkoutSale(
 ): Promise<PosSaleDto> {
   const validated = checkoutSaleRequestSchema.parse(body);
   const payload: Record<string, unknown> = {
-    lines: validated.lines.map((line) => {
-      const entry: Record<string, unknown> = {
-        productId: line.productId,
-        quantity: line.quantity,
-      };
-      if (line.sellingUnitId) {
-        entry.sellingUnitId = line.sellingUnitId;
-      }
-      if (line.enteredQuantity !== undefined) {
-        entry.enteredQuantity = line.enteredQuantity;
-      }
-      return entry;
-    }),
+    lines: serializeLines(validated.lines),
     paymentMethod: validated.paymentMethod,
     amountTendered: validated.amountTendered,
     saleId: validated.saleId,
@@ -141,6 +233,10 @@ export async function checkoutSale(
   };
   if (validated.customerId) {
     payload.customerId = validated.customerId;
+  }
+  const discounts = serializeDiscounts(validated.discounts);
+  if (discounts) {
+    payload.discounts = discounts;
   }
 
   const raw = await posRequest<unknown>({
@@ -151,6 +247,41 @@ export async function checkoutSale(
     body: payload,
   });
   return parseSale(raw);
+}
+
+/**
+ * Non-persisting authoritative checkout quote (RMAP-B03 / RMAP-11b).
+ * Never mutates UnitPrice client-side; never treats quote as authorization to record.
+ */
+export async function quoteSale(
+  workspace: PosWorkspaceScope,
+  body: QuoteSaleRequest,
+  signal?: AbortSignal,
+): Promise<PosSaleQuoteDto> {
+  const validated = quoteSaleRequestSchema.parse(body);
+  const payload: Record<string, unknown> = {
+    lines: serializeLines(validated.lines),
+    paymentMethod: validated.paymentMethod,
+  };
+  if (validated.amountTendered !== undefined) {
+    payload.amountTendered = validated.amountTendered;
+  }
+  if (validated.customerId) {
+    payload.customerId = validated.customerId;
+  }
+  const discounts = serializeDiscounts(validated.discounts);
+  if (discounts) {
+    payload.discounts = discounts;
+  }
+
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: QUOTE_PATH,
+    body: payload,
+  });
+  return posSaleQuoteDtoSchema.parse(raw);
 }
 
 export async function getSale(
