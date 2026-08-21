@@ -777,4 +777,9 @@ export const en = {
   "shift.denomEmptyDetail": "Enter the total cash amount manually.",
   "org.cashHandlingLink": "Cash handling",
   "org.cashHandlingLinkDetail": "Opening and closing cash count rules and denominations",
+  "shift.tapDenominationHint": "Tap for denomination breakdown",
+  "shift.viewOpeningDenominationBreakdown": "Opening cash denomination breakdown",
+  "shift.viewDenominationBreakdown": "Closing cash denomination breakdown",
+  "shift.countedCash": "Counted cash",
+  "shift.cashVariance": "Cash variance",
 };

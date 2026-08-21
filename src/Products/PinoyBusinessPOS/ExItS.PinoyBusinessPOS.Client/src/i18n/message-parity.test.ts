@@ -23,4 +23,20 @@ describe("i18n message-key parity", () => {
   it("uses the approved product search placeholder in English", () => {
     expect(en["sell.searchPlaceholder"]).toBe("Search by product name, barcode, or SKU");
   });
+
+  it.each(["ceb-PH", "ilo-PH", "hil-PH"] as const)(
+    "%s differs from Filipino for most keys (fidelity guard)",
+    (locale) => {
+      const fil = catalogs["fil-PH"];
+      const catalog = catalogs[locale];
+      let identical = 0;
+      for (const key of keys) {
+        if (catalog[key] === fil[key]) {
+          identical += 1;
+        }
+      }
+      const pct = (100 * identical) / keys.length;
+      expect(pct, `${locale} still ${pct.toFixed(1)}% identical to fil-PH`).toBeLessThan(35);
+    },
+  );
 });

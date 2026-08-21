@@ -805,4 +805,9 @@ export const filPH: Record<keyof typeof en, string> = {
   "shift.denomEmptyDetail": "I-enter nang manual ang total cash amount.",
   "org.cashHandlingLink": "Cash handling",
   "org.cashHandlingLinkDetail": "Mga panuntunan sa opening at closing cash count at denominations",
+  "shift.tapDenominationHint": "I-tap para sa breakdown ng denomination",
+  "shift.viewOpeningDenominationBreakdown": "Breakdown ng denomination ng opening cash",
+  "shift.viewDenominationBreakdown": "Breakdown ng denomination ng closing cash",
+  "shift.countedCash": "Nabilang na cash",
+  "shift.cashVariance": "Pagkakaiba ng cash",
 };
