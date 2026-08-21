@@ -519,7 +519,8 @@ export function PersonalTodoDetailPage() {
       </Button>
 
       <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-        {t("personal.todo.status")}: {t(statusLabelKey(todo.status))} · {t(priorityLabelKey(todo.priority))}
+        {t("personal.todo.status")}: {t(statusLabelKey(todo.status))} ·{" "}
+        {t(priorityLabelKey(todo.priority))}
       </p>
 
       {editing ? (

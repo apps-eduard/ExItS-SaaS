@@ -1,6 +1,8 @@
 /** Mirrors MAUI `OrganizationSlug` — suggest/validate org URL slugs (not shown to users). */
 
-export function suggestOrganizationSlugFromDisplayName(displayName: string | null | undefined): string {
+export function suggestOrganizationSlugFromDisplayName(
+  displayName: string | null | undefined,
+): string {
   if (!displayName || !displayName.trim()) {
     return "";
   }

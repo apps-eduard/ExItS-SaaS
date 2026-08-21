@@ -4,10 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { DropdownMenu, MenuHeader, MenuItem, MenuSeparator } from "@/components/ui/dropdown-menu";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSession } from "@/session/SessionProvider";
-import {
-  isOrganizationContextLocked,
-  sessionAccountClass,
-} from "@/session/account-class";
+import { isOrganizationContextLocked, sessionAccountClass } from "@/session/account-class";
 import { ensurePersonalSessionProfile } from "@/session/ensure-personal-profile";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { resolveEffectivePosRoleCode } from "@/access/pos-capabilities";

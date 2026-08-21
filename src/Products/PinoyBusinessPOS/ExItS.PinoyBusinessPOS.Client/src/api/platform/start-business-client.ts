@@ -119,7 +119,11 @@ function normalizeStartBusinessResult(raw: unknown): unknown {
   return {
     organizationId: pick(r, "organizationId", "OrganizationId"),
     membershipId: pick(r, "membershipId", "MembershipId"),
-    organizationAccountProfileId: pick(r, "organizationAccountProfileId", "OrganizationAccountProfileId"),
+    organizationAccountProfileId: pick(
+      r,
+      "organizationAccountProfileId",
+      "OrganizationAccountProfileId",
+    ),
     sessionId: pick(r, "sessionId", "SessionId"),
     accountClass: pick(r, "accountClass", "AccountClass"),
     allowedScope: pick(r, "allowedScope", "AllowedScope"),
@@ -131,7 +135,9 @@ function normalizeStartBusinessResult(raw: unknown): unknown {
       pick(r, "productAccessAssignmentId", "ProductAccessAssignmentId") ?? null,
     productLocalRoleGrantId: pick(r, "productLocalRoleGrantId", "ProductLocalRoleGrantId") ?? null,
     productLocalRoleCode: pick(r, "productLocalRoleCode", "ProductLocalRoleCode") ?? null,
-    organizationOwnerGranted: Boolean(pick(r, "organizationOwnerGranted", "OrganizationOwnerGranted")),
+    organizationOwnerGranted: Boolean(
+      pick(r, "organizationOwnerGranted", "OrganizationOwnerGranted"),
+    ),
     posEntitlementActivated: Boolean(pick(r, "posEntitlementActivated", "PosEntitlementActivated")),
     posOwnerRoleGranted: Boolean(pick(r, "posOwnerRoleGranted", "PosOwnerRoleGranted")),
     productCode: pick(r, "productCode", "ProductCode"),

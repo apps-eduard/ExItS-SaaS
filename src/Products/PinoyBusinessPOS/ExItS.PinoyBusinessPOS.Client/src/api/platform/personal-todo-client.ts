@@ -192,7 +192,10 @@ function addLocalDays(date: Date, days: number): Date {
   return next;
 }
 
-export function classifyTodoDue(dueAtUtc: string | null | undefined, now = new Date()): TodoDueBucket {
+export function classifyTodoDue(
+  dueAtUtc: string | null | undefined,
+  now = new Date(),
+): TodoDueBucket {
   if (!dueAtUtc) return "none";
   const due = new Date(dueAtUtc);
   if (Number.isNaN(due.getTime())) return "none";
@@ -220,7 +223,10 @@ export function filterTodosByTab(
   });
 }
 
-export function summarizeTodoCounts(todos: PersonalTodoDto[], now = new Date()): PersonalTodoCounts {
+export function summarizeTodoCounts(
+  todos: PersonalTodoDto[],
+  now = new Date(),
+): PersonalTodoCounts {
   return {
     today: filterTodosByTab(todos, "today", now).length,
     upcoming: filterTodosByTab(todos, "upcoming", now).length,

@@ -150,7 +150,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.home.actionPeople": "Add person",
   "personal.home.actionTodo": "Add to-do",
   "personal.home.todoSummary": "Aramiden",
-  "personal.home.todoSoon": "Agparang ditoy dagiti personal nga aramiden iti sumaruno a panagbalbaliw.",
+  "personal.home.todoSoon":
+    "Agparang ditoy dagiti personal nga aramiden iti sumaruno a panagbalbaliw.",
   "personal.home.todoUnavailable": "Saan a magun-od ita ti bilang dagiti aramiden.",
   "personal.home.todoEmpty": "Awan pay ti nalukat nga aramiden. Agnayon manipud iti Aramiden.",
   "personal.utang.title": "Utang",
@@ -300,7 +301,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.explore.errorDetail": "Commercial plans could not be loaded. Try again.",
   "personal.explore.emptyTitle": "No plans available",
   "personal.explore.emptyDetail": "No active POS plans are published yet.",
-  "personal.explore.selectHint": "Start a trial when available. Paid subscribe uses Local Validation payment only in non-production.",
+  "personal.explore.selectHint":
+    "Start a trial when available. Paid subscribe uses Local Validation payment only in non-production.",
   "personal.explore.trialDays": "{days}-day trial",
   "personal.explore.noTrial": "No trial",
   "personal.explore.billingMonth": "month",
@@ -314,22 +316,27 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.explore.featureExport": "Exports",
   "personal.explore.startTrial": "Start trial",
   "personal.explore.subscribe": "Subscribe (Local Validation)",
-  "personal.explore.paymentUnavailable": "Paid subscribe is not available without a configured payment provider.",
-  "personal.explore.paymentNote": "Production payment providers are not wired. Trial activation does not charge a card.",
-  "personal.explore.localValidationNote": "Local Validation mode: Subscribe uses the simulated payment provider (not a production card charge).",
+  "personal.explore.paymentUnavailable":
+    "Paid subscribe is not available without a configured payment provider.",
+  "personal.explore.paymentNote":
+    "Production payment providers are not wired. Trial activation does not charge a card.",
+  "personal.explore.localValidationNote":
+    "Local Validation mode: Subscribe uses the simulated payment provider (not a production card charge).",
   "personal.startBusiness.title": "Start a Business",
   "personal.startBusiness.lede": "Create your organization and open the owner workspace.",
   "personal.startBusiness.loading": "Loading Start a Business…",
   "personal.startBusiness.formTitle": "Business details",
   "personal.startBusiness.displayName": "Business name",
   "personal.startBusiness.displayNamePlaceholder": "e.g. Ana's Sari-Sari",
-  "personal.startBusiness.slugHiddenHint": "A unique organization slug is generated for you — you do not need to enter one.",
+  "personal.startBusiness.slugHiddenHint":
+    "A unique organization slug is generated for you — you do not need to enter one.",
   "personal.startBusiness.primaryTypeTitle": "Primary business type",
   "personal.startBusiness.primaryTypeHint": "Choose the type that best matches your store.",
   "personal.startBusiness.primaryTypeRequired": "Choose a primary business type.",
   "personal.startBusiness.businessTypesLoadFailed": "Business types could not be loaded.",
   "personal.startBusiness.contactTitle": "Organization contact",
-  "personal.startBusiness.contactHelper": "Optional. Copied once into the organization profile — not kept in sync later.",
+  "personal.startBusiness.contactHelper":
+    "Optional. Copied once into the organization profile — not kept in sync later.",
   "personal.startBusiness.useMyContactDetails": "Use my Personal contact details",
   "personal.startBusiness.contactEmail": "Contact email",
   "personal.startBusiness.contactPhone": "Contact phone",
@@ -344,24 +351,24 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.startBusiness.modeSubscribe": "Subscribe",
   "personal.startBusiness.billingCycle": "Billing cycle",
   "personal.startBusiness.trialDays": "{days}-day trial, then the plan price.",
-  "personal.startBusiness.confirmHint": "Confirm to create the organization, activate POS access, and open your workspace.",
+  "personal.startBusiness.confirmHint":
+    "Confirm to create the organization, activate POS access, and open your workspace.",
   "personal.startBusiness.confirmSubmit": "Create business",
   "personal.startBusiness.submitting": "Creating…",
   "personal.startBusiness.validationRequired": "Enter a business name.",
   "personal.startBusiness.planRequired": "Choose a plan first",
-  "personal.startBusiness.planRequiredDetail": "Open Explore POS plans, pick a trial or Local Validation subscribe path, then continue.",
+  "personal.startBusiness.planRequiredDetail":
+    "Open Explore POS plans, pick a trial or Local Validation subscribe path, then continue.",
   "personal.startBusiness.planLoadFailed": "Plan could not be loaded",
   "personal.startBusiness.planLoadFailedDetail": "Return to Explore POS and select a plan again.",
   "personal.startBusiness.failed": "Start a Business failed. Try again.",
   "personal.customerLinks.title": "Customer link requests",
-  "personal.customerLinks.lede":
-    "Stores asking to link your Personal account as their customer.",
+  "personal.customerLinks.lede": "Stores asking to link your Personal account as their customer.",
   "personal.customerLinks.emptyTitle": "No pending link requests",
   "personal.customerLinks.emptyDetail":
     "When a store sends a customer link request, it appears here.",
   "personal.customerLinks.errorTitle": "Could not load link requests",
-  "personal.customerLinks.errorDetail":
-    "Customer link requests could not be loaded. Try again.",
+  "personal.customerLinks.errorDetail": "Customer link requests could not be loaded. Try again.",
   "personal.customerLinks.accept": "Accept",
   "personal.customerLinks.decline": "Decline",
   "personal.customerLinks.acceptFailed": "Could not accept the link request.",

@@ -5,10 +5,7 @@ import { SignInPage } from "@/features/auth/SignInPage";
 import { HomePage } from "@/features/home/HomePage";
 import { NotFoundPage } from "@/features/not-found/NotFoundPage";
 import { PersonalHomePage } from "@/features/personal/PersonalHomePage";
-import {
-  PersonalMorePage,
-  PersonalUtangHubPage,
-} from "@/features/personal/PersonalHubPages";
+import { PersonalMorePage, PersonalUtangHubPage } from "@/features/personal/PersonalHubPages";
 import { PersonalExplorePosPage } from "@/features/personal/start-business/PersonalExplorePosPage";
 import { PersonalStartBusinessPage } from "@/features/personal/start-business/PersonalStartBusinessPage";
 import { PersonalShell } from "@/features/personal/PersonalShell";

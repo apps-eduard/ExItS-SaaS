@@ -1,6 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { listCommercialPlans, type CommercialPlanDto } from "@/api/platform/commercial-plans-client";
+import {
+  listCommercialPlans,
+  type CommercialPlanDto,
+} from "@/api/platform/commercial-plans-client";
 import { isFrontendLocalValidationMode } from "@/api/platform/local-validation-gate";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -10,10 +13,7 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 
-function planFeatureLines(
-  plan: CommercialPlanDto,
-  t: (key: MessageKey) => string,
-): string[] {
+function planFeatureLines(plan: CommercialPlanDto, t: (key: MessageKey) => string): string[] {
   const lines = [
     t("personal.explore.featureBranches").replace("{count}", String(plan.maxBranches)),
     t("personal.explore.featureStaff").replace("{count}", String(plan.maxActiveStaff)),

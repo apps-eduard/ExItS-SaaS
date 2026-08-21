@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-  findCommercialPlan,
-  listCommercialPlans,
-} from "@/api/platform/commercial-plans-client";
+import { findCommercialPlan, listCommercialPlans } from "@/api/platform/commercial-plans-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import {
   getPersonalProfile,
@@ -41,8 +38,7 @@ export function PersonalStartBusinessPage() {
   const startAsTrial = parseBoolFlag(searchParams.get("trial"), true);
   const payNow = parseBoolFlag(searchParams.get("payNow"), false);
   const billingRaw = searchParams.get("billing");
-  const billingCycle =
-    billingRaw === "Annual" || billingRaw === "Monthly" ? billingRaw : "Monthly";
+  const billingCycle = billingRaw === "Annual" || billingRaw === "Monthly" ? billingRaw : "Monthly";
 
   const [displayName, setDisplayName] = useState("");
   const [primaryBusinessTypeId, setPrimaryBusinessTypeId] = useState("");
@@ -167,9 +163,10 @@ export function PersonalStartBusinessPage() {
   }
 
   const selectedPrice = billingCycle === "Annual" ? plan.annualPrice : plan.monthlyPrice;
-  const modeLabel = startAsTrial && !payNow
-    ? t("personal.startBusiness.modeTrial")
-    : t("personal.startBusiness.modeSubscribe");
+  const modeLabel =
+    startAsTrial && !payNow
+      ? t("personal.startBusiness.modeTrial")
+      : t("personal.startBusiness.modeSubscribe");
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="personal-start-business-page">
@@ -361,10 +358,7 @@ export function PersonalStartBusinessPage() {
         </p>
         {startAsTrial && !payNow ? (
           <p className="m-0 mt-2 text-[length:var(--exits-text-sm)]">
-            {t("personal.startBusiness.trialDays").replace(
-              "{days}",
-              String(plan.defaultTrialDays),
-            )}
+            {t("personal.startBusiness.trialDays").replace("{days}", String(plan.defaultTrialDays))}
           </p>
         ) : null}
         <p className="m-0 mt-2 text-[length:var(--exits-text-base)] font-semibold">

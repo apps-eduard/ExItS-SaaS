@@ -44,7 +44,12 @@ export function LinkedMerchantsPage() {
         <Button asChild variant="ghost" className="min-h-11 w-fit">
           <Link to="/personal/orders">{t("personal.myOrdersLink")}</Link>
         </Button>
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-customer-links">
+        <Button
+          asChild
+          variant="ghost"
+          className="min-h-11 w-fit"
+          data-testid="open-customer-links"
+        >
           <Link to="/personal/customer-links">{t("personal.customerLinks.title")}</Link>
         </Button>
       </div>

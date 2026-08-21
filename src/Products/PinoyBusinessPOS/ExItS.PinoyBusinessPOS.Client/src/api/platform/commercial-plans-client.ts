@@ -57,7 +57,9 @@ function normalizePlan(raw: unknown): unknown {
     maxBranches: Number(pick(r, "maxBranches", "MaxBranches") ?? 1),
     maxActiveStaff: Number(pick(r, "maxActiveStaff", "MaxActiveStaff") ?? 3),
     maxActivePosDevices: Number(pick(r, "maxActivePosDevices", "MaxActivePosDevices") ?? 1),
-    maxActiveBusinessTypes: Number(pick(r, "maxActiveBusinessTypes", "MaxActiveBusinessTypes") ?? 1),
+    maxActiveBusinessTypes: Number(
+      pick(r, "maxActiveBusinessTypes", "MaxActiveBusinessTypes") ?? 1,
+    ),
     customerCreditEnabled: Boolean(pick(r, "customerCreditEnabled", "CustomerCreditEnabled")),
     advancedReportsEnabled: Boolean(pick(r, "advancedReportsEnabled", "AdvancedReportsEnabled")),
     exportEnabled: Boolean(pick(r, "exportEnabled", "ExportEnabled")),

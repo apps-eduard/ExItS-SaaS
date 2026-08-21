@@ -302,7 +302,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.explore.errorDetail": "Indi ma-load ang commercial plans. Tilawi liwat.",
   "personal.explore.emptyTitle": "Wala sing available nga plans",
   "personal.explore.emptyDetail": "Wala pa sing active nga POS plans.",
-  "personal.explore.selectHint": "Sugodi ang trial kung available. Ang bayad nga subscribe naggamit sang Local Validation payment sa non-production lang.",
+  "personal.explore.selectHint":
+    "Sugodi ang trial kung available. Ang bayad nga subscribe naggamit sang Local Validation payment sa non-production lang.",
   "personal.explore.trialDays": "{days}-adlaw nga trial",
   "personal.explore.noTrial": "Wala sing trial",
   "personal.explore.billingMonth": "bulan",
@@ -316,22 +317,27 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.explore.featureExport": "Mga export",
   "personal.explore.startTrial": "Sugodi ang trial",
   "personal.explore.subscribe": "Mag-subscribe (Local Validation)",
-  "personal.explore.paymentUnavailable": "Indi available ang bayad nga subscribe kung wala sing configured payment provider.",
-  "personal.explore.paymentNote": "Wala pa ang production payment providers. Ang trial activation indi mag-charge sang card.",
-  "personal.explore.localValidationNote": "Local Validation mode: Ang Subscribe naggamit sang simulated payment provider (indi production card charge).",
+  "personal.explore.paymentUnavailable":
+    "Indi available ang bayad nga subscribe kung wala sing configured payment provider.",
+  "personal.explore.paymentNote":
+    "Wala pa ang production payment providers. Ang trial activation indi mag-charge sang card.",
+  "personal.explore.localValidationNote":
+    "Local Validation mode: Ang Subscribe naggamit sang simulated payment provider (indi production card charge).",
   "personal.startBusiness.title": "Mag-umpisa Negosyo",
   "personal.startBusiness.lede": "Himoa ang imo organization kag buksan ang owner workspace.",
   "personal.startBusiness.loading": "Nagakarga sang Mag-umpisa Negosyo…",
   "personal.startBusiness.formTitle": "Detalye sang negosyo",
   "personal.startBusiness.displayName": "Ngalan sang negosyo",
   "personal.startBusiness.displayNamePlaceholder": "halimbawa Ana's Sari-Sari",
-  "personal.startBusiness.slugHiddenHint": "May unique organization slug nga himoon para sa imo — indi kinahanglan isulat.",
+  "personal.startBusiness.slugHiddenHint":
+    "May unique organization slug nga himoon para sa imo — indi kinahanglan isulat.",
   "personal.startBusiness.primaryTypeTitle": "Panguna nga klase sang negosyo",
   "personal.startBusiness.primaryTypeHint": "Pilia ang klase nga pinakaangay sa imo tindahan.",
   "personal.startBusiness.primaryTypeRequired": "Pilia ang panguna nga klase sang negosyo.",
   "personal.startBusiness.businessTypesLoadFailed": "Indi ma-load ang business types.",
   "personal.startBusiness.contactTitle": "Contact sang organization",
-  "personal.startBusiness.contactHelper": "Opsyonal. Kopyahon isa ka beses sa organization profile — indi i-sync sa ulihi.",
+  "personal.startBusiness.contactHelper":
+    "Opsyonal. Kopyahon isa ka beses sa organization profile — indi i-sync sa ulihi.",
   "personal.startBusiness.useMyContactDetails": "Gamita ang akon Personal contact details",
   "personal.startBusiness.contactEmail": "Contact email",
   "personal.startBusiness.contactPhone": "Contact phone",
@@ -346,24 +352,24 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.startBusiness.modeSubscribe": "Subscribe",
   "personal.startBusiness.billingCycle": "Siklo sang bayad",
   "personal.startBusiness.trialDays": "{days}-adlaw nga trial, dayon ang plan price.",
-  "personal.startBusiness.confirmHint": "Kompirma para himoon ang organization, i-activate ang POS access, kag buksan ang workspace.",
+  "personal.startBusiness.confirmHint":
+    "Kompirma para himoon ang organization, i-activate ang POS access, kag buksan ang workspace.",
   "personal.startBusiness.confirmSubmit": "Himoa ang negosyo",
   "personal.startBusiness.submitting": "Ginahimo…",
   "personal.startBusiness.validationRequired": "Isulat ang ngalan sang negosyo.",
   "personal.startBusiness.planRequired": "Pilia anay ang plan",
-  "personal.startBusiness.planRequiredDetail": "Buksa ang Explore POS plans, pilia ang trial ukon Local Validation subscribe, dayon padayon.",
+  "personal.startBusiness.planRequiredDetail":
+    "Buksa ang Explore POS plans, pilia ang trial ukon Local Validation subscribe, dayon padayon.",
   "personal.startBusiness.planLoadFailed": "Indi ma-load ang plan",
   "personal.startBusiness.planLoadFailedDetail": "Balik sa Explore POS kag pilia liwat ang plan.",
   "personal.startBusiness.failed": "Nagpalya ang Mag-umpisa Negosyo. Tilawi liwat.",
   "personal.customerLinks.title": "Customer link requests",
-  "personal.customerLinks.lede":
-    "Stores asking to link your Personal account as their customer.",
+  "personal.customerLinks.lede": "Stores asking to link your Personal account as their customer.",
   "personal.customerLinks.emptyTitle": "No pending link requests",
   "personal.customerLinks.emptyDetail":
     "When a store sends a customer link request, it appears here.",
   "personal.customerLinks.errorTitle": "Could not load link requests",
-  "personal.customerLinks.errorDetail":
-    "Customer link requests could not be loaded. Try again.",
+  "personal.customerLinks.errorDetail": "Customer link requests could not be loaded. Try again.",
   "personal.customerLinks.accept": "Accept",
   "personal.customerLinks.decline": "Decline",
   "personal.customerLinks.acceptFailed": "Could not accept the link request.",

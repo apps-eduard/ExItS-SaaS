@@ -106,7 +106,9 @@ export function PersonalHomePage() {
           {t("personal.home.todoSummary")}
         </h2>
         {todosQuery.isPending ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("personal.todo.loading")}</p>
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("personal.todo.loading")}
+          </p>
         ) : todosQuery.isError ? (
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("personal.home.todoUnavailable")}
@@ -123,7 +125,10 @@ export function PersonalHomePage() {
             }
             return (
               <div className="grid min-w-0 grid-cols-3 gap-2" data-testid="personal-todo-counts">
-                <SummaryTile label={t("personal.todo.countToday")} testId="personal-todo-stat-today">
+                <SummaryTile
+                  label={t("personal.todo.countToday")}
+                  testId="personal-todo-stat-today"
+                >
                   <span className="text-[length:var(--exits-text-lg)] font-semibold">
                     {counts.today}
                   </span>

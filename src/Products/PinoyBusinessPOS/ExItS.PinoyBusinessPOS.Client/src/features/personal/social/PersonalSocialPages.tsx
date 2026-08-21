@@ -229,10 +229,12 @@ export function PersonalNotificationsPage() {
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {isCustomerLink ? (
-                    <Button asChild className="min-h-11" data-testid="notification-open-customer-links">
-                      <Link to="/personal/customer-links">
-                        {t("personal.customerLinks.title")}
-                      </Link>
+                    <Button
+                      asChild
+                      className="min-h-11"
+                      data-testid="notification-open-customer-links"
+                    >
+                      <Link to="/personal/customer-links">{t("personal.customerLinks.title")}</Link>
                     </Button>
                   ) : null}
                   {!item.isRead ? (

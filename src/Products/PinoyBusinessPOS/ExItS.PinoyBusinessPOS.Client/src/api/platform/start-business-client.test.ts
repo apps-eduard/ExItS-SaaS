@@ -60,22 +60,23 @@ describe("start-business-client", () => {
   it("loads personal profile for contact prefill", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () =>
-        ({
-          ok: true,
-          status: 200,
-          json: async () => ({
-            UserIdentityId: "11111111-1111-1111-1111-111111111111",
-            AccountProfileId: "22222222-2222-2222-2222-222222222222",
-            Username: "ana",
-            DisplayName: "Ana",
-            Email: "ana@example.com",
-            AccountClass: "Personal",
-            Status: "Active",
-            Phone: "+639171234567",
-          }),
-          text: async () => "",
-        }) as Response,
+      vi.fn(
+        async () =>
+          ({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              UserIdentityId: "11111111-1111-1111-1111-111111111111",
+              AccountProfileId: "22222222-2222-2222-2222-222222222222",
+              Username: "ana",
+              DisplayName: "Ana",
+              Email: "ana@example.com",
+              AccountClass: "Personal",
+              Status: "Active",
+              Phone: "+639171234567",
+            }),
+            text: async () => "",
+          }) as Response,
       ),
     );
 

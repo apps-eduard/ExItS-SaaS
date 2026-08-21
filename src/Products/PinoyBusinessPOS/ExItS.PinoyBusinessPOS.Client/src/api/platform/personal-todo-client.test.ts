@@ -11,7 +11,9 @@ import { PlatformApiError } from "@/api/platform/platform-http";
 
 const ownerId = "11111111-1111-1111-1111-111111111111";
 
-function todo(partial: Partial<PersonalTodoDto> & Pick<PersonalTodoDto, "id" | "title">): PersonalTodoDto {
+function todo(
+  partial: Partial<PersonalTodoDto> & Pick<PersonalTodoDto, "id" | "title">,
+): PersonalTodoDto {
   return {
     ownerUserIdentityId: ownerId,
     notes: null,
@@ -83,9 +85,21 @@ describe("personal-todo-client", () => {
     expect(classifyTodoDue(null, now)).toBe("none");
 
     const items = [
-      todo({ id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", title: "A", dueAtUtc: "2026-08-21T15:00:00" }),
-      todo({ id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", title: "B", dueAtUtc: "2026-08-25T15:00:00" }),
-      todo({ id: "cccccccc-cccc-cccc-cccc-cccccccccccc", title: "C", dueAtUtc: "2026-08-19T15:00:00" }),
+      todo({
+        id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        title: "A",
+        dueAtUtc: "2026-08-21T15:00:00",
+      }),
+      todo({
+        id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        title: "B",
+        dueAtUtc: "2026-08-25T15:00:00",
+      }),
+      todo({
+        id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+        title: "C",
+        dueAtUtc: "2026-08-19T15:00:00",
+      }),
       todo({ id: "dddddddd-dddd-dddd-dddd-dddddddddddd", title: "D", dueAtUtc: null }),
       todo({
         id: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
