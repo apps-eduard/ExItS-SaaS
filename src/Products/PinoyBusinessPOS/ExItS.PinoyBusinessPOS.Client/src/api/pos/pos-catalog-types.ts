@@ -61,6 +61,10 @@ export type PosCatalogProductDto = {
   units?: PosCatalogProductUnitDto[] | null;
   tracksExpiration?: boolean;
   expirationWarningDays?: number | null;
+  /** Mirrors inventory IsTracked when catalog list/detail includes stock snapshot. */
+  isTracked?: boolean;
+  onHandQuantity?: number;
+  stockStatus?: string;
 };
 
 export type PosProductCategoryDto = {

@@ -37,12 +37,16 @@ test.describe("sell floor catalog and session cart", () => {
     const landscapeCart = page.getByTestId("sell-cart-landscape");
     await expect(landscapeCart).toBeVisible();
     await page.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`).click();
-    await expect(landscapeCart.getByTestId(`sell-cart-line-${MOCK_COKE_PRODUCT_ID}`)).toBeVisible();
+    await expect(
+      landscapeCart.getByTestId(`sell-cart-line-${MOCK_COKE_PRODUCT_ID}::base`),
+    ).toBeVisible();
     await expect(landscapeCart.getByTestId("sell-cart-subtotal")).toContainText("25");
 
     await page.getByTestId(`sell-category-${MOCK_SNACKS_CATEGORY_ID}`).click();
     await expect(page.getByTestId(`sell-product-${MOCK_CHIPS_PRODUCT_ID}`)).toBeVisible();
-    await expect(landscapeCart.getByTestId(`sell-cart-line-${MOCK_COKE_PRODUCT_ID}`)).toBeVisible();
+    await expect(
+      landscapeCart.getByTestId(`sell-cart-line-${MOCK_COKE_PRODUCT_ID}::base`),
+    ).toBeVisible();
     await expect(landscapeCart.getByTestId("sell-pay")).toBeDisabled();
     await assertNoHorizontalOverflow(page);
     await page.screenshot({
@@ -55,6 +59,6 @@ test.describe("sell floor catalog and session cart", () => {
     await page.getByTestId("sell-search").fill("4006381333930");
     await expect(page.getByTestId("sell-search-error")).toBeVisible();
     await expect(page.getByTestId("sell-search-error")).toContainText("barcode");
-    await expect(page.getByTestId(`sell-cart-line-${MOCK_COKE_PRODUCT_ID}`)).toHaveCount(0);
+    await expect(page.getByTestId(`sell-cart-line-${MOCK_COKE_PRODUCT_ID}::base`)).toHaveCount(0);
   });
 });

@@ -1,7 +1,12 @@
 export const MOCK_DRINKS_CATEGORY_ID = "dddddddd-dddd-dddd-dddd-dddddddddddd";
 export const MOCK_SNACKS_CATEGORY_ID = "ssssssss-ssss-ssss-ssss-ssssssssssss";
+export const MOCK_STAPLES_CATEGORY_ID = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
 export const MOCK_COKE_PRODUCT_ID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
 export const MOCK_CHIPS_PRODUCT_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+export const MOCK_RICE_PRODUCT_ID = "rrrrrrrr-rrrr-rrrr-rrrr-rrrrrrrrrrrr";
+export const MOCK_MEAT_PRODUCT_ID = "mmmmmmmm-mmmm-mmmm-mmmm-mmmmmmmmmmmm";
+export const MOCK_RICE_KG_UNIT_ID = "ukukukuk-ukuk-ukuk-ukuk-ukukukukukuk";
+export const MOCK_RICE_SACK_UNIT_ID = "usususus-usus-usus-usus-usususususus";
 
 export const mockCatalogCategories = {
   items: [
@@ -21,8 +26,16 @@ export const mockCatalogCategories = {
       createdAtUtc: "2026-01-01T00:00:00Z",
       updatedAtUtc: "2026-01-01T00:00:00Z",
     },
+    {
+      categoryId: MOCK_STAPLES_CATEGORY_ID,
+      organizationId: "11111111-1111-1111-1111-111111111111",
+      name: "Staples",
+      status: "Active",
+      createdAtUtc: "2026-01-01T00:00:00Z",
+      updatedAtUtc: "2026-01-01T00:00:00Z",
+    },
   ],
-  totalCount: 2,
+  totalCount: 3,
   page: 1,
   pageSize: 50,
 };
@@ -34,11 +47,13 @@ export const mockCokeProduct = {
   sku: "COKE-330",
   barcode: "4006381333931",
   categoryId: MOCK_DRINKS_CATEGORY_ID,
-  unitOfMeasure: "bottle",
+  unitOfMeasure: "Bottle",
   sellingMode: "PerItem",
   sellingPrice: 25,
   status: "Active",
   canBeSold: true,
+  isTracked: true,
+  onHandQuantity: 48,
   createdAtUtc: "2026-01-01T00:00:00Z",
   updatedAtUtc: "2026-01-01T00:00:00Z",
 };
@@ -50,7 +65,7 @@ export const mockChipsProduct = {
   sku: "CHIPS-50",
   barcode: "1234567890123",
   categoryId: MOCK_SNACKS_CATEGORY_ID,
-  unitOfMeasure: "pack",
+  unitOfMeasure: "Pack",
   sellingMode: "PerItem",
   sellingPrice: 15,
   status: "Active",
@@ -59,7 +74,75 @@ export const mockChipsProduct = {
   updatedAtUtc: "2026-01-01T00:00:00Z",
 };
 
-export const mockCatalogProducts = [mockCokeProduct, mockChipsProduct];
+export const mockRiceProduct = {
+  productId: MOCK_RICE_PRODUCT_ID,
+  organizationId: "11111111-1111-1111-1111-111111111111",
+  name: "Rice",
+  sku: "RICE-50",
+  barcode: "4800012345678",
+  categoryId: MOCK_STAPLES_CATEGORY_ID,
+  unitOfMeasure: "Kilogram",
+  sellingMode: "PerItem",
+  sellingPrice: 55,
+  status: "Active",
+  canBeSold: true,
+  isTracked: true,
+  onHandQuantity: 500,
+  createdAtUtc: "2026-01-01T00:00:00Z",
+  updatedAtUtc: "2026-01-01T00:00:00Z",
+  units: [
+    {
+      unitId: MOCK_RICE_KG_UNIT_ID,
+      productId: MOCK_RICE_PRODUCT_ID,
+      kind: "Sell",
+      displayName: "Kilogram",
+      shortLabel: "kg",
+      multiplierToBase: 1,
+      sellingPrice: 55,
+      allowsCustomQuantity: false,
+      isActive: true,
+      sortOrder: 0,
+    },
+    {
+      unitId: MOCK_RICE_SACK_UNIT_ID,
+      productId: MOCK_RICE_PRODUCT_ID,
+      kind: "Sell",
+      displayName: "Sack 50kg",
+      shortLabel: "sack",
+      multiplierToBase: 50,
+      sellingPrice: 2600,
+      allowsCustomQuantity: false,
+      isActive: true,
+      sortOrder: 1,
+    },
+  ],
+};
+
+export const mockMeatProduct = {
+  productId: MOCK_MEAT_PRODUCT_ID,
+  organizationId: "11111111-1111-1111-1111-111111111111",
+  name: "Ground Pork",
+  sku: "PORK-GW",
+  barcode: "4800098765432",
+  categoryId: MOCK_STAPLES_CATEGORY_ID,
+  unitOfMeasure: "Kilogram",
+  sellingMode: "ByWeight",
+  sellingPrice: 60,
+  status: "Active",
+  canBeSold: true,
+  isTracked: true,
+  onHandQuantity: 12.5,
+  tracksExpiration: true,
+  createdAtUtc: "2026-01-01T00:00:00Z",
+  updatedAtUtc: "2026-01-01T00:00:00Z",
+};
+
+export const mockCatalogProducts = [
+  mockCokeProduct,
+  mockChipsProduct,
+  mockRiceProduct,
+  mockMeatProduct,
+];
 
 export function filterMockProducts(url: string) {
   const parsed = new URL(url, "http://127.0.0.1");

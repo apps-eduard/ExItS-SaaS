@@ -8,6 +8,9 @@ import {
   mockCatalogCategories,
   MOCK_COKE_PRODUCT_ID,
   MOCK_DRINKS_CATEGORY_ID,
+  MOCK_MEAT_PRODUCT_ID,
+  MOCK_RICE_PRODUCT_ID,
+  MOCK_RICE_SACK_UNIT_ID,
 } from "@/test/mock-pos-catalog";
 import { AppProviders } from "@/app/providers";
 import { appRoutes } from "@/app/router";
@@ -214,15 +217,84 @@ describe("SellFloorPage", () => {
     const landscapeCart = screen.getByTestId("sell-cart-landscape");
     await waitFor(() => {
       expect(
-        within(landscapeCart).getByTestId(`sell-cart-line-${MOCK_COKE_PRODUCT_ID}`),
+        within(landscapeCart).getByTestId(`sell-cart-line-${MOCK_COKE_PRODUCT_ID}::base`),
       ).toBeInTheDocument();
     });
 
     await user.click(screen.getByTestId(`sell-category-${MOCK_DRINKS_CATEGORY_ID}`));
 
     expect(
-      within(landscapeCart).getByTestId(`sell-cart-line-${MOCK_COKE_PRODUCT_ID}`),
+      within(landscapeCart).getByTestId(`sell-cart-line-${MOCK_COKE_PRODUCT_ID}::base`),
     ).toBeInTheDocument();
     expect(within(landscapeCart).getByTestId("sell-cart-subtotal")).toHaveTextContent("25");
+  });
+
+  it("opens sell-unit picker for multi-UOM products and adds sack line", async () => {
+    const user = userEvent.setup();
+    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
+    render(
+      <AppProviders>
+        <RouterProvider router={memoryRouter} />
+      </AppProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`sell-product-${MOCK_RICE_PRODUCT_ID}`)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId(`sell-product-${MOCK_RICE_PRODUCT_ID}`));
+    expect(screen.getByTestId("sell-unit-entry")).toBeInTheDocument();
+    await user.click(screen.getByTestId(`sell-unit-option-${MOCK_RICE_SACK_UNIT_ID}`));
+    await user.click(screen.getByTestId("sell-unit-add"));
+
+    const landscapeCart = screen.getByTestId("sell-cart-landscape");
+    await waitFor(() => {
+      expect(
+        within(landscapeCart).getByTestId(
+          `sell-cart-line-${MOCK_RICE_PRODUCT_ID}::${MOCK_RICE_SACK_UNIT_ID}`,
+        ),
+      ).toBeInTheDocument();
+    });
+    expect(within(landscapeCart).getByTestId("sell-cart-subtotal")).toHaveTextContent("2,600");
+  });
+
+  it("opens weight entry for ByWeight products and clears cart with confirmation", async () => {
+    const user = userEvent.setup();
+    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
+    render(
+      <AppProviders>
+        <RouterProvider router={memoryRouter} />
+      </AppProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`sell-product-${MOCK_MEAT_PRODUCT_ID}`)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId(`sell-product-${MOCK_MEAT_PRODUCT_ID}`));
+    expect(screen.getByTestId("sell-weight-entry")).toBeInTheDocument();
+    await user.clear(screen.getByTestId("sell-weight-input"));
+    await user.type(screen.getByTestId("sell-weight-input"), "2");
+    await user.click(screen.getByTestId("sell-weight-confirm"));
+
+    const landscapeCart = screen.getByTestId("sell-cart-landscape");
+    await waitFor(() => {
+      expect(
+        within(landscapeCart).getByTestId(`sell-cart-line-${MOCK_MEAT_PRODUCT_ID}::base`),
+      ).toBeInTheDocument();
+    });
+    expect(within(landscapeCart).getByTestId("sell-cart-subtotal")).toHaveTextContent("120");
+
+    await user.click(within(landscapeCart).getByTestId("sell-cart-clear"));
+    await user.click(
+      within(screen.getByTestId("sell-cart-clear-confirm")).getByRole("button", {
+        name: "Clear cart",
+      }),
+    );
+    await waitFor(() => {
+      expect(
+        within(landscapeCart).queryByTestId(`sell-cart-line-${MOCK_MEAT_PRODUCT_ID}::base`),
+      ).not.toBeInTheDocument();
+    });
   });
 });

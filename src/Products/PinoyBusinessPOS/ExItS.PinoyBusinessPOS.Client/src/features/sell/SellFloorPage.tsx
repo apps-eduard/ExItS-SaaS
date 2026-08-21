@@ -7,8 +7,17 @@ import {
   listCatalogCategories,
   listCatalogProducts,
 } from "@/api/pos/pos-catalog-client";
-import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
-import { useSessionCart } from "@/cart/SessionCartProvider";
+import type { PosCatalogProductDto, PosCatalogProductUnitDto } from "@/api/pos/pos-catalog-types";
+import { getInventoryProduct } from "@/api/pos/pos-inventory-client";
+import {
+  activeSellUnits,
+  formatQuantityDisplay,
+  isByWeightSellingMode,
+  needsSellUnitOrWeightDialog,
+  resolveStockHint,
+} from "@/cart/sell-cart-helpers";
+import { cartLineKey } from "@/cart/sell-cart-helpers";
+import { useSessionCart, type SessionCartLine } from "@/cart/SessionCartProvider";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
@@ -17,6 +26,8 @@ import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { StickyActionBar } from "@/components/exits/FoundationStates";
 import { SellCartPanel } from "@/features/sell/SellCartPanel";
 import { SellCategoryFilter } from "@/features/sell/SellCategoryFilter";
+import { SellUnitEntryDialog } from "@/features/sell/SellUnitEntryDialog";
+import { SellWeightEntryDialog } from "@/features/sell/SellWeightEntryDialog";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatCartSummary } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
@@ -36,6 +47,19 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
   return debounced;
 }
 
+type PendingUnitEntry = {
+  product: PosCatalogProductDto;
+  options: PosCatalogProductUnitDto[];
+  initialUnitId?: string | null;
+  initialQuantity?: number;
+};
+
+type PendingWeightEntry = {
+  product: PosCatalogProductDto;
+  unit: PosCatalogProductUnitDto | null;
+  initialKilograms?: number | null;
+};
+
 export function SellFloorPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -49,6 +73,8 @@ export function SellFloorPage() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [lookupProducts, setLookupProducts] = useState<PosCatalogProductDto[]>([]);
   const [lookupLoading, setLookupLoading] = useState(false);
+  const [unitEntry, setUnitEntry] = useState<PendingUnitEntry | null>(null);
+  const [weightEntry, setWeightEntry] = useState<PendingWeightEntry | null>(null);
   const lastExactScanRef = useRef<string | null>(null);
 
   const debouncedSearch = useDebouncedValue(searchTerm, SEARCH_DEBOUNCE_MS);
@@ -85,14 +111,94 @@ export function SellFloorPage() {
       ),
   });
 
-  const addProductToCart = useCallback(
+  const stockProductId = unitEntry?.product.productId ?? weightEntry?.product.productId ?? null;
+  const stockNeedsSellable =
+    (unitEntry?.product.tracksExpiration === true ||
+      weightEntry?.product.tracksExpiration === true) &&
+    stockProductId != null;
+
+  const inventoryHintQuery = useQuery({
+    queryKey: ["pos-sell-stock-hint", workspaceScope?.organizationId, stockProductId],
+    enabled: workspaceScope !== null && stockNeedsSellable && stockProductId != null,
+    queryFn: ({ signal }) => getInventoryProduct(workspaceScope!, stockProductId!, signal),
+    staleTime: 30_000,
+  });
+
+  const dialogStockHint = useMemo(() => {
+    const product = unitEntry?.product ?? weightEntry?.product;
+    if (!product) {
+      return null;
+    }
+    return {
+      isTracked: inventoryHintQuery.data?.isTracked ?? product.isTracked,
+      onHandQuantity: inventoryHintQuery.data?.onHandQuantity ?? product.onHandQuantity,
+      sellableQuantity: inventoryHintQuery.data?.sellableQuantity,
+      tracksExpiration: inventoryHintQuery.data?.tracksExpiration ?? product.tracksExpiration,
+    };
+  }, [inventoryHintQuery.data, unitEntry?.product, weightEntry?.product]);
+
+  const openWeightEntry = useCallback(
+    (
+      product: PosCatalogProductDto,
+      unit: PosCatalogProductUnitDto | null,
+      initialKilograms?: number | null,
+    ) => {
+      const existing =
+        initialKilograms ?? cart.getEnteredQuantity(product.productId, unit?.unitId ?? null);
+      setWeightEntry({
+        product,
+        unit,
+        initialKilograms: existing > 0 ? existing : null,
+      });
+    },
+    [cart],
+  );
+
+  const openUnitEntry = useCallback(
+    (product: PosCatalogProductDto, options: PosCatalogProductUnitDto[]) => {
+      setUnitEntry({
+        product,
+        options,
+        initialUnitId: options[0]?.unitId,
+        initialQuantity: 1,
+      });
+    },
+    [],
+  );
+
+  const beginAddProduct = useCallback(
     (product: PosCatalogProductDto) => {
       if (product.canBeSold === false) {
         return;
       }
-      cart.addProduct(product);
+
+      const sellUnits = activeSellUnits(product);
+
+      if (
+        sellUnits.length > 1 ||
+        (sellUnits.length === 1 &&
+          (sellUnits[0]!.multiplierToBase !== 1 || sellUnits[0]!.allowsCustomQuantity))
+      ) {
+        if (
+          sellUnits.length === 1 &&
+          (sellUnits[0]!.allowsCustomQuantity || isByWeightSellingMode(product.sellingMode))
+        ) {
+          openWeightEntry(product, sellUnits[0]!);
+          return;
+        }
+
+        openUnitEntry(product, sellUnits);
+        return;
+      }
+
+      if (isByWeightSellingMode(product.sellingMode)) {
+        openWeightEntry(product, null);
+        return;
+      }
+
+      cart.addProduct(product, 1);
     },
-    [cart],
+    [cart, openUnitEntry, openWeightEntry],
   );
 
   useEffect(() => {
@@ -125,7 +231,7 @@ export function SellFloorPage() {
         if (result.kind === "exact") {
           const scanKey = `${result.matchedBy}:${term}`;
           if (lastExactScanRef.current !== scanKey) {
-            addProductToCart(result.product);
+            beginAddProduct(result.product);
             lastExactScanRef.current = scanKey;
             setSearchTerm("");
             setLookupProducts([]);
@@ -161,7 +267,7 @@ export function SellFloorPage() {
     return () => {
       cancelled = true;
     };
-  }, [activeCategory, addProductToCart, debouncedSearch, t, workspaceScope]);
+  }, [activeCategory, beginAddProduct, debouncedSearch, t, workspaceScope]);
 
   const displayedProducts = useMemo(() => {
     if (debouncedSearch.trim()) {
@@ -175,6 +281,91 @@ export function SellFloorPage() {
     displayedProducts.length === 0;
 
   const cartSummary = formatCartSummary(cart.lineCount, cart.subtotal);
+
+  const handleUnitConfirm = useCallback(
+    (unit: PosCatalogProductUnitDto, quantity: number) => {
+      if (!unitEntry) {
+        return;
+      }
+      const { product } = unitEntry;
+      setUnitEntry(null);
+
+      if (unit.allowsCustomQuantity || isByWeightSellingMode(product.sellingMode)) {
+        openWeightEntry(product, unit, quantity > 0 ? quantity : null);
+        return;
+      }
+
+      cart.addLine(product, { unit, quantity });
+    },
+    [cart, openWeightEntry, unitEntry],
+  );
+
+  const handleWeightConfirm = useCallback(
+    (kilograms: number) => {
+      if (!weightEntry) {
+        return;
+      }
+      cart.addLine(weightEntry.product, {
+        unit: weightEntry.unit,
+        quantity: kilograms,
+        replaceQuantity: true,
+      });
+      setWeightEntry(null);
+    },
+    [cart, weightEntry],
+  );
+
+  const handleEditWeight = useCallback(
+    (line: SessionCartLine) => {
+      const product =
+        displayedProducts.find((item) => item.productId === line.productId) ??
+        ({
+          productId: line.productId,
+          organizationId: workspaceScope?.organizationId ?? "",
+          name: line.name,
+          sku: line.sku,
+          unitOfMeasure: line.baseUnitOfMeasure,
+          sellingMode: line.sellingMode,
+          sellingPrice: line.unitPrice,
+          status: "Active",
+          createdAtUtc: "",
+          updatedAtUtc: "",
+          units: line.productUnitId
+            ? [
+                {
+                  unitId: line.productUnitId,
+                  productId: line.productId,
+                  kind: "Sell",
+                  displayName: line.unitLabel,
+                  shortLabel: line.unitLabel,
+                  multiplierToBase: line.multiplierToBase,
+                  sellingPrice: line.unitPrice,
+                  allowsCustomQuantity: true,
+                  isActive: true,
+                  sortOrder: 0,
+                },
+              ]
+            : [],
+        } satisfies PosCatalogProductDto);
+
+      const unit =
+        activeSellUnits(product).find((item) => item.unitId === line.productUnitId) ?? null;
+      openWeightEntry(product, unit, line.quantity);
+    },
+    [displayedProducts, openWeightEntry, workspaceScope?.organizationId],
+  );
+
+  const cartPanelProps = {
+    lines: cart.lines,
+    lineCount: cart.lineCount,
+    subtotal: cart.subtotal,
+    onIncrement: cart.incrementLine,
+    onDecrement: cart.decrementLine,
+    onRemove: cart.removeLine,
+    onSetQuantity: cart.setLineQuantity,
+    onEditWeight: handleEditWeight,
+    onClear: cart.clear,
+  };
 
   return (
     <div
@@ -251,24 +442,54 @@ export function SellFloorPage() {
               </p>
             ) : null}
 
-            {displayedProducts.map((product) => (
-              <button
-                key={product.productId}
-                type="button"
-                data-testid={`sell-product-${product.productId}`}
-                className="flex min-h-[6rem] flex-col items-start justify-between rounded-[var(--exits-radius-md)] border border-border bg-surface p-3 text-left transition-colors hover:border-primary"
-                onClick={() => addProductToCart(product)}
-              >
-                <span className="line-clamp-2 text-[length:var(--exits-text-sm)] font-semibold">
-                  {product.name}
-                </span>
-                <MoneyDisplay
-                  amount={product.sellingPrice}
-                  className="text-muted"
-                  testId={`sell-product-price-${product.productId}`}
-                />
-              </button>
-            ))}
+            {displayedProducts.map((product) => {
+              const hint = resolveStockHint({
+                isTracked: product.isTracked,
+                onHandQuantity: product.onHandQuantity,
+                unitOfMeasure: product.unitOfMeasure,
+                tracksExpiration: product.tracksExpiration,
+                // Tile uses catalog on-hand; sellable is loaded in entry dialogs for expiry products.
+                sellableQuantity: undefined,
+              });
+              const multiUnit = needsSellUnitOrWeightDialog(product);
+              return (
+                <button
+                  key={product.productId}
+                  type="button"
+                  data-testid={`sell-product-${product.productId}`}
+                  className="flex min-h-[6rem] min-w-0 flex-col items-start justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface p-3 text-left transition-colors hover:border-primary"
+                  onClick={() => beginAddProduct(product)}
+                >
+                  <span className="line-clamp-2 break-words text-[length:var(--exits-text-sm)] font-semibold">
+                    {product.name}
+                  </span>
+                  <div className="flex w-full min-w-0 flex-col gap-1">
+                    <MoneyDisplay
+                      amount={product.sellingPrice}
+                      className="max-w-full truncate text-muted"
+                      testId={`sell-product-price-${product.productId}`}
+                    />
+                    {hint ? (
+                      <span
+                        data-testid={`sell-product-stock-${product.productId}`}
+                        className="truncate text-[length:var(--exits-text-xs)] text-muted"
+                      >
+                        {t("sell.stockOnHand")
+                          .replace("{qty}", formatQuantityDisplay(hint.quantity))
+                          .replace("{unit}", hint.unitOfMeasure)}
+                      </span>
+                    ) : null}
+                    {multiUnit || isByWeightSellingMode(product.sellingMode) ? (
+                      <span className="truncate text-[length:var(--exits-text-xs)] text-muted">
+                        {isByWeightSellingMode(product.sellingMode)
+                          ? t("sell.tileByWeight")
+                          : t("sell.tileChooseUnit")}
+                      </span>
+                    ) : null}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </section>
 
@@ -277,14 +498,7 @@ export function SellFloorPage() {
           className="sell-cart-landscape hidden min-h-0 min-w-0 flex-col gap-3 rounded-[var(--exits-radius-lg)] border border-border bg-surface p-4"
           aria-label={t("sell.cartLabel")}
         >
-          <SellCartPanel
-            lines={cart.lines}
-            lineCount={cart.lineCount}
-            subtotal={cart.subtotal}
-            onIncrement={cart.incrementLine}
-            onDecrement={cart.decrementLine}
-            onRemove={cart.removeLine}
-          />
+          <SellCartPanel {...cartPanelProps} panelId="landscape" />
         </aside>
       </div>
 
@@ -292,13 +506,15 @@ export function SellFloorPage() {
         <button
           type="button"
           data-testid="sell-cart-bar"
-          className="flex w-full items-center justify-between gap-3 text-left"
+          className="flex w-full min-w-0 items-center justify-between gap-3 text-left"
           onClick={() => setCartSheetOpen(true)}
           aria-expanded={cartSheetOpen}
           aria-controls="sell-cart-sheet-panel"
         >
-          <span className="text-[length:var(--exits-text-sm)] font-semibold">{cartSummary}</span>
-          <span className="text-[length:var(--exits-text-sm)] text-muted">
+          <span className="min-w-0 truncate text-[length:var(--exits-text-sm)] font-semibold">
+            {cartSummary}
+          </span>
+          <span className="shrink-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("sell.cartBarHint")}
           </span>
         </button>
@@ -322,16 +538,41 @@ export function SellFloorPage() {
         aria-hidden={!cartSheetOpen}
       >
         <SellCartPanel
-          lines={cart.lines}
-          lineCount={cart.lineCount}
-          subtotal={cart.subtotal}
-          onIncrement={cart.incrementLine}
-          onDecrement={cart.decrementLine}
-          onRemove={cart.removeLine}
+          {...cartPanelProps}
+          panelId="sheet"
           showClose
           onClose={() => setCartSheetOpen(false)}
         />
       </div>
+
+      <SellUnitEntryDialog
+        open={unitEntry != null}
+        product={unitEntry?.product ?? null}
+        options={unitEntry?.options ?? []}
+        initialUnitId={unitEntry?.initialUnitId}
+        initialQuantity={unitEntry?.initialQuantity}
+        stockHint={dialogStockHint}
+        onCancel={() => setUnitEntry(null)}
+        onConfirm={handleUnitConfirm}
+      />
+
+      <SellWeightEntryDialog
+        open={weightEntry != null}
+        product={weightEntry?.product ?? null}
+        unit={weightEntry?.unit ?? null}
+        initialKilograms={weightEntry?.initialKilograms}
+        stockHint={dialogStockHint}
+        onCancel={() => setWeightEntry(null)}
+        onRemove={() => {
+          if (weightEntry) {
+            cart.removeLine(
+              cartLineKey(weightEntry.product.productId, weightEntry.unit?.unitId ?? null),
+            );
+            setWeightEntry(null);
+          }
+        }}
+        onConfirm={handleWeightConfirm}
+      />
     </div>
   );
 }
