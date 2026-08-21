@@ -416,19 +416,20 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 | Objective                        | Replace thin React Personal shell with real Personal journeys (Utang-first Home, Utang core, invitations/reminders, To-do domain+UI, stores/ordering, Start Business, integrated Personal↔Business E2E)                                                              |
 | Dependencies                     | RMAP-01, RMAP-00; RMAP-19 for ordering reuse                                                                                                                                                                                                                            |
 | Execution order (PO decision)    | **Pulled forward before RMAP-21 Offline** so the SaaS ecosystem can be validated end-to-end while Personal was only a thin shell. Historic IDs are **not** renumbered. See [Personal implementation roadmap](../Personal/personal-implementation-roadmap.md). |
-| Status                           | **COMPLETE / APPROVED** — Personal Master Run 01. Review Repair 01: Personal shell notifications + Connection foundation. `RMAP_21_AUTHORIZED=NO`. |
-| Exclusions                       | RMAP-21 offline; RMAP-B04 buyer purchase projection; RMAP-B05; RMAP-TAX; production cutover; Loan SaaS                                                                                                                                                                   |
-| Next                             | After Review Repair 01 PO review → RMAP-21 when authorized (not automatic)                                                                                                                                                                                                 |
+| Status                           | **COMPLETE / APPROVED** — Personal Master Run 01 + Review Repair 01. Owner quick-fix polish accepted as RMAP-21 start baseline (`86ded438`). `RMAP_21_AUTHORIZED=YES` (Master Run 01 in progress). |
+| Exclusions                       | RMAP-B04 buyer purchase projection; RMAP-B05; RMAP-TAX; production cutover; Loan SaaS                                                                                                                                                                   |
+| Next                             | RMAP-21 Offline Master Run 01 (21A→21H)                                                                                                                                                                                                 |
 
-### RMAP-21 — Offline / LocalStore / outbox (cash + customers)
+### RMAP-21 — Offline / LocalStore / outbox (POS + Personal)
 
 | Field        | Content                                                                                                                                                          |
 | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Objective    | Selective offline parity with capability matrix                                                                                                                  |
-| Dependencies | RMAP-11, RMAP-13; Personal domains designed for future outbox during RMAP-22 but **not** implemented offline here                                                |
-| Status       | **NOT STARTED** — intentionally held until Personal online Master Run is proven (`RMAP_21_AUTHORIZED=NO`)                                                        |
-| Exclusions   | Offline inventory/purchasing/reports                                                                                                                             |
-| Next         | RMAP-23 (after authorized offline pass)                                                                                                                          |
+| Objective    | Warm-session offline: IndexedDB LocalStore + encrypted outbox; real Connection & Sync; selective Cash Sell; business customers/credit; Personal Utang; Personal To-do; reconnect/E2E |
+| Dependencies | RMAP-11, RMAP-13, RMAP-22 Personal online; [offline capability matrix](../Offline/react-pwa-offline-capability-matrix.md) |
+| Status       | **IN PROGRESS** — Master Run 01 authorized (`RMAP_21_AUTHORIZED=YES`). Start SHA `86ded438`. 21A.0 diagnostic safety + 21A reconciliation. |
+| Scope        | POS selective offline + Business customer offline + Personal Utang offline + Personal To-do offline |
+| Exclusions   | Offline inventory/purchasing/suppliers/reports/branch admin/staff admin/billing; GCash; Business Utang checkout; discount/override; lot/expiry (fail closed); cold-start unlock = `DEFERRED_SECURITY_GAP` |
+| Next         | 21B LocalStore/outbox → 21C Connection & Sync → 21D–21H                                                                                                                                 |
 
 ### RMAP-23 — Parity / security / UX hardening
 
