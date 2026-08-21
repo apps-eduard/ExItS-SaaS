@@ -426,7 +426,7 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Objective    | Warm-session offline: IndexedDB LocalStore + encrypted outbox; real Connection & Sync; selective Cash Sell; business customers/credit; Personal Utang; Personal To-do; reconnect/E2E |
 | Dependencies | RMAP-11, RMAP-13, RMAP-22 Personal online; [offline capability matrix](../Offline/react-pwa-offline-capability-matrix.md) |
-| Status       | **COMPLETE / AWAITING PO REVIEW** — Master Run 01 (`RMAP_21_AUTHORIZED=YES`). Start `86ded438` → end `30312ec4`. Packages 21A.0–21H delivered. |
+| Status       | **COMPLETE / AWAITING PO REVIEW** — Master Run 01 (`RMAP_21_AUTHORIZED=YES`). Start `86ded438` → end `5ef9109a`. Packages 21A.0–21H delivered. |
 | Scope        | POS selective offline + Business customer offline + Personal Utang offline + Personal To-do offline |
 | Exclusions   | Offline inventory/purchasing/suppliers/reports/branch admin/staff admin/billing; GCash; Business Utang checkout; discount/override; lot/expiry (fail closed); cold-start unlock = `DEFERRED_SECURITY_GAP` |
 | Next         | **HARD STOP** for Product Owner + ChatGPT review. Do not start RMAP-23 until authorized. Report: [POS-REACT-RMAP-21-OFFLINE-MASTER-RUN-01.md](../../Reports/POS-REACT-RMAP-21-OFFLINE-MASTER-RUN-01.md) |
