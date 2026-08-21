@@ -2,7 +2,7 @@
 
 ## Status
 
-**RMAP-11 COMPLETE** — online cash checkout via authorized browser PosDevice. Ready for authorized RMAP-11b / RMAP-12.
+**RMAP-11b COMPLETE** — commercial discount UX on React cash checkout via server quote. Ready for authorized RMAP-12.
 
 ## Baseline
 
@@ -20,27 +20,29 @@
 | RMAP-10 | PASS | `356cdfde` | `d39776ff` |
 | RMAP-10b | PASS | `d48da9a8` | `e356ee16` |
 | RMAP-11 | PASS | `a43d26b8` | `3d9615eb` |
+| RMAP-11b | PASS | `f9fd88a4` | _(docs; see Cursor response)_ |
 
 ## Former blocker — CLEARED
 
 **Code:** `RMAP11_BROWSER_DEVICE_CONTRACT_GAP` → **CLEARED** by RMAP-10b.
 
-**Evidence after RMAP-11:**
+**Evidence after RMAP-11b:**
 
 - Durable browser installation id + authorize + `X-Pos-Installation-Device-Id` on sale POST.
-- `moneyPostReady` required for Pay → cash checkout (no invented terminal; no Dev bypass).
-- Online Cash `POST /api/v1/pos/sales` with client `saleId` idempotency; Transaction Summary wording (not Invoice).
+- Online Cash checkout with optional commercial discount intents + authoritative `POST /sales/quote`.
+- Cashier denied discount UI; server rejects discount intents without ApplyCommercialDiscount.
+- Zero-total Cash after full discount: tendered/change 0; “No payment required”.
 
 ## Not started
 
-RMAP-11b, RMAP-12, RMAP-13, RMAP-14, RMAP-15+, RMAP-B01, RMAP-12b, RMAP-B04, RMAP-TAX, provider payments, Owner Personal switcher.
+RMAP-12, RMAP-13, RMAP-14, RMAP-15+, RMAP-B01, RMAP-12b, RMAP-B04, RMAP-TAX, provider payments, Owner Personal switcher.
 
 ## Exact next
 
-**RMAP-11b — Commercial Discount UX** when authorized (or RMAP-12 payments expansion).
+**RMAP-12 — Payments expansion + void** when authorized.
 
-Do **not** invent devices, add Development money bypass, or start RMAP-11b/12 without authorization.
+Do **not** invent devices, add Development money bypass, or start RMAP-12 without authorization.
 
 ## Final HEAD
 
-`1c97c2c2da3e481f88a6614d7aed33a1c320be47` (= `origin/feat/pos-react-client`)
+_(Omit tip SHA in package report per RMAP-11b commit rules; Cursor response records HEAD externally.)_

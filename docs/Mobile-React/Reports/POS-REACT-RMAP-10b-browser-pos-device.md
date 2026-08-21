@@ -22,7 +22,7 @@ starting SHA: `aff4803d` (Master Run 02 hard stop at device gap)
 | Branch conflict | Register/redeem reject different-branch install (409); redeem does not consume token |
 | Staff redeem ACL | Wrong-branch staff → `BranchAccessDenied` without consuming token |
 | HTTP mapping | `PosDeviceNotAuthorized` / `PosDeviceRevoked` → 403; `PosDeviceBranchConflict` → 409 |
-| Owner decision | NO |
+| Owner decision | YES — real browser/PWA PosDevice registration authorized; Development bypass rejected. |
 
 ## Device contract conclusion
 

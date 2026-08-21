@@ -275,11 +275,13 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 ### RMAP-11b — Commercial Discount UX
 | Field | Content |
 |-------|---------|
-| Status | **NOT STARTED** (roadmap definition only) |
+| Status | **COMPLETE** |
 | Objective | Expose the authoritative RMAP-B03 commercial discount contract in React checkout |
 | Dependencies | RMAP-11, RMAP-B03 FINAL CLOSED, RMAP-00 |
 | Scope | Line + sale discount; percent + fixed; required reason; server quote/preview; Owner/Manager auth; Cashier denied by default; friendly Gross/Discount/Amount to Pay wording |
 | Exclusions | Price override (RMAP-12b / B01); promotions/coupons; regulatory Senior/PWD discounts; RMAP-TAX; Card/provider-payment implementation |
+| Acceptance | Quote + checkout with intents; cashier denied; zero-total Cash with “No payment required” |
+| Report | [POS-REACT-RMAP-11b-commercial-discount-ux.md](../../Reports/POS-REACT-RMAP-11b-commercial-discount-ux.md) |
 | Next | RMAP-12 |
 
 ### RMAP-12 — Payments expansion + void
@@ -428,17 +430,17 @@ Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, 
 1. **RMAP-B00** staff existing-person link — required before RMAP-01 final validation, RMAP-01b, and RMAP-02 in Master Run 01
 2. **RMAP-B01** sale price policy — required before override UI
 3. **RMAP-B02** Milligram — only if owner approves
-4. **RMAP-B03** Sale discount / adjustment backend contract — **FINAL CLOSED**. Discount React UX = **RMAP-11b** (not started).
+4. **RMAP-B03** Sale discount / adjustment backend contract — **FINAL CLOSED**. Discount React UX = **RMAP-11b** (**COMPLETE**).
 5. **RMAP-B04** Linked ExItS buyer purchase projection — **NOT STARTED**
 6. **RMAP-TAX** Final controlled tax activation — **NOT STARTED** (after RMAP-23, before RMAP-24)
 
 ## APPROVED PROPOSED MASTER RUN 01
 
 **Name:** Foundation + Catalog/Inventory Baseline
-**Status:** RMAP-00…RMAP-11 PASS (sell-floor/cart + register/open-shift readiness + browser PosDevice + online cash checkout). Commercial discount payment boundaries proven (RMAP-B03). Next authorized package: RMAP-11b (commercial discount UX) or RMAP-12 when authorized.
+**Status:** RMAP-00…RMAP-11b PASS (sell-floor/cart + register/open-shift readiness + browser PosDevice + online cash checkout + commercial discount UX). Next authorized package: RMAP-12 when authorized.
 **Stop rule:** After Master Run packages + authorized B03 closeout → HARD STOP for Product Owner + ChatGPT review (historical). RMAP-08/09 completed after that stop when authorized.
-**Do not include (still gated):** RMAP-11b discount UX; RMAP-B04; RMAP-TAX implementation
-**Completed beyond Master Run 01 table:** RMAP-08 lots/expiry inventory surfaces; RMAP-09 sell floor + session cart; RMAP-10 registers + open shift gate; RMAP-10b browser POS device authorization; RMAP-11 online cash checkout
+**Do not include (still gated):** RMAP-B04; RMAP-TAX implementation
+**Completed beyond Master Run 01 table:** RMAP-08 lots/expiry inventory surfaces; RMAP-09 sell floor + session cart; RMAP-10 registers + open shift gate; RMAP-10b browser POS device authorization; RMAP-11 online cash checkout; RMAP-11b commercial discount UX
 **Distinction preserved:** Today's Price ≠ Cashier Price Override ≠ Commercial Discount ≠ Promotion ≠ Regulatory Discount
 **Completion report (B00):** [POS-REACT-RMAP-B00-identity-reconciliation.md](../../Reports/POS-REACT-RMAP-B00-identity-reconciliation.md)
 **Completion report (RMAP-01):** [POS-REACT-RMAP-01-account-session-parity.md](../../Reports/POS-REACT-RMAP-01-account-session-parity.md)
