@@ -187,45 +187,40 @@ export function OrgPosDevicesPage() {
 
       {capacity ? (
         <Card data-testid="devices-capacity">
-          {capacity.kind === "unlimited" ? (
-            <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-              {t("devices.capacity.unlimited").replace("{used}", String(capacity.used))}
-            </p>
-          ) : (
-            <>
+          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("devices.capacity.activeOfAllowed")
+              .replace("{used}", capacity.used.toLocaleString())
+              .replace("{allowed}", capacity.allowed.toLocaleString())}
+          </p>
+          <p className="mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
+            {t("devices.capacity.available").replace(
+              "{available}",
+              capacity.available.toLocaleString(),
+            )}
+          </p>
+          <div
+            className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--exits-surface-muted)]"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={capacity.allowed}
+            aria-valuenow={capacity.used}
+            data-testid="devices-capacity-bar"
+          >
+            <div
+              className="h-full rounded-full bg-primary transition-[width]"
+              style={{ width: `${Math.round(capacity.progressRatio * 100)}%` }}
+            />
+          </div>
+          {capacity.atLimit ? (
+            <div className="mt-3" data-testid="devices-capacity-limit">
               <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-                {t("devices.capacity.activeOfAllowed")
-                  .replace("{used}", String(capacity.used))
-                  .replace("{allowed}", String(capacity.allowed))}
+                {t("devices.capacity.limitReached")}
               </p>
               <p className="mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
-                {t("devices.capacity.available").replace("{available}", String(capacity.available))}
+                {t("devices.capacity.limitReachedDetail")}
               </p>
-              <div
-                className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--exits-surface-muted)]"
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={capacity.allowed}
-                aria-valuenow={capacity.used}
-                data-testid="devices-capacity-bar"
-              >
-                <div
-                  className="h-full rounded-full bg-primary transition-[width]"
-                  style={{ width: `${Math.round(capacity.progressRatio * 100)}%` }}
-                />
-              </div>
-              {capacity.atLimit ? (
-                <div className="mt-3" data-testid="devices-capacity-limit">
-                  <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-                    {t("devices.capacity.limitReached")}
-                  </p>
-                  <p className="mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
-                    {t("devices.capacity.limitReachedDetail")}
-                  </p>
-                </div>
-              ) : null}
-            </>
-          )}
+            </div>
+          ) : null}
         </Card>
       ) : null}
 

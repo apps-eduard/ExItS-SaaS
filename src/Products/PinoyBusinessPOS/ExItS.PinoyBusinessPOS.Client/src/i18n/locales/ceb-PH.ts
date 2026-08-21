@@ -794,7 +794,6 @@ export const cebPH: Record<keyof typeof en, string> = {
   "devices.capacityLoadError": "Dili ma-load ang kapasidad sa device.",
   "devices.capacity.activeOfAllowed": "{used} sa {allowed} ang aktibo",
   "devices.capacity.available": "{available} ang nabatonan",
-  "devices.capacity.unlimited": "{used} aktibo / Walay utlanan ang devices",
   "devices.capacity.limitReached": "Naabot na ang utlanan sa device",
   "devices.capacity.limitReachedDetail":
     "Walay nabatonang slot sa device. I-revoke ang wala magamit nga device o usba ang plano/settings.",

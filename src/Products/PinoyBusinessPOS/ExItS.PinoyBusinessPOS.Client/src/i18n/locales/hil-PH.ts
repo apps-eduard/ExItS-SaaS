@@ -796,7 +796,6 @@ export const hilPH: Record<keyof typeof en, string> = {
   "devices.capacityLoadError": "Indi ma-load ang kapasidad sang device.",
   "devices.capacity.activeOfAllowed": "{used} sa {allowed} ang aktibo",
   "devices.capacity.available": "{available} ang magamit",
-  "devices.capacity.unlimited": "{used} aktibo / Wala sing utlanan ang mga device",
   "devices.capacity.limitReached": "Naabot na ang utlanan sang device",
   "devices.capacity.limitReachedDetail":
     "Wala sing magamit nga slot sang device. I-revoke ang wala ginagamit nga device ukon bag-oha ang plano/settings.",

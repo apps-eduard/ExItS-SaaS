@@ -798,7 +798,6 @@ export const iloPH: Record<keyof typeof en, string> = {
   "devices.capacityLoadError": "Saan ma-load ti kapasidad ti device.",
   "devices.capacity.activeOfAllowed": "{used} iti {allowed} ti aktibo",
   "devices.capacity.available": "{available} ti magun-od",
-  "devices.capacity.unlimited": "{used} aktibo / Awan patingga dagiti device",
   "devices.capacity.limitReached": "Naaboten ti patingga ti device",
   "devices.capacity.limitReachedDetail":
     "Awan ti magun-od a slot ti device. I-revoke ti di maus-usar a device wenno baliwan ti plano/settings.",

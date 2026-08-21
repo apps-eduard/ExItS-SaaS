@@ -782,7 +782,6 @@ export const filPH: Record<keyof typeof en, string> = {
   "devices.capacityLoadError": "Hindi ma-load ang device capacity.",
   "devices.capacity.activeOfAllowed": "{used} sa {allowed} ang active",
   "devices.capacity.available": "{available} ang available",
-  "devices.capacity.unlimited": "{used} active / Walang limit ang devices",
   "devices.capacity.limitReached": "Naabot na ang device limit",
   "devices.capacity.limitReachedDetail":
     "Walang available na device slot. Mag-revoke ng hindi ginagamit na device o baguhin ang plan/settings.",

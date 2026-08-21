@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+﻿import { expect, test } from "@playwright/test";
 import { assertNoHorizontalOverflow } from "./helpers";
 import {
   mockBoundCashierSession,
@@ -25,7 +25,7 @@ const FIXED_INSTALL_ID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
 test.describe("POS OPERATIONS UX REPAIR 01", () => {
   test.use({ serviceWorkers: "block" });
 
-  test("cashier unregistered → device readiness, no admin controls", async ({ page }) => {
+  test("cashier unregistered â†’ device readiness, no admin controls", async ({ page }) => {
     await seedInstallationId(page);
     await mockBoundCashierSession(page);
     await mockPosCatalogApi(page);
@@ -49,7 +49,7 @@ test.describe("POS OPERATIONS UX REPAIR 01", () => {
     await expect(page.getByTestId("devices-create-code")).toHaveCount(0);
   });
 
-  test("authorized device + no shift → shift readiness", async ({ page }) => {
+  test("authorized device + no shift â†’ shift readiness", async ({ page }) => {
     await mockBoundCashierSession(page);
     await mockPosCatalogApi(page);
     await seedInstallationId(page);
@@ -65,7 +65,7 @@ test.describe("POS OPERATIONS UX REPAIR 01", () => {
     await expect(page.getByTestId("sell-readiness-shift")).toBeVisible();
   });
 
-  test("authorized + open shift → Sell opens", async ({ page }) => {
+  test("authorized + open shift â†’ Sell opens", async ({ page }) => {
     await mockBoundCashierSession(page);
     await mockPosCatalogApi(page);
     await prepareSellReady(page);
@@ -172,56 +172,92 @@ test.describe("POS OPERATIONS UX REPAIR 01", () => {
     }
   });
 
-  test("owner devices show authoritative capacity", async ({ page }) => {
-    await seedInstallationId(page);
-    await mockBoundOwnerSession(page);
-    await page.route("**/platform-api/**/pos-devices**", async (route) => {
-      const url = route.request().url();
-      const method = route.request().method();
-      if (url.includes("/pos-devices/capacity") && method === "GET") {
-        return route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({ used: 3, allowed: 5 }),
-        });
-      }
-      if (url.includes("/pos-devices/authorize") && method === "POST") {
-        return route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            posDeviceId: DEVICE_ID,
-            branchId: E2E_BRANCH_ID,
-            installationDeviceId: FIXED_INSTALL_ID,
-          }),
-        });
-      }
-      if (url.includes("/pos-devices") && method === "GET" && !url.includes("capacity")) {
-        return route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify([
-            {
-              id: DEVICE_ID,
-              organizationId: E2E_ORG_ID,
+  for (const scenario of [
+    {
+      name: "3/5 finite",
+      used: 3,
+      allowed: 5,
+      active: "3 of 5 active",
+      available: "2 available",
+      limit: false,
+    },
+    {
+      name: "5/5 limit reached",
+      used: 5,
+      allowed: 5,
+      active: "5 of 5 active",
+      available: "0 available",
+      limit: true,
+    },
+    {
+      name: "3/10000 remains finite",
+      used: 3,
+      allowed: 10000,
+      active: /3 of 10[,.]?000 active/,
+      available: /9[,.]?997 available/,
+      limit: false,
+    },
+  ] as const) {
+    test(`owner devices capacity ${scenario.name}`, async ({ page }) => {
+      await seedInstallationId(page);
+      await mockBoundOwnerSession(page);
+      await page.route("**/platform-api/**/pos-devices**", async (route) => {
+        const url = route.request().url();
+        const method = route.request().method();
+        if (url.includes("/pos-devices/capacity") && method === "GET") {
+          return route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({ used: scenario.used, allowed: scenario.allowed }),
+          });
+        }
+        if (url.includes("/pos-devices/authorize") && method === "POST") {
+          return route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+              posDeviceId: DEVICE_ID,
               branchId: E2E_BRANCH_ID,
               installationDeviceId: FIXED_INSTALL_ID,
-              friendlyName: "Front browser",
-              status: "Active",
-              registeredAtUtc: "2026-08-21T01:00:00Z",
-              lastSeenAtUtc: "2026-08-21T01:00:00Z",
-            },
-          ]),
-        });
+            }),
+          });
+        }
+        if (url.includes("/pos-devices") && method === "GET" && !url.includes("capacity")) {
+          return route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify([
+              {
+                id: DEVICE_ID,
+                organizationId: E2E_ORG_ID,
+                branchId: E2E_BRANCH_ID,
+                installationDeviceId: FIXED_INSTALL_ID,
+                friendlyName: "Front browser",
+                status: "Active",
+                registeredAtUtc: "2026-08-21T01:00:00Z",
+                lastSeenAtUtc: "2026-08-21T01:00:00Z",
+              },
+            ]),
+          });
+        }
+        return route.fallback();
+      });
+
+      await signInAndBindOwner(page);
+      await chooseOwnerManageBusiness(page);
+      await page.getByTestId("open-org-devices").click();
+      await expect(page.getByTestId("org-devices-page")).toBeVisible();
+
+      const capacity = page.getByTestId("devices-capacity");
+      await expect(capacity).toContainText(scenario.active);
+      await expect(capacity).toContainText(scenario.available);
+      await expect(page.getByTestId("devices-capacity-bar")).toBeVisible();
+      await expect(capacity).not.toContainText(/Unlimited/i);
+      if (scenario.limit) {
+        await expect(page.getByTestId("devices-capacity-limit")).toBeVisible();
+      } else {
+        await expect(page.getByTestId("devices-capacity-limit")).toHaveCount(0);
       }
-      return route.fallback();
     });
-    await signInAndBindOwner(page);
-    await chooseOwnerManageBusiness(page);
-    await page.getByTestId("open-org-devices").click();
-    await expect(page.getByTestId("org-devices-page")).toBeVisible();
-    await expect(page.getByTestId("devices-capacity")).toContainText("3 of 5 active");
-    await expect(page.getByTestId("devices-capacity")).toContainText("2 available");
-    await expect(page.getByTestId("devices-capacity-bar")).toBeVisible();
-  });
+  }
 });

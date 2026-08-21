@@ -765,7 +765,6 @@ export const en = {
   "devices.capacityLoadError": "Could not load device capacity.",
   "devices.capacity.activeOfAllowed": "{used} of {allowed} active",
   "devices.capacity.available": "{available} available",
-  "devices.capacity.unlimited": "{used} active / Unlimited devices",
   "devices.capacity.limitReached": "Device limit reached",
   "devices.capacity.limitReachedDetail":
     "No device slots are available. Revoke an unused device or change the applicable plan or settings.",

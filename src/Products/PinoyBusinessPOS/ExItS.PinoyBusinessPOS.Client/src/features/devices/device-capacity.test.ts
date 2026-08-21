@@ -29,11 +29,15 @@ describe("formatPosDeviceCapacity", () => {
     });
   });
 
-  it("treats allowed >= 10000 as unlimited", () => {
-    expect(formatPosDeviceCapacity({ used: 3, allowed: 10000 })).toEqual({
-      kind: "unlimited",
+  it("treats allowed 10000 as a finite plan limit, not unlimited", () => {
+    const formatted = formatPosDeviceCapacity({ used: 3, allowed: 10000 });
+    expect(formatted).toMatchObject({
+      kind: "finite",
       used: 3,
-      progressRatio: null,
+      allowed: 10000,
+      available: 9997,
+      atLimit: false,
     });
+    expect(formatted?.progressRatio).toBeCloseTo(3 / 10000, 10);
   });
 });
