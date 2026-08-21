@@ -22,7 +22,8 @@
 | Role | Hash |
 |------|------|
 | Implementation | `e7bd79a9d69920d3cf4052d5da0cfdcc0334bce6` |
-| Docs | $docsHash |
+| Docs closeout | `d1c13e256190f0a486e9151c51ee1f34dab4a5ad` |
+| Final HEAD (after hash record) | `e3c4ac0dc8cb9b91fdb36081c0d7630d5ae5aade` |
 
 ## Evidence
 
