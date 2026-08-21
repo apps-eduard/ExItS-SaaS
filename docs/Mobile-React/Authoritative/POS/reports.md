@@ -25,4 +25,4 @@ Tests: `ManagementOverviewQueryServiceTests`, `SaleReportAggregateEquivalenceTes
 ## MAUI / React
 
 MAUI: `/reports*`, `/dashboard`.
-React: **MISSING**.
+React: **COMPLETE** (RMAP-20) — management overview + dashboard + operational/classic reports; Tax UI **NO**; Fake P&L **NO**; buyer purchase projection **NO**.

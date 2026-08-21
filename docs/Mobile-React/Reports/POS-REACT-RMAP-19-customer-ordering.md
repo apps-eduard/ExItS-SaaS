@@ -89,4 +89,4 @@ Responsive matrix (seller queue):
 
 ## Exact next
 
-Do **not** start RMAP-20 until authorized. Do **not** start RMAP-B05 (`RMAP_B05_AUTHORIZED=NO`). Native-speaker i18n review remains PENDING.
+Do **not** start RMAP-B05 (`RMAP_B05_AUTHORIZED=NO`). RMAP-20 authorized and complete — see [POS-REACT-RMAP-20-reports-dashboard.md](./POS-REACT-RMAP-20-reports-dashboard.md). Native-speaker i18n review remains PENDING.
