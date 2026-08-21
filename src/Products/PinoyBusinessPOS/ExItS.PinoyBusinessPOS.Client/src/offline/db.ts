@@ -3,6 +3,8 @@ import {
   OFFLINE_SCHEMA_VERSION,
   type CachedCatalogCategoryRecord,
   type CachedCatalogProductRecord,
+  type CachedCustomerCreditRecord,
+  type CachedCustomerRecord,
   type OfflineOperationRecord,
   type OfflineScopeKind,
   type SellReadinessSnapshotRecord,
@@ -48,13 +50,26 @@ interface OfflineDbSchema extends DBSchema {
     key: string;
     value: SellReadinessSnapshotRecord;
   };
+  customers: {
+    key: string;
+    value: CachedCustomerRecord;
+    indexes: {
+      byStatus: string;
+    };
+  };
+  customerCredit: {
+    key: string;
+    value: CachedCustomerCreditRecord;
+  };
 }
 
 export type OfflineDb = IDBPDatabase<OfflineDbSchema>;
 
 function databaseName(scope: OfflineScopeKind, scopeKey: string): string {
   // Separate DBs per Personal user vs Organization context — never share.
-  return `exits-offline-v${OFFLINE_SCHEMA_VERSION}-${scope}-${scopeKey}`;
+  // The schema version stays out of the name so a schema bump upgrades the existing database
+  // instead of orphaning already queued money operations under an unreachable name.
+  return `exits-offline-${scope}-${scopeKey}`;
 }
 
 export function personalScopeKey(userId: string, accountProfileId: string): string {
@@ -97,6 +112,13 @@ export async function openOfflineDatabase(
       }
       if (!db.objectStoreNames.contains("sellReadiness")) {
         db.createObjectStore("sellReadiness", { keyPath: "key" });
+      }
+      if (!db.objectStoreNames.contains("customers")) {
+        const customers = db.createObjectStore("customers", { keyPath: "customerId" });
+        customers.createIndex("byStatus", "status");
+      }
+      if (!db.objectStoreNames.contains("customerCredit")) {
+        db.createObjectStore("customerCredit", { keyPath: "customerId" });
       }
     },
   });

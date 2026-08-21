@@ -1,6 +1,11 @@
 import { z } from "zod";
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { posRequest } from "@/api/pos/pos-http";
+import {
+  buildPosMutationIdempotencyHeaders,
+  OFFLINE_OPERATION_TYPES,
+} from "@/api/pos/pos-mutation-idempotency";
+import { createSecureMutationId } from "@/lib/secure-mutation-id";
 
 const CUSTOMERS_PATH = "/api/v1/pos/customers";
 
@@ -162,10 +167,14 @@ export type CreatePosCustomerInput = {
   mobileNumber?: string | null;
   address?: string | null;
   notes?: string | null;
+  /** Client-chosen id so a replayed create returns the same customer instead of a duplicate. */
+  customerId?: string;
 };
 
 export type UpdatePosCustomerInput = CreatePosCustomerInput & {
   expectedUpdatedAtUtc?: string | null;
+  /** Stable id for this edit attempt; two different offline edits must not share one key. */
+  operationId?: string;
 };
 
 export type CreatePosRepaymentInput = {
@@ -173,6 +182,59 @@ export type CreatePosRepaymentInput = {
   remarks?: string | null;
   repaymentId?: string;
 };
+
+/**
+ * Idempotency headers for a customer/credit mutation, mirroring MAUI
+ * PosMutationIdempotencyHelper. Returns no headers when secure randomness is unavailable and
+ * the caller has no id to key on — the server treats a header-less mutation as non-idempotent
+ * rather than trusting a guessable key.
+ */
+async function customerMutationHeaders(
+  entityId: string | undefined,
+  body: unknown,
+  operationType: string,
+): Promise<Record<string, string> | undefined> {
+  if (!entityId) {
+    return undefined;
+  }
+  return buildPosMutationIdempotencyHeaders(entityId, JSON.stringify(body), operationType);
+}
+
+function newMutationId(): string | undefined {
+  const generated = createSecureMutationId();
+  return generated.ok ? generated.id : undefined;
+}
+
+/** Payload the server expects for a customer create — shared by the online and offline paths. */
+export function buildCreateCustomerPayload(input: CreatePosCustomerInput) {
+  return {
+    displayName: input.displayName.trim(),
+    mobileNumber: input.mobileNumber?.trim() || null,
+    address: input.address?.trim() || null,
+    notes: input.notes?.trim() || null,
+    ...(input.customerId ? { customerId: input.customerId } : {}),
+  };
+}
+
+/** Payload the server expects for a customer update — shared by the online and offline paths. */
+export function buildUpdateCustomerPayload(input: UpdatePosCustomerInput) {
+  return {
+    displayName: input.displayName.trim(),
+    mobileNumber: input.mobileNumber?.trim() || null,
+    address: input.address?.trim() || null,
+    notes: input.notes?.trim() || null,
+    expectedUpdatedAtUtc: input.expectedUpdatedAtUtc ?? null,
+  };
+}
+
+/** Payload the server expects for a repayment — shared by the online and offline paths. */
+export function buildCreateRepaymentPayload(input: CreatePosRepaymentInput) {
+  return {
+    amount: input.amount,
+    remarks: input.remarks?.trim() || null,
+    ...(input.repaymentId ? { repaymentId: input.repaymentId } : {}),
+  };
+}
 
 function appendQuery(
   path: string,
@@ -288,17 +350,21 @@ export async function createCustomer(
   input: CreatePosCustomerInput,
   signal?: AbortSignal,
 ): Promise<PosCustomerDetail> {
+  // The server adopts a client-chosen id and returns the existing row on replay, so a retried
+  // create can never produce a second customer.
+  const customerId = input.customerId ?? newMutationId();
+  const body = buildCreateCustomerPayload({ ...input, customerId });
   const raw = await posRequest<unknown>({
     method: "POST",
     workspace,
     signal,
     path: CUSTOMERS_PATH,
-    body: {
-      displayName: input.displayName.trim(),
-      mobileNumber: input.mobileNumber?.trim() || null,
-      address: input.address?.trim() || null,
-      notes: input.notes?.trim() || null,
-    },
+    body,
+    headers: await customerMutationHeaders(
+      customerId,
+      body,
+      OFFLINE_OPERATION_TYPES.CustomerCreate,
+    ),
   });
   return posCustomerDetailSchema.parse(raw);
 }
@@ -309,18 +375,21 @@ export async function updateCustomer(
   input: UpdatePosCustomerInput,
   signal?: AbortSignal,
 ): Promise<PosCustomerDetail> {
+  // Keyed on the edit attempt, not the customer, so two different offline edits of one customer
+  // do not collide on a single idempotency key.
+  const operationId = input.operationId ?? newMutationId();
+  const body = buildUpdateCustomerPayload(input);
   const raw = await posRequest<unknown>({
     method: "PUT",
     workspace,
     signal,
     path: customerPath(customerId),
-    body: {
-      displayName: input.displayName.trim(),
-      mobileNumber: input.mobileNumber?.trim() || null,
-      address: input.address?.trim() || null,
-      notes: input.notes?.trim() || null,
-      expectedUpdatedAtUtc: input.expectedUpdatedAtUtc ?? null,
-    },
+    body,
+    headers: await customerMutationHeaders(
+      operationId,
+      body,
+      OFFLINE_OPERATION_TYPES.CustomerUpdate,
+    ),
   });
   return posCustomerDetailSchema.parse(raw);
 }
@@ -409,16 +478,21 @@ export async function createCustomerRepayment(
   input: CreatePosRepaymentInput,
   signal?: AbortSignal,
 ): Promise<PosRepayment> {
+  // A repayment is money: the client-chosen repaymentId plus the idempotency key make a retry
+  // land on the same recorded payment instead of crediting the customer twice.
+  const repaymentId = input.repaymentId ?? newMutationId();
+  const body = buildCreateRepaymentPayload({ ...input, repaymentId });
   const raw = await posRequest<unknown>({
     method: "POST",
     workspace,
     signal,
     path: customerPath(customerId, "/repayments"),
-    body: {
-      amount: input.amount,
-      remarks: input.remarks?.trim() || null,
-      ...(input.repaymentId ? { repaymentId: input.repaymentId } : {}),
-    },
+    body,
+    headers: await customerMutationHeaders(
+      repaymentId,
+      body,
+      OFFLINE_OPERATION_TYPES.RepaymentCreate,
+    ),
   });
   return posRepaymentSchema.parse(raw);
 }

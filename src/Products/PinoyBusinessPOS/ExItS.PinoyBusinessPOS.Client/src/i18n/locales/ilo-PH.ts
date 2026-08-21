@@ -70,6 +70,26 @@ export const iloPH: Record<keyof typeof en, string> = {
   "offline.cachedCatalogNotice":
     "Naidulin a produkto ti maipakita. Ag-refresh ti presio no makakonekta manen.",
   "offline.shiftContinued": "Offline · agtultuloy ti shift {shift}",
+  "offline.requiredCreditExtend": "Masapul ti internet no agnayon ti utang.",
+  "offline.requiredCreditReverse": "Masapul ti internet no ibabawi ti entry.",
+  "offline.requiredCustomerStatus": "Masapul ti internet no baliwan ti status ti customer.",
+  "offline.requiredCustomerStatement": "Masapul ti internet ti statement.",
+  "offline.requiredCustomerLink": "Masapul ti internet no i-link ti ExItS account.",
+  "offline.cachedCustomersNotice":
+    "Naidulin a customer ti maipakita. Ag-refresh ti balanse no makakonekta manen.",
+  "offline.cachedBalanceNotice": "Naidulin a balanse. Ag-refresh no makakonekta manen.",
+  "offline.customerQueuedTitle": "Naidulin ti customer iti daytoy a device",
+  "offline.customerQueuedDetail": "Saan pay a nairekord iti server.",
+  "offline.paymentQueuedTitle": "Naidulin ti bayad iti daytoy a device",
+  "offline.paymentQueuedDetail":
+    "Kompirmaren ti server maibusor iti pudno a balanse no makakonekta manen.",
+  "offline.customerWillQueue":
+    "Offline ka. Ti panagidulin agtalinaed iti device inggana a makakonekta ka manen.",
+  "offline.paymentWillQueue":
+    "Offline ka. Ti bayad agtalinaed iti device inggana a kompirmaren ti server.",
+  "offline.customerEnqueueFailed": "Saan a naidulin ti customer iti device. Padasen manen.",
+  "offline.paymentEnqueueFailed": "Saan a naidulin ti bayad iti device. Padasen manen.",
+  "offline.customerNotCached": "Saan a naidulin iti daytoy a device ti customer.",
   "shell.notifications.label": "Dagiti pakaammo",
   "shell.notifications.unreadLabel": "Dagiti pakaammo, {count} saan pay a nabasa",
   "pwa.updateAvailable": "Adda ti update",

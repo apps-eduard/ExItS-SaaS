@@ -11,6 +11,9 @@ export const OPERATION_TYPE_HEADER = "X-Pos-Operation-Type";
 export const OFFLINE_OPERATION_TYPES = {
   SaleCheckout: "sale.checkout",
   SaleReturnCreate: "sale_return.create",
+  CustomerCreate: "customer.create",
+  CustomerUpdate: "customer.update",
+  RepaymentCreate: "repayment.create",
   PurchaseOrderSubmit: "purchase_order.submit",
   PurchaseOrderReceive: "purchase_order.receive",
   CustomerOrderPlace: "customer_order.place",

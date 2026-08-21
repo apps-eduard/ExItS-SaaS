@@ -7,7 +7,17 @@ import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
+import { createSecureMutationId } from "@/lib/secure-mutation-id";
+import { getCachedCustomer } from "@/offline/customer-cache";
+import {
+  enqueueOfflineCustomerCreate,
+  enqueueOfflineCustomerUpdate,
+  OfflineCustomerRejectedError,
+} from "@/offline/customer-offline";
+import { useOfflineSync } from "@/offline/OfflineSyncProvider";
+import { useOrganizationOfflineContext } from "@/offline/organization-offline-context";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type Mode = "create" | "edit";
@@ -25,6 +35,9 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
   const navigate = useNavigate();
   const { customerId } = useParams<{ customerId: string }>();
   const { boundWorkspace } = useWorkspace();
+  const online = useBrowserOnline();
+  const offlineContext = useOrganizationOfflineContext();
+  const { refreshCounts } = useOfflineSync();
 
   const [displayName, setDisplayName] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
@@ -44,7 +57,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
 
   const existing = useQuery({
     queryKey: ["customers", "detail", workspace?.organizationId, customerId],
-    enabled: mode === "edit" && Boolean(workspace) && Boolean(customerId),
+    enabled: mode === "edit" && Boolean(workspace) && Boolean(customerId) && online,
     queryFn: ({ signal }) => getCustomer(workspace!, customerId!, signal),
   });
 
@@ -59,6 +72,34 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
     setExpectedUpdatedAtUtc(existing.data.updatedAtUtc);
   }, [existing.data]);
 
+  // Editing offline starts from the cached row so a queued edit still carries the fields the
+  // cashier last saw, including the concurrency token the server will check.
+  useEffect(() => {
+    if (mode !== "edit" || !customerId || !offlineContext || existing.data || online) {
+      return;
+    }
+    let cancelled = false;
+    void getCachedCustomer(offlineContext.db, offlineContext.scopeBinding, customerId).then(
+      (cachedCustomer) => {
+        if (cancelled) {
+          return;
+        }
+        if (!cachedCustomer) {
+          setError(t("offline.customerNotCached"));
+          return;
+        }
+        setDisplayName(cachedCustomer.displayName);
+        setMobileNumber(cachedCustomer.mobileNumber ?? "");
+        setAddress(cachedCustomer.address ?? "");
+        setNotes(cachedCustomer.notes ?? "");
+        setExpectedUpdatedAtUtc(cachedCustomer.updatedAtUtc);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [customerId, existing.data, mode, offlineContext, online, t]);
+
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
   }
@@ -67,7 +108,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
     return <LoadingState label={t("loading.label")} />;
   }
 
-  if (mode === "edit" && existing.isError) {
+  if (mode === "edit" && existing.isError && online) {
     return <ErrorState title={t("error.title")} detail={(existing.error as Error).message} />;
   }
 
@@ -83,6 +124,10 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
     setSaving(true);
     setError(null);
     try {
+      if (!online) {
+        await saveOffline(name);
+        return;
+      }
       if (mode === "create") {
         const created = await createCustomer(workspace, {
           displayName: name,
@@ -108,12 +153,63 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
     }
   }
 
+  /**
+   * Queue the customer for the server instead of pretending it was accepted. A create picks the
+   * id here so the server adopts it, which keeps the queued row and the eventual server row the
+   * same customer.
+   */
+  async function saveOffline(name: string) {
+    if (!offlineContext) {
+      setError(t("offline.customerEnqueueFailed"));
+      return;
+    }
+    const generated = createSecureMutationId();
+    if (!generated.ok) {
+      setError(t("offline.customerEnqueueFailed"));
+      return;
+    }
+
+    try {
+      if (mode === "create") {
+        await enqueueOfflineCustomerCreate({
+          ...offlineContext,
+          customerId: generated.id,
+          customer: { displayName: name, mobileNumber, address, notes },
+        });
+        await refreshCounts();
+        navigate(`/customers/${generated.id}`, { replace: true });
+        return;
+      }
+      await enqueueOfflineCustomerUpdate({
+        ...offlineContext,
+        customerId: customerId!,
+        operationId: generated.id,
+        customer: { displayName: name, mobileNumber, address, notes, expectedUpdatedAtUtc },
+      });
+      await refreshCounts();
+      navigate(`/customers/${customerId}`, { replace: true });
+    } catch (err) {
+      setError(
+        err instanceof OfflineCustomerRejectedError
+          ? err.message
+          : t("offline.customerEnqueueFailed"),
+      );
+    }
+  }
+
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="customer-form-page">
       <PageHeader
         title={mode === "create" ? t("customers.newTitle") : t("customers.editTitle")}
         description={t("customers.formLede")}
       />
+      {!online ? (
+        <Card data-testid="customer-form-offline-notice">
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("offline.customerWillQueue")}
+          </p>
+        </Card>
+      ) : null}
       {error ? (
         <Card data-testid="customer-form-error">
           <p className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">

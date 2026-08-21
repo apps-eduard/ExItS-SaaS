@@ -63,6 +63,26 @@ export const en = {
   "offline.queuedNewSale": "New sale",
   "offline.cachedCatalogNotice": "Showing saved products. Prices refresh when you reconnect.",
   "offline.shiftContinued": "Offline · continuing shift {shift}",
+  "offline.requiredCreditExtend": "Adding utang needs internet.",
+  "offline.requiredCreditReverse": "Reversing an entry needs internet.",
+  "offline.requiredCustomerStatus": "Changing customer status needs internet.",
+  "offline.requiredCustomerStatement": "Statements need internet.",
+  "offline.requiredCustomerLink": "Linking an ExItS account needs internet.",
+  "offline.cachedCustomersNotice":
+    "Showing saved customers. Balances refresh when you reconnect.",
+  "offline.cachedBalanceNotice": "Saved balance. It refreshes when you reconnect.",
+  "offline.customerQueuedTitle": "Customer saved on this device",
+  "offline.customerQueuedDetail": "It is not recorded on the server yet.",
+  "offline.paymentQueuedTitle": "Payment saved on this device",
+  "offline.paymentQueuedDetail":
+    "The server confirms it against the live balance when you reconnect.",
+  "offline.customerWillQueue":
+    "You are offline. Saving keeps this customer on this device until you reconnect.",
+  "offline.paymentWillQueue":
+    "You are offline. Saving keeps this payment on this device until the server confirms it.",
+  "offline.customerEnqueueFailed": "Could not save this customer on this device. Try again.",
+  "offline.paymentEnqueueFailed": "Could not save this payment on this device. Try again.",
+  "offline.customerNotCached": "This customer is not saved on this device.",
   "shell.notifications.label": "Notifications",
   "shell.notifications.unreadLabel": "Notifications, {count} unread",
   "pwa.updateAvailable": "Update available",

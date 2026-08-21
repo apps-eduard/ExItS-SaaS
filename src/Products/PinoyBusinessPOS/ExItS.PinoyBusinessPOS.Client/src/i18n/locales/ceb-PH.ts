@@ -70,6 +70,26 @@ export const cebPH: Record<keyof typeof en, string> = {
   "offline.cachedCatalogNotice":
     "Gitipigan nga produkto ang gipakita. Mag-refresh ang presyo kon makakonektar na.",
   "offline.shiftContinued": "Offline · nagpadayon ang shift {shift}",
+  "offline.requiredCreditExtend": "Kinahanglan internet sa pagdugang utang.",
+  "offline.requiredCreditReverse": "Kinahanglan internet sa pagbawi sa entry.",
+  "offline.requiredCustomerStatus": "Kinahanglan internet sa pag-usab sa status sa customer.",
+  "offline.requiredCustomerStatement": "Kinahanglan internet ang statement.",
+  "offline.requiredCustomerLink": "Kinahanglan internet sa pag-link sa ExItS account.",
+  "offline.cachedCustomersNotice":
+    "Gitipigan nga customer ang gipakita. Mag-refresh ang balanse kon makakonektar na.",
+  "offline.cachedBalanceNotice": "Gitipigan nga balanse. Mag-refresh kon makakonektar na.",
+  "offline.customerQueuedTitle": "Natipigan ang customer sa device",
+  "offline.customerQueuedDetail": "Wala pa kini narekord sa server.",
+  "offline.paymentQueuedTitle": "Natipigan ang bayad sa device",
+  "offline.paymentQueuedDetail":
+    "Kompirmahon kini sa server batok sa tinuod nga balanse kon makakonektar na.",
+  "offline.customerWillQueue":
+    "Offline ka. Ang pag-save magpabilin sa device hangtod makakonektar ka pag-usab.",
+  "offline.paymentWillQueue":
+    "Offline ka. Ang bayad magpabilin sa device hangtod kompirmahon kini sa server.",
+  "offline.customerEnqueueFailed": "Wala matipigan ang customer sa device. Sulayi pag-usab.",
+  "offline.paymentEnqueueFailed": "Wala matipigan ang bayad sa device. Sulayi pag-usab.",
+  "offline.customerNotCached": "Wala kini natipigan nga customer sa device.",
   "shell.notifications.label": "Mga pahibalo",
   "shell.notifications.unreadLabel": "Mga pahibalo, {count} wala pa mabasa",
   "pwa.updateAvailable": "Adunay update",

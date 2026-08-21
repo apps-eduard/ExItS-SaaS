@@ -70,6 +70,27 @@ export const filPH: Record<keyof typeof en, string> = {
   "offline.cachedCatalogNotice":
     "Nakaimbak na produkto ang nakikita. Magre-refresh ang presyo kapag nakakonekta muli.",
   "offline.shiftContinued": "Offline · nagpapatuloy ang shift {shift}",
+  "offline.requiredCreditExtend": "Kailangan ng internet para magdagdag ng utang.",
+  "offline.requiredCreditReverse": "Kailangan ng internet para ibalik ang tala.",
+  "offline.requiredCustomerStatus": "Kailangan ng internet para baguhin ang status ng customer.",
+  "offline.requiredCustomerStatement": "Kailangan ng internet ang statement.",
+  "offline.requiredCustomerLink": "Kailangan ng internet para i-link ang ExItS account.",
+  "offline.cachedCustomersNotice":
+    "Nakaimbak na customer ang nakikita. Magre-refresh ang balanse kapag nakakonekta muli.",
+  "offline.cachedBalanceNotice": "Nakaimbak na balanse. Magre-refresh kapag nakakonekta muli.",
+  "offline.customerQueuedTitle": "Nakaimbak ang customer sa device na ito",
+  "offline.customerQueuedDetail": "Hindi pa ito naitala sa server.",
+  "offline.paymentQueuedTitle": "Nakaimbak ang bayad sa device na ito",
+  "offline.paymentQueuedDetail":
+    "Kokompirmahin ito ng server sa tunay na balanse kapag nakakonekta muli.",
+  "offline.customerWillQueue":
+    "Offline ka. Ang pag-save ay mananatili sa device na ito hangga't hindi ka nakakonekta.",
+  "offline.paymentWillQueue":
+    "Offline ka. Ang bayad ay mananatili sa device na ito hangga't hindi kinompirma ng server.",
+  "offline.customerEnqueueFailed":
+    "Hindi na-imbak ang customer sa device na ito. Subukan muli.",
+  "offline.paymentEnqueueFailed": "Hindi na-imbak ang bayad sa device na ito. Subukan muli.",
+  "offline.customerNotCached": "Hindi nakaimbak sa device na ito ang customer.",
   "shell.notifications.label": "Mga abiso",
   "shell.notifications.unreadLabel": "Mga abiso, {count} hindi pa nabasa",
   "pwa.updateAvailable": "May update",

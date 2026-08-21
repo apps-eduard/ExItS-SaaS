@@ -1,85 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
-import type { OfflineDb } from "@/offline/db";
-import { openSharedOfflineDatabase, organizationScopeKey } from "@/offline/db";
-import { useOfflineSync } from "@/offline/OfflineSyncProvider";
-import { useSession } from "@/session/SessionProvider";
-import { peekDurableInstallationDeviceId } from "@/workspace/browser-installation-identity";
-import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import {
+  useOrganizationOfflineContext,
+  type OrganizationOfflineContext,
+} from "@/offline/organization-offline-context";
 
 /**
- * Organization-scoped offline store for the Sell context (RMAP-21D).
- * The database is keyed by user + organization + branch + installation device, so a different
- * cashier, branch, or browser never reads another scope's queued work.
+ * Sell view of the organization-scoped offline store (RMAP-21D).
+ * The store itself is shared with every other Business surface, so a queued Cash sale and a
+ * queued customer edit sit in one outbox and one Connection & Sync count.
  */
-export type SellOfflineContext = {
-  db: OfflineDb;
-  /** Envelope key material — the same organization scope key the database is named after. */
-  scopeBinding: string;
-  userId: string;
-  organizationId: string;
-  branchId: string;
-  installationDeviceId: string;
-  posDeviceId: string | null;
-};
+export type SellOfflineContext = OrganizationOfflineContext;
 
 export function useSellOfflineContext(): SellOfflineContext | null {
-  const { session } = useSession();
-  const { boundWorkspace, posDevice } = useWorkspace();
-  const { bindDatabase } = useOfflineSync();
-  const [opened, setOpened] = useState<{ db: OfflineDb; scopeBinding: string } | null>(null);
-
-  const userId = session?.userId ?? null;
-  const organizationId = boundWorkspace?.organizationId ?? null;
-  const branchId = boundWorkspace?.branchId ?? null;
-  // Durable installation identity is local, so it survives an offline device authorize failure.
-  const installationDeviceId = posDevice.installationDeviceId ?? peekDurableInstallationDeviceId();
-  const posDeviceId = posDevice.posDeviceId ?? null;
-
-  useEffect(() => {
-    if (!userId || !organizationId || !branchId || !installationDeviceId) {
-      setOpened(null);
-      return;
-    }
-
-    const scopeBinding = organizationScopeKey({
-      userId,
-      organizationId,
-      branchId,
-      installationDeviceId,
-    });
-
-    let cancelled = false;
-    void openSharedOfflineDatabase("Organization", scopeBinding)
-      .then(async (db) => {
-        if (cancelled) {
-          return;
-        }
-        setOpened({ db, scopeBinding });
-        await bindDatabase(db);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setOpened(null);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [bindDatabase, branchId, installationDeviceId, organizationId, userId]);
-
-  return useMemo(() => {
-    if (!opened || !userId || !organizationId || !branchId || !installationDeviceId) {
-      return null;
-    }
-    return {
-      db: opened.db,
-      scopeBinding: opened.scopeBinding,
-      userId,
-      organizationId,
-      branchId,
-      installationDeviceId,
-      posDeviceId,
-    };
-  }, [branchId, installationDeviceId, opened, organizationId, posDeviceId, userId]);
+  return useOrganizationOfflineContext();
 }

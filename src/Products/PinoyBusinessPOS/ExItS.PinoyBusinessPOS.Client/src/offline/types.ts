@@ -1,7 +1,7 @@
 import type { PosCatalogProductDto, PosProductCategoryDto } from "@/api/pos/pos-catalog-types";
 
-/** v2 adds the read-only Sell catalog cache and the Sell readiness snapshot (RMAP-21D). */
-export const OFFLINE_SCHEMA_VERSION = 2 as const;
+/** v3 adds the encrypted Business customer cache and credit summary cache (RMAP-21E). */
+export const OFFLINE_SCHEMA_VERSION = 3 as const;
 
 export type OfflineScopeKind = "Personal" | "Organization";
 
@@ -61,6 +61,31 @@ export type CachedCatalogCategoryRecord = {
   categoryId: string;
   cachedAtUtc: string;
   category: PosProductCategoryDto;
+};
+
+/**
+ * Business customer projection (RMAP-21E).
+ * Display name, mobile, address, notes and ExItS link ids are personal data, so the body is
+ * AES-GCM encrypted like an outbox payload. Only routing and lifecycle columns stay readable,
+ * mirroring the MAUI LocalEncryptedCustomerCreditStore column split.
+ */
+export type CachedCustomerRecord = {
+  customerId: string;
+  organizationId: string;
+  status: string;
+  updatedAtUtc: string;
+  cachedAtUtc: string;
+  /** Encrypted customer projection — never log plaintext. */
+  ciphertext: ArrayBuffer;
+  iv: ArrayBuffer;
+};
+
+/** Outstanding balance is money, so the credit summary is never cached as plaintext. */
+export type CachedCustomerCreditRecord = {
+  customerId: string;
+  cachedAtUtc: string;
+  ciphertext: ArrayBuffer;
+  iv: ArrayBuffer;
 };
 
 export const SELL_READINESS_SNAPSHOT_KEY = "sell-readiness" as const;

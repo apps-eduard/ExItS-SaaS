@@ -71,6 +71,26 @@ export const hilPH: Record<keyof typeof en, string> = {
   "offline.cachedCatalogNotice":
     "Gina-tipigan nga produkto ang ginapakita. Maga-refresh ang presyo kon makakonektar liwat.",
   "offline.shiftContinued": "Offline · nagapadayon ang shift {shift}",
+  "offline.requiredCreditExtend": "Kinahanglan internet sa pagdugang sang utang.",
+  "offline.requiredCreditReverse": "Kinahanglan internet sa pagbawi sang entry.",
+  "offline.requiredCustomerStatus": "Kinahanglan internet sa pagbag-o sang status sang customer.",
+  "offline.requiredCustomerStatement": "Kinahanglan internet ang statement.",
+  "offline.requiredCustomerLink": "Kinahanglan internet sa pag-link sang ExItS account.",
+  "offline.cachedCustomersNotice":
+    "Gina-tipigan nga customer ang ginapakita. Maga-refresh ang balanse kon makakonektar liwat.",
+  "offline.cachedBalanceNotice": "Gina-tipigan nga balanse. Maga-refresh kon makakonektar liwat.",
+  "offline.customerQueuedTitle": "Natipigan ang customer sa sini nga device",
+  "offline.customerQueuedDetail": "Wala pa ini narekord sa server.",
+  "offline.paymentQueuedTitle": "Natipigan ang bayad sa sini nga device",
+  "offline.paymentQueuedDetail":
+    "Kompirmahon ini sang server batok sa matuod nga balanse kon makakonektar liwat.",
+  "offline.customerWillQueue":
+    "Offline ka. Ang pag-save magapabilin sa device tubtob makakonektar ka liwat.",
+  "offline.paymentWillQueue":
+    "Offline ka. Ang bayad magapabilin sa device tubtob kompirmahon ini sang server.",
+  "offline.customerEnqueueFailed": "Wala natipigan ang customer sa device. Tilawi liwat.",
+  "offline.paymentEnqueueFailed": "Wala natipigan ang bayad sa device. Tilawi liwat.",
+  "offline.customerNotCached": "Wala ini natipigan nga customer sa sini nga device.",
   "shell.notifications.label": "Mga pahibalo",
   "shell.notifications.unreadLabel": "Mga pahibalo, {count} wala pa nabasa",
   "pwa.updateAvailable": "May update",

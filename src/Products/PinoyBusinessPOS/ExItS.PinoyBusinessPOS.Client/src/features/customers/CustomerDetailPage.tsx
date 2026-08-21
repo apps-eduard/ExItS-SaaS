@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { canEditCustomer, canRecordRepayment, canViewStatement } from "@/access/pos-capabilities";
@@ -10,6 +10,7 @@ import {
   listCustomerCreditEntries,
   listCustomerRepayments,
   reactivateCustomer,
+  type PosCustomerListItem,
 } from "@/api/pos/pos-customers-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -19,7 +20,16 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
+import {
+  cacheCustomer,
+  cacheCustomerCreditSummary,
+  getCachedCustomer,
+  getCachedCustomerCreditSummary,
+} from "@/offline/customer-cache";
+import { onlineRequiredDetailKey, ONLINE_REQUIRED_CODES } from "@/offline/online-required";
+import { useOrganizationOfflineContext } from "@/offline/organization-offline-context";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export function CustomerDetailPage() {
@@ -27,8 +37,12 @@ export function CustomerDetailPage() {
   const { customerId } = useParams<{ customerId: string }>();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const queryClient = useQueryClient();
+  const online = useBrowserOnline();
+  const offlineContext = useOrganizationOfflineContext();
   const [actionError, setActionError] = useState<string | null>(null);
   const [acting, setActing] = useState(false);
+  const [cachedCustomer, setCachedCustomer] = useState<PosCustomerListItem | null>(null);
+  const [cachedOwed, setCachedOwed] = useState<number | null>(null);
 
   const workspace = useMemo(
     () =>
@@ -42,31 +56,71 @@ export function CustomerDetailPage() {
   const allowRepay = canRecordRepayment(sessionGrant);
   const allowStatement = canViewStatement(sessionGrant);
 
+  const enabledOnline = Boolean(workspace) && Boolean(customerId) && online;
+
   const customerQuery = useQuery({
     queryKey: ["customers", "detail", workspace?.organizationId, customerId],
-    enabled: Boolean(workspace) && Boolean(customerId),
+    enabled: enabledOnline,
     queryFn: ({ signal }) => getCustomer(workspace!, customerId!, signal),
   });
 
   const summaryQuery = useQuery({
     queryKey: ["customers", "credit-summary", workspace?.organizationId, customerId],
-    enabled: Boolean(workspace) && Boolean(customerId),
+    enabled: enabledOnline,
     queryFn: ({ signal }) => getCustomerCreditSummary(workspace!, customerId!, signal),
   });
 
   const creditsQuery = useQuery({
     queryKey: ["customers", "credits", workspace?.organizationId, customerId],
-    enabled: Boolean(workspace) && Boolean(customerId),
+    enabled: enabledOnline,
     queryFn: ({ signal }) =>
       listCustomerCreditEntries(workspace!, customerId!, { pageSize: 20 }, signal),
   });
 
   const repaymentsQuery = useQuery({
     queryKey: ["customers", "repayments", workspace?.organizationId, customerId],
-    enabled: Boolean(workspace) && Boolean(customerId),
+    enabled: enabledOnline,
     queryFn: ({ signal }) =>
       listCustomerRepayments(workspace!, customerId!, { pageSize: 20 }, signal),
   });
+
+  useEffect(() => {
+    if (!offlineContext || !online) {
+      return;
+    }
+    if (customerQuery.data) {
+      void cacheCustomer(offlineContext.db, offlineContext.scopeBinding, customerQuery.data).catch(
+        () => {},
+      );
+    }
+    if (summaryQuery.data) {
+      void cacheCustomerCreditSummary(
+        offlineContext.db,
+        offlineContext.scopeBinding,
+        summaryQuery.data,
+      ).catch(() => {});
+    }
+  }, [customerQuery.data, offlineContext, online, summaryQuery.data]);
+
+  useEffect(() => {
+    if (!offlineContext || online || !customerId) {
+      return;
+    }
+    let cancelled = false;
+    void Promise.all([
+      getCachedCustomer(offlineContext.db, offlineContext.scopeBinding, customerId),
+      getCachedCustomerCreditSummary(offlineContext.db, offlineContext.scopeBinding, customerId),
+    ]).then(([cachedRow, summary]) => {
+      if (cancelled) {
+        return;
+      }
+      setCachedCustomer(cachedRow);
+      setCachedOwed(summary?.outstandingAmount ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [customerId, offlineContext, online]);
 
   if (!workspace || !customerId) {
     return <LoadingState label={t("session.loading")} />;
@@ -76,27 +130,39 @@ export function CustomerDetailPage() {
     return <LoadingState label={t("loading.label")} />;
   }
 
-  if (customerQuery.isError || !customerQuery.data) {
+  const customer = customerQuery.data ?? cachedCustomer;
+
+  if (!customer) {
     return (
       <ErrorState
         title={t("error.title")}
-        detail={(customerQuery.error as Error | undefined)?.message ?? t("customers.notFound")}
+        detail={
+          online
+            ? ((customerQuery.error as Error | undefined)?.message ?? t("customers.notFound"))
+            : t("offline.customerNotCached")
+        }
       />
     );
   }
 
-  const customer = customerQuery.data;
-  const amountOwed = summaryQuery.data?.outstandingAmount ?? 0;
+  const usingCachedCustomer = !customerQuery.data;
+  const amountOwed = summaryQuery.data?.outstandingAmount ?? cachedOwed ?? 0;
   const linked = hasExItsPersonalLink(customer);
+  const isActive = customer.status.toLowerCase() === "active";
 
   async function toggleStatus() {
     if (!allowEdit || acting || !workspace || !customerId) {
       return;
     }
+    if (!online) {
+      // Activating or deactivating a customer is an authorization act the server owns.
+      setActionError(t(onlineRequiredDetailKey(ONLINE_REQUIRED_CODES.CustomerStatus)));
+      return;
+    }
     setActing(true);
     setActionError(null);
     try {
-      if (customer.status.toLowerCase() === "active") {
+      if (isActive) {
         await deactivateCustomer(workspace, customerId);
       } else {
         await reactivateCustomer(workspace, customerId);
@@ -113,9 +179,7 @@ export function CustomerDetailPage() {
     <div className="flex min-w-0 flex-col gap-4" data-testid="customer-detail-page">
       <PageHeader title={customer.displayName} description={t("customers.detailLede")} />
       <div className="flex flex-wrap items-center gap-2">
-        <StatusChip tone={customer.status.toLowerCase() === "active" ? "success" : "warning"}>
-          {customer.status}
-        </StatusChip>
+        <StatusChip tone={isActive ? "success" : "warning"}>{customer.status}</StatusChip>
         {linked ? (
           <span data-testid="customer-link-status">
             <StatusChip tone="info">{t("customers.linkedPersonal")}</StatusChip>
@@ -129,6 +193,14 @@ export function CustomerDetailPage() {
           </span>
         )}
       </div>
+
+      {usingCachedCustomer ? (
+        <Card data-testid="customer-detail-cached-notice">
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("offline.cachedBalanceNotice")}
+          </p>
+        </Card>
+      ) : null}
 
       {actionError ? (
         <Card>
@@ -175,7 +247,7 @@ export function CustomerDetailPage() {
             <Link to={`/customers/${customerId}/repay`}>{t("customers.recordPayment")}</Link>
           </Button>
         ) : null}
-        {allowStatement ? (
+        {allowStatement && online ? (
           <Button asChild variant="ghost" className="min-h-11" data-testid="customer-statement">
             <Link to={`/customers/${customerId}/statement`}>{t("customers.viewStatement")}</Link>
           </Button>
@@ -189,9 +261,7 @@ export function CustomerDetailPage() {
             disabled={acting}
             onClick={() => void toggleStatus()}
           >
-            {customer.status.toLowerCase() === "active"
-              ? t("customers.deactivate")
-              : t("customers.reactivate")}
+            {isActive ? t("customers.deactivate") : t("customers.reactivate")}
           </Button>
         ) : null}
         <Button asChild variant="ghost" className="min-h-11">
