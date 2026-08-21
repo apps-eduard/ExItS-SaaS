@@ -24,6 +24,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { RelationshipInviteReminderPanel } from "@/features/personal/social/PersonalSocialPages";
 import { useI18n } from "@/i18n/I18nProvider";
 
 function contactLabel(
@@ -588,6 +589,13 @@ export function PersonalRelationshipDetailPage() {
           {t("personal.utang.saveEntry")}
         </Button>
       </form>
+
+      <RelationshipInviteReminderPanel
+        relationshipId={relationshipId}
+        inviteeContactId={
+          detail.perspective === "Borrowed" ? detail.creditorContactId : detail.debtorContactId
+        }
+      />
 
       <section aria-label={t("personal.utang.activity")}>
         <h2 className="m-0 mb-2 text-[length:var(--exits-text-sm)] font-semibold">

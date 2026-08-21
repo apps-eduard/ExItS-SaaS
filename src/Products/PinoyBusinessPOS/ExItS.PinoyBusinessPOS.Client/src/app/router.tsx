@@ -13,6 +13,12 @@ import {
 } from "@/features/personal/PersonalHubPages";
 import { PersonalShell } from "@/features/personal/PersonalShell";
 import {
+  PersonalInvitationsPage,
+  PersonalMyQrPage,
+  PersonalNotificationsPage,
+  PersonalUtangInviteAcceptPage,
+} from "@/features/personal/social/PersonalSocialPages";
+import {
   PersonalContactsPage,
   PersonalLentPage,
   PersonalOwePage,
@@ -154,6 +160,14 @@ export const appRoutes = [
         ),
       },
       {
+        path: "/personal/utang/invitations/accept",
+        element: (
+          <AllowInvitationAccept>
+            <PersonalUtangInviteAcceptPage />
+          </AllowInvitationAccept>
+        ),
+      },
+      {
         path: "/",
         element: (
           <RequireSession>
@@ -189,6 +203,9 @@ export const appRoutes = [
                 path: "utang/relationships/:relationshipId",
                 element: <PersonalRelationshipDetailPage />,
               },
+              { path: "utang/invitations", element: <PersonalInvitationsPage /> },
+              { path: "notifications", element: <PersonalNotificationsPage /> },
+              { path: "my-qr", element: <PersonalMyQrPage /> },
               { path: "todo", element: <PersonalTodoHubPage /> },
               { path: "more", element: <PersonalMorePage /> },
               {

@@ -56,6 +56,30 @@ export function PersonalMorePage() {
           asChild
           variant="ghost"
           className="min-h-11 justify-start"
+          data-testid="more-open-invitations"
+        >
+          <Link to="/personal/utang/invitations">{t("personal.social.invitationsTitle")}</Link>
+        </Button>
+        <Button
+          asChild
+          variant="ghost"
+          className="min-h-11 justify-start"
+          data-testid="more-open-notifications"
+        >
+          <Link to="/personal/notifications">{t("personal.social.notificationsTitle")}</Link>
+        </Button>
+        <Button
+          asChild
+          variant="ghost"
+          className="min-h-11 justify-start"
+          data-testid="more-open-qr"
+        >
+          <Link to="/personal/my-qr">{t("personal.social.qrTitle")}</Link>
+        </Button>
+        <Button
+          asChild
+          variant="ghost"
+          className="min-h-11 justify-start"
           data-testid="more-open-orders"
         >
           <Link to="/personal/orders">{t("personal.nav.orders")}</Link>
