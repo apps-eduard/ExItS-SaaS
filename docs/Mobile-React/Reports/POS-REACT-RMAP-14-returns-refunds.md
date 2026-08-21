@@ -12,6 +12,7 @@
 | `REACT_UI_STARTED` / `RMAP14_REACT_UI_NOT_STARTED` | **YES** / NO |
 | `RMAP14_RETURN_CONCURRENCY_GAP` | **CLOSED** |
 | `RMAP14_RETURN_VOID_RACE_GAP` | **CLOSED** |
+| `RMAP14_CLIENT_RETURN_ID_GAP` | **CLOSED** (Final Review Repair 01 — secure mutation id; no constant GUID fallback) |
 | `RMAP_14_FINAL` | **APPROVED** |
 | `RMAP_15_AUTHORIZED` | **NO** |
 | `RMAP_B01_AUTHORIZED` | NO |
@@ -42,6 +43,7 @@
 - UX: search by transaction number, quantity steppers / ByWeight decimals, Return all, Put back in stock / Do not return to stock, required reason, confirmation, success wording for Cash / GCash / Utang
 - Stale/409: refresh refundable, clear over-max qty, user re-confirms (no silent clamp)
 - Cash no open shift: friendly block (not treated as stale concurrency)
+- Client ReturnId: `createSecureMutationId` / `resolveReturnMutationId` — `crypto.randomUUID` preferred, getRandomValues UUID v4 fallback, fail closed if secure randomness unavailable; pending id reused on retry; cleared on success/stale refresh
 - No lot selection; no Invoice labels; Cashier cannot ProcessReturn
 - i18n `returns.*` en + fil-PH
 

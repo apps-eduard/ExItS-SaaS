@@ -39,6 +39,7 @@
 | `RMAP14_EXPIRY_RETURN_CONTRACT_GAP` | **CLEARED** by Review Repair 01 |
 | `RMAP14_RETURN_CONCURRENCY_GAP` | **CLEARED** by Review Repair 02 |
 | `RMAP14_RETURN_VOID_RACE_GAP` | **CLEARED** by Review Repair 02 |
+| `RMAP14_CLIENT_RETURN_ID_GAP` | **CLEARED** by RMAP-14 Final Review Repair 01 |
 
 ## Active package state — RMAP-14
 
@@ -49,8 +50,10 @@
 | `RMAP14_REACT_UI_STARTED` | YES |
 | `RMAP14_RETURN_CONCURRENCY_GAP` | CLOSED |
 | `RMAP14_RETURN_VOID_RACE_GAP` | CLOSED |
+| `RMAP14_CLIENT_RETURN_ID_GAP` | **CLOSED** (Final Review Repair 01) |
 | `RMAP_14_FINAL` | **APPROVED** |
 | Package PASS | **YES** |
+| `MASTER_RUN_02_FINAL` | **APPROVED** (through RMAP-14 closeout) |
 
 ## Not started / not authorized
 
