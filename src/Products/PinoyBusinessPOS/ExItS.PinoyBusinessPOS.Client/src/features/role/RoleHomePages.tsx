@@ -7,6 +7,7 @@ import {
   canViewRegisters,
   canViewReturns,
   canViewShifts,
+  canViewSuppliers,
   canUseAdminExperience,
   canUseOperationsExperience,
   hasOrganizationManagementAuthority,
@@ -54,6 +55,7 @@ export function RoleHomeShell({
   const canOpenShift = canManageShifts(sessionGrant);
   const canRegisters = canViewRegisters(sessionGrant);
   const canCustomers = canViewCustomers(sessionGrant);
+  const canSuppliers = canViewSuppliers(sessionGrant);
   const canReturns = canViewReturns(sessionGrant);
   const canDevices = hasOrganizationManagementAuthority(sessionGrant);
   const securityRole = resolveEffectivePosRoleCode(sessionGrant);
@@ -173,6 +175,11 @@ export function RoleHomeShell({
       {canCustomers ? (
         <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-customers">
           <Link to="/customers">{t("customers.open")}</Link>
+        </Button>
+      ) : null}
+      {canSuppliers ? (
+        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-suppliers">
+          <Link to="/suppliers">{t("suppliers.open")}</Link>
         </Button>
       ) : null}
       {canReturns ? (

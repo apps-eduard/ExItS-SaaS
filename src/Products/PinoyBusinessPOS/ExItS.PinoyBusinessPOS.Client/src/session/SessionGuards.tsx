@@ -11,6 +11,7 @@ import {
   canManageCatalog,
   canManageInventory,
   canManageShifts,
+  canManageSuppliers,
   canProcessReturn,
   canRecordRepayment,
   canUseAdminExperience,
@@ -20,6 +21,7 @@ import {
   canViewReturns,
   canViewShifts,
   canViewStatement,
+  canViewSuppliers,
 } from "@/access/pos-capabilities";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
@@ -362,6 +364,26 @@ export function RequireViewStatement({ children }: { children: ReactNode }) {
 
   if (!canViewStatement(sessionGrant)) {
     return <ExperienceAccessDeniedPage testId="customers-statement-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireViewSuppliers({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canViewSuppliers(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="suppliers-view-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireManageSuppliers({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canManageSuppliers(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="suppliers-manage-denied" />;
   }
 
   return children;

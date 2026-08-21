@@ -19,7 +19,9 @@ import {
   canUseAdminExperience,
   canUseOperationsExperience,
   canUseSellingExperience,
+  canManageSuppliers,
   canViewCustomers,
+  canViewSuppliers,
   canViewRegisters,
   canViewReturns,
   canViewShifts,
@@ -304,5 +306,46 @@ describe("pos-capabilities", () => {
     expect(canProcessReturn(manager)).toBe(true);
     expect(canProcessReturn(cashier)).toBe(false);
     expect(canProcessReturn(reporting)).toBe(false);
+  });
+
+  it("ViewSuppliers includes InventoryStaff/ReportingUser; ManageSuppliers is Owner/Manager only", () => {
+    const owner = grant({
+      mappedPosRoleCode: "Owner",
+      productLocalRoleCode: "Owner",
+      membershipRole: "OrganizationOwner",
+      organizationManagementAuthority: true,
+    });
+    const manager = grant({
+      mappedPosRoleCode: "StoreManager",
+      productLocalRoleCode: "Manager",
+      membershipRole: "OrganizationMember",
+    });
+    const cashier = grant({
+      mappedPosRoleCode: "Cashier",
+      productLocalRoleCode: "Cashier",
+      membershipRole: "OrganizationMember",
+    });
+    const inventory = grant({
+      mappedPosRoleCode: "InventoryStaff",
+      productLocalRoleCode: "InventoryStaff",
+      membershipRole: "OrganizationMember",
+    });
+    const reporting = grant({
+      mappedPosRoleCode: "ReportingUser",
+      productLocalRoleCode: "ReportingUser",
+      membershipRole: "OrganizationMember",
+    });
+
+    expect(canViewSuppliers(owner)).toBe(true);
+    expect(canViewSuppliers(manager)).toBe(true);
+    expect(canViewSuppliers(inventory)).toBe(true);
+    expect(canViewSuppliers(reporting)).toBe(true);
+    expect(canViewSuppliers(cashier)).toBe(false);
+
+    expect(canManageSuppliers(owner)).toBe(true);
+    expect(canManageSuppliers(manager)).toBe(true);
+    expect(canManageSuppliers(inventory)).toBe(false);
+    expect(canManageSuppliers(reporting)).toBe(false);
+    expect(canManageSuppliers(cashier)).toBe(false);
   });
 });

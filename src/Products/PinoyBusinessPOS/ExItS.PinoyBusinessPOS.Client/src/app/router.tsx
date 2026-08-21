@@ -40,6 +40,9 @@ import { SellFloorPage } from "@/features/sell/SellFloorPage";
 import { ShiftDetailPage } from "@/features/shifts/ShiftDetailPage";
 import { ShiftOpenPage } from "@/features/shifts/ShiftOpenPage";
 import { ShiftsHubPage } from "@/features/shifts/ShiftsHubPage";
+import { SupplierDetailPage } from "@/features/suppliers/SupplierDetailPage";
+import { SupplierCreatePage, SupplierEditPage } from "@/features/suppliers/SupplierFormPage";
+import { SuppliersListPage } from "@/features/suppliers/SuppliersListPage";
 import { OrgStaffInvitePage } from "@/features/staff/OrgStaffInvitePage";
 import { StaffInvitationAcceptPage } from "@/features/staff/StaffInvitationAcceptPage";
 import { NoAccessibleBranchPage } from "@/features/workspace/NoAccessibleBranchPage";
@@ -56,6 +59,7 @@ import {
   RequireInviteStaff,
   RequireManageCatalog,
   RequireManageShifts,
+  RequireManageSuppliers,
   RequireManagerRoleHome,
   RequireOrganizationSession,
   RequireOwnerRoleHome,
@@ -69,6 +73,7 @@ import {
   RequireViewReturns,
   RequireViewShifts,
   RequireViewStatement,
+  RequireViewSuppliers,
   RequireWorkspaceBound,
   RequireOrganizationBound,
   WorkspaceBootGate,
@@ -336,6 +341,38 @@ export const appRoutes = [
                   <RequireViewStatement>
                     <CustomerStatementPage />
                   </RequireViewStatement>
+                ),
+              },
+            ],
+          },
+          {
+            path: "suppliers",
+            element: (
+              <RequireOrganizationSession>
+                <RequireWorkspaceBound>
+                  <RequireViewSuppliers>
+                    <Outlet />
+                  </RequireViewSuppliers>
+                </RequireWorkspaceBound>
+              </RequireOrganizationSession>
+            ),
+            children: [
+              { index: true, element: <SuppliersListPage /> },
+              {
+                path: "new",
+                element: (
+                  <RequireManageSuppliers>
+                    <SupplierCreatePage />
+                  </RequireManageSuppliers>
+                ),
+              },
+              { path: ":supplierId", element: <SupplierDetailPage /> },
+              {
+                path: ":supplierId/edit",
+                element: (
+                  <RequireManageSuppliers>
+                    <SupplierEditPage />
+                  </RequireManageSuppliers>
                 ),
               },
             ],
