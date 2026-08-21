@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import {
+  canAccessReportsHub,
   canCreateCustomer,
   canCreateSale,
   canEditCustomer,
@@ -19,14 +20,17 @@ import {
   canViewCustomerOrders,
   canManageCustomerOrders,
   canViewCustomers,
+  canViewDashboard,
   canViewInventory,
   canViewPurchasing,
   canViewRegisters,
+  canViewReports,
   canViewReturns,
   canViewShifts,
   canViewStatement,
   canViewSuppliers,
 } from "@/access/pos-capabilities";
+import { canAccessClassicReport } from "@/features/reports/report-access";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -465,5 +469,67 @@ export function RequireManageCustomerOrders({ children }: { children: ReactNode 
     return <ExperienceAccessDeniedPage testId="customer-orders-manage-denied" />;
   }
 
+  return children;
+}
+
+export function RequireViewDashboard({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canViewDashboard(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="dashboard-view-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireAccessReportsHub({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canAccessReportsHub(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="reports-hub-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireViewReports({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canViewReports(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="reports-view-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireClassicSalesReport({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+  if (!canAccessClassicReport(sessionGrant, "sales")) {
+    return <ExperienceAccessDeniedPage testId="classic-sales-denied" />;
+  }
+  return children;
+}
+
+export function RequireClassicUtangReport({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+  if (!canAccessClassicReport(sessionGrant, "utang")) {
+    return <ExperienceAccessDeniedPage testId="classic-utang-denied" />;
+  }
+  return children;
+}
+
+export function RequireClassicInventoryReport({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+  if (!canAccessClassicReport(sessionGrant, "inventory")) {
+    return <ExperienceAccessDeniedPage testId="classic-inventory-denied" />;
+  }
+  return children;
+}
+
+export function RequireClassicExpensesReport({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+  if (!canAccessClassicReport(sessionGrant, "expenses")) {
+    return <ExperienceAccessDeniedPage testId="classic-expenses-denied" />;
+  }
   return children;
 }

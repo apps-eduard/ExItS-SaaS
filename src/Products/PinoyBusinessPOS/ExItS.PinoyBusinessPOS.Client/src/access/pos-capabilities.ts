@@ -329,6 +329,52 @@ export function canViewCustomerOrders(grant: PosSessionGrantFacts | null | undef
 }
 
 /**
+ * ViewDashboard UI gate — Owner/Admin/StoreManager/ReportingUser (+ org management authority).
+ * Cashier DENY. Server remains authoritative via StoreDashboardView.
+ */
+export function canViewDashboard(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (hasOrganizationManagementAuthority(grant)) {
+    return true;
+  }
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  if (isPosOwnerRole(grant) || isPosOperationsManager(grant)) {
+    return true;
+  }
+  const role = resolveEffectivePosRoleCode(grant)?.toLowerCase();
+  return role === "reportinguser";
+}
+
+/**
+ * ViewReports UI gate — same default matrix as ViewDashboard.
+ * Cashier DENY. Server remains authoritative via StoreReportsView.
+ */
+export function canViewReports(grant: PosSessionGrantFacts | null | undefined): boolean {
+  return canViewDashboard(grant);
+}
+
+/**
+ * ViewExpenses UI gate — Owner/Admin/StoreManager/ReportingUser (+ org management).
+ * Cashier DENY.
+ */
+export function canViewExpenses(grant: PosSessionGrantFacts | null | undefined): boolean {
+  return canViewReports(grant);
+}
+
+/** Reports hub entry when any report-family capability is present (MAUI ReportsHub parity). */
+export function canAccessReportsHub(grant: PosSessionGrantFacts | null | undefined): boolean {
+  return (
+    canViewReports(grant) ||
+    canViewShifts(grant) ||
+    canViewInventory(grant) ||
+    canViewPurchasing(grant) ||
+    canViewExpenses(grant) ||
+    canViewDashboard(grant)
+  );
+}
+
+/**
  * ManageCustomerOrders UI gate — Owner/Admin/StoreManager only. Cashier DENY.
  * Server remains authoritative via StoreCustomerOrdering + StoreDeliveryOrders.
  */

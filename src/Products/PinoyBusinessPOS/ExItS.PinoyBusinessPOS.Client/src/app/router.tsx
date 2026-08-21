@@ -12,6 +12,10 @@ import { MyOrdersPage } from "@/features/customer-ordering/MyOrdersPage";
 import { MyOrderDetailPage } from "@/features/customer-ordering/MyOrderDetailPage";
 import { SellerOrdersPage } from "@/features/customer-ordering/SellerOrdersPage";
 import { SellerOrderDetailPage } from "@/features/customer-ordering/SellerOrderDetailPage";
+import { ClassicReportPage } from "@/features/reports/ClassicReportPage";
+import { ManagementDashboardPage } from "@/features/reports/ManagementDashboardPage";
+import { OperationalReportPage } from "@/features/reports/OperationalReportPage";
+import { ReportsHubPage } from "@/features/reports/ReportsHubPage";
 import { PreferencesPage } from "@/features/preferences/PreferencesPage";
 import { CashHandlingSettingsPage } from "@/features/settings/CashHandlingSettingsPage";
 import { BranchFulfillmentEditPage } from "@/features/branches/BranchFulfillmentEditPage";
@@ -95,7 +99,13 @@ import {
   RequireRecordRepayment,
   RequireSession,
   RequireViewCustomers,
+  RequireAccessReportsHub,
+  RequireClassicExpensesReport,
+  RequireClassicInventoryReport,
+  RequireClassicSalesReport,
+  RequireClassicUtangReport,
   RequireViewCustomerOrders,
+  RequireViewDashboard,
   RequireViewInventory,
   RequireViewPurchasing,
   RequireViewRegisters,
@@ -591,6 +601,66 @@ export const appRoutes = [
             children: [
               { index: true, element: <SellerOrdersPage /> },
               { path: ":orderId", element: <SellerOrderDetailPage /> },
+            ],
+          },
+          {
+            path: "dashboard",
+            element: (
+              <RequireOrganizationSession>
+                <RequireWorkspaceBound>
+                  <RequireViewDashboard>
+                    <ManagementDashboardPage />
+                  </RequireViewDashboard>
+                </RequireWorkspaceBound>
+              </RequireOrganizationSession>
+            ),
+          },
+          {
+            path: "reports",
+            element: (
+              <RequireOrganizationSession>
+                <RequireWorkspaceBound>
+                  <RequireAccessReportsHub>
+                    <Outlet />
+                  </RequireAccessReportsHub>
+                </RequireWorkspaceBound>
+              </RequireOrganizationSession>
+            ),
+            children: [
+              { index: true, element: <ReportsHubPage /> },
+              { path: "operational/:kind", element: <OperationalReportPage /> },
+              {
+                path: "sales",
+                element: (
+                  <RequireClassicSalesReport>
+                    <ClassicReportPage />
+                  </RequireClassicSalesReport>
+                ),
+              },
+              {
+                path: "utang",
+                element: (
+                  <RequireClassicUtangReport>
+                    <ClassicReportPage />
+                  </RequireClassicUtangReport>
+                ),
+              },
+              {
+                path: "inventory",
+                element: (
+                  <RequireClassicInventoryReport>
+                    <ClassicReportPage />
+                  </RequireClassicInventoryReport>
+                ),
+              },
+              {
+                path: "expenses",
+                element: (
+                  <RequireClassicExpensesReport>
+                    <ClassicReportPage />
+                  </RequireClassicExpensesReport>
+                ),
+              },
             ],
           },
           { path: "*", element: <NotFoundPage /> },

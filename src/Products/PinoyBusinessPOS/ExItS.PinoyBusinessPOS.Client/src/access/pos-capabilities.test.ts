@@ -24,7 +24,9 @@ import {
   canViewCustomers,
   canViewCustomerOrders,
   canManageCustomerOrders,
+  canViewDashboard,
   canViewPurchasing,
+  canViewReports,
   canViewSuppliers,
   canViewRegisters,
   canViewReturns,
@@ -377,5 +379,11 @@ describe("pos-capabilities", () => {
     expect(canManageCustomerOrders(manager)).toBe(true);
     expect(canManageCustomerOrders(reporting)).toBe(false);
     expect(canManageCustomerOrders(cashier)).toBe(false);
+
+    expect(canViewDashboard(owner)).toBe(true);
+    expect(canViewReports(owner)).toBe(true);
+    expect(canViewDashboard(reporting)).toBe(true);
+    expect(canViewDashboard(cashier)).toBe(false);
+    expect(canViewReports(cashier)).toBe(false);
   });
 });

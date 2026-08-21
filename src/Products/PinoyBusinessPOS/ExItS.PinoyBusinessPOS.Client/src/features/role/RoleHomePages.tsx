@@ -1,9 +1,11 @@
 import {
+  canAccessReportsHub,
   canCreateSale,
   canManageCatalog,
   canManageShifts,
   canViewCustomers,
   canViewCustomerOrders,
+  canViewDashboard,
   canViewInventory,
   canViewPurchasing,
   canViewRegisters,
@@ -61,6 +63,8 @@ export function RoleHomeShell({
   const canSuppliers = canViewSuppliers(sessionGrant);
   const canPurchasing = canViewPurchasing(sessionGrant) || canViewInventory(sessionGrant);
   const canReturns = canViewReturns(sessionGrant);
+  const canDashboard = canViewDashboard(sessionGrant);
+  const canReports = canAccessReportsHub(sessionGrant);
   const canDevices = hasOrganizationManagementAuthority(sessionGrant);
   const securityRole = resolveEffectivePosRoleCode(sessionGrant);
 
@@ -214,6 +218,16 @@ export function RoleHomeShell({
       {canReturns ? (
         <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-returns">
           <Link to="/returns">{t("returns.open")}</Link>
+        </Button>
+      ) : null}
+      {canDashboard ? (
+        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-dashboard">
+          <Link to="/dashboard">{t("dashboard.open")}</Link>
+        </Button>
+      ) : null}
+      {canReports ? (
+        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-reports">
+          <Link to="/reports">{t("reports.open")}</Link>
         </Button>
       ) : null}
     </div>
