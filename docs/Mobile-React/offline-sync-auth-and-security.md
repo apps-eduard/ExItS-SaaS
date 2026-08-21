@@ -159,6 +159,8 @@ PWA static cache ≠ this layer (DOC-04).
 
 Offline cash line totals are **immutable snapshots**; server validates arithmetic and does not replace those prices from live catalog on that path (`SaleEndpoints` comment). Online carts still price from live catalog.
 
+The React client does **not** use that snapshot path as its pricing authority. A browser is a more editable client than a signed mobile build, so a React offline cash line carries a **server-signed price lease** issued before the network dropped, and the server bills the leased price after verifying the signature, scope, and window. See [Review Repair 01](Reports/POS-REACT-RMAP-21-REVIEW-REPAIR-01-offline-cash-finality.md).
+
 ---
 
 ## 4. Connectivity and transaction visibility

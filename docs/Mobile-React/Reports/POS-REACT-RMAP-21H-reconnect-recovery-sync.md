@@ -17,13 +17,14 @@
 | Retry sync from Connection & Sync | `retrySync` → `drainOutbox` |
 | PWA API caching | NetworkOnly (vite workbox) — unchanged |
 | Diagnostics dump offline plaintext | NO |
+| Server total ≠ collected total → Conflict (never Succeeded) | [Review Repair 01](POS-REACT-RMAP-21-REVIEW-REPAIR-01-offline-cash-finality.md) |
 
 ## Explicit non-claims
 
 - Cold-start unlock of protected LocalStore: `DEFERRED_SECURITY_GAP`
 - Native SecureStorage / Keystore / Keychain parity: NO
 - Background Sync API: not used
-- Full Playwright offline cash E2E against live APIs: deferred to device verification; processor covered by unit tests
+- Full Playwright offline cash E2E against live APIs: deferred to device verification; processor covered by unit tests, and by a Playwright `setOffline` run against mocked APIs added in [Review Repair 01](POS-REACT-RMAP-21-REVIEW-REPAIR-01-offline-cash-finality.md)
 
 ## Tests
 

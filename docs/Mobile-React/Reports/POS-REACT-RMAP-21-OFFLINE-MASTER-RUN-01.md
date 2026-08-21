@@ -10,6 +10,7 @@
 | RMAP_21_AUTHORIZED | YES |
 | RMAP_22_PERSONAL_MASTER_RUN_01 | APPROVED |
 | RMAP_22_REVIEW_REPAIR_01 | APPROVED |
+| RMAP_21_REVIEW_REPAIR_01 | APPROVED (offline Cash price finality) |
 | POS_OPERATIONS_UX_REPAIR_01 | APPROVED |
 | OWNER_QUICK_FIX_POLISH | ACCEPTED_BASELINE |
 | RMAP_23_AUTHORIZED | NO |
@@ -43,6 +44,8 @@
 | 21G | `1400bf08` (+ docs `bf8d0de7`) | feat(pos-react): add personal todo offline support |
 | 21H | `30312ec4` | feat(pos-react): reconnect recovery and offline sync processor |
 | Master report | `5ef9109a` | docs(pos-react): record RMAP-21 offline master run 01 |
+| Review Repair 01 (backend) | `b3f36236` | feat(pos): add offline price authority for cash finality |
+| Review Repair 01 (client) | `03665e5e` | feat(pos-react): price offline cash sales from server price leases |
 
 ## Delivered capability
 
@@ -55,6 +58,7 @@
 7. **21F** — Personal Utang LocalStore + contact/relationship/entry queue (no silent linking)  
 8. **21G** — Personal To-do private cache + create/update/complete/reopen/cancel queue  
 9. **21H** — Outbox processor, reconnect drain, abandoned Syncing recovery  
+10. **Review Repair 01** — Server-signed offline price lease: an offline Cash line is billed the price the server committed to before the network dropped, not the price the catalog happens to hold at sync. Includes Playwright `setOffline` coverage for Organization Cash and Personal queueing, and a fix for React Query silently pausing every Personal offline write.  
 
 ## Explicit exclusions
 
@@ -83,6 +87,9 @@
 | Staff may open Personal LocalStore | NO |
 | DEVICE → SHIFT → SELL preserved | YES |
 | OFFLINE_SELL_CASH | YES |
+| OFFLINE_CASH_PRICE_AUTHORITY (server-signed lease, verified at checkout) | YES |
+| Offline Cash sale re-priced from live catalog at sync | NO |
+| Client may mint, extend, or edit a price lease | NO |
 | OFFLINE_GCASH | NO |
 | OFFLINE_BUSINESS_UTANG_CHECKOUT | NO |
 | OFFLINE_DISCOUNT | NO |
@@ -116,14 +123,16 @@
 - [21F](./POS-REACT-RMAP-21F-personal-utang-offline.md)  
 - [21G](./POS-REACT-RMAP-21G-personal-todo-offline.md)  
 - [21H](./POS-REACT-RMAP-21H-reconnect-recovery-sync.md)  
+- [Review Repair 01](./POS-REACT-RMAP-21-REVIEW-REPAIR-01-offline-cash-finality.md)  
 - Matrix: [react-pwa-offline-capability-matrix.md](../Authoritative/Offline/react-pwa-offline-capability-matrix.md)
 
 ## Risks / open decisions
 
 1. Cold-start unlock remains deferred — warm browser session required for protected offline data.  
 2. Personal create ops without server idempotency park on ambiguous transport (intentional).  
-3. Full device Playwright offline cash + reconnect E2E against live APIs not claimed as Device Verified.  
-4. Cached catalog stock can drift until reconnect.  
+3. Full device Playwright offline cash + reconnect E2E against live APIs not claimed as Device Verified. Review Repair 01 adds `setOffline` coverage against mocked APIs.  
+4. Cached catalog stock can drift until reconnect. A price lease commits a price, not stock, so two offline devices can still sell the same last unit.  
+5. A product never browsed online holds no price lease and cannot be sold offline.  
 
 ## Exact next work package
 

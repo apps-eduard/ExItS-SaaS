@@ -74,7 +74,7 @@ Full suite: `npm run test` — 83 files, 381 tests passed. `npm run typecheck` c
 
 - Offline search matches the cached catalog by name, exact SKU, and exact barcode only; there is no local search index or fuzzy match.
 - Offline stock hints come from the cached catalog snapshot; there is no offline reservation, so two devices can oversell the same stock until sync resolves it.
-- Sale line prices offline come from the cached catalog price; the server re-prices on sync and a queued sale can therefore fail or change total.
+- Sale line prices offline come from the cached catalog price; the server re-prices on sync and a queued sale can therefore fail or change total. **Repaired** — see [Review Repair 01](POS-REACT-RMAP-21-REVIEW-REPAIR-01-offline-cash-finality.md): an offline Cash line now carries a server-signed price lease and the server bills the leased price, so a shelf price edited while the device was offline no longer rewrites a sale already paid in cash.
 - No conflict UX yet for a queued sale rejected on sync (closed shift, revoked device, withdrawn product) — needs 21H.
 - Personal-domain offline stores (Utang, todo) remain outbox-envelope only.
 

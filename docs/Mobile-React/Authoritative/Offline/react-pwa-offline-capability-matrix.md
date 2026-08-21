@@ -33,7 +33,9 @@
 | Product search (barcode/SKU/name) | OfflineCapable | |
 | SellReadinessGate device snapshot | OfflineCapable | No offline device register |
 | SellReadinessGate open-shift snapshot | OfflineCapable | No offline open/close shift |
-| Cash checkout | Queueable | Requires durable saleId + server replay/idempotency |
+| Cash checkout | Queueable | Requires durable saleId + server replay/idempotency, and a live server-signed price lease for every line (Review Repair 01) |
+| Offline Cash line pricing | Server-authoritative | Billed from the signed lease, not the catalog at sync and not any price the client asserts |
+| Cash checkout with no lease for a line | OnlineRequired | "Connect to refresh prices before selling." |
 | ManualGCash / GCash | OnlineRequired | |
 | Business Utang checkout | OnlineRequired | Not assumed from customer-credit queue |
 | Commercial Discount | OnlineRequired | Server fail-closed offline |
@@ -82,3 +84,4 @@
 - No password / refresh / antiforgery persistence for offline.
 - Diagnostics: origin+pathname only; no query/fragment; no payload dumps (21A.0).
 - Personal vs Organization LocalStore must never merge for same human Owner.
+- Offline Cash prices are server-signed leases bound to organization, branch, product, and sell unit, with a bounded window (default 8 hours). The client stores and replays the server's bytes; it can never mint, extend, or edit a lease, and an unreadable lease cache blocks the sale.
