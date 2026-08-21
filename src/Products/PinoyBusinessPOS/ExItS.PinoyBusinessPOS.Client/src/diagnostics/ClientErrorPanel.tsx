@@ -1,9 +1,10 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   formatClientErrorReport,
   type ClientErrorReportInput,
 } from "@/diagnostics/client-error-report";
+import { safeDiagnosticError } from "@/diagnostics/diagnostic-redaction";
 import { cn } from "@/lib/cn";
 
 export type ClientErrorPanelProps = {
@@ -15,6 +16,7 @@ export type ClientErrorPanelProps = {
 
 export function ClientErrorPanel({ input, onReload, onDismiss, className }: ClientErrorPanelProps) {
   const report = formatClientErrorReport(input);
+  const summary = useMemo(() => safeDiagnosticError(input.error).message, [input.error]);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
 
   const copyReport = useCallback(async () => {
@@ -58,7 +60,7 @@ export function ClientErrorPanel({ input, onReload, onDismiss, className }: Clie
       </div>
 
       <p className="m-0 rounded-[var(--exits-radius-md)] bg-[var(--exits-surface-muted)] px-3 py-2 text-[length:var(--exits-text-sm)] font-medium wrap-break-word">
-        {input.error instanceof Error ? input.error.message : String(input.error)}
+        {summary}
       </p>
 
       <label className="flex min-w-0 flex-col gap-1.5">

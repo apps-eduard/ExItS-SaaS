@@ -1,23 +1,36 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { ClientErrorPanel } from "@/diagnostics/ClientErrorPanel";
 import type { ClientErrorReportInput } from "@/diagnostics/client-error-report";
+import { safeDiagnosticLocation } from "@/diagnostics/diagnostic-redaction";
 
 type Props = { children: ReactNode };
 type State = {
   report: ClientErrorReportInput | null;
 };
 
+function captureLocation(): Pick<ClientErrorReportInput, "url" | "pathname"> {
+  if (typeof window === "undefined") {
+    return {};
+  }
+  const location = safeDiagnosticLocation(window.location.href, window.location.pathname);
+  return { url: location.url, pathname: location.pathname };
+}
+
 export class GlobalErrorBoundary extends Component<Props, State> {
   state: State = { report: null };
 
   static getDerivedStateFromError(error: Error): State {
+    const location =
+      typeof window !== "undefined"
+        ? safeDiagnosticLocation(window.location.href, window.location.pathname)
+        : { url: undefined, pathname: undefined };
     return {
       report: {
         source: "react-error-boundary",
         error,
         occurredAt: new Date().toISOString(),
-        url: typeof window !== "undefined" ? window.location.href : undefined,
-        pathname: typeof window !== "undefined" ? window.location.pathname : undefined,
+        url: location.url,
+        pathname: location.pathname,
         mode: import.meta.env.MODE,
       },
     };
@@ -33,8 +46,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
         }),
         error,
         componentStack: info.componentStack,
-        url: typeof window !== "undefined" ? window.location.href : undefined,
-        pathname: typeof window !== "undefined" ? window.location.pathname : undefined,
+        ...captureLocation(),
         mode: import.meta.env.MODE,
       },
     }));

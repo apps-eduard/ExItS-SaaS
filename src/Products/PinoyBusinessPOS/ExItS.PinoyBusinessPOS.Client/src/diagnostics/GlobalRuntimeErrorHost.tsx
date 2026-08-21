@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ClientErrorPanel } from "@/diagnostics/ClientErrorPanel";
 import type { ClientErrorReportInput } from "@/diagnostics/client-error-report";
+import { safeDiagnosticLocation } from "@/diagnostics/diagnostic-redaction";
 
 /**
  * Captures window.onerror and unhandledrejection, shows a copyable diagnostic overlay.
@@ -11,19 +12,19 @@ export function GlobalRuntimeErrorHost({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     function capture(source: ClientErrorReportInput["source"], error: unknown) {
+      const location = safeDiagnosticLocation(window.location.href, window.location.pathname);
       setReport({
         source,
         error,
         occurredAt: new Date().toISOString(),
-        url: window.location.href,
-        pathname: window.location.pathname,
+        url: location.url,
+        pathname: location.pathname,
         mode: import.meta.env.MODE,
       });
       console.error(`[ExItS] ${source}`, error);
     }
 
     function onWindowError(event: ErrorEvent) {
-      // Ignore ResizeObserver noise and script load noise without useful message.
       if (!event.error && !event.message) {
         return;
       }
