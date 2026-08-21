@@ -21,7 +21,7 @@ Organization
 | Operating hours impact | PROVEN_CURRENT | operating-hours + readiness |
 | Haversine serviceability | PROVEN_CURRENT | Platform + POS distance calculators |
 
-MAUI configuration: `BranchEdit.razor`. React configuration: **MISSING**.
+MAUI configuration: `BranchEdit.razor`. React configuration: **PARTIAL** — RMAP-18 branch fulfillment admin (address/coords/hours/pickup/delivery/readiness).
 
 ## CURRENT — Customer ordering (POS)
 
