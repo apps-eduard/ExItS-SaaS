@@ -2,8 +2,12 @@ import { expect, test } from "@playwright/test";
 import { assertNoHorizontalOverflow } from "./helpers";
 import { mockBoundCashierSession, signInAndBindCashier } from "./mock-bound-session";
 import {
+  MOCK_BOTTLE_PRODUCT_ID,
+  MOCK_BOTTLE_UNIT_ID,
   MOCK_COKE_PRODUCT_ID,
   MOCK_MEAT_PRODUCT_ID,
+  MOCK_OIL_LITER_UNIT_ID,
+  MOCK_OIL_PRODUCT_ID,
   MOCK_RICE_PRODUCT_ID,
   MOCK_RICE_SACK_UNIT_ID,
 } from "./mock-pos-catalog";
@@ -16,11 +20,18 @@ const VIEWPORTS = [
   { width: 1440, height: 900 },
 ] as const;
 
+async function mockNoOpenShift(page: import("@playwright/test").Page) {
+  await page.route("**/cashier-shifts/current**", async (route) => {
+    await route.fulfill({ status: 404, contentType: "application/json", body: "{}" });
+  });
+}
+
 test.describe("RMAP-09 sell floor and session cart parity", () => {
   test.use({ serviceWorkers: "block" });
 
   test.beforeEach(async ({ page }) => {
     await mockBoundCashierSession(page);
+    await mockNoOpenShift(page);
     await mockPosCatalogApi(page);
     await signInAndBindCashier(page);
     await expect(page.getByTestId("sell-floor")).toBeVisible();
@@ -40,6 +51,49 @@ test.describe("RMAP-09 sell floor and session cart parity", () => {
     ).toBeVisible();
     await expect(cart.getByTestId("sell-cart-subtotal")).toContainText("2,600");
     await expect(cart.getByTestId("sell-pay")).toBeDisabled();
+  });
+
+  test("single normal sell unit adds with unit identity and price 95 not 100", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.getByTestId(`sell-product-${MOCK_BOTTLE_PRODUCT_ID}`).click();
+    await expect(page.getByTestId("sell-unit-entry")).toHaveCount(0);
+    await expect(page.getByTestId("sell-weight-entry")).toHaveCount(0);
+    await expect(page.getByTestId("sell-custom-qty-entry")).toHaveCount(0);
+
+    const cart = page.getByTestId("sell-cart-landscape");
+    await expect(
+      cart.getByTestId(`sell-cart-line-${MOCK_BOTTLE_PRODUCT_ID}::${MOCK_BOTTLE_UNIT_ID}`),
+    ).toBeVisible();
+    await expect(cart.getByTestId("sell-cart-subtotal")).toContainText("95");
+    await expect(cart.getByTestId("sell-cart-subtotal")).not.toContainText("100");
+  });
+
+  test("custom liter quantity opens measured dialog without kg conversion", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.getByTestId(`sell-product-${MOCK_OIL_PRODUCT_ID}`).click();
+    await expect(page.getByTestId("sell-custom-qty-entry")).toBeVisible();
+    await expect(page.getByTestId("sell-weight-entry")).toHaveCount(0);
+    await page.getByTestId("sell-custom-qty-input").fill("1.5");
+    await expect(page.getByTestId("sell-custom-qty-preview")).toContainText("1.5 L");
+    await expect(page.getByTestId("sell-custom-qty-preview")).not.toContainText("kg");
+    await page.getByTestId("sell-custom-qty-confirm").click();
+
+    const cart = page.getByTestId("sell-cart-landscape");
+    await expect(
+      cart.getByTestId(`sell-cart-line-${MOCK_OIL_PRODUCT_ID}::${MOCK_OIL_LITER_UNIT_ID}`),
+    ).toBeVisible();
+    await expect(cart.getByTestId("sell-cart-subtotal")).toContainText("120");
+  });
+
+  test("whole quantity rejects decimal on non-custom line", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.getByTestId(`sell-product-${MOCK_BOTTLE_PRODUCT_ID}`).click();
+    const cart = page.getByTestId("sell-cart-landscape");
+    const lineKey = `${MOCK_BOTTLE_PRODUCT_ID}::${MOCK_BOTTLE_UNIT_ID}`;
+    await expect(cart.getByTestId(`sell-cart-line-${lineKey}`)).toBeVisible();
+    await cart.getByTestId(`sell-cart-qty-input-${lineKey}`).fill("1.5");
+    await expect(cart.getByTestId(`sell-cart-qty-${lineKey}`)).toHaveText("1");
+    await expect(cart.getByTestId("sell-cart-subtotal")).toContainText("95");
   });
 
   test("ByWeight meat opens weight entry with kg preview and sellable advisory", async ({

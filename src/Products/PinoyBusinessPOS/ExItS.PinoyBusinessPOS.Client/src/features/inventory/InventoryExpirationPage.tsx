@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { listExpiringLots, type PosExpiringLotDto } from "@/api/pos/pos-inventory-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,6 +16,8 @@ import {
 } from "@/features/inventory/inventory-lot-status";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+
+const EXPIRING_PAGE_SIZE = 50;
 
 function formatLotStatus(lot: PosExpiringLotDto, t: ReturnType<typeof useI18n>["t"]): string {
   const label = resolveLotExpiryLabel(lot.expiryStatus, lot.expirationDate);
@@ -66,7 +68,7 @@ export function InventoryExpirationPage() {
     [boundWorkspace],
   );
 
-  const query = useQuery({
+  const query = useInfiniteQuery({
     queryKey: [
       "inventory",
       "expiring",
@@ -76,13 +78,40 @@ export function InventoryExpirationPage() {
       debounced,
     ],
     enabled: Boolean(workspace),
-    queryFn: ({ signal }) =>
+    initialPageParam: 1,
+    queryFn: ({ pageParam, signal }) =>
       listExpiringLots(
         workspace!,
-        { window: windowCode, search: debounced || undefined, pageSize: 50 },
+        {
+          window: windowCode,
+          search: debounced || undefined,
+          page: pageParam,
+          pageSize: EXPIRING_PAGE_SIZE,
+        },
         signal,
       ),
+    getNextPageParam: (lastPage) => {
+      const loaded = lastPage.page * lastPage.pageSize;
+      return loaded < lastPage.totalCount ? lastPage.page + 1 : undefined;
+    },
   });
+
+  const items = useMemo(() => {
+    const seen = new Set<string>();
+    const merged: PosExpiringLotDto[] = [];
+    for (const page of query.data?.pages ?? []) {
+      for (const lot of page.items) {
+        if (seen.has(lot.lotId)) {
+          continue;
+        }
+        seen.add(lot.lotId);
+        merged.push(lot);
+      }
+    }
+    return merged;
+  }, [query.data]);
+
+  const counts = query.data?.pages[0];
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
@@ -120,24 +149,24 @@ export function InventoryExpirationPage() {
       {query.isError ? (
         <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
       ) : null}
-      {query.isSuccess ? (
+      {query.isSuccess && counts ? (
         <p
           className="m-0 text-[length:var(--exits-text-sm)] text-muted"
           data-testid="inventory-expiry-counts"
         >
           {t("inventory.expiryCounts")
-            .replace("{expired}", String(query.data.expiredCount))
-            .replace("{near}", String(query.data.nearExpiryCount))}
+            .replace("{expired}", String(counts.expiredCount))
+            .replace("{near}", String(counts.nearExpiryCount))}
         </p>
       ) : null}
-      {query.isSuccess && query.data.items.length === 0 ? (
+      {query.isSuccess && items.length === 0 ? (
         <EmptyState
           title={t("inventory.expirationEmpty")}
           detail={t("inventory.expirationEmptyDetail")}
         />
       ) : null}
       <ul className="m-0 flex list-none flex-col gap-2 p-0" data-testid="inventory-expiring-list">
-        {query.data?.items.map((lot) => (
+        {items.map((lot) => (
           <li key={lot.lotId}>
             <Card className="p-3">
               <Link
@@ -156,6 +185,18 @@ export function InventoryExpirationPage() {
           </li>
         ))}
       </ul>
+      {query.hasNextPage ? (
+        <Button
+          type="button"
+          variant="ghost"
+          className="min-h-11 w-fit"
+          disabled={query.isFetchingNextPage}
+          onClick={() => void query.fetchNextPage()}
+          data-testid="inventory-expiring-load-more"
+        >
+          {query.isFetchingNextPage ? t("inventory.loadingMore") : t("inventory.loadMore")}
+        </Button>
+      ) : null}
       <Button asChild variant="ghost" className="min-h-11 w-fit">
         <Link to="/inventory">{t("inventory.backList")}</Link>
       </Button>

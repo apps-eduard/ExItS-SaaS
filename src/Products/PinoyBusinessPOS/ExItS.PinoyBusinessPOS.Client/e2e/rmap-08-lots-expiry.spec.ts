@@ -88,6 +88,9 @@ function defaultExpiring(): LotHarness["expiring"] {
 }
 
 async function mockInventoryLotsApi(page: Page, harness: LotHarness) {
+  await page.route("**/cashier-shifts/current**", async (route) => {
+    await route.fulfill({ status: 404, contentType: "application/json", body: "{}" });
+  });
   await page.route("**/pos-api/**/inventory**", async (route) => {
     const url = route.request().url();
     const method = route.request().method();
@@ -125,19 +128,24 @@ async function mockInventoryLotsApi(page: Page, harness: LotHarness) {
       !url.match(/\/inventory\/[0-9a-f-]{36}\/lots/i) &&
       method === "GET"
     ) {
-      const windowParam = new URL(url).searchParams.get("window") ?? "Days30";
+      const parsed = new URL(url);
+      const windowParam = parsed.searchParams.get("window") ?? "Days30";
+      const pageNum = Math.max(1, Number(parsed.searchParams.get("page") ?? "1") || 1);
+      const pageSize = Math.max(1, Number(parsed.searchParams.get("pageSize") ?? "50") || 50);
       let items = harness.expiring;
       if (windowParam === "Expired") {
         items = harness.expiring.filter((lot) => lot.expiryStatus === "Expired");
       }
+      const start = (pageNum - 1) * pageSize;
+      const slice = items.slice(start, start + pageSize);
       return route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          items,
+          items: slice,
           totalCount: items.length,
-          page: 1,
-          pageSize: 50,
+          page: pageNum,
+          pageSize,
           expiredCount: harness.expiring.filter((l) => l.expiryStatus === "Expired").length,
           nearExpiryCount: harness.expiring.filter((l) => l.expiryStatus === "NearExpiry").length,
         }),
@@ -145,14 +153,19 @@ async function mockInventoryLotsApi(page: Page, harness: LotHarness) {
     }
 
     if (url.includes("/lots") && method === "GET") {
+      const parsed = new URL(url);
+      const pageNum = Math.max(1, Number(parsed.searchParams.get("page") ?? "1") || 1);
+      const pageSize = Math.max(1, Number(parsed.searchParams.get("pageSize") ?? "50") || 50);
+      const start = (pageNum - 1) * pageSize;
+      const slice = harness.lots.slice(start, start + pageSize);
       return route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          items: harness.lots,
+          items: slice,
           totalCount: harness.lots.length,
-          page: 1,
-          pageSize: 50,
+          page: pageNum,
+          pageSize,
         }),
       });
     }
@@ -358,11 +371,60 @@ test.describe("RMAP-08 lots / expiry", () => {
   });
 
   test("cashier denied inventory expiration", async ({ page }) => {
+    await page.route("**/cashier-shifts/current**", async (route) => {
+      await route.fulfill({ status: 404, contentType: "application/json", body: "{}" });
+    });
     await mockBoundCashierSession(page);
     await mockPosCatalogAdminApi(page);
     await signInAndBindCashier(page);
     await clientNavigate(page, "/inventory/expiration");
     await expect(page.getByTestId("inventory-view-denied")).toBeVisible();
+  });
+
+  test("product lots load more past page size 50", async ({ page }) => {
+    const manyLots = Array.from({ length: 55 }, (_, index) => {
+      const day = String((index % 28) + 1).padStart(2, "0");
+      const lotId = `aaaaaaaa-${String(index).padStart(4, "0")}-4111-8111-aaaaaaaaaaaa`;
+      return {
+        lotId,
+        productId: MOCK_COKE_PRODUCT_ID,
+        lotNumber: `LOT-${index + 1}`,
+        expirationDate: `2026-09-${day}`,
+        quantityOnHand: 1,
+        expiryStatus: "Ok",
+        createdAtUtc: "2026-01-01T00:00:00Z",
+        updatedAtUtc: "2026-01-01T00:00:00Z",
+      };
+    });
+    const harness: LotHarness = {
+      tracked: true,
+      tracksExpiration: true,
+      onHand: 55,
+      sellable: 55,
+      expired: 0,
+      nearExpiry: 0,
+      lots: manyLots,
+      expiring: manyLots.map((lot) => ({
+        ...lot,
+        productName: LONG_NAME,
+        sku: "MILK-1L",
+        warningDays: 7,
+      })),
+      movements: [],
+    };
+    await mockBoundManagerSession(page);
+    await mockPosCatalogAdminApi(page);
+    await mockInventoryLotsApi(page, harness);
+    await signInAndBindManager(page);
+    await clientNavigate(page, `/inventory/${MOCK_COKE_PRODUCT_ID}`);
+    await expect(page.getByTestId("inventory-lots")).toBeVisible();
+    await expect(page.getByTestId(`inventory-lot-${manyLots[0]!.lotId}`)).toBeVisible();
+    await expect(page.getByTestId(`inventory-lot-${manyLots[50]!.lotId}`)).toHaveCount(0);
+    await page.getByTestId("inventory-lots-load-more").click();
+    await expect(page.getByTestId(`inventory-lot-${manyLots[50]!.lotId}`)).toBeVisible();
+    await page.getByTestId("inventory-adjust-direction").selectOption("Out");
+    await page.getByTestId("inventory-adjust-lot").selectOption(manyLots[50]!.lotId);
+    await expect(page.getByTestId("inventory-adjust-lot")).toHaveValue(manyLots[50]!.lotId);
   });
 
   for (const viewport of VIEWPORTS) {

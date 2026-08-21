@@ -46,8 +46,8 @@ public sealed class PosInventoryLotApiTests(PosPostgreSqlFixture fixture)
         Assert.Equal(HttpStatusCode.BadRequest, missingResponse.StatusCode);
         Assert.Equal(DomainErrorCodes.InventoryExpirationRequired, await ReadErrorCodeAsync(missingResponse));
 
-        await ReceiveAsync(client, org, product.ProductId, 20m, new DateOnly(2026, 8, 20), "LOT-A");
-        await ReceiveAsync(client, org, product.ProductId, 30m, new DateOnly(2026, 9, 5), "LOT-B");
+        await ReceiveAsync(client, org, product.ProductId, 20m, DateOnly.FromDateTime(DateTime.UtcNow.AddDays(20)), "LOT-A");
+        await ReceiveAsync(client, org, product.ProductId, 30m, DateOnly.FromDateTime(DateTime.UtcNow.AddDays(40)), "LOT-B");
 
         using var lotsRequest = Scoped(HttpMethod.Get, $"{Inventory}/{product.ProductId:D}/lots", org);
         using var lotsResponse = await client.SendAsync(lotsRequest);
@@ -75,8 +75,8 @@ public sealed class PosInventoryLotApiTests(PosPostgreSqlFixture fixture)
         using var afterLots = Scoped(HttpMethod.Get, $"{Inventory}/{product.ProductId:D}/lots", org);
         using var afterLotsResponse = await client.SendAsync(afterLots);
         var remaining = await afterLotsResponse.Content.ReadFromJsonAsync<PagedResult<PosInventoryLotDto>>(JsonOptions);
-        var early = remaining!.Items.Single(l => l.ExpirationDate == new DateOnly(2026, 8, 20));
-        var later = remaining.Items.Single(l => l.ExpirationDate == new DateOnly(2026, 9, 5));
+        var early = remaining!.Items.Single(l => l.LotNumber == "LOT-A");
+        var later = remaining.Items.Single(l => l.LotNumber == "LOT-B");
         Assert.Equal(15m, early.QuantityOnHand);
         Assert.Equal(30m, later.QuantityOnHand);
 
@@ -212,15 +212,99 @@ public sealed class PosInventoryLotApiTests(PosPostgreSqlFixture fixture)
         Assert.Null(account.SellableQuantity);
     }
 
+    [Fact]
+    public async Task Near_expiry_count_uses_product_effective_warning_days()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+
+        using var create = Scoped(HttpMethod.Post, Products, org);
+        create.Content = JsonContent.Create(
+            new CreatePosCatalogProductRequest(
+                "Long-life Milk",
+                "Piece",
+                50m,
+                Sku: $"sku-{Guid.NewGuid():N}"[..20],
+                TracksExpiration: true,
+                ExpirationWarningDays: 14),
+            options: JsonOptions);
+        using var createResponse = await client.SendAsync(create);
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        var product = await createResponse.Content.ReadFromJsonAsync<PosCatalogProductDto>(JsonOptions);
+        Assert.NotNull(product);
+        Assert.Equal(14, product!.ExpirationWarningDays);
+
+        using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", org);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(0m), options: JsonOptions);
+        (await client.SendAsync(enable)).EnsureSuccessStatusCode();
+
+        // Day +10 is outside DefaultWarningDays (7) but inside product warning (14).
+        var nearForProduct = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(10));
+        await ReceiveAsync(client, org, product.ProductId, 3m, nearForProduct, "WARN-14");
+
+        using var expiring = Scoped(HttpMethod.Get, $"{Inventory}/lots?window=Days30", org);
+        using var expiringResponse = await client.SendAsync(expiring);
+        expiringResponse.EnsureSuccessStatusCode();
+        var page = await expiringResponse.Content.ReadFromJsonAsync<PosExpiringLotPagedResult>(JsonOptions);
+        Assert.NotNull(page);
+        Assert.Equal(0, page!.ExpiredCount);
+        Assert.True(page.NearExpiryCount >= 1);
+        Assert.Contains(page.Items, lot => lot.LotNumber == "WARN-14" && lot.ExpiryStatus == "NearExpiry");
+    }
+
+    [Fact]
+    public async Task Bound_branch_lists_only_that_branch_lots_and_rejects_cross_branch_adjust()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var branchA = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var branchB = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var product = await CreateProductAsync(client, org, "Branch Milk", tracksExpiration: true);
+
+        using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", org);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(0m), options: JsonOptions);
+        (await client.SendAsync(enable)).EnsureSuccessStatusCode();
+
+        var expiry = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(20));
+        await ReceiveAsync(client, org, product.ProductId, 5m, expiry, "LOT-A", branchA);
+        await ReceiveAsync(client, org, product.ProductId, 7m, expiry, "LOT-B", branchB);
+
+        using var listA = Scoped(HttpMethod.Get, $"{Inventory}/{product.ProductId:D}/lots", org, branchA);
+        using var listAResponse = await client.SendAsync(listA);
+        listAResponse.EnsureSuccessStatusCode();
+        var lotsA = await listAResponse.Content.ReadFromJsonAsync<PagedResult<PosInventoryLotDto>>(JsonOptions);
+        Assert.Single(lotsA!.Items);
+        Assert.Equal("LOT-A", lotsA.Items[0].LotNumber);
+        Assert.Equal(branchA, lotsA.Items[0].BranchId);
+
+        using var listB = Scoped(HttpMethod.Get, $"{Inventory}/{product.ProductId:D}/lots", org, branchB);
+        using var listBResponse = await client.SendAsync(listB);
+        var lotsB = await listBResponse.Content.ReadFromJsonAsync<PagedResult<PosInventoryLotDto>>(JsonOptions);
+        Assert.Single(lotsB!.Items);
+        Assert.Equal("LOT-B", lotsB.Items[0].LotNumber);
+        var foreignLotId = lotsB.Items[0].LotId;
+
+        using var crossAdjust = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/adjustments", org, branchA);
+        crossAdjust.Content = JsonContent.Create(
+            new AdjustInventoryRequest("Out", 1m, "Wrong branch", LotId: foreignLotId),
+            options: JsonOptions);
+        using var crossResponse = await client.SendAsync(crossAdjust);
+        Assert.Equal(HttpStatusCode.BadRequest, crossResponse.StatusCode);
+        Assert.Equal(DomainErrorCodes.InventoryLotMismatch, await ReadErrorCodeAsync(crossResponse));
+    }
+
     private static async Task ReceiveAsync(
         HttpClient client,
         Guid org,
         Guid productId,
         decimal qty,
         DateOnly expiry,
-        string? lotNumber)
+        string? lotNumber,
+        Guid? branchId = null)
     {
-        using var adjust = Scoped(HttpMethod.Post, $"{Inventory}/{productId:D}/adjustments", org);
+        using var adjust = Scoped(HttpMethod.Post, $"{Inventory}/{productId:D}/adjustments", org, branchId);
         adjust.Content = JsonContent.Create(
             new AdjustInventoryRequest("In", qty, "Receive", ExpirationDate: expiry, LotNumber: lotNumber),
             options: JsonOptions);
@@ -257,11 +341,20 @@ public sealed class PosInventoryLotApiTests(PosPostgreSqlFixture fixture)
         return problem.TryGetProperty("errorCode", out var code) ? code.GetString() : null;
     }
 
-    private static HttpRequestMessage Scoped(HttpMethod method, string path, Guid organizationId)
+    private static HttpRequestMessage Scoped(
+        HttpMethod method,
+        string path,
+        Guid organizationId,
+        Guid? branchId = null)
     {
         var request = new HttpRequestMessage(method, path);
         request.Headers.TryAddWithoutValidation(PosOrganizationHeaders.OrganizationHeaderName, organizationId.ToString("D"));
         request.Headers.TryAddWithoutValidation(PosOrganizationHeaders.ActorHeaderName, Actor.ToString("D"));
+        if (branchId is { } id && id != Guid.Empty)
+        {
+            request.Headers.TryAddWithoutValidation(PosOrganizationHeaders.BranchHeaderName, id.ToString("D"));
+        }
+
         return request;
     }
 

@@ -35,21 +35,52 @@ export function resolveSellUnitPrice(
   return product.sellingPrice;
 }
 
-/** Pack-style units (multiplier ≠ 1, not custom) default to whole entered quantities. */
+/** Whole entered quantities when the sell unit does not allow measured/custom qty. */
 export function requiresWholeEnteredQuantity(unit: PosCatalogProductUnitDto): boolean {
-  return !unit.allowsCustomQuantity && unit.multiplierToBase !== 1;
+  return !unit.allowsCustomQuantity;
 }
 
-export function needsSellUnitOrWeightDialog(product: PosCatalogProductDto): boolean {
-  const sellUnits = activeSellUnits(product);
-  if (
-    sellUnits.length > 1 ||
-    (sellUnits.length === 1 &&
-      (sellUnits[0]!.multiplierToBase !== 1 || sellUnits[0]!.allowsCustomQuantity))
-  ) {
-    return true;
+/**
+ * Locked sell-floor add decision tree:
+ * ByWeight → weight
+ * else 1 sell unit + custom → generic custom qty (not weight)
+ * else 1 sell unit + !custom → direct add with that unit identity
+ * else >1 → unit selector
+ * else → base fallback
+ */
+export type SellAddFlow =
+  | { kind: "weight"; unit: PosCatalogProductUnitDto | null }
+  | { kind: "customQuantity"; unit: PosCatalogProductUnitDto }
+  | { kind: "direct"; unit: PosCatalogProductUnitDto }
+  | { kind: "unitSelector"; units: PosCatalogProductUnitDto[] }
+  | { kind: "base" };
+
+export function resolveAddFlow(product: PosCatalogProductDto): SellAddFlow {
+  if (isByWeightSellingMode(product.sellingMode)) {
+    const sellUnits = activeSellUnits(product);
+    return { kind: "weight", unit: sellUnits.length === 1 ? sellUnits[0]! : null };
   }
-  return isByWeightSellingMode(product.sellingMode);
+
+  const sellUnits = activeSellUnits(product);
+  if (sellUnits.length === 1) {
+    const unit = sellUnits[0]!;
+    if (unit.allowsCustomQuantity) {
+      return { kind: "customQuantity", unit };
+    }
+    return { kind: "direct", unit };
+  }
+
+  if (sellUnits.length > 1) {
+    return { kind: "unitSelector", units: sellUnits };
+  }
+
+  return { kind: "base" };
+}
+
+/** @deprecated Prefer resolveAddFlow — kept for call sites that only need a dialog cue. */
+export function needsSellUnitOrWeightDialog(product: PosCatalogProductDto): boolean {
+  const flow = resolveAddFlow(product);
+  return flow.kind === "weight" || flow.kind === "customQuantity" || flow.kind === "unitSelector";
 }
 
 export type WeightInputUnit = "kg" | "g";
@@ -83,6 +114,24 @@ export function normalizeWeightToKilograms(
   }
 
   return { kilograms: roundQuantity(rawValue) };
+}
+
+/**
+ * Normalize measured custom quantity (Liter, Meter, etc.) — at most 3 decimal places, no kg conversion.
+ */
+export function normalizeCustomQuantity(
+  rawValue: number,
+): { quantity: number } | { error: "zero" | "precision" | "invalid" } {
+  if (!Number.isFinite(rawValue) || rawValue <= 0) {
+    return { error: "zero" };
+  }
+
+  const scaled = rawValue * 1000;
+  if (Math.abs(scaled - Math.round(scaled)) > 1e-9) {
+    return { error: "precision" };
+  }
+
+  return { quantity: roundQuantity(rawValue) };
 }
 
 export function formatQuantityDisplay(value: number): string {

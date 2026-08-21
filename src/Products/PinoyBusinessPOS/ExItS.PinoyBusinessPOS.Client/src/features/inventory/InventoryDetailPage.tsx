@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   adjustInventoryStock,
   disableInventoryTracking,
@@ -23,6 +23,8 @@ import {
 } from "@/features/inventory/inventory-lot-status";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+
+const LOT_PAGE_SIZE = 50;
 
 function formatLotStatus(lot: PosInventoryLotDto, t: ReturnType<typeof useI18n>["t"]): string {
   const label = resolveLotExpiryLabel(lot.expiryStatus, lot.expirationDate);
@@ -78,12 +80,33 @@ export function InventoryDetailPage() {
     queryFn: ({ signal }) => listInventoryMovements(workspace!, productId!, {}, signal),
   });
 
-  const lotsQuery = useQuery({
-    queryKey: ["inventory", "lots", workspace?.organizationId, productId],
+  const lotsQuery = useInfiniteQuery({
+    queryKey: [
+      "inventory",
+      "lots",
+      workspace?.organizationId,
+      workspace?.branchId,
+      productId,
+    ],
     enabled: Boolean(workspace) && Boolean(productId) && tracksExpiration,
-    queryFn: ({ signal }) =>
-      listProductLots(workspace!, productId!, { includeDepleted: false, pageSize: 50 }, signal),
+    initialPageParam: 1,
+    queryFn: ({ pageParam, signal }) =>
+      listProductLots(
+        workspace!,
+        productId!,
+        { includeDepleted: false, page: pageParam, pageSize: LOT_PAGE_SIZE },
+        signal,
+      ),
+    getNextPageParam: (lastPage) => {
+      const loaded = lastPage.page * lastPage.pageSize;
+      return loaded < lastPage.totalCount ? lastPage.page + 1 : undefined;
+    },
   });
+
+  const lots = useMemo(
+    () => lotsQuery.data?.pages.flatMap((page) => page.items) ?? [],
+    [lotsQuery.data],
+  );
 
   async function invalidate() {
     await queryClient.invalidateQueries({ queryKey: ["inventory"] });
@@ -141,7 +164,6 @@ export function InventoryDetailPage() {
       if (tracksExpiration && adjustDirection === "In" && !adjustExpiry.trim()) {
         throw new Error(t("inventory.expirationDateRequired"));
       }
-      const lots = lotsQuery.data?.items ?? [];
       if (tracksExpiration && adjustDirection === "Out" && lots.length > 0 && !selectedLotId) {
         throw new Error(t("inventory.lotRequired"));
       }
@@ -194,8 +216,6 @@ export function InventoryDetailPage() {
   if (!account) {
     return <ErrorState title={t("error.title")} detail={t("inventory.notFound")} />;
   }
-
-  const lots = lotsQuery.data?.items ?? [];
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="inventory-detail-page">
@@ -269,6 +289,18 @@ export function InventoryDetailPage() {
               ))}
             </ul>
           )}
+          {lotsQuery.hasNextPage ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="mt-2 min-h-11 w-fit"
+              disabled={lotsQuery.isFetchingNextPage}
+              onClick={() => void lotsQuery.fetchNextPage()}
+              data-testid="inventory-lots-load-more"
+            >
+              {lotsQuery.isFetchingNextPage ? t("inventory.loadingMore") : t("inventory.loadMore")}
+            </Button>
+          ) : null}
         </div>
       ) : null}
 

@@ -29,6 +29,7 @@ public sealed class InventoryLotQueryService
         bool includeDepleted,
         int? page,
         int? pageSize,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default)
     {
         var (skip, take) = PosPagination.Normalize(page, pageSize);
@@ -40,8 +41,11 @@ public sealed class InventoryLotQueryService
             return new PagedResult<PosInventoryLotDto>([], 0, Math.Max(page ?? 1, 1), take);
         }
 
+        // Match OnHandQuery: when branch is bound, only that branch's lots (exact BranchId match;
+        // org-level null-branch lots are not included — same as inventory on-hand semantics).
+        PosBranchId? branch = branchId is { } id && id != Guid.Empty ? PosBranchId.From(id) : null;
         var (items, total) = await _lots
-            .ListPagedAsync(orgId, catalogProductId, branchId: null, includeDepleted, skip, take, cancellationToken)
+            .ListPagedAsync(orgId, catalogProductId, branch, includeDepleted, skip, take, cancellationToken)
             .ConfigureAwait(false);
         var today = InventoryLot.BusinessDateOf(_clock.UtcNow);
         var warning = product.EffectiveExpirationWarningDays;
@@ -73,7 +77,7 @@ public sealed class InventoryLotQueryService
             .ListExpiringPagedAsync(orgId, branch, expireOnOrBefore, expireOnOrAfter, search, skip, take, cancellationToken)
             .ConfigureAwait(false);
         var counts = await _lots
-            .CountExpiryAsync(orgId, today, InventoryLot.DefaultWarningDays, cancellationToken)
+            .CountExpiryAsync(orgId, today, cancellationToken)
             .ConfigureAwait(false);
 
         var productIds = items.Select(l => l.ProductId).Distinct().ToArray();

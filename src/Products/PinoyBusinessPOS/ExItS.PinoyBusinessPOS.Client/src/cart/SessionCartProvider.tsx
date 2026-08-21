@@ -9,6 +9,7 @@ import {
 } from "react";
 import type { PosCatalogProductDto, PosCatalogProductUnitDto } from "@/api/pos/pos-catalog-types";
 import {
+  activeSellUnits,
   cartLineKey,
   isByWeightSellingMode,
   resolveSellUnitPrice,
@@ -35,6 +36,8 @@ export type SessionCartLine = {
    */
   quantity: number;
   baseUnitOfMeasure: string;
+  /** When false (and not ByWeight), quantity must be a whole number. */
+  allowsCustomQuantity: boolean;
 };
 
 export type AddCartLineOptions = {
@@ -82,6 +85,20 @@ function unitLabelFor(
   return product.unitOfMeasure;
 }
 
+function resolveAllowsCustomQuantity(
+  product: PosCatalogProductDto,
+  unit: PosCatalogProductUnitDto | null | undefined,
+): boolean {
+  if (isByWeightSellingMode(product.sellingMode)) {
+    return true;
+  }
+  return unit?.allowsCustomQuantity === true;
+}
+
+function isWholeQuantityRequired(line: SessionCartLine): boolean {
+  return !line.allowsCustomQuantity && !isByWeightSellingMode(line.sellingMode);
+}
+
 function toCartLine(
   product: PosCatalogProductDto,
   quantity: number,
@@ -101,6 +118,7 @@ function toCartLine(
     unitPrice: resolveSellUnitPrice(product, unit),
     quantity: roundQuantity(quantity),
     baseUnitOfMeasure: product.unitOfMeasure,
+    allowsCustomQuantity: resolveAllowsCustomQuantity(product, unit),
   };
 }
 
@@ -113,6 +131,14 @@ export function SessionCartProvider({ children }: { children: ReactNode }) {
       return;
     }
     const unit = options?.unit ?? null;
+    const allowsCustom = resolveAllowsCustomQuantity(product, unit);
+    if (
+      !allowsCustom &&
+      !isByWeightSellingMode(product.sellingMode) &&
+      delta !== Math.trunc(delta)
+    ) {
+      return;
+    }
     const key = cartLineKey(product.productId, unit?.unitId ?? null);
     const replace = options?.replaceQuantity === true;
 
@@ -134,7 +160,9 @@ export function SessionCartProvider({ children }: { children: ReactNode }) {
 
   const addProduct = useCallback(
     (product: PosCatalogProductDto, quantity = 1) => {
-      addLine(product, { quantity: Math.max(quantity, 1) });
+      const sellUnits = activeSellUnits(product);
+      const unit = sellUnits.length === 1 ? sellUnits[0]! : null;
+      addLine(product, { quantity: Math.max(quantity, 1), unit });
     },
     [addLine],
   );
@@ -144,25 +172,42 @@ export function SessionCartProvider({ children }: { children: ReactNode }) {
       if (!(quantity > 0)) {
         return current.filter((line) => line.lineKey !== lineKey);
       }
-      const next = roundQuantity(quantity);
+      const existing = current.find((line) => line.lineKey === lineKey);
+      if (!existing) {
+        return current;
+      }
+      if (isWholeQuantityRequired(existing) && quantity !== Math.trunc(quantity)) {
+        return current;
+      }
+      const next = isWholeQuantityRequired(existing)
+        ? Math.trunc(quantity)
+        : roundQuantity(quantity);
       return current.map((line) => (line.lineKey === lineKey ? { ...line, quantity: next } : line));
     });
   }, []);
 
   const incrementLine = useCallback((lineKey: string) => {
     setLines((current) =>
-      current.map((line) =>
-        line.lineKey === lineKey ? { ...line, quantity: roundQuantity(line.quantity + 1) } : line,
-      ),
+      current.map((line) => {
+        if (line.lineKey !== lineKey) {
+          return line;
+        }
+        const step = isWholeQuantityRequired(line) ? 1 : 0.001;
+        return { ...line, quantity: roundQuantity(line.quantity + step) };
+      }),
     );
   }, []);
 
   const decrementLine = useCallback((lineKey: string) => {
     setLines((current) =>
       current
-        .map((line) =>
-          line.lineKey === lineKey ? { ...line, quantity: roundQuantity(line.quantity - 1) } : line,
-        )
+        .map((line) => {
+          if (line.lineKey !== lineKey) {
+            return line;
+          }
+          const step = isWholeQuantityRequired(line) ? 1 : 0.001;
+          return { ...line, quantity: roundQuantity(line.quantity - step) };
+        })
         .filter((line) => line.quantity > 0),
     );
   }, []);

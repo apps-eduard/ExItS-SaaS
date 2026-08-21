@@ -623,6 +623,14 @@ public sealed class AdjustInventoryStock
                                 "Lot does not belong to this product.");
                         }
 
+                        // Bound branch may only adjust lots for that branch (matches ListLots filter).
+                        if (branch is not null && found.BranchId != branch)
+                        {
+                            return ApplicationResult<InventoryAccount>.Failure(
+                                DomainErrorCodes.InventoryLotMismatch,
+                                "Lot does not belong to this branch.");
+                        }
+
                         target = found;
                     }
                     else if (expirationDate is DateOnly expiry)

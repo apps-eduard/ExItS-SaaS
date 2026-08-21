@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import type { ReactNode } from "react";
-import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
+import type { PosCatalogProductDto, PosCatalogProductUnitDto } from "@/api/pos/pos-catalog-types";
 import {
   cartLineKey,
   formatLineAmountPreview,
+  normalizeCustomQuantity,
   normalizeWeightToKilograms,
+  requiresWholeEnteredQuantity,
+  resolveAddFlow,
   resolveStockHint,
 } from "@/cart/sell-cart-helpers";
 import { SessionCartProvider, useSessionCart } from "@/cart/SessionCartProvider";
@@ -26,6 +29,23 @@ const sampleProduct = (
   createdAtUtc: "2026-01-01T00:00:00Z",
   updatedAtUtc: "2026-01-01T00:00:00Z",
   ...extras,
+});
+
+const bottleSellUnit: PosCatalogProductUnitDto = {
+  unitId: "bottle-unit",
+  productId: "bottle",
+  kind: "Sell",
+  displayName: "Bottle",
+  shortLabel: "btl",
+  multiplierToBase: 1,
+  sellingPrice: 95,
+  allowsCustomQuantity: false,
+  isActive: true,
+  sortOrder: 0,
+};
+
+const singleNormalSellUnitProduct = sampleProduct("bottle", 100, "Premium Bottle", {
+  units: [bottleSellUnit],
 });
 
 const riceProduct = sampleProduct("rice", 55, "Rice", {
@@ -56,6 +76,24 @@ const riceProduct = sampleProduct("rice", 55, "Rice", {
       sortOrder: 1,
     },
   ],
+});
+
+const literUnit: PosCatalogProductUnitDto = {
+  unitId: "liter-unit",
+  productId: "oil",
+  kind: "Sell",
+  displayName: "Liter",
+  shortLabel: "L",
+  multiplierToBase: 1,
+  sellingPrice: 80,
+  allowsCustomQuantity: true,
+  isActive: true,
+  sortOrder: 0,
+};
+
+const oilProduct = sampleProduct("oil", 80, "Cooking Oil", {
+  unitOfMeasure: "Liter",
+  units: [literUnit],
 });
 
 const meatProduct = sampleProduct("meat", 60, "Ground Pork", {
@@ -113,22 +151,70 @@ describe("SessionCartProvider", () => {
     expect(result.current.subtotal).toBe(0);
   });
 
-  it("keeps separate lines per sell unit and uses unit prices", () => {
+  it("SINGLE_NORMAL_SELL_UNIT keeps unit identity and unit price 95 not 100", () => {
+    const { result } = renderHook(() => useSessionCart(), { wrapper });
+
+    act(() => {
+      result.current.addProduct(singleNormalSellUnitProduct);
+    });
+
+    expect(result.current.lineCount).toBe(1);
+    expect(result.current.lines[0]?.productUnitId).toBe("bottle-unit");
+    expect(result.current.lines[0]?.unitPrice).toBe(95);
+    expect(result.current.subtotal).toBe(95);
+    expect(result.current.lines[0]?.allowsCustomQuantity).toBe(false);
+  });
+
+  it("MULTI_UOM keeps separate lines per sell unit and uses unit prices", () => {
     const { result } = renderHook(() => useSessionCart(), { wrapper });
     const kg = riceProduct.units![0]!;
     const sack = riceProduct.units![1]!;
 
     act(() => {
-      result.current.addLine(riceProduct, { unit: kg, quantity: 3.5 });
+      result.current.addLine(riceProduct, { unit: kg, quantity: 3 });
       result.current.addLine(riceProduct, { unit: sack, quantity: 1 });
     });
 
     expect(result.current.lineCount).toBe(2);
-    expect(result.current.subtotal).toBe(55 * 3.5 + 2600);
+    expect(result.current.subtotal).toBe(55 * 3 + 2600);
     expect(result.current.lines.map((line) => line.unitLabel).sort()).toEqual(["kg", "sack"]);
   });
 
-  it("stores ByWeight quantity as kilograms and supports replace", () => {
+  it("NON_CUSTOM rejects decimal quantity 1.5", () => {
+    const { result } = renderHook(() => useSessionCart(), { wrapper });
+    const kg = riceProduct.units![0]!;
+
+    act(() => {
+      result.current.addLine(riceProduct, { unit: kg, quantity: 1 });
+    });
+    const key = cartLineKey("rice", "kg-unit");
+    expect(result.current.lines[0]?.quantity).toBe(1);
+
+    act(() => {
+      result.current.setLineQuantity(key, 1.5);
+    });
+    expect(result.current.lines[0]?.quantity).toBe(1);
+
+    act(() => {
+      result.current.addLine(riceProduct, { unit: kg, quantity: 1.5 });
+    });
+    expect(result.current.lines[0]?.quantity).toBe(1);
+  });
+
+  it("CUSTOM Liter accepts 1.5 L without kg conversion", () => {
+    const { result } = renderHook(() => useSessionCart(), { wrapper });
+
+    act(() => {
+      result.current.addLine(oilProduct, { unit: literUnit, quantity: 1.5, replaceQuantity: true });
+    });
+
+    expect(result.current.lines[0]?.quantity).toBe(1.5);
+    expect(result.current.lines[0]?.unitLabel).toBe("L");
+    expect(result.current.lines[0]?.allowsCustomQuantity).toBe(true);
+    expect(result.current.subtotal).toBe(120);
+  });
+
+  it("BY_WEIGHT stores kilograms and supports replace", () => {
     const { result } = renderHook(() => useSessionCart(), { wrapper });
 
     act(() => {
@@ -172,11 +258,47 @@ describe("SessionCartProvider", () => {
 });
 
 describe("sell-cart-helpers", () => {
+  it("requiresWholeEnteredQuantity follows allowsCustomQuantity only", () => {
+    expect(requiresWholeEnteredQuantity(bottleSellUnit)).toBe(true);
+    expect(requiresWholeEnteredQuantity(literUnit)).toBe(false);
+    expect(
+      requiresWholeEnteredQuantity({
+        ...bottleSellUnit,
+        multiplierToBase: 12,
+        allowsCustomQuantity: false,
+      }),
+    ).toBe(true);
+    expect(
+      requiresWholeEnteredQuantity({
+        ...bottleSellUnit,
+        multiplierToBase: 1,
+        allowsCustomQuantity: true,
+      }),
+    ).toBe(false);
+  });
+
+  it("resolveAddFlow matches locked decision tree", () => {
+    expect(resolveAddFlow(meatProduct).kind).toBe("weight");
+    expect(resolveAddFlow(oilProduct)).toEqual({ kind: "customQuantity", unit: literUnit });
+    expect(resolveAddFlow(singleNormalSellUnitProduct)).toEqual({
+      kind: "direct",
+      unit: bottleSellUnit,
+    });
+    expect(resolveAddFlow(riceProduct).kind).toBe("unitSelector");
+    expect(resolveAddFlow(sampleProduct("plain", 10, "Plain")).kind).toBe("base");
+  });
+
   it("normalizes kg and g weight input", () => {
     expect(normalizeWeightToKilograms(2, "kg")).toEqual({ kilograms: 2 });
     expect(normalizeWeightToKilograms(1500, "g")).toEqual({ kilograms: 1.5 });
     expect(normalizeWeightToKilograms(1.2345, "kg")).toEqual({ error: "precision" });
     expect(normalizeWeightToKilograms(1.5, "g")).toEqual({ error: "precision" });
+  });
+
+  it("normalizes custom quantity without kg conversion", () => {
+    expect(normalizeCustomQuantity(1.5)).toEqual({ quantity: 1.5 });
+    expect(normalizeCustomQuantity(1.2345)).toEqual({ error: "precision" });
+    expect(normalizeCustomQuantity(0)).toEqual({ error: "zero" });
   });
 
   it("formats line amount preview and prefers sellable stock for expiry products", () => {

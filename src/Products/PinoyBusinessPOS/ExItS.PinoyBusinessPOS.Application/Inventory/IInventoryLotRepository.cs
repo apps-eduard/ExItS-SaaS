@@ -45,10 +45,13 @@ public interface IInventoryLotRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Counts on-hand expired lots (date-based) and near-expiry lots using each product's
+    /// <c>EffectiveExpirationWarningDays</c> (joined from catalog products).
+    /// </summary>
     Task<(int ExpiredCount, int NearExpiryCount)> CountExpiryAsync(
         PosOrganizationId organizationId,
         DateOnly today,
-        int warningDays,
         CancellationToken cancellationToken = default);
 
     Task AddAsync(InventoryLot lot, CancellationToken cancellationToken = default);

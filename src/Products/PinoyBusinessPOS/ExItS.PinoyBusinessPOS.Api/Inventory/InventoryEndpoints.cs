@@ -303,8 +303,9 @@ internal static class InventoryEndpoints
             return problem!;
         }
 
+        PosOrganizationScope.TryGetOptionalBranchId(request, out var branchId);
         var result = await queries
-            .ListAsync(organizationId, productId, includeDepleted ?? false, page, pageSize, ct)
+            .ListAsync(organizationId, productId, includeDepleted ?? false, page, pageSize, branchId, ct)
             .ConfigureAwait(false);
         return Results.Ok(result);
     }

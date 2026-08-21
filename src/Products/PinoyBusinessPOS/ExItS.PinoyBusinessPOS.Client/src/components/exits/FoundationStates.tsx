@@ -2,7 +2,17 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { EmptyState } from "@/components/exits/EmptyState";
 
-export function LoadingSkeleton({ count = 3, className }: { count?: number; className?: string }) {
+export function LoadingSkeleton({
+  count = 3,
+  className,
+  label: _label,
+}: {
+  count?: number;
+  className?: string;
+  /** Optional accessible label for callers; skeleton remains visual-only. */
+  label?: string;
+}) {
+  void _label;
   return (
     <div className={cn("grid gap-3", className)} aria-hidden="true" data-testid="loading-skeleton">
       {Array.from({ length: count }).map((_, index) => (

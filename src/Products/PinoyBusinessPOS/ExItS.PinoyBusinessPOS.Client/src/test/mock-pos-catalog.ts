@@ -5,6 +5,10 @@ export const MOCK_COKE_PRODUCT_ID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
 export const MOCK_CHIPS_PRODUCT_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 export const MOCK_RICE_PRODUCT_ID = "rrrrrrrr-rrrr-rrrr-rrrr-rrrrrrrrrrrr";
 export const MOCK_MEAT_PRODUCT_ID = "mmmmmmmm-mmmm-mmmm-mmmm-mmmmmmmmmmmm";
+export const MOCK_BOTTLE_PRODUCT_ID = "bbbbbbbb-1111-4111-8111-bbbbbbbbbbbb";
+export const MOCK_BOTTLE_UNIT_ID = "ubububub-ubub-ubub-ubub-ubububububub";
+export const MOCK_OIL_PRODUCT_ID = "oooooooo-oooo-oooo-oooo-oooooooooooo";
+export const MOCK_OIL_LITER_UNIT_ID = "ulululul-ulul-ulul-ulul-ulululululul";
 export const MOCK_RICE_KG_UNIT_ID = "ukukukuk-ukuk-ukuk-ukuk-ukukukukukuk";
 export const MOCK_RICE_SACK_UNIT_ID = "usususus-usus-usus-usus-usususususus";
 
@@ -137,11 +141,73 @@ export const mockMeatProduct = {
   updatedAtUtc: "2026-01-01T00:00:00Z",
 };
 
+export const mockBottleProduct = {
+  productId: MOCK_BOTTLE_PRODUCT_ID,
+  organizationId: "11111111-1111-1111-1111-111111111111",
+  name: "Premium Bottle",
+  sku: "BTL-95",
+  barcode: "4800099999999",
+  categoryId: MOCK_DRINKS_CATEGORY_ID,
+  unitOfMeasure: "Piece",
+  sellingMode: "PerItem",
+  sellingPrice: 100,
+  status: "Active",
+  canBeSold: true,
+  createdAtUtc: "2026-01-01T00:00:00Z",
+  updatedAtUtc: "2026-01-01T00:00:00Z",
+  units: [
+    {
+      unitId: MOCK_BOTTLE_UNIT_ID,
+      productId: MOCK_BOTTLE_PRODUCT_ID,
+      kind: "Sell",
+      displayName: "Bottle",
+      shortLabel: "btl",
+      multiplierToBase: 1,
+      sellingPrice: 95,
+      allowsCustomQuantity: false,
+      isActive: true,
+      sortOrder: 0,
+    },
+  ],
+};
+
+export const mockOilProduct = {
+  productId: MOCK_OIL_PRODUCT_ID,
+  organizationId: "11111111-1111-1111-1111-111111111111",
+  name: "Cooking Oil",
+  sku: "OIL-1L",
+  barcode: "4800088888888",
+  categoryId: MOCK_STAPLES_CATEGORY_ID,
+  unitOfMeasure: "Liter",
+  sellingMode: "PerItem",
+  sellingPrice: 80,
+  status: "Active",
+  canBeSold: true,
+  createdAtUtc: "2026-01-01T00:00:00Z",
+  updatedAtUtc: "2026-01-01T00:00:00Z",
+  units: [
+    {
+      unitId: MOCK_OIL_LITER_UNIT_ID,
+      productId: MOCK_OIL_PRODUCT_ID,
+      kind: "Sell",
+      displayName: "Liter",
+      shortLabel: "L",
+      multiplierToBase: 1,
+      sellingPrice: 80,
+      allowsCustomQuantity: true,
+      isActive: true,
+      sortOrder: 0,
+    },
+  ],
+};
+
 export const mockCatalogProducts = [
   mockCokeProduct,
   mockChipsProduct,
   mockRiceProduct,
   mockMeatProduct,
+  mockBottleProduct,
+  mockOilProduct,
 ];
 
 export function filterMockProducts(url: string) {

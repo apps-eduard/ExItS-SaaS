@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { resolveCatalogLookup } from "@/api/pos/catalog-lookup";
 import {
@@ -13,7 +13,7 @@ import {
   activeSellUnits,
   formatQuantityDisplay,
   isByWeightSellingMode,
-  needsSellUnitOrWeightDialog,
+  resolveAddFlow,
   resolveStockHint,
 } from "@/cart/sell-cart-helpers";
 import { cartLineKey } from "@/cart/sell-cart-helpers";
@@ -26,8 +26,10 @@ import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { StickyActionBar } from "@/components/exits/FoundationStates";
 import { SellCartPanel } from "@/features/sell/SellCartPanel";
 import { SellCategoryFilter } from "@/features/sell/SellCategoryFilter";
+import { SellCustomQuantityDialog } from "@/features/sell/SellCustomQuantityDialog";
 import { SellUnitEntryDialog } from "@/features/sell/SellUnitEntryDialog";
 import { SellWeightEntryDialog } from "@/features/sell/SellWeightEntryDialog";
+import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatCartSummary } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
@@ -60,12 +62,19 @@ type PendingWeightEntry = {
   initialKilograms?: number | null;
 };
 
+type PendingCustomQuantityEntry = {
+  product: PosCatalogProductDto;
+  unit: PosCatalogProductUnitDto;
+  initialQuantity?: number | null;
+};
+
 export function SellFloorPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { returnRoute, exit } = useSellingMode();
   const { boundWorkspace } = useWorkspace();
   const cart = useSessionCart();
+  const { readiness, hasOpenShift, currentShift } = useShiftContext();
 
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
@@ -75,6 +84,7 @@ export function SellFloorPage() {
   const [lookupLoading, setLookupLoading] = useState(false);
   const [unitEntry, setUnitEntry] = useState<PendingUnitEntry | null>(null);
   const [weightEntry, setWeightEntry] = useState<PendingWeightEntry | null>(null);
+  const [customQtyEntry, setCustomQtyEntry] = useState<PendingCustomQuantityEntry | null>(null);
   const lastExactScanRef = useRef<string | null>(null);
 
   const debouncedSearch = useDebouncedValue(searchTerm, SEARCH_DEBOUNCE_MS);
@@ -111,10 +121,15 @@ export function SellFloorPage() {
       ),
   });
 
-  const stockProductId = unitEntry?.product.productId ?? weightEntry?.product.productId ?? null;
+  const stockProductId =
+    unitEntry?.product.productId ??
+    weightEntry?.product.productId ??
+    customQtyEntry?.product.productId ??
+    null;
   const stockNeedsSellable =
     (unitEntry?.product.tracksExpiration === true ||
-      weightEntry?.product.tracksExpiration === true) &&
+      weightEntry?.product.tracksExpiration === true ||
+      customQtyEntry?.product.tracksExpiration === true) &&
     stockProductId != null;
 
   const inventoryHintQuery = useQuery({
@@ -125,7 +140,7 @@ export function SellFloorPage() {
   });
 
   const dialogStockHint = useMemo(() => {
-    const product = unitEntry?.product ?? weightEntry?.product;
+    const product = unitEntry?.product ?? weightEntry?.product ?? customQtyEntry?.product;
     if (!product) {
       return null;
     }
@@ -135,7 +150,7 @@ export function SellFloorPage() {
       sellableQuantity: inventoryHintQuery.data?.sellableQuantity,
       tracksExpiration: inventoryHintQuery.data?.tracksExpiration ?? product.tracksExpiration,
     };
-  }, [inventoryHintQuery.data, unitEntry?.product, weightEntry?.product]);
+  }, [customQtyEntry?.product, inventoryHintQuery.data, unitEntry?.product, weightEntry?.product]);
 
   const openWeightEntry = useCallback(
     (
@@ -166,39 +181,49 @@ export function SellFloorPage() {
     [],
   );
 
+  const openCustomQuantityEntry = useCallback(
+    (
+      product: PosCatalogProductDto,
+      unit: PosCatalogProductUnitDto,
+      initialQuantity?: number | null,
+    ) => {
+      const existing =
+        initialQuantity ?? cart.getEnteredQuantity(product.productId, unit.unitId);
+      setCustomQtyEntry({
+        product,
+        unit,
+        initialQuantity: existing > 0 ? existing : null,
+      });
+    },
+    [cart],
+  );
+
   const beginAddProduct = useCallback(
     (product: PosCatalogProductDto) => {
       if (product.canBeSold === false) {
         return;
       }
 
-      const sellUnits = activeSellUnits(product);
-
-      if (
-        sellUnits.length > 1 ||
-        (sellUnits.length === 1 &&
-          (sellUnits[0]!.multiplierToBase !== 1 || sellUnits[0]!.allowsCustomQuantity))
-      ) {
-        if (
-          sellUnits.length === 1 &&
-          (sellUnits[0]!.allowsCustomQuantity || isByWeightSellingMode(product.sellingMode))
-        ) {
-          openWeightEntry(product, sellUnits[0]!);
+      const flow = resolveAddFlow(product);
+      switch (flow.kind) {
+        case "weight":
+          openWeightEntry(product, flow.unit);
           return;
-        }
-
-        openUnitEntry(product, sellUnits);
-        return;
+        case "customQuantity":
+          openCustomQuantityEntry(product, flow.unit);
+          return;
+        case "direct":
+          cart.addLine(product, { unit: flow.unit, quantity: 1 });
+          return;
+        case "unitSelector":
+          openUnitEntry(product, flow.units);
+          return;
+        case "base":
+          cart.addProduct(product, 1);
+          return;
       }
-
-      if (isByWeightSellingMode(product.sellingMode)) {
-        openWeightEntry(product, null);
-        return;
-      }
-
-      cart.addProduct(product, 1);
     },
-    [cart, openUnitEntry, openWeightEntry],
+    [cart, openCustomQuantityEntry, openUnitEntry, openWeightEntry],
   );
 
   useEffect(() => {
@@ -290,14 +315,19 @@ export function SellFloorPage() {
       const { product } = unitEntry;
       setUnitEntry(null);
 
-      if (unit.allowsCustomQuantity || isByWeightSellingMode(product.sellingMode)) {
+      if (isByWeightSellingMode(product.sellingMode)) {
         openWeightEntry(product, unit, quantity > 0 ? quantity : null);
+        return;
+      }
+
+      if (unit.allowsCustomQuantity) {
+        openCustomQuantityEntry(product, unit, quantity > 0 ? quantity : null);
         return;
       }
 
       cart.addLine(product, { unit, quantity });
     },
-    [cart, openWeightEntry, unitEntry],
+    [cart, openCustomQuantityEntry, openWeightEntry, unitEntry],
   );
 
   const handleWeightConfirm = useCallback(
@@ -315,44 +345,90 @@ export function SellFloorPage() {
     [cart, weightEntry],
   );
 
+  const handleCustomQuantityConfirm = useCallback(
+    (quantity: number) => {
+      if (!customQtyEntry) {
+        return;
+      }
+      cart.addLine(customQtyEntry.product, {
+        unit: customQtyEntry.unit,
+        quantity,
+        replaceQuantity: true,
+      });
+      setCustomQtyEntry(null);
+    },
+    [cart, customQtyEntry],
+  );
+
+  const synthesizeLineProduct = useCallback(
+    (line: SessionCartLine): PosCatalogProductDto =>
+      displayedProducts.find((item) => item.productId === line.productId) ??
+      ({
+        productId: line.productId,
+        organizationId: workspaceScope?.organizationId ?? "",
+        name: line.name,
+        sku: line.sku,
+        unitOfMeasure: line.baseUnitOfMeasure,
+        sellingMode: line.sellingMode,
+        sellingPrice: line.unitPrice,
+        status: "Active",
+        createdAtUtc: "",
+        updatedAtUtc: "",
+        units: line.productUnitId
+          ? [
+              {
+                unitId: line.productUnitId,
+                productId: line.productId,
+                kind: "Sell",
+                displayName: line.unitLabel,
+                shortLabel: line.unitLabel,
+                multiplierToBase: line.multiplierToBase,
+                sellingPrice: line.unitPrice,
+                allowsCustomQuantity: line.allowsCustomQuantity,
+                isActive: true,
+                sortOrder: 0,
+              },
+            ]
+          : [],
+      } satisfies PosCatalogProductDto),
+    [displayedProducts, workspaceScope?.organizationId],
+  );
+
   const handleEditWeight = useCallback(
     (line: SessionCartLine) => {
-      const product =
-        displayedProducts.find((item) => item.productId === line.productId) ??
-        ({
-          productId: line.productId,
-          organizationId: workspaceScope?.organizationId ?? "",
-          name: line.name,
-          sku: line.sku,
-          unitOfMeasure: line.baseUnitOfMeasure,
-          sellingMode: line.sellingMode,
-          sellingPrice: line.unitPrice,
-          status: "Active",
-          createdAtUtc: "",
-          updatedAtUtc: "",
-          units: line.productUnitId
-            ? [
-                {
-                  unitId: line.productUnitId,
-                  productId: line.productId,
-                  kind: "Sell",
-                  displayName: line.unitLabel,
-                  shortLabel: line.unitLabel,
-                  multiplierToBase: line.multiplierToBase,
-                  sellingPrice: line.unitPrice,
-                  allowsCustomQuantity: true,
-                  isActive: true,
-                  sortOrder: 0,
-                },
-              ]
-            : [],
-        } satisfies PosCatalogProductDto);
-
+      const product = synthesizeLineProduct(line);
       const unit =
         activeSellUnits(product).find((item) => item.unitId === line.productUnitId) ?? null;
       openWeightEntry(product, unit, line.quantity);
     },
-    [displayedProducts, openWeightEntry, workspaceScope?.organizationId],
+    [openWeightEntry, synthesizeLineProduct],
+  );
+
+  const handleEditCustomQuantity = useCallback(
+    (line: SessionCartLine) => {
+      const product = synthesizeLineProduct(line);
+      const unit =
+        activeSellUnits(product).find((item) => item.unitId === line.productUnitId) ??
+        (line.productUnitId
+          ? ({
+              unitId: line.productUnitId,
+              productId: line.productId,
+              kind: "Sell",
+              displayName: line.unitLabel,
+              shortLabel: line.unitLabel,
+              multiplierToBase: line.multiplierToBase,
+              sellingPrice: line.unitPrice,
+              allowsCustomQuantity: true,
+              isActive: true,
+              sortOrder: 0,
+            } satisfies PosCatalogProductUnitDto)
+          : null);
+      if (!unit) {
+        return;
+      }
+      openCustomQuantityEntry(product, unit, line.quantity);
+    },
+    [openCustomQuantityEntry, synthesizeLineProduct],
   );
 
   const cartPanelProps = {
@@ -364,7 +440,9 @@ export function SellFloorPage() {
     onRemove: cart.removeLine,
     onSetQuantity: cart.setLineQuantity,
     onEditWeight: handleEditWeight,
+    onEditCustomQuantity: handleEditCustomQuantity,
     onClear: cart.clear,
+    checkoutReadiness: readiness,
   };
 
   return (
@@ -385,6 +463,31 @@ export function SellFloorPage() {
         >
           {t("sell.exitSelling")}
         </Button>
+      </div>
+
+      <div
+        data-testid="sell-shift-banner"
+        className="mb-4 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] p-3"
+      >
+        {hasOpenShift && currentShift ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)]">
+            {t("sell.shiftOpenBanner")
+              .replace("{shift}", currentShift.shiftNumber)
+              .replace(
+                "{register}",
+                currentShift.registerCode
+                  ? `${currentShift.registerCode} — ${currentShift.registerName ?? ""}`
+                  : t("shift.noRegisterOnShift"),
+              )}
+          </p>
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="m-0 text-[length:var(--exits-text-sm)]">{t("sell.shiftClosedBanner")}</p>
+            <Button asChild variant="ghost" className="min-h-11" data-testid="sell-banner-open-shift">
+              <Link to="/shifts/open">{t("shift.openTitle")}</Link>
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="sell-floor-layout min-h-0 min-w-0 flex-1">
@@ -451,7 +554,7 @@ export function SellFloorPage() {
                 // Tile uses catalog on-hand; sellable is loaded in entry dialogs for expiry products.
                 sellableQuantity: undefined,
               });
-              const multiUnit = needsSellUnitOrWeightDialog(product);
+              const flow = resolveAddFlow(product);
               return (
                 <button
                   key={product.productId}
@@ -479,11 +582,15 @@ export function SellFloorPage() {
                           .replace("{unit}", hint.unitOfMeasure)}
                       </span>
                     ) : null}
-                    {multiUnit || isByWeightSellingMode(product.sellingMode) ? (
+                    {flow.kind === "weight" ||
+                    flow.kind === "customQuantity" ||
+                    flow.kind === "unitSelector" ? (
                       <span className="truncate text-[length:var(--exits-text-xs)] text-muted">
-                        {isByWeightSellingMode(product.sellingMode)
+                        {flow.kind === "weight"
                           ? t("sell.tileByWeight")
-                          : t("sell.tileChooseUnit")}
+                          : flow.kind === "customQuantity"
+                            ? t("sell.tileCustomQty")
+                            : t("sell.tileChooseUnit")}
                       </span>
                     ) : null}
                   </div>
@@ -572,6 +679,24 @@ export function SellFloorPage() {
           }
         }}
         onConfirm={handleWeightConfirm}
+      />
+
+      <SellCustomQuantityDialog
+        open={customQtyEntry != null}
+        product={customQtyEntry?.product ?? null}
+        unit={customQtyEntry?.unit ?? null}
+        initialQuantity={customQtyEntry?.initialQuantity}
+        stockHint={dialogStockHint}
+        onCancel={() => setCustomQtyEntry(null)}
+        onRemove={() => {
+          if (customQtyEntry) {
+            cart.removeLine(
+              cartLineKey(customQtyEntry.product.productId, customQtyEntry.unit.unitId),
+            );
+            setCustomQtyEntry(null);
+          }
+        }}
+        onConfirm={handleCustomQuantityConfirm}
       />
     </div>
   );

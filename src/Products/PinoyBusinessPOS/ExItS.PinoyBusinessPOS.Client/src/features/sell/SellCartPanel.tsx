@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { lineAmount, type SessionCartLine } from "@/cart/SessionCartProvider";
 import { formatQuantityDisplay, isByWeightSellingMode } from "@/cart/sell-cart-helpers";
 import { ConfirmationDialog } from "@/components/exits/SheetDialog";
 import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
+import type { CheckoutShiftReadiness } from "@/features/shifts/checkout-readiness";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatCartSummary } from "@/lib/format-money";
 
@@ -16,11 +18,13 @@ type SellCartPanelProps = {
   onRemove: (lineKey: string) => void;
   onSetQuantity: (lineKey: string, quantity: number) => void;
   onEditWeight: (line: SessionCartLine) => void;
+  onEditCustomQuantity?: (line: SessionCartLine) => void;
   onClear: () => void;
   showClose?: boolean;
   onClose?: () => void;
   /** Disambiguates duplicate landscape + sheet markup (ids / optional test prefix). */
   panelId?: string;
+  checkoutReadiness?: CheckoutShiftReadiness;
 };
 
 export function SellCartPanel({
@@ -32,14 +36,18 @@ export function SellCartPanel({
   onRemove,
   onSetQuantity,
   onEditWeight,
+  onEditCustomQuantity,
   onClear,
   showClose = false,
   onClose,
   panelId = "cart",
+  checkoutReadiness,
 }: SellCartPanelProps) {
   const { t } = useI18n();
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const summary = formatCartSummary(lineCount, subtotal);
+  const shiftGateReady = checkoutReadiness?.shiftGateReady === true;
+  const readinessStatus = checkoutReadiness?.status ?? "loading";
 
   return (
     <>
@@ -77,6 +85,8 @@ export function SellCartPanel({
         <ul className="m-0 flex min-h-0 flex-1 list-none flex-col gap-2 overflow-y-auto p-0">
           {lines.map((line) => {
             const byWeight = isByWeightSellingMode(line.sellingMode);
+            const customMeasured = line.allowsCustomQuantity && !byWeight;
+            const wholeOnly = !line.allowsCustomQuantity && !byWeight;
             const amount = lineAmount(line);
             return (
               <li
@@ -124,6 +134,17 @@ export function SellCartPanel({
                       {formatQuantityDisplay(line.quantity)} {line.unitLabel} ·{" "}
                       {t("sell.editWeight")}
                     </Button>
+                  ) : customMeasured && onEditCustomQuantity ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="border border-border"
+                      data-testid={`sell-cart-edit-custom-${line.lineKey}`}
+                      onClick={() => onEditCustomQuantity(line)}
+                    >
+                      {formatQuantityDisplay(line.quantity)} {line.unitLabel} ·{" "}
+                      {t("sell.editCustomQty")}
+                    </Button>
                   ) : (
                     <div className="flex flex-wrap items-center gap-2">
                       <QuantityStepper
@@ -144,9 +165,9 @@ export function SellCartPanel({
                         id={`${panelId}-sell-qty-input-${line.lineKey}`}
                         data-testid={`sell-cart-qty-input-${line.lineKey}`}
                         type="number"
-                        inputMode="decimal"
-                        min={0.001}
-                        step={line.multiplierToBase !== 1 ? 1 : 1}
+                        inputMode={wholeOnly ? "numeric" : "decimal"}
+                        min={wholeOnly ? 1 : 0.001}
+                        step={wholeOnly ? 1 : 0.001}
                         value={line.quantity}
                         className="min-h-11 w-20 rounded-[var(--exits-radius-md)] border border-border bg-surface px-2 tabular-nums"
                         onChange={(event) => {
@@ -180,16 +201,55 @@ export function SellCartPanel({
             {t("sell.cartSubtotalLabel")}: <MoneyDisplay amount={subtotal} />
           </p>
         ) : null}
+        <div
+          data-testid="checkout-readiness"
+          data-readiness={readinessStatus}
+          className="rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] p-3"
+        >
+          <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold">
+            {t("sell.checkoutReadinessLabel")}
+          </p>
+          <p
+            className="mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted"
+            data-testid="checkout-readiness-detail"
+          >
+            {shiftGateReady
+              ? t("sell.checkoutReadinessReady")
+              : readinessStatus === "blocked_denied"
+                ? t("sell.checkoutReadinessDenied")
+                : readinessStatus === "blocked_closed"
+                  ? t("sell.checkoutReadinessClosed")
+                  : readinessStatus === "blocked_no_register"
+                    ? t("sell.checkoutReadinessNoRegister")
+                    : readinessStatus === "loading"
+                      ? t("loading.label")
+                      : t("sell.checkoutReadinessBlocked")}
+          </p>
+          {!shiftGateReady && readinessStatus !== "loading" && readinessStatus !== "blocked_denied" ? (
+            <Button asChild variant="ghost" className="mt-2 min-h-11 w-full" data-testid="sell-open-shift-cta">
+              <Link to="/shifts/open">{t("shift.openTitle")}</Link>
+            </Button>
+          ) : null}
+          {shiftGateReady ? (
+            <Button asChild variant="ghost" className="mt-2 min-h-11 w-full" data-testid="sell-view-shift-cta">
+              <Link to="/shifts">{t("shift.hubTitle")}</Link>
+            </Button>
+          ) : null}
+        </div>
         <Button
           data-testid="sell-pay"
           type="button"
           disabled
-          title={t("sell.payDisabledTitle")}
+          title={
+            shiftGateReady ? t("sell.payAwaitingSalePost") : t("sell.payDisabledNeedsShift")
+          }
           className="w-full"
         >
           {lineCount > 0 ? `${t("sell.payWithItems")} (${lineCount})` : t("sell.pay")}
         </Button>
-        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("sell.payNotReady")}</p>
+        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+          {shiftGateReady ? t("sell.payShiftReadyNotPosted") : t("sell.payNotReady")}
+        </p>
       </div>
 
       <ConfirmationDialog
