@@ -1,11 +1,28 @@
 import type { ReactNode } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
+import { cn } from "@/lib/cn";
 
-export function AppShell({ children, header }: { children: ReactNode; header?: ReactNode }) {
+export function AppShell({
+  children,
+  header,
+  withOrgBottomNav = false,
+}: {
+  children: ReactNode;
+  header?: ReactNode;
+  /** Reserve space for fixed org bottom nav on compact/tablet (hidden at lg+). */
+  withOrgBottomNav?: boolean;
+}) {
   const { t } = useI18n();
 
   return (
-    <div className="mx-auto flex min-h-[100dvh] w-full max-w-5xl min-w-0 flex-col overflow-x-hidden px-[max(var(--exits-page-padding),env(safe-area-inset-left))] pr-[max(var(--exits-page-padding),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)] pb-[max(2rem,env(safe-area-inset-bottom))]">
+    <div
+      className={cn(
+        "mx-auto flex min-h-[100dvh] w-full max-w-5xl min-w-0 flex-col overflow-x-hidden px-[max(var(--exits-page-padding),env(safe-area-inset-left))] pr-[max(var(--exits-page-padding),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]",
+        withOrgBottomNav
+          ? "pb-[max(5.5rem,calc(4.25rem+env(safe-area-inset-bottom)))] lg:pb-[max(2rem,env(safe-area-inset-bottom))]"
+          : "pb-[max(2rem,env(safe-area-inset-bottom))]",
+      )}
+    >
       <a
         href="#main-content"
         className="sr-only z-50 rounded-[var(--exits-radius-md)] bg-primary px-3 py-2 text-primary-foreground"

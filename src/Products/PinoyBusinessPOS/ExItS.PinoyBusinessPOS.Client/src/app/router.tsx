@@ -9,6 +9,7 @@ import { PersonalMorePage, PersonalUtangHubPage } from "@/features/personal/Pers
 import { PersonalExplorePosPage } from "@/features/personal/start-business/PersonalExplorePosPage";
 import { PersonalStartBusinessPage } from "@/features/personal/start-business/PersonalStartBusinessPage";
 import { PersonalShell } from "@/features/personal/PersonalShell";
+import { OrgMorePage } from "@/features/shell/OrgMorePage";
 import {
   PersonalInvitationsPage,
   PersonalMyQrPage,
@@ -242,6 +243,16 @@ export const appRoutes = [
             ),
           },
           { path: "settings/preferences", element: <PreferencesPage /> },
+          {
+            path: "more",
+            element: (
+              <RequireOrganizationSession>
+                <RequireWorkspaceBound>
+                  <OrgMorePage />
+                </RequireWorkspaceBound>
+              </RequireOrganizationSession>
+            ),
+          },
           {
             path: "sell",
             element: (

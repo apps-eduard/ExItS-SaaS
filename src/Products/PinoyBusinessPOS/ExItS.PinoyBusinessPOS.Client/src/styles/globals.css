@@ -170,7 +170,8 @@ body {
   position: fixed;
   left: max(0.75rem, env(safe-area-inset-left));
   right: max(0.75rem, env(safe-area-inset-right));
-  bottom: max(0.75rem, env(safe-area-inset-bottom));
+  /* Sit above the org bottom nav on compact/tablet; desktop has no bottom nav. */
+  bottom: max(0.75rem, calc(4.25rem + env(safe-area-inset-bottom)));
   z-index: 25;
   display: flex;
   min-height: 3.25rem;
@@ -183,6 +184,12 @@ body {
   padding: 0.75rem 1rem;
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.1);
   text-align: left;
+}
+
+@media (min-width: 1024px) {
+  .sell-cart-floating {
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
 }
 
 @media (min-width: 900px) and (orientation: landscape) {
@@ -208,6 +215,20 @@ body {
 @media not all and (min-width: 900px) and (orientation: landscape) {
   .sell-cart-landscape {
     display: none !important;
+  }
+}
+
+/* Responsive product tiles: auto-fill with a sensible max width so sparse catalogs
+   do not stretch into oversized cards on wide tablets/desktops. */
+.sell-product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5rem), 11.5rem));
+  justify-content: start;
+}
+
+@media (min-width: 640px) {
+  .sell-product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 10rem), 12.5rem));
   }
 }
 

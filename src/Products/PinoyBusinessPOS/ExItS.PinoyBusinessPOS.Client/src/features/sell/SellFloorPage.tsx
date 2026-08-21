@@ -708,7 +708,7 @@ export function SellFloorPage() {
 
           <div
             data-testid="sell-products"
-            className="grid min-h-[12rem] content-start items-start grid-cols-2 gap-3 rounded-[var(--exits-radius-lg)] border border-border bg-[var(--exits-surface-muted)] p-4 sm:grid-cols-3 lg:grid-cols-4"
+            className="sell-product-grid min-h-[12rem] content-start items-start gap-3 rounded-[var(--exits-radius-lg)] border border-border bg-[var(--exits-surface-muted)] p-4"
             aria-label={t("sell.productsLabel")}
           >
             {productsLoading ? (
