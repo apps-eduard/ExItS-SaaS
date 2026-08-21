@@ -24,7 +24,7 @@ Offline policy: `PosOfflineCapabilityPolicy` (unknown → OnlineRequired).
 | Sell / checkout | `/sales/new` | `SaleCartService` | `/pos/sales` | Queueable cash | CreateSale | Full checkout | PROVEN_CURRENT | | React cart only |
 | Sales history | `/sales`, detail/receipt | Sales pages | `/pos/sales` | OnlineRequired | roles | History | PROVEN_CURRENT | | React MISSING |
 | Returns | `/sales/{id}/return` | `SaleReturn.razor` | `/sale-returns` | OnlineRequired | return roles | Partial/restock | PROVEN_CURRENT | | React MISSING |
-| Customers / Utang | `/customers*` | Customers + local credit store | `/pos/customers` | Queueable list/credit | roles | Credit/repay | PROVEN_CURRENT | | React MISSING |
+| Customers / Utang | `/customers*` | Customers + local credit store | `/pos/customers` | Queueable list/credit | roles | Credit/repay | PROVEN_CURRENT | | React CURRENT (RMAP-13; online) |
 | Reports | `/reports*`, `/dashboard` | Reporting | `/pos/reports` | OnlineRequired | Viewer+ | Ops reports | PROVEN_CURRENT | | React MISSING |
 | Customer ordering | `/orders*`, personal shop | Seller/Buyer order pages | customer-orders | OnlineRequired | | Storefront + ops | PROVEN_CURRENT | | React MISSING |
 | Offline PIN/grant | `/offline-pin*` | OfflinePin + LocalStore | sync/grant | OfflineCapable | device | PIN unlock | PROVEN_CURRENT | | React MISSING |

@@ -32,4 +32,4 @@ Personal ledger ≠ Organization Business Credit ledger. Preserve.
 
 ## React
 
-Customers / Business Utang / linked statements: **MISSING**.
+Customers / Business Utang / statements: **CURRENT** (RMAP-13). Linked Personal purchase projection: **MISSING** (RMAP-B04 NOT STARTED). Personal Utang React: **MISSING**.

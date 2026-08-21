@@ -41,7 +41,7 @@ Current Contract Status: `CURRENT` | `OWNER_CONFIRMED_CHANGE` | `MIXED` | `UNRES
 | Cart | Required | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT (RMAP-09; session only) | Sell floor | Checkout next | SessionCart |
 | Checkout/sale | Required | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Shift+cart+inventory | Major React WP | SaleUseCases |
 | Returns/void | Required | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Sales | After sales | SaleReturn |
-| Customers / Business Utang | Required | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Sales optional | Customer WP | CustomerEndpoints |
+| Customers / Business Utang | Required | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | MISSING | Sales optional | Customer WP | CustomerEndpoints |
 | Personal Utang | Personal surface | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Personal session | Personal WP | personal/utang |
 | Expenses | Ops | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Org | Later | ExpenseEndpoints |
 | Reports | Ops | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Sales data | Later | ReportingEndpoints |

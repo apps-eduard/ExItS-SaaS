@@ -2,7 +2,7 @@
 
 ## Status
 
-**RMAP-12 COMPLETE** — current payments (Cash / GCash→ManualGCash / Utang) + void. Ready for authorized RMAP-13.
+**RMAP-13 COMPLETE** — customers + Business Utang (credit, payments, statements). Ready for authorized RMAP-14.
 
 ## Baseline
 
@@ -21,28 +21,31 @@
 | RMAP-10b | PASS | `d48da9a8` | `e356ee16` |
 | RMAP-11 | PASS | `a43d26b8` | `3d9615eb` |
 | RMAP-11b | PASS | `f9fd88a4` | _(docs; see prior Cursor response)_ |
-| RMAP-12 | PASS | `7dcd3ab5` | _(docs; this package)_ |
+| RMAP-12 | PASS | `7dcd3ab5` | _(docs; see prior package)_ |
+| RMAP-13 | PASS | `adf634ee` | _(docs; this package)_ |
 
 ## Former blocker — CLEARED
 
 **Code:** `RMAP11_BROWSER_DEVICE_CONTRACT_GAP` → **CLEARED** by RMAP-10b.
 
-**Evidence after RMAP-12:**
+**Evidence after RMAP-13:**
 
 - Durable browser installation id + authorize + `X-Pos-Installation-Device-Id` on sale POST.
 - Online Cash / ManualGCash / Utang checkout; commercial discount intents + authoritative quote.
 - Void on Transaction Summary for Owner/Manager; Cashier denied.
-- Cashier Utang customer lookup gap documented (CreateCredit without ViewCustomers) — no matrix bypass.
+- Customers CRUD + Business Utang Amount owed / Payment / Remaining balance + statement.
+- Discounted Utang credit amount displayed from server equals net Amount to Pay.
+- `RMAP_B04_STARTED=NO` (buyer purchase projection not started).
 
 ## Not started
 
-RMAP-13, RMAP-14, RMAP-15+, RMAP-B01, RMAP-12b, RMAP-B04, RMAP-TAX, provider payments, Owner Personal switcher.
+RMAP-14, RMAP-15+, RMAP-B01, RMAP-12b, RMAP-B04, RMAP-TAX, provider payments, Owner Personal switcher, Personal Utang React.
 
 ## Exact next
 
-**RMAP-13 — Customers + Business Utang** when authorized.
+**RMAP-14 — Returns / refunds** when authorized.
 
-Do **not** invent Card/provider GCash UI, mutate PosRoleMatrix without auth, or start RMAP-13 without authorization.
+Do **not** invent Card/provider GCash UI, mutate PosRoleMatrix without auth, start RMAP-B04, or start Personal Utang without authorization.
 
 ## Final HEAD
 

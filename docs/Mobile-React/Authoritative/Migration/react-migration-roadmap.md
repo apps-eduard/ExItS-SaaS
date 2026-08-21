@@ -305,6 +305,7 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 |-------|---------|
 | Objective | Customers, credit, repayments, statements |
 | Dependencies | RMAP-11, RMAP-00 |
+| Status | **COMPLETE** — report [POS-REACT-RMAP-13-customers-utang.md](../../Reports/POS-REACT-RMAP-13-customers-utang.md) |
 | Next | RMAP-14 |
 
 ### RMAP-14 — Returns / refunds
@@ -438,10 +439,10 @@ Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, 
 ## APPROVED PROPOSED MASTER RUN 01
 
 **Name:** Foundation + Catalog/Inventory Baseline
-**Status:** RMAP-00…RMAP-12 PASS (sell-floor/cart + register/open-shift readiness + browser PosDevice + online checkout Cash/GCash/Utang + commercial discount UX + void). Next authorized package: RMAP-13 when authorized.
+**Status:** RMAP-00…RMAP-13 PASS (sell-floor/cart + register/open-shift readiness + browser PosDevice + online checkout Cash/GCash/Utang + commercial discount UX + void + customers/Business Utang). Next authorized package: RMAP-14 when authorized.
 **Stop rule:** After Master Run packages + authorized B03 closeout → HARD STOP for Product Owner + ChatGPT review (historical). RMAP-08/09 completed after that stop when authorized.
 **Do not include (still gated):** RMAP-B04; RMAP-TAX implementation
-**Completed beyond Master Run 01 table:** RMAP-08 lots/expiry inventory surfaces; RMAP-09 sell floor + session cart; RMAP-10 registers + open shift gate; RMAP-10b browser POS device authorization; RMAP-11 online cash checkout; RMAP-11b commercial discount UX; RMAP-12 current payments (Cash/GCash/Utang) + void
+**Completed beyond Master Run 01 table:** RMAP-08 lots/expiry inventory surfaces; RMAP-09 sell floor + session cart; RMAP-10 registers + open shift gate; RMAP-10b browser POS device authorization; RMAP-11 online cash checkout; RMAP-11b commercial discount UX; RMAP-12 current payments (Cash/GCash/Utang) + void; RMAP-13 customers + Business Utang
 **Distinction preserved:** Today's Price ≠ Cashier Price Override ≠ Commercial Discount ≠ Promotion ≠ Regulatory Discount
 **Completion report (B00):** [POS-REACT-RMAP-B00-identity-reconciliation.md](../../Reports/POS-REACT-RMAP-B00-identity-reconciliation.md)
 **Completion report (RMAP-01):** [POS-REACT-RMAP-01-account-session-parity.md](../../Reports/POS-REACT-RMAP-01-account-session-parity.md)
