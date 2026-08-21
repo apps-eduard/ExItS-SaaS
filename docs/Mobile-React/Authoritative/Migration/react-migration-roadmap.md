@@ -313,7 +313,8 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 |-------|---------|
 | Objective | Partial returns, restock, inventory restore |
 | Dependencies | RMAP-11, RMAP-00 |
-| Next | RMAP-15 |
+| Status | **HARD STOP** — `RMAP14_EXPIRY_RETURN_CONTRACT_GAP` ([report](../../Reports/POS-REACT-RMAP-14-returns-refunds.md)). Return restock does not restore FEFO lots; React returns withheld. |
+| Next | Backend expiry-return contract authorization → restart RMAP-14 only. Do **not** start RMAP-15 until RMAP-14 PASS. |
 
 ### RMAP-15 — Manual suppliers
 | Field | Content |
@@ -439,7 +440,7 @@ Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, 
 ## APPROVED PROPOSED MASTER RUN 01
 
 **Name:** Foundation + Catalog/Inventory Baseline
-**Status:** RMAP-00…RMAP-13 PASS (sell-floor/cart + register/open-shift readiness + browser PosDevice + online checkout Cash/GCash/Utang + commercial discount UX + void + customers/Business Utang). Next authorized package: RMAP-14 when authorized.
+**Status:** RMAP-00…RMAP-13 PASS. Master Run 02 Resume **HARD STOP** at RMAP-14 (`RMAP14_EXPIRY_RETURN_CONTRACT_GAP`). Do not start RMAP-15 until RMAP-14 PASS.
 **Stop rule:** After Master Run packages + authorized B03 closeout → HARD STOP for Product Owner + ChatGPT review (historical). RMAP-08/09 completed after that stop when authorized.
 **Do not include (still gated):** RMAP-B04; RMAP-TAX implementation
 **Completed beyond Master Run 01 table:** RMAP-08 lots/expiry inventory surfaces; RMAP-09 sell floor + session cart; RMAP-10 registers + open shift gate; RMAP-10b browser POS device authorization; RMAP-11 online cash checkout; RMAP-11b commercial discount UX; RMAP-12 current payments (Cash/GCash/Utang) + void; RMAP-13 customers + Business Utang
