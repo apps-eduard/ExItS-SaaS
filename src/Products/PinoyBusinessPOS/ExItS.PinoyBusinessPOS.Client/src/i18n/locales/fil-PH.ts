@@ -75,6 +75,23 @@ export const filPH: Record<keyof typeof en, string> = {
   "offline.requiredCustomerStatus": "Kailangan ng internet para baguhin ang status ng customer.",
   "offline.requiredCustomerStatement": "Kailangan ng internet ang statement.",
   "offline.requiredCustomerLink": "Kailangan ng internet para i-link ang ExItS account.",
+  "offline.requiredPersonalContactLink":
+    "Kailangan ng internet para i-link ang ExItS account ng taong ito.",
+  "offline.requiredPersonalUtangInvite": "Kailangan ng internet para i-share ang utang na ito.",
+  "offline.requiredPersonalUtangReminder": "Kailangan ng internet para magpadala ng paalala.",
+  "offline.requiredPersonalUtangAdjustment": "Kailangan ng internet para itama ang balanse.",
+  "offline.personalCachedNotice":
+    "Nakaimbak na utang ang nakikita. Magre-refresh kapag nakakonekta muli.",
+  "offline.personalWaitingBadge": "Hinihintay ang sync",
+  "offline.personalContactWillQueue":
+    "Offline ka. Mananatili ang taong ito sa device hangga't hindi ka nakakonekta.",
+  "offline.personalUtangWillQueue":
+    "Offline ka. Mananatili ang utang na ito sa device hangga't hindi ka nakakonekta.",
+  "offline.personalEntryWillQueue":
+    "Offline ka. Mananatili ang talang ito sa device hangga't hindi ka nakakonekta.",
+  "offline.personalEnqueueFailed": "Hindi ito naimbak sa device. Subukan muli.",
+  "offline.personalOwnerUnknown":
+    "Buksan ang Utang minsan habang online, pagkatapos ay puwede nang offline.",
   "offline.cachedCustomersNotice":
     "Nakaimbak na customer ang nakikita. Magre-refresh ang balanse kapag nakakonekta muli.",
   "offline.cachedBalanceNotice": "Nakaimbak na balanse. Magre-refresh kapag nakakonekta muli.",
@@ -87,8 +104,7 @@ export const filPH: Record<keyof typeof en, string> = {
     "Offline ka. Ang pag-save ay mananatili sa device na ito hangga't hindi ka nakakonekta.",
   "offline.paymentWillQueue":
     "Offline ka. Ang bayad ay mananatili sa device na ito hangga't hindi kinompirma ng server.",
-  "offline.customerEnqueueFailed":
-    "Hindi na-imbak ang customer sa device na ito. Subukan muli.",
+  "offline.customerEnqueueFailed": "Hindi na-imbak ang customer sa device na ito. Subukan muli.",
   "offline.paymentEnqueueFailed": "Hindi na-imbak ang bayad sa device na ito. Subukan muli.",
   "offline.customerNotCached": "Hindi nakaimbak sa device na ito ang customer.",
   "shell.notifications.label": "Mga abiso",

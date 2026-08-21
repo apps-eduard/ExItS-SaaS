@@ -75,6 +75,23 @@ export const cebPH: Record<keyof typeof en, string> = {
   "offline.requiredCustomerStatus": "Kinahanglan internet sa pag-usab sa status sa customer.",
   "offline.requiredCustomerStatement": "Kinahanglan internet ang statement.",
   "offline.requiredCustomerLink": "Kinahanglan internet sa pag-link sa ExItS account.",
+  "offline.requiredPersonalContactLink":
+    "Kinahanglan internet sa pag-link sa ExItS account niini nga tawo.",
+  "offline.requiredPersonalUtangInvite": "Kinahanglan internet sa pag-share niini nga utang.",
+  "offline.requiredPersonalUtangReminder": "Kinahanglan internet sa pagpadala og pahinumdom.",
+  "offline.requiredPersonalUtangAdjustment": "Kinahanglan internet sa pag-tul-id sa balanse.",
+  "offline.personalCachedNotice":
+    "Gitipigan nga utang ang gipakita. Mag-refresh kon makakonektar na.",
+  "offline.personalWaitingBadge": "Naghulat sa sync",
+  "offline.personalContactWillQueue":
+    "Offline ka. Magpabilin kini nga tawo sa device hangtod makakonektar ka.",
+  "offline.personalUtangWillQueue":
+    "Offline ka. Magpabilin kini nga utang sa device hangtod makakonektar ka.",
+  "offline.personalEntryWillQueue":
+    "Offline ka. Magpabilin kini nga entry sa device hangtod makakonektar ka.",
+  "offline.personalEnqueueFailed": "Wala kini natipigan sa device. Sulayi pag-usab.",
+  "offline.personalOwnerUnknown":
+    "Ablihi ang Utang usa ka higayon samtang online, dayon mahimo na offline.",
   "offline.cachedCustomersNotice":
     "Gitipigan nga customer ang gipakita. Mag-refresh ang balanse kon makakonektar na.",
   "offline.cachedBalanceNotice": "Gitipigan nga balanse. Mag-refresh kon makakonektar na.",

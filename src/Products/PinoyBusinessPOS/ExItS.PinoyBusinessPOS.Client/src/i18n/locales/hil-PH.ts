@@ -76,6 +76,23 @@ export const hilPH: Record<keyof typeof en, string> = {
   "offline.requiredCustomerStatus": "Kinahanglan internet sa pagbag-o sang status sang customer.",
   "offline.requiredCustomerStatement": "Kinahanglan internet ang statement.",
   "offline.requiredCustomerLink": "Kinahanglan internet sa pag-link sang ExItS account.",
+  "offline.requiredPersonalContactLink":
+    "Kinahanglan internet sa pag-link sang ExItS account sini nga tawo.",
+  "offline.requiredPersonalUtangInvite": "Kinahanglan internet sa pag-share sini nga utang.",
+  "offline.requiredPersonalUtangReminder": "Kinahanglan internet sa pagpadala sang pahanumdom.",
+  "offline.requiredPersonalUtangAdjustment": "Kinahanglan internet sa pagtadlong sang balanse.",
+  "offline.personalCachedNotice":
+    "Gina-tipigan nga utang ang ginapakita. Maga-refresh kon makakonektar liwat.",
+  "offline.personalWaitingBadge": "Ginahulat ang sync",
+  "offline.personalContactWillQueue":
+    "Offline ka. Magapabilin ini nga tawo sa device tubtob makakonektar ka.",
+  "offline.personalUtangWillQueue":
+    "Offline ka. Magapabilin ini nga utang sa device tubtob makakonektar ka.",
+  "offline.personalEntryWillQueue":
+    "Offline ka. Magapabilin ini nga entry sa device tubtob makakonektar ka.",
+  "offline.personalEnqueueFailed": "Wala ini natipigan sa device. Tilawi liwat.",
+  "offline.personalOwnerUnknown":
+    "Buksan ang Utang isa ka beses samtang online, dayon mahimo na offline.",
   "offline.cachedCustomersNotice":
     "Gina-tipigan nga customer ang ginapakita. Maga-refresh ang balanse kon makakonektar liwat.",
   "offline.cachedBalanceNotice": "Gina-tipigan nga balanse. Maga-refresh kon makakonektar liwat.",

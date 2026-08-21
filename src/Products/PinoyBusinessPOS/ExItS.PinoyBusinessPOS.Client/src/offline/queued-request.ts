@@ -65,3 +65,73 @@ export function parseQueuedRequest(plaintextJson: string): QueuedRequestEnvelope
   }
   return { api: record.api, method: record.method, path: record.path, body: record.body };
 }
+
+/**
+ * A relationship queued offline points at a contact that does not exist on the server yet, so the
+ * queued request carries a placeholder instead of a real id. The sync processor rewrites every
+ * placeholder from the entity map right before replay, and refuses to send while any is unresolved.
+ *
+ * Keeping the marker inside the payload means the dependency travels with the encrypted request
+ * rather than living in UI state that a reload would lose.
+ */
+/** A placeholder can be a whole body value or one segment of a path, so matching is not anchored. */
+const LOCAL_REF_PATTERN = /\{\{local:([^{}]+)\}\}/g;
+
+export function localRefToken(localId: string): string {
+  if (!localId || localId.includes("{{") || localId.includes("}}")) {
+    throw new Error("A local reference token needs a plain local id.");
+  }
+  return `{{local:${localId}}}`;
+}
+
+function walk(value: unknown, visit: (localId: string) => string): unknown {
+  if (typeof value === "string") {
+    return value.replace(LOCAL_REF_PATTERN, (_token, localId: string) => visit(localId));
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => walk(item, visit));
+  }
+  if (typeof value === "object" && value !== null) {
+    const mapped: Record<string, unknown> = {};
+    for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+      mapped[key] = walk(item, visit);
+    }
+    return mapped;
+  }
+  return value;
+}
+
+export function collectLocalRefs(envelope: QueuedRequestEnvelope): string[] {
+  const found = new Set<string>();
+  const record = (localId: string): string => {
+    found.add(localId);
+    return localRefToken(localId);
+  };
+  walk(envelope.body, record);
+  walk(envelope.path, record);
+  return [...found];
+}
+
+export type LocalRefResolution =
+  { resolved: true; envelope: QueuedRequestEnvelope } | { resolved: false; missing: string[] };
+
+export function resolveLocalRefs(
+  envelope: QueuedRequestEnvelope,
+  lookup: (localId: string) => string | null,
+): LocalRefResolution {
+  const missing: string[] = [];
+  const substitute = (localId: string): string => {
+    const serverId = lookup(localId);
+    if (!serverId) {
+      missing.push(localId);
+      return localRefToken(localId);
+    }
+    return serverId;
+  };
+  const body = walk(envelope.body, substitute);
+  const path = walk(envelope.path, substitute) as string;
+  if (missing.length > 0) {
+    return { resolved: false, missing: [...new Set(missing)] };
+  }
+  return { resolved: true, envelope: { ...envelope, path, body } };
+}

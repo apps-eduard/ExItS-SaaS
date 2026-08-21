@@ -12,10 +12,7 @@ import {
 } from "@/api/pos/pos-mutation-idempotency";
 import type { OfflineDb } from "@/offline/db";
 import { enqueueEncryptedOperation } from "@/offline/outbox";
-import {
-  QUEUED_REQUEST_PAYLOAD_VERSION,
-  serializeQueuedRequest,
-} from "@/offline/queued-request";
+import { QUEUED_REQUEST_PAYLOAD_VERSION, serializeQueuedRequest } from "@/offline/queued-request";
 import type { OfflineOperationRecord } from "@/offline/types";
 
 /**

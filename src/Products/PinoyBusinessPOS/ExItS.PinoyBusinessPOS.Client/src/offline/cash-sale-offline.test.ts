@@ -45,8 +45,8 @@ function baseInput(
 }
 
 describe("RMAP-21D offline Cash sale enqueue", () => {
-  it("keeps the Sell stores intact after the RMAP-21E schema bump", async () => {
-    expect(OFFLINE_SCHEMA_VERSION).toBe(3);
+  it("keeps the Sell stores intact after the RMAP-21F schema bump", async () => {
+    expect(OFFLINE_SCHEMA_VERSION).toBe(4);
     const { db } = await openScopedDb("user-schema");
     expect([...db.objectStoreNames].sort()).toEqual([
       "catalogCategories",
@@ -56,6 +56,9 @@ describe("RMAP-21D offline Cash sale enqueue", () => {
       "entityMap",
       "meta",
       "outbox",
+      "personalContacts",
+      "personalEntries",
+      "personalRelationships",
       "sellReadiness",
     ]);
     db.close();

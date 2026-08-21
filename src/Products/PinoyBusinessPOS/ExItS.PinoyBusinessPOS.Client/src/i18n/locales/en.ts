@@ -68,8 +68,7 @@ export const en = {
   "offline.requiredCustomerStatus": "Changing customer status needs internet.",
   "offline.requiredCustomerStatement": "Statements need internet.",
   "offline.requiredCustomerLink": "Linking an ExItS account needs internet.",
-  "offline.cachedCustomersNotice":
-    "Showing saved customers. Balances refresh when you reconnect.",
+  "offline.cachedCustomersNotice": "Showing saved customers. Balances refresh when you reconnect.",
   "offline.cachedBalanceNotice": "Saved balance. It refreshes when you reconnect.",
   "offline.customerQueuedTitle": "Customer saved on this device",
   "offline.customerQueuedDetail": "It is not recorded on the server yet.",
@@ -83,6 +82,21 @@ export const en = {
   "offline.customerEnqueueFailed": "Could not save this customer on this device. Try again.",
   "offline.paymentEnqueueFailed": "Could not save this payment on this device. Try again.",
   "offline.customerNotCached": "This customer is not saved on this device.",
+  "offline.requiredPersonalContactLink":
+    "Linking this person to their ExItS account needs internet.",
+  "offline.requiredPersonalUtangInvite": "Sharing this utang needs internet.",
+  "offline.requiredPersonalUtangReminder": "Sending a reminder needs internet.",
+  "offline.requiredPersonalUtangAdjustment": "Correcting a balance needs internet.",
+  "offline.personalCachedNotice": "Showing saved utang. It refreshes when you reconnect.",
+  "offline.personalWaitingBadge": "Waiting to sync",
+  "offline.personalContactWillQueue":
+    "You are offline. Saving keeps this person on this device until you reconnect.",
+  "offline.personalUtangWillQueue":
+    "You are offline. Saving keeps this utang on this device until you reconnect.",
+  "offline.personalEntryWillQueue":
+    "You are offline. Saving keeps this entry on this device until you reconnect.",
+  "offline.personalEnqueueFailed": "Could not save this on this device. Try again.",
+  "offline.personalOwnerUnknown": "Open Utang once while online, then you can add utang offline.",
   "shell.notifications.label": "Notifications",
   "shell.notifications.unreadLabel": "Notifications, {count} unread",
   "pwa.updateAvailable": "Update available",

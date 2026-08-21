@@ -1,7 +1,13 @@
 import type { PosCatalogProductDto, PosProductCategoryDto } from "@/api/pos/pos-catalog-types";
 
-/** v3 adds the encrypted Business customer cache and credit summary cache (RMAP-21E). */
-export const OFFLINE_SCHEMA_VERSION = 3 as const;
+/** v4 adds the encrypted Personal Utang projections (RMAP-21F). */
+export const OFFLINE_SCHEMA_VERSION = 4 as const;
+
+/** Written to `meta` on open so a Personal write can refuse an Organization database. */
+export const OFFLINE_SCOPE_KIND_META_KEY = "scopeKind" as const;
+
+/** Personal identity id, cached while online so an offline relationship can name its owner. */
+export const PERSONAL_USER_IDENTITY_META_KEY = "personalUserIdentityId" as const;
 
 export type OfflineScopeKind = "Personal" | "Organization";
 
@@ -83,6 +89,48 @@ export type CachedCustomerRecord = {
 /** Outstanding balance is money, so the credit summary is never cached as plaintext. */
 export type CachedCustomerCreditRecord = {
   customerId: string;
+  cachedAtUtc: string;
+  ciphertext: ArrayBuffer;
+  iv: ArrayBuffer;
+};
+
+/**
+ * Personal Utang projections (RMAP-21F).
+ * Every readable column here is either a local routing id or a lifecycle flag. Contact names,
+ * phone numbers, amounts and notes live inside the AES-GCM body, so a stolen device profile
+ * cannot be read as "who owes this person money".
+ */
+export type CachedPersonalContactRecord = {
+  /** Local id. Equals the server id once the contact has synced. */
+  contactId: string;
+  serverId: string | null;
+  origin: "Server" | "Local";
+  updatedAtUtc: string;
+  cachedAtUtc: string;
+  ciphertext: ArrayBuffer;
+  iv: ArrayBuffer;
+};
+
+export type CachedPersonalRelationshipRecord = {
+  relationshipId: string;
+  serverId: string | null;
+  /** "Lent" = the signed-in person is the creditor, "Borrowed" = the debtor. */
+  perspective: "Lent" | "Borrowed";
+  origin: "Server" | "Local";
+  /** Server row version, used only to detect that the cached balance is stale. */
+  version: number | null;
+  updatedAtUtc: string;
+  cachedAtUtc: string;
+  ciphertext: ArrayBuffer;
+  iv: ArrayBuffer;
+};
+
+export type CachedPersonalEntryRecord = {
+  entryId: string;
+  relationshipId: string;
+  serverId: string | null;
+  origin: "Server" | "Local";
+  occurredAtUtc: string;
   cachedAtUtc: string;
   ciphertext: ArrayBuffer;
   iv: ArrayBuffer;

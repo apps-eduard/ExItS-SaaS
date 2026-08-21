@@ -75,6 +75,23 @@ export const iloPH: Record<keyof typeof en, string> = {
   "offline.requiredCustomerStatus": "Masapul ti internet no baliwan ti status ti customer.",
   "offline.requiredCustomerStatement": "Masapul ti internet ti statement.",
   "offline.requiredCustomerLink": "Masapul ti internet no i-link ti ExItS account.",
+  "offline.requiredPersonalContactLink":
+    "Masapul ti internet no i-link ti ExItS account daytoy a tao.",
+  "offline.requiredPersonalUtangInvite": "Masapul ti internet no i-share daytoy nga utang.",
+  "offline.requiredPersonalUtangReminder": "Masapul ti internet no mangipatulod ti palagip.",
+  "offline.requiredPersonalUtangAdjustment": "Masapul ti internet no aturen ti balanse.",
+  "offline.personalCachedNotice":
+    "Naidulin nga utang ti maipakita. Ag-refresh no makakonekta manen.",
+  "offline.personalWaitingBadge": "Aguray ti sync",
+  "offline.personalContactWillQueue":
+    "Offline ka. Agtalinaed daytoy a tao iti device agingga a makakonekta ka.",
+  "offline.personalUtangWillQueue":
+    "Offline ka. Agtalinaed daytoy nga utang iti device agingga a makakonekta ka.",
+  "offline.personalEntryWillQueue":
+    "Offline ka. Agtalinaed daytoy nga entry iti device agingga a makakonekta ka.",
+  "offline.personalEnqueueFailed": "Saan a naidulin iti device. Padasen manen.",
+  "offline.personalOwnerUnknown":
+    "Lukatan ti Utang maminsan bayat nga online, kalpasanna mabalin nga offline.",
   "offline.cachedCustomersNotice":
     "Naidulin a customer ti maipakita. Ag-refresh ti balanse no makakonekta manen.",
   "offline.cachedBalanceNotice": "Naidulin a balanse. Ag-refresh no makakonekta manen.",

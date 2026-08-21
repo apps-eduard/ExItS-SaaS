@@ -11,6 +11,10 @@ import type { MessageKey } from "@/i18n/messages";
  * credit and reversing money need the live balance, changing a customer's active status is an
  * authorization act, a statement is a server-computed document, and linking a Business customer
  * to an ExItS Personal or Organization identity must never happen silently offline.
+ *
+ * RMAP-21F adds the Personal Utang acts that involve somebody other than the person holding the
+ * device: linking a contact to a real ExItS account, inviting or accepting a shared debt, sending
+ * a reminder, and correcting a balance against a version this device may no longer be showing.
  */
 export const ONLINE_REQUIRED_CODES = {
   GCashCheckout: "online_required.gcash_checkout",
@@ -24,6 +28,10 @@ export const ONLINE_REQUIRED_CODES = {
   CustomerStatus: "online_required.customer_status",
   CustomerStatement: "online_required.customer_statement",
   CustomerIdentityLink: "online_required.customer_identity_link",
+  PersonalContactLink: "online_required.personal_contact_link",
+  PersonalUtangInvite: "online_required.personal_utang_invite",
+  PersonalUtangReminder: "online_required.personal_utang_reminder",
+  PersonalUtangAdjustment: "online_required.personal_utang_adjustment",
 } as const;
 
 export type OnlineRequiredCode = (typeof ONLINE_REQUIRED_CODES)[keyof typeof ONLINE_REQUIRED_CODES];
@@ -40,6 +48,10 @@ const DETAIL_KEYS: Record<OnlineRequiredCode, MessageKey> = {
   [ONLINE_REQUIRED_CODES.CustomerStatus]: "offline.requiredCustomerStatus",
   [ONLINE_REQUIRED_CODES.CustomerStatement]: "offline.requiredCustomerStatement",
   [ONLINE_REQUIRED_CODES.CustomerIdentityLink]: "offline.requiredCustomerLink",
+  [ONLINE_REQUIRED_CODES.PersonalContactLink]: "offline.requiredPersonalContactLink",
+  [ONLINE_REQUIRED_CODES.PersonalUtangInvite]: "offline.requiredPersonalUtangInvite",
+  [ONLINE_REQUIRED_CODES.PersonalUtangReminder]: "offline.requiredPersonalUtangReminder",
+  [ONLINE_REQUIRED_CODES.PersonalUtangAdjustment]: "offline.requiredPersonalUtangAdjustment",
 };
 
 export function onlineRequiredDetailKey(code: OnlineRequiredCode): MessageKey {

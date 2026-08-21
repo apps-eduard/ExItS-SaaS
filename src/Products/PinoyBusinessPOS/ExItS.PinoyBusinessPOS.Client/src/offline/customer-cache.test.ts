@@ -131,12 +131,12 @@ describe("RMAP-21E Business customer cache", () => {
     expect(filterCachedCustomers(rows, { search: "ana" }).map((row) => row.customerId)).toEqual([
       "id-1",
     ]);
-    expect(
-      filterCachedCustomers(rows, { search: "0000002" }).map((row) => row.customerId),
-    ).toEqual(["id-2"]);
-    expect(
-      filterCachedCustomers(rows, { status: "Active" }).map((row) => row.customerId),
-    ).toEqual(["id-1"]);
+    expect(filterCachedCustomers(rows, { search: "0000002" }).map((row) => row.customerId)).toEqual(
+      ["id-2"],
+    );
+    expect(filterCachedCustomers(rows, { status: "Active" }).map((row) => row.customerId)).toEqual([
+      "id-1",
+    ]);
     expect(filterCachedCustomers(rows, {}).length).toBe(2);
   });
 });

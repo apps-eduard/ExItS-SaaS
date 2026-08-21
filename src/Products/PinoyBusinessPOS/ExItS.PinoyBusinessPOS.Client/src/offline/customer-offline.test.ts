@@ -29,7 +29,11 @@ async function openScoped(userId: string) {
   return { db, scopeBinding };
 }
 
-function scope(db: Awaited<ReturnType<typeof openOfflineDatabase>>, scopeBinding: string, userId: string) {
+function scope(
+  db: Awaited<ReturnType<typeof openOfflineDatabase>>,
+  scopeBinding: string,
+  userId: string,
+) {
   return {
     db,
     scopeBinding,
