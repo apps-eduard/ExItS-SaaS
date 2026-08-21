@@ -34,4 +34,4 @@ Tests: ConnectedSuppliers unit tests, LocalStore connected supplier tests, MAUI 
 
 ## React
 
-**MISSING** entire suppliers/connected-suppliers surface.
+**PARTIAL** — RMAP-15 manual suppliers + RMAP-16 connected suppliers (relationship/share/catalog/links). Purchasing PO receive remains RMAP-17.
