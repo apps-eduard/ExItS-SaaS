@@ -113,21 +113,24 @@ async function mockBoundOrgSession(
       });
     }
 
-    if (url.includes(`/organizations/${E2E_ORG_ID}/branches`) && method === "GET") {
-      return route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify([
-          {
-            id: E2E_BRANCH_ID,
-            organizationId: E2E_ORG_ID,
-            code: "MAIN",
-            name: "Main Branch",
-            isPrimary: true,
-            status: "Active",
-          },
-        ]),
-      });
+    {
+      const pathname = new URL(url).pathname.replace(/\/$/, "");
+      if (pathname.endsWith(`/organizations/${E2E_ORG_ID}/branches`) && method === "GET") {
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([
+            {
+              id: E2E_BRANCH_ID,
+              organizationId: E2E_ORG_ID,
+              code: "MAIN",
+              name: "Main Branch",
+              isPrimary: true,
+              status: "Active",
+            },
+          ]),
+        });
+      }
     }
 
     if (url.includes("/api/v1/platform/auth/organization-context") && method === "PUT") {

@@ -7,6 +7,8 @@ import { NotFoundPage } from "@/features/not-found/NotFoundPage";
 import { PersonalHomePage } from "@/features/personal/PersonalHomePage";
 import { PreferencesPage } from "@/features/preferences/PreferencesPage";
 import { CashHandlingSettingsPage } from "@/features/settings/CashHandlingSettingsPage";
+import { BranchFulfillmentEditPage } from "@/features/branches/BranchFulfillmentEditPage";
+import { BranchFulfillmentListPage } from "@/features/branches/BranchFulfillmentListPage";
 import { OrgEssentialsPage } from "@/features/role/OrgEssentialsPage";
 import { CatalogCategoriesPage } from "@/features/catalog/CatalogCategoriesPage";
 import {
@@ -232,6 +234,8 @@ export const appRoutes = [
               },
               { path: "devices", element: <OrgPosDevicesPage /> },
               { path: "cash-handling", element: <CashHandlingSettingsPage /> },
+              { path: "branches", element: <BranchFulfillmentListPage /> },
+              { path: "branches/:branchId", element: <BranchFulfillmentEditPage /> },
             ],
           },
           {

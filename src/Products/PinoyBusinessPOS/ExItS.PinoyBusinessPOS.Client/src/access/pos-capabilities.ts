@@ -397,6 +397,16 @@ export function canUseAdminExperience(grant: PosSessionGrantFacts | null | undef
   return hasOrganizationManagementAuthority(grant);
 }
 
+/**
+ * Branch fulfillment admin (address/coords/hours/pickup/delivery) — Owner or OrganizationAdministrator.
+ * POS StoreManager alone DENY. Server remains authoritative on Platform branch APIs.
+ */
+export function canManageBranchFulfillment(
+  grant: PosSessionGrantFacts | null | undefined,
+): boolean {
+  return hasOrganizationManagementAuthority(grant);
+}
+
 /** Manager-style operations experience. */
 export function canUseOperationsExperience(
   grant: PosSessionGrantFacts | null | undefined,

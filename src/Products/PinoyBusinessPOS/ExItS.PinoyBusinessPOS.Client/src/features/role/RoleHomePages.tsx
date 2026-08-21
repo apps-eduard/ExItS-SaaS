@@ -151,6 +151,16 @@ export function RoleHomeShell({
           <Link to="/org/devices">{t("devices.listTitle")}</Link>
         </Button>
       ) : null}
+      {canDevices ? (
+        <Button
+          asChild
+          variant="ghost"
+          className="min-h-11 w-fit"
+          data-testid="open-branch-fulfillment"
+        >
+          <Link to="/org/branches">{t("org.branchesLink")}</Link>
+        </Button>
+      ) : null}
       <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-device-register">
         <Link to="/devices/register">{t("devices.redeemTitle")}</Link>
       </Button>
