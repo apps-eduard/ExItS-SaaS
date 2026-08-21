@@ -1,6 +1,6 @@
 # POS-REACT OPERATIONS UX REPAIR 01 — Device → Shift → Sell readiness
 
-**Status:** `POS_OPERATIONS_UX_REPAIR_01=AWAITING_PRODUCT_OWNER_CHATGPT_REVIEW`  
+**Status:** `POS_OPERATIONS_UX_REPAIR_01=APPROVED` (capacity semantics closed by Review Repair 01)  
 **Start SHA:** `5e65fa22c22f21537bf52e164ecf14f8dd995d22` (RMAP-22 Personal Master Run 01 final tip)  
 **Implementation commit:** `a2fd04a51e078959ed114c938424f448c89692e4`  
 **Branch:** `feat/pos-react-client`
@@ -48,8 +48,9 @@ Client route/readiness UI is **not** security authority. Server continues to den
 ### Owner/Admin POS devices
 
 - Capacity from `getPosDeviceCapacity` (server-authoritative)
-- Finite: used / allowed + available + progress bar
-- Unlimited sentinel (`allowed >= 10000`): “active / Unlimited devices”
+- Finite server-authoritative capacity: PASS (`used` / `allowed` / available + progress bar)
+- Invented unlimited sentinel: REMOVED (`allowed >= 10000` is still a finite plan max of 10,000)
+- Flags: `POS_DEVICE_CAPACITY_SERVER_AUTHORITY=PASS`, `POS_DEVICE_CAPACITY_10000_IS_FINITE=PASS`, `POS_DEVICE_UNLIMITED_CLIENT_SENTINEL=REMOVED`
 - Raw installation UUID de-emphasized (copy under details)
 
 ### Organization essentials
