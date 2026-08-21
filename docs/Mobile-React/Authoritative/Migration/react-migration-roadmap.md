@@ -219,7 +219,7 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 | Backend | CURRENT |
 | Report | [POS-REACT-RMAP-08-lots-expiry-fefo.md](../../Reports/POS-REACT-RMAP-08-lots-expiry-fefo.md) |
 | Implementation SHA | `4c38bb0e` |
-| Exclusions | Checkout FEFO allocation (RMAP-09+); Card/provider payments |
+| Exclusions | Checkout FEFO allocation (**RMAP-11**); Card/provider payments |
 | Owner | OD-EXP-* |
 | Next | RMAP-09 |
 

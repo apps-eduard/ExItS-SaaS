@@ -30,7 +30,7 @@ Current Contract Status: `CURRENT` | `OWNER_CONFIRMED_CHANGE` | `MIXED` | `UNRES
 | Inventory default untracked | Default untracked | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Catalog, RMAP-07 | — | CreateUntracked; validation closeout `cb91145b` |
 | Inventory track/adjust/movements | Tracked authority | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Product, RMAP-07 | — | InventoryUseCases; validation closeout `cb91145b` |
 | Oversell prevention | Required | PROVEN_CURRENT | PROVEN_CURRENT | MISSING (enforced at checkout) | CURRENT | MISSING (advisory hints only on RMAP-09) | Inventory+checkout | Enforce on checkout | insufficient_stock |
-| Expiry lots + FEFO | Optional expiry | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT (inventory surfaces) | CURRENT | CURRENT (RMAP-08; checkout FEFO later) | Tracked inventory, RMAP-08 | Checkout FEFO later | InventoryLotFefo; React `4c38bb0e` |
+| Expiry lots + FEFO | Optional expiry | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT (inventory surfaces) | CURRENT | CURRENT (RMAP-08; checkout FEFO = RMAP-11) | Tracked inventory, RMAP-08 | Checkout FEFO at RMAP-11 | InventoryLotFefo; React inventory only |
 | Manual suppliers | Local suppliers | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Org, RMAP-00 | React supplier WP | Supplier |
 | Connected suppliers EXPOSABLE≠SHARED | Preserve | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Suppliers | After local suppliers | ConnectedSuppliers |
 | Purchasing receive-only stock | Preserve invariant | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Suppliers+inventory | React purchasing WP | GRN movements |
