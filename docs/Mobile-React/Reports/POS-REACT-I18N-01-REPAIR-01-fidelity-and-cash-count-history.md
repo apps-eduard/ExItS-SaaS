@@ -22,7 +22,7 @@
 | Role | Hash |
 |------|------|
 | Implementation | `e7bd79a9d69920d3cf4052d5da0cfdcc0334bce6` |
-| Docs | *(this commit)* |
+| Docs | $docsHash |
 
 ## Evidence
 
