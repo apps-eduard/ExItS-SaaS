@@ -234,7 +234,9 @@ test.describe("I18N-01 Repair 02 shift cash history", () => {
 
     for (const { locale, radio, notCounted } of locales) {
       await page.getByTestId("account-menu-trigger").click();
-      await page.getByRole("menuitem", { name: /Preferences|Mga setting|Dagiti kaykayat/i }).click();
+      await page
+        .getByRole("menuitem", { name: /Preferences|Mga setting|Dagiti kaykayat/i })
+        .click();
       await expect(page.getByTestId("preferences-close")).toBeVisible();
       await page.getByRole("radio", { name: radio }).click();
       await expect(page.locator("html")).toHaveAttribute("lang", locale);
