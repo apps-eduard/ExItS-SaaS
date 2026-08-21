@@ -16,11 +16,11 @@ Current Contract Status: `CURRENT` | `OWNER_CONFIRMED_CHANGE` | `MIXED` | `UNRES
 | Shared React UI foundation | Mobile-first DoD | N/A | N/A | PROVEN_CURRENT (foundation) | OWNER_CONFIRMED (UI std) | PROVEN_CURRENT (foundation) | RMAP-00 COMPLETE | Reuse in later WPs | 06-react-ui-ux doc; shared-ui-foundation.test.tsx |
 | Branch context binding | Required for ops | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT (RMAP-03) | CURRENT | PASS | Org | Device deferred | WorkspaceProvider + operational-branch |
 | Branch fulfillment/delivery config | Required for delivery | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Branch, RMAP-00 | After org parity | BranchEdit, Platform APIs |
-| Catalog read (sell) | Needed for sell floor | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_PARTIAL | CURRENT | PARTIAL | Product access | Extend units/weight | pos-catalog-client |
+| Catalog read (sell) | Needed for sell floor | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT (RMAP-09) | Product access | Checkout next | pos-catalog-client; units/weight on sell |
 | Catalog admin CRUD | Owner/Manager | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Catalog, RMAP-00, RMAP-04 | Units/prices next | CatalogEndpoints + `/catalog*` |
-| UOM enum | Controlled list | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_PARTIAL | CURRENT | PARTIAL | Catalog | Surface enum | UnitOfMeasure.cs |
-| ByWeight selling | Required | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | UOM, RMAP-00 | React sell WP | SellingMode |
-| Multi-UOM shared pool (rice etc.) | Required | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Product units, RMAP-05 | Prices next | CatalogProductUnit |
+| UOM enum | Controlled list | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT (RMAP-05/09) | Catalog | — | UnitOfMeasure.cs |
+| ByWeight selling | Required | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT (RMAP-09; Pay excluded) | UOM, RMAP-00 | Checkout WP | SellingMode; weight dialog |
+| Multi-UOM shared pool (rice etc.) | Required | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Product units, RMAP-05/09 | Checkout next | CatalogProductUnit |
 | Milligram UOM | Decision item | PROVEN_MISSING | PROVEN_MISSING | MISSING | UNRESOLVED | N/A | UD-01 | Owner decision; optional backend | No enum member |
 | Today’s Prices | Daily price change | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Catalog admin, RMAP-06 | Cashier override later (RMAP-B01) | prices endpoint; validation closeout `cb91145b` |
 | Commercial sale discount | Preserve UnitPrice; separate adjustment | PROVEN_CURRENT | PROVEN_CURRENT (no discount UI) | MISSING (no React UX) | CURRENT | Backend FINAL CLOSED; UI BLOCKED | RMAP-B03 | Discount UX after checkout (RMAP-11b) | ApplyCommercialDiscount; quote+checkout |
@@ -29,16 +29,16 @@ Current Contract Status: `CURRENT` | `OWNER_CONFIRMED_CHANGE` | `MIXED` | `UNRES
 | Controlled tax activation UX | TAX_NOT_AVAILABLE→ACTIVE | PROVEN_PARTIAL (capability) | PROVEN_PARTIAL | MISSING | OWNER_CONFIRMED_CHANGE (future) | N/A | RMAP-TAX NOT STARTED | After RMAP-23 | Not BIR certification |
 | Inventory default untracked | Default untracked | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Catalog, RMAP-07 | — | CreateUntracked; validation closeout `cb91145b` |
 | Inventory track/adjust/movements | Tracked authority | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT | Product, RMAP-07 | — | InventoryUseCases; validation closeout `cb91145b` |
-| Oversell prevention | Required | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Inventory+checkout | Enforce on checkout | insufficient_stock |
-| Expiry lots + FEFO | Optional expiry | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT (inventory surfaces) | CURRENT | CURRENT (RMAP-08; checkout FEFO later) | Tracked inventory, RMAP-08 | Sell-floor FEFO on RMAP-09+ | InventoryLotFefo; React `4c38bb0e` |
+| Oversell prevention | Required | PROVEN_CURRENT | PROVEN_CURRENT | MISSING (enforced at checkout) | CURRENT | MISSING (advisory hints only on RMAP-09) | Inventory+checkout | Enforce on checkout | insufficient_stock |
+| Expiry lots + FEFO | Optional expiry | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT (inventory surfaces) | CURRENT | CURRENT (RMAP-08; checkout FEFO later) | Tracked inventory, RMAP-08 | Checkout FEFO later | InventoryLotFefo; React `4c38bb0e` |
 | Manual suppliers | Local suppliers | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Org, RMAP-00 | React supplier WP | Supplier |
 | Connected suppliers EXPOSABLE≠SHARED | Preserve | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Suppliers | After local suppliers | ConnectedSuppliers |
 | Purchasing receive-only stock | Preserve invariant | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Suppliers+inventory | React purchasing WP | GRN movements |
 | Registers | Station mgmt | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Branch | Before shift UX | Register |
 | Devices | Device auth | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_PARTIAL (deferred) | CURRENT | PARTIAL — no browser PosDevice | Org | Later device contract | Honest deferred; money APIs server-gated |
 | Shifts | Cash authority | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Register/device | Gate checkout | CashierShift |
-| Sell floor browse | Required | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_PARTIAL | CURRENT | PARTIAL | Catalog, RMAP-00 | Continue | SellFloorPage |
-| Cart | Required | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_PARTIAL | CURRENT | PARTIAL | Sell floor | Add unit/weight | SessionCart |
+| Sell floor browse | Required | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT (RMAP-09) | Catalog, RMAP-00 | Checkout next | SellFloorPage |
+| Cart | Required | PROVEN_CURRENT | PROVEN_CURRENT | PROVEN_CURRENT | CURRENT | CURRENT (RMAP-09; session only) | Sell floor | Checkout next | SessionCart |
 | Checkout/sale | Required | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Shift+cart+inventory | Major React WP | SaleUseCases |
 | Returns/void | Required | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Sales | After sales | SaleReturn |
 | Customers / Business Utang | Required | PROVEN_CURRENT | PROVEN_CURRENT | MISSING | CURRENT | MISSING | Sales optional | Customer WP | CustomerEndpoints |

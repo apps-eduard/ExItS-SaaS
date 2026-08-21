@@ -38,9 +38,9 @@ Do not treat prior WP labels as completeness. Inventory against routes and code.
 | Workspace | `WorkspaceProvider`, chooser | workspace-resolver, Platform APIs | workspace tests | Org/branch binding; Personal no auto-bind | Owner ensure+select Organization (RMAP-02) | Medium |
 | Shared UI kit | `components/exits`, `components/ui` | tokens in `globals.css` | `shared-ui-foundation.test.tsx` + foundation/e2e viewports | **PROVEN_CURRENT / COMPLETE** for RMAP-00 foundation primitives | Date/DateTime, Tabs, ToggleRow deferred | Low |
 | Personal | `PersonalHomePage` | AccountClass guard | RMAP-01 e2e | Class-gated Personal home | Utang, shop, explore, start business | High if claimed complete |
-| Sell floor | `SellFloorPage` | catalog client, cart provider | sell-floor e2e | Browse/search/categories/cart UI | ByWeight, sell units, stock gates, pay | High |
+| Sell floor | `SellFloorPage` | catalog client, cart provider | sell-floor + rmap-09 e2e | Browse/search/categories/units/weight/cart UI | Pay/checkout; camera barcode | Medium |
 | Catalog admin | `/catalog*` pages | `pos-catalog-client` CRUD + units + image | rmap-04/05 e2e + unit draft tests | Category/product CRUD, UOM/SellingMode/packages, SKU/barcode, concurrency | Today’s Prices/import | Medium |
-| Cart | `SessionCartProvider` | in-memory | cart tests | Session cart | Persist/outbox/server cart | High |
+| Cart | `SessionCartProvider` | in-memory | cart tests | Session cart with units/weight | Persist/outbox/server cart | Medium |
 | Checkout | disabled copy | no sale POST client | | Explicit non-implementation | Entire sale pipeline; commercial discount backend exists (RMAP-B03) but **no React discount UI** | Critical |
 | Org/staff/branches | `/org` shell + invite | experience + invite guards | RMAP-02R e2e | Admin experience; Owner invite | Full Org Web CRUD | Medium |
 | Experience model | Owner chooser; role homes | `pos-capabilities` | RMAP-02R | Admin/Ops/Sell without role mutation | Custom roles | Low |

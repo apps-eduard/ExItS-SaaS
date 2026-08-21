@@ -75,4 +75,4 @@ Owner rice/feed/powder package requirements **align with CURRENT** multi-unit mo
 
 ## React
 
-Sell-floor catalog read does not yet expose full sell-unit selection / ByWeight entry parity with MAUI. Status: **PROVEN_PARTIAL** / largely **MISSING** for unit UX.
+Sell-floor catalog read exposes sell-unit selection and ByWeight entry parity with MAUI for cart building (RMAP-09). Checkout/Pay remains disabled. Status: **PROVEN_CURRENT** for cart entry UX; checkout still **MISSING**.

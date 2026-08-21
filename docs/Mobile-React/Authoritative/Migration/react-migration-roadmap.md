@@ -226,10 +226,13 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 ### RMAP-09 — Sell floor + cart parity (units/weight/stock)
 | Field | Content |
 |-------|---------|
+| Status | **COMPLETE** |
 | Objective | Search/categories/barcode, sell-unit selection, ByWeight, stock hints, cart edits |
 | Dependencies | RMAP-05, RMAP-07, RMAP-00 |
 | React start | `SellFloorPage`, `SessionCartProvider` |
-| Exclusions | Pay/checkout |
+| Report | [POS-REACT-RMAP-09-sell-floor-cart.md](../../Reports/POS-REACT-RMAP-09-sell-floor-cart.md) |
+| Implementation SHA | `ae433fd2` |
+| Exclusions | Pay/checkout; FEFO allocation; camera barcode (deferred) |
 | Next | RMAP-10 |
 
 ### RMAP-10 — Registers + open shift gate
@@ -414,10 +417,10 @@ Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, 
 ## APPROVED PROPOSED MASTER RUN 01
 
 **Name:** Foundation + Catalog/Inventory Baseline
-**Status:** RMAP-00…RMAP-08 PASS on inventory/expiry surfaces. Commercial discount payment boundaries proven (RMAP-B03). Next authorized package: RMAP-09 (sell floor). Do **not** start RMAP-11b, RMAP-B04, or RMAP-TAX without authorization.
-**Stop rule:** After Master Run packages + authorized B03 closeout → HARD STOP for Product Owner + ChatGPT review (historical). RMAP-08 completed after that stop when authorized.
+**Status:** RMAP-00…RMAP-09 PASS on sell-floor/cart parity (units/weight/stock; Pay still disabled). Commercial discount payment boundaries proven (RMAP-B03). Next authorized package: RMAP-10 (registers + shift gate). Do **not** start RMAP-11b, RMAP-B04, or RMAP-TAX without authorization.
+**Stop rule:** After Master Run packages + authorized B03 closeout → HARD STOP for Product Owner + ChatGPT review (historical). RMAP-08/09 completed after that stop when authorized.
 **Do not include (still gated):** RMAP-11b discount UX; RMAP-B04; RMAP-TAX implementation
-**Completed beyond Master Run 01 table:** RMAP-08 lots/expiry inventory surfaces (`4c38bb0e`)
+**Completed beyond Master Run 01 table:** RMAP-08 lots/expiry inventory surfaces (`4c38bb0e`); RMAP-09 sell floor + session cart
 **Distinction preserved:** Today's Price ≠ Cashier Price Override ≠ Commercial Discount ≠ Promotion ≠ Regulatory Discount
 **Completion report (B00):** [POS-REACT-RMAP-B00-identity-reconciliation.md](../../Reports/POS-REACT-RMAP-B00-identity-reconciliation.md)
 **Completion report (RMAP-01):** [POS-REACT-RMAP-01-account-session-parity.md](../../Reports/POS-REACT-RMAP-01-account-session-parity.md)

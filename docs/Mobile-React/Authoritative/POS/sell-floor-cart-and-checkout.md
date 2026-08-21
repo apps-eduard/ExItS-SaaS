@@ -28,12 +28,13 @@ Route: `/sales/new` (checkout + cart), role homes `/cashier|manager|owner`.
 
 | Area | Status | Evidence |
 |------|--------|----------|
-| Sell floor browse/search/categories | PROVEN_PARTIAL | `SellFloorPage.tsx` |
-| In-memory session cart | PROVEN_PARTIAL | `SessionCartProvider` |
+| Sell floor browse/search/categories | PROVEN_CURRENT | `SellFloorPage.tsx` (RMAP-09) |
+| In-memory session cart | PROVEN_CURRENT | `SessionCartProvider` — units/weight lines |
 | Checkout / pay | MISSING (explicitly disabled) | i18n `sell.payDisabledTitle`; no sale POST client |
-| ByWeight / sell-unit dialogs | MISSING | |
+| ByWeight / sell-unit dialogs | PROVEN_CURRENT | `SellWeightEntryDialog`, `SellUnitEntryDialog` |
 | Shift gate | MISSING | |
 | Offline cart/outbox | MISSING | |
+| Camera barcode | DEFERRED | Keyboard/wedge path only |
 
 ## OWNER notes
 
