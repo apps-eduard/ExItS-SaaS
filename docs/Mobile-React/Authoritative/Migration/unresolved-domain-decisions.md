@@ -27,15 +27,14 @@ Markers appear only when evidence supports them.
 | Field | Value |
 |-------|-------|
 | ID | UD-02 |
-| Markers | `POS_SALE_PRICE_POLICY_CONTRACT_MISSING`, `POS_CASHIER_PRICE_OVERRIDE_CONTRACT_MISSING` |
+| Markers | ~~`POS_SALE_PRICE_POLICY_CONTRACT_MISSING`~~, ~~`POS_CASHIER_PRICE_OVERRIDE_CONTRACT_MISSING`~~ (**SUPERSEDED**) |
+| Status | **RESOLVED (backend)** — locked PO role matrix; CashierAdjustable **SUPERSEDED** |
 | Question | Exact product policy fields, permission codes, min/max rules, reason schema, manager approval threshold? |
-| Why it matters | Owner requires Fixed vs CashierAdjustable; no UI-only authority |
-| Known evidence | No `SalePricePolicy` / `CashierAdjustable` types; checkout uses catalog/unit price |
-| Current behavior | Catalog/Today’s Prices change future prices; no per-sale override model |
-| Owner requirement | Controlled override with audit |
-| Dependency impact | Blocks React override UI; does **not** block Today’s Prices or fixed-price checkout |
-| Recommended investigation | Backend domain design package + tests before any React override controls |
-| Blocking? | **YES** for override UI; **NO** for standard checkout at catalog price |
+| Resolution | Cashier **DENY**; Manager ≤100% inclusive deviation; Owner/Admin unlimited via `OverrideSalePriceUnlimited`; OrgAdmin/Platform Admin alone no; reason required; free = B03 only; audit via `sale_price_override_adjustments` |
+| Known evidence | RMAP-B01 backend: `SalePriceOverride*`, feature codes `store-sales-override-price` (+ `-unlimited`) |
+| Current behavior | Quote/checkout apply overrides to draft UnitPrice; catalog SellingPrice / Today's Price untouched |
+| Dependency impact | Unblocks React override UI (**RMAP-12b**); does **not** require Fixed/CashierAdjustable product fields |
+| Blocking? | **NO** for backend; RMAP-12b still pending for React UX |
 
 ---
 

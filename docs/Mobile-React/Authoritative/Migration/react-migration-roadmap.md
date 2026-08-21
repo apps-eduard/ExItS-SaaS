@@ -121,18 +121,19 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 | Report    | [POS-REACT-RMAP-B00-identity-reconciliation.md](../../Reports/POS-REACT-RMAP-B00-identity-reconciliation.md)                                                                |
 | Next      | Product Owner + ChatGPT review. Do **not** start RMAP-01 in this repair.                                                                                                    |
 
-### RMAP-B01 — Sale price policy backend (BLOCKING for override UI only)
+### RMAP-B01 — Sale price override backend (BLOCKING for override UI only)
 
 | Field        | Content                                                             |
 | ------------ | ------------------------------------------------------------------- |
-| Objective    | Domain+API+tests for Fixed/CashierAdjustable, limits, reason, audit |
-| Why          | OWNER_CONFIRMED_CHANGE; PROVEN_MISSING                              |
+| Status       | **BACKEND IMPLEMENTED** (React RMAP-12b not started)                |
+| Objective    | Domain+API+tests for role-gated override, ≤100% manager ceiling, reason, audit |
+| Why          | Locked PO policy (Cashier DENY / Manager ≤100% / Owner unlimited); CashierAdjustable **SUPERSEDED** |
 | Dependencies | Catalog product model                                               |
-| Backend      | **NEW** — UD-02                                                     |
-| MAUI         | Regression after API exists                                         |
-| React        | **Not started until backend complete**                              |
-| Exclusions   | Shipping override UI early                                          |
-| Next         | Optional RMAP-B01-M MAUI; then RMAP-12b React override              |
+| Backend      | **DONE** — UD-02 resolved for backend; report [POS-REACT-RMAP-B01-sale-price-override-backend.md](../../Reports/POS-REACT-RMAP-B01-sale-price-override-backend.md) |
+| MAUI         | Optional regression                                                 |
+| React        | **RMAP-12b only after this backend**                                |
+| Exclusions   | React override UI; per-product Fixed/CashierAdjustable              |
+| Next         | RMAP-12b React override UX                                          |
 
 ### RMAP-B02 — Milligram UOM (OPTIONAL)
 

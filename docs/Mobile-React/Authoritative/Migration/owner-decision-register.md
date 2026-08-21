@@ -24,11 +24,11 @@ Each row: Owner decision → CURRENT alignment → Action implication.
 | ID | Owner decision | CURRENT | Action |
 |----|----------------|---------|--------|
 | OD-PRICE-01 | Market prices may change daily; fast update | Today’s Prices PROVEN_CURRENT | React parity |
-| OD-PRICE-02 | Current-price change ≠ one-sale override | Override model MISSING | Backend before React override UI |
-| OD-PRICE-03 | Cashier overrides controlled by product policy + permissions | MISSING | `POS_SALE_PRICE_POLICY_CONTRACT_MISSING` |
-| OD-PRICE-04 | Fixed default; optional CashierAdjustable | MISSING | Backend domain package |
-| OD-PRICE-05 | Override reason/audit; future manager threshold | MISSING | Backend + audit design |
-| OD-PRICE-06 | No UI-only price authority | CURRENT server prices | Preserve |
+| OD-PRICE-02 | Current-price change ≠ one-sale override | Override backend PROVEN_CURRENT (RMAP-B01) | React UI = RMAP-12b |
+| OD-PRICE-03 | Cashier overrides controlled by permissions | **SUPERSEDED**: Cashier **DENY**; Manager ≤100%; Owner unlimited | Role capabilities, not product policy |
+| OD-PRICE-04 | Fixed default; optional CashierAdjustable | **SUPERSEDED** by locked PO role matrix | Do not implement CashierAdjustable |
+| OD-PRICE-05 | Override reason/audit; manager ceiling | PROVEN_CURRENT (reason + audit rows; Manager ≤100% inclusive) | Preserve |
+| OD-PRICE-06 | No UI-only price authority | CURRENT server prices + capability gates | Preserve |
 
 ## INVENTORY
 
