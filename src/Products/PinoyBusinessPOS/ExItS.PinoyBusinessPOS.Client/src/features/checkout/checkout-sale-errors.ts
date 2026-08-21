@@ -33,6 +33,23 @@ export function mapCheckoutSaleErrorKey(error: unknown): MessageKey {
   }
 
   if (
+    code.includes("voidsale") ||
+    (code.includes("capability.denied") &&
+      (detail.includes("voidsale") || detail.includes("void sale"))) ||
+    (code.includes("void") && detail.includes("denied"))
+  ) {
+    return "checkout.errorVoidDenied";
+  }
+
+  if (
+    code.includes("createcredit") ||
+    (code.includes("capability.denied") && detail.includes("credit")) ||
+    (code.includes("capability.denied") && detail.includes("utang"))
+  ) {
+    return "checkout.errorCreditDenied";
+  }
+
+  if (
     code.includes("product_access") ||
     code === "application.auth.product_access_denied" ||
     code.includes("capability.denied") ||
@@ -80,6 +97,29 @@ export function mapCheckoutSaleErrorKey(error: unknown): MessageKey {
 
   if (code.includes("amount_tendered") || detail.includes("amount tendered")) {
     return "checkout.errorInvalidTender";
+  }
+
+  if (code.includes("gcash_reference") || detail.includes("gcash reference")) {
+    return "checkout.errorGCashReference";
+  }
+
+  if (
+    code.includes("utang.total_must_be_positive") ||
+    detail.includes("utang total must be greater")
+  ) {
+    return "checkout.errorUtangZero";
+  }
+
+  if (code.includes("utang.customer_required") || detail.includes("utang requires a customer")) {
+    return "checkout.errorUtangCustomer";
+  }
+
+  if (code.includes("void_reason") || detail.includes("void reason")) {
+    return "checkout.errorVoidReason";
+  }
+
+  if (code.includes("already_voided") || detail.includes("already voided")) {
+    return "checkout.errorAlreadyVoided";
   }
 
   if (code.includes("product.not_found") || code.includes("product.not_active")) {

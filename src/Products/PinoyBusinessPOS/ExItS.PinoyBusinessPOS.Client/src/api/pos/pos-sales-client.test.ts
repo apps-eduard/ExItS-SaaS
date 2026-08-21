@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { checkoutSale, getSale, listSales, quoteSale } from "@/api/pos/pos-sales-client";
+import {
+  checkoutSale,
+  formatPaymentMethodLabel,
+  getSale,
+  listSales,
+  quoteSale,
+  voidSale,
+} from "@/api/pos/pos-sales-client";
 import { PosApiError } from "@/api/pos/pos-http";
 
 const workspace = {
@@ -264,5 +271,128 @@ describe("pos-sales-client", () => {
         ],
       }),
     ).rejects.toMatchObject({ status: 403 });
+  });
+
+  it("posts ManualGCash without tender and with gCashReference", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify(
+          saleJson({
+            paymentMethod: "ManualGCash",
+            amountTendered: null,
+            changeAmount: null,
+            gCashReference: "GC-123",
+          }),
+        ),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    await checkoutSale(workspace, {
+      lines: [{ productId, quantity: 1 }],
+      paymentMethod: "ManualGCash",
+      gCashReference: "GC-123",
+      saleId,
+      shiftId,
+    });
+
+    const body = JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]?.body));
+    expect(body.paymentMethod).toBe("ManualGCash");
+    expect(body.gCashReference).toBe("GC-123");
+    expect(body.amountTendered).toBeUndefined();
+  });
+
+  it("posts Utang with customerId and optional dueDate without tender", async () => {
+    const customerId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify(
+          saleJson({
+            paymentMethod: "Utang",
+            amountTendered: null,
+            changeAmount: null,
+            customerId,
+            linkedCreditEntryId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          }),
+        ),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    await checkoutSale(workspace, {
+      lines: [{ productId, quantity: 1 }],
+      paymentMethod: "Utang",
+      customerId,
+      dueDate: "2026-09-01",
+      saleId,
+      shiftId,
+    });
+
+    const body = JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]?.body));
+    expect(body.paymentMethod).toBe("Utang");
+    expect(body.customerId).toBe(customerId);
+    expect(body.dueDate).toBe("2026-09-01");
+    expect(body.amountTendered).toBeUndefined();
+  });
+
+  it("posts discounted Utang with intents and no tender", async () => {
+    const customerId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify(
+          saleJson({
+            paymentMethod: "Utang",
+            amountTendered: null,
+            changeAmount: null,
+            total: 22.5,
+            customerId,
+            linkedCreditEntryId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            discountTotal: 2.5,
+          }),
+        ),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    await checkoutSale(workspace, {
+      lines: [{ productId, quantity: 1 }],
+      paymentMethod: "Utang",
+      customerId,
+      saleId,
+      shiftId,
+      discounts: [{ scope: "Sale", method: "Percentage", value: 10, reason: "Regular buyer" }],
+    });
+
+    const body = JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]?.body));
+    expect(body.paymentMethod).toBe("Utang");
+    expect(body.discounts).toHaveLength(1);
+    expect(body.amountTendered).toBeUndefined();
+  });
+
+  it("voids a sale with reason", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify(
+          saleJson({
+            status: "Voided",
+            voidReason: "Wrong item",
+            voidedAtUtc: "2026-08-21T03:00:00Z",
+          }),
+        ),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const voided = await voidSale(workspace, saleId, { reason: "Wrong item" });
+    expect(voided.status).toBe("Voided");
+    expect(String(vi.mocked(fetch).mock.calls[0][0])).toContain(`/sales/${saleId}/void`);
+    const body = JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]?.body));
+    expect(body.reason).toBe("Wrong item");
+  });
+
+  it("labels ManualGCash as GCash for users", () => {
+    expect(formatPaymentMethodLabel("ManualGCash")).toBe("GCash");
+    expect(formatPaymentMethodLabel("Cash")).toBe("Cash");
+    expect(formatPaymentMethodLabel("Utang")).toBe("Utang");
   });
 });

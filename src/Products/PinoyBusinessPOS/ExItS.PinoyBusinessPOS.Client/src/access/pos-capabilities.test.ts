@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   canApplyCommercialDiscount,
+  canCreateCredit,
   canCreateSale,
   canEnterCashierRoleHome,
   canEnterManagerRoleHome,
@@ -14,8 +15,10 @@ import {
   canUseAdminExperience,
   canUseOperationsExperience,
   canUseSellingExperience,
+  canViewCustomers,
   canViewRegisters,
   canViewShifts,
+  canVoidSale,
   hasOrganizationManagementAuthority,
   isPosOperationsManager,
   resolveEffectivePosRoleCode,
@@ -188,5 +191,36 @@ describe("pos-capabilities", () => {
     expect(canApplyCommercialDiscount(manager)).toBe(true);
     expect(canApplyCommercialDiscount(cashier)).toBe(false);
     expect(canApplyCommercialDiscount(orgAdmin)).toBe(false);
+  });
+
+  it("VoidSale / ViewCustomers / CreateCredit mirror PosRoleMatrix gaps", () => {
+    const owner = grant({
+      mappedPosRoleCode: "Owner",
+      productLocalRoleCode: "Owner",
+      membershipRole: "OrganizationOwner",
+      organizationManagementAuthority: true,
+    });
+    const manager = grant({
+      mappedPosRoleCode: "StoreManager",
+      productLocalRoleCode: "Manager",
+      membershipRole: "OrganizationMember",
+    });
+    const cashier = grant({
+      mappedPosRoleCode: "Cashier",
+      productLocalRoleCode: "Cashier",
+      membershipRole: "OrganizationMember",
+    });
+
+    expect(canVoidSale(owner)).toBe(true);
+    expect(canVoidSale(manager)).toBe(true);
+    expect(canVoidSale(cashier)).toBe(false);
+
+    expect(canViewCustomers(owner)).toBe(true);
+    expect(canViewCustomers(manager)).toBe(true);
+    expect(canViewCustomers(cashier)).toBe(false);
+
+    expect(canCreateCredit(owner)).toBe(true);
+    expect(canCreateCredit(manager)).toBe(true);
+    expect(canCreateCredit(cashier)).toBe(true);
   });
 });

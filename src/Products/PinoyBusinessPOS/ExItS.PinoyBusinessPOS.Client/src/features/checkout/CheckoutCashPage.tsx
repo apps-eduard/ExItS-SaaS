@@ -1,9 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { canApplyCommercialDiscount, canCreateSale } from "@/access/pos-capabilities";
+import {
+  canApplyCommercialDiscount,
+  canCreateCredit,
+  canCreateSale,
+  canViewCustomers,
+} from "@/access/pos-capabilities";
+import { listCustomers, type PosCustomerListItem } from "@/api/pos/pos-customers-client";
 import {
   checkoutSale,
+  GCASH_REFERENCE_MAX_LENGTH,
   quoteSale,
+  type CheckoutPaymentMethod,
   type CommercialDiscountIntentRequest,
   type PosSaleQuoteDto,
 } from "@/api/pos/pos-sales-client";
@@ -22,6 +30,7 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type DiscountScope = CommercialDiscountIntentRequest["scope"];
 type DiscountMethod = CommercialDiscountIntentRequest["method"];
+type UiPaymentChoice = "Cash" | "GCash" | "Utang";
 
 type AppliedDiscount = CommercialDiscountIntentRequest & { localId: string };
 
@@ -57,6 +66,26 @@ function parseDiscountValue(raw: string): number | null {
   return value;
 }
 
+function toApiPaymentMethod(choice: UiPaymentChoice): CheckoutPaymentMethod {
+  if (choice === "GCash") {
+    return "ManualGCash";
+  }
+  return choice;
+}
+
+function confirmLabelKey(
+  choice: UiPaymentChoice,
+): "checkout.confirmCash" | "checkout.confirmGCash" | "checkout.confirmUtang" {
+  if (choice === "GCash") {
+    return "checkout.confirmGCash";
+  }
+  if (choice === "Utang") {
+    return "checkout.confirmUtang";
+  }
+  return "checkout.confirmCash";
+}
+
+/** Checkout page — Cash / GCash (ManualGCash) / Utang. File kept as CheckoutCashPage for route stability. */
 export function CheckoutCashPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -64,7 +93,14 @@ export function CheckoutCashPage() {
   const cart = useSessionCart();
   const { readiness, currentShift, refresh } = useShiftContext();
 
+  const [paymentChoice, setPaymentChoice] = useState<UiPaymentChoice>("Cash");
   const [cashReceived, setCashReceived] = useState("");
+  const [gcashReference, setGcashReference] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [customers, setCustomers] = useState<PosCustomerListItem[]>([]);
+  const [customersLoading, setCustomersLoading] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<PosCustomerListItem | null>(null);
+  const [dueDate, setDueDate] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [appliedDiscounts, setAppliedDiscounts] = useState<AppliedDiscount[]>([]);
@@ -95,8 +131,11 @@ export function CheckoutCashPage() {
 
   const allowSale = canCreateSale(sessionGrant);
   const allowDiscount = canApplyCommercialDiscount(sessionGrant);
+  const allowViewCustomers = canViewCustomers(sessionGrant);
+  const allowCreateCredit = canCreateCredit(sessionGrant);
   const moneyReady = readiness.moneyPostReady === true;
   const deviceReady = isPosDeviceReadyForMoney(posDevice);
+  const apiPaymentMethod = toApiPaymentMethod(paymentChoice);
 
   const discountIntents = useMemo(
     () =>
@@ -135,16 +174,30 @@ export function CheckoutCashPage() {
   const discountTotal = quote?.discountTotal ?? 0;
   const zeroTotal = amountToPay <= 1e-9;
   const parsedTender = zeroTotal ? 0 : parseCashTender(cashReceived);
-  const tenderOk = zeroTotal || (parsedTender !== null && parsedTender + 1e-9 >= amountToPay);
+  const tenderOk =
+    paymentChoice !== "Cash" ||
+    zeroTotal ||
+    (parsedTender !== null && parsedTender + 1e-9 >= amountToPay);
   const changeAdvisory =
-    !zeroTotal && tenderOk && parsedTender !== null
+    paymentChoice === "Cash" && !zeroTotal && tenderOk && parsedTender !== null
       ? roundMoney(Math.max(0, parsedTender - amountToPay))
-      : zeroTotal
+      : paymentChoice === "Cash" && zeroTotal
         ? 0
         : null;
 
+  const gcashRefTrimmed = gcashReference.trim();
+  const gcashRefOk =
+    paymentChoice !== "GCash" ||
+    zeroTotal ||
+    (gcashRefTrimmed.length > 0 && gcashRefTrimmed.length <= GCASH_REFERENCE_MAX_LENGTH);
+
+  const utangBlockedZero = paymentChoice === "Utang" && zeroTotal;
+  const utangNeedsCustomerLookup = paymentChoice === "Utang" && !allowViewCustomers;
+  const utangCustomerOk =
+    paymentChoice !== "Utang" || (allowViewCustomers && selectedCustomer != null);
+  const utangCreditOk = paymentChoice !== "Utang" || allowCreateCredit;
+
   useEffect(() => {
-    // Fail-closed gate pages must stay visible even with an empty cart.
     if (!moneyReady || !deviceReady || !readiness.shiftGateReady) {
       return;
     }
@@ -199,7 +252,7 @@ export function CheckoutCashPage() {
   }, [allowDiscount, cartSignature, deviceReady, discountSignature, moneyReady, t, workspaceScope]);
 
   useEffect(() => {
-    if (!quote) {
+    if (paymentChoice !== "Cash" || !quote) {
       return;
     }
     if (zeroTotal) {
@@ -220,7 +273,39 @@ export function CheckoutCashPage() {
       lastSeededTotalRef.current = amountToPay;
       tenderEditedRef.current = false;
     }
-  }, [amountToPay, quote, zeroTotal]);
+  }, [amountToPay, paymentChoice, quote, zeroTotal]);
+
+  useEffect(() => {
+    if (paymentChoice !== "Utang" || !allowViewCustomers || !workspaceScope) {
+      return;
+    }
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      setCustomersLoading(true);
+      void listCustomers(
+        workspaceScope,
+        { status: "Active", search: customerSearch.trim() || undefined, pageSize: 20 },
+        controller.signal,
+      )
+        .then((page) => {
+          if (!controller.signal.aborted) {
+            setCustomers(page.items);
+            setCustomersLoading(false);
+          }
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) {
+            setCustomers([]);
+            setCustomersLoading(false);
+          }
+        });
+    }, 250);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [allowViewCustomers, customerSearch, paymentChoice, workspaceScope]);
 
   function addDiscount() {
     setDiscountFormError(null);
@@ -313,8 +398,24 @@ export function CheckoutCashPage() {
       setSubmitError(quoteError ?? t("checkout.quoteError"));
       return;
     }
-    if (!zeroTotal && (parsedTender === null || !tenderOk)) {
+    if (paymentChoice === "Cash" && !zeroTotal && (parsedTender === null || !tenderOk)) {
       setSubmitError(t("checkout.tenderInvalid"));
+      return;
+    }
+    if (paymentChoice === "GCash" && !zeroTotal && !gcashRefOk) {
+      setSubmitError(t("checkout.gcashReferenceRequired"));
+      return;
+    }
+    if (utangBlockedZero) {
+      setSubmitError(t("checkout.utangZeroBlocked"));
+      return;
+    }
+    if (utangNeedsCustomerLookup) {
+      setSubmitError(t("checkout.utangCustomerDenied"));
+      return;
+    }
+    if (paymentChoice === "Utang" && !utangCustomerOk) {
+      setSubmitError(t("checkout.utangCustomerRequired"));
       return;
     }
 
@@ -324,16 +425,26 @@ export function CheckoutCashPage() {
 
     const saleId = attemptSaleIdRef.current;
     const lines = mapCartLinesToCheckoutRequest(cart.lines);
-    const amountTendered = zeroTotal ? 0 : Number((parsedTender as number).toFixed(2));
 
     try {
       await refresh();
       const sale = await checkoutSale(workspaceScope, {
         lines,
-        paymentMethod: "Cash",
-        amountTendered,
+        paymentMethod: apiPaymentMethod,
         saleId,
         shiftId: readiness.shiftId,
+        ...(paymentChoice === "Cash"
+          ? { amountTendered: zeroTotal ? 0 : Number((parsedTender as number).toFixed(2)) }
+          : {}),
+        ...(paymentChoice === "GCash" && !zeroTotal && gcashRefTrimmed
+          ? { gCashReference: gcashRefTrimmed.slice(0, GCASH_REFERENCE_MAX_LENGTH) }
+          : {}),
+        ...(paymentChoice === "Utang" && selectedCustomer
+          ? {
+              customerId: selectedCustomer.customerId,
+              ...(dueDate.trim() ? { dueDate: dueDate.trim() } : {}),
+            }
+          : {}),
         discounts: allowDiscount && discountIntents.length > 0 ? discountIntents : undefined,
       });
       completedRef.current = true;
@@ -347,6 +458,18 @@ export function CheckoutCashPage() {
       setSaving(false);
     }
   }
+
+  const confirmDisabled =
+    saving ||
+    cart.lineCount === 0 ||
+    !quote ||
+    Boolean(quoteError) ||
+    !tenderOk ||
+    !gcashRefOk ||
+    utangBlockedZero ||
+    utangNeedsCustomerLookup ||
+    !utangCustomerOk ||
+    !utangCreditOk;
 
   return (
     <div data-testid="checkout-cash-page" className="flex min-w-0 flex-col gap-4">
@@ -384,6 +507,48 @@ export function CheckoutCashPage() {
               .replace("{register}", currentShift.registerCode ?? "—")}
           </p>
         ) : null}
+      </Card>
+
+      <Card data-testid="checkout-payment-method">
+        <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+          {t("checkout.paymentMethod")}
+        </h2>
+        <div
+          className="mt-3 flex flex-wrap gap-2"
+          role="radiogroup"
+          aria-label={t("checkout.paymentMethod")}
+        >
+          {(
+            [
+              ["Cash", "checkout.paymentCash"],
+              ["GCash", "checkout.paymentGCash"],
+              ["Utang", "checkout.paymentUtang"],
+            ] as const
+          ).map(([value, labelKey]) => (
+            <Button
+              key={value}
+              type="button"
+              variant={paymentChoice === value ? "default" : "ghost"}
+              className="min-h-11"
+              data-testid={`checkout-pay-${value.toLowerCase()}`}
+              aria-pressed={paymentChoice === value}
+              disabled={saving}
+              onClick={() => {
+                setPaymentChoice(value);
+                setSubmitError(null);
+              }}
+            >
+              {t(labelKey)}
+            </Button>
+          ))}
+        </div>
+        {/* Prove Card / provider GCash are not offered */}
+        <span data-testid="checkout-no-card" className="sr-only">
+          no-card
+        </span>
+        <span data-testid="checkout-no-provider-gcash" className="sr-only">
+          no-provider-gcash
+        </span>
       </Card>
 
       {allowDiscount ? (
@@ -563,11 +728,10 @@ export function CheckoutCashPage() {
           <span>{t("checkout.amountToPay")}</span>
           <MoneyDisplay amount={amountToPay} />
         </p>
-        {/* Compat for RMAP-11 selectors */}
         <span data-testid="checkout-total" className="sr-only">
           {amountToPay}
         </span>
-        {zeroTotal ? (
+        {zeroTotal && paymentChoice !== "Utang" ? (
           <p
             data-testid="checkout-no-payment-required"
             className="mb-0 mt-3 text-[length:var(--exits-text-sm)] font-medium"
@@ -575,63 +739,207 @@ export function CheckoutCashPage() {
             {t("checkout.noPaymentRequired")}
           </p>
         ) : null}
+        {utangBlockedZero ? (
+          <p
+            data-testid="checkout-utang-zero-blocked"
+            className="mb-0 mt-3 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+          >
+            {t("checkout.utangZeroBlocked")}
+          </p>
+        ) : null}
       </Card>
 
-      {!zeroTotal ? (
-        <Card>
+      {paymentChoice === "Cash" ? (
+        !zeroTotal ? (
+          <Card>
+            <label
+              className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+              htmlFor="checkout-cash-received"
+            >
+              {t("checkout.cashReceived")}
+              <input
+                id="checkout-cash-received"
+                data-testid="checkout-cash-received"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="0.01"
+                value={cashReceived}
+                disabled={saving}
+                className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
+                onChange={(event) => {
+                  tenderEditedRef.current = true;
+                  setCashReceived(event.target.value);
+                }}
+              />
+            </label>
+            <p
+              data-testid="checkout-change"
+              className="mb-0 mt-3 text-[length:var(--exits-text-sm)]"
+            >
+              {t("checkout.change")}:{" "}
+              {changeAdvisory === null ? (
+                <span className="text-muted">—</span>
+              ) : (
+                <MoneyDisplay amount={changeAdvisory} />
+              )}
+            </p>
+            <p className="mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
+              {t("checkout.changeAdvisory")}
+            </p>
+          </Card>
+        ) : (
+          <Card data-testid="checkout-zero-tender">
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("checkout.cashReceived")}: <MoneyDisplay amount={0} />
+            </p>
+            <p
+              data-testid="checkout-change"
+              className="mb-0 mt-2 text-[length:var(--exits-text-sm)]"
+            >
+              {t("checkout.change")}: <MoneyDisplay amount={0} />
+            </p>
+          </Card>
+        )
+      ) : null}
+
+      {paymentChoice === "GCash" && !zeroTotal ? (
+        <Card data-testid="checkout-gcash-panel">
           <label
             className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
-            htmlFor="checkout-cash-received"
+            htmlFor="checkout-gcash-reference"
           >
-            {t("checkout.cashReceived")}
+            {t("checkout.gcashReference")}
             <input
-              id="checkout-cash-received"
-              data-testid="checkout-cash-received"
-              type="number"
-              inputMode="decimal"
-              min={0}
-              step="0.01"
-              value={cashReceived}
+              id="checkout-gcash-reference"
+              data-testid="checkout-gcash-reference"
+              type="text"
+              maxLength={GCASH_REFERENCE_MAX_LENGTH}
+              value={gcashReference}
               disabled={saving}
-              className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
-              onChange={(event) => {
-                tenderEditedRef.current = true;
-                setCashReceived(event.target.value);
-              }}
+              className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+              onChange={(event) => setGcashReference(event.target.value)}
             />
           </label>
-          <p data-testid="checkout-change" className="mb-0 mt-3 text-[length:var(--exits-text-sm)]">
-            {t("checkout.change")}:{" "}
-            {changeAdvisory === null ? (
-              <span className="text-muted">—</span>
-            ) : (
-              <MoneyDisplay amount={changeAdvisory} />
-            )}
-          </p>
-          <p className="mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
-            {t("checkout.changeAdvisory")}
+          <p className="mb-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
+            {t("checkout.gcashReferenceHint")}
           </p>
         </Card>
-      ) : (
-        <Card data-testid="checkout-zero-tender">
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("checkout.cashReceived")}: <MoneyDisplay amount={0} />
+      ) : null}
+
+      {paymentChoice === "Utang" ? (
+        <Card data-testid="checkout-utang-panel">
+          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+            {t("checkout.utangDebtHint")}
           </p>
-          <p data-testid="checkout-change" className="mb-0 mt-2 text-[length:var(--exits-text-sm)]">
-            {t("checkout.change")}: <MoneyDisplay amount={0} />
-          </p>
+          {utangNeedsCustomerLookup ? (
+            <p
+              data-testid="checkout-utang-customer-denied"
+              className="mb-0 mt-3 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+            >
+              {t("checkout.utangCustomerDenied")}
+            </p>
+          ) : (
+            <>
+              <label
+                className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+                htmlFor="checkout-customer-search"
+              >
+                {t("checkout.utangCustomerSearch")}
+                <input
+                  id="checkout-customer-search"
+                  data-testid="checkout-customer-search"
+                  type="search"
+                  value={customerSearch}
+                  disabled={saving}
+                  className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                  onChange={(event) => setCustomerSearch(event.target.value)}
+                />
+              </label>
+              {selectedCustomer ? (
+                <div
+                  data-testid="checkout-customer-selected"
+                  className="mt-3 flex items-center justify-between gap-2 text-[length:var(--exits-text-sm)]"
+                >
+                  <span>
+                    {t("checkout.utangCustomer")}: <strong>{selectedCustomer.displayName}</strong>
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="min-h-9"
+                    data-testid="checkout-customer-clear"
+                    disabled={saving}
+                    onClick={() => setSelectedCustomer(null)}
+                  >
+                    {t("checkout.customerClear")}
+                  </Button>
+                </div>
+              ) : null}
+              {customersLoading ? (
+                <p className="mb-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
+                  {t("checkout.customerLoading")}
+                </p>
+              ) : customers.length === 0 ? (
+                <p
+                  data-testid="checkout-customer-empty"
+                  className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-muted"
+                >
+                  {t("checkout.customerEmpty")}
+                </p>
+              ) : (
+                <ul
+                  className="mb-0 mt-2 list-none space-y-1 p-0"
+                  data-testid="checkout-customer-list"
+                >
+                  {customers.map((customer) => (
+                    <li key={customer.customerId}>
+                      <Button
+                        type="button"
+                        variant={
+                          selectedCustomer?.customerId === customer.customerId ? "default" : "ghost"
+                        }
+                        className="min-h-11 w-full justify-start"
+                        data-testid={`checkout-customer-${customer.customerId}`}
+                        disabled={saving}
+                        onClick={() => setSelectedCustomer(customer)}
+                      >
+                        {customer.displayName}
+                        {customer.mobileNumber ? ` · ${customer.mobileNumber}` : ""}
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <label
+                className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+                htmlFor="checkout-utang-due-date"
+              >
+                {t("checkout.utangDueDate")}
+                <input
+                  id="checkout-utang-due-date"
+                  data-testid="checkout-utang-due-date"
+                  type="date"
+                  value={dueDate}
+                  disabled={saving}
+                  className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                  onChange={(event) => setDueDate(event.target.value)}
+                />
+              </label>
+            </>
+          )}
         </Card>
-      )}
+      ) : null}
 
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
           data-testid="checkout-confirm"
           className="min-h-11"
-          disabled={saving || !tenderOk || cart.lineCount === 0 || !quote || Boolean(quoteError)}
+          disabled={confirmDisabled}
           onClick={() => void onConfirm()}
         >
-          {saving ? t("checkout.confirming") : t("checkout.confirmCash")}
+          {saving ? t("checkout.confirming") : t(confirmLabelKey(paymentChoice))}
         </Button>
         <Button asChild type="button" variant="ghost" className="min-h-11" disabled={saving}>
           <Link to="/sell">{t("checkout.backToCart")}</Link>

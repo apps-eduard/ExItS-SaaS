@@ -105,5 +105,28 @@ describe("mapCheckoutSaleErrorKey", () => {
         }),
       ),
     ).toBe("checkout.errorDiscountDenied");
+    expect(
+      mapCheckoutSaleErrorKey(
+        new PosApiError(400, { errorCode: "pos.sale.gcash_reference.invalid" }),
+      ),
+    ).toBe("checkout.errorGCashReference");
+    expect(
+      mapCheckoutSaleErrorKey(
+        new PosApiError(400, { errorCode: "pos.sale.utang.total_must_be_positive" }),
+      ),
+    ).toBe("checkout.errorUtangZero");
+    expect(
+      mapCheckoutSaleErrorKey(
+        new PosApiError(400, { errorCode: "pos.sale.utang.customer_required" }),
+      ),
+    ).toBe("checkout.errorUtangCustomer");
+    expect(
+      mapCheckoutSaleErrorKey(
+        new PosApiError(403, {
+          errorCode: "application.auth.capability.denied",
+          detail: "VoidSale is required.",
+        }),
+      ),
+    ).toBe("checkout.errorVoidDenied");
   });
 });

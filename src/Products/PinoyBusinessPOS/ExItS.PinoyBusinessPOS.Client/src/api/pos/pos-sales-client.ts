@@ -10,6 +10,13 @@ const guidSchema = z
   .string()
   .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/);
 
+/** Current checkout methods only — never Card or provider GCash in React UX (RMAP-12). */
+export const checkoutPaymentMethodSchema = z.enum(["Cash", "ManualGCash", "Utang"]);
+export type CheckoutPaymentMethod = z.infer<typeof checkoutPaymentMethodSchema>;
+
+export const GCASH_REFERENCE_MAX_LENGTH = 64;
+export const VOID_REASON_MAX_LENGTH = 512;
+
 export const checkoutSaleLineRequestSchema = z.object({
   productId: guidSchema,
   quantity: z.number(),
@@ -28,27 +35,38 @@ export const commercialDiscountIntentRequestSchema = z.object({
 
 export const checkoutSaleRequestSchema = z.object({
   lines: z.array(checkoutSaleLineRequestSchema).min(1),
-  paymentMethod: z.literal("Cash"),
-  amountTendered: z.number(),
+  paymentMethod: checkoutPaymentMethodSchema,
+  amountTendered: z.number().optional(),
+  gCashReference: z.string().max(GCASH_REFERENCE_MAX_LENGTH).optional(),
   saleId: guidSchema,
   shiftId: guidSchema,
   customerId: guidSchema.optional(),
+  /** ISO date `YYYY-MM-DD` for optional Utang due date (DateOnly). */
+  dueDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   discounts: z.array(commercialDiscountIntentRequestSchema).optional(),
 });
 
 /** Quote uses the same line/discount contract; tender/saleId/shift are not required. */
 export const quoteSaleRequestSchema = z.object({
   lines: z.array(checkoutSaleLineRequestSchema).min(1),
-  paymentMethod: z.literal("Cash"),
+  paymentMethod: checkoutPaymentMethodSchema.optional(),
   amountTendered: z.number().optional(),
   customerId: guidSchema.optional(),
   discounts: z.array(commercialDiscountIntentRequestSchema).optional(),
+});
+
+export const voidSaleRequestSchema = z.object({
+  reason: z.string().min(1).max(VOID_REASON_MAX_LENGTH),
 });
 
 export type CheckoutSaleLineRequest = z.infer<typeof checkoutSaleLineRequestSchema>;
 export type CommercialDiscountIntentRequest = z.infer<typeof commercialDiscountIntentRequestSchema>;
 export type CheckoutSaleRequest = z.infer<typeof checkoutSaleRequestSchema>;
 export type QuoteSaleRequest = z.infer<typeof quoteSaleRequestSchema>;
+export type VoidSaleRequest = z.infer<typeof voidSaleRequestSchema>;
 
 export const posSaleLineDtoSchema = z.object({
   saleLineId: guidSchema,
@@ -214,9 +232,10 @@ function serializeDiscounts(
 }
 
 /**
- * Online cash checkout. Omit snapshot fields; server prices from live catalog.
+ * Online checkout for Cash / ManualGCash / Utang.
+ * Omit snapshot fields; server prices from live catalog.
  * Optional commercial discount intents (RMAP-11b) — server recomputes all money.
- * Do not send ManualGCash/Utang/Card (RMAP-12).
+ * Never send Card or provider GCash from this client.
  */
 export async function checkoutSale(
   workspace: PosWorkspaceScope,
@@ -227,13 +246,25 @@ export async function checkoutSale(
   const payload: Record<string, unknown> = {
     lines: serializeLines(validated.lines),
     paymentMethod: validated.paymentMethod,
-    amountTendered: validated.amountTendered,
     saleId: validated.saleId,
     shiftId: validated.shiftId,
   };
+
+  if (validated.paymentMethod === "Cash") {
+    payload.amountTendered = validated.amountTendered ?? 0;
+  }
+
+  if (validated.paymentMethod === "ManualGCash" && validated.gCashReference) {
+    payload.gCashReference = validated.gCashReference;
+  }
+
   if (validated.customerId) {
     payload.customerId = validated.customerId;
   }
+  if (validated.paymentMethod === "Utang" && validated.dueDate) {
+    payload.dueDate = validated.dueDate;
+  }
+
   const discounts = serializeDiscounts(validated.discounts);
   if (discounts) {
     payload.discounts = discounts;
@@ -261,7 +292,7 @@ export async function quoteSale(
   const validated = quoteSaleRequestSchema.parse(body);
   const payload: Record<string, unknown> = {
     lines: serializeLines(validated.lines),
-    paymentMethod: validated.paymentMethod,
+    paymentMethod: validated.paymentMethod ?? "Cash",
   };
   if (validated.amountTendered !== undefined) {
     payload.amountTendered = validated.amountTendered;
@@ -326,4 +357,30 @@ export async function listSales(
     }),
   });
   return posSalePagedResultSchema.parse(raw);
+}
+
+/** POST /api/v1/pos/sales/{saleId}/void — Owner/Admin/Manager (VoidSale). */
+export async function voidSale(
+  workspace: PosWorkspaceScope,
+  saleId: string,
+  body: VoidSaleRequest,
+  signal?: AbortSignal,
+): Promise<PosSaleDto> {
+  const validated = voidSaleRequestSchema.parse(body);
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${SALES_PATH}/${saleId}/void`,
+    body: { reason: validated.reason.trim() },
+  });
+  return parseSale(raw);
+}
+
+/** User-facing payment label — never show ManualGCash to operators. */
+export function formatPaymentMethodLabel(paymentMethod: string): string {
+  if (paymentMethod === "ManualGCash") {
+    return "GCash";
+  }
+  return paymentMethod;
 }

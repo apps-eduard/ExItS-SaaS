@@ -150,6 +150,45 @@ export function canApplyCommercialDiscount(
 }
 
 /**
+ * VoidSale UI gate — PosRoleMatrix Owner/Admin/StoreManager (+ Manager alias).
+ * Cashier DENY. Server remains authoritative (Utang void also needs ReverseCredit).
+ */
+export function canVoidSale(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  return isPosOwnerRole(grant) || isPosOperationsManager(grant);
+}
+
+/**
+ * ViewCustomersAndHistory UI gate — Owner/Admin/StoreManager (+ ReportingUser).
+ * Cashier DENY (pre-existing matrix gap vs CreateCredit).
+ * Server remains authoritative for customer list/search.
+ */
+export function canViewCustomers(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  if (isPosOwnerRole(grant) || isPosOperationsManager(grant)) {
+    return true;
+  }
+  const role = resolveEffectivePosRoleCode(grant)?.toLowerCase();
+  return role === "reportinguser";
+}
+
+/**
+ * CreateCredit UI gate — Owner/Admin/StoreManager/Cashier.
+ * Cashier has CreateCredit but not ViewCustomers — Utang picker still blocked without a customer.
+ * Server remains authoritative on Utang checkout.
+ */
+export function canCreateCredit(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  return isPosOwnerRole(grant) || isPosOperationsManager(grant) || isPosCashierRole(grant);
+}
+
+/**
  * UI gate for catalog administration (ManageCatalog).
  * Mirrors PosRoleMatrix: Owner/Admin/StoreManager (+ Manager alias).
  * OrganizationAdministrator alone does NOT imply ManageCatalog.
