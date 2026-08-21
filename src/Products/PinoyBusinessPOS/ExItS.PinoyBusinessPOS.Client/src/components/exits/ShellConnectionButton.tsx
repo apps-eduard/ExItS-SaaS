@@ -25,7 +25,7 @@ export function ShellConnectionButton({
   const online = useBrowserOnline();
   const queryClient = useQueryClient();
   const menu = useDismissibleOpen(false);
-  const { counts, lastSuccessfulSyncAt, refreshCounts, retrySyncPreparation } = useOfflineSync();
+  const { counts, lastSuccessfulSyncAt, refreshCounts, retrySync } = useOfflineSync();
   const summary = describeSyncSummary(counts);
   const title = t("shell.connectionSync.title");
 
@@ -164,7 +164,7 @@ export function ShellConnectionButton({
               className="min-h-11 w-full justify-start"
               data-testid={`${testId}-retry-sync`}
               onClick={() => {
-                void retrySyncPreparation();
+                void retrySync();
                 menu.close();
               }}
             >

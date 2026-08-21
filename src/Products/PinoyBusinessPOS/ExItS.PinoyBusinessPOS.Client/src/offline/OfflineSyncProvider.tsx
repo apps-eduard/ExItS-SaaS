@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import type { OfflineDb } from "@/offline/db";
 import { getMeta, putMeta } from "@/offline/db";
+import { drainOutbox } from "@/offline/outbox-processor";
 import { getOutboxCounts, recoverAbandonedSyncing } from "@/offline/outbox";
 import {
   isFullySynced,
@@ -23,9 +24,13 @@ type OfflineSyncContextValue = {
   counts: OfflineQueueCounts;
   lastSuccessfulSyncAt: string | null;
   activeDb: OfflineDb | null;
-  bindDatabase: (db: OfflineDb | null) => Promise<void>;
+  activeScopeBinding: string | null;
+  bindDatabase: (db: OfflineDb | null, scopeBinding?: string | null) => Promise<void>;
   refreshCounts: () => Promise<void>;
   markSuccessfulSync: () => Promise<void>;
+  /** Recover abandoned Syncing rows, then drain the outbox when online. */
+  retrySync: () => Promise<void>;
+  /** @deprecated use retrySync — kept for older call sites during Master Run. */
   retrySyncPreparation: () => Promise<void>;
 };
 
@@ -33,6 +38,7 @@ const OfflineSyncContext = createContext<OfflineSyncContextValue | null>(null);
 
 export function OfflineSyncProvider({ children }: { children: ReactNode }) {
   const [activeDb, setActiveDb] = useState<OfflineDb | null>(null);
+  const [activeScopeBinding, setActiveScopeBinding] = useState<string | null>(null);
   const [counts, setCounts] = useState<OfflineQueueCounts>(emptyCounts);
   const [lastSuccessfulSyncAt, setLastSuccessfulSyncAt] = useState<string | null>(null);
 
@@ -45,13 +51,15 @@ export function OfflineSyncProvider({ children }: { children: ReactNode }) {
     setLastSuccessfulSyncAt(await getMeta(activeDb, "lastSuccessfulSyncAt"));
   }, [activeDb]);
 
-  const bindDatabase = useCallback(async (db: OfflineDb | null) => {
+  const bindDatabase = useCallback(async (db: OfflineDb | null, scopeBinding?: string | null) => {
     setActiveDb(db);
+    setActiveScopeBinding(db ? (scopeBinding ?? null) : null);
     if (!db) {
       setCounts(emptyCounts);
       setLastSuccessfulSyncAt(null);
       return;
     }
+    await recoverAbandonedSyncing(db);
     setCounts(await getOutboxCounts(db));
     setLastSuccessfulSyncAt(await getMeta(db, "lastSuccessfulSyncAt"));
   }, []);
@@ -66,32 +74,40 @@ export function OfflineSyncProvider({ children }: { children: ReactNode }) {
     setCounts(await getOutboxCounts(activeDb));
   }, [activeDb]);
 
-  const retrySyncPreparation = useCallback(async () => {
-    if (!activeDb) {
+  const retrySync = useCallback(async () => {
+    if (!activeDb || !activeScopeBinding) {
       return;
     }
-    await recoverAbandonedSyncing(activeDb);
+    const result = await drainOutbox(activeDb, activeScopeBinding);
     setCounts(await getOutboxCounts(activeDb));
-  }, [activeDb]);
+    if (result.succeeded > 0) {
+      const at = new Date().toISOString();
+      await putMeta(activeDb, "lastSuccessfulSyncAt", at);
+      setLastSuccessfulSyncAt(at);
+    }
+  }, [activeDb, activeScopeBinding]);
 
   const value = useMemo(
     () => ({
       counts,
       lastSuccessfulSyncAt,
       activeDb,
+      activeScopeBinding,
       bindDatabase,
       refreshCounts,
       markSuccessfulSync,
-      retrySyncPreparation,
+      retrySync,
+      retrySyncPreparation: retrySync,
     }),
     [
       counts,
       lastSuccessfulSyncAt,
       activeDb,
+      activeScopeBinding,
       bindDatabase,
       refreshCounts,
       markSuccessfulSync,
-      retrySyncPreparation,
+      retrySync,
     ],
   );
 

@@ -3,6 +3,7 @@ import { useState, type ReactNode } from "react";
 import { PreferencesProvider } from "@/hooks/usePreferences";
 import { I18nProvider } from "@/i18n/I18nProvider";
 import { OfflineSyncProvider } from "@/offline/OfflineSyncProvider";
+import { OutboxSyncHost } from "@/offline/OutboxSyncHost";
 
 export function AppProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -21,7 +22,10 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <PreferencesProvider>
         <I18nProvider>
-          <OfflineSyncProvider>{children}</OfflineSyncProvider>
+          <OfflineSyncProvider>
+            <OutboxSyncHost />
+            {children}
+          </OfflineSyncProvider>
         </I18nProvider>
       </PreferencesProvider>
     </QueryClientProvider>

@@ -55,7 +55,7 @@ export function useOrganizationOfflineContext(): OrganizationOfflineContext | nu
           return;
         }
         setOpened({ db, scopeBinding });
-        await bindDatabase(db);
+        await bindDatabase(db, scopeBinding);
       })
       .catch(() => {
         if (!cancelled) {
