@@ -10,6 +10,7 @@ import {
   canInviteOrganizationStaff,
   canManageCatalog,
   canManageInventory,
+  canManagePurchasing,
   canManageShifts,
   canManageSuppliers,
   canProcessReturn,
@@ -17,6 +18,7 @@ import {
   canUseAdminExperience,
   canViewCustomers,
   canViewInventory,
+  canViewPurchasing,
   canViewRegisters,
   canViewReturns,
   canViewShifts,
@@ -384,6 +386,26 @@ export function RequireManageSuppliers({ children }: { children: ReactNode }) {
 
   if (!canManageSuppliers(sessionGrant)) {
     return <ExperienceAccessDeniedPage testId="suppliers-manage-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireViewPurchasing({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canViewPurchasing(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="purchasing-view-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireManagePurchasing({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canManagePurchasing(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="purchasing-manage-denied" />;
   }
 
   return children;

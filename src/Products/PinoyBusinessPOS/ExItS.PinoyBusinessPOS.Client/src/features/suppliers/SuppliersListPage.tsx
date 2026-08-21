@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { canManageSuppliers } from "@/access/pos-capabilities";
+import { canManageSuppliers, canViewSuppliers } from "@/access/pos-capabilities";
+import { listRelationships } from "@/api/pos/pos-connected-suppliers-client";
 import { listSuppliers, resolveSupplierSearchParams } from "@/api/pos/pos-suppliers-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -42,6 +43,7 @@ export function SuppliersListPage() {
   );
 
   const allowManage = canManageSuppliers(sessionGrant);
+  const allowView = canViewSuppliers(sessionGrant);
   const searchParams = resolveSupplierSearchParams(debounced);
 
   const query = useQuery({
@@ -68,6 +70,15 @@ export function SuppliersListPage() {
       ),
   });
 
+  const incomingQuery = useQuery({
+    queryKey: ["connected-suppliers", "incoming-count", workspace?.organizationId],
+    enabled: Boolean(workspace) && allowView,
+    queryFn: async ({ signal }) => {
+      const rows = await listRelationships(workspace!, "supplier", signal);
+      return rows.filter((row) => row.status.toLowerCase() === "pending").length;
+    },
+  });
+
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
   }
@@ -76,6 +87,7 @@ export function SuppliersListPage() {
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const canPrev = page > 1;
   const canNext = page < totalPages && totalCount > 0;
+  const incomingCount = incomingQuery.data ?? 0;
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="suppliers-list-page">
@@ -84,6 +96,30 @@ export function SuppliersListPage() {
         {allowManage ? (
           <Button asChild className="min-h-11" data-testid="suppliers-new">
             <Link to="/suppliers/new">{t("suppliers.add")}</Link>
+          </Button>
+        ) : null}
+        {allowManage ? (
+          <Button asChild variant="ghost" className="min-h-11" data-testid="suppliers-connect">
+            <Link to="/suppliers/connected/request">{t("connected.requestConnection")}</Link>
+          </Button>
+        ) : null}
+        {allowView ? (
+          <Button asChild variant="ghost" className="min-h-11" data-testid="suppliers-incoming">
+            <Link to="/suppliers/connected/requests">
+              {incomingCount > 0
+                ? t("connected.incomingCompact").replace("{count}", String(incomingCount))
+                : t("connected.incomingRequests")}
+            </Link>
+          </Button>
+        ) : null}
+        {allowView ? (
+          <Button
+            asChild
+            variant="ghost"
+            className="min-h-11"
+            data-testid="suppliers-connected-buyers"
+          >
+            <Link to="/suppliers/connected/buyers">{t("connected.buyersTitle")}</Link>
           </Button>
         ) : null}
       </div>

@@ -257,6 +257,36 @@ export function canManageSuppliers(grant: PosSessionGrantFacts | null | undefine
 }
 
 /**
+ * ViewPurchasing UI gate — PosRoleMatrix Owner/Admin/StoreManager + InventoryStaff + ReportingUser.
+ * Cashier DENY. Server remains authoritative.
+ */
+export function canViewPurchasing(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  if (isPosOwnerRole(grant) || isPosOperationsManager(grant)) {
+    return true;
+  }
+  const role = resolveEffectivePosRoleCode(grant)?.toLowerCase();
+  return role === "inventorystaff" || role === "reportinguser";
+}
+
+/**
+ * ManagePurchasing UI gate — Owner/Admin/StoreManager + InventoryStaff.
+ * Cashier / ReportingUser DENY. Server remains authoritative.
+ */
+export function canManagePurchasing(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  if (isPosOwnerRole(grant) || isPosOperationsManager(grant)) {
+    return true;
+  }
+  const role = resolveEffectivePosRoleCode(grant)?.toLowerCase();
+  return role === "inventorystaff";
+}
+
+/**
  * ViewReturns UI gate — PosRoleMatrix Owner/Admin/StoreManager/Cashier (+ ReportingUser).
  * Cashier may view history but must not process returns.
  * Server remains authoritative via store-returns-view.

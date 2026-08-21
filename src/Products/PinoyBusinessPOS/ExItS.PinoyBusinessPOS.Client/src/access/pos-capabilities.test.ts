@@ -12,6 +12,7 @@ import {
   canInviteOrganizationStaff,
   canManageCatalog,
   canManageRegisters,
+  canManagePurchasing,
   canManageShifts,
   canProcessReturn,
   canRecordRepayment,
@@ -21,6 +22,7 @@ import {
   canUseSellingExperience,
   canManageSuppliers,
   canViewCustomers,
+  canViewPurchasing,
   canViewSuppliers,
   canViewRegisters,
   canViewReturns,
@@ -347,5 +349,22 @@ describe("pos-capabilities", () => {
     expect(canManageSuppliers(inventory)).toBe(false);
     expect(canManageSuppliers(reporting)).toBe(false);
     expect(canManageSuppliers(cashier)).toBe(false);
+
+    expect(canViewPurchasing(owner)).toBe(true);
+    expect(canViewPurchasing(manager)).toBe(true);
+    expect(canViewPurchasing(inventory)).toBe(true);
+    expect(canViewPurchasing(reporting)).toBe(true);
+    expect(canViewPurchasing(cashier)).toBe(false);
+
+    expect(canManagePurchasing(owner)).toBe(true);
+    expect(canManagePurchasing(manager)).toBe(true);
+    expect(canManagePurchasing(inventory)).toBe(true);
+    expect(canManagePurchasing(reporting)).toBe(false);
+    expect(canManagePurchasing(cashier)).toBe(false);
+
+    expect(canManageCatalog(owner)).toBe(true);
+    expect(canManageCatalog(manager)).toBe(true);
+    expect(canManageCatalog(inventory)).toBe(false);
+    expect(canManageCatalog(cashier)).toBe(false);
   });
 });

@@ -1,7 +1,12 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { canManageSuppliers } from "@/access/pos-capabilities";
+import { canManageSuppliers, canViewPurchasing } from "@/access/pos-capabilities";
+import {
+  isRelationshipActive,
+  isRelationshipPending,
+  listRelationships,
+} from "@/api/pos/pos-connected-suppliers-client";
 import {
   activateSupplier,
   deactivateSupplier,
@@ -40,11 +45,23 @@ export function SupplierDetailPage() {
   );
 
   const allowManage = canManageSuppliers(sessionGrant);
+  const allowViewPurchasing = canViewPurchasing(sessionGrant);
 
   const supplierQuery = useQuery({
     queryKey: ["suppliers", "detail", workspace?.organizationId, supplierId],
     enabled: Boolean(workspace) && Boolean(supplierId),
     queryFn: ({ signal }) => getSupplier(workspace!, supplierId!, signal),
+  });
+
+  const relationshipId = supplierQuery.data?.connectedRelationshipId ?? null;
+
+  const relationshipQuery = useQuery({
+    queryKey: ["connected-suppliers", "relationship", relationshipId],
+    enabled: Boolean(workspace) && Boolean(relationshipId),
+    queryFn: async ({ signal }) => {
+      const rows = await listRelationships(workspace!, "buyer", signal);
+      return rows.find((row) => row.relationshipId === relationshipId) ?? null;
+    },
   });
 
   if (!workspace || !supplierId) {
@@ -71,6 +88,9 @@ export function SupplierDetailPage() {
   const supplier = supplierQuery.data;
   const connected = isConnectedSupplier(supplier);
   const isActive = supplier.status.toLowerCase() === "active";
+  const relationship = relationshipQuery.data;
+  const relationshipActive = relationship ? isRelationshipActive(relationship) : false;
+  const relationshipPending = relationship ? isRelationshipPending(relationship) : false;
 
   async function toggleStatus() {
     if (!allowManage || acting || !workspace || !supplierId) {
@@ -164,6 +184,39 @@ export function SupplierDetailPage() {
           </div>
         </dl>
       </Card>
+
+      {connected && relationshipPending ? (
+        <Card data-testid="supplier-connected-pending">
+          <p className="m-0 text-[length:var(--exits-text-sm)]">
+            {t("connected.waitingForApproval")}
+          </p>
+        </Card>
+      ) : null}
+
+      {connected && relationshipActive && allowViewPurchasing ? (
+        <div
+          className="flex flex-wrap gap-2"
+          role="group"
+          aria-label={t("connected.browseProducts")}
+          data-testid="supplier-connected-actions"
+        >
+          <Button asChild className="min-h-11" data-testid="supplier-browse-catalog">
+            <Link to={`/suppliers/${supplierId}/connected-catalog`}>
+              {t("connected.browseProducts")}
+            </Link>
+          </Button>
+          <Button
+            asChild
+            variant="ghost"
+            className="min-h-11"
+            data-testid="supplier-linked-products"
+          >
+            <Link to={`/suppliers/${supplierId}/linked-products`}>
+              {t("connected.linkedTitle")}
+            </Link>
+          </Button>
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap gap-2">
         {allowManage ? (

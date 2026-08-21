@@ -43,6 +43,12 @@ import { ShiftsHubPage } from "@/features/shifts/ShiftsHubPage";
 import { SupplierDetailPage } from "@/features/suppliers/SupplierDetailPage";
 import { SupplierCreatePage, SupplierEditPage } from "@/features/suppliers/SupplierFormPage";
 import { SuppliersListPage } from "@/features/suppliers/SuppliersListPage";
+import { ConnectedRequestPage } from "@/features/suppliers/ConnectedRequestPage";
+import { ConnectedIncomingRequestsPage } from "@/features/suppliers/ConnectedIncomingRequestsPage";
+import { ConnectedBuyersPage } from "@/features/suppliers/ConnectedBuyersPage";
+import { ConnectedSharedProductsPage } from "@/features/suppliers/ConnectedSharedProductsPage";
+import { ConnectedCatalogPage } from "@/features/suppliers/ConnectedCatalogPage";
+import { LinkedProductsPage } from "@/features/suppliers/LinkedProductsPage";
 import { OrgStaffInvitePage } from "@/features/staff/OrgStaffInvitePage";
 import { StaffInvitationAcceptPage } from "@/features/staff/StaffInvitationAcceptPage";
 import { NoAccessibleBranchPage } from "@/features/workspace/NoAccessibleBranchPage";
@@ -69,6 +75,7 @@ import {
   RequireSession,
   RequireViewCustomers,
   RequireViewInventory,
+  RequireViewPurchasing,
   RequireViewRegisters,
   RequireViewReturns,
   RequireViewShifts,
@@ -364,6 +371,58 @@ export const appRoutes = [
                   <RequireManageSuppliers>
                     <SupplierCreatePage />
                   </RequireManageSuppliers>
+                ),
+              },
+              {
+                path: "connected/request",
+                element: (
+                  <RequireManageSuppliers>
+                    <ConnectedRequestPage />
+                  </RequireManageSuppliers>
+                ),
+              },
+              {
+                path: "connected/requests",
+                element: <ConnectedIncomingRequestsPage />,
+              },
+              {
+                path: "connected/buyers",
+                element: <ConnectedBuyersPage />,
+              },
+              {
+                path: "connected/buyers/:relationshipId",
+                element: <ConnectedBuyersPage />,
+              },
+              {
+                path: "connected/buyers/:relationshipId/shared-products",
+                element: (
+                  <RequireManageSuppliers>
+                    <ConnectedSharedProductsPage />
+                  </RequireManageSuppliers>
+                ),
+              },
+              {
+                path: "connected/buyers/:relationshipId/share-products",
+                element: (
+                  <RequireManageSuppliers>
+                    <ConnectedSharedProductsPage />
+                  </RequireManageSuppliers>
+                ),
+              },
+              {
+                path: ":supplierId/connected-catalog",
+                element: (
+                  <RequireViewPurchasing>
+                    <ConnectedCatalogPage />
+                  </RequireViewPurchasing>
+                ),
+              },
+              {
+                path: ":supplierId/linked-products",
+                element: (
+                  <RequireViewPurchasing>
+                    <LinkedProductsPage />
+                  </RequireViewPurchasing>
                 ),
               },
               { path: ":supplierId", element: <SupplierDetailPage /> },
