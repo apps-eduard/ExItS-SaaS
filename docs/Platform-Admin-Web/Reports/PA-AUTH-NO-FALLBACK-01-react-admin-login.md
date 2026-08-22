@@ -4,7 +4,7 @@
 
 Starting HEAD: 4cce7d9fc25942e156eab5f9abdc6748504e5f7a
 Implementation Commit: 34c6f86bb86740a704e9099f5fbf9317723daa1e
-Final HEAD: 34c6f86bb86740a704e9099f5fbf9317723daa1e
+Final HEAD: 9661fb71281946312502b5521b4a0db747ac4390
 Status: COMPLETE — narrow auth/error-state fix on feat/platform-admin-auth-no-fallback (dedicated worktree; no PA-COM / POS / System Health mix)
 
 RUNTIME_8095_CONTAINER=exits-local-validation-admin-web-react
