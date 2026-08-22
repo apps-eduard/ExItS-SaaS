@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   assertWebCryptoSubtleAvailable,
   isWebCryptoSubtleAvailable,
-  resolveEmulatorHttpsDevUrl,
+  resolveEmulatorLoopbackDevUrl,
   WebCryptoUnavailableError,
 } from "@/lib/web-crypto-capability";
 
@@ -14,7 +14,7 @@ describe("web crypto capability", () => {
     vi.unstubAllGlobals();
   });
 
-  it("builds emulator HTTPS upgrade URL on insecure 10.0.2.2", () => {
+  it("builds emulator loopback URL on insecure 10.0.2.2", () => {
     vi.stubGlobal("window", {
       isSecureContext: false,
       location: {
@@ -26,7 +26,7 @@ describe("web crypto capability", () => {
         hash: "",
       },
     });
-    expect(resolveEmulatorHttpsDevUrl()).toBe("https://10.0.2.2:5177/offline-pin-setup");
+    expect(resolveEmulatorLoopbackDevUrl()).toBe("http://127.0.0.1:5177/offline-pin-setup");
     vi.unstubAllGlobals();
   });
 });

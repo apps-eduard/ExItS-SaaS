@@ -100,8 +100,8 @@ export const en = {
   "offline.pin.invalidFormat": "Enter at least 6 digits.",
   "offline.pin.notSignedIn": "Sign in online before setting an offline PIN.",
   "offline.pin.webCryptoUnavailable":
-    "Offline PIN encryption requires a secure browser context. Tap Open secure dev URL below and accept the local certificate, or run adb reverse tcp:5177 tcp:5177 and use http://127.0.0.1:5177.",
-  "offline.pin.openSecureDevUrl": "Open secure dev URL",
+    "Offline PIN encryption requires a secure browser context. npm run dev sets up adb reverse automatically — open http://127.0.0.1:5177 in the emulator browser (not http://10.0.2.2).",
+  "offline.pin.openEmulatorDevUrl": "Open http://127.0.0.1:5177",
   "offline.pin.unlockTitle": "Unlock offline",
   "offline.pin.unlockSubtitle": "Enter your offline PIN to open saved POS data on this device.",
   "offline.pin.label": "Offline PIN",

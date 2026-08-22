@@ -11,14 +11,13 @@ export default defineConfig({
   reporter: "list",
   timeout: 120_000,
   use: {
-    baseURL: "https://127.0.0.1:5177",
-    ignoreHTTPSErrors: true,
+    baseURL: "http://127.0.0.1:5177",
     trace: "on-first-retry",
   },
   webServer: {
     cwd: clientRoot,
     command: "npm run dev",
-    url: "https://127.0.0.1:5177",
+    url: "http://127.0.0.1:5177",
     reuseExistingServer: true,
     timeout: 120_000,
   },

@@ -19,7 +19,7 @@ const adb = path.join(
 );
 const username = "kizy@gmail.com";
 const password = "1";
-const signInUrl = "http://10.0.2.2:5177/sign-in";
+const signInUrl = "http://127.0.0.1:5177/sign-in";
 const loginPath = "/platform-api/api/v1/platform/auth/login";
 
 function runAdb(args) {
@@ -49,7 +49,7 @@ runAdb(["-s", device, "shell", "am", "start", "-a", "android.intent.action.VIEW"
 const browser = await chromium.connectOverCDP("http://127.0.0.1:9222");
 const context = browser.contexts()[0] ?? (await browser.newContext());
 let page =
-  context.pages().find((candidate) => candidate.url().includes("10.0.2.2:5177")) ??
+  context.pages().find((candidate) => candidate.url().includes("127.0.0.1:5177")) ??
   context.pages()[0];
 if (!page) {
   page = await context.newPage();

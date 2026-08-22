@@ -19,8 +19,8 @@ export function assertWebCryptoSubtleAvailable(): void {
   }
 }
 
-/** Emulator dev on http://10.0.2.2 needs HTTPS for crypto.subtle; Vite dev serves basic SSL. */
-export function resolveEmulatorHttpsDevUrl(): string | null {
+/** Emulator dev on http://10.0.2.2 is not a secure context; adb reverse exposes http://127.0.0.1 as secure. */
+export function resolveEmulatorLoopbackDevUrl(): string | null {
   if (typeof window === "undefined" || window.isSecureContext) {
     return null;
   }
@@ -28,5 +28,5 @@ export function resolveEmulatorHttpsDevUrl(): string | null {
   if (protocol !== "http:" || hostname !== "10.0.2.2") {
     return null;
   }
-  return `https://${hostname}${port ? `:${port}` : ""}${pathname}${search}${hash}`;
+  return `http://127.0.0.1${port ? `:${port}` : ""}${pathname}${search}${hash}`;
 }

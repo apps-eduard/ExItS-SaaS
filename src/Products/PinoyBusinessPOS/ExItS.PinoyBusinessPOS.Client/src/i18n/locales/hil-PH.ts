@@ -107,8 +107,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "offline.pin.invalidFormat": "Magbutang sang indi menos 6 ka digit.",
   "offline.pin.notSignedIn": "Mag-sign in online anay antes mag-set sang offline PIN.",
   "offline.pin.webCryptoUnavailable":
-    "Offline PIN encryption requires a secure browser context. Tap Open secure dev URL below and accept the local certificate, or run adb reverse tcp:5177 tcp:5177 and use http://127.0.0.1:5177.",
-  "offline.pin.openSecureDevUrl": "Open secure dev URL",
+    "Offline PIN encryption requires a secure browser context. npm run dev sets up adb reverse automatically — open http://127.0.0.1:5177 in the emulator browser (not http://10.0.2.2).",
+  "offline.pin.openEmulatorDevUrl": "Open http://127.0.0.1:5177",
   "offline.pin.unlockTitle": "I-unlock ang offline",
   "offline.pin.unlockSubtitle":
     "Ibutang ang offline PIN agod mabuksan ang naka-save nga POS data sa sini nga device.",
