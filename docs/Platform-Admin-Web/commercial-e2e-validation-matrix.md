@@ -93,7 +93,7 @@ Ordering/Delivery: **do not** expect Starter-off / Pro-on. Seed grants both on a
 | Scenario | API | React today | After PA-COM-04 |
 |---|---|---|---|
 | No subscription → Trialing (Starter/Growth) | `POST .../trials` | **AVAILABLE** (PA-COM-04) | delivered |
-| Trialing → Active (convert) | `activate-subscription` + confirmed payment | **AVAILABLE** (PA-COM-06 manual path) | record → confirm → activate from payment |
+| Trialing → Active (convert) | `activate-subscription` + confirmed payment | **AVAILABLE** (PA-COM-06) | Server validates payment amount/currency vs plan before activate (FIX01) |
 | No subscription → Active paid | `POST .../subscriptions` + paymentId | **AVAILABLE** (PA-COM-06) | Subscribe with payment wizard |
 | Active → upgrade | `POST .../upgrade` | **AVAILABLE** while Trialing; paid Active → payment-required copy | 04 + 06 for paid |
 | Active → scheduled downgrade | `POST .../downgrade` | **AVAILABLE** | delivered |
