@@ -28,6 +28,13 @@ import { OverviewPage } from "@/features/overview/OverviewPage";
 import { SystemHealthPage } from "@/features/system-health/SystemHealthPage";
 import { AuditListPage } from "@/features/audit/AuditListPage";
 import { AuditDetailPage } from "@/features/audit/AuditDetailPage";
+import { PrivacyOverviewPage } from "@/features/privacy-compliance/PrivacyOverviewPage";
+import {
+  PrivacyCategoryPage,
+  PrivacyDocumentsPage,
+} from "@/features/privacy-compliance/PrivacyRequirementsPages";
+import { PrivacySystemsPage } from "@/features/privacy-compliance/PrivacySystemsPage";
+import { PrivacyEvidencePage } from "@/features/privacy-compliance/PrivacyEvidencePage";
 import { UsersPage } from "@/features/users/UsersPage";
 import { UserDetailPage } from "@/features/users/UserDetailPage";
 import { ShellCatchAllPage } from "@/features/overview/ShellCatchAllPage";
@@ -150,6 +157,33 @@ export function App() {
                         <Route path="audit">
                           <Route index element={<AuditListPage />} />
                           <Route path=":auditId" element={<AuditDetailPage />} />
+                        </Route>
+                        <Route path="privacy-compliance">
+                          <Route index element={<PrivacyOverviewPage />} />
+                          <Route path="documents" element={<PrivacyDocumentsPage />} />
+                          <Route path="systems" element={<PrivacySystemsPage />} />
+                          <Route path="evidence" element={<PrivacyEvidencePage />} />
+                          <Route path="pias" element={<PrivacyCategoryPage segment="pias" />} />
+                          <Route
+                            path="data-inventory"
+                            element={<PrivacyCategoryPage segment="data-inventory" />}
+                          />
+                          <Route
+                            path="retention"
+                            element={<PrivacyCategoryPage segment="retention" />}
+                          />
+                          <Route
+                            path="incidents"
+                            element={<PrivacyCategoryPage segment="incidents" />}
+                          />
+                          <Route
+                            path="vendors"
+                            element={<PrivacyCategoryPage segment="vendors" />}
+                          />
+                          <Route
+                            path="dpo-npc"
+                            element={<PrivacyCategoryPage segment="dpo-npc" />}
+                          />
                         </Route>
                         <Route path="system-health" element={<SystemHealthPage />} />
                         <Route
