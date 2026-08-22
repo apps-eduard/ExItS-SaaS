@@ -145,7 +145,7 @@ test("empty billing is truthful", async ({ page }) => {
     await route.fulfill({ json: organization });
   });
   await page.goto(`/admin/organizations/${organization.id}/billing`);
-  await expect(page.getByText("No SaaS payments")).toBeVisible();
+  await expect(page.getByText("No SaaS payments").first()).toBeVisible();
 });
 
 test("billing error retry and forbidden fail-closed without amount leak", async ({ page }) => {

@@ -11,7 +11,8 @@ const buttonVariants = cva(
         default: "bg-primary text-primary-foreground hover:bg-[var(--exits-primary-hover)]",
         secondary: "bg-secondary text-secondary-foreground hover:bg-[var(--exits-secondary-hover)]",
         outline: "border border-border bg-surface text-foreground hover:bg-surface-muted",
-        destructive: "bg-destructive text-white hover:opacity-90",
+        destructive:
+          "bg-destructive text-destructive-foreground hover:bg-[var(--exits-danger-hover)]",
         ghost: "bg-transparent text-foreground hover:bg-surface-muted",
       },
       size: {

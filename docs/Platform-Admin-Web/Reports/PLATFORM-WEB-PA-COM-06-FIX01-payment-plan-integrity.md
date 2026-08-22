@@ -46,3 +46,11 @@ Subscription upgrade `payment_required` → navigate to Billing with `upgradeSub
 ## Billing cycle
 
 UI selects Monthly/Annual when catalog supports both. Server validates `PriceForCycle` and paid period via `SubscriptionBillingPeriods.ComputePaidPeriod`.
+
+---
+
+## Accessibility closure (PA-COM-06-FIX02)
+
+**DESTRUCTIVE_BUTTON_CONTRAST=PASS** · **PLAYWRIGHT_BILLING=PASS**
+
+Root cause: shared `Button` destructive variant used `text-white` on dark-theme `--exits-danger` (`#f08a80`), failing WCAG 2 AA (≈2.5:1). Fix: semantic `--exits-danger-contrast` + `--exits-danger-hover` tokens; `text-destructive-foreground` on all destructive buttons (Billing Void/Reject, confirmation dialogs, subscription cancel). Pre-existing design-system gap exposed by PA-COM-06 billing axe coverage.

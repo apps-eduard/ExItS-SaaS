@@ -14,6 +14,7 @@
   --color-accent: var(--exits-accent);
   --color-accent-foreground: var(--exits-accent-contrast);
   --color-destructive: var(--exits-danger);
+  --color-destructive-foreground: var(--exits-danger-contrast);
   --color-warning: var(--exits-warning);
   --color-success: var(--exits-success);
   --color-info: var(--exits-info);
@@ -57,6 +58,8 @@
   --exits-warning: #92400e;
   --exits-warning-bg: #fef3c7;
   --exits-danger: #b42318;
+  --exits-danger-contrast: #ffffff;
+  --exits-danger-hover: #962018;
   --exits-danger-bg: #fbe7e5;
   --exits-info: #0f766e;
   --exits-info-bg: #ccfbf1;
@@ -96,6 +99,8 @@
   --exits-warning: #e2b336;
   --exits-warning-bg: #3a2f0d;
   --exits-danger: #f08a80;
+  --exits-danger-contrast: #1f0a08;
+  --exits-danger-hover: #e07a70;
   --exits-danger-bg: #3a1c1c;
   --exits-info: #2aa89a;
   --exits-info-bg: #134e4a;
@@ -137,6 +142,8 @@
     --exits-warning: #e2b336;
     --exits-warning-bg: #3a2f0d;
     --exits-danger: #f08a80;
+    --exits-danger-contrast: #1f0a08;
+    --exits-danger-hover: #e07a70;
     --exits-danger-bg: #3a1c1c;
     --exits-info: #2aa89a;
     --exits-info-bg: #134e4a;
