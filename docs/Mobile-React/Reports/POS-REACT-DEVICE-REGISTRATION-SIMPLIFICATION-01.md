@@ -1,9 +1,11 @@
-# POS React — Device Registration Simplification + Sales Execution Gate
+# POS React â€” Device Registration Simplification + Sales Execution Gate
 
 **Status:** `AWAITING_PRODUCT_OWNER_CHATGPT_REVIEW`  
 **Branch:** `feat/pos-react-client`  
 **Starting HEAD (this gap-fill):** `3127f8415a9799c22cfe16cca3deacd9032fbc09`  
 **Prior implementation:** `0d8fb021` (core simplification) + `9ad0723e` (active-only UI)
+**Implementation HEAD:** `e937dd256f241a958f2b8eb286a0a0803301711d`
+**Final HEAD:** `9e53c3bac59fb9858e304e96932515b7cfd78396`
 
 ## Canonical product rule
 
@@ -17,7 +19,7 @@
 
 | Item | Change |
 |---|---|
-| Residual “Register with a code” footer | Removed; link uses **Register this device** |
+| Residual â€œRegister with a codeâ€ footer | Removed; link uses **Register this device** |
 | Dead redeem/createCode i18n | Removed from all five locales |
 | Customer copy | Device terminology; no registration-code sell help |
 | Concurrent capacity | `RegisterCurrentDevice` + MAUI redeem under `ExecuteWithOrganizationLockAsync` |
