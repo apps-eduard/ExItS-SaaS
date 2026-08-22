@@ -63,6 +63,37 @@ public sealed class POSCustomerQueryService
         return customer is null ? null : Map(customer);
     }
 
+    /// <summary>
+    /// Exact org-scoped lookup for checkout Personal QR/ID selection (Active customers only).
+    /// </summary>
+    public async Task<CheckoutCustomerSearchItemDto?> GetByLinkedPersonalPublicUserIdForCheckoutAsync(
+        Guid organizationId,
+        string personalPublicUserId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(personalPublicUserId))
+        {
+            return null;
+        }
+
+        var customer = await _customers
+            .FindByLinkedPersonalPublicUserIdAsync(
+                PosOrganizationId.From(organizationId),
+                personalPublicUserId,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (customer is null || customer.Status != CustomerStatus.Active)
+        {
+            return null;
+        }
+
+        return new CheckoutCustomerSearchItemDto(
+            customer.Id.Value,
+            customer.DisplayName,
+            customer.MobileNumber,
+            customer.Status.ToString());
+    }
+
     public async Task<PagedResult<POSCustomerDto>> ListAsync(
         Guid organizationId,
         CustomerStatus? status,

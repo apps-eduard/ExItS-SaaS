@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { createCustomer, getCustomer, updateCustomer } from "@/api/pos/pos-customers-client";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,9 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { customerId } = useParams<{ customerId: string }>();
+  const [searchParams] = useSearchParams();
+  const linkPublicId = searchParams.get("linkPublicId");
+  const returnTo = searchParams.get("returnTo");
   const { boundWorkspace } = useWorkspace();
   const online = useBrowserOnline();
   const offlineContext = useOrganizationOfflineContext();
@@ -145,6 +148,10 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
             : notes,
           platformBusinessCustomerId: personalLink?.platformBusinessCustomerId ?? null,
         });
+        if (returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")) {
+          navigate(returnTo, { replace: true });
+          return;
+        }
         navigate(
           personalLink
             ? `/customers/${created.customerId}?pendingLink=1`
@@ -297,6 +304,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
           phone={mobileNumber}
           notes={notes}
           disabled={saving}
+          initialSubject={linkPublicId}
           onLinked={(link) => {
             setPersonalLink(link);
             if (!displayName.trim()) {

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
-import { posRequest } from "@/api/pos/pos-http";
+import { PosApiError, posRequest } from "@/api/pos/pos-http";
 import {
   buildPosMutationIdempotencyHeaders,
   OFFLINE_OPERATION_TYPES,
@@ -334,6 +334,36 @@ export async function searchCheckoutCustomers(
     }),
   });
   return checkoutCustomerSearchResultSchema.parse(raw);
+}
+
+/**
+ * Exact org-scoped lookup by linked Personal ExItS public ID (Active customers only).
+ * Requires CreateSale. Returns null when no correlated customer exists in this organization.
+ */
+export async function findCustomerByLinkedPersonalPublicUserId(
+  workspace: PosWorkspaceScope,
+  personalPublicUserId: string,
+  signal?: AbortSignal,
+): Promise<CheckoutCustomerSearchItem | null> {
+  const normalized = personalPublicUserId.trim();
+  if (!normalized) {
+    return null;
+  }
+
+  try {
+    const raw = await posRequest<unknown>({
+      method: "GET",
+      workspace,
+      signal,
+      path: `${CUSTOMERS_PATH}/by-linked-personal/${encodeURIComponent(normalized)}`,
+    });
+    return checkoutCustomerSearchItemSchema.parse(raw);
+  } catch (error) {
+    if (error instanceof PosApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 export async function getCustomer(

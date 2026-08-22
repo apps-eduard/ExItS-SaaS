@@ -3,6 +3,7 @@ import {
   createCustomer,
   createCustomerRepayment,
   deactivateCustomer,
+  findCustomerByLinkedPersonalPublicUserId,
   getCustomer,
   getCustomerCreditSummary,
   getCustomerStatement,
@@ -92,6 +93,34 @@ describe("pos-customers-client", () => {
     expect(url).toContain("/api/v1/pos/customers/checkout-search");
     expect(url).toContain("search=Juan");
     expect(url).toContain("pageSize=20");
+  });
+
+  it("finds customer by linked personal public id", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse({
+        customerId,
+        displayName: "Juan Dela Cruz",
+        mobileNumber: "09171234567",
+        status: "Active",
+      }),
+    );
+
+    const found = await findCustomerByLinkedPersonalPublicUserId(workspace, "EX-4827-1936");
+    expect(found?.displayName).toBe("Juan Dela Cruz");
+    const url = String(vi.mocked(fetch).mock.calls[0][0]);
+    expect(url).toContain("/api/v1/pos/customers/by-linked-personal/EX-4827-1936");
+  });
+
+  it("returns null when linked personal customer is missing in org scope", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ title: "Not Found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    const missing = await findCustomerByLinkedPersonalPublicUserId(workspace, "EX-9999-9999");
+    expect(missing).toBeNull();
   });
 
   it("gets, creates, updates, and toggles customer lifecycle", async () => {

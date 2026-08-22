@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { UserRoundCheck } from "lucide-react";
 import {
   createBusinessCustomerWithPersonalLink,
@@ -25,6 +25,7 @@ type Props = {
   phone: string;
   notes: string;
   disabled?: boolean;
+  initialSubject?: string | null;
   onLinked: (link: ConfirmedPersonalLink) => void;
   onCleared: () => void;
 };
@@ -39,6 +40,7 @@ export function CustomerPersonalLinkPanel({
   phone,
   notes,
   disabled,
+  initialSubject,
   onLinked,
   onCleared,
 }: Props) {
@@ -47,6 +49,7 @@ export function CustomerPersonalLinkPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [linkSent, setLinkSent] = useState(false);
+  const seededInitialSubject = useRef(false);
 
   async function onPayload(subjectOrPayload: string) {
     setBusy(true);
@@ -64,6 +67,17 @@ export function CustomerPersonalLinkPanel({
       setBusy(false);
     }
   }
+
+  useEffect(() => {
+    const seed = initialSubject?.trim();
+    if (!seed || seededInitialSubject.current) {
+      return;
+    }
+    seededInitialSubject.current = true;
+    void onPayload(seed);
+    // Seed once from checkout deep-link; onPayload is stable for the initial resolve only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional one-shot seed
+  }, [initialSubject]);
 
   async function confirmLink() {
     if (!resolved) return;

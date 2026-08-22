@@ -714,6 +714,15 @@ export const filPH: Record<keyof typeof en, string> = {
   "checkout.customerClear": "Alisin ang customer",
   "checkout.optionalCustomerHint": "Opsyonal — maglagay ng customer sa Cash o GCash sale.",
   "checkout.optionalCustomerSearch": "Maghanap ng customers (opsyonal)",
+  "checkout.personalCustomerTitle": "I-scan ang ExItS QR o ilagay ang ExItS ID",
+  "checkout.personalCustomerHint":
+    "Hanapin ang umiiral na customer na naka-link sa Personal ExItS identity.",
+  "checkout.customerNotLinked": "Hindi naka-link ang customer sa negosyong ito",
+  "checkout.addLinkCustomer": "Magdagdag/mag-link ng customer",
+  "checkout.customerNotLinkedDenied":
+    "Hindi naka-link ang customer na ito. Hilingin sa manager na magdagdag o mag-link ng customer.",
+  "checkout.customerNotLinkedCancel": "Isara",
+  "checkout.personalResolveFailed": "Hindi ma-resolve ang ExItS ID na iyon.",
   "checkout.totalAmount": "Kabuuang Halaga",
   "checkout.discount": "Diskwento",
   "checkout.amountToPay": "Halagang Babayaran",

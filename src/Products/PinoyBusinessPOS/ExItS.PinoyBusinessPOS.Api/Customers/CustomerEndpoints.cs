@@ -61,6 +61,42 @@ internal static class CustomerEndpoints
             return Results.Ok(result);
         });
 
+        group.MapGet("/by-linked-personal/{personalPublicUserId}", async (
+            HttpRequest request,
+            string personalPublicUserId,
+            POSCustomerQueryService queries,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.CreateSale, out problem))
+            {
+                return problem!;
+            }
+
+            if (string.IsNullOrWhiteSpace(personalPublicUserId))
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.CheckoutCustomerSearchRequired,
+                    "Personal ExItS ID is required.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            var customer = await queries
+                .GetByLinkedPersonalPublicUserIdForCheckoutAsync(organizationId, personalPublicUserId, ct)
+                .ConfigureAwait(false);
+            return customer is null
+                ? PosApiResults.Problem(
+                    ApplicationErrorCodes.CustomerNotFound,
+                    "No active customer in this organization is linked to that Personal ExItS identity.",
+                    StatusCodes.Status404NotFound)
+                : Results.Ok(customer);
+        });
+
         group.MapGet("/checkout-search", async (
             HttpRequest request,
             string? search,

@@ -721,6 +721,15 @@ export const cebPH: Record<keyof typeof en, string> = {
   "checkout.customerClear": "Kuhaa ang customer",
   "checkout.optionalCustomerHint": "Opsyonal — i-attach ang customer niining Cash o GCash sale.",
   "checkout.optionalCustomerSearch": "Pangita og customers (opsyonal)",
+  "checkout.personalCustomerTitle": "I-scan ang ExItS QR o isulat ang ExItS ID",
+  "checkout.personalCustomerHint":
+    "Pangitaa ang existing customer nga naka-link sa Personal ExItS identity.",
+  "checkout.customerNotLinked": "Wala naka-link ang customer niining negosyo",
+  "checkout.addLinkCustomer": "Dugang/link customer",
+  "checkout.customerNotLinkedDenied":
+    "Wala naka-link kini nga customer. Pangayo sa manager nga magdugang o mag-link og customer.",
+  "checkout.customerNotLinkedCancel": "Isira",
+  "checkout.personalResolveFailed": "Dili ma-resolve ang ExItS ID nga kana.",
   "checkout.totalAmount": "Kinatibuk-ang Amount",
   "checkout.discount": "Diskwento",
   "checkout.amountToPay": "Amount to Pay",

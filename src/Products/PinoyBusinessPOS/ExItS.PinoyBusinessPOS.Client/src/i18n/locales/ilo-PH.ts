@@ -724,6 +724,15 @@ export const iloPH: Record<keyof typeof en, string> = {
   "checkout.optionalCustomerHint":
     "Opsional — i-attach ti customer iti daytoy a Cash wenno GCash sale.",
   "checkout.optionalCustomerSearch": "Pangita iti customers (opsional)",
+  "checkout.personalCustomerTitle": "I-scan ti ExItS QR wenno isurat ti ExItS ID",
+  "checkout.personalCustomerHint":
+    "Sapulen ti adda a customer a naka-link iti Personal ExItS identity.",
+  "checkout.customerNotLinked": "Saan a naka-link ti customer iti daytoy a negosyo",
+  "checkout.addLinkCustomer": "Manginayon/link customer",
+  "checkout.customerNotLinkedDenied":
+    "Saan a naka-link daytoy a customer. Agkiddaw iti manager nga manginayon wenno mang-link iti customer.",
+  "checkout.customerNotLinkedCancel": "Isardeng",
+  "checkout.personalResolveFailed": "Saan a ma-resolve daytoy a ExItS ID.",
   "checkout.totalAmount": "Kinatibuk-ti Amount",
   "checkout.discount": "Diskwento",
   "checkout.amountToPay": "Amount to Pay",

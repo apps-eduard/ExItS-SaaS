@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   canApplyCommercialDiscount,
   canCreateCredit,
+  canCreateCustomer,
   canCreateSale,
   canOverrideSalePrice,
   canViewCustomers,
@@ -25,6 +26,7 @@ import { OnlineRequiredCard } from "@/components/exits/OnlineRequiredCard";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
+import { CheckoutPersonalCustomerPicker } from "@/features/checkout/CheckoutPersonalCustomerPicker";
 import {
   mapCartLinesToCheckoutRequest,
   mapCartLinesToOfflineCheckoutRequest,
@@ -110,6 +112,7 @@ function confirmLabelKey(
 export function CheckoutCashPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const location = useLocation();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const cart = useSessionCart();
   const { readiness, currentShift, refresh } = useShiftContext();
@@ -160,6 +163,7 @@ export function CheckoutCashPage() {
   const allowOverride = canOverrideSalePrice(sessionGrant);
   const allowViewCustomers = canViewCustomers(sessionGrant);
   const allowCreateCredit = canCreateCredit(sessionGrant);
+  const allowCreateCustomer = canCreateCustomer(sessionGrant);
   /** Cashier Utang may use narrow checkout-search; management list still requires ViewCustomers. */
   const allowCheckoutCustomerSearch = allowSale;
   const moneyReady = sellReadiness.moneyPostReady === true;
@@ -1139,6 +1143,18 @@ export function CheckoutCashPage() {
           <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
             {t("checkout.optionalCustomerHint")}
           </p>
+          {workspaceScope ? (
+            <CheckoutPersonalCustomerPicker
+              workspace={workspaceScope}
+              disabled={saving}
+              canLinkCustomer={allowCreateCustomer}
+              returnTo={location.pathname}
+              onCustomerSelected={(customer) => {
+                setSelectedCustomer(customer);
+                setCustomerSearch(customer.displayName);
+              }}
+            />
+          ) : null}
           <label
             className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
             htmlFor="checkout-optional-customer-search"
@@ -1223,6 +1239,18 @@ export function CheckoutCashPage() {
             </p>
           ) : (
             <>
+              {workspaceScope ? (
+                <CheckoutPersonalCustomerPicker
+                  workspace={workspaceScope}
+                  disabled={saving}
+                  canLinkCustomer={allowCreateCustomer}
+                  returnTo={location.pathname}
+                  onCustomerSelected={(customer) => {
+                    setSelectedCustomer(customer);
+                    setCustomerSearch(customer.displayName);
+                  }}
+                />
+              ) : null}
               <label
                 className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
                 htmlFor="checkout-customer-search"

@@ -4,8 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { DropdownMenu, MenuHeader, MenuItem, MenuSeparator } from "@/components/ui/dropdown-menu";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSession } from "@/session/SessionProvider";
-import { isOrganizationContextLocked, sessionAccountClass } from "@/session/account-class";
+import { sessionAccountClass, isOrganizationContextLocked } from "@/session/account-class";
 import { ensurePersonalSessionProfile } from "@/session/ensure-personal-profile";
+import { useSwitchToBusiness } from "@/workspace/use-switch-to-business";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { resolveEffectivePosRoleCode } from "@/access/pos-capabilities";
 import {
@@ -47,6 +48,12 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
   const { sessionGrant, boundWorkspace, clearBoundWorkspace } = useWorkspace();
   const [open, setOpen] = useState(false);
   const [switchingPersonal, setSwitchingPersonal] = useState(false);
+  const {
+    canSwitch: canSwitchToBusiness,
+    switching: switchingBusiness,
+    switchToBusiness,
+    online: businessSwitchOnline,
+  } = useSwitchToBusiness();
 
   const displayName = resolveUserDisplayName(session) || t("account.signedIn");
   const secondary = resolveUserSecondaryIdentity(session);
@@ -63,6 +70,7 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
   const currentExperience = experienceLabel(boundWorkspace?.experience, t);
   const canReturnToPersonal =
     sessionAccountClass(session) === "Organization" && !isOrganizationContextLocked(session);
+  const showSwitchToBusiness = sessionAccountClass(session) === "Personal" && canSwitchToBusiness;
 
   const accountLabel = `${t("account.menu")}: ${displayName}`;
 
@@ -153,6 +161,29 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
           </div>
         ) : null}
       </MenuHeader>
+      {showSwitchToBusiness ? (
+        <>
+          <MenuItem
+            data-testid="account-switch-to-business"
+            disabled={switchingBusiness || !businessSwitchOnline}
+            onSelect={() => {
+              setOpen(false);
+              void switchToBusiness();
+            }}
+          >
+            <Building2 className="size-4 shrink-0" aria-hidden="true" />
+            {switchingBusiness
+              ? t("personal.more.switchingBusiness")
+              : t("personal.more.switchToBusiness")}
+          </MenuItem>
+          {!businessSwitchOnline ? (
+            <p className="px-3 pb-1 text-[length:var(--exits-text-xs)] text-muted">
+              {t("offline.requiredContextSwitch")}
+            </p>
+          ) : null}
+          <MenuSeparator />
+        </>
+      ) : null}
       {boundWorkspace ? (
         <>
           <MenuItem

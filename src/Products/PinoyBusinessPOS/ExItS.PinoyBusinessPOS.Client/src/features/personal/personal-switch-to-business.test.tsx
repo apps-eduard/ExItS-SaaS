@@ -281,3 +281,114 @@ describe("Personal More switch to business", () => {
     });
   });
 });
+
+describe("Personal avatar account menu switch to business", () => {
+  afterEach(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    vi.unstubAllGlobals();
+    clearPlatformAntiforgeryToken();
+    Object.defineProperty(window.navigator, "onLine", {
+      configurable: true,
+      value: true,
+    });
+  });
+
+  it("hides Switch to business in the avatar menu when the user has no accessible organizations", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("/api/v1/platform/antiforgery/token")) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf-token" }),
+            text: async () => "",
+          } as Response;
+        }
+        if (url.includes("/api/v1/platform/auth/me")) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              sessionId: personalUserId,
+              username: "ana",
+              displayName: "Ana Reyes",
+              email: "ana@example.com",
+              selectedOrganizationId: null,
+              accountClass: "Personal",
+              homeOrganizationId: null,
+              organizationContextLocked: false,
+            }),
+            text: async () => "",
+          } as Response;
+        }
+        if (url.includes("/api/v1/platform/auth/organizations")) {
+          return { ok: true, status: 200, json: async () => [], text: async () => "" } as Response;
+        }
+        if (url.includes("/api/v1/personal/notifications")) {
+          return { ok: true, status: 200, json: async () => [], text: async () => "" } as Response;
+        }
+        return {
+          ok: false,
+          status: 404,
+          json: async () => ({ detail: `unmocked ${url}` }),
+          text: async () => "",
+        } as Response;
+      }),
+    );
+
+    renderAt("/personal");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("account-menu-trigger")).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("account-switch-to-business")).not.toBeInTheDocument();
+  });
+
+  it("shows Switch to business in the personal avatar menu when organizations exist", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal("fetch", createPersonalWithOrgsFetchMock(1));
+    renderAt("/personal/more");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("more-switch-to-business")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId("account-menu-trigger"));
+    await waitFor(() => {
+      expect(screen.getByTestId("account-switch-to-business")).toHaveTextContent(
+        "Switch to business",
+      );
+    });
+  });
+
+  it("keeps Personal More switch to business as a convenient entry", async () => {
+    vi.stubGlobal("fetch", createPersonalWithOrgsFetchMock(1));
+    renderAt("/personal/more");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("more-switch-to-business")).toBeInTheDocument();
+    });
+  });
+
+  it("blocks avatar Switch to business while offline", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal("fetch", createPersonalWithOrgsFetchMock(1));
+    Object.defineProperty(window.navigator, "onLine", {
+      configurable: true,
+      value: false,
+    });
+    renderAt("/personal/more");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("more-switch-to-business")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId("account-menu-trigger"));
+    await waitFor(() => {
+      expect(screen.getByTestId("account-switch-to-business")).toBeDisabled();
+    });
+    expect(screen.getByText("Switching to business needs internet.")).toBeInTheDocument();
+  });
+});

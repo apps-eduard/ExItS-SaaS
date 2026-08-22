@@ -15,9 +15,12 @@ const deviceId = "ffffffff-ffff-4fff-8fff-ffffffffffff";
 const shiftId = "cccccccc-cccc-cccc-cccc-cccccccccccc";
 const registerId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 
-function createFetchMock(options: { longNames?: boolean; unbound?: boolean } = {}) {
+function createFetchMock(
+  options: { longNames?: boolean; unbound?: boolean; personalSwitchable?: boolean } = {},
+) {
   const longNames = options.longNames ?? false;
   const unbound = options.unbound ?? false;
+  const personalSwitchable = options.personalSwitchable ?? false;
   const orgName = longNames
     ? "Very Long Organization Name For Truncation Testing Carenderia"
     : "Kizy Store";
@@ -105,7 +108,7 @@ function createFetchMock(options: { longNames?: boolean; unbound?: boolean } = {
           selectedOrganizationId: unbound ? null : orgId,
           accountClass: unbound ? "Personal" : "Organization",
           homeOrganizationId: unbound ? null : orgId,
-          organizationContextLocked: !unbound,
+          organizationContextLocked: personalSwitchable ? false : !unbound,
         }),
         text: async () => "",
       } as Response;
@@ -305,5 +308,19 @@ describe("account shell", () => {
       "title",
       expect.stringContaining("Very Long Organization"),
     );
+  });
+
+  it("shows Switch to Personal in the organization avatar menu for non-locked sessions", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal("fetch", createFetchMock({ personalSwitchable: true }));
+    renderAt("/role/cashier");
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Sell floor" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId("account-menu-trigger"));
+    const menu = await screen.findByRole("menu");
+    expect(within(menu).getByRole("menuitem", { name: "Switch to Personal" })).toBeInTheDocument();
   });
 });

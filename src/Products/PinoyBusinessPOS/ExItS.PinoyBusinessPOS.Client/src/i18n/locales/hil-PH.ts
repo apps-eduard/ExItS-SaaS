@@ -725,6 +725,15 @@ export const hilPH: Record<keyof typeof en, string> = {
   "checkout.optionalCustomerHint":
     "Opsyonal — i-attach ang customer sa sini nga Cash ukon GCash sale.",
   "checkout.optionalCustomerSearch": "Pangita sang customers (opsyonal)",
+  "checkout.personalCustomerTitle": "I-scan ang ExItS QR ukon isulat ang ExItS ID",
+  "checkout.personalCustomerHint":
+    "Pangita sang existing customer nga naka-link sa Personal ExItS identity.",
+  "checkout.customerNotLinked": "Wala naka-link ang customer sa sini nga negosyo",
+  "checkout.addLinkCustomer": "Magdugang/link customer",
+  "checkout.customerNotLinkedDenied":
+    "Wala naka-link ini nga customer. Pangayo sa manager nga magdugang ukon mag-link sang customer.",
+  "checkout.customerNotLinkedCancel": "Isara",
+  "checkout.personalResolveFailed": "Indi ma-resolve ang ExItS ID nga amo.",
   "checkout.totalAmount": "Kinatibuk-ang Amount",
   "checkout.discount": "Diskwento",
   "checkout.amountToPay": "Amount to Pay",
