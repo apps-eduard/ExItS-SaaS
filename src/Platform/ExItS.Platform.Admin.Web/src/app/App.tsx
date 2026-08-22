@@ -25,6 +25,7 @@ import { ProductDetailPage } from "@/features/products/ProductDetailPage";
 import { PlansPage } from "@/features/plans/PlansPage";
 import { PlanDetailPage } from "@/features/plans/PlanDetailPage";
 import { OverviewPage } from "@/features/overview/OverviewPage";
+import { SystemHealthPage } from "@/features/system-health/SystemHealthPage";
 import { UsersPage } from "@/features/users/UsersPage";
 import { UserDetailPage } from "@/features/users/UserDetailPage";
 import { ShellCatchAllPage } from "@/features/overview/ShellCatchAllPage";
@@ -144,6 +145,11 @@ export function App() {
                           <Route index element={<UsersPage />} />
                           <Route path=":userId" element={<UserDetailPage />} />
                         </Route>
+                        <Route path="system-health" element={<SystemHealthPage />} />
+                        <Route
+                          path="operations/health"
+                          element={<Navigate to="/admin/system-health" replace />}
+                        />
                         <Route path="*" element={<ShellCatchAllPage />} />
                       </Route>
                     </Route>

@@ -36,4 +36,5 @@ boundaries, and records a dedicated planning worktree (`docs/platform-admin-web-
 - `pweb-21-30-continuation-plan.md` — authoritative continuation plan for PWEB-IMPL-21..30 (planning only)
 - `Packages/PWEB-IMPL-21-*.md` … `Packages/PWEB-IMPL-30-*.md` — per-package specifications (not implemented)
 - `Reports/PWEB-IMPL-04C-parallel-react-local-validation-container.md` — parallel React local-validation container
+- `Reports/PLATFORM-HEALTH-01-system-health-v1.md` — Platform Operations System Health V1
 

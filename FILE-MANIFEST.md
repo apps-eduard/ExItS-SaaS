@@ -23,9 +23,9 @@ Directory.Build.props
 Directory.Packages.props
 ExItS.slnx
 src/Platform/ExItS.Platform.Domain/ (+ Authorization; Audit; FeatureCode includes `store-suppliers-view` / `store-suppliers-manage`)
-src/Platform/ExItS.Platform.Application/ (+ Catalog; Admin portfolio queries; Authorization; Audit; Contracts; Projections; MigrationValidation)
-src/Platform/ExItS.Platform.Infrastructure/ (PlatformDbContext, catalog + organization/subscription + payment + entitlement + role-assignment + audit persistence, Admin portfolio read store, Magick.NET shared GlobalProduct WebP pipeline + local/dev filesystem object store, migrations through **`20260817220000_AddGlobalProductImages`**; `Health/PlatformDatabaseReadyHealthCheck`)
-src/Platform/ExItS.Platform.Api/ (`/` + `/health` + `/health/ready` + catalog + organizations + subscriptions + payments + entitlements + identity/access + authorization + audit + admin read APIs + org/public-identity + `/api/v1/qr/resolve` + POS device registration-tokens + Platform/merchant GlobalProduct image endpoints; `PlatformAuthz`; Production security pipeline; phase marker `P10-WP08-phase-10-closeout`)
+src/Platform/ExItS.Platform.Application/ (+ Catalog; Admin portfolio queries; Authorization; Audit; Contracts; Projections; MigrationValidation; operations system-health DTOs)
+src/Platform/ExItS.Platform.Infrastructure/ (PlatformDbContext, catalog + organization/subscription + payment + entitlement + role-assignment + audit persistence, Admin portfolio read store, Magick.NET shared GlobalProduct WebP pipeline + local/dev filesystem object store, migrations through **`20260817220000_AddGlobalProductImages`**; `Health/PlatformDatabaseReadyHealthCheck`; operations system-health host/POS probes)
+src/Platform/ExItS.Platform.Api/ (`/` + `/health` + `/health/ready` + catalog + organizations + subscriptions + payments + entitlements + identity/access + authorization + audit + admin read APIs + `GET /api/v1/platform/operations/system-health` + org/public-identity + `/api/v1/qr/resolve` + POS device registration-tokens + Platform/merchant GlobalProduct image endpoints; `PlatformAuthz`; Production security pipeline; phase marker `P10-WP08-phase-10-closeout`)
 src/Platform/ExItS.Platform.Admin/ (Blazor Web App — Ant Design Blazor shell per ADR-015/ADR-022; canonical browser sign-in; Platform operator console; typed API client; GlobalProduct image preview/upload/replace/remove; themes Light/Dark/System; AdminResources en/fil-PH; no Fluent/Tailwind)
 src/Platform/ExItS.Platform.Admin.Web/ (React + TypeScript + Vite Platform Admin Web; parallel to Blazor Admin; Login + shell + dashboard + read-only Organizations list as of PWEB-IMPL-07; consumes Platform API; no cutover)
 src/Platform/ExItS.Personal.Web/ (Personal Web — Ant Design Blazor presentation over existing Personal APIs; Local Validation :8094; no checkout)
@@ -329,6 +329,7 @@ docs/operations/pilot-and-deployment/README.md
 docs/reports/phase-02-extraction-closeout.md
 docs/reports/phase-01-architecture-approval.md
 docs/risks-and-issues.md
+docs/Platform-Admin-Web/Reports/PLATFORM-HEALTH-01-system-health-v1.md
 
 ## Not tracked
 
