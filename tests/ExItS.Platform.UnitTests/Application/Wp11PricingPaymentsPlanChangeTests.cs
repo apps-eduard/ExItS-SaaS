@@ -779,7 +779,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
             ctx.StarterVersion = await ctx.PublishVersionAsync(ctx.StarterPlan);
             ctx.BusinessVersion = await ctx.PublishVersionAsync(ctx.BusinessPlan);
             await ctx.PublishVersionAsync(ctx.ProPlan);
-            ctx.Trial = UtangTrialTestFactory.CreateConfigured(utcNow, TimeSpan.FromDays(14), ctx.BusinessPlan.Id);
+            ctx.Trial = UtangTrialTestFactory.CreateConfigured(utcNow, TimeSpan.FromDays(14), planId: null);
             await ctx.Trials.AddAsync(ctx.Trial);
             return ctx;
         }

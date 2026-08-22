@@ -82,6 +82,46 @@ public sealed class SubscriptionAndEntitlementTests
     }
 
     [Fact]
+    public void StartTrial_rejects_trial_definition_bound_to_a_different_plan()
+    {
+        var (plan, version, _) = CreatePosCatalog();
+        var otherPlan = Plan.CreateDraft(
+            ProductCode.Create(ProductCode.PinoyBusinessPos),
+            PlanCode.Create("growth-other"),
+            "Growth Other",
+            T0);
+        otherPlan.Activate(T0);
+        var otherTrial = UtangTrialTestFactory.CreateConfigured(T0, ConfiguredTrialDuration, otherPlan.Id);
+
+        var ex = Assert.Throws<DomainException>(() =>
+            Subscription.StartTrial(PlatformOrganizationId.New(), plan, version, otherTrial, T0));
+        Assert.Equal(DomainErrorCodes.ProductMismatch, ex.ErrorCode);
+        Assert.Contains("belong", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void StartTrial_accepts_matching_plan_specific_trial()
+    {
+        var (plan, version, trial) = CreatePosCatalog();
+        var sub = Subscription.StartTrial(PlatformOrganizationId.New(), plan, version, trial, T0);
+        Assert.Equal(SubscriptionStatus.Trialing, sub.Status);
+        Assert.Equal(plan.Id, sub.PlanId);
+        Assert.Equal(trial.Id, sub.TrialDefinitionId);
+        Assert.Equal(version.Id, sub.PlanVersionId);
+    }
+
+    [Fact]
+    public void StartTrial_accepts_product_wide_trial_with_null_plan_id()
+    {
+        var (plan, version, _) = CreatePosCatalog();
+        var productWide = UtangTrialTestFactory.CreateConfigured(T0, ConfiguredTrialDuration, planId: null);
+        var sub = Subscription.StartTrial(PlatformOrganizationId.New(), plan, version, productWide, T0);
+        Assert.Equal(SubscriptionStatus.Trialing, sub.Status);
+        Assert.Equal(productWide.Id, sub.TrialDefinitionId);
+        Assert.Null(productWide.PlanId);
+    }
+
+    [Fact]
     public void FeatureOverride_requires_reason_and_creator_and_can_revoke()
     {
         var product = ProductCode.Create(ProductCode.PinoyBusinessPos);

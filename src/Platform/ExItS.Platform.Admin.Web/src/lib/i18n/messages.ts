@@ -521,6 +521,8 @@ export const enMessages = {
   "organization.subscriptions.startTrial.success": "Trial subscription created.",
   "organization.subscriptions.startTrial.unavailable":
     "This plan does not have a published version and active trial definition.",
+  "organization.subscriptions.startTrial.noMatchingTrial":
+    "No active trial definition is available for this plan.",
   "organization.subscriptions.changePlan": "Change plan",
   "organization.subscriptions.changePlan.title": "Change plan",
   "organization.subscriptions.changePlan.description":
@@ -1245,6 +1247,8 @@ export const filPhMessages: Record<MessageKey, string> = {
   "organization.subscriptions.startTrial.success": "Nalikha ang trial subscription.",
   "organization.subscriptions.startTrial.unavailable":
     "Walang published version at active trial definition ang plan na ito.",
+  "organization.subscriptions.startTrial.noMatchingTrial":
+    "Walang active trial definition para sa plan na ito.",
   "organization.subscriptions.changePlan": "Palitan ang plan",
   "organization.subscriptions.changePlan.title": "Palitan ang plan",
   "organization.subscriptions.changePlan.description":

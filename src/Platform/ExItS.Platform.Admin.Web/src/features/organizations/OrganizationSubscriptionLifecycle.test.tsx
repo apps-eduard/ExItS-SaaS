@@ -33,6 +33,22 @@ const growthPlan = {
   sortOrder: 20,
 };
 
+const starterPlan = {
+  id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+  productCode: "pinoy-business-pos",
+  code: "starter",
+  displayName: "Starter",
+  status: "Active",
+  trialAllowed: true,
+  defaultTrialDays: 14,
+  maxBranches: 1,
+  maxActiveStaff: 3,
+  maxActivePosDevices: 1,
+  monthlyPrice: 299,
+  currencyCode: "PHP",
+  sortOrder: 10,
+};
+
 const proPlan = {
   id: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
   productCode: "pinoy-business-pos",
@@ -210,6 +226,83 @@ describe("organization subscription lifecycle", () => {
     await openSubscriptionPage();
     await user.click(await screen.findByRole("button", { name: "Start trial" }));
     const dialog = await screen.findByRole("dialog");
+    const confirm = within(dialog).getByRole("button", { name: "Start trial" });
+    await waitFor(() => expect(confirm).toBeEnabled());
+    await user.click(confirm);
+    expect(await screen.findByText("Trial subscription created.")).toBeInTheDocument();
+  });
+
+  it("binds Starter and Growth trials exactly and does not fall back across plans", async () => {
+    stubDesktop();
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
+      if (url.includes("/auth/me")) {
+        return jsonResponse(200, sampleSession);
+      }
+      if (url.includes("/authorization/me")) {
+        return jsonResponse(200, sampleAuthorization);
+      }
+      if (url.endsWith("/antiforgery/token")) {
+        return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "csrf-token" });
+      }
+      if (url.includes("/health")) {
+        return textResponse(200, "Healthy");
+      }
+      if (url.includes("/commercial-summary")) {
+        return jsonResponse(200, { subscriptions: [], payments: [], latestEntitlements: [] });
+      }
+      if (url.includes("/trials") && method === "POST") {
+        const body = JSON.parse(String(init?.body)) as { planId: string; trialDefinitionId: string };
+        expect(body.planId).toBe(growthPlan.id);
+        expect(body.trialDefinitionId).toBe("trial-growth");
+        return jsonResponse(200, growthSubscription);
+      }
+      if (url.includes("/trials")) {
+        return jsonResponse(200, [
+          {
+            id: "trial-growth",
+            productCode: "pinoy-business-pos",
+            planId: growthPlan.id,
+            displayName: "Growth trial",
+            status: "Active",
+          },
+        ]);
+      }
+      if (url.includes("/versions")) {
+        const planId = url.includes(starterPlan.id) ? starterPlan.id : growthPlan.id;
+        return jsonResponse(200, [
+          {
+            id: `version-${planId}`,
+            planId,
+            productCode: "pinoy-business-pos",
+            versionNumber: 1,
+            status: "Published",
+          },
+        ]);
+      }
+      if (/\/catalog\/products\/[^/]+\/plans$/.test(url)) {
+        return jsonResponse(200, [starterPlan, growthPlan, proPlan]);
+      }
+      if (url.includes("/subscriptions") && method === "GET") {
+        return jsonResponse(200, { items: [], totalCount: 0, page: 1, pageSize: 20 });
+      }
+      if (url.includes(`/organizations/${sampleOrg.id}`) && method === "GET") {
+        return jsonResponse(200, sampleOrg);
+      }
+      return jsonResponse(200, { items: [], totalCount: 0, page: 1, pageSize: 1 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+    await openSubscriptionPage();
+    await user.click(await screen.findByRole("button", { name: "Start trial" }));
+    const dialog = await screen.findByRole("dialog");
+    await user.selectOptions(within(dialog).getByLabelText("Plan"), starterPlan.id);
+    expect(
+      await within(dialog).findByText("No active trial definition is available for this plan."),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Start trial" })).toBeDisabled();
+    await user.selectOptions(within(dialog).getByLabelText("Plan"), growthPlan.id);
     const confirm = within(dialog).getByRole("button", { name: "Start trial" });
     await waitFor(() => expect(confirm).toBeEnabled());
     await user.click(confirm);

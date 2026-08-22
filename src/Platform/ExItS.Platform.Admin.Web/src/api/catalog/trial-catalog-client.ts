@@ -64,10 +64,26 @@ export function listCatalogTrialsByProductCode(
   });
 }
 
+function isProductWideTrial(trial: CatalogTrialDefinition): boolean {
+  return trial.planId == null || trial.planId.length === 0;
+}
+
+/**
+ * Bind a trial definition to the selected plan.
+ * Exact plan-specific trial, then canonical product-wide (null PlanId).
+ * Never another plan's trial.
+ */
 export function selectActiveTrialDefinition(
   trials: CatalogTrialDefinition[],
   planId: string,
 ): CatalogTrialDefinition | undefined {
+  if (!planId) {
+    return undefined;
+  }
   const active = trials.filter((trial) => trial.status === "Active");
-  return active.find((trial) => trial.planId === planId) ?? active[0];
+  const exact = active.find((trial) => trial.planId === planId);
+  if (exact) {
+    return exact;
+  }
+  return active.find(isProductWideTrial);
 }

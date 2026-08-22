@@ -8,6 +8,7 @@
 **Starting branch:** `feat/platform-admin-pa-com-01`
 **Starting HEAD:** `e2b34770bb293033518d09e08a0c5b1087b32af6`
 **Implementation commit:** `dfcbbe1d8d89a3d62a6887e7e70de2e2e3a0e093`
+**FIX01:** exact trial→plan binding (no cross-plan fallback)
 
 `PA_COM_01=APPROVED` (authorized by Product Owner for this follow-on).
 `PA_COM_04_AUTHORIZED=YES`.
@@ -62,9 +63,15 @@ Server authorization remains authoritative. React hiding is convenience.
 1. Operator opens Organization → Subscription.
 2. If no Pinoy Business POS subscription and `platform.permission.manage_subscriptions` and at least one Active catalog plan with `trialAllowed`.
 3. Dialog: choose eligible plan (catalog data, not hardcoded IDs). Device limit shown from catalog.
-4. Confirm disabled until a **Published** plan version and **Active** trial definition exist.
-5. `POST .../organizations/{orgId}/subscriptions/trials` with `{ planId, planVersionId, trialDefinitionId }`.
-6. Success invalidates organization subscriptions, commercial summary, entitlements, billing, activity, dashboard subscription summary.
+4. Confirm disabled until a **Published** plan version and an **eligible** trial definition exist.
+5. Trial selection (`selectActiveTrialDefinition`):
+   1. exact **Active** trial where `trial.planId == selectedPlan.id`
+   2. otherwise **Active** product-wide trial where `trial.planId` is null/absent (`TrialDefinition.PlanId` is nullable; Local Validation uses this)
+   3. otherwise unavailable — confirm stays disabled with: “No active trial definition is available for this plan.”
+   **Never** another plan’s trial. Cross-plan `active[0]` fallback is removed (PA-COM-04-FIX01).
+6. `POST .../organizations/{orgId}/subscriptions/trials` with `{ planId, planVersionId, trialDefinitionId }`.
+7. Backend `Subscription.StartTrial` / `StartTrialSubscription`: if `trialDefinition.PlanId != null`, require `trialDefinition.PlanId == plan.Id` (`platform.product.mismatch` / `application.subscription.ineligible`). Product-wide null `PlanId` remains valid. Plan version must still be `Published` and belong to the plan.
+8. Success invalidates organization subscriptions, commercial summary, entitlements, billing, activity, dashboard subscription summary.
 
 Backend remains authoritative for eligibility.
 
@@ -131,11 +138,12 @@ Does not invalidate users, settings, or the full query cache.
 
 | Gate | Result |
 |---|---|
-| Vitest | **PASS** — 53 files, 301 tests |
+| Vitest | **PASS** — 54 files, 309 tests (includes exact trial-binding unit + UI tests) |
 | Typecheck | **PASS** (`tsc -b`) |
 | ESLint | **PASS** |
 | Production build | **PASS** (`vite build`; existing >500 kB chunk warning) |
-| Playwright `e2e/organization-subscriptions.spec.ts` | **PASS** — 3 tests (empty/axe, filters, retry) |
+| Playwright `e2e/organization-subscriptions.spec.ts` | **PASS** — 3 tests |
+| Platform unit (Subscriptions / Commercial / Wp11 / PlanAndTrial) | **PASS** — 109 tests |
 
 Covered scenarios include: empty POS + Start trial with/without permission; trial success/failure; Trialing actions; plan preview device limits from catalog; upgrade submit; scheduled downgrade copy; suspend confirmation + reactivate refresh; Cancelled has no Reactivate; support actions under menu; no Activate; 403/409/invalid transition; duplicate submit disabled; read-only operator; filters remain; Entitlements/Billing/Activity pages still pass; narrow viewport; dialog title/description/Escape.
 
@@ -167,6 +175,7 @@ Uses normal Platform APIs. No fake admin path.
 - Lifecycle summary uses an unfiltered first page of subscriptions (page size 20).
 - Live Local Validation + Agent 1 Platform→POS proof is out of this package.
 - Plan-version retire HTTP and Admin renew remain backend gaps from PA-COM-01.
+- Catalog auto-select helpers outside Organization → Subscription (e.g. Personal Start-a-Business duration fallback) are unchanged; StartTrial still rejects a trial explicitly assigned to a different plan.
 
 ---
 

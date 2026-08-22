@@ -639,7 +639,9 @@ function StartTrialDialog({
       ) : null}
       {!ready && !versionsQuery.isPending && !trialsQuery.isPending ? (
         <p className="text-[length:var(--exits-text-sm)] text-muted">
-          {t("organization.subscriptions.startTrial.unavailable")}
+          {versionId
+            ? t("organization.subscriptions.startTrial.noMatchingTrial")
+            : t("organization.subscriptions.startTrial.unavailable")}
         </p>
       ) : null}
     </ConfirmActionDialog>
