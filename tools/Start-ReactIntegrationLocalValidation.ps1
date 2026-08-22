@@ -254,13 +254,20 @@ $platformEnv = @{
     LocalValidation__Enabled = "true"
     LocalValidation__SeedScope = "PlatformAdministratorsOnly"
     LocalValidation__SharedPassword = [string]$envMap["LOCAL_VALIDATION_SHARED_PASSWORD"]
-    PlatformAuthentication__Lifecycle__ExposeDebugTokens = "true"
-    PlatformAuthentication__External__TestingEndpointEnabled = "true"
+    PlatformAuthentication__Lifecycle__ExposeDebugTokens = "false"
+    PlatformAuthentication__External__TestingEndpointEnabled = "false"
     PlatformAuthentication__Password__MinimumLength = "1"
     PlatformAuthentication__Password__RequireUppercase = "false"
     PlatformAuthentication__Password__RequireLowercase = "false"
     PlatformAuthentication__Password__RequireDigit = "false"
     PlatformAuthentication__Password__RequireNonAlphanumeric = "false"
+    # Host-run API (not Docker network): Mailpit is on the loopback published ports.
+    PlatformEmail__SmtpHost = "127.0.0.1"
+    PlatformEmail__SmtpPort = "1025"
+    PlatformEmail__UseSsl = "false"
+    PlatformEmail__FromAddress = "noreply@exits.local"
+    PlatformEmail__FromDisplayName = "ExItS Local Validation"
+    PlatformEmail__AdminPublicBaseUrl = $reactAdminUrl
 }
 for ($i = 0; $i -lt $corsOrigins.Count; $i++) {
     $platformEnv["Cors__AllowedOrigins__$i"] = $corsOrigins[$i]
@@ -292,6 +299,9 @@ $adminEnv = @{
     VITE_PLATFORM_API_PROXY_TARGET = $loopbackPlatformApiUrl
     VITE_BUILD_SHA = $platformSha
     EXITS_GIT_SHA = $platformSha
+    # Enables weak-password client policy + Development Test User (via Vite /config.js plugin).
+    LOCAL_VALIDATION_TOOLS_ENABLED = "true"
+    PLATFORM_API_SAME_ORIGIN = "true"
 }
 # Empty API base URL => browser same-origin /api via Vite proxy (cookie-friendly for Local Validation HTTP).
 $windowPids += Start-NpmDevWindow -Title "PA-INTEGRATION React Admin" -WorkingDirectory $adminWebDir -EnvMap $adminEnv -NpmScript "dev"
@@ -353,3 +363,4 @@ Write-Host "  POS branch/SHA:      $posBranch / $posSha"
 Write-Host "  OLD_BLAZOR_ADMIN_USED_AS_REACT_ADMIN=NO"
 Write-Host "  POS_DOWNGRADED=NO"
 Write-Host ""
+

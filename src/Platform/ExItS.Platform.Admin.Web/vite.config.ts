@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { exitsRuntimeConfigPlugin } from "./vite.runtime-config-plugin";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
@@ -12,7 +13,7 @@ function resolveDevApiProxyTarget(): string {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), exitsRuntimeConfigPlugin()],
   resolve: {
     alias: {
       "@": path.resolve(rootDir, "./src"),

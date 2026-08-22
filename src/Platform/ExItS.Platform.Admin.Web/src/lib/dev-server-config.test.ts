@@ -8,6 +8,7 @@ describe("Vite and Local Validation launcher bind/config", () => {
     expect(viteConfig).toContain("host: true");
     expect(viteConfig).toContain("port: 8095");
     expect(viteConfig).toContain('"/api"');
+    expect(viteConfig).toContain("exitsRuntimeConfigPlugin");
     expect(viteConfig).not.toMatch(/100\.120\.79\.81/);
   });
 
