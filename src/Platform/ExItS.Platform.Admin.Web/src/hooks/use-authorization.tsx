@@ -11,6 +11,7 @@ export type AuthorizationStatus = "loading" | "loaded" | "failed";
 type AuthorizationContextValue = {
   status: AuthorizationStatus;
   permissions: ReadonlySet<string>;
+  actorIdentifier: string | null;
   actorType: string | null;
   hasPermission: (code: string) => boolean;
   hasAnyPermission: (codes: readonly string[]) => boolean;
@@ -83,6 +84,7 @@ export function AuthorizationProvider({ children }: { children: ReactNode }) {
     return {
       status,
       permissions,
+      actorIdentifier: snapshot?.actorIdentifier ?? null,
       actorType,
       hasPermission,
       hasAnyPermission,

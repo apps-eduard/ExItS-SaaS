@@ -132,6 +132,8 @@ export type AuthenticatedFetchOptions = {
   forbiddenOrgPayments?: boolean;
   orgPaymentItems?: Array<Record<string, unknown>>;
   orgPaymentTotalCount?: number;
+  paymentMutationError?: { status: number; errorCode: string; detail: string };
+  onPaymentMutation?: (method: string, path: string, body: unknown) => void;
   failOrgAudit?: boolean;
   forbiddenOrgAudit?: boolean;
   orgAuditItems?: Array<Record<string, unknown>>;
@@ -160,9 +162,18 @@ export function mockUnauthenticatedFetch(): void {
 }
 
 export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+  let paymentItems = [...(options.orgPaymentItems ?? [])];
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const path = pathnameOf(url);
+    const method = init?.method ?? "GET";
+    const parseBody = () => {
+      try {
+        return init?.body ? JSON.parse(String(init.body)) : null;
+      } catch {
+        return null;
+      }
+    };
     if (url.includes("/api/v1/platform/auth/logout")) {
       return {
         ok: true,
@@ -452,11 +463,134 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
           detail: "Payment list failed.",
         });
       }
-      const items = options.orgPaymentItems ?? [];
+      const items = paymentItems;
       return jsonResponse(
         200,
         pagedJson(items, options.orgPaymentTotalCount ?? items.length, items.length || 20),
       );
+    }
+    if (path.endsWith("/payments/manual") && method === "POST") {
+      if (options.paymentMutationError) {
+        return jsonResponse(options.paymentMutationError.status, {
+          title: "Error",
+          status: options.paymentMutationError.status,
+          detail: options.paymentMutationError.detail,
+          errorCode: options.paymentMutationError.errorCode,
+        });
+      }
+      const body = parseBody() as Record<string, unknown>;
+      options.onPaymentMutation?.(method, path, body);
+      const created = {
+        id: crypto.randomUUID(),
+        organizationId: body.organizationId,
+        productCode: body.productCode,
+        amount: body.amount,
+        currencyCode: body.currencyCode,
+        method: body.method,
+        externalReference: body.externalReference,
+        status: "PendingConfirmation",
+        paidAtUtc: body.paidAtUtc,
+      };
+      paymentItems = [created, ...paymentItems];
+      return jsonResponse(201, created);
+    }
+    const paymentActionMatch = path.match(
+      /\/api\/v1\/platform\/payments\/([0-9a-fA-F-]{36})\/(confirm|reject|void|activate-subscription)$/,
+    );
+    if (paymentActionMatch && method === "POST") {
+      if (options.paymentMutationError) {
+        return jsonResponse(options.paymentMutationError.status, {
+          title: "Error",
+          status: options.paymentMutationError.status,
+          detail: options.paymentMutationError.detail,
+          errorCode: options.paymentMutationError.errorCode,
+        });
+      }
+      const paymentId = paymentActionMatch[1]!;
+      const action = paymentActionMatch[2]!;
+      const body = parseBody();
+      options.onPaymentMutation?.(method, path, body);
+      const existing = paymentItems.find((item) => item.id === paymentId);
+      if (!existing) {
+        return jsonResponse(404, {
+          title: "Not Found",
+          status: 404,
+          detail: "Payment was not found.",
+          errorCode: "application.payment.not_found",
+        });
+      }
+      if (action === "confirm") {
+        const updated = { ...existing, status: "Confirmed", confirmedAtUtc: new Date().toISOString() };
+        paymentItems = paymentItems.map((item) => (item.id === paymentId ? updated : item));
+        return jsonResponse(200, updated);
+      }
+      if (action === "reject") {
+        const updated = {
+          ...existing,
+          status: "Rejected",
+          rejectedAtUtc: new Date().toISOString(),
+          rejectionReason: (body as Record<string, unknown>)?.reason ?? "rejected",
+        };
+        paymentItems = paymentItems.map((item) => (item.id === paymentId ? updated : item));
+        return jsonResponse(200, updated);
+      }
+      if (action === "void") {
+        const updated = {
+          ...existing,
+          status: "Voided",
+          voidedAtUtc: new Date().toISOString(),
+          voidReason: (body as Record<string, unknown>)?.reason ?? "voided",
+        };
+        paymentItems = paymentItems.map((item) => (item.id === paymentId ? updated : item));
+        return jsonResponse(200, updated);
+      }
+      const activateBody = body as Record<string, unknown>;
+      const subscriptionId = activateBody?.subscriptionId;
+      const subscription = (options.orgSubscriptionItems ?? []).find((item) => item.id === subscriptionId);
+      const updatedPayment = {
+        ...existing,
+        status: "Confirmed",
+        subscriptionId,
+        confirmedAtUtc: existing.confirmedAtUtc ?? new Date().toISOString(),
+      };
+      paymentItems = paymentItems.map((item) => (item.id === paymentId ? updatedPayment : item));
+      return jsonResponse(200, {
+        payment: updatedPayment,
+        subscription: subscription ?? {
+          id: subscriptionId,
+          organizationId: existing.organizationId,
+          productCode: existing.productCode,
+          status: "Active",
+        },
+      });
+    }
+    const createPaidMatch = path.match(
+      /\/api\/v1\/platform\/organizations\/([0-9a-fA-F-]{36})\/subscriptions$/,
+    );
+    if (createPaidMatch && method === "POST" && !path.includes("/trials") && !path.includes("/from-catalog")) {
+      const body = parseBody() as Record<string, unknown>;
+      options.onPaymentMutation?.(method, path, body);
+      const subscription = {
+        id: crypto.randomUUID(),
+        organizationId: createPaidMatch[1],
+        productCode: "pinoy-business-pos",
+        planId: body.planId,
+        status: "Active",
+      };
+      return jsonResponse(201, subscription);
+    }
+    if (path.endsWith("/local-validation/payments/simulate") && method === "POST") {
+      const body = parseBody() as Record<string, unknown>;
+      options.onPaymentMutation?.(method, path, body);
+      return jsonResponse(200, {
+        status: "Succeeded",
+        provider: "local-validation",
+        providerReference: "LV-TEST",
+        amount: body.amount,
+        currencyCode: body.currencyCode,
+        isTest: true,
+        idempotencyKey: body.idempotencyKey,
+      });
     }
     const orgAuditGet = path.match(
       /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/audit$/,

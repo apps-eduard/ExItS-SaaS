@@ -10,8 +10,24 @@ import {
   type UpdatePlanCommercialBody,
 } from "@/api/catalog/plan-mutations-client";
 import {
+  activateSubscriptionFromPayment,
+  confirmManualPayment,
+  createManualPayment,
+  rejectManualPayment,
+  simulateLocalValidationPayment,
+  voidManualPayment,
+  type ActivateSubscriptionFromPaymentBody,
+  type ConfirmPaymentBody,
+  type CreateManualPaymentBody,
+  type RejectPaymentBody,
+  type SimulateLocalValidationPaymentBody,
+  type VoidPaymentBody,
+} from "@/api/payments/payment-mutations-client";
+import {
   applyPendingPlanChange,
   cancelSubscription,
+  convertTrialSubscription,
+  createPaidSubscription,
   enterSubscriptionGracePeriod,
   expireSubscription,
   markSubscriptionPastDue,
@@ -20,6 +36,8 @@ import {
   startTrialSubscription,
   suspendSubscription,
   upgradeOrganizationSubscription,
+  type ConvertTrialBody,
+  type CreatePaidSubscriptionBody,
   type DowngradeSubscriptionBody,
   type GracePeriodBody,
   type ReactivateSubscriptionBody,
@@ -294,6 +312,132 @@ export function useExpireSubscriptionMutation() {
       invalidateCommercialQueries(
         queryClient,
         organizationCommercialInvalidationScope(subscription.organizationId),
+      ),
+  });
+}
+
+export function useCreateManualPaymentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (body: CreateManualPaymentBody) =>
+      createManualPayment(env.platformApiBaseUrl, body),
+    onSuccess: (payment) =>
+      invalidateCommercialQueries(
+        queryClient,
+        organizationCommercialInvalidationScope(payment.organizationId),
+      ),
+  });
+}
+
+export function useConfirmManualPaymentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: { paymentId: string; body: ConfirmPaymentBody }) =>
+      confirmManualPayment(env.platformApiBaseUrl, input.paymentId, input.body),
+    onSuccess: (payment) =>
+      invalidateCommercialQueries(
+        queryClient,
+        organizationCommercialInvalidationScope(payment.organizationId),
+      ),
+  });
+}
+
+export function useRejectManualPaymentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: { paymentId: string; body: RejectPaymentBody }) =>
+      rejectManualPayment(env.platformApiBaseUrl, input.paymentId, input.body),
+    onSuccess: (payment) =>
+      invalidateCommercialQueries(
+        queryClient,
+        organizationCommercialInvalidationScope(payment.organizationId),
+      ),
+  });
+}
+
+export function useVoidManualPaymentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: { paymentId: string; body: VoidPaymentBody }) =>
+      voidManualPayment(env.platformApiBaseUrl, input.paymentId, input.body),
+    onSuccess: (payment) =>
+      invalidateCommercialQueries(
+        queryClient,
+        organizationCommercialInvalidationScope(payment.organizationId),
+      ),
+  });
+}
+
+export function useActivateSubscriptionFromPaymentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: { paymentId: string; body: ActivateSubscriptionFromPaymentBody }) =>
+      activateSubscriptionFromPayment(env.platformApiBaseUrl, input.paymentId, input.body),
+    onSuccess: (result) =>
+      invalidateCommercialQueries(
+        queryClient,
+        organizationCommercialInvalidationScope(result.subscription.organizationId),
+      ),
+  });
+}
+
+export function useCreatePaidSubscriptionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: { organizationId: string; body: CreatePaidSubscriptionBody }) =>
+      createPaidSubscription(env.platformApiBaseUrl, input.organizationId, input.body),
+    onSuccess: (subscription) =>
+      invalidateCommercialQueries(
+        queryClient,
+        organizationCommercialInvalidationScope(subscription.organizationId),
+      ),
+  });
+}
+
+export function useConvertTrialSubscriptionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: {
+      organizationId: string;
+      subscriptionId: string;
+      body: ConvertTrialBody;
+    }) =>
+      convertTrialSubscription(
+        env.platformApiBaseUrl,
+        input.organizationId,
+        input.subscriptionId,
+        input.body,
+      ),
+    onSuccess: (subscription) =>
+      invalidateCommercialQueries(
+        queryClient,
+        organizationCommercialInvalidationScope(subscription.organizationId),
+      ),
+  });
+}
+
+export function useSimulateLocalValidationPaymentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: {
+      body: SimulateLocalValidationPaymentBody;
+      localValidationToolsEnabled: boolean;
+    }) =>
+      simulateLocalValidationPayment(env.platformApiBaseUrl, input.body, {
+        localValidationToolsEnabled: input.localValidationToolsEnabled,
+      }),
+    onSuccess: (_result, input) =>
+      invalidateCommercialQueries(
+        queryClient,
+        organizationCommercialInvalidationScope(input.body.organizationId),
       ),
   });
 }
