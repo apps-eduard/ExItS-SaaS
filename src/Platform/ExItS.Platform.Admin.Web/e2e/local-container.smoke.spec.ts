@@ -44,10 +44,11 @@ test.describe("local-validation React container smoke", () => {
 
     await page.goto("/admin/login");
     await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
-    await expect(page.getByText("Local Validation", { exact: true })).toBeVisible();
-    const selector = page.getByLabel("Test User — Local Validation");
+    await expect(page.getByText("Development Test User", { exact: true })).toBeVisible();
+    const selector = page.getByLabel("Select test user");
     await expect(selector).toBeVisible();
-    await expect(page.getByText("Test users unavailable")).toHaveCount(0);
+    await expect(page.getByText("Unable to load development test users.")).toHaveCount(0);
+    await expect(page.getByText("No test users are available.")).toHaveCount(0);
 
     await page.getByRole("button", { name: "Preferences" }).click();
     await page.getByRole("menuitem", { name: /^Light/ }).click();

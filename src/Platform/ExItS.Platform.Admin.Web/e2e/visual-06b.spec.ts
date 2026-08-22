@@ -231,13 +231,13 @@ test("local validation screenshots fill email only", async ({ page }) => {
   await setPreferences(page, { theme: "light", language: "en" });
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/admin/login");
-  await expect(page.getByText("Local Validation", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("Test User — Local Validation")).toBeVisible();
+  await expect(page.getByText("Development Test User", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Select test user")).toBeVisible();
   await page.screenshot({
     path: resolve(screenshotDir, "05-login-local-validation-1440x900.png"),
   });
 
-  await page.getByLabel("Test User — Local Validation").selectOption("olivia");
+  await page.getByLabel("Select test user").selectOption("olivia");
   await expect(page.getByLabel("Email")).toHaveValue(olivia.email);
   await expect(page.locator("#sign-in-password")).toHaveValue("");
   await page.screenshot({

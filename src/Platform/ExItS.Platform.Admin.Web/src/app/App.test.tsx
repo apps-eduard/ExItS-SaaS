@@ -183,6 +183,9 @@ describe("Sign In", () => {
         if (url.includes("/auth/me")) {
           return jsonResponse(401, { status: 401, errorCode: AUTH_ERROR_CODES.sessionInvalid });
         }
+        if (url.includes("/local-validation/enabled")) {
+          return jsonResponse(200, false);
+        }
         if (url.includes("/auth/login")) {
           const body = JSON.parse(String(init?.body)) as { password?: string };
           expect(body.password).toBe("wrong-password");
@@ -202,7 +205,7 @@ describe("Sign In", () => {
     await user.type(screen.getByLabelText("Email"), "olivia@example.test");
     await user.type(screen.getByLabelText("Password"), "wrong-password");
     await user.click(screen.getByRole("button", { name: "Sign In" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Invalid email or password.");
+    expect(await screen.findByText("Invalid credentials")).toBeInTheDocument();
     expect(screen.getByLabelText("Email")).toHaveValue("olivia@example.test");
     expect(screen.getByLabelText("Password")).toHaveValue("");
     expect(screen.queryByText(/stack/i)).not.toBeInTheDocument();
@@ -216,6 +219,9 @@ describe("Sign In", () => {
         const url = String(input);
         if (url.includes("/auth/me")) {
           return jsonResponse(401, { status: 401, errorCode: AUTH_ERROR_CODES.sessionInvalid });
+        }
+        if (url.includes("/local-validation/enabled")) {
+          return jsonResponse(200, false);
         }
         if (url.includes("/auth/login")) {
           return jsonResponse(400, {
@@ -234,7 +240,7 @@ describe("Sign In", () => {
     await user.type(screen.getByLabelText("Email"), "olivia@example.test");
     await user.type(screen.getByLabelText("Password"), "wrong-password");
     await user.click(screen.getByRole("button", { name: "Sign In" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Invalid email or password.");
+    expect(await screen.findByText("Invalid credentials")).toBeInTheDocument();
     expect(screen.queryByText("Something went wrong")).not.toBeInTheDocument();
     expect(screen.queryByText(/Exception text/i)).not.toBeInTheDocument();
   });
@@ -299,6 +305,9 @@ describe("Sign In", () => {
       if (url.includes("/auth/me")) {
         return jsonResponse(401, { status: 401, errorCode: AUTH_ERROR_CODES.sessionInvalid });
       }
+      if (url.includes("/local-validation/enabled")) {
+        return jsonResponse(200, false);
+      }
       if (url.includes("/auth/login")) {
         return jsonResponse(409, {
           status: 409,
@@ -322,12 +331,15 @@ describe("Sign In", () => {
       if (url.includes("/auth/me")) {
         return jsonResponse(401, { status: 401, errorCode: AUTH_ERROR_CODES.sessionInvalid });
       }
+      if (url.includes("/local-validation/enabled")) {
+        return jsonResponse(200, false);
+      }
       throw new TypeError("Failed to fetch");
     });
     await user.type(screen.getByLabelText("Password"), "secret-password");
     await user.click(screen.getByRole("button", { name: "Sign In" }));
-    expect(await screen.findByText("Unable to connect to Platform API.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Copy error details" })).toBeInTheDocument();
+    expect(await screen.findByText("Unable to reach authentication service")).toBeInTheDocument();
+    expect(screen.queryByText("Invalid credentials")).not.toBeInTheDocument();
   });
 
   it("shows the session-expired notice", async () => {
