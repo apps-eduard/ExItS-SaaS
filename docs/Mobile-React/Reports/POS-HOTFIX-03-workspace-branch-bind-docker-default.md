@@ -6,7 +6,7 @@
 |-------|-------|
 | Branch | `feat/pos-react-client` |
 | Starting HEAD | `75c4f211c2313a41db8197c0fb3a0eb331139ee4` |
-| Final HEAD | _(recorded after push)_ |
+| Final HEAD | `fccfb3e9` _(hash record commit follows)_ |
 
 ## Executive summary
 
