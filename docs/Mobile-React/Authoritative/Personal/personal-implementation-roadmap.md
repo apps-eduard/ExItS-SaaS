@@ -62,7 +62,7 @@ Do not start: RMAP-21 Offline, RMAP-23, RMAP-B04, RMAP-B05, RMAP-TAX, RMAP-24, p
 | Invitations / reminders / in-app notifications | **Reuse** |
 | Customer link / linked merchants / ordering | **Reuse** Platform + POS RMAP-19 |
 | Start Business / catalog / trial / entitlement | **Reuse** |
-| Public identity / QR | **Reuse** `/api/v1/me/public-identity` |
+| Public identity / QR | **React:** Personal My QR + Org Business QR + customer Scan/Enter ExItS ID (`POS-REACT-PUBLIC-QR-LINKING-PARITY-01`). Reuses `/api/v1/me/public-identity`, org public-identity, resolve APIs. Device-registration QR **not** in React. |
 | Personal To-do | **Create** additive domain (RMAP-22E1) |
 | Linked Business Utang / buyer purchase projection | Document Phase-24 overlap; **do not implement RMAP-B04** |
 
