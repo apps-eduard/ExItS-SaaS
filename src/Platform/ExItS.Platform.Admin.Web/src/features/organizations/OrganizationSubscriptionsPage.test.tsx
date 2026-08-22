@@ -67,11 +67,12 @@ describe("organization workspace subscriptions", () => {
     expect(
       await screen.findByRole("heading", { name: "Subscription", level: 1 }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Pinoy Business POS")).toBeInTheDocument();
-    expect(screen.getByText("Starter")).toBeInTheDocument();
+    expect(screen.getAllByText("Pinoy Business POS").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Starter").length).toBeGreaterThan(0);
     expect(screen.queryByText("999")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /activate/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /cancel/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^activate$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Suspend subscription" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancel subscription" })).toBeInTheDocument();
   });
 
   it("applies server search, status, trial, and paging query params", async () => {
@@ -107,7 +108,7 @@ describe("organization workspace subscriptions", () => {
     window.history.replaceState({}, "", `/admin/organizations/${sampleOrg.id}/subscription`);
     const user = userEvent.setup();
     render(<App />);
-    expect(await screen.findByText("Pinoy Business POS")).toBeInTheDocument();
+    expect(await screen.findAllByText("Pinoy Business POS")).not.toHaveLength(0);
     await user.type(screen.getByLabelText("Search"), "north");
     await user.click(screen.getByRole("button", { name: "Search" }));
     await waitFor(() => {

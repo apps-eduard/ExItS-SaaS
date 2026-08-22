@@ -10,11 +10,18 @@ import {
   type UpdatePlanCommercialBody,
 } from "@/api/catalog/plan-mutations-client";
 import {
+  applyPendingPlanChange,
   cancelSubscription,
+  enterSubscriptionGracePeriod,
+  expireSubscription,
+  markSubscriptionPastDue,
   reactivateSubscription,
+  scheduleSubscriptionDowngrade,
   startTrialSubscription,
   suspendSubscription,
   upgradeOrganizationSubscription,
+  type DowngradeSubscriptionBody,
+  type GracePeriodBody,
   type ReactivateSubscriptionBody,
   type StartTrialBody,
   type SubscriptionLifecycleBody,
@@ -204,6 +211,85 @@ export function useUpgradeSubscriptionMutation() {
         input.subscriptionId,
         input.body,
       ),
+    onSuccess: (subscription) =>
+      invalidateCommercialQueries(
+        queryClient,
+        organizationCommercialInvalidationScope(subscription.organizationId),
+      ),
+  });
+}
+
+export function useDowngradeSubscriptionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: {
+      organizationId: string;
+      subscriptionId: string;
+      body: DowngradeSubscriptionBody;
+    }) =>
+      scheduleSubscriptionDowngrade(
+        env.platformApiBaseUrl,
+        input.organizationId,
+        input.subscriptionId,
+        input.body,
+      ),
+    onSuccess: (subscription) =>
+      invalidateCommercialQueries(
+        queryClient,
+        organizationCommercialInvalidationScope(subscription.organizationId),
+      ),
+  });
+}
+
+export function useApplyPendingPlanMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: { organizationId: string; subscriptionId: string }) =>
+      applyPendingPlanChange(env.platformApiBaseUrl, input.organizationId, input.subscriptionId),
+    onSuccess: (subscription) =>
+      invalidateCommercialQueries(
+        queryClient,
+        organizationCommercialInvalidationScope(subscription.organizationId),
+      ),
+  });
+}
+
+export function useEnterGracePeriodMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: { subscriptionId: string; body: GracePeriodBody }) =>
+      enterSubscriptionGracePeriod(env.platformApiBaseUrl, input.subscriptionId, input.body),
+    onSuccess: (subscription) =>
+      invalidateCommercialQueries(
+        queryClient,
+        organizationCommercialInvalidationScope(subscription.organizationId),
+      ),
+  });
+}
+
+export function useMarkPastDueMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: { subscriptionId: string; body?: SubscriptionLifecycleBody }) =>
+      markSubscriptionPastDue(env.platformApiBaseUrl, input.subscriptionId, input.body),
+    onSuccess: (subscription) =>
+      invalidateCommercialQueries(
+        queryClient,
+        organizationCommercialInvalidationScope(subscription.organizationId),
+      ),
+  });
+}
+
+export function useExpireSubscriptionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: { subscriptionId: string; body?: SubscriptionLifecycleBody }) =>
+      expireSubscription(env.platformApiBaseUrl, input.subscriptionId, input.body),
     onSuccess: (subscription) =>
       invalidateCommercialQueries(
         queryClient,

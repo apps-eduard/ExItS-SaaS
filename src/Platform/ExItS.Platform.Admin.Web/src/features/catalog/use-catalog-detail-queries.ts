@@ -3,7 +3,9 @@ import {
   getCatalogPlanById,
   listCatalogPlansByProductCode,
   listCatalogPlansPage,
+  listCatalogPlanVersions,
 } from "@/api/catalog/plan-catalog-client";
+import { listCatalogTrialsByProductCode } from "@/api/catalog/trial-catalog-client";
 import { PLAN_LIST_PAGE_SIZE, type PlanListQuery } from "@/api/catalog/plan-catalog-types";
 import { getCatalogProductById } from "@/api/catalog/product-catalog-client";
 import { env } from "@/lib/env";
@@ -65,5 +67,29 @@ export function useCatalogPlanListQuery(query: PlanListQuery, enabled: boolean) 
         pageSize: query.pageSize ?? PLAN_LIST_PAGE_SIZE,
         signal,
       }),
+  });
+}
+
+export const catalogPlanVersionsQueryKey = (productCode: string, planId: string) =>
+  ["catalog-plans", "versions", productCode, planId] as const;
+
+export function useCatalogPlanVersionsQuery(productCode: string | null, planId: string | null) {
+  return useQuery({
+    queryKey: catalogPlanVersionsQueryKey(productCode ?? "", planId ?? ""),
+    enabled: Boolean(productCode) && Boolean(planId),
+    queryFn: ({ signal }) =>
+      listCatalogPlanVersions(env.platformApiBaseUrl, productCode!, planId!, signal),
+  });
+}
+
+export const catalogTrialsQueryKey = (productCode: string) =>
+  ["catalog-trials", productCode] as const;
+
+export function useCatalogTrialsQuery(productCode: string | null, enabled = true) {
+  return useQuery({
+    queryKey: catalogTrialsQueryKey(productCode ?? ""),
+    enabled: enabled && Boolean(productCode),
+    queryFn: ({ signal }) =>
+      listCatalogTrialsByProductCode(env.platformApiBaseUrl, productCode!, signal),
   });
 }

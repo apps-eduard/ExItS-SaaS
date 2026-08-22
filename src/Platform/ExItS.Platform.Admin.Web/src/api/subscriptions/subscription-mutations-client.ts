@@ -187,13 +187,131 @@ export function applyPendingPlanChange(
   }).then(requireSubscription);
 }
 
+export type PlanUsageConflict = {
+  kind: string;
+  currentUsage: number;
+  targetLimit: number;
+  message: string;
+};
+
+export type PlanChangePreview = {
+  currentPlanId: string;
+  currentPlanDisplayName: string;
+  targetPlanId: string;
+  targetPlanDisplayName: string;
+  activeStaffCount?: number;
+  activeBranchCount?: number;
+  branchCountAvailable?: boolean;
+  usageConflicts: PlanUsageConflict[];
+  lostFeatures: string[];
+  hasBlockingUsageConflicts: boolean;
+};
+
+function asPreviewRecord(payload: unknown): Record<string, unknown> | null {
+  return typeof payload === "object" && payload !== null
+    ? (payload as Record<string, unknown>)
+    : null;
+}
+
+function readPreviewString(record: Record<string, unknown>, ...keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string" && value.length > 0) {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+function readPreviewNumber(record: Record<string, unknown>, ...keys: string[]): number | undefined {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+function readPreviewBoolean(
+  record: Record<string, unknown>,
+  ...keys: string[]
+): boolean | undefined {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "boolean") {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+export function mapPlanChangePreview(payload: unknown): PlanChangePreview {
+  const record = asPreviewRecord(payload);
+  if (!record) {
+    throw new Error("Invalid plan change preview.");
+  }
+  const currentPlanId = readPreviewString(record, "currentPlanId", "CurrentPlanId");
+  const currentPlanDisplayName = readPreviewString(
+    record,
+    "currentPlanDisplayName",
+    "CurrentPlanDisplayName",
+  );
+  const targetPlanId = readPreviewString(record, "targetPlanId", "TargetPlanId");
+  const targetPlanDisplayName = readPreviewString(
+    record,
+    "targetPlanDisplayName",
+    "TargetPlanDisplayName",
+  );
+  if (!currentPlanId || !currentPlanDisplayName || !targetPlanId || !targetPlanDisplayName) {
+    throw new Error("Invalid plan change preview.");
+  }
+  const conflictsPayload = record.usageConflicts ?? record.UsageConflicts;
+  const lostPayload = record.lostFeatures ?? record.LostFeatures;
+  return {
+    currentPlanId,
+    currentPlanDisplayName,
+    targetPlanId,
+    targetPlanDisplayName,
+    activeStaffCount: readPreviewNumber(record, "activeStaffCount", "ActiveStaffCount"),
+    activeBranchCount: readPreviewNumber(record, "activeBranchCount", "ActiveBranchCount"),
+    branchCountAvailable: readPreviewBoolean(
+      record,
+      "branchCountAvailable",
+      "BranchCountAvailable",
+    ),
+    usageConflicts: Array.isArray(conflictsPayload)
+      ? conflictsPayload.flatMap((item) => {
+          const conflict = asPreviewRecord(item);
+          if (!conflict) {
+            return [];
+          }
+          const kind = readPreviewString(conflict, "kind", "Kind", "dimension", "Dimension");
+          const message = readPreviewString(conflict, "message", "Message");
+          const currentUsage = readPreviewNumber(conflict, "currentUsage", "CurrentUsage");
+          const targetLimit = readPreviewNumber(conflict, "targetLimit", "TargetLimit");
+          if (!kind || !message || currentUsage === undefined || targetLimit === undefined) {
+            return [];
+          }
+          return [{ kind, currentUsage, targetLimit, message }];
+        })
+      : [],
+    lostFeatures: Array.isArray(lostPayload)
+      ? lostPayload.filter((item): item is string => typeof item === "string")
+      : [],
+    hasBlockingUsageConflicts:
+      readPreviewBoolean(record, "hasBlockingUsageConflicts", "HasBlockingUsageConflicts") ===
+      true,
+  };
+}
+
 export function getSubscriptionPlanChangePreview(
   baseUrl: string,
   organizationId: string,
   subscriptionId: string,
   options: { planId?: string; planKey?: string; activeBranchCount?: number },
   signal?: AbortSignal,
-): Promise<unknown> {
+): Promise<PlanChangePreview> {
   const params = new URLSearchParams();
   if (options.planId) {
     params.set("planId", options.planId);
@@ -209,7 +327,7 @@ export function getSubscriptionPlanChangePreview(
   return platformRequest<unknown>(baseUrl, {
     path: orgSubscriptionPath(organizationId, `/${subscriptionId}/plan-change-preview${suffix}`),
     signal,
-  });
+  }).then(mapPlanChangePreview);
 }
 
 export function suspendSubscription(

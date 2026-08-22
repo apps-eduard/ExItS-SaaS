@@ -79,6 +79,8 @@ export type AuthenticatedFetchOptions = {
   }>;
   catalogPlanItems?: Array<Record<string, unknown>>;
   catalogProductPlans?: Array<Record<string, unknown>>;
+  catalogTrials?: Array<Record<string, unknown>>;
+  catalogPlanVersions?: Array<Record<string, unknown>>;
   failCatalogProductDetail?: boolean;
   forbiddenCatalogProductDetail?: boolean;
   notFoundCatalogProductDetail?: boolean;
@@ -187,6 +189,12 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
       );
       if (productPlansMatch) {
         return jsonResponse(200, options.catalogProductPlans ?? []);
+      }
+      if (/\/plans\/[^/]+\/versions$/.test(path)) {
+        return jsonResponse(200, options.catalogPlanVersions ?? []);
+      }
+      if (/\/trials$/.test(path)) {
+        return jsonResponse(200, options.catalogTrials ?? []);
       }
       const productDetailMatch = path.match(
         /\/api\/v1\/platform\/catalog\/products\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/,
@@ -387,6 +395,19 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
         200,
         pagedJson(items, options.orgSubscriptionTotalCount ?? items.length, items.length || 20),
       );
+    }
+    if (path.includes("/plan-change-preview")) {
+      const current = options.orgSubscriptionItems?.[0];
+      const target = options.catalogProductPlans?.find((plan) => plan.id !== current?.planId);
+      return jsonResponse(200, {
+        currentPlanId: current?.planId ?? "current-plan",
+        currentPlanDisplayName: current?.planDisplayName ?? "Current",
+        targetPlanId: target?.id ?? "target-plan",
+        targetPlanDisplayName: target?.displayName ?? "Target",
+        usageConflicts: [],
+        lostFeatures: [],
+        hasBlockingUsageConflicts: false,
+      });
     }
     const entitlementSnapshotsGet = path.match(
       /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/products\/[^/]+\/entitlements\/snapshots$/,

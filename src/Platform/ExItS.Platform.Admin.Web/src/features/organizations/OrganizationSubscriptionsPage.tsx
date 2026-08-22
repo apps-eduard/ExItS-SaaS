@@ -24,6 +24,7 @@ import {
   organizationSubscriptionStatusLabel,
   organizationSubscriptionStatusTone,
 } from "@/features/organizations/organization-subscription-status";
+import { OrganizationSubscriptionLifecycle } from "@/features/organizations/OrganizationSubscriptionLifecycle";
 import { useOrganizationSubscriptionsQuery } from "@/features/organizations/use-organization-workspace-queries";
 import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -90,6 +91,15 @@ export function OrganizationSubscriptionsPage() {
   }
 
   const query = useOrganizationSubscriptionsQuery(organizationId, state);
+  const overviewQuery = useOrganizationSubscriptionsQuery(organizationId, {
+    page: 1,
+    search: "",
+    status: "",
+    isTrial: "",
+    productCode: "",
+    sortBy: "UpdatedAtUtc",
+    sortDesc: true,
+  });
 
   if (
     query.error instanceof PlatformApiError &&
@@ -132,6 +142,13 @@ export function OrganizationSubscriptionsPage() {
         title={t("organization.subscriptions.title")}
         description={t("organization.subscriptions.description")}
       />
+
+      {overviewQuery.data && organizationId ? (
+        <OrganizationSubscriptionLifecycle
+          organizationId={organizationId}
+          subscriptions={overviewQuery.data.items}
+        />
+      ) : null}
 
       <form
         className="grid gap-2 rounded-[var(--exits-density-radius)] border border-border bg-surface p-3 md:grid-cols-2"

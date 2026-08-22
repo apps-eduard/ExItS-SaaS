@@ -65,8 +65,11 @@ async function mockCore(page: import("@playwright/test").Page) {
   await page.route("**/api/v1/platform/subscriptions*", async (route) => {
     await route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 1 } });
   });
-  await page.route("**/api/v1/platform/users*", async (route) => {
-    await route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 1 } });
+  await page.route("**/api/v1/platform/catalog/**", async (route) => {
+    await route.fulfill({ json: [] });
+  });
+  await page.route("**/api/v1/platform/antiforgery/token", async (route) => {
+    await route.fulfill({ json: { headerName: "X-XSRF-TOKEN", token: "csrf-token" } });
   });
   await page.route("**/api/v1/platform/audit*", async (route) => {
     await route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 8 } });
@@ -76,7 +79,7 @@ async function mockCore(page: import("@playwright/test").Page) {
   });
 }
 
-test("subscription navigation, filters, and no mutations", async ({ page }) => {
+test("subscription navigation, filters, and no Activate control", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await mockCore(page);
   await page.route(/\/api\/v1\/platform\/organizations(\/|\?|$)/, async (route) => {
@@ -98,11 +101,10 @@ test("subscription navigation, filters, and no mutations", async ({ page }) => {
     await route.fulfill({ json: organization });
   });
   await page.goto(`/admin/organizations/${organization.id}/subscription`);
-  await expect(
-    page.getByRole("heading", { name: "Subscription", exact: true, level: 1 }),
-  ).toBeVisible();
-  await expect(page.getByText("Pinoy Business POS")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Subscription", exact: true, level: 1 })).toBeVisible();
+  await expect(page.getByText("Pinoy Business POS").first()).toBeVisible();
   await expect(page.getByRole("button", { name: /activate/i })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Suspend subscription" })).toBeVisible();
   await page.locator("#org-sub-status").selectOption("Active");
   await expect(page).toHaveURL(/status=Active/);
   await page.setViewportSize({ width: 375, height: 812 });
@@ -125,6 +127,7 @@ test("empty, zero-result, error, forbidden, i18n, axe", async ({ page }) => {
   });
   await page.goto(`/admin/organizations/${organization.id}/subscription`);
   await expect(page.getByText("No subscriptions")).toBeVisible();
+  await expect(page.getByText("No Pinoy Business POS subscription", { exact: true })).toBeVisible();
   await page.locator("#org-sub-status").selectOption("Active");
   await expect(page.getByText("No subscriptions match your filters.")).toBeVisible();
   await page.getByRole("button", { name: "Reset filters" }).click();
@@ -163,5 +166,5 @@ test("subscription error retry and forbidden fail-closed", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Copy diagnostics" })).toBeVisible();
   fail = false;
   await page.getByRole("button", { name: "Retry" }).click();
-  await expect(page.getByText("Pinoy Business POS")).toBeVisible();
+  await expect(page.getByText("Pinoy Business POS").first()).toBeVisible();
 });
