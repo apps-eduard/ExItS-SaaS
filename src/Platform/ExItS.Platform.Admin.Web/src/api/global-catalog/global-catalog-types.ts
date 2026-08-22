@@ -67,7 +67,33 @@ export type BusinessTypeAssignmentMode = (typeof BUSINESS_TYPE_ASSIGNMENT_MODES)
 export const GLOBAL_BUSINESS_TYPE_LIST_PAGE_SIZE = 20;
 export const GLOBAL_CATEGORY_LIST_PAGE_SIZE = 20;
 export const GLOBAL_PRODUCT_LIST_PAGE_SIZE = 20;
+export const GLOBAL_CATALOG_IMPORT_LIST_PAGE_SIZE = 20;
+export const GLOBAL_CATALOG_IMPORT_ERRORS_PAGE_SIZE = 20;
+export const GLOBAL_CATALOG_IMPORT_MAX_FILE_BYTES = 5 * 1024 * 1024;
+export const GLOBAL_CATALOG_IMPORT_MAX_ROWS = 5000;
+export const GLOBAL_CATALOG_IMPORT_TEMPLATE_FILENAME = "exits-global-product-import-template.csv";
 export const GLOBAL_CATALOG_LOOKUP_PAGE_SIZE = 100;
+
+export const GLOBAL_CATALOG_IMPORT_STATUSES = [
+  "Validated",
+  "Queued",
+  "Processing",
+  "Completed",
+  "CompletedWithWarnings",
+  "Failed",
+] as const;
+export type GlobalCatalogImportStatus = (typeof GLOBAL_CATALOG_IMPORT_STATUSES)[number];
+
+export const GLOBAL_CATALOG_IMPORT_PREVIEW_ITEM_STATUSES = [
+  "Valid",
+  "ValidWithNewCategory",
+  "Pending",
+  "Imported",
+  "Skipped",
+  "Failed",
+] as const;
+export type GlobalCatalogImportPreviewItemStatus =
+  (typeof GLOBAL_CATALOG_IMPORT_PREVIEW_ITEM_STATUSES)[number];
 
 export type GlobalBusinessTypeItem = {
   id: string;
@@ -209,4 +235,100 @@ export type CreateGlobalProductInput = {
 
 export type UpdateGlobalProductInput = CreateGlobalProductInput & {
   expectedUpdatedAtUtc: string;
+};
+
+export type GlobalCatalogImportListItem = {
+  id: string;
+  fileName: string;
+  fileFormat: string;
+  status: GlobalCatalogImportStatus;
+  totalCount: number;
+  processedCount: number;
+  importedCount: number;
+  skippedCount: number;
+  failedCount: number;
+  pendingCount: number;
+  validProductCount: number;
+  warningCount: number;
+  errorSummary?: string;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+  completedAtUtc?: string;
+};
+
+export type GlobalCatalogImportPreviewItem = {
+  id: string;
+  rowNumber: number;
+  name: string;
+  description?: string;
+  sku?: string;
+  barcode?: string;
+  globalCategoryId?: string | null;
+  categoryName?: string;
+  unit: ProductUnit;
+  costPrice?: number;
+  sellingPrice?: number;
+  imageReference?: string;
+  searchTagsRaw?: string;
+  businessTypesRaw?: string;
+  status: string;
+  errorCode?: string;
+  errorMessage?: string;
+  willCreateCategory: boolean;
+  createdGlobalProductId?: string | null;
+};
+
+export type GlobalCatalogImportDetail = GlobalCatalogImportListItem & {
+  contentType?: string;
+  fileSizeBytes: number;
+  fileSha256: string;
+  idempotencyKey?: string;
+  requestedBy: string;
+  existingCategoriesReferencedCount: number;
+  newCategoriesToCreateCount: number;
+  previewSummary?: string;
+  currentStage?: string;
+  startedAtUtc?: string;
+  lastHeartbeatAtUtc?: string;
+  previewItems: GlobalCatalogImportPreviewItem[];
+  targetTemplateId?: string | null;
+  targetTemplateName?: string;
+  targetTemplateProductCount?: number;
+  estimatedTemplateLinks?: number;
+  productsAlreadyInTemplate?: number;
+};
+
+export type GlobalCatalogImportErrorItem = {
+  id: string;
+  rowNumber: number;
+  name: string;
+  sku?: string;
+  barcode?: string;
+  status: string;
+  errorCode?: string;
+  errorMessage?: string;
+};
+
+export type GlobalCatalogImportListQuery = {
+  page?: number;
+  pageSize?: number;
+  status?: GlobalCatalogImportStatus;
+  signal?: AbortSignal;
+};
+
+export type GlobalCatalogImportErrorsQuery = {
+  page?: number;
+  pageSize?: number;
+  signal?: AbortSignal;
+};
+
+export type UploadGlobalCatalogImportInput = {
+  file: File;
+  idempotencyKey?: string;
+  signal?: AbortSignal;
+};
+
+export type ConfirmGlobalCatalogImportInput = {
+  idempotencyKey?: string;
+  signal?: AbortSignal;
 };

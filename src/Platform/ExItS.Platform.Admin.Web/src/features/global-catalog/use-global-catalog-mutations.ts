@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  confirmGlobalCatalogImport,
   createGlobalBusinessType,
   createGlobalCategory,
   createGlobalProduct,
@@ -10,9 +11,11 @@ import {
   updateGlobalBusinessType,
   updateGlobalCategory,
   updateGlobalProduct,
+  uploadGlobalCatalogImport,
   uploadGlobalProductImage,
 } from "@/api/global-catalog/global-catalog-client";
 import type {
+  ConfirmGlobalCatalogImportInput,
   CreateGlobalBusinessTypeInput,
   CreateGlobalCategoryInput,
   CreateGlobalProductInput,
@@ -22,6 +25,7 @@ import type {
   UpdateGlobalBusinessTypeInput,
   UpdateGlobalCategoryInput,
   UpdateGlobalProductInput,
+  UploadGlobalCatalogImportInput,
 } from "@/api/global-catalog/global-catalog-types";
 import { globalCatalogQueryKeys } from "@/api/global-catalog/global-catalog-query-keys";
 import { env } from "@/lib/env";
@@ -39,6 +43,10 @@ export function useGlobalCatalogMutations() {
 
   async function invalidateProducts() {
     await queryClient.invalidateQueries({ queryKey: globalCatalogQueryKeys.products.all });
+  }
+
+  async function invalidateImports() {
+    await queryClient.invalidateQueries({ queryKey: globalCatalogQueryKeys.imports.all });
   }
 
   const createBusinessType = useMutation({
@@ -201,6 +209,28 @@ export function useGlobalCatalogMutations() {
     },
   });
 
+  const uploadImport = useMutation({
+    mutationFn: (input: UploadGlobalCatalogImportInput) =>
+      uploadGlobalCatalogImport(env.platformApiBaseUrl, input),
+    onSuccess: invalidateImports,
+  });
+
+  const confirmImport = useMutation({
+    mutationFn: ({
+      jobId,
+      input = {},
+    }: {
+      jobId: string;
+      input?: ConfirmGlobalCatalogImportInput;
+    }) => confirmGlobalCatalogImport(env.platformApiBaseUrl, jobId, input),
+    onSuccess: async (_data, variables) => {
+      await invalidateImports();
+      await queryClient.invalidateQueries({
+        queryKey: globalCatalogQueryKeys.imports.detail(variables.jobId),
+      });
+    },
+  });
+
   return {
     createBusinessType,
     updateBusinessType,
@@ -213,5 +243,7 @@ export function useGlobalCatalogMutations() {
     changeProductStatus,
     uploadProductImage,
     removeProductImage,
+    uploadImport,
+    confirmImport,
   };
 }

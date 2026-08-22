@@ -17,4 +17,11 @@ export const globalCatalogQueryKeys = {
     list: (query: unknown) => ["global-catalog", "products", "list", query] as const,
     detail: (productId: string) => ["global-catalog", "products", "detail", productId] as const,
   },
+  imports: {
+    all: ["global-catalog", "imports"] as const,
+    list: (query: unknown) => ["global-catalog", "imports", "list", query] as const,
+    detail: (jobId: string) => ["global-catalog", "imports", "detail", jobId] as const,
+    errors: (jobId: string, query: unknown) =>
+      ["global-catalog", "imports", "errors", jobId, query] as const,
+  },
 } as const;

@@ -29,3 +29,31 @@ export function globalCatalogStatusTone(
   }
   return "neutral";
 }
+
+export function globalCatalogImportStatusTone(
+  status: string,
+): "success" | "warning" | "danger" | "neutral" {
+  if (status === "Completed") {
+    return "success";
+  }
+  if (status === "Validated" || status === "Queued" || status === "Processing") {
+    return "warning";
+  }
+  if (status === "CompletedWithWarnings") {
+    return "warning";
+  }
+  if (status === "Failed") {
+    return "danger";
+  }
+  return "neutral";
+}
+
+export function formatGlobalCatalogFileSize(bytes: number): string {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}

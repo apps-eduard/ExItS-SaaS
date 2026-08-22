@@ -493,15 +493,17 @@ test.describe("global catalog mutations and conflicts", () => {
     await page.getByLabel("Name").fill("Snacks");
     await page.getByRole("button", { name: "Save" }).click();
     await expect(page).toHaveURL(/\/admin\/global-catalog\/categories\//);
-    expect(mock.antiforgeryRequested).toBe(true);
-    expect(
-      mock.mutationCalls.some(
-        (call) =>
-          call.method === "POST" &&
-          call.path.endsWith("/global-catalog/categories") &&
-          call.csrfHeader === "test-antiforgery-token",
-      ),
-    ).toBe(true);
+    await expect.poll(() => mock.antiforgeryRequested).toBe(true);
+    await expect
+      .poll(() =>
+        mock.mutationCalls.some(
+          (call) =>
+            call.method === "POST" &&
+            call.path.endsWith("/global-catalog/categories") &&
+            call.csrfHeader === "test-antiforgery-token",
+        ),
+      )
+      .toBe(true);
   });
 
   test("product create uses antiforgery and POST path", async ({ page }) => {
@@ -514,14 +516,16 @@ test.describe("global catalog mutations and conflicts", () => {
     await page.getByLabel("Unit").selectOption("Pack");
     await page.getByRole("button", { name: "Save" }).click();
     await expect(page).toHaveURL(/\/admin\/global-catalog\/products\//);
-    expect(
-      mock.mutationCalls.some(
-        (call) =>
-          call.method === "POST" &&
-          call.path.endsWith("/global-catalog/products") &&
-          call.csrfHeader === "test-antiforgery-token",
-      ),
-    ).toBe(true);
+    await expect
+      .poll(() =>
+        mock.mutationCalls.some(
+          (call) =>
+            call.method === "POST" &&
+            call.path.endsWith("/global-catalog/products") &&
+            call.csrfHeader === "test-antiforgery-token",
+        ),
+      )
+      .toBe(true);
   });
 
   test("409 conflict on category edit refetches detail and shows truthful message", async ({ page }) => {

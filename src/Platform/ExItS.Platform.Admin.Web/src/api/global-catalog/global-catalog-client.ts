@@ -1,14 +1,20 @@
 import { globalBusinessTypesListRequestPath } from "@/api/global-catalog/business-type-list-query";
 import { globalCategoriesListRequestPath } from "@/api/global-catalog/category-list-query";
+import { globalCatalogImportsListRequestPath } from "@/api/global-catalog/import-list-query";
 import {
+  globalCatalogImportUploadRequest,
   globalCatalogMultipartRequest,
   globalCatalogMutationRequest,
 } from "@/api/global-catalog/global-catalog-http";
 import {
+  GLOBAL_CATALOG_IMPORT_ERRORS_PAGE_SIZE,
+  GLOBAL_CATALOG_IMPORT_STATUSES,
+  GLOBAL_CATALOG_IMPORT_TEMPLATE_FILENAME,
   GLOBAL_CATALOG_LOOKUP_PAGE_SIZE,
   GLOBAL_PRODUCT_STATUSES,
   PRODUCT_SELLING_MODES,
   PRODUCT_UNITS,
+  type ConfirmGlobalCatalogImportInput,
   type CreateGlobalBusinessTypeInput,
   type CreateGlobalCategoryInput,
   type CreateGlobalProductInput,
@@ -16,6 +22,13 @@ import {
   type GlobalBusinessTypeItem,
   type GlobalBusinessTypeListQuery,
   type GlobalBusinessTypeStatus,
+  type GlobalCatalogImportDetail,
+  type GlobalCatalogImportErrorItem,
+  type GlobalCatalogImportErrorsQuery,
+  type GlobalCatalogImportListItem,
+  type GlobalCatalogImportListQuery,
+  type GlobalCatalogImportPreviewItem,
+  type GlobalCatalogImportStatus,
   type GlobalCategoryDetail,
   type GlobalCategoryListItem,
   type GlobalCategoryListQuery,
@@ -29,10 +42,11 @@ import {
   type UpdateGlobalBusinessTypeInput,
   type UpdateGlobalCategoryInput,
   type UpdateGlobalProductInput,
+  type UploadGlobalCatalogImportInput,
 } from "@/api/global-catalog/global-catalog-types";
 import { globalProductsListRequestPath } from "@/api/global-catalog/product-list-query";
 import { parsePagedResult, type PagedResult } from "@/api/platform/paged-result";
-import { platformRequest } from "@/api/platform-http";
+import { createCorrelationId, PlatformApiError, platformRequest, type PlatformProblemDetails } from "@/api/platform-http";
 import { withQuery } from "@/lib/http/query-string";
 
 function readString(record: Record<string, unknown>, ...keys: string[]): string | undefined {
@@ -149,6 +163,170 @@ function readSellingMode(record: Record<string, unknown>): ProductSellingMode {
     return raw as ProductSellingMode;
   }
   return "PerItem";
+}
+
+function readImportStatus(
+  record: Record<string, unknown>,
+  ...keys: string[]
+): GlobalCatalogImportStatus {
+  return readStatus<GlobalCatalogImportStatus>(
+    record,
+    GLOBAL_CATALOG_IMPORT_STATUSES,
+    ...keys,
+  );
+}
+
+export function mapGlobalCatalogImportPreviewItem(
+  payload: unknown,
+): GlobalCatalogImportPreviewItem {
+  const record = asRecord(payload);
+  if (!record) {
+    throw new Error("Invalid import preview item.");
+  }
+  const id = readString(record, "id", "Id");
+  const name = readString(record, "name", "Name");
+  const rowNumber = readNumber(record, "rowNumber", "RowNumber");
+  if (!id || !name || rowNumber == null) {
+    throw new Error("Invalid import preview item.");
+  }
+  return {
+    id,
+    rowNumber,
+    name,
+    description: readOptionalString(record, "description", "Description"),
+    sku: readOptionalString(record, "sku", "Sku"),
+    barcode: readOptionalString(record, "barcode", "Barcode"),
+    globalCategoryId: readNullableGuid(record, "globalCategoryId", "GlobalCategoryId"),
+    categoryName: readOptionalString(record, "categoryName", "CategoryName"),
+    unit: readUnit(record),
+    costPrice: readNumber(record, "costPrice", "CostPrice"),
+    sellingPrice: readNumber(record, "sellingPrice", "SellingPrice"),
+    imageReference: readOptionalString(record, "imageReference", "ImageReference"),
+    searchTagsRaw: readOptionalString(record, "searchTagsRaw", "SearchTagsRaw"),
+    businessTypesRaw: readOptionalString(record, "businessTypesRaw", "BusinessTypesRaw"),
+    status: readString(record, "status", "Status") ?? "Pending",
+    errorCode: readOptionalString(record, "errorCode", "ErrorCode"),
+    errorMessage: readOptionalString(record, "errorMessage", "ErrorMessage"),
+    willCreateCategory: readBoolean(record, "willCreateCategory", "WillCreateCategory"),
+    createdGlobalProductId: readNullableGuid(
+      record,
+      "createdGlobalProductId",
+      "CreatedGlobalProductId",
+    ),
+  };
+}
+
+function mapGlobalCatalogImportListFields(
+  record: Record<string, unknown>,
+): Omit<GlobalCatalogImportListItem, "id" | "fileName" | "fileFormat" | "status" | "createdAtUtc" | "updatedAtUtc"> {
+  return {
+    totalCount: readNumber(record, "totalCount", "TotalCount") ?? 0,
+    processedCount: readNumber(record, "processedCount", "ProcessedCount") ?? 0,
+    importedCount: readNumber(record, "importedCount", "ImportedCount") ?? 0,
+    skippedCount: readNumber(record, "skippedCount", "SkippedCount") ?? 0,
+    failedCount: readNumber(record, "failedCount", "FailedCount") ?? 0,
+    pendingCount: readNumber(record, "pendingCount", "PendingCount") ?? 0,
+    validProductCount: readNumber(record, "validProductCount", "ValidProductCount") ?? 0,
+    warningCount: readNumber(record, "warningCount", "WarningCount") ?? 0,
+    errorSummary: readOptionalString(record, "errorSummary", "ErrorSummary"),
+    completedAtUtc: readOptionalString(record, "completedAtUtc", "CompletedAtUtc"),
+  };
+}
+
+export function mapGlobalCatalogImportListItem(payload: unknown): GlobalCatalogImportListItem {
+  const record = asRecord(payload);
+  if (!record) {
+    throw new Error("Invalid import job.");
+  }
+  const id = readString(record, "id", "Id");
+  const fileName = readString(record, "fileName", "FileName");
+  const fileFormat = readString(record, "fileFormat", "FileFormat");
+  const createdAtUtc = readString(record, "createdAtUtc", "CreatedAtUtc");
+  const updatedAtUtc = readString(record, "updatedAtUtc", "UpdatedAtUtc");
+  if (!id || !fileName || !fileFormat || !createdAtUtc || !updatedAtUtc) {
+    throw new Error("Invalid import job.");
+  }
+  return {
+    id,
+    fileName,
+    fileFormat,
+    status: readImportStatus(record, "status", "Status"),
+    createdAtUtc,
+    updatedAtUtc,
+    ...mapGlobalCatalogImportListFields(record),
+  };
+}
+
+export function mapGlobalCatalogImportDetail(payload: unknown): GlobalCatalogImportDetail {
+  const record = asRecord(payload);
+  if (!record) {
+    throw new Error("Invalid import job.");
+  }
+  const listItem = mapGlobalCatalogImportListItem(payload);
+  const fileSha256 = readString(record, "fileSha256", "FileSha256");
+  const requestedBy = readString(record, "requestedBy", "RequestedBy");
+  const fileSizeBytes = readNumber(record, "fileSizeBytes", "FileSizeBytes");
+  if (!fileSha256 || !requestedBy || fileSizeBytes == null) {
+    throw new Error("Invalid import job.");
+  }
+  const previewRaw = record.previewItems ?? record.PreviewItems;
+  const previewItems = Array.isArray(previewRaw)
+    ? previewRaw.map(mapGlobalCatalogImportPreviewItem)
+    : [];
+  return {
+    ...listItem,
+    contentType: readOptionalString(record, "contentType", "ContentType"),
+    fileSizeBytes,
+    fileSha256,
+    idempotencyKey: readOptionalString(record, "idempotencyKey", "IdempotencyKey"),
+    requestedBy,
+    existingCategoriesReferencedCount:
+      readNumber(record, "existingCategoriesReferencedCount", "ExistingCategoriesReferencedCount") ??
+      0,
+    newCategoriesToCreateCount:
+      readNumber(record, "newCategoriesToCreateCount", "NewCategoriesToCreateCount") ?? 0,
+    previewSummary: readOptionalString(record, "previewSummary", "PreviewSummary"),
+    currentStage: readOptionalString(record, "currentStage", "CurrentStage"),
+    startedAtUtc: readOptionalString(record, "startedAtUtc", "StartedAtUtc"),
+    lastHeartbeatAtUtc: readOptionalString(record, "lastHeartbeatAtUtc", "LastHeartbeatAtUtc"),
+    previewItems,
+    targetTemplateId: readNullableGuid(record, "targetTemplateId", "TargetTemplateId"),
+    targetTemplateName: readOptionalString(record, "targetTemplateName", "TargetTemplateName"),
+    targetTemplateProductCount: readNumber(
+      record,
+      "targetTemplateProductCount",
+      "TargetTemplateProductCount",
+    ),
+    estimatedTemplateLinks: readNumber(record, "estimatedTemplateLinks", "EstimatedTemplateLinks"),
+    productsAlreadyInTemplate: readNumber(
+      record,
+      "productsAlreadyInTemplate",
+      "ProductsAlreadyInTemplate",
+    ),
+  };
+}
+
+export function mapGlobalCatalogImportErrorItem(payload: unknown): GlobalCatalogImportErrorItem {
+  const record = asRecord(payload);
+  if (!record) {
+    throw new Error("Invalid import error item.");
+  }
+  const id = readString(record, "id", "Id");
+  const name = readString(record, "name", "Name");
+  const rowNumber = readNumber(record, "rowNumber", "RowNumber");
+  if (!id || !name || rowNumber == null) {
+    throw new Error("Invalid import error item.");
+  }
+  return {
+    id,
+    rowNumber,
+    name,
+    sku: readOptionalString(record, "sku", "Sku"),
+    barcode: readOptionalString(record, "barcode", "Barcode"),
+    status: readString(record, "status", "Status") ?? "Failed",
+    errorCode: readOptionalString(record, "errorCode", "ErrorCode"),
+    errorMessage: readOptionalString(record, "errorMessage", "ErrorMessage"),
+  };
 }
 
 export function mapGlobalBusinessType(payload: unknown): GlobalBusinessTypeDetail {
@@ -560,4 +738,124 @@ export function deleteGlobalProductImage(
     path: `/api/v1/platform/global-catalog/products/${productId}/image`,
     signal,
   });
+}
+
+export function listGlobalCatalogImports(
+  baseUrl: string,
+  query: GlobalCatalogImportListQuery,
+): Promise<PagedResult<GlobalCatalogImportListItem>> {
+  return platformRequest<unknown>(baseUrl, {
+    path: globalCatalogImportsListRequestPath(query),
+    signal: query.signal,
+  }).then((payload) => {
+    const page = parsePagedResult<unknown>(payload);
+    return {
+      ...page,
+      items: page.items.map(mapGlobalCatalogImportListItem),
+    };
+  });
+}
+
+export function getGlobalCatalogImport(
+  baseUrl: string,
+  jobId: string,
+  signal?: AbortSignal,
+): Promise<GlobalCatalogImportDetail> {
+  return platformRequest<unknown>(baseUrl, {
+    path: `/api/v1/platform/global-catalog/products/imports/${jobId}`,
+    signal,
+  }).then(mapGlobalCatalogImportDetail);
+}
+
+export function uploadGlobalCatalogImport(
+  baseUrl: string,
+  input: UploadGlobalCatalogImportInput,
+): Promise<GlobalCatalogImportDetail> {
+  const formData = new FormData();
+  formData.append("file", input.file);
+  if (input.idempotencyKey) {
+    formData.append("idempotencyKey", input.idempotencyKey);
+  }
+  return globalCatalogImportUploadRequest<unknown>(baseUrl, {
+    path: "/api/v1/platform/global-catalog/products/imports",
+    formData,
+    idempotencyKey: input.idempotencyKey,
+    signal: input.signal,
+  }).then(mapGlobalCatalogImportDetail);
+}
+
+export function confirmGlobalCatalogImport(
+  baseUrl: string,
+  jobId: string,
+  input: ConfirmGlobalCatalogImportInput = {},
+): Promise<GlobalCatalogImportDetail> {
+  return globalCatalogMutationRequest<unknown>(baseUrl, {
+    method: "POST",
+    path: `/api/v1/platform/global-catalog/products/imports/${jobId}/confirm`,
+    body: input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : {},
+    signal: input.signal,
+  }).then(mapGlobalCatalogImportDetail);
+}
+
+export function listGlobalCatalogImportErrors(
+  baseUrl: string,
+  jobId: string,
+  query: GlobalCatalogImportErrorsQuery = {},
+): Promise<PagedResult<GlobalCatalogImportErrorItem>> {
+  return platformRequest<unknown>(baseUrl, {
+    path: withQuery(`/api/v1/platform/global-catalog/products/imports/${jobId}/errors`, {
+      page: query.page ?? 1,
+      pageSize: query.pageSize ?? GLOBAL_CATALOG_IMPORT_ERRORS_PAGE_SIZE,
+    }),
+    signal: query.signal,
+  }).then((payload) => {
+    const page = parsePagedResult<unknown>(payload);
+    return {
+      ...page,
+      items: page.items.map(mapGlobalCatalogImportErrorItem),
+    };
+  });
+}
+
+export async function downloadGlobalCatalogImportTemplate(
+  baseUrl: string,
+  signal?: AbortSignal,
+): Promise<{ blob: Blob; fileName: string }> {
+  const requestCorrelationId = createCorrelationId();
+  const response = await fetch(
+    `${baseUrl}/api/v1/platform/global-catalog/products/imports/template.csv`,
+    {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        Accept: "text/csv",
+        "X-Correlation-Id": requestCorrelationId,
+      },
+      signal,
+    },
+  );
+
+  if (!response.ok) {
+    let problem: PlatformProblemDetails = { status: response.status };
+    try {
+      const payload = await response.json();
+      if (typeof payload === "object" && payload !== null) {
+        const record = payload as Record<string, unknown>;
+        problem = {
+          ...problem,
+          detail: typeof record.detail === "string" ? record.detail : undefined,
+          title: typeof record.title === "string" ? record.title : undefined,
+        };
+      }
+    } catch {
+      // Non-JSON error bodies still surface as status-only problems.
+    }
+    throw new PlatformApiError(response.status, problem, requestCorrelationId);
+  }
+
+  const disposition = response.headers.get("Content-Disposition");
+  const fileNameMatch = disposition?.match(/filename="?([^";]+)"?/i);
+  const fileName = fileNameMatch?.[1] ?? GLOBAL_CATALOG_IMPORT_TEMPLATE_FILENAME;
+  const blob = await response.blob();
+  return { blob, fileName };
 }

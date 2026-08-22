@@ -111,6 +111,49 @@ export async function globalCatalogMultipartRequest<T>(
   return (await response.json()) as T;
 }
 
+export async function globalCatalogImportUploadRequest<T>(
+  baseUrl: string,
+  options: {
+    path: string;
+    formData: FormData;
+    idempotencyKey?: string;
+    signal?: AbortSignal;
+  },
+): Promise<T> {
+  const requestCorrelationId = createCorrelationId();
+  const headers = new Headers({
+    Accept: "application/json",
+    "X-Correlation-Id": requestCorrelationId,
+  });
+  if (options.idempotencyKey) {
+    headers.set("Idempotency-Key", options.idempotencyKey);
+  }
+
+  const response = await fetch(`${baseUrl}${options.path}`, {
+    method: "POST",
+    credentials: "include",
+    headers,
+    body: options.formData,
+    signal: options.signal,
+  });
+
+  if (!response.ok) {
+    let problem: PlatformProblemDetails = { status: response.status };
+    try {
+      problem = { ...problem, ...parseProblem(await response.json()) };
+    } catch {
+      // Non-JSON error bodies still surface as a status-only problem.
+    }
+    throw new PlatformApiError(response.status, problem, requestCorrelationId);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return (await response.json()) as T;
+}
+
 export function globalProductImageUrl(
   baseUrl: string,
   productId: string,

@@ -39,6 +39,8 @@ import {
   ProductDetailPage as GlobalCatalogProductDetailPage,
   ProductFormPage as GlobalCatalogProductFormPage,
 } from "@/features/global-catalog/ProductDetailPage";
+import { ImportsPage } from "@/features/global-catalog/ImportsPage";
+import { ImportDetailPage } from "@/features/global-catalog/ImportDetailPage";
 import { ShellCatchAllPage } from "@/features/overview/ShellCatchAllPage";
 import { AuthorizationProvider } from "@/hooks/use-authorization";
 import { DiagnosticsProvider } from "@/hooks/use-diagnostics";
@@ -171,10 +173,18 @@ export function App() {
                               <Route path="edit" element={<GlobalCatalogProductFormPage mode="edit" />} />
                             </Route>
                           </Route>
+                          <Route path="imports">
+                            <Route index element={<ImportsPage />} />
+                            <Route path=":jobId" element={<ImportDetailPage />} />
+                          </Route>
                         </Route>
                         <Route
                           path="catalog/business-types"
                           element={<Navigate to="/admin/global-catalog/business-types" replace />}
+                        />
+                        <Route
+                          path="catalog/imports"
+                          element={<Navigate to="/admin/global-catalog/imports" replace />}
                         />
                         <Route path="*" element={<ShellCatchAllPage />} />
                       </Route>

@@ -36,6 +36,13 @@ describe("PLATFORM_PERMISSIONS", () => {
     expect(PLATFORM_PERMISSIONS.manageGlobalProducts).toBe(csharpConstant("ManageGlobalProducts"));
   });
 
+  it("importGlobalProducts matches backend canonical value", () => {
+    expect(PLATFORM_PERMISSIONS.importGlobalProducts).toBe(
+      "platform.permission.import_global_products",
+    );
+    expect(PLATFORM_PERMISSIONS.importGlobalProducts).toBe(csharpConstant("ImportGlobalProducts"));
+  });
+
   it("keeps existing permission constants aligned with backend", () => {
     expect(PLATFORM_PERMISSIONS.viewPortfolio).toBe(csharpConstant("ViewPortfolio"));
     expect(PLATFORM_PERMISSIONS.manageOrganizations).toBe(csharpConstant("ManageOrganizations"));
