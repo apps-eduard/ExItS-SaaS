@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { PosApiError } from "@/api/pos/pos-http";
+import { describePosApiError } from "@/access/pos-commercial-errors";
 import {
   formatReportPaymentMethod,
   getExpensesReport,
@@ -171,12 +171,9 @@ export function ClassicReportPage() {
     return <LoadingState label={t("session.loading")} />;
   }
 
-  const errorMessage =
-    query.error instanceof PosApiError
-      ? query.error.message
-      : query.isError
-        ? t("reports.loadError")
-        : null;
+  const errorMessage = query.isError
+    ? describePosApiError(query.error, t, "reports.loadError")
+    : null;
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="classic-report-page" data-kind={kind}>

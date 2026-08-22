@@ -23,6 +23,10 @@
     <ProjectReference Include="..\..\src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.Application\ExItS.PinoyBusinessPOS.Application.csproj" />
     <ProjectReference Include="..\..\src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.Domain\ExItS.PinoyBusinessPOS.Domain.csproj" />
     <ProjectReference Include="..\..\src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.Infrastructure\ExItS.PinoyBusinessPOS.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Platform\ExItS.Platform.Api\ExItS.Platform.Api.csproj" Aliases="PlatformApi" />
+    <ProjectReference Include="..\..\src\Platform\ExItS.Platform.Application\ExItS.Platform.Application.csproj" />
+    <ProjectReference Include="..\..\src\Platform\ExItS.Platform.Infrastructure\ExItS.Platform.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Platform\ExItS.Platform.Domain\ExItS.Platform.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>

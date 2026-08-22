@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { PosApiError } from "@/api/pos/pos-http";
+import { describePosApiError } from "@/access/pos-commercial-errors";
 import {
   formatReportPaymentMethod,
   getDashboard,
@@ -111,18 +111,12 @@ export function ManagementDashboardPage() {
     return <LoadingState label={t("session.loading")} />;
   }
 
-  const overviewError =
-    overviewQuery.error instanceof PosApiError
-      ? overviewQuery.error.message
-      : overviewQuery.isError
-        ? t("reports.loadError")
-        : null;
-  const dashboardError =
-    dashboardQuery.error instanceof PosApiError
-      ? dashboardQuery.error.message
-      : dashboardQuery.isError
-        ? t("reports.loadError")
-        : null;
+  const overviewError = overviewQuery.isError
+    ? describePosApiError(overviewQuery.error, t, "reports.loadError")
+    : null;
+  const dashboardError = dashboardQuery.isError
+    ? describePosApiError(dashboardQuery.error, t, "reports.loadError")
+    : null;
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="management-dashboard-page">

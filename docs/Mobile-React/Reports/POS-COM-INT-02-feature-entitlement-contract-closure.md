@@ -130,3 +130,11 @@ POS authorization never branches on plan name.
 - Updated `POS-COM-INT-01-platform-commercial-readiness.md`
 
 **PLATFORM_ADMIN_REACT_MODIFIED=NO**
+
+---
+
+## 11. COM-INT-03 cross-reference
+
+COM-INT-03 added REAL_PLATFORM_STATE_E2E harness (`PosPlatformCommercialSpineIntegrationTests`) and fixed a Platform trial-resolution defect where Starter start-business could reuse another plan’s trial definition (same duration), leaking Growth grants into Starter introspection. Strict/header tests in this package remain the HEADER_SIMULATION regression layer.
+
+See [POS-COM-INT-03-platform-pos-integration-harness.md](./POS-COM-INT-03-platform-pos-integration-harness.md).

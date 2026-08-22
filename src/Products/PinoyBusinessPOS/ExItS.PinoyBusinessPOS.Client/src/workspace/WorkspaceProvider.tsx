@@ -40,6 +40,7 @@ import {
 } from "@/workspace/workspace-resolver";
 import {
   classifyWorkspaceBindFailure,
+  type WorkspaceBindFailure,
   type WorkspaceBindFailureKind,
 } from "@/workspace/workspace-bind-error";
 import {
@@ -192,14 +193,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     (
       kind: WorkspaceBindFailureKind,
       technicalDetail: string | null,
-      detailKey:
-        | "accessDenied.detail"
-        | "accessDenied.sessionExpired"
-        | "accessDenied.staffOrgLock"
-        | "accessDenied.branchNotAccessible"
-        | "accessDenied.profileRequired"
-        | "accessDenied.serviceUnavailable"
-        | "accessDenied.generic",
+      detailKey: WorkspaceBindFailure["detailKey"],
     ) => {
       setBindFailureKind(kind);
       setAccessDeniedDetail(detailKey);

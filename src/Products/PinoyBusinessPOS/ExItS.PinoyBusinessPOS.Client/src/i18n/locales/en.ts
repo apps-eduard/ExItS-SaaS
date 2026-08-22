@@ -557,11 +557,11 @@ export const en = {
   "accessDenied.profileRequired":
     "Organization workspace requires an Organization account profile.",
   "accessDenied.generic": "This workspace could not be opened. Try again or sign in again.",
-  "commercial.notIncludedInPlan": "Not included in your current plan.",
+  "commercial.notIncludedInPlan": "This feature is not included in your current plan.",
+  "commercial.productUnavailable": "This product is not available for your organization.",
   "commercial.accessUnavailable":
-    "Commercial access is unavailable. Try again or sign in again.",
-  "commercial.subscriptionSuspended":
-    "This business subscription is suspended. Financial changes are blocked until it is reactivated.",
+    "We couldn't verify your subscription access. Try again.",
+  "commercial.subscriptionSuspended": "Your subscription is currently suspended.",
   "home.title": "Workspace ready",
   "home.lede": "Foundation continues after browser session and workspace binding.",
   "home.badge": "Ready",

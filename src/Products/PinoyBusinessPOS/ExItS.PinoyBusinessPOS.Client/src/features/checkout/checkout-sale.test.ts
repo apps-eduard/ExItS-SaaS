@@ -63,7 +63,7 @@ describe("mapCheckoutSaleErrorKey", () => {
       mapCheckoutSaleErrorKey(
         new PosApiError(403, { errorCode: "application.auth.product_access_denied" }),
       ),
-    ).toBe("checkout.errorProductAccess");
+    ).toBe("commercial.productUnavailable");
     expect(
       mapCheckoutSaleErrorKey(
         new PosApiError(409, { errorCode: "pos.cashier_shift.no_open_shift" }),

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import { PosApiError } from "@/api/pos/pos-http";
+import { describePosApiError } from "@/access/pos-commercial-errors";
 import {
   getCustomerStorefront,
   isInsufficientStockError,
@@ -201,7 +202,7 @@ export function MerchantCheckoutPage() {
         await refreshStorefrontAfterStockConflict();
         setError(t("orders.stockConflict"));
       } else if (err instanceof PosApiError) {
-        setError(err.problem.detail ?? err.message);
+        setError(describePosApiError(err, t, "error.detail"));
       } else {
         setError(err instanceof Error ? err.message : t("orders.error"));
       }

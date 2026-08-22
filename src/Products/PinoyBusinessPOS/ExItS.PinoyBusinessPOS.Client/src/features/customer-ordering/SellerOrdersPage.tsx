@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { listSellerCustomerOrders, sellerWorkspace } from "@/api/pos/pos-customer-orders-client";
+import { describePosApiError } from "@/access/pos-commercial-errors";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -65,7 +66,7 @@ export function SellerOrdersPage() {
       <div className="flex min-w-0 flex-col gap-4">
         <ErrorState
           title={t("orders.error")}
-          detail={query.error instanceof Error ? query.error.message : t("error.detail")}
+          detail={describePosApiError(query.error, t, "error.detail")}
         />
         <Button type="button" className="min-h-11 w-fit" onClick={() => void query.refetch()}>
           {t("orders.retry")}

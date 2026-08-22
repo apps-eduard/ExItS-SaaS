@@ -12,7 +12,7 @@ describe("workspace bind error classification", () => {
       detail: "subscription_inactive",
     });
     expect(failure.kind).toBe("product_access_denied");
-    expect(failure.detailKey).toBe("accessDenied.detail");
+    expect(failure.detailKey).toBe("commercial.productUnavailable");
     expect(workspaceBindFailureTitleKey(failure.kind)).toBe("accessDenied.title");
   });
 

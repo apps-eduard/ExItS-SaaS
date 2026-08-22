@@ -27,6 +27,9 @@ internal sealed class PlatformTokenIntrospectionClient(
     private static readonly TimeSpan CacheTtl = TimeSpan.FromSeconds(45);
     private static readonly ConcurrentDictionary<string, CacheEntry> Cache = new(StringComparer.Ordinal);
 
+    /// <summary>Clears the process-wide introspection cache (integration tests only).</summary>
+    internal static void ClearCacheForTests() => Cache.Clear();
+
     public async Task<PlatformTokenIntrospectionResult> IntrospectAsync(
         string accessToken,
         CancellationToken cancellationToken = default)

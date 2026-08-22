@@ -1,6 +1,9 @@
 import { PosApiError } from "@/api/pos/pos-http";
+import {
+  describeCommercialAccessError,
+  mapCommercialAccessErrorKey,
+} from "@/access/pos-commercial-errors";
 import type { MessageKey } from "@/i18n/messages";
-
 /**
  * Map POS sale / device / session error codes to friendly i18n keys.
  * Fail closed: unknown codes use a generic checkout failure message.
@@ -78,28 +81,20 @@ export function mapCheckoutSaleErrorKey(error: unknown): MessageKey {
 
   if (
     code.includes("createcredit") ||
-    (code.includes("capability.denied") && detail.includes("credit")) ||
-    (code.includes("capability.denied") && detail.includes("utang"))
+    (code.includes("capability.denied") &&
+      (detail.includes("credit") || detail.includes("utang")) &&
+      !detail.includes("suspended"))
   ) {
     return "checkout.errorCreditDenied";
   }
 
-  if (
-    code.includes("commercial.access_unknown") ||
-    code.includes("commercial.capability_denied") ||
-    code === "pos.commercial.access_unknown" ||
-    code === "pos.commercial.capability_denied"
-  ) {
-    return "checkout.errorProductAccess";
+  const commercial = mapCommercialAccessErrorKey(error);
+  if (commercial) {
+    return commercial;
   }
 
-  if (
-    code.includes("product_access") ||
-    code === "application.auth.product_access_denied" ||
-    code.includes("capability.denied") ||
-    code.includes("role_denied")
-  ) {
-    return "checkout.errorProductAccess";
+  if (code.includes("capability.denied") || code.includes("role_denied")) {
+    return "checkout.errorGeneric";
   }
 
   if (
@@ -174,6 +169,11 @@ export function mapCheckoutSaleErrorKey(error: unknown): MessageKey {
 }
 
 export function describeCheckoutSaleError(error: unknown, t: (key: MessageKey) => string): string {
+  const commercial = describeCommercialAccessError(error, t);
+  if (commercial) {
+    return commercial;
+  }
+
   const key = mapCheckoutSaleErrorKey(error);
   if (key === "checkout.errorGeneric" && error instanceof PosApiError) {
     return error.problem.detail ?? error.message ?? t(key);

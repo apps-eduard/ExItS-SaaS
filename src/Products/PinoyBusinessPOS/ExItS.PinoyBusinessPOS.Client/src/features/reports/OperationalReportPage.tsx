@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { PosApiError } from "@/api/pos/pos-http";
+import { describePosApiError } from "@/access/pos-commercial-errors";
 import {
   formatReportPaymentMethod,
   getCashVarianceReport,
@@ -332,12 +332,9 @@ export function OperationalReportPage() {
     return <LoadingState label={t("session.loading")} />;
   }
 
-  const errorMessage =
-    query.error instanceof PosApiError
-      ? query.error.message
-      : query.isError
-        ? t("reports.loadError")
-        : null;
+  const errorMessage = query.isError
+    ? describePosApiError(query.error, t, "reports.loadError")
+    : null;
 
   return (
     <div

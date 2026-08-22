@@ -3,6 +3,7 @@ import type { SessionGrantResponse } from "@/api/platform/platform-auth-client";
 export type PosSessionGrantFacts = Pick<
   SessionGrantResponse,
   | "productAccessAllowed"
+  | "productAccessReasonCode"
   | "mappedPosRoleCode"
   | "productLocalRoleCode"
   | "membershipRole"

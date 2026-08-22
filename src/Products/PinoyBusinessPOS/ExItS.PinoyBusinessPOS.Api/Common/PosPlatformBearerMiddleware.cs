@@ -15,6 +15,9 @@ internal sealed class PosPlatformBearerMiddleware(RequestDelegate next)
         IHostEnvironment environment,
         IConfiguration configuration)
     {
+        // Always start from an unknown commercial snapshot; bearer binding repopulates per request.
+        commercialAccess.Current = PosCommercialAccess.Unknown;
+
         var bearer = ExtractBearer(context.Request);
         if (string.IsNullOrWhiteSpace(bearer))
         {

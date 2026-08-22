@@ -3,6 +3,8 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { CircleAlert, MonitorSmartphone } from "lucide-react";
 import { getPosDeviceCapacity, registerPosDevice } from "@/api/platform/pos-devices-client";
+import { PlatformApiError } from "@/api/platform/platform-http";
+import { describePosApiError } from "@/access/pos-commercial-errors";
 import {
   browserRegistrationMetadata,
   suggestFriendlyName,
@@ -92,7 +94,7 @@ export function DeviceRegisterPage() {
         appVersion: metadata.appVersion,
       });
       if (!result.ok) {
-        throw new Error(result.body?.detail ?? t("devices.registerError"));
+        throw new PlatformApiError(result.status, result.body ?? {});
       }
       return { device: result.value, branchId: effectiveBranchId };
     },
@@ -101,8 +103,8 @@ export function DeviceRegisterPage() {
       await refreshPosDevice({ branchId: registeredBranchId });
       navigate(fromSell || Boolean(boundWorkspace) ? "/sell" : "/", { replace: true });
     },
-    onError: (err: Error) => {
-      setError(err.message);
+    onError: (err: unknown) => {
+      setError(describePosApiError(err, t, "devices.registerError"));
     },
   });
 

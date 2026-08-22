@@ -5,6 +5,7 @@
 
 export type WorkspaceBindFailureKind =
   | "product_access_denied"
+  | "subscription_suspended"
   | "session_expired"
   | "staff_org_lock"
   | "branch_not_accessible"
@@ -22,7 +23,10 @@ export type WorkspaceBindFailure = {
     | "accessDenied.branchNotAccessible"
     | "accessDenied.profileRequired"
     | "accessDenied.serviceUnavailable"
-    | "accessDenied.generic";
+    | "accessDenied.generic"
+    | "commercial.productUnavailable"
+    | "commercial.subscriptionSuspended"
+    | "commercial.accessUnavailable";
   /** Keep technical detail for console / diagnostics only. */
   technicalDetail: string | null;
 };
@@ -41,9 +45,18 @@ export function classifyWorkspaceBindFailure(input: {
   const status = input.status ?? null;
 
   if (input.reason === "access_denied") {
+    const lowered = detail?.toLowerCase() ?? "";
+    if (lowered.includes("suspended") || lowered.includes("subscription_ineligible")) {
+      return {
+        kind: "subscription_suspended",
+        detailKey: "commercial.subscriptionSuspended",
+        technicalDetail: detail,
+      };
+    }
+
     return {
       kind: "product_access_denied",
-      detailKey: "accessDenied.detail",
+      detailKey: "commercial.productUnavailable",
       technicalDetail: detail,
     };
   }
@@ -53,9 +66,18 @@ export function classifyWorkspaceBindFailure(input: {
     errorCode === "application.auth.product_access_inactive" ||
     errorCode === "application.auth.product_access_missing"
   ) {
+    const lowered = detail?.toLowerCase() ?? "";
+    if (lowered.includes("suspended") || lowered.includes("subscription_ineligible")) {
+      return {
+        kind: "subscription_suspended",
+        detailKey: "commercial.subscriptionSuspended",
+        technicalDetail: detail,
+      };
+    }
+
     return {
       kind: "product_access_denied",
-      detailKey: "accessDenied.detail",
+      detailKey: "commercial.productUnavailable",
       technicalDetail: detail,
     };
   }
@@ -110,8 +132,11 @@ export function workspaceBindFailureTitleKey(
   | "accessDenied.title"
   | "accessDenied.sessionTitle"
   | "accessDenied.serviceTitle"
-  | "accessDenied.branchTitle" {
+  | "accessDenied.branchTitle"
+  | "commercial.subscriptionSuspended" {
   switch (kind) {
+    case "subscription_suspended":
+      return "commercial.subscriptionSuspended";
     case "session_expired":
       return "accessDenied.sessionTitle";
     case "service_unavailable":

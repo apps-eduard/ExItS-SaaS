@@ -13,6 +13,7 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { describePosApiError } from "@/access/pos-commercial-errors";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import {
@@ -171,7 +172,7 @@ export function CustomerRepayPage() {
       });
       navigate(`/customers/${customerId}`, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("error.detail"));
+      setError(describePosApiError(err, t, "error.detail"));
     } finally {
       setSaving(false);
     }

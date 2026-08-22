@@ -571,10 +571,10 @@ export const filPH: Record<keyof typeof en, string> = {
     "Kailangan ng Organization account profile ang organization workspace.",
   "accessDenied.generic": "Hindi mabuksan ang workspace na ito. Subukan ulit o mag-sign in muli.",
   "commercial.notIncludedInPlan": "Hindi kasama sa kasalukuyang plan mo.",
+  "commercial.productUnavailable": "Hindi available ang produktong ito para sa iyong organization.",
   "commercial.accessUnavailable":
-    "Hindi available ang commercial access. Subukan ulit o mag-sign in muli.",
-  "commercial.subscriptionSuspended":
-    "Suspended ang subscription ng negosyong ito. Naka-block ang financial changes hanggang ma-reactivate.",
+    "Hindi namin ma-verify ang subscription access mo. Subukan ulit.",
+  "commercial.subscriptionSuspended": "Suspended ang iyong subscription sa ngayon.",
   "home.title": "Handa na ang workspace",
   "home.lede": "Magpapatuloy ang foundation pagkatapos ng browser session at workspace binding.",
   "home.badge": "Handa",

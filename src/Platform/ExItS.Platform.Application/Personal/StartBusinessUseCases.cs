@@ -851,8 +851,7 @@ public sealed class StartBusinessForPersonalUser
         var trials = await _trials.ListByProductAsync(pc, cancellationToken).ConfigureAwait(false);
         var activeTrials = trials.Where(t => t.Status == TrialDefinitionStatus.Active).ToList();
         var expectedDuration = TimeSpan.FromDays(plan.DefaultTrialDays);
-        var trial = activeTrials.FirstOrDefault(t => t.PlanId == plan.Id)
-            ?? activeTrials.FirstOrDefault(t => t.Duration == expectedDuration);
+        var trial = activeTrials.FirstOrDefault(t => t.PlanId == plan.Id);
 
         if (trial is null)
         {

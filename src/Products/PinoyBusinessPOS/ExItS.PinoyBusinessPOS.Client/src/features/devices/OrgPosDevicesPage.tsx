@@ -16,6 +16,8 @@ import {
   issuePosDeviceRevokeStepUp,
   type GovernanceStepUpFailureReason,
 } from "@/api/platform/governance-step-up-client";
+import { PlatformApiError } from "@/api/platform/platform-http";
+import { describePosApiError } from "@/access/pos-commercial-errors";
 import { getPlatformCredentialStatus } from "@/api/platform/platform-credentials-client";
 import {
   getPosDeviceCapacity,
@@ -185,7 +187,7 @@ export function OrgPosDevicesPage() {
         appVersion: metadata.appVersion,
       });
       if (!result.ok) {
-        throw new Error(result.body?.detail ?? t("devices.registerError"));
+        throw new PlatformApiError(result.status, result.body ?? {});
       }
       return result.value;
     },
@@ -199,8 +201,8 @@ export function OrgPosDevicesPage() {
       });
       await refreshPosDevice({ branchId: registerBranchId });
     },
-    onError: (error: Error) => {
-      setActionError(error.message);
+    onError: (error: unknown) => {
+      setActionError(describePosApiError(error, t, "devices.registerError"));
     },
   });
 

@@ -579,10 +579,10 @@ export const hilPH: Record<keyof typeof en, string> = {
     "Kinahanglan ang Organization account profile para sa organization workspace.",
   "accessDenied.generic": "Indi mabuksan ini nga workspace. Tilawi liwat ukon mag-sign in liwat.",
   "commercial.notIncludedInPlan": "Wala ini sa imo subong nga plan.",
+  "commercial.productUnavailable": "Indi available ini nga produkto para sa imo organization.",
   "commercial.accessUnavailable":
-    "Indi available ang commercial access. Tilawi liwat ukon mag-sign in liwat.",
-  "commercial.subscriptionSuspended":
-    "Suspended ang subscription sini nga negosyo. Ginapugngan ang financial changes tubtob ma-reactivate.",
+    "Indi namon ma-verify ang imo subscription access. Tilawi liwat.",
+  "commercial.subscriptionSuspended": "Suspended ang imo subscription subong.",
   "home.title": "Handa na ang workspace",
   "home.lede": "Magpadayon ang foundation pagkatapos sang browser session kag workspace binding.",
   "home.badge": "Handa",

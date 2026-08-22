@@ -14,7 +14,7 @@ import {
   sellerWorkspace,
   startPreparingSellerCustomerOrder,
 } from "@/api/pos/pos-customer-orders-client";
-import { PosApiError } from "@/api/pos/pos-http";
+import { describePosApiError } from "@/access/pos-commercial-errors";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -89,13 +89,7 @@ export function SellerOrderDetailPage() {
       await runners[action]();
       await query.refetch();
     } catch (err) {
-      setError(
-        err instanceof PosApiError
-          ? (err.problem.detail ?? err.message)
-          : err instanceof Error
-            ? err.message
-            : t("orders.error"),
-      );
+      setError(describePosApiError(err, t, "orders.error"));
     } finally {
       setBusy(false);
     }
@@ -113,13 +107,7 @@ export function SellerOrderDetailPage() {
       setShowReject(false);
       await query.refetch();
     } catch (err) {
-      setError(
-        err instanceof PosApiError
-          ? (err.problem.detail ?? err.message)
-          : err instanceof Error
-            ? err.message
-            : t("orders.error"),
-      );
+      setError(describePosApiError(err, t, "orders.error"));
     } finally {
       setBusy(false);
     }
