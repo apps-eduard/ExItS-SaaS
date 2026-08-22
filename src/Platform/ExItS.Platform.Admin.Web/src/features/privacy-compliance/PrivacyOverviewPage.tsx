@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Link } from "react-router-dom";
 import { isImportantGap } from "@/api/privacy-compliance/privacy-filters";
 import { AdminTable } from "@/components/exits/AdminTable";
@@ -27,6 +27,7 @@ import {
 import { usePreferences } from "@/hooks/use-preferences";
 import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
 import type { MessageKey } from "@/lib/i18n/messages";
+import { cn } from "@/lib/utils";
 
 const TECHNICAL_LABELS: Record<string, MessageKey> = {
   Implemented: "privacy.technical.Implemented",
@@ -45,6 +46,34 @@ const NPC_LABELS: Record<string, MessageKey> = {
   Pending: "privacy.npc.Pending",
   Verified: "privacy.npc.Verified",
 };
+
+type PrivacyOverviewTab = "category" | "pia" | "gaps";
+
+const PRIVACY_OVERVIEW_TABS: readonly {
+  id: PrivacyOverviewTab;
+  labelKey: MessageKey;
+  panelId: string;
+  tabId: string;
+}[] = [
+  {
+    id: "category",
+    labelKey: "privacy.categoryReadiness.title",
+    panelId: "privacy-overview-panel-category",
+    tabId: "privacy-overview-tab-category",
+  },
+  {
+    id: "pia",
+    labelKey: "privacy.piaFollowUps.title",
+    panelId: "privacy-overview-panel-pia",
+    tabId: "privacy-overview-tab-pia",
+  },
+  {
+    id: "gaps",
+    labelKey: "privacy.importantGaps.title",
+    panelId: "privacy-overview-panel-gaps",
+    tabId: "privacy-overview-tab-gaps",
+  },
+];
 
 function formatInstant(value: string | null | undefined, language: string): string | null {
   if (!value) {
@@ -66,6 +95,8 @@ export function PrivacyOverviewPage() {
   const { authorization, canView } = usePrivacyViewGate();
   const overviewQuery = usePrivacyOverviewQuery(canView);
   const requirementsQuery = usePrivacyRequirementsQuery(canView);
+  const [activeTab, setActiveTab] = useState<PrivacyOverviewTab>("category");
+  const tabRefs = useRef<Partial<Record<PrivacyOverviewTab, HTMLButtonElement | null>>>({});
 
   const gaps = useMemo(() => {
     if (!requirementsQuery.data) {
@@ -73,6 +104,42 @@ export function PrivacyOverviewPage() {
     }
     return requirementsQuery.data.filter(isImportantGap);
   }, [requirementsQuery.data]);
+
+  const focusTab = (id: PrivacyOverviewTab) => {
+    setActiveTab(id);
+    queueMicrotask(() => {
+      tabRefs.current[id]?.focus();
+    });
+  };
+
+  const onTabListKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const index = PRIVACY_OVERVIEW_TABS.findIndex((tab) => tab.id === activeTab);
+    if (index < 0) {
+      return;
+    }
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      event.preventDefault();
+      const next = PRIVACY_OVERVIEW_TABS[(index + 1) % PRIVACY_OVERVIEW_TABS.length]!;
+      focusTab(next.id);
+      return;
+    }
+    if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      event.preventDefault();
+      const prev =
+        PRIVACY_OVERVIEW_TABS[(index - 1 + PRIVACY_OVERVIEW_TABS.length) % PRIVACY_OVERVIEW_TABS.length]!;
+      focusTab(prev.id);
+      return;
+    }
+    if (event.key === "Home") {
+      event.preventDefault();
+      focusTab(PRIVACY_OVERVIEW_TABS[0]!.id);
+      return;
+    }
+    if (event.key === "End") {
+      event.preventDefault();
+      focusTab(PRIVACY_OVERVIEW_TABS[PRIVACY_OVERVIEW_TABS.length - 1]!.id);
+    }
+  };
 
   if (authorization.status === "loading") {
     return <PrivacyAuthLoading />;
@@ -85,6 +152,7 @@ export function PrivacyOverviewPage() {
   }
 
   const data = overviewQuery.data;
+  const activeMeta = PRIVACY_OVERVIEW_TABS.find((tab) => tab.id === activeTab)!;
 
   return (
     <section className="grid gap-4" data-testid="privacy-overview-page">
@@ -182,130 +250,250 @@ export function PrivacyOverviewPage() {
             </p>
           ) : null}
 
-          <DashboardSection title={t("privacy.categoryReadiness.title")}>
-            {data.categorySummaries == null || data.categorySummaries.length === 0 ? (
-              <p className="text-[length:var(--exits-text-sm)] text-muted">{t("privacy.empty.data")}</p>
-            ) : (
-              <AdminTable
-                caption={t("privacy.categoryReadiness.title")}
-                empty={t("privacy.empty.data")}
-                rows={data.categorySummaries.map((row) => ({
-                  ...row,
-                  id: `${row.group}:${row.detailRoute}`,
-                }))}
-                columns={[
-                  {
-                    id: "group",
-                    header: t("privacy.column.category"),
-                    cell: (row) => row.group,
-                  },
-                  {
-                    id: "status",
-                    header: t("privacy.column.status"),
-                    cell: (row) => <PrivacyStatusTag value={row.status} />,
-                  },
-                  {
-                    id: "count",
-                    header: t("privacy.column.count"),
-                    cell: (row) => row.requirementCount,
-                  },
-                  {
-                    id: "ready",
-                    header: t("privacy.metric.ready"),
-                    cell: (row) => row.readyCount,
-                  },
-                  {
-                    id: "action",
-                    header: t("privacy.metric.actionNeeded"),
-                    cell: (row) => row.actionNeededCount,
-                  },
-                  {
-                    id: "evidence",
-                    header: t("privacy.metric.evidenceCoverage"),
-                    cell: (row) => `${row.evidenceCoveredCount} / ${row.requirementCount}`,
-                  },
-                  {
-                    id: "reviewed",
-                    header: t("privacy.lastReviewed"),
-                    cell: (row) => row.lastReviewedDate ?? t("privacy.notAssessed"),
-                  },
-                  {
-                    id: "link",
-                    header: t("privacy.column.actions"),
-                    cell: (row) => (
-                      <Link
-                        className="text-primary underline-offset-4 hover:underline"
-                        to={row.detailRoute}
-                      >
-                        {t("privacy.viewDetails")}
-                      </Link>
-                    ),
-                  },
-                ]}
-              />
-            )}
-          </DashboardSection>
+          <div
+            className="rounded-[var(--exits-radius-md)] border border-border bg-surface"
+            data-testid="privacy-overview-tabs"
+          >
+            <div
+              role="tablist"
+              aria-label={t("privacy.overview.title")}
+              data-testid="privacy-overview-tablist"
+              className="-mx-px flex gap-1 overflow-x-auto overscroll-x-contain border-b border-border px-2 pt-2 [scrollbar-width:thin]"
+              onKeyDown={onTabListKeyDown}
+            >
+              {PRIVACY_OVERVIEW_TABS.map((tab) => {
+                const selected = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    ref={(node) => {
+                      tabRefs.current[tab.id] = node;
+                    }}
+                    type="button"
+                    role="tab"
+                    id={tab.tabId}
+                    data-testid={tab.tabId}
+                    aria-selected={selected}
+                    aria-controls={tab.panelId}
+                    tabIndex={selected ? 0 : -1}
+                    className={cn(
+                      "min-h-11 shrink-0 whitespace-nowrap rounded-t-[var(--exits-radius-md)] border-b-2 px-3 py-2 text-[length:var(--exits-text-sm)] font-semibold transition-[color,border-color,background-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--exits-focus-ring)]",
+                      selected
+                        ? "border-primary text-foreground"
+                        : "border-transparent text-muted hover:bg-[var(--exits-surface-muted)] hover:text-foreground",
+                    )}
+                    onClick={() => setActiveTab(tab.id)}
+                  >
+                    {t(tab.labelKey)}
+                  </button>
+                );
+              })}
+            </div>
 
-          <DashboardSection title={t("privacy.piaFollowUps.title")}>
-            {data.privacyImpactFollowUps == null || data.privacyImpactFollowUps.length === 0 ? (
-              <p className="text-[length:var(--exits-text-sm)] text-muted">
-                {t("privacy.empty.piaFollowUps")}
-              </p>
-            ) : (
-              <AdminTable
-                caption={t("privacy.piaFollowUps.title")}
-                empty={t("privacy.empty.piaFollowUps")}
-                rows={data.privacyImpactFollowUps.map((row) => ({
-                  ...row,
-                  id: row.code,
-                }))}
-                columns={[
-                  {
-                    id: "title",
-                    header: t("privacy.column.name"),
-                    cell: (row) => row.title,
-                  },
-                  {
-                    id: "code",
-                    header: t("privacy.column.code"),
-                    cell: (row) => (
-                      <span className="font-mono text-[length:var(--exits-text-xs)] text-muted">
-                        {row.code}
-                      </span>
-                    ),
-                  },
-                  {
-                    id: "status",
-                    header: t("privacy.column.status"),
-                    cell: (row) => <PrivacyStatusTag value={row.status} />,
-                  },
-                  {
-                    id: "legal",
-                    header: t("privacy.legalReviewRequired"),
-                    cell: (row) =>
-                      row.requiresDpoLegalVerification ? t("privacy.yes") : t("privacy.no"),
-                  },
-                  {
-                    id: "evidence",
-                    header: t("privacy.column.evidence"),
-                    cell: (row) => row.evidenceCount,
-                  },
-                  {
-                    id: "link",
-                    header: t("privacy.column.actions"),
-                    cell: () => (
-                      <Link
-                        className="text-primary underline-offset-4 hover:underline"
-                        to="/admin/privacy-compliance/pias"
-                      >
-                        {t("privacy.viewDetails")}
-                      </Link>
-                    ),
-                  },
-                ]}
-              />
-            )}
-          </DashboardSection>
+            <div
+              role="tabpanel"
+              id={activeMeta.panelId}
+              data-testid={activeMeta.panelId}
+              aria-labelledby={activeMeta.tabId}
+              className="p-4"
+            >
+              {activeTab === "category" ? (
+                data.categorySummaries == null || data.categorySummaries.length === 0 ? (
+                  <p className="text-[length:var(--exits-text-sm)] text-muted">{t("privacy.empty.data")}</p>
+                ) : (
+                  <AdminTable
+                    caption={t("privacy.categoryReadiness.title")}
+                    empty={t("privacy.empty.data")}
+                    rows={data.categorySummaries.map((row) => ({
+                      ...row,
+                      id: `${row.group}:${row.detailRoute}`,
+                    }))}
+                    columns={[
+                      {
+                        id: "group",
+                        header: t("privacy.column.category"),
+                        cell: (row) => row.group,
+                      },
+                      {
+                        id: "status",
+                        header: t("privacy.column.status"),
+                        cell: (row) => <PrivacyStatusTag value={row.status} />,
+                      },
+                      {
+                        id: "count",
+                        header: t("privacy.column.count"),
+                        cell: (row) => row.requirementCount,
+                      },
+                      {
+                        id: "ready",
+                        header: t("privacy.metric.ready"),
+                        cell: (row) => row.readyCount,
+                      },
+                      {
+                        id: "action",
+                        header: t("privacy.metric.actionNeeded"),
+                        cell: (row) => row.actionNeededCount,
+                      },
+                      {
+                        id: "evidence",
+                        header: t("privacy.metric.evidenceCoverage"),
+                        cell: (row) => `${row.evidenceCoveredCount} / ${row.requirementCount}`,
+                      },
+                      {
+                        id: "reviewed",
+                        header: t("privacy.lastReviewed"),
+                        cell: (row) => row.lastReviewedDate ?? t("privacy.notAssessed"),
+                      },
+                      {
+                        id: "link",
+                        header: t("privacy.column.actions"),
+                        cell: (row) => (
+                          <Link
+                            className="text-primary underline-offset-4 hover:underline"
+                            to={row.detailRoute}
+                          >
+                            {t("privacy.viewDetails")}
+                          </Link>
+                        ),
+                      },
+                    ]}
+                  />
+                )
+              ) : null}
+
+              {activeTab === "pia" ? (
+                data.privacyImpactFollowUps == null || data.privacyImpactFollowUps.length === 0 ? (
+                  <p className="text-[length:var(--exits-text-sm)] text-muted">
+                    {t("privacy.empty.piaFollowUps")}
+                  </p>
+                ) : (
+                  <AdminTable
+                    caption={t("privacy.piaFollowUps.title")}
+                    empty={t("privacy.empty.piaFollowUps")}
+                    rows={data.privacyImpactFollowUps.map((row) => ({
+                      ...row,
+                      id: row.code,
+                    }))}
+                    columns={[
+                      {
+                        id: "title",
+                        header: t("privacy.column.name"),
+                        cell: (row) => row.title,
+                      },
+                      {
+                        id: "code",
+                        header: t("privacy.column.code"),
+                        cell: (row) => (
+                          <span className="font-mono text-[length:var(--exits-text-xs)] text-muted">
+                            {row.code}
+                          </span>
+                        ),
+                      },
+                      {
+                        id: "status",
+                        header: t("privacy.column.status"),
+                        cell: (row) => <PrivacyStatusTag value={row.status} />,
+                      },
+                      {
+                        id: "legal",
+                        header: t("privacy.legalReviewRequired"),
+                        cell: (row) =>
+                          row.requiresDpoLegalVerification ? t("privacy.yes") : t("privacy.no"),
+                      },
+                      {
+                        id: "evidence",
+                        header: t("privacy.column.evidence"),
+                        cell: (row) => row.evidenceCount,
+                      },
+                      {
+                        id: "link",
+                        header: t("privacy.column.actions"),
+                        cell: () => (
+                          <Link
+                            className="text-primary underline-offset-4 hover:underline"
+                            to="/admin/privacy-compliance/pias"
+                          >
+                            {t("privacy.viewDetails")}
+                          </Link>
+                        ),
+                      },
+                    ]}
+                  />
+                )
+              ) : null}
+
+              {activeTab === "gaps" ? (
+                <>
+                  {requirementsQuery.isPending ? (
+                    <div role="status" aria-busy="true">
+                      <DashboardWidgetSkeleton />
+                    </div>
+                  ) : null}
+                  {requirementsQuery.isError ? (
+                    privacyForbiddenFromError(requirementsQuery.error) ? (
+                      <PrivacyForbidden />
+                    ) : (
+                      <ErrorState
+                        diagnostic={normalizeDiagnosticError({
+                          error: requirementsQuery.error,
+                          operation: "Load privacy compliance requirements for gaps",
+                          environment: { locale: language, theme, density },
+                        })}
+                        description={t("privacy.importantGaps.error")}
+                        onRetry={() => void requirementsQuery.refetch()}
+                      />
+                    )
+                  ) : null}
+                  {gaps ? (
+                    gaps.length === 0 ? (
+                      <p className="text-[length:var(--exits-text-sm)] text-muted">
+                        {t("privacy.empty.gaps")}
+                      </p>
+                    ) : (
+                      <AdminTable
+                        caption={t("privacy.importantGaps.title")}
+                        empty={t("privacy.empty.gaps")}
+                        rows={gaps}
+                        columns={[
+                          {
+                            id: "title",
+                            header: t("privacy.column.name"),
+                            cell: (row) => row.title,
+                          },
+                          {
+                            id: "code",
+                            header: t("privacy.column.code"),
+                            cell: (row) => (
+                              <span className="font-mono text-[length:var(--exits-text-xs)] text-muted">
+                                {row.code}
+                              </span>
+                            ),
+                          },
+                          {
+                            id: "status",
+                            header: t("privacy.column.status"),
+                            cell: (row) => <PrivacyStatusTag value={row.status} />,
+                          },
+                          {
+                            id: "link",
+                            header: t("privacy.column.actions"),
+                            cell: () => (
+                              <Link
+                                className="text-primary underline-offset-4 hover:underline"
+                                to="/admin/privacy-compliance/documents"
+                              >
+                                {t("privacy.viewDetails")}
+                              </Link>
+                            ),
+                          },
+                        ]}
+                      />
+                    )
+                  ) : null}
+                </>
+              ) : null}
+            </div>
+          </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
             <DashboardSection title={t("privacy.byStatus.title")}>
@@ -352,75 +540,6 @@ export function PrivacyOverviewPage() {
               </div>
             </DashboardSection>
           </div>
-
-          <DashboardSection title={t("privacy.importantGaps.title")}>
-            {requirementsQuery.isPending ? (
-              <div role="status" aria-busy="true">
-                <DashboardWidgetSkeleton />
-              </div>
-            ) : null}
-            {requirementsQuery.isError ? (
-              privacyForbiddenFromError(requirementsQuery.error) ? (
-                <PrivacyForbidden />
-              ) : (
-                <ErrorState
-                  diagnostic={normalizeDiagnosticError({
-                    error: requirementsQuery.error,
-                    operation: "Load privacy compliance requirements for gaps",
-                    environment: { locale: language, theme, density },
-                  })}
-                  description={t("privacy.importantGaps.error")}
-                  onRetry={() => void requirementsQuery.refetch()}
-                />
-              )
-            ) : null}
-            {gaps ? (
-              gaps.length === 0 ? (
-                <p className="text-[length:var(--exits-text-sm)] text-muted">
-                  {t("privacy.empty.gaps")}
-                </p>
-              ) : (
-                <AdminTable
-                  caption={t("privacy.importantGaps.title")}
-                  empty={t("privacy.empty.gaps")}
-                  rows={gaps}
-                  columns={[
-                    {
-                      id: "title",
-                      header: t("privacy.column.name"),
-                      cell: (row) => row.title,
-                    },
-                    {
-                      id: "code",
-                      header: t("privacy.column.code"),
-                      cell: (row) => (
-                        <span className="font-mono text-[length:var(--exits-text-xs)] text-muted">
-                          {row.code}
-                        </span>
-                      ),
-                    },
-                    {
-                      id: "status",
-                      header: t("privacy.column.status"),
-                      cell: (row) => <PrivacyStatusTag value={row.status} />,
-                    },
-                    {
-                      id: "link",
-                      header: t("privacy.column.actions"),
-                      cell: () => (
-                        <Link
-                          className="text-primary underline-offset-4 hover:underline"
-                          to="/admin/privacy-compliance/documents"
-                        >
-                          {t("privacy.viewDetails")}
-                        </Link>
-                      ),
-                    },
-                  ]}
-                />
-              )
-            ) : null}
-          </DashboardSection>
         </>
       ) : null}
     </section>

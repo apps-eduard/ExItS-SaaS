@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { App } from "@/app/App";
 import { jsonResponse, mockAuthenticatedFetch } from "@/test/auth-fixtures";
@@ -82,6 +82,7 @@ function mockPrivacyFetch(options?: {
   overviewBody?: unknown;
   requirements?: unknown[];
   requirementsStatus?: number;
+  requirementsBody?: unknown;
   requirementDetail?: typeof sampleRequirement;
   patchStatus?: number;
   patchBody?: unknown;
@@ -156,6 +157,12 @@ function mockPrivacyFetch(options?: {
       return jsonResponse(200, currentRequirement);
     }
     if (url.includes("/privacy-compliance/requirements")) {
+      if ((options?.requirementsStatus ?? 200) >= 400) {
+        return jsonResponse(
+          options?.requirementsStatus ?? 500,
+          options?.requirementsBody ?? { detail: "requirements failed", title: "Error", status: 500 },
+        );
+      }
       return jsonResponse(
         options?.requirementsStatus ?? 200,
         options?.requirements ?? [currentRequirement],
@@ -186,6 +193,7 @@ describe("Privacy Compliance pages", () => {
   });
 
   it("shows empty gaps from authoritative empty list, not invented ready state", async () => {
+    const user = userEvent.setup();
     mockPrivacyFetch({
       overviewBody: { ...sampleOverview, actionNeededCount: 0, requirementsByStatus: {} },
       requirements: [
@@ -200,8 +208,118 @@ describe("Privacy Compliance pages", () => {
     expect(await screen.findByTestId("privacy-overview-page")).toBeInTheDocument();
     expect(await screen.findByTestId("privacy-disclaimer")).toBeInTheDocument();
     expect(screen.getByText(/Readiness tooling only/i)).toBeInTheDocument();
+    expect(await screen.findByTestId("privacy-overview-tab-category")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(screen.getByTestId("privacy-overview-panel-category")).toBeInTheDocument();
+    expect(screen.queryByTestId("privacy-overview-panel-gaps")).not.toBeInTheDocument();
+
+    await user.click(await screen.findByTestId("privacy-overview-tab-gaps"));
+    expect(await screen.findByTestId("privacy-overview-panel-gaps")).toBeInTheDocument();
     expect(await screen.findByText(/No important gaps/i)).toBeInTheDocument();
     expect(screen.queryByText(/Unable to load/i)).not.toBeInTheDocument();
+  });
+
+  it("defaults to Category readiness and switches Privacy overview tabs", async () => {
+    const user = userEvent.setup();
+    mockPrivacyFetch({
+      overviewBody: {
+        ...sampleOverview,
+        privacyImpactFollowUps: [
+          {
+            code: "PIA-CORE",
+            title: "Core processing PIA",
+            status: "ActionNeeded",
+            requiresDpoLegalVerification: true,
+            evidenceCount: 0,
+          },
+        ],
+      },
+      requirements: [sampleRequirement],
+    });
+    render(<App />);
+    expect(await screen.findByTestId("privacy-overview-tabs")).toBeInTheDocument();
+
+    const categoryTab = screen.getByTestId("privacy-overview-tab-category");
+    const piaTab = screen.getByTestId("privacy-overview-tab-pia");
+    const gapsTab = screen.getByTestId("privacy-overview-tab-gaps");
+
+    expect(categoryTab).toHaveAttribute("aria-selected", "true");
+    const categoryPanel = screen.getByTestId("privacy-overview-panel-category");
+    expect(categoryPanel).toBeInTheDocument();
+    expect(within(categoryPanel).getByText("Documents")).toBeInTheDocument();
+    expect(screen.queryByText("Core processing PIA")).not.toBeInTheDocument();
+    expect(screen.queryByText("Privacy Notice")).not.toBeInTheDocument();
+
+    await user.click(piaTab);
+    expect(piaTab).toHaveAttribute("aria-selected", "true");
+    expect(categoryTab).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByTestId("privacy-overview-panel-pia")).toBeInTheDocument();
+    expect(screen.getByText("Core processing PIA")).toBeInTheDocument();
+    expect(screen.queryByTestId("privacy-overview-panel-category")).not.toBeInTheDocument();
+
+    await user.click(gapsTab);
+    expect(gapsTab).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("privacy-overview-panel-gaps")).toBeInTheDocument();
+    expect(screen.getByText("Privacy Notice")).toBeInTheDocument();
+    expect(screen.queryByText("Core processing PIA")).not.toBeInTheDocument();
+  });
+
+  it("supports keyboard navigation across Privacy overview tabs", async () => {
+    const user = userEvent.setup();
+    mockPrivacyFetch();
+    render(<App />);
+    expect(await screen.findByTestId("privacy-overview-tablist")).toBeInTheDocument();
+
+    const categoryTab = screen.getByTestId("privacy-overview-tab-category");
+    categoryTab.focus();
+    expect(categoryTab).toHaveFocus();
+
+    await user.keyboard("{ArrowRight}");
+    expect(screen.getByTestId("privacy-overview-tab-pia")).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("privacy-overview-tab-pia")).toHaveFocus();
+
+    await user.keyboard("{ArrowRight}");
+    expect(screen.getByTestId("privacy-overview-tab-gaps")).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("privacy-overview-panel-gaps")).toBeInTheDocument();
+
+    await user.keyboard("{Home}");
+    expect(screen.getByTestId("privacy-overview-tab-category")).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("preserves Important gaps loading and error states inside the gaps tab", async () => {
+    const user = userEvent.setup();
+    mockPrivacyFetch({
+      requirementsStatus: 500,
+      requirementsBody: { detail: "gaps failed", title: "Error", status: 500 },
+    });
+    render(<App />);
+    expect(await screen.findByTestId("privacy-overview-tab-gaps")).toBeInTheDocument();
+    await user.click(screen.getByTestId("privacy-overview-tab-gaps"));
+    expect(await screen.findByText(/Unable to load important gap requirements/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /retry|try again|subukan/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /copy error details/i })).toBeInTheDocument();
+  });
+
+  it("keeps Privacy overview tablist horizontally scrollable on narrow viewports", async () => {
+    Object.defineProperty(HTMLElement.prototype, "scrollWidth", {
+      configurable: true,
+      get() {
+        return 640;
+      },
+    });
+    Object.defineProperty(HTMLElement.prototype, "clientWidth", {
+      configurable: true,
+      get() {
+        return 320;
+      },
+    });
+    mockPrivacyFetch();
+    render(<App />);
+    const tablist = await screen.findByTestId("privacy-overview-tablist");
+    expect(tablist.className).toMatch(/overflow-x-auto/);
+    expect(tablist.scrollWidth).toBeGreaterThan(tablist.clientWidth);
   });
 
   it("shows ErrorState with retry when overview fails", async () => {
