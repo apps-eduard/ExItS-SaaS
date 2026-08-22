@@ -84,7 +84,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (!isSessionInvalidError(error)) {
         report(error, {
           operation: "Sign out",
-          category: isNetworkFailure(error) ? "NETWORK" : "UNKNOWN",
+          category: isNetworkFailure(error) ? "NETWORK_ERROR" : "UNEXPECTED_CLIENT_ERROR",
         });
         throw error;
       }

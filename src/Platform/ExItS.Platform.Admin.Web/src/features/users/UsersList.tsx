@@ -20,6 +20,7 @@ import { StatusIndicator } from "@/components/exits/StatusIndicator";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CreatePlatformStaffPanel } from "@/features/users/CreatePlatformStaffPanel";
 import { useUserListQuery } from "@/features/users/use-user-list-query";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { usePreferences } from "@/hooks/use-preferences";
@@ -111,6 +112,8 @@ export function UsersList({ enabled }: { enabled: boolean }) {
         onSubmitSearch={(search) => replaceState({ search, page: 1 })}
         onReplace={replaceState}
       />
+
+      {state.directory === "PlatformStaff" ? <CreatePlatformStaffPanel /> : null}
 
       {query.isPending ? (
         <div

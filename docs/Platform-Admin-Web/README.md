@@ -42,4 +42,5 @@ boundaries, and records a dedicated planning worktree (`docs/platform-admin-web-
 - `Reports/PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01.md` — commercial readiness audit (HEAD `525bae36`)
 - `Reports/PLATFORM-WEB-PA-COM-01-commercial-mutation-foundation.md` — PA-COM-01 typed clients + hooks foundation
 - `Reports/PLATFORM-WEB-PA-COM-04-subscription-lifecycle-ui.md` — PA-COM-04 Organization → Subscription lifecycle UI
+- `Reports/PLATFORM-HEALTH-01-system-health-v1.md` — Platform Operations System Health V1
 

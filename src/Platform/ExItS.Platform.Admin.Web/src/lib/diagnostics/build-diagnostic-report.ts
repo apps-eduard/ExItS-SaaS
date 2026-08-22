@@ -1,44 +1,106 @@
 import type { DiagnosticRecord } from "@/lib/diagnostics/diagnostic-types";
 import { presentText } from "@/lib/diagnostics/diagnostic-redaction";
 
-const FIELD_ORDER: ReadonlyArray<{
-  label: string;
-  read: (record: DiagnosticRecord) => string | undefined;
-}> = [
-  { label: "Application", read: (record) => presentText(record.application) },
-  { label: "Route", read: (record) => presentText(record.route) },
-  { label: "Operation", read: (record) => presentText(record.operation) },
-  { label: "Error Reference", read: (record) => presentText(record.errorReference) },
-  { label: "Error Type", read: (record) => presentText(record.errorType) },
-  { label: "Category", read: (record) => presentText(record.category) },
-  {
-    label: "HTTP Status",
-    read: (record) =>
-      typeof record.httpStatus === "number" ? String(record.httpStatus) : undefined,
-  },
-  { label: "Error Code", read: (record) => presentText(record.errorCode) },
-  { label: "Request Correlation ID", read: (record) => presentText(record.requestCorrelationId) },
-  { label: "Server Trace ID", read: (record) => presentText(record.serverTraceId) },
-  { label: "Timestamp", read: (record) => presentText(record.timestamp) },
-  { label: "Locale", read: (record) => presentText(record.locale) },
-  { label: "Theme", read: (record) => presentText(record.theme) },
-  { label: "Density", read: (record) => presentText(record.density) },
-  { label: "Browser/Platform", read: (record) => presentText(record.browserPlatform) },
-  { label: "Message", read: (record) => presentText(record.message) },
-  { label: "Component Stack", read: (record) => presentText(record.componentStack) },
-];
+function displayValue(value: string | undefined): string {
+  return presentText(value) ?? "Not available";
+}
 
-export function buildDiagnosticReport(record: DiagnosticRecord): string {
-  const sections = FIELD_ORDER.flatMap(({ label, read }) => {
-    const value = read(record);
-    return value ? [`${label}:`, value, ""] : [];
-  });
+function displayBoolean(value: boolean | undefined): string {
+  if (value === true) {
+    return "Yes";
+  }
+  if (value === false) {
+    return "No";
+  }
+  return "Not available";
+}
 
-  return [
-    "EXITS ERROR DIAGNOSTICS",
+function displayOnline(value: boolean | undefined): string {
+  if (value === true) {
+    return "Yes";
+  }
+  if (value === false) {
+    return "Offline";
+  }
+  return "Not available";
+}
+
+export function formatDiagnosticForClipboard(record: DiagnosticRecord): string {
+  const lines = [
+    "EXITS PLATFORM ERROR REPORT",
     "",
-    ...sections,
-    "SECURITY:",
-    "Sensitive credentials and protected request/response payloads excluded.",
-  ].join("\n");
+    `Error Reference: ${displayValue(record.errorReference)}`,
+    `Time: ${displayValue(record.timestampUtc)}`,
+    `Application: ${displayValue(record.application)}`,
+    `Build: ${displayValue(record.buildSha)}`,
+    `Environment: ${displayValue(record.environment)}`,
+  ];
+
+  if (record.localValidationEnabled) {
+    lines.push(
+      `Frontend Mode: ${displayValue(record.frontendMode)}`,
+      `API Mode: ${displayValue(record.apiMode)}`,
+      "Local Validation: Enabled",
+    );
+  }
+
+  lines.push(
+    "",
+    "Page:",
+    displayValue(record.pagePath),
+    "",
+    "Operation:",
+    displayValue(record.operation),
+    "",
+    "Category:",
+    displayValue(record.category),
+    "",
+    "Message:",
+    displayValue(record.userMessage),
+    "",
+    "HTTP Method:",
+    displayValue(record.httpMethod),
+    "",
+    "API Path:",
+    displayValue(record.apiPath),
+    "",
+    "HTTP Status:",
+    displayValue(
+      record.httpStatusLabel ??
+        (typeof record.httpStatus === "number" ? String(record.httpStatus) : undefined),
+    ),
+    "",
+    "Error Code:",
+    displayValue(record.errorCode),
+    "",
+    "Trace ID:",
+    displayValue(record.traceId),
+    "",
+    "Correlation ID:",
+    displayValue(record.correlationId),
+    "",
+    "Browser Online:",
+    displayOnline(record.networkOnline),
+    "",
+    "Retryable:",
+    displayBoolean(record.retryable),
+    "",
+    "Safe to paste into Cursor:",
+    "YES",
+  );
+
+  if (presentText(record.browserName) || presentText(record.browserVersion)) {
+    lines.push(
+      "",
+      "Browser:",
+      [record.browserName, record.browserVersion].filter(Boolean).join(" ") || "Not available",
+    );
+  }
+
+  return lines.join("\n");
+}
+
+/** @deprecated Use formatDiagnosticForClipboard */
+export function buildDiagnosticReport(record: DiagnosticRecord): string {
+  return formatDiagnosticForClipboard(record);
 }

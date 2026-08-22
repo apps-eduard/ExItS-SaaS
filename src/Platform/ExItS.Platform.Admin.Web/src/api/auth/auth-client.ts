@@ -1,10 +1,26 @@
 import { clearPlatformAntiforgeryToken, platformRequest } from "@/api/platform-http";
 import type {
+  ActivateAccountRequest,
   AuthSession,
+  AuthWorkflowAck,
   LocalValidationIdentity,
   LoginRequest,
   LoginResultDto,
+  RegisterPersonalAccountRequest,
+  RequestPasswordResetRequest,
+  ResetPasswordRequest,
 } from "@/api/auth/auth-types";
+
+type AuthWorkflowAckDto = AuthWorkflowAck & {
+  debugToken?: string | null;
+};
+
+function omitDebugToken(dto: AuthWorkflowAckDto): AuthWorkflowAck {
+  return {
+    message: dto.message,
+    expiresAtUtc: dto.expiresAtUtc ?? null,
+  };
+}
 
 function omitSessionToken(dto: LoginResultDto): AuthSession {
   return {
@@ -75,4 +91,71 @@ export function listQuickLoginIdentities(
     path: "/api/v1/platform/local-validation/quick-login-identities",
     signal,
   });
+}
+
+export function registerPersonalAccount(
+  baseUrl: string,
+  request: RegisterPersonalAccountRequest,
+  signal?: AbortSignal,
+): Promise<AuthWorkflowAck> {
+  return platformRequest<AuthWorkflowAckDto>(baseUrl, {
+    method: "POST",
+    path: "/api/v1/platform/auth/register",
+    body: {
+      displayName: request.displayName,
+      email: request.email,
+    },
+    signal,
+    skipAntiforgery: true,
+  }).then(omitDebugToken);
+}
+
+export function activateAccount(
+  baseUrl: string,
+  request: ActivateAccountRequest,
+  signal?: AbortSignal,
+): Promise<void> {
+  return platformRequest<unknown>(baseUrl, {
+    method: "POST",
+    path: "/api/v1/platform/auth/activate-account",
+    body: {
+      token: request.token,
+      password: request.password,
+    },
+    signal,
+    skipAntiforgery: true,
+  }).then(() => undefined);
+}
+
+export function requestPasswordReset(
+  baseUrl: string,
+  request: RequestPasswordResetRequest,
+  signal?: AbortSignal,
+): Promise<AuthWorkflowAck> {
+  return platformRequest<AuthWorkflowAckDto>(baseUrl, {
+    method: "POST",
+    path: "/api/v1/platform/auth/forgot-password",
+    body: {
+      usernameOrEmail: request.usernameOrEmail,
+    },
+    signal,
+    skipAntiforgery: true,
+  }).then(omitDebugToken);
+}
+
+export function resetPassword(
+  baseUrl: string,
+  request: ResetPasswordRequest,
+  signal?: AbortSignal,
+): Promise<void> {
+  return platformRequest<unknown>(baseUrl, {
+    method: "POST",
+    path: "/api/v1/platform/auth/reset-password",
+    body: {
+      token: request.token,
+      newPassword: request.newPassword,
+    },
+    signal,
+    skipAntiforgery: true,
+  }).then(() => undefined);
 }

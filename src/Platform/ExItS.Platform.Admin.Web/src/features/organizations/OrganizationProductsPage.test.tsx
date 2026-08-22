@@ -99,7 +99,7 @@ describe("organization workspace products", () => {
       await screen.findByRole("heading", { name: "Unable to load product access." }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Copy diagnostics" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Copy error details" })).toBeInTheDocument();
   });
 
   it("renders canonical subscription status tones and labels", async () => {

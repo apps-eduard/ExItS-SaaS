@@ -8,7 +8,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AppBreadcrumbs } from "@/components/exits/AppBreadcrumbs";
 import { PreferencesMenu } from "@/components/exits/PreferencesMenu";
-import { areDevelopmentToolsAllowed } from "@/lib/auth/development-tools";
+import {
+  areDevelopmentToolsAllowed,
+  areTestUserToolsPermitted,
+} from "@/lib/auth/development-tools";
 import { initialsFromIdentity } from "@/lib/identity/initials";
 import { usePreferences } from "@/hooks/use-preferences";
 import { useSession } from "@/hooks/use-session";
@@ -23,6 +26,7 @@ export function AppTopBar({
   const { t, sidebarCollapsed, setSidebarCollapsed } = usePreferences();
   const { session, signOut } = useSession();
   const showDev = areDevelopmentToolsAllowed();
+  const showRuntimeBadge = areTestUserToolsPermitted();
   const initials = initialsFromIdentity(session?.displayName, session?.username, session?.email);
 
   return (
@@ -56,9 +60,9 @@ export function AppTopBar({
       <div className="min-w-0 flex-1">
         <AppBreadcrumbs />
       </div>
-      {showDev ? (
+      {showRuntimeBadge ? (
         <span className="hidden rounded-sm border border-border px-1.5 py-0.5 text-[length:var(--exits-text-xs)] text-muted sm:inline">
-          {t("shell.environment.dev")}
+          {showDev ? t("shell.environment.dev") : t("shell.environment.localValidation")}
         </span>
       ) : null}
       <PreferencesMenu />

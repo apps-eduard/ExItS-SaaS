@@ -107,7 +107,7 @@ describe("Overview dashboard", () => {
     render(<App />);
     expect(await screen.findByRole("heading", { name: "Subscriptions" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Platform readiness" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Copy diagnostics" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Copy error details" })).not.toBeInTheDocument();
     const orgSection = screen.getByRole("heading", { name: "Organizations" }).closest("section");
     expect(orgSection).toBeTruthy();
     expect(

@@ -272,7 +272,7 @@ export const navigationRegistry: NavigationSectionDefinition[] = [
         id: "PWEB-NAV-PLATFORM-HEALTH",
         labelKey: "nav.platformHealth",
         icon: "activity",
-        href: "/admin/operations/health",
+        href: "/admin/system-health",
         lifecycle: "AVAILABLE",
         permission: { kind: "platformAdministrator" },
         order: 1,

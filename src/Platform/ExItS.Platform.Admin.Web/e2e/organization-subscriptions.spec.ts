@@ -163,7 +163,7 @@ test("subscription error retry and forbidden fail-closed", async ({ page }) => {
   });
   await page.goto(`/admin/organizations/${organization.id}/subscription`);
   await expect(page.getByRole("heading", { name: "Unable to load subscriptions." })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Copy diagnostics" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Copy error details" })).toBeVisible();
   fail = false;
   await page.getByRole("button", { name: "Retry" }).click();
   await expect(page.getByText("Pinoy Business POS").first()).toBeVisible();

@@ -44,13 +44,13 @@ test("authorization 500 stays fail-closed and exposes copyable diagnostics", asy
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
   await expect(page.getByRole("link", { name: "All Organizations" })).toHaveCount(0);
   await expect(page.getByRole("alert")).toHaveCount(1);
-  await expect(page.getByRole("button", { name: "Copy diagnostics" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Copy error details" })).toBeVisible();
 
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
-  await page.getByRole("button", { name: "Copy diagnostics" }).click();
-  await expect(page.getByText("Copied")).toBeVisible();
+  await page.getByRole("button", { name: "Copy error details" }).click();
+  await expect(page.getByText("Error details copied.")).toBeVisible();
   const copied = await page.evaluate(() => navigator.clipboard.readText());
-  expect(copied).toContain("EXITS ERROR DIAGNOSTICS");
+  expect(copied).toContain("EXITS PLATFORM ERROR REPORT");
   expect(copied).toContain("Load authorization");
   expect(copied).not.toContain("olivia@example.test");
 

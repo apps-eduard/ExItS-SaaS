@@ -15,7 +15,7 @@ import { DevelopmentTestUserTools } from "@/features/auth/DevelopmentTestUserToo
 import { usePreferences } from "@/hooks/use-preferences";
 import { useSession } from "@/hooks/use-session";
 import { resolvePostLoginPath } from "@/lib/auth/safe-return-path";
-import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
+import { normalizeDiagnosticError, buildDiagnosticEnvironmentFromPreferences } from "@/lib/diagnostics/normalize-diagnostic-error";
 import type { DiagnosticRecord } from "@/lib/diagnostics/diagnostic-types";
 
 type SignInValues = {
@@ -89,8 +89,7 @@ export function SignInPage() {
         normalizeDiagnosticError({
           error,
           operation: "Sign in",
-          category: kind === "network" ? "NETWORK" : "UNKNOWN",
-          environment: { locale: language, theme, density },
+          environment: buildDiagnosticEnvironmentFromPreferences({ locale: language, theme, density }),
         }),
       );
     }
@@ -111,12 +110,7 @@ export function SignInPage() {
 
       {diagnostic ? (
         <div className="mb-4">
-          <ErrorState
-            diagnostic={diagnostic}
-            description={
-              diagnostic.category === "NETWORK" ? t("auth.error.network") : t("auth.error.unknown")
-            }
-          />
+          <ErrorState diagnostic={diagnostic} onRetry={() => form.handleSubmit(onSubmit)()} />
         </div>
       ) : null}
 

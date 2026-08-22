@@ -7,8 +7,11 @@ describe("runtime /config.js contract", () => {
   it("writes only non-secret runtime keys and defaults tools to false", () => {
     expect(runtimeConfigScript).toContain("localValidationToolsEnabled");
     expect(runtimeConfigScript).toContain("LOCAL_VALIDATION_TOOLS_ENABLED");
+    expect(runtimeConfigScript).toContain("PLATFORM_API_SAME_ORIGIN");
+    expect(runtimeConfigScript).toContain("PLATFORM_API_PROXY_TARGET");
     expect(runtimeConfigScript).toContain("tools_enabled=false");
     expect(runtimeConfigScript).not.toMatch(/PASSWORD|SECRET|TOKEN|SHARED/i);
+    expect(runtimeConfigScript).not.toMatch(/100\.120\.79\.81/);
   });
 
   it("keeps the Vite public config.js fail-closed and secret-free", () => {
@@ -18,5 +21,11 @@ describe("runtime /config.js contract", () => {
 
   it("does not enable Test User tools in production compose", () => {
     expect(productionCompose).not.toMatch(/LOCAL_VALIDATION_TOOLS_ENABLED\s*:\s*"?true"?/);
+  });
+
+  it("does not expose Mailpit or Local Validation SMTP in production compose", () => {
+    expect(productionCompose).not.toMatch(/mailpit/i);
+    expect(productionCompose).not.toMatch(/8025/);
+    expect(productionCompose).not.toMatch(/PlatformEmail__SmtpHost:\s*mailpit/);
   });
 });

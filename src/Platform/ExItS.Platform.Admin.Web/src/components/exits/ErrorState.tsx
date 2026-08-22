@@ -4,7 +4,7 @@ import { usePreferences } from "@/hooks/use-preferences";
 import type { DiagnosticRecord } from "@/lib/diagnostics/diagnostic-types";
 
 function correlationPreview(diagnostic: DiagnosticRecord): string | undefined {
-  const value = diagnostic.requestCorrelationId ?? diagnostic.serverTraceId;
+  const value = diagnostic.correlationId ?? diagnostic.traceId;
   if (!value) {
     return undefined;
   }
@@ -44,8 +44,9 @@ export function ErrorState({
         <CopyDiagnosticsButton diagnostic={diagnostic} />
       </div>
       <p className="mt-2 text-[length:var(--exits-text-sm)] text-muted">
-        {description ?? diagnostic.message}
+        {description ?? t("diagnostics.body")}
       </p>
+      <p className="mt-1 text-[length:var(--exits-text-sm)] text-muted">{diagnostic.userMessage}</p>
       <p className="mt-3 font-mono text-[length:var(--exits-text-xs)] text-muted">
         <span className="sr-only">{t("diagnostics.reference")}: </span>
         {diagnostic.errorReference}

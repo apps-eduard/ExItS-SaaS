@@ -161,6 +161,8 @@ export type AuthenticatedFetchOptions = {
   globalBusinessTypeItems?: Array<Record<string, unknown>>;
   globalCatalogMutationError?: { status: number; errorCode: string; detail: string };
   onGlobalCatalogMutation?: (method: string, path: string, body: unknown) => void;
+  systemHealth?: Record<string, unknown>;
+  failSystemHealth?: boolean;
 };
 
 export function mockUnauthenticatedFetch(): void {
@@ -295,6 +297,15 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
     }
     if (url.includes("/api/v1/platform/antiforgery/token")) {
       return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "test-antiforgery-token" });
+    }
+    if (url.includes("/api/v1/platform/operations/system-health")) {
+      if (options.failSystemHealth) {
+        return jsonResponse(500, { title: "Error", status: 500, detail: "Password=should-not-render" });
+      }
+      if (options.systemHealth) {
+        return jsonResponse(200, options.systemHealth);
+      }
+      return jsonResponse(404, { title: "Not Found", status: 404 });
     }
     if (url.includes("/api/v1/platform/auth/me")) {
       return jsonResponse(200, sampleSession);

@@ -8,7 +8,7 @@ import {
 import { PageHeader } from "@/components/exits/PageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UsersList } from "@/features/users/UsersList";
-import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
+import { ForbiddenState } from "@/features/overview/ForbiddenState";
 import { useAuthorization } from "@/hooks/use-authorization";
 import { usePreferences } from "@/hooks/use-preferences";
 import type { MessageKey } from "@/lib/i18n/messages";
@@ -40,7 +40,7 @@ export function UsersPage() {
   }
 
   if (!canList) {
-    return <ShellNotFoundPage />;
+    return <ForbiddenState requiredPermission={PLATFORM_PERMISSIONS.managePlatformUsers} />;
   }
 
   const title = urlState.directory

@@ -326,7 +326,8 @@ describe("Sign In", () => {
     });
     await user.type(screen.getByLabelText("Password"), "secret-password");
     await user.click(screen.getByRole("button", { name: "Sign In" }));
-    expect(await screen.findByText("Unable to connect. Please try again.")).toBeInTheDocument();
+    expect(await screen.findByText("Unable to connect to Platform API.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Copy error details" })).toBeInTheDocument();
   });
 
   it("shows the session-expired notice", async () => {

@@ -107,7 +107,7 @@ test("known /admin/personal-features is under development", async ({ page }) => 
   await page.goto("/admin/personal-features");
   await expect(page.getByRole("heading", { name: "Under development" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Back to Overview" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Copy diagnostics" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Copy error details" })).toHaveCount(0);
 });
 
 test("unknown platform route remains page not found", async ({ page }) => {

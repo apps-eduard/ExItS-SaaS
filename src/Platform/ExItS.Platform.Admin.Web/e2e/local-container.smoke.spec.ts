@@ -31,8 +31,9 @@ test.describe("local-validation React container smoke", () => {
     const response = await request.get("/config.js");
     expect(response.ok()).toBeTruthy();
     const body = await response.text();
-    expect(body).toContain('platformApiBaseUrl:"http://localhost:8091"');
+    expect(body).toContain("platformApiSameOrigin:true");
     expect(body).toContain("localValidationToolsEnabled:true");
+    expect(body).not.toMatch(/100\.\d+\.\d+\.\d+/);
     expect(body).not.toMatch(/password|secret|token/i);
   });
 
@@ -46,6 +47,7 @@ test.describe("local-validation React container smoke", () => {
     await expect(page.getByText("Local Validation", { exact: true })).toBeVisible();
     const selector = page.getByLabel("Test User — Local Validation");
     await expect(selector).toBeVisible();
+    await expect(page.getByText("Test users unavailable")).toHaveCount(0);
 
     await page.getByRole("button", { name: "Preferences" }).click();
     await page.getByRole("menuitem", { name: /^Light/ }).click();

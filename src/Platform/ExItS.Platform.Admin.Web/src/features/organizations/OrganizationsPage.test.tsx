@@ -207,7 +207,7 @@ describe("organizations list", () => {
     expect(
       await screen.findByRole("heading", { name: "Unable to load organizations." }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Copy diagnostics" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Copy error details" })).toBeInTheDocument();
     fail = false;
     await user.click(screen.getByRole("button", { name: "Retry" }));
     expect(await screen.findByText("Northwind Market")).toBeInTheDocument();

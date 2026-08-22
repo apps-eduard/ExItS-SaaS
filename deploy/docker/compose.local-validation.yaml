@@ -89,16 +89,25 @@ services:
       ASPNETCORE_ENVIRONMENT: Staging
       ConnectionStrings__PlatformDatabase: Host=platform-db;Port=5432;Database=exits_platform;Username=${LOCAL_VALIDATION_PLATFORM_DB_USER};Password=${LOCAL_VALIDATION_PLATFORM_DB_PASSWORD}
       AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;admin-web-react;pos-api;org-web;personal-web}
-      Cors__AllowedOrigins__0: ${LOCAL_VALIDATION_ADMIN_ORIGIN:-http://localhost:8090}
-      Cors__AllowedOrigins__1: ${LOCAL_VALIDATION_ORG_WEB_ORIGIN:-http://localhost:8093}
-      Cors__AllowedOrigins__2: ${LOCAL_VALIDATION_PERSONAL_WEB_ORIGIN:-http://localhost:8094}
-      Cors__AllowedOrigins__3: ${LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN:-http://localhost:8095}
+      Cors__AllowedOrigins__0: http://localhost:8090
+      Cors__AllowedOrigins__1: http://127.0.0.1:8090
+      Cors__AllowedOrigins__2: http://localhost:8093
+      Cors__AllowedOrigins__3: http://127.0.0.1:8093
+      Cors__AllowedOrigins__4: http://localhost:8094
+      Cors__AllowedOrigins__5: http://127.0.0.1:8094
+      Cors__AllowedOrigins__6: http://localhost:8095
+      Cors__AllowedOrigins__7: http://127.0.0.1:8095
+      Cors__AllowedOrigins__8: ${LOCAL_VALIDATION_ADMIN_ORIGIN:-http://localhost:8090}
+      Cors__AllowedOrigins__9: ${LOCAL_VALIDATION_ORG_WEB_ORIGIN:-http://localhost:8093}
+      Cors__AllowedOrigins__10: ${LOCAL_VALIDATION_PERSONAL_WEB_ORIGIN:-http://localhost:8094}
+      Cors__AllowedOrigins__11: ${LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN:-http://localhost:8095}
       Security__EnforceHttps: "false"
       LocalValidation__Enabled: "true"
       LocalValidation__SeedScope: ${LOCAL_VALIDATION_SEED_SCOPE:-PlatformAdministratorsOnly}
       LocalValidation__PurgeTransactionalOnSeed: ${LOCAL_VALIDATION_PURGE_TRANSACTIONAL:-false}
       LocalValidation__SharedPassword: ${LOCAL_VALIDATION_SHARED_PASSWORD}
       PlatformAuthentication__Password__MinimumLength: "1"
+      PlatformAuthentication__Password__MaximumLength: "128"
       PlatformAuthentication__Password__RequireUppercase: "false"
       PlatformAuthentication__Password__RequireLowercase: "false"
       PlatformAuthentication__Password__RequireDigit: "false"
@@ -108,7 +117,7 @@ services:
       PlatformEmail__UseSsl: "false"
       PlatformEmail__FromAddress: noreply@exits.local
       PlatformEmail__FromDisplayName: ExItS Local Validation
-      PlatformEmail__AdminPublicBaseUrl: ${LOCAL_VALIDATION_ADMIN_ORIGIN:-http://localhost:8090}
+      PlatformEmail__AdminPublicBaseUrl: ${LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN:-http://localhost:8095}
     ports:
       - "${LOCAL_VALIDATION_PLATFORM_API_HOST_PORT:-8091}:8080"
     networks:
@@ -136,10 +145,18 @@ services:
       ASPNETCORE_ENVIRONMENT: Staging
       ConnectionStrings__PosDatabase: Host=pos-db;Port=5432;Database=exits_pos;Username=${LOCAL_VALIDATION_POS_DB_USER};Password=${LOCAL_VALIDATION_POS_DB_PASSWORD}
       AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;admin-web-react;pos-api;org-web;personal-web}
-      Cors__AllowedOrigins__0: ${LOCAL_VALIDATION_ADMIN_ORIGIN:-http://localhost:8090}
-      Cors__AllowedOrigins__1: ${LOCAL_VALIDATION_ORG_WEB_ORIGIN:-http://localhost:8093}
-      Cors__AllowedOrigins__2: ${LOCAL_VALIDATION_PERSONAL_WEB_ORIGIN:-http://localhost:8094}
-      Cors__AllowedOrigins__3: ${LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN:-http://localhost:8095}
+      Cors__AllowedOrigins__0: http://localhost:8090
+      Cors__AllowedOrigins__1: http://127.0.0.1:8090
+      Cors__AllowedOrigins__2: http://localhost:8093
+      Cors__AllowedOrigins__3: http://127.0.0.1:8093
+      Cors__AllowedOrigins__4: http://localhost:8094
+      Cors__AllowedOrigins__5: http://127.0.0.1:8094
+      Cors__AllowedOrigins__6: http://localhost:8095
+      Cors__AllowedOrigins__7: http://127.0.0.1:8095
+      Cors__AllowedOrigins__8: ${LOCAL_VALIDATION_ADMIN_ORIGIN:-http://localhost:8090}
+      Cors__AllowedOrigins__9: ${LOCAL_VALIDATION_ORG_WEB_ORIGIN:-http://localhost:8093}
+      Cors__AllowedOrigins__10: ${LOCAL_VALIDATION_PERSONAL_WEB_ORIGIN:-http://localhost:8094}
+      Cors__AllowedOrigins__11: ${LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN:-http://localhost:8095}
       Security__EnforceHttps: "false"
       LocalValidation__Enabled: "true"
       LocalValidation__PlatformApiBaseUrl: ${LOCAL_VALIDATION_PLATFORM_API_INTERNAL_URL:-http://platform-api:8080}
@@ -246,10 +263,17 @@ services:
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile.platform-admin-web
+      args:
+        EXITS_GIT_SHA: ${EXITS_GIT_SHA:-unknown}
     image: exits/platform-admin-web:${LOCAL_VALIDATION_IMAGE_TAG:-local-validation}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
-      PLATFORM_API_PUBLIC_URL: ${LOCAL_VALIDATION_PLATFORM_API_PUBLIC_URL:-http://localhost:8091}
+      PLATFORM_API_PUBLIC_URL: ${LOCAL_VALIDATION_PLATFORM_API_PUBLIC_URL:-}
+      PLATFORM_API_SAME_ORIGIN: ${LOCAL_VALIDATION_PLATFORM_API_SAME_ORIGIN:-true}
+      PLATFORM_API_PROXY_TARGET: ${LOCAL_VALIDATION_PLATFORM_API_PROXY_TARGET:-http://platform-api:8080}
       LOCAL_VALIDATION_TOOLS_ENABLED: "true"
+      EXITS_GIT_SHA: ${EXITS_GIT_SHA:-unknown}
     ports:
       - "${LOCAL_VALIDATION_ADMIN_WEB_REACT_HOST_PORT:-8095}:8080"
     networks:

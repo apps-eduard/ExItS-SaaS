@@ -5,7 +5,10 @@ namespace ExItS.Platform.Api.Common;
 
 internal static class PlatformBrowserAntiforgeryExtensions
 {
-    internal static void AddPlatformBrowserAntiforgery(this IServiceCollection services, IHostEnvironment environment)
+    internal static void AddPlatformBrowserAntiforgery(
+        this IServiceCollection services,
+        IHostEnvironment environment,
+        IConfiguration configuration)
     {
         services.AddAntiforgery(options =>
         {
@@ -14,9 +17,7 @@ internal static class PlatformBrowserAntiforgeryExtensions
             options.Cookie.HttpOnly = true;
             options.Cookie.Path = "/";
             options.Cookie.SameSite = SameSiteMode.Lax;
-            options.Cookie.SecurePolicy = environment.IsDevelopment() || environment.IsEnvironment("Testing")
-                ? CookieSecurePolicy.SameAsRequest
-                : CookieSecurePolicy.Always;
+            options.Cookie.SecurePolicy = PlatformAuthCookiePolicy.SecurePolicy(environment, configuration);
         });
     }
 

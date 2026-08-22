@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePreferences } from "@/hooks/use-preferences";
-import { copyDiagnosticReport } from "@/lib/diagnostics/copy-diagnostic-text";
+import {
+  copyDiagnosticReport,
+  formatDiagnosticForClipboard,
+} from "@/lib/diagnostics/copy-diagnostic-text";
 import type { DiagnosticRecord } from "@/lib/diagnostics/diagnostic-types";
 
 type CopyState = "idle" | "copied" | "failed";
@@ -10,6 +13,7 @@ type CopyState = "idle" | "copied" | "failed";
 export function CopyDiagnosticsButton({ diagnostic }: { diagnostic: DiagnosticRecord }) {
   const { t } = usePreferences();
   const [state, setState] = useState<CopyState>("idle");
+  const reportText = useMemo(() => formatDiagnosticForClipboard(diagnostic), [diagnostic]);
 
   useEffect(() => {
     if (state !== "copied") {
@@ -25,7 +29,7 @@ export function CopyDiagnosticsButton({ diagnostic }: { diagnostic: DiagnosticRe
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="flex w-full flex-col items-stretch gap-1 sm:items-end">
       <Button
         type="button"
         variant="ghost"
@@ -41,9 +45,23 @@ export function CopyDiagnosticsButton({ diagnostic }: { diagnostic: DiagnosticRe
         <span>{state === "copied" ? t("diagnostics.copied") : t("diagnostics.copy")}</span>
       </Button>
       {state === "failed" ? (
-        <p className="text-[length:var(--exits-text-xs)] text-destructive">
-          {t("diagnostics.copyFailed")}
-        </p>
+        <>
+          <p className="text-[length:var(--exits-text-xs)] text-destructive">
+            {t("diagnostics.copyFailed")}
+          </p>
+          <label className="grid w-full gap-1">
+            <span className="text-[length:var(--exits-text-xs)] text-muted">
+              {t("diagnostics.copyFallbackHint")}
+            </span>
+            <textarea
+              readOnly
+              aria-label={t("diagnostics.copyFallbackHint")}
+              className="min-h-32 w-full rounded-[var(--exits-density-radius)] border border-input bg-surface px-2 py-1 font-mono text-[length:var(--exits-text-xs)]"
+              value={reportText}
+              onFocus={(event) => event.currentTarget.select()}
+            />
+          </label>
+        </>
       ) : null}
     </div>
   );

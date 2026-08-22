@@ -10,6 +10,7 @@ using ExItS.Platform.Api.Common;
 using ExItS.Platform.Api.Entitlements;
 using ExItS.Platform.Api.GlobalCatalog;
 using ExItS.Platform.Api.Identity;
+using ExItS.Platform.Api.Operations;
 using ExItS.Platform.Api.Organizations;
 using ExItS.Platform.Api.Payments;
 using ExItS.Platform.Api.Personal;
@@ -39,6 +40,7 @@ using ExItS.Platform.Infrastructure.Integration.Pos;
 using ExItS.Platform.Infrastructure.Payments;
 using ExItS.Platform.Infrastructure.LocalValidation;
 using ExItS.Platform.Infrastructure.Health;
+using ExItS.Platform.Infrastructure.Operations;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Authentication.Facebook;
 using Microsoft.AspNetCore.Authentication.Google;
@@ -60,8 +62,9 @@ builder.Services.ConfigureHttpJsonOptions(options =>
             allowIntegerValues: true));
 });
 builder.Services.AddPlatformHealthChecks();
+builder.Services.AddPlatformOperationsHealth();
 builder.AddPlatformSecurity();
-builder.Services.AddPlatformBrowserAntiforgery(builder.Environment);
+builder.Services.AddPlatformBrowserAntiforgery(builder.Environment, builder.Configuration);
 builder.AddPlatformForwardedHeaders();
 builder.Services.AddPlatformPersistence(builder.Configuration);
 builder.Services.AddPlatformPaymentProvider(builder.Configuration, builder.Environment);
@@ -80,9 +83,9 @@ var authenticationBuilder = builder.Services.AddAuthentication(PlatformSessionDe
         options.ExpireTimeSpan = TimeSpan.FromMinutes(15);
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
-        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing")
-            ? CookieSecurePolicy.SameAsRequest
-            : CookieSecurePolicy.Always;
+        options.Cookie.SecurePolicy = PlatformAuthCookiePolicy.SecurePolicy(
+            builder.Environment,
+            builder.Configuration);
         options.SlidingExpiration = false;
     });
 
@@ -557,11 +560,19 @@ app.MapSubscriptionEndpoints();
 app.MapPaymentEndpoints();
 app.MapEntitlementEndpoints();
 app.MapAdminEndpoints();
+app.MapSystemHealthEndpoints();
 app.MapAuthorizationEndpoints();
 app.MapOrganizationRbacEndpoints();
 app.MapAuditEndpoints();
 app.MapPrivacyComplianceEndpoints();
 app.MapLocalValidationEndpoints();
+
+if (app.Environment.IsEnvironment("Testing"))
+{
+    app.MapGet(
+        "/api/v1/platform/__test__/unhandled",
+        static IResult () => throw new InvalidOperationException("SensitiveStackDetail"));
+}
 
 // Phase marker: P10-WP08-phase-10-closeout
 

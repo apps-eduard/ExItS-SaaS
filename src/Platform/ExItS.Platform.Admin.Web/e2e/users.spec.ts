@@ -90,6 +90,32 @@ async function mockUsers(
     await route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 100 } });
   });
   await page.route(
+    "**/api/v1/platform/users/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb/credentials**",
+    async (route) => {
+      await route.fulfill({
+        json: {
+          userId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+          hasPassword: true,
+          emailVerified: true,
+          isLockedOut: false,
+          failedAccessCount: 0,
+        },
+      });
+    },
+  );
+  await page.route(
+    "**/api/v1/platform/users/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb/memberships**",
+    async (route) => {
+      await route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 50 } });
+    },
+  );
+  await page.route(
+    "**/api/v1/platform/users/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb/product-access**",
+    async (route) => {
+      await route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 50 } });
+    },
+  );
+  await page.route(
     "**/api/v1/platform/users/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
     async (route) => {
       await route.fulfill({
@@ -113,17 +139,27 @@ async function mockUsers(
   });
 }
 
-test("authorized users directory is implemented and has no mutation controls", async ({ page }) => {
+test("authorized users directory is implemented and has no create on all accounts", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await mockUsers(page);
   await page.goto("/admin/users");
   await expect(page.getByRole("heading", { name: "All Accounts", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Olivia Mendoza" })).toBeVisible();
-  await expect(page.getByRole("button", { name: /create/i })).toHaveCount(0);
+  await expect(page.getByTestId("users-toggle-create")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Olivia Mendoza" })).toHaveAttribute(
     "href",
     "/admin/users/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
   );
+});
+
+test("directory path aliases redirect to query filters", async ({ page }) => {
+  await mockUsers(page);
+  await page.goto("/admin/users/platform-staff");
+  await expect(page).toHaveURL(/\/admin\/users\?directory=PlatformStaff/);
+  await expect(page.getByRole("heading", { name: "All Accounts / Platform Staff" })).toBeVisible();
+  await expect(page.getByTestId("users-toggle-create")).toBeVisible();
+  await page.goto("/admin/users/unassigned");
+  await expect(page).toHaveURL(/\/admin\/users\?directory=Unassigned/);
 });
 
 test("directory views use API enum values", async ({ page }) => {
@@ -145,7 +181,8 @@ test("directory views use API enum values", async ({ page }) => {
 test("unauthorized users route fail-closes", async ({ page }) => {
   await mockUsers(page, ["platform.permission.view_portfolio"]);
   await page.goto("/admin/users");
-  await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
+  await expect(page.getByTestId("forbidden-state")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Access denied" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "All Accounts", exact: true })).toHaveCount(0);
 });
 
@@ -163,11 +200,13 @@ test("users directory has no overflow at 375 and no serious axe issues", async (
   expect(overflow).toBe(false);
 });
 
-test("user detail is read-only with assignments and no mutation controls", async ({ page }) => {
+test("user detail shows lifecycle and credentials without role assign controls", async ({ page }) => {
   await mockUsers(page);
   await page.goto("/admin/users/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
   await expect(page.getByRole("heading", { name: "Olivia Mendoza" })).toBeVisible();
   await expect(page.getByText("Platform administrator")).toBeVisible();
+  await expect(page.getByTestId("users-lifecycle-suspend")).toBeVisible();
+  await expect(page.getByTestId("users-credentials-panel")).toBeVisible();
   await expect(page.getByRole("button", { name: /assign/i })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /revoke/i })).toHaveCount(0);
 });
@@ -187,7 +226,8 @@ test("missing user shows safe not-found", async ({ page }) => {
 test("unauthorized user detail fail-closes", async ({ page }) => {
   await mockUsers(page, ["platform.permission.view_portfolio"]);
   await page.goto("/admin/users/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
-  await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
+  await expect(page.getByTestId("forbidden-state")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Access denied" })).toBeVisible();
 });
 
 test("empty assignments and mobile layout on user detail", async ({ page }) => {

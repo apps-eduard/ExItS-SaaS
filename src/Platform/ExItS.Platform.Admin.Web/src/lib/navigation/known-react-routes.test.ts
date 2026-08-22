@@ -60,6 +60,24 @@ describe("resolveKnownReactRoute", () => {
     );
   });
 
+  it("treats /admin/audit as implemented", () => {
+    expect(resolveKnownReactRoute({ ...loadedAuthorized, pathname: "/admin/audit" })).toBe(
+      "implemented",
+    );
+  });
+
+  it("treats /admin/privacy-compliance as implemented", () => {
+    expect(
+      resolveKnownReactRoute({ ...loadedAuthorized, pathname: "/admin/privacy-compliance" }),
+    ).toBe("implemented");
+  });
+
+  it("treats /admin/platform-roles as implemented", () => {
+    expect(
+      resolveKnownReactRoute({ ...loadedAuthorized, pathname: "/admin/platform-roles" }),
+    ).toBe("implemented");
+  });
+
   it("treats /admin/users as implemented", () => {
     expect(resolveKnownReactRoute({ ...loadedAuthorized, pathname: "/admin/users" })).toBe(
       "implemented",

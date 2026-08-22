@@ -5,7 +5,10 @@ import { AppErrorBoundary } from "@/app/AppErrorBoundary";
 import { RedirectIfAuthenticated } from "@/app/RedirectIfAuthenticated";
 import { RequireSession } from "@/app/RequireSession";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthPlaceholderPage } from "@/features/auth/AuthPlaceholderPage";
+import { ActivateAccountPage } from "@/features/auth/ActivateAccountPage";
+import { ForgotPasswordPage } from "@/features/auth/ForgotPasswordPage";
+import { RegisterPage } from "@/features/auth/RegisterPage";
+import { ResetPasswordPage } from "@/features/auth/ResetPasswordPage";
 import { SignInPage } from "@/features/auth/SignInPage";
 import { OrganizationBranchesPage } from "@/features/organizations/OrganizationBranchesPage";
 import { OrganizationPeoplePage } from "@/features/organizations/OrganizationPeoplePage";
@@ -30,8 +33,21 @@ import { PaymentsPage } from "@/features/payments/PaymentsPage";
 import { PaymentDetailPage } from "@/features/payments/PaymentDetailPage";
 import { EntitlementsPortfolioPage } from "@/features/entitlements/EntitlementsPortfolioPage";
 import { OverviewPage } from "@/features/overview/OverviewPage";
+import { SystemHealthPage } from "@/features/system-health/SystemHealthPage";
+import { AuditListPage } from "@/features/audit/AuditListPage";
+import { AuditDetailPage } from "@/features/audit/AuditDetailPage";
+import { PlatformRolesListPage } from "@/features/platform-roles/PlatformRolesListPage";
+import { PlatformRoleDetailPage } from "@/features/platform-roles/PlatformRoleDetailPage";
+import { PrivacyOverviewPage } from "@/features/privacy-compliance/PrivacyOverviewPage";
+import {
+  PrivacyCategoryPage,
+  PrivacyDocumentsPage,
+} from "@/features/privacy-compliance/PrivacyRequirementsPages";
+import { PrivacySystemsPage } from "@/features/privacy-compliance/PrivacySystemsPage";
+import { PrivacyEvidencePage } from "@/features/privacy-compliance/PrivacyEvidencePage";
 import { UsersPage } from "@/features/users/UsersPage";
 import { UserDetailPage } from "@/features/users/UserDetailPage";
+import { UsersDirectoryRedirect } from "@/features/users/UsersDirectoryRedirect";
 import { CategoriesPage } from "@/features/global-catalog/CategoriesPage";
 import {
   CategoryDetailPage,
@@ -121,12 +137,22 @@ export function App() {
                       />
                       <Route
                         path="/admin/forgot-password"
-                        element={<AuthPlaceholderPage titleKey="auth.forgotPassword.title" />}
+                        element={
+                          <RedirectIfAuthenticated>
+                            <ForgotPasswordPage />
+                          </RedirectIfAuthenticated>
+                        }
                       />
                       <Route
                         path="/admin/register"
-                        element={<AuthPlaceholderPage titleKey="auth.createAccount.title" />}
+                        element={
+                          <RedirectIfAuthenticated>
+                            <RegisterPage />
+                          </RedirectIfAuthenticated>
+                        }
                       />
+                      <Route path="/admin/activate-account" element={<ActivateAccountPage />} />
+                      <Route path="/admin/reset-password" element={<ResetPasswordPage />} />
                     </Route>
                     <Route element={<ProtectedShell />}>
                       <Route path="/" element={<Navigate to="/admin" replace />} />
@@ -171,8 +197,64 @@ export function App() {
                         <Route path="entitlements" element={<EntitlementsPortfolioPage />} />
                         <Route path="users">
                           <Route index element={<UsersPage />} />
+                          <Route
+                            path="unassigned"
+                            element={<UsersDirectoryRedirect directory="Unassigned" />}
+                          />
+                          <Route
+                            path="organization"
+                            element={<UsersDirectoryRedirect directory="Organization" />}
+                          />
+                          <Route
+                            path="platform-staff"
+                            element={<UsersDirectoryRedirect directory="PlatformStaff" />}
+                          />
+                          <Route
+                            path="personal"
+                            element={<UsersDirectoryRedirect directory="Personal" />}
+                          />
                           <Route path=":userId" element={<UserDetailPage />} />
                         </Route>
+                        <Route path="platform-roles">
+                          <Route index element={<PlatformRolesListPage />} />
+                          <Route path=":roleId" element={<PlatformRoleDetailPage />} />
+                        </Route>
+                        <Route path="audit">
+                          <Route index element={<AuditListPage />} />
+                          <Route path=":auditId" element={<AuditDetailPage />} />
+                        </Route>
+                        <Route path="privacy-compliance">
+                          <Route index element={<PrivacyOverviewPage />} />
+                          <Route path="documents" element={<PrivacyDocumentsPage />} />
+                          <Route path="systems" element={<PrivacySystemsPage />} />
+                          <Route path="evidence" element={<PrivacyEvidencePage />} />
+                          <Route path="pias" element={<PrivacyCategoryPage segment="pias" />} />
+                          <Route
+                            path="data-inventory"
+                            element={<PrivacyCategoryPage segment="data-inventory" />}
+                          />
+                          <Route
+                            path="retention"
+                            element={<PrivacyCategoryPage segment="retention" />}
+                          />
+                          <Route
+                            path="incidents"
+                            element={<PrivacyCategoryPage segment="incidents" />}
+                          />
+                          <Route
+                            path="vendors"
+                            element={<PrivacyCategoryPage segment="vendors" />}
+                          />
+                          <Route
+                            path="dpo-npc"
+                            element={<PrivacyCategoryPage segment="dpo-npc" />}
+                          />
+                        </Route>
+                        <Route path="system-health" element={<SystemHealthPage />} />
+                        <Route
+                          path="operations/health"
+                          element={<Navigate to="/admin/system-health" replace />}
+                        />
                         <Route path="global-catalog">
                           <Route path="business-types">
                             <Route index element={<BusinessTypesPage />} />
@@ -192,10 +274,16 @@ export function App() {
                           </Route>
                           <Route path="products">
                             <Route index element={<GlobalProductsPage />} />
-                            <Route path="new" element={<GlobalCatalogProductFormPage mode="create" />} />
+                            <Route
+                              path="new"
+                              element={<GlobalCatalogProductFormPage mode="create" />}
+                            />
                             <Route path=":productId">
                               <Route index element={<GlobalCatalogProductDetailPage />} />
-                              <Route path="edit" element={<GlobalCatalogProductFormPage mode="edit" />} />
+                              <Route
+                                path="edit"
+                                element={<GlobalCatalogProductFormPage mode="edit" />}
+                              />
                             </Route>
                           </Route>
                           <Route path="imports">

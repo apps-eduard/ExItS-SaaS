@@ -1,16 +1,21 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { PlatformApiError, platformRequest } from "@/api/platform-http";
+import {
+  PlatformApiError,
+  clearPlatformAntiforgeryToken,
+  platformRequest,
+} from "@/api/platform-http";
 
 describe("platformRequest", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    clearPlatformAntiforgeryToken();
   });
 
   it("sends credentials and a correlation id", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({ ok: true }),
+      text: async () => JSON.stringify({ ok: true }),
     });
     vi.stubGlobal("fetch", fetchMock);
 

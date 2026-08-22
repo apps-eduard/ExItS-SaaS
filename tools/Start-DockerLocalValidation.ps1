@@ -155,6 +155,9 @@ Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN' -Value $a
 Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_PLATFORM_API_PUBLIC_URL' -Value $platformApiPublicUrl
 Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_PLATFORM_API_INTERNAL_URL' -Value 'http://platform-api:8080'
 Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_POS_API_INTERNAL_URL' -Value 'http://pos-api:8080'
+Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_PLATFORM_API_SAME_ORIGIN' -Value 'true'
+Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_PLATFORM_API_PROXY_TARGET' -Value 'http://platform-api:8080'
+Set-ComposeEnvironment -Name 'EXITS_GIT_SHA' -Value (Get-LocalValidationGitSha -RepoRoot $repoRoot)
 Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_SEED_SCOPE' -Value $SeedScope
 Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_PURGE_TRANSACTIONAL' -Value $(if ($PurgeTransactional) { 'true' } else { 'false' })
 
@@ -234,7 +237,8 @@ Write-Host "  POS API:      $posApiPublicUrl"
 Write-Host "  Org Web:      $orgWebOrigin"
 Write-Host "  Personal Web: $personalWebOrigin"
 Write-Host "  React Admin:  $adminWebReactOrigin"
-Write-Host "  Mailpit:      http://localhost:$mailpitUiPort"
+Write-LocalValidationReactAdminBanner -Port $adminWebReactPort -PublicHost $resolvedPublicHost -ApiDescription 'same-origin /api (proxy http://platform-api:8080)' -GitSha (Get-LocalValidationGitSha -RepoRoot $repoRoot)
+Write-LocalValidationMailpitBanner -UiPort $mailpitUiPort -PublicHost $resolvedPublicHost -EmailLinkBaseUrl $adminWebReactOrigin
 Write-Host '  Migrations:   API-hosted LocalValidation services'
 Write-Host '  Volumes:      preserved'
 Write-Host '================================================' -ForegroundColor Green

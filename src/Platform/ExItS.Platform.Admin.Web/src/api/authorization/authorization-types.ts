@@ -16,6 +16,7 @@ export const PLATFORM_PERMISSIONS = {
   manageCatalogTemplates: "platform.permission.manage_catalog_templates",
   publishCatalogTemplates: "platform.permission.publish_catalog_templates",
   viewPrivacyCompliance: "platform.permission.view_privacy_compliance",
+  managePrivacyCompliance: "platform.permission.manage_privacy_compliance",
 } as const;
 
 export type PlatformPermissionCode =
