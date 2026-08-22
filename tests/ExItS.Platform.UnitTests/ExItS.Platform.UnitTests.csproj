@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Platform\ExItS.Platform.Api\ExItS.Platform.Api.csproj" />
     <ProjectReference Include="..\..\src\Platform\ExItS.Platform.Application\ExItS.Platform.Application.csproj" />
     <ProjectReference Include="..\..\src\Platform\ExItS.Platform.Domain\ExItS.Platform.Domain.csproj" />
     <ProjectReference Include="..\..\src\Platform\ExItS.Platform.Infrastructure\ExItS.Platform.Infrastructure.csproj" />
