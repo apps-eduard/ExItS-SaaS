@@ -553,7 +553,11 @@ if (-not $SkipReactPos) {
         $posClientEnv = @{
             VITE_POS_BUILD_SHA = $posSha
         }
-        $windowPids += Start-NpmDevWindow -Title "PA-INTEGRATION React POS" -WorkingDirectory $posClientDir -EnvMap $posClientEnv -NpmScript "dev" -ExtraNpmArgs "--host 0.0.0.0 --port $reactPosPort"
+        if ($resolvedPublicHost) {
+            $posClientEnv["POS_DEV_HOST"] = "0.0.0.0"
+            $posClientEnv["POS_DEV_PUBLIC_HOST"] = $resolvedPublicHost
+        }
+        $windowPids += Start-NpmDevWindow -Title "PA-INTEGRATION React POS" -WorkingDirectory $posClientDir -EnvMap $posClientEnv -NpmScript "dev"
         Wait-TcpPort -Label "React POS" -HostName "127.0.0.1" -Port $reactPosPort -TimeoutSeconds $PortWaitSeconds
         $null = Ensure-AdbReverse -Port $reactPosPort
         $null = Ensure-AdbReverse -Port $platformApiPort
