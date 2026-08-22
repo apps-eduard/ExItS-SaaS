@@ -1,5 +1,4 @@
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { buildOrgMoreLinks } from "@/features/shell/org-nav-config";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -13,19 +12,15 @@ export function OrgMorePage() {
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="org-more-page">
       <PageHeader title={t("org.more.title")} description={t("org.more.lede")} />
-      <div className="flex flex-col gap-2">
-        {links.map((link, index) => (
-          <Button
-            key={link.to}
-            asChild
-            variant={index === 0 ? "default" : "ghost"}
-            className="min-h-11 justify-start"
-            data-testid={link.testId}
-          >
-            <Link to={link.to}>{t(link.labelKey)}</Link>
-          </Button>
-        ))}
-      </div>
+      <ActionTileGrid
+        tiles={links.map((link) => ({
+          key: link.testId,
+          label: t(link.labelKey),
+          icon: link.icon,
+          testId: link.testId,
+          to: link.to,
+        }))}
+      />
     </div>
   );
 }

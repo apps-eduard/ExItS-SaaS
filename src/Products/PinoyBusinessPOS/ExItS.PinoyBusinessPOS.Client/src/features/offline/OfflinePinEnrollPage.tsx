@@ -1,5 +1,5 @@
 import { useState, useEffect, type FormEvent } from "react";
-import { LockKeyhole } from "lucide-react";
+import { ExternalLink, LockKeyhole, LogIn, Save } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,12 +15,13 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 export function OfflinePinEnrollPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const { session } = useSession();
+  const { session, signOut } = useSession();
   const { refreshWorkspaces } = useWorkspace();
   const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [leaving, setLeaving] = useState(false);
 
   const userId = session?.userId;
   const emulatorDevUrl = resolveEmulatorLoopbackDevUrl();
@@ -63,6 +64,16 @@ export function OfflinePinEnrollPage() {
     }
   }
 
+  async function handleBackToSignIn() {
+    setLeaving(true);
+    try {
+      await signOut();
+      navigate("/sign-in", { replace: true });
+    } finally {
+      setLeaving(false);
+    }
+  }
+
   return (
     <div
       className="mx-auto flex min-h-[100dvh] w-full max-w-[24rem] flex-col gap-5 px-[max(var(--exits-page-padding),env(safe-area-inset-left))] py-[max(2rem,env(safe-area-inset-top))]"
@@ -99,21 +110,36 @@ export function OfflinePinEnrollPage() {
           {emulatorDevUrl ? (
             <Button
               type="button"
-              className="w-full"
+              variant="ghost"
+              className="w-full justify-start"
               data-testid="offline-pin-open-emulator-dev-url"
               onClick={() => {
                 window.location.assign(emulatorDevUrl);
               }}
             >
+              <ExternalLink className="size-5 shrink-0" aria-hidden />
               {t("offline.pin.openEmulatorDevUrl")}
             </Button>
           ) : null}
           <Button
             type="submit"
             disabled={submitting || !webCryptoReady}
+            className="w-full justify-start"
             data-testid="offline-pin-enroll-submit"
           >
+            <Save className="size-5 shrink-0" aria-hidden />
             {t("offline.pin.enrollAction")}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full justify-start"
+            disabled={submitting || leaving}
+            data-testid="offline-pin-back-to-sign-in"
+            onClick={() => void handleBackToSignIn()}
+          >
+            <LogIn className="size-5 shrink-0" aria-hidden />
+            {t("auth.backToSignIn")}
           </Button>
         </form>
       </Card>

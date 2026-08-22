@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { hasOrganizationManagementAuthority } from "@/access/pos-capabilities";
@@ -51,6 +52,8 @@ export function CashHandlingSettingsPage() {
     queryKey: ["pos-cash-denominations", workspace?.organizationId],
     enabled: Boolean(workspace && canManage),
     queryFn: ({ signal }) => listCashDenominations(workspace!, signal),
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const [requireOpening, setRequireOpening] = useState<boolean | null>(null);
@@ -266,27 +269,29 @@ export function CashHandlingSettingsPage() {
           </div>
         ) : (
           <ul
-            className="m-0 flex list-none flex-col gap-2 p-0"
+            className="m-0 grid list-none grid-cols-2 gap-2 p-0"
             data-testid="cash-handling-denoms-list"
           >
             {denominations.map((denom) => (
               <li
                 key={denom.denominationId}
-                className="flex min-h-11 items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border px-3"
+                className="flex min-h-11 min-w-0 items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
                 data-testid={`cash-handling-denom-${formatDenominationValue(denom.value)}`}
               >
-                <span className="tabular-nums font-medium">
+                <span className="min-w-0 truncate tabular-nums font-medium">
                   {formatDenominationValue(denom.value)}
                 </span>
                 <Button
                   type="button"
                   variant="ghost"
-                  className="min-h-11"
+                  size="icon"
+                  className="shrink-0"
                   disabled={savingDenoms}
+                  aria-label={t("cashHandling.remove")}
                   data-testid={`cash-handling-remove-${formatDenominationValue(denom.value)}`}
                   onClick={() => void removeDenomination(denom)}
                 >
-                  {t("cashHandling.remove")}
+                  <Trash2 className="size-5" aria-hidden />
                 </Button>
               </li>
             ))}

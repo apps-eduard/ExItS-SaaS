@@ -91,7 +91,7 @@ export async function mockPosRegisterShiftApi(
       sortOrder: index,
       updatedAtUtc: "2026-01-01T00:00:00Z",
     })) ??
-    [1000, 500, 200, 100, 50, 20, 10, 5, 1, 0.25, 0.1, 0.05].map((value, index) => ({
+    [1000, 500, 200, 100, 50, 20, 10, 5, 1, 0.25, 0.1, 0.5].map((value, index) => ({
       denominationId: `dddddddd-dddd-dddd-dddd-dddddddddd${String(index).padStart(2, "0")}`,
       organizationId: E2E_ORG_ID,
       value,

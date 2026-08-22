@@ -758,7 +758,7 @@ export function SellFloorPage() {
                   key={product.productId}
                   type="button"
                   data-testid={`sell-product-${product.productId}`}
-                  className="flex min-h-[6rem] min-w-0 flex-col items-start justify-between gap-2 self-start rounded-[var(--exits-radius-md)] border border-border bg-surface p-3 text-left transition-colors hover:border-primary"
+                  className="flex min-h-[6rem] min-w-0 w-full flex-col items-start justify-between gap-2 self-stretch rounded-[var(--exits-radius-md)] border border-border bg-surface p-3 text-left transition-colors hover:border-primary"
                   onClick={() => beginAddProduct(product)}
                 >
                   <span className="line-clamp-2 break-words text-[length:var(--exits-text-sm)] font-semibold">

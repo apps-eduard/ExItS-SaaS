@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ChevronDown, ChevronRight, ListCollapse } from "lucide-react";
 import { formatDenominationValue } from "@/api/pos/pos-operational-setup-client";
 import type { CashCountDenominationLineDto } from "@/api/pos/pos-shifts-client";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
@@ -56,7 +57,7 @@ export function CashCountHistoryBlock({
     <div data-testid={testId} className="flex flex-col gap-2">
       <button
         type="button"
-        className="flex min-h-11 w-full items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex min-h-11 w-full items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 text-left shadow-sm transition-colors hover:bg-surface-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         aria-expanded={expanded}
         data-testid={`${testId}-toggle`}
         onClick={() => setExpanded((value) => !value)}
@@ -67,15 +68,22 @@ export function CashCountHistoryBlock({
           }
         }}
       >
-        <span className="flex min-w-0 flex-col">
-          <span className="text-[length:var(--exits-text-sm)] font-medium">{label}</span>
-          <span className="text-[length:var(--exits-text-sm)] text-muted">
-            {t("shift.tapDenominationHint")}
+        <span className="flex min-w-0 items-start gap-2">
+          <ListCollapse className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+          <span className="flex min-w-0 flex-col">
+            <span className="text-[length:var(--exits-text-sm)] font-medium">{label}</span>
+            <span className="text-[length:var(--exits-text-sm)] text-muted">
+              {t("shift.tapDenominationHint")}
+            </span>
           </span>
         </span>
         <span className="flex shrink-0 items-center gap-2 tabular-nums text-[length:var(--exits-text-sm)] font-semibold">
           <MoneyDisplay amount={displayAmount} testId={`${testId}-amount`} />
-          <span aria-hidden="true">{expanded ? "▾" : "›"}</span>
+          {expanded ? (
+            <ChevronDown className="size-4 text-muted" aria-hidden />
+          ) : (
+            <ChevronRight className="size-4 text-muted" aria-hidden />
+          )}
         </span>
       </button>
       {expanded ? (

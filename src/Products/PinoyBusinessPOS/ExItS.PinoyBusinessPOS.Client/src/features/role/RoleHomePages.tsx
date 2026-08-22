@@ -15,7 +15,6 @@ import {
   Truck,
   Users,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import {
   canAccessReportsHub,
@@ -38,8 +37,8 @@ import {
 } from "@/access/pos-capabilities";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ActionTileGrid, type ActionTileDef } from "@/components/exits/ActionTileGrid";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { RoleActionTile } from "@/components/exits/RoleActionTile";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSellingMode } from "@/selling/SellingModeProvider";
@@ -58,15 +57,7 @@ type RoleHomeShellProps = {
   dashboardGuide?: boolean;
 };
 
-type TileDef = {
-  key: string;
-  label: string;
-  icon: LucideIcon;
-  testId?: string;
-  primary?: boolean;
-  to?: string;
-  onClick?: () => void;
-};
+type TileDef = ActionTileDef;
 
 function Section({
   title,
@@ -84,41 +75,6 @@ function Section({
       </h2>
       {children}
     </section>
-  );
-}
-
-function TileGrid({ tiles }: { tiles: TileDef[] }) {
-  if (tiles.length === 0) {
-    return null;
-  }
-  return (
-    <div className="grid min-w-0 grid-cols-2 gap-2" role="group">
-      {tiles.map((tile, index) => {
-        const fullWidth = tiles.length === 1 || (tiles.length % 2 === 1 && index === tiles.length - 1);
-        const tileClassName = fullWidth ? "col-span-2" : undefined;
-        return tile.onClick ? (
-          <RoleActionTile
-            key={tile.key}
-            label={tile.label}
-            icon={tile.icon}
-            testId={tile.testId}
-            primary={tile.primary}
-            onClick={tile.onClick}
-            className={tileClassName}
-          />
-        ) : (
-          <RoleActionTile
-            key={tile.key}
-            label={tile.label}
-            icon={tile.icon}
-            testId={tile.testId}
-            primary={tile.primary}
-            to={tile.to!}
-            className={tileClassName}
-          />
-        );
-      })}
-    </div>
   );
 }
 
@@ -335,7 +291,7 @@ export function RoleHomeShell({
 
         {quickTiles.length > 0 ? (
           <Section title={t("role.section.quickActions")} testId="manager-quick-actions">
-            <TileGrid tiles={quickTiles} />
+            <ActionTileGrid tiles={quickTiles} />
             {canSell ? (
               <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
                 {t("role.startSellingHint")}
@@ -346,19 +302,19 @@ export function RoleHomeShell({
 
         {operationTiles.length > 0 ? (
           <Section title={t("role.section.operations")} testId="manager-operations">
-            <TileGrid tiles={operationTiles} />
+            <ActionTileGrid tiles={operationTiles} />
           </Section>
         ) : null}
 
         {deviceTiles.length > 0 ? (
           <Section title={t("role.section.devices")} testId="manager-devices">
-            <TileGrid tiles={deviceTiles} />
+            <ActionTileGrid tiles={deviceTiles} />
           </Section>
         ) : null}
 
         {insightTiles.length > 0 ? (
           <Section title={t("role.section.insights")} testId="manager-insights">
-            <TileGrid tiles={insightTiles} />
+            <ActionTileGrid tiles={insightTiles} />
           </Section>
         ) : null}
       </div>

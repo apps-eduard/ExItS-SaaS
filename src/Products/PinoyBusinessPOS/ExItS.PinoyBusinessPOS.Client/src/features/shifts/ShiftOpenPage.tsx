@@ -6,6 +6,7 @@ import { PosApiError } from "@/api/pos/pos-http";
 import {
   getOperationalSetup,
   listCashDenominations,
+  mapEnabledCashDenominations,
   resolveCashCountRequired,
   resolveOpeningCashCountMode,
   resolveOpeningCashVisible,
@@ -69,6 +70,8 @@ export function ShiftOpenPage() {
     queryKey: ["pos-cash-denominations", workspaceScope?.organizationId],
     enabled: workspaceScope !== null && canManage,
     queryFn: ({ signal }) => listCashDenominations(workspaceScope!, signal),
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const registers = useMemo(() => registersQuery.data ?? [], [registersQuery.data]);
@@ -77,10 +80,7 @@ export function ShiftOpenPage() {
   const showOpeningCash = resolveOpeningCashVisible(openingMode);
   const openingRequired = resolveCashCountRequired(openingMode);
   const enabledDenoms = useMemo(
-    () =>
-      (denomsQuery.data ?? [])
-        .filter((d) => d.isEnabled)
-        .map((d) => ({ value: d.value, label: d.displayLabel })),
+    () => mapEnabledCashDenominations(denomsQuery.data),
     [denomsQuery.data],
   );
 

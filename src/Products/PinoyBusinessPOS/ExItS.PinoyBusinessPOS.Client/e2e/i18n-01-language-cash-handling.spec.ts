@@ -62,14 +62,15 @@ test.describe("I18N-01 language + cash handling", () => {
     await expect(page.getByTestId("cash-handling-page")).toBeVisible();
     await expect(page.getByTestId("cash-handling-denom-0.01")).toHaveCount(0);
     await expect(page.getByTestId("cash-handling-denom-1000")).toBeVisible();
+    await expect(page.getByTestId("cash-handling-denom-0.5")).toBeVisible();
+    await expect(page.getByTestId("cash-handling-denom-0.05")).toHaveCount(0);
+
+    await page.getByTestId("cash-handling-add-value").fill("0.05");
+    await page.getByTestId("cash-handling-add").click();
     await expect(page.getByTestId("cash-handling-denom-0.05")).toBeVisible();
 
-    await page.getByTestId("cash-handling-add-value").fill("0.50");
-    await page.getByTestId("cash-handling-add").click();
-    await expect(page.getByTestId("cash-handling-denom-0.5")).toBeVisible();
-
-    await page.getByTestId("cash-handling-remove-0.5").click();
-    await expect(page.getByTestId("cash-handling-denom-0.5")).toHaveCount(0);
+    await page.getByTestId("cash-handling-remove-0.05").click();
+    await expect(page.getByTestId("cash-handling-denom-0.05")).toHaveCount(0);
 
     api.setState({ denominations: [] });
     await clientNavigate(page, "/org");

@@ -160,3 +160,23 @@ export function formatDenominationValue(value: number): string {
   }
   return value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
 }
+
+export type CashDenominationCountItem = {
+  value: number;
+  label?: string | null;
+  sortOrder: number;
+};
+
+/** Enabled org denominations in cash-handling sort order for shift count helpers. */
+export function mapEnabledCashDenominations(
+  items: OrganizationCashDenominationDto[] | undefined,
+): CashDenominationCountItem[] {
+  return [...(items ?? [])]
+    .filter((denomination) => denomination.isEnabled)
+    .sort((a, b) => a.sortOrder - b.sortOrder || b.value - a.value)
+    .map((denomination) => ({
+      value: denomination.value,
+      label: denomination.displayLabel,
+      sortOrder: denomination.sortOrder,
+    }));
+}

@@ -1,3 +1,18 @@
+import type { LucideIcon } from "lucide-react";
+import {
+  BarChart3,
+  Boxes,
+  ClipboardList,
+  LayoutDashboard,
+  MonitorSmartphone,
+  PackagePlus,
+  Receipt,
+  RefreshCw,
+  Settings,
+  Truck,
+  UserPlus,
+  Users,
+} from "lucide-react";
 import type { PosSessionGrantFacts } from "@/access/pos-capabilities";
 import {
   canCreateSale,
@@ -137,6 +152,7 @@ export type OrgMoreLink = {
     | "org.more.staff"
     | "org.more.preferences";
   testId: string;
+  icon: LucideIcon;
 };
 
 /** Secondary destinations for the More hub — permission-filtered. */
@@ -148,6 +164,7 @@ export function buildOrgMoreLinks(grant: PosSessionGrantFacts | null | undefined
       to: "/inventory",
       labelKey: "org.more.inventory",
       testId: "org-more-inventory",
+      icon: Boxes,
     });
   }
   if (canViewCustomers(grant)) {
@@ -155,19 +172,31 @@ export function buildOrgMoreLinks(grant: PosSessionGrantFacts | null | undefined
       to: "/customers",
       labelKey: "org.more.customers",
       testId: "org-more-customers",
+      icon: Users,
     });
   }
   if (canViewShifts(grant)) {
-    links.push({ to: "/shifts", labelKey: "org.more.shifts", testId: "org-more-shifts" });
+    links.push({
+      to: "/shifts",
+      labelKey: "org.more.shifts",
+      testId: "org-more-shifts",
+      icon: RefreshCw,
+    });
   }
   if (canViewReturns(grant)) {
-    links.push({ to: "/returns", labelKey: "org.more.returns", testId: "org-more-returns" });
+    links.push({
+      to: "/returns",
+      labelKey: "org.more.returns",
+      testId: "org-more-returns",
+      icon: Receipt,
+    });
   }
   if (canViewPurchasing(grant)) {
     links.push({
       to: "/purchasing",
       labelKey: "org.more.purchasing",
       testId: "org-more-purchasing",
+      icon: PackagePlus,
     });
   }
   if (canViewSuppliers(grant)) {
@@ -175,6 +204,7 @@ export function buildOrgMoreLinks(grant: PosSessionGrantFacts | null | undefined
       to: "/suppliers",
       labelKey: "org.more.suppliers",
       testId: "org-more-suppliers",
+      icon: Truck,
     });
   }
   if (canViewDashboard(grant)) {
@@ -182,19 +212,31 @@ export function buildOrgMoreLinks(grant: PosSessionGrantFacts | null | undefined
       to: "/dashboard",
       labelKey: "org.more.dashboard",
       testId: "org-more-dashboard",
+      icon: LayoutDashboard,
     });
   }
   if (canAccessReportsHub(grant)) {
-    links.push({ to: "/reports", labelKey: "org.more.reports", testId: "org-more-reports" });
+    links.push({
+      to: "/reports",
+      labelKey: "org.more.reports",
+      testId: "org-more-reports",
+      icon: BarChart3,
+    });
   }
   if (canUseAdminExperience(grant) || hasOrganizationManagementAuthority(grant)) {
-    links.push({ to: "/org", labelKey: "org.more.organization", testId: "org-more-org" });
+    links.push({
+      to: "/org",
+      labelKey: "org.more.organization",
+      testId: "org-more-org",
+      icon: ClipboardList,
+    });
   }
   if (hasOrganizationManagementAuthority(grant)) {
     links.push({
       to: "/org/devices",
       labelKey: "org.more.devices",
       testId: "org-more-devices",
+      icon: MonitorSmartphone,
     });
   }
   if (canInviteOrganizationStaff(grant)) {
@@ -202,12 +244,14 @@ export function buildOrgMoreLinks(grant: PosSessionGrantFacts | null | undefined
       to: "/org/staff/invite",
       labelKey: "org.more.staff",
       testId: "org-more-staff",
+      icon: UserPlus,
     });
   }
   links.push({
     to: "/settings/preferences",
     labelKey: "org.more.preferences",
     testId: "org-more-preferences",
+    icon: Settings,
   });
 
   return links;

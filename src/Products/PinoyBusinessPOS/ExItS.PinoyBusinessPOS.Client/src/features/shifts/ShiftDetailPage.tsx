@@ -1,10 +1,21 @@
 import { useMemo, useState } from "react";
+import {
+  ArrowLeft,
+  Banknote,
+  CircleAlert,
+  DoorClosed,
+  Loader2,
+  MessageSquareText,
+  ShoppingCart,
+  SkipForward,
+} from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { canManageShifts, canViewShifts } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
 import {
   listCashDenominations,
+  mapEnabledCashDenominations,
   resolveCashCountRequired,
 } from "@/api/pos/pos-operational-setup-client";
 import {
@@ -71,14 +82,24 @@ export function ShiftDetailPage() {
       Boolean(shiftQuery.data) &&
       isOpenCashierShift(shiftQuery.data),
     queryFn: ({ signal }) => listCashDenominations(workspaceScope!, signal),
+    staleTime: 0,
+    refetchOnMount: "always",
   });
+
+  const enabledDenoms = useMemo(
+    () => mapEnabledCashDenominations(denomsQuery.data),
+    [denomsQuery.data],
+  );
 
   if (!canView) {
     return (
       <div data-testid="shift-detail-denied" className="flex flex-col gap-3">
         <PageHeader title={t("shift.detailTitle")} description={t("shift.deniedDetail")} />
         <Button asChild variant="ghost" className="min-h-11 w-fit">
-          <Link to="/">{t("notFound.home")}</Link>
+          <Link to="/" className="inline-flex items-center gap-2">
+            <ArrowLeft className="size-5 shrink-0" aria-hidden />
+            {t("notFound.home")}
+          </Link>
         </Button>
       </div>
     );
@@ -93,7 +114,10 @@ export function ShiftDetailPage() {
       <div data-testid="shift-detail-missing" className="flex flex-col gap-3">
         <PageHeader title={t("shift.detailTitle")} description={t("shift.notFound")} />
         <Button asChild variant="ghost" className="min-h-11 w-fit">
-          <Link to="/shifts">{t("shift.backToShifts")}</Link>
+          <Link to="/shifts" className="inline-flex items-center gap-2">
+            <ArrowLeft className="size-5 shrink-0" aria-hidden />
+            {t("shift.backToShifts")}
+          </Link>
         </Button>
       </div>
     );
@@ -106,9 +130,6 @@ export function ShiftDetailPage() {
   const closingModeLive =
     shift.effectiveClosingCashCountMode?.trim() || shift.effectiveCashCountMode;
   const closingRequired = resolveCashCountRequired(closingModeLive);
-  const enabledDenoms = (denomsQuery.data ?? [])
-    .filter((d) => d.isEnabled)
-    .map((d) => ({ value: d.value, label: d.displayLabel }));
 
   async function onClose(skipClosingCash = false) {
     if (!canManage || !open || saving) {
@@ -157,8 +178,12 @@ export function ShiftDetailPage() {
   }
 
   return (
-    <div data-testid="shift-detail-page" className="flex min-w-0 flex-col gap-4">
+    <div
+      data-testid="shift-detail-page"
+      className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-4"
+    >
       <PageHeader title={shift.shiftNumber} description={t("shift.detailLede")} />
+
       <div data-testid="shift-status-chip">
         <StatusChip tone={open ? "success" : "info"}>
           {open ? t("shift.statusOpen") : shift.status}
@@ -168,11 +193,23 @@ export function ShiftDetailPage() {
       <ShiftCashHistoryPanel shift={shift} summary={summary} closed={closed} />
 
       {open && canManage ? (
-        <Card data-testid="shift-close-panel">
-          <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-            {t("shift.closeTitle")}
-          </h2>
-          <div className="mt-3">
+        <Card
+          data-testid="shift-close-panel"
+          className="flex flex-col gap-4 border-primary/15 bg-surface"
+        >
+          <div className="flex items-start gap-2.5">
+            <DoorClosed className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+                {t("shift.closeTitle")}
+              </h2>
+              <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                {t("shift.denomHelperHint")}
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-[var(--exits-radius-md)] border border-border bg-surface-muted/30 p-3">
             <DenominationCountHelper
               denominations={enabledDenoms}
               currencyCode="PHP"
@@ -183,15 +220,19 @@ export function ShiftDetailPage() {
               testIdPrefix="closing-denom"
             />
           </div>
-          <label className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            <span>{t("shift.closingCashLabel")}</span>
+
+          <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)]">
+            <span className="inline-flex items-center gap-2 font-medium">
+              <Banknote className="size-4 shrink-0 text-primary" aria-hidden />
+              {t("shift.closingCashLabel")}
+            </span>
             <input
               data-testid="shift-closing-cash"
               type="number"
               inputMode="decimal"
               min={0}
               step="0.01"
-              className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
+              className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums shadow-sm"
               value={closingCash}
               onChange={(event) => {
                 setClosingCash(event.target.value);
@@ -199,59 +240,82 @@ export function ShiftDetailPage() {
               }}
             />
           </label>
-          <label className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            <span>{t("shift.closingNotesLabel")}</span>
+
+          <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)]">
+            <span className="inline-flex items-center gap-2 font-medium">
+              <MessageSquareText className="size-4 shrink-0 text-primary" aria-hidden />
+              {t("shift.closingNotesLabel")}
+            </span>
             <input
               data-testid="shift-closing-notes"
               type="text"
               maxLength={512}
-              className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+              placeholder={t("shift.closingNotesLabel")}
+              className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 shadow-sm"
               value={closingNotes}
               onChange={(event) => setClosingNotes(event.target.value)}
             />
           </label>
+
           {closingError ? (
-            <p className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">
-              {closingError}
-            </p>
+            <div
+              className="flex items-start gap-2 rounded-[var(--exits-radius-md)] border border-destructive/30 bg-destructive/5 px-3 py-2"
+              role="alert"
+            >
+              <CircleAlert className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
+              <p className="mb-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">
+                {closingError}
+              </p>
+            </div>
           ) : null}
-          <div className="mt-3 flex flex-wrap gap-2">
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             {!closingRequired ? (
               <Button
                 type="button"
                 variant="ghost"
-                className="min-h-11"
+                className="min-h-11 w-full sm:w-auto"
                 disabled={saving}
                 data-testid="shift-close-skip-cash"
                 onClick={() => void onClose(true)}
               >
+                <SkipForward className="size-5 shrink-0" aria-hidden />
                 {t("shift.skipClosingCash")}
               </Button>
             ) : null}
             <Button
               type="button"
-              className="min-h-11"
+              className="min-h-11 w-full flex-1 sm:w-auto"
               disabled={saving}
               data-testid="shift-close-confirm"
               onClick={() => void onClose(false)}
             >
+              {saving ? (
+                <Loader2 className="size-5 shrink-0 animate-spin" aria-hidden />
+              ) : (
+                <DoorClosed className="size-5 shrink-0" aria-hidden />
+              )}
               {saving ? t("shift.closing") : t("shift.closeConfirm")}
             </Button>
           </div>
         </Card>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
-        <Button asChild variant="ghost" className="min-h-11">
-          <Link to="/shifts">{t("shift.backToShifts")}</Link>
+      <div className={`grid gap-2 ${open ? "grid-cols-2" : "grid-cols-1"}`}>
+        <Button asChild variant="ghost" className="min-h-11 border border-border">
+          <Link to="/shifts" className="inline-flex items-center justify-center gap-2">
+            <ArrowLeft className="size-5 shrink-0" aria-hidden />
+            {t("shift.backToShifts")}
+          </Link>
         </Button>
         {open ? (
           <Button
             type="button"
-            className="min-h-11"
+            className="min-h-11 inline-flex items-center justify-center gap-2"
             data-testid="shift-go-sell"
             onClick={() => navigate("/sell")}
           >
+            <ShoppingCart className="size-5 shrink-0" aria-hidden />
             {t("role.openSellFloor")}
           </Button>
         ) : null}
