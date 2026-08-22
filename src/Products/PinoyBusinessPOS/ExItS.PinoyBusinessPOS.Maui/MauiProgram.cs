@@ -62,19 +62,18 @@ public static class MauiProgram
 
     private static void ConfigureAppConfiguration(ConfigurationManager configuration)
     {
-        // Local Validation default: Tailscale/LAN PublicHost (100.120.79.81).
-        // Same host for emulator and physical Debug builds when Local Validation is started with -PublicHost.
-        // Optional Emulator-only loopback remains available via network_security_config (10.0.2.2) if rebuilt for that target.
-        // PhysicalDevice Debug also overlays wwwroot/appsettings.LocalValidation.PhysicalDevice.json.
+        // LEGACY-MAUI-ISO-01: Debug Local Validation targets the isolated MAUI stack
+        // (Start-MauiLegacyLocalValidation.ps1) — Platform :8191, POS :8192 — NOT React :8091/:8092.
+        // Emulator overlay: 10.0.2.2. PhysicalDevice overlay: Tailscale/LAN PublicHost:8191/8192.
+        // Release embeds HTTPS-only appsettings.Release.json (unchanged production behavior).
         configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
-            // Local Validation stack (Start-LocalValidation.ps1 -PublicHost): Platform :8091, POS :8092.
-            ["PosApi:BaseUrl"] = "http://100.120.79.81:8091",
-            ["PosApi:TimeoutSeconds"] = "15",
-            ["PosBusinessApi:BaseUrl"] = "http://100.120.79.81:8092",
-            ["PosBusinessApi:TimeoutSeconds"] = "15",
 #if DEBUG
-            // Matches deploy/docker/.env.local-validation LOCAL_VALIDATION_SHARED_PASSWORD (local only).
+            ["PosApi:BaseUrl"] = "http://10.0.2.2:8191",
+            ["PosApi:TimeoutSeconds"] = "15",
+            ["PosBusinessApi:BaseUrl"] = "http://10.0.2.2:8192",
+            ["PosBusinessApi:TimeoutSeconds"] = "15",
+            // Matches deploy/docker/.env.maui-local-validation shared password (local only).
             ["LocalValidation:Enabled"] = "true",
             ["LocalValidation:SharedPassword"] = "LivePreviewLocal1!",
 #else
@@ -91,8 +90,19 @@ public static class MauiProgram
             }
         }
 
+#if DEBUG && POS_LOCAL_VALIDATION_EMULATOR_LOOPBACK
+        using (var emulator = Assembly.GetExecutingAssembly()
+                   .GetManifestResourceStream("appsettings.LocalValidation.Emulator.json"))
+        {
+            if (emulator is not null)
+            {
+                configuration.AddJsonStream(emulator);
+            }
+        }
+#endif
+
 #if DEBUG && POS_LOCAL_VALIDATION_PHYSICAL_DEVICE
-        // Separate PhysicalDevice Local Validation profile (Tailscale/LAN). Never embedded in Release.
+        // PhysicalDevice Local Validation profile (Tailscale/LAN + MAUI ports 8191/8192). Never Release.
         using (var physical = Assembly.GetExecutingAssembly()
                    .GetManifestResourceStream("appsettings.LocalValidation.PhysicalDevice.json"))
         {

@@ -4,6 +4,8 @@ Production-equivalent **local deployment** for validation. Same application code
 
 **Not** packaging (`compose.yaml`). Does **not** close Phase 16 or start Phase 17. Production topology template remains `compose.production.yaml`.
 
+For an **isolated legacy MAUI + Blazor** stack that can run beside React (ports `8190–8194`, DBs `16533/16534`), see [README.maui-local-validation.md](./README.maui-local-validation.md) and `.\tools\Start-MauiLegacyLocalValidation.ps1`.
+
 ## FAST host mode (preferred daily command)
 
 From repository root:
