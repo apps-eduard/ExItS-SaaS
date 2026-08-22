@@ -61,6 +61,26 @@ function destinationIcon(experience: WorkingExperience): LucideIcon {
   return LayoutGrid;
 }
 
+type OrganizationGrantState = {
+  grant: ReturnType<typeof useWorkspace>["sessionGrant"];
+  grantFailure: WorkspaceGrantProbeFailure | null;
+  grantLoading: boolean;
+};
+
+function resolveOrganizationGrantState(
+  organizationId: string,
+  grantByOrganizationId: ReadonlyMap<string, ReturnType<typeof useWorkspace>["sessionGrant"] | null>,
+  grantProbeFailureByOrganizationId: ReadonlyMap<string, WorkspaceGrantProbeFailure>,
+  grantLoadingOrgId: string | null,
+  workspaceReady: boolean,
+): OrganizationGrantState {
+  const grant = grantByOrganizationId.get(organizationId) ?? null;
+  const grantFailure = grantProbeFailureByOrganizationId.get(organizationId) ?? null;
+  const grantLoading =
+    grantLoadingOrgId === organizationId || (workspaceReady && !grant && !grantFailure);
+  return { grant, grantFailure, grantLoading };
+}
+
 export function WorkspaceChooserPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -170,6 +190,100 @@ export function WorkspaceChooserPage() {
     : "accessDenied.title";
   const failureDetailKey = (accessDeniedDetail as MessageKey | null) ?? localErrorKey;
 
+  if (workspaces.length === 1) {
+    const organization = workspaces[0];
+    const grantState = resolveOrganizationGrantState(
+      organization.organizationId,
+      grantByOrganizationId,
+      grantProbeFailureByOrganizationId,
+      grantLoadingOrgId,
+      status === "ready",
+    );
+
+    if (grantState.grantLoading) {
+      return (
+        <div
+          className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-4"
+          data-testid="workspace-grant-loading"
+        >
+          <PageHeader title={t("workspace.title")} description={t("workspace.experienceLede")} />
+          <LoadingState label={t("workspace.preparingPermissions")} />
+        </div>
+      );
+    }
+
+    if (grantState.grantFailure && !grantState.grant) {
+      return (
+        <div className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-4">
+          <PageHeader title={t("workspace.title")} description={t("workspace.experienceLede")} />
+          <div className="flex flex-col gap-3" data-testid="workspace-grant-probe-error">
+            <ErrorState
+              title={t("workspace.grantProbeFailedTitle")}
+              detail={t("workspace.grantProbeFailedDetail")}
+              diagnostic={workspaceGrantFailureDiagnostic(
+                organization.displayName,
+                grantState.grantFailure,
+              )}
+            />
+            <Button
+              type="button"
+              className="min-h-11 w-full sm:w-auto"
+              onClick={() => void retryOrganizationGrantHint(organization.organizationId)}
+            >
+              {t("workspace.grantProbeRetry")}
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    const destinations = buildOrganizationDestinations({
+      workspace: organization,
+      grant: grantState.grant,
+    });
+
+    if (destinations.length === 0) {
+      return (
+        <div
+          className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-4"
+          data-testid="workspace-no-authorized-destinations"
+        >
+          <PageHeader title={t("workspace.title")} description={t("workspace.experienceLede")} />
+          <EmptyState
+            title={t("workspace.noAuthorizedDestinationsTitle")}
+            detail={t("workspace.noAuthorizedDestinationsDetail")}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-4">
+        <PageHeader title={t("workspace.title")} description={t("workspace.experienceLede")} />
+        {failureDetailKey ? (
+          <ErrorState
+            title={t(failureTitleKey)}
+            detail={t(failureDetailKey)}
+            diagnostic={failureDiagnostic ?? undefined}
+          />
+        ) : null}
+        <OrganizationWorkspaceCard
+          organization={organization}
+          expanded
+          canCollapse={false}
+          onToggle={() => undefined}
+          grant={grantState.grant}
+          grantResolved
+          roster={rosterByOrg.get(organization.organizationId) ?? null}
+          bindingKey={bindingKey}
+          onSelectDestination={(destination) => void selectDestination(destination)}
+          membershipLabel={membershipRoleLabel(organization.membershipRole, t)}
+          t={t}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-4">
       <PageHeader title={t("workspace.title")} description={t("workspace.experienceLede")} />
@@ -181,30 +295,94 @@ export function WorkspaceChooserPage() {
         />
       ) : null}
       <div className="flex flex-col gap-3" role="list">
-        {workspaces.map((organization) => (
-          <OrganizationWorkspaceCard
-            key={organization.organizationId}
-            organization={organization}
-            expanded={!canCollapseOrgs || expandedOrgId === organization.organizationId}
-            canCollapse={canCollapseOrgs}
-            onToggle={() =>
-              setExpandedOrgId(
-                expandedOrgId === organization.organizationId ? null : organization.organizationId,
-              )
-            }
-            grant={grantByOrganizationId.get(organization.organizationId) ?? null}
-            grantFailure={
-              grantProbeFailureByOrganizationId.get(organization.organizationId) ?? null
-            }
-            grantLoading={grantLoadingOrgId === organization.organizationId}
-            onRetryGrant={() => void retryOrganizationGrantHint(organization.organizationId)}
-            roster={rosterByOrg.get(organization.organizationId) ?? null}
-            bindingKey={bindingKey}
-            onSelectDestination={(destination) => void selectDestination(destination)}
-            membershipLabel={membershipRoleLabel(organization.membershipRole, t)}
-            t={t}
-          />
-        ))}
+        {workspaces.map((organization) => {
+          const expanded = canCollapseOrgs
+            ? expandedOrgId === organization.organizationId
+            : true;
+          const grantState = resolveOrganizationGrantState(
+            organization.organizationId,
+            grantByOrganizationId,
+            grantProbeFailureByOrganizationId,
+            grantLoadingOrgId,
+            status === "ready",
+          );
+
+          if (expanded && grantState.grantLoading) {
+            return (
+              <div key={organization.organizationId} data-testid="workspace-grant-loading">
+                <LoadingState label={t("workspace.preparingPermissions")} />
+              </div>
+            );
+          }
+
+          if (expanded && grantState.grantFailure && !grantState.grant) {
+            return (
+              <div
+                key={organization.organizationId}
+                className="flex flex-col gap-3"
+                data-testid="workspace-grant-probe-error"
+              >
+                <ErrorState
+                  title={t("workspace.grantProbeFailedTitle")}
+                  detail={t("workspace.grantProbeFailedDetail")}
+                  diagnostic={workspaceGrantFailureDiagnostic(
+                    organization.displayName,
+                    grantState.grantFailure,
+                  )}
+                />
+                <Button
+                  type="button"
+                  className="min-h-11 w-full sm:w-auto"
+                  onClick={() => void retryOrganizationGrantHint(organization.organizationId)}
+                >
+                  {t("workspace.grantProbeRetry")}
+                </Button>
+              </div>
+            );
+          }
+
+          if (
+            expanded &&
+            grantState.grant &&
+            buildOrganizationDestinations({ workspace: organization, grant: grantState.grant })
+              .length === 0
+          ) {
+            return (
+              <div
+                key={organization.organizationId}
+                data-testid="workspace-no-authorized-destinations"
+              >
+                <EmptyState
+                  title={t("workspace.noAuthorizedDestinationsTitle")}
+                  detail={t("workspace.noAuthorizedDestinationsDetail")}
+                />
+              </div>
+            );
+          }
+
+          return (
+            <OrganizationWorkspaceCard
+              key={organization.organizationId}
+              organization={organization}
+              expanded={expanded}
+              canCollapse={canCollapseOrgs}
+              onToggle={() =>
+                setExpandedOrgId(
+                  expandedOrgId === organization.organizationId
+                    ? null
+                    : organization.organizationId,
+                )
+              }
+              grant={grantState.grant}
+              grantResolved={Boolean(grantState.grant)}
+              roster={rosterByOrg.get(organization.organizationId) ?? null}
+              bindingKey={bindingKey}
+              onSelectDestination={(destination) => void selectDestination(destination)}
+              membershipLabel={membershipRoleLabel(organization.membershipRole, t)}
+              t={t}
+            />
+          );
+        })}
       </div>
     </div>
   );
@@ -214,15 +392,22 @@ function workspaceGrantFailureDiagnostic(
   organizationName: string,
   failure: WorkspaceGrantProbeFailure,
 ): PosErrorReportInput {
+  const detail = failure.detail ?? "";
+  const isAntiforgeryBootstrap =
+    failure.errorCode === "application.auth.account_scope_denied" &&
+    detail.includes("/api/v1/platform/antiforgery/token");
+
   return normalizePosError({
     source: "workspace",
     error: new PlatformApiError(failure.status, {
       errorCode: failure.errorCode,
       detail: failure.detail,
     }),
-    operation: "workspace session grant probe",
-    httpMethod: "POST",
-    path: "/api/v1/platform/auth/token",
+    operation: isAntiforgeryBootstrap ? "antiforgery bootstrap" : "workspace session grant probe",
+    httpMethod: isAntiforgeryBootstrap ? "GET" : "POST",
+    path: isAntiforgeryBootstrap
+      ? "/api/v1/platform/antiforgery/token"
+      : "/api/v1/platform/auth/token",
     screen: "/workspace",
     organizationName,
     status: failure.status,
@@ -236,9 +421,7 @@ function OrganizationWorkspaceCard({
   canCollapse,
   onToggle,
   grant,
-  grantFailure,
-  grantLoading,
-  onRetryGrant,
+  grantResolved,
   roster,
   bindingKey,
   onSelectDestination,
@@ -250,9 +433,7 @@ function OrganizationWorkspaceCard({
   canCollapse: boolean;
   onToggle: () => void;
   grant: ReturnType<typeof useWorkspace>["sessionGrant"];
-  grantFailure: WorkspaceGrantProbeFailure | null;
-  grantLoading: boolean;
-  onRetryGrant: () => void;
+  grantResolved: boolean;
   roster: {
     managementTeam: WorkspaceRosterPerson[];
     branchStaff: WorkspaceRosterPerson[];
@@ -282,9 +463,11 @@ function OrganizationWorkspaceCard({
           {membershipLabel}
         </span>
       ) : null}
-      <span className="mt-0.5 block text-[length:var(--exits-text-sm)] text-muted">
-        {branchCountLabel}
-      </span>
+      {grantResolved ? (
+        <span className="mt-0.5 block text-[length:var(--exits-text-sm)] text-muted">
+          {branchCountLabel}
+        </span>
+      ) : null}
     </span>
   );
 
@@ -308,133 +491,111 @@ function OrganizationWorkspaceCard({
         <div className="px-4 py-3">{headerContent}</div>
       )}
 
-      {expanded ? (
+      {expanded && grantResolved ? (
         <div className={cn("px-4 py-3", canCollapse && "border-t border-border")}>
-          {grantLoading || (!grant && !grantFailure) ? (
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {t("workspace.loadingDestinations")}
-            </p>
-          ) : grantFailure && !grant ? (
-            <div className="flex flex-col gap-3" data-testid="workspace-grant-probe-error">
-              <ErrorState
-                title={t("workspace.grantProbeFailedTitle")}
-                detail={t("workspace.grantProbeFailedDetail")}
-                diagnostic={workspaceGrantFailureDiagnostic(organization.displayName, grantFailure)}
-              />
-              <Button type="button" className="min-h-11 w-full sm:w-auto" onClick={onRetryGrant}>
-                {t("workspace.grantProbeRetry")}
-              </Button>
-            </div>
-          ) : destinations.length === 0 ? (
-            <EmptyState
-              title={t("workspace.noAuthorizedDestinationsTitle")}
-              detail={t("workspace.noAuthorizedDestinationsDetail")}
-            />
-          ) : (
-            <div className="flex flex-col gap-4">
-              {manageBusiness ? (
-                <section aria-labelledby={`mgmt-${organization.organizationId}`}>
-                  <h3
-                    id={`mgmt-${organization.organizationId}`}
-                    className="m-0 mb-2 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
+          <div className="flex flex-col gap-4">
+            {manageBusiness ? (
+              <section aria-labelledby={`mgmt-${organization.organizationId}`}>
+                <h3
+                  id={`mgmt-${organization.organizationId}`}
+                  className="m-0 mb-2 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
+                >
+                  {t("workspace.management")}
+                </h3>
+                {roster && roster.managementTeam.length > 0 ? (
+                  <ul
+                    className="mb-2 list-none space-y-1 p-0"
+                    aria-label={t("workspace.managementTeam")}
                   >
-                    {t("workspace.management")}
-                  </h3>
-                  {roster && roster.managementTeam.length > 0 ? (
-                    <ul
-                      className="mb-2 list-none space-y-1 p-0"
-                      aria-label={t("workspace.managementTeam")}
-                    >
-                      {roster.managementTeam.map((person) => (
-                        <li
-                          key={person.membershipId}
-                          className="truncate text-[length:var(--exits-text-sm)] text-muted"
-                        >
-                          {person.displayName} — {person.roleLabel}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                  <DestinationTile
-                    destination={manageBusiness}
-                    bindingKey={bindingKey}
-                    onSelect={onSelectDestination}
-                    t={t}
-                    primary
-                  />
-                </section>
-              ) : null}
-
-              {organization.branches.length > 0 ? (
-                <section aria-labelledby={`branches-${organization.organizationId}`}>
-                  <h3
-                    id={`branches-${organization.organizationId}`}
-                    className="m-0 mb-2 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
-                  >
-                    {t("workspace.branches")}
-                  </h3>
-                  <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2">
-                    {organization.branches.map((branch) => {
-                      const branchDestinations = destinations.filter(
-                        (d) => d.branchId === branch.branchId,
-                      );
-                      const staffForBranch =
-                        roster?.branchStaff.filter(
-                          (person) =>
-                            !person.branchName ||
-                            person.branchName.localeCompare(branch.name, undefined, {
-                              sensitivity: "base",
-                            }) === 0,
-                        ) ?? [];
-                      return (
-                        <li
-                          key={branch.branchId}
-                          className="min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-3"
-                          data-testid={`workspace-branch-${branch.branchId}`}
-                        >
-                          <p className="m-0 truncate font-semibold">{branch.name}</p>
-                          {staffForBranch.length > 0 ? (
-                            <ul className="mb-2 mt-1 list-none space-y-0.5 p-0">
-                              {staffForBranch.map((person) => (
-                                <li
-                                  key={person.membershipId}
-                                  className="truncate text-[length:var(--exits-text-sm)] text-muted"
-                                >
-                                  {person.displayName} — {person.roleLabel}
-                                </li>
-                              ))}
-                            </ul>
-                          ) : null}
-                          {branchDestinations.length > 0 ? (
-                            <div
-                              className={cn(
-                                "mt-3 grid gap-2",
-                                branchDestinations.length === 1 ? "grid-cols-1" : "grid-cols-2",
-                              )}
-                            >
-                              {branchDestinations.map((destination) => (
-                                <DestinationTile
-                                  key={`${destination.experience}:${destination.branchId}`}
-                                  destination={destination}
-                                  bindingKey={bindingKey}
-                                  onSelect={onSelectDestination}
-                                  t={t}
-                                />
-                              ))}
-                            </div>
-                          ) : null}
-                        </li>
-                      );
-                    })}
+                    {roster.managementTeam.map((person) => (
+                      <li
+                        key={person.membershipId}
+                        className="truncate text-[length:var(--exits-text-sm)] text-muted"
+                      >
+                        {person.displayName} — {person.roleLabel}
+                      </li>
+                    ))}
                   </ul>
-                </section>
-              ) : manageBusiness ? (
-                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                  {t("workspace.noActiveBranches")}
-                </p>
-              ) : null}
-            </div>
-          )}
+                ) : null}
+                <DestinationTile
+                  destination={manageBusiness}
+                  bindingKey={bindingKey}
+                  onSelect={onSelectDestination}
+                  t={t}
+                  primary
+                />
+              </section>
+            ) : null}
+
+            {organization.branches.length > 0 ? (
+              <section aria-labelledby={`branches-${organization.organizationId}`}>
+                <h3
+                  id={`branches-${organization.organizationId}`}
+                  className="m-0 mb-2 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
+                >
+                  {t("workspace.branches")}
+                </h3>
+                <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2">
+                  {organization.branches.map((branch) => {
+                    const branchDestinations = destinations.filter(
+                      (d) => d.branchId === branch.branchId,
+                    );
+                    const staffForBranch =
+                      roster?.branchStaff.filter(
+                        (person) =>
+                          !person.branchName ||
+                          person.branchName.localeCompare(branch.name, undefined, {
+                            sensitivity: "base",
+                          }) === 0,
+                      ) ?? [];
+                    return (
+                      <li
+                        key={branch.branchId}
+                        className="min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-3"
+                        data-testid={`workspace-branch-${branch.branchId}`}
+                      >
+                        <p className="m-0 truncate font-semibold">{branch.name}</p>
+                        {staffForBranch.length > 0 ? (
+                          <ul className="mb-2 mt-1 list-none space-y-0.5 p-0">
+                            {staffForBranch.map((person) => (
+                              <li
+                                key={person.membershipId}
+                                className="truncate text-[length:var(--exits-text-sm)] text-muted"
+                              >
+                                {person.displayName} — {person.roleLabel}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                        {branchDestinations.length > 0 ? (
+                          <div
+                            className={cn(
+                              "mt-3 grid gap-2",
+                              branchDestinations.length === 1 ? "grid-cols-1" : "grid-cols-2",
+                            )}
+                          >
+                            {branchDestinations.map((destination) => (
+                              <DestinationTile
+                                key={`${destination.experience}:${destination.branchId}`}
+                                destination={destination}
+                                bindingKey={bindingKey}
+                                onSelect={onSelectDestination}
+                                t={t}
+                              />
+                            ))}
+                          </div>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ) : manageBusiness ? (
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("workspace.noActiveBranches")}
+              </p>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </Card>

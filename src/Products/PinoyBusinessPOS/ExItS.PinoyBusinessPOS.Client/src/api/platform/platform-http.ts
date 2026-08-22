@@ -105,6 +105,24 @@ export function clearPlatformAntiforgeryToken(): void {
   inMemoryAntiforgeryToken = null;
 }
 
+export function hasPlatformAntiforgeryToken(): boolean {
+  return inMemoryAntiforgeryToken !== null;
+}
+
+/** Best-effort CSRF bootstrap for cookie-session mutations (sign-in page / post-login). */
+export async function prefetchPlatformAntiforgeryToken(): Promise<boolean> {
+  if (inMemoryAntiforgeryToken) {
+    return true;
+  }
+
+  try {
+    await bootstrapAntiforgeryToken();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function isPlatformAntiforgeryValidationError(error: PlatformApiError): boolean {
   if (error.errorCode === PlatformAntiforgeryDefaults.invalidErrorCode) {
     return true;
@@ -126,11 +144,14 @@ export function isPlatformAntiforgeryValidationError(error: PlatformApiError): b
 
 async function bootstrapAntiforgeryToken(signal?: AbortSignal): Promise<AntiforgeryBootstrap> {
   assertRelativePlatformBase(PLATFORM_API_BASE_PATH);
+  // Omit session cookies so AccountScopeGuard does not classify this as an authenticated
+  // Organization/Personal bootstrap (403 on older Platform builds). The antiforgery cookie
+  // is still stored from the response; mutations continue to use credentials: "include".
   const response = await fetch(
     `${PLATFORM_API_BASE_PATH}${PlatformAntiforgeryDefaults.tokenPath}`,
     {
       method: "GET",
-      credentials: "include",
+      credentials: "omit",
       headers: {
         Accept: "application/json",
         "X-Correlation-Id": createCorrelationId(),

@@ -285,6 +285,7 @@ export const en = {
   "workspace.lede": "Select the organization and branch you will operate.",
   "workspace.experienceLede": "Choose how you want to work.",
   "workspace.loading": "Loading workspaces…",
+  "workspace.preparingPermissions": "Preparing workspace permissions…",
   "workspace.loadingDestinations": "Loading available experiences…",
   "workspace.opening": "Opening…",
   "workspace.loadError": "Workspace data could not be loaded.",
@@ -301,11 +302,11 @@ export const en = {
     "The previously selected workspace is no longer accessible. Choose again.",
   "workspace.previousBranchInaccessible":
     "The previously selected branch is no longer accessible. Choose an active branch.",
-  "workspace.grantProbeFailedTitle": "Workspace authorization could not be loaded",
+  "workspace.grantProbeFailedTitle": "Unable to prepare your workspace",
   "workspace.grantProbeFailedDetail":
-    "The server session grant for this organization could not be resolved. Retry when you are back online.",
-  "workspace.grantProbeRetry": "Retry authorization",
-  "workspace.noAuthorizedDestinationsTitle": "No authorized workspace destinations",
+    "You are signed in, but workspace permissions could not be loaded.",
+  "workspace.grantProbeRetry": "Retry",
+  "workspace.noAuthorizedDestinationsTitle": "No authorized workspace actions",
   "workspace.noAuthorizedDestinationsDetail":
     "Your account can see this organization, but the server did not authorize any POS experiences yet.",
   "experience.current": "Current",

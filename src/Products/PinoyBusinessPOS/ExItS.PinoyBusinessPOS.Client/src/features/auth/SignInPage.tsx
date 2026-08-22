@@ -21,6 +21,7 @@ import {
 } from "@/api/platform/platform-auth-client";
 import { evaluateOfflinePinLoginOffer } from "@/offline/offline-pin-login-offer";
 import { mapColdStartDenialToMessageKey } from "@/offline/offline-operating-grant";
+import { prefetchPlatformAntiforgeryToken } from "@/api/platform/platform-http";
 import { looksLikeOrgScopedStaffLogin } from "@/session/account-class";
 import { useSession } from "@/session/SessionProvider";
 
@@ -96,6 +97,10 @@ export function SignInPage() {
       window.removeEventListener("online", syncOnline);
       window.removeEventListener("offline", syncOnline);
     };
+  }, []);
+
+  useEffect(() => {
+    void prefetchPlatformAntiforgeryToken();
   }, []);
 
   useEffect(() => {

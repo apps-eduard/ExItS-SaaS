@@ -6,6 +6,7 @@ import {
   isPlatformAntiforgeryValidationError,
   PlatformApiError,
   platformRequest,
+  prefetchPlatformAntiforgeryToken,
 } from "@/api/platform/platform-http";
 
 describe("platformRequest antiforgery", () => {
@@ -18,6 +19,7 @@ describe("platformRequest antiforgery", () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
+        expect(init?.credentials).toBe("omit");
         return {
           ok: true,
           status: 200,
@@ -255,6 +257,27 @@ describe("platformRequest antiforgery", () => {
         String(url).endsWith(PlatformAntiforgeryDefaults.tokenPath),
       ).length,
     ).toBe(1);
+  });
+
+  it("prefetch returns false when bootstrap is denied", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
+        return {
+          ok: false,
+          status: 403,
+          json: async () => ({
+            status: 403,
+            errorCode: "application.auth.account_scope_denied",
+            detail: "Account class 'Organization' is not allowed.",
+          }),
+        } as Response;
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(prefetchPlatformAntiforgeryToken()).resolves.toBe(false);
   });
 
   it("identifies canonical antiforgery validation errors", () => {

@@ -18,7 +18,10 @@ import {
   loginWithPassword,
   logoutSession,
 } from "@/api/platform/platform-auth-client";
-import { clearPlatformAntiforgeryToken } from "@/api/platform/platform-http";
+import {
+  clearPlatformAntiforgeryToken,
+  prefetchPlatformAntiforgeryToken,
+} from "@/api/platform/platform-http";
 import { isOfflinePinAndDekConfigured, unlockOfflineCryptoWithPin } from "@/offline/local-store-key";
 import { clearUnlockedDek } from "@/offline/offline-unlock-session";
 import {
@@ -98,11 +101,15 @@ export function OfflinePinSetupGate({ children }: { children: ReactNode }) {
   return children;
 }
 
+function clearPosCredentialArtifacts(): void {
+  clearPosAccessToken();
+  clearPosSessionGrant();
+}
+
 function clearClientSessionArtifacts(queryClient: { clear: () => void }): void {
   queryClient.clear();
   clearPlatformAntiforgeryToken();
-  clearPosAccessToken();
-  clearPosSessionGrant();
+  clearPosCredentialArtifacts();
 }
 
 function isBrowserOffline(): boolean {
@@ -210,6 +217,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [coldStartDenial, setColdStartDenial] = useState<ColdStartGrantDenialReason | null>(null);
 
   useEffect(() => {
+    void prefetchPlatformAntiforgeryToken();
     let cancelled = false;
     void resolveBootstrapSession().then((resolved) => {
       if (cancelled) {
@@ -264,13 +272,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       }
       signInLock.current = true;
       try {
-        clearClientSessionArtifacts(queryClient);
+        queryClient.clear();
+        clearPosCredentialArtifacts();
         clearUnlockedDek();
         clearPendingRemoteLogout();
         const result = await loginWithPassword(usernameOrEmail, password);
         if (!result.ok) {
           return false;
         }
+        await prefetchPlatformAntiforgeryToken();
         setSession(result.session);
         setStatus("authenticated");
         setColdStartGrant(null);

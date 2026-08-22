@@ -7,10 +7,32 @@ import {
 
 const E2E_BRANCH_2_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 
+async function completeOwnerPinSetupToWorkspace(page: import("@playwright/test").Page) {
+  await page.goto("/sign-in");
+  await page.getByLabel("Email or staff login").fill("owner");
+  await page.getByLabel("Password").fill("secret");
+  await page.getByTestId("sign-in-submit").click();
+  await expect(page.getByTestId("offline-pin-setup-page")).toBeVisible({ timeout: 15000 });
+  await page.getByTestId("offline-pin-enroll-input").fill("123456");
+  await page.getByTestId("offline-pin-enroll-confirm").fill("123456");
+  await page.getByTestId("offline-pin-enroll-submit").click();
+  await expect(page).toHaveURL(/\/workspace$/, { timeout: 15000 });
+}
+
+async function expectOwnerDestinations(page: import("@playwright/test").Page) {
+  await expect(page.getByRole("heading", { name: "Choose workspace" })).toBeVisible();
+  await expect(page.getByText("Kizy Store", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("workspace-destination-manage_business")).toBeVisible();
+  await expect(page.getByTestId(`workspace-branch-${E2E_BRANCH_ID}`)).toBeVisible();
+  await expect(page.getByTestId(`workspace-branch-${E2E_BRANCH_2_ID}`)).toBeVisible();
+  await expect(page.getByTestId("workspace-destination-operations")).toHaveCount(2);
+  await expect(page.getByTestId("workspace-destination-start_selling")).toHaveCount(2);
+}
+
 test.describe("workspace after offline PIN enrollment", () => {
   test.use({ serviceWorkers: "block" });
 
-  test("owner sees authorized destinations after PIN setup", async ({ page }) => {
+  test.beforeEach(async ({ page }) => {
     await mockBoundOwnerSession(page, {
       extraBranches: [
         {
@@ -23,24 +45,11 @@ test.describe("workspace after offline PIN enrollment", () => {
         },
       ],
     });
+  });
 
-    await page.goto("/sign-in");
-    await page.getByLabel("Email or staff login").fill("owner");
-    await page.getByLabel("Password").fill("secret");
-    await page.getByTestId("sign-in-submit").click();
-    await expect(page.getByTestId("offline-pin-setup-page")).toBeVisible({ timeout: 15000 });
-    await page.getByTestId("offline-pin-enroll-input").fill("123456");
-    await page.getByTestId("offline-pin-enroll-confirm").fill("123456");
-    await page.getByTestId("offline-pin-enroll-submit").click();
-
-    await expect(page).toHaveURL(/\/workspace$/, { timeout: 15000 });
-    await expect(page.getByRole("heading", { name: "Choose workspace" })).toBeVisible();
-    await expect(page.getByText("Kizy Store", { exact: true })).toBeVisible();
-    await expect(page.getByTestId("workspace-destination-manage_business")).toBeVisible();
-    await expect(page.getByTestId(`workspace-branch-${E2E_BRANCH_ID}`)).toBeVisible();
-    await expect(page.getByTestId(`workspace-branch-${E2E_BRANCH_2_ID}`)).toBeVisible();
-    await expect(page.getByTestId("workspace-destination-operations")).toHaveCount(2);
-    await expect(page.getByTestId("workspace-destination-start_selling")).toHaveCount(2);
+  test("owner sees authorized destinations after PIN setup", async ({ page }) => {
+    await completeOwnerPinSetupToWorkspace(page);
+    await expectOwnerDestinations(page);
 
     for (const viewport of [
       { width: 390, height: 844 },
@@ -53,5 +62,13 @@ test.describe("workspace after offline PIN enrollment", () => {
       );
       expect(overflow).toBe(false);
     }
+  });
+
+  test("direct refresh keeps authorized destinations after PIN setup", async ({ page }) => {
+    await completeOwnerPinSetupToWorkspace(page);
+    await expectOwnerDestinations(page);
+    await page.reload();
+    await expect(page).toHaveURL(/\/workspace$/, { timeout: 15000 });
+    await expectOwnerDestinations(page);
   });
 });
