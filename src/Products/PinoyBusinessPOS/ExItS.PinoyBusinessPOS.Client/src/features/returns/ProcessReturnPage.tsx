@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createSaleReturn,
@@ -21,6 +21,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { isByWeightSellingMode } from "@/cart/sell-cart-helpers";
 import { describeReturnError } from "@/features/returns/return-errors";
 import { resolveReturnMutationId } from "@/features/returns/return-mutation-id";
@@ -42,7 +43,11 @@ type Step = "edit" | "confirm" | "success";
 
 export function ProcessReturnPage() {
   const { t } = useI18n();
-  const navigate = useNavigate();
+  const headerBack = {
+    backTo: pageBackNav.returns.to,
+    backLabel: t(pageBackNav.returns.labelKey),
+    backTestId: "page-header-back-returns",
+  };
   const { saleId } = useParams<{ saleId: string }>();
   const { boundWorkspace } = useWorkspace();
   const queryClient = useQueryClient();
@@ -226,10 +231,7 @@ export function ProcessReturnPage() {
   if (!saleId) {
     return (
       <div data-testid="process-return-missing" className="flex flex-col gap-3">
-        <PageHeader title={t("returns.returnItems")} description={t("returns.missingSale")} />
-        <Button asChild variant="ghost" className="min-h-11 w-fit">
-          <Link to="/returns">{t("returns.back")}</Link>
-        </Button>
+        <PageHeader title={t("returns.returnItems")} description={t("returns.missingSale")} {...headerBack} />
       </div>
     );
   }
@@ -241,10 +243,7 @@ export function ProcessReturnPage() {
   if (refundableQuery.isError || !refundable) {
     return (
       <div data-testid="process-return-error" className="flex flex-col gap-3">
-        <PageHeader title={t("returns.returnItems")} description={t("returns.loadError")} />
-        <Button asChild className="min-h-11 w-fit">
-          <Link to="/returns">{t("returns.back")}</Link>
-        </Button>
+        <PageHeader title={t("returns.returnItems")} description={t("returns.loadError")} {...headerBack} />
       </div>
     );
   }
@@ -252,10 +251,7 @@ export function ProcessReturnPage() {
   if (refundable.status !== "Completed") {
     return (
       <div data-testid="process-return-not-returnable" className="flex flex-col gap-3">
-        <PageHeader title={t("returns.returnItems")} description={t("returns.cannotReturn")} />
-        <Button asChild className="min-h-11 w-fit">
-          <Link to="/returns">{t("returns.back")}</Link>
-        </Button>
+        <PageHeader title={t("returns.returnItems")} description={t("returns.cannotReturn")} {...headerBack} />
       </div>
     );
   }
@@ -266,14 +262,12 @@ export function ProcessReturnPage() {
         <PageHeader
           title={t("returns.returnItems")}
           description={`${t("returns.alreadyReturned")} · ${refundable.saleNumber}`}
+          {...headerBack}
         />
         <EmptyState
           title={t("returns.alreadyReturned")}
           detail={t("returns.alreadyReturnedDetail")}
         />
-        <Button asChild className="min-h-11 w-fit">
-          <Link to="/returns">{t("returns.back")}</Link>
-        </Button>
       </div>
     );
   }
@@ -282,7 +276,7 @@ export function ProcessReturnPage() {
     const method = completedMethod ?? refundable.paymentMethod;
     return (
       <div data-testid="process-return-success" className="flex min-w-0 flex-col gap-4">
-        <PageHeader title={t("returns.successTitle")} description={refundable.saleNumber} />
+        <PageHeader title={t("returns.successTitle")} description={refundable.saleNumber} {...headerBack} />
         <Card>
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("returns.refundAmount")}
@@ -313,9 +307,6 @@ export function ProcessReturnPage() {
           <Button asChild className="min-h-11" data-testid="returns-view-detail">
             <Link to={`/returns/${completedReturnId}`}>{t("returns.viewDetail")}</Link>
           </Button>
-          <Button asChild variant="ghost" className="min-h-11">
-            <Link to="/returns">{t("returns.back")}</Link>
-          </Button>
         </div>
       </div>
     );
@@ -327,6 +318,7 @@ export function ProcessReturnPage() {
         <PageHeader
           title={t("returns.confirmTitle")}
           description={`${t("returns.confirmLede")} · ${refundable.saleNumber}`}
+          {...headerBack}
         />
         <Card>
           <ul className="m-0 list-none space-y-2 p-0">
@@ -399,6 +391,7 @@ export function ProcessReturnPage() {
       <PageHeader
         title={t("returns.returnItems")}
         description={`${t("returns.processLede")} · ${refundable.saleNumber}`}
+        {...headerBack}
       />
 
       <Card data-testid="returns-payment-method">
@@ -605,14 +598,6 @@ export function ProcessReturnPage() {
           }}
         >
           {t("returns.continue")}
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          className="min-h-11"
-          onClick={() => navigate("/returns")}
-        >
-          {t("returns.back")}
         </Button>
       </div>
     </div>

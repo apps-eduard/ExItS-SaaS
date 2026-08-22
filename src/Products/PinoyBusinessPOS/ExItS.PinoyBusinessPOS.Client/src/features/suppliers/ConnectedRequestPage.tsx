@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { canManageSuppliers } from "@/access/pos-capabilities";
 import { requestConnection } from "@/api/pos/pos-connected-suppliers-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -13,7 +14,6 @@ const GUID_ONLY = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-
 
 export function ConnectedRequestPage() {
   const { t } = useI18n();
-  const navigate = useNavigate();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const [payload, setPayload] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +65,13 @@ export function ConnectedRequestPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="connected-request-page">
-      <PageHeader title={t("connected.requestTitle")} description={t("connected.requestHelp")} />
+      <PageHeader
+        title={t("connected.requestTitle")}
+        description={t("connected.requestHelp")}
+        backTo={pageBackNav.suppliers.to}
+        backLabel={t("connected.backToSuppliers")}
+        backTestId="page-header-back-suppliers"
+      />
       {error ? (
         <Card data-testid="connected-request-error">
           <p className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">
@@ -103,14 +109,6 @@ export function ConnectedRequestPage() {
             {saving ? t("connected.sending") : t("connected.sendRequest")}
           </Button>
         ) : null}
-        <Button
-          type="button"
-          variant="ghost"
-          className="min-h-11"
-          onClick={() => navigate("/suppliers")}
-        >
-          {t("connected.backToSuppliers")}
-        </Button>
         <Button asChild variant="ghost" className="min-h-11">
           <Link to="/suppliers/connected/requests">{t("connected.incomingRequests")}</Link>
         </Button>

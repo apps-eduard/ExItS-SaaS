@@ -19,6 +19,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -177,7 +178,13 @@ export function CustomerDetailPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="customer-detail-page">
-      <PageHeader title={customer.displayName} description={t("customers.detailLede")} />
+      <PageHeader
+        title={customer.displayName}
+        description={t("customers.detailLede")}
+        backTo={pageBackNav.customers.to}
+        backLabel={t(pageBackNav.customers.labelKey)}
+        backTestId="page-header-back-customers"
+      />
       <div className="flex flex-wrap items-center gap-2">
         <StatusChip tone={isActive ? "success" : "warning"}>{customer.status}</StatusChip>
         {linked ? (
@@ -264,9 +271,6 @@ export function CustomerDetailPage() {
             {isActive ? t("customers.deactivate") : t("customers.reactivate")}
           </Button>
         ) : null}
-        <Button asChild variant="ghost" className="min-h-11">
-          <Link to="/customers">{t("customers.back")}</Link>
-        </Button>
       </div>
 
       <section data-testid="customer-credits-section">

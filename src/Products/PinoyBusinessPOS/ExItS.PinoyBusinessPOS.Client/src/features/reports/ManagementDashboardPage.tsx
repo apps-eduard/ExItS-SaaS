@@ -14,6 +14,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { ReportFilters } from "@/features/reports/ReportFilters";
 import {
   resolveReportDatePreset,
@@ -120,7 +121,13 @@ export function ManagementDashboardPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="management-dashboard-page">
-      <PageHeader title={t("dashboard.title")} description={t("dashboard.lede")} />
+      <PageHeader
+        title={t("dashboard.title")}
+        description={t("dashboard.lede")}
+        backTo={pageBackNav.managerHome.to}
+        backLabel={t(pageBackNav.managerHome.labelKey)}
+        backTestId="page-header-back-reports"
+      />
 
       <div className="flex min-w-0 flex-wrap gap-2">
         <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-reports-hub">

@@ -13,6 +13,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -38,10 +39,13 @@ export function ReturnDetailPage() {
   if (!returnId) {
     return (
       <div data-testid="return-detail-missing" className="flex flex-col gap-3">
-        <PageHeader title={t("returns.detailTitle")} description={t("returns.missingReturn")} />
-        <Button asChild variant="ghost" className="min-h-11 w-fit">
-          <Link to="/returns">{t("returns.back")}</Link>
-        </Button>
+        <PageHeader
+          title={t("returns.detailTitle")}
+          description={t("returns.missingReturn")}
+          backTo={pageBackNav.returns.to}
+          backLabel={t(pageBackNav.returns.labelKey)}
+          backTestId="page-header-back-returns"
+        />
       </div>
     );
   }
@@ -53,11 +57,14 @@ export function ReturnDetailPage() {
   if (detailQuery.isError || !detailQuery.data) {
     return (
       <div data-testid="return-detail-error" className="flex flex-col gap-3">
-        <PageHeader title={t("returns.detailTitle")} description={t("returns.loadError")} />
+        <PageHeader
+          title={t("returns.detailTitle")}
+          description={t("returns.loadError")}
+          backTo={pageBackNav.returns.to}
+          backLabel={t(pageBackNav.returns.labelKey)}
+          backTestId="page-header-back-returns"
+        />
         <ErrorState title={t("error.title")} detail={t("returns.errorNotFound")} />
-        <Button asChild className="min-h-11 w-fit">
-          <Link to="/returns">{t("returns.back")}</Link>
-        </Button>
       </div>
     );
   }
@@ -70,6 +77,9 @@ export function ReturnDetailPage() {
       <PageHeader
         title={t("returns.detailTitle")}
         description={`${detail.returnNumber} · ${detail.returnDate}`}
+        backTo={pageBackNav.returns.to}
+        backLabel={t(pageBackNav.returns.labelKey)}
+        backTestId="page-header-back-returns"
       />
 
       <Card>
@@ -157,9 +167,6 @@ export function ReturnDetailPage() {
       </Card>
 
       <div className="flex flex-wrap gap-2">
-        <Button asChild variant="ghost" className="min-h-11" data-testid="return-detail-back">
-          <Link to="/returns">{t("returns.back")}</Link>
-        </Button>
         <Button asChild variant="ghost" className="min-h-11">
           <Link to={`/sell/sales/${detail.saleId}/summary`}>{t("returns.viewTransaction")}</Link>
         </Button>

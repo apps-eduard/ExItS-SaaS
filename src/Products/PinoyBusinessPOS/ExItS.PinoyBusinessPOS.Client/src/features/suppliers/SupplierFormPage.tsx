@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { describeSupplierError } from "@/features/suppliers/supplier-errors";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -207,6 +208,11 @@ function SupplierFormPage({ mode }: { mode: Mode }) {
       <PageHeader
         title={mode === "create" ? t("suppliers.newTitle") : t("suppliers.editTitle")}
         description={t("suppliers.formLede")}
+        backTo={
+          mode === "edit" && supplierId ? `/suppliers/${supplierId}` : pageBackNav.suppliers.to
+        }
+        backLabel={t(pageBackNav.suppliers.labelKey)}
+        backTestId="page-header-back-suppliers"
       />
       {error ? (
         <Card data-testid="supplier-form-error">

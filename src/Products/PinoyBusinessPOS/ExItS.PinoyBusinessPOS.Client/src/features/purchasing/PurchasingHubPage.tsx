@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -24,7 +25,13 @@ export function PurchasingHubPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="purchasing-hub-page">
-      <PageHeader title={t("purchasing.title")} description={t("purchasing.hubLede")} />
+      <PageHeader
+        title={t("purchasing.title")}
+        description={t("purchasing.hubLede")}
+        backTo={pageBackNav.managerHome.to}
+        backLabel={t(pageBackNav.managerHome.labelKey)}
+        backTestId="page-header-back-purchasing"
+      />
       <Card>
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
           {t("purchasing.choiceReceive")}

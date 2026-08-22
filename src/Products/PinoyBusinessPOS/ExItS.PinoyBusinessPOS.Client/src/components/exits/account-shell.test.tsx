@@ -258,7 +258,7 @@ describe("account shell", () => {
 
     await user.click(screen.getByTestId("preferences-close"));
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Sell floor" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "More" })).toBeInTheDocument();
     });
   });
 

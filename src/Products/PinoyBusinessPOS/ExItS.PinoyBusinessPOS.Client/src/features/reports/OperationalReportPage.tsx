@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import {
@@ -26,6 +26,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { ReportFilters } from "@/features/reports/ReportFilters";
 import {
   canAccessOperationalReport,
@@ -342,10 +343,13 @@ export function OperationalReportPage() {
       data-testid="operational-report-page"
       data-kind={kind}
     >
-      <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="report-back">
-        <Link to="/reports">{t("reports.back")}</Link>
-      </Button>
-      <PageHeader title={t(titleKeyFor(kind))} description={t("reports.operationalLede")} />
+      <PageHeader
+        title={t(titleKeyFor(kind))}
+        description={t("reports.operationalLede")}
+        backTo={pageBackNav.reports.to}
+        backLabel={t(pageBackNav.reports.labelKey)}
+        backTestId="page-header-back-reports"
+      />
 
       <ReportFilters
         preset={preset}

@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import {
   createEmptyUnitDraft,
   draftsToUnitInputs,
@@ -219,6 +220,9 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
       <PageHeader
         title={mode === "create" ? t("catalog.newProduct") : t("catalog.editProduct")}
         description={t("catalog.productFormLede")}
+        backTo={pageBackNav.catalog.to}
+        backLabel={t(pageBackNav.catalog.labelKey)}
+        backTestId="page-header-back-catalog"
       />
       {error ? <ErrorState title={t("error.title")} detail={error} /> : null}
       <Card>

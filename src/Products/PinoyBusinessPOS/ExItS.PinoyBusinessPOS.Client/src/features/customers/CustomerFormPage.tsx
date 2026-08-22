@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { createCustomer, getCustomer, updateCustomer } from "@/api/pos/pos-customers-client";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import {
   CustomerPersonalLinkPanel,
@@ -224,6 +225,13 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
       <PageHeader
         title={mode === "create" ? t("customers.newTitle") : t("customers.editTitle")}
         description={t("customers.formLede")}
+        backTo={
+          mode === "edit" && customerId ? `/customers/${customerId}` : pageBackNav.customers.to
+        }
+        backLabel={
+          mode === "edit" && customerId ? t("customers.backDetail") : t(pageBackNav.customers.labelKey)
+        }
+        backTestId="page-header-back-customers"
       />
       {!online ? (
         <Card data-testid="customer-form-offline-notice">
@@ -330,11 +338,6 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
           onClick={() => void onSubmit()}
         >
           {saving ? t("customers.saving") : t("customers.save")}
-        </Button>
-        <Button asChild variant="ghost" className="min-h-11" disabled={saving}>
-          <Link to={mode === "edit" && customerId ? `/customers/${customerId}` : "/customers"}>
-            {t("customers.back")}
-          </Link>
         </Button>
       </div>
     </div>

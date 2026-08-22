@@ -44,7 +44,9 @@ export const cebPH: Record<keyof typeof en, string> = {
   "org.nav.orders": "Mga order",
   "org.nav.more": "More",
   "org.more.title": "More",
+  "org.more.back": "Balik sa More",
   "org.more.lede": "Ubang POS tool ug setting para niining organisasyon.",
+  "nav.backToManagerHome": "Balik sa Manager home",
   "org.more.inventory": "Imbentaryo",
   "org.more.customers": "Mga customer",
   "org.more.shifts": "Mga shift",
@@ -1020,6 +1022,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "shift.readinessClosed": "Gibabagan ù sirado ang shift.",
   "shift.readinessNoRegister": "Gibabagan ù walay register ang abierto nga shift.",
   "register.listTitle": "Registers",
+  "registers.back": "Balik sa registers",
   "register.listLede": "Mga POS station para sa pag-abli og shift. Dili branch o device.",
   "register.deniedDetail": "Dili tugotan ang access sa register para niining account.",
   "register.viewOnly":
@@ -1043,6 +1046,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "devices.deniedDetail":
     "Organization owners ug administrators lang ang makadumala og POS devices.",
   "devices.backOrg": "Balik sa organization",
+  "devices.backDevices": "Balik sa POS devices",
   "devices.thisBrowserTitle": "Kini nga browser",
   "devices.statusLabel": "Status",
   "devices.deviceNameLabel": "Ngalan sa device",

@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -37,10 +38,13 @@ export function BranchFulfillmentListPage() {
   if (!canManage) {
     return (
       <div data-testid="branch-fulfillment-denied" className="flex flex-col gap-3">
-        <PageHeader title={t("branches.listTitle")} description={t("branches.denied")} />
-        <Button asChild variant="ghost" className="min-h-11 w-fit">
-          <Link to="/org">{t("branches.backOrg")}</Link>
-        </Button>
+        <PageHeader
+          title={t("branches.listTitle")}
+          description={t("branches.denied")}
+          backTo={pageBackNav.org.to}
+          backLabel={t(pageBackNav.org.labelKey)}
+          backTestId="page-header-back-org"
+        />
       </div>
     );
   }
@@ -52,20 +56,26 @@ export function BranchFulfillmentListPage() {
   if (branchesQuery.isError) {
     return (
       <div data-testid="branch-fulfillment-list-error" className="flex flex-col gap-3">
-        <PageHeader title={t("branches.listTitle")} description={t("branches.loadError")} />
-        <Button asChild variant="ghost" className="min-h-11 w-fit">
-          <Link to="/org">{t("branches.backOrg")}</Link>
-        </Button>
+        <PageHeader
+          title={t("branches.listTitle")}
+          description={t("branches.loadError")}
+          backTo={pageBackNav.org.to}
+          backLabel={t(pageBackNav.org.labelKey)}
+          backTestId="page-header-back-org"
+        />
       </div>
     );
   }
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="branch-fulfillment-list">
-      <PageHeader title={t("branches.listTitle")} description={t("branches.listLede")} />
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/org">{t("branches.backOrg")}</Link>
-      </Button>
+      <PageHeader
+        title={t("branches.listTitle")}
+        description={t("branches.listLede")}
+        backTo={pageBackNav.org.to}
+        backLabel={t(pageBackNav.org.labelKey)}
+        backTestId="page-header-back-org"
+      />
 
       {branches.length === 0 ? (
         <EmptyState title={t("branches.emptyTitle")} detail={t("branches.emptyDetail")} />

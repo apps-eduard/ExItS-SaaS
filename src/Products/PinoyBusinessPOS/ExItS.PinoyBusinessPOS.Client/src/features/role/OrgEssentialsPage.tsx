@@ -16,6 +16,7 @@ import {
 } from "@/access/pos-capabilities";
 import { ActionCard } from "@/components/exits/ActionCard";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -108,7 +109,13 @@ export function OrgEssentialsPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="org-essentials-page">
-      <PageHeader title={t("org.title")} description={t("org.lede")} />
+      <PageHeader
+        title={t("org.title")}
+        description={t("org.lede")}
+        backTo={pageBackNav.more.to}
+        backLabel={t(pageBackNav.more.labelKey)}
+        backTestId="page-header-back-org"
+      />
 
       {operations.length > 0 ? (
         <section className="flex flex-col gap-2" data-testid="org-group-operations">

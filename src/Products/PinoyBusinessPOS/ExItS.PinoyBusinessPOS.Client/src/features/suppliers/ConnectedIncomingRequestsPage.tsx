@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { canManageSuppliers } from "@/access/pos-capabilities";
 import {
@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -79,7 +80,13 @@ export function ConnectedIncomingRequestsPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="connected-incoming-page">
-      <PageHeader title={t("connected.incomingTitle")} description={t("connected.incomingHelp")} />
+      <PageHeader
+        title={t("connected.incomingTitle")}
+        description={t("connected.incomingHelp")}
+        backTo={pageBackNav.suppliers.to}
+        backLabel={t("connected.backToSuppliers")}
+        backTestId="page-header-back-suppliers"
+      />
       {actionError ? (
         <Card>
           <p className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">
@@ -180,9 +187,6 @@ export function ConnectedIncomingRequestsPage() {
           );
         })}
       </ul>
-      <Button asChild variant="ghost" className="min-h-11 self-start">
-        <Link to="/suppliers">{t("connected.backToSuppliers")}</Link>
-      </Button>
     </div>
   );
 }

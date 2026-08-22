@@ -3,6 +3,7 @@ import { LayoutDashboard } from "lucide-react";
 import { canViewDashboard, canViewReports } from "@/access/pos-capabilities";
 import { ActionTileGrid, type ActionTileDef } from "@/components/exits/ActionTileGrid";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import {
   buildOperationalReportGroups,
   type ClassicReportKind,
@@ -101,7 +102,13 @@ export function ReportsHubPage() {
       className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-5"
       data-testid="reports-hub-page"
     >
-      <PageHeader title={t("reports.title")} description={t("reports.lede")} />
+      <PageHeader
+        title={t("reports.title")}
+        description={t("reports.lede")}
+        backTo={pageBackNav.managerHome.to}
+        backLabel={t(pageBackNav.managerHome.labelKey)}
+        backTestId="page-header-back-reports"
+      />
 
       {dashboardTiles.length > 0 ? <ActionTileGrid tiles={dashboardTiles} /> : null}
 

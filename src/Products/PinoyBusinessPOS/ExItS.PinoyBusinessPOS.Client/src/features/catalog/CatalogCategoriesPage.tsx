@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createCatalogCategory,
@@ -16,6 +15,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -60,10 +60,13 @@ export function CatalogCategoriesPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="catalog-categories-page">
-      <PageHeader title={t("catalog.categoriesTitle")} description={t("catalog.categoriesLede")} />
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/catalog">{t("catalog.back")}</Link>
-      </Button>
+      <PageHeader
+        title={t("catalog.categoriesTitle")}
+        description={t("catalog.categoriesLede")}
+        backTo={pageBackNav.catalog.to}
+        backLabel={t(pageBackNav.catalog.labelKey)}
+        backTestId="page-header-back-catalog"
+      />
       {error ? <ErrorState title={t("error.title")} detail={error} /> : null}
       <Card>
         <form

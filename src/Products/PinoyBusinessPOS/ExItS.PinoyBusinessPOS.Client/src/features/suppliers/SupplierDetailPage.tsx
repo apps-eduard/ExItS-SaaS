@@ -18,6 +18,7 @@ import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { describeSupplierError } from "@/features/suppliers/supplier-errors";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -114,7 +115,13 @@ export function SupplierDetailPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="supplier-detail-page">
-      <PageHeader title={supplier.name} description={t("suppliers.detailLede")} />
+      <PageHeader
+        title={supplier.name}
+        description={t("suppliers.detailLede")}
+        backTo={pageBackNav.suppliers.to}
+        backLabel={t(pageBackNav.suppliers.labelKey)}
+        backTestId="page-header-back-suppliers"
+      />
       <div className="flex flex-wrap items-center gap-2">
         <StatusChip tone={isActive ? "success" : "warning"}>{supplier.status}</StatusChip>
         <StatusChip tone={connected ? "info" : "warning"}>
@@ -236,9 +243,6 @@ export function SupplierDetailPage() {
             {isActive ? t("suppliers.deactivate") : t("suppliers.activate")}
           </Button>
         ) : null}
-        <Button asChild variant="ghost" className="min-h-11">
-          <Link to="/suppliers">{t("suppliers.back")}</Link>
-        </Button>
       </div>
     </div>
   );

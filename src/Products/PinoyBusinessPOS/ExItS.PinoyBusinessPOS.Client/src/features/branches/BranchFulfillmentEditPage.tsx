@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { StatusChip } from "@/components/exits/StatusChip";
 import {
   formatCoordinate,
@@ -181,10 +182,13 @@ export function BranchFulfillmentEditPage() {
   if (!canManage) {
     return (
       <div data-testid="branch-fulfillment-denied" className="flex flex-col gap-3">
-        <PageHeader title={t("branches.editTitle")} description={t("branches.denied")} />
-        <Button asChild variant="ghost" className="min-h-11 w-fit">
-          <Link to="/org">{t("branches.backOrg")}</Link>
-        </Button>
+        <PageHeader
+          title={t("branches.editTitle")}
+          description={t("branches.denied")}
+          backTo={pageBackNav.org.to}
+          backLabel={t(pageBackNav.org.labelKey)}
+          backTestId="page-header-back-org"
+        />
       </div>
     );
   }
@@ -196,10 +200,13 @@ export function BranchFulfillmentEditPage() {
   if (detailQuery.isError || !detailQuery.data?.branch) {
     return (
       <div data-testid="branch-fulfillment-not-found" className="flex flex-col gap-3">
-        <PageHeader title={t("branches.editTitle")} description={t("branches.notFound")} />
-        <Button asChild variant="ghost" className="min-h-11 w-fit">
-          <Link to="/org/branches">{t("branches.backList")}</Link>
-        </Button>
+        <PageHeader
+          title={t("branches.editTitle")}
+          description={t("branches.notFound")}
+          backTo={pageBackNav.orgBranches.to}
+          backLabel={t(pageBackNav.orgBranches.labelKey)}
+          backTestId="page-header-back-org"
+        />
       </div>
     );
   }
@@ -360,10 +367,13 @@ export function BranchFulfillmentEditPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4 pb-24" data-testid="branch-fulfillment-edit">
-      <PageHeader title={branch.name} description={t("branches.editLede")} />
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/org/branches">{t("branches.backList")}</Link>
-      </Button>
+      <PageHeader
+        title={branch.name}
+        description={t("branches.editLede")}
+        backTo={pageBackNav.orgBranches.to}
+        backLabel={t(pageBackNav.orgBranches.labelKey)}
+        backTestId="page-header-back-org"
+      />
 
       {error ? (
         <p

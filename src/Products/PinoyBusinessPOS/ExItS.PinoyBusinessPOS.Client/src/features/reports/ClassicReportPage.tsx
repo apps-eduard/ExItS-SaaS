@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import {
@@ -9,12 +9,12 @@ import {
   getSalesReport,
   getUtangReport,
 } from "@/api/pos/pos-reporting-client";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { ReportFilters } from "@/features/reports/ReportFilters";
 import { type ClassicReportKind } from "@/features/reports/report-access";
 import {
@@ -177,10 +177,13 @@ export function ClassicReportPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="classic-report-page" data-kind={kind}>
-      <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="report-back">
-        <Link to="/reports">{t("reports.back")}</Link>
-      </Button>
-      <PageHeader title={t(titleKeys[kind])} description={t("reports.classicLede")} />
+      <PageHeader
+        title={t(titleKeys[kind])}
+        description={t("reports.classicLede")}
+        backTo={pageBackNav.reports.to}
+        backLabel={t(pageBackNav.reports.labelKey)}
+        backTestId="page-header-back-reports"
+      />
 
       <ReportFilters
         preset={preset}

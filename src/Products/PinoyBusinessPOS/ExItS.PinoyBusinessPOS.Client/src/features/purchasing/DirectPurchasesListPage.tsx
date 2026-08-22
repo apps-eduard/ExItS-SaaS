@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -49,6 +50,9 @@ export function DirectPurchasesListPage() {
       <PageHeader
         title={t("purchasing.directPurchases")}
         description={t("purchasing.directPurchasesLede")}
+        backTo={pageBackNav.purchasing.to}
+        backLabel={t(pageBackNav.purchasing.labelKey)}
+        backTestId="page-header-back-purchasing"
       />
       {!online ? (
         <Card>
@@ -61,9 +65,6 @@ export function DirectPurchasesListPage() {
             <Link to="/purchasing/receive-stock">{t("purchasing.receiveStock")}</Link>
           </Button>
         ) : null}
-        <Button asChild variant="ghost" className="min-h-11">
-          <Link to="/purchasing">{t("purchasing.backHub")}</Link>
-        </Button>
       </div>
       {query.isLoading ? <LoadingState label={t("purchasing.loading")} /> : null}
       {query.isError ? (

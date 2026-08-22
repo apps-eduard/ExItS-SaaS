@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { listCatalogProducts, updateCatalogProductPrices } from "@/api/pos/pos-catalog-client";
 import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
@@ -11,6 +10,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { SearchField } from "@/components/exits/SearchField";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -139,10 +139,13 @@ export function TodaysPricesPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4 pb-24" data-testid="todays-prices-page">
-      <PageHeader title={t("prices.title")} description={t("prices.lede")} />
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/catalog">{t("catalog.back")}</Link>
-      </Button>
+      <PageHeader
+        title={t("prices.title")}
+        description={t("prices.lede")}
+        backTo={pageBackNav.catalog.to}
+        backLabel={t(pageBackNav.catalog.labelKey)}
+        backTestId="page-header-back-catalog"
+      />
       <SearchField
         label={t("catalog.searchProducts")}
         value={search}

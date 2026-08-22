@@ -11,6 +11,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { SearchField } from "@/components/exits/SearchField";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -77,7 +78,13 @@ export function ReturnsHubPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="returns-hub-page">
-      <PageHeader title={t("returns.title")} description={t("returns.lede")} />
+      <PageHeader
+        title={t("returns.title")}
+        description={t("returns.lede")}
+        backTo={pageBackNav.managerHome.to}
+        backLabel={t(pageBackNav.managerHome.labelKey)}
+        backTestId="page-header-back-returns"
+      />
 
       <form className="flex min-w-0 flex-col gap-2" onSubmit={onSearchSubmit}>
         <SearchField

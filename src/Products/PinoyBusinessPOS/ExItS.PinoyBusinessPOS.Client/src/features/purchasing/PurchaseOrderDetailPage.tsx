@@ -101,6 +101,9 @@ export function PurchaseOrderDetailPage() {
       <PageHeader
         title={po.poNumber ?? t("purchasing.detailTitle")}
         description={po.supplierName ?? t("purchasing.unknownSupplier")}
+        backTo="/purchasing/orders"
+        backLabel={t("purchasing.backOrders")}
+        backTestId="page-header-back-purchasing"
       />
       <div className="flex flex-wrap items-center gap-2">
         <StatusChip tone="info">{displayStatus || po.status}</StatusChip>
@@ -232,9 +235,6 @@ export function PurchaseOrderDetailPage() {
             {t("purchasing.cancel")}
           </Button>
         ) : null}
-        <Button asChild variant="ghost" className="min-h-11">
-          <Link to="/purchasing/orders">{t("purchasing.backOrders")}</Link>
-        </Button>
       </div>
     </div>
   );

@@ -45,7 +45,9 @@ export const hilPH: Record<keyof typeof en, string> = {
   "org.nav.orders": "Mga order",
   "org.nav.more": "More",
   "org.more.title": "More",
+  "org.more.back": "Balik sa More",
   "org.more.lede": "Iban nga POS tool kag setting para sa organisasyon.",
+  "nav.backToManagerHome": "Balik sa Manager home",
   "org.more.inventory": "Imbentaryo",
   "org.more.customers": "Mga customer",
   "org.more.shifts": "Mga shift",
@@ -1024,6 +1026,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "shift.readinessClosed": "Ginablock ù nasirado ang shift.",
   "shift.readinessNoRegister": "Ginablock ù wala sing register ang bukas nga shift.",
   "register.listTitle": "Registers",
+  "registers.back": "Balik sa registers",
   "register.listLede": "Mga POS station para sa pag-abli sang shift. Indi branch ukon device.",
   "register.deniedDetail": "Indi tugotan ang access sa register para sa sini nga account.",
   "register.viewOnly":
@@ -1047,6 +1050,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "devices.deniedDetail":
     "Organization owners kag administrators lang ang makadumala sang POS devices.",
   "devices.backOrg": "Balik sa organization",
+  "devices.backDevices": "Balik sa POS devices",
   "devices.thisBrowserTitle": "Ini nga browser",
   "devices.statusLabel": "Status",
   "devices.deviceNameLabel": "Ngalan sa device",

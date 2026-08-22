@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { canManageShifts, canViewShifts } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { DenominationCountHelper } from "@/features/shifts/DenominationCountHelper";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
@@ -113,10 +114,13 @@ export function ShiftOpenPage() {
   if (!canView) {
     return (
       <div data-testid="shift-open-denied" className="flex flex-col gap-3">
-        <PageHeader title={t("shift.openTitle")} description={t("shift.deniedDetail")} />
-        <Button asChild variant="ghost" className="min-h-11 w-fit">
-          <Link to="/">{t("notFound.home")}</Link>
-        </Button>
+        <PageHeader
+          title={t("shift.openTitle")}
+          description={t("shift.deniedDetail")}
+          backTo={pageBackNav.shifts.to}
+          backLabel={t(pageBackNav.shifts.labelKey)}
+          backTestId="page-header-back-shifts"
+        />
       </div>
     );
   }
@@ -124,10 +128,13 @@ export function ShiftOpenPage() {
   if (!canManage) {
     return (
       <div data-testid="shift-open-denied" className="flex flex-col gap-3">
-        <PageHeader title={t("shift.openTitle")} description={t("shift.manageDeniedDetail")} />
-        <Button asChild variant="ghost" className="min-h-11 w-fit">
-          <Link to="/shifts">{t("shift.backToShifts")}</Link>
-        </Button>
+        <PageHeader
+          title={t("shift.openTitle")}
+          description={t("shift.manageDeniedDetail")}
+          backTo={pageBackNav.shifts.to}
+          backLabel={t(pageBackNav.shifts.labelKey)}
+          backTestId="page-header-back-shifts"
+        />
       </div>
     );
   }
@@ -196,7 +203,13 @@ export function ShiftOpenPage() {
 
   return (
     <div data-testid="shift-open-page" className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("shift.openTitle")} description={t("shift.openLede")} />
+      <PageHeader
+        title={t("shift.openTitle")}
+        description={t("shift.openLede")}
+        backTo={pageBackNav.shifts.to}
+        backLabel={t(pageBackNav.shifts.labelKey)}
+        backTestId="page-header-back-shifts"
+      />
 
       {submitError ? (
         <Card data-testid="shift-open-error">
@@ -319,9 +332,6 @@ export function ShiftOpenPage() {
           onClick={() => void onOpen(!showOpeningCash)}
         >
           {saving ? t("shift.opening") : t("shift.openConfirm")}
-        </Button>
-        <Button asChild variant="ghost" className="min-h-11">
-          <Link to="/shifts">{t("shift.backToShifts")}</Link>
         </Button>
       </div>
     </div>

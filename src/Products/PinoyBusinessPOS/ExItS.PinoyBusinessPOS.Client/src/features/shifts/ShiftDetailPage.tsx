@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import {
-  ArrowLeft,
   Banknote,
   CircleAlert,
   DoorClosed,
@@ -9,7 +8,7 @@ import {
   ShoppingCart,
   SkipForward,
 } from "lucide-react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { canManageShifts, canViewShifts } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
@@ -28,6 +27,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { DenominationCountHelper } from "@/features/shifts/DenominationCountHelper";
@@ -94,13 +94,13 @@ export function ShiftDetailPage() {
   if (!canView) {
     return (
       <div data-testid="shift-detail-denied" className="flex flex-col gap-3">
-        <PageHeader title={t("shift.detailTitle")} description={t("shift.deniedDetail")} />
-        <Button asChild variant="ghost" className="min-h-11 w-fit">
-          <Link to="/" className="inline-flex items-center gap-2">
-            <ArrowLeft className="size-5 shrink-0" aria-hidden />
-            {t("notFound.home")}
-          </Link>
-        </Button>
+        <PageHeader
+          title={t("shift.detailTitle")}
+          description={t("shift.deniedDetail")}
+          backTo={pageBackNav.managerHome.to}
+          backLabel={t(pageBackNav.managerHome.labelKey)}
+          backTestId="page-header-back-shifts"
+        />
       </div>
     );
   }
@@ -112,13 +112,13 @@ export function ShiftDetailPage() {
   if (shiftQuery.isError || !shiftQuery.data) {
     return (
       <div data-testid="shift-detail-missing" className="flex flex-col gap-3">
-        <PageHeader title={t("shift.detailTitle")} description={t("shift.notFound")} />
-        <Button asChild variant="ghost" className="min-h-11 w-fit">
-          <Link to="/shifts" className="inline-flex items-center gap-2">
-            <ArrowLeft className="size-5 shrink-0" aria-hidden />
-            {t("shift.backToShifts")}
-          </Link>
-        </Button>
+        <PageHeader
+          title={t("shift.detailTitle")}
+          description={t("shift.notFound")}
+          backTo={pageBackNav.shifts.to}
+          backLabel={t(pageBackNav.shifts.labelKey)}
+          backTestId="page-header-back-shifts"
+        />
       </div>
     );
   }
@@ -182,7 +182,13 @@ export function ShiftDetailPage() {
       data-testid="shift-detail-page"
       className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-4"
     >
-      <PageHeader title={shift.shiftNumber} description={t("shift.detailLede")} />
+      <PageHeader
+        title={shift.shiftNumber}
+        description={t("shift.detailLede")}
+        backTo={pageBackNav.shifts.to}
+        backLabel={t(pageBackNav.shifts.labelKey)}
+        backTestId="page-header-back-shifts"
+      />
 
       <div data-testid="shift-status-chip">
         <StatusChip tone={open ? "success" : "info"}>
@@ -301,13 +307,7 @@ export function ShiftDetailPage() {
         </Card>
       ) : null}
 
-      <div className={`grid gap-2 ${open ? "grid-cols-2" : "grid-cols-1"}`}>
-        <Button asChild variant="ghost" className="min-h-11 border border-border">
-          <Link to="/shifts" className="inline-flex items-center justify-center gap-2">
-            <ArrowLeft className="size-5 shrink-0" aria-hidden />
-            {t("shift.backToShifts")}
-          </Link>
-        </Button>
+      <div className="grid grid-cols-1 gap-2">
         {open ? (
           <Button
             type="button"

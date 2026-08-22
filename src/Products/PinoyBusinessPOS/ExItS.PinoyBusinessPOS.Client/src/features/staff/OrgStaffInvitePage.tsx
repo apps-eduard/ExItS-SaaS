@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -52,6 +53,9 @@ export function OrgStaffInvitePage() {
         <PageHeader
           title={t("staffInvite.createdTitle")}
           description={t("staffInvite.createdLede")}
+          backTo={pageBackNav.org.to}
+          backLabel={t(pageBackNav.org.labelKey)}
+          backTestId="page-header-back-org"
         />
         <StatusChip tone="success">{t("staffInvite.createdBadge")}</StatusChip>
         <Card className="flex flex-col gap-3">
@@ -65,9 +69,6 @@ export function OrgStaffInvitePage() {
           <Button asChild className="min-h-11 w-full sm:w-auto">
             <Link to={acceptPath}>{t("staffInvite.openAccept")}</Link>
           </Button>
-          <Button asChild variant="ghost" className="min-h-11 w-full sm:w-auto">
-            <Link to="/org">{t("staffInvite.backOrg")}</Link>
-          </Button>
         </Card>
       </div>
     );
@@ -75,7 +76,13 @@ export function OrgStaffInvitePage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="staff-invite-page">
-      <PageHeader title={t("staffInvite.title")} description={t("staffInvite.lede")} />
+      <PageHeader
+        title={t("staffInvite.title")}
+        description={t("staffInvite.lede")}
+        backTo={pageBackNav.org.to}
+        backLabel={t(pageBackNav.org.labelKey)}
+        backTestId="page-header-back-org"
+      />
       <StatusChip tone="info">{t("staffInvite.badge")}</StatusChip>
       {error ? <ErrorState title={t("error.title")} detail={error} /> : null}
       <Card>

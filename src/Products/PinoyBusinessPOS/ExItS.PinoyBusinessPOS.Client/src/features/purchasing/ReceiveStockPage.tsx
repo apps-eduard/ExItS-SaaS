@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { canManageInventory } from "@/access/pos-capabilities";
 import { listCatalogProducts } from "@/api/pos/pos-catalog-client";
@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { SearchField } from "@/components/exits/SearchField";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -178,6 +179,9 @@ export function ReceiveStockPage() {
       <PageHeader
         title={t("purchasing.receiveStock")}
         description={t("purchasing.receiveStockLede")}
+        backTo={pageBackNav.purchasing.to}
+        backLabel={t(pageBackNav.purchasing.labelKey)}
+        backTestId="page-header-back-purchasing"
       />
       <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
         {t("purchasing.receiveStockHelper")}
@@ -192,9 +196,6 @@ export function ReceiveStockPage() {
           <p className="m-0">{t("purchasing.inventoryManageDenied")}</p>
         </Card>
       ) : null}
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/purchasing">{t("purchasing.backHub")}</Link>
-      </Button>
 
       {!reviewing ? (
         <>

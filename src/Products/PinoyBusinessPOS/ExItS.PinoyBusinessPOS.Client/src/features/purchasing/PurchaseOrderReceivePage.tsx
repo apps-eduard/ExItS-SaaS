@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { canManagePurchasing } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
@@ -184,6 +184,9 @@ export function PurchaseOrderReceivePage() {
       <PageHeader
         title={t("purchasing.receiveTitle")}
         description={po.poNumber ?? t("purchasing.receiveSubtitle")}
+        backTo={`/purchasing/${purchaseOrderId}`}
+        backLabel={t("purchasing.backDetail")}
+        backTestId="page-header-back-purchasing"
       />
       <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
         {t("purchasing.receiptsStockNote")}
@@ -322,9 +325,6 @@ export function PurchaseOrderReceivePage() {
             {t("purchasing.reviewReceipt")}
           </Button>
         )}
-        <Button asChild variant="ghost" className="min-h-11">
-          <Link to={`/purchasing/${purchaseOrderId}`}>{t("purchasing.backDetail")}</Link>
-        </Button>
       </div>
     </div>
   );

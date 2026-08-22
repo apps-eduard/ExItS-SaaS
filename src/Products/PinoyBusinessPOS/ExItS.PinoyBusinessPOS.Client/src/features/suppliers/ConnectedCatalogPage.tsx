@@ -231,7 +231,13 @@ export function ConnectedCatalogPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="connected-catalog-page">
-      <PageHeader title={t("connected.catalogTitle")} description={supplierQuery.data.name} />
+      <PageHeader
+        title={t("connected.catalogTitle")}
+        description={supplierQuery.data.name}
+        backTo={`/suppliers/${supplierId}`}
+        backLabel={t("connected.backToSupplier")}
+        backTestId="page-header-back-suppliers"
+      />
       <div className="flex flex-wrap gap-2">
         <Button asChild variant="ghost" className="min-h-11" data-testid="connected-open-linked">
           <Link to={`/suppliers/${supplierId}/linked-products`}>
@@ -437,9 +443,6 @@ export function ConnectedCatalogPage() {
           </div>
         </div>
       ) : null}
-      <Button asChild variant="ghost" className="min-h-11 self-start">
-        <Link to={`/suppliers/${supplierId}`}>{t("connected.backToSupplier")}</Link>
-      </Button>
     </div>
   );
 }

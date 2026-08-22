@@ -14,6 +14,7 @@ import { getDurableInstallationDeviceId } from "@/workspace/browser-installation
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { hasOrganizationManagementAuthority } from "@/access/pos-capabilities";
@@ -110,7 +111,13 @@ export function DeviceRegisterPage() {
 
   return (
     <div data-testid="device-register-page" className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("devices.registerTitle")} description={t("devices.registerLede")} />
+      <PageHeader
+        title={t("devices.registerTitle")}
+        description={t("devices.registerLede")}
+        backTo={pageBackNav.orgDevices.to}
+        backLabel={t(pageBackNav.orgDevices.labelKey)}
+        backTestId="page-header-back-org"
+      />
 
       <Card className="flex flex-col gap-3 p-4">
         <div className="flex items-start gap-3">

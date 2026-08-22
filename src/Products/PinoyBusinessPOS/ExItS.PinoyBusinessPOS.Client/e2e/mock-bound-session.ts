@@ -465,11 +465,24 @@ export async function signInAndBindManager(page: Page) {
   await page.getByLabel("Email or staff login").fill("manager");
   await page.getByRole("textbox", { name: "Password" }).fill("secret");
   await page.getByTestId("sign-in-submit").click();
-  await page
-    .getByTestId("workspace-destination-operations")
-    .waitFor({ state: "visible", timeout: 15000 });
-  await page.getByTestId("workspace-destination-operations").click();
-  await page.getByTestId("open-inventory").waitFor({ state: "visible", timeout: 15000 });
+  const ops = page.getByTestId("workspace-destination-operations");
+  const openInventory = page.getByTestId("open-inventory");
+  const managerHome = page.getByTestId("manager-home");
+  const chooser = page.getByRole("heading", { name: "Choose workspace" });
+  await Promise.race([
+    ops.waitFor({ state: "visible", timeout: 15000 }),
+    openInventory.waitFor({ state: "visible", timeout: 15000 }),
+    managerHome.waitFor({ state: "visible", timeout: 15000 }),
+    chooser.waitFor({ state: "visible", timeout: 15000 }),
+    page.getByTestId("offline-pin-setup-page").waitFor({ state: "visible", timeout: 15000 }),
+  ]);
+  await completeOfflinePinSetupIfNeeded(page);
+  await ops.waitFor({ state: "visible", timeout: 15000 });
+  await ops.click();
+  await Promise.race([
+    openInventory.waitFor({ state: "visible", timeout: 15000 }),
+    managerHome.waitFor({ state: "visible", timeout: 15000 }),
+  ]);
 }
 
 export async function signInAndBindOrgAdmin(page: Page) {

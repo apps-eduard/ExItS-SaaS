@@ -44,7 +44,9 @@ export const iloPH: Record<keyof typeof en, string> = {
   "org.nav.orders": "Dagiti order",
   "org.nav.more": "More",
   "org.more.title": "More",
+  "org.more.back": "Agsubli iti More",
   "org.more.lede": "Dadduma a POS tool ken setting para iti daytoy nga organisasion.",
+  "nav.backToManagerHome": "Agsubli iti Manager home",
   "org.more.inventory": "Imbentario",
   "org.more.customers": "Dagiti customer",
   "org.more.shifts": "Dagiti shift",
@@ -1023,6 +1025,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "shift.readinessClosed": "Nablock ù nairikep ti shift.",
   "shift.readinessNoRegister": "Nablock ù awan ti register ti nakalukat a shift.",
   "register.listTitle": "Registers",
+  "registers.back": "Agsubli kadagiti register",
   "register.listLede":
     "Dagiti POS station para iti pag-abli iti shift. Saan a branch wenno device.",
   "register.deniedDetail": "Saan a tugotan ti access iti register para iti daytoy a account.",
@@ -1047,6 +1050,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "devices.deniedDetail":
     "Organization owners ken administrators lti ti makadumala iti POS devices.",
   "devices.backOrg": "Agsubli iti organization",
+  "devices.backDevices": "Agsubli kadagiti POS device",
   "devices.thisBrowserTitle": "Daytoy a browser",
   "devices.statusLabel": "Status",
   "devices.deviceNameLabel": "Nagan iti device",

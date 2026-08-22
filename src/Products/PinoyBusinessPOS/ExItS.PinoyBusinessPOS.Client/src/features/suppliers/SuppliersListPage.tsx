@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
@@ -92,7 +93,13 @@ export function SuppliersListPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="suppliers-list-page">
-      <PageHeader title={t("suppliers.title")} description={t("suppliers.lede")} />
+      <PageHeader
+        title={t("suppliers.title")}
+        description={t("suppliers.lede")}
+        backTo={pageBackNav.managerHome.to}
+        backLabel={t(pageBackNav.managerHome.labelKey)}
+        backTestId="page-header-back-suppliers"
+      />
       <div className="flex flex-wrap gap-2">
         {allowManage ? (
           <Button asChild className="min-h-11" data-testid="suppliers-new">

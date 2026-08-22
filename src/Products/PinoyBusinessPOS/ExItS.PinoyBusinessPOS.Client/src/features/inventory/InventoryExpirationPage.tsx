@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { SearchField } from "@/components/exits/SearchField";
 import {
   EXPIRY_WINDOWS,
@@ -122,6 +123,9 @@ export function InventoryExpirationPage() {
       <PageHeader
         title={t("inventory.expirationTitle")}
         description={t("inventory.expirationLede")}
+        backTo={pageBackNav.inventory.to}
+        backLabel={t(pageBackNav.inventory.labelKey)}
+        backTestId="page-header-back-inventory"
       />
       <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
         {t("inventory.expiryWindow")}
@@ -197,9 +201,6 @@ export function InventoryExpirationPage() {
           {query.isFetchingNextPage ? t("inventory.loadingMore") : t("inventory.loadMore")}
         </Button>
       ) : null}
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/inventory">{t("inventory.backList")}</Link>
-      </Button>
     </div>
   );
 }

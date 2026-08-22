@@ -33,6 +33,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { BottomSheet } from "@/components/exits/SheetDialog";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { StatusChip } from "@/components/exits/StatusChip";
@@ -298,10 +299,13 @@ export function OrgPosDevicesPage() {
   if (!canManage) {
     return (
       <div data-testid="org-devices-denied" className="flex flex-col gap-3">
-        <PageHeader title={t("devices.listTitle")} description={t("devices.deniedDetail")} />
-        <Button asChild variant="ghost" className="min-h-11 w-fit">
-          <Link to="/org">{t("devices.backOrg")}</Link>
-        </Button>
+        <PageHeader
+          title={t("devices.listTitle")}
+          description={t("devices.deniedDetail")}
+          backTo={pageBackNav.org.to}
+          backLabel={t(pageBackNav.org.labelKey)}
+          backTestId="page-header-back-org"
+        />
       </div>
     );
   }
@@ -316,7 +320,13 @@ export function OrgPosDevicesPage() {
       data-testid="org-devices-page"
       className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-4"
     >
-      <PageHeader title={t("devices.listTitle")} description={t("devices.listLede")} />
+      <PageHeader
+        title={t("devices.listTitle")}
+        description={t("devices.listLede")}
+        backTo={pageBackNav.org.to}
+        backLabel={t(pageBackNav.org.labelKey)}
+        backTestId="page-header-back-org"
+      />
 
       {capacity ? (
         <Card data-testid="devices-capacity">
@@ -706,9 +716,6 @@ export function OrgPosDevicesPage() {
           <Link to="/devices/register" data-testid="devices-open-register">
             {t("devices.registerThisDevice")}
           </Link>
-        </Button>
-        <Button asChild variant="ghost" className="min-h-11">
-          <Link to="/org">{t("devices.backOrg")}</Link>
         </Button>
       </div>
     </div>

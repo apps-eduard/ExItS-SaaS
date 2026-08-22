@@ -1,8 +1,7 @@
 import { useMemo } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getDirectPurchaseReceipt } from "@/api/pos/pos-direct-purchase-receipts-client";
-import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -51,7 +50,13 @@ export function DirectPurchaseDetailPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="direct-purchase-detail-page">
-      <PageHeader title={receipt.receiptNumber} description={t("purchasing.directDetailLede")} />
+      <PageHeader
+        title={receipt.receiptNumber}
+        description={t("purchasing.directDetailLede")}
+        backTo="/purchasing/direct-purchases"
+        backLabel={t("purchasing.backDirect")}
+        backTestId="page-header-back-purchasing"
+      />
       <dl className="m-0 grid gap-2 sm:grid-cols-2">
         <div>
           <dt className="text-[length:var(--exits-text-sm)] text-muted">
@@ -97,9 +102,6 @@ export function DirectPurchaseDetailPage() {
           ))}
         </ul>
       </section>
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/purchasing/direct-purchases">{t("purchasing.backDirect")}</Link>
-      </Button>
     </div>
   );
 }

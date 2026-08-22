@@ -5,12 +5,12 @@ import {
   isReceivablePurchaseOrderStatus,
   listPurchaseOrders,
 } from "@/api/pos/pos-purchase-orders-client";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -55,7 +55,13 @@ export function ReceivableOrdersPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="receivable-orders-page">
-      <PageHeader title={t("purchasing.receipts")} description={t("purchasing.receiptsLede")} />
+      <PageHeader
+        title={t("purchasing.receipts")}
+        description={t("purchasing.receiptsLede")}
+        backTo={pageBackNav.purchasing.to}
+        backLabel={t(pageBackNav.purchasing.labelKey)}
+        backTestId="page-header-back-purchasing"
+      />
       <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
         {t("purchasing.receiptsStockNote")}
       </p>
@@ -64,9 +70,6 @@ export function ReceivableOrdersPage() {
           <p className="m-0">{t("purchasing.offline")}</p>
         </Card>
       ) : null}
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/purchasing">{t("purchasing.backHub")}</Link>
-      </Button>
       {query.isLoading ? <LoadingState label={t("purchasing.loading")} /> : null}
       {query.isError ? (
         <ErrorState title={t("purchasing.errorTitle")} detail={t("purchasing.loadFailed")} />

@@ -110,7 +110,13 @@ export function LinkedProductsPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="linked-products-page">
-      <PageHeader title={t("connected.linkedTitle")} description={t("connected.linkedHelp")} />
+      <PageHeader
+        title={t("connected.linkedTitle")}
+        description={t("connected.linkedHelp")}
+        backTo={`/suppliers/${supplierId}`}
+        backLabel={t("connected.backToSupplier")}
+        backTestId="page-header-back-suppliers"
+      />
       <Button asChild className="min-h-11 self-start" data-testid="linked-browse-catalog">
         <Link to={`/suppliers/${supplierId}/connected-catalog`}>
           {t("connected.browseProducts")}
@@ -175,9 +181,6 @@ export function LinkedProductsPage() {
           </li>
         ))}
       </ul>
-      <Button asChild variant="ghost" className="min-h-11 self-start">
-        <Link to={`/suppliers/${supplierId}`}>{t("connected.backToSupplier")}</Link>
-      </Button>
     </div>
   );
 }

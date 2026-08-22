@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   adjustInventoryStock,
@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import {
   requiresOpeningExpirationDate,
   resolveLotExpiryLabel,
@@ -213,10 +214,13 @@ export function InventoryDetailPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="inventory-detail-page">
-      <PageHeader title={account.name} description={t("inventory.detailLede")} />
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/inventory">{t("inventory.backList")}</Link>
-      </Button>
+      <PageHeader
+        title={account.name}
+        description={t("inventory.detailLede")}
+        backTo={pageBackNav.inventory.to}
+        backLabel={t(pageBackNav.inventory.labelKey)}
+        backTestId="page-header-back-inventory"
+      />
       {error ? <ErrorState title={t("error.title")} detail={error} /> : null}
 
       <Card className="p-3" data-testid="inventory-status">

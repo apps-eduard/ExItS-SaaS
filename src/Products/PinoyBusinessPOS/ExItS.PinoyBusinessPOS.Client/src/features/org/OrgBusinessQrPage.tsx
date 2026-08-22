@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Copy, Share2 } from "lucide-react";
-import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getOrganizationPublicIdentity } from "@/api/platform/public-identity-client";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { QrCodeImage } from "@/features/qr/QrCodeImage";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -69,7 +69,13 @@ export function OrgBusinessQrPage() {
       className="mx-auto flex w-full max-w-md min-w-0 flex-col gap-4"
       data-testid="org-business-qr-page"
     >
-      <PageHeader title={t("org.businessQr.title")} description={t("org.businessQr.lede")} />
+      <PageHeader
+        title={t("org.businessQr.title")}
+        description={t("org.businessQr.lede")}
+        backTo={pageBackNav.org.to}
+        backLabel={t(pageBackNav.org.labelKey)}
+        backTestId="page-header-back-org"
+      />
       <Card className="flex flex-col items-center gap-3 p-4 text-center">
         <QrCodeImage
           payload={query.data.qrPayload}
@@ -112,9 +118,6 @@ export function OrgBusinessQrPage() {
           ) : null}
         </div>
       </Card>
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/org">{t("org.businessQr.back")}</Link>
-      </Button>
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { RotateCcw, Trash2 } from "lucide-react";
-import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { hasOrganizationManagementAuthority } from "@/access/pos-capabilities";
 import {
@@ -19,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -78,10 +78,13 @@ export function CashHandlingSettingsPage() {
   if (!canManage) {
     return (
       <div data-testid="cash-handling-denied" className="flex flex-col gap-3">
-        <PageHeader title={t("cashHandling.title")} description={t("cashHandling.denied")} />
-        <Button asChild variant="ghost" className="min-h-11 w-fit">
-          <Link to="/org">{t("notFound.home")}</Link>
-        </Button>
+        <PageHeader
+          title={t("cashHandling.title")}
+          description={t("cashHandling.denied")}
+          backTo={pageBackNav.org.to}
+          backLabel={t(pageBackNav.org.labelKey)}
+          backTestId="page-header-back-org"
+        />
       </div>
     );
   }
@@ -93,10 +96,13 @@ export function CashHandlingSettingsPage() {
   if (setupQuery.isError || !setup) {
     return (
       <div data-testid="cash-handling-error" className="flex flex-col gap-3">
-        <PageHeader title={t("cashHandling.title")} description={t("cashHandling.loadError")} />
-        <Button asChild variant="ghost" className="min-h-11 w-fit">
-          <Link to="/org">{t("notFound.home")}</Link>
-        </Button>
+        <PageHeader
+          title={t("cashHandling.title")}
+          description={t("cashHandling.loadError")}
+          backTo={pageBackNav.org.to}
+          backLabel={t(pageBackNav.org.labelKey)}
+          backTestId="page-header-back-org"
+        />
       </div>
     );
   }
@@ -213,7 +219,13 @@ export function CashHandlingSettingsPage() {
 
   return (
     <div data-testid="cash-handling-page" className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("cashHandling.title")} description={t("cashHandling.lede")} />
+      <PageHeader
+        title={t("cashHandling.title")}
+        description={t("cashHandling.lede")}
+        backTo={pageBackNav.org.to}
+        backLabel={t(pageBackNav.org.labelKey)}
+        backTestId="page-header-back-org"
+      />
 
       {error ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">{error}</p>
@@ -354,10 +366,6 @@ export function CashHandlingSettingsPage() {
           </Button>
         </div>
       </Card>
-
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/org">{t("notFound.home")}</Link>
-      </Button>
     </div>
   );
 }

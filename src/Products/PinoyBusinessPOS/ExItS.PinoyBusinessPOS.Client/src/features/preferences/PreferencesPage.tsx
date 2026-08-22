@@ -1,28 +1,30 @@
 import { X } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { LanguageControl } from "@/components/exits/LanguageControl";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { ThemeControl } from "@/components/exits/ThemeControl";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
+import { pageBackNav } from "@/navigation/page-back-nav";
 
 export function PreferencesPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const location = useLocation();
 
   function onClose() {
-    if (location.key !== "default") {
-      navigate(-1);
-      return;
-    }
-    navigate("/", { replace: true });
+    navigate("/more", { replace: true });
   }
 
   return (
     <div className="mx-auto flex w-full max-w-lg min-w-0 flex-col gap-5">
       <div className="flex items-start justify-between gap-3">
-        <PageHeader title={t("preferences.title")} description={t("preferences.lede")} />
+        <PageHeader
+          title={t("preferences.title")}
+          description={t("preferences.lede")}
+          backTo={pageBackNav.more.to}
+          backLabel={t(pageBackNav.more.labelKey)}
+          backTestId="page-header-back-preferences"
+        />
         <Button
           type="button"
           variant="ghost"

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { canManageCustomerOrders } from "@/access/pos-capabilities";
 import {
@@ -20,6 +20,7 @@ import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { StatusChip } from "@/components/exits/StatusChip";
 import {
   availableSellerActions,
@@ -145,10 +146,14 @@ export function SellerOrderDetailPage() {
   if (query.isError || !query.data) {
     return (
       <div className="flex min-w-0 flex-col gap-4">
+        <PageHeader
+          title={t("orders.notFound")}
+          description={t("orders.notFoundHelp")}
+          backTo={pageBackNav.orders.to}
+          backLabel={t(pageBackNav.orders.labelKey)}
+          backTestId="page-header-back-orders"
+        />
         <ErrorState title={t("orders.notFound")} detail={t("orders.notFoundHelp")} />
-        <Button asChild className="min-h-11 w-fit">
-          <Link to="/orders">{t("orders.backToQueue")}</Link>
-        </Button>
       </div>
     );
   }
@@ -161,11 +166,11 @@ export function SellerOrderDetailPage() {
       <PageHeader
         title={`#${order.orderNumber}`}
         description={`${order.customerDisplayName} · ${order.fulfillmentType}`}
+        backTo={pageBackNav.orders.to}
+        backLabel={t(pageBackNav.orders.labelKey)}
+        backTestId="page-header-back-orders"
       />
       <StatusChip tone="info">{t(displayOrderStatusKey(order) as MessageKey)}</StatusChip>
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/orders">{t("orders.backToQueue")}</Link>
-      </Button>
       {error ? <ErrorState title={t("orders.error")} detail={error} /> : null}
 
       <Card className="grid gap-2 text-[length:var(--exits-text-sm)]" data-testid="order-facts">

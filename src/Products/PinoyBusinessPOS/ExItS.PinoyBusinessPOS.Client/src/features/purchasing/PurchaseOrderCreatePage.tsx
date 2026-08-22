@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { canManagePurchasing } from "@/access/pos-capabilities";
 import { listCatalogProducts } from "@/api/pos/pos-catalog-client";
@@ -162,7 +162,13 @@ export function PurchaseOrderCreatePage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="purchase-order-create-page">
-      <PageHeader title={t("purchasing.createTitle")} description={t("purchasing.createLede")} />
+      <PageHeader
+        title={t("purchasing.createTitle")}
+        description={t("purchasing.createLede")}
+        backTo="/purchasing/orders"
+        backLabel={t("purchasing.backOrders")}
+        backTestId="page-header-back-purchasing"
+      />
       <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
         {t("purchasing.ordersNoStock")}
       </p>
@@ -176,9 +182,6 @@ export function PurchaseOrderCreatePage() {
           <p className="m-0">{t("purchasing.manageDenied")}</p>
         </Card>
       ) : null}
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/purchasing/orders">{t("purchasing.backOrders")}</Link>
-      </Button>
 
       <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
         {t("purchasing.branch")}

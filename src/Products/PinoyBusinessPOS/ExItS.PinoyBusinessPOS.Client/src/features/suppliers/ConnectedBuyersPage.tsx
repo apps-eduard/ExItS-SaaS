@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -92,7 +93,13 @@ export function ConnectedBuyersPage() {
     const name = buyer.counterpartyDisplayName?.trim() || t("connected.unknownBusiness");
     return (
       <div className="flex min-w-0 flex-col gap-4" data-testid="connected-buyer-detail">
-        <PageHeader title={t("connected.buyerDetailTitle")} description={name} />
+        <PageHeader
+          title={t("connected.buyerDetailTitle")}
+          description={name}
+          backTo={pageBackNav.connectedBuyers.to}
+          backLabel={t(pageBackNav.connectedBuyers.labelKey)}
+          backTestId="page-header-back-suppliers"
+        />
         <div className="flex flex-wrap items-center gap-2">
           <StatusChip tone={isRelationshipActive(buyer) ? "success" : "warning"}>
             {buyer.status}
@@ -121,16 +128,19 @@ export function ConnectedBuyersPage() {
             </Link>
           </Button>
         ) : null}
-        <Button asChild variant="ghost" className="min-h-11 self-start">
-          <Link to="/suppliers/connected/buyers">{t("connected.backToBuyers")}</Link>
-        </Button>
       </div>
     );
   }
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="connected-buyers-page">
-      <PageHeader title={t("connected.buyersTitle")} description={t("connected.buyersHelp")} />
+      <PageHeader
+        title={t("connected.buyersTitle")}
+        description={t("connected.buyersHelp")}
+        backTo={pageBackNav.suppliers.to}
+        backLabel={t("connected.backToSuppliers")}
+        backTestId="page-header-back-suppliers"
+      />
       {listQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
       {listQuery.isError ? (
         <ErrorState title={t("error.title")} detail={t("connected.loadFailed")} />
@@ -160,9 +170,6 @@ export function ConnectedBuyersPage() {
           );
         })}
       </ul>
-      <Button asChild variant="ghost" className="min-h-11 self-start">
-        <Link to="/suppliers">{t("connected.backToSuppliers")}</Link>
-      </Button>
     </div>
   );
 }

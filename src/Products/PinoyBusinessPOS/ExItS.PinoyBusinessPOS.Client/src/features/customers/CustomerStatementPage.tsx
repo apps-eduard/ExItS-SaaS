@@ -1,8 +1,7 @@
 import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getCustomer, getCustomerStatement } from "@/api/pos/pos-customers-client";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -88,6 +87,9 @@ export function CustomerStatementPage() {
       <PageHeader
         title={t("customers.statementTitle")}
         description={t("customers.statementLede").replace("{name}", customerQuery.data.displayName)}
+        backTo={`/customers/${customerId}`}
+        backLabel={t("customers.backDetail")}
+        backTestId="page-header-back-customers"
       />
 
       <Card className="flex flex-wrap gap-3">
@@ -183,10 +185,6 @@ export function CustomerStatementPage() {
           )}
         </>
       ) : null}
-
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to={`/customers/${customerId}`}>{t("customers.backDetail")}</Link>
-      </Button>
     </div>
   );
 }

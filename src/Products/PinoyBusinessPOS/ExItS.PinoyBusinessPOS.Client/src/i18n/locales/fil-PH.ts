@@ -44,7 +44,9 @@ export const filPH: Record<keyof typeof en, string> = {
   "org.nav.orders": "Mga order",
   "org.nav.more": "More",
   "org.more.title": "More",
+  "org.more.back": "Bumalik sa More",
   "org.more.lede": "Iba pang POS tool at setting para sa organisasyong ito.",
+  "nav.backToManagerHome": "Bumalik sa Manager home",
   "org.more.inventory": "Imbentaryo",
   "org.more.customers": "Mga customer",
   "org.more.shifts": "Mga shift",
@@ -1008,6 +1010,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "shift.readinessClosed": "Blocked ù sarado na ang shift.",
   "shift.readinessNoRegister": "Blocked ù walang register ang open shift.",
   "register.listTitle": "Mga register",
+  "registers.back": "Bumalik sa mga register",
   "register.listLede": "Mga POS station para sa pag-open ng shift. Hindi branch o device.",
   "register.deniedDetail": "Hindi allowed ang register access para sa account na ito.",
   "register.viewOnly":
@@ -1031,6 +1034,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "devices.deniedDetail":
     "Owner at administrator lang ng organization ang puwedeng mag-manage ng POS devices.",
   "devices.backOrg": "Bumalik sa organization",
+  "devices.backDevices": "Bumalik sa POS devices",
   "devices.thisBrowserTitle": "Browser na ito",
   "devices.statusLabel": "Status",
   "devices.deviceNameLabel": "Pangalan ng device",

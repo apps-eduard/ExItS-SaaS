@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { SearchField } from "@/components/exits/SearchField";
 import { useBrowserOnline } from "@/connectivity/browser-online";
@@ -110,7 +111,13 @@ export function CustomersListPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="customers-list-page">
-      <PageHeader title={t("customers.title")} description={t("customers.lede")} />
+      <PageHeader
+        title={t("customers.title")}
+        description={t("customers.lede")}
+        backTo={pageBackNav.managerHome.to}
+        backLabel={t(pageBackNav.managerHome.labelKey)}
+        backTestId="page-header-back-customers"
+      />
       <div className="flex flex-wrap gap-2">
         {allowCreate ? (
           <Button asChild className="min-h-11" data-testid="customers-new">

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   createCustomerRepayment,
@@ -216,6 +216,9 @@ export function CustomerRepayPage() {
       <PageHeader
         title={t("customers.repayTitle")}
         description={t("customers.repayLede").replace("{name}", displayName)}
+        backTo={`/customers/${customerId}`}
+        backLabel={t("customers.backDetail")}
+        backTestId="page-header-back-customers"
       />
 
       <Card data-testid="customer-repay-owed">
@@ -303,9 +306,6 @@ export function CustomerRepayPage() {
           onClick={() => void onSubmit()}
         >
           {saving ? t("customers.saving") : t("customers.recordPayment")}
-        </Button>
-        <Button asChild variant="ghost" className="min-h-11" disabled={saving}>
-          <Link to={`/customers/${customerId}`}>{t("customers.backDetail")}</Link>
         </Button>
       </div>
     </div>

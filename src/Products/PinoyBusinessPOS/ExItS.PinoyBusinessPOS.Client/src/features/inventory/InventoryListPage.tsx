@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { SearchField } from "@/components/exits/SearchField";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -44,7 +45,13 @@ export function InventoryListPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="inventory-list-page">
-      <PageHeader title={t("inventory.title")} description={t("inventory.lede")} />
+      <PageHeader
+        title={t("inventory.title")}
+        description={t("inventory.lede")}
+        backTo={pageBackNav.managerHome.to}
+        backLabel={t(pageBackNav.managerHome.labelKey)}
+        backTestId="page-header-back-inventory"
+      />
       <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-expiring-stock">
         <Link to="/inventory/expiration">{t("inventory.openExpiring")}</Link>
       </Button>
@@ -82,9 +89,6 @@ export function InventoryListPage() {
           </li>
         ))}
       </ul>
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/role/manager">{t("inventory.backOps")}</Link>
-      </Button>
     </div>
   );
 }

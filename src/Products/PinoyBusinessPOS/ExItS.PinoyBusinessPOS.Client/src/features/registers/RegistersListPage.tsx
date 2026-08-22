@@ -6,6 +6,7 @@ import { listRegisters } from "@/api/pos/pos-registers-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -36,17 +37,26 @@ export function RegistersListPage() {
   if (!canView) {
     return (
       <div data-testid="registers-denied" className="flex flex-col gap-3">
-        <PageHeader title={t("register.listTitle")} description={t("register.deniedDetail")} />
-        <Button asChild variant="ghost" className="min-h-11 w-fit">
-          <Link to="/">{t("notFound.home")}</Link>
-        </Button>
+        <PageHeader
+          title={t("register.listTitle")}
+          description={t("register.deniedDetail")}
+          backTo={pageBackNav.managerHome.to}
+          backLabel={t(pageBackNav.managerHome.labelKey)}
+          backTestId="page-header-back-registers"
+        />
       </div>
     );
   }
 
   return (
     <div data-testid="registers-list-page" className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("register.listTitle")} description={t("register.listLede")} />
+      <PageHeader
+        title={t("register.listTitle")}
+        description={t("register.listLede")}
+        backTo={pageBackNav.managerHome.to}
+        backLabel={t(pageBackNav.managerHome.labelKey)}
+        backTestId="page-header-back-registers"
+      />
       {!canManage ? (
         <p
           className="m-0 text-[length:var(--exits-text-sm)] text-muted"

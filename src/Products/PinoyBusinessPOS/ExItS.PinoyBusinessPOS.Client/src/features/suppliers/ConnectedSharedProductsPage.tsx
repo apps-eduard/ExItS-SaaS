@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { canManageSuppliers } from "@/access/pos-capabilities";
 import {
@@ -167,6 +167,9 @@ export function ConnectedSharedProductsPage() {
       <PageHeader
         title={t("connected.manageSharedTitle")}
         description={t("connected.manageSharedHelp")}
+        backTo={`/suppliers/connected/buyers/${relationshipId}`}
+        backLabel={t("connected.backToBuyer")}
+        backTestId="page-header-back-suppliers"
       />
       <p
         className="m-0 text-[length:var(--exits-text-sm)] text-muted"
@@ -343,11 +346,6 @@ export function ConnectedSharedProductsPage() {
           </div>
         </div>
       ) : null}
-      <Button asChild variant="ghost" className="min-h-11 self-start">
-        <Link to={`/suppliers/connected/buyers/${relationshipId}`}>
-          {t("connected.backToBuyer")}
-        </Link>
-      </Button>
     </div>
   );
 }
