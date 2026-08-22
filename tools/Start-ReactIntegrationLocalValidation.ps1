@@ -4,18 +4,25 @@
   Local Validation launcher for the React Platform Admin integration branch + current React POS.
 
 .DESCRIPTION
-  Starts a host-app Local Validation stack for PA-INTEGRATION-01:
+  Starts a host-app Local Validation stack for PA-INTEGRATION (01/04):
 
   - PostgreSQL + Mailpit (Docker volumes preserved; never compose down -v)
   - Platform API :8091 from THIS integration worktree
   - POS API :8092 from the current feat/pos-react-client HEAD (no detach/downgrade)
   - React Platform Admin Vite :8095 from THIS worktree (never Blazor Admin as React Admin)
-  - React POS Vite :5177 from the POS worktree (separate window; adb reverse when emulator present)
+  - React POS :5177 from the POS worktree:
+      default = npm run dev (Vite)
+      -ReactPosDocker = Docker nginx SPA built from POS worktree (not this Platform tree)
+  - Does not touch MAUI isolated Local Validation ports 8190-8194
 
   Does NOT merge to main. Does NOT start Blazor Admin as the React Admin surface.
+  Does NOT copy or downgrade POS source into the Platform integration worktree.
 
 .EXAMPLE
   .\tools\Start-ReactIntegrationLocalValidation.ps1
+
+.EXAMPLE
+  .\tools\Start-ReactIntegrationLocalValidation.ps1 -ReactPosDocker
 #>
 [CmdletBinding()]
 param(
@@ -23,7 +30,9 @@ param(
     [string]$PosRepoRoot = "C:\Users\speed\Desktop\ExItS-SaaS-pos-react-client",
     [string]$EnvFile = "",
     [int]$PortWaitSeconds = 180,
-    [switch]$SkipReactPos
+    [switch]$SkipReactPos,
+    [switch]$ReactPosDocker,
+    [switch]$ReactPosDockerRebuild
 )
 
 Set-StrictMode -Version Latest
@@ -147,12 +156,151 @@ function Ensure-AdbReverse([int]$Port) {
     return $true
 }
 
+function Wait-HttpEndpoint {
+    param(
+        [Parameter(Mandatory)][string]$Label,
+        [Parameter(Mandatory)][string]$Url,
+        [Parameter(Mandatory)][int]$TimeoutSeconds
+    )
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        try {
+            $response = Invoke-WebRequest -Uri $Url -Method GET -UseBasicParsing -TimeoutSec 5
+            if ([int]$response.StatusCode -ge 200 -and [int]$response.StatusCode -lt 500) {
+                Write-Ok "$Label responded HTTP $([int]$response.StatusCode)"
+                return
+            }
+        }
+        catch {
+            Start-Sleep -Seconds 2
+        }
+    }
+    throw "$Label did not become ready at $Url within ${TimeoutSeconds}s."
+}
+
+function Stop-ReactPosDockerContainer {
+    param(
+        [Parameter(Mandatory)][string]$PosComposeFile,
+        [Parameter(Mandatory)][string]$PosEnvFile
+    )
+    $composeProject = $LocalValidationStack.ComposeProjectName
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        docker compose -p $composeProject -f $PosComposeFile --env-file $PosEnvFile --profile react-pos stop react-pos 2>$null | Out-Null
+        docker compose -p $composeProject -f $PosComposeFile --env-file $PosEnvFile --profile react-pos rm -f react-pos 2>$null | Out-Null
+        docker rm -f exits-local-validation-react-pos 2>$null | Out-Null
+    }
+    finally {
+        $ErrorActionPreference = $prev
+    }
+}
+
+function Start-ReactPosDockerFromPosWorktree {
+    param(
+        [Parameter(Mandatory)][string]$PosRepoRoot,
+        [Parameter(Mandatory)][string]$PosComposeFile,
+        [Parameter(Mandatory)][string]$PosEnvFile,
+        [Parameter(Mandatory)][int]$PlatformApiPort,
+        [Parameter(Mandatory)][int]$PosApiPort,
+        [Parameter(Mandatory)][int]$ReactPosPort,
+        [Parameter(Mandatory)][string]$PosSha,
+        [switch]$Rebuild
+    )
+
+    Write-Step "Building/starting React POS Docker from POS worktree (context=$PosRepoRoot)..."
+    Write-Host "  compose=$PosComposeFile"
+    Write-Host "  image source SHA=$PosSha"
+    Write-Note "Upstream APIs: host.docker.internal :$PlatformApiPort / :$PosApiPort (not Platform-tree POS sources)."
+
+    $env:REACT_POS_PLATFORM_API_UPSTREAM = "http://host.docker.internal:$PlatformApiPort"
+    $env:REACT_POS_POS_API_UPSTREAM = "http://host.docker.internal:$PosApiPort"
+    $env:REACT_POS_PLATFORM_API_PROXY_HOST = "127.0.0.1:$PlatformApiPort"
+    $env:REACT_POS_POS_API_PROXY_HOST = "127.0.0.1:$PosApiPort"
+    $env:LOCAL_VALIDATION_REACT_POS_HOST_PORT = "$ReactPosPort"
+    $env:LOCAL_VALIDATION_REACT_POS_ORIGIN = "http://127.0.0.1:$ReactPosPort"
+    $env:LOCAL_VALIDATION_REACT_POS_ORIGIN_LOCALHOST = "http://localhost:$ReactPosPort"
+    $env:LOCAL_VALIDATION_REACT_POS_ORIGIN_EMULATOR = "http://10.0.2.2:$ReactPosPort"
+
+    Stop-ReactPosDockerContainer -PosComposeFile $PosComposeFile -PosEnvFile $PosEnvFile
+
+    $composeBaseArgs = @(
+        "compose", "-p", $LocalValidationStack.ComposeProjectName,
+        "-f", $PosComposeFile, "--env-file", $PosEnvFile,
+        "--profile", "react-pos"
+    )
+
+    if ($Rebuild) {
+        $buildExit = Invoke-LocalValidationDocker -DockerArgs ($composeBaseArgs + @("build", "--no-cache", "react-pos"))
+        if ($buildExit -ne 0) { throw "React POS Docker clean build failed ($buildExit)." }
+    }
+
+    $upArgs = $composeBaseArgs + @("up", "-d", "--build", "react-pos")
+    $upExit = Invoke-LocalValidationDocker -DockerArgs $upArgs
+    if ($upExit -ne 0) { throw "React POS Docker startup failed ($upExit)." }
+
+    Wait-TcpPort -Label "React POS Docker" -HostName "127.0.0.1" -Port $ReactPosPort -TimeoutSeconds $PortWaitSeconds
+    Wait-HttpEndpoint -Label "React POS /" -Url "http://127.0.0.1:$ReactPosPort/" -TimeoutSeconds $PortWaitSeconds
+    Wait-HttpEndpoint -Label "React POS /sign-in" -Url "http://127.0.0.1:$ReactPosPort/sign-in" -TimeoutSeconds $PortWaitSeconds
+}
+
+function Test-ReactPosProxyLoginChain {
+    param(
+        [Parameter(Mandatory)][string]$ReactPosBaseUrl,
+        [Parameter(Mandatory)][string]$SharedPassword
+    )
+
+    # Prefer a known Local Validation personal identity when seeded; fall back to short shared-password probe user.
+    $candidates = @(
+        @{ Username = "kizy@gmail.com"; Password = $SharedPassword },
+        @{ Username = "kizy@gmail.com"; Password = "1" }
+    )
+
+    $lastError = $null
+    foreach ($candidate in $candidates) {
+        try {
+            $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+            $loginBody = @{ usernameOrEmail = $candidate.Username; password = $candidate.Password } | ConvertTo-Json
+            $login = Invoke-WebRequest -Uri "$ReactPosBaseUrl/platform-api/api/v1/platform/auth/login" `
+                -Method POST -ContentType "application/json" -Body $loginBody `
+                -WebSession $session -UseBasicParsing -TimeoutSec 30
+            if ([int]$login.StatusCode -ne 200) {
+                throw "login HTTP $([int]$login.StatusCode)"
+            }
+            $me = Invoke-WebRequest -Uri "$ReactPosBaseUrl/platform-api/api/v1/platform/auth/me" `
+                -Method GET -WebSession $session -UseBasicParsing -TimeoutSec 30
+            if ([int]$me.StatusCode -ne 200) {
+                throw "auth/me HTTP $([int]$me.StatusCode)"
+            }
+            $platformHealth = Invoke-WebRequest -Uri "$ReactPosBaseUrl/platform-api/health" `
+                -Method GET -UseBasicParsing -TimeoutSec 15
+            $posHealth = Invoke-WebRequest -Uri "$ReactPosBaseUrl/pos-api/health" `
+                -Method GET -UseBasicParsing -TimeoutSec 15
+            return [pscustomobject]@{
+                Login = "PASS"
+                AuthMe = "PASS"
+                PlatformApiProxy = $(if ([int]$platformHealth.StatusCode -eq 200) { "PASS" } else { "FAIL" })
+                PosApiProxy = $(if ([int]$posHealth.StatusCode -eq 200) { "PASS" } else { "FAIL" })
+                Username = $candidate.Username
+            }
+        }
+        catch {
+            $lastError = $_
+        }
+    }
+    throw "React POS proxy login chain failed. Last error: $lastError"
+}
+
 if (-not $PlatformRepoRoot) {
     $PlatformRepoRoot = Get-LocalValidationRepoRoot -StartPath $PSScriptRoot
 }
 
 if (-not (Test-Path -LiteralPath $PosRepoRoot)) {
     throw "POS worktree not found: $PosRepoRoot"
+}
+
+if ($SkipReactPos -and $ReactPosDocker) {
+    throw "Use either -SkipReactPos or -ReactPosDocker, not both."
 }
 
 $platformBranch = Get-GitBranch -RepoRoot $PlatformRepoRoot
@@ -164,6 +312,10 @@ if ($platformBranch -ne "feat/platform-admin-react-integration" -and $platformBr
     Write-Note "Platform branch is '$platformBranch' (expected feat/platform-admin-react-integration)."
 }
 
+if ($posBranch -ne "feat/pos-react-client") {
+    throw "POS worktree must be on feat/pos-react-client (found '$posBranch' at $PosRepoRoot)."
+}
+
 Write-Step "Platform: $PlatformRepoRoot"
 Write-Host "  branch=$platformBranch"
 Write-Host "  sha=$platformSha"
@@ -171,11 +323,32 @@ Write-Step "POS:      $PosRepoRoot"
 Write-Host "  branch=$posBranch"
 Write-Host "  sha=$posSha"
 Write-Note "POS HEAD is used as-is (no detach/downgrade)."
+if ($ReactPosDocker) {
+    Write-Note "React POS mode=Docker (built from POS worktree; exclusive with npm run dev on :5177)."
+}
+else {
+    Write-Note "React POS mode=Vite npm run dev (default)."
+}
 
 $envFile = Resolve-EnvFilePath -PlatformRoot $PlatformRepoRoot -Override $EnvFile
 $composeFile = Join-Path $PlatformRepoRoot "deploy\docker\$($LocalValidationStack.ComposeFileName)"
 if (-not (Test-Path -LiteralPath $composeFile)) {
     throw "Missing compose file: $composeFile"
+}
+
+$posComposeFile = Join-Path $PosRepoRoot "deploy\docker\$($LocalValidationStack.ComposeFileName)"
+$posEnvFile = Join-Path $PosRepoRoot "deploy\docker\$($LocalValidationStack.EnvFileName)"
+if ($ReactPosDocker) {
+    if (-not (Test-Path -LiteralPath $posComposeFile)) {
+        throw "Missing POS compose file for React POS Docker: $posComposeFile"
+    }
+    if (-not (Test-Path -LiteralPath $posEnvFile)) {
+        Write-Note "POS env file missing at $posEnvFile - using Platform env file for compose substitution."
+        $posEnvFile = $envFile
+    }
+    if (-not (Test-Path -LiteralPath (Join-Path $PosRepoRoot "deploy\docker\Dockerfile.pos-react"))) {
+        throw "Missing POS Dockerfile.pos-react under $PosRepoRoot (approved React POS Docker image must come from POS worktree)."
+    }
 }
 
 Test-LocalValidationDockerAvailable
@@ -197,7 +370,7 @@ Write-Step "Stopping conflicting repo-scoped host apps..."
 $null = Stop-LocalValidationRepoScopedHostApps -RepoRoot $PlatformRepoRoot
 $null = Stop-LocalValidationRepoScopedHostApps -RepoRoot $PosRepoRoot
 
-# Stop stale Docker React Admin container if it holds :8095 — host Vite is the integration surface.
+# Stop stale Docker React Admin container if it holds :8095 - host Vite is the integration surface.
 $composeProject = $LocalValidationStack.ComposeProjectName
 $prev = $ErrorActionPreference
 $ErrorActionPreference = "Continue"
@@ -207,6 +380,12 @@ try {
 }
 finally {
     $ErrorActionPreference = $prev
+}
+
+# Always clear React POS Docker binder when using Vite mode; Docker mode rebuilds it below.
+if (-not $ReactPosDocker -and (Test-Path -LiteralPath $posComposeFile)) {
+    $posEnvForStop = if (Test-Path -LiteralPath $posEnvFile) { $posEnvFile } else { $envFile }
+    Stop-ReactPosDockerContainer -PosComposeFile $posComposeFile -PosEnvFile $posEnvForStop
 }
 
 $blocked = @(Report-LocalValidationPortConflicts -Ports @($platformApiPort, $posApiPort, $adminWebReactPort, $reactPosPort))
@@ -308,42 +487,74 @@ $windowPids += Start-NpmDevWindow -Title "PA-INTEGRATION React Admin" -WorkingDi
 Wait-TcpPort -Label "React Admin" -HostName "127.0.0.1" -Port $adminWebReactPort -TimeoutSeconds $PortWaitSeconds
 
 if (-not $SkipReactPos) {
-    Write-Step "Starting React POS Vite on :$reactPosPort..."
-    $posClientEnv = @{
-        VITE_POS_BUILD_SHA = $posSha
+    if ($ReactPosDocker) {
+        Start-ReactPosDockerFromPosWorktree `
+            -PosRepoRoot $PosRepoRoot `
+            -PosComposeFile $posComposeFile `
+            -PosEnvFile $posEnvFile `
+            -PlatformApiPort $platformApiPort `
+            -PosApiPort $posApiPort `
+            -ReactPosPort $reactPosPort `
+            -PosSha $posSha `
+            -Rebuild:$ReactPosDockerRebuild
+        $null = Ensure-AdbReverse -Port $reactPosPort
+        $null = Ensure-AdbReverse -Port $platformApiPort
     }
-    $windowPids += Start-NpmDevWindow -Title "PA-INTEGRATION React POS" -WorkingDirectory $posClientDir -EnvMap $posClientEnv -NpmScript "dev"
-    Wait-TcpPort -Label "React POS" -HostName "127.0.0.1" -Port $reactPosPort -TimeoutSeconds $PortWaitSeconds
-    $null = Ensure-AdbReverse -Port $reactPosPort
-    $null = Ensure-AdbReverse -Port $platformApiPort
+    else {
+        Write-Step "Starting React POS Vite on :$reactPosPort..."
+        $posClientEnv = @{
+            VITE_POS_BUILD_SHA = $posSha
+        }
+        $windowPids += Start-NpmDevWindow -Title "PA-INTEGRATION React POS" -WorkingDirectory $posClientDir -EnvMap $posClientEnv -NpmScript "dev"
+        Wait-TcpPort -Label "React POS" -HostName "127.0.0.1" -Port $reactPosPort -TimeoutSeconds $PortWaitSeconds
+        $null = Ensure-AdbReverse -Port $reactPosPort
+        $null = Ensure-AdbReverse -Port $platformApiPort
+    }
 }
 else {
     Write-Note "SkipReactPos set - start React POS manually: cd $posClientDir; npm run dev"
 }
 
+$reactPosMode = if ($SkipReactPos) { "Skipped" } elseif ($ReactPosDocker) { "Docker" } else { "Vite" }
+$proxyValidation = $null
+if ($ReactPosDocker -and -not $SkipReactPos) {
+    Write-Step "Validating React POS Docker login + /auth/me + API proxies..."
+    $proxyValidation = Test-ReactPosProxyLoginChain `
+        -ReactPosBaseUrl $reactPosUrl `
+        -SharedPassword ([string]$envMap["LOCAL_VALIDATION_SHARED_PASSWORD"])
+    Write-Ok "LOGIN=$($proxyValidation.Login) AUTH_ME=$($proxyValidation.AuthMe) /platform-api=$($proxyValidation.PlatformApiProxy) /pos-api=$($proxyValidation.PosApiProxy)"
+}
+
 $stateDir = Join-Path $env:LOCALAPPDATA "ExItS\LocalValidation"
 New-Item -ItemType Directory -Force -Path $stateDir | Out-Null
 $provenance = [ordered]@{
-    package = "PA-INTEGRATION-01"
+    package = "PA-INTEGRATION-04"
     platformBranch = $platformBranch
     platformRuntimeSha = $platformSha
     posBranch = $posBranch
     posRuntimeSha = $posSha
+    posDockerFromPosWorktree = [bool]$ReactPosDocker
+    reactPosMode = $reactPosMode
     reactAdminUrl = "$reactAdminUrl/admin"
     platformApiUrl = $loopbackPlatformApiUrl
     posApiUrl = $loopbackPosApiUrl
     reactPosUrl = $reactPosUrl
     blazorAdminUsedAsReactAdmin = $false
     posDowngraded = $false
+    mauiStackPortsUntouched = @("8190", "8191", "8192", "8193", "8194")
     envFile = $envFile
+    posComposeFile = $(if ($ReactPosDocker) { $posComposeFile } else { $null })
+    proxyValidation = $proxyValidation
     startedAtUtc = (Get-Date).ToUniversalTime().ToString("o")
 }
 $provenancePath = Join-Path $stateDir "pa-integration-provenance.json"
-$provenance | ConvertTo-Json | Set-Content -LiteralPath $provenancePath -Encoding UTF8
+$provenance | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $provenancePath -Encoding UTF8
 $launcherState = [ordered]@{
     Mode = "ReactIntegration"
+    Package = "PA-INTEGRATION-04"
     PlatformRepoRoot = $PlatformRepoRoot
     PosRepoRoot = $PosRepoRoot
+    ReactPosMode = $reactPosMode
     WindowPids = $windowPids
     ProvenancePath = $provenancePath
 }
@@ -353,14 +564,23 @@ Write-Host ""
 Write-Ok "React Admin:  $reactAdminUrl/admin"
 Write-Ok "Platform API: $loopbackPlatformApiUrl"
 Write-Ok "POS API:      $loopbackPosApiUrl"
-Write-Ok "React POS:    $reactPosUrl"
+Write-Ok "React POS:    $reactPosUrl  (mode=$reactPosMode)"
 Write-Ok "Emulator POS: http://127.0.0.1:$reactPosPort  (after adb reverse)"
 Write-Ok "Provenance:   $provenancePath"
 Write-Host ""
 Write-Host "RUNTIME PROVENANCE"
 Write-Host "  Platform branch/SHA: $platformBranch / $platformSha"
 Write-Host "  POS branch/SHA:      $posBranch / $posSha"
+Write-Host "  POS_DOCKER_FROM_POS_WORKTREE=$(if ($ReactPosDocker) { 'YES' } else { 'NO' })"
+Write-Host "  REACT_POS_MODE=$reactPosMode"
 Write-Host "  OLD_BLAZOR_ADMIN_USED_AS_REACT_ADMIN=NO"
 Write-Host "  POS_DOWNGRADED=NO"
+Write-Host "  MAUI_STACK_UNCHANGED=YES (8190-8194 untouched)"
+if ($proxyValidation) {
+    Write-Host "  LOGIN=$($proxyValidation.Login)"
+    Write-Host "  AUTH_ME=$($proxyValidation.AuthMe)"
+    Write-Host "  PLATFORM_API_PROXY=$($proxyValidation.PlatformApiProxy)"
+    Write-Host "  POS_API_PROXY=$($proxyValidation.PosApiProxy)"
+}
 Write-Host ""
 
