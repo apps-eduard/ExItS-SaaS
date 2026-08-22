@@ -1,17 +1,18 @@
 # React Platform Admin — Commercial / Subscription Implementation Plan
 
-**Status:** PA-COM-01 COMPLETE; PA-COM-04 COMPLETE (awaiting Product Owner / ChatGPT review)
+**Status:** PA-COM-01 COMPLETE; PA-COM-04 COMPLETE; PA-COM-06 COMPLETE (awaiting Product Owner / ChatGPT review)
 **Audit:** [PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01](./Reports/PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01.md)
 **PA-COM-01 report:** [Reports/PLATFORM-WEB-PA-COM-01-commercial-mutation-foundation.md](./Reports/PLATFORM-WEB-PA-COM-01-commercial-mutation-foundation.md)
 **PA-COM-04 report:** [Reports/PLATFORM-WEB-PA-COM-04-subscription-lifecycle-ui.md](./Reports/PLATFORM-WEB-PA-COM-04-subscription-lifecycle-ui.md)
+**PA-COM-06 report:** [Reports/PLATFORM-WEB-PA-COM-06-saas-billing-paid-activation.md](./Reports/PLATFORM-WEB-PA-COM-06-saas-billing-paid-activation.md)
 **Contract:** [commercial-platform-pos-contract.md](./commercial-platform-pos-contract.md)
 **E2E matrix:** [commercial-e2e-validation-matrix.md](./commercial-e2e-validation-matrix.md)
 **Audit baseline HEAD:** `525bae3633fb7fde1bbc9b855435a05f5f616c09`
-**Implementation started:** YES (PA-COM-01 + PA-COM-04)
+**Implementation started:** YES (PA-COM-01 + PA-COM-04 + PA-COM-06)
 **PA-COM-01:** COMPLETE (typed clients + hooks + tests)
 **PA-COM-04:** COMPLETE (Organization → Subscription lifecycle UI; acceptance tests PASS)
-**PA-COM-06:** **NOT STARTED** / not authorized
-PA-COM-02, 03, 05, 07, 08 remain unauthorized. This plan does **not** authorize PA-COM-06.
+**PA-COM-06:** COMPLETE (Organization → Billing manual payment + paid activation UI; Vitest PASS)
+PA-COM-02, 03, 05, 07, 08 remain unauthorized. This plan does **not** authorize PA-COM-05.
 
 Target application: `src/Platform/ExItS.Platform.Admin.Web`  
 Stack (do not replace): React + TypeScript + Vite, Tailwind, shadcn/ui, Lucide, TanStack Query, TanStack Table, React Hook Form, Zod.  
@@ -39,7 +40,7 @@ Platform Admin
   → billing/history/audit verified
 ```
 
-This is the commercial spine for full ExItS testing. React Admin can now **start a trial and run lifecycle actions** (PA-COM-04). Paid subscribe / paid upgrade / convert-trial still require PA-COM-06. Live Platform→POS proof remains Agent 1 + Local Validation.
+This is the commercial spine for full ExItS testing. React Admin can **start a trial and run lifecycle actions** (PA-COM-04) and **record/confirm SaaS payments and activate paid subscriptions** (PA-COM-06). Live Platform→POS proof remains Agent 1 + Local Validation.
 
 ---
 

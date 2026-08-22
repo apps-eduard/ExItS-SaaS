@@ -28,7 +28,7 @@ Platform Admin → configure Product/Plan
   → billing/history/audit
 ```
 
-**Full flow possible from React Admin today: PARTIAL.** Trial + suspend/reactivate/cancel/plan-change UI exists (PA-COM-04). Paid subscribe, convert-trial, and paid Active upgrade remain PA-COM-06. Live POS proof is Agent 1 + Local Validation.
+**Full flow possible from React Admin today: PARTIAL.** Trial + lifecycle (PA-COM-04) and manual SaaS billing + paid activation (PA-COM-06) are implemented in React. Live Platform→POS proof remains Agent 1 + Local Validation.
 
 ---
 
@@ -39,7 +39,7 @@ Prerequisites: Pinoy Business POS product Active; Growth plan `MaxActivePosDevic
 | # | Step | Verdict | Notes |
 |---|---|---|---|
 | 1 | Platform Admin shows Growth max devices = 3 | **PASS TODAY** | `PlanDetailPage` displays `maxActivePosDevices` |
-| 2 | Admin assigns/creates Growth subscription for org | **REACT ADMIN AVAILABLE** (Start trial) | `POST .../trials` from Organization → Subscription. Paid create remains PA-COM-06 |
+| 2 | Admin assigns/creates Growth subscription for org | **REACT ADMIN AVAILABLE** | Start trial (PA-COM-04) or Subscribe with payment (PA-COM-06) |
 | 3 | Entitlement snapshot contains device limit 3 | **PASS TODAY** (if subscription exists) | grant `plan-max-active-pos-devices`; React can **read** snapshots |
 | 4 | Org logs into POS React | **PASS TODAY** | POS React auth; not Admin |
 | 5 | Device Management shows 0 of 3 | **PASS TODAY** | `OrgPosDevicesPage` + capacity API |
@@ -47,7 +47,7 @@ Prerequisites: Pinoy Business POS product Active; Growth plan `MaxActivePosDevic
 | 7 | Device #2 → 2 of 3 | **PASS TODAY** | |
 | 8 | Device #3 → 3 of 3 | **PASS TODAY** | |
 | 9 | Device #4 denied | **PASS TODAY** (server + unit/integration) | Playwright often **mocks** capacity → **TEST HARNESS GAP** for browser proof |
-| 10 | Admin upgrade Growth → Pro | **REACT ADMIN AVAILABLE** (Trialing); **PA-COM-06** for paid Active | Trialing upgrade uses `POST .../upgrade`. Active paid upgrade returns payment-required |
+| 10 | Admin upgrade Growth → Pro | **REACT ADMIN AVAILABLE** | Trialing: upgrade API. Active paid: payment-required on Subscription → complete on Billing (PA-COM-06) |
 | 11 | Entitlement refreshed | **PASS TODAY** on upgrade use case | snapshot regenerated server-side |
 | 12 | POS shows higher device limit | **PASS TODAY** | capacity uses **live plan**, not token |
 | 13 | Additional device registration possible | **PASS TODAY** after upgrade | |
@@ -56,7 +56,7 @@ Prerequisites: Pinoy Business POS product Active; Growth plan `MaxActivePosDevic
 | 16 | Admin reactivate | **REACT ADMIN AVAILABLE** | `POST .../reactivate` for Suspended only. Cancelled/Expired have no Reactivate |
 | 17 | POS commercial access restored | **PASS TODAY** after reactivate | |
 
-**Conclusion:** React Admin can drive trial / plan-change / suspend / reactivate / cancel. Paid activation and payment management are **not** in PA-COM-04. Full Admin→POS live spine is **not** signed off until Local Validation + Agent 1.
+**Conclusion:** React Admin can drive trial / plan-change / suspend / reactivate / cancel and manual SaaS billing (PA-COM-06). Full Admin→POS **live** spine is **not** signed off until Local Validation + Agent 1.
 
 ---
 
@@ -82,7 +82,7 @@ Same pattern: device/branch/BT **YES**; staff invite **PARTIAL**; reports/export
 
 ### Pro — 10 / 30 / 10 / 6; credit/reports/export on; trial not allowed
 
-Starting a Pro **trial** must fail (`TrialAllowed=false`). Paid subscribe required (PA-COM-06).
+Starting a Pro **trial** must fail (`TrialAllowed=false`). Paid subscribe uses Billing **Subscribe with payment** (PA-COM-06).
 
 Ordering/Delivery: **do not** expect Starter-off / Pro-on. Seed grants both on all MVP plans.
 
@@ -93,8 +93,8 @@ Ordering/Delivery: **do not** expect Starter-off / Pro-on. Seed grants both on a
 | Scenario | API | React today | After PA-COM-04 |
 |---|---|---|---|
 | No subscription → Trialing (Starter/Growth) | `POST .../trials` | **AVAILABLE** (PA-COM-04) | delivered |
-| Trialing → Active (convert) | `POST .../convert-trial` | GAP (needs payment) | **not in 04**; PA-COM-06 |
-| No subscription → Active paid | `POST .../subscriptions` + paymentId | GAP | **not in 04**; PA-COM-06 |
+| Trialing → Active (convert) | `activate-subscription` + confirmed payment | **AVAILABLE** (PA-COM-06 manual path) | record → confirm → activate from payment |
+| No subscription → Active paid | `POST .../subscriptions` + paymentId | **AVAILABLE** (PA-COM-06) | Subscribe with payment wizard |
 | Active → upgrade | `POST .../upgrade` | **AVAILABLE** while Trialing; paid Active → payment-required copy | 04 + 06 for paid |
 | Active → scheduled downgrade | `POST .../downgrade` | **AVAILABLE** | delivered |
 | Active → GracePeriod | `POST .../grace-period` | **AVAILABLE** (Support actions) | delivered |
@@ -105,7 +105,7 @@ Ordering/Delivery: **do not** expect Starter-off / Pro-on. Seed grants both on a
 | * → Expired | `POST .../expire` | **AVAILABLE** (Support actions) | delivered |
 | Cancelled → Reactivate | **unsupported** | must create new | do not invent button (**not shown**) |
 | Dedicated renew | **no Admin HTTP** | — | stop / Local Validation simulate only |
-| Dedicated Activate | `POST .../activate` | **not exposed** (always payment-required) | PA-COM-06 |
+| Dedicated Activate | `POST .../activate` | **not exposed** (always payment-required) | use activate-from-payment (PA-COM-06) |
 
 ---
 

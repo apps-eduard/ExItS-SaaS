@@ -23,6 +23,8 @@ Product (pinoy-business-pos)
 
 Product and Plan **must not** contain operational POS data (sales, stock, customers).
 
+**Platform SaaS billing ≠ POS payments.** Organization → Billing manages ExItS subscription manual payments (`PendingConfirmation` / `Confirmed` / etc.). POS Cash, GCash tenders, Utang, and customer sales are separate product-local concerns. React Admin must not call POS APIs to push commercial state.
+
 ---
 
 ## 2. Runtime path (actual)
