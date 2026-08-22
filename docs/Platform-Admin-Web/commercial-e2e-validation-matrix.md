@@ -1,6 +1,6 @@
 # Commercial E2E validation matrix
 
-**Status:** PLANNING / NOT EXECUTED as a full Admin-driven spine  
+**Status:** PLANNING / PARTIAL — PA-COM-04 React lifecycle UI is implemented and unit/Playwright-tested. Full Admin-driven paid spine and live Platform→POS proof are **not** executed.
 **Audit HEAD:** `525bae3633fb7fde1bbc9b855435a05f5f616c09`  
 **POS React inspected:** `42d487d42c0d9e3e6592cafcb2259c24655dbb23`  
 **Related:** [contract](./commercial-platform-pos-contract.md) · [implementation plan](./commercial-subscription-implementation-plan.md)
@@ -28,7 +28,7 @@ Platform Admin → configure Product/Plan
   → billing/history/audit
 ```
 
-**Full flow possible from React Admin today: NO.**
+**Full flow possible from React Admin today: PARTIAL.** Trial + suspend/reactivate/cancel/plan-change UI exists (PA-COM-04). Paid subscribe, convert-trial, and paid Active upgrade remain PA-COM-06. Live POS proof is Agent 1 + Local Validation.
 
 ---
 
@@ -39,7 +39,7 @@ Prerequisites: Pinoy Business POS product Active; Growth plan `MaxActivePosDevic
 | # | Step | Verdict | Notes |
 |---|---|---|---|
 | 1 | Platform Admin shows Growth max devices = 3 | **PASS TODAY** | `PlanDetailPage` displays `maxActivePosDevices` |
-| 2 | Admin assigns/creates Growth subscription for org | **REACT ADMIN GAP** | APIs exist (`/trials`, `/from-catalog`, paid create) |
+| 2 | Admin assigns/creates Growth subscription for org | **REACT ADMIN AVAILABLE** (Start trial) | `POST .../trials` from Organization → Subscription. Paid create remains PA-COM-06 |
 | 3 | Entitlement snapshot contains device limit 3 | **PASS TODAY** (if subscription exists) | grant `plan-max-active-pos-devices`; React can **read** snapshots |
 | 4 | Org logs into POS React | **PASS TODAY** | POS React auth; not Admin |
 | 5 | Device Management shows 0 of 3 | **PASS TODAY** | `OrgPosDevicesPage` + capacity API |
@@ -47,16 +47,16 @@ Prerequisites: Pinoy Business POS product Active; Growth plan `MaxActivePosDevic
 | 7 | Device #2 → 2 of 3 | **PASS TODAY** | |
 | 8 | Device #3 → 3 of 3 | **PASS TODAY** | |
 | 9 | Device #4 denied | **PASS TODAY** (server + unit/integration) | Playwright often **mocks** capacity → **TEST HARNESS GAP** for browser proof |
-| 10 | Admin upgrade Growth → Pro | **REACT ADMIN GAP** | `POST .../upgrade` + payment |
+| 10 | Admin upgrade Growth → Pro | **REACT ADMIN AVAILABLE** (Trialing); **PA-COM-06** for paid Active | Trialing upgrade uses `POST .../upgrade`. Active paid upgrade returns payment-required |
 | 11 | Entitlement refreshed | **PASS TODAY** on upgrade use case | snapshot regenerated server-side |
 | 12 | POS shows higher device limit | **PASS TODAY** | capacity uses **live plan**, not token |
 | 13 | Additional device registration possible | **PASS TODAY** after upgrade | |
-| 14 | Admin suspend subscription | **REACT ADMIN GAP** | `POST .../suspend` |
+| 14 | Admin suspend subscription | **REACT ADMIN AVAILABLE** | `POST .../suspend` from Organization → Subscription |
 | 15 | POS commercial access changes | **PASS TODAY** (ops deny) | `CanEnterProduct` Suspended=false; UtangCapability deny. Device APIs may still be active-like → **BACKEND NUANCE** |
-| 16 | Admin reactivate | **REACT ADMIN GAP** | `POST .../reactivate` |
+| 16 | Admin reactivate | **REACT ADMIN AVAILABLE** | `POST .../reactivate` for Suspended only. Cancelled/Expired have no Reactivate |
 | 17 | POS commercial access restored | **PASS TODAY** after reactivate | |
 
-**Conclusion:** the device math is implemented on Platform + POS React. The **Admin operator spine** is not. Full Admin-driven flow is **not possible today**.
+**Conclusion:** React Admin can drive trial / plan-change / suspend / reactivate / cancel. Paid activation and payment management are **not** in PA-COM-04. Full Admin→POS live spine is **not** signed off until Local Validation + Agent 1.
 
 ---
 
@@ -92,19 +92,20 @@ Ordering/Delivery: **do not** expect Starter-off / Pro-on. Seed grants both on a
 
 | Scenario | API | React today | After PA-COM-04 |
 |---|---|---|---|
-| No subscription → Trialing (Starter/Growth) | `POST .../trials` | GAP | required |
-| Trialing → Active (convert) | `POST .../convert-trial` | GAP | required; needs payment (06) |
-| No subscription → Active paid | `POST .../subscriptions` + paymentId | GAP | 04+06 |
-| Active → upgrade | `POST .../upgrade` | GAP | 04+06 |
-| Active → scheduled downgrade | `POST .../downgrade` | GAP | 04 |
-| Active → GracePeriod | `POST .../grace-period` | GAP | 04 |
-| * → PastDue | `POST .../past-due` | GAP | 04 |
-| * → Suspended | `POST .../suspend` | GAP | 04 |
-| Suspended → Active | `POST .../reactivate` | GAP | 04 |
-| * → Cancelled | `POST .../cancel` | GAP | 04 |
-| * → Expired | `POST .../expire` | GAP | 04 |
-| Cancelled → Reactivate | **unsupported** | must create new | do not invent button |
+| No subscription → Trialing (Starter/Growth) | `POST .../trials` | **AVAILABLE** (PA-COM-04) | delivered |
+| Trialing → Active (convert) | `POST .../convert-trial` | GAP (needs payment) | **not in 04**; PA-COM-06 |
+| No subscription → Active paid | `POST .../subscriptions` + paymentId | GAP | **not in 04**; PA-COM-06 |
+| Active → upgrade | `POST .../upgrade` | **AVAILABLE** while Trialing; paid Active → payment-required copy | 04 + 06 for paid |
+| Active → scheduled downgrade | `POST .../downgrade` | **AVAILABLE** | delivered |
+| Active → GracePeriod | `POST .../grace-period` | **AVAILABLE** (Support actions) | delivered |
+| * → PastDue | `POST .../past-due` | **AVAILABLE** (Support actions) | delivered |
+| * → Suspended | `POST .../suspend` | **AVAILABLE** | delivered |
+| Suspended → Active | `POST .../reactivate` | **AVAILABLE** | delivered |
+| * → Cancelled | `POST .../cancel` | **AVAILABLE** | delivered |
+| * → Expired | `POST .../expire` | **AVAILABLE** (Support actions) | delivered |
+| Cancelled → Reactivate | **unsupported** | must create new | do not invent button (**not shown**) |
 | Dedicated renew | **no Admin HTTP** | — | stop / Local Validation simulate only |
+| Dedicated Activate | `POST .../activate` | **not exposed** (always payment-required) | PA-COM-06 |
 
 ---
 
@@ -132,7 +133,7 @@ Never mix with POS Cash / POS Manual GCash / POS Utang.
 |---|---|
 | Org A subscription not visible/mutable as Org B | BACKEND AVAILABLE; keep fail-closed in React |
 | UI permission hide vs server 403 | UI convenience only |
-| CSRF on mutations | Foundation PASS TODAY (PWEB-20); unused by commercial UI |
+| CSRF on mutations | Foundation PASS TODAY (PWEB-20); used by PA-COM-04 subscription lifecycle |
 | Social login `sessionToken` in URL | `BLOCKS_CUTOVER` (unrelated; do not claim cutover) |
 
 ---
@@ -151,6 +152,6 @@ Never mix with POS Cash / POS Manual GCash / POS Utang.
 10. Verify audit events on org Activity  
 11. PA-COM-08 records the signed matrix — still **not** Production Ready  
 
-Until steps 2–8 can be driven from React Admin, mark:
+Until paid paths (PA-COM-06) and live Local Validation + Agent 1 POS proof exist, mark:
 
 `PLATFORM_POS_COMMERCIAL_E2E=NOT_READY_UNTIL_AUDIT_GAPS_CLOSED`

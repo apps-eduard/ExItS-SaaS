@@ -1,15 +1,17 @@
 # React Platform Admin — Commercial / Subscription Implementation Plan
 
-**Status:** PA-COM-01 COMPLETE (foundation only; awaiting Product Owner / ChatGPT review)
+**Status:** PA-COM-01 COMPLETE; PA-COM-04 COMPLETE (awaiting Product Owner / ChatGPT review)
 **Audit:** [PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01](./Reports/PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01.md)
 **PA-COM-01 report:** [Reports/PLATFORM-WEB-PA-COM-01-commercial-mutation-foundation.md](./Reports/PLATFORM-WEB-PA-COM-01-commercial-mutation-foundation.md)
+**PA-COM-04 report:** [Reports/PLATFORM-WEB-PA-COM-04-subscription-lifecycle-ui.md](./Reports/PLATFORM-WEB-PA-COM-04-subscription-lifecycle-ui.md)
 **Contract:** [commercial-platform-pos-contract.md](./commercial-platform-pos-contract.md)
 **E2E matrix:** [commercial-e2e-validation-matrix.md](./commercial-e2e-validation-matrix.md)
 **Audit baseline HEAD:** `525bae3633fb7fde1bbc9b855435a05f5f616c09`
-**Implementation started:** YES (PA-COM-01 only)
-**PA-COM-01:** COMPLETE (typed clients + hooks + tests; **no** commercial UI actions)
-**PA-COM-04 authorized:** **NO**
-PA-COM-02…08 remain unauthorized. This plan does **not** authorize PA-COM-04.
+**Implementation started:** YES (PA-COM-01 + PA-COM-04)
+**PA-COM-01:** COMPLETE (typed clients + hooks + tests)
+**PA-COM-04:** COMPLETE (Organization → Subscription lifecycle UI; acceptance tests PASS)
+**PA-COM-06:** **NOT STARTED** / not authorized
+PA-COM-02, 03, 05, 07, 08 remain unauthorized. This plan does **not** authorize PA-COM-06.
 
 Target application: `src/Platform/ExItS.Platform.Admin.Web`  
 Stack (do not replace): React + TypeScript + Vite, Tailwind, shadcn/ui, Lucide, TanStack Query, TanStack Table, React Hook Form, Zod.  
@@ -37,7 +39,7 @@ Platform Admin
   → billing/history/audit verified
 ```
 
-This is the commercial spine for full ExItS testing. It is **not possible from React Admin today**.
+This is the commercial spine for full ExItS testing. React Admin can now **start a trial and run lifecycle actions** (PA-COM-04). Paid subscribe / paid upgrade / convert-trial still require PA-COM-06. Live Platform→POS proof remains Agent 1 + Local Validation.
 
 ---
 
@@ -193,7 +195,7 @@ IDs are stable. **Execution order differs** from numeric ID order because seed p
 - No new routes required — **PASS**
 - No production payment provider — **PASS**
 
-**STOP gate.** Do not start PA-COM-04 until Product Owner / ChatGPT authorizes it separately. `PA_COM_04_AUTHORIZED=NO`.
+**STOP gate (historical).** PA-COM-04 was separately authorized (`PA_COM_04_AUTHORIZED=YES`) and implemented on `feat/platform-admin-pa-com-04`. Do **not** start PA-COM-06 until separately authorized. `PA_COM_06_AUTHORIZED=NO`.
 
 ---
 
@@ -260,6 +262,11 @@ Seed-based E2E can proceed **without** this package if operators accept catalog 
 
 ## PA-COM-04 — Organization subscription lifecycle actions
 
+**Status.** COMPLETE — [PLATFORM-WEB-PA-COM-04-subscription-lifecycle-ui.md](./Reports/PLATFORM-WEB-PA-COM-04-subscription-lifecycle-ui.md)
+**Branch.** `feat/platform-admin-pa-com-04`
+**Implementation commit.** `dfcbbe1d`
+**Review.** `PA_COM_04=AWAITING_PRODUCT_OWNER_CHATGPT_REVIEW`
+
 **Objective.** From `/admin/organizations/:id/subscription`, perform proven lifecycle transitions.
 
 **Dependencies.** PA-COM-01. Seed plans sufficient. Overlaps PWEB-IMPL-29 subscription half.
@@ -306,9 +313,11 @@ Reactivate from GracePeriod/PastDue **requires** a new paid period range.
 
 **Tests.** Each wired transition; invalid transition 409/domain error; CSRF; no Activate/Cancel for unauthorized; cross-product isolation.
 
-**Acceptance.** Operator can start Growth trial, suspend, reactivate on a Local Validation org without leaving React Admin.
+**Acceptance (package tests).** Operator UI can start a trial, change plan (catalog diffs + preview), suspend, reactivate, and cancel using Platform APIs. Vitest / typecheck / ESLint / production build / Playwright subscription spec **PASS**. Live Local Validation login is Agent 3; Platform→POS deny/restore is Agent 1.
 
-**STOP.** `PWEB29_SUBSCRIPTION_MUTATION_CONTRACT_MISSING`; payment bypass; inventing NoSubscription status enum.
+**Not delivered.** Paid activation, convert-trial, payment simulation — PA-COM-06.
+
+**STOP.** `PWEB29_SUBSCRIPTION_MUTATION_CONTRACT_MISSING`; payment bypass; inventing NoSubscription status enum; starting PA-COM-06 without authorization.
 
 ---
 
@@ -338,6 +347,8 @@ Reactivate from GracePeriod/PastDue **requires** a new paid period range.
 ---
 
 ## PA-COM-06 — Local Validation billing / payment actions
+
+**Status.** **NOT STARTED.** `PA_COM_06_AUTHORIZED=NO`. Do not start from PA-COM-04.
 
 **Objective.** Separate Platform SaaS money UX from POS tenders. Enable paid subscribe/upgrade in Local Validation.
 
@@ -421,7 +432,7 @@ Unknown simulation currently maps to **Succeeded** — UI must not send unknown 
 | Track | Next package | Purpose |
 |---|---|---|
 | Identity/governance | PWEB-IMPL-21 (still not authorized by this audit) | Users/sessions/roles |
-| Commercial E2E | PA-COM-04 (not authorized) | Subscription lifecycle UI; depends on PA-COM-01 |
+| Commercial E2E | PA-COM-06 (not authorized) | Paid subscribe / upgrade / convert-trial; PA-COM-04 lifecycle UI is COMPLETE |
 
 They share CSRF. They do not share screens. Either may start first if Product Owner authorizes that ID explicitly.
 
