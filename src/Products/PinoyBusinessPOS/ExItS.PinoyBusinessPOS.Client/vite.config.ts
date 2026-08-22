@@ -68,7 +68,15 @@ export default defineConfig({
     port: 5177,
     strictPort: true,
     // Android emulator reaches the host loopback as 10.0.2.2; allow that Host header.
-    allowedHosts: ["127.0.0.1", "localhost", "10.0.2.2"],
+    // POS_DEV_PUBLIC_HOST adds Tailscale/LAN PublicHost for Local Validation.
+    allowedHosts: [
+      "127.0.0.1",
+      "localhost",
+      "10.0.2.2",
+      ...(process.env.POS_DEV_PUBLIC_HOST
+        ? [process.env.POS_DEV_PUBLIC_HOST.trim()].filter(Boolean)
+        : []),
+    ],
     proxy: {
       ...createPlatformApiProxy(),
       ...createPosApiProxy(),
@@ -78,7 +86,14 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 4177,
     strictPort: true,
-    allowedHosts: ["127.0.0.1", "localhost", "10.0.2.2"],
+    allowedHosts: [
+      "127.0.0.1",
+      "localhost",
+      "10.0.2.2",
+      ...(process.env.POS_DEV_PUBLIC_HOST
+        ? [process.env.POS_DEV_PUBLIC_HOST.trim()].filter(Boolean)
+        : []),
+    ],
     proxy: {
       ...createPlatformApiProxy(),
       ...createPosApiProxy(),

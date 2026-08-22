@@ -14,10 +14,13 @@ for (const line of formatPosDevStartupLines(forwardResult)) {
   console.log(line);
 }
 
+// Default loopback; Local Validation Tailscale/LAN sets POS_DEV_HOST=0.0.0.0.
+const host = (process.env.POS_DEV_HOST ?? "127.0.0.1").trim() || "127.0.0.1";
+
 const viteBin = path.join(clientRoot, "node_modules", "vite", "bin", "vite.js");
 const vite = spawn(
   process.execPath,
-  [viteBin, "--host", "127.0.0.1", "--port", String(POS_DEV_PORT), "--strictPort"],
+  [viteBin, "--host", host, "--port", String(POS_DEV_PORT), "--strictPort"],
   {
     cwd: clientRoot,
     stdio: "inherit",
