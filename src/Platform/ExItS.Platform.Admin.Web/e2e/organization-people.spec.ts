@@ -32,6 +32,7 @@ const authorization = {
     "platform.permission.manage_memberships",
     "platform.permission.manage_manual_payments",
     "platform.permission.manage_entitlement_overrides",
+    "platform.permission.manage_product_access",
   ],
 };
 
@@ -168,7 +169,7 @@ test("Overview and People navigation and deep link work", async ({ page }) => {
   );
   await expect(page.getByRole("heading", { name: "People", exact: true, level: 1 })).toBeVisible();
   await expect(page.getByText("Ana Cruz")).toBeVisible();
-  await expect(page.getByRole("button", { name: /invite/i })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /invite/i })).toBeVisible();
   await workspaceNav.getByRole("link", { name: "Overview" }).click();
   await expect(page.getByRole("heading", { name: "Northwind Market" })).toBeVisible();
 });

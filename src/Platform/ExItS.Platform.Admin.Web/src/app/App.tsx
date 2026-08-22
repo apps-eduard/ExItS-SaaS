@@ -12,6 +12,9 @@ import { OrganizationPeoplePage } from "@/features/organizations/OrganizationPeo
 import { OrganizationProductsPage } from "@/features/organizations/OrganizationProductsPage";
 import { OrganizationBillingPage } from "@/features/organizations/OrganizationBillingPage";
 import { OrganizationActivityPage } from "@/features/organizations/OrganizationActivityPage";
+import { OrganizationEnabledProductsPage } from "@/features/organizations/OrganizationEnabledProductsPage";
+import { OrganizationProductAccessPage } from "@/features/organizations/OrganizationProductAccessPage";
+import { OrganizationRolesPage } from "@/features/organizations/OrganizationRolesPage";
 import { OrganizationEntitlementsPage } from "@/features/organizations/OrganizationEntitlementsPage";
 import { OrganizationSubscriptionsPage } from "@/features/organizations/OrganizationSubscriptionsPage";
 import { OrganizationOverviewPage } from "@/features/organizations/OrganizationOverviewPage";
@@ -113,6 +116,9 @@ export function App() {
                             <Route index element={<OrganizationOverviewPage />} />
                             <Route path="branches" element={<OrganizationBranchesPage />} />
                             <Route path="people" element={<OrganizationPeoplePage />} />
+                            <Route path="roles" element={<OrganizationRolesPage />} />
+                            <Route path="product-access" element={<OrganizationProductAccessPage />} />
+                            <Route path="enabled-products" element={<OrganizationEnabledProductsPage />} />
                             <Route path="products" element={<OrganizationProductsPage />} />
                             <Route
                               path="subscription"

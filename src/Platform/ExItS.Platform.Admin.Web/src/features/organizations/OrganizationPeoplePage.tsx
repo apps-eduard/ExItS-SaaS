@@ -24,6 +24,11 @@ import {
   useOrganizationInvitationsQuery,
   useOrganizationMembersQuery,
 } from "@/features/organizations/use-organization-workspace-queries";
+import {
+  OrganizationInvitationActions,
+  OrganizationMemberActions,
+  OrganizationPeopleInviteButton,
+} from "@/features/organizations/OrganizationPeopleOperator";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { usePreferences } from "@/hooks/use-preferences";
 import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
@@ -115,6 +120,7 @@ export function OrganizationPeoplePage() {
       <PageHeader
         title={t("organization.people.title")}
         description={t("organization.people.description")}
+        actions={organizationId ? <OrganizationPeopleInviteButton organizationId={organizationId} /> : undefined}
       />
 
       <div
@@ -157,6 +163,7 @@ export function OrganizationPeoplePage() {
       {state.tab === "members" ? (
         <div id="people-panel-members" role="tabpanel" aria-labelledby="people-tab-members">
           <PeopleMembersPanel
+            organizationId={organizationId}
             query={membersQuery}
             state={state}
             showTable={showTable}
@@ -167,6 +174,7 @@ export function OrganizationPeoplePage() {
       ) : (
         <div id="people-panel-invitations" role="tabpanel" aria-labelledby="people-tab-invitations">
           <PeopleInvitationsPanel
+            organizationId={organizationId}
             query={invitationsQuery}
             state={state}
             showTable={showTable}
@@ -183,12 +191,14 @@ export function OrganizationPeoplePage() {
 }
 
 function PeopleMembersPanel({
+  organizationId,
   query,
   state,
   showTable,
   onStatus,
   onPage,
 }: {
+  organizationId: string | null;
   query: ReturnType<typeof useOrganizationMembersQuery>;
   state: OrganizationPeopleUrlState;
   showTable: boolean;
@@ -299,6 +309,17 @@ function PeopleMembersPanel({
                       />
                     ),
                   },
+                  ...(organizationId
+                    ? [
+                        {
+                          id: "actions",
+                          header: t("organization.productAccess.column.actions"),
+                          cell: (member: OrganizationMember) => (
+                            <OrganizationMemberActions organizationId={organizationId} member={member} />
+                          ),
+                        },
+                      ]
+                    : []),
                 ]}
                 rows={query.data.items}
               />
@@ -347,6 +368,7 @@ function PeopleMembersPanel({
 }
 
 function PeopleInvitationsPanel({
+  organizationId,
   query,
   state,
   showTable,
@@ -354,6 +376,7 @@ function PeopleInvitationsPanel({
   onStatus,
   onPage,
 }: {
+  organizationId: string | null;
   query: ReturnType<typeof useOrganizationInvitationsQuery>;
   state: OrganizationPeopleUrlState;
   showTable: boolean;
@@ -466,6 +489,20 @@ function PeopleInvitationsPanel({
                     header: t("organization.people.column.expires"),
                     cell: (invitation) => formatInstant(invitation.expiresAtUtc, language) || "—",
                   },
+                  ...(organizationId
+                    ? [
+                        {
+                          id: "actions",
+                          header: t("organization.productAccess.column.actions"),
+                          cell: (invitation: OrganizationInvitation) => (
+                            <OrganizationInvitationActions
+                              organizationId={organizationId}
+                              invitation={invitation}
+                            />
+                          ),
+                        },
+                      ]
+                    : []),
                 ]}
                 rows={query.data.items}
               />

@@ -110,6 +110,7 @@ function mapBranding(payload: unknown): OrganizationBranding {
   }
   return {
     brandDisplayName: readString(record, "brandDisplayName", "BrandDisplayName"),
+    logoUrl: readString(record, "logoUrl", "LogoUrl"),
     primaryColor: readString(record, "primaryColor", "PrimaryColor"),
     accentColor: readString(record, "accentColor", "AccentColor"),
   };

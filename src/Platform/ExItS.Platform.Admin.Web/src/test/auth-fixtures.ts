@@ -28,6 +28,7 @@ export const sampleAuthorization = {
     "platform.permission.manage_organizations",
     "platform.permission.manage_platform_users",
     "platform.permission.manage_memberships",
+    "platform.permission.manage_product_access",
     "platform.permission.manage_subscriptions",
     "platform.permission.manage_manual_payments",
     "platform.permission.manage_entitlement_overrides",
@@ -595,6 +596,17 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
       /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/invitations$/,
     );
     if (invitationsGet) {
+      if (method === "POST") {
+        const body = parseBody() as Record<string, unknown>;
+        return jsonResponse(201, {
+          id: "44444444-4444-4444-4444-444444444444",
+          organizationId: invitationsGet[1],
+          email: body.email,
+          role: body.role,
+          status: "Pending",
+          invitationStatus: "Sent",
+        });
+      }
       if (options.forbiddenInvitations) {
         return jsonResponse(403, {
           title: "Forbidden",
@@ -1014,6 +1026,73 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
         pagedJson(items, options.orgAuditTotalCount ?? items.length, items.length || 20),
       );
     }
+    const productAccessGet = path.match(
+      /\/api\/v1\/platform\/organizations\/([0-9a-fA-F-]{36})\/product-access$/,
+    );
+    if (productAccessGet) {
+      if (method === "POST") {
+        const body = parseBody() as Record<string, unknown>;
+        return jsonResponse(201, {
+          id: "55555555-5555-5555-5555-555555555555",
+          organizationId: productAccessGet[1],
+          userId: body.userId,
+          membershipId: "11111111-1111-1111-1111-111111111111",
+          productCode: body.productCode,
+          status: "Active",
+          grantedAtUtc: "2026-08-22T10:00:00Z",
+          grantedByActor: body.grantedByActor,
+        });
+      }
+      return jsonResponse(200, pagedJson([], 0, 20));
+    }
+    if (path.includes("/api/v1/platform/access/evaluate")) {
+      return jsonResponse(200, {
+        allowed: true,
+        reasonCode: "allowed",
+        userId: "22222222-2222-2222-2222-222222222222",
+        organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        productCode: "pinoy-business-pos",
+        evaluatedAtUtc: "2026-08-22T10:00:00Z",
+      });
+    }
+    if (path.match(/\/api\/v1\/organizations\/[0-9a-fA-F-]{36}\/enabled-products$/)) {
+      return jsonResponse(200, []);
+    }
+    if (path.match(/\/api\/v1\/organizations\/[0-9a-fA-F-]{36}\/product-local-roles/)) {
+      return jsonResponse(200, []);
+    }
+    const roleDefinitionsGet = path.match(
+      /\/api\/v1\/platform\/organizations\/([0-9a-fA-F-]{36})\/role-definitions$/,
+    );
+    if (roleDefinitionsGet) {
+      if (method === "POST") {
+        const body = parseBody() as Record<string, unknown>;
+        return jsonResponse(201, {
+          id: "66666666-6666-6666-6666-666666666666",
+          organizationId: roleDefinitionsGet[1],
+          code: body.code,
+          name: body.name,
+          status: "Active",
+          permissions: body.permissions ?? [],
+          version: 1,
+        });
+      }
+      return jsonResponse(200, pagedJson([], 0, 20));
+    }
+    if (path.includes("/api/v1/platform/authorization/organization-permissions")) {
+      return jsonResponse(200, [{ code: "organization.permission.manage_staff" }]);
+    }
+    const organizationMutation = path.match(
+      /\/api\/v1\/platform\/organizations\/([0-9a-fA-F-]{36})\/(branding|suspend|reactivate|close)$/,
+    );
+    if (organizationMutation && method !== "GET") {
+      const items = options.organizationItems ?? [];
+      const match = items.find((item) => item.id === organizationMutation[1]) ?? items[0];
+      if (!match) {
+        return jsonResponse(404, { title: "Not Found", status: 404 });
+      }
+      return jsonResponse(200, { ...match, updatedAtUtc: new Date().toISOString() });
+    }
     const organizationGet = path.match(
       /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/,
     );
@@ -1037,6 +1116,9 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
           detail: "Platform Organization was not found.",
           errorCode: "application.organization.not_found",
         });
+      }
+      if (method === "PUT") {
+        return jsonResponse(200, { ...match, updatedAtUtc: new Date().toISOString() });
       }
       return jsonResponse(200, match);
     }

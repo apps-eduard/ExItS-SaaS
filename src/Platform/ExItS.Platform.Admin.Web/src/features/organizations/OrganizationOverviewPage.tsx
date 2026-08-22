@@ -1,13 +1,12 @@
 import { parseOrganizationId } from "@/api/organizations/organization-id";
-import type {
-  OrganizationBranding,
-  OrganizationProfile,
-} from "@/api/organizations/organization-types";
 import { DashboardSection } from "@/components/exits/dashboard/DashboardSection";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusIndicator } from "@/components/exits/StatusIndicator";
+import { OrganizationBrandingEditor } from "@/features/organizations/OrganizationBrandingEditor";
+import { OrganizationLifecycleOperator } from "@/features/organizations/OrganizationLifecycleOperator";
+import { OrganizationProfileEditor } from "@/features/organizations/OrganizationProfileEditor";
 import {
   useOrganizationCommercialSummaryQuery,
   useOrganizationDetailQuery,
@@ -22,27 +21,6 @@ const STATUS_LABELS: Record<string, MessageKey> = {
   Suspended: "dashboard.status.Suspended",
   Closed: "dashboard.status.Closed",
 };
-
-const PROFILE_FIELDS: Array<{ key: keyof OrganizationProfile; label: MessageKey }> = [
-  { key: "legalName", label: "organization.field.legalName" },
-  { key: "contactEmail", label: "organization.field.contactEmail" },
-  { key: "contactPhone", label: "organization.field.contactPhone" },
-  { key: "addressLine1", label: "organization.field.addressLine1" },
-  { key: "addressLine2", label: "organization.field.addressLine2" },
-  { key: "city", label: "organization.field.city" },
-  { key: "region", label: "organization.field.region" },
-  { key: "postalCode", label: "organization.field.postalCode" },
-  { key: "countryCode", label: "organization.field.countryCode" },
-  { key: "timeZoneId", label: "organization.field.timeZoneId" },
-  { key: "locale", label: "organization.field.locale" },
-  { key: "currencyCode", label: "organization.field.currencyCode" },
-];
-
-const BRANDING_FIELDS: Array<{ key: keyof OrganizationBranding; label: MessageKey }> = [
-  { key: "brandDisplayName", label: "organization.field.brandDisplayName" },
-  { key: "primaryColor", label: "organization.field.primaryColor" },
-  { key: "accentColor", label: "organization.field.accentColor" },
-];
 
 function statusTone(status: string): "success" | "warning" | "danger" | "neutral" {
   if (status === "Active") {
@@ -71,16 +49,6 @@ function formatInstant(value: string | undefined, language: string): string | nu
   }).format(date);
 }
 
-function presentFields<T extends object>(
-  source: T,
-  fields: Array<{ key: keyof T; label: MessageKey }>,
-): Array<{ label: MessageKey; value: string }> {
-  return fields.flatMap((field) => {
-    const value = source[field.key];
-    return typeof value === "string" && value.length > 0 ? [{ label: field.label, value }] : [];
-  });
-}
-
 export function OrganizationOverviewPage() {
   const { t, language } = usePreferences();
   const params = useParams();
@@ -93,8 +61,6 @@ export function OrganizationOverviewPage() {
     return null;
   }
 
-  const profileFields = presentFields(organization.profile, PROFILE_FIELDS);
-  const brandingFields = presentFields(organization.branding, BRANDING_FIELDS);
   const commercialDiagnostic = commercialQuery.error
     ? normalizeDiagnosticError({
         error: commercialQuery.error,
@@ -156,39 +122,19 @@ export function OrganizationOverviewPage() {
             </dd>
           </div>
         </dl>
+        <div className="mt-3">
+          <OrganizationLifecycleOperator organization={organization} />
+        </div>
       </DashboardSection>
 
-      <DashboardSection title={t("organization.overview.profile")}>
-        {profileFields.length === 0 ? (
-          <p className="text-[length:var(--exits-text-sm)] text-muted">
-            {t("organization.overview.profile.empty")}
-          </p>
-        ) : (
-          <dl className="grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2">
-            {profileFields.map((field) => (
-              <div key={field.label} className="min-w-0">
-                <dt className="text-[length:var(--exits-text-xs)] text-muted">{t(field.label)}</dt>
-                <dd className="break-words">{field.value}</dd>
-              </div>
-            ))}
-          </dl>
-        )}
-      </DashboardSection>
-
-      {brandingFields.length > 0 ? (
-        <DashboardSection title={t("organization.overview.branding")}>
-          <dl className="grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2">
-            {brandingFields.map((field) => (
-              <div key={field.label} className="min-w-0">
-                <dt className="text-[length:var(--exits-text-xs)] text-muted">{t(field.label)}</dt>
-                <dd className="break-words font-mono text-[length:var(--exits-text-xs)]">
-                  {field.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </DashboardSection>
-      ) : null}
+      <OrganizationProfileEditor
+        key={`profile-${organization.updatedAtUtc ?? organization.id}`}
+        organization={organization}
+      />
+      <OrganizationBrandingEditor
+        key={`branding-${organization.updatedAtUtc ?? organization.id}`}
+        organization={organization}
+      />
 
       <DashboardSection
         title={t("organization.overview.commercial")}

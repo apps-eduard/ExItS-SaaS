@@ -38,9 +38,85 @@ export type OrganizationProfile = {
 
 export type OrganizationBranding = {
   brandDisplayName?: string;
+  logoUrl?: string;
   primaryColor?: string;
   accentColor?: string;
 };
+
+export const ORGANIZATION_MEMBER_ROLES = ["OrganizationOwner", "OrganizationMember"] as const;
+export type OrganizationMemberRole = (typeof ORGANIZATION_MEMBER_ROLES)[number];
+
+export type ProductAccessAssignment = {
+  id: string;
+  userId: string;
+  organizationId: string;
+  membershipId: string;
+  productCode: string;
+  status: string;
+  grantedAtUtc?: string;
+  grantedByActor?: string;
+  revokedAtUtc?: string;
+  revokedByActor?: string;
+  reason?: string;
+  createdAtUtc?: string;
+  updatedAtUtc?: string;
+};
+
+export type EnabledProduct = {
+  productCode: string;
+  displayName: string;
+  entitlementActive: boolean;
+  productAccessAssigned: boolean;
+  productLocalRoleGranted: boolean;
+  canLaunch: boolean;
+  productLocalRoleCode?: string;
+  mappedPosRoleCode?: string;
+  subscriptionStatus?: string;
+  reasonCode?: string;
+  productId?: string;
+  productKey?: string;
+  productDisplayName?: string;
+  entitlementStatus?: string;
+  provisioningStatus?: string;
+  organizationRole?: string;
+  productRole?: string;
+  denialReasonCode?: string;
+  denialReasonDisplay?: string;
+};
+
+export type ProductLocalRoleGrant = {
+  id: string;
+  organizationId: string;
+  userIdentityId: string;
+  productCode: string;
+  roleCode: string;
+  mappedPosRoleCode: string;
+  status: string;
+  grantedAtUtc?: string;
+  grantedByUserIdentityId?: string;
+  source?: string;
+  revokedAtUtc?: string;
+  userDisplayName?: string;
+  productDisplayName?: string;
+  roleDisplay?: string;
+  productKey?: string;
+};
+
+export type OrganizationRoleDefinition = {
+  id: string;
+  organizationId: string;
+  code: string;
+  name: string;
+  description?: string;
+  status: string;
+  permissions: string[];
+  createdAtUtc?: string;
+  updatedAtUtc?: string;
+  version?: number;
+};
+
+export const PRODUCT_ACCESS_PAGE_SIZE = 20;
+export const ORGANIZATION_ROLES_PAGE_SIZE = 20;
 
 export type OrganizationDetail = OrganizationListItem & {
   profile: OrganizationProfile;

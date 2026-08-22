@@ -80,8 +80,7 @@ describe("organization workspace people", () => {
     expect(await screen.findByRole("heading", { name: "People", level: 1 })).toBeInTheDocument();
     expect(screen.getByText("Ana Cruz")).toBeInTheDocument();
     expect(screen.getByText("Staff")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /invite/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /revoke/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /invite/i })).toBeInTheDocument();
     expect(screen.queryByLabelText(/^Search$/i)).not.toBeInTheDocument();
     const crumb = screen.getByRole("navigation", { name: "Breadcrumb" });
     expect(crumb).toHaveTextContent("Organizations");

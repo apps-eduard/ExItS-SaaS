@@ -101,7 +101,7 @@ test("Overview and Products navigation and mapping work", async ({ page }) => {
   await mockCore(page);
   await page.goto(`/admin/organizations/${organization.id}`);
   const workspaceNav = page.getByRole("navigation", { name: "Organization workspace" });
-  await workspaceNav.getByRole("link", { name: "Products" }).click();
+  await workspaceNav.getByRole("link", { name: "Products", exact: true }).click();
   await expect(page).toHaveURL(/\/products$/);
   await expect(
     page.getByRole("heading", { name: "Products", exact: true, level: 1 }),

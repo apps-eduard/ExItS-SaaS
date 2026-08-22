@@ -31,6 +31,9 @@ export function isOrganizationWorkspacePath(pathname: string): boolean {
 export const ORGANIZATION_WORKSPACE_SECTIONS = [
   "branches",
   "people",
+  "roles",
+  "product-access",
+  "enabled-products",
   "products",
   "subscription",
   "entitlements",
@@ -44,6 +47,9 @@ export type OrganizationWorkspaceNavSection =
   | "overview"
   | "branches"
   | "people"
+  | "roles"
+  | "product-access"
+  | "enabled-products"
   | "products"
   | "subscription"
   | "entitlements"

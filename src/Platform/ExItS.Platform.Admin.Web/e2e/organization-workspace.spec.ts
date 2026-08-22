@@ -102,7 +102,7 @@ test("list navigation opens the organization workspace", async ({ page }) => {
   await page.getByRole("link", { name: "Northwind Market" }).click();
   await expect(page).toHaveURL(/\/admin\/organizations\/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa$/);
   await expect(page.getByRole("heading", { name: "Northwind Market" })).toBeVisible();
-  await expect(page.getByText("POS")).toBeVisible();
+  await expect(page.getByText("POS", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /edit/i })).toHaveCount(0);
   await page
     .getByRole("navigation", { name: "Breadcrumb" })
@@ -198,7 +198,7 @@ test("supplemental commercial failure stays isolated with retry and copy diagnos
   await expect(page.getByRole("button", { name: "Copy diagnostics" })).toBeVisible();
   fail = false;
   await page.getByRole("button", { name: "Retry" }).click();
-  await expect(page.getByText("POS")).toBeVisible();
+  await expect(page.getByText("POS", { exact: true })).toBeVisible();
 });
 
 test("workspace localizes, supports themes, preserves density, and has no serious axe issues", async ({

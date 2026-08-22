@@ -60,9 +60,9 @@ describe("organization workspace overview", () => {
     });
     expect(await screen.findByRole("heading", { name: "Northwind Market" })).toBeInTheDocument();
     expect(screen.getAllByText("northwind-market").length).toBeGreaterThan(0);
-    expect(screen.getByText("Northwind LLC")).toBeInTheDocument();
+    expect(screen.getByLabelText("Legal name")).toHaveValue("Northwind LLC");
     expect(screen.getByText("POS")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /edit/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /save profile/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /create/i })).not.toBeInTheDocument();
     await user.click(
       within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("link", {

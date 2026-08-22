@@ -12,9 +12,23 @@ import {
   listOrganizationAuditRecords,
   listOrganizationSubscriptions,
 } from "@/api/organizations/organization-client";
+import { listOrganizationProductAccess, type ProductAccessUrlState } from "@/api/organizations/product-access-client";
+import {
+  listEnabledProducts,
+  listProductLocalRoles,
+} from "@/api/organizations/enabled-products-client";
+import {
+  listOrganizationPermissionCatalog,
+  listOrganizationRoleDefinitions,
+  type OrganizationRolesUrlState,
+} from "@/api/organizations/organization-roles-client";
 import type { OrganizationBillingUrlState } from "@/api/organizations/billing-list-query";
 import type { OrganizationAuditUrlState } from "@/api/organizations/organization-audit-list-query";
-import { ORGANIZATION_PEOPLE_PAGE_SIZE } from "@/api/organizations/organization-types";
+import {
+  ORGANIZATION_PEOPLE_PAGE_SIZE,
+  PRODUCT_ACCESS_PAGE_SIZE,
+  ORGANIZATION_ROLES_PAGE_SIZE,
+} from "@/api/organizations/organization-types";
 import {
   ORGANIZATION_ENTITLEMENT_PAGE_SIZE,
   ORGANIZATION_FEATURE_OVERRIDE_PAGE_SIZE,
@@ -249,5 +263,79 @@ export function useOrganizationAuditQuery(
     enabled: organizationId != null,
     queryFn: ({ signal }) =>
       listOrganizationAuditRecords(env.platformApiBaseUrl, organizationId!, state, signal),
+  });
+}
+
+export const organizationProductAccessQueryKey = (
+  organizationId: string,
+  state: ProductAccessUrlState,
+) => ["organizations", "product-access", organizationId, state.page, state.status] as const;
+
+export function useOrganizationProductAccessQuery(
+  organizationId: string | null,
+  state: ProductAccessUrlState,
+) {
+  return useQuery({
+    queryKey: organizationProductAccessQueryKey(organizationId ?? "", state),
+    enabled: organizationId != null,
+    queryFn: ({ signal }) =>
+      listOrganizationProductAccess(env.platformApiBaseUrl, organizationId!, {
+        ...state,
+        pageSize: PRODUCT_ACCESS_PAGE_SIZE,
+        signal,
+      }),
+  });
+}
+
+export const organizationEnabledProductsQueryKey = (organizationId: string) =>
+  ["organizations", "enabled-products", organizationId] as const;
+
+export function useOrganizationEnabledProductsQuery(organizationId: string | null) {
+  return useQuery({
+    queryKey: organizationEnabledProductsQueryKey(organizationId ?? ""),
+    enabled: organizationId != null,
+    queryFn: ({ signal }) => listEnabledProducts(env.platformApiBaseUrl, organizationId!, signal),
+  });
+}
+
+export const organizationProductLocalRolesQueryKey = (organizationId: string) =>
+  ["organizations", "product-local-roles", organizationId] as const;
+
+export function useOrganizationProductLocalRolesQuery(organizationId: string | null) {
+  return useQuery({
+    queryKey: organizationProductLocalRolesQueryKey(organizationId ?? ""),
+    enabled: organizationId != null,
+    queryFn: ({ signal }) =>
+      listProductLocalRoles(env.platformApiBaseUrl, organizationId!, { status: "Active", signal }),
+  });
+}
+
+export const organizationRolesQueryKey = (organizationId: string, state: OrganizationRolesUrlState) =>
+  ["organizations", "roles", organizationId, state.page, state.status, state.search] as const;
+
+export function useOrganizationRolesQuery(
+  organizationId: string | null,
+  state: OrganizationRolesUrlState,
+) {
+  return useQuery({
+    queryKey: organizationRolesQueryKey(organizationId ?? "", state),
+    enabled: organizationId != null,
+    queryFn: ({ signal }) =>
+      listOrganizationRoleDefinitions(env.platformApiBaseUrl, organizationId!, {
+        ...state,
+        pageSize: ORGANIZATION_ROLES_PAGE_SIZE,
+        signal,
+      }),
+  });
+}
+
+export const organizationPermissionCatalogQueryKey = () =>
+  ["organizations", "permission-catalog"] as const;
+
+export function useOrganizationPermissionCatalogQuery(enabled: boolean) {
+  return useQuery({
+    queryKey: organizationPermissionCatalogQueryKey(),
+    enabled,
+    queryFn: ({ signal }) => listOrganizationPermissionCatalog(env.platformApiBaseUrl, signal),
   });
 }
