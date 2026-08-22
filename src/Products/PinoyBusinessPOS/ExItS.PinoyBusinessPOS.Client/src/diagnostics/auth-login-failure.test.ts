@@ -127,6 +127,16 @@ describe("auth login failure diagnostics", () => {
     expect(report).toContain("ExItS POS Error Report");
   });
 
+  it("does not classify client runtime errors as network failures", () => {
+    const failure = buildAuthLoginFailure(
+      new TypeError("crypto.randomUUID is not a function"),
+    );
+    const presentation = resolveAuthLoginFailurePresentation(failure, t);
+    expect(presentation.title).toBe("signIn.failed");
+    expect(presentation.detail).toContain("crypto.randomUUID");
+    expect(presentation.title).not.toBe("signIn.networkError");
+  });
+
   it("GENERIC_FALSE_ONLY_LOGIN_FAILURE removed from presentation", () => {
     const failure = buildAuthLoginFailure(
       new PlatformApiError(502, {

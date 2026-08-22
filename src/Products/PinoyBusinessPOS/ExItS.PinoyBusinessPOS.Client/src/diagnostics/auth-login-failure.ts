@@ -71,10 +71,23 @@ export function isInvalidCredentialsFailure(failure: AuthLoginFailureDiagnostic)
   return INVALID_CREDENTIAL_ERROR_CODES.has(failure.errorCode);
 }
 
+function isLikelyNetworkFailure(failure: AuthLoginFailureDiagnostic): boolean {
+  if (failure.status !== undefined) {
+    return false;
+  }
+  const detail = (failure.detail ?? "").toLowerCase();
+  return (
+    detail.includes("failed to fetch") ||
+    detail.includes("networkerror") ||
+    detail.includes("load failed") ||
+    detail.includes("network request failed")
+  );
+}
+
 export function resolveAuthLoginFriendlyMessageKey(
   failure: AuthLoginFailureDiagnostic,
 ): MessageKey {
-  if (failure.status === undefined) {
+  if (isLikelyNetworkFailure(failure)) {
     return "signIn.networkError";
   }
 
@@ -95,6 +108,14 @@ export function resolveAuthLoginFailurePresentation(
 
   if (titleKey === "signIn.networkError") {
     return { title, detail: title, friendlyMessage };
+  }
+
+  if (failure.status === undefined && failure.detail) {
+    return {
+      title,
+      detail: sanitizeDetail(failure.detail) ?? title,
+      friendlyMessage,
+    };
   }
 
   if (titleKey === "signIn.denied") {
@@ -132,7 +153,7 @@ export function authLoginFailureToPosErrorReport(
           },
           failure.requestCorrelationId,
         )
-      : new Error(friendlyMessage);
+      : new Error(sanitizeDetail(failure.detail) ?? friendlyMessage);
 
   return normalizePosError({
     source: "session",

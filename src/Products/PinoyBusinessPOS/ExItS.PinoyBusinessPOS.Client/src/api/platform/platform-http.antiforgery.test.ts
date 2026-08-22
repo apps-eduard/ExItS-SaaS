@@ -3,6 +3,7 @@ import { PlatformAntiforgeryDefaults } from "@/api/platform/antiforgery";
 import { AUTH_LOGIN_PATH } from "@/api/platform/browser-session";
 import {
   clearPlatformAntiforgeryToken,
+  createCorrelationId,
   isPlatformAntiforgeryValidationError,
   PlatformApiError,
   platformRequest,
@@ -313,5 +314,19 @@ describe("platformRequest antiforgery", () => {
       detail: "A valid browser antiforgery token is required for this request.",
     });
     expect(isPlatformAntiforgeryValidationError(error)).toBe(true);
+  });
+
+  it("createCorrelationId falls back to getRandomValues when randomUUID is missing", () => {
+    vi.stubGlobal("crypto", {
+      getRandomValues: (bytes: Uint8Array) => {
+        bytes.set(Array.from({ length: bytes.length }, (_, index) => index + 1));
+        return bytes;
+      },
+    });
+
+    const correlationId = createCorrelationId();
+    expect(correlationId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
   });
 });
