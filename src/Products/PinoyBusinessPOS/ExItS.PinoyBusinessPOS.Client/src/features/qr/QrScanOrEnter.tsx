@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Camera, Keyboard, X } from "lucide-react";
+import { Camera, Keyboard, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
 import {
@@ -8,6 +8,7 @@ import {
   ExItsQrParseError,
 } from "@/lib/exits-qr/envelope";
 import { decodeQrFromImageFile } from "@/features/qr/decode-qr-from-image";
+import { LiveQrCameraScanner } from "@/features/qr/LiveQrCameraScanner";
 
 type Props = {
   expectedPurpose: ExItsQrPurpose;
@@ -18,21 +19,25 @@ type Props = {
 export function QrScanOrEnter({ expectedPurpose, onResolvedPayload, disabled }: Props) {
   const { t } = useI18n();
   const fileRef = useRef<HTMLInputElement>(null);
+  const manualInputRef = useRef<HTMLInputElement>(null);
   const [manual, setManual] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [scanning, setScanning] = useState(false);
+  const [scanningFile, setScanningFile] = useState(false);
+  const [liveOpen, setLiveOpen] = useState(false);
+
+  function mapSubject(parsedSubject: string, rawPayload: string): string {
+    if (expectedPurpose === "pos-device-registration") {
+      return rawPayload.trim();
+    }
+
+    return parsedSubject;
+  }
 
   function applyRaw(raw: string) {
     try {
       const parsed = assertExItsQrPurpose(raw, expectedPurpose);
       setError(null);
-      onResolvedPayload(
-        expectedPurpose === "personal"
-          ? parsed.subject
-          : expectedPurpose === "organization"
-            ? parsed.subject
-            : raw.trim(),
-      );
+      onResolvedPayload(mapSubject(parsed.subject, raw));
     } catch (err) {
       if (err instanceof ExItsQrParseError) {
         setError(err.code === "unknown_purpose" ? t("qr.wrongPurpose") : t("qr.invalidPayload"));
@@ -44,7 +49,7 @@ export function QrScanOrEnter({ expectedPurpose, onResolvedPayload, disabled }: 
 
   async function onFileChange(file: File | null) {
     if (!file) return;
-    setScanning(true);
+    setScanningFile(true);
     setError(null);
     try {
       const payload = await decodeQrFromImageFile(file);
@@ -56,7 +61,7 @@ export function QrScanOrEnter({ expectedPurpose, onResolvedPayload, disabled }: 
     } catch {
       setError(t("qr.cameraUnavailable"));
     } finally {
-      setScanning(false);
+      setScanningFile(false);
       if (fileRef.current) fileRef.current.value = "";
     }
   }
@@ -67,22 +72,32 @@ export function QrScanOrEnter({ expectedPurpose, onResolvedPayload, disabled }: 
         ref={fileRef}
         type="file"
         accept="image/*"
-        capture="environment"
         className="sr-only"
         data-testid="qr-file-input"
-        disabled={disabled || scanning}
+        disabled={disabled || scanningFile}
         onChange={(event) => void onFileChange(event.target.files?.[0] ?? null)}
       />
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
           className="min-h-11"
-          data-testid="qr-scan-button"
-          disabled={disabled || scanning}
-          onClick={() => fileRef.current?.click()}
+          data-testid="qr-live-camera-button"
+          disabled={disabled || scanningFile}
+          onClick={() => setLiveOpen(true)}
         >
           <Camera className="size-4" aria-hidden />
-          {scanning ? t("qr.scanning") : t("qr.scan")}
+          {t("qr.scanWithCamera")}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          className="min-h-11"
+          data-testid="qr-upload-button"
+          disabled={disabled || scanningFile}
+          onClick={() => fileRef.current?.click()}
+        >
+          <Upload className="size-4" aria-hidden />
+          {scanningFile ? t("qr.scanning") : t("qr.uploadImage")}
         </Button>
         <Button
           type="button"
@@ -99,13 +114,14 @@ export function QrScanOrEnter({ expectedPurpose, onResolvedPayload, disabled }: 
           {t("qr.clear")}
         </Button>
       </div>
-      <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("qr.cameraHint")}</p>
+      <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("qr.inputHint")}</p>
       <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
         <span className="inline-flex items-center gap-1.5">
           <Keyboard className="size-4" aria-hidden />
           {t("qr.enterId")}
         </span>
         <input
+          ref={manualInputRef}
           className="min-h-11 rounded border border-[var(--exits-border)] bg-transparent px-3 uppercase"
           data-testid="qr-manual-id"
           value={manual}
@@ -139,6 +155,19 @@ export function QrScanOrEnter({ expectedPurpose, onResolvedPayload, disabled }: 
           {error}
         </p>
       ) : null}
+
+      <LiveQrCameraScanner
+        open={liveOpen}
+        expectedPurpose={expectedPurpose}
+        onClose={() => setLiveOpen(false)}
+        onScan={(result) => {
+          applyRaw(result.rawPayload);
+        }}
+        onUploadFallback={() => fileRef.current?.click()}
+        onManualFallback={() => {
+          manualInputRef.current?.focus();
+        }}
+      />
     </div>
   );
 }

@@ -7,6 +7,8 @@ import { resolvePublicUserId } from "@/api/platform/public-identity-client";
 import { findCustomerByLinkedPersonalPublicUserId } from "@/api/pos/pos-customers-client";
 import { buildExItsQr } from "@/lib/exits-qr/envelope";
 import { CheckoutPersonalCustomerPicker } from "@/features/checkout/CheckoutPersonalCustomerPicker";
+import * as cameraAccess from "@/lib/qr/camera-access";
+import * as decodeFrame from "@/lib/qr/decode-qr-frame";
 
 vi.mock("@/api/platform/public-identity-client", () => ({
   resolvePublicUserId: vi.fn(),
@@ -15,6 +17,25 @@ vi.mock("@/api/platform/public-identity-client", () => ({
 vi.mock("@/api/pos/pos-customers-client", () => ({
   findCustomerByLinkedPersonalPublicUserId: vi.fn(),
 }));
+
+vi.mock("@/lib/qr/camera-access", async (importOriginal) => {
+  const actual = await importOriginal<typeof cameraAccess>();
+  return {
+    ...actual,
+    isCameraApiAvailable: vi.fn(() => true),
+    isCameraSecureContext: vi.fn(() => true),
+    openPreferredCamera: vi.fn(),
+    stopMediaStream: vi.fn(),
+  };
+});
+
+vi.mock("@/lib/qr/decode-qr-frame", async (importOriginal) => {
+  const actual = await importOriginal<typeof decodeFrame>();
+  return {
+    ...actual,
+    decodeQrFromVideoFrame: vi.fn(),
+  };
+});
 
 const workspace = {
   organizationId: "11111111-1111-1111-1111-111111111111",
@@ -60,8 +81,12 @@ function renderPicker(
 
 describe("CheckoutPersonalCustomerPicker", () => {
   beforeEach(() => {
+    HTMLVideoElement.prototype.play = vi.fn().mockResolvedValue(undefined);
     vi.mocked(resolvePublicUserId).mockReset();
     vi.mocked(findCustomerByLinkedPersonalPublicUserId).mockReset();
+    vi.mocked(cameraAccess.openPreferredCamera).mockReset();
+    vi.mocked(decodeFrame.decodeQrFromVideoFrame).mockReset();
+    vi.mocked(decodeFrame.decodeQrFromVideoFrame).mockResolvedValue(null);
   });
 
   it("selects an existing correlated customer from manual ExItS ID", async () => {
@@ -159,7 +184,7 @@ describe("CheckoutPersonalCustomerPicker", () => {
     await user.click(screen.getByTestId("qr-manual-submit"));
 
     await waitFor(() => {
-      expect(screen.getByTestId("qr-error")).toHaveTextContent(/different purpose/i);
+      expect(screen.getByTestId("qr-error")).toHaveTextContent("This QR code can't be used here.");
     });
     expect(resolvePublicUserId).not.toHaveBeenCalled();
   });
@@ -175,7 +200,7 @@ describe("CheckoutPersonalCustomerPicker", () => {
     await user.click(screen.getByTestId("qr-manual-submit"));
 
     await waitFor(() => {
-      expect(screen.getByTestId("qr-error")).toHaveTextContent(/different purpose/i);
+      expect(screen.getByTestId("qr-error")).toHaveTextContent("This QR code can't be used here.");
     });
     expect(resolvePublicUserId).not.toHaveBeenCalled();
   });
@@ -191,5 +216,40 @@ describe("CheckoutPersonalCustomerPicker", () => {
       expect(screen.getByTestId("qr-error")).toHaveTextContent(/not a valid ExItS QR/i);
     });
     expect(resolvePublicUserId).not.toHaveBeenCalled();
+  });
+
+  it("resolves linked customer from live Personal QR without auto-finalizing sale", async () => {
+    vi.mocked(cameraAccess.openPreferredCamera).mockResolvedValue({
+      ok: true,
+      stream: {
+        getTracks: () => [],
+        getVideoTracks: () => [],
+      } as unknown as MediaStream,
+      facingMode: "environment",
+    });
+    vi.mocked(decodeFrame.decodeQrFromVideoFrame).mockResolvedValue(buildExItsQr("personal", publicId));
+
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.mocked(resolvePublicUserId).mockResolvedValue(resolvedPersonal);
+    vi.mocked(findCustomerByLinkedPersonalPublicUserId).mockResolvedValue({
+      customerId,
+      displayName: "Rosa Santos",
+      mobileNumber: null,
+      status: "Active",
+    });
+
+    const { onCustomerSelected } = renderPicker();
+
+    await user.click(screen.getByTestId("qr-live-camera-button"));
+    await user.click(screen.getByTestId("live-qr-open-camera"));
+    await vi.advanceTimersByTimeAsync(200);
+
+    await waitFor(() => {
+      expect(onCustomerSelected).toHaveBeenCalledWith(
+        expect.objectContaining({ customerId, displayName: "Rosa Santos" }),
+      );
+    });
+    vi.useRealTimers();
   });
 });

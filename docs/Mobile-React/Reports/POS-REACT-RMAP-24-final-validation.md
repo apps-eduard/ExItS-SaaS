@@ -128,11 +128,15 @@ DEVICE_VERIFIED=NO
 | ---- | ----- |
 | Physical PWA offline cash on registered POS device | Requires hardware + production-like deployment |
 | Bluetooth/USB peripherals | Out of React scope |
-| Live QR camera scan | **NOT IMPLEMENTED** — file/still decode + manual ID only |
+| Live QR camera scan | **IMPLEMENTED (automated mocked harness)** — physical device verification still **NO** |
 
 ```
-LIVE_CAMERA_VERIFIED=NO
+LIVE_CAMERA_IMPLEMENTED=YES
+LIVE_CAMERA_AUTOMATED_VERIFIED=PASS
+LIVE_CAMERA_DEVICE_VERIFIED=NO
 ```
+
+See addendum: [POS-LIVE-QR-01](./POS-LIVE-QR-01-live-browser-camera-scanning.md).
 
 ---
 
@@ -144,7 +148,7 @@ LIVE_CAMERA_VERIFIED=NO
 | Organization buyer purchase history | NO approved API — UI intentionally absent |
 | RMAP-TAX | NOT STARTED / NOT AUTHORIZED |
 | RMAP-B05 public discovery | NOT AUTHORIZED |
-| Live browser camera QR | Documented fallback only |
+| Live browser camera QR | Live camera implemented; file/manual fallbacks retained — see POS-LIVE-QR-01 |
 | MAUI retirement | NOT AUTHORIZED |
 
 ---

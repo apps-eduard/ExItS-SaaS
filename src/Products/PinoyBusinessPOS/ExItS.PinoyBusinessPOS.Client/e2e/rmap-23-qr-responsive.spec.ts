@@ -1,6 +1,6 @@
 /**
- * RMAP-23 — Dedicated QR responsive coverage (still-image decode + manual ID fallback).
- * Live browser camera (getUserMedia) is NOT implemented; do not claim LIVE_CAMERA_VERIFIED=YES.
+ * RMAP-23 — Dedicated QR responsive coverage (still-image decode + manual ID + live camera UI).
+ * Physical device camera verification remains manual (POS-LIVE-QR-01).
  */
 import { expect, test } from "@playwright/test";
 import { assertNoHorizontalOverflow } from "./helpers";
