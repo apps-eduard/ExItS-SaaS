@@ -28,6 +28,35 @@ public sealed class RegisterCurrentDevice(
             return ApplicationResult<PosDeviceDto>.Failure(ApplicationErrorCodes.BranchNotFound, "The selected branch was not found.");
         try { branch.EnsureActive(); } catch (DomainException ex) { return ApplicationResult<PosDeviceDto>.Failure(ex.ErrorCode, ex.Message); }
 
+        ApplicationResult<PosDeviceDto>? outcome = null;
+        try
+        {
+            // Capacity check + insert must be serialized per organization so two final-slot
+            // registrations cannot both succeed (PostgreSQL advisory lock in PlatformUnitOfWork).
+            await unitOfWork.ExecuteWithOrganizationLockAsync(
+                organizationId.Value,
+                async ct =>
+                {
+                    outcome = await ExecuteLockedAsync(organizationId, branch, command, ct).ConfigureAwait(false);
+                },
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<PosDeviceDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+
+        return outcome ?? ApplicationResult<PosDeviceDto>.Failure(
+            ApplicationErrorCodes.PosDeviceNotAuthorized,
+            "POS device registration did not complete.");
+    }
+
+    private async Task<ApplicationResult<PosDeviceDto>> ExecuteLockedAsync(
+        PlatformOrganizationId organizationId,
+        OrganizationBranch branch,
+        RegisterPosDeviceCommand command,
+        CancellationToken cancellationToken)
+    {
         PosDevice? existing;
         try { existing = await devices.GetByInstallationDeviceIdAsync(organizationId, command.InstallationDeviceId, cancellationToken).ConfigureAwait(false); }
         catch (DomainException ex) { return ApplicationResult<PosDeviceDto>.Failure(ex.ErrorCode, ex.Message); }

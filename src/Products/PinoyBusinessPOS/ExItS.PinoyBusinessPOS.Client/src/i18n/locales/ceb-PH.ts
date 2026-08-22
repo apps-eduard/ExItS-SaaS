@@ -870,7 +870,7 @@ export const cebPH: Record<keyof typeof en, string> = {
     "I-assign ang Owner, Manager, o Cashier POS roles para sa pagbaligya. Ang bug-at nga administration magpabilin niining surface.",
   "devices.listTitle": "Mga POS device",
   "devices.listLede":
-    "I-register kini nga browser o paghimo og one-time code aron ang staff maka-register og laing browser para sa branch.",
+    "Irehistro ang mga telepono, tablet, laptop, o computer nga gitugotan nga mobaligya sa POS.",
   "devices.deniedDetail":
     "Organization owners ug administrators lang ang makadumala og POS devices.",
   "devices.backOrg": "Balik sa organization",
@@ -891,12 +891,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "devices.registerBrowser": "I-register kini nga browser",
   "devices.registering": "Gina-register…",
   "devices.registerError": "Dili ma-register kini nga browser.",
-  "devices.createCode": "Paghimo og registration code",
   "devices.creatingCode": "Gihimo ang code…",
-  "devices.tokenError": "Dili mahimo ang registration code.",
-  "devices.codeReady":
-    "Ipakigbahin kini nga one-time code sa staff. Mo-expire kini sa dili madugay.",
-  "devices.openRedeem": "I-register gamit ang code",
   "devices.loadError": "Dili ma-load ang POS devices.",
   "devices.empty": "Wala pay naka-register nga POS devices.",
   "devices.identityUnavailable":
@@ -920,18 +915,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "devices.revokeError": "Dili ma-revoke ang device. Basin kinahanglan og dugang verification.",
   "devices.cancel": "Kanselahon",
   "devices.actionError": "Adunay sayop sa device action.",
-  "devices.redeemTitle": "I-register kini nga browser",
-  "devices.redeemLede":
-    "I-paste ang registration code gikan sa imong owner o admin. Walay kinahanglan nga camera.",
-  "devices.redeemHint":
-    "Ang code mo-register niining browser para sa usa ka branch. Magpabilin kini nga registered human mag-sign out.",
-  "devices.codeLabel": "Registration code",
   "devices.codePlaceholder": "I-paste ang code dinhi",
-  "devices.codeRequired": "I-paste ang registration code.",
-  "devices.redeemSubmit": "I-register ang browser",
-  "devices.redeeming": "Gina-register…",
-  "devices.redeemError": "Dili ma-redeem ang registration code.",
-  "devices.redeemSuccess": "Naka-register kini nga browser para sa gipili nga branch.",
   "devices.branchFallback": "Gipili nga sanga",
   "devices.capacityLoadError": "Dili ma-load ang kapasidad sa device.",
   "devices.capacity.activeOfAllowed": "{used} sa {allowed} ang aktibo",
@@ -995,22 +979,22 @@ export const cebPH: Record<keyof typeof en, string> = {
   "org.action.branchesDetail": "Address, oras, ug pickup o delivery",
   "org.action.catalogDetail": "Mga produkto, presyo, ug kategoriya",
   "org.action.inviteDetail": "Imbitaha ang staff sa organisasyon gamit ang recovery email",
-  "org.action.devicesDetail": "Irehistro ang mga browser ug dumala ang POS devices",
+  "org.action.devicesDetail": "Irehistro kini nga device ug dumalaha ang mga aktibong POS device",
   "org.action.workspaceDetail": "Pagpili og laing organisasyon o sanga",
   "sell.readiness.loading": "Gisusi ang kahanda sa pagbaligya…",
   "sell.readiness.deviceTitle": "Gikinahanglan ang setup sa device",
   "sell.readiness.deviceDetail":
-    "Kinahanglan irehistro kini nga browser sa dili pa ka makasugod og baligya sa {branch}.",
+    "Kinahanglan irehistro kini nga device sa dili pa ka makasugod og baligya sa {branch}.",
   "sell.readiness.deviceHelp":
-    "Pangayo og registration code sa tag-iya o admin, dayon irehistro kini nga browser para sa gipili nga sanga.",
+    "Mahimo nimong ipadayon ang pagtan-aw ug pagdumala sa imong negosyo, o irehistro kini nga device aron magsugod og baligya.",
   "sell.readiness.registerDevice": "Irehistro kini nga device",
   "sell.viewOnlyBanner": "View only — Irehistro kini nga device aron makabaligya",
-  "sell.readiness.registerBrowser": "Irehistro kini nga browser",
+  "sell.readiness.registerBrowser": "Irehistro kini nga device",
   "sell.readiness.deviceRevokedTitle": "Gibawi kini nga device",
   "sell.readiness.deviceRevokedDetail":
-    "Gibawi kini nga browser para sa {branch}, mao nga na-block ang pagbaligya dinhi.",
+    "Gibawi kini nga device para sa {branch}, mao nga na-block ang pagbaligya dinhi.",
   "sell.readiness.deviceRevokedHelp":
-    "Dili mobalik ang rehistro sa iyang kaugalingon. Irehistro pag-usab kini nga browser, o pangayo ug registration code sa imong owner o admin.",
+    "Dili mobalik ang rehistro sa iyang kaugalingon. Irehistro pag-usab kini nga device kung adunay available nga device slot.",
   "sell.readiness.manageDevices": "Dumalaha ang mga POS device",
   "sell.readiness.shiftTitle": "Gikinahanglan ang pag-abli og shift",
   "sell.readiness.shiftDetail": "Ablihi una ang shift sa dili pa magsugod og baligya.",
@@ -1019,7 +1003,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "sell.readiness.openShift": "Ablihi ang shift",
   "sell.midSession.deviceLost": "Dili na aprubado ang imong device para sa pagbaligya.",
   "sell.midSession.shiftLost": "Dili na abierto ang imong shift.",
-  "sell.midSession.fixDevice": "Irehistro kini nga browser",
+  "sell.midSession.fixDevice": "Irehistro kini nga device",
   "sell.midSession.openShift": "Ablihi ang shift",
   "sell.floatingCartSummary": "{count} ka butang · ₱{subtotal}",
   "sell.floatingCartView": "Tan-awa ang cart",

@@ -858,7 +858,7 @@ export const filPH: Record<keyof typeof en, string> = {
     "Magtalaga ng Owner, Manager, o Cashier POS roles para magbenta. Dito nananatili ang mabibigat na administration.",
   "devices.listTitle": "Mga POS device",
   "devices.listLede":
-    "I-register ang browser na ito o gumawa ng one-time code para ma-register ng staff ang ibang browser sa isang branch.",
+    "Irehistro ang mga telepono, tablet, laptop, o computer na pinapayagang magbenta sa POS.",
   "devices.deniedDetail":
     "Owner at administrator lang ng organization ang puwedeng mag-manage ng POS devices.",
   "devices.backOrg": "Bumalik sa organization",
@@ -879,11 +879,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "devices.registerBrowser": "I-register ang browser na ito",
   "devices.registering": "Nire-register…",
   "devices.registerError": "Hindi ma-register ang browser na ito.",
-  "devices.createCode": "Gumawa ng registration code",
   "devices.creatingCode": "Gumagawa ng code…",
-  "devices.tokenError": "Hindi makagawa ng registration code.",
-  "devices.codeReady": "Ibahagi ang one-time code sa staff. Mag-e-expire ito agad.",
-  "devices.openRedeem": "Mag-register gamit ang code",
   "devices.loadError": "Hindi ma-load ang POS devices.",
   "devices.empty": "Wala pang naka-register na POS device.",
   "devices.identityUnavailable":
@@ -908,18 +904,7 @@ export const filPH: Record<keyof typeof en, string> = {
     "Hindi ma-revoke ang device. Maaaring kailangan ng karagdagang verification.",
   "devices.cancel": "Cancel",
   "devices.actionError": "May problema sa device action.",
-  "devices.redeemTitle": "I-register ang browser na ito",
-  "devices.redeemLede":
-    "I-paste ang registration code mula sa owner o admin. Hindi kailangan ng camera.",
-  "devices.redeemHint":
-    "Ire-register ng code ang browser na ito sa isang branch. Mananatili ito pagkatapos mag-sign out.",
-  "devices.codeLabel": "Registration code",
   "devices.codePlaceholder": "I-paste ang code dito",
-  "devices.codeRequired": "I-paste ang registration code.",
-  "devices.redeemSubmit": "I-register ang browser",
-  "devices.redeeming": "Nire-register…",
-  "devices.redeemError": "Hindi ma-redeem ang registration code.",
-  "devices.redeemSuccess": "Naka-register ang browser na ito sa napiling branch.",
   "devices.branchFallback": "Napiling branch",
   "devices.capacityLoadError": "Hindi ma-load ang device capacity.",
   "devices.capacity.activeOfAllowed": "{used} sa {allowed} ang active",
@@ -982,22 +967,23 @@ export const filPH: Record<keyof typeof en, string> = {
   "org.action.branchesDetail": "Address, oras, at pickup o delivery",
   "org.action.catalogDetail": "Mga produkto, presyo, at kategorya",
   "org.action.inviteDetail": "Mag-invite ng organization staff gamit ang recovery email",
-  "org.action.devicesDetail": "Mag-register ng browser at i-manage ang POS devices",
+  "org.action.devicesDetail":
+    "Irehistro ang device na ito at pamahalaan ang mga aktibong POS device",
   "org.action.workspaceDetail": "Pumili ng ibang organization o branch",
   "sell.readiness.loading": "Sinusuri ang kahandaan sa pagbebenta…",
   "sell.readiness.deviceTitle": "Kailangan ang setup ng device",
   "sell.readiness.deviceDetail":
-    "Kailangang i-register ang browser na ito bago ka makapagsimulang magbenta sa {branch}.",
+    "Kailangang i-register ang device na ito bago ka makapagsimulang magbenta sa {branch}.",
   "sell.readiness.deviceHelp":
-    "Humingi ng registration code sa owner o admin, tapos i-register ang browser na ito para sa napiling branch.",
+    "Maaari mong ipagpatuloy ang pagtingin at pamamahala sa negosyo, o irehistro ang device na ito para makapagsimulang magbenta.",
   "sell.readiness.registerDevice": "Irehistro ang device na ito",
   "sell.viewOnlyBanner": "View only — Irehistro ang device na ito para makapagbenta",
-  "sell.readiness.registerBrowser": "I-register ang browser na ito",
+  "sell.readiness.registerBrowser": "I-register ang device na ito",
   "sell.readiness.deviceRevokedTitle": "Nabawi ang device na ito",
   "sell.readiness.deviceRevokedDetail":
-    "Nabawi ang browser na ito para sa {branch}, kaya naka-block ang pagbebenta rito.",
+    "Nabawi ang device na ito para sa {branch}, kaya naka-block ang pagbebenta rito.",
   "sell.readiness.deviceRevokedHelp":
-    "Hindi kusang bumabalik ang rehistro. Irehistro ulit ang browser na ito, o humingi ng registration code sa owner o admin mo.",
+    "Hindi kusang bumabalik ang rehistro. Irehistro ulit ang device na ito kapag may available na device slot.",
   "sell.readiness.manageDevices": "Pamahalaan ang mga POS device",
   "sell.readiness.shiftTitle": "Kailangan mag-open ng shift",
   "sell.readiness.shiftDetail": "Mag-open muna ng shift bago magsimulang magbenta.",
@@ -1005,7 +991,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "sell.readiness.openShift": "Mag-open ng shift",
   "sell.midSession.deviceLost": "Hindi na aprubado ang device mo para magbenta.",
   "sell.midSession.shiftLost": "Hindi na open ang shift mo.",
-  "sell.midSession.fixDevice": "I-register ang browser na ito",
+  "sell.midSession.fixDevice": "I-register ang device na ito",
   "sell.midSession.openShift": "Mag-open ng shift",
   "sell.floatingCartSummary": "{count} item · ₱{subtotal}",
   "sell.floatingCartView": "Tingnan ang cart",

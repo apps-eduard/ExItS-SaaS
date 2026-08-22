@@ -20,7 +20,6 @@ const listPosDevices = vi.fn();
 const getPosDeviceCapacity = vi.fn();
 const revokePosDevice = vi.fn();
 const registerPosDevice = vi.fn();
-const createPosDeviceRegistrationToken = vi.fn();
 const getPlatformCredentialStatus = vi.fn();
 const issuePosDeviceRevokeStepUp = vi.fn();
 const refreshPosDevice = vi.fn(async () => undefined);
@@ -32,8 +31,6 @@ vi.mock("@/api/platform/pos-devices-client", () => ({
   getPosDeviceCapacity: (...args: unknown[]) => getPosDeviceCapacity(...args),
   revokePosDevice: (...args: unknown[]) => revokePosDevice(...args),
   registerPosDevice: (...args: unknown[]) => registerPosDevice(...args),
-  createPosDeviceRegistrationToken: (...args: unknown[]) =>
-    createPosDeviceRegistrationToken(...args),
 }));
 
 vi.mock("@/api/platform/platform-credentials-client", () => ({
@@ -183,6 +180,14 @@ describe("OrgPosDevicesPage this-device awareness", () => {
     expect(screen.getByTestId("devices-this-browser")).toHaveAttribute("data-state", "active");
   });
 
+  it("does not expose registration-code customer UX", async () => {
+    renderPage();
+    await screen.findByTestId("devices-list");
+    expect(screen.queryByText(/registration code/i)).toBeNull();
+    expect(screen.queryByText(/register with a code/i)).toBeNull();
+    expect(screen.getByTestId("devices-open-register")).toHaveTextContent(/register this device/i);
+  });
+
   it("hides revoked devices from the normal active list", async () => {
     listPosDevices.mockResolvedValue({
       ok: true,
@@ -322,9 +327,7 @@ describe("OrgPosDevicesPage revoke governance", () => {
     renderPage();
 
     const user = await openRevokeSheet(OTHER_DEVICE_ID);
-    expect(screen.getByTestId("devices-revoke-warning")).not.toHaveTextContent(
-      /currently using/i,
-    );
+    expect(screen.getByTestId("devices-revoke-warning")).not.toHaveTextContent(/currently using/i);
     await user.click(screen.getByTestId("devices-revoke-cancel"));
 
     await openRevokeSheet(CURRENT_DEVICE_ID);

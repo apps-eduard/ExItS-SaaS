@@ -228,6 +228,41 @@ public sealed class RedeemPosDeviceRegistrationToken(
                 "You are not authorized to register a POS device for the selected branch.");
         }
 
+        ApplicationResult<PosDeviceDto>? outcome = null;
+        try
+        {
+            await unitOfWork.ExecuteWithOrganizationLockAsync(
+                organizationId.Value,
+                async ct =>
+                {
+                    outcome = await RedeemLockedAsync(
+                        organizationId,
+                        actorUserId,
+                        branch,
+                        token,
+                        command,
+                        ct).ConfigureAwait(false);
+                },
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<PosDeviceDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+
+        return outcome ?? ApplicationResult<PosDeviceDto>.Failure(
+            ApplicationErrorCodes.PosDeviceNotAuthorized,
+            "POS device registration did not complete.");
+    }
+
+    private async Task<ApplicationResult<PosDeviceDto>> RedeemLockedAsync(
+        PlatformOrganizationId organizationId,
+        PlatformUserId actorUserId,
+        OrganizationBranch branch,
+        PosDeviceRegistrationToken token,
+        RedeemPosDeviceRegistrationTokenCommand command,
+        CancellationToken cancellationToken)
+    {
         PosDevice? existing;
         try
         {

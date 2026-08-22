@@ -701,7 +701,9 @@ export function OrgPosDevicesPage() {
 
       <div className="flex flex-wrap gap-2">
         <Button asChild variant="ghost" className="min-h-11">
-          <Link to="/devices/register">{t("devices.openRedeem")}</Link>
+          <Link to="/devices/register" data-testid="devices-open-register">
+            {t("devices.registerThisDevice")}
+          </Link>
         </Button>
         <Button asChild variant="ghost" className="min-h-11">
           <Link to="/org">{t("devices.backOrg")}</Link>

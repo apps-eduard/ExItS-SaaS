@@ -874,7 +874,7 @@ export const iloPH: Record<keyof typeof en, string> = {
     "I-assign ti Owner, Manager, wenno Cashier POS roles para iti panagilako. Ti bug-at a administration magpabilin iti daytoy a surface.",
   "devices.listTitle": "Dagiti POS device",
   "devices.listLede":
-    "I-register daytoy a browser wenno paghimo iti one-time code tapno ti staff maka-register iti laing browser para iti branch.",
+    "Irehistro dagiti telepono, tablet, laptop, wenno computer a mapalubosan nga agilako iti POS.",
   "devices.deniedDetail":
     "Organization owners ken administrators lti ti makadumala iti POS devices.",
   "devices.backOrg": "Agsubli iti organization",
@@ -895,12 +895,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "devices.registerBrowser": "I-register daytoy a browser",
   "devices.registering": "Gina-register…",
   "devices.registerError": "Saan a ma-register daytoy a browser.",
-  "devices.createCode": "Paghimo iti registration code",
   "devices.creatingCode": "Naaramid ti code…",
-  "devices.tokenError": "Saan a mahimo ti registration code.",
-  "devices.codeReady":
-    "Ibingay daytoy a one-time code iti staff. Mo-expire daytoy iti saan a madugay.",
-  "devices.openRedeem": "I-register gamit ti code",
   "devices.loadError": "Saan a ma-load ti POS devices.",
   "devices.empty": "Awan pay ti naka-register a POS devices.",
   "devices.identityUnavailable":
@@ -924,18 +919,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "devices.revokeError": "Saan a ma-revoke ti device. Basin masapul ti dugti verification.",
   "devices.cancel": "Ikansela",
   "devices.actionError": "Adda ti biddut iti device action.",
-  "devices.redeemTitle": "I-register daytoy a browser",
-  "devices.redeemLede":
-    "I-paste ti registration code gikan iti ti owner wenno admin. Awan ti masapul a camera.",
-  "devices.redeemHint":
-    "Ti code mo-register iti daytoy a browser para iti mayiti a branch. Magpabilin daytoy a registered human mag-sign out.",
-  "devices.codeLabel": "Registration code",
   "devices.codePlaceholder": "I-paste ti code ditoy",
-  "devices.codeRequired": "I-paste ti registration code.",
-  "devices.redeemSubmit": "I-register ti browser",
-  "devices.redeeming": "Gina-register…",
-  "devices.redeemError": "Saan a ma-redeem ti registration code.",
-  "devices.redeemSuccess": "Naka-register daytoy a browser para iti gipili a branch.",
   "devices.branchFallback": "Napili a sanga",
   "devices.capacityLoadError": "Saan ma-load ti kapasidad ti device.",
   "devices.capacity.activeOfAllowed": "{used} iti {allowed} ti aktibo",
@@ -998,22 +982,22 @@ export const iloPH: Record<keyof typeof en, string> = {
   "org.action.branchesDetail": "Address, oras, ken pickup wenno delivery",
   "org.action.catalogDetail": "Dagiti produkto, presio, ken kategoriya",
   "org.action.inviteDetail": "Ayaban ti staff ti organisasion babaen ti recovery email",
-  "org.action.devicesDetail": "Irehistro dagiti browser ken ipangpangulo dagiti POS device",
+  "org.action.devicesDetail": "Irehistro daytoy a device ken taripatoen dagiti aktibo a POS device",
   "org.action.workspaceDetail": "Piliyen ti sabali nga organisasion wenno sanga",
   "sell.readiness.loading": "Masuksukimat ti panagsagana iti panaglako…",
   "sell.readiness.deviceTitle": "Masapul ti panagsagana ti device",
   "sell.readiness.deviceDetail":
-    "Masapul a mairehistro daytoy a browser sakbay a mangrugi ka nga aglako idiay {branch}.",
+    "Masapul a mairehistro daytoy a device sakbay a mangrugi ka nga aglako idiay {branch}.",
   "sell.readiness.deviceHelp":
-    "Agdamag iti registration code iti akinkukua wenno admin, ket irehistro daytoy a browser para iti napili a sanga.",
+    "Mabalinmo nga ituloy ti panangkita ken panangtaripato iti negosyom, wenno irehistro daytoy a device tapno mangrugi ka nga agilako.",
   "sell.readiness.registerDevice": "Irehistro daytoy a device",
   "sell.viewOnlyBanner": "View only — Irehistro daytoy a device tapno agilako",
-  "sell.readiness.registerBrowser": "Irehistro daytoy a browser",
+  "sell.readiness.registerBrowser": "Irehistro daytoy a device",
   "sell.readiness.deviceRevokedTitle": "Nabawi daytoy a device",
   "sell.readiness.deviceRevokedDetail":
-    "Nabawi daytoy a browser para iti {branch}, isu a naserraan ti panaglako ditoy.",
+    "Nabawi daytoy a device para iti {branch}, isu a naserraan ti panaglako ditoy.",
   "sell.readiness.deviceRevokedHelp":
-    "Saan a kusto nga agsubli ti rehistro. Irehistro manen daytoy a browser, wenno dumawat iti registration code iti owner wenno admin mo.",
+    "Saan a kusto nga agsubli ti rehistro. Irehistro manen daytoy a device no adda available a device slot.",
   "sell.readiness.manageDevices": "Idauluan dagiti POS device",
   "sell.readiness.shiftTitle": "Masapul a malukatan ti shift",
   "sell.readiness.shiftDetail": "Lukatan umuna ti shift sakbay a mangrugi nga aglako.",
@@ -1022,7 +1006,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "sell.readiness.openShift": "Lukatan ti shift",
   "sell.midSession.deviceLost": "Saanen a napalubusan ti device mo para iti panaglako.",
   "sell.midSession.shiftLost": "Saanen a nalukatan ti shift mo.",
-  "sell.midSession.fixDevice": "Irehistro daytoy a browser",
+  "sell.midSession.fixDevice": "Irehistro daytoy a device",
   "sell.midSession.openShift": "Lukatan ti shift",
   "sell.floatingCartSummary": "{count} a banag · ₱{subtotal}",
   "sell.floatingCartView": "Kitaen ti cart",
