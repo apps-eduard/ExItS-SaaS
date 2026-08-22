@@ -5,7 +5,7 @@
 **Starting HEAD (this gap-fill):** `3127f8415a9799c22cfe16cca3deacd9032fbc09`  
 **Prior implementation:** `0d8fb021` (core simplification) + `9ad0723e` (active-only UI)  
 **Implementation HEAD:** `e937dd256f241a958f2b8eb286a0a0803301711d`  
-**Final HEAD:** `PLACEHOLDER`
+**Final HEAD:** `9ae3d8fade5822a7ca29c77933574575eae1f938`
 
 ## Canonical product rule
 
@@ -48,3 +48,4 @@
 `REVOKED_DEVICE_DB_RETENTION=APPROVED`  
 `NEXT_RMAP_AUTHORIZED=NO`  
 `PRODUCTION_CUTOVER=NO`
+
