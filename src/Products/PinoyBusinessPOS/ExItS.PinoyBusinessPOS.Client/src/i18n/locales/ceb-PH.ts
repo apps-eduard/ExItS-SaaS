@@ -600,8 +600,10 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.startBusiness.formTitle": "Detalye sa negosyo",
   "personal.startBusiness.displayName": "Ngalan sa negosyo",
   "personal.startBusiness.displayNamePlaceholder": "pananglitan Ana's Sari-Sari",
-  "personal.startBusiness.slugHiddenHint":
-    "Usa ka unique organization slug ang himoon alang kanimo ù dili kinahanglan isulat.",
+  "personal.startBusiness.slug": "Organization slug",
+  "personal.startBusiness.slugPlaceholder": "Generated from your business name",
+  "personal.startBusiness.slugHint":
+    "Auto-filled from your business name. You cannot edit this.",
   "personal.startBusiness.primaryTypeTitle": "Panguna nga klase sa negosyo",
   "personal.startBusiness.primaryTypeHint": "Pilia ang klase nga pinakahaum sa imong tindahan.",
   "personal.startBusiness.primaryTypeRequired": "Pilia ang panguna nga klase sa negosyo.",

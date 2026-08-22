@@ -604,8 +604,10 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.startBusiness.formTitle": "Detalye sang negosyo",
   "personal.startBusiness.displayName": "Ngalan sang negosyo",
   "personal.startBusiness.displayNamePlaceholder": "halimbawa Ana's Sari-Sari",
-  "personal.startBusiness.slugHiddenHint":
-    "May unique organization slug nga himoon para sa imo ù indi kinahanglan isulat.",
+  "personal.startBusiness.slug": "Organization slug",
+  "personal.startBusiness.slugPlaceholder": "Generated from your business name",
+  "personal.startBusiness.slugHint":
+    "Auto-filled from your business name. You cannot edit this.",
   "personal.startBusiness.primaryTypeTitle": "Panguna nga klase sang negosyo",
   "personal.startBusiness.primaryTypeHint": "Pilia ang klase nga pinakaangay sa imo tindahan.",
   "personal.startBusiness.primaryTypeRequired": "Pilia ang panguna nga klase sang negosyo.",

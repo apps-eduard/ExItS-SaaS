@@ -41,6 +41,7 @@ export function PersonalStartBusinessPage() {
   const billingCycle = billingRaw === "Annual" || billingRaw === "Monthly" ? billingRaw : "Monthly";
 
   const [displayName, setDisplayName] = useState("");
+  const [slugPreview, setSlugPreview] = useState("");
   const [primaryBusinessTypeId, setPrimaryBusinessTypeId] = useState("");
   const [useMyContactDetails, setUseMyContactDetails] = useState(true);
   const [contactEmail, setContactEmail] = useState("");
@@ -79,6 +80,11 @@ export function PersonalStartBusinessPage() {
     setContactPhone(profileQuery.data.phone ?? "");
   }, [profileQuery.data, useMyContactDetails]);
 
+  useEffect(() => {
+    const name = displayName.trim();
+    setSlugPreview(name ? ensureOrganizationSlug(name) : "");
+  }, [displayName]);
+
   const mutation = useMutation({
     mutationFn: async () => {
       const name = displayName.trim();
@@ -92,7 +98,7 @@ export function PersonalStartBusinessPage() {
         throw new Error(t("personal.startBusiness.planRequired"));
       }
 
-      const slug = ensureOrganizationSlug(name);
+      const slug = slugPreview || ensureOrganizationSlug(name);
       return startBusiness({
         displayName: name,
         slug,
@@ -255,8 +261,23 @@ export function PersonalStartBusinessPage() {
             required
           />
         </label>
+        <label className="mt-3 flex flex-col gap-1">
+          <span className="text-[length:var(--exits-text-sm)] font-medium">
+            {t("personal.startBusiness.slug")}
+          </span>
+          <input
+            data-testid="start-business-slug"
+            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] px-3 text-muted"
+            value={slugPreview}
+            readOnly
+            aria-readonly="true"
+            disabled={mutation.isPending}
+            placeholder={t("personal.startBusiness.slugPlaceholder")}
+            tabIndex={-1}
+          />
+        </label>
         <p className="m-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
-          {t("personal.startBusiness.slugHiddenHint")}
+          {t("personal.startBusiness.slugHint")}
         </p>
       </section>
 

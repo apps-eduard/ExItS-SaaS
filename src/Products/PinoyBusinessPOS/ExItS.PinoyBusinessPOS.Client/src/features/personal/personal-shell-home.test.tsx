@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import { appRoutes } from "@/app/router";
@@ -229,7 +230,7 @@ describe("Personal shell and home (RMAP-22B)", () => {
     expect(screen.getByTestId("explore-start-trial-business")).toBeInTheDocument();
   });
 
-  it("renders Start Business form without user-facing slug field", async () => {
+  it("renders Start Business form with read-only auto-filled slug", async () => {
     const base = createPersonalFetchMock();
     vi.stubGlobal(
       "fetch",
@@ -311,7 +312,12 @@ describe("Personal shell and home (RMAP-22B)", () => {
     });
     expect(screen.getByTestId("start-business-display-name")).toBeInTheDocument();
     expect(screen.getByTestId("start-business-submit")).toBeInTheDocument();
-    expect(screen.queryByTestId("start-business-slug")).not.toBeInTheDocument();
+    const slugInput = screen.getByTestId("start-business-slug");
+    expect(slugInput).toBeInTheDocument();
+    expect(slugInput).toHaveAttribute("readonly");
+    const user = userEvent.setup();
+    await user.type(screen.getByTestId("start-business-display-name"), "Ana's Sari-Sari");
+    expect(slugInput).toHaveValue("ana-s-sari-sari");
   });
 
   it("renders Stores and customer links routes inside Personal shell", async () => {

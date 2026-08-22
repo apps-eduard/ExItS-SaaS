@@ -586,8 +586,10 @@ export const en = {
   "personal.startBusiness.formTitle": "Business details",
   "personal.startBusiness.displayName": "Business name",
   "personal.startBusiness.displayNamePlaceholder": "e.g. Ana's Sari-Sari",
-  "personal.startBusiness.slugHiddenHint":
-    "A unique organization slug is generated for you — you do not need to enter one.",
+  "personal.startBusiness.slug": "Organization slug",
+  "personal.startBusiness.slugPlaceholder": "Generated from your business name",
+  "personal.startBusiness.slugHint":
+    "Auto-filled from your business name. You cannot edit this.",
   "personal.startBusiness.primaryTypeTitle": "Primary business type",
   "personal.startBusiness.primaryTypeHint": "Choose the type that best matches your store.",
   "personal.startBusiness.primaryTypeRequired": "Choose a primary business type.",
