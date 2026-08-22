@@ -78,6 +78,11 @@ Product requirements explicitly **defer** cash-drawer hardware, direct GCash API
 9. Only registered **active** devices may execute POS sales (see device registration simplification / sales execution gate).
 10. Registration-code UX is not part of the normal React customer flow; MAUI may still use token APIs for compatibility.
 11. Governing/support history including revoked devices: `GET .../pos-devices/history` (edit-org authority).
+12. Login may succeed from any permitted endpoint without consuming a device slot.
+13. Unregistered endpoints may use authorized read/management surfaces; POS money execution is blocked client-side and server-side (`application.pos_device.registration_required`).
+14. React primary action is **Register this device** (`POST .../pos-devices/register`); do not auto-register on login.
+15. Capacity-consuming registration (register + MAUI redeem) runs under organization advisory lock so concurrent final-slot races cannot over-allocate Active devices.
+16. Web cannot expose permanent physical hardware identity across browsers; durable `InstallationDeviceId` is the registration identity (documented limitation).
 
 ---
 

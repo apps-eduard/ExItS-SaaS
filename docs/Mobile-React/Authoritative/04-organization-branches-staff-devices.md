@@ -75,14 +75,19 @@ Note: Platform and POS Haversine Earth-radius constants differ slightly (`6371.0
 | Concern | Authority | Status |
 |---------|-----------|--------|
 | Registered POS device | Platform `pos-devices` | PROVEN_CURRENT |
-| Registration token / recovery | Platform | PROVEN_CURRENT |
+| Active-only customer list | `GET .../pos-devices` → Active only | PROVEN_CURRENT |
+| Soft revoke + history | Status Revoked retained; `GET .../pos-devices/history` | PROVEN_CURRENT |
+| Registration token / recovery | Platform (MAUI customer UX still uses create/redeem) | PROVEN_CURRENT |
+| React direct register | `POST .../pos-devices/register` — no React registration-code UX | PROVEN_CURRENT |
+| Login ≠ device slot | Auth does not register or consume capacity | PROVEN_CURRENT |
+| POS sales execution gate | Platform authorize + POS `IPosDeviceTransactionAuthorizer` | PROVEN_CURRENT |
 | Device on POS session | POS session carries `PosDeviceId` | PROVEN_CURRENT |
 | Lost/revoked device | Platform revoke + POS authorization fail-closed | PROVEN_CURRENT |
 | Offline grant / PIN binding | Device-bound offline operating grant | PROVEN_CURRENT (MAUI LocalStore) |
-| Browser/PWA durable install id + register/redeem/authorize | Platform + React | PROVEN_CURRENT (RMAP-10b) |
+| Browser/PWA durable install id + register/authorize | Platform + React | PROVEN_CURRENT (RMAP-10b + simplification) |
 
-MAUI: `/devices/register`, `/organization/devices`.
-React: `/devices/register`, `/org/devices` (RMAP-10b).
+MAUI: `/devices/register` (redeem), `/organization/devices` (create code) — compatibility retained.
+React: `/devices/register` (Register this device), `/org/devices` (active-only management).
 
 ## Registers and shifts (POS)
 
