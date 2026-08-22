@@ -238,6 +238,10 @@ export const cebPH: Record<keyof typeof en, string> = {
     "Wala pay active nga branches. Available gihapon ang Manage business.",
   "workspace.switch": "Ilisan ang workspace",
   "workspace.switchExperience": "Ilisan ang experience",
+  "workspace.previousWorkspaceInaccessible":
+    "Dili na available ang miaging napili nga workspace. Pilia pag-usab.",
+  "workspace.previousBranchInaccessible":
+    "Dili na available ang miaging napili nga branch. Pilia ang active nga branch.",
   "experience.current": "Karon",
   "personal.title": "Personal home",
   "personal.lede": "Sunda ang personal nga Utang, to-do, ug mga store.",
@@ -590,6 +594,9 @@ export const cebPH: Record<keyof typeof en, string> = {
     "Dili accessible nga Active branch kana para niining account.",
   "accessDenied.profileRequired":
     "Kinahanglan og Organization account profile ang organization workspace.",
+  "accessDenied.antiforgeryTitle": "Napakyas ang security check",
+  "accessDenied.antiforgery":
+    "Dili ma-verify kining aksyon. I-reload ang page ug sulayi pag-usab.",
   "accessDenied.generic": "Dili maabli kini nga workspace. Sulayi pag-usab o pag-sign in pag-usab.",
   "commercial.notIncludedInPlan": "Wala kini sa imong karon nga plan.",
   "commercial.productUnavailable": "Dili available kining produkto alang sa imong organization.",

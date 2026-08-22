@@ -95,7 +95,7 @@ describe("logoutSession", () => {
         return {
           ok: true,
           status: 200,
-          json: async () => ({ headerName: "X-XSRF-TOKEN", token: `csrf-${logoutAttempts}` }),
+          json: async () => ({ headerName: "X-XSRF-TOKEN", token: `csrf-${logoutAttempts + 1}` }),
           text: async () => "",
         } as Response;
       }
@@ -105,7 +105,10 @@ describe("logoutSession", () => {
           return {
             ok: false,
             status: 400,
-            json: async () => ({ detail: "antiforgery" }),
+            json: async () => ({
+              errorCode: PlatformAntiforgeryDefaults.invalidErrorCode,
+              detail: "antiforgery",
+            }),
             text: async () => "",
           } as Response;
         }
@@ -122,6 +125,37 @@ describe("logoutSession", () => {
 
     await expect(logoutSession()).resolves.toBe("logged_out");
     expect(logoutAttempts).toBe(2);
+  });
+
+  it("does not treat antiforgery-related 403 as already signed out", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf" }),
+          text: async () => "",
+        } as Response;
+      }
+      if (url.endsWith(AUTH_LOGOUT_PATH)) {
+        return {
+          ok: false,
+          status: 403,
+          json: async () => ({
+            errorCode: "application.auth.account_scope_denied",
+            detail: "Forbidden",
+          }),
+          text: async () => "",
+        } as Response;
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    setPosAccessToken("keep-on-antiforgery-403");
+    await expect(logoutSession()).rejects.toBeInstanceOf(PlatformApiError);
+    expect(getPosAccessToken()).toBe("keep-on-antiforgery-403");
   });
 
   it("throws when logout fails with a non-recoverable server error", async () => {

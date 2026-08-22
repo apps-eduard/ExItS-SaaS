@@ -286,7 +286,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         (workspace) => workspace.organizationId === previousBound.organizationId,
       );
       if (!orgStillPresent) {
-        denial = "The previously selected workspace is no longer accessible. Choose again.";
+        denial = "workspace.previousWorkspaceInaccessible";
         autoDestinationAttempted.current = false;
       } else if (previousBound.branchId) {
         const branchStillValid = findBranchLabel(
@@ -295,8 +295,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           previousBound.branchId,
         );
         if (!branchStillValid) {
-          denial =
-            "The previously selected branch is no longer accessible. Choose an active branch.";
+          denial = "workspace.previousBranchInaccessible";
           autoDestinationAttempted.current = false;
         } else {
           resolvedBound = {

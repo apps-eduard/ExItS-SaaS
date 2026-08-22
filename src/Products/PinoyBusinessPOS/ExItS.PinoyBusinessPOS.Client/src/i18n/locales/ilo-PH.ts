@@ -239,6 +239,10 @@ export const iloPH: Record<keyof typeof en, string> = {
     "Awan pay ti active a branches. Available pay laeng ti Manage business.",
   "workspace.switch": "Sukatan ti workspace",
   "workspace.switchExperience": "Sukatan ti experience",
+  "workspace.previousWorkspaceInaccessible":
+    "Saanen a magun-od ti dati a napili a workspace. Agpili manen.",
+  "workspace.previousBranchInaccessible":
+    "Saanen a magun-od ti dati a napili a branch. Agpili ti active a branch.",
   "experience.current": "Agdama",
   "personal.title": "Personal home",
   "personal.lede": "Bantayan ti personal nga Utang, to-do, ken stores.",
@@ -592,6 +596,9 @@ export const iloPH: Record<keyof typeof en, string> = {
     "Saan a accessible nga Active branch dayta para iti daytoy a account.",
   "accessDenied.profileRequired":
     "Masapul ti Organization account profile para iti organization workspace.",
+  "accessDenied.antiforgeryTitle": "Napaay ti security check",
+  "accessDenied.antiforgery":
+    "Saan a ma-verify daytoy nga aksion. I-reload ti page ken padasen manen.",
   "accessDenied.generic": "Saan a malukatan daytoy a workspace. Padasen manen wenno sumrek manen.",
   "commercial.notIncludedInPlan": "Saan a mairaman iti agdama a planom.",
   "commercial.productUnavailable": "Saan a magun-od daytoy a produkto para iti organizationmo.",

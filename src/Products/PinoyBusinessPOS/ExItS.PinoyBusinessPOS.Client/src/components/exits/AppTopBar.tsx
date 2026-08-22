@@ -26,7 +26,11 @@ export function AppTopBar() {
     setSignOutError(null);
     const result = await signOut();
     if (!result.ok) {
-      setSignOutError(result.detail || t("topbar.signOutFailed"));
+      setSignOutError(
+        result.detail === "__ANTIFORGERY__"
+          ? t("accessDenied.antiforgery")
+          : result.detail || t("topbar.signOutFailed"),
+      );
       setSigningOut(false);
       return;
     }

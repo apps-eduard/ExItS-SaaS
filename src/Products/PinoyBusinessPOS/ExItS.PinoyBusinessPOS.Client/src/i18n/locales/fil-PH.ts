@@ -234,6 +234,10 @@ export const filPH: Record<keyof typeof en, string> = {
   "workspace.noActiveBranches": "Wala pang active na branch. Available pa rin ang Manage business.",
   "workspace.switch": "Magpalit ng workspace",
   "workspace.switchExperience": "Magpalit ng experience",
+  "workspace.previousWorkspaceInaccessible":
+    "Hindi na available ang dating napiling workspace. Pumili muli.",
+  "workspace.previousBranchInaccessible":
+    "Hindi na available ang dating napiling branch. Pumili ng active na branch.",
   "experience.current": "Kasalukuyan",
   "personal.title": "Personal home",
   "personal.lede": "Subaybayan ang personal na Utang, to-do, at mga store.",
@@ -586,6 +590,9 @@ export const filPH: Record<keyof typeof en, string> = {
     "Hindi accessible Active branch ang branch na iyon para sa account na ito.",
   "accessDenied.profileRequired":
     "Kailangan ng Organization account profile ang organization workspace.",
+  "accessDenied.antiforgeryTitle": "Nabigo ang security check",
+  "accessDenied.antiforgery":
+    "Hindi ma-verify ang aksyong ito. I-reload ang page at subukan muli.",
   "accessDenied.generic": "Hindi mabuksan ang workspace na ito. Subukan ulit o mag-sign in muli.",
   "commercial.notIncludedInPlan": "Hindi kasama sa kasalukuyang plan mo.",
   "commercial.productUnavailable": "Hindi available ang produktong ito para sa iyong organization.",

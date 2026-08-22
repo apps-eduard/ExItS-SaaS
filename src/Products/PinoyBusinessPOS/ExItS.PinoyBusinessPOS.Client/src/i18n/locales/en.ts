@@ -221,6 +221,10 @@ export const en = {
   "workspace.noActiveBranches": "No active branches yet. Manage business is still available.",
   "workspace.switch": "Switch workspace",
   "workspace.switchExperience": "Switch experience",
+  "workspace.previousWorkspaceInaccessible":
+    "The previously selected workspace is no longer accessible. Choose again.",
+  "workspace.previousBranchInaccessible":
+    "The previously selected branch is no longer accessible. Choose an active branch.",
   "experience.current": "Current",
   "personal.title": "Personal home",
   "personal.lede": "Track personal Utang, to-dos, and your connected stores.",
@@ -573,6 +577,9 @@ export const en = {
     "That branch is not an accessible Active branch for this account.",
   "accessDenied.profileRequired":
     "Organization workspace requires an Organization account profile.",
+  "accessDenied.antiforgeryTitle": "Security check failed",
+  "accessDenied.antiforgery":
+    "This action could not be verified. Reload the page and try again.",
   "accessDenied.generic": "This workspace could not be opened. Try again or sign in again.",
   "commercial.notIncludedInPlan": "This feature is not included in your current plan.",
   "commercial.productUnavailable": "This product is not available for your organization.",

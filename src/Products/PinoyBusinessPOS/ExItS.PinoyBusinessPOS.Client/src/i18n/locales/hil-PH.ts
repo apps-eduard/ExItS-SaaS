@@ -240,6 +240,10 @@ export const hilPH: Record<keyof typeof en, string> = {
     "Wala pa sing active nga branches. Available gihapon ang Manage business.",
   "workspace.switch": "Islan ang workspace",
   "workspace.switchExperience": "Islan ang experience",
+  "workspace.previousWorkspaceInaccessible":
+    "Indi na available ang dati nga napilian nga workspace. Pilia liwat.",
+  "workspace.previousBranchInaccessible":
+    "Indi na available ang dati nga napilian nga branch. Pilia ang active nga branch.",
   "experience.current": "Subong",
   "personal.title": "Personal home",
   "personal.lede": "Bantayi ang personal nga Utang, to-do, kag mga store.",
@@ -594,6 +598,9 @@ export const hilPH: Record<keyof typeof en, string> = {
     "Indi accessible nga Active branch ina para sa sini nga account.",
   "accessDenied.profileRequired":
     "Kinahanglan ang Organization account profile para sa organization workspace.",
+  "accessDenied.antiforgeryTitle": "Napakyas ang security check",
+  "accessDenied.antiforgery":
+    "Indi ma-verify ini nga aksyon. I-reload ang page kag tilawi liwat.",
   "accessDenied.generic": "Indi mabuksan ini nga workspace. Tilawi liwat ukon mag-sign in liwat.",
   "commercial.notIncludedInPlan": "Wala ini sa imo subong nga plan.",
   "commercial.productUnavailable": "Indi available ini nga produkto para sa imo organization.",

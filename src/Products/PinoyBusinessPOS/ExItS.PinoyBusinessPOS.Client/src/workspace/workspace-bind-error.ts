@@ -1,3 +1,5 @@
+import { PlatformAntiforgeryDefaults } from "@/api/platform/antiforgery";
+
 /**
  * Classifies workspace bind / POS operational failures for UX.
  * Server remains authoritative — this only maps completed outcomes to user language.
@@ -10,6 +12,7 @@ export type WorkspaceBindFailureKind =
   | "staff_org_lock"
   | "branch_not_accessible"
   | "profile_required"
+  | "antiforgery"
   | "service_unavailable"
   | "generic";
 
@@ -22,6 +25,7 @@ export type WorkspaceBindFailure = {
     | "accessDenied.staffOrgLock"
     | "accessDenied.branchNotAccessible"
     | "accessDenied.profileRequired"
+    | "accessDenied.antiforgery"
     | "accessDenied.serviceUnavailable"
     | "accessDenied.generic"
     | "commercial.productUnavailable"
@@ -110,6 +114,18 @@ export function classifyWorkspaceBindFailure(input: {
     };
   }
 
+  if (
+    errorCode === PlatformAntiforgeryDefaults.invalidErrorCode ||
+    status === 419 ||
+    (status === 400 && detail !== null && /antiforgery/i.test(detail))
+  ) {
+    return {
+      kind: "antiforgery",
+      detailKey: "accessDenied.antiforgery",
+      technicalDetail: detail,
+    };
+  }
+
   if (status === 502 || status === 503 || status === 429) {
     return {
       kind: "service_unavailable",
@@ -133,6 +149,7 @@ export function workspaceBindFailureTitleKey(
   | "accessDenied.sessionTitle"
   | "accessDenied.serviceTitle"
   | "accessDenied.branchTitle"
+  | "accessDenied.antiforgeryTitle"
   | "commercial.subscriptionSuspended" {
   switch (kind) {
     case "subscription_suspended":
@@ -143,6 +160,8 @@ export function workspaceBindFailureTitleKey(
       return "accessDenied.serviceTitle";
     case "branch_not_accessible":
       return "accessDenied.branchTitle";
+    case "antiforgery":
+      return "accessDenied.antiforgeryTitle";
     default:
       return "accessDenied.title";
   }

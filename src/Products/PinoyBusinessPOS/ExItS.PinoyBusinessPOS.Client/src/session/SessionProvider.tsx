@@ -17,7 +17,7 @@ import {
   loginWithPassword,
   logoutSession,
 } from "@/api/platform/platform-auth-client";
-import { clearPlatformAntiforgeryToken, PlatformApiError } from "@/api/platform/platform-http";
+import { isPlatformAntiforgeryValidationError, PlatformApiError, clearPlatformAntiforgeryToken } from "@/api/platform/platform-http";
 
 export type SessionStatus = "loading" | "authenticated" | "unauthenticated" | "expired";
 
@@ -107,7 +107,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       // Do not pretend success when the server logout mutation failed.
       const detail =
         error instanceof PlatformApiError
-          ? (error.problem.detail ?? error.message)
+          ? isPlatformAntiforgeryValidationError(error)
+            ? "__ANTIFORGERY__"
+            : (error.problem.detail ?? error.message)
           : "Sign out failed. Check your connection and try again.";
       return { ok: false, detail };
     } finally {

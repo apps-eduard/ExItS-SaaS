@@ -61,6 +61,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 builder.Services.AddPlatformHealthChecks();
 builder.AddPlatformSecurity();
+builder.Services.AddPlatformBrowserAntiforgery(builder.Environment);
 builder.AddPlatformForwardedHeaders();
 builder.Services.AddPlatformPersistence(builder.Configuration);
 builder.Services.AddPlatformPaymentProvider(builder.Configuration, builder.Environment);
@@ -525,12 +526,14 @@ var app = builder.Build();
 app.UsePlatformForwardedHeaders();
 app.UsePlatformSecurity();
 app.UseAuthentication();
+app.UsePlatformBrowserAntiforgery();
 app.UseMiddleware<AccountScopeGuardMiddleware>();
 app.UseAuthorization();
 app.UseStatusCodePages();
 
 app.MapPlatformRootEndpoint();
 app.MapPlatformHealthEndpoints();
+app.MapAntiforgeryEndpoints();
 app.MapCatalogEndpoints();
 app.MapPersonalFeatureAdminEndpoints();
 app.MapGlobalCatalogEndpoints();

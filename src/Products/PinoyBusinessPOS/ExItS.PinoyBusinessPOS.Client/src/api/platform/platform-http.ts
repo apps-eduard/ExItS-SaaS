@@ -90,10 +90,12 @@ type AntiforgeryBootstrap = {
   token: string;
 };
 
+type PlatformRequestState = {
+  csrfRetried: boolean;
+};
+
 let inMemoryAntiforgeryToken: string | null = null;
 let inMemoryAntiforgeryHeaderName: string = PlatformAntiforgeryDefaults.headerName;
-/** When the Platform antiforgery endpoint is missing (404) or account-scoped away (403), skip CSRF headers. */
-let antiforgeryBootstrapState: "unknown" | "ready" | "unavailable" = "unknown";
 
 function isMutationMethod(method: string): boolean {
   return method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE";
@@ -101,7 +103,25 @@ function isMutationMethod(method: string): boolean {
 
 export function clearPlatformAntiforgeryToken(): void {
   inMemoryAntiforgeryToken = null;
-  antiforgeryBootstrapState = "unknown";
+}
+
+export function isPlatformAntiforgeryValidationError(error: PlatformApiError): boolean {
+  if (error.errorCode === PlatformAntiforgeryDefaults.invalidErrorCode) {
+    return true;
+  }
+
+  if (error.status === 419) {
+    return true;
+  }
+
+  if (error.status === 400) {
+    const detail = error.problem.detail?.toLowerCase() ?? "";
+    if (detail.includes("antiforgery")) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 async function bootstrapAntiforgeryToken(signal?: AbortSignal): Promise<AntiforgeryBootstrap> {
@@ -130,32 +150,31 @@ async function bootstrapAntiforgeryToken(signal?: AbortSignal): Promise<Antiforg
   }
 
   const payload = (await response.json()) as AntiforgeryBootstrap;
+  if (!payload.token?.trim()) {
+    throw new PlatformApiError(response.status, {
+      status: response.status,
+      detail: "Browser antiforgery bootstrap returned an empty token.",
+      errorCode: PlatformAntiforgeryDefaults.invalidErrorCode,
+    });
+  }
+
   inMemoryAntiforgeryHeaderName = payload.headerName || PlatformAntiforgeryDefaults.headerName;
   inMemoryAntiforgeryToken = payload.token;
-  antiforgeryBootstrapState = "ready";
   return payload;
 }
 
 async function ensureAntiforgeryToken(signal?: AbortSignal): Promise<void> {
-  if (inMemoryAntiforgeryToken || antiforgeryBootstrapState === "unavailable") {
+  if (inMemoryAntiforgeryToken) {
     return;
   }
 
-  try {
-    await bootstrapAntiforgeryToken(signal);
-  } catch (error) {
-    // Live-preview Platform images may omit the token route (404). Organization/Personal
-    // sessions are also blocked from /platform/antiforgery/* by account-scope (403) even
-    // though auth context mutations under /platform/auth/* remain allowed without CSRF.
-    if (error instanceof PlatformApiError && (error.status === 404 || error.status === 403)) {
-      antiforgeryBootstrapState = "unavailable";
-      return;
-    }
-    throw error;
-  }
+  await bootstrapAntiforgeryToken(signal);
 }
 
-export async function platformRequest<T>(options: PlatformRequestOptions): Promise<T> {
+async function executePlatformRequest<T>(
+  options: PlatformRequestOptions,
+  state: PlatformRequestState,
+): Promise<T> {
   assertRelativePlatformBase(PLATFORM_API_BASE_PATH);
 
   const method = options.method ?? "GET";
@@ -171,9 +190,14 @@ export async function platformRequest<T>(options: PlatformRequestOptions): Promi
 
   if (isMutationMethod(method) && !options.skipAntiforgery) {
     await ensureAntiforgeryToken(options.signal);
-    if (inMemoryAntiforgeryToken) {
-      headers.set(inMemoryAntiforgeryHeaderName, inMemoryAntiforgeryToken);
+    if (!inMemoryAntiforgeryToken) {
+      throw new PlatformApiError(500, {
+        status: 500,
+        detail: "Browser antiforgery token is required but missing after bootstrap.",
+        errorCode: PlatformAntiforgeryDefaults.invalidErrorCode,
+      });
     }
+    headers.set(inMemoryAntiforgeryHeaderName, inMemoryAntiforgeryToken);
   }
 
   const response = await fetch(`${PLATFORM_API_BASE_PATH}${options.path}`, {
@@ -191,7 +215,18 @@ export async function platformRequest<T>(options: PlatformRequestOptions): Promi
     } catch {
       // Non-JSON error bodies still surface as a status-only problem.
     }
-    throw new PlatformApiError(response.status, problem, requestCorrelationId);
+    const apiError = new PlatformApiError(response.status, problem, requestCorrelationId);
+    if (
+      !state.csrfRetried &&
+      isMutationMethod(method) &&
+      !options.skipAntiforgery &&
+      isPlatformAntiforgeryValidationError(apiError)
+    ) {
+      clearPlatformAntiforgeryToken();
+      state.csrfRetried = true;
+      return executePlatformRequest<T>(options, state);
+    }
+    throw apiError;
   }
 
   if (response.status === 204) {
@@ -199,4 +234,8 @@ export async function platformRequest<T>(options: PlatformRequestOptions): Promi
   }
 
   return (await response.json()) as T;
+}
+
+export async function platformRequest<T>(options: PlatformRequestOptions): Promise<T> {
+  return executePlatformRequest<T>(options, { csrfRetried: false });
 }
