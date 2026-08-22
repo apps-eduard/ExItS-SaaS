@@ -12,7 +12,11 @@ import { AuthNewPasswordFields } from "@/features/auth/AuthNewPasswordFields";
 import { usePreferences } from "@/hooks/use-preferences";
 import { env } from "@/lib/env";
 import { buildAuthNewPasswordSchema } from "@/lib/auth/password-policy";
-import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
+import {
+  buildDiagnosticEnvironmentFromPreferences,
+  normalizeDiagnosticError,
+} from "@/lib/diagnostics/normalize-diagnostic-error";
+import { shouldShowCredentialWorkflowDiagnostic } from "@/lib/diagnostics/auth-workflow-diagnostics";
 import type { DiagnosticRecord } from "@/lib/diagnostics/diagnostic-types";
 
 type ActivateValues = {
@@ -32,7 +36,6 @@ export function ActivateAccountPage() {
   const [tokenAlert, setTokenAlert] = useState<string | null>(
     token.length === 0 ? t("auth.activate.token.invalid") : null,
   );
-  const [formError, setFormError] = useState<string | null>(null);
   const [diagnostic, setDiagnostic] = useState<DiagnosticRecord | null>(null);
 
   const schema = useMemo(
@@ -63,7 +66,6 @@ export function ActivateAccountPage() {
   const tokenErrorId = "activate-token-error";
 
   async function onSubmit(values: ActivateValues) {
-    setFormError(null);
     setDiagnostic(null);
     if (token.length === 0) {
       setTokenAlert(t("auth.activate.token.invalid"));
@@ -95,24 +97,21 @@ export function ActivateAccountPage() {
         form.setError("password", { message: policy });
         return;
       }
-      if (kind === "network") {
-        setFormError(t("auth.error.network"));
-        return;
-      }
-      if (kind === "service_unavailable") {
-        setFormError(t("auth.error.serviceUnavailable"));
-        return;
-      }
-      if (kind === "rate_limited") {
-        setFormError(t("auth.error.rateLimited"));
+      if (shouldShowCredentialWorkflowDiagnostic(kind)) {
+        setDiagnostic(
+          normalizeDiagnosticError({
+            error,
+            operation: "Activate account",
+            environment: buildDiagnosticEnvironmentFromPreferences({ locale: language, theme, density }),
+          }),
+        );
         return;
       }
       setDiagnostic(
         normalizeDiagnosticError({
           error,
           operation: "Activate account",
-          category: kind === "unknown" ? "UNKNOWN" : "API",
-          environment: { locale: language, theme, density },
+          environment: buildDiagnosticEnvironmentFromPreferences({ locale: language, theme, density }),
         }),
       );
     }
@@ -152,11 +151,12 @@ export function ActivateAccountPage() {
         <Alert id={tokenErrorId} className="mb-4" tone="danger" title={tokenAlert} />
       ) : null}
 
-      {formError ? <Alert className="mb-4" tone="danger" title={formError} /> : null}
-
       {diagnostic ? (
         <div className="mb-4">
-          <ErrorState diagnostic={diagnostic} description={t("auth.error.generic")} />
+          <ErrorState
+            diagnostic={diagnostic}
+            onRetry={() => void form.handleSubmit(onSubmit)()}
+          />
         </div>
       ) : null}
 

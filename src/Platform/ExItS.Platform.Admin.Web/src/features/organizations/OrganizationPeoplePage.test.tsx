@@ -208,7 +208,7 @@ describe("organization workspace people", () => {
       await screen.findByRole("heading", { name: "Unable to load members." }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Copy diagnostics" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Copy error details" })).toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "Invitations" }));
     expect(await screen.findByText("invitee@example.test")).toBeInTheDocument();
   });

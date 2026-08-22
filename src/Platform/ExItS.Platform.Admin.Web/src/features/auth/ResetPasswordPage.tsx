@@ -13,6 +13,8 @@ import { usePreferences } from "@/hooks/use-preferences";
 import { env } from "@/lib/env";
 import { buildAuthNewPasswordSchema } from "@/lib/auth/password-policy";
 import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
+import { buildDiagnosticEnvironmentFromPreferences } from "@/lib/diagnostics/normalize-diagnostic-error";
+import { shouldShowCredentialWorkflowDiagnostic } from "@/lib/diagnostics/auth-workflow-diagnostics";
 import type { DiagnosticRecord } from "@/lib/diagnostics/diagnostic-types";
 
 type ResetValues = {
@@ -32,7 +34,6 @@ export function ResetPasswordPage() {
   const [tokenAlert, setTokenAlert] = useState<string | null>(
     token.length === 0 ? t("auth.reset.token.invalid") : null,
   );
-  const [formError, setFormError] = useState<string | null>(null);
   const [diagnostic, setDiagnostic] = useState<DiagnosticRecord | null>(null);
 
   const schema = useMemo(
@@ -63,7 +64,6 @@ export function ResetPasswordPage() {
   const tokenErrorId = "reset-token-error";
 
   async function onSubmit(values: ResetValues) {
-    setFormError(null);
     setDiagnostic(null);
     if (token.length === 0) {
       setTokenAlert(t("auth.reset.token.invalid"));
@@ -95,24 +95,21 @@ export function ResetPasswordPage() {
         form.setError("password", { message: policy });
         return;
       }
-      if (kind === "network") {
-        setFormError(t("auth.error.network"));
-        return;
-      }
-      if (kind === "service_unavailable") {
-        setFormError(t("auth.error.serviceUnavailable"));
-        return;
-      }
-      if (kind === "rate_limited") {
-        setFormError(t("auth.error.rateLimited"));
+      if (shouldShowCredentialWorkflowDiagnostic(kind)) {
+        setDiagnostic(
+          normalizeDiagnosticError({
+            error,
+            operation: "Reset password",
+            environment: buildDiagnosticEnvironmentFromPreferences({ locale: language, theme, density }),
+          }),
+        );
         return;
       }
       setDiagnostic(
         normalizeDiagnosticError({
           error,
           operation: "Reset password",
-          category: kind === "unknown" ? "UNKNOWN" : "API",
-          environment: { locale: language, theme, density },
+          environment: buildDiagnosticEnvironmentFromPreferences({ locale: language, theme, density }),
         }),
       );
     }
@@ -150,11 +147,12 @@ export function ResetPasswordPage() {
         <Alert id={tokenErrorId} className="mb-4" tone="danger" title={tokenAlert} />
       ) : null}
 
-      {formError ? <Alert className="mb-4" tone="danger" title={formError} /> : null}
-
       {diagnostic ? (
         <div className="mb-4">
-          <ErrorState diagnostic={diagnostic} description={t("auth.error.generic")} />
+          <ErrorState
+            diagnostic={diagnostic}
+            onRetry={() => void form.handleSubmit(onSubmit)()}
+          />
         </div>
       ) : null}
 

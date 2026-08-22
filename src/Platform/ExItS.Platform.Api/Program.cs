@@ -562,6 +562,13 @@ app.MapAuditEndpoints();
 app.MapPrivacyComplianceEndpoints();
 app.MapLocalValidationEndpoints();
 
+if (app.Environment.IsEnvironment("Testing"))
+{
+    app.MapGet(
+        "/api/v1/platform/__test__/unhandled",
+        static IResult () => throw new InvalidOperationException("SensitiveStackDetail"));
+}
+
 // Phase marker: P10-WP08-phase-10-closeout
 
 app.Run();

@@ -5,7 +5,6 @@ import { Link } from "react-router-dom";
 import { z } from "zod";
 import { requestPasswordReset } from "@/api/auth/auth-client";
 import { classifyCredentialWorkflowFailure } from "@/api/auth/auth-errors";
-import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,7 +13,11 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { MailpitConvenienceHint } from "@/features/auth/MailpitConvenienceHint";
 import { usePreferences } from "@/hooks/use-preferences";
 import { env } from "@/lib/env";
-import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
+import {
+  buildDiagnosticEnvironmentFromPreferences,
+  normalizeDiagnosticError,
+} from "@/lib/diagnostics/normalize-diagnostic-error";
+import { shouldShowCredentialWorkflowDiagnostic } from "@/lib/diagnostics/auth-workflow-diagnostics";
 import type { DiagnosticRecord } from "@/lib/diagnostics/diagnostic-types";
 
 type ForgotPasswordValues = {
@@ -24,7 +27,6 @@ type ForgotPasswordValues = {
 export function ForgotPasswordPage() {
   const { t, language, theme, density } = usePreferences();
   const [succeeded, setSucceeded] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
   const [diagnostic, setDiagnostic] = useState<DiagnosticRecord | null>(null);
 
   const schema = useMemo(
@@ -45,7 +47,6 @@ export function ForgotPasswordPage() {
   const submitting = form.formState.isSubmitting;
 
   async function onSubmit(values: ForgotPasswordValues) {
-    setFormError(null);
     setDiagnostic(null);
     try {
       await requestPasswordReset(env.platformApiBaseUrl, {
@@ -54,16 +55,21 @@ export function ForgotPasswordPage() {
       setSucceeded(true);
     } catch (error) {
       const kind = classifyCredentialWorkflowFailure(error);
-      if (kind === "network") {
-        setFormError(t("auth.error.network"));
+      if (shouldShowCredentialWorkflowDiagnostic(kind)) {
+        setDiagnostic(
+          normalizeDiagnosticError({
+            error,
+            operation: "Request password reset",
+            environment: buildDiagnosticEnvironmentFromPreferences({ locale: language, theme, density }),
+          }),
+        );
         return;
       }
       setDiagnostic(
         normalizeDiagnosticError({
           error,
           operation: "Request password reset",
-          category: kind === "unknown" ? "UNKNOWN" : "API",
-          environment: { locale: language, theme, density },
+          environment: buildDiagnosticEnvironmentFromPreferences({ locale: language, theme, density }),
         }),
       );
     }
@@ -100,11 +106,12 @@ export function ForgotPasswordPage() {
         </p>
       </header>
 
-      {formError ? <Alert className="mb-4" tone="danger" title={formError} /> : null}
-
       {diagnostic ? (
         <div className="mb-4">
-          <ErrorState diagnostic={diagnostic} description={t("auth.error.generic")} />
+          <ErrorState
+            diagnostic={diagnostic}
+            onRetry={() => void form.handleSubmit(onSubmit)()}
+          />
         </div>
       ) : null}
 

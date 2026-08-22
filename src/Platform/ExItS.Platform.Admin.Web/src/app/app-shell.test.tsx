@@ -264,7 +264,7 @@ describe("application shell", () => {
       "href",
       "/admin",
     );
-    expect(screen.queryByRole("button", { name: "Copy diagnostics" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Copy error details" })).not.toBeInTheDocument();
     unmount();
 
     window.history.replaceState({}, "", "/admin/entitlements");

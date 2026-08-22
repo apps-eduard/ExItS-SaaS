@@ -262,29 +262,33 @@ internal static class PlatformSecurityPipeline
                 var logger = context.RequestServices
                     .GetService<ILoggerFactory>()
                     ?.CreateLogger("ExItS.Platform.Api.UnhandledException");
+                var correlationId = context.Items["CorrelationId"] as string;
+                if (string.IsNullOrWhiteSpace(correlationId))
+                {
+                    correlationId = context.Request.Headers["X-Correlation-Id"].FirstOrDefault()
+                        ?? context.TraceIdentifier;
+                }
+
                 if (error is not null)
                 {
                     logger?.LogError(
                         error,
-                        "Unhandled platform exception. TraceId={TraceId} Path={Path}",
+                        "Unhandled platform exception. TraceId={TraceId} CorrelationId={CorrelationId} Path={Path}",
                         context.TraceIdentifier,
+                        correlationId,
                         context.Request.Path.Value);
                 }
-
-                var env = context.RequestServices.GetService<IHostEnvironment>();
-                var detail = env?.IsDevelopment() == true && error is not null
-                    ? $"{error.GetType().Name}: {error.Message}"
-                    : "An unexpected error occurred.";
 
                 context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                 context.Response.ContentType = "application/problem+json";
                 await context.Response.WriteAsJsonAsync(new
                 {
-                    title = "An unexpected error occurred.",
+                    title = "An unexpected server error occurred.",
                     status = StatusCodes.Status500InternalServerError,
-                    detail,
-                    errorCode = "platform.internal_error",
-                    traceId = context.TraceIdentifier
+                    detail = "An unexpected server error occurred.",
+                    errorCode = "platform.unhandled_error",
+                    traceId = context.TraceIdentifier,
+                    correlationId
                 }).ConfigureAwait(false);
             });
         });

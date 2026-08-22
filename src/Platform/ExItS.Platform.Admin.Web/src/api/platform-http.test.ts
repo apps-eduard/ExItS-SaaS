@@ -1,9 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { PlatformApiError, platformRequest } from "@/api/platform-http";
+import {
+  PlatformApiError,
+  clearPlatformAntiforgeryToken,
+  platformRequest,
+} from "@/api/platform-http";
 
 describe("platformRequest", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    clearPlatformAntiforgeryToken();
   });
 
   it("sends credentials and a correlation id", async () => {

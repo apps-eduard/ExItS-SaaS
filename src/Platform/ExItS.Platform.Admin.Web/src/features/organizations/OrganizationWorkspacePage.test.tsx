@@ -132,7 +132,7 @@ describe("organization workspace overview", () => {
     expect(
       await screen.findByRole("heading", { name: "Unable to load commercial records." }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Copy diagnostics" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Copy error details" })).toBeInTheDocument();
     failCommercial = false;
     await user.click(screen.getByRole("button", { name: "Retry" }));
     expect(await screen.findByText("POS")).toBeInTheDocument();

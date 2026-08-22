@@ -18,7 +18,7 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
     return {
       diagnostic: normalizeDiagnosticError({
         error,
-        category: "RENDER",
+        category: "REACT_RENDER_ERROR",
         operation: "Render application",
       }),
     };
@@ -32,13 +32,13 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
       return {
         diagnostic: normalizeDiagnosticError({
           error,
-          category: "RENDER",
+          category: "REACT_RENDER_ERROR",
           operation: "Render application",
           componentStack: info.componentStack ?? undefined,
           environment: {
-            createReference: () => current.diagnostic?.errorReference ?? "ERR-0000",
-            now: () => current.diagnostic?.timestamp ?? new Date().toISOString(),
-            pathname: current.diagnostic.route,
+            createReference: () => current.diagnostic?.errorReference ?? "ERR-000000",
+            now: () => current.diagnostic?.timestampUtc ?? new Date().toISOString(),
+            pathname: current.diagnostic.pagePath,
           },
         }),
       };

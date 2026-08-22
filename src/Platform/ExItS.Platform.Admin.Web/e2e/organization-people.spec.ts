@@ -229,7 +229,7 @@ test("member list error stays in region with retry and copy diagnostics", async 
   });
   await page.goto(`/admin/organizations/${organization.id}/people`);
   await expect(page.getByRole("heading", { name: "Unable to load members." })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Copy diagnostics" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Copy error details" })).toBeVisible();
   fail = false;
   await page.getByRole("button", { name: "Retry" }).click();
   await expect(page.getByText("Ana Cruz")).toBeVisible();

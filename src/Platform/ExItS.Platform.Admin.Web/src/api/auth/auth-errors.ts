@@ -1,11 +1,15 @@
-import { PlatformApiError } from "@/api/platform-http";
+import { PlatformApiError, PlatformNetworkError } from "@/api/platform-http";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth-types";
 
 export type SignInFailureKind =
   "invalid_credentials" | "account_locked" | "account_disabled" | "network" | "unknown";
 
 export function isNetworkFailure(error: unknown): boolean {
-  return error instanceof TypeError || (error instanceof Error && error.name === "TypeError");
+  return (
+    error instanceof PlatformNetworkError ||
+    error instanceof TypeError ||
+    (error instanceof Error && error.name === "TypeError")
+  );
 }
 
 export function classifySignInFailure(error: unknown): SignInFailureKind {

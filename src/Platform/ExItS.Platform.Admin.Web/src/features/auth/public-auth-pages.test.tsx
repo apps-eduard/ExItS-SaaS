@@ -178,9 +178,10 @@ describe("public auth pages", () => {
     await user.type(screen.getByLabelText("Display name"), "Ana Cruz");
     await user.type(screen.getByLabelText("Email"), "ana@example.test");
     await user.click(screen.getByRole("button", { name: "Create account" }));
-    expect(
-      await screen.findByText("Unable to complete this request. Please try again."),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Something went wrong")).toBeInTheDocument();
+    expect(screen.getByText("Unable to complete this request.")).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain("stack-trace-secret");
+    expect(screen.getByRole("button", { name: "Copy error details" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Create your ExItS account" })).toBeInTheDocument();
   });
 

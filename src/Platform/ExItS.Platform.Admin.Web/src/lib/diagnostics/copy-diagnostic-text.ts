@@ -1,4 +1,7 @@
-import { buildDiagnosticReport } from "@/lib/diagnostics/build-diagnostic-report";
+import {
+  formatDiagnosticForClipboard,
+  buildDiagnosticReport,
+} from "@/lib/diagnostics/build-diagnostic-report";
 import type { DiagnosticRecord } from "@/lib/diagnostics/diagnostic-types";
 
 export async function copyDiagnosticText(text: string): Promise<boolean> {
@@ -14,5 +17,7 @@ export async function copyDiagnosticText(text: string): Promise<boolean> {
 }
 
 export async function copyDiagnosticReport(diagnostic: DiagnosticRecord): Promise<boolean> {
-  return copyDiagnosticText(buildDiagnosticReport(diagnostic));
+  return copyDiagnosticText(formatDiagnosticForClipboard(diagnostic));
 }
+
+export { formatDiagnosticForClipboard, buildDiagnosticReport };

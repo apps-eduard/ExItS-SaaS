@@ -90,14 +90,14 @@ export function DiagnosticsProvider({ children }: { children: ReactNode }) {
       if (isAbortError(event.error) || wasHandled(event.error)) {
         return;
       }
-      report(event.error ?? event.message, { category: "RUNTIME" });
+      report(event.error ?? event.message, { category: "UNEXPECTED_CLIENT_ERROR" });
     }
 
     function onUnhandledRejection(event: PromiseRejectionEvent) {
       if (isAbortError(event.reason) || wasHandled(event.reason)) {
         return;
       }
-      report(event.reason, { category: "RUNTIME" });
+      report(event.reason, { category: "UNEXPECTED_CLIENT_ERROR" });
     }
 
     window.addEventListener("error", onWindowError);
