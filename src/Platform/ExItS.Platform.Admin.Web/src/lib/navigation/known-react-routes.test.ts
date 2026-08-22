@@ -42,12 +42,23 @@ describe("resolveKnownReactRoute", () => {
     );
   });
 
-  it.each(["/admin/subscriptions"])(
-    "treats known unimplemented pathname %s as under-development",
-    (pathname) => {
-      expect(resolveKnownReactRoute({ ...loadedAuthorized, pathname })).toBe("under-development");
-    },
-  );
+  it("treats /admin/subscriptions as implemented", () => {
+    expect(resolveKnownReactRoute({ ...loadedAuthorized, pathname: "/admin/subscriptions" })).toBe(
+      "implemented",
+    );
+  });
+
+  it("treats /admin/payments as implemented", () => {
+    expect(resolveKnownReactRoute({ ...loadedAuthorized, pathname: "/admin/payments" })).toBe(
+      "implemented",
+    );
+  });
+
+  it("treats /admin/entitlements as implemented", () => {
+    expect(resolveKnownReactRoute({ ...loadedAuthorized, pathname: "/admin/entitlements" })).toBe(
+      "implemented",
+    );
+  });
 
   it("treats /admin/users as implemented", () => {
     expect(resolveKnownReactRoute({ ...loadedAuthorized, pathname: "/admin/users" })).toBe(

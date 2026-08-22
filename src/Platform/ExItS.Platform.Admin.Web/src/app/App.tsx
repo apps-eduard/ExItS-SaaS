@@ -21,6 +21,11 @@ import { ProductsPage } from "@/features/products/ProductsPage";
 import { ProductDetailPage } from "@/features/products/ProductDetailPage";
 import { PlansPage } from "@/features/plans/PlansPage";
 import { PlanDetailPage } from "@/features/plans/PlanDetailPage";
+import { SubscriptionsPage } from "@/features/subscriptions/SubscriptionsPage";
+import { SubscriptionDetailPage } from "@/features/subscriptions/SubscriptionDetailPage";
+import { PaymentsPage } from "@/features/payments/PaymentsPage";
+import { PaymentDetailPage } from "@/features/payments/PaymentDetailPage";
+import { EntitlementsPortfolioPage } from "@/features/entitlements/EntitlementsPortfolioPage";
 import { OverviewPage } from "@/features/overview/OverviewPage";
 import { UsersPage } from "@/features/users/UsersPage";
 import { UserDetailPage } from "@/features/users/UserDetailPage";
@@ -127,6 +132,15 @@ export function App() {
                           <Route index element={<PlansPage />} />
                           <Route path=":planId" element={<PlanDetailPage />} />
                         </Route>
+                        <Route path="subscriptions">
+                          <Route index element={<SubscriptionsPage />} />
+                          <Route path=":subscriptionId" element={<SubscriptionDetailPage />} />
+                        </Route>
+                        <Route path="payments">
+                          <Route index element={<PaymentsPage />} />
+                          <Route path=":paymentId" element={<PaymentDetailPage />} />
+                        </Route>
+                        <Route path="entitlements" element={<EntitlementsPortfolioPage />} />
                         <Route path="users">
                           <Route index element={<UsersPage />} />
                           <Route path=":userId" element={<UserDetailPage />} />

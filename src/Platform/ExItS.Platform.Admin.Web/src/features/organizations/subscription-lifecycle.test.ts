@@ -63,6 +63,12 @@ describe("subscriptionLifecycleCapabilities", () => {
     expect(subscriptionLifecycleCapabilities("Active").applyPending).toBe(false);
   });
 
+  it("exposes convertTrial only for Trialing", () => {
+    expect(subscriptionLifecycleCapabilities("Trialing").convertTrial).toBe(true);
+    expect(subscriptionLifecycleCapabilities("Active").convertTrial).toBe(false);
+    expect(subscriptionLifecycleCapabilities("Suspended").convertTrial).toBe(false);
+  });
+
   it("keeps grace/past-due/expire as support actions where the state machine allows them", () => {
     expect(subscriptionLifecycleCapabilities("Active").supportActions).toEqual([
       "gracePeriod",

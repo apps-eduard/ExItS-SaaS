@@ -71,6 +71,11 @@ export async function invalidateCommercialQueries(
     enqueue([...commercialQueryKeyRoots.organizationBilling, scope.organizationId]);
     enqueue([...commercialQueryKeyRoots.organizationActivity, scope.organizationId]);
     enqueue(commercialQueryKeyRoots.dashboardSubscriptions);
+    enqueue(["subscriptions", "portfolio"]);
+    enqueue(["subscriptions", "detail"]);
+    enqueue(["payments", "portfolio"]);
+    enqueue(["payments", "detail"]);
+    enqueue(["entitlements", "portfolio"]);
   }
   await Promise.all(tasks);
 }

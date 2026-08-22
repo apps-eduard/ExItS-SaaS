@@ -25,6 +25,8 @@ import { commercialMutationFailureCopy } from "@/features/organizations/commerci
 import {
   buildBillingUpgradeSearchParams,
   defaultBillingCycle,
+  supportedBillingCycles,
+  type BillingCycleChoice,
 } from "@/features/organizations/billing-lifecycle";
 import {
   organizationSubscriptionStatusLabel,
@@ -44,6 +46,7 @@ import {
 import {
   useApplyPendingPlanMutation,
   useCancelSubscriptionMutation,
+  useConvertTrialSubscriptionMutation,
   useDowngradeSubscriptionMutation,
   useEnterGracePeriodMutation,
   useExpireSubscriptionMutation,
@@ -79,6 +82,25 @@ function formatInstant(value: string | undefined, language: string): string | nu
   return new Intl.DateTimeFormat(language === "fil-PH" ? "fil-PH" : "en-GB", {
     dateStyle: "medium",
   }).format(date);
+}
+
+function formatMoney(
+  value: number | undefined,
+  currency: string | undefined,
+  language: string,
+): string | null {
+  if (value === undefined) {
+    return null;
+  }
+  const code = currency && currency.length > 0 ? currency : "PHP";
+  try {
+    return new Intl.NumberFormat(language === "fil-PH" ? "fil-PH" : "en-PH", {
+      style: "currency",
+      currency: code,
+    }).format(value);
+  } catch {
+    return `${value} ${code}`;
+  }
 }
 
 function productLabel(item: OrganizationSubscription): string {
@@ -137,6 +159,7 @@ export function OrganizationSubscriptionLifecycle({
   );
   const [startTrialOpen, setStartTrialOpen] = useState(false);
   const [changePlanItem, setChangePlanItem] = useState<OrganizationSubscription | null>(null);
+  const [convertTrialItem, setConvertTrialItem] = useState<OrganizationSubscription | null>(null);
   const [confirm, setConfirm] = useState<{ kind: ConfirmKind; item: OrganizationSubscription } | null>(
     null,
   );
@@ -146,6 +169,7 @@ export function OrganizationSubscriptionLifecycle({
   const upgrade = useUpgradeSubscriptionMutation();
   const downgrade = useDowngradeSubscriptionMutation();
   const applyPending = useApplyPendingPlanMutation();
+  const convertTrial = useConvertTrialSubscriptionMutation();
   const suspend = useSuspendSubscriptionMutation();
   const reactivate = useReactivateSubscriptionMutation();
   const cancel = useCancelSubscriptionMutation();
@@ -158,6 +182,7 @@ export function OrganizationSubscriptionLifecycle({
     upgrade.isPending ||
     downgrade.isPending ||
     applyPending.isPending ||
+    convertTrial.isPending ||
     suspend.isPending ||
     reactivate.isPending ||
     cancel.isPending ||
@@ -321,6 +346,24 @@ export function OrganizationSubscriptionLifecycle({
                       <dd>{formatInstant(subscriptionPeriodEnd(item), language) || "—"}</dd>
                     </div>
                     <div>
+                      <dt className="text-muted">{t("organization.subscriptions.summary.billingCycle")}</dt>
+                      <dd>{item.billingCycle || "—"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted">{t("organization.subscriptions.summary.agreedPrice")}</dt>
+                      <dd>
+                        {formatMoney(item.agreedPrice, item.currencyCode, language) || "—"}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted">{t("organization.subscriptions.summary.graceEnd")}</dt>
+                      <dd>{formatInstant(item.gracePeriodEndUtc, language) || "—"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted">{t("organization.subscriptions.summary.version")}</dt>
+                      <dd>{item.version ?? "—"}</dd>
+                    </div>
+                    <div>
                       <dt className="text-muted">{t("organization.subscriptions.summary.devices")}</dt>
                       <dd>
                         {plan?.maxActivePosDevices != null
@@ -346,6 +389,16 @@ export function OrganizationSubscriptionLifecycle({
                   </dl>
                   {canManage ? (
                     <div className="flex flex-wrap gap-2">
+                      {capabilities.convertTrial ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={pending}
+                          onClick={() => setConvertTrialItem(item)}
+                        >
+                          {t("organization.subscriptions.convertTrial")}
+                        </Button>
+                      ) : null}
                       {capabilities.changePlan ? (
                         <Button
                           type="button"
@@ -476,6 +529,36 @@ export function OrganizationSubscriptionLifecycle({
               showSuccess("organization.subscriptions.startTrial.success");
             } catch {
               // Dialog already shows startTrial.error via commercialMutationFailureCopy.
+            }
+          }}
+        />
+      ) : null}
+
+      {convertTrialItem ? (
+        <ConvertTrialDialog
+          item={convertTrialItem}
+          plans={(plansByProduct.get(convertTrialItem.productCode) ?? posPlansQuery.data ?? []).filter(
+            (plan) => plan.status === "Active",
+          )}
+          pending={convertTrial.isPending}
+          error={
+            convertTrial.error ? commercialMutationFailureCopy(convertTrial.error, t) : null
+          }
+          onCancel={() => {
+            convertTrial.reset();
+            setConvertTrialItem(null);
+          }}
+          onSubmit={async (body) => {
+            try {
+              await convertTrial.mutateAsync({
+                organizationId,
+                subscriptionId: convertTrialItem.id,
+                body,
+              });
+              setConvertTrialItem(null);
+              showSuccess("organization.subscriptions.convertTrial.success");
+            } catch {
+              // Dialog shows convertTrial.error.
             }
           }}
         />
@@ -770,6 +853,104 @@ function ChangePlanDialog({
           {t("organization.subscriptions.changePlan.lost")}: {previewQuery.data.lostFeatures.join(", ")}
         </p>
       ) : null}
+    </ConfirmActionDialog>
+  );
+}
+
+function ConvertTrialDialog({
+  item,
+  plans,
+  pending,
+  error,
+  onCancel,
+  onSubmit,
+}: {
+  item: OrganizationSubscription;
+  plans: CatalogPlan[];
+  pending: boolean;
+  error: { title: string; detail: string } | null;
+  onCancel: () => void;
+  onSubmit: (body: {
+    planId: string;
+    billingCycle: BillingCycleChoice;
+    idempotencyKey: string;
+    expectedVersion?: number;
+  }) => Promise<void>;
+}) {
+  const { t } = usePreferences();
+  const initialPlan = plans.find((plan) => plan.id === item.planId) ?? plans[0];
+  const [planId, setPlanId] = useState(initialPlan?.id ?? "");
+  const selected = plans.find((plan) => plan.id === planId) ?? plans[0];
+  const cycles = selected ? supportedBillingCycles(selected) : (["Monthly"] as BillingCycleChoice[]);
+  const [billingCycle, setBillingCycle] = useState<BillingCycleChoice>(
+    initialPlan ? defaultBillingCycle(initialPlan) : "Monthly",
+  );
+
+  const ready = Boolean(selected && cycles.includes(billingCycle));
+
+  return (
+    <ConfirmActionDialog
+      open
+      title={t("organization.subscriptions.convertTrial.title")}
+      description={t("organization.subscriptions.convertTrial.description")}
+      confirmLabel={t("organization.subscriptions.convertTrial.confirm")}
+      cancelLabel={t("organization.subscriptions.dialog.dismiss")}
+      pendingLabel={t("organization.subscriptions.submitting")}
+      pending={pending}
+      confirmDisabled={!ready}
+      error={error ? <Alert title={error.title} tone="danger">{error.detail}</Alert> : null}
+      onCancel={onCancel}
+      onConfirm={() => {
+        if (!ready || !selected || pending) {
+          return;
+        }
+        void onSubmit({
+          planId: selected.id,
+          billingCycle,
+          idempotencyKey: crypto.randomUUID(),
+          expectedVersion: item.version,
+        });
+      }}
+    >
+      <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium" htmlFor="org-sub-convert-plan">
+        {t("organization.subscriptions.convertTrial.plan")}
+        <select
+          id="org-sub-convert-plan"
+          className="h-[var(--exits-control-height)] rounded-[var(--exits-density-radius)] border border-input bg-surface px-3"
+          value={selected?.id ?? ""}
+          onChange={(event) => {
+            const nextPlanId = event.target.value;
+            setPlanId(nextPlanId);
+            const nextPlan = plans.find((plan) => plan.id === nextPlanId);
+            if (nextPlan) {
+              setBillingCycle(defaultBillingCycle(nextPlan));
+            }
+          }}
+        >
+          {plans.map((plan) => (
+            <option key={plan.id} value={plan.id}>
+              {plan.displayName}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium" htmlFor="org-sub-convert-cycle">
+        {t("organization.subscriptions.convertTrial.billingCycle")}
+        <select
+          id="org-sub-convert-cycle"
+          className="h-[var(--exits-control-height)] rounded-[var(--exits-density-radius)] border border-input bg-surface px-3"
+          value={billingCycle}
+          onChange={(event) => setBillingCycle(event.target.value as BillingCycleChoice)}
+        >
+          {cycles.map((cycle) => (
+            <option key={cycle} value={cycle}>
+              {cycle === "Annual"
+                ? t("organization.subscriptions.convertTrial.billingCycle.annual")
+                : t("organization.subscriptions.convertTrial.billingCycle.monthly")}
+            </option>
+          ))}
+        </select>
+      </label>
     </ConfirmActionDialog>
   );
 }

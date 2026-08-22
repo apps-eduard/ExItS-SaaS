@@ -1,21 +1,20 @@
 import { PLATFORM_PERMISSIONS } from "@/api/authorization/authorization-types";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PlanCreateOperator } from "@/features/plans/PlanCreateOperator";
-import { PlansList } from "@/features/plans/PlansList";
+import { SubscriptionsList } from "@/features/subscriptions/SubscriptionsList";
 import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
 import { useAuthorization } from "@/hooks/use-authorization";
 import { usePreferences } from "@/hooks/use-preferences";
 
-export function PlansPage() {
+export function SubscriptionsPage() {
   const { t } = usePreferences();
   const authorization = useAuthorization();
   const canList =
     authorization.status === "loaded" &&
-    authorization.hasAnyPermission([PLATFORM_PERMISSIONS.viewPortfolio]);
-  const canCreate =
-    authorization.status === "loaded" &&
-    authorization.hasPermission(PLATFORM_PERMISSIONS.manageCatalog);
+    authorization.hasAnyPermission([
+      PLATFORM_PERMISSIONS.manageSubscriptions,
+      PLATFORM_PERMISSIONS.viewPortfolio,
+    ]);
 
   if (authorization.status === "loading") {
     return (
@@ -33,11 +32,10 @@ export function PlansPage() {
   return (
     <section className="grid gap-4">
       <PageHeader
-        title={t("nav.plans")}
-        description={t("plans.description")}
-        actions={canCreate ? <PlanCreateOperator /> : null}
+        title={t("subscriptions.portfolio.title")}
+        description={t("subscriptions.portfolio.description")}
       />
-      <PlansList enabled={canList} />
+      <SubscriptionsList enabled={canList} />
     </section>
   );
 }

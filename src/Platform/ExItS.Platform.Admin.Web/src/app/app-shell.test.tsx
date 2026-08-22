@@ -222,7 +222,7 @@ describe("application shell", () => {
     window.history.replaceState({}, "", "/admin");
     render(<App />);
     await screen.findByRole("heading", { name: "Overview" });
-    expect(screen.getByText("Development")).toBeInTheDocument();
+    expect(screen.getByText("Development", { exact: true })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "All Organizations" })).toBeInTheDocument();
     expect(await screen.findByRole("link", { name: "All Accounts" })).toHaveAttribute(
       "href",
@@ -255,7 +255,7 @@ describe("application shell", () => {
   it("renders Under development for known unimplemented routes and Page not found for unknown routes", async () => {
     stubDesktop(true);
     mockAuthenticatedFetch();
-    window.history.replaceState({}, "", "/admin/subscriptions");
+    window.history.replaceState({}, "", "/admin/personal-features");
     const { unmount } = render(<App />);
     expect(await screen.findByRole("heading", { name: "Under development" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Back to Overview" })).toHaveAttribute(
@@ -265,7 +265,7 @@ describe("application shell", () => {
     expect(screen.queryByRole("button", { name: "Copy diagnostics" })).not.toBeInTheDocument();
     unmount();
 
-    window.history.replaceState({}, "", "/admin/entitlements");
+    window.history.replaceState({}, "", "/admin/platform-roles");
     const second = render(<App />);
     expect(await screen.findByRole("heading", { name: "Under development" })).toBeInTheDocument();
     second.unmount();
@@ -335,7 +335,7 @@ describe("application shell", () => {
   it("localizes the under-development page to Filipino", async () => {
     stubDesktop(true);
     mockAuthenticatedFetch();
-    window.history.replaceState({}, "", "/admin/subscriptions");
+    window.history.replaceState({}, "", "/admin/personal-features");
     const user = userEvent.setup();
     render(<App />);
     expect(await screen.findByRole("heading", { name: "Under development" })).toBeInTheDocument();

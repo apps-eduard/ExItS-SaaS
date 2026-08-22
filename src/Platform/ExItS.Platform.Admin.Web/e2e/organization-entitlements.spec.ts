@@ -155,7 +155,7 @@ test("entitlement navigation, product selector, and operator controls", async ({
     page.getByRole("heading", { name: "Entitlements", exact: true, level: 1 }),
   ).toBeVisible();
   await expect(page).toHaveURL(/product=POS/);
-  await expect(page.getByText("starter")).toBeVisible();
+  await expect(page.getByRole("table").getByText("starter").first()).toBeVisible();
   await expect(page.getByText("1 enabled · 0 disabled").first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Show grants" }).first()).toBeVisible();
   await expect(page.getByText("pos.checkout")).toHaveCount(0);
@@ -257,7 +257,7 @@ test("entitlement error retry and forbidden fail-closed", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Copy diagnostics" })).toBeVisible();
   fail = false;
   await page.getByRole("button", { name: "Retry" }).click();
-  await expect(page.getByText("starter")).toBeVisible();
+  await expect(page.getByRole("table").getByText("starter").first()).toBeVisible();
 
   await page.route(/\/api\/v1\/platform\/organizations(\/|\?|$)/, async (route) => {
     const url = route.request().url();

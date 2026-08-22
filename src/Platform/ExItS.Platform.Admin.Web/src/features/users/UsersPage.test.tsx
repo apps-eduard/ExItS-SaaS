@@ -72,7 +72,7 @@ describe("platform users directory", () => {
     render(<App />);
     expect(await screen.findByRole("heading", { name: "All Accounts" })).toBeInTheDocument();
     expect(await screen.findByText("Olivia Mendoza")).toBeInTheDocument();
-    expect(screen.getByText("olivia")).toBeInTheDocument();
+    expect(await screen.findByText("olivia")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /create/i })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Olivia Mendoza" })).toHaveAttribute(
       "href",

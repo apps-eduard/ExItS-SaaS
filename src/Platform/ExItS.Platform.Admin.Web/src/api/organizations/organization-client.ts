@@ -411,6 +411,11 @@ export function mapOrganizationSubscription(payload: unknown): OrganizationSubsc
     paidPeriodEndUtc: readString(record, "paidPeriodEndUtc", "PaidPeriodEndUtc"),
     currentPeriodStartUtc: readString(record, "currentPeriodStartUtc", "CurrentPeriodStartUtc"),
     currentPeriodEndUtc: readString(record, "currentPeriodEndUtc", "CurrentPeriodEndUtc"),
+    organizationDisplayName: readString(
+      record,
+      "organizationDisplayName",
+      "OrganizationDisplayName",
+    ),
     productDisplayName: readString(record, "productDisplayName", "ProductDisplayName"),
     planDisplayName: readString(record, "planDisplayName", "PlanDisplayName"),
     planKey: readString(record, "planKey", "PlanKey"),

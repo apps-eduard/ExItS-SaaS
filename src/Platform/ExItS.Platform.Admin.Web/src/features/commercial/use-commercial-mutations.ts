@@ -8,6 +8,7 @@ import {
 import {
   activatePlan,
   createDraftPlanVersion,
+  createPlan,
   deactivatePlan,
   publishPlanVersion,
   renamePlan,
@@ -15,6 +16,7 @@ import {
   updatePlanCommercial,
   upsertDraftFeatureGrant,
   type CreateDraftPlanVersionBody,
+  type CreatePlanBody,
   type UpdatePlanCommercialBody,
   type UpsertDraftFeatureGrantBody,
 } from "@/api/catalog/plan-mutations-client";
@@ -147,6 +149,16 @@ export function useUpdatePlanMutation() {
       planId: string;
       body: UpdatePlanCommercialBody;
     }) => updatePlanCommercial(env.platformApiBaseUrl, input.productCode, input.planId, input.body),
+    onSuccess: (plan) => planMutationInvalidation(queryClient, plan),
+  });
+}
+
+export function useCreatePlanMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: { productCode: string; body: CreatePlanBody }) =>
+      createPlan(env.platformApiBaseUrl, input.productCode, input.body),
     onSuccess: (plan) => planMutationInvalidation(queryClient, plan),
   });
 }

@@ -40,6 +40,7 @@ export type OrganizationSubscription = {
   paidPeriodEndUtc?: string;
   currentPeriodStartUtc?: string;
   currentPeriodEndUtc?: string;
+  organizationDisplayName?: string;
   productDisplayName?: string;
   planDisplayName?: string;
   planKey?: string;

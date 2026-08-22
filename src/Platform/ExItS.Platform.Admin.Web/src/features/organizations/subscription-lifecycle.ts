@@ -19,6 +19,7 @@ export type SubscriptionSupportAction = "gracePeriod" | "pastDue" | "expire";
 export type SubscriptionLifecycleCapabilities = {
   changePlan: boolean;
   applyPending: boolean;
+  convertTrial: boolean;
   suspend: boolean;
   reactivate: boolean;
   cancel: boolean;
@@ -77,6 +78,7 @@ export function subscriptionLifecycleCapabilities(
   return {
     changePlan: planMutable,
     applyPending: Boolean(pendingPlanId) && planMutable,
+    convertTrial: normalized === "Trialing",
     suspend:
       normalized === "Trialing" ||
       normalized === "Active" ||
