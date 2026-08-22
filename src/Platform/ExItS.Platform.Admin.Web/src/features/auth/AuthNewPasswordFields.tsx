@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePreferences } from "@/hooks/use-preferences";
+import { isLocalValidationToolsEnabled } from "@/lib/env";
 
 type AuthNewPasswordFieldsProps = {
   passwordId: string;
@@ -30,9 +31,15 @@ export function AuthNewPasswordFields({
   const { t } = usePreferences();
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmVisible, setConfirmVisible] = useState(false);
+  const showWeakPasswordNotice = isLocalValidationToolsEnabled();
 
   return (
     <>
+      {showWeakPasswordNotice ? (
+        <p className="text-[length:var(--exits-text-xs)] text-muted">
+          {t("auth.localValidation.weakPasswordNotice")}
+        </p>
+      ) : null}
       <PasswordInput
         id={passwordId}
         label={t("auth.newPassword")}

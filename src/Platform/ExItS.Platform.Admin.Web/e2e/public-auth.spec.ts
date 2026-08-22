@@ -43,7 +43,7 @@ test("activation missing token is rejected safely", async ({ page }) => {
   await mockUnauthenticated(page);
   await page.goto("/admin/activate-account");
   await expect(page.getByRole("alert")).toHaveText(
-    "This activation link is invalid or has expired.",
+    "This activation link is invalid or has already been used.",
   );
   await expect(page.getByRole("button", { name: "Activate account" })).toBeDisabled();
 });

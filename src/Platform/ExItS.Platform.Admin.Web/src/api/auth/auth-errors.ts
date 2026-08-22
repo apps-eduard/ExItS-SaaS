@@ -33,9 +33,12 @@ export function classifySignInFailure(error: unknown): SignInFailureKind {
 
 export type CredentialWorkflowFailureKind =
   | "invalid_token"
+  | "expired_token"
   | "password_invalid"
   | "invalid_display_name"
   | "invalid_email"
+  | "rate_limited"
+  | "service_unavailable"
   | "network"
   | "unknown";
 
@@ -48,6 +51,10 @@ export function classifyCredentialWorkflowFailure(error: unknown): CredentialWor
     return "unknown";
   }
 
+  if (error.status === 502 || error.status === 503 || error.status === 504) {
+    return "service_unavailable";
+  }
+
   const code = error.problem.errorCode;
   if (code === AUTH_ERROR_CODES.passwordInvalid) {
     return "password_invalid";
@@ -58,10 +65,13 @@ export function classifyCredentialWorkflowFailure(error: unknown): CredentialWor
   if (code === AUTH_ERROR_CODES.invalidEmail) {
     return "invalid_email";
   }
-  if (
-    code === AUTH_ERROR_CODES.credentialTokenInvalid ||
-    code === AUTH_ERROR_CODES.credentialTokenExpired
-  ) {
+  if (code === AUTH_ERROR_CODES.rateLimitExceeded) {
+    return "rate_limited";
+  }
+  if (code === AUTH_ERROR_CODES.credentialTokenExpired) {
+    return "expired_token";
+  }
+  if (code === AUTH_ERROR_CODES.credentialTokenInvalid) {
     return "invalid_token";
   }
 

@@ -124,6 +124,22 @@ async function ensureAntiforgeryToken(baseUrl: string, signal?: AbortSignal): Pr
   await bootstrapAntiforgeryToken(baseUrl, signal);
 }
 
+async function parseSuccessResponseBody<T>(response: Response): Promise<T> {
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  if (typeof response.text === "function") {
+    const bodyText = await response.text();
+    if (bodyText.trim().length === 0) {
+      return undefined as T;
+    }
+    return JSON.parse(bodyText) as T;
+  }
+
+  return (await response.json()) as T;
+}
+
 export async function platformRequest<T>(
   baseUrl: string,
   options: PlatformRequestOptions,
@@ -164,9 +180,5 @@ export async function platformRequest<T>(
     throw new PlatformApiError(response.status, problem, requestCorrelationId);
   }
 
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return (await response.json()) as T;
+  return parseSuccessResponseBody<T>(response);
 }

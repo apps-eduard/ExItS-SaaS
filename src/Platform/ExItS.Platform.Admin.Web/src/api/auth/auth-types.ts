@@ -10,6 +10,7 @@ export const AUTH_ERROR_CODES = {
   credentialTokenExpired: "application.auth.credential_token_expired",
   invalidDisplayName: "platform.display_name.invalid",
   invalidEmail: "platform.email.invalid",
+  rateLimitExceeded: "platform.rate_limit.exceeded",
 } as const;
 
 export type AuthErrorCode = (typeof AUTH_ERROR_CODES)[keyof typeof AUTH_ERROR_CODES];

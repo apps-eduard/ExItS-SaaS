@@ -2,7 +2,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useSearchParams } from "react-router-dom";
-import { z } from "zod";
 import { activateAccount } from "@/api/auth/auth-client";
 import { classifyCredentialWorkflowFailure } from "@/api/auth/auth-errors";
 import { Alert } from "@/components/ui/alert";
@@ -12,6 +11,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { AuthNewPasswordFields } from "@/features/auth/AuthNewPasswordFields";
 import { usePreferences } from "@/hooks/use-preferences";
 import { env } from "@/lib/env";
+import { buildAuthNewPasswordSchema } from "@/lib/auth/password-policy";
 import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
 import type { DiagnosticRecord } from "@/lib/diagnostics/diagnostic-types";
 
@@ -29,21 +29,26 @@ export function ActivateAccountPage() {
   const [params] = useSearchParams();
   const token = readToken(params.get("token"));
   const [succeeded, setSucceeded] = useState(false);
-  const [tokenError, setTokenError] = useState(token.length === 0);
+  const [tokenAlert, setTokenAlert] = useState<string | null>(
+    token.length === 0 ? t("auth.activate.token.invalid") : null,
+  );
   const [formError, setFormError] = useState<string | null>(null);
   const [diagnostic, setDiagnostic] = useState<DiagnosticRecord | null>(null);
 
   const schema = useMemo(
     () =>
-      z
-        .object({
-          password: z.string().min(1, t("auth.validation.passwordRequired")),
-          confirmPassword: z.string().min(1, t("auth.validation.confirmPasswordRequired")),
-        })
-        .refine((values) => values.password === values.confirmPassword, {
-          message: t("auth.validation.passwordMismatch"),
-          path: ["confirmPassword"],
-        }),
+      buildAuthNewPasswordSchema(
+        {
+          passwordRequired: t("auth.validation.passwordRequired"),
+          passwordMinLength: t("auth.validation.passwordMinLength"),
+          passwordUppercase: t("auth.validation.passwordUppercase"),
+          passwordLowercase: t("auth.validation.passwordLowercase"),
+          passwordDigit: t("auth.validation.passwordDigit"),
+          passwordSpecial: t("auth.validation.passwordSpecial"),
+        },
+        t("auth.validation.passwordMismatch"),
+        t("auth.validation.confirmPasswordRequired"),
+      ),
     [t],
   );
 
@@ -61,7 +66,7 @@ export function ActivateAccountPage() {
     setFormError(null);
     setDiagnostic(null);
     if (token.length === 0) {
-      setTokenError(true);
+      setTokenAlert(t("auth.activate.token.invalid"));
       return;
     }
     try {
@@ -72,8 +77,13 @@ export function ActivateAccountPage() {
       setSucceeded(true);
     } catch (error) {
       const kind = classifyCredentialWorkflowFailure(error);
+      if (kind === "expired_token") {
+        setTokenAlert(t("auth.activate.token.expired"));
+        form.reset({ password: "", confirmPassword: "" });
+        return;
+      }
       if (kind === "invalid_token") {
-        setTokenError(true);
+        setTokenAlert(t("auth.activate.token.invalid"));
         form.reset({ password: "", confirmPassword: "" });
         return;
       }
@@ -87,6 +97,14 @@ export function ActivateAccountPage() {
       }
       if (kind === "network") {
         setFormError(t("auth.error.network"));
+        return;
+      }
+      if (kind === "service_unavailable") {
+        setFormError(t("auth.error.serviceUnavailable"));
+        return;
+      }
+      if (kind === "rate_limited") {
+        setFormError(t("auth.error.rateLimited"));
         return;
       }
       setDiagnostic(
@@ -130,13 +148,8 @@ export function ActivateAccountPage() {
         </p>
       </header>
 
-      {tokenError ? (
-        <Alert
-          id={tokenErrorId}
-          className="mb-4"
-          tone="danger"
-          title={t("auth.activate.token.invalid")}
-        />
+      {tokenAlert ? (
+        <Alert id={tokenErrorId} className="mb-4" tone="danger" title={tokenAlert} />
       ) : null}
 
       {formError ? <Alert className="mb-4" tone="danger" title={formError} /> : null}
@@ -156,7 +169,7 @@ export function ActivateAccountPage() {
           passwordError={passwordError}
           confirmError={confirmError}
           disabled={submitting || token.length === 0}
-          describedBy={tokenError ? tokenErrorId : undefined}
+          describedBy={tokenAlert ? tokenErrorId : undefined}
         />
         <Button
           type="submit"

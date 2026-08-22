@@ -35,7 +35,7 @@ describe("classifySignInFailure", () => {
 });
 
 describe("classifyCredentialWorkflowFailure", () => {
-  it("maps invalid and expired tokens to invalid_token", () => {
+  it("maps invalid and expired tokens separately", () => {
     expect(
       classifyCredentialWorkflowFailure(
         new PlatformApiError(401, { errorCode: AUTH_ERROR_CODES.credentialTokenInvalid }),
@@ -45,10 +45,10 @@ describe("classifyCredentialWorkflowFailure", () => {
       classifyCredentialWorkflowFailure(
         new PlatformApiError(401, { errorCode: AUTH_ERROR_CODES.credentialTokenExpired }),
       ),
-    ).toBe("invalid_token");
+    ).toBe("expired_token");
   });
 
-  it("maps password policy failures", () => {
+  it("maps password policy failures without treating them as connectivity", () => {
     expect(
       classifyCredentialWorkflowFailure(
         new PlatformApiError(400, {
@@ -57,5 +57,26 @@ describe("classifyCredentialWorkflowFailure", () => {
         }),
       ),
     ).toBe("password_invalid");
+  });
+
+  it("maps rate limiting separately from network failures", () => {
+    expect(
+      classifyCredentialWorkflowFailure(
+        new PlatformApiError(429, { errorCode: AUTH_ERROR_CODES.rateLimitExceeded }),
+      ),
+    ).toBe("rate_limited");
+  });
+
+  it("maps upstream proxy failures to service unavailable", () => {
+    expect(classifyCredentialWorkflowFailure(new PlatformApiError(502, { title: "Bad Gateway" }))).toBe(
+      "service_unavailable",
+    );
+    expect(
+      classifyCredentialWorkflowFailure(new PlatformApiError(503, { title: "Service Unavailable" })),
+    ).toBe("service_unavailable");
+  });
+
+  it("maps fetch TypeError to network only", () => {
+    expect(classifyCredentialWorkflowFailure(new TypeError("Failed to fetch"))).toBe("network");
   });
 });

@@ -119,3 +119,54 @@ Generic acknowledgement (all public success branches):
 | Live email link origin before API recycle | `http://<detected-host>:8090` (old runtime env) |
 
 Do not fabricate a physical Tailscale-device PASS.
+
+## AUTH-MAILPIT-03 — Local Validation weak password mode + reset error classification
+
+**Starting HEAD:** `4bb1d1474f1591155a241db6720acdff25589955`
+
+### Local Validation weak password mode
+
+`LOCAL_VALIDATION_WEAK_PASSWORD_MODE=ENABLED`
+
+Configured only in Local Validation packaging (`deploy/docker/compose.local-validation.yaml`, `tools/Start-LocalValidation.ps1`):
+
+| Setting | Local Validation value |
+|---|---|
+| `PlatformAuthentication__Password__MinimumLength` | `1` |
+| `PlatformAuthentication__Password__MaximumLength` | `128` |
+| `PlatformAuthentication__Password__RequireUppercase` | `false` |
+| `PlatformAuthentication__Password__RequireLowercase` | `false` |
+| `PlatformAuthentication__Password__RequireDigit` | `false` |
+| `PlatformAuthentication__Password__RequireNonAlphanumeric` | `false` |
+
+`PRODUCTION_PASSWORD_POLICY_UNCHANGED=YES` — `PlatformPasswordOptions` defaults remain `MinimumLength=12` with all complexity requirements `true`. Production compose, production env examples, and normal appsettings are not weakened.
+
+React client validation mirrors Local Validation when `localValidationToolsEnabled === true` via shared `password-policy.ts`; production mode retains min-12 + complexity rules. Empty passwords and confirmation mismatches are still rejected.
+
+### Owner reset failure — root cause
+
+`RESET_UNABLE_TO_CONNECT_ROOT_CAUSE`: The Reset Password page maps **only** `TypeError` / browser fetch failures to **"Unable to connect. Please try again."** Backend password-policy rejections (`application.credential.password_invalid`) and token errors were not the cause when password `"1"` was tested against a healthy API — direct `POST /api/v1/platform/auth/reset-password` via same-origin `:8095/api` succeeds with Local Validation weak password env.
+
+Observed misclassification vectors fixed in AUTH-MAILPIT-03:
+
+1. **Upstream proxy unavailable (502/503/504)** during container recycle — now classified as service unavailable, not generic unknown.
+2. **Rate limit (429 `platform.rate_limit.exceeded`)** after repeated reset/forgot testing — now classified as rate limited, not unknown/connectivity.
+3. **Expired vs invalid/consumed tokens** — split user-facing messages (`auth.reset.token.expired` vs `auth.reset.token.invalid`).
+
+Historical owner `"Unable to connect"` with password `"1"` most likely occurred during a **same-origin `/api` fetch failure** (Platform API restart/502 window or transient proxy upstream loss), not password policy rejection — policy failures surface as field-level password messages when the API responds.
+
+### Error classification (reset / activate)
+
+| Condition | User message |
+|---|---|
+| Network fetch failure (`TypeError`) | Unable to connect. Please try again. |
+| 502/503/504 | Sign-in service temporarily unavailable |
+| 429 rate limit | Too many attempts… |
+| Password policy | Backend detail on password field |
+| Mismatch | Passwords do not match. |
+| Invalid/consumed token | This reset link is invalid or has already been used. |
+| Expired token | This reset link has expired. |
+| Success | Password changed → Sign In |
+
+Same-origin architecture preserved: browser → `:8095/api` → nginx/Vite proxy → Platform API (no direct `:8091` browser calls).
+

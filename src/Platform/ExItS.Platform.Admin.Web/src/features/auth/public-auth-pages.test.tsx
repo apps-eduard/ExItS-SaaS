@@ -196,7 +196,7 @@ describe("public auth pages", () => {
       await screen.findByRole("heading", { name: "Activate your account" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "This activation link is invalid or has expired.",
+      "This activation link is invalid or has already been used.",
     );
     expect(screen.getByRole("button", { name: "Activate account" })).toBeDisabled();
     expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("activate-account"))).toBe(
@@ -214,7 +214,7 @@ describe("public auth pages", () => {
       if (url.includes("/api/v1/platform/auth/activate-account")) {
         expect(JSON.parse(String(init?.body))).toEqual({
           token: "opaque-activation-token",
-          password: "replacement-password",
+          password: "Correct-Horse-9!",
         });
         return jsonResponse(200, { hasPassword: true });
       }
@@ -231,13 +231,13 @@ describe("public auth pages", () => {
       "new-password",
     );
 
-    await user.type(screen.getByLabelText("New password"), "replacement-password");
-    await user.type(screen.getByLabelText("Confirm password"), "different-password");
+    await user.type(screen.getByLabelText("New password"), "Correct-Horse-9!");
+    await user.type(screen.getByLabelText("Confirm password"), "Different-Horse-9!");
     await user.click(screen.getByRole("button", { name: "Activate account" }));
     expect(await screen.findByText("Passwords do not match.")).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText("Confirm password"));
-    await user.type(screen.getByLabelText("Confirm password"), "replacement-password");
+    await user.type(screen.getByLabelText("Confirm password"), "Correct-Horse-9!");
     await user.click(screen.getByRole("button", { name: "Activate account" }));
     expect(await screen.findByRole("heading", { name: "Account activated" })).toBeInTheDocument();
     expect(storageContains("opaque-activation-token")).toBe(false);
@@ -266,11 +266,11 @@ describe("public auth pages", () => {
     const user = userEvent.setup();
     render(<App />);
     await screen.findByRole("heading", { name: "Activate your account" });
-    await user.type(screen.getByLabelText("New password"), "replacement-password");
-    await user.type(screen.getByLabelText("Confirm password"), "replacement-password");
+    await user.type(screen.getByLabelText("New password"), "Correct-Horse-9!");
+    await user.type(screen.getByLabelText("Confirm password"), "Correct-Horse-9!");
     await user.click(screen.getByRole("button", { name: "Activate account" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "This activation link is invalid or has expired.",
+      "This activation link has expired.",
     );
     expect(screen.queryByText("Verification token has expired.")).not.toBeInTheDocument();
   });
@@ -328,7 +328,7 @@ describe("public auth pages", () => {
       if (url.includes("/api/v1/platform/auth/reset-password")) {
         expect(JSON.parse(String(init?.body))).toEqual({
           token: "opaque-reset-token",
-          newPassword: "replacement-password",
+          newPassword: "Correct-Horse-9!",
         });
         return jsonResponse(200, { hasPassword: true });
       }
@@ -339,13 +339,43 @@ describe("public auth pages", () => {
     const user = userEvent.setup();
     render(<App />);
     await screen.findByRole("heading", { name: "Reset password" });
-    await user.type(screen.getByLabelText("New password"), "replacement-password");
-    await user.type(screen.getByLabelText("Confirm password"), "replacement-password");
+    await user.type(screen.getByLabelText("New password"), "Correct-Horse-9!");
+    await user.type(screen.getByLabelText("Confirm password"), "Correct-Horse-9!");
     await user.click(screen.getByRole("button", { name: "Change password" }));
     expect(
       await screen.findByRole("heading", { name: "Password changed successfully." }),
     ).toBeInTheDocument();
     expect(storageContains("opaque-reset-token")).toBe(false);
+  });
+
+  it("accepts single-character passwords in Local Validation mode", async () => {
+    window.__EXITS_PLATFORM_ADMIN_WEB__ = { localValidationToolsEnabled: true };
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const unauthenticated = unauthenticatedMe(url);
+      if (unauthenticated) {
+        return unauthenticated;
+      }
+      if (url.includes("/api/v1/platform/auth/reset-password")) {
+        expect(JSON.parse(String(init?.body))).toEqual({
+          token: "lv-reset-token",
+          newPassword: "1",
+        });
+        return jsonResponse(200, { hasPassword: true });
+      }
+      return jsonResponse(404, {});
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    window.history.replaceState({}, "", "/admin/reset-password?token=lv-reset-token");
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole("heading", { name: "Reset password" });
+    await user.type(screen.getByLabelText("New password"), "1");
+    await user.type(screen.getByLabelText("Confirm password"), "1");
+    await user.click(screen.getByRole("button", { name: "Change password" }));
+    expect(
+      await screen.findByRole("heading", { name: "Password changed successfully." }),
+    ).toBeInTheDocument();
   });
 
   it("shows a safe message for a consumed reset token", async () => {
@@ -371,11 +401,11 @@ describe("public auth pages", () => {
     const user = userEvent.setup();
     render(<App />);
     await screen.findByRole("heading", { name: "Reset password" });
-    await user.type(screen.getByLabelText("New password"), "replacement-password");
-    await user.type(screen.getByLabelText("Confirm password"), "replacement-password");
+    await user.type(screen.getByLabelText("New password"), "Correct-Horse-9!");
+    await user.type(screen.getByLabelText("Confirm password"), "Correct-Horse-9!");
     await user.click(screen.getByRole("button", { name: "Change password" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "This password reset link is invalid or has expired.",
+      "This reset link is invalid or has already been used.",
     );
     expect(screen.queryByText("Reset token is invalid.")).not.toBeInTheDocument();
   });

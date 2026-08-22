@@ -10,7 +10,7 @@ describe("platformRequest", () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({ ok: true }),
+      text: async () => JSON.stringify({ ok: true }),
     });
     vi.stubGlobal("fetch", fetchMock);
 
