@@ -27,7 +27,9 @@ vi.mock("@/offline/offline-pin-login-offer", () => ({
   })),
 }));
 
-const signInMock = vi.fn(async () => true);
+const signInMock = vi.fn<() => Promise<{ ok: true } | { ok: false; failure: Record<string, unknown> }>>(
+  async () => ({ ok: true }),
+);
 
 vi.mock("@/session/SessionProvider", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/session/SessionProvider")>();
@@ -115,6 +117,59 @@ describe("SignInPage LOGIN-UX-01", () => {
     await waitFor(() => {
       expect(signInMock).toHaveBeenCalledWith("owner@example.com", "secret123");
     });
+  });
+
+  it("shows sign-in ErrorState with diagnostics instead of generic-only failure", async () => {
+    signInMock.mockResolvedValueOnce({
+      ok: false,
+      failure: {
+        failureStage: "platform.auth.login",
+        httpMethod: "POST",
+        path: "/api/v1/platform/auth/login",
+        status: 502,
+        errorCode: "application.upstream_error",
+        detail: "Platform API gateway timeout.",
+        traceId: "trace-sign-in-502",
+        requestCorrelationId: "corr-sign-in-502",
+      },
+    });
+    const user = userEvent.setup();
+    renderSignInPage();
+    await user.type(screen.getByLabelText("Email or staff login"), "kizy@gmail.com");
+    await user.type(screen.getByLabelText("Password"), "1");
+    await user.click(screen.getByTestId("sign-in-submit"));
+    await waitFor(() => {
+      expect(screen.getByTestId("error-state")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Sign in failed.")).toBeInTheDocument();
+    expect(screen.getByText("Platform API gateway timeout.")).toBeInTheDocument();
+    expect(screen.getByTestId("copy-error-details")).toBeInTheDocument();
+    expect(screen.queryByText(/check your credentials/i)).not.toBeInTheDocument();
+  });
+
+  it("shows inline sign-in error instead of crashing when login fails with server error", async () => {
+    signInMock.mockResolvedValueOnce({
+      ok: false,
+      failure: {
+        failureStage: "platform.auth.login",
+        httpMethod: "POST",
+        path: "/api/v1/platform/auth/login",
+        status: 401,
+        errorCode: "application.auth.login_failed",
+        detail: "Invalid username or password.",
+      },
+    });
+    const user = userEvent.setup();
+    renderSignInPage();
+    await user.type(screen.getByLabelText("Email or staff login"), "owner@example.com");
+    await user.type(screen.getByLabelText("Password"), "secret123");
+    await user.click(screen.getByTestId("sign-in-submit"));
+    await waitFor(() => {
+      expect(screen.getByTestId("error-state")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("copy-error-details")).toBeInTheDocument();
+    expect(screen.queryByText(/check your credentials/i)).not.toBeInTheDocument();
+    expect(screen.getByTestId("sign-in-page")).toBeInTheDocument();
   });
 
   it("routes to offline PIN unlock from the alternate sign-in action", async () => {

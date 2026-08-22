@@ -27,8 +27,16 @@ import {
   type PlatformProblem,
 } from "@/api/platform/browser-session";
 import { isFrontendLocalValidationMode } from "@/api/platform/local-validation-gate";
+import {
+  buildAuthLoginFailure,
+  type AuthLoginFailureDiagnostic,
+} from "@/diagnostics/auth-login-failure";
 import { clearPosAccessToken, setPosAccessToken } from "@/api/platform/pos-access-token";
 import { clearPosSessionGrant, setPosSessionGrant } from "@/api/platform/pos-session-grant";
+
+export type LoginWithPasswordResult =
+  | { ok: true; session: BrowserSessionSnapshot }
+  | { ok: false; failure: AuthLoginFailureDiagnostic };
 
 export type QuickLoginIdentity = {
   key?: string;
@@ -117,7 +125,7 @@ export async function fetchCurrentSession(): Promise<{
 export async function loginWithPassword(
   usernameOrEmail: string,
   password: string,
-): Promise<{ ok: true; session: BrowserSessionSnapshot } | { ok: false }> {
+): Promise<LoginWithPasswordResult> {
   clearPosAccessToken();
   clearPosSessionGrant();
   try {
@@ -129,10 +137,7 @@ export async function loginWithPassword(
     });
     return { ok: true, session: toBrowserSessionSnapshot(body) };
   } catch (error) {
-    if (error instanceof PlatformApiError && error.status >= 400 && error.status < 500) {
-      return { ok: false };
-    }
-    throw error;
+    return { ok: false, failure: buildAuthLoginFailure(error) };
   }
 }
 

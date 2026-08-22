@@ -38,6 +38,10 @@ import {
   hasPendingRemoteLogout,
   markPendingRemoteLogout,
 } from "@/session/remote-logout-retry";
+import {
+  buildAuthLoginFailure,
+  type AuthLoginFailureDiagnostic,
+} from "@/diagnostics/auth-login-failure";
 
 export type SessionStatus =
   | "loading"
@@ -57,12 +61,14 @@ export type SignOutResult =
     }
   | { ok: false; detail: string };
 
+export type SignInResult = { ok: true } | { ok: false; failure: AuthLoginFailureDiagnostic };
+
 type SessionContextValue = {
   status: SessionStatus;
   session: BrowserSessionSnapshot | null;
   coldStartGrant: StoredOfflineOperatingGrant | null;
   coldStartDenial: ColdStartGrantDenialReason | null;
-  signIn: (usernameOrEmail: string, password: string) => Promise<boolean>;
+  signIn: (usernameOrEmail: string, password: string) => Promise<SignInResult>;
   signOut: () => Promise<SignOutResult>;
   refreshSession: () => Promise<SessionStatus>;
   unlockOfflinePin: (pin: string) => Promise<boolean>;
@@ -267,9 +273,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
 
   const signIn = useCallback(
-    async (usernameOrEmail: string, password: string) => {
+    async (usernameOrEmail: string, password: string): Promise<SignInResult> => {
       if (signInLock.current) {
-        return false;
+        return {
+          ok: false,
+          failure: buildAuthLoginFailure(new Error("Sign in is already in progress.")),
+        };
       }
       signInLock.current = true;
       try {
@@ -279,14 +288,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         clearPendingRemoteLogout();
         const result = await loginWithPassword(usernameOrEmail, password);
         if (!result.ok) {
-          return false;
+          return result;
         }
         await refreshPlatformAntiforgeryToken();
         setSession(result.session);
         setStatus("authenticated");
         setColdStartGrant(null);
         setColdStartDenial(null);
-        return true;
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, failure: buildAuthLoginFailure(error) };
       } finally {
         signInLock.current = false;
       }

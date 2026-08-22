@@ -3,6 +3,7 @@ import { Eye, EyeOff, Info, LayoutGrid } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ErrorState } from "@/components/exits/ErrorState";
 import { AuthExperienceLayout, AuthOrDivider } from "@/features/auth/AuthExperienceLayout";
 import { cn } from "@/lib/cn";
 import {
@@ -18,6 +19,12 @@ import { mapColdStartDenialToMessageKey } from "@/offline/offline-operating-gran
 import { prefetchPlatformAntiforgeryToken } from "@/api/platform/platform-http";
 import { looksLikeOrgScopedStaffLogin } from "@/session/account-class";
 import { useSession } from "@/session/SessionProvider";
+import type { AuthLoginFailureDiagnostic } from "@/diagnostics/auth-login-failure";
+import {
+  authLoginFailureToPosErrorReport,
+  buildAuthLoginFailure,
+  resolveAuthLoginFailurePresentation,
+} from "@/diagnostics/auth-login-failure";
 type AuthTab = "sign-in" | "sign-up";
 
 function AuthInlineFeedback({
@@ -59,6 +66,12 @@ export function SignInPage() {
   const [signUpName, setSignUpName] = useState("");
   const [signUpEmail, setSignUpEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [signInFailure, setSignInFailure] = useState<{
+    failure: AuthLoginFailureDiagnostic;
+    title: string;
+    detail: string;
+    friendlyMessage: string;
+  } | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [isOffline, setIsOffline] = useState(
@@ -106,22 +119,36 @@ export function SignInPage() {
     };
   }, [isOffline, status]);
 
-  async function handleSignInSubmit(event: FormEvent) {    event.preventDefault();
+  async function handleSignInSubmit(event: FormEvent) {
+    event.preventDefault();
     if (isOffline) {
       setError(t("auth.offlinePasswordBlocked"));
       return;
     }
     setSubmitting(true);
     setError(null);
+    setSignInFailure(null);
     setInfo(null);
     persistRememberedUsername(usernameOrEmail, rememberMe);
-    const ok = await signIn(usernameOrEmail.trim(), password);
-    setSubmitting(false);
-    if (!ok) {
-      setError(t("signIn.error"));
-      return;
+    try {
+      const result = await signIn(usernameOrEmail.trim(), password);
+      if (!result.ok) {
+        setSignInFailure({
+          failure: result.failure,
+          ...resolveAuthLoginFailurePresentation(result.failure, t),
+        });
+        return;
+      }
+      navigate("/", { replace: true });
+    } catch (caught) {
+      const failure = buildAuthLoginFailure(caught);
+      setSignInFailure({
+        failure,
+        ...resolveAuthLoginFailurePresentation(failure, t),
+      });
+    } finally {
+      setSubmitting(false);
     }
-    navigate("/", { replace: true });
   }
 
   async function handleSignUpSubmit(event: FormEvent) {
@@ -188,6 +215,7 @@ export function SignInPage() {
       onTabChange={(tab) => {
         setActiveTab(tab);
         setError(null);
+        setSignInFailure(null);
         setInfo(null);
       }}
       offlineBanner={offlineBanner}
@@ -198,6 +226,7 @@ export function SignInPage() {
               setUsernameOrEmail(value);
               setPassword("");
               setError(null);
+              setSignInFailure(null);
               setActiveTab("sign-in");
             }}
           />
@@ -208,7 +237,18 @@ export function SignInPage() {
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("signIn.expired")}</p>
       ) : null}
       {info ? <AuthInlineFeedback message={info} testId="auth-info" tone="success" /> : null}
-      {error ? <AuthInlineFeedback message={error} testId="auth-error" /> : null}
+      {signInFailure ? (
+        <ErrorState
+          title={signInFailure.title}
+          detail={signInFailure.detail}
+          diagnostic={authLoginFailureToPosErrorReport(
+            signInFailure.failure,
+            signInFailure.friendlyMessage,
+          )}
+        />
+      ) : error ? (
+        <AuthInlineFeedback message={error} testId="auth-error" />
+      ) : null}
 
       {activeTab === "sign-in" ? (
         <form className="flex flex-col gap-4" onSubmit={(event) => void handleSignInSubmit(event)}>
