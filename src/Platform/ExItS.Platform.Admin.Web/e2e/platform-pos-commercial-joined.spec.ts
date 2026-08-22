@@ -54,7 +54,7 @@ test.describe("PA-COM-07 Platform→POS commercial joined integration", () => {
     const provenance = await readProvenance(request);
     expect(provenance.strictCommercialValidation).toBe("ON");
     expect(provenance.developmentGrantMerge).toBe("OFF");
-    expect(provenance.posApiRuntimeSha.toLowerCase()).toContain("7e8256b2");
+    expect(provenance.posApiRuntimeSha.toLowerCase()).toContain("891f3d73");
   });
 
   test("joined commercial spine: Growth devices, Pro upgrade, suspend, reactivate", async ({

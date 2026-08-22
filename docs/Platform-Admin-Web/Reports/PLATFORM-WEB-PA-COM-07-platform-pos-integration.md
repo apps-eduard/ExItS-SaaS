@@ -8,11 +8,11 @@ PA-COM-07 proves the joined commercial spine using **real HTTP** across mixed wo
 
 | Item | Value |
 |---|---|
-| Starting HEAD | `18db549af98b86a3971897c9d2b5a60cc3d6f065` |
 | Branch | `feat/platform-admin-pa-com-07` |
-| POS validation SHA | `7e8256b2aa6ae1e44e615a272939a7a796aeb89e` (`feat/pos-react-client`) |
+| Platform closeout HEAD | `df22735a7b969a16ed79bdf31409979062355c53` (pre-closeout harness refresh) |
+| POS validation SHA (CLOSEOUT01) | `891f3d73dbb191651c05fc0aca10c9980c3d6abe` (`origin/feat/pos-react-client`) |
 
-Bootstrap uses Platform Testing external auth (`POST /auth/external/testing/complete`) to avoid auth/register rate limits; disposable orgs are created via `POST /api/v1/personal/start-business` on Growth trial.
+Bootstrap uses Platform Testing external auth (`POST /auth/external/testing/complete`) to avoid auth/register rate limits; disposable orgs are created via `POST /api/v1/personal/start-business` on Growth trial with `assignPosOwnerRole: true` (authoritative Owner `CanOperate` path).
 
 POS financial mutations in Staging require registered device headers (`X-Pos-Installation-Device-Id`, `X-Pos-Branch-Id`) and an open shift id on checkout — the joined scenario registers devices through Platform first, then exercises sale checkout server-side.
 
@@ -22,7 +22,7 @@ POS financial mutations in Staging require registered device headers (`X-Pos-Ins
 |---|---|---|
 | React Platform Admin | Agent 2 `feat/platform-admin-pa-com-07` | **8095** |
 | Platform API | Agent 2 `feat/platform-admin-pa-com-07` | **8091** |
-| POS API | Agent 1 `feat/pos-react-client` @ `7e8256b2…` | **8092** |
+| POS API | Agent 1 `feat/pos-react-client` @ `891f3d73…` | **8092** |
 
 Launcher: `tools/Start-PaCom07MixedValidation.ps1`  
 Provenance file: `%LOCALAPPDATA%\ExItS\LocalValidation\pa-com-07-provenance.json`
@@ -67,7 +67,7 @@ Run:
 .\tools\Invoke-PaCom07JoinedIntegration.ps1
 ```
 
-## Validation evidence (2026-08-22)
+## Validation evidence — PA-COM-07-CLOSEOUT01 (2026-08-22)
 
 | Gate | Result |
 |---|---|
@@ -77,6 +77,8 @@ Run:
 | `npm run build` | PASS |
 | PA-COM Playwright regression (4 specs) | 20 passed |
 | Joined integration (`Invoke-PaCom07JoinedIntegration.ps1`) | 2 passed |
+| Provenance Platform SHA | `df22735a7b969a16ed79bdf31409979062355c53` |
+| Provenance POS SHA | `891f3d73dbb191651c05fc0aca10c9980c3d6abe` |
 
 ## Agent conflict checks
 
@@ -84,6 +86,7 @@ Run:
 |---|---|---|
 | Agent 1 POS branch | **NO** | POS runs external worktree only |
 | Agent 3 Global Catalog | **NO** | No global-catalog paths touched |
+| Agent 4 System Health | **NO** | Not merged |
 
 ## Explicit exclusions
 
@@ -91,8 +94,9 @@ Run:
 - No POS React UI changes
 - No backend API invention
 - No merge to `main`
+- No Platform Admin reconciliation / PA-NO-FALLBACK-01
 
 ## Known gaps
 
-- Platform API on Agent 2 worktree may lack Agent 1 introspection role-preservation fix (`AccessTokenUseCases`); disposable org bootstrap uses owner `CanOperate` path to avoid org-management-only tokens.
-- React Admin container on 8095 is built from current worktree Docker context; rebuild may be required after Admin changes.
+- Platform API on Agent 2 worktree still clears `mappedPosRole` unconditionally on the org-management authority path; Agent 1 POS preserves local role when `ProductLocalRoleGranted`. CLOSEOUT01 joined scenario does **not** rely on that path — it uses Start-a-Business Owner with `assignPosOwnerRole` → real `CanOperate` + non-null `mappedPosRoleCode`.
+- React Admin container on 8095 is rebuilt from current worktree Docker context by the mixed launcher.

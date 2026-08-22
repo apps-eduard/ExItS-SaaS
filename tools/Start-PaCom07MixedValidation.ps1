@@ -16,7 +16,7 @@
 param(
     [string]$PlatformRepoRoot = "",
     [string]$PosRepoRoot = "C:\Users\speed\Desktop\ExItS-SaaS-pos-react-client",
-    [string]$ExpectedPosSha = "7e8256b2aa6ae1e44e615a272939a7a796aeb89e",
+    [string]$ExpectedPosSha = "891f3d73dbb191651c05fc0aca10c9980c3d6abe",
     [string]$EnvFile = "",
     [int]$PortWaitSeconds = 180
 )
