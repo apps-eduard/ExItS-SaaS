@@ -204,6 +204,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "auth.tabSignUp": "Sign Up",
   "auth.orDivider": "or",
   "auth.rememberMe": "Remember Me",
+  "auth.usernameHintShow": "Ipakita ang tabang sa sign-in username",
+  "auth.usernameHintHide": "Itago ang tabang sa sign-in username",
   "auth.showPassword": "Show password",
   "auth.hidePassword": "Hide password",
   "auth.forgotPassword": "Forgot Password",

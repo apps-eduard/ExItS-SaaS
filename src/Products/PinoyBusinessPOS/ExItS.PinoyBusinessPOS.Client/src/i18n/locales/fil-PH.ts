@@ -204,6 +204,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "auth.tabSignUp": "Sign Up",
   "auth.orDivider": "or",
   "auth.rememberMe": "Remember Me",
+  "auth.usernameHintShow": "Ipakita ang tulong sa sign-in username",
+  "auth.usernameHintHide": "Itago ang tulong sa sign-in username",
   "auth.showPassword": "Show password",
   "auth.hidePassword": "Hide password",
   "auth.forgotPassword": "Forgot Password",

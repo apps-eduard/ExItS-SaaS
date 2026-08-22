@@ -80,6 +80,16 @@ describe("SignInPage LOGIN-UX-01", () => {
     expect(screen.getByRole("button", { name: "Use Offline PIN" })).toBeInTheDocument();
   });
 
+  it("toggles username help from the info icon", async () => {
+    const user = userEvent.setup();
+    renderSignInPage();
+    expect(screen.queryByTestId("sign-in-username-hint")).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("sign-in-username-hint-toggle"));
+    expect(screen.getByTestId("sign-in-username-hint")).toBeInTheDocument();
+    await user.click(screen.getByTestId("sign-in-username-hint-toggle"));
+    expect(screen.queryByTestId("sign-in-username-hint")).not.toBeInTheDocument();
+  });
+
   it("shows staff login hint for org-scoped aliases", async () => {
     const user = userEvent.setup();
     renderSignInPage();
@@ -94,6 +104,20 @@ describe("SignInPage LOGIN-UX-01", () => {
     await user.click(screen.getByRole("checkbox", { name: "Remember Me" }));
     await user.click(screen.getByTestId("sign-in-submit"));
     expect(JSON.stringify(window.localStorage)).not.toContain("secret123");
+  });
+
+  it("keeps alternate sign-in buttons enabled when providers are unconfigured", () => {
+    renderSignInPage();
+    expect(screen.getByTestId("auth-facebook-button")).toBeEnabled();
+    expect(screen.getByTestId("auth-google-button")).toBeEnabled();
+    expect(screen.getByTestId("auth-pin-button")).toBeEnabled();
+  });
+
+  it("shows provider unavailable feedback without disabling social buttons", async () => {
+    const user = userEvent.setup();
+    renderSignInPage();
+    await user.click(screen.getByTestId("auth-google-button"));
+    expect(screen.getByTestId("auth-error")).toHaveTextContent(/not configured/i);
   });
 
   it("blocks password submit while offline", async () => {

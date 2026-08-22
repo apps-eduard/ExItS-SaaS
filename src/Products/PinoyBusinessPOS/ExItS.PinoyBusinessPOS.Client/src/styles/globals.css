@@ -263,3 +263,45 @@ body {
     mask-image: none;
   }
 }
+
+/* MAUI-inspired auth shell (LOGIN-UX-01 visual reference). */
+.auth-experience__hero-shape {
+  position: absolute;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--exits-primary-contrast) 12%, transparent);
+}
+
+.auth-experience__hero-shape--one {
+  top: -2.5rem;
+  right: -1.5rem;
+  width: 9rem;
+  height: 9rem;
+}
+
+.auth-experience__hero-shape--two {
+  top: 2.5rem;
+  left: -2.75rem;
+  width: 7rem;
+  height: 7rem;
+  background: color-mix(in srgb, var(--exits-primary-contrast) 8%, transparent);
+}
+
+.auth-experience__hero-shape--three {
+  right: 18%;
+  bottom: -3rem;
+  width: 10rem;
+  height: 10rem;
+  background: color-mix(in srgb, var(--exits-primary-contrast) 10%, transparent);
+}
+
+.auth-experience .auth-remember-checkbox {
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: var(--exits-primary);
+}
+
+.auth-experience .auth-submit-button {
+  min-height: 3rem;
+  border-radius: 0.75rem;
+  font-size: var(--exits-text-md);
+}

@@ -204,6 +204,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "auth.tabSignUp": "Sign Up",
   "auth.orDivider": "or",
   "auth.rememberMe": "Remember Me",
+  "auth.usernameHintShow": "Ipakita ti tulong iti sign-in username",
+  "auth.usernameHintHide": "Ilemmeng ti tulong iti sign-in username",
   "auth.showPassword": "Show password",
   "auth.hidePassword": "Hide password",
   "auth.forgotPassword": "Forgot Password",

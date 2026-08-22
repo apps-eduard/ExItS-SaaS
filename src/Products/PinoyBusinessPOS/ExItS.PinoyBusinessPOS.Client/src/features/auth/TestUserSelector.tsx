@@ -40,51 +40,41 @@ export function TestUserSelector({
   }
 
   return (
-    <details className="rounded-[var(--exits-radius-md)] border border-border bg-surface/60 px-3 py-2">
-      <summary className="cursor-pointer text-[length:var(--exits-text-xs)] font-semibold tracking-wide uppercase text-muted">
+    <label className="flex min-w-0 flex-col gap-2" htmlFor="pos-test-user">
+      <span className="text-[length:var(--exits-text-sm)] font-semibold text-foreground">
         {t("signIn.devTools")}
-      </summary>
-      <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-          {t("signIn.localValidationHint")}
-        </p>
-        <label className="flex min-w-0 flex-col gap-1.5" htmlFor="pos-test-user">
-          <span className="text-[length:var(--exits-text-sm)] font-semibold">
-            {t("signIn.testUser")}
-          </span>
-          <select
-            id="pos-test-user"
-            className="h-[var(--exits-control-height)] min-h-[var(--exits-touch-target-min)] w-full rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 text-[length:var(--exits-text-sm)] text-foreground"
-            defaultValue=""
-            onChange={(event) => {
-              const key = event.target.value;
-              const identity = identities.find(
-                (item) => (item.key ?? item.username ?? item.email) === key,
-              );
-              if (!identity) {
-                return;
-              }
-              const login = loginValueForIdentity(identity);
-              if (login) {
-                onSelectIdentity(login);
-              }
-            }}
-          >
-            <option value="">{t("signIn.selectUser")}</option>
-            {identities.map((identity) => {
-              const value = identity.key ?? identity.username ?? identity.email ?? "";
-              return (
-                <option key={value} value={value}>
-                  {identity.listLabel ||
-                    identity.displayName ||
-                    identity.username ||
-                    identity.email}
-                </option>
-              );
-            })}
-          </select>
-        </label>
-      </div>
-    </details>
+      </span>
+      <select
+        id="pos-test-user"
+        className="h-[var(--exits-control-height)] min-h-[var(--exits-touch-target-min)] w-full rounded-[0.75rem] border border-border bg-surface px-3 text-[length:var(--exits-text-sm)] text-foreground"
+        defaultValue=""
+        onChange={(event) => {
+          const key = event.target.value;
+          const identity = identities.find(
+            (item) => (item.key ?? item.username ?? item.email) === key,
+          );
+          if (!identity) {
+            return;
+          }
+          const login = loginValueForIdentity(identity);
+          if (login) {
+            onSelectIdentity(login);
+          }
+        }}
+      >
+        <option value="">{t("signIn.selectUser")}</option>
+        {identities.map((identity) => {
+          const value = identity.key ?? identity.username ?? identity.email ?? "";
+          return (
+            <option key={value} value={value}>
+              {identity.listLabel ||
+                identity.displayName ||
+                identity.username ||
+                identity.email}
+            </option>
+          );
+        })}
+      </select>
+    </label>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Eye, EyeOff, KeyRound } from "lucide-react";
+import { Eye, EyeOff, Info, LayoutGrid } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,6 +61,7 @@ export function SignInPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(() => readRememberMePreference());
+  const [showUsernameHint, setShowUsernameHint] = useState(false);
   const [signUpName, setSignUpName] = useState("");
   const [signUpEmail, setSignUpEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -266,10 +267,31 @@ export function SignInPage() {
             onChange={(event) => setUsernameOrEmail(event.target.value)}
             required
             disabled={submitting || isOffline}
+            labelAccessory={
+              <button
+                type="button"
+                className="inline-flex size-8 items-center justify-center rounded-full text-[var(--exits-info)] hover:bg-[var(--exits-surface-muted)]"
+                aria-expanded={showUsernameHint}
+                aria-controls="sign-in-username-hint"
+                aria-label={
+                  showUsernameHint ? t("auth.usernameHintHide") : t("auth.usernameHintShow")
+                }
+                data-testid="sign-in-username-hint-toggle"
+                onClick={() => setShowUsernameHint((value) => !value)}
+              >
+                <Info className="size-4" aria-hidden />
+              </button>
+            }
           />
-          <p className="m-0 text-[length:var(--exits-text-sm)] leading-relaxed text-muted">
-            {t("signIn.usernameHint")}
-          </p>
+          {showUsernameHint ? (
+            <p
+              id="sign-in-username-hint"
+              className="m-0 text-[length:var(--exits-text-sm)] leading-relaxed text-muted"
+              data-testid="sign-in-username-hint"
+            >
+              {t("signIn.usernameHint")}
+            </p>
+          ) : null}
           {staffLoginHint ? (
             <p className="m-0 text-[length:var(--exits-text-sm)] leading-relaxed text-muted" data-testid="staff-login-hint">
               {t("signIn.staffLoginHint")}
@@ -302,6 +324,7 @@ export function SignInPage() {
             <label className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)] text-foreground">
               <input
                 type="checkbox"
+                className="auth-remember-checkbox"
                 checked={rememberMe}
                 disabled={submitting}
                 onChange={(event) => setRememberMe(event.target.checked)}
@@ -310,7 +333,7 @@ export function SignInPage() {
             </label>
             <Link
               to="/forgot-password"
-              className="text-[length:var(--exits-text-sm)] font-semibold text-primary hover:underline"
+              className="text-[length:var(--exits-text-sm)] font-semibold text-[var(--exits-info)] hover:underline"
               data-testid="auth-forgot-password-link"
             >
               {t("auth.forgotPassword")}
@@ -319,7 +342,7 @@ export function SignInPage() {
 
           <Button
             type="submit"
-            className="w-full min-h-11"
+            className="auth-submit-button w-full"
             disabled={submitting || isOffline}
             data-testid="sign-in-submit"
           >
@@ -350,7 +373,7 @@ export function SignInPage() {
             required
             disabled={submitting || isOffline}
           />
-          <Button type="submit" className="w-full min-h-11" disabled={submitting || isOffline}>
+          <Button type="submit" className="auth-submit-button w-full" disabled={submitting || isOffline}>
             {submitting ? t("auth.signUpSubmitting") : t("auth.signUpSubmit")}
           </Button>
         </form>
@@ -363,7 +386,8 @@ export function SignInPage() {
           <CircularAuthButton
             testId="auth-facebook-button"
             label={t("auth.continueWithFacebook")}
-            disabled={submitting || isOffline || facebookAvailability === "disabled"}
+            variant="facebook"
+            disabled={submitting || isOffline}
             onClick={() => handleExternalProvider("facebook", facebookAvailability)}
             icon={
               <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden focusable="false">
@@ -377,7 +401,8 @@ export function SignInPage() {
           <CircularAuthButton
             testId="auth-google-button"
             label={t("auth.continueWithGoogle")}
-            disabled={submitting || isOffline || googleAvailability === "disabled"}
+            variant="google"
+            disabled={submitting || isOffline}
             onClick={() => handleExternalProvider("google", googleAvailability)}
             icon={
               <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden focusable="false">
@@ -391,10 +416,10 @@ export function SignInPage() {
           <CircularAuthButton
             testId="auth-pin-button"
             label={t("auth.continueWithPin")}
-            disabled={submitting || !canUsePin}
+            disabled={submitting || (isOffline && !canUsePin)}
             variant="pin"
             onClick={handlePinLogin}
-            icon={<KeyRound className="size-5" aria-hidden />}
+            icon={<LayoutGrid className="size-5" aria-hidden />}
           />
         </div>
         <p className="m-0 text-center text-[length:var(--exits-text-xs)] leading-relaxed text-muted">

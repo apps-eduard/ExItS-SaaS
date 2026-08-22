@@ -27,26 +27,31 @@ export function AuthExperienceLayout({
       data-testid="auth-experience"
     >
       <div
-        className="auth-experience__hero relative shrink-0 bg-primary px-[max(var(--exits-page-padding),env(safe-area-inset-left))] pr-[max(var(--exits-page-padding),env(safe-area-inset-right))] pt-[max(2.5rem,env(safe-area-inset-top))] pb-24 text-primary-foreground sm:pb-28"
+        className="auth-experience__hero relative shrink-0 overflow-hidden bg-primary px-[max(var(--exits-page-padding),env(safe-area-inset-left))] pr-[max(var(--exits-page-padding),env(safe-area-inset-right))] pt-[max(2.75rem,env(safe-area-inset-top))] pb-[5.5rem] text-primary-foreground sm:pb-[6.25rem]"
         data-testid="auth-experience-hero"
       >
-        <div className="mx-auto flex w-full max-w-[28rem] flex-col gap-1 text-center sm:max-w-[32rem] lg:max-w-[36rem]">
-          <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold tracking-[0.18em] uppercase opacity-90">
+        <div className="auth-experience__hero-shapes pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+          <span className="auth-experience__hero-shape auth-experience__hero-shape--one" />
+          <span className="auth-experience__hero-shape auth-experience__hero-shape--two" />
+          <span className="auth-experience__hero-shape auth-experience__hero-shape--three" />
+        </div>
+        <div className="relative mx-auto flex w-full max-w-[28rem] flex-col gap-1 text-center sm:max-w-[32rem] lg:max-w-[36rem]">
+          <p className="m-0 text-[length:var(--exits-text-sm)] font-bold tracking-[0.14em] uppercase sm:text-[length:var(--exits-text-md)]">
             {t("auth.brandLine")}
           </p>
-          <h1 className="m-0 text-[length:var(--exits-text-2xl)] font-bold tracking-tight sm:text-[length:var(--exits-text-3xl)]">
+          <h1 className="m-0 text-[length:var(--exits-text-xl)] font-semibold tracking-tight sm:text-[length:var(--exits-text-2xl)]">
             {t("auth.productLine")}
           </h1>
         </div>
       </div>
 
-      <div className="auth-experience__sheet-wrap relative z-[1] -mt-16 flex flex-1 flex-col overflow-y-auto px-[max(var(--exits-page-padding),env(safe-area-inset-left))] pr-[max(var(--exits-page-padding),env(safe-area-inset-right))] pb-[max(2rem,env(safe-area-inset-bottom))]">
+      <div className="auth-experience__sheet-wrap relative z-[1] -mt-[4.75rem] flex flex-1 flex-col overflow-y-auto px-[max(var(--exits-page-padding),env(safe-area-inset-left))] pr-[max(var(--exits-page-padding),env(safe-area-inset-right))] pb-[max(2rem,env(safe-area-inset-bottom))] sm:-mt-[5.25rem]">
         <div
-          className="auth-experience__sheet mx-auto flex w-full max-w-[min(100%,28rem)] min-w-0 flex-col gap-5 rounded-[1.25rem] border border-border bg-surface p-5 shadow-[0_18px_40px_rgba(20,32,26,0.12)] sm:max-w-[min(100%,30rem)] sm:p-6 md:max-w-[min(100%,32rem)] lg:max-w-[min(100%,32rem)]"
+          className="auth-experience__sheet mx-auto flex w-full max-w-[min(100%,28rem)] min-w-0 flex-col gap-5 rounded-[1.875rem] bg-surface p-5 shadow-[0_20px_48px_rgba(20,32,26,0.14)] sm:max-w-[min(100%,30rem)] sm:p-6 md:max-w-[min(100%,32rem)] lg:max-w-[min(100%,32rem)]"
           data-testid="auth-experience-sheet"
         >
           <div
-            className="grid grid-cols-2 gap-1 rounded-[var(--exits-radius-lg)] bg-[var(--exits-surface-muted)] p-1"
+            className="auth-experience__tabs grid grid-cols-2 border-b border-border"
             role="tablist"
             aria-label={t("auth.tabsLabel")}
           >
@@ -56,9 +61,9 @@ export function AuthExperienceLayout({
               aria-selected={activeTab === "sign-in"}
               data-testid="auth-tab-sign-in"
               className={cn(
-                "min-h-11 rounded-[var(--exits-radius-md)] border-b-2 text-[length:var(--exits-text-sm)] font-semibold transition-colors",
+                "min-h-11 border-b-[3px] px-2 pb-3 text-[length:var(--exits-text-md)] font-semibold transition-colors",
                 activeTab === "sign-in"
-                  ? "border-primary bg-surface text-primary shadow-sm"
+                  ? "border-primary text-primary"
                   : "border-transparent text-muted hover:text-foreground",
               )}
               onClick={() => onTabChange("sign-in")}
@@ -71,9 +76,9 @@ export function AuthExperienceLayout({
               aria-selected={activeTab === "sign-up"}
               data-testid="auth-tab-sign-up"
               className={cn(
-                "min-h-11 rounded-[var(--exits-radius-md)] border-b-2 text-[length:var(--exits-text-sm)] font-semibold transition-colors",
+                "min-h-11 border-b-[3px] px-2 pb-3 text-[length:var(--exits-text-md)] font-semibold transition-colors",
                 activeTab === "sign-up"
-                  ? "border-primary bg-surface text-primary shadow-sm"
+                  ? "border-primary text-primary"
                   : "border-transparent text-muted hover:text-foreground",
               )}
               onClick={() => onTabChange("sign-up")}
@@ -102,7 +107,7 @@ export function AuthOrDivider() {
   return (
     <div className="auth-or-divider flex items-center gap-3" role="separator">
       <span className="h-px flex-1 bg-border" aria-hidden />
-      <span className="text-[length:var(--exits-text-xs)] font-medium uppercase tracking-wide text-muted">
+      <span className="text-[length:var(--exits-text-sm)] font-normal lowercase text-muted">
         {t("auth.orDivider")}
       </span>
       <span className="h-px flex-1 bg-border" aria-hidden />
