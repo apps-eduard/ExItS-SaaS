@@ -3,7 +3,7 @@
 **Status:** COMPLETE
 
 **Starting HEAD:** `ca135d527dad70ebee917e1ba48b49a8f99debf5`  
-**IMPLEMENTATION_COMMIT=`16c7e016c621b12e259dc9c6273ca3b3e8680745`**
+**Implementation commit:** `feat(platform-web): add global catalog product import admin (PWEB-GCAT-03)` on branch `feat/platform-admin-global-catalog-imports`
 
 ## Delivered capability
 
