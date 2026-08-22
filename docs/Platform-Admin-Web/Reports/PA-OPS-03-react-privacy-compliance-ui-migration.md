@@ -4,7 +4,7 @@
 
 Starting HEAD: 5fd2addd6546e8808404fa1b58f2447926207f0b
 Implementation Commit: 18b927ec0112a58697ee9bb0af7e05d7ba2951b0
-Final HEAD: 18b927ec0112a58697ee9bb0af7e05d7ba2951b0
+Final HEAD: 71d5e7ed9cff078b8dcc84b1f086e1b3ec41c594
 Status: COMPLETE
 
 BLAZOR_PRIVACY_FAMILY_REVIEWED=YES — PrivacyComplianceOverview, Documents, Systems, Evidence, CategoryPage (pias/data-inventory/retention/incidents/vendors/dpo-npc), RequirementDrawer, StatusTag, PrivacyComplianceFilters
