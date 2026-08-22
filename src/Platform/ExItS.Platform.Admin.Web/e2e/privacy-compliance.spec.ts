@@ -90,7 +90,14 @@ const sampleEvidence = {
   createdAtUtc: "2026-08-01T00:00:00Z",
 };
 
-async function mockSession(page: Page) {
+async function mockSession(
+  page: Page,
+  permissions: string[] = [
+    "platform.permission.view_privacy_compliance",
+    "platform.permission.view_portfolio",
+    "platform.permission.manage_organizations",
+  ],
+) {
   await page.route("**/api/v1/platform/auth/me", async (route) => {
     await route.fulfill({
       json: {
@@ -116,19 +123,44 @@ async function mockSession(page: Page) {
         actorType: "PlatformUser",
         platformUserId: "22222222-2222-2222-2222-222222222222",
         organizationId: null,
-        permissions: [
-          "platform.permission.view_privacy_compliance",
-          "platform.permission.view_portfolio",
-          "platform.permission.manage_organizations",
-        ],
+        permissions,
       },
+    });
+  });
+  await page.route("**/api/v1/platform/antiforgery/token**", async (route) => {
+    await route.fulfill({
+      json: { headerName: "X-XSRF-TOKEN", token: "test-antiforgery-token" },
     });
   });
 }
 
-async function mockPrivacyApis(page: Page) {
+async function mockPrivacyApis(
+  page: Page,
+  options?: { patchFail?: boolean; initialRequirement?: typeof sampleRequirement },
+) {
+  let requirement = { ...(options?.initialRequirement ?? sampleRequirement) };
   await page.route("**/api/v1/platform/privacy-compliance/**", async (route) => {
     const url = route.request().url();
+    const method = route.request().method().toUpperCase();
+
+    if (method === "PATCH" && url.includes(`/requirements/${requirement.id}`)) {
+      if (options?.patchFail) {
+        await route.fulfill({
+          status: 500,
+          json: { detail: "upstream failure", title: "Error", status: 500 },
+        });
+        return;
+      }
+      const body = route.request().postDataJSON() as { status?: string; notes?: string | null };
+      if (url.endsWith("/status") && typeof body.status === "string") {
+        requirement = { ...requirement, status: body.status };
+      } else if ("notes" in body) {
+        requirement = { ...requirement, notes: body.notes ?? null };
+      }
+      await route.fulfill({ json: requirement });
+      return;
+    }
+
     if (url.includes("/overview")) {
       await route.fulfill({ json: sampleOverview });
       return;
@@ -141,12 +173,12 @@ async function mockPrivacyApis(page: Page) {
       await route.fulfill({ json: [sampleEvidence] });
       return;
     }
-    if (url.includes(`/requirements/${sampleRequirement.id}`) && !url.includes("export")) {
-      await route.fulfill({ json: sampleRequirement });
+    if (url.includes(`/requirements/${requirement.id}`) && !url.includes("export")) {
+      await route.fulfill({ json: requirement });
       return;
     }
     if (url.includes("/requirements")) {
-      await route.fulfill({ json: [sampleRequirement] });
+      await route.fulfill({ json: [requirement] });
       return;
     }
     await route.fulfill({ status: 404, json: { detail: "not found" } });
@@ -187,37 +219,57 @@ test("privacy compliance overview, documents, systems, evidence, and PIA routes"
 });
 
 test("privacy compliance fails closed without permission", async ({ page }) => {
-  await page.route("**/api/v1/platform/auth/me", async (route) => {
-    await route.fulfill({
-      json: {
-        sessionId: "11111111-1111-1111-1111-111111111111",
-        userId: "22222222-2222-2222-2222-222222222222",
-        username: "olivia",
-        displayName: "Olivia Mendoza",
-        email: "olivia@example.test",
-        expiresAtUtc: "2026-08-19T12:00:00Z",
-        absoluteExpiresAtUtc: "2026-08-20T12:00:00Z",
-        selectedOrganizationId: null,
-        selectedOrganizationDisplayName: null,
-        organizationSelectionState: "None",
-        activeOrganizationCount: 0,
-        accountClass: "Platform",
-      },
-    });
-  });
-  await page.route("**/api/v1/platform/authorization/me**", async (route) => {
-    await route.fulfill({
-      json: {
-        actorIdentifier: "olivia@example.test",
-        actorType: "PlatformUser",
-        platformUserId: "22222222-2222-2222-2222-222222222222",
-        organizationId: null,
-        permissions: ["platform.permission.view_portfolio"],
-      },
-    });
-  });
+  await mockSession(page, ["platform.permission.view_portfolio"]);
 
   await page.goto("/admin/privacy-compliance");
   await expect(page.getByRole("heading", { name: /not found/i })).toBeVisible();
   await expect(page.getByTestId("privacy-overview-page")).toHaveCount(0);
+});
+
+test("manage user can edit status and notes", async ({ page }) => {
+  await mockSession(page, [
+    "platform.permission.view_privacy_compliance",
+    "platform.permission.manage_privacy_compliance",
+  ]);
+  await mockPrivacyApis(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/admin/privacy-compliance/documents");
+  await page.getByRole("button", { name: /view details/i }).click();
+  await expect(page.getByTestId("privacy-requirement-manage")).toBeVisible();
+  await page.getByTestId("privacy-requirement-status").selectOption("Approved");
+  await page.getByTestId("privacy-requirement-notes").fill("Reviewed by counsel");
+  await page.getByTestId("privacy-requirement-save").click();
+  await expect(page.getByTestId("privacy-requirement-save-success")).toBeVisible();
+  await expect(page.getByTestId("privacy-requirement-pdf")).toBeVisible();
+});
+
+test("view-only user cannot edit requirement", async ({ page }) => {
+  await mockSession(page, ["platform.permission.view_privacy_compliance"]);
+  await mockPrivacyApis(page, {
+    initialRequirement: { ...sampleRequirement, notes: "Locked note" },
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/admin/privacy-compliance/documents");
+  await page.getByRole("button", { name: /view details/i }).click();
+  await expect(page.getByTestId("privacy-requirement-drawer")).toBeVisible();
+  await expect(page.getByText("Locked note")).toBeVisible();
+  await expect(page.getByTestId("privacy-requirement-pdf")).toBeVisible();
+  await expect(page.getByTestId("privacy-requirement-manage")).toHaveCount(0);
+  await expect(page.getByTestId("privacy-requirement-save")).toHaveCount(0);
+});
+
+test("failed save remains truthful without success feedback", async ({ page }) => {
+  await mockSession(page, [
+    "platform.permission.view_privacy_compliance",
+    "platform.permission.manage_privacy_compliance",
+  ]);
+  await mockPrivacyApis(page, { patchFail: true });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/admin/privacy-compliance/documents");
+  await page.getByRole("button", { name: /view details/i }).click();
+  await page.getByTestId("privacy-requirement-status").selectOption("InProgress");
+  await page.getByTestId("privacy-requirement-save").click();
+  await expect(page.getByTestId("privacy-requirement-save-error")).toBeVisible();
+  await expect(page.getByText("upstream failure")).toBeVisible();
+  await expect(page.getByTestId("privacy-requirement-save-success")).toHaveCount(0);
 });

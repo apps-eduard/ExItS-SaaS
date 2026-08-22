@@ -9,6 +9,7 @@ export const PLATFORM_PERMISSIONS = {
   viewAuditRecords: "platform.permission.view_audit_records",
   viewGlobalCatalog: "platform.permission.view_global_catalog",
   viewPrivacyCompliance: "platform.permission.view_privacy_compliance",
+  managePrivacyCompliance: "platform.permission.manage_privacy_compliance",
 } as const;
 
 export type PlatformPermissionCode =

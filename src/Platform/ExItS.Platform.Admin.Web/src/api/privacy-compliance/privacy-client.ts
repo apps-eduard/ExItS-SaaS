@@ -66,6 +66,34 @@ export function listPrivacyComplianceSystems(
   });
 }
 
+export function updatePrivacyComplianceRequirementStatus(
+  baseUrl: string,
+  requirementId: string,
+  status: string,
+  signal?: AbortSignal,
+): Promise<ComplianceRequirementDto> {
+  return platformRequest<ComplianceRequirementDto>(baseUrl, {
+    path: `${BASE}/requirements/${encodeURIComponent(requirementId)}/status`,
+    method: "PATCH",
+    body: { status },
+    signal,
+  });
+}
+
+export function updatePrivacyComplianceRequirementDetails(
+  baseUrl: string,
+  requirementId: string,
+  details: { notes?: string | null },
+  signal?: AbortSignal,
+): Promise<ComplianceRequirementDto> {
+  return platformRequest<ComplianceRequirementDto>(baseUrl, {
+    path: `${BASE}/requirements/${encodeURIComponent(requirementId)}`,
+    method: "PATCH",
+    body: { notes: details.notes },
+    signal,
+  });
+}
+
 /**
  * Aggregates evidence across requirements (same approach as Blazor Evidence page).
  * Any failed evidence fetch rejects — never invents an empty success.

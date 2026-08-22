@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 type AlertProps = HTMLAttributes<HTMLDivElement> & {
   title: string;
-  tone?: "info" | "danger";
+  tone?: "info" | "danger" | "success";
 };
 
 export function Alert({ title, className, children, tone = "info", ...props }: AlertProps) {
@@ -12,9 +12,9 @@ export function Alert({ title, className, children, tone = "info", ...props }: A
       role={tone === "danger" ? "alert" : "status"}
       className={cn(
         "rounded-[var(--exits-density-radius)] border p-[var(--exits-density-space-unit)]",
-        tone === "danger"
-          ? "border-destructive bg-[var(--exits-danger-bg)] text-destructive"
-          : "border-border bg-[var(--exits-info-bg)] text-info",
+        tone === "danger" && "border-destructive bg-[var(--exits-danger-bg)] text-destructive",
+        tone === "success" && "border-success bg-[var(--exits-success-bg)] text-success",
+        tone === "info" && "border-border bg-[var(--exits-info-bg)] text-info",
         className,
       )}
       {...props}

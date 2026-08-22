@@ -4,7 +4,26 @@ import userEvent from "@testing-library/user-event";
 import { App } from "@/app/App";
 import { jsonResponse, mockAuthenticatedFetch } from "@/test/auth-fixtures";
 
-const sampleRequirement = {
+const sampleRequirement: {
+  id: string;
+  code: string;
+  title: string;
+  category: string;
+  description: string;
+  requirementLevel: string;
+  status: string;
+  ownerRole: string;
+  version: string;
+  effectiveDate: string | null;
+  lastReviewedDate: string | null;
+  nextReviewDate: string | null;
+  notes: string | null;
+  sourceReference: string | null;
+  requiresDpoLegalVerification: boolean;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+  evidenceCount: number;
+} = {
   id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
   code: "DOC-1",
   title: "Privacy Notice",
@@ -63,12 +82,17 @@ function mockPrivacyFetch(options?: {
   overviewBody?: unknown;
   requirements?: unknown[];
   requirementsStatus?: number;
+  requirementDetail?: typeof sampleRequirement;
+  patchStatus?: number;
+  patchBody?: unknown;
 }) {
+  let currentRequirement = { ...(options?.requirementDetail ?? sampleRequirement) };
   const fetchMock = mockAuthenticatedFetch({
     permissions: options?.permissions ?? ["platform.permission.view_privacy_compliance"],
   });
-  fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+  fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
+    const method = (init?.method ?? "GET").toUpperCase();
     if (url.includes("/auth/me")) {
       return jsonResponse(200, {
         sessionId: "11111111-1111-1111-1111-111111111111",
@@ -94,6 +118,9 @@ function mockPrivacyFetch(options?: {
         permissions: options?.permissions ?? ["platform.permission.view_privacy_compliance"],
       });
     }
+    if (url.includes("/antiforgery/token")) {
+      return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "test-antiforgery-token" });
+    }
     if (url.includes("/privacy-compliance/overview")) {
       return jsonResponse(
         options?.overviewStatus ?? 200,
@@ -103,13 +130,35 @@ function mockPrivacyFetch(options?: {
     if (url.includes("/privacy-compliance/requirements/") && url.includes("/evidence")) {
       return jsonResponse(200, []);
     }
-    if (url.includes("/privacy-compliance/requirements/") && !url.includes("?")) {
-      return jsonResponse(200, sampleRequirement);
+    if (
+      method === "PATCH" &&
+      url.includes(`/privacy-compliance/requirements/${currentRequirement.id}`)
+    ) {
+      if ((options?.patchStatus ?? 200) >= 400) {
+        return jsonResponse(
+          options?.patchStatus ?? 500,
+          options?.patchBody ?? { detail: "save failed", title: "Error", status: 500 },
+        );
+      }
+      const body =
+        typeof init?.body === "string" ? (JSON.parse(init.body) as Record<string, unknown>) : {};
+      if (url.endsWith("/status") && typeof body.status === "string") {
+        currentRequirement = { ...currentRequirement, status: body.status };
+      } else if (typeof body.notes === "string" || body.notes === null) {
+        currentRequirement = {
+          ...currentRequirement,
+          notes: typeof body.notes === "string" ? body.notes : null,
+        };
+      }
+      return jsonResponse(200, currentRequirement);
+    }
+    if (url.includes(`/privacy-compliance/requirements/${currentRequirement.id}`)) {
+      return jsonResponse(200, currentRequirement);
     }
     if (url.includes("/privacy-compliance/requirements")) {
       return jsonResponse(
         options?.requirementsStatus ?? 200,
-        options?.requirements ?? [sampleRequirement],
+        options?.requirements ?? [currentRequirement],
       );
     }
     if (url.includes("/privacy-compliance/systems")) {
@@ -178,6 +227,73 @@ describe("Privacy Compliance pages", () => {
     await waitFor(() => {
       expect(screen.getByText("Customer-facing privacy notice")).toBeInTheDocument();
     });
+  });
+
+  it("view-only users can inspect but cannot manage", async () => {
+    const user = userEvent.setup();
+    mockPrivacyFetch({
+      permissions: ["platform.permission.view_privacy_compliance"],
+      requirementDetail: { ...sampleRequirement, notes: "Existing note" },
+    });
+    window.history.replaceState({}, "", "/admin/privacy-compliance/documents");
+    render(<App />);
+    await user.click(await screen.findByRole("button", { name: /view details/i }));
+    expect(await screen.findByTestId("privacy-requirement-drawer")).toBeInTheDocument();
+    expect(await screen.findByText("Existing note")).toBeInTheDocument();
+    expect(screen.getByTestId("privacy-requirement-pdf")).toBeInTheDocument();
+    expect(screen.queryByTestId("privacy-requirement-manage")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("privacy-requirement-save")).not.toBeInTheDocument();
+  });
+
+  it("manage users can update status and notes with success feedback", async () => {
+    const user = userEvent.setup();
+    mockPrivacyFetch({
+      permissions: [
+        "platform.permission.view_privacy_compliance",
+        "platform.permission.manage_privacy_compliance",
+      ],
+    });
+    window.history.replaceState({}, "", "/admin/privacy-compliance/documents");
+    render(<App />);
+    await user.click(await screen.findByRole("button", { name: /view details/i }));
+    expect(await screen.findByTestId("privacy-requirement-manage")).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByTestId("privacy-requirement-status"), "Approved");
+    await user.clear(screen.getByTestId("privacy-requirement-notes"));
+    await user.type(screen.getByTestId("privacy-requirement-notes"), "Reviewed by counsel");
+    await user.click(screen.getByTestId("privacy-requirement-save"));
+
+    expect(await screen.findByTestId("privacy-requirement-save-success")).toBeInTheDocument();
+    expect(screen.getByText(/Requirement updated/i)).toBeInTheDocument();
+    expect(screen.queryByTestId("privacy-requirement-save-error")).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId("privacy-requirement-status")).toHaveValue("Approved");
+    });
+  });
+
+  it("failed save shows truthful error without success feedback", async () => {
+    const user = userEvent.setup();
+    mockPrivacyFetch({
+      permissions: [
+        "platform.permission.view_privacy_compliance",
+        "platform.permission.manage_privacy_compliance",
+      ],
+      patchStatus: 500,
+      patchBody: { detail: "upstream failure", title: "Error", status: 500 },
+    });
+    window.history.replaceState({}, "", "/admin/privacy-compliance/documents");
+    render(<App />);
+    await user.click(await screen.findByRole("button", { name: /view details/i }));
+    await user.selectOptions(
+      await screen.findByTestId("privacy-requirement-status"),
+      "InProgress",
+    );
+    await user.click(screen.getByTestId("privacy-requirement-save"));
+
+    expect(await screen.findByTestId("privacy-requirement-save-error")).toBeInTheDocument();
+    expect(screen.getByText(/Could not update requirement/i)).toBeInTheDocument();
+    expect(screen.getByText(/upstream failure/i)).toBeInTheDocument();
+    expect(screen.queryByTestId("privacy-requirement-save-success")).not.toBeInTheDocument();
   });
 
   it("PIA category route uses existing filter semantics", async () => {
