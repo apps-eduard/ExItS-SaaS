@@ -4,10 +4,13 @@ import {
   createDraftPlanVersion,
   deactivatePlan,
   publishPlanVersion,
+  renamePlan,
   retirePlan,
   updatePlanCommercial,
+  upsertDraftFeatureGrant,
   type CreateDraftPlanVersionBody,
   type UpdatePlanCommercialBody,
+  type UpsertDraftFeatureGrantBody,
 } from "@/api/catalog/plan-mutations-client";
 import {
   activateSubscriptionFromPayment,
@@ -65,6 +68,18 @@ import { env } from "@/lib/env";
 
 const noRetry = { retry: false as const };
 
+function planMutationInvalidation(
+  queryClient: ReturnType<typeof useQueryClient>,
+  plan: { id: string; productCode: string },
+) {
+  return invalidateCommercialQueries(queryClient, {
+    planId: plan.id,
+    productCode: plan.productCode,
+    invalidatePlanVersions: true,
+    invalidateProductFeatures: true,
+  });
+}
+
 export function useUpdatePlanMutation() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -74,11 +89,20 @@ export function useUpdatePlanMutation() {
       planId: string;
       body: UpdatePlanCommercialBody;
     }) => updatePlanCommercial(env.platformApiBaseUrl, input.productCode, input.planId, input.body),
-    onSuccess: (plan) =>
-      invalidateCommercialQueries(queryClient, {
-        planId: plan.id,
-        productCode: plan.productCode,
-      }),
+    onSuccess: (plan) => planMutationInvalidation(queryClient, plan),
+  });
+}
+
+export function useRenamePlanMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: {
+      productCode: string;
+      planId: string;
+      body: { displayName: string; expectedUpdatedAtUtc?: string | null };
+    }) => renamePlan(env.platformApiBaseUrl, input.productCode, input.planId, input.body),
+    onSuccess: (plan) => planMutationInvalidation(queryClient, plan),
   });
 }
 
@@ -88,11 +112,7 @@ export function useActivatePlanMutation() {
     ...noRetry,
     mutationFn: (input: { productCode: string; planId: string }) =>
       activatePlan(env.platformApiBaseUrl, input.productCode, input.planId),
-    onSuccess: (plan) =>
-      invalidateCommercialQueries(queryClient, {
-        planId: plan.id,
-        productCode: plan.productCode,
-      }),
+    onSuccess: (plan) => planMutationInvalidation(queryClient, plan),
   });
 }
 
@@ -102,11 +122,7 @@ export function useDeactivatePlanMutation() {
     ...noRetry,
     mutationFn: (input: { productCode: string; planId: string }) =>
       deactivatePlan(env.platformApiBaseUrl, input.productCode, input.planId),
-    onSuccess: (plan) =>
-      invalidateCommercialQueries(queryClient, {
-        planId: plan.id,
-        productCode: plan.productCode,
-      }),
+    onSuccess: (plan) => planMutationInvalidation(queryClient, plan),
   });
 }
 
@@ -116,11 +132,7 @@ export function useRetirePlanMutation() {
     ...noRetry,
     mutationFn: (input: { productCode: string; planId: string }) =>
       retirePlan(env.platformApiBaseUrl, input.productCode, input.planId),
-    onSuccess: (plan) =>
-      invalidateCommercialQueries(queryClient, {
-        planId: plan.id,
-        productCode: plan.productCode,
-      }),
+    onSuccess: (plan) => planMutationInvalidation(queryClient, plan),
   });
 }
 
@@ -143,6 +155,7 @@ export function useCreateDraftPlanVersionMutation() {
       invalidateCommercialQueries(queryClient, {
         planId: version.planId,
         productCode: version.productCode,
+        invalidatePlanVersions: true,
       }),
   });
 }
@@ -162,6 +175,33 @@ export function usePublishPlanVersionMutation() {
       invalidateCommercialQueries(queryClient, {
         planId: version.planId,
         productCode: version.productCode,
+        invalidatePlanVersions: true,
+      }),
+  });
+}
+
+export function useUpsertDraftFeatureGrantMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: {
+      productCode: string;
+      planId: string;
+      versionNumber: number;
+      body: UpsertDraftFeatureGrantBody;
+    }) =>
+      upsertDraftFeatureGrant(
+        env.platformApiBaseUrl,
+        input.productCode,
+        input.planId,
+        input.versionNumber,
+        input.body,
+      ),
+    onSuccess: (version) =>
+      invalidateCommercialQueries(queryClient, {
+        planId: version.planId,
+        productCode: version.productCode,
+        invalidatePlanVersions: true,
       }),
   });
 }

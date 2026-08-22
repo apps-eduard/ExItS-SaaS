@@ -168,7 +168,7 @@ test("plan detail shows returned pricing fields", async ({ page }) => {
   await mockCatalog(page);
   await page.goto(`/admin/plans/${planId}`);
   await expect(page.getByRole("heading", { name: "Starter" })).toBeVisible();
-  await expect(page.getByText("₱999.00")).toBeVisible();
+  await expect(page.getByLabel("Monthly price")).toHaveValue("999");
 });
 
 test("plan 404 shows not found", async ({ page }) => {

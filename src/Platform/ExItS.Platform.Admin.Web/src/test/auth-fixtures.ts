@@ -137,6 +137,8 @@ export type AuthenticatedFetchOptions = {
   catalogFeatureItems?: Array<Record<string, unknown>>;
   entitlementMutationError?: { status: number; errorCode: string; detail: string };
   onEntitlementMutation?: (method: string, path: string, body: unknown) => void;
+  planMutationError?: { status: number; errorCode: string; detail: string };
+  onPlanMutation?: (method: string, path: string, body: unknown) => void;
   failOrgPayments?: boolean;
   forbiddenOrgPayments?: boolean;
   orgPaymentItems?: Array<Record<string, unknown>>;
@@ -178,6 +180,30 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
       ? entitlementSnapshotItems[0] ?? null
       : options.entitlementLatestSnapshot;
   let featureOverrideItems = [...(options.featureOverrideItems ?? [])];
+  const defaultCatalogPlanItems = [
+    {
+      id: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+      productCode: "pinoy-business-pos",
+      code: "growth",
+      displayName: "Growth",
+      status: "Active",
+      maxBranches: 3,
+      maxActiveStaff: 10,
+      maxActivePosDevices: 3,
+      maxActiveBusinessTypes: 3,
+      customerCreditEnabled: true,
+      advancedReportsEnabled: true,
+      exportEnabled: true,
+      trialAllowed: true,
+      defaultTrialDays: 14,
+      monthlyPrice: 699,
+      annualPrice: 6990,
+      currencyCode: "PHP",
+      updatedAtUtc: "2026-08-01T08:00:00Z",
+    },
+  ];
+  let catalogPlanItems = [...(options.catalogPlanItems ?? defaultCatalogPlanItems)];
+  let catalogPlanVersions = [...(options.catalogPlanVersions ?? [])];
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const path = pathnameOf(url);
@@ -214,10 +240,152 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
         /\/api\/v1\/platform\/catalog\/products\/([^/]+)\/plans$/,
       );
       if (productPlansMatch) {
-        return jsonResponse(200, options.catalogProductPlans ?? []);
+        return jsonResponse(200, options.catalogProductPlans ?? catalogPlanItems);
+      }
+      const planCommercialMatch = path.match(
+        /\/api\/v1\/platform\/catalog\/products\/([^/]+)\/plans\/([0-9a-fA-F-]{36})\/commercial$/,
+      );
+      if (planCommercialMatch && method === "PATCH") {
+        const body = parseBody() as Record<string, unknown>;
+        options.onPlanMutation?.(method, path, body);
+        if (options.planMutationError) {
+          return jsonResponse(options.planMutationError.status, {
+            title: "Error",
+            status: options.planMutationError.status,
+            detail: options.planMutationError.detail,
+            errorCode: options.planMutationError.errorCode,
+          });
+        }
+        const plan = catalogPlanItems.find((item) => item.id === planCommercialMatch[2]);
+        if (!plan) {
+          return jsonResponse(404, { title: "Not Found", status: 404 });
+        }
+        const updated = {
+          ...plan,
+          ...body,
+          updatedAtUtc: new Date().toISOString(),
+        };
+        catalogPlanItems = catalogPlanItems.map((item) =>
+          item.id === planCommercialMatch[2] ? updated : item,
+        );
+        return jsonResponse(200, updated);
+      }
+      const planRenameMatch = path.match(
+        /\/api\/v1\/platform\/catalog\/products\/([^/]+)\/plans\/([0-9a-fA-F-]{36})\/rename$/,
+      );
+      if (planRenameMatch && method === "PATCH") {
+        const body = parseBody() as Record<string, unknown>;
+        options.onPlanMutation?.(method, path, body);
+        const plan = catalogPlanItems.find((item) => item.id === planRenameMatch[2]);
+        if (!plan) {
+          return jsonResponse(404, { title: "Not Found", status: 404 });
+        }
+        const updated = {
+          ...plan,
+          displayName: body.displayName,
+          updatedAtUtc: new Date().toISOString(),
+        };
+        catalogPlanItems = catalogPlanItems.map((item) =>
+          item.id === planRenameMatch[2] ? updated : item,
+        );
+        return jsonResponse(200, updated);
+      }
+      const planLifecycleMatch = path.match(
+        /\/api\/v1\/platform\/catalog\/products\/([^/]+)\/plans\/([0-9a-fA-F-]{36})\/(activate|deactivate|retire)$/,
+      );
+      if (planLifecycleMatch && method === "POST") {
+        options.onPlanMutation?.(method, path, null);
+        const plan = catalogPlanItems.find((item) => item.id === planLifecycleMatch[2]);
+        if (!plan) {
+          return jsonResponse(404, { title: "Not Found", status: 404 });
+        }
+        const nextStatus =
+          planLifecycleMatch[3] === "activate"
+            ? "Active"
+            : planLifecycleMatch[3] === "deactivate"
+              ? "Inactive"
+              : "Retired";
+        const updated = { ...plan, status: nextStatus, updatedAtUtc: new Date().toISOString() };
+        catalogPlanItems = catalogPlanItems.map((item) =>
+          item.id === planLifecycleMatch[2] ? updated : item,
+        );
+        return jsonResponse(200, updated);
+      }
+      const draftVersionMatch = path.match(
+        /\/api\/v1\/platform\/catalog\/products\/([^/]+)\/plans\/([0-9a-fA-F-]{36})\/versions\/draft$/,
+      );
+      if (draftVersionMatch && method === "POST") {
+        const body = parseBody() as Record<string, unknown>;
+        options.onPlanMutation?.(method, path, body);
+        const version = {
+          id: crypto.randomUUID(),
+          planId: draftVersionMatch[2],
+          productCode: draftVersionMatch[1],
+          versionNumber: body.versionNumber,
+          status: "Draft",
+          billingPeriod: body.billingPeriod ?? "Monthly",
+          trialEligible: body.trialEligible ?? false,
+          grants: body.grants ?? [],
+        };
+        catalogPlanVersions = [...catalogPlanVersions, version];
+        return jsonResponse(201, version);
+      }
+      const publishVersionMatch = path.match(
+        /\/api\/v1\/platform\/catalog\/products\/([^/]+)\/plans\/([0-9a-fA-F-]{36})\/versions\/(\d+)\/publish$/,
+      );
+      if (publishVersionMatch && method === "POST") {
+        options.onPlanMutation?.(method, path, null);
+        const versionNumber = Number.parseInt(publishVersionMatch[3]!, 10);
+        const version = catalogPlanVersions.find(
+          (item) =>
+            item.planId === publishVersionMatch[2] && item.versionNumber === versionNumber,
+        );
+        if (!version) {
+          return jsonResponse(404, { title: "Not Found", status: 404 });
+        }
+        const updated = { ...version, status: "Published" };
+        catalogPlanVersions = catalogPlanVersions.map((item) =>
+          item.id === version.id ? updated : item,
+        );
+        return jsonResponse(200, updated);
+      }
+      const featureGrantMatch = path.match(
+        /\/api\/v1\/platform\/catalog\/products\/([^/]+)\/plans\/([0-9a-fA-F-]{36})\/versions\/(\d+)\/feature-grants\/([^/]+)$/,
+      );
+      if (featureGrantMatch && method === "PUT") {
+        const body = parseBody() as Record<string, unknown>;
+        options.onPlanMutation?.(method, path, body);
+        const versionNumber = Number.parseInt(featureGrantMatch[3]!, 10);
+        const featureCode = decodeURIComponent(featureGrantMatch[4]!);
+        const version = catalogPlanVersions.find(
+          (item) =>
+            item.planId === featureGrantMatch[2] && item.versionNumber === versionNumber,
+        );
+        if (!version) {
+          return jsonResponse(404, { title: "Not Found", status: 404 });
+        }
+        const grants = Array.isArray(version.grants) ? [...version.grants] : [];
+        const nextGrant = {
+          featureCode,
+          enabled: body.enabled === true,
+          numericLimit: body.numericLimit ?? null,
+        };
+        const index = grants.findIndex(
+          (grant) => (grant as { featureCode?: string }).featureCode === featureCode,
+        );
+        if (index >= 0) {
+          grants[index] = nextGrant;
+        } else {
+          grants.push(nextGrant);
+        }
+        const updated = { ...version, grants };
+        catalogPlanVersions = catalogPlanVersions.map((item) =>
+          item.id === version.id ? updated : item,
+        );
+        return jsonResponse(200, updated);
       }
       if (/\/plans\/[^/]+\/versions$/.test(path)) {
-        return jsonResponse(200, options.catalogPlanVersions ?? []);
+        return jsonResponse(200, catalogPlanVersions);
       }
       if (/\/trials$/.test(path)) {
         return jsonResponse(200, options.catalogTrials ?? []);
@@ -305,17 +473,7 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
         if (options.failCatalogPlanDetail) {
           return jsonResponse(500, { title: "Error", status: 500 });
         }
-        const items = options.catalogPlanItems ?? [
-          {
-            id: "dddddddd-dddd-dddd-dddd-dddddddddddd",
-            productCode: "future-product-x",
-            code: "starter",
-            displayName: "Starter",
-            status: "Active",
-            monthlyPrice: 999,
-            currencyCode: "PHP",
-          },
-        ];
+        const items = catalogPlanItems;
         const match = items.find((item) => item.id === planDetailMatch[1]);
         if (!match) {
           return jsonResponse(404, { title: "Not Found", status: 404 });
@@ -328,17 +486,7 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
       if (options.failCatalogPlans) {
         return jsonResponse(500, { title: "Error", status: 500 });
       }
-      const items = options.catalogPlanItems ?? [
-        {
-          id: "dddddddd-dddd-dddd-dddd-dddddddddddd",
-          productCode: "future-product-x",
-          code: "starter",
-          displayName: "Starter",
-          status: "Active",
-          monthlyPrice: 999,
-          currencyCode: "PHP",
-        },
-      ];
+      const items = catalogPlanItems;
       return jsonResponse(200, pagedJson(items, items.length, 20));
     }
     if (path.endsWith("/health/ready") || path.endsWith("/health")) {

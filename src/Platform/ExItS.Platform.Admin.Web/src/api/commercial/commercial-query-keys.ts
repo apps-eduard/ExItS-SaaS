@@ -22,6 +22,8 @@ export type CommercialInvalidationScope = {
   productCode?: string;
   productId?: string;
   planId?: string;
+  invalidatePlanVersions?: boolean;
+  invalidateProductFeatures?: boolean;
 };
 
 export type QueryInvalidator = {
@@ -48,6 +50,12 @@ export async function invalidateCommercialQueries(
     }
     if (scope.productCode) {
       enqueue(["catalog-products", "plans", scope.productCode]);
+      if (scope.invalidateProductFeatures) {
+        enqueue(["catalog-products", "features", scope.productCode]);
+      }
+      if (scope.invalidatePlanVersions && scope.planId) {
+        enqueue(["catalog-plans", "versions", scope.productCode, scope.planId]);
+      }
     }
     if (scope.productId) {
       enqueue(["catalog-products", "detail", scope.productId]);
