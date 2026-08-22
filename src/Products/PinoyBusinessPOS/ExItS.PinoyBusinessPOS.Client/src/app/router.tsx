@@ -28,6 +28,9 @@ import {
 } from "@/features/personal/utang/PersonalUtangPages";
 import { PersonalCustomerLinksPage } from "@/features/personal/customer-links/PersonalCustomerLinksPage";
 import { LinkedMerchantsPage } from "@/features/customer-ordering/LinkedMerchantsPage";
+import { LinkedMerchantReceiptPage } from "@/features/personal/linked-merchants/LinkedMerchantReceiptPage";
+import { LinkedMerchantStatementPage } from "@/features/personal/linked-merchants/LinkedMerchantStatementPage";
+import { PersonalRewardsPage } from "@/features/personal/linked-merchants/PersonalRewardsPage";
 import { MerchantShopPage } from "@/features/customer-ordering/MerchantShopPage";
 import { MerchantCheckoutPage } from "@/features/customer-ordering/MerchantCheckoutPage";
 import { MyOrdersPage } from "@/features/customer-ordering/MyOrdersPage";
@@ -224,6 +227,14 @@ export const appRoutes = [
               { path: "customer-links", element: <PersonalCustomerLinksPage /> },
               { path: "linked-merchants", element: <LinkedMerchantsPage /> },
               {
+                path: "linked-merchants/:organizationId/:businessCustomerId",
+                element: <LinkedMerchantStatementPage />,
+              },
+              {
+                path: "linked-merchants/:organizationId/:businessCustomerId/receipts/:saleId",
+                element: <LinkedMerchantReceiptPage />,
+              },
+              {
                 path: "linked-merchants/:organizationId/shop",
                 element: <MerchantShopPage />,
               },
@@ -233,6 +244,7 @@ export const appRoutes = [
               },
               { path: "orders", element: <MyOrdersPage /> },
               { path: "orders/:orderId", element: <MyOrderDetailPage /> },
+              { path: "rewards", element: <PersonalRewardsPage /> },
             ],
           },
           {

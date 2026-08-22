@@ -74,13 +74,27 @@ export function LinkedMerchantsPage() {
                 <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                   {merchant.customerDisplayName}
                 </p>
-                {merchant.canCustomerOrder ? (
-                  <Button asChild className="min-h-11 w-fit" data-testid="open-merchant-shop">
-                    <Link to={`/personal/linked-merchants/${merchant.organizationId}/shop`}>
-                      {t("personal.shopLink")}
+                <div className="flex flex-wrap gap-2">
+                  <Button asChild className="min-h-11 w-fit" data-testid="open-merchant-statement">
+                    <Link
+                      to={`/personal/linked-merchants/${merchant.organizationId}/${merchant.businessCustomerId}`}
+                    >
+                      {t("personal.merchantStatement.openPurchases")}
                     </Link>
                   </Button>
-                ) : null}
+                  {merchant.canCustomerOrder ? (
+                    <Button
+                      asChild
+                      variant="ghost"
+                      className="min-h-11 w-fit"
+                      data-testid="open-merchant-shop"
+                    >
+                      <Link to={`/personal/linked-merchants/${merchant.organizationId}/shop`}>
+                        {t("personal.shopLink")}
+                      </Link>
+                    </Button>
+                  ) : null}
+                </div>
               </Card>
             </li>
           ))}

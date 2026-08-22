@@ -118,6 +118,7 @@ export const hilPH: Record<keyof typeof en, string> = {
     "Buksan ang Utang isa ka beses samtang online, dayon mahimo na offline.",
   "offline.requiredPersonalTodoShare": "Kinahanglan internet sa pag-share sang to-do.",
   "offline.requiredContextSwitch": "Kinahanglan internet para magbalhin sa negosyo.",
+  "offline.requiredHistory": "Kinahanglan internet ang purchase history.",
   "offline.todoCachedNotice":
     "Gina-tipigan nga to-do ang ginapakita. Maga-refresh kon makakonektar liwat.",
   "offline.todoWillQueue":
@@ -1810,6 +1811,48 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.merchantsEmptyTitle": "No connected stores",
   "personal.merchantsEmptyDetail":
     "When a business links your Personal account as a customer, it appears here for ordering.",
+  "personal.merchantStatement.openPurchases": "Mga purchase kag activity",
+  "personal.merchantStatement.title": "Merchant activity",
+  "personal.merchantStatement.lede":
+    "Outstanding balance kag recent purchases gikan sa linked store (read-only).",
+  "personal.merchantStatement.backToStores": "Balik sa mga store",
+  "personal.merchantStatement.outstandingLabel": "Current balance",
+  "personal.merchantStatement.openDebtSection": "Open debt activity",
+  "personal.merchantStatement.openDebtEmptyTitle": "Wala sing open-debt rows",
+  "personal.merchantStatement.openDebtEmptyDetail":
+    "May outstanding balance, pero wala sing open-debt activity rows nga ginsubli.",
+  "personal.merchantStatement.recentSection": "Recent activity",
+  "personal.merchantStatement.recentEmptyTitle": "Wala sing recent activity",
+  "personal.merchantStatement.recentEmptyDetail":
+    "Mag-appear diri ang recent purchases kag Utang activity kon available.",
+  "personal.merchantStatement.olderSection": "Mas daan nga settled history",
+  "personal.merchantStatement.olderLoad": "I-load ang mas daan nga history",
+  "personal.merchantStatement.olderEmptyTitle": "Wala sing mas daan nga settled rows",
+  "personal.merchantStatement.olderEmptyDetail":
+    "Wala sing mas daan nga settled activity nga ginsubli para sa sini nga store.",
+  "personal.merchantStatement.historyLockedTitle": "Extended history locked",
+  "personal.merchantStatement.historyLocked":
+    "Kinahanglan ang Personal extended-history entitlement para sa mas daan nga settled records.",
+  "personal.merchantStatement.historyUnlock": "Abri ang rewards",
+  "personal.merchantStatement.loadMore": "Load more",
+  "personal.merchantStatement.openReceipt": "Abri ang receipt",
+  "personal.merchantStatement.errorTitle": "Indi ma-load ang activity",
+  "personal.merchantStatement.loadFailed": "Indi ma-load ang merchant activity. Tilawi liwat.",
+  "personal.merchantStatement.deniedTitle": "Access denied",
+  "personal.merchantStatement.denied": "Wala ka authorization sa activity sini nga store.",
+  "personal.merchantStatement.missingTitle": "Wala makita",
+  "personal.merchantStatement.missing": "Wala makita ini nga linked store activity.",
+  "personal.merchantReceipt.backToStatement": "Balik sa activity",
+  "personal.merchantReceipt.lede": "Mga sale line gikan sa merchant ledger (read-only).",
+  "personal.merchantReceipt.linesSection": "Lines",
+  "personal.merchantReceipt.errorTitle": "Indi ma-load ang receipt",
+  "personal.merchantReceipt.loadFailed": "Indi ma-load ang receipt. Tilawi liwat.",
+  "personal.merchantReceipt.missingTitle": "Wala makita ang receipt",
+  "personal.merchantReceipt.missing": "Wala makita ini nga receipt.",
+  "personal.rewards.title": "Rewards",
+  "personal.rewards.lede": "Personal reward points kag feature unlocks.",
+  "personal.rewards.comingSoon":
+    "Mo-abot sa sunod nga update ang reward balance kag redemption. Diri man ang extended history unlock.",
   "personal.shopLink": "Shop",
   "personal.shopLede": "Browse available products for pickup or delivery.",
   "personal.backToMerchants": "Back to stores",

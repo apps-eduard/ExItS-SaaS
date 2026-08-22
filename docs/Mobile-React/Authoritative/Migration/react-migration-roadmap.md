@@ -162,12 +162,13 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 
 | Field     | Content                                                                                                               |
 | --------- | --------------------------------------------------------------------------------------------------------------------- |
-| Status    | **NOT STARTED**                                                                                                       |
+| Status    | **COMPLETE**                                                                                                          |
+| Report    | [POS-REACT-RMAP-B04-linked-buyer-purchase-history.md](../../Reports/POS-REACT-RMAP-B04-linked-buyer-purchase-history.md) |
 | Objective | Read-only projection of seller-owned Completed sales into authenticated Personal/Organization buyer purchase history  |
 | Blocking? | YES for buyer purchase-history UI                                                                                     |
 | Rules     | Seller Sale remains authoritative; no ownership transfer; no cross-org DB shortcut; privacy/retention review required |
-| UI later  | RMAP-13 / RMAP-22 / Organization purchase-history surfaces                                                            |
-| Next      | Do not implement until authorized                                                                                     |
+| Delivered | Personal linked-merchant statement + lazy receipt (Phase-24 APIs); Organization buyer **unsupported** (no API contract) |
+| Next      | RMAP-23 hardening                                                                                                     |
 
 ---
 
