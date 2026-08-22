@@ -69,4 +69,22 @@ describe("workspace bind error classification", () => {
     expect(failure.kind).toBe("branch_not_accessible");
     expect(workspaceBindFailureTitleKey(failure.kind)).toBe("accessDenied.branchTitle");
   });
+
+  it("empty branch-context payload maps to branch_not_accessible", () => {
+    const failure = classifyWorkspaceBindFailure({
+      status: 400,
+      errorCode: "application.branch.not_found",
+      detail: "BranchId cannot be an empty GUID.",
+    });
+    expect(failure.kind).toBe("branch_not_accessible");
+  });
+
+  it("platform branch access denied maps to branch_not_accessible", () => {
+    const failure = classifyWorkspaceBindFailure({
+      status: 403,
+      errorCode: "application.branch.access_denied",
+      detail: "You are not authorized to access this branch in the current organization.",
+    });
+    expect(failure.kind).toBe("branch_not_accessible");
+  });
 });

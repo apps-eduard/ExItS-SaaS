@@ -4,33 +4,21 @@ Production-equivalent **local deployment** for validation. Same application code
 
 **Not** packaging (`compose.yaml`). Does **not** close Phase 16 or start Phase 17. Production topology template remains `compose.production.yaml`.
 
-## FAST host mode (preferred daily command)
+## Default owner-equivalent validation (FULL Docker)
 
 From repository root:
 
 ```powershell
-.\tools\Start-LocalValidation.ps1
+.\tools\Start-DockerLocalValidation.ps1 -Build
 ```
 
-This keeps PostgreSQL and Mailpit in Docker while all five apps run with `dotnet watch`.
-It is the daily coding default because source changes rebuild quickly. If FULL Docker mode
-is running, this command automatically stops only its app containers; infrastructure and
-database volumes remain.
-
-## FULL Docker mode
-
-Use the production-shaped container topology for end-to-end image validation:
-
-```powershell
-.\tools\Start-DockerLocalValidation.ps1
-```
+This is the **default Local Validation mode** for owner-equivalent end-to-end checks. It runs the full application stack in Docker (Platform API `:8091`, POS API `:8092`, Admin `:8090`, org/personal web, PostgreSQL, Mailpit).
 
 The launcher automatically stops repo-scoped host apps before claiming ports 8090-8094.
 Use `-Build` to rebuild changed images during startup, or `-CleanBuild` for a no-cache image
 build. Neither option removes database volumes.
 
 ```powershell
-.\tools\Start-DockerLocalValidation.ps1 -Build
 .\tools\Start-DockerLocalValidation.ps1 -CleanBuild
 ```
 
@@ -41,6 +29,18 @@ Stop Docker apps while leaving PostgreSQL and Mailpit running:
 ```
 
 Add `-StopInfrastructure` to stop PostgreSQL and Mailpit too; volumes are still preserved.
+
+## Optional host debug mode (developer / tracing)
+
+For faster edit/rebuild cycles during development:
+
+```powershell
+.\tools\Start-LocalValidation.ps1
+```
+
+This keeps PostgreSQL and Mailpit in Docker while all five apps run with `dotnet watch`.
+If FULL Docker mode is running, this command automatically stops only its app containers; infrastructure and
+database volumes remain. Host debug mode must **not** replace Docker for final owner-equivalent acceptance.
 
 Full operator guide: [`README.local-validation-workflow.md`](README.local-validation-workflow.md).
 

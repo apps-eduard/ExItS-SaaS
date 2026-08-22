@@ -1,5 +1,5 @@
 /**
- * Live Local Validation harness for POS-HOTFIX-01.
+ * Live Local Validation harness for POS workspace bind (HOTFIX-01/02/03).
  * Reads LOCAL_VALIDATION_SHARED_PASSWORD from deploy/docker/.env.local-validation when unset.
  */
 import { readFileSync } from "node:fs";
@@ -7,6 +7,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const POS_ORIGIN = process.env.POS_ORIGIN ?? "http://127.0.0.1:5177";
+const POS_API_ORIGIN = process.env.POS_API_ORIGIN ?? "http://127.0.0.1:8092";
 const PLATFORM_PREFIX = `${POS_ORIGIN}/platform-api`;
 const ORG_ID = "ca023f5b-925e-4aa5-a843-d48c4c06fa14";
 
@@ -26,6 +27,11 @@ function loadSharedPassword() {
   return match[1].trim();
 }
 
+function resolvePlatformBranchId(branch) {
+  const resolved = branch?.id ?? branch?.branchId ?? branch?.Id ?? branch?.BranchId ?? null;
+  return typeof resolved === "string" && resolved.trim().length > 0 ? resolved.trim() : null;
+}
+
 const jar = new Map();
 
 function storeSetCookies(response) {
@@ -43,14 +49,15 @@ function cookieHeader() {
   return [...jar.entries()].map(([k, v]) => `${k}=${v}`).join("; ");
 }
 
-async function request(path, { method = "GET", body, xsrf } = {}) {
+async function request(path, { method = "GET", body, xsrf, base = PLATFORM_PREFIX, bearer } = {}) {
   const headers = {
     Accept: "application/json",
     ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
     ...(xsrf ? { "X-XSRF-TOKEN": xsrf } : {}),
+    ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
     ...(cookieHeader() ? { Cookie: cookieHeader() } : {}),
   };
-  const response = await fetch(`${PLATFORM_PREFIX}${path}`, {
+  const response = await fetch(`${base}${path}`, {
     method,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -72,6 +79,79 @@ async function bootstrapToken() {
     throw new Error(`ANTIFORGERY_TOKEN_ENDPOINT=BLOCKER status=${tokenRes.status}`);
   }
   return tokenRes.json.token;
+}
+
+async function bindBranch(branch) {
+  const branchId = resolvePlatformBranchId(branch);
+  if (!branchId) {
+    throw new Error(`branch list missing id for ${branch?.name ?? "unknown branch"}`);
+  }
+
+  const orgToken = await bootstrapToken();
+  let res = await request("/api/v1/platform/auth/organization-context", {
+    method: "PUT",
+    body: { organizationId: ORG_ID },
+    xsrf: orgToken,
+  });
+  if (res.status >= 400) {
+    throw new Error(
+      `org-context ${branch.name} status=${res.status} errorCode=${res.json?.errorCode ?? "?"}`,
+    );
+  }
+
+  const branchToken = await bootstrapToken();
+  res = await request(`/api/v1/platform/organizations/${ORG_ID}/branch-context`, {
+    method: "PUT",
+    body: { branchId },
+    xsrf: branchToken,
+  });
+  if (res.status >= 400) {
+    throw new Error(
+      `branch-context ${branch.name} status=${res.status} errorCode=${res.json?.errorCode ?? "?"} branchId=${branchId}`,
+    );
+  }
+
+  const grantToken = await bootstrapToken();
+  res = await request("/api/v1/platform/auth/token", {
+    method: "POST",
+    body: {
+      grantType: "session",
+      organizationId: ORG_ID,
+      productCode: "pinoy-business-pos",
+    },
+    xsrf: grantToken,
+  });
+  if (res.status >= 400) {
+    throw new Error(
+      `session-grant ${branch.name} status=${res.status} errorCode=${res.json?.errorCode ?? "?"}`,
+    );
+  }
+
+  const accessToken = res.json?.accessToken;
+  if (!accessToken) {
+    throw new Error(`session-grant ${branch.name} missing accessToken`);
+  }
+
+  const pos = await request(
+    "/api/v1/pos/operational-branch",
+    {
+      method: "PUT",
+      base: POS_API_ORIGIN,
+      bearer: accessToken,
+      body: {
+        branchId,
+        fromBranchId: null,
+        deviceBoundBranchId: null,
+      },
+    },
+  );
+  if (pos.status >= 400) {
+    throw new Error(
+      `pos-operational-branch ${branch.name} status=${pos.status} errorCode=${pos.json?.errorCode ?? "?"}`,
+    );
+  }
+
+  return { branchId, accessToken };
 }
 
 async function main() {
@@ -107,34 +187,6 @@ async function main() {
   const main = branchList.find((b) => /main branch/i.test(b.name ?? ""));
   const second = branchList.find((b) => /kizy store 02/i.test(b.name ?? ""));
 
-  async function bindBranch(branch) {
-    const fresh = await bootstrapToken();
-    let res = await request("/api/v1/platform/auth/organization-context", {
-      method: "PUT",
-      body: { organizationId: ORG_ID },
-      xsrf: fresh,
-    });
-    if (res.status >= 400) throw new Error(`org-context ${branch.name} status=${res.status}`);
-    const branchToken = await bootstrapToken();
-    res = await request(`/api/v1/platform/organizations/${ORG_ID}/branch-context`, {
-      method: "PUT",
-      body: { branchId: branch.branchId },
-      xsrf: branchToken,
-    });
-    if (res.status >= 400) throw new Error(`branch-context ${branch.name} status=${res.status}`);
-    const grantToken = await bootstrapToken();
-    res = await request("/api/v1/platform/auth/token", {
-      method: "POST",
-      body: {
-        grantType: "session",
-        organizationId: ORG_ID,
-        productCode: "pinoy-business-pos",
-      },
-      xsrf: grantToken,
-    });
-    if (res.status >= 400) throw new Error(`session-grant ${branch.name} status=${res.status}`);
-  }
-
   if (main) await bindBranch(main);
   if (second) await bindBranch(second);
 
@@ -160,6 +212,8 @@ async function main() {
         ANTIFORGERY_HEADER_PRESENT: "YES",
         WORKSPACE_MAIN_BRANCH_LIVE: main ? "PASS" : "BLOCKER",
         WORKSPACE_SECOND_BRANCH_LIVE: second ? "PASS" : "BLOCKER",
+        SESSION_GRANT_AFTER_BRANCH_BIND: main && second ? "PASS" : "BLOCKER",
+        POS_API_AFTER_BRANCH_BIND: main && second ? "PASS" : "BLOCKER",
         LOGOUT_LIVE: "PASS",
         LOGIN_AFTER_LOGOUT_LIVE: relogin.status === 200 ? "PASS" : "BLOCKER",
         ME_AFTER_LOGOUT: me.status,

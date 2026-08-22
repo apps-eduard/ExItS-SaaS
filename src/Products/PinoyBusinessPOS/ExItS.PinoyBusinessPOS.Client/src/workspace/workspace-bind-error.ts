@@ -42,7 +42,13 @@ export function classifyWorkspaceBindFailure(input: {
   status?: number | null;
   errorCode?: string | null;
   detail?: string | null;
-  reason?: "context" | "grant" | "access_denied" | null;
+  reason?:
+    | "organization_context"
+    | "branch_context"
+    | "grant"
+    | "access_denied"
+    | "context"
+    | null;
 }): WorkspaceBindFailure {
   const detail = input.detail?.trim() || null;
   const errorCode = input.errorCode?.trim() || null;
@@ -104,8 +110,12 @@ export function classifyWorkspaceBindFailure(input: {
 
   if (
     status === 404 ||
+    errorCode === "application.branch.not_found" ||
+    errorCode === "application.branch.not_selectable" ||
+    errorCode === "application.branch.access_denied" ||
     errorCode === "pos.customer_order.branch.not_found" ||
-    (detail !== null && /selected branch is not an Active branch/i.test(detail))
+    (detail !== null && /selected branch is not an Active branch/i.test(detail)) ||
+    (detail !== null && /BranchId cannot be an empty GUID/i.test(detail))
   ) {
     return {
       kind: "branch_not_accessible",

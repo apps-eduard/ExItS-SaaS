@@ -28,7 +28,10 @@ internal static class PosProductionSecurityGuard
     public static void ValidateOrThrow(WebApplicationBuilder builder)
     {
         var env = builder.Environment;
-        if (PosDevelopmentEnvironment.IsApprovedDevelopmentEnvironment(env))
+        var localValidationEnabled = builder.Configuration.GetValue<bool>("LocalValidation:Enabled")
+            && !env.IsProduction();
+
+        if (PosDevelopmentEnvironment.IsApprovedDevelopmentEnvironment(env) || localValidationEnabled)
         {
             return;
         }
@@ -71,9 +74,6 @@ internal static class PosProductionSecurityGuard
             throw new InvalidOperationException(
                 "Production requires an explicit AllowedHosts value (wildcard '*' is not allowed).");
         }
-
-        var localValidationEnabled = builder.Configuration.GetValue<bool>("LocalValidation:Enabled")
-            && !env.IsProduction();
 
         var platformAuthBaseUrl = builder.Configuration[$"{PlatformAuthOptions.SectionName}:BaseUrl"];
         if (!string.IsNullOrWhiteSpace(platformAuthBaseUrl))

@@ -59,6 +59,20 @@ export type PlatformBranch = {
   customerOrderingReady?: boolean;
 };
 
+/** ListBranches returns `id`; some harnesses still read legacy `branchId`. */
+export function resolvePlatformBranchId(
+  branch: Pick<PlatformBranch, "id"> & { branchId?: string | null },
+): string | null {
+  const resolved = branch.id?.trim() || branch.branchId?.trim() || null;
+  return resolved && resolved.length > 0 ? resolved : null;
+}
+
+export type WorkspaceBindFailureReason =
+  | "organization_context"
+  | "branch_context"
+  | "grant"
+  | "access_denied";
+
 export type SessionGrantResponse = {
   accessToken: string;
   productAccessAllowed: boolean;
@@ -349,19 +363,29 @@ export async function bindWorkspaceWithSessionGrant(
   | { ok: true; grant: SessionGrantResponse }
   | {
       ok: false;
-      reason: "context" | "grant" | "access_denied";
+      reason: WorkspaceBindFailureReason;
       status: number;
       body: PlatformProblem | null;
     }
 > {
   const orgContext = await setOrganizationContext(organizationId);
   if (!orgContext.ok) {
-    return { ok: false, reason: "context", status: orgContext.status, body: orgContext.body };
+    return {
+      ok: false,
+      reason: "organization_context",
+      status: orgContext.status,
+      body: orgContext.body,
+    };
   }
 
   const branchContext = await setBranchContext(organizationId, branchId);
   if (!branchContext.ok) {
-    return { ok: false, reason: "context", status: branchContext.status, body: branchContext.body };
+    return {
+      ok: false,
+      reason: "branch_context",
+      status: branchContext.status,
+      body: branchContext.body,
+    };
   }
 
   const grantResult = await issueSessionGrant(organizationId);
@@ -398,14 +422,19 @@ export async function bindOrganizationManagementGrant(organizationId: string): P
   | { ok: true; grant: SessionGrantResponse }
   | {
       ok: false;
-      reason: "context" | "grant" | "access_denied";
+      reason: WorkspaceBindFailureReason;
       status: number;
       body: PlatformProblem | null;
     }
 > {
   const orgContext = await setOrganizationContext(organizationId);
   if (!orgContext.ok) {
-    return { ok: false, reason: "context", status: orgContext.status, body: orgContext.body };
+    return {
+      ok: false,
+      reason: "organization_context",
+      status: orgContext.status,
+      body: orgContext.body,
+    };
   }
 
   const grantResult = await issueSessionGrant(organizationId);

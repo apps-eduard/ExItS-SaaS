@@ -10,7 +10,11 @@ import {
   type ReactNode,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import type { BrowserSessionSnapshot } from "@/api/platform/browser-session";
+import {
+  AUTH_ORGANIZATION_CONTEXT_PATH,
+  AUTH_TOKEN_PATH,
+  type BrowserSessionSnapshot,
+} from "@/api/platform/browser-session";
 import { clearPosAccessToken } from "@/api/platform/pos-access-token";
 import { clearPosSessionGrant, getPosSessionGrant } from "@/api/platform/pos-session-grant";
 import {
@@ -21,6 +25,7 @@ import {
   probeOrganizationSessionGrant,
   type PlatformBranch,
   type SessionGrantResponse,
+  type WorkspaceBindFailureReason,
 } from "@/api/platform/platform-auth-client";
 import { clearPlatformAntiforgeryToken } from "@/api/platform/platform-http";
 import { selectOperationalBranch } from "@/api/pos/operational-branch-client";
@@ -81,6 +86,39 @@ type WorkspaceContextValue = {
 };
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
+
+function workspaceBindFailureDiagnosticContext(reason: WorkspaceBindFailureReason): {
+  operation: string;
+  httpMethod: "PUT" | "POST";
+  path: string;
+} {
+  switch (reason) {
+    case "organization_context":
+      return {
+        operation: "organization context",
+        httpMethod: "PUT",
+        path: AUTH_ORGANIZATION_CONTEXT_PATH,
+      };
+    case "branch_context":
+      return {
+        operation: "Select branch",
+        httpMethod: "PUT",
+        path: "/api/v1/platform/organizations/{organizationId}/branch-context",
+      };
+    case "grant":
+      return {
+        operation: "workspace session grant",
+        httpMethod: "POST",
+        path: AUTH_TOKEN_PATH,
+      };
+    default:
+      return {
+        operation: "workspace session grant",
+        httpMethod: "POST",
+        path: AUTH_TOKEN_PATH,
+      };
+  }
+}
 
 function findBranchLabel(
   workspaces: AccessibleOrganizationWorkspace[],
@@ -498,12 +536,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           errorCode: result.body?.errorCode,
           detail: result.body?.detail,
         });
-        const bindPath =
-          result.reason === "context"
-            ? "/api/v1/platform/auth/organization-context"
-            : result.reason === "grant"
-              ? "/api/v1/platform/auth/token"
-              : "/api/v1/platform/auth/token";
+        const diagnosticContext = workspaceBindFailureDiagnosticContext(result.reason);
         denyBind(
           classified.kind,
           classified.technicalDetail,
@@ -511,10 +544,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           normalizePosError({
             source: "workspace",
             error: new PlatformApiError(result.status, result.body ?? {}),
-            operation:
-              result.reason === "context" ? "organization context" : "workspace session grant",
-            httpMethod: result.reason === "context" ? "PUT" : "POST",
-            path: bindPath,
+            operation: diagnosticContext.operation,
+            httpMethod: diagnosticContext.httpMethod,
+            path: diagnosticContext.path,
             screen: "Choose workspace",
             accountClass: sessionAccountClass(activeSession) ?? undefined,
             organizationName:
