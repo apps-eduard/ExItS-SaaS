@@ -83,35 +83,39 @@ internal sealed class PosPlatformBearerMiddleware(RequestDelegate next)
         if (productAllowed && result.OrganizationId is Guid boundOrg && boundOrg != Guid.Empty)
         {
             var grants = result.EnabledFeatureCodes ?? Array.Empty<string>();
-            // Local Validation / Dev: Platform Start-Business snapshots historically omitted
-            // Registers/Shifts (and other Full POS) features. Merge the approved Dev grant set so
-            // Open Shift / Registers do not 403 while role remains Owner.
-            // Also covers OrganizationManagementAuthority tokens that arrive with empty feature lists.
-            if (ShouldMergeDevelopmentGrants(environment, configuration))
+            if (PosCommercialValidation.ShouldMergeDevelopmentGrants(environment, configuration))
             {
                 grants = UtangCapabilityPolicy.MergeWithDevelopmentDefaults(grants);
             }
 
-            var status = string.IsNullOrWhiteSpace(result.SubscriptionStatus)
-                ? PosSubscriptionStatuses.Active
-                : result.SubscriptionStatus;
-            commercialAccess.Current = new PosCommercialAccess(status, grants, IsKnown: true);
-            context.Items[PosAuthItems.CommercialBound] = true;
-            context.Items[PosAuthItems.EnabledFeatureCodes] = grants;
+            var status = result.SubscriptionStatus;
+            if (string.IsNullOrWhiteSpace(status))
+            {
+                if (PosCommercialValidation.IsStrict(configuration))
+                {
+                    // Strict mode: missing subscription status is not upgraded to Active.
+                    status = null;
+                }
+                else if (PosCommercialValidation.ShouldMergeDevelopmentGrants(environment, configuration))
+                {
+                    status = PosSubscriptionStatuses.Active;
+                }
+            }
+
+            if (PosCommercialValidation.IsStrict(configuration)
+                && (string.IsNullOrWhiteSpace(status) || grants.Count == 0))
+            {
+                commercialAccess.Current = PosCommercialAccess.Unknown;
+            }
+            else
+            {
+                commercialAccess.Current = new PosCommercialAccess(status, grants, IsKnown: true);
+                context.Items[PosAuthItems.CommercialBound] = true;
+                context.Items[PosAuthItems.EnabledFeatureCodes] = grants;
+            }
         }
 
         await next(context).ConfigureAwait(false);
-    }
-
-    private static bool ShouldMergeDevelopmentGrants(IHostEnvironment environment, IConfiguration configuration)
-    {
-        if (PosDevelopmentEnvironment.IsApprovedDevelopmentEnvironment(environment))
-        {
-            return true;
-        }
-
-        // Staging Local Validation (Start-LocalValidation.ps1) is non-Production and needs the same aid.
-        return configuration.GetValue("LocalValidation:Enabled", false) && !environment.IsProduction();
     }
 
     private static string? ExtractBearer(HttpRequest request)

@@ -92,6 +92,79 @@ public sealed class PosDeviceConcurrentRegistrationIntegrationTests(PostgreSqlFi
         Assert.Equal(1, await devices.CountActiveAsync(org.Id).ConfigureAwait(false));
     }
 
+    [Fact]
+    public async Task Growth_like_three_device_plan_blocks_fourth_registration()
+    {
+        await using var provider = BuildProvider(fixture.ConnectionString);
+        var createProduct = provider.GetRequiredService<CreateProduct>();
+        var createPlan = provider.GetRequiredService<CreatePlan>();
+        var activatePlan = provider.GetRequiredService<ActivatePlan>();
+        var createVersion = provider.GetRequiredService<CreateDraftPlanVersion>();
+        var publish = provider.GetRequiredService<PublishExistingPlanVersion>();
+        var createTrial = provider.GetRequiredService<CreateTrialDefinition>();
+        var createOrg = provider.GetRequiredService<CreatePlatformOrganization>();
+        var startTrial = provider.GetRequiredService<StartTrialSubscription>();
+        var branches = provider.GetRequiredService<IOrganizationBranchRepository>();
+        var register = provider.GetRequiredService<RegisterCurrentDevice>();
+
+        var productCode = ProductCode.PinoyBusinessPos;
+        await createProduct.ExecuteAsync(productCode, "POS Device Growth Limit");
+        var plan = (await createPlan.ExecuteAsync(
+            productCode,
+            "growth-devices",
+            "Growth Devices",
+            description: null,
+            maxBranches: 3,
+            maxActiveStaff: 10,
+            maxActivePosDevices: 3,
+            maxActiveBusinessTypes: 3,
+            customerCreditEnabled: true,
+            advancedReportsEnabled: true,
+            exportEnabled: true,
+            trialAllowed: true,
+            defaultTrialDays: 14,
+            sortOrder: 20,
+            monthlyPrice: 0m,
+            annualPrice: 0m,
+            currencyCode: "PHP")).Value!;
+        await activatePlan.ExecuteAsync(plan.Id);
+        var version = (await createVersion
+            .ExecuteAsync(plan.Id, 1, BillingPeriod.Monthly, true, Array.Empty<FeatureGrantSpec>(), T0)
+            .ConfigureAwait(false)).Value!;
+        await publish.ExecuteAsync(plan.Id, 1).ConfigureAwait(false);
+        var trial = (await createTrial
+            .ExecuteAsync(productCode, "Trial", TimeSpan.FromDays(14), Array.Empty<FeatureGrantSpec>(), Array.Empty<FeatureGrantSpec>())
+            .ConfigureAwait(false)).Value!;
+
+        var org = (await createOrg.ExecuteAsync("Growth Device Org", Unique("growthdevorg")).ConfigureAwait(false)).Value!;
+        Assert.True((await startTrial.ExecuteAsync(org.Id, plan.Id, version.Id, trial.Id).ConfigureAwait(false)).IsSuccess);
+
+        var uow = provider.GetRequiredService<IPlatformUnitOfWork>();
+        var branch = OrganizationBranch.CreateMainBranch(org.Id, T0);
+        await branches.AddAsync(branch).ConfigureAwait(false);
+        await uow.SaveChangesAsync().ConfigureAwait(false);
+
+        for (var index = 0; index < 3; index++)
+        {
+            var result = await register.ExecuteAsync(
+                org.Id,
+                new RegisterPosDeviceCommand(
+                    branch.Id.Value,
+                    $"install-growth-{index}-{Guid.NewGuid():N}",
+                    $"Growth Device {index}")).ConfigureAwait(false);
+            Assert.True(result.IsSuccess, result.ErrorMessage);
+        }
+
+        var blocked = await register.ExecuteAsync(
+            org.Id,
+            new RegisterPosDeviceCommand(
+                branch.Id.Value,
+                $"install-growth-blocked-{Guid.NewGuid():N}",
+                "Growth Device Blocked")).ConfigureAwait(false);
+        Assert.False(blocked.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.PosDeviceCapacityExceeded, blocked.ErrorCode);
+    }
+
     private static ServiceProvider BuildProvider(string connectionString)
     {
         var configuration = new ConfigurationBuilder()

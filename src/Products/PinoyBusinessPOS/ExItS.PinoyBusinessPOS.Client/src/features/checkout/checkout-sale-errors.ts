@@ -85,6 +85,15 @@ export function mapCheckoutSaleErrorKey(error: unknown): MessageKey {
   }
 
   if (
+    code.includes("commercial.access_unknown") ||
+    code.includes("commercial.capability_denied") ||
+    code === "pos.commercial.access_unknown" ||
+    code === "pos.commercial.capability_denied"
+  ) {
+    return "checkout.errorProductAccess";
+  }
+
+  if (
     code.includes("product_access") ||
     code === "application.auth.product_access_denied" ||
     code.includes("capability.denied") ||
