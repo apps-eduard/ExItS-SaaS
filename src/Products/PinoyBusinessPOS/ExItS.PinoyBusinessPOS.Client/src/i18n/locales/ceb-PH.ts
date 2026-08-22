@@ -574,6 +574,11 @@ export const cebPH: Record<keyof typeof en, string> = {
   "accessDenied.profileRequired":
     "Kinahanglan og Organization account profile ang organization workspace.",
   "accessDenied.generic": "Dili maabli kini nga workspace. Sulayi pag-usab o pag-sign in pag-usab.",
+  "commercial.notIncludedInPlan": "Wala kini sa imong karon nga plan.",
+  "commercial.accessUnavailable":
+    "Dili available ang commercial access. Sulayi pag-usab o pag-sign in pag-usab.",
+  "commercial.subscriptionSuspended":
+    "Suspended ang subscription niining negosyo. Giblock ang financial changes hangtod ma-reactivate.",
   "home.title": "Andam na ang workspace",
   "home.lede": "Magpadayon ang foundation human sa browser session ug workspace binding.",
   "home.badge": "Andam",

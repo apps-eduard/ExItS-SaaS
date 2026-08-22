@@ -20,6 +20,8 @@ public static class PosFeatureCodes
     public const string StoreExpensesManage = "store-expenses-manage";
     public const string StoreDashboardView = "store-dashboard-view";
     public const string StoreReportsView = "store-reports-view";
+    public const string StoreAdvancedReports = "store-advanced-reports";
+    public const string StoreExport = "store-export";
     public const string StoreSuppliersView = "store-suppliers-view";
     public const string StoreSuppliersManage = "store-suppliers-manage";
     public const string StorePurchasingView = "store-purchasing-view";
@@ -108,7 +110,13 @@ public enum UtangCapability
     /// Apply a per-sale unit-price override without a deviation ceiling (Owner / Admin equivalent).
     /// Still requires a positive price and a reason; free items remain commercial-discount only.
     /// </summary>
-    OverrideSalePriceUnlimited = 41
+    OverrideSalePriceUnlimited = 41,
+
+    /// <summary>Operational / advanced report endpoints beyond classic store-reports-view reports.</summary>
+    ViewAdvancedReports = 42,
+
+    /// <summary>Reserved for file export actions when implemented (Platform store-export).</summary>
+    ExportData = 43
 }
 
 /// <summary>
@@ -231,6 +239,12 @@ public static class UtangCapabilityPolicy
 
             UtangCapability.ViewReports =>
                 CanEnter(status, grants) && HasFeature(grants, PosFeatureCodes.StoreReportsView),
+
+            UtangCapability.ViewAdvancedReports =>
+                CanEnter(status, grants) && HasFeature(grants, PosFeatureCodes.StoreAdvancedReports),
+
+            UtangCapability.ExportData =>
+                IsFullCommercialState(status) && HasFeature(grants, PosFeatureCodes.StoreExport),
 
             UtangCapability.ViewSuppliers =>
                 CanEnter(status, grants) && HasFeature(grants, PosFeatureCodes.StoreSuppliersView),

@@ -282,6 +282,177 @@ public sealed class PosCommercialIntegrationReadinessTests(PosPostgreSqlFixture 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Strict_classic_sales_report_allowed_without_advanced_grant()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString, strictCommercial: true);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+
+        using var request = CreateScopedRequest(
+            HttpMethod.Get,
+            "/api/v1/pos/reports/sales?fromDate=2026-07-01&toDate=2026-07-01",
+            org,
+            status: PosSubscriptionStatuses.Active,
+            grants: PosFeatureCodes.StoreReportsView);
+        using var response = await client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+    }
+
+    [Fact]
+    public async Task Strict_operational_report_denied_without_store_advanced_reports()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString, strictCommercial: true);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+
+        using var request = CreateScopedRequest(
+            HttpMethod.Get,
+            "/api/v1/pos/reports/sales-summary?fromDate=2026-07-01&toDate=2026-07-01",
+            org,
+            Actor,
+            PosSubscriptionStatuses.Active,
+            PosFeatureCodes.StoreReportsView);
+        using var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Strict_operational_report_allowed_with_store_advanced_reports()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString, strictCommercial: true);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var grants = $"{PosFeatureCodes.StoreReportsView},{PosFeatureCodes.StoreAdvancedReports}";
+
+        using var request = CreateScopedRequest(
+            HttpMethod.Get,
+            "/api/v1/pos/reports/sales-summary?fromDate=2026-07-01&toDate=2026-07-01",
+            org,
+            Actor,
+            PosSubscriptionStatuses.Active,
+            grants);
+        using var response = await client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+    }
+
+    [Fact]
+    public async Task Strict_customer_ordering_list_denied_without_grant()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString, strictCommercial: true);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+
+        using var request = CreateScopedRequest(
+            HttpMethod.Get,
+            $"/api/v1/pos/organizations/{org:D}/customer-orders",
+            org,
+            Actor,
+            PosSubscriptionStatuses.Active,
+            PosFeatureCodes.StoreSalesView);
+        using var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Strict_customer_ordering_list_allowed_with_grant()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString, strictCommercial: true);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+
+        using var request = CreateScopedRequest(
+            HttpMethod.Get,
+            $"/api/v1/pos/organizations/{org:D}/customer-orders",
+            org,
+            Actor,
+            PosSubscriptionStatuses.Active,
+            PosFeatureCodes.StoreCustomerOrdering);
+        using var response = await client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+    }
+
+    [Fact]
+    public async Task Strict_delivery_management_denied_without_store_delivery_orders()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString, strictCommercial: true);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var orderId = Guid.NewGuid();
+
+        using var request = CreateScopedRequest(
+            HttpMethod.Post,
+            $"/api/v1/pos/organizations/{org:D}/customer-orders/{orderId:D}/accept",
+            org,
+            Actor,
+            PosSubscriptionStatuses.Active,
+            PosFeatureCodes.StoreCustomerOrdering);
+        using var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Strict_delivery_management_allowed_with_store_delivery_orders()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString, strictCommercial: true);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var orderId = Guid.NewGuid();
+        var grants = $"{PosFeatureCodes.StoreCustomerOrdering},{PosFeatureCodes.StoreDeliveryOrders}";
+
+        using var request = CreateScopedRequest(
+            HttpMethod.Post,
+            $"/api/v1/pos/organizations/{org:D}/customer-orders/{orderId:D}/accept",
+            org,
+            Actor,
+            PosSubscriptionStatuses.Active,
+            grants);
+        using var response = await client.SendAsync(request);
+        Assert.NotEqual(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Non_strict_testing_without_headers_still_allows_customer_ordering_list()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString, strictCommercial: false);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+
+        using var request = CreateScopedRequest(
+            HttpMethod.Get,
+            $"/api/v1/pos/organizations/{org:D}/customer-orders",
+            org,
+            Actor);
+        using var response = await client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+    }
+
+    [Fact]
+    public async Task Strict_gcash_sale_allowed_without_customer_credit_grant()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString, strictCommercial: true);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var product = await CreateProductAsync(client, org, CashSaleGrants);
+        await EnsureOpenShiftWithGrantsAsync(client, org, Actor, CashSaleGrants);
+
+        using var sale = CreateScopedRequest(
+            HttpMethod.Post,
+            Sales,
+            org,
+            Actor,
+            PosSubscriptionStatuses.Active,
+            CashSaleGrants);
+        sale.Content = JsonContent.Create(
+            new CheckoutSaleRequest(
+                [new CheckoutSaleLineRequest(product.ProductId, 1m)],
+                PosSaleOptions.ManualGCashPaymentMethod,
+                GCashReference: "GCASH-TEST-1"),
+            options: JsonOptions);
+        using var response = await client.SendAsync(sale);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
     private static async Task EnsureOpenShiftWithGrantsAsync(
         HttpClient client,
         Guid organizationId,

@@ -15,6 +15,7 @@ import {
   canViewDashboard,
   canViewReports,
 } from "@/features/reports/report-access";
+import { FEATURE_STORE_ADVANCED_REPORTS } from "@/access/pos-capabilities";
 import { isReportRangeValid, resolveReportDatePreset } from "@/features/reports/report-date-range";
 import type { SessionGrantResponse } from "@/api/platform/platform-auth-client";
 
@@ -64,17 +65,32 @@ describe("report-access", () => {
     expect(canViewReports(cashier)).toBe(false);
     expect(canAccessReportsHub(cashier)).toBe(true); // shifts
     expect(canAccessOperationalReport(cashier, "sales-summary")).toBe(false);
-    expect(canAccessOperationalReport(cashier, "shifts")).toBe(true);
+    expect(canAccessOperationalReport(cashier, "shifts")).toBe(false);
+    const cashierAdvanced = grant({
+      mappedPosRoleCode: "Cashier",
+      productLocalRoleCode: "Cashier",
+      grantedFeatureCodes: [FEATURE_STORE_ADVANCED_REPORTS],
+    });
+    expect(canAccessOperationalReport(cashierAdvanced, "shifts")).toBe(true);
   });
 
-  it("allows inventory staff inventory/purchasing reports only", () => {
+  it("allows inventory staff inventory/purchasing reports only with advanced grant", () => {
     const staff = grant({
       mappedPosRoleCode: "InventoryStaff",
       productLocalRoleCode: "InventoryStaff",
     });
-    expect(canAccessOperationalReport(staff, "inventory-status")).toBe(true);
-    expect(canAccessOperationalReport(staff, "purchasing-summary")).toBe(true);
+    expect(canAccessOperationalReport(staff, "inventory-status")).toBe(false);
+    expect(canAccessOperationalReport(staff, "purchasing-summary")).toBe(false);
     expect(canAccessOperationalReport(staff, "sales-summary")).toBe(false);
+
+    const staffAdvanced = grant({
+      mappedPosRoleCode: "InventoryStaff",
+      productLocalRoleCode: "InventoryStaff",
+      grantedFeatureCodes: [FEATURE_STORE_ADVANCED_REPORTS],
+    });
+    expect(canAccessOperationalReport(staffAdvanced, "inventory-status")).toBe(true);
+    expect(canAccessOperationalReport(staffAdvanced, "purchasing-summary")).toBe(true);
+    expect(canAccessOperationalReport(staffAdvanced, "sales-summary")).toBe(false);
   });
 });
 

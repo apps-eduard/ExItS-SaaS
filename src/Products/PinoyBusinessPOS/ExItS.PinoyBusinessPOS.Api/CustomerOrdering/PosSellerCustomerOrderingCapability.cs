@@ -17,6 +17,7 @@ internal sealed class PosSellerCustomerOrderingCapability(
     IHttpContextAccessor httpContextAccessor,
     IOptions<PlatformAuthOptions> options,
     IHostEnvironment environment,
+    IConfiguration configuration,
     IPosCommercialAccessAccessor commercialAccess) : ISellerCustomerOrderingCapability
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -33,7 +34,8 @@ internal sealed class PosSellerCustomerOrderingCapability(
             return new SellerCustomerOrderingCapability(sellerOrganizationId, false, false);
         }
 
-        if (environment.IsEnvironment("Testing"))
+        if (environment.IsEnvironment("Testing")
+            && !PosCommercialValidation.IsStrict(configuration))
         {
             return new SellerCustomerOrderingCapability(
                 sellerOrganizationId,

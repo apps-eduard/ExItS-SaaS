@@ -1,4 +1,5 @@
 import {
+  canViewAdvancedReports,
   canViewExpenses,
   canViewInventory,
   canViewPurchasing,
@@ -46,6 +47,10 @@ export function canAccessOperationalReport(
   grant: PosSessionGrantFacts | null | undefined,
   kind: OperationalReportKind,
 ): boolean {
+  if (!canViewAdvancedReports(grant)) {
+    return false;
+  }
+
   if (hasOrganizationManagementAuthority(grant)) {
     return true;
   }
@@ -136,6 +141,10 @@ export type ReportHubGroup = {
 export function buildOperationalReportGroups(
   grant: PosSessionGrantFacts | null | undefined,
 ): ReportHubGroup[] {
+  if (!canViewAdvancedReports(grant)) {
+    return [];
+  }
+
   const groups: ReportHubGroup[] = [];
 
   if (canViewReports(grant)) {

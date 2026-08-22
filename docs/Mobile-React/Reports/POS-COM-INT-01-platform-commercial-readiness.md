@@ -110,10 +110,10 @@ Tests: `PosStatementReceiptAndCommercialApiTests`, `PosSaleApiTests`, `PosReport
 | Capability | Platform provides value? | POS API enforces? | React hides/disables? | Server fail-closed? | Test exists? |
 |------------|---------------------------|-------------------|----------------------|---------------------|--------------|
 | Customer credit / Utang | Yes — `customer-credit-*` feature codes from entitlement snapshot | Yes — `UtangCapabilityPolicy` + sale/credit endpoints | Partial — `pos-capabilities.ts` + checkout UX | Yes | Yes — `PosProductBasedUtangApiTests`, `PosCommercialIntegrationReadinessTests` |
-| Advanced reports | Plan flag on Platform (`AdvancedReportsEnabled`) — **no separate POS feature code yet** | Partial — only `store-reports-view` grant; no advanced-only split | Explore POS UI only | N/A for advanced split | Partial |
-| Export | Plan flag (`ExportEnabled`) — file export deferred | **No dedicated export endpoint enforcement yet** | Deferred footnote (Maui parity) | N/A | **BLOCKED** — export generation not implemented |
-| Customer ordering | Yes — `store-customer-ordering` | Yes — seller capability + order endpoints | React capability helpers | Yes (non-Testing) | **GAP** — `PosSellerCustomerOrderingCapability` returns all-true in `Testing` env |
-| Delivery | Yes — `store-delivery-orders` | Yes — paired with ordering capability | React capability helpers | Yes (non-Testing) | Same Testing bypass gap |
+| Advanced reports | Yes — `store-advanced-reports` (`FeatureCode.StoreAdvancedReports`) | Yes — operational `/reports/*` endpoints require `ViewAdvancedReports` | Yes — `canViewAdvancedReports` + operational hub groups | Yes | Yes — COM-INT-02 integration tests |
+| Export | Yes — `store-export` (`FeatureCode.StoreExport`) | Reserved (`ExportData`); **no export API yet** | Deferred footnote only | N/A until feature exists | **PRODUCT_FEATURE_NOT_IMPLEMENTED** |
+| Customer ordering | Yes — `store-customer-ordering` | Yes — order endpoints + strict capability resolver | Yes — `canViewCustomerOrders` | Yes | Yes — COM-INT-02 strict tests |
+| Delivery | Yes — `store-delivery-orders` | Yes — capability resolver + order use cases | Yes — `canManageCustomerOrders` | Yes | Yes — unit + strict resolver tests |
 
 ---
 
@@ -192,9 +192,10 @@ No polling added. Full Platform Admin → POS E2E refresh: **READY_FOR_PLATFORM_
 
 ## 10. Known gaps / blockers
 
-1. **Export / advanced reports split** — Platform plan flags exist; POS has no separate `store-reports-export` / advanced feature codes or export API enforcement yet.
-2. **Customer ordering Testing bypass** — `PosSellerCustomerOrderingCapability` forces enable in `Testing` environment; strict entitlement tests for ordering must run against Staging/Local Validation or non-Testing harness.
-3. **Platform Admin E2E** — Full cross-app flow awaits Agent 2 commercial management UI + shared test fixtures.
+1. **Export file generation** — `store-export` entitlement is on Platform plans; POS has no CSV/PDF/Excel action to authorize (**PRODUCT_FEATURE_NOT_IMPLEMENTED**, not a subscription blocker).
+2. **Platform Admin E2E** — Full cross-app flow awaits Agent 2 commercial management UI + shared test fixtures.
+
+COM-INT-02 closed advanced-reports enforcement and strict-mode ordering bypass (see `POS-COM-INT-02-feature-entitlement-contract-closure.md`).
 
 ---
 

@@ -576,6 +576,11 @@ export const iloPH: Record<keyof typeof en, string> = {
   "accessDenied.profileRequired":
     "Masapul ti Organization account profile para iti organization workspace.",
   "accessDenied.generic": "Saan a malukatan daytoy a workspace. Padasen manen wenno sumrek manen.",
+  "commercial.notIncludedInPlan": "Saan a mairaman iti agdama a planom.",
+  "commercial.accessUnavailable":
+    "Saan a magun-od ti commercial access. Padasen manen wenno sumrek manen.",
+  "commercial.subscriptionSuspended":
+    "Nasuspend ti subscription daytoy a negosyo. Maserra dagiti financial changes agingga ma-reactivate.",
   "home.title": "Nakasagana ti workspace",
   "home.lede": "Agtultuloy ti foundation kalpasan ti browser session ken workspace binding.",
   "home.badge": "Nakasagana",

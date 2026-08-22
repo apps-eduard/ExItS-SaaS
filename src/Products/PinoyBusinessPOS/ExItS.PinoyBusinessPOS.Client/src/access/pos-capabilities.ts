@@ -14,6 +14,19 @@ export type PosSessionGrantFacts = Pick<
 /** Platform feature codes for sale-line price override (RMAP-B01 / RMAP-12b). */
 export const FEATURE_OVERRIDE_SALE_PRICE = "store-sales-override-price";
 export const FEATURE_OVERRIDE_SALE_PRICE_UNLIMITED = "store-sales-override-price-unlimited";
+export const FEATURE_CUSTOMER_CREDIT_CREATE = "customer-credit-create";
+export const FEATURE_STORE_REPORTS_VIEW = "store-reports-view";
+export const FEATURE_STORE_ADVANCED_REPORTS = "store-advanced-reports";
+export const FEATURE_STORE_EXPORT = "store-export";
+export const FEATURE_STORE_CUSTOMER_ORDERING = "store-customer-ordering";
+export const FEATURE_STORE_DELIVERY_ORDERS = "store-delivery-orders";
+
+function featureGrantDenied(
+  grant: PosSessionGrantFacts | null | undefined,
+  featureCode: string,
+): boolean {
+  return grantHasFeatureCode(grant, featureCode) === false;
+}
 
 function collectGrantFeatureCodes(
   grant: PosSessionGrantFacts | null | undefined,
@@ -252,6 +265,9 @@ export function canCreateCredit(grant: PosSessionGrantFacts | null | undefined):
   if (!grant?.productAccessAllowed) {
     return false;
   }
+  if (featureGrantDenied(grant, FEATURE_CUSTOMER_CREDIT_CREATE)) {
+    return false;
+  }
   return isPosOwnerRole(grant) || isPosOperationsManager(grant) || isPosCashierRole(grant);
 }
 
@@ -388,6 +404,9 @@ export function canViewCustomerOrders(grant: PosSessionGrantFacts | null | undef
   if (!grant?.productAccessAllowed) {
     return false;
   }
+  if (featureGrantDenied(grant, FEATURE_STORE_CUSTOMER_ORDERING)) {
+    return false;
+  }
   if (isPosOwnerRole(grant) || isPosOperationsManager(grant)) {
     return true;
   }
@@ -418,7 +437,20 @@ export function canViewDashboard(grant: PosSessionGrantFacts | null | undefined)
  * Cashier DENY. Server remains authoritative via StoreReportsView.
  */
 export function canViewReports(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (featureGrantDenied(grant, FEATURE_STORE_REPORTS_VIEW)) {
+    return false;
+  }
   return canViewDashboard(grant);
+}
+
+/** Advanced / operational reports (store-advanced-reports). Classic reports use canViewReports. */
+export function canViewAdvancedReports(grant: PosSessionGrantFacts | null | undefined): boolean {
+  return grantHasFeatureCode(grant, FEATURE_STORE_ADVANCED_REPORTS) === true;
+}
+
+/** File export entitlement (store-export). No export UI exists yet — reserved for future actions. */
+export function canExportData(grant: PosSessionGrantFacts | null | undefined): boolean {
+  return grantHasFeatureCode(grant, FEATURE_STORE_EXPORT) === true;
 }
 
 /**
@@ -447,6 +479,12 @@ export function canAccessReportsHub(grant: PosSessionGrantFacts | null | undefin
  */
 export function canManageCustomerOrders(grant: PosSessionGrantFacts | null | undefined): boolean {
   if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  if (
+    featureGrantDenied(grant, FEATURE_STORE_CUSTOMER_ORDERING)
+    || featureGrantDenied(grant, FEATURE_STORE_DELIVERY_ORDERS)
+  ) {
     return false;
   }
   return isPosOwnerRole(grant) || isPosOperationsManager(grant);
