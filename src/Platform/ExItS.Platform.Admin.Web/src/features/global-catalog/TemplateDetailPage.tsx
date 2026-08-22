@@ -32,6 +32,8 @@ import {
 import {
   formatGlobalCatalogInstant,
   globalCatalogControlClass,
+  globalCatalogDetailCardClass,
+  globalCatalogFieldLabelClass,
   globalCatalogStatusTone,
 } from "@/features/global-catalog/global-catalog-presentation";
 import {
@@ -152,7 +154,7 @@ function TemplateDetailContent({
         }
       />
 
-      <dl className="grid max-w-2xl gap-3 rounded-[var(--exits-density-radius)] border border-border bg-surface p-4">
+      <dl className={globalCatalogDetailCardClass}>
         <DetailRow label={t("globalCatalog.templates.column.slug")} value={<span className="font-mono">{template.slug}</span>} />
         <DetailRow
           label={t("globalCatalog.column.status")}
@@ -568,7 +570,7 @@ function FormField({
 }) {
   return (
     <div className="grid gap-1">
-      <Label htmlFor={htmlFor} className="text-[length:var(--exits-text-xs)] font-medium text-muted">
+      <Label htmlFor={htmlFor} className={globalCatalogFieldLabelClass}>
         {label}
       </Label>
       {children}

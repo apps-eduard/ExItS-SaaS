@@ -25,7 +25,12 @@ import { isPlatformForbidden } from "@/api/platform-http-status";
 import {
   formatGlobalCatalogInstant,
   globalCatalogControlClass,
+  globalCatalogFieldLabelClass,
+  globalCatalogFilterFormClass,
+  globalCatalogListShellClass,
+  globalCatalogMobileCardClass,
   globalCatalogStatusTone,
+  globalCatalogTableShellClass,
 } from "@/features/global-catalog/global-catalog-presentation";
 import { useGlobalBusinessTypesQuery } from "@/features/global-catalog/use-global-business-types-query";
 import { useGlobalCategoryLookupQuery } from "@/features/global-catalog/use-global-category-queries";
@@ -61,10 +66,22 @@ export function ProductsList({ enabled }: { enabled: boolean }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const state = useMemo(() => parseGlobalProductListSearchParams(searchParams), [searchParams]);
   const [searchDraft, setSearchDraft] = useState(state.search);
+  const [skuDraft, setSkuDraft] = useState(state.sku);
+  const [barcodeDraft, setBarcodeDraft] = useState(state.barcode);
   const [appliedSearch, setAppliedSearch] = useState(state.search);
+  const [appliedSku, setAppliedSku] = useState(state.sku);
+  const [appliedBarcode, setAppliedBarcode] = useState(state.barcode);
   if (state.search !== appliedSearch) {
     setAppliedSearch(state.search);
     setSearchDraft(state.search);
+  }
+  if (state.sku !== appliedSku) {
+    setAppliedSku(state.sku);
+    setSkuDraft(state.sku);
+  }
+  if (state.barcode !== appliedBarcode) {
+    setAppliedBarcode(state.barcode);
+    setBarcodeDraft(state.barcode);
   }
 
   const businessTypesQuery = useGlobalBusinessTypesQuery(enabled);
@@ -100,7 +117,29 @@ export function ProductsList({ enabled }: { enabled: boolean }) {
 
   function onSearchSubmit(event: FormEvent) {
     event.preventDefault();
-    replaceState({ search: searchDraft.trim(), page: 1 });
+    replaceState({
+      search: searchDraft.trim(),
+      sku: skuDraft.trim(),
+      barcode: barcodeDraft.trim(),
+      page: 1,
+    });
+  }
+
+  function resetFilters() {
+    setSearchDraft("");
+    setSkuDraft("");
+    setBarcodeDraft("");
+    replaceState({
+      page: 1,
+      search: "",
+      status: "",
+      categoryId: "",
+      businessTypeId: "",
+      barcode: "",
+      sku: "",
+      sortBy: "Name",
+      sortDesc: false,
+    });
   }
 
   const totalPages = query.data
@@ -111,12 +150,12 @@ export function ProductsList({ enabled }: { enabled: boolean }) {
     : null;
 
   return (
-    <div className="grid gap-3">
+    <div className={globalCatalogListShellClass}>
       <form
-        className="grid gap-2 rounded-[var(--exits-density-radius)] border border-border bg-surface p-3 md:grid-cols-[minmax(0,1fr)_minmax(9rem,11rem)_minmax(9rem,11rem)_minmax(8rem,10rem)_minmax(8rem,10rem)_10rem_9rem_auto] md:items-end"
+        className={`${globalCatalogFilterFormClass} md:grid-cols-[minmax(0,1fr)_minmax(9rem,11rem)_minmax(9rem,11rem)_minmax(8rem,10rem)_minmax(8rem,10rem)_minmax(8rem,10rem)_10rem_9rem_auto]`}
         onSubmit={onSearchSubmit}
       >
-        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted" htmlFor="gc-product-search">
+        <label className={globalCatalogFieldLabelClass} htmlFor="gc-product-search">
           {t("globalCatalog.search")}
           <Input
             id="gc-product-search"
@@ -126,7 +165,7 @@ export function ProductsList({ enabled }: { enabled: boolean }) {
             autoComplete="off"
           />
         </label>
-        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted" htmlFor="gc-product-status">
+        <label className={globalCatalogFieldLabelClass} htmlFor="gc-product-status">
           {t("globalCatalog.status")}
           <select
             id="gc-product-status"
@@ -144,7 +183,7 @@ export function ProductsList({ enabled }: { enabled: boolean }) {
             ))}
           </select>
         </label>
-        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted" htmlFor="gc-product-category">
+        <label className={globalCatalogFieldLabelClass} htmlFor="gc-product-category">
           {t("globalCatalog.column.category")}
           <select
             id="gc-product-category"
@@ -161,7 +200,7 @@ export function ProductsList({ enabled }: { enabled: boolean }) {
             ))}
           </select>
         </label>
-        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted" htmlFor="gc-product-business-type">
+        <label className={globalCatalogFieldLabelClass} htmlFor="gc-product-business-type">
           {t("globalCatalog.businessType")}
           <select
             id="gc-product-business-type"
@@ -178,16 +217,25 @@ export function ProductsList({ enabled }: { enabled: boolean }) {
             ))}
           </select>
         </label>
-        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted" htmlFor="gc-product-sku">
+        <label className={globalCatalogFieldLabelClass} htmlFor="gc-product-sku">
           {t("globalCatalog.column.sku")}
           <Input
             id="gc-product-sku"
-            value={state.sku}
-            onChange={(event) => replaceState({ sku: event.target.value, page: 1 })}
+            value={skuDraft}
+            onChange={(event) => setSkuDraft(event.target.value)}
             autoComplete="off"
           />
         </label>
-        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted" htmlFor="gc-product-sort">
+        <label className={globalCatalogFieldLabelClass} htmlFor="gc-product-barcode">
+          {t("globalCatalog.column.barcode")}
+          <Input
+            id="gc-product-barcode"
+            value={barcodeDraft}
+            onChange={(event) => setBarcodeDraft(event.target.value)}
+            autoComplete="off"
+          />
+        </label>
+        <label className={globalCatalogFieldLabelClass} htmlFor="gc-product-sort">
           {t("globalCatalog.sort")}
           <select
             id="gc-product-sort"
@@ -204,7 +252,7 @@ export function ProductsList({ enabled }: { enabled: boolean }) {
             ))}
           </select>
         </label>
-        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted" htmlFor="gc-product-order">
+        <label className={globalCatalogFieldLabelClass} htmlFor="gc-product-order">
           {t("globalCatalog.sort.direction")}
           <select
             id="gc-product-order"
@@ -223,25 +271,7 @@ export function ProductsList({ enabled }: { enabled: boolean }) {
             {t("globalCatalog.searchSubmit")}
           </Button>
           {hasActiveGlobalProductFilters(state) ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setSearchDraft("");
-                replaceState({
-                  page: 1,
-                  search: "",
-                  status: "",
-                  categoryId: "",
-                  businessTypeId: "",
-                  barcode: "",
-                  sku: "",
-                  sortBy: "Name",
-                  sortDesc: false,
-                });
-              }}
-            >
+            <Button type="button" size="sm" variant="outline" onClick={resetFilters}>
               {t("globalCatalog.reset")}
             </Button>
           ) : null}
@@ -272,20 +302,7 @@ export function ProductsList({ enabled }: { enabled: boolean }) {
           showTable={showTable}
           categoryNames={categoryNames}
           onPage={(nextPage) => replaceState({ page: nextPage })}
-          onReset={() => {
-            setSearchDraft("");
-            replaceState({
-              page: 1,
-              search: "",
-              status: "",
-              categoryId: "",
-              businessTypeId: "",
-              barcode: "",
-              sku: "",
-              sortBy: "Name",
-              sortDesc: false,
-            });
-          }}
+          onReset={resetFilters}
         />
       ) : null}
     </div>
@@ -329,9 +346,9 @@ function ProductResults({
   }
 
   return (
-    <div className="grid gap-3">
+    <div className={globalCatalogListShellClass}>
       {showTable ? (
-        <div className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-3">
+        <div className={globalCatalogTableShellClass}>
           <AdminTable
             caption={t("globalCatalog.products.caption")}
             empty={emptyTitle}
@@ -400,30 +417,26 @@ function ProductResults({
       ) : (
         <ul className="grid gap-2">
           {items.map((product) => (
-            <li
-              key={product.id}
-              className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-3 py-2.5"
-            >
-              <p className="font-medium">{product.name}</p>
+            <li key={product.id} className={globalCatalogMobileCardClass}>
+              <Link
+                className="font-medium text-primary hover:underline"
+                to={`/admin/global-catalog/products/${product.id}`}
+              >
+                {product.name}
+              </Link>
               <p className="mt-0.5 font-mono text-[length:var(--exits-text-xs)] text-muted">{product.sku}</p>
-              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <div className="mt-1.5">
                 <StatusIndicator
                   tone={globalCatalogStatusTone(product.status)}
                   label={t(STATUS_LABELS[product.status])}
                 />
-                <Link
-                  className="text-primary hover:underline"
-                  to={`/admin/global-catalog/products/${product.id}`}
-                >
-                  {t("globalCatalog.open")}
-                </Link>
               </div>
             </li>
           ))}
         </ul>
       )}
 
-      {totalCount > 0 ? (
+      {totalCount > 0 && totalPages > 1 ? (
         <div className="flex flex-wrap items-center gap-2">
           <Button type="button" size="sm" variant="outline" disabled={page <= 1} onClick={() => onPage(page - 1)}>
             {t("globalCatalog.previous")}

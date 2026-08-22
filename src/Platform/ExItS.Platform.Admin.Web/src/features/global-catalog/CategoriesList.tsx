@@ -25,7 +25,12 @@ import { isPlatformForbidden } from "@/api/platform-http-status";
 import {
   formatGlobalCatalogInstant,
   globalCatalogControlClass,
+  globalCatalogFieldLabelClass,
+  globalCatalogFilterFormClass,
+  globalCatalogListShellClass,
+  globalCatalogMobileCardClass,
   globalCatalogStatusTone,
+  globalCatalogTableShellClass,
 } from "@/features/global-catalog/global-catalog-presentation";
 import { useGlobalBusinessTypesQuery } from "@/features/global-catalog/use-global-business-types-query";
 import {
@@ -100,6 +105,19 @@ export function CategoriesList({ enabled }: { enabled: boolean }) {
     replaceState({ search: searchDraft.trim(), page: 1 });
   }
 
+  function resetFilters() {
+    setSearchDraft("");
+    replaceState({
+      page: 1,
+      search: "",
+      status: "",
+      parentId: "",
+      businessTypeId: "",
+      sortBy: "SortOrder",
+      sortDesc: false,
+    });
+  }
+
   const totalPages = query.data
     ? Math.max(1, Math.ceil(query.data.totalCount / GLOBAL_CATEGORY_LIST_PAGE_SIZE))
     : 1;
@@ -108,12 +126,12 @@ export function CategoriesList({ enabled }: { enabled: boolean }) {
     : null;
 
   return (
-    <div className="grid gap-3">
+    <div className={globalCatalogListShellClass}>
       <form
-        className="grid gap-2 rounded-[var(--exits-density-radius)] border border-border bg-surface p-3 md:grid-cols-[minmax(0,1fr)_minmax(10rem,12rem)_minmax(10rem,12rem)_10rem_9rem_auto] md:items-end"
+        className={`${globalCatalogFilterFormClass} md:grid-cols-[minmax(0,1fr)_minmax(10rem,12rem)_minmax(10rem,12rem)_minmax(10rem,12rem)_10rem_9rem_auto]`}
         onSubmit={onSearchSubmit}
       >
-        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted" htmlFor="gc-category-search">
+        <label className={globalCatalogFieldLabelClass} htmlFor="gc-category-search">
           {t("globalCatalog.search")}
           <Input
             id="gc-category-search"
@@ -123,7 +141,7 @@ export function CategoriesList({ enabled }: { enabled: boolean }) {
             autoComplete="off"
           />
         </label>
-        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted" htmlFor="gc-category-status">
+        <label className={globalCatalogFieldLabelClass} htmlFor="gc-category-status">
           {t("globalCatalog.status")}
           <select
             id="gc-category-status"
@@ -141,7 +159,7 @@ export function CategoriesList({ enabled }: { enabled: boolean }) {
             ))}
           </select>
         </label>
-        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted" htmlFor="gc-category-business-type">
+        <label className={globalCatalogFieldLabelClass} htmlFor="gc-category-business-type">
           {t("globalCatalog.businessType")}
           <select
             id="gc-category-business-type"
@@ -158,7 +176,24 @@ export function CategoriesList({ enabled }: { enabled: boolean }) {
             ))}
           </select>
         </label>
-        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted" htmlFor="gc-category-sort">
+        <label className={globalCatalogFieldLabelClass} htmlFor="gc-category-parent">
+          {t("globalCatalog.column.parent")}
+          <select
+            id="gc-category-parent"
+            className={globalCatalogControlClass}
+            value={state.parentId}
+            disabled={lookupQuery.isPending}
+            onChange={(event) => replaceState({ parentId: event.target.value, page: 1 })}
+          >
+            <option value="">{t("globalCatalog.category.all")}</option>
+            {(lookupQuery.data?.items ?? []).map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className={globalCatalogFieldLabelClass} htmlFor="gc-category-sort">
           {t("globalCatalog.sort")}
           <select
             id="gc-category-sort"
@@ -175,7 +210,7 @@ export function CategoriesList({ enabled }: { enabled: boolean }) {
             ))}
           </select>
         </label>
-        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted" htmlFor="gc-category-order">
+        <label className={globalCatalogFieldLabelClass} htmlFor="gc-category-order">
           {t("globalCatalog.sort.direction")}
           <select
             id="gc-category-order"
@@ -194,23 +229,7 @@ export function CategoriesList({ enabled }: { enabled: boolean }) {
             {t("globalCatalog.searchSubmit")}
           </Button>
           {hasActiveGlobalCategoryFilters(state) ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setSearchDraft("");
-                replaceState({
-                  page: 1,
-                  search: "",
-                  status: "",
-                  parentId: "",
-                  businessTypeId: "",
-                  sortBy: "SortOrder",
-                  sortDesc: false,
-                });
-              }}
-            >
+            <Button type="button" size="sm" variant="outline" onClick={resetFilters}>
               {t("globalCatalog.reset")}
             </Button>
           ) : null}
@@ -241,18 +260,7 @@ export function CategoriesList({ enabled }: { enabled: boolean }) {
           showTable={showTable}
           parentNames={parentNames}
           onPage={(nextPage) => replaceState({ page: nextPage })}
-          onReset={() => {
-            setSearchDraft("");
-            replaceState({
-              page: 1,
-              search: "",
-              status: "",
-              parentId: "",
-              businessTypeId: "",
-              sortBy: "SortOrder",
-              sortDesc: false,
-            });
-          }}
+          onReset={resetFilters}
         />
       ) : null}
     </div>
@@ -296,9 +304,9 @@ function CategoryResults({
   }
 
   return (
-    <div className="grid gap-3">
+    <div className={globalCatalogListShellClass}>
       {showTable ? (
-        <div className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-3">
+        <div className={globalCatalogTableShellClass}>
           <AdminTable
             caption={t("globalCatalog.categories.caption")}
             empty={emptyTitle}
@@ -356,34 +364,30 @@ function CategoryResults({
       ) : (
         <ul className="grid gap-2">
           {items.map((category) => (
-            <li
-              key={category.id}
-              className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-3 py-2.5"
-            >
-              <p className="font-medium">{category.name}</p>
+            <li key={category.id} className={globalCatalogMobileCardClass}>
+              <Link
+                className="font-medium text-primary hover:underline"
+                to={`/admin/global-catalog/categories/${category.id}`}
+              >
+                {category.name}
+              </Link>
               <p className="mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
                 {category.parentId
                   ? `${t("globalCatalog.column.parent")}: ${parentNames.get(category.parentId) ?? category.parentId}`
                   : t("globalCatalog.parent.root")}
               </p>
-              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <div className="mt-1.5">
                 <StatusIndicator
                   tone={globalCatalogStatusTone(category.status)}
                   label={t(STATUS_LABELS[category.status])}
                 />
-                <Link
-                  className="text-primary hover:underline"
-                  to={`/admin/global-catalog/categories/${category.id}`}
-                >
-                  {t("globalCatalog.open")}
-                </Link>
               </div>
             </li>
           ))}
         </ul>
       )}
 
-      {totalCount > 0 ? (
+      {totalCount > 0 && totalPages > 1 ? (
         <div className="flex flex-wrap items-center gap-2">
           <Button type="button" size="sm" variant="outline" disabled={page <= 1} onClick={() => onPage(page - 1)}>
             {t("globalCatalog.previous")}

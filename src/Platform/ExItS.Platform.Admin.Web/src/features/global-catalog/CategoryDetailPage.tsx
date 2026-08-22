@@ -10,12 +10,17 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusIndicator } from "@/components/exits/StatusIndicator";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BusinessTypeMultiSelect } from "@/features/global-catalog/BusinessTypeMultiSelect";
 import { CategoryLifecycleActions } from "@/features/global-catalog/CategoryLifecycleActions";
 import {
   formatGlobalCatalogInstant,
   globalCatalogStatusTone,
+  globalCatalogDetailCardClass,
+  globalCatalogControlClass,
+  globalCatalogFieldLabelClass,
 } from "@/features/global-catalog/global-catalog-presentation";
 import {
   globalCatalogMutationDetail,
@@ -126,8 +131,7 @@ function CategoryDetailContent({
           ) : null
         }
       />
-      <div className="grid gap-4 rounded-[var(--exits-density-radius)] border border-border bg-surface p-4 md:grid-cols-2">
-        <dl className="grid gap-2 text-[length:var(--exits-text-sm)]">
+            <dl className={globalCatalogDetailCardClass}>
           <div>
             <dt className="text-muted">{t("globalCatalog.column.status")}</dt>
             <dd className="mt-0.5">
@@ -156,8 +160,9 @@ function CategoryDetailContent({
             </dd>
           </div>
         </dl>
-        <CategoryLifecycleActions category={category} canManage={canManage} />
-      </div>
+
+      <CategoryLifecycleActions category={category} canManage={canManage} />
+
     </>
   );
 }
@@ -329,19 +334,21 @@ function CategoryForm({
 
   return (
     <form className="grid max-w-2xl gap-3" onSubmit={(event) => void onSubmit(event)}>
-      <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted">
-        {t("globalCatalog.field.name")}
-        <input
-          className="h-[var(--exits-control-height)] rounded-[var(--exits-density-radius)] border border-input bg-surface px-3"
+      <div className={globalCatalogFieldLabelClass}>
+        <Label htmlFor="gc-category-name">{t("globalCatalog.field.name")}</Label>
+        <Input
+          id="gc-category-name"
+          className={globalCatalogControlClass}
           value={name}
           onChange={(event) => setName(event.target.value)}
           required
         />
-      </label>
-      <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted">
-        {t("globalCatalog.field.parent")}
+      </div>
+      <div className={globalCatalogFieldLabelClass}>
+        <Label htmlFor="gc-category-parent">{t("globalCatalog.field.parent")}</Label>
         <select
-          className="h-[var(--exits-control-height)] rounded-[var(--exits-density-radius)] border border-input bg-surface px-3"
+          id="gc-category-parent"
+          className={globalCatalogControlClass}
           value={parentId}
           onChange={(event) => setParentId(event.target.value)}
         >
@@ -352,16 +359,17 @@ function CategoryForm({
             </option>
           ))}
         </select>
-      </label>
-      <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted">
-        {t("globalCatalog.field.sortOrder")}
-        <input
-          className="h-[var(--exits-control-height)] rounded-[var(--exits-density-radius)] border border-input bg-surface px-3"
+      </div>
+      <div className={globalCatalogFieldLabelClass}>
+        <Label htmlFor="gc-category-sort">{t("globalCatalog.field.sortOrder")}</Label>
+        <Input
+          id="gc-category-sort"
+          className={globalCatalogControlClass}
           inputMode="numeric"
           value={sortOrder}
           onChange={(event) => setSortOrder(event.target.value)}
         />
-      </label>
+      </div>
       <BusinessTypeMultiSelect
         id="category-business-types"
         options={businessTypesQuery.data?.items ?? []}

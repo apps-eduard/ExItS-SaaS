@@ -149,20 +149,27 @@ export function ImportUploadPanel({ enabled }: { enabled: boolean }) {
         {selectedFile ? (
           <p className="text-[length:var(--exits-text-sm)] text-muted">{selectedFile.name}</p>
         ) : null}
-        <label
-          className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted"
-          htmlFor="gc-import-idempotency"
-        >
-          {t("globalCatalog.imports.idempotencyKey")}
-          <Input
-            id="gc-import-idempotency"
-            value={idempotencyKey}
-            onChange={(event) => setIdempotencyKey(event.target.value)}
-            placeholder={t("globalCatalog.imports.idempotencyKeyPlaceholder")}
-            autoComplete="off"
-            disabled={!enabled || uploadImport.isPending}
-          />
-        </label>
+        <details className="rounded-[var(--exits-density-radius)] border border-border/70 bg-surface px-3 py-2">
+          <summary className="cursor-pointer text-[length:var(--exits-text-xs)] font-medium text-muted">
+            {t("globalCatalog.imports.advancedOptions")}
+          </summary>
+          <div className="mt-2">
+            <label
+              className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted"
+              htmlFor="gc-import-idempotency"
+            >
+              {t("globalCatalog.imports.idempotencyKey")}
+              <Input
+                id="gc-import-idempotency"
+                value={idempotencyKey}
+                onChange={(event) => setIdempotencyKey(event.target.value)}
+                placeholder={t("globalCatalog.imports.idempotencyKeyPlaceholder")}
+                autoComplete="off"
+                disabled={!enabled || uploadImport.isPending}
+              />
+            </label>
+          </div>
+        </details>
         {clientError ? (
           <p className="text-[length:var(--exits-text-sm)] text-danger" role="alert">
             {clientError}

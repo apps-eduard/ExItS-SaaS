@@ -189,6 +189,7 @@ describe("global catalog imports", () => {
     const user = userEvent.setup();
     render(<App />);
     expect(await screen.findByRole("heading", { name: "Imports" })).toBeInTheDocument();
+    await user.click(screen.getByText("Advanced options"));
     await user.type(screen.getByLabelText("Idempotency key (optional)"), "upload-key-1");
     await user.upload(screen.getByLabelText("Import file"), makeCsvFile());
     await user.click(screen.getByRole("button", { name: "Upload and validate" }));

@@ -6,6 +6,7 @@ import type {
 } from "@/api/global-catalog/global-catalog-types";
 import { classifyGlobalCatalogMutationFailure } from "@/api/global-catalog/global-catalog-errors";
 import { AdminTable } from "@/components/exits/AdminTable";
+import { ConfirmActionDialog } from "@/components/exits/ConfirmActionDialog";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ export function TemplateCompositionPanel({
   const [appliedSearch, setAppliedSearch] = useState("");
   const [page, setPage] = useState(1);
   const [mutationError, setMutationError] = useState<string | null>(null);
+  const [productToRemove, setProductToRemove] = useState<GlobalCatalogTemplateProduct | null>(null);
   const {
     assignTemplateProduct,
     removeTemplateProduct,
@@ -86,6 +88,7 @@ export function TemplateCompositionPanel({
         productId: product.globalProductId,
         expectedUpdatedAtUtc: template.updatedAtUtc,
       });
+      setProductToRemove(null);
       onChanged();
     } catch (error) {
       handleMutationError(error);
@@ -263,7 +266,10 @@ export function TemplateCompositionPanel({
                           variant="destructive"
                           disabled={pending}
                           aria-label={t("globalCatalog.templates.removeProduct")}
-                          onClick={() => void onRemove(item)}
+                          onClick={() => {
+                            setMutationError(null);
+                            setProductToRemove(item);
+                          }}
                         >
                           <Trash2 aria-hidden="true" className="size-4" />
                         </Button>
@@ -364,6 +370,35 @@ export function TemplateCompositionPanel({
           {mutationError}
         </p>
       ) : null}
+
+      <ConfirmActionDialog
+        open={productToRemove != null}
+        title={t("globalCatalog.templates.removeProductConfirmTitle")}
+        description={t("globalCatalog.templates.removeProductConfirmBody")}
+        confirmLabel={t("globalCatalog.templates.removeProduct")}
+        cancelLabel={t("globalCatalog.cancel")}
+        pendingLabel={t("globalCatalog.saving")}
+        destructive
+        pending={removeTemplateProduct.isPending}
+        error={
+          mutationError && productToRemove ? (
+            <p className="text-[length:var(--exits-text-sm)] text-danger" role="alert">
+              {mutationError}
+            </p>
+          ) : undefined
+        }
+        onCancel={() => {
+          if (!removeTemplateProduct.isPending) {
+            setProductToRemove(null);
+          }
+        }}
+        onConfirm={() => {
+          if (productToRemove) {
+            void onRemove(productToRemove);
+          }
+        }}
+      />
+
     </div>
   );
 }

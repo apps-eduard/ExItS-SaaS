@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import {
   formatGlobalCatalogFileSize,
   formatGlobalCatalogInstant,
+  globalCatalogDetailCardClass,
   globalCatalogImportStatusTone,
 } from "@/features/global-catalog/global-catalog-presentation";
 import {
@@ -132,7 +133,7 @@ export function ImportDetailPage() {
             }
           />
 
-          <div className="grid gap-3 rounded-[var(--exits-density-radius)] border border-border bg-surface p-4 md:grid-cols-2">
+          <div className={globalCatalogDetailCardClass}>
             <DetailField label={t("globalCatalog.column.status")}>
               <StatusIndicator
                 tone={globalCatalogImportStatusTone(job.status)}

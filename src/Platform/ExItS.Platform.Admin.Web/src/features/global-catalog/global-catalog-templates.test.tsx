@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { App } from "@/app/App";
 import { clearPlatformAntiforgeryToken } from "@/api/platform-http";
@@ -250,6 +250,9 @@ describe("global catalog templates", () => {
     await user.click(assignButtons[0]!);
     expect(await screen.findByText("Canned Tuna")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Remove product" }));
+    const removeDialog = await screen.findByRole("dialog");
+    expect(removeDialog).toBeInTheDocument();
+    await user.click(within(removeDialog).getByRole("button", { name: "Remove product" }));
     expect(await screen.findByText("No products assigned to this template yet.")).toBeInTheDocument();
   });
 });

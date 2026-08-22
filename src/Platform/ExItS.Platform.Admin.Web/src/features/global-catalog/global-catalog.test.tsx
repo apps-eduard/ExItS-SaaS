@@ -38,7 +38,7 @@ describe("global catalog admin", () => {
     window.history.replaceState({}, "", "/admin/global-catalog/categories?search=bev&status=Active");
     render(<App />);
     expect(await screen.findByRole("heading", { name: "Categories" })).toBeInTheDocument();
-    expect(await screen.findByText("Beverages")).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Beverages" })).toBeInTheDocument();
     await waitFor(() => {
       const urls = fetchMock.mock.calls.map(([input]) => String(input));
       expect(urls.some((url) => url.includes("/global-catalog/categories"))).toBe(true);

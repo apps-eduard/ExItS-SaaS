@@ -25,7 +25,12 @@ import { isPlatformForbidden } from "@/api/platform-http-status";
 import {
   formatGlobalCatalogInstant,
   globalCatalogControlClass,
+  globalCatalogFieldLabelClass,
+  globalCatalogFilterFormClass,
+  globalCatalogListShellClass,
+  globalCatalogMobileCardClass,
   globalCatalogStatusTone,
+  globalCatalogTableShellClass,
 } from "@/features/global-catalog/global-catalog-presentation";
 import { useGlobalBusinessTypesQuery } from "@/features/global-catalog/use-global-business-types-query";
 import { useGlobalCatalogTemplateListQuery } from "@/features/global-catalog/use-global-template-queries";
@@ -118,12 +123,12 @@ export function TemplatesList({ enabled }: { enabled: boolean }) {
   }
 
   return (
-    <div className="grid gap-4">
+    <div className={globalCatalogListShellClass}>
       <form
-        className="grid gap-3 rounded-[var(--exits-density-radius)] border border-border bg-surface p-4 md:grid-cols-2 xl:grid-cols-4"
+        className={`${globalCatalogFilterFormClass} md:grid-cols-[minmax(0,1fr)_minmax(10rem,12rem)_minmax(10rem,12rem)_10rem_9rem_auto]`}
         onSubmit={onSearchSubmit}
       >
-        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted" htmlFor="gc-tpl-search">
+        <label className={globalCatalogFieldLabelClass} htmlFor="gc-tpl-search">
           {t("globalCatalog.search")}
           <Input
             id="gc-tpl-search"
@@ -133,7 +138,7 @@ export function TemplatesList({ enabled }: { enabled: boolean }) {
             autoComplete="off"
           />
         </label>
-        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted" htmlFor="gc-tpl-status">
+        <label className={globalCatalogFieldLabelClass} htmlFor="gc-tpl-status">
           {t("globalCatalog.status")}
           <select
             id="gc-tpl-status"
@@ -154,10 +159,7 @@ export function TemplatesList({ enabled }: { enabled: boolean }) {
             ))}
           </select>
         </label>
-        <label
-          className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted"
-          htmlFor="gc-tpl-business-type"
-        >
+        <label className={globalCatalogFieldLabelClass} htmlFor="gc-tpl-business-type">
           {t("globalCatalog.businessType")}
           <select
             id="gc-tpl-business-type"
@@ -173,7 +175,7 @@ export function TemplatesList({ enabled }: { enabled: boolean }) {
             ))}
           </select>
         </label>
-        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted" htmlFor="gc-tpl-sort">
+        <label className={globalCatalogFieldLabelClass} htmlFor="gc-tpl-sort">
           {t("globalCatalog.sort")}
           <select
             id="gc-tpl-sort"
@@ -190,7 +192,7 @@ export function TemplatesList({ enabled }: { enabled: boolean }) {
             ))}
           </select>
         </label>
-        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted" htmlFor="gc-tpl-order">
+        <label className={globalCatalogFieldLabelClass} htmlFor="gc-tpl-order">
           {t("globalCatalog.sort.direction")}
           <select
             id="gc-tpl-order"
@@ -204,7 +206,7 @@ export function TemplatesList({ enabled }: { enabled: boolean }) {
             <option value="desc">{t("globalCatalog.sort.desc")}</option>
           </select>
         </label>
-        <div className="flex flex-wrap gap-2 md:col-span-2 xl:col-span-4">
+        <div className="flex flex-wrap gap-2">
           <Button type="submit" size="sm">
             {t("globalCatalog.searchSubmit")}
           </Button>
@@ -283,9 +285,9 @@ function TemplateResults({
   }
 
   return (
-    <div className="grid gap-4">
+    <div className={globalCatalogListShellClass}>
       {showTable ? (
-        <div className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-3">
+        <div className={globalCatalogTableShellClass}>
           <AdminTable
             caption={t("globalCatalog.templates.caption")}
             empty={emptyTitle}
@@ -334,25 +336,13 @@ function TemplateResults({
                   </span>
                 ),
               },
-              {
-                id: "actions",
-                header: t("globalCatalog.open"),
-                cell: (item) => (
-                  <Button asChild size="sm" variant="outline">
-                    <Link to={`/admin/global-catalog/templates/${item.id}`}>{t("globalCatalog.open")}</Link>
-                  </Button>
-                ),
-              },
             ]}
           />
         </div>
       ) : (
-        <ul className="grid gap-3">
+        <ul className="grid gap-2">
           {items.map((item) => (
-            <li
-              key={item.id}
-              className="rounded-[var(--exits-density-radius)] border border-border bg-surface p-4"
-            >
+            <li key={item.id} className={globalCatalogMobileCardClass}>
               <TemplateCard item={item} language={language} />
             </li>
           ))}
@@ -399,19 +389,14 @@ function TemplateCard({
   const updated = formatGlobalCatalogInstant(item.updatedAtUtc, language);
 
   return (
-    <div className="grid gap-2">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <Link
-            className="font-medium text-primary hover:underline"
-            to={`/admin/global-catalog/templates/${item.id}`}
-          >
-            {item.name}
-          </Link>
-          <p className="font-mono text-[length:var(--exits-text-xs)] text-muted">{item.slug}</p>
-        </div>
-        <StatusIndicator label={t(STATUS_LABELS[item.status])} tone={globalCatalogStatusTone(item.status)} />
-      </div>
+    <div className="grid gap-1">
+      <Link
+        className="font-medium text-primary hover:underline"
+        to={`/admin/global-catalog/templates/${item.id}`}
+      >
+        {item.name}
+      </Link>
+      <p className="font-mono text-[length:var(--exits-text-xs)] text-muted">{item.slug}</p>
       <div className="flex flex-wrap gap-3 text-[length:var(--exits-text-xs)] text-muted">
         <span>
           {t("globalCatalog.templates.column.productCount")}: {item.productCount}
@@ -419,9 +404,9 @@ function TemplateCard({
         <span>{item.primaryBusinessType}</span>
         {updated ? <span>{updated}</span> : null}
       </div>
-      <Button asChild size="sm" variant="outline" className="w-fit">
-        <Link to={`/admin/global-catalog/templates/${item.id}`}>{t("globalCatalog.open")}</Link>
-      </Button>
+      <div className="mt-1.5">
+        <StatusIndicator label={t(STATUS_LABELS[item.status])} tone={globalCatalogStatusTone(item.status)} />
+      </div>
     </div>
   );
 }

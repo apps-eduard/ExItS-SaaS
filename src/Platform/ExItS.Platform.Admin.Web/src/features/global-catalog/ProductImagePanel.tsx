@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { Trash2, Upload } from "lucide-react";
 import type { GlobalProductDetail } from "@/api/global-catalog/global-catalog-types";
 import { classifyGlobalCatalogMutationFailure } from "@/api/global-catalog/global-catalog-errors";
 import { globalProductImageUrl } from "@/api/global-catalog/global-catalog-http";
@@ -70,6 +71,7 @@ export function ProductImagePanel({
               disabled={uploadProductImage.isPending}
               onClick={() => inputRef.current?.click()}
             >
+              <Upload aria-hidden="true" className="mr-1.5 size-4" />
               {product.hasImage ? t("globalCatalog.image.replace") : t("globalCatalog.image.upload")}
             </Button>
             {product.hasImage ? (
@@ -80,6 +82,7 @@ export function ProductImagePanel({
                 disabled={removeProductImage.isPending}
                 onClick={() => setConfirmRemove(true)}
               >
+                <Trash2 aria-hidden="true" className="mr-1.5 size-4" />
                 {t("globalCatalog.image.remove")}
               </Button>
             ) : null}

@@ -16,12 +16,15 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusIndicator } from "@/components/exits/StatusIndicator";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BusinessTypeMultiSelect } from "@/features/global-catalog/BusinessTypeMultiSelect";
 import {
   formatGlobalCatalogInstant,
   globalCatalogControlClass,
   globalCatalogStatusTone,
+  globalCatalogDetailCardClass,
+  globalCatalogFieldLabelClass,
 } from "@/features/global-catalog/global-catalog-presentation";
 import {
   globalCatalogMutationDetail,
@@ -107,8 +110,7 @@ export function ProductDetailPage() {
               ) : null
             }
           />
-          <div className="grid gap-4 rounded-[var(--exits-density-radius)] border border-border bg-surface p-4 md:grid-cols-2">
-            <dl className="grid gap-2 text-[length:var(--exits-text-sm)]">
+                    <dl className={globalCatalogDetailCardClass}>
               <div>
                 <dt className="text-muted">{t("globalCatalog.column.status")}</dt>
                 <dd className="mt-0.5">
@@ -161,8 +163,9 @@ export function ProductDetailPage() {
                 </dd>
               </div>
             </dl>
-            <ProductLifecycleActions product={query.data} canManage={canManage} />
-          </div>
+
+          <ProductLifecycleActions product={query.data} canManage={canManage} />
+
           <ProductImagePanel product={query.data} canManage={canManage} />
         </>
       ) : null}
@@ -242,7 +245,6 @@ function ProductEditForm({
         />
       ) : null}
       {query.data ? <ProductForm mode="edit" product={query.data} onSaved={onSaved} /> : null}
-      {query.data ? <ProductImagePanel product={query.data} canManage /> : null}
     </ProductFormShell>
   );
 }
@@ -347,46 +349,51 @@ function ProductForm({
 
   return (
     <form className="grid max-w-2xl gap-3" onSubmit={(event) => void onSubmit(event)}>
-      <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted">
-        {t("globalCatalog.field.name")}
+      <div className={globalCatalogFieldLabelClass}>
+        <Label htmlFor="gc-product-name">{t("globalCatalog.field.name")}</Label>
         <input
-          className="h-[var(--exits-control-height)] rounded-[var(--exits-density-radius)] border border-input bg-surface px-3"
+          id="gc-product-name"
+          className={globalCatalogControlClass}
           value={name}
           onChange={(event) => setName(event.target.value)}
           required
         />
-      </label>
+      </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted">
-          {t("globalCatalog.column.sku")}
+        <div className={globalCatalogFieldLabelClass}>
+          <Label htmlFor="gc-product-form-sku">{t("globalCatalog.column.sku")}</Label>
           <input
-            className="h-[var(--exits-control-height)] rounded-[var(--exits-density-radius)] border border-input bg-surface px-3 font-mono"
+            id="gc-product-form-sku"
+            className={`${globalCatalogControlClass} font-mono`}
             value={sku}
             onChange={(event) => setSku(event.target.value)}
             required
           />
-        </label>
-        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted">
-          {t("globalCatalog.column.barcode")}
+        </div>
+        <div className={globalCatalogFieldLabelClass}>
+          <Label htmlFor="gc-product-form-barcode">{t("globalCatalog.column.barcode")}</Label>
           <input
-            className="h-[var(--exits-control-height)] rounded-[var(--exits-density-radius)] border border-input bg-surface px-3 font-mono"
+            id="gc-product-form-barcode"
+            className={`${globalCatalogControlClass} font-mono`}
             value={barcode}
             onChange={(event) => setBarcode(event.target.value)}
           />
-        </label>
+        </div>
       </div>
-      <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted">
-        {t("globalCatalog.column.brand")}
+      <div className={globalCatalogFieldLabelClass}>
+        <Label htmlFor="gc-product-brand">{t("globalCatalog.column.brand")}</Label>
         <input
-          className="h-[var(--exits-control-height)] rounded-[var(--exits-density-radius)] border border-input bg-surface px-3"
+          id="gc-product-brand"
+          className={globalCatalogControlClass}
           value={brand}
           onChange={(event) => setBrand(event.target.value)}
           required
         />
-      </label>
-      <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted">
-        {t("globalCatalog.column.category")}
+      </div>
+      <div className={globalCatalogFieldLabelClass}>
+        <Label htmlFor="gc-product-category">{t("globalCatalog.column.category")}</Label>
         <select
+          id="gc-product-category"
           className={globalCatalogControlClass}
           value={globalCategoryId}
           required
@@ -399,11 +406,12 @@ function ProductForm({
             </option>
           ))}
         </select>
-      </label>
+      </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted">
-          {t("globalCatalog.column.unit")}
+        <div className={globalCatalogFieldLabelClass}>
+          <Label htmlFor="gc-product-unit">{t("globalCatalog.column.unit")}</Label>
           <select
+            id="gc-product-unit"
             className={globalCatalogControlClass}
             value={unit}
             onChange={(event) => setUnit(event.target.value as ProductUnit)}
@@ -414,10 +422,11 @@ function ProductForm({
               </option>
             ))}
           </select>
-        </label>
-        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted">
-          {t("globalCatalog.field.sellingMode")}
+        </div>
+        <div className={globalCatalogFieldLabelClass}>
+          <Label htmlFor="gc-product-selling-mode">{t("globalCatalog.field.sellingMode")}</Label>
           <select
+            id="gc-product-selling-mode"
             className={globalCatalogControlClass}
             value={sellingMode}
             onChange={(event) => setSellingMode(event.target.value as ProductSellingMode)}
@@ -428,27 +437,29 @@ function ProductForm({
               </option>
             ))}
           </select>
-        </label>
+        </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted">
-          {t("globalCatalog.column.costPrice")}
+        <div className={globalCatalogFieldLabelClass}>
+          <Label htmlFor="gc-product-cost">{t("globalCatalog.column.costPrice")}</Label>
           <input
-            className="h-[var(--exits-control-height)] rounded-[var(--exits-density-radius)] border border-input bg-surface px-3"
+            id="gc-product-cost"
+            className={globalCatalogControlClass}
             inputMode="decimal"
             value={costPrice}
             onChange={(event) => setCostPrice(event.target.value)}
           />
-        </label>
-        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted">
-          {t("globalCatalog.column.sellingPrice")}
+        </div>
+        <div className={globalCatalogFieldLabelClass}>
+          <Label htmlFor="gc-product-selling">{t("globalCatalog.column.sellingPrice")}</Label>
           <input
-            className="h-[var(--exits-control-height)] rounded-[var(--exits-density-radius)] border border-input bg-surface px-3"
+            id="gc-product-selling"
+            className={globalCatalogControlClass}
             inputMode="decimal"
             value={sellingPrice}
             onChange={(event) => setSellingPrice(event.target.value)}
           />
-        </label>
+        </div>
       </div>
       <BusinessTypeMultiSelect
         id="product-business-types"

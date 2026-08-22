@@ -473,6 +473,7 @@ test.describe("global catalog product browser flows", () => {
       .poll(() => mock.productListRequests.some((url) => url.includes("search=water")))
       .toBe(true);
     await page.fill("#gc-product-sku", "BW-500");
+    await page.getByRole("button", { name: "Search" }).click();
     await expect
       .poll(() => mock.productListRequests.some((url) => url.includes("sku=BW-500")))
       .toBe(true);
@@ -571,7 +572,7 @@ test.describe("global catalog image browser flow", () => {
 });
 
 test.describe("global catalog accessibility and responsive layout", () => {
-  test("categories page has no serious axe violations at desktop and tablet", async ({ page }) => {
+  test("categories page has no serious axe violations at desktop, tablet, and phone", async ({ page }) => {
     await mockGlobalCatalog(page);
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/admin/global-catalog/categories");
@@ -582,6 +583,14 @@ test.describe("global catalog accessibility and responsive layout", () => {
 
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto("/admin/global-catalog/categories");
+    await expect(page.getByRole("link", { name: "Beverages" })).toBeVisible();
+    accessibility = await new AxeBuilder({ page }).analyze();
+    expect(accessibility.violations.filter((v) => v.impact === "serious" || v.impact === "critical")).toEqual([]);
+    await assertNoHorizontalOverflow(page);
+
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/admin/global-catalog/categories");
+    await expect(page.getByRole("heading", { name: "Categories" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Beverages" })).toBeVisible();
     accessibility = await new AxeBuilder({ page }).analyze();
     expect(accessibility.violations.filter((v) => v.impact === "serious" || v.impact === "critical")).toEqual([]);

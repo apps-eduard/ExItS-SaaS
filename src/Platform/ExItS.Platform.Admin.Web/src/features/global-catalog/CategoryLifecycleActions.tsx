@@ -89,8 +89,24 @@ export function CategoryLifecycleActions({
 
       <ConfirmActionDialog
         open={pendingAction != null}
-        title={pendingAction ? t("globalCatalog.lifecycle.confirmTitle") : ""}
-        description={pendingAction ? t("globalCatalog.lifecycle.confirmBody") : ""}
+        title={
+          pendingAction
+            ? t(
+                pendingAction.destructive
+                  ? "globalCatalog.lifecycle.confirmArchiveTitle"
+                  : "globalCatalog.lifecycle.confirmTitle",
+              )
+            : ""
+        }
+        description={
+          pendingAction
+            ? t(
+                pendingAction.destructive
+                  ? "globalCatalog.lifecycle.confirmArchiveBody"
+                  : "globalCatalog.lifecycle.confirmBody",
+              )
+            : ""
+        }
         confirmLabel={pendingAction ? t(pendingAction.labelKey) : t("globalCatalog.save")}
         cancelLabel={t("globalCatalog.cancel")}
         pendingLabel={t("globalCatalog.saving")}
