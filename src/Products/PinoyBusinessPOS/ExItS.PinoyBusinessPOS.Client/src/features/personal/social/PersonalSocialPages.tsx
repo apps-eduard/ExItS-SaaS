@@ -7,7 +7,6 @@ import {
   createPersonalUtangInvitation,
   createRelationshipReminder,
   declinePersonalUtangInvitation,
-  getMyPublicIdentity,
   listPersonalNotifications,
   listPersonalUtangInvitations,
   listRelationshipReminders,
@@ -302,35 +301,7 @@ export function PersonalNotificationsPage() {
   );
 }
 
-export function PersonalMyQrPage() {
-  const { t } = useI18n();
-  const query = useQuery({
-    queryKey: ["personal", "public-identity"],
-    queryFn: ({ signal }) => getMyPublicIdentity(signal),
-  });
-
-  if (query.isPending) return <LoadingSkeleton />;
-  if (query.isError) {
-    return (
-      <ErrorState
-        title={t("personal.social.loadErrorTitle")}
-        detail={t("personal.social.loadErrorDetail")}
-      />
-    );
-  }
-
-  return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="personal-my-qr-page">
-      <PageHeader title={t("personal.social.qrTitle")} description={t("personal.social.qrLede")} />
-      <p className="m-0 break-all font-semibold" data-testid="personal-public-id">
-        {query.data.publicUserId}
-      </p>
-      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-        {t("personal.social.qrSafety")}
-      </p>
-    </div>
-  );
-}
+export { PersonalMyQrPage } from "@/features/personal/social/PersonalMyQrPage";
 
 export function RelationshipInviteReminderPanel({
   relationshipId,

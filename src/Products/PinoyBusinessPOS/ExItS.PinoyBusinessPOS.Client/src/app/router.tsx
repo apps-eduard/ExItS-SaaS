@@ -43,6 +43,7 @@ import { CashHandlingSettingsPage } from "@/features/settings/CashHandlingSettin
 import { BranchFulfillmentEditPage } from "@/features/branches/BranchFulfillmentEditPage";
 import { BranchFulfillmentListPage } from "@/features/branches/BranchFulfillmentListPage";
 import { OrgEssentialsPage } from "@/features/role/OrgEssentialsPage";
+import { OrgBusinessQrPage } from "@/features/org/OrgBusinessQrPage";
 import { CatalogCategoriesPage } from "@/features/catalog/CatalogCategoriesPage";
 import {
   CatalogProductCreatePage,
@@ -320,6 +321,7 @@ export const appRoutes = [
             ),
             children: [
               { index: true, element: <OrgEssentialsPage /> },
+              { path: "business-qr", element: <OrgBusinessQrPage /> },
               {
                 path: "staff/invite",
                 element: (

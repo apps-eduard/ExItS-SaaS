@@ -4,6 +4,7 @@ import {
   MapPin,
   MonitorSmartphone,
   Package,
+  QrCode,
   ShoppingCart,
   UserPlus,
 } from "lucide-react";
@@ -82,6 +83,15 @@ export function OrgEssentialsPage() {
           subtitle: t("org.action.devicesDetail"),
           icon: MonitorSmartphone,
           testId: "open-org-devices",
+        }
+      : null,
+    canDevices
+      ? {
+          to: "/org/business-qr",
+          title: t("org.businessQr.title"),
+          subtitle: t("org.action.businessQrDetail"),
+          icon: QrCode,
+          testId: "open-business-qr",
         }
       : null,
   ].filter((item): item is NonNullable<typeof item> => item != null);

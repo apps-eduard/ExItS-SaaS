@@ -169,6 +169,8 @@ export type CreatePosCustomerInput = {
   notes?: string | null;
   /** Client-chosen id so a replayed create returns the same customer instead of a duplicate. */
   customerId?: string;
+  /** Platform BusinessCustomer correlation after with-personal-link. */
+  platformBusinessCustomerId?: string | null;
 };
 
 export type UpdatePosCustomerInput = CreatePosCustomerInput & {
@@ -213,6 +215,9 @@ export function buildCreateCustomerPayload(input: CreatePosCustomerInput) {
     address: input.address?.trim() || null,
     notes: input.notes?.trim() || null,
     ...(input.customerId ? { customerId: input.customerId } : {}),
+    ...(input.platformBusinessCustomerId
+      ? { platformBusinessCustomerId: input.platformBusinessCustomerId }
+      : {}),
   };
 }
 

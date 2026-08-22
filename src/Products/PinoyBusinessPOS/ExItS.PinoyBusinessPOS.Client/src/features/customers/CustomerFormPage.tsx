@@ -8,6 +8,10 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import {
+  CustomerPersonalLinkPanel,
+  type ConfirmedPersonalLink,
+} from "@/features/customers/CustomerPersonalLinkPanel";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { getCachedCustomer } from "@/offline/customer-cache";
@@ -46,6 +50,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
   const [expectedUpdatedAtUtc, setExpectedUpdatedAtUtc] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [personalLink, setPersonalLink] = useState<ConfirmedPersonalLink | null>(null);
 
   const workspace = useMemo(
     () =>
@@ -133,9 +138,19 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
           displayName: name,
           mobileNumber,
           address,
-          notes,
+          notes: personalLink
+            ? notes.trim()
+              ? `${notes.trim()}\nexits-id:${personalLink.publicUserId}`
+              : `exits-id:${personalLink.publicUserId}`
+            : notes,
+          platformBusinessCustomerId: personalLink?.platformBusinessCustomerId ?? null,
         });
-        navigate(`/customers/${created.customerId}`, { replace: true });
+        navigate(
+          personalLink
+            ? `/customers/${created.customerId}?pendingLink=1`
+            : `/customers/${created.customerId}`,
+          { replace: true },
+        );
         return;
       }
       const updated = await updateCustomer(workspace, customerId!, {
@@ -275,6 +290,29 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
           />
         </label>
       </Card>
+      {mode === "create" && online && workspace ? (
+        <CustomerPersonalLinkPanel
+          organizationId={workspace.organizationId}
+          displayName={displayName}
+          phone={mobileNumber}
+          notes={notes}
+          disabled={saving}
+          onLinked={(link) => {
+            setPersonalLink(link);
+            if (!displayName.trim()) {
+              setDisplayName(link.displayName);
+            }
+          }}
+          onCleared={() => setPersonalLink(null)}
+        />
+      ) : null}
+      {mode === "create" && !online ? (
+        <Card data-testid="customer-personal-link-offline">
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("customers.personalLink.requiresOnline")}
+          </p>
+        </Card>
+      ) : null}
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"

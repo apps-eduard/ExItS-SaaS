@@ -54,6 +54,8 @@ export const personalInAppNotificationSchema = z.object({
 export const publicIdentitySchema = z.object({
   publicUserId: z.string(),
   qrPayload: z.string().nullable().optional().default(null),
+  displayName: z.string().optional().default(""),
+  status: z.string().optional().default("Active"),
 });
 
 export type PersonalUtangInvitationDto = z.infer<typeof personalUtangInvitationSchema>;
@@ -256,5 +258,7 @@ export async function getMyPublicIdentity(signal?: AbortSignal): Promise<PublicI
     publicUserId: pick(r, "publicUserId", "PublicUserId"),
     qrPayload:
       pick(r, "qrPayload", "QrPayload") ?? pick(r, "qrCodePayload", "QrCodePayload") ?? null,
+    displayName: pick(r, "displayName", "DisplayName") ?? "",
+    status: pick(r, "status", "Status") ?? "Active",
   });
 }
