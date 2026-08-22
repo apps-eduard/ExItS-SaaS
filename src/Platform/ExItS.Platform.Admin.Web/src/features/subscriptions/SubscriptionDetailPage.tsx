@@ -1,4 +1,5 @@
 import { Link, useParams } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { PLATFORM_PERMISSIONS } from "@/api/authorization/authorization-types";
 import { PlatformApiError } from "@/api/platform-http";
 import {
@@ -119,14 +120,15 @@ export function SubscriptionDetailPage() {
 
   return (
     <section className="grid max-w-3xl gap-4">
+      <p className="text-[length:var(--exits-text-sm)]">
+        <Link className="inline-flex items-center gap-1 text-primary hover:underline" to={subscriptionsListHref()}>
+          <ArrowLeft aria-hidden className="size-4" />
+          {t("subscriptions.detail.back")}
+        </Link>
+      </p>
       <PageHeader
         title={subscription.productDisplayName || subscription.productCode}
         description={t("subscriptions.detail.description")}
-        actions={
-          <Button type="button" variant="outline" size="sm" asChild>
-            <Link to={subscriptionsListHref()}>{t("subscriptions.detail.back")}</Link>
-          </Button>
-        }
       />
 
       <div className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-3">

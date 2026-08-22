@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   ORGANIZATION_PAYMENT_STATUSES,
@@ -17,6 +17,7 @@ import { AdminTable } from "@/components/exits/AdminTable";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { StatusIndicator } from "@/components/exits/StatusIndicator";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useAuthorizedCatalogProductsQuery } from "@/features/navigation/use-catalog-products-query";
 import { MANUAL_PAYMENT_METHODS } from "@/features/organizations/billing-lifecycle";
@@ -70,6 +71,15 @@ export function PaymentsList({ enabled }: { enabled: boolean }) {
     setSearchParams(paymentPortfolioSearchParams({ ...current, ...patch }), { replace: true });
   }
 
+  function resetFilters() {
+    replaceState({ page: 1, status: "", productCode: "", method: "" });
+  }
+
+  function onFilterSubmit(event: FormEvent) {
+    event.preventDefault();
+  }
+
+  const filtersActive = hasActivePaymentPortfolioFilters(state);
   const totalPages = query.data
     ? Math.max(1, Math.ceil(query.data.totalCount / PAYMENT_PORTFOLIO_PAGE_SIZE))
     : 1;
@@ -79,7 +89,10 @@ export function PaymentsList({ enabled }: { enabled: boolean }) {
 
   return (
     <div className="grid gap-3">
-      <div className="grid gap-2 rounded-[var(--exits-density-radius)] border border-border bg-surface p-3 md:grid-cols-3">
+      <form
+        className="grid gap-2 rounded-[var(--exits-density-radius)] border border-border bg-surface p-3 md:grid-cols-3"
+        onSubmit={onFilterSubmit}
+      >
         <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted">
           {t("payments.portfolio.status")}
           <select
@@ -107,15 +120,19 @@ export function PaymentsList({ enabled }: { enabled: boolean }) {
             className={controlClass}
             value={state.productCode}
             aria-label={t("payments.portfolio.product")}
+            disabled={productsQuery.isPending || productsQuery.isError}
             onChange={(event) => replaceState({ productCode: event.target.value, page: 1 })}
           >
             <option value="">{t("payments.portfolio.product.all")}</option>
-            {(productsQuery.data?.items ?? []).map((product) => (
+            {productsQuery.data?.items.map((product) => (
               <option key={product.code} value={product.code}>
                 {product.displayName}
               </option>
             ))}
           </select>
+          {productsQuery.isPending ? (
+            <span className="font-normal text-muted">{t("commercial.productCatalog.loading")}</span>
+          ) : null}
         </label>
         <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted">
           {t("payments.portfolio.method")}
@@ -133,21 +150,20 @@ export function PaymentsList({ enabled }: { enabled: boolean }) {
             ))}
           </select>
         </label>
-        {hasActivePaymentPortfolioFilters(state) ? (
+        {filtersActive ? (
           <div className="md:col-span-3">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() =>
-                replaceState({ page: 1, status: "", productCode: "", method: "" })
-              }
-            >
+            <Button type="button" size="sm" variant="outline" onClick={resetFilters}>
               {t("payments.portfolio.reset")}
             </Button>
           </div>
         ) : null}
-      </div>
+      </form>
+
+      {productsQuery.isError ? (
+        <Alert title={t("commercial.catalogUnavailable")} tone="danger">
+          {t("organizations.product.catalogUnavailable")}
+        </Alert>
+      ) : null}
 
       {query.isPending ? (
         <div
@@ -174,10 +190,15 @@ export function PaymentsList({ enabled }: { enabled: boolean }) {
           {query.data.items.length === 0 ? (
             <div className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-3">
               <p className="text-[length:var(--exits-text-sm)] text-muted" role="status">
-                {hasActivePaymentPortfolioFilters(state)
+                {filtersActive
                   ? t("payments.portfolio.zeroResult")
                   : t("payments.portfolio.empty")}
               </p>
+              {filtersActive ? (
+                <Button type="button" size="sm" variant="outline" className="mt-2" onClick={resetFilters}>
+                  {t("payments.portfolio.reset")}
+                </Button>
+              ) : null}
             </div>
           ) : showTable ? (
             <div className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-3">
@@ -256,11 +277,19 @@ export function PaymentsList({ enabled }: { enabled: boolean }) {
                   <p className="mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
                     {item.productCode} · {item.method}
                   </p>
+                  <div className="mt-1.5">
+                    <StatusIndicator
+                      tone={statusTone(item.status)}
+                      label={
+                        STATUS_LABELS[item.status] ? t(STATUS_LABELS[item.status]!) : item.status
+                      }
+                    />
+                  </div>
                 </li>
               ))}
             </ul>
           )}
-          {query.data.totalCount > PAYMENT_PORTFOLIO_PAGE_SIZE ? (
+          {totalPages > 1 ? (
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 type="button"

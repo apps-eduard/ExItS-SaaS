@@ -474,29 +474,31 @@ export function OrganizationEntitlementsPage() {
               )}
             </ul>
           )}
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={state.page <= 1}
-              onClick={() => replaceState({ page: state.page - 1 })}
-            >
-              {t("organizations.previous")}
-            </Button>
-            <p className="text-[length:var(--exits-text-xs)] text-muted">
-              {t("organizations.page")} {state.page} / {totalPages}
-            </p>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={state.page >= totalPages}
-              onClick={() => replaceState({ page: state.page + 1 })}
-            >
-              {t("organizations.next")}
-            </Button>
-          </div>
+          {totalPages > 1 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={state.page <= 1}
+                onClick={() => replaceState({ page: state.page - 1 })}
+              >
+                {t("organizations.previous")}
+              </Button>
+              <p className="text-[length:var(--exits-text-xs)] text-muted">
+                {t("organizations.page")} {state.page} / {totalPages}
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={state.page >= totalPages}
+                onClick={() => replaceState({ page: state.page + 1 })}
+              >
+                {t("organizations.next")}
+              </Button>
+            </div>
+          ) : null}
         </>
       ) : null}
     </section>

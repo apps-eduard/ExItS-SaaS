@@ -18,6 +18,7 @@ import { AdminTable } from "@/components/exits/AdminTable";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { StatusIndicator } from "@/components/exits/StatusIndicator";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthorizedCatalogProductsQuery } from "@/features/navigation/use-catalog-products-query";
@@ -118,10 +119,29 @@ export function PlansList({ enabled }: { enabled: boolean }) {
         productCode={state.productCode}
         sortBy={state.sortBy}
         sortDesc={state.sortDesc}
-        products={productsQuery.data?.items ?? []}
+        products={productsQuery.data?.items}
+        productsLoading={productsQuery.isPending}
+        productsError={productsQuery.isError}
+        hasActiveFilters={hasActivePlanFilters(state)}
         onSubmitSearch={(search) => replaceState({ search, page: 1 })}
         onReplace={replaceState}
+        onReset={() =>
+          replaceState({
+            page: 1,
+            search: "",
+            status: "",
+            productCode: "",
+            sortBy: "DisplayName",
+            sortDesc: false,
+          })
+        }
       />
+
+      {productsQuery.isError ? (
+        <Alert title={t("commercial.catalogUnavailable")} tone="danger">
+          {t("organizations.product.catalogUnavailable")}
+        </Alert>
+      ) : null}
 
       {query.isPending ? (
         <div
@@ -146,7 +166,6 @@ export function PlansList({ enabled }: { enabled: boolean }) {
       {query.data ? (
         <PlanResults
           items={query.data.items}
-          totalCount={query.data.totalCount}
           page={state.page}
           totalPages={totalPages}
           filtered={hasActivePlanFilters(state)}
@@ -176,17 +195,25 @@ function PlanFilterForm({
   sortBy,
   sortDesc,
   products,
+  productsLoading,
+  productsError,
+  hasActiveFilters,
   onSubmitSearch,
   onReplace,
+  onReset,
 }: {
   search: string;
   status: string;
   productCode: string;
   sortBy: PlanListSortBy;
   sortDesc: boolean;
-  products: { code: string; displayName: string }[];
+  products: { code: string; displayName: string }[] | undefined;
+  productsLoading: boolean;
+  productsError: boolean;
+  hasActiveFilters: boolean;
   onSubmitSearch: (search: string) => void;
   onReplace: (patch: Partial<PlanListUrlState>) => void;
+  onReset: () => void;
 }) {
   const { t } = usePreferences();
   const [searchDraft, setSearchDraft] = useState(search);
@@ -220,15 +247,19 @@ function PlanFilterForm({
           className={controlClass}
           value={productCode}
           aria-label={t("plans.product")}
+          disabled={productsLoading || productsError}
           onChange={(event) => onReplace({ productCode: event.target.value, page: 1 })}
         >
           <option value="">{t("plans.product.all")}</option>
-          {products.map((product) => (
+          {products?.map((product) => (
             <option key={product.code} value={product.code}>
               {product.displayName}
             </option>
           ))}
         </select>
+        {productsLoading ? (
+          <span className="font-normal text-muted">{t("commercial.productCatalog.loading")}</span>
+        ) : null}
       </label>
       <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted">
         {t("plans.status")}
@@ -278,13 +309,17 @@ function PlanFilterForm({
       <Button type="submit" className="min-h-[var(--exits-touch-target-min)]">
         {t("plans.searchSubmit")}
       </Button>
+      {hasActiveFilters ? (
+        <Button type="button" variant="outline" className="min-h-[var(--exits-touch-target-min)]" onClick={onReset}>
+          {t("plans.reset")}
+        </Button>
+      ) : null}
     </form>
   );
 }
 
 function PlanResults({
   items,
-  totalCount,
   page,
   totalPages,
   filtered,
@@ -294,7 +329,6 @@ function PlanResults({
   onReset,
 }: {
   items: CatalogPlan[];
-  totalCount: number;
   page: number;
   totalPages: number;
   filtered: boolean;
@@ -424,7 +458,7 @@ function PlanResults({
         )}
       </div>
 
-      {totalCount > PLAN_LIST_PAGE_SIZE ? (
+      {totalPages > 1 ? (
         <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"

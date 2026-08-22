@@ -16,6 +16,7 @@ import { AdminTable } from "@/components/exits/AdminTable";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { StatusIndicator } from "@/components/exits/StatusIndicator";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthorizedCatalogProductsQuery } from "@/features/navigation/use-catalog-products-query";
@@ -109,6 +110,22 @@ export function SubscriptionsList({ enabled }: { enabled: boolean }) {
     });
   }
 
+  function resetFilters() {
+    setSearchDraft("");
+    setProductDraft("");
+    replaceState({
+      page: 1,
+      search: "",
+      status: "",
+      isTrial: "",
+      productCode: "",
+      planId: "",
+      sortBy: "UpdatedAtUtc",
+      sortDesc: true,
+    });
+  }
+
+  const filtersActive = hasActiveSubscriptionPortfolioFilters(state);
   const totalPages = query.data
     ? Math.max(1, Math.ceil(query.data.totalCount / SUBSCRIPTION_PORTFOLIO_PAGE_SIZE))
     : 1;
@@ -148,15 +165,19 @@ export function SubscriptionsList({ enabled }: { enabled: boolean }) {
             id="sub-portfolio-product"
             className={controlClass}
             value={productDraft}
+            disabled={productsQuery.isPending || productsQuery.isError}
             onChange={(event) => setProductDraft(event.target.value)}
           >
             <option value="">{t("subscriptions.portfolio.product.all")}</option>
-            {(productsQuery.data?.items ?? []).map((product) => (
+            {productsQuery.data?.items.map((product) => (
               <option key={product.code} value={product.code}>
                 {product.displayName}
               </option>
             ))}
           </select>
+          {productsQuery.isPending ? (
+            <span className="font-normal text-muted">{t("commercial.productCatalog.loading")}</span>
+          ) : null}
         </label>
         <label
           className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted"
@@ -250,31 +271,24 @@ export function SubscriptionsList({ enabled }: { enabled: boolean }) {
           <Button type="submit" size="sm">
             {t("subscriptions.portfolio.searchSubmit")}
           </Button>
-          {hasActiveSubscriptionPortfolioFilters(state) ? (
+          {filtersActive ? (
             <Button
               type="button"
               size="sm"
               variant="outline"
-              onClick={() => {
-                setSearchDraft("");
-                setProductDraft("");
-                replaceState({
-                  page: 1,
-                  search: "",
-                  status: "",
-                  isTrial: "",
-                  productCode: "",
-                  planId: "",
-                  sortBy: "UpdatedAtUtc",
-                  sortDesc: true,
-                });
-              }}
+              onClick={resetFilters}
             >
               {t("subscriptions.portfolio.reset")}
             </Button>
           ) : null}
         </div>
       </form>
+
+      {productsQuery.isError ? (
+        <Alert title={t("commercial.catalogUnavailable")} tone="danger">
+          {t("organizations.product.catalogUnavailable")}
+        </Alert>
+      ) : null}
 
       {query.isPending ? (
         <div
@@ -301,10 +315,15 @@ export function SubscriptionsList({ enabled }: { enabled: boolean }) {
           {query.data.items.length === 0 ? (
             <div className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-3">
               <p className="text-[length:var(--exits-text-sm)] text-muted" role="status">
-                {hasActiveSubscriptionPortfolioFilters(state)
+                {filtersActive
                   ? t("subscriptions.portfolio.zeroResult")
                   : t("subscriptions.portfolio.empty")}
               </p>
+              {filtersActive ? (
+                <Button type="button" size="sm" variant="outline" className="mt-2" onClick={resetFilters}>
+                  {t("subscriptions.portfolio.reset")}
+                </Button>
+              ) : null}
             </div>
           ) : showTable ? (
             <div className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-3">
@@ -394,7 +413,7 @@ export function SubscriptionsList({ enabled }: { enabled: boolean }) {
               ))}
             </ul>
           )}
-          {query.data.totalCount > SUBSCRIPTION_PORTFOLIO_PAGE_SIZE ? (
+          {totalPages > 1 ? (
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 type="button"

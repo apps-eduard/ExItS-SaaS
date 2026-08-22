@@ -193,11 +193,22 @@ export function EntitlementsPortfolioPage() {
                   <p className="mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
                     {productLabel(item)}
                   </p>
+                  <div className="mt-1.5">
+                    <StatusIndicator
+                      tone={organizationSubscriptionStatusTone(item.subscriptionStatus)}
+                      label={organizationSubscriptionStatusLabel(item.subscriptionStatus, t)}
+                    />
+                  </div>
+                  {item.generatedAtUtc ? (
+                    <p className="mt-1 text-[length:var(--exits-text-xs)] text-muted">
+                      {formatInstant(item.generatedAtUtc, language)}
+                    </p>
+                  ) : null}
                 </li>
               ))}
             </ul>
           )}
-          {query.data.totalCount > ENTITLEMENT_PORTFOLIO_PAGE_SIZE ? (
+          {totalPages > 1 ? (
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 type="button"

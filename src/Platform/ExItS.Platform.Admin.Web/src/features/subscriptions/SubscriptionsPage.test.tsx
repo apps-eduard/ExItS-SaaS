@@ -176,4 +176,50 @@ describe("SubscriptionsPage portfolio list", () => {
     expect(screen.getAllByText("Pinoy Business POS").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Starter").length).toBeGreaterThan(0);
   });
+
+  it("shows catalog unavailable alert when product catalog fails", async () => {
+    stubDesktop();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("/auth/me")) {
+          return jsonResponse(200, {
+            sessionId: "11111111-1111-1111-1111-111111111111",
+            userId: "22222222-2222-2222-2222-222222222222",
+            username: "olivia",
+            displayName: "Olivia Mendoza",
+            email: "olivia@example.test",
+            expiresAtUtc: "2026-08-19T12:00:00Z",
+            absoluteExpiresAtUtc: "2026-08-20T12:00:00Z",
+            selectedOrganizationId: null,
+            selectedOrganizationDisplayName: null,
+            organizationSelectionState: "None",
+            activeOrganizationCount: 0,
+            accountClass: "Platform",
+          });
+        }
+        if (url.includes("/authorization/me")) {
+          return jsonResponse(200, sampleAuthorization);
+        }
+        if (url.includes("/health")) {
+          return textResponse(200, "Healthy");
+        }
+        if (url.includes("/api/v1/platform/subscriptions")) {
+          return jsonResponse(200, { items: [], totalCount: 0, page: 1, pageSize: 20 });
+        }
+        if (url.includes("/catalog/products")) {
+          return jsonResponse(500, { title: "Error", status: 500, detail: "catalog-boom" });
+        }
+        return jsonResponse(200, { items: [], totalCount: 0, page: 1, pageSize: 1 });
+      }),
+    );
+    window.history.replaceState({}, "", "/admin/subscriptions");
+    render(<App />);
+    expect(
+      await screen.findByText(
+        "Product catalog could not be loaded. Open All Organizations or try again later.",
+      ),
+    ).toBeInTheDocument();
+  });
 });

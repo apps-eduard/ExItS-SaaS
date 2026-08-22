@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { CreditCard, Plus } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { PLATFORM_PERMISSIONS } from "@/api/authorization/authorization-types";
 import type { CatalogPlan } from "@/api/catalog/plan-catalog-types";
@@ -208,9 +209,21 @@ export function OrganizationBillingLifecycle({ organizationId }: { organizationI
   const upgradeFromPayment = useUpgradeSubscriptionFromPaymentMutation();
   const simulatePayment = useSimulateLocalValidationPaymentMutation();
 
-  const subscriptions = subscriptionsQuery.data?.items ?? [];
+  const subscriptions = subscriptionsQuery.isSuccess ? (subscriptionsQuery.data?.items ?? []) : [];
   const payments = paymentsQuery.data?.items ?? [];
-  const posPlans = posPlansQuery.data ?? [];
+  const posPlans = posPlansQuery.isSuccess ? (posPlansQuery.data ?? []) : [];
+  const posPlansDiagnostic = posPlansQuery.error
+    ? normalizeDiagnosticError({
+        error: posPlansQuery.error,
+        operation: "Load plan catalog",
+      })
+    : null;
+  const subscriptionsDiagnostic = subscriptionsQuery.error
+    ? normalizeDiagnosticError({
+        error: subscriptionsQuery.error,
+        operation: "Load organization subscriptions",
+      })
+    : null;
   const upgradeTargetPlan = upgradeContext
     ? posPlans.find((plan) => plan.id === upgradeContext.targetPlanId)
     : undefined;
@@ -282,7 +295,11 @@ export function OrganizationBillingLifecycle({ organizationId }: { organizationI
       } else if (kind === "activate") {
         const subscription = findSubscriptionForPayment(payment, subscriptions);
         if (!subscription) {
-          showError(new Error("No eligible subscription for this payment."));
+          setFeedback({
+            tone: "danger",
+            title: t("organization.billing.activate.noEligibleSubscription"),
+            detail: "",
+          });
           return;
         }
         const subscriptionPlan = posPlans.find((plan) => plan.id === subscription.planId);
@@ -303,7 +320,11 @@ export function OrganizationBillingLifecycle({ organizationId }: { organizationI
         showSuccess("organization.billing.activate.success");
       } else if (kind === "upgrade") {
         if (!upgradeContext || !upgradeTargetPlan) {
-          showError(new Error("Upgrade context is missing."));
+          setFeedback({
+            tone: "danger",
+            title: t("organization.billing.upgrade.contextMissing"),
+            detail: "",
+          });
           return;
         }
         await upgradeFromPayment.mutateAsync({
@@ -341,6 +362,25 @@ export function OrganizationBillingLifecycle({ organizationId }: { organizationI
       {feedback ? (
         <Alert tone={feedback.tone} title={feedback.title}>
           {feedback.detail}
+        </Alert>
+      ) : null}
+
+      {posPlansQuery.isError && !paymentsQuery.isError && posPlansDiagnostic ? (
+        <ErrorState
+          diagnostic={posPlansDiagnostic}
+          title={t("organization.billing.plansCatalog.error")}
+          headingLevel="h2"
+          onRetry={() => void posPlansQuery.refetch()}
+        />
+      ) : null}
+
+      {subscriptionsQuery.isError && !paymentsQuery.isError && subscriptionsDiagnostic ? (
+        <Alert title={t("organization.billing.subscriptions.error")} tone="danger">
+          <div className="mt-2">
+            <Button type="button" size="sm" variant="outline" onClick={() => void subscriptionsQuery.refetch()}>
+              {t("diagnostics.retry")}
+            </Button>
+          </div>
         </Alert>
       ) : null}
 
@@ -399,6 +439,7 @@ export function OrganizationBillingLifecycle({ organizationId }: { organizationI
       {canManagePayments ? (
         <div className="flex flex-wrap gap-2">
           <Button type="button" size="sm" disabled={pending} onClick={() => setRecordOpen(true)}>
+            <Plus aria-hidden className="mr-2 size-4" />
             {t("organization.billing.record")}
           </Button>
           {canManageSubscriptions && !hasPosSubscription ? (
@@ -406,9 +447,10 @@ export function OrganizationBillingLifecycle({ organizationId }: { organizationI
               type="button"
               size="sm"
               variant="outline"
-              disabled={pending || (posPlansQuery.data ?? []).length === 0}
+              disabled={pending || posPlansQuery.isError || posPlans.length === 0}
               onClick={() => setSubscribeOpen(true)}
             >
+              <CreditCard aria-hidden className="mr-2 size-4" />
               {t("organization.billing.subscribeWithPayment")}
             </Button>
           ) : null}
@@ -416,7 +458,7 @@ export function OrganizationBillingLifecycle({ organizationId }: { organizationI
             <LocalValidationSimulateButton
               organizationId={organizationId}
               subscription={posSubscription}
-              plans={posPlansQuery.data ?? []}
+              plans={posPlansQuery.isSuccess ? posPlans : []}
               pending={pending}
               onError={showError}
               onSuccess={() => showSuccess("organization.billing.simulate.success")}
@@ -587,29 +629,31 @@ export function OrganizationBillingLifecycle({ organizationId }: { organizationI
               )}
             </ul>
           )}
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={state.page <= 1}
-              onClick={() => replaceState({ page: state.page - 1 })}
-            >
-              {t("organizations.previous")}
-            </Button>
-            <p className="text-[length:var(--exits-text-xs)] text-muted">
-              {t("organizations.page")} {state.page} / {totalPages}
-            </p>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={state.page >= totalPages}
-              onClick={() => replaceState({ page: state.page + 1 })}
-            >
-              {t("organizations.next")}
-            </Button>
-          </div>
+          {totalPages > 1 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={state.page <= 1}
+                onClick={() => replaceState({ page: state.page - 1 })}
+              >
+                {t("organizations.previous")}
+              </Button>
+              <p className="text-[length:var(--exits-text-xs)] text-muted">
+                {t("organizations.page")} {state.page} / {totalPages}
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={state.page >= totalPages}
+                onClick={() => replaceState({ page: state.page + 1 })}
+              >
+                {t("organizations.next")}
+              </Button>
+            </div>
+          ) : null}
         </>
       ) : null}
 

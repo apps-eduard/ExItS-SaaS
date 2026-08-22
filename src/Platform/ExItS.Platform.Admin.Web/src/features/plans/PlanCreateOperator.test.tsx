@@ -121,4 +121,57 @@ describe("PlanCreateOperator", () => {
       })).toBe(true);
     });
   });
+
+  it("disables confirm when product catalog fails to load", async () => {
+    stubDesktop();
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
+      if (url.includes("/auth/me")) {
+        return jsonResponse(200, {
+          sessionId: "11111111-1111-1111-1111-111111111111",
+          userId: "22222222-2222-2222-2222-222222222222",
+          username: "olivia",
+          displayName: "Olivia Mendoza",
+          email: "olivia@example.test",
+          expiresAtUtc: "2026-08-19T12:00:00Z",
+          absoluteExpiresAtUtc: "2026-08-20T12:00:00Z",
+          selectedOrganizationId: null,
+          selectedOrganizationDisplayName: null,
+          organizationSelectionState: "None",
+          activeOrganizationCount: 0,
+          accountClass: "Platform",
+        });
+      }
+      if (url.includes("/authorization/me")) {
+        return jsonResponse(200, {
+          ...sampleAuthorization,
+          permissions: [
+            ...sampleAuthorization.permissions,
+            PLATFORM_PERMISSIONS.manageCatalog,
+          ],
+        });
+      }
+      if (url.includes("/health")) {
+        return textResponse(200, "Healthy");
+      }
+      if (url.includes("/catalog/products") && method === "GET") {
+        return jsonResponse(500, { title: "Error", status: 500, detail: "catalog-boom" });
+      }
+      if (url.includes("/catalog/plans?")) {
+        return jsonResponse(200, { items: [], totalCount: 0, page: 1, pageSize: 20 });
+      }
+      return jsonResponse(200, { items: [], totalCount: 0, page: 1, pageSize: 1 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    window.history.replaceState({}, "", "/admin/plans");
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(await screen.findByRole("button", { name: "Create plan" }));
+    expect(
+      await screen.findByText("Product catalog could not be loaded. Close and try again later."),
+    ).toBeInTheDocument();
+    const createButtons = screen.getAllByRole("button", { name: "Create plan" });
+    expect(createButtons[createButtons.length - 1]).toBeDisabled();
+  });
 });

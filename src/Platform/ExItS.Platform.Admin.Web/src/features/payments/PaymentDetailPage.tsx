@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { PLATFORM_PERMISSIONS } from "@/api/authorization/authorization-types";
 import { PlatformApiError } from "@/api/platform-http";
 import {
@@ -234,14 +235,15 @@ export function PaymentDetailPage() {
 
   return (
     <section className="grid max-w-3xl gap-4">
+      <p className="text-[length:var(--exits-text-sm)]">
+        <Link className="inline-flex items-center gap-1 text-primary hover:underline" to={paymentsListHref()}>
+          <ArrowLeft aria-hidden className="size-4" />
+          {t("payments.detail.back")}
+        </Link>
+      </p>
       <PageHeader
         title={t("payments.detail.title")}
         description={t("payments.detail.description")}
-        actions={
-          <Button type="button" variant="outline" size="sm" asChild>
-            <Link to={paymentsListHref()}>{t("payments.detail.back")}</Link>
-          </Button>
-        }
       />
 
       {feedback ? (

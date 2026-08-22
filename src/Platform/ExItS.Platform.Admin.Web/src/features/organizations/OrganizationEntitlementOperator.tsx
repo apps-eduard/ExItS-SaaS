@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Plus, RefreshCw } from "lucide-react";
 import { PLATFORM_PERMISSIONS } from "@/api/authorization/authorization-types";
 import type { EntitlementGrant, EntitlementSnapshot, FeatureOverride } from "@/api/organizations/entitlement-list-query";
 import { featureSupportsNumericLimit } from "@/api/catalog/feature-catalog-types";
@@ -385,6 +386,7 @@ export function OrganizationEntitlementOperator({
                   aria-busy={generateMutation.isPending}
                   onClick={() => setConfirm({ kind: "generate", snapshot: latestSnapshot })}
                 >
+                  <RefreshCw aria-hidden className="mr-2 size-4" />
                   {t("organization.entitlements.generate.action")}
                 </Button>
                 <Button
@@ -520,6 +522,7 @@ export function OrganizationEntitlementOperator({
           </div>
           {canManageOverrides ? (
             <Button type="button" size="sm" variant="outline" onClick={() => setCreateOpen(true)}>
+              <Plus aria-hidden className="mr-2 size-4" />
               {t("organization.entitlements.override.create.action")}
             </Button>
           ) : null}

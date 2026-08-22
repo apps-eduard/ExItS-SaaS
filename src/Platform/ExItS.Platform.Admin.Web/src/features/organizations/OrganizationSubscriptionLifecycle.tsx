@@ -1,4 +1,11 @@
 import { useMemo, useState } from "react";
+import {
+  ArrowRightLeft,
+  Pause,
+  Play,
+  RotateCcw,
+  X,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { PLATFORM_PERMISSIONS } from "@/api/authorization/authorization-types";
@@ -10,6 +17,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ConfirmActionDialog } from "@/components/exits/ConfirmActionDialog";
+import { ErrorState } from "@/components/exits/ErrorState";
 import { StatusIndicator } from "@/components/exits/StatusIndicator";
 import {
   DropdownMenu,
@@ -60,6 +68,7 @@ import { selectActiveTrialDefinition } from "@/api/catalog/trial-catalog-client"
 import { useAuthorization } from "@/hooks/use-authorization";
 import { usePreferences } from "@/hooks/use-preferences";
 import { env } from "@/lib/env";
+import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
 import type { MessageKey } from "@/lib/i18n/messages";
 
 type ConfirmKind =
@@ -147,16 +156,20 @@ export function OrganizationSubscriptionLifecycle({
 
   const plansByProduct = useMemo(() => {
     const map = new Map<string, CatalogPlan[]>();
-    map.set(PINOY_BUSINESS_POS_PRODUCT_CODE, posPlansQuery.data ?? []);
-    if (extraProductCodes[0] && extraPlansQuery.data) {
+    if (posPlansQuery.isSuccess) {
+      map.set(PINOY_BUSINESS_POS_PRODUCT_CODE, posPlansQuery.data ?? []);
+    }
+    if (extraProductCodes[0] && extraPlansQuery.isSuccess && extraPlansQuery.data) {
       map.set(extraProductCodes[0], extraPlansQuery.data);
     }
     return map;
-  }, [posPlansQuery.data, extraPlansQuery.data, extraProductCodes]);
+  }, [posPlansQuery.data, posPlansQuery.isSuccess, extraPlansQuery.data, extraPlansQuery.isSuccess, extraProductCodes]);
 
-  const [feedback, setFeedback] = useState<{ tone: "info" | "danger"; title: string; detail: string } | null>(
-    null,
-  );
+  const [feedback, setFeedback] = useState<{
+    tone: "info" | "danger" | "success";
+    title: string;
+    detail: string;
+  } | null>(null);
   const [startTrialOpen, setStartTrialOpen] = useState(false);
   const [changePlanItem, setChangePlanItem] = useState<OrganizationSubscription | null>(null);
   const [convertTrialItem, setConvertTrialItem] = useState<OrganizationSubscription | null>(null);
@@ -191,7 +204,15 @@ export function OrganizationSubscriptionLifecycle({
     expire.isPending;
 
   const hasPosSubscription = organizationHasPinoyBusinessPosSubscription(subscriptions);
-  const eligibleTrialPlans = trialEligiblePlans(posPlansQuery.data ?? []);
+  const eligibleTrialPlans = posPlansQuery.isSuccess
+    ? trialEligiblePlans(posPlansQuery.data ?? [])
+    : [];
+  const posPlansDiagnostic = posPlansQuery.error
+    ? normalizeDiagnosticError({
+        error: posPlansQuery.error,
+        operation: "Load plan catalog",
+      })
+    : null;
 
   function showError(error: unknown) {
     const copy = commercialMutationFailureCopy(error, t);
@@ -200,7 +221,7 @@ export function OrganizationSubscriptionLifecycle({
 
   function showSuccess(titleKey: MessageKey, detailKey?: MessageKey) {
     setFeedback({
-      tone: "info",
+      tone: "success",
       title: t(titleKey),
       detail: detailKey ? t(detailKey) : "",
     });
@@ -301,15 +322,28 @@ export function OrganizationSubscriptionLifecycle({
   return (
     <div className="grid gap-3">
       {feedback ? (
-        <Alert title={feedback.title} tone={feedback.tone} aria-live={feedback.tone === "danger" ? "assertive" : "polite"}>
+        <Alert
+          title={feedback.title}
+          tone={feedback.tone === "danger" ? "danger" : feedback.tone === "success" ? "success" : "info"}
+          aria-live={feedback.tone === "danger" ? "assertive" : "polite"}
+        >
           {feedback.detail}
         </Alert>
+      ) : null}
+
+      {posPlansQuery.isError && posPlansDiagnostic ? (
+        <ErrorState
+          diagnostic={posPlansDiagnostic}
+          title={t("organization.subscriptions.plansCatalog.error")}
+          headingLevel="h2"
+          onRetry={() => void posPlansQuery.refetch()}
+        />
       ) : null}
 
       {subscriptions.length > 0 ? (
         <ul className="grid gap-2">
           {subscriptions.map((item) => {
-            const plans = plansByProduct.get(item.productCode) ?? posPlansQuery.data ?? [];
+            const plans = plansByProduct.get(item.productCode) ?? [];
             const plan = findCatalogPlan(plans, item.planId);
             const pendingPlan = findCatalogPlan(plans, item.pendingPlanId);
             const capabilities = subscriptionLifecycleCapabilities(item.status, item.pendingPlanId);
@@ -396,6 +430,7 @@ export function OrganizationSubscriptionLifecycle({
                           disabled={pending}
                           onClick={() => setConvertTrialItem(item)}
                         >
+                          <RotateCcw aria-hidden className="mr-2 size-4" />
                           {t("organization.subscriptions.convertTrial")}
                         </Button>
                       ) : null}
@@ -405,6 +440,7 @@ export function OrganizationSubscriptionLifecycle({
                           size="sm"
                           onClick={() => setChangePlanItem(item)}
                         >
+                          <ArrowRightLeft aria-hidden className="mr-2 size-4" />
                           {t("organization.subscriptions.changePlan")}
                         </Button>
                       ) : null}
@@ -427,6 +463,7 @@ export function OrganizationSubscriptionLifecycle({
                           disabled={pending}
                           onClick={() => setConfirm({ kind: "suspend", item })}
                         >
+                          <Pause aria-hidden className="mr-2 size-4" />
                           {t("organization.subscriptions.suspend")}
                         </Button>
                       ) : null}
@@ -448,6 +485,7 @@ export function OrganizationSubscriptionLifecycle({
                           disabled={pending}
                           onClick={() => setConfirm({ kind: "cancel", item })}
                         >
+                          <X aria-hidden className="mr-2 size-4" />
                           {t("organization.subscriptions.cancel")}
                         </Button>
                       ) : null}
@@ -501,9 +539,10 @@ export function OrganizationSubscriptionLifecycle({
           <p className="text-[length:var(--exits-text-sm)] text-muted">
             {t("organization.subscriptions.emptyPos.body")}
           </p>
-          {canManage && eligibleTrialPlans.length > 0 ? (
+          {canManage && eligibleTrialPlans.length > 0 && posPlansQuery.isSuccess ? (
             <div>
               <Button type="button" onClick={() => setStartTrialOpen(true)}>
+                <Play aria-hidden className="mr-2 size-4" />
                 {t("organization.subscriptions.startTrial")}
               </Button>
             </div>
@@ -537,7 +576,7 @@ export function OrganizationSubscriptionLifecycle({
       {convertTrialItem ? (
         <ConvertTrialDialog
           item={convertTrialItem}
-          plans={(plansByProduct.get(convertTrialItem.productCode) ?? posPlansQuery.data ?? []).filter(
+          plans={(plansByProduct.get(convertTrialItem.productCode) ?? []).filter(
             (plan) => plan.status === "Active",
           )}
           pending={convertTrial.isPending}
@@ -568,11 +607,11 @@ export function OrganizationSubscriptionLifecycle({
         <ChangePlanDialog
           organizationId={organizationId}
           item={changePlanItem}
-          plans={(plansByProduct.get(changePlanItem.productCode) ?? posPlansQuery.data ?? []).filter(
+          plans={(plansByProduct.get(changePlanItem.productCode) ?? []).filter(
             (plan) => plan.status === "Active" && plan.id !== changePlanItem.planId,
           )}
           currentPlan={findCatalogPlan(
-            plansByProduct.get(changePlanItem.productCode) ?? posPlansQuery.data ?? [],
+            plansByProduct.get(changePlanItem.productCode) ?? [],
             changePlanItem.planId,
           )}
           pending={upgrade.isPending || downgrade.isPending}

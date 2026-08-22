@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { planDetailHref } from "@/api/catalog/plan-list-query";
 import type { CreatePlanBody } from "@/api/catalog/plan-mutations-client";
@@ -30,8 +31,15 @@ export function PlanCreateOperator() {
   const [currencyCode, setCurrencyCode] = useState("PHP");
   const [errorCopy, setErrorCopy] = useState<{ title: string; detail: string } | null>(null);
 
-  const products = productsQuery.data?.items ?? [];
+  const products = productsQuery.isSuccess ? (productsQuery.data?.items ?? []) : [];
   const defaultProductCode = products[0]?.code ?? "";
+  const catalogBlocked =
+    productsQuery.isError || (productsQuery.isSuccess && products.length === 0);
+  const catalogBlockedMessage = productsQuery.isError
+    ? t("plans.create.catalogUnavailable")
+    : productsQuery.isSuccess && products.length === 0
+      ? t("plans.create.catalogEmpty")
+      : null;
 
   function openDialog() {
     setProductCode((current) => current || defaultProductCode);
@@ -81,7 +89,7 @@ export function PlanCreateOperator() {
 
   async function submit() {
     const body = buildBody();
-    if (!productCode || !body || createPlan.isPending) {
+    if (!productCode || !body || createPlan.isPending || catalogBlocked) {
       return;
     }
     setErrorCopy(null);
@@ -98,11 +106,18 @@ export function PlanCreateOperator() {
     }
   }
 
-  const ready = Boolean(productCode && code.trim() && displayName.trim());
+  const ready = Boolean(productCode && code.trim() && displayName.trim() && !catalogBlocked);
 
   return (
     <>
-      <Button type="button" size="sm" onClick={openDialog}>
+      <Button
+        type="button"
+        size="sm"
+        disabled={productsQuery.isPending}
+        aria-busy={productsQuery.isPending}
+        onClick={openDialog}
+      >
+        <Plus aria-hidden className="mr-2 size-4" />
         {t("plans.create.action")}
       </Button>
       {open ? (
@@ -113,33 +128,42 @@ export function PlanCreateOperator() {
           confirmLabel={t("plans.create.confirm")}
           cancelLabel={t("plans.create.cancel")}
           pendingLabel={t("plans.create.pending")}
-          pending={createPlan.isPending}
+          pending={createPlan.isPending || productsQuery.isPending}
           confirmDisabled={!ready}
           error={
             errorCopy ? (
               <Alert title={errorCopy.title} tone="danger">
                 {errorCopy.detail}
               </Alert>
+            ) : catalogBlockedMessage ? (
+              <Alert title={catalogBlockedMessage} tone="danger" />
             ) : null
           }
           onCancel={closeDialog}
           onConfirm={() => void submit()}
         >
-          <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium" htmlFor="plan-create-product">
-            {t("plans.create.product")}
-            <select
-              id="plan-create-product"
-              className={controlClass}
-              value={productCode}
-              onChange={(event) => setProductCode(event.target.value)}
-            >
-              {products.map((product) => (
-                <option key={product.code} value={product.code}>
-                  {product.displayName}
-                </option>
-              ))}
-            </select>
-          </label>
+          {productsQuery.isPending ? (
+            <p className="text-[length:var(--exits-text-sm)] text-muted" role="status" aria-busy="true">
+              {t("plans.create.catalogLoading")}
+            </p>
+          ) : null}
+          {!productsQuery.isPending && !catalogBlocked ? (
+            <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium" htmlFor="plan-create-product">
+              {t("plans.create.product")}
+              <select
+                id="plan-create-product"
+                className={controlClass}
+                value={productCode}
+                onChange={(event) => setProductCode(event.target.value)}
+              >
+                {products.map((product) => (
+                  <option key={product.code} value={product.code}>
+                    {product.displayName}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium" htmlFor="plan-create-code">
             {t("plans.create.code")}
             <Input
