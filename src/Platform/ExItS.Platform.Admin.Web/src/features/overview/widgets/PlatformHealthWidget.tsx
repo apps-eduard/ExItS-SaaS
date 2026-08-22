@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { StatusIndicator } from "@/components/exits/StatusIndicator";
 import { DashboardSection } from "@/components/exits/dashboard/DashboardSection";
 import { DashboardWidgetError } from "@/components/exits/dashboard/DashboardWidgetError";
@@ -32,7 +33,7 @@ function healthLabel(
     return t("dashboard.health.Degraded");
   }
   if (status === "Unhealthy") {
-    return t("dashboard.health.Unhealthy");
+    return t("dashboard.health.Unavailable");
   }
   return rawBody.length > 0 ? rawBody : t("dashboard.health.unknown");
 }
@@ -75,6 +76,14 @@ export function PlatformHealthWidget({ enabled }: { enabled: boolean }) {
           </li>
         </ul>
       ) : null}
+      <p className="mt-3">
+        <Link
+          to="/admin/system-health"
+          className="text-[length:var(--exits-text-xs)] font-medium text-foreground underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          {t("dashboard.health.viewDetails")}
+        </Link>
+      </p>
     </DashboardSection>
   );
 }
