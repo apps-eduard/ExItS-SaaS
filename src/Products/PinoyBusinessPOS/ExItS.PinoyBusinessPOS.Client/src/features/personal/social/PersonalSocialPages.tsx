@@ -20,6 +20,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { PERSONAL_NOTIFICATIONS_QUERY_KEY } from "@/features/personal/personal-notifications";
 import { useI18n } from "@/i18n/I18nProvider";
 
@@ -208,34 +209,23 @@ export function PersonalNotificationsPage() {
         title={t("personal.social.notificationsTitle")}
         description={t("personal.social.notificationsLede")}
       />
-      <div
-        className="grid grid-cols-2 gap-2"
-        role="tablist"
-        aria-label={t("personal.social.notificationsTitle")}
-      >
-        <Button
-          type="button"
-          role="tab"
-          aria-selected={tab === "unread"}
-          variant={tab === "unread" ? "default" : "ghost"}
-          className="min-h-11"
-          data-testid="notifications-tab-unread"
-          onClick={() => setTab("unread")}
-        >
-          {t("personal.social.tabUnread")}
-        </Button>
-        <Button
-          type="button"
-          role="tab"
-          aria-selected={tab === "all"}
-          variant={tab === "all" ? "default" : "ghost"}
-          className="min-h-11"
-          data-testid="notifications-tab-all"
-          onClick={() => setTab("all")}
-        >
-          {t("personal.social.tabAll")}
-        </Button>
-      </div>
+      <UnderlineTabBar
+        items={[
+          {
+            key: "unread",
+            label: t("personal.social.tabUnread"),
+            testId: "notifications-tab-unread",
+          },
+          {
+            key: "all",
+            label: t("personal.social.tabAll"),
+            testId: "notifications-tab-all",
+          },
+        ]}
+        activeKey={tab}
+        onChange={(key) => setTab(key as "unread" | "all")}
+        ariaLabel={t("personal.social.notificationsTitle")}
+      />
 
       {visible.length === 0 ? (
         <EmptyState

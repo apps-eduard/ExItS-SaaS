@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { ReportDatePreset, ReportDateRangeValue } from "@/features/reports/report-date-range";
@@ -76,26 +77,18 @@ export function ReportFilters({
 
       {showDates ? (
         <>
-          <div
-            className="flex min-w-0 flex-wrap gap-2"
-            role="group"
-            aria-label={t("reports.datePresets")}
-            data-testid="report-date-presets"
-          >
-            {PRESETS.map((key) => (
-              <Button
-                key={key}
-                type="button"
-                variant={preset === key ? "default" : "ghost"}
-                className="min-h-11"
-                data-testid={`report-preset-${key}`}
-                disabled={loading}
-                onClick={() => onPresetChange(key)}
-              >
-                {t(`reports.preset.${key}` as "reports.preset.today")}
-              </Button>
-            ))}
-          </div>
+          <UnderlineTabBar
+            items={PRESETS.map((key) => ({
+              key,
+              label: t(`reports.preset.${key}` as "reports.preset.today"),
+              testId: `report-preset-${key}`,
+              disabled: loading,
+            }))}
+            activeKey={preset}
+            onChange={(key) => onPresetChange(key as ReportDatePreset)}
+            ariaLabel={t("reports.datePresets")}
+            testId="report-date-presets"
+          />
 
           {preset === "custom" ? (
             <div

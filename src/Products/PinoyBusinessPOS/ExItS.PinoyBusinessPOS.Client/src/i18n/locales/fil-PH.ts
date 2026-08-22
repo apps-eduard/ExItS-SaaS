@@ -105,7 +105,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "offline.pin.invalidFormat": "Maglagay ng hindi bababa sa 6 na digit.",
   "offline.pin.notSignedIn": "Mag-sign in online bago magtakda ng offline PIN.",
   "offline.pin.webCryptoUnavailable":
-    "Offline PIN encryption requires a secure browser context. npm run dev sets up adb reverse automatically ó open http://127.0.0.1:5177 in the emulator browser (not http://10.0.2.2).",
+    "Offline PIN encryption requires a secure browser context. npm run dev sets up adb reverse automatically ù open http://127.0.0.1:5177 in the emulator browser (not http://10.0.2.2).",
   "offline.pin.openEmulatorDevUrl": "Open http://127.0.0.1:5177",
   "offline.pin.unlockTitle": "I-unlock ang offline",
   "offline.pin.unlockSubtitle":
@@ -1602,6 +1602,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "cashHandling.addDenomination": "Magdagdag ng denomination",
   "cashHandling.addDenominationPlaceholder": "Halaga",
   "cashHandling.add": "Idagdag",
+  "cashHandling.resetDefaults": "I-reset sa default",
+  "cashHandling.resetSaved": "Na-reset ang cash denominations sa default.",
   "cashHandling.remove": "Alisin",
   "cashHandling.save": "I-save ang changes",
   "cashHandling.saved": "Na-save ang cash handling settings.",

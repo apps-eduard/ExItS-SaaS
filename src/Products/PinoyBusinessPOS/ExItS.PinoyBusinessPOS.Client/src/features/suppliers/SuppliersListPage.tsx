@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -131,26 +132,22 @@ export function SuppliersListPage() {
         placeholder={t("suppliers.search")}
         data-testid="suppliers-search"
       />
-      <div className="flex flex-wrap gap-2" role="group" aria-label={t("suppliers.statusFilter")}>
-        {(
+      <UnderlineTabBar
+        items={(
           [
             ["Active", "suppliers.statusActive"],
             ["Inactive", "suppliers.statusInactive"],
             ["", "suppliers.statusAll"],
           ] as const
-        ).map(([value, labelKey]) => (
-          <Button
-            key={value || "all"}
-            type="button"
-            variant={status === value ? "default" : "ghost"}
-            className="min-h-11"
-            data-testid={`suppliers-status-${value || "all"}`}
-            onClick={() => setStatus(value)}
-          >
-            {t(labelKey)}
-          </Button>
-        ))}
-      </div>
+        ).map(([value, labelKey]) => ({
+          key: value || "all",
+          label: t(labelKey),
+          testId: `suppliers-status-${value || "all"}`,
+        }))}
+        activeKey={status || "all"}
+        onChange={(key) => setStatus(key === "all" ? "" : (key as "Active" | "Inactive"))}
+        ariaLabel={t("suppliers.statusFilter")}
+      />
       {query.isLoading ? <LoadingState label={t("loading.label")} /> : null}
       {query.isError ? (
         <ErrorState title={t("error.title")} detail={(query.error as Error).message} />

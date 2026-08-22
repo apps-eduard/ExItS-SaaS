@@ -106,7 +106,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "offline.pin.invalidFormat": "Mangikabil iti saan a basbassit ngem 6 a digit.",
   "offline.pin.notSignedIn": "Ag-sign in iti online sakbay nga ag-set ti offline PIN.",
   "offline.pin.webCryptoUnavailable":
-    "Offline PIN encryption requires a secure browser context. npm run dev sets up adb reverse automatically ó open http://127.0.0.1:5177 in the emulator browser (not http://10.0.2.2).",
+    "Offline PIN encryption requires a secure browser context. npm run dev sets up adb reverse automatically ù open http://127.0.0.1:5177 in the emulator browser (not http://10.0.2.2).",
   "offline.pin.openEmulatorDevUrl": "Open http://127.0.0.1:5177",
   "offline.pin.unlockTitle": "I-unlock ti offline",
   "offline.pin.unlockSubtitle":
@@ -1616,6 +1616,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "cashHandling.addDenomination": "Manginayon iti denomination",
   "cashHandling.addDenominationPlaceholder": "Amount",
   "cashHandling.add": "Idugang",
+  "cashHandling.resetDefaults": "I-reset iti default",
+  "cashHandling.resetSaved": "Na-reset dagiti cash denominations iti default.",
   "cashHandling.remove": "Ikkaten",
   "cashHandling.save": "I-save ti changes",
   "cashHandling.saved": "Na-save ti cash handling settings.",

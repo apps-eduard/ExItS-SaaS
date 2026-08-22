@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { SearchField } from "@/components/exits/SearchField";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -124,26 +125,24 @@ export function CustomersListPage() {
         onClear={() => setSearch("")}
         placeholder={t("customers.search")}
       />
-      <div className="flex flex-wrap gap-2" role="group" aria-label={t("customers.statusFilter")}>
-        {(
+      <UnderlineTabBar
+        items={(
           [
             ["Active", "customers.statusActive"],
             ["Inactive", "customers.statusInactive"],
             ["", "customers.statusAll"],
           ] as const
-        ).map(([value, labelKey]) => (
-          <Button
-            key={value || "all"}
-            type="button"
-            variant={status === value ? "default" : "ghost"}
-            className="min-h-11"
-            data-testid={`customers-status-${value || "all"}`}
-            onClick={() => setStatus(value)}
-          >
-            {t(labelKey)}
-          </Button>
-        ))}
-      </div>
+        ).map(([value, labelKey]) => ({
+          key: value || "all",
+          label: t(labelKey),
+          testId: `customers-status-${value || "all"}`,
+        }))}
+        activeKey={status || "all"}
+        onChange={(key) =>
+          setStatus(key === "all" ? "" : (key as "Active" | "Inactive"))
+        }
+        ariaLabel={t("customers.statusFilter")}
+      />
       {usingCache ? (
         <Card data-testid="customers-cached-notice">
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">

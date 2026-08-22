@@ -107,7 +107,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "offline.pin.invalidFormat": "Magbutang sang indi menos 6 ka digit.",
   "offline.pin.notSignedIn": "Mag-sign in online anay antes mag-set sang offline PIN.",
   "offline.pin.webCryptoUnavailable":
-    "Offline PIN encryption requires a secure browser context. npm run dev sets up adb reverse automatically ó open http://127.0.0.1:5177 in the emulator browser (not http://10.0.2.2).",
+    "Offline PIN encryption requires a secure browser context. npm run dev sets up adb reverse automatically ù open http://127.0.0.1:5177 in the emulator browser (not http://10.0.2.2).",
   "offline.pin.openEmulatorDevUrl": "Open http://127.0.0.1:5177",
   "offline.pin.unlockTitle": "I-unlock ang offline",
   "offline.pin.unlockSubtitle":
@@ -1622,6 +1622,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "cashHandling.addDenomination": "Magdugang sang denomination",
   "cashHandling.addDenominationPlaceholder": "Amount",
   "cashHandling.add": "Idugang",
+  "cashHandling.resetDefaults": "I-reset sa default",
+  "cashHandling.resetSaved": "Na-reset ang cash denominations sa default.",
   "cashHandling.remove": "Kuhaa",
   "cashHandling.save": "I-save ang changes",
   "cashHandling.saved": "Na-save ang cash handling settings.",

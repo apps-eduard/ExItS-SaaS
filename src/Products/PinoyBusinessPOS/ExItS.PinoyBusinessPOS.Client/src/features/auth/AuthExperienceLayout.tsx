@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
+import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { useI18n } from "@/i18n/I18nProvider";
-import { cn } from "@/lib/cn";
 
 type AuthTab = "sign-in" | "sign-up";
 
@@ -50,42 +50,16 @@ export function AuthExperienceLayout({
           className="auth-experience__sheet mx-auto flex w-full max-w-[min(100%,28rem)] min-w-0 flex-col gap-5 rounded-[1.875rem] bg-surface p-5 shadow-[0_20px_48px_rgba(20,32,26,0.14)] sm:max-w-[min(100%,30rem)] sm:p-6 md:max-w-[min(100%,32rem)] lg:max-w-[min(100%,32rem)]"
           data-testid="auth-experience-sheet"
         >
-          <div
-            className="auth-experience__tabs grid grid-cols-2 border-b border-border"
-            role="tablist"
-            aria-label={t("auth.tabsLabel")}
-          >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === "sign-in"}
-              data-testid="auth-tab-sign-in"
-              className={cn(
-                "min-h-11 border-b-[3px] px-2 pb-3 text-[length:var(--exits-text-md)] font-semibold transition-colors",
-                activeTab === "sign-in"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted hover:text-foreground",
-              )}
-              onClick={() => onTabChange("sign-in")}
-            >
-              {t("auth.tabSignIn")}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === "sign-up"}
-              data-testid="auth-tab-sign-up"
-              className={cn(
-                "min-h-11 border-b-[3px] px-2 pb-3 text-[length:var(--exits-text-md)] font-semibold transition-colors",
-                activeTab === "sign-up"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted hover:text-foreground",
-              )}
-              onClick={() => onTabChange("sign-up")}
-            >
-              {t("auth.tabSignUp")}
-            </button>
-          </div>
+          <UnderlineTabBar
+            className="auth-experience__tabs grid w-full grid-cols-2 [&>button]:justify-center [&>button]:text-[length:var(--exits-text-md)]"
+            items={[
+              { key: "sign-in", label: t("auth.tabSignIn"), testId: "auth-tab-sign-in" },
+              { key: "sign-up", label: t("auth.tabSignUp"), testId: "auth-tab-sign-up" },
+            ]}
+            activeKey={activeTab}
+            onChange={(key) => onTabChange(key as AuthTab)}
+            ariaLabel={t("auth.tabsLabel")}
+          />
 
           {offlineBanner}
 

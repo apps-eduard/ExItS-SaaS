@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { StatusChip } from "@/components/exits/StatusChip";
 import {
   displayOrderStatusKey,
@@ -80,20 +81,16 @@ export function SellerOrdersPage() {
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="seller-orders-page">
       <PageHeader title={t("orders.sellerTitle")} description={t("orders.sellerLede")} />
-      <div className="flex flex-wrap gap-2" role="group" aria-label={t("orders.filterLabel")}>
-        {FILTERS.map((f) => (
-          <Button
-            key={f}
-            type="button"
-            variant={filter === f ? "default" : "ghost"}
-            className="min-h-11"
-            data-testid={`orders-filter-${f.toLowerCase()}`}
-            onClick={() => setFilter(f)}
-          >
-            {t(`orders.filter${f}` as MessageKey)}
-          </Button>
-        ))}
-      </div>
+      <UnderlineTabBar
+        items={FILTERS.map((f) => ({
+          key: f,
+          label: t(`orders.filter${f}` as MessageKey),
+          testId: `orders-filter-${f.toLowerCase()}`,
+        }))}
+        activeKey={filter}
+        onChange={(key) => setFilter(key as SellerOrderFilter)}
+        ariaLabel={t("orders.filterLabel")}
+      />
       {items.length === 0 ? (
         <EmptyState title={t("orders.emptyTitle")} detail={t("orders.emptySellerDetail")} />
       ) : (

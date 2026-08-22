@@ -1563,6 +1563,8 @@ export const en = {
   "cashHandling.addDenomination": "Add denomination",
   "cashHandling.addDenominationPlaceholder": "Amount",
   "cashHandling.add": "Add",
+  "cashHandling.resetDefaults": "Reset to defaults",
+  "cashHandling.resetSaved": "Cash denominations reset to defaults.",
   "cashHandling.remove": "Remove",
   "cashHandling.save": "Save changes",
   "cashHandling.saved": "Cash handling settings saved.",

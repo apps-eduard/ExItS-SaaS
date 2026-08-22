@@ -22,6 +22,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -252,13 +253,8 @@ export function ConnectedCatalogPage() {
         data-testid="connected-catalog-search"
       />
       {readinessQuery.data ? (
-        <div
-          className="flex flex-wrap gap-2"
-          role="toolbar"
-          aria-label={t("connected.readinessFilters")}
-          data-testid="connected-readiness-chips"
-        >
-          {(
+        <UnderlineTabBar
+          items={(
             [
               [
                 "all",
@@ -273,19 +269,18 @@ export function ConnectedCatalogPage() {
               ["Review", readinessQuery.data.review, "connected.filterReview"],
               ["Conflict", readinessQuery.data.conflict, "connected.filterAttention"],
             ] as const
-          ).map(([value, count, key]) => (
-            <Button
-              key={value}
-              type="button"
-              variant={readinessFilter === value ? "default" : "ghost"}
-              className="min-h-11"
-              data-testid={`connected-ready-${value}`}
-              onClick={() => setReadinessFilter(value)}
-            >
-              {t(key).replace("{count}", String(count))}
-            </Button>
-          ))}
-        </div>
+          ).map(([value, count, key]) => ({
+            key: value,
+            label: t(key).replace("{count}", String(count)),
+            testId: `connected-ready-${value}`,
+          }))}
+          activeKey={readinessFilter}
+          onChange={(key) =>
+            setReadinessFilter(key as "all" | "Ready" | "New" | "Review" | "Conflict")
+          }
+          ariaLabel={t("connected.readinessFilters")}
+          testId="connected-readiness-chips"
+        />
       ) : null}
       {catalogQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
       {denied ? (

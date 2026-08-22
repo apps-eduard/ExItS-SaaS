@@ -15,6 +15,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -186,26 +187,22 @@ export function ConnectedSharedProductsPage() {
         placeholder={t("connected.searchProducts")}
         data-testid="connected-share-search"
       />
-      <div className="flex flex-wrap gap-2" role="group" aria-label={t("connected.shareFilter")}>
-        {(
+      <UnderlineTabBar
+        items={(
           [
             ["all", "connected.filterAll"],
             ["shared", "connected.filterShared"],
             ["notShared", "connected.filterNotShared"],
           ] as const
-        ).map(([value, key]) => (
-          <Button
-            key={value}
-            type="button"
-            variant={shareFilter === value ? "default" : "ghost"}
-            className="min-h-11"
-            data-testid={`connected-filter-${value}`}
-            onClick={() => setShareFilter(value)}
-          >
-            {t(key)}
-          </Button>
-        ))}
-      </div>
+        ).map(([value, key]) => ({
+          key: value,
+          label: t(key),
+          testId: `connected-filter-${value}`,
+        }))}
+        activeKey={shareFilter}
+        onChange={(key) => setShareFilter(key as typeof shareFilter)}
+        ariaLabel={t("connected.shareFilter")}
+      />
       {query.isLoading ? <LoadingState label={t("loading.label")} /> : null}
       {query.isError ? (
         <ErrorState

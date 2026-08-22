@@ -4,6 +4,11 @@ import { posRequest } from "@/api/pos/pos-http";
 const SETUP_PATH = "/api/v1/pos/operational-setup";
 const DENOMINATIONS_PATH = `${SETUP_PATH}/cash-denominations`;
 
+/** Matches PhilippineCashDenominationDefaults.Values in the POS API. */
+export const DEFAULT_PHP_CASH_DENOMINATION_VALUES = [
+  1000, 500, 200, 100, 50, 20, 10, 5, 1, 0.25, 0.1, 0.05,
+] as const;
+
 export type PosOperationalSetupDto = {
   organizationId: string;
   storeDisplayName: string;

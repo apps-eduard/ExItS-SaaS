@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { RotateCcw, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { hasOrganizationManagementAuthority } from "@/access/pos-capabilities";
 import {
+  DEFAULT_PHP_CASH_DENOMINATION_VALUES,
   formatDenominationValue,
   getOperationalSetup,
   listCashDenominations,
@@ -140,37 +141,43 @@ export function CashHandlingSettingsPage() {
     }
   }
 
-  async function persistDenoms(next: OrganizationCashDenominationDto[], extra?: { value: number }) {
+  async function saveDenominationItems(items: CashDenominationWriteDto[]) {
     if (!workspace || savingDenoms) {
-      return;
+      return false;
     }
     setSavingDenoms(true);
     setError(null);
     setOkMessage(null);
     try {
-      const items: CashDenominationWriteDto[] = next.map((d, index) => ({
-        value: d.value,
-        isEnabled: d.isEnabled,
-        sortOrder: d.sortOrder ?? index,
-        displayLabel: d.displayLabel,
-        denominationId: d.denominationId,
-      }));
-      if (extra) {
-        items.push({
-          value: extra.value,
-          isEnabled: true,
-          sortOrder: items.length,
-        });
-      }
       await replaceCashDenominations(workspace, { items });
       await queryClient.invalidateQueries({
         queryKey: ["pos-cash-denominations", workspace.organizationId],
       });
+      return true;
     } catch {
       setError(t("cashHandling.saveError"));
+      return false;
     } finally {
       setSavingDenoms(false);
     }
+  }
+
+  async function persistDenoms(next: OrganizationCashDenominationDto[], extra?: { value: number }) {
+    const items: CashDenominationWriteDto[] = next.map((d, index) => ({
+      value: d.value,
+      isEnabled: d.isEnabled,
+      sortOrder: d.sortOrder ?? index,
+      displayLabel: d.displayLabel,
+      denominationId: d.denominationId,
+    }));
+    if (extra) {
+      items.push({
+        value: extra.value,
+        isEnabled: true,
+        sortOrder: items.length,
+      });
+    }
+    await saveDenominationItems(items);
   }
 
   async function removeDenomination(denom: OrganizationCashDenominationDto) {
@@ -190,6 +197,18 @@ export function CashHandlingSettingsPage() {
     }
     setNewValue("");
     await persistDenoms(denominations, { value: parsed });
+  }
+
+  async function resetDenominationsToDefault() {
+    const items = DEFAULT_PHP_CASH_DENOMINATION_VALUES.map((value, index) => ({
+      value,
+      isEnabled: true,
+      sortOrder: index,
+    }));
+    const saved = await saveDenominationItems(items);
+    if (saved) {
+      setOkMessage(t("cashHandling.resetSaved"));
+    }
   }
 
   return (
@@ -285,13 +304,13 @@ export function CashHandlingSettingsPage() {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="shrink-0"
+                  className="size-9 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
                   disabled={savingDenoms}
                   aria-label={t("cashHandling.remove")}
                   data-testid={`cash-handling-remove-${formatDenominationValue(denom.value)}`}
                   onClick={() => void removeDenomination(denom)}
                 >
-                  <Trash2 className="size-5" aria-hidden />
+                  <Trash2 className="size-[15px]" aria-hidden />
                 </Button>
               </li>
             ))}
@@ -321,6 +340,17 @@ export function CashHandlingSettingsPage() {
             onClick={() => void addDenomination()}
           >
             {t("cashHandling.add")}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="min-h-11 inline-flex items-center gap-2 border border-border"
+            disabled={savingDenoms}
+            data-testid="cash-handling-reset-defaults"
+            onClick={() => void resetDenominationsToDefault()}
+          >
+            <RotateCcw className="size-4 shrink-0" aria-hidden />
+            {t("cashHandling.resetDefaults")}
           </Button>
         </div>
       </Card>

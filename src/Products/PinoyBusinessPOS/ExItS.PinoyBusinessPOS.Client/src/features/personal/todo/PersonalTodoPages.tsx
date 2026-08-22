@@ -23,6 +23,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
@@ -430,13 +431,8 @@ export function PersonalTodoHubPage() {
 
       {usingCache ? <OfflineNotice message={t("offline.todoCachedNotice")} /> : null}
 
-      <div
-        className="flex flex-wrap gap-2"
-        role="tablist"
-        aria-label={t("personal.todo.filters")}
-        data-testid="personal-todo-filters"
-      >
-        {TABS.map((item) => {
+      <UnderlineTabBar
+        items={TABS.map((item) => {
           const count =
             counts == null
               ? 0
@@ -449,22 +445,17 @@ export function PersonalTodoHubPage() {
                     : item.id === "open"
                       ? counts.open
                       : counts.completed;
-          return (
-            <Button
-              key={item.id}
-              type="button"
-              role="tab"
-              aria-selected={tab === item.id}
-              variant={tab === item.id ? "default" : "ghost"}
-              className="min-h-11"
-              data-testid={`todo-tab-${item.id}`}
-              onClick={() => setTab(item.id)}
-            >
-              {t(item.labelKey)} ({count})
-            </Button>
-          );
+          return {
+            key: item.id,
+            label: `${t(item.labelKey)} (${count})`,
+            testId: `todo-tab-${item.id}`,
+          };
         })}
-      </div>
+        activeKey={tab}
+        onChange={(key) => setTab(key as TodoAgendaTab)}
+        ariaLabel={t("personal.todo.filters")}
+        testId="personal-todo-filters"
+      />
 
       <form
         className="flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border p-3"
