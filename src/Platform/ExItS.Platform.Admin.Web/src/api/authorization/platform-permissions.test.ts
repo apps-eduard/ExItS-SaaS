@@ -43,6 +43,21 @@ describe("PLATFORM_PERMISSIONS", () => {
     expect(PLATFORM_PERMISSIONS.importGlobalProducts).toBe(csharpConstant("ImportGlobalProducts"));
   });
 
+  it("manageCatalogTemplates and publishCatalogTemplates match backend canonical values", () => {
+    expect(PLATFORM_PERMISSIONS.manageCatalogTemplates).toBe(
+      "platform.permission.manage_catalog_templates",
+    );
+    expect(PLATFORM_PERMISSIONS.manageCatalogTemplates).toBe(
+      csharpConstant("ManageCatalogTemplates"),
+    );
+    expect(PLATFORM_PERMISSIONS.publishCatalogTemplates).toBe(
+      "platform.permission.publish_catalog_templates",
+    );
+    expect(PLATFORM_PERMISSIONS.publishCatalogTemplates).toBe(
+      csharpConstant("PublishCatalogTemplates"),
+    );
+  });
+
   it("keeps existing permission constants aligned with backend", () => {
     expect(PLATFORM_PERMISSIONS.viewPortfolio).toBe(csharpConstant("ViewPortfolio"));
     expect(PLATFORM_PERMISSIONS.manageOrganizations).toBe(csharpConstant("ManageOrganizations"));

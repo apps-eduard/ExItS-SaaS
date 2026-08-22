@@ -1,28 +1,46 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  archiveGlobalCatalogTemplate,
+  assignGlobalCatalogTemplateProduct,
+  bulkAssignGlobalCatalogTemplateProducts,
+  bulkRemoveGlobalCatalogTemplateProducts,
   confirmGlobalCatalogImport,
   createGlobalBusinessType,
+  createGlobalCatalogTemplate,
   createGlobalCategory,
   createGlobalProduct,
   deleteGlobalProductImage,
+  publishGlobalCatalogTemplate,
+  removeGlobalCatalogTemplateProduct,
+  reorderGlobalCatalogTemplateProducts,
   setGlobalBusinessTypeStatus,
   setGlobalCategoryStatus,
   setGlobalProductStatus,
+  unpublishGlobalCatalogTemplate,
   updateGlobalBusinessType,
+  updateGlobalCatalogTemplate,
+  updateGlobalCatalogTemplateProductFlags,
   updateGlobalCategory,
   updateGlobalProduct,
   uploadGlobalCatalogImport,
   uploadGlobalProductImage,
 } from "@/api/global-catalog/global-catalog-client";
 import type {
+  AssignGlobalCatalogTemplateProductInput,
+  BulkAssignGlobalCatalogTemplateProductsInput,
+  BulkRemoveGlobalCatalogTemplateProductsInput,
   ConfirmGlobalCatalogImportInput,
   CreateGlobalBusinessTypeInput,
+  CreateGlobalCatalogTemplateInput,
   CreateGlobalCategoryInput,
   CreateGlobalProductInput,
   GlobalBusinessTypeStatus,
   GlobalCategoryStatus,
   GlobalProductStatus,
+  ReorderGlobalCatalogTemplateProductsInput,
   UpdateGlobalBusinessTypeInput,
+  UpdateGlobalCatalogTemplateInput,
+  UpdateGlobalCatalogTemplateProductFlagsInput,
   UpdateGlobalCategoryInput,
   UpdateGlobalProductInput,
   UploadGlobalCatalogImportInput,
@@ -47,6 +65,10 @@ export function useGlobalCatalogMutations() {
 
   async function invalidateImports() {
     await queryClient.invalidateQueries({ queryKey: globalCatalogQueryKeys.imports.all });
+  }
+
+  async function invalidateTemplates() {
+    await queryClient.invalidateQueries({ queryKey: globalCatalogQueryKeys.templates.all });
   }
 
   const createBusinessType = useMutation({
@@ -231,6 +253,182 @@ export function useGlobalCatalogMutations() {
     },
   });
 
+  const createTemplate = useMutation({
+    mutationFn: (input: CreateGlobalCatalogTemplateInput) =>
+      createGlobalCatalogTemplate(env.platformApiBaseUrl, input),
+    onSuccess: invalidateTemplates,
+  });
+
+  const updateTemplate = useMutation({
+    mutationFn: ({
+      templateId,
+      input,
+    }: {
+      templateId: string;
+      input: UpdateGlobalCatalogTemplateInput;
+    }) => updateGlobalCatalogTemplate(env.platformApiBaseUrl, templateId, input),
+    onSuccess: async (_data, variables) => {
+      await invalidateTemplates();
+      await queryClient.invalidateQueries({
+        queryKey: globalCatalogQueryKeys.templates.detail(variables.templateId),
+      });
+    },
+  });
+
+  const publishTemplate = useMutation({
+    mutationFn: ({
+      templateId,
+      expectedUpdatedAtUtc,
+    }: {
+      templateId: string;
+      expectedUpdatedAtUtc?: string;
+    }) => publishGlobalCatalogTemplate(env.platformApiBaseUrl, templateId, expectedUpdatedAtUtc),
+    onSuccess: async (_data, variables) => {
+      await invalidateTemplates();
+      await queryClient.invalidateQueries({
+        queryKey: globalCatalogQueryKeys.templates.detail(variables.templateId),
+      });
+    },
+  });
+
+  const unpublishTemplate = useMutation({
+    mutationFn: ({
+      templateId,
+      expectedUpdatedAtUtc,
+    }: {
+      templateId: string;
+      expectedUpdatedAtUtc?: string;
+    }) => unpublishGlobalCatalogTemplate(env.platformApiBaseUrl, templateId, expectedUpdatedAtUtc),
+    onSuccess: async (_data, variables) => {
+      await invalidateTemplates();
+      await queryClient.invalidateQueries({
+        queryKey: globalCatalogQueryKeys.templates.detail(variables.templateId),
+      });
+    },
+  });
+
+  const archiveTemplate = useMutation({
+    mutationFn: ({
+      templateId,
+      expectedUpdatedAtUtc,
+    }: {
+      templateId: string;
+      expectedUpdatedAtUtc?: string;
+    }) => archiveGlobalCatalogTemplate(env.platformApiBaseUrl, templateId, expectedUpdatedAtUtc),
+    onSuccess: async (_data, variables) => {
+      await invalidateTemplates();
+      await queryClient.invalidateQueries({
+        queryKey: globalCatalogQueryKeys.templates.detail(variables.templateId),
+      });
+    },
+  });
+
+  const assignTemplateProduct = useMutation({
+    mutationFn: ({
+      templateId,
+      input,
+    }: {
+      templateId: string;
+      input: AssignGlobalCatalogTemplateProductInput;
+    }) => assignGlobalCatalogTemplateProduct(env.platformApiBaseUrl, templateId, input),
+    onSuccess: async (_data, variables) => {
+      await invalidateTemplates();
+      await queryClient.invalidateQueries({
+        queryKey: globalCatalogQueryKeys.templates.detail(variables.templateId),
+      });
+    },
+  });
+
+  const removeTemplateProduct = useMutation({
+    mutationFn: ({
+      templateId,
+      productId,
+      expectedUpdatedAtUtc,
+    }: {
+      templateId: string;
+      productId: string;
+      expectedUpdatedAtUtc?: string;
+    }) =>
+      removeGlobalCatalogTemplateProduct(
+        env.platformApiBaseUrl,
+        templateId,
+        productId,
+        expectedUpdatedAtUtc,
+      ),
+    onSuccess: async (_data, variables) => {
+      await invalidateTemplates();
+      await queryClient.invalidateQueries({
+        queryKey: globalCatalogQueryKeys.templates.detail(variables.templateId),
+      });
+    },
+  });
+
+  const updateTemplateProductFlags = useMutation({
+    mutationFn: ({
+      templateId,
+      productId,
+      input,
+    }: {
+      templateId: string;
+      productId: string;
+      input: UpdateGlobalCatalogTemplateProductFlagsInput;
+    }) => updateGlobalCatalogTemplateProductFlags(env.platformApiBaseUrl, templateId, productId, input),
+    onSuccess: async (_data, variables) => {
+      await invalidateTemplates();
+      await queryClient.invalidateQueries({
+        queryKey: globalCatalogQueryKeys.templates.detail(variables.templateId),
+      });
+    },
+  });
+
+  const reorderTemplateProducts = useMutation({
+    mutationFn: ({
+      templateId,
+      input,
+    }: {
+      templateId: string;
+      input: ReorderGlobalCatalogTemplateProductsInput;
+    }) => reorderGlobalCatalogTemplateProducts(env.platformApiBaseUrl, templateId, input),
+    onSuccess: async (_data, variables) => {
+      await invalidateTemplates();
+      await queryClient.invalidateQueries({
+        queryKey: globalCatalogQueryKeys.templates.detail(variables.templateId),
+      });
+    },
+  });
+
+  const bulkAssignTemplateProducts = useMutation({
+    mutationFn: ({
+      templateId,
+      input,
+    }: {
+      templateId: string;
+      input: BulkAssignGlobalCatalogTemplateProductsInput;
+    }) => bulkAssignGlobalCatalogTemplateProducts(env.platformApiBaseUrl, templateId, input),
+    onSuccess: async (_data, variables) => {
+      await invalidateTemplates();
+      await queryClient.invalidateQueries({
+        queryKey: globalCatalogQueryKeys.templates.detail(variables.templateId),
+      });
+    },
+  });
+
+  const bulkRemoveTemplateProducts = useMutation({
+    mutationFn: ({
+      templateId,
+      input,
+    }: {
+      templateId: string;
+      input: BulkRemoveGlobalCatalogTemplateProductsInput;
+    }) => bulkRemoveGlobalCatalogTemplateProducts(env.platformApiBaseUrl, templateId, input),
+    onSuccess: async (_data, variables) => {
+      await invalidateTemplates();
+      await queryClient.invalidateQueries({
+        queryKey: globalCatalogQueryKeys.templates.detail(variables.templateId),
+      });
+    },
+  });
+
   return {
     createBusinessType,
     updateBusinessType,
@@ -245,5 +443,16 @@ export function useGlobalCatalogMutations() {
     removeProductImage,
     uploadImport,
     confirmImport,
+    createTemplate,
+    updateTemplate,
+    publishTemplate,
+    unpublishTemplate,
+    archiveTemplate,
+    assignTemplateProduct,
+    removeTemplateProduct,
+    updateTemplateProductFlags,
+    reorderTemplateProducts,
+    bulkAssignTemplateProducts,
+    bulkRemoveTemplateProducts,
   };
 }

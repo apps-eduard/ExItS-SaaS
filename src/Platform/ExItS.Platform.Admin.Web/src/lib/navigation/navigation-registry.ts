@@ -231,7 +231,7 @@ export const navigationRegistry: NavigationSectionDefinition[] = [
         id: "PWEB-NAV-TEMPLATES",
         labelKey: "nav.templates",
         icon: "file-text",
-        href: "/admin/catalog/templates",
+        href: "/admin/global-catalog/templates",
         lifecycle: "AVAILABLE",
         permission: { kind: "any", codes: [P.viewGlobalCatalog] },
         order: 5,

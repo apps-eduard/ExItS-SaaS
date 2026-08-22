@@ -13,6 +13,8 @@ export const PLATFORM_PERMISSIONS = {
   manageGlobalCategories: "platform.permission.manage_global_categories",
   manageGlobalProducts: "platform.permission.manage_global_products",
   importGlobalProducts: "platform.permission.import_global_products",
+  manageCatalogTemplates: "platform.permission.manage_catalog_templates",
+  publishCatalogTemplates: "platform.permission.publish_catalog_templates",
   viewPrivacyCompliance: "platform.permission.view_privacy_compliance",
 } as const;
 

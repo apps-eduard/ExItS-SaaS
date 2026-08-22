@@ -332,3 +332,137 @@ export type ConfirmGlobalCatalogImportInput = {
   idempotencyKey?: string;
   signal?: AbortSignal;
 };
+
+export const GLOBAL_CATALOG_TEMPLATE_STATUSES = ["Draft", "Published", "Archived"] as const;
+export type GlobalCatalogTemplateStatus = (typeof GLOBAL_CATALOG_TEMPLATE_STATUSES)[number];
+
+export const GLOBAL_CATALOG_TEMPLATE_LIST_SORT_BY = [
+  "Name",
+  "Slug",
+  "Status",
+  "PrimaryBusinessType",
+  "UpdatedAtUtc",
+  "CreatedAtUtc",
+  "ProductCount",
+] as const;
+export type GlobalCatalogTemplateListSortBy = (typeof GLOBAL_CATALOG_TEMPLATE_LIST_SORT_BY)[number];
+
+export const CATALOG_TEMPLATE_SELECTION_MODES = ["Curated", "Auto", "Hybrid"] as const;
+export type CatalogTemplateSelectionMode = (typeof CATALOG_TEMPLATE_SELECTION_MODES)[number];
+
+export const GLOBAL_CATALOG_TEMPLATE_LIST_PAGE_SIZE = 20;
+export const GLOBAL_CATALOG_TEMPLATE_AVAILABLE_PRODUCTS_PAGE_SIZE = 10;
+
+export type GlobalCatalogTemplateProduct = {
+  id: string;
+  globalProductId: string;
+  sortOrder: number;
+  isFeatured: boolean;
+  isFirstBatch: boolean;
+  productName?: string;
+  sku?: string;
+  barcode?: string;
+  brand?: string;
+  categoryId?: string | null;
+  categoryName?: string;
+  status?: string;
+  unit?: string;
+  sellingMode?: string;
+  costPrice?: number;
+  sellingPrice?: number;
+  hasImage: boolean;
+  imageVersion?: number;
+};
+
+export type GlobalCatalogTemplateSummary = {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  iconReference?: string;
+  primaryBusinessType: string;
+  primaryBusinessTypeId: string;
+  status: GlobalCatalogTemplateStatus;
+  defaultBatchSize: number;
+  selectionMode: CatalogTemplateSelectionMode;
+  publishedAtUtc?: string;
+  productCount: number;
+  firstBatchCount: number;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+};
+
+export type GlobalCatalogTemplateDetail = GlobalCatalogTemplateSummary & {
+  products: GlobalCatalogTemplateProduct[];
+};
+
+export type GlobalCatalogTemplateListQuery = {
+  page?: number;
+  pageSize?: number;
+  status?: GlobalCatalogTemplateStatus;
+  primaryBusinessTypeId?: string;
+  primaryBusinessTypeCode?: string;
+  search?: string;
+  sortBy?: GlobalCatalogTemplateListSortBy;
+  sortDesc?: boolean;
+  signal?: AbortSignal;
+};
+
+export type GlobalCatalogTemplateAvailableProductsQuery = {
+  page?: number;
+  pageSize?: number;
+  status?: GlobalProductStatus;
+  categoryId?: string;
+  search?: string;
+  barcode?: string;
+  sku?: string;
+  sortBy?: GlobalProductListSortBy;
+  sortDesc?: boolean;
+  signal?: AbortSignal;
+};
+
+export type CreateGlobalCatalogTemplateInput = {
+  name: string;
+  primaryBusinessType?: string;
+  primaryBusinessTypeId?: string;
+  slug?: string;
+  description?: string;
+  iconReference?: string;
+  defaultBatchSize?: number;
+  selectionMode?: CatalogTemplateSelectionMode;
+};
+
+export type UpdateGlobalCatalogTemplateInput = CreateGlobalCatalogTemplateInput & {
+  expectedUpdatedAtUtc: string;
+};
+
+export type AssignGlobalCatalogTemplateProductInput = {
+  globalProductId: string;
+  isFeatured?: boolean;
+  isFirstBatch?: boolean;
+  sortOrder?: number;
+  expectedUpdatedAtUtc?: string;
+};
+
+export type BulkAssignGlobalCatalogTemplateProductsInput = {
+  globalProductIds: string[];
+  isFeatured?: boolean;
+  isFirstBatch?: boolean;
+  expectedUpdatedAtUtc?: string;
+};
+
+export type BulkRemoveGlobalCatalogTemplateProductsInput = {
+  globalProductIds: string[];
+  expectedUpdatedAtUtc?: string;
+};
+
+export type ReorderGlobalCatalogTemplateProductsInput = {
+  orderedGlobalProductIds: string[];
+  expectedUpdatedAtUtc?: string;
+};
+
+export type UpdateGlobalCatalogTemplateProductFlagsInput = {
+  isFeatured?: boolean;
+  isFirstBatch?: boolean;
+  expectedUpdatedAtUtc?: string;
+};

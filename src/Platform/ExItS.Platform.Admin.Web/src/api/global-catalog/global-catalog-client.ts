@@ -2,6 +2,10 @@ import { globalBusinessTypesListRequestPath } from "@/api/global-catalog/busines
 import { globalCategoriesListRequestPath } from "@/api/global-catalog/category-list-query";
 import { globalCatalogImportsListRequestPath } from "@/api/global-catalog/import-list-query";
 import {
+  globalCatalogTemplateAvailableProductsRequestPath,
+  globalCatalogTemplatesListRequestPath,
+} from "@/api/global-catalog/template-list-query";
+import {
   globalCatalogImportUploadRequest,
   globalCatalogMultipartRequest,
   globalCatalogMutationRequest,
@@ -14,9 +18,14 @@ import {
   GLOBAL_PRODUCT_STATUSES,
   PRODUCT_SELLING_MODES,
   PRODUCT_UNITS,
+  type AssignGlobalCatalogTemplateProductInput,
+  type BulkAssignGlobalCatalogTemplateProductsInput,
+  type BulkRemoveGlobalCatalogTemplateProductsInput,
+  type CatalogTemplateSelectionMode,
   type ConfirmGlobalCatalogImportInput,
   type CreateGlobalBusinessTypeInput,
   type CreateGlobalCategoryInput,
+  type CreateGlobalCatalogTemplateInput,
   type CreateGlobalProductInput,
   type GlobalBusinessTypeDetail,
   type GlobalBusinessTypeItem,
@@ -29,6 +38,12 @@ import {
   type GlobalCatalogImportListQuery,
   type GlobalCatalogImportPreviewItem,
   type GlobalCatalogImportStatus,
+  type GlobalCatalogTemplateAvailableProductsQuery,
+  type GlobalCatalogTemplateDetail,
+  type GlobalCatalogTemplateListQuery,
+  type GlobalCatalogTemplateProduct,
+  type GlobalCatalogTemplateStatus,
+  type GlobalCatalogTemplateSummary,
   type GlobalCategoryDetail,
   type GlobalCategoryListItem,
   type GlobalCategoryListQuery,
@@ -39,8 +54,11 @@ import {
   type GlobalProductStatus,
   type ProductSellingMode,
   type ProductUnit,
+  type ReorderGlobalCatalogTemplateProductsInput,
   type UpdateGlobalBusinessTypeInput,
   type UpdateGlobalCategoryInput,
+  type UpdateGlobalCatalogTemplateInput,
+  type UpdateGlobalCatalogTemplateProductFlagsInput,
   type UpdateGlobalProductInput,
   type UploadGlobalCatalogImportInput,
 } from "@/api/global-catalog/global-catalog-types";
@@ -858,4 +876,359 @@ export async function downloadGlobalCatalogImportTemplate(
   const fileName = fileNameMatch?.[1] ?? GLOBAL_CATALOG_IMPORT_TEMPLATE_FILENAME;
   const blob = await response.blob();
   return { blob, fileName };
+}
+
+const CATALOG_TEMPLATE_STATUSES = ["Draft", "Published", "Archived"] as const;
+const CATALOG_TEMPLATE_SELECTION_MODES = ["Curated", "Auto", "Hybrid"] as const;
+
+function readSelectionMode(record: Record<string, unknown>): CatalogTemplateSelectionMode {
+  const raw = readString(record, "selectionMode", "SelectionMode") ?? "Curated";
+  if ((CATALOG_TEMPLATE_SELECTION_MODES as readonly string[]).includes(raw)) {
+    return raw as CatalogTemplateSelectionMode;
+  }
+  return "Curated";
+}
+
+export function mapGlobalCatalogTemplateProduct(payload: unknown): GlobalCatalogTemplateProduct {
+  const record = asRecord(payload);
+  if (!record) {
+    throw new Error("Invalid template product.");
+  }
+  const id = readString(record, "id", "Id");
+  const globalProductId = readString(record, "globalProductId", "GlobalProductId");
+  const sortOrder = readNumber(record, "sortOrder", "SortOrder");
+  if (!id || !globalProductId || sortOrder == null) {
+    throw new Error("Invalid template product.");
+  }
+  return {
+    id,
+    globalProductId,
+    sortOrder,
+    isFeatured: readBoolean(record, "isFeatured", "IsFeatured"),
+    isFirstBatch: readBoolean(record, "isFirstBatch", "IsFirstBatch"),
+    productName: readOptionalString(record, "productName", "ProductName"),
+    sku: readOptionalString(record, "sku", "Sku"),
+    barcode: readOptionalString(record, "barcode", "Barcode"),
+    brand: readOptionalString(record, "brand", "Brand"),
+    categoryId: readNullableGuid(record, "categoryId", "CategoryId"),
+    categoryName: readOptionalString(record, "categoryName", "CategoryName"),
+    status: readOptionalString(record, "status", "Status"),
+    unit: readOptionalString(record, "unit", "Unit"),
+    sellingMode: readOptionalString(record, "sellingMode", "SellingMode"),
+    costPrice: readNumber(record, "costPrice", "CostPrice"),
+    sellingPrice: readNumber(record, "sellingPrice", "SellingPrice"),
+    hasImage: readBoolean(record, "hasImage", "HasImage"),
+    imageVersion: readNumber(record, "imageVersion", "ImageVersion"),
+  };
+}
+
+function mapGlobalCatalogTemplateSummaryFields(
+  record: Record<string, unknown>,
+): Omit<GlobalCatalogTemplateSummary, "id" | "name" | "slug" | "createdAtUtc" | "updatedAtUtc"> {
+  const primaryBusinessType = readString(record, "primaryBusinessType", "PrimaryBusinessType");
+  const primaryBusinessTypeId = readString(record, "primaryBusinessTypeId", "PrimaryBusinessTypeId");
+  if (!primaryBusinessType || !primaryBusinessTypeId) {
+    throw new Error("Invalid catalog template.");
+  }
+  return {
+    description: readOptionalString(record, "description", "Description"),
+    iconReference: readOptionalString(record, "iconReference", "IconReference"),
+    primaryBusinessType,
+    primaryBusinessTypeId,
+    status: readStatus<GlobalCatalogTemplateStatus>(
+      record,
+      CATALOG_TEMPLATE_STATUSES,
+      "status",
+      "Status",
+    ),
+    defaultBatchSize: readNumber(record, "defaultBatchSize", "DefaultBatchSize") ?? 0,
+    selectionMode: readSelectionMode(record),
+    publishedAtUtc: readOptionalString(record, "publishedAtUtc", "PublishedAtUtc"),
+    productCount: readNumber(record, "productCount", "ProductCount") ?? 0,
+    firstBatchCount: readNumber(record, "firstBatchCount", "FirstBatchCount") ?? 0,
+  };
+}
+
+export function mapGlobalCatalogTemplateSummary(payload: unknown): GlobalCatalogTemplateSummary {
+  const record = asRecord(payload);
+  if (!record) {
+    throw new Error("Invalid catalog template.");
+  }
+  const id = readString(record, "id", "Id");
+  const name = readString(record, "name", "Name");
+  const slug = readString(record, "slug", "Slug");
+  const createdAtUtc = readString(record, "createdAtUtc", "CreatedAtUtc");
+  const updatedAtUtc = readString(record, "updatedAtUtc", "UpdatedAtUtc");
+  if (!id || !name || !slug || !createdAtUtc || !updatedAtUtc) {
+    throw new Error("Invalid catalog template.");
+  }
+  return {
+    id,
+    name,
+    slug,
+    createdAtUtc,
+    updatedAtUtc,
+    ...mapGlobalCatalogTemplateSummaryFields(record),
+  };
+}
+
+export function mapGlobalCatalogTemplateDetail(payload: unknown): GlobalCatalogTemplateDetail {
+  const record = asRecord(payload);
+  if (!record) {
+    throw new Error("Invalid catalog template.");
+  }
+  const summary = mapGlobalCatalogTemplateSummary(payload);
+  const productsRaw = record.products ?? record.Products;
+  const products = Array.isArray(productsRaw)
+    ? productsRaw.map(mapGlobalCatalogTemplateProduct)
+    : [];
+  return {
+    ...summary,
+    products,
+  };
+}
+
+export function listGlobalCatalogTemplates(
+  baseUrl: string,
+  query: GlobalCatalogTemplateListQuery,
+): Promise<PagedResult<GlobalCatalogTemplateSummary>> {
+  return platformRequest<unknown>(baseUrl, {
+    path: globalCatalogTemplatesListRequestPath(query),
+    signal: query.signal,
+  }).then((payload) => {
+    const page = parsePagedResult<unknown>(payload);
+    return {
+      ...page,
+      items: page.items.map(mapGlobalCatalogTemplateSummary),
+    };
+  });
+}
+
+export function getGlobalCatalogTemplate(
+  baseUrl: string,
+  templateId: string,
+  signal?: AbortSignal,
+): Promise<GlobalCatalogTemplateDetail> {
+  return platformRequest<unknown>(baseUrl, {
+    path: `/api/v1/platform/global-catalog/templates/${templateId}`,
+    signal,
+  }).then(mapGlobalCatalogTemplateDetail);
+}
+
+export function createGlobalCatalogTemplate(
+  baseUrl: string,
+  input: CreateGlobalCatalogTemplateInput,
+  signal?: AbortSignal,
+): Promise<GlobalCatalogTemplateDetail> {
+  return globalCatalogMutationRequest<unknown>(baseUrl, {
+    method: "POST",
+    path: "/api/v1/platform/global-catalog/templates",
+    body: {
+      name: input.name,
+      primaryBusinessType: input.primaryBusinessType ?? null,
+      primaryBusinessTypeId: input.primaryBusinessTypeId ?? null,
+      slug: input.slug ?? null,
+      description: input.description ?? null,
+      iconReference: input.iconReference ?? null,
+      defaultBatchSize: input.defaultBatchSize ?? null,
+      selectionMode: input.selectionMode ?? null,
+    },
+    signal,
+  }).then(mapGlobalCatalogTemplateDetail);
+}
+
+export function updateGlobalCatalogTemplate(
+  baseUrl: string,
+  templateId: string,
+  input: UpdateGlobalCatalogTemplateInput,
+  signal?: AbortSignal,
+): Promise<GlobalCatalogTemplateDetail> {
+  return globalCatalogMutationRequest<unknown>(baseUrl, {
+    method: "PUT",
+    path: `/api/v1/platform/global-catalog/templates/${templateId}`,
+    body: {
+      name: input.name,
+      primaryBusinessType: input.primaryBusinessType ?? null,
+      primaryBusinessTypeId: input.primaryBusinessTypeId ?? null,
+      slug: input.slug ?? null,
+      description: input.description ?? null,
+      iconReference: input.iconReference ?? null,
+      defaultBatchSize: input.defaultBatchSize ?? null,
+      selectionMode: input.selectionMode ?? null,
+      expectedUpdatedAtUtc: input.expectedUpdatedAtUtc,
+    },
+    signal,
+  }).then(mapGlobalCatalogTemplateDetail);
+}
+
+function lifecycleBody(expectedUpdatedAtUtc?: string) {
+  return expectedUpdatedAtUtc ? { expectedUpdatedAtUtc } : {};
+}
+
+export function publishGlobalCatalogTemplate(
+  baseUrl: string,
+  templateId: string,
+  expectedUpdatedAtUtc?: string,
+  signal?: AbortSignal,
+): Promise<GlobalCatalogTemplateDetail> {
+  return globalCatalogMutationRequest<unknown>(baseUrl, {
+    method: "POST",
+    path: `/api/v1/platform/global-catalog/templates/${templateId}/publish`,
+    body: lifecycleBody(expectedUpdatedAtUtc),
+    signal,
+  }).then(mapGlobalCatalogTemplateDetail);
+}
+
+export function unpublishGlobalCatalogTemplate(
+  baseUrl: string,
+  templateId: string,
+  expectedUpdatedAtUtc?: string,
+  signal?: AbortSignal,
+): Promise<GlobalCatalogTemplateDetail> {
+  return globalCatalogMutationRequest<unknown>(baseUrl, {
+    method: "POST",
+    path: `/api/v1/platform/global-catalog/templates/${templateId}/unpublish`,
+    body: lifecycleBody(expectedUpdatedAtUtc),
+    signal,
+  }).then(mapGlobalCatalogTemplateDetail);
+}
+
+export function archiveGlobalCatalogTemplate(
+  baseUrl: string,
+  templateId: string,
+  expectedUpdatedAtUtc?: string,
+  signal?: AbortSignal,
+): Promise<GlobalCatalogTemplateDetail> {
+  return globalCatalogMutationRequest<unknown>(baseUrl, {
+    method: "POST",
+    path: `/api/v1/platform/global-catalog/templates/${templateId}/archive`,
+    body: lifecycleBody(expectedUpdatedAtUtc),
+    signal,
+  }).then(mapGlobalCatalogTemplateDetail);
+}
+
+export function assignGlobalCatalogTemplateProduct(
+  baseUrl: string,
+  templateId: string,
+  input: AssignGlobalCatalogTemplateProductInput,
+  signal?: AbortSignal,
+): Promise<GlobalCatalogTemplateDetail> {
+  return globalCatalogMutationRequest<unknown>(baseUrl, {
+    method: "POST",
+    path: `/api/v1/platform/global-catalog/templates/${templateId}/products`,
+    body: {
+      globalProductId: input.globalProductId,
+      isFeatured: input.isFeatured ?? false,
+      isFirstBatch: input.isFirstBatch ?? false,
+      sortOrder: input.sortOrder ?? null,
+      expectedUpdatedAtUtc: input.expectedUpdatedAtUtc ?? null,
+    },
+    signal,
+  }).then(mapGlobalCatalogTemplateDetail);
+}
+
+export function bulkAssignGlobalCatalogTemplateProducts(
+  baseUrl: string,
+  templateId: string,
+  input: BulkAssignGlobalCatalogTemplateProductsInput,
+  signal?: AbortSignal,
+): Promise<GlobalCatalogTemplateDetail> {
+  return globalCatalogMutationRequest<unknown>(baseUrl, {
+    method: "POST",
+    path: `/api/v1/platform/global-catalog/templates/${templateId}/products/bulk`,
+    body: {
+      globalProductIds: input.globalProductIds,
+      isFeatured: input.isFeatured ?? false,
+      isFirstBatch: input.isFirstBatch ?? false,
+      expectedUpdatedAtUtc: input.expectedUpdatedAtUtc ?? null,
+    },
+    signal,
+  }).then(mapGlobalCatalogTemplateDetail);
+}
+
+export function bulkRemoveGlobalCatalogTemplateProducts(
+  baseUrl: string,
+  templateId: string,
+  input: BulkRemoveGlobalCatalogTemplateProductsInput,
+  signal?: AbortSignal,
+): Promise<GlobalCatalogTemplateDetail> {
+  return globalCatalogMutationRequest<unknown>(baseUrl, {
+    method: "POST",
+    path: `/api/v1/platform/global-catalog/templates/${templateId}/products/bulk-remove`,
+    body: {
+      globalProductIds: input.globalProductIds,
+      expectedUpdatedAtUtc: input.expectedUpdatedAtUtc ?? null,
+    },
+    signal,
+  }).then(mapGlobalCatalogTemplateDetail);
+}
+
+export function removeGlobalCatalogTemplateProduct(
+  baseUrl: string,
+  templateId: string,
+  productId: string,
+  expectedUpdatedAtUtc?: string,
+  signal?: AbortSignal,
+): Promise<GlobalCatalogTemplateDetail> {
+  return globalCatalogMutationRequest<unknown>(baseUrl, {
+    method: "DELETE",
+    path: withQuery(
+      `/api/v1/platform/global-catalog/templates/${templateId}/products/${productId}`,
+      { expectedUpdatedAtUtc },
+    ),
+    signal,
+  }).then(mapGlobalCatalogTemplateDetail);
+}
+
+export function updateGlobalCatalogTemplateProductFlags(
+  baseUrl: string,
+  templateId: string,
+  productId: string,
+  input: UpdateGlobalCatalogTemplateProductFlagsInput,
+  signal?: AbortSignal,
+): Promise<GlobalCatalogTemplateDetail> {
+  return globalCatalogMutationRequest<unknown>(baseUrl, {
+    method: "PATCH",
+    path: `/api/v1/platform/global-catalog/templates/${templateId}/products/${productId}`,
+    body: {
+      isFeatured: input.isFeatured ?? null,
+      isFirstBatch: input.isFirstBatch ?? null,
+      expectedUpdatedAtUtc: input.expectedUpdatedAtUtc ?? null,
+    },
+    signal,
+  }).then(mapGlobalCatalogTemplateDetail);
+}
+
+export function reorderGlobalCatalogTemplateProducts(
+  baseUrl: string,
+  templateId: string,
+  input: ReorderGlobalCatalogTemplateProductsInput,
+  signal?: AbortSignal,
+): Promise<GlobalCatalogTemplateDetail> {
+  return globalCatalogMutationRequest<unknown>(baseUrl, {
+    method: "PUT",
+    path: `/api/v1/platform/global-catalog/templates/${templateId}/products/order`,
+    body: {
+      orderedGlobalProductIds: input.orderedGlobalProductIds,
+      expectedUpdatedAtUtc: input.expectedUpdatedAtUtc ?? null,
+    },
+    signal,
+  }).then(mapGlobalCatalogTemplateDetail);
+}
+
+export function listGlobalCatalogTemplateAvailableProducts(
+  baseUrl: string,
+  templateId: string,
+  query: GlobalCatalogTemplateAvailableProductsQuery,
+): Promise<PagedResult<GlobalProductListItem>> {
+  return platformRequest<unknown>(baseUrl, {
+    path: globalCatalogTemplateAvailableProductsRequestPath(templateId, query),
+    signal: query.signal,
+  }).then((payload) => {
+    const page = parsePagedResult<unknown>(payload);
+    return {
+      ...page,
+      items: page.items.map(mapGlobalProductListItem),
+    };
+  });
 }

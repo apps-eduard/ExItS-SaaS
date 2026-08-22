@@ -41,6 +41,11 @@ import {
 } from "@/features/global-catalog/ProductDetailPage";
 import { ImportsPage } from "@/features/global-catalog/ImportsPage";
 import { ImportDetailPage } from "@/features/global-catalog/ImportDetailPage";
+import { TemplatesPage } from "@/features/global-catalog/TemplatesPage";
+import {
+  TemplateDetailPage,
+  TemplateFormPage,
+} from "@/features/global-catalog/TemplateDetailPage";
 import { ShellCatchAllPage } from "@/features/overview/ShellCatchAllPage";
 import { AuthorizationProvider } from "@/hooks/use-authorization";
 import { DiagnosticsProvider } from "@/hooks/use-diagnostics";
@@ -177,10 +182,22 @@ export function App() {
                             <Route index element={<ImportsPage />} />
                             <Route path=":jobId" element={<ImportDetailPage />} />
                           </Route>
+                          <Route path="templates">
+                            <Route index element={<TemplatesPage />} />
+                            <Route path="new" element={<TemplateFormPage mode="create" />} />
+                            <Route path=":templateId">
+                              <Route index element={<TemplateDetailPage />} />
+                              <Route path="edit" element={<TemplateFormPage mode="edit" />} />
+                            </Route>
+                          </Route>
                         </Route>
                         <Route
                           path="catalog/business-types"
                           element={<Navigate to="/admin/global-catalog/business-types" replace />}
+                        />
+                        <Route
+                          path="catalog/templates"
+                          element={<Navigate to="/admin/global-catalog/templates" replace />}
                         />
                         <Route
                           path="catalog/imports"

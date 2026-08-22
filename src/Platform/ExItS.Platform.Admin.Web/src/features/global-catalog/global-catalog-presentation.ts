@@ -18,7 +18,7 @@ export const globalCatalogControlClass =
 export function globalCatalogStatusTone(
   status: string,
 ): "success" | "warning" | "danger" | "neutral" {
-  if (status === "Active") {
+  if (status === "Active" || status === "Published") {
     return "success";
   }
   if (status === "Draft" || status === "Inactive") {

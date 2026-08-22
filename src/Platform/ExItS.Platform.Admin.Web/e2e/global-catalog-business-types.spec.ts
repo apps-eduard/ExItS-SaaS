@@ -261,15 +261,17 @@ test.describe("global catalog business types", () => {
     await page.getByLabel("Name").fill("Cafe");
     await page.getByRole("button", { name: "Save" }).click();
     await expect(page).toHaveURL(/\/admin\/global-catalog\/business-types\//);
-    expect(mock.antiforgeryRequested).toBe(true);
-    expect(
-      mock.mutationCalls.some(
-        (call) =>
-          call.method === "POST" &&
-          call.path.endsWith("/global-catalog/business-types") &&
-          call.csrfHeader === "test-antiforgery-token",
-      ),
-    ).toBe(true);
+    await expect.poll(() => mock.antiforgeryRequested).toBe(true);
+    await expect
+      .poll(() =>
+        mock.mutationCalls.some(
+          (call) =>
+            call.method === "POST" &&
+            call.path.endsWith("/global-catalog/business-types") &&
+            call.csrfHeader === "test-antiforgery-token",
+        ),
+      )
+      .toBe(true);
   });
 
   test("edit keeps code read-only and PUT succeeds", async ({ page }) => {
