@@ -7,8 +7,7 @@ PA-COM-02 delivers React Platform Admin lifecycle management for **existing** Pl
 | Item | Value |
 |---|---|
 | Starting HEAD | `f50195c00cb6d542535c9df6e0df9b6fc5e2d909` |
-| Branch | `feat/platform-admin-pa-com-02` |
-| Package | PA-COM-02 |
+| Final HEAD | `c560b291` |
 
 ## API contracts (verified from `CatalogEndpoints.cs`)
 
