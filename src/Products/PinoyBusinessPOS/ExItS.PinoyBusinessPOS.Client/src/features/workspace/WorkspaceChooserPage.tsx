@@ -66,6 +66,7 @@ export function WorkspaceChooserPage() {
     workspaces,
     accessDeniedDetail,
     bindFailureKind,
+    failureDiagnostic,
     bindDestination,
     grantByOrganizationId,
     ensureOrganizationGrantHint,
@@ -128,7 +129,13 @@ export function WorkspaceChooserPage() {
   }
 
   if (status === "error") {
-    return <ErrorState title={t("error.title")} detail={t("workspace.loadError")} />;
+    return (
+      <ErrorState
+        title={t("diagnostics.loadFailedTitle")}
+        detail={t("workspace.loadError")}
+        diagnostic={failureDiagnostic ?? undefined}
+      />
+    );
   }
 
   if (workspaces.length === 0) {
@@ -162,7 +169,11 @@ export function WorkspaceChooserPage() {
     <div className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-4">
       <PageHeader title={t("workspace.title")} description={t("workspace.experienceLede")} />
       {failureDetailKey ? (
-        <ErrorState title={t(failureTitleKey)} detail={t(failureDetailKey)} />
+        <ErrorState
+          title={t(failureTitleKey)}
+          detail={t(failureDetailKey)}
+          diagnostic={failureDiagnostic ?? undefined}
+        />
       ) : null}
       <div className="flex flex-col gap-3" role="list">
         {workspaces.map((organization) => (

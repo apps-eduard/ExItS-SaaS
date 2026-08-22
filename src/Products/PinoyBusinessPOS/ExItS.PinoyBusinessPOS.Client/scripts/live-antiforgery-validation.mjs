@@ -102,7 +102,7 @@ async function main() {
     throw new Error(`ORG_CONTEXT=BLOCKER status=${withHeader.status}`);
   }
 
-  const branches = await request(`/api/v1/organizations/${ORG_ID}/branches`);
+  const branches = await request(`/api/v1/platform/organizations/${ORG_ID}/branches`);
   const branchList = Array.isArray(branches.json) ? branches.json : [];
   const main = branchList.find((b) => /main branch/i.test(b.name ?? ""));
   const second = branchList.find((b) => /kizy store 02/i.test(b.name ?? ""));

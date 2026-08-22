@@ -412,15 +412,26 @@ $mailpitSmtpPort = if ($envMap['LOCAL_VALIDATION_MAILPIT_SMTP_HOST_PORT']) { [in
 New-Item -ItemType Directory -Force -Path $dpKeys | Out-Null
 Write-Ok "DataProtection keys directory: $dpKeys"
 
+$appPortLabels = @{
+    $adminPort        = 'Platform Admin'
+    $platformApiPort   = 'Platform API'
+    $posApiPort        = 'POS API'
+    $orgWebPort        = 'Organization Web'
+    $personalWebPort   = 'Personal Web'
+}
+
+Write-Step 'Inspecting Local Validation port/runtime provenance (all ExItS worktrees)...'
+Write-LocalValidationRuntimeProvenanceTable -PortLabels $appPortLabels -ExpectedRepoRoot $repoRoot
+
 Write-Step 'Stopping Docker app services before host mode (infrastructure and volumes preserved)...'
 $null = Stop-LocalValidationDockerAppServices -ComposeFile $composeFile -EnvFile $envFile
 
-Write-Step 'Stopping stale repo-scoped local ExItS host apps (DBs untouched)...'
-$null = Stop-LocalValidationRepoScopedHostApps -RepoRoot $repoRoot
+Write-Step 'Stopping stale cross-worktree ExItS host apps (DBs untouched)...'
+$null = Stop-LocalValidationCrossWorktreeHostApps -RepoRoot $repoRoot
 
-$conflicts = @(Report-LocalValidationPortConflicts -Ports @($adminPort, $platformApiPort, $posApiPort, $orgWebPort, $personalWebPort))
+$conflicts = @(Report-LocalValidationPortConflictsWithProvenance -PortLabels $appPortLabels -ExpectedRepoRoot $repoRoot)
 if ($conflicts.Count -gt 0) {
-    throw 'Ports 8090/8091/8092/8093/8094 still occupied after stopping repo-scoped apps. Free them and retry.'
+    throw 'Ports 8090/8091/8092/8093/8094 still occupied after stopping cross-worktree apps and Docker app services. Free them and retry.'
 }
 Write-Ok 'App ports 8090/8091/8092/8093/8094 are free'
 
@@ -703,6 +714,9 @@ if (-not $healthOk) {
     Write-Fail 'One or more health checks failed - see messages above.'
     exit 1
 }
+
+Write-LocalValidationRuntimeSummary -PortLabels $appPortLabels -ExpectedRepoRoot $repoRoot -Mode 'HostApps'
+Assert-LocalValidationPortsOwnedByExpectedWorktree -PortLabels $appPortLabels -ExpectedRepoRoot $repoRoot
 
 Write-Ok 'All health checks passed.'
 exit 0

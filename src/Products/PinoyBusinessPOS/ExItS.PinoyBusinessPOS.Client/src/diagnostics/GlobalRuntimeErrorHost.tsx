@@ -1,26 +1,23 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ClientErrorPanel } from "@/diagnostics/ClientErrorPanel";
-import type { ClientErrorReportInput } from "@/diagnostics/client-error-report";
-import { safeDiagnosticLocation } from "@/diagnostics/diagnostic-redaction";
+import { normalizeReactClientError } from "@/diagnostics/normalize-pos-error";
+import type { PosErrorReportInput } from "@/diagnostics/pos-error-report";
 
 /**
  * Captures window.onerror and unhandledrejection, shows a copyable diagnostic overlay.
  * Does not replace the React tree (dismissible). React render crashes use GlobalErrorBoundary.
  */
 export function GlobalRuntimeErrorHost({ children }: { children: ReactNode }) {
-  const [report, setReport] = useState<ClientErrorReportInput | null>(null);
+  const [report, setReport] = useState<PosErrorReportInput | null>(null);
 
   useEffect(() => {
-    function capture(source: ClientErrorReportInput["source"], error: unknown) {
-      const location = safeDiagnosticLocation(window.location.href, window.location.pathname);
-      setReport({
-        source,
-        error,
-        occurredAt: new Date().toISOString(),
-        url: location.url,
-        pathname: location.pathname,
-        mode: import.meta.env.MODE,
-      });
+    function capture(source: PosErrorReportInput["source"], error: unknown) {
+      setReport(
+        normalizeReactClientError({
+          source,
+          error,
+        }),
+      );
       console.error(`[ExItS] ${source}`, error);
     }
 

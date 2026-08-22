@@ -22,6 +22,12 @@ export const hilPH: Record<keyof typeof en, string> = {
   "error.title": "May natabo nga sala",
   "error.detail":
     "I-reload ang page. Wala sing business data nga gintipigan sa sini nga foundation.",
+  "diagnostics.loadFailedTitle": "May natabo nga sala samtang gin-load ang imo nga workspace.",
+  "diagnostics.copy": "Copy error details",
+  "diagnostics.copied": "Copied",
+  "diagnostics.copyFailed": "Copy failed — select the text below",
+  "diagnostics.copyFallbackHint": "Select all and copy manually",
+  "diagnostics.technicalDetails": "Technical details",
   "loading.label": "Nagakarga",
   "connectivity.online": "Online",
   "connectivity.offlineTitle": "Offline ka subong",

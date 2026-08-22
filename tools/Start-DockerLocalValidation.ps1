@@ -154,11 +154,21 @@ Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_POS_API_INTERNAL_URL' -Value 'htt
 Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_SEED_SCOPE' -Value $SeedScope
 Set-ComposeEnvironment -Name 'LOCAL_VALIDATION_PURGE_TRANSACTIONAL' -Value $(if ($PurgeTransactional) { 'true' } else { 'false' })
 
+Write-Step 'Inspecting Local Validation port/runtime provenance (all ExItS worktrees)...'
+$dockerAppPortLabels = @{
+    $adminPort        = 'Platform Admin'
+    $platformApiPort   = 'Platform API'
+    $posApiPort        = 'POS API'
+    $orgWebPort        = 'Organization Web'
+    $personalWebPort   = 'Personal Web'
+}
+Write-LocalValidationRuntimeProvenanceTable -PortLabels $dockerAppPortLabels -ExpectedRepoRoot $repoRoot
+
 Write-Step 'Stopping repo-scoped host applications before Docker app mode...'
-$null = Stop-LocalValidationRepoScopedHostApps -RepoRoot $repoRoot
+$null = Stop-LocalValidationCrossWorktreeHostApps -RepoRoot $repoRoot
 Write-Step 'Stopping any existing Docker app services before the port safety check...'
 $null = Stop-LocalValidationDockerAppServices -ComposeFile $composeFile -EnvFile $envFile
-$conflicts = @(Report-LocalValidationPortConflicts -Ports @($adminPort, $platformApiPort, $posApiPort, $orgWebPort, $personalWebPort))
+$conflicts = @(Report-LocalValidationPortConflictsWithProvenance -PortLabels $dockerAppPortLabels -ExpectedRepoRoot $repoRoot)
 if ($conflicts.Count -gt 0) {
     throw 'Local Validation app ports remain occupied by unknown processes. Free them and retry.'
 }
@@ -229,4 +239,6 @@ Write-Host '  Migrations:   API-hosted LocalValidation services'
 Write-Host '  Volumes:      preserved'
 Write-Host '================================================' -ForegroundColor Green
 Write-Note 'Stop apps: .\tools\Stop-DockerLocalValidation.ps1'
+Write-LocalValidationRuntimeSummary -PortLabels $dockerAppPortLabels -ExpectedRepoRoot $repoRoot -Mode 'DockerApps'
+Assert-LocalValidationPortsOwnedByExpectedWorktree -PortLabels $dockerAppPortLabels -ExpectedRepoRoot $repoRoot
 Write-Ok 'All Docker Local Validation health checks passed.'

@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { CopyErrorDetailsButton } from "@/diagnostics/CopyErrorDetailsButton";
 import {
   formatClientErrorReport,
   type ClientErrorReportInput,
@@ -15,31 +16,11 @@ export type ClientErrorPanelProps = {
 };
 
 export function ClientErrorPanel({ input, onReload, onDismiss, className }: ClientErrorPanelProps) {
-  const report = formatClientErrorReport(input);
-  const summary = useMemo(() => safeDiagnosticError(input.error).message, [input.error]);
-  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
-
-  const copyReport = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(report);
-      setCopyState("copied");
-    } catch {
-      try {
-        const area = document.createElement("textarea");
-        area.value = report;
-        area.setAttribute("readonly", "");
-        area.style.position = "fixed";
-        area.style.left = "-9999px";
-        document.body.appendChild(area);
-        area.select();
-        document.execCommand("copy");
-        document.body.removeChild(area);
-        setCopyState("copied");
-      } catch {
-        setCopyState("failed");
-      }
-    }
-  }, [report]);
+  const report = useMemo(() => formatClientErrorReport(input), [input]);
+  const summary = useMemo(
+    () => input.friendlyMessage ?? safeDiagnosticError(input.error).message,
+    [input.error, input.friendlyMessage],
+  );
 
   return (
     <div
@@ -63,6 +44,8 @@ export function ClientErrorPanel({ input, onReload, onDismiss, className }: Clie
         {summary}
       </p>
 
+      <CopyErrorDetailsButton report={{ ...input, friendlyMessage: summary }} />
+
       <label className="flex min-w-0 flex-col gap-1.5">
         <span className="text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
           Copyable AI report
@@ -77,18 +60,6 @@ export function ClientErrorPanel({ input, onReload, onDismiss, className }: Clie
       </label>
 
       <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          className="min-h-11"
-          data-testid="client-error-copy"
-          onClick={() => void copyReport()}
-        >
-          {copyState === "copied"
-            ? "Copied"
-            : copyState === "failed"
-              ? "Copy failed — select text"
-              : "Copy report"}
-        </Button>
         {onReload ? (
           <Button
             type="button"

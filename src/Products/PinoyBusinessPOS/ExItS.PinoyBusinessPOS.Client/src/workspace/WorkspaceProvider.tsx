@@ -43,6 +43,9 @@ import {
   type WorkspaceBindFailure,
   type WorkspaceBindFailureKind,
 } from "@/workspace/workspace-bind-error";
+import { normalizePosError } from "@/diagnostics/normalize-pos-error";
+import type { PosErrorReportInput } from "@/diagnostics/pos-error-report";
+import { PlatformApiError } from "@/api/platform/platform-http";
 import {
   resolveDestinationRouting,
   type WorkspaceDestination,
@@ -67,6 +70,8 @@ type WorkspaceContextValue = {
   accessDeniedDetail: string | null;
   /** Classified bind failure for user-facing copy (null when no denial). */
   bindFailureKind: WorkspaceBindFailureKind | null;
+  /** Sanitized copyable diagnostics for the latest bind/load failure. */
+  failureDiagnostic: PosErrorReportInput | null;
   /** @deprecated Prefer bindDestination — kept for legacy callers. */
   bindWorkspace: (organizationId: string, branchId: string) => Promise<boolean>;
   bindDestination: (destination: WorkspaceDestination) => Promise<boolean>;
@@ -149,6 +154,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [posDevice, setPosDevice] = useState<PosDeviceContext>(INITIAL_POS_DEVICE_CONTEXT);
   const [accessDeniedDetail, setAccessDeniedDetail] = useState<string | null>(null);
   const [bindFailureKind, setBindFailureKind] = useState<WorkspaceBindFailureKind | null>(null);
+  const [failureDiagnostic, setFailureDiagnostic] = useState<PosErrorReportInput | null>(null);
 
   const refreshPosDevice = useCallback(
     async (options?: { branchId?: string | null }) => {
@@ -194,9 +200,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       kind: WorkspaceBindFailureKind,
       technicalDetail: string | null,
       detailKey: WorkspaceBindFailure["detailKey"],
+      diagnostic?: PosErrorReportInput | null,
     ) => {
       setBindFailureKind(kind);
       setAccessDeniedDetail(detailKey);
+      setFailureDiagnostic(diagnostic ?? null);
       if (technicalDetail) {
         console.warn("[workspace-bind]", kind, technicalDetail);
       }
@@ -230,11 +238,26 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setStatus("loading");
     setAccessDeniedDetail(null);
     setBindFailureKind(null);
+    setFailureDiagnostic(null);
 
     const accountClass = sessionAccountClass(currentSession);
 
     const organizationsResult = await listEligibleOrganizations();
     if (!organizationsResult.ok) {
+      setFailureDiagnostic(
+        normalizePosError({
+          source: "workspace",
+          error: new PlatformApiError(
+            organizationsResult.status,
+            organizationsResult.body ?? {},
+          ),
+          operation: "workspace bootstrap",
+          httpMethod: "GET",
+          path: "/api/v1/platform/auth/organizations",
+          screen: "Choose workspace",
+          accountClass: accountClass ?? undefined,
+        }),
+      );
       setStatus("error");
       setWorkspaces([]);
       setRoutingPlan(null);
@@ -407,6 +430,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setStatus("binding");
       setBindFailureKind(null);
       setAccessDeniedDetail(null);
+      setFailureDiagnostic(null);
 
       const activeSession = await ensureOrganizationSession();
       if (!activeSession) {
@@ -424,7 +448,22 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             errorCode: result.body?.errorCode,
             detail: result.body?.detail,
           });
-          denyBind(classified.kind, classified.technicalDetail, classified.detailKey);
+          denyBind(
+            classified.kind,
+            classified.technicalDetail,
+            classified.detailKey,
+            normalizePosError({
+              source: "workspace",
+              error: new PlatformApiError(result.status, result.body ?? {}),
+              operation: "workspace management grant",
+              httpMethod: "POST",
+              path: "/api/v1/platform/auth/token",
+              screen: "Choose workspace",
+              accountClass: sessionAccountClass(activeSession) ?? undefined,
+              organizationName:
+                findOrganizationLabel(workspaces, destination.organizationId) ?? undefined,
+            }),
+          );
           setBoundWorkspace(null);
           setStatus(classified.kind === "product_access_denied" ? "access_denied" : "ready");
           return false;
@@ -459,7 +498,30 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           errorCode: result.body?.errorCode,
           detail: result.body?.detail,
         });
-        denyBind(classified.kind, classified.technicalDetail, classified.detailKey);
+        const bindPath =
+          result.reason === "context"
+            ? "/api/v1/platform/auth/organization-context"
+            : result.reason === "grant"
+              ? "/api/v1/platform/auth/token"
+              : "/api/v1/platform/auth/token";
+        denyBind(
+          classified.kind,
+          classified.technicalDetail,
+          classified.detailKey,
+          normalizePosError({
+            source: "workspace",
+            error: new PlatformApiError(result.status, result.body ?? {}),
+            operation:
+              result.reason === "context" ? "organization context" : "workspace session grant",
+            httpMethod: result.reason === "context" ? "PUT" : "POST",
+            path: bindPath,
+            screen: "Choose workspace",
+            accountClass: sessionAccountClass(activeSession) ?? undefined,
+            organizationName:
+              findOrganizationLabel(workspaces, destination.organizationId) ?? undefined,
+            branchName: destination.branchName ?? undefined,
+          }),
+        );
         setBoundWorkspace(null);
         setStatus(classified.kind === "product_access_denied" ? "access_denied" : "ready");
         return false;
@@ -484,7 +546,25 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         clearPosSessionGrant();
         setSessionGrantState(null);
         setBoundWorkspace(null);
-        denyBind(classified.kind, classified.technicalDetail, classified.detailKey);
+        denyBind(
+          classified.kind,
+          classified.technicalDetail,
+          classified.detailKey,
+          normalizePosError({
+            source: "workspace",
+            error: new Error(operational.detail ?? "Operational branch bind failed"),
+            operation: "operational branch bind",
+            httpMethod: "PUT",
+            path: "/api/v1/platform/organizations/{organizationId}/branch-context",
+            screen: "Choose workspace",
+            accountClass: sessionAccountClass(activeSession) ?? undefined,
+            organizationName:
+              findOrganizationLabel(workspaces, destination.organizationId) ?? undefined,
+            branchName: destination.branchName ?? undefined,
+            status: operational.status,
+            errorCode: operational.errorCode,
+          }),
+        );
         setStatus(classified.kind === "product_access_denied" ? "access_denied" : "ready");
         return false;
       }
@@ -498,6 +578,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       });
       setBindFailureKind(null);
       setAccessDeniedDetail(null);
+      setFailureDiagnostic(null);
       setStatus("bound");
       return true;
     },
@@ -618,6 +699,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       refreshPosDevice,
       accessDeniedDetail,
       bindFailureKind,
+      failureDiagnostic,
       bindWorkspace,
       bindDestination,
       ensureOrganizationGrantHint,
@@ -628,6 +710,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       accessDeniedDetail,
       bindDestination,
       bindFailureKind,
+      failureDiagnostic,
       bindWorkspace,
       boundWorkspace,
       clearBoundWorkspace,

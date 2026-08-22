@@ -1,8 +1,10 @@
 const SECRET_KEY_PATTERN =
-  /(access[_-]?token|refresh[_-]?token|authorization|bearer|password|antiforgery|csrf|invitation[_-]?token|registration[_-]?token|recovery|secret|api[_-]?key|xsrf)/i;
+  /(access[_-]?token|refresh[_-]?token|authorization|bearer|password|antiforgery|csrf|invitation[_-]?token|registration[_-]?token|recovery|secret|api[_-]?key|xsrf|cookie|set-cookie|x-xsrf-token)/i;
 
 const SECRET_VALUE_PATTERN =
   /\b(Bearer\s+[A-Za-z0-9\-._~+/]+=*|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+|[0-9a-f]{32,}|[A-Za-z0-9_-]{24,}=*)\b/gi;
+
+const COOKIE_HEADER_PATTERN = /\b(Cookie|Set-Cookie|X-XSRF-TOKEN)\s*[:=]\s*[^\s;]+/gi;
 
 /** Origin + pathname only — never search/hash (invitation tokens etc.). */
 export function safeDiagnosticLocation(
@@ -41,7 +43,10 @@ export function redactDiagnosticText(value: string | null | undefined): string {
   if (!value) {
     return "";
   }
-  return value.replace(SECRET_VALUE_PATTERN, "[REDACTED]");
+  return value
+    .replace(COOKIE_HEADER_PATTERN, "[REDACTED]")
+    .replace(/\bpassword\s*=\s*\S+/gi, "password=[REDACTED]")
+    .replace(SECRET_VALUE_PATTERN, "[REDACTED]");
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

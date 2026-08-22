@@ -159,31 +159,7 @@ function Get-LocalValidationRepoScopedAppProcesses {
 function Stop-LocalValidationRepoScopedHostApps {
     param([Parameter(Mandatory)][string]$RepoRoot)
 
-    $stateFile = Join-Path $env:LOCALAPPDATA 'ExItS\LocalValidation\launcher-state.json'
-    if (Test-Path -LiteralPath $stateFile) {
-        try {
-            $state = Get-Content -LiteralPath $stateFile -Raw | ConvertFrom-Json
-            if ([string]$state.Mode -ne 'DockerApps') {
-                foreach ($windowPid in @($state.WindowPids)) {
-                    if ($windowPid -and (Get-Process -Id $windowPid -ErrorAction SilentlyContinue)) {
-                        Write-Host "[local-validation] Stopping host launcher window PID $windowPid" -ForegroundColor Cyan
-                        Stop-Process -Id $windowPid -Force -ErrorAction SilentlyContinue
-                    }
-                }
-            }
-        }
-        catch { }
-    }
-
-    $processes = @(Get-LocalValidationRepoScopedAppProcesses -RepoRoot $RepoRoot)
-    foreach ($process in $processes) {
-        $snippet = [string]$process.CommandLine
-        if ($snippet.Length -gt 120) { $snippet = $snippet.Substring(0, 120) }
-        Write-Host ("[local-validation] Stopping repo-scoped host PID {0}: {1}" -f $process.ProcessId, $snippet) -ForegroundColor Cyan
-        Stop-Process -Id $process.ProcessId -Force -ErrorAction SilentlyContinue
-    }
-    if ($processes.Count -gt 0) { Start-Sleep -Seconds 1 }
-    return $processes
+    return Stop-LocalValidationCrossWorktreeHostApps -RepoRoot $RepoRoot
 }
 
 function Report-LocalValidationPortConflicts {
@@ -358,4 +334,365 @@ function Write-LocalValidationStartupDiagnostics {
     if ($WindowPids -and $WindowPids.Count -gt 0) {
         Write-Host ("  Launcher window PIDs:   {0}" -f ($WindowPids -join ', '))
     }
+}
+
+function Get-ExItSRepositoryWorktrees {
+    param([Parameter(Mandatory)][string]$RepoRoot)
+
+    $entries = @()
+    $current = @{}
+    $raw = & git -C $RepoRoot worktree list --porcelain 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $raw) {
+        return @(
+            [pscustomobject]@{
+                Path   = (Resolve-Path -LiteralPath $RepoRoot).Path
+                Head   = (& git -C $RepoRoot rev-parse HEAD 2>$null)
+                Branch = (& git -C $RepoRoot branch --show-current 2>$null)
+            }
+        )
+    }
+
+    foreach ($line in @($raw)) {
+        if ($line.StartsWith('worktree ')) {
+            if ($current.Count -gt 0) {
+                $entries += [pscustomobject]$current
+                $current = @{}
+            }
+            $current.Path = $line.Substring(9).Trim()
+        }
+        elseif ($line.StartsWith('HEAD ')) {
+            $current.Head = $line.Substring(5).Trim()
+        }
+        elseif ($line.StartsWith('branch ')) {
+            $current.Branch = ($line.Substring(7).Trim() -replace '^refs/heads/', '')
+        }
+        elseif ($line -eq 'detached') {
+            $current.Branch = '(detached)'
+        }
+    }
+    if ($current.Count -gt 0) {
+        $entries += [pscustomobject]$current
+    }
+    return $entries
+}
+
+function Get-LocalValidationWorktreeGitMetadata {
+    param([Parameter(Mandatory)][string]$WorktreePath)
+
+    $head = [string](& git -C $WorktreePath rev-parse HEAD 2>$null)
+    $branch = [string](& git -C $WorktreePath branch --show-current 2>$null)
+    if ([string]::IsNullOrWhiteSpace($branch)) { $branch = '(detached)' }
+    return [pscustomobject]@{
+        WorktreePath = (Resolve-Path -LiteralPath $WorktreePath).Path
+        Head         = $head
+        Branch       = $branch
+    }
+}
+
+function Resolve-LocalValidationWorktreeFromCommandLine {
+    param(
+        [string]$CommandLine,
+        [Parameter(Mandatory)][object[]]$Worktrees
+    )
+
+    if ([string]::IsNullOrWhiteSpace($CommandLine)) { return $null }
+    $cmdNorm = $CommandLine.Replace('/', '\')
+    $matches = @()
+    foreach ($worktree in $Worktrees) {
+        $pathNorm = ([string]$worktree.Path).Replace('/', '\').TrimEnd('\')
+        if ($cmdNorm.IndexOf($pathNorm, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
+            $matches += $worktree
+        }
+    }
+    if ($matches.Count -eq 0) { return $null }
+    return ($matches | Sort-Object { ([string]$_.Path).Length } -Descending | Select-Object -First 1)
+}
+
+function Get-LocalValidationCrossWorktreeHostProcesses {
+    param([Parameter(Mandatory)][string]$RepoRoot)
+
+    $worktrees = @(Get-ExItSRepositoryWorktrees -RepoRoot $RepoRoot)
+    $byPid = @{}
+    foreach ($worktree in $worktrees) {
+        foreach ($process in @(Get-LocalValidationRepoScopedAppProcesses -RepoRoot $worktree.Path)) {
+            $byPid[$process.ProcessId] = $process
+        }
+    }
+    return @($byPid.Values)
+}
+
+function Get-LocalValidationDockerAppContainers {
+    $names = @(
+        $LocalValidationStack.PlatformApiContainer,
+        $LocalValidationStack.PosApiContainer,
+        $LocalValidationStack.AdminWebContainer,
+        $LocalValidationStack.OrgWebContainer,
+        $LocalValidationStack.PersonalWebContainer
+    )
+    $results = @()
+    foreach ($name in $names) {
+        $state = (& docker inspect -f '{{.State.Status}}' $name 2>$null)
+        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($state)) { continue }
+        $labelsJson = (& docker inspect -f '{{json .Config.Labels}}' $name 2>$null)
+        $labels = $null
+        if ($labelsJson) {
+            try { $labels = $labelsJson | ConvertFrom-Json } catch { }
+        }
+        $results += [pscustomobject]@{
+            Name              = $name
+            Status            = [string]$state
+            ComposeWorkingDir = if ($labels) { [string]$labels.'com.docker.compose.project.working_dir' } else { $null }
+            ComposeConfigFile = if ($labels) { [string]$labels.'com.docker.compose.project.config_files' } else { $null }
+            ComposeService    = if ($labels) { [string]$labels.'com.docker.compose.service' } else { $null }
+        }
+    }
+    return $results
+}
+
+function Resolve-LocalValidationDockerContainerForPort {
+    param([Parameter(Mandatory)][int]$Port)
+
+    foreach ($container in @(Get-LocalValidationDockerAppContainers)) {
+        if ($container.Status -ne 'running') { continue }
+        $portLines = @(& docker port $container.Name 2>$null)
+        foreach ($line in $portLines) {
+            if ($line -match ":$Port`$") {
+                return $container
+            }
+        }
+    }
+    return $null
+}
+
+function Resolve-LocalValidationPortRuntimeProvenance {
+    param(
+        [Parameter(Mandatory)][int]$Port,
+        [Parameter(Mandatory)][string]$ExpectedRepoRoot,
+        [string]$AppLabel = '?'
+    )
+
+    $expectedNorm = (Resolve-Path -LiteralPath $ExpectedRepoRoot).Path
+    $worktrees = @(Get-ExItSRepositoryWorktrees -RepoRoot $ExpectedRepoRoot)
+    $dockerContainer = Resolve-LocalValidationDockerContainerForPort -Port $Port
+    if ($null -ne $dockerContainer) {
+        $composeDir = $dockerContainer.ComposeWorkingDir
+        $worktreePath = $null
+        if ($composeDir) {
+            $probe = (Resolve-Path -LiteralPath $composeDir).Path
+            while ($probe) {
+                if (Test-Path -LiteralPath (Join-Path $probe 'ExItS.slnx')) {
+                    $worktreePath = $probe
+                    break
+                }
+                $parent = Split-Path -Parent $probe
+                if ($parent -eq $probe) { break }
+                $probe = $parent
+            }
+        }
+        $git = if ($worktreePath) {
+            Get-LocalValidationWorktreeGitMetadata -WorktreePath $worktreePath
+        } else {
+            [pscustomobject]@{ WorktreePath = $composeDir; Head = ''; Branch = '' }
+        }
+        $expected = ($git.WorktreePath -and ($git.WorktreePath.Replace('/', '\').TrimEnd('\').Equals(
+            $expectedNorm.Replace('/', '\').TrimEnd('\'), [StringComparison]::OrdinalIgnoreCase)))
+        $composeService = if ($dockerContainer.ComposeService) { $dockerContainer.ComposeService } else { $AppLabel }
+        return [pscustomobject]@{
+            Port        = $Port
+            App         = $composeService
+            RuntimeKind = 'docker'
+            ProcessId   = $dockerContainer.Name
+            ProcessName = 'docker'
+            CommandLine = $dockerContainer.ComposeConfigFile
+            Worktree    = $git.WorktreePath
+            Branch      = $git.Branch
+            Head        = $git.Head
+            Expected    = [bool]$expected
+            StartTime   = $null
+        }
+    }
+
+    $owner = Get-LocalValidationListeningOwner -Port $Port
+    if ($null -eq $owner) {
+        return [pscustomobject]@{
+            Port        = $Port
+            App         = $AppLabel
+            RuntimeKind = 'free'
+            ProcessId   = $null
+            ProcessName = $null
+            CommandLine = $null
+            Worktree    = $null
+            Branch      = $null
+            Head        = $null
+            Expected    = $true
+            StartTime   = $null
+        }
+    }
+
+    $matchedWorktree = Resolve-LocalValidationWorktreeFromCommandLine -CommandLine $owner.CommandLine -Worktrees $worktrees
+    $worktreePath = if ($matchedWorktree) { $matchedWorktree.Path } else { $null }
+    $branch = if ($matchedWorktree) { $matchedWorktree.Branch } else { $null }
+    $head = if ($matchedWorktree) { $matchedWorktree.Head } else { $null }
+    if ($worktreePath -and (-not $head -or -not $branch)) {
+        $git = Get-LocalValidationWorktreeGitMetadata -WorktreePath $worktreePath
+        $branch = $git.Branch
+        $head = $git.Head
+    }
+    $expected = ($worktreePath -and ($worktreePath.Replace('/', '\').TrimEnd('\').Equals(
+        $expectedNorm.Replace('/', '\').TrimEnd('\'), [StringComparison]::OrdinalIgnoreCase)))
+    $startTime = $null
+    try {
+        $startTime = (Get-Process -Id $owner.ProcessId -ErrorAction SilentlyContinue).StartTime
+    }
+    catch { }
+
+    return [pscustomobject]@{
+        Port        = $Port
+        App         = $AppLabel
+        RuntimeKind = 'host'
+        ProcessId   = $owner.ProcessId
+        ProcessName = $owner.ProcessName
+        CommandLine = $owner.CommandLine
+        Worktree    = $worktreePath
+        Branch      = $branch
+        Head        = $head
+        Expected    = [bool]$expected
+        StartTime   = $startTime
+    }
+}
+
+function Write-LocalValidationRuntimeProvenanceTable {
+    param(
+        [Parameter(Mandatory)][hashtable]$PortLabels,
+        [Parameter(Mandatory)][string]$ExpectedRepoRoot
+    )
+
+    Write-Host '[local-validation] --- runtime provenance (before startup) ---' -ForegroundColor Cyan
+    Write-Host ('{0,-6} {1,-22} {2,-8} {3,-48} {4,-28} {5,-12} {6,-8}' -f `
+        'PORT', 'APP', 'KIND', 'WORKTREE', 'BRANCH', 'HEAD', 'EXPECTED?')
+    foreach ($entry in ($PortLabels.GetEnumerator() | Sort-Object { [int]$_.Key })) {
+        $row = Resolve-LocalValidationPortRuntimeProvenance -Port ([int]$entry.Key) -ExpectedRepoRoot $ExpectedRepoRoot -AppLabel $entry.Value
+        $headShort = if ($row.Head) { $row.Head.Substring(0, [Math]::Min(12, $row.Head.Length)) } else { '-' }
+        $worktreeShort = if ($row.Worktree) {
+            $norm = $row.Worktree.Replace('/', '\')
+            if ($norm.Length -gt 46) { '...' + $norm.Substring($norm.Length - 43) } else { $norm }
+        } else { '-' }
+        $expectedLabel = if ($row.RuntimeKind -eq 'free') { 'free' } elseif ($row.Expected) { 'YES' } else { 'NO' }
+        $pidLabel = if ($row.ProcessId) { [string]$row.ProcessId } else { '-' }
+        $branchLabel = if ($row.Branch) { $row.Branch } else { '-' }
+        $cmdLine = if ($row.CommandLine) { $row.CommandLine } else { '' }
+        Write-Host ('{0,-6} {1,-22} {2,-8} {3,-48} {4,-28} {5,-12} {6,-8}' -f `
+            $row.Port, $row.App, $row.RuntimeKind, $worktreeShort, $branchLabel, $headShort, $expectedLabel)
+        if ($row.RuntimeKind -ne 'free') {
+            Write-Host ("         PID={0} {1}" -f $pidLabel, $cmdLine)
+        }
+    }
+}
+
+function Write-LocalValidationRuntimeSummary {
+    param(
+        [Parameter(Mandatory)][hashtable]$PortLabels,
+        [Parameter(Mandatory)][string]$ExpectedRepoRoot,
+        [ValidateSet('HostApps', 'DockerApps')]
+        [string]$Mode = 'HostApps'
+    )
+
+    Write-Host ''
+    Write-Host 'LOCAL VALIDATION RUNTIME' -ForegroundColor Green
+    Write-Host ("  Mode: {0}" -f $Mode)
+    foreach ($entry in ($PortLabels.GetEnumerator() | Sort-Object { [int]$_.Key })) {
+        $row = Resolve-LocalValidationPortRuntimeProvenance -Port ([int]$entry.Key) -ExpectedRepoRoot $ExpectedRepoRoot -AppLabel $entry.Value
+        $worktreeLabel = if ($row.Worktree) { $row.Worktree } else { '(none / foreign runtime)' }
+        $branchLabel = if ($row.Branch) { $row.Branch } else { '-' }
+        $headLabel = if ($row.Head) { $row.Head } else { '-' }
+        $pidLabelSummary = if ($row.ProcessId) { [string]$row.ProcessId } else { '-' }
+        Write-Host ("  {0} :{1}" -f $entry.Value, $entry.Key)
+        Write-Host ("    Worktree: {0}" -f $worktreeLabel)
+        Write-Host ("    Branch:   {0}" -f $branchLabel)
+        Write-Host ("    SHA:      {0}" -f $headLabel)
+        Write-Host ("    PID:      {0} ({1})" -f $pidLabelSummary, $row.RuntimeKind)
+        if (-not $row.Expected -and $row.RuntimeKind -ne 'free') {
+            Write-Host '    WARNING: port owner does not match this launcher worktree/branch.' -ForegroundColor Yellow
+        }
+    }
+}
+
+function Assert-LocalValidationPortsOwnedByExpectedWorktree {
+    param(
+        [Parameter(Mandatory)][hashtable]$PortLabels,
+        [Parameter(Mandatory)][string]$ExpectedRepoRoot
+    )
+
+    $blockers = @()
+    foreach ($entry in $PortLabels.GetEnumerator()) {
+        $row = Resolve-LocalValidationPortRuntimeProvenance -Port ([int]$entry.Key) -ExpectedRepoRoot $ExpectedRepoRoot -AppLabel $entry.Value
+        if ($row.RuntimeKind -eq 'free') {
+            $blockers += "Port $($entry.Key) ($($entry.Value)) is not listening after startup."
+            continue
+        }
+        if (-not $row.Expected) {
+            $worktreeBlocker = if ($row.Worktree) { $row.Worktree } else { 'unknown' }
+            $headBlocker = if ($row.Head) { $row.Head } else { '?' }
+            $blockers += ("Port {0} ({1}) is owned by {2} @ {3} ({4}) - expected {5}." -f `
+                $entry.Key, $entry.Value, $row.RuntimeKind, $worktreeBlocker, $headBlocker, $ExpectedRepoRoot)
+        }
+    }
+    if ($blockers.Count -gt 0) {
+        throw ($blockers -join ' ')
+    }
+}
+
+function Stop-LocalValidationCrossWorktreeHostApps {
+    param([Parameter(Mandatory)][string]$RepoRoot)
+
+    $stateFile = Join-Path $env:LOCALAPPDATA 'ExItS\LocalValidation\launcher-state.json'
+    if (Test-Path -LiteralPath $stateFile) {
+        try {
+            $state = Get-Content -LiteralPath $stateFile -Raw | ConvertFrom-Json
+            if ([string]$state.Mode -ne 'DockerApps') {
+                foreach ($windowPid in @($state.WindowPids)) {
+                    if ($windowPid -and (Get-Process -Id $windowPid -ErrorAction SilentlyContinue)) {
+                        Write-Host "[local-validation] Stopping host launcher window PID $windowPid" -ForegroundColor Cyan
+                        Stop-Process -Id $windowPid -Force -ErrorAction SilentlyContinue
+                    }
+                }
+            }
+        }
+        catch { }
+    }
+
+    $processes = @(Get-LocalValidationCrossWorktreeHostProcesses -RepoRoot $RepoRoot)
+    foreach ($process in $processes) {
+        $snippet = [string]$process.CommandLine
+        if ($snippet.Length -gt 120) { $snippet = $snippet.Substring(0, 120) }
+        Write-Host ("[local-validation] Stopping cross-worktree host PID {0}: {1}" -f $process.ProcessId, $snippet) -ForegroundColor Cyan
+        Stop-Process -Id $process.ProcessId -Force -ErrorAction SilentlyContinue
+    }
+    if ($processes.Count -gt 0) { Start-Sleep -Seconds 1 }
+    return $processes
+}
+
+function Report-LocalValidationPortConflictsWithProvenance {
+    param(
+        [Parameter(Mandatory)][hashtable]$PortLabels,
+        [Parameter(Mandatory)][string]$ExpectedRepoRoot
+    )
+
+    $blocked = @()
+    foreach ($entry in ($PortLabels.GetEnumerator() | Sort-Object { [int]$_.Key })) {
+        $row = Resolve-LocalValidationPortRuntimeProvenance -Port ([int]$entry.Key) -ExpectedRepoRoot $ExpectedRepoRoot -AppLabel $entry.Value
+        if ($row.RuntimeKind -eq 'free') { continue }
+        $pidConflict = if ($row.ProcessId) { [string]$row.ProcessId } else { '?' }
+        Write-Host ("[local-validation] FAIL Port {0} in use ({1}) by {2} PID {3}" -f `
+            $row.Port, $row.App, $row.RuntimeKind, $pidConflict) -ForegroundColor Red
+        if ($row.Worktree) {
+            $branchConflict = if ($row.Branch) { $row.Branch } else { '-' }
+            $headConflict = if ($row.Head) { $row.Head } else { '-' }
+            Write-Host ("         Worktree: {0}" -f $row.Worktree)
+            Write-Host ("         Branch:   {0}  SHA: {1}" -f $branchConflict, $headConflict)
+        }
+        if ($row.CommandLine) { Write-Host "         $($row.CommandLine)" }
+        $blocked += $row
+    }
+    return $blocked
 }

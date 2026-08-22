@@ -146,4 +146,22 @@ public sealed class ApiBrowserAntiforgeryTests(PostgreSqlFixture fixture) : IAsy
         Assert.True(body.TryGetProperty("token", out var token));
         Assert.False(string.IsNullOrWhiteSpace(token.GetString()));
     }
+
+    [Fact]
+    public async Task Organization_cookie_session_can_bootstrap_antiforgery_token_without_scope_denial()
+    {
+        var (_, _, staffLogin, password, _) =
+            await PlatformIntegrationTestUsers.SeedOrgMemberViaInvitationAsync(_headerClient, _browser, "csrf-org");
+        var login = await _browser.PostAsJsonAsync(
+            "/api/v1/platform/auth/login",
+            new { usernameOrEmail = staffLogin, password });
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        var loginBody = await login.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Organization", loginBody.GetProperty("accountClass").GetString());
+
+        var response = await _browser.GetAsync(PlatformAntiforgeryDefaults.TokenRoute);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.False(string.IsNullOrWhiteSpace(body.GetProperty("token").GetString()));
+    }
 }

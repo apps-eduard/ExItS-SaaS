@@ -61,7 +61,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 builder.Services.AddPlatformHealthChecks();
 builder.AddPlatformSecurity();
-builder.Services.AddPlatformBrowserAntiforgery(builder.Environment);
+builder.Services.AddPlatformBrowserAntiforgery(builder.Environment, builder.Configuration);
 builder.AddPlatformForwardedHeaders();
 builder.Services.AddPlatformPersistence(builder.Configuration);
 builder.Services.AddPlatformPaymentProvider(builder.Configuration, builder.Environment);

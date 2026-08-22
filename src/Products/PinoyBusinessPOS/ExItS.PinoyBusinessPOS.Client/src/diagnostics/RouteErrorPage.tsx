@@ -1,6 +1,6 @@
 import { useRouteError, isRouteErrorResponse } from "react-router-dom";
 import { ClientErrorPanel } from "@/diagnostics/ClientErrorPanel";
-import { safeDiagnosticLocation } from "@/diagnostics/diagnostic-redaction";
+import { normalizeReactClientError } from "@/diagnostics/normalize-pos-error";
 
 export function RouteErrorPage() {
   const routeError = useRouteError();
@@ -13,20 +13,17 @@ export function RouteErrorPage() {
 
   const location =
     typeof window !== "undefined"
-      ? safeDiagnosticLocation(window.location.href, window.location.pathname)
-      : { url: undefined, pathname: undefined };
+      ? window.location.pathname
+      : undefined;
 
   return (
     <div className="flex min-h-dvh min-w-0 items-start justify-center bg-background p-4">
       <ClientErrorPanel
-        input={{
+        input={normalizeReactClientError({
           source: "react-error-boundary",
           error,
-          occurredAt: new Date().toISOString(),
-          url: location.url,
-          pathname: location.pathname,
-          mode: import.meta.env.MODE,
-        }}
+          pathname: location,
+        })}
         onReload={() => window.location.reload()}
       />
     </div>

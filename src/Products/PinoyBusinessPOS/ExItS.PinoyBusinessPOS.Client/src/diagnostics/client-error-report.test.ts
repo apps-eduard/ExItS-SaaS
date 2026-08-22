@@ -48,15 +48,14 @@ describe("diagnostic redaction", () => {
       source: "react-error-boundary",
       error: new Error("TileGrid is not defined"),
       componentStack: "\n    at ManagerRoleHomePage",
-      url: "http://127.0.0.1:5177/role/manager?token=should-not-appear",
       pathname: "/role/manager",
       mode: "development",
       occurredAt: "2026-08-21T18:00:00.000Z",
     });
 
-    expect(report).toContain("Error message: TileGrid is not defined");
-    expect(report).toContain("Pathname: /role/manager");
-    expect(report).toContain("http://127.0.0.1:5177/role/manager");
+    expect(report).toContain("Error message:");
+    expect(report).toContain("TileGrid is not defined");
+    expect(report).toContain("Screen:");
     expect(report).not.toContain("should-not-appear");
     expect(report).not.toContain("token=");
     expect(report).toContain("ManagerRoleHomePage");
@@ -70,7 +69,8 @@ describe("diagnostic redaction", () => {
         password: "also-leak",
         customerName: "ShouldNotAppear",
       },
-      url: "https://example.com/personal/utang?invite=xyz",
+      screen: "/personal/utang",
+      pathname: "/personal/utang",
     });
     expect(report).not.toContain("leak-me");
     expect(report).not.toContain("also-leak");

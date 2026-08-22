@@ -1,55 +1,33 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { ClientErrorPanel } from "@/diagnostics/ClientErrorPanel";
-import type { ClientErrorReportInput } from "@/diagnostics/client-error-report";
-import { safeDiagnosticLocation } from "@/diagnostics/diagnostic-redaction";
+import { normalizeReactClientError } from "@/diagnostics/normalize-pos-error";
+import type { PosErrorReportInput } from "@/diagnostics/pos-error-report";
 
 type Props = { children: ReactNode };
 type State = {
-  report: ClientErrorReportInput | null;
+  report: PosErrorReportInput | null;
 };
-
-function captureLocation(): Pick<ClientErrorReportInput, "url" | "pathname"> {
-  if (typeof window === "undefined") {
-    return {};
-  }
-  const location = safeDiagnosticLocation(window.location.href, window.location.pathname);
-  return { url: location.url, pathname: location.pathname };
-}
 
 export class GlobalErrorBoundary extends Component<Props, State> {
   state: State = { report: null };
 
   static getDerivedStateFromError(error: Error): State {
-    const location =
-      typeof window !== "undefined"
-        ? safeDiagnosticLocation(window.location.href, window.location.pathname)
-        : { url: undefined, pathname: undefined };
     return {
-      report: {
+      report: normalizeReactClientError({
         source: "react-error-boundary",
         error,
-        occurredAt: new Date().toISOString(),
-        url: location.url,
-        pathname: location.pathname,
-        mode: import.meta.env.MODE,
-      },
+      }),
     };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    this.setState((prev) => ({
-      report: {
-        ...(prev.report ?? {
-          source: "react-error-boundary",
-          error,
-          occurredAt: new Date().toISOString(),
-        }),
+    this.setState({
+      report: normalizeReactClientError({
+        source: "react-error-boundary",
         error,
         componentStack: info.componentStack,
-        ...captureLocation(),
-        mode: import.meta.env.MODE,
-      },
-    }));
+      }),
+    });
     console.error("[ExItS] React error boundary", error, info.componentStack);
   }
 
