@@ -316,6 +316,13 @@ export const iloPH: Record<keyof typeof en, string> = {
     "Saanen a magun-od ti dati a napili a workspace. Agpili manen.",
   "workspace.previousBranchInaccessible":
     "Saanen a magun-od ti dati a napili a branch. Agpili ti active a branch.",
+  "workspace.grantProbeFailedTitle": "Saan a ma-load ti workspace authorization",
+  "workspace.grantProbeFailedDetail":
+    "Saan a ma-resolve ti server session grant para iti organization. Padasem manen no online kan.",
+  "workspace.grantProbeRetry": "Padasen manen ti authorization",
+  "workspace.noAuthorizedDestinationsTitle": "Awan ti authorized workspace destinations",
+  "workspace.noAuthorizedDestinationsDetail":
+    "Makita ti account-mo daytoy nga organization, ngem awan pay ti POS experiences a na-authorize ti server.",
   "experience.current": "Agdama",
   "personal.title": "Personal home",
   "personal.lede": "Bantayan ti personal nga Utang, to-do, ken stores.",

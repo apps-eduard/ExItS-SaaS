@@ -13,6 +13,14 @@ type MockGrantOptions = {
   productAccessAllowed?: boolean;
   organizationManagementAuthority?: boolean;
   membershipRole?: string | null;
+  extraBranches?: Array<{
+    id: string;
+    organizationId: string;
+    code: string;
+    name: string;
+    isPrimary: boolean;
+    status: string;
+  }>;
 };
 
 type SessionClassOptions = {
@@ -59,6 +67,7 @@ async function mockBoundOrgSession(
     productAccessAllowed = true,
     organizationManagementAuthority = false,
     membershipRole = null,
+    extraBranches = [],
   } = grant;
 
   let loggedIn = false;
@@ -136,6 +145,7 @@ async function mockBoundOrgSession(
               isPrimary: true,
               status: "Active",
             },
+            ...extraBranches,
           ]),
         });
       }

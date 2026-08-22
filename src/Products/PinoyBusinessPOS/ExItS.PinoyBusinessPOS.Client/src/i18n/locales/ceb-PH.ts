@@ -315,6 +315,13 @@ export const cebPH: Record<keyof typeof en, string> = {
     "Dili na available ang miaging napili nga workspace. Pilia pag-usab.",
   "workspace.previousBranchInaccessible":
     "Dili na available ang miaging napili nga branch. Pilia ang active nga branch.",
+  "workspace.grantProbeFailedTitle": "Dili ma-load ang workspace authorization",
+  "workspace.grantProbeFailedDetail":
+    "Dili ma-resolve ang server session grant alang sa organization. Sulayi pag-usab kung online na ka.",
+  "workspace.grantProbeRetry": "Sulayi pag-usab ang authorization",
+  "workspace.noAuthorizedDestinationsTitle": "Walay authorized workspace destinations",
+  "workspace.noAuthorizedDestinationsDetail":
+    "Makita sa imong account kining organization, apan wala pay POS experiences nga gi-authorize sa server.",
   "experience.current": "Karon",
   "personal.title": "Personal home",
   "personal.lede": "Sunda ang personal nga Utang, to-do, ug mga store.",

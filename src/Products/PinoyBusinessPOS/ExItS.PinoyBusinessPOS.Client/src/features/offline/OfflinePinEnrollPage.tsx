@@ -9,11 +9,13 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { useI18n } from "@/i18n/I18nProvider";
 import { enrollOfflinePinAndDek } from "@/offline/local-store-key";
 import { useSession } from "@/session/SessionProvider";
+import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export function OfflinePinEnrollPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { session } = useSession();
+  const { refreshWorkspaces } = useWorkspace();
   const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +41,7 @@ export function OfflinePinEnrollPage() {
       setError(t("offline.pin.invalidFormat"));
       return;
     }
+    await refreshWorkspaces();
     navigate("/", { replace: true });
   }
 

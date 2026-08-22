@@ -301,6 +301,13 @@ export const en = {
     "The previously selected workspace is no longer accessible. Choose again.",
   "workspace.previousBranchInaccessible":
     "The previously selected branch is no longer accessible. Choose an active branch.",
+  "workspace.grantProbeFailedTitle": "Workspace authorization could not be loaded",
+  "workspace.grantProbeFailedDetail":
+    "The server session grant for this organization could not be resolved. Retry when you are back online.",
+  "workspace.grantProbeRetry": "Retry authorization",
+  "workspace.noAuthorizedDestinationsTitle": "No authorized workspace destinations",
+  "workspace.noAuthorizedDestinationsDetail":
+    "Your account can see this organization, but the server did not authorize any POS experiences yet.",
   "experience.current": "Current",
   "personal.title": "Personal home",
   "personal.lede": "Track personal Utang, to-dos, and your connected stores.",

@@ -311,6 +311,13 @@ export const filPH: Record<keyof typeof en, string> = {
     "Hindi na available ang dating napiling workspace. Pumili muli.",
   "workspace.previousBranchInaccessible":
     "Hindi na available ang dating napiling branch. Pumili ng active na branch.",
+  "workspace.grantProbeFailedTitle": "Hindi ma-load ang workspace authorization",
+  "workspace.grantProbeFailedDetail":
+    "Hindi ma-resolve ang server session grant para sa organization na ito. Subukan muli kapag online ka na.",
+  "workspace.grantProbeRetry": "Subukang muli ang authorization",
+  "workspace.noAuthorizedDestinationsTitle": "Walang authorized workspace destinations",
+  "workspace.noAuthorizedDestinationsDetail":
+    "Makikita ng account mo ang organization na ito, pero wala pang POS experiences na inauthorize ng server.",
   "experience.current": "Kasalukuyan",
   "personal.title": "Personal home",
   "personal.lede": "Subaybayan ang personal na Utang, to-do, at mga store.",

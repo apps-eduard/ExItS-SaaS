@@ -36,6 +36,7 @@ import {
   buildPosDeviceFromGrant,
   persistServerSignedGrantFromApi,
 } from "@/offline/offline-operating-grant";
+import { isOfflinePinAndDekConfigured } from "@/offline/local-store-key";
 import { sessionAccountClass, isOrganizationContextLocked } from "@/session/account-class";
 import { ensureOrganizationSessionProfile } from "@/session/ensure-organization-profile";
 import { isAuthenticatedOrColdStartOffline, useSession } from "@/session/SessionProvider";
@@ -64,6 +65,12 @@ import {
 } from "@/workspace/workspace-destinations";
 import type { WorkingExperience } from "@/workspace/working-experience";
 
+export type WorkspaceGrantProbeFailure = {
+  status: number;
+  errorCode?: string;
+  detail?: string;
+};
+
 export type WorkspaceStatus =
   "idle" | "loading" | "ready" | "binding" | "bound" | "access_denied" | "error";
 
@@ -75,6 +82,8 @@ type WorkspaceContextValue = {
   sessionGrant: SessionGrantResponse | null;
   /** Authoritative grants probed per org for destination visibility (may be unbound). */
   grantByOrganizationId: ReadonlyMap<string, SessionGrantResponse | null>;
+  /** Latest failed session-grant probe per org (does not block retry). */
+  grantProbeFailureByOrganizationId: ReadonlyMap<string, WorkspaceGrantProbeFailure>;
   /** Honest device state — never invents an authorized POS terminal. */
   posDevice: PosDeviceContext;
   /** Re-run durable identity + Platform authorize for the bound org/branch. */
@@ -88,6 +97,7 @@ type WorkspaceContextValue = {
   bindWorkspace: (organizationId: string, branchId: string) => Promise<boolean>;
   bindDestination: (destination: WorkspaceDestination) => Promise<boolean>;
   ensureOrganizationGrantHint: (organizationId: string) => Promise<SessionGrantResponse | null>;
+  retryOrganizationGrantHint: (organizationId: string) => Promise<SessionGrantResponse | null>;
   refreshWorkspaces: () => Promise<void>;
   clearBoundWorkspace: () => void;
 };
@@ -196,6 +206,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   >(() => new Map());
   const grantByOrganizationIdRef = useRef(grantByOrganizationId);
   grantByOrganizationIdRef.current = grantByOrganizationId;
+  const [grantProbeFailureByOrganizationId, setGrantProbeFailureByOrganizationId] = useState<
+    Map<string, WorkspaceGrantProbeFailure>
+  >(() => new Map());
+  const grantProbeFailureByOrganizationIdRef = useRef(grantProbeFailureByOrganizationId);
+  grantProbeFailureByOrganizationIdRef.current = grantProbeFailureByOrganizationId;
   const [posDevice, setPosDevice] = useState<PosDeviceContext>(INITIAL_POS_DEVICE_CONTEXT);
   const [accessDeniedDetail, setAccessDeniedDetail] = useState<string | null>(null);
   const [bindFailureKind, setBindFailureKind] = useState<WorkspaceBindFailureKind | null>(null);
@@ -306,6 +321,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setAccessDeniedDetail(null);
     setBindFailureKind(null);
     setFailureDiagnostic(null);
+    setGrantProbeFailureByOrganizationId(new Map());
 
     const accountClass = sessionAccountClass(currentSession);
 
@@ -355,15 +371,36 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setRoutingPlan(plan);
 
     const nextGrants = new Map<string, SessionGrantResponse | null>();
+    const nextFailures = new Map<string, WorkspaceGrantProbeFailure>();
 
-    // Single-org: probe grant for smart destination routing (no branch inventing).
-    if (accessible.length === 1 && accountClass !== "Personal") {
+    // Single-org: probe grant for smart destination routing after offline PIN is configured.
+    if (
+      accessible.length === 1 &&
+      accountClass !== "Personal" &&
+      currentSession?.userId &&
+      isOfflinePinAndDekConfigured(currentSession.userId)
+    ) {
       const only = accessible[0];
       const probed = await probeOrganizationSessionGrant(only.organizationId);
-      nextGrants.set(only.organizationId, probed.ok ? probed.grant : null);
+      if (probed.ok) {
+        nextGrants.set(only.organizationId, probed.grant);
+      } else {
+        nextFailures.set(only.organizationId, {
+          status: probed.status,
+          errorCode: probed.body?.errorCode,
+          detail: probed.body?.detail,
+        });
+        console.warn(
+          "[workspace-grant-probe]",
+          only.organizationId,
+          probed.status,
+          probed.body?.errorCode,
+        );
+      }
     }
 
     setGrantByOrganizationId(nextGrants);
+    setGrantProbeFailureByOrganizationId(nextFailures);
 
     const previousBound = boundWorkspaceRef.current;
     let resolvedBound: BoundWorkspace | null = null;
@@ -427,9 +464,26 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [loadWorkspaces, session]);
 
   const ensureOrganizationGrantHint = useCallback(
-    async (organizationId: string) => {
-      if (grantByOrganizationIdRef.current.has(organizationId)) {
-        return grantByOrganizationIdRef.current.get(organizationId) ?? null;
+    async (organizationId: string, options?: { force?: boolean }) => {
+      if (!options?.force) {
+        const cachedGrant = grantByOrganizationIdRef.current.get(organizationId);
+        if (cachedGrant) {
+          return cachedGrant;
+        }
+        if (grantProbeFailureByOrganizationIdRef.current.has(organizationId)) {
+          return null;
+        }
+      } else {
+        setGrantProbeFailureByOrganizationId((prev) => {
+          const next = new Map(prev);
+          next.delete(organizationId);
+          return next;
+        });
+        setGrantByOrganizationId((prev) => {
+          const next = new Map(prev);
+          next.delete(organizationId);
+          return next;
+        });
       }
 
       let activeSession = session;
@@ -439,9 +493,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           refreshSession,
         });
         if (!ensured.ok) {
-          setGrantByOrganizationId((prev) => {
+          setGrantProbeFailureByOrganizationId((prev) => {
             const next = new Map(prev);
-            next.set(organizationId, null);
+            next.set(organizationId, {
+              status: 403,
+              detail: ensured.detail,
+              errorCode: "application.auth.profile_required",
+            });
             return next;
           });
           return null;
@@ -450,24 +508,55 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }
 
       if (sessionAccountClass(activeSession) !== "Organization") {
-        setGrantByOrganizationId((prev) => {
+        setGrantProbeFailureByOrganizationId((prev) => {
           const next = new Map(prev);
-          next.set(organizationId, null);
+          next.set(organizationId, {
+            status: 403,
+            errorCode: "application.auth.profile_required",
+          });
           return next;
         });
         return null;
       }
 
       const probed = await probeOrganizationSessionGrant(organizationId);
-      const grant = probed.ok ? probed.grant : null;
+      if (!probed.ok) {
+        setGrantProbeFailureByOrganizationId((prev) => {
+          const next = new Map(prev);
+          next.set(organizationId, {
+            status: probed.status,
+            errorCode: probed.body?.errorCode,
+            detail: probed.body?.detail,
+          });
+          return next;
+        });
+        console.warn(
+          "[workspace-grant-probe]",
+          organizationId,
+          probed.status,
+          probed.body?.errorCode,
+        );
+        return null;
+      }
+
       setGrantByOrganizationId((prev) => {
         const next = new Map(prev);
-        next.set(organizationId, grant);
+        next.set(organizationId, probed.grant);
         return next;
       });
-      return grant;
+      setGrantProbeFailureByOrganizationId((prev) => {
+        const next = new Map(prev);
+        next.delete(organizationId);
+        return next;
+      });
+      return probed.grant;
     },
     [refreshSession, session],
+  );
+
+  const retryOrganizationGrantHint = useCallback(
+    async (organizationId: string) => ensureOrganizationGrantHint(organizationId, { force: true }),
+    [ensureOrganizationGrantHint],
   );
 
   const bindDestination = useCallback(
@@ -715,6 +804,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setBindFailureKind((current) => (current === null ? current : null));
       setSessionGrantState((current) => (current === null ? current : null));
       setGrantByOrganizationId((current) => (current.size === 0 ? current : new Map()));
+      setGrantProbeFailureByOrganizationId((current) =>
+        current.size === 0 ? current : new Map(),
+      );
       setStatus((current) => (current === "idle" ? current : "idle"));
       autoDestinationAttempted.current = false;
       return;
@@ -799,6 +891,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       boundWorkspace,
       sessionGrant,
       grantByOrganizationId,
+      grantProbeFailureByOrganizationId,
       posDevice,
       refreshPosDevice,
       accessDeniedDetail,
@@ -807,6 +900,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       bindWorkspace,
       bindDestination,
       ensureOrganizationGrantHint,
+      retryOrganizationGrantHint,
       refreshWorkspaces,
       clearBoundWorkspace,
     }),
@@ -820,9 +914,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       clearBoundWorkspace,
       ensureOrganizationGrantHint,
       grantByOrganizationId,
+      grantProbeFailureByOrganizationId,
       posDevice,
       refreshPosDevice,
       refreshWorkspaces,
+      retryOrganizationGrantHint,
       routingPlan,
       sessionGrant,
       status,

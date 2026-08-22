@@ -23,7 +23,10 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/cn";
-import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { normalizePosError } from "@/diagnostics/normalize-pos-error";
+import type { PosErrorReportInput } from "@/diagnostics/pos-error-report";
+import { PlatformApiError } from "@/api/platform/platform-http";
+import { useWorkspace, type WorkspaceGrantProbeFailure } from "@/workspace/WorkspaceProvider";
 import { workspaceBindFailureTitleKey } from "@/workspace/workspace-bind-error";
 import {
   buildOrganizationDestinations,
@@ -69,7 +72,9 @@ export function WorkspaceChooserPage() {
     failureDiagnostic,
     bindDestination,
     grantByOrganizationId,
+    grantProbeFailureByOrganizationId,
     ensureOrganizationGrantHint,
+    retryOrganizationGrantHint,
   } = useWorkspace();
   const canCollapseOrgs = workspaces.length > 1;
   const [expandedOrgId, setExpandedOrgId] = useState<string | null>(() =>
@@ -188,7 +193,11 @@ export function WorkspaceChooserPage() {
               )
             }
             grant={grantByOrganizationId.get(organization.organizationId) ?? null}
+            grantFailure={
+              grantProbeFailureByOrganizationId.get(organization.organizationId) ?? null
+            }
             grantLoading={grantLoadingOrgId === organization.organizationId}
+            onRetryGrant={() => void retryOrganizationGrantHint(organization.organizationId)}
             roster={rosterByOrg.get(organization.organizationId) ?? null}
             bindingKey={bindingKey}
             onSelectDestination={(destination) => void selectDestination(destination)}
@@ -201,13 +210,35 @@ export function WorkspaceChooserPage() {
   );
 }
 
+function workspaceGrantFailureDiagnostic(
+  organizationName: string,
+  failure: WorkspaceGrantProbeFailure,
+): PosErrorReportInput {
+  return normalizePosError({
+    source: "workspace",
+    error: new PlatformApiError(failure.status, {
+      errorCode: failure.errorCode,
+      detail: failure.detail,
+    }),
+    operation: "workspace session grant probe",
+    httpMethod: "POST",
+    path: "/api/v1/platform/auth/token",
+    screen: "/workspace",
+    organizationName,
+    status: failure.status,
+    errorCode: failure.errorCode,
+  });
+}
+
 function OrganizationWorkspaceCard({
   organization,
   expanded,
   canCollapse,
   onToggle,
   grant,
+  grantFailure,
   grantLoading,
+  onRetryGrant,
   roster,
   bindingKey,
   onSelectDestination,
@@ -219,7 +250,9 @@ function OrganizationWorkspaceCard({
   canCollapse: boolean;
   onToggle: () => void;
   grant: ReturnType<typeof useWorkspace>["sessionGrant"];
+  grantFailure: WorkspaceGrantProbeFailure | null;
   grantLoading: boolean;
+  onRetryGrant: () => void;
   roster: {
     managementTeam: WorkspaceRosterPerson[];
     branchStaff: WorkspaceRosterPerson[];
@@ -241,17 +274,16 @@ function OrganizationWorkspaceCard({
 
   const headerContent = (
     <span className="min-w-0">
-      <span className="block truncate text-[length:var(--exits-text-md)] font-semibold">
+      <span className="block truncate text-[length:var(--exits-text-lg)] font-semibold text-foreground">
         {organization.displayName}
       </span>
-      <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[length:var(--exits-text-sm)] text-muted">
-        <span>{branchCountLabel}</span>
-        {membershipLabel ? (
-          <>
-            <span aria-hidden="true">·</span>
-            <span>{membershipLabel}</span>
-          </>
-        ) : null}
+      {membershipLabel ? (
+        <span className="mt-0.5 block text-[length:var(--exits-text-sm)] text-muted">
+          {membershipLabel}
+        </span>
+      ) : null}
+      <span className="mt-0.5 block text-[length:var(--exits-text-sm)] text-muted">
+        {branchCountLabel}
       </span>
     </span>
   );
@@ -278,10 +310,26 @@ function OrganizationWorkspaceCard({
 
       {expanded ? (
         <div className={cn("px-4 py-3", canCollapse && "border-t border-border")}>
-          {!grant && grantLoading ? (
+          {grantLoading || (!grant && !grantFailure) ? (
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
               {t("workspace.loadingDestinations")}
             </p>
+          ) : grantFailure && !grant ? (
+            <div className="flex flex-col gap-3" data-testid="workspace-grant-probe-error">
+              <ErrorState
+                title={t("workspace.grantProbeFailedTitle")}
+                detail={t("workspace.grantProbeFailedDetail")}
+                diagnostic={workspaceGrantFailureDiagnostic(organization.displayName, grantFailure)}
+              />
+              <Button type="button" className="min-h-11 w-full sm:w-auto" onClick={onRetryGrant}>
+                {t("workspace.grantProbeRetry")}
+              </Button>
+            </div>
+          ) : destinations.length === 0 ? (
+            <EmptyState
+              title={t("workspace.noAuthorizedDestinationsTitle")}
+              detail={t("workspace.noAuthorizedDestinationsDetail")}
+            />
           ) : (
             <div className="flex flex-col gap-4">
               {manageBusiness ? (
@@ -384,8 +432,6 @@ function OrganizationWorkspaceCard({
                 <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                   {t("workspace.noActiveBranches")}
                 </p>
-              ) : destinations.length === 0 ? (
-                <EmptyState title={t("noLocation.title")} detail={t("noLocation.detail")} />
               ) : null}
             </div>
           )}

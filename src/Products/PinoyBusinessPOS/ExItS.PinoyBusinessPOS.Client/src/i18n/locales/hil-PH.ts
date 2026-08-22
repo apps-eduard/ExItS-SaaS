@@ -317,6 +317,13 @@ export const hilPH: Record<keyof typeof en, string> = {
     "Indi na available ang dati nga napilian nga workspace. Pilia liwat.",
   "workspace.previousBranchInaccessible":
     "Indi na available ang dati nga napilian nga branch. Pilia ang active nga branch.",
+  "workspace.grantProbeFailedTitle": "Indi ma-load ang workspace authorization",
+  "workspace.grantProbeFailedDetail":
+    "Indi ma-resolve ang server session grant para sa organization. Sulayi liwat kon online ka na.",
+  "workspace.grantProbeRetry": "Sulayi liwat ang authorization",
+  "workspace.noAuthorizedDestinationsTitle": "Wala authorized workspace destinations",
+  "workspace.noAuthorizedDestinationsDetail":
+    "Makita sang organization sang account mo, pero wala pa POS experiences nga gin-authorize sang server.",
   "experience.current": "Subong",
   "personal.title": "Personal home",
   "personal.lede": "Bantayi ang personal nga Utang, to-do, kag mga store.",
