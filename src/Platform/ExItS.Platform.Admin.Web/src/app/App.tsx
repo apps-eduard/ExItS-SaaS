@@ -28,6 +28,8 @@ import { OverviewPage } from "@/features/overview/OverviewPage";
 import { SystemHealthPage } from "@/features/system-health/SystemHealthPage";
 import { AuditListPage } from "@/features/audit/AuditListPage";
 import { AuditDetailPage } from "@/features/audit/AuditDetailPage";
+import { PlatformRolesListPage } from "@/features/platform-roles/PlatformRolesListPage";
+import { PlatformRoleDetailPage } from "@/features/platform-roles/PlatformRoleDetailPage";
 import { PrivacyOverviewPage } from "@/features/privacy-compliance/PrivacyOverviewPage";
 import {
   PrivacyCategoryPage,
@@ -153,6 +155,10 @@ export function App() {
                         <Route path="users">
                           <Route index element={<UsersPage />} />
                           <Route path=":userId" element={<UserDetailPage />} />
+                        </Route>
+                        <Route path="platform-roles">
+                          <Route index element={<PlatformRolesListPage />} />
+                          <Route path=":roleId" element={<PlatformRoleDetailPage />} />
                         </Route>
                         <Route path="audit">
                           <Route index element={<AuditListPage />} />

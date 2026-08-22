@@ -61,6 +61,12 @@ describe("resolveKnownReactRoute", () => {
     ).toBe("implemented");
   });
 
+  it("treats /admin/platform-roles as implemented", () => {
+    expect(
+      resolveKnownReactRoute({ ...loadedAuthorized, pathname: "/admin/platform-roles" }),
+    ).toBe("implemented");
+  });
+
   it("treats /admin/users as implemented", () => {
     expect(resolveKnownReactRoute({ ...loadedAuthorized, pathname: "/admin/users" })).toBe(
       "implemented",
