@@ -175,6 +175,7 @@ describe("Personal shell and home (RMAP-22B)", () => {
     expect(screen.getByTestId("more-open-customer-links")).toBeInTheDocument();
     expect(screen.getByTestId("more-open-orders")).toBeInTheDocument();
     expect(screen.getByTestId("more-open-start-business")).toBeInTheDocument();
+    expect(screen.queryByTestId("more-switch-to-business")).not.toBeInTheDocument();
   });
 
   it("renders Explore POS plans inside Personal shell", async () => {

@@ -115,6 +115,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "offline.personalOwnerUnknown":
     "Buksan ang Utang minsan habang online, pagkatapos ay puwede nang offline.",
   "offline.requiredPersonalTodoShare": "Kailangan ng internet para i-share ang to-do.",
+  "offline.requiredContextSwitch": "Kailangan ng internet para lumipat sa negosyo.",
   "offline.todoCachedNotice":
     "Nakaimbak na to-do ang nakikita. Magre-refresh kapag nakakonekta muli.",
   "offline.todoWillQueue":
@@ -446,6 +447,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.more.lede": "Stores, preferences, and Start a Business.",
   "personal.more.stores": "Mga tindahan",
   "personal.more.startBusiness": "Start a Business",
+  "personal.more.switchToBusiness": "Switch to business",
+  "personal.more.switchingBusiness": "Switching…",
   "personal.more.back": "Back to More",
   "personal.explore.title": "Explore POS plans",
   "personal.explore.lede": "Choose a plan, then create your business organization.",

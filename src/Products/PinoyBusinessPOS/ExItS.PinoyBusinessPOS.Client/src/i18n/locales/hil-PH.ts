@@ -117,6 +117,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "offline.personalOwnerUnknown":
     "Buksan ang Utang isa ka beses samtang online, dayon mahimo na offline.",
   "offline.requiredPersonalTodoShare": "Kinahanglan internet sa pag-share sang to-do.",
+  "offline.requiredContextSwitch": "Kinahanglan internet para magbalhin sa negosyo.",
   "offline.todoCachedNotice":
     "Gina-tipigan nga to-do ang ginapakita. Maga-refresh kon makakonektar liwat.",
   "offline.todoWillQueue":
@@ -454,6 +455,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.more.lede": "Mga tindahan, prefensiya, kag Mag-umpisa Negosyo.",
   "personal.more.stores": "Mga tindahan",
   "personal.more.startBusiness": "Mag-umpisa Negosyo",
+  "personal.more.switchToBusiness": "Magbalhin sa negosyo",
+  "personal.more.switchingBusiness": "Nagabalhin…",
   "personal.more.back": "Balik sa Lain pa",
   "personal.explore.title": "Tilawi ang POS plans",
   "personal.explore.lede": "Pilia ang plan, dayon himoa ang imo business organization.",

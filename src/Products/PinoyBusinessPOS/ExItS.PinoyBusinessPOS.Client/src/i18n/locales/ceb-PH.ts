@@ -116,6 +116,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "offline.personalOwnerUnknown":
     "Ablihi ang Utang usa ka higayon samtang online, dayon mahimo na offline.",
   "offline.requiredPersonalTodoShare": "Kinahanglan internet sa pag-share sa to-do.",
+  "offline.requiredContextSwitch": "Kinahanglan internet aron mobalhin sa negosyo.",
   "offline.todoCachedNotice": "Gitipigan nga to-do ang gipakita. Mag-refresh kon makakonektar na.",
   "offline.todoWillQueue":
     "Offline ka. Magpabilin kini nga to-do sa device hangtod makakonektar ka.",
@@ -450,6 +451,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.more.lede": "Stores, preferences, and Start a Business.",
   "personal.more.stores": "Mga tindahan",
   "personal.more.startBusiness": "Start a Business",
+  "personal.more.switchToBusiness": "Balhin sa negosyo",
+  "personal.more.switchingBusiness": "Nagbalhin…",
   "personal.more.back": "Back to More",
   "personal.explore.title": "Susiha ang POS plans",
   "personal.explore.lede": "Pilia ang plan, dayon himoa ang imong business organization.",

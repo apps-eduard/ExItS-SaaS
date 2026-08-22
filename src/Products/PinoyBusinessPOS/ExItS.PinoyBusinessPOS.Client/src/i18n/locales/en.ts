@@ -120,6 +120,7 @@ export const en = {
   "offline.personalEnqueueFailed": "Could not save this on this device. Try again.",
   "offline.personalOwnerUnknown": "Open Utang once while online, then you can add utang offline.",
   "offline.requiredPersonalTodoShare": "Sharing a to-do needs internet.",
+  "offline.requiredContextSwitch": "Switching to business needs internet.",
   "offline.todoCachedNotice": "Showing saved to-dos. They refresh when you reconnect.",
   "offline.todoWillQueue":
     "You are offline. Saving keeps this to-do on this device until you reconnect.",
@@ -433,6 +434,8 @@ export const en = {
   "personal.more.lede": "Stores, preferences, and Start a Business.",
   "personal.more.stores": "Stores",
   "personal.more.startBusiness": "Start a Business",
+  "personal.more.switchToBusiness": "Switch to business",
+  "personal.more.switchingBusiness": "Switching…",
   "personal.more.back": "Back to More",
   "personal.explore.title": "Explore POS plans",
   "personal.explore.lede": "Choose a plan, then create your business organization.",

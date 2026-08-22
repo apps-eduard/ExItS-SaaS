@@ -116,6 +116,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "offline.personalOwnerUnknown":
     "Lukatan ti Utang maminsan bayat nga online, kalpasanna mabalin nga offline.",
   "offline.requiredPersonalTodoShare": "Masapul ti internet no i-share ti to-do.",
+  "offline.requiredContextSwitch": "Masapul ti internet tapno agbalbaliw iti negosyo.",
   "offline.todoCachedNotice": "Naidulin a to-do ti maipakita. Ag-refresh no makakonekta manen.",
   "offline.todoWillQueue":
     "Offline ka. Agtalinaed daytoy a to-do iti device agingga a makakonekta ka.",
@@ -452,6 +453,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.more.lede": "Stores, preferences, and Start a Business.",
   "personal.more.stores": "Dagiti tindaan",
   "personal.more.startBusiness": "Start a Business",
+  "personal.more.switchToBusiness": "Switch to business",
+  "personal.more.switchingBusiness": "Switching…",
   "personal.more.back": "Back to More",
   "personal.explore.title": "Explore POS plans",
   "personal.explore.lede": "Choose a plan, then create your business organization.",

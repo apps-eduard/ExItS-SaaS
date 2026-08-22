@@ -1,7 +1,9 @@
+import { Building2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useI18n } from "@/i18n/I18nProvider";
+import { useSwitchToBusiness } from "@/workspace/use-switch-to-business";
 
 export function PersonalUtangHubPage() {
   const { t } = useI18n();
@@ -36,10 +38,29 @@ export function PersonalUtangHubPage() {
 
 export function PersonalMorePage() {
   const { t } = useI18n();
+  const { canSwitch, switching, switchToBusiness, online } = useSwitchToBusiness();
+
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="personal-more-page">
       <PageHeader title={t("personal.more.title")} description={t("personal.more.lede")} />
       <div className="flex flex-col gap-2">
+        {canSwitch ? (
+          <Button
+            type="button"
+            className="min-h-11 justify-start gap-2"
+            data-testid="more-switch-to-business"
+            disabled={switching || !online}
+            onClick={() => void switchToBusiness()}
+          >
+            <Building2 className="size-4 shrink-0" aria-hidden="true" />
+            {switching ? t("personal.more.switchingBusiness") : t("personal.more.switchToBusiness")}
+          </Button>
+        ) : null}
+        {!online && canSwitch ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="more-switch-offline">
+            {t("offline.requiredContextSwitch")}
+          </p>
+        ) : null}
         <Button asChild className="min-h-11 justify-start" data-testid="more-open-stores">
           <Link to="/personal/linked-merchants">{t("personal.more.stores")}</Link>
         </Button>
