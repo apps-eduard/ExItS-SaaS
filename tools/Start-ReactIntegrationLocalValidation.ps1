@@ -308,7 +308,7 @@ if (-not $SkipReactPos) {
     $null = Ensure-AdbReverse -Port $platformApiPort
 }
 else {
-    Write-Note "SkipReactPos set — start React POS manually: cd $posClientDir; npm run dev"
+    Write-Note "SkipReactPos set - start React POS manually: cd $posClientDir; npm run dev"
 }
 
 $stateDir = Join-Path $env:LOCALAPPDATA "ExItS\LocalValidation"
@@ -346,12 +346,10 @@ Write-Ok "POS API:      $loopbackPosApiUrl"
 Write-Ok "React POS:    $reactPosUrl"
 Write-Ok "Emulator POS: http://127.0.0.1:$reactPosPort  (after adb reverse)"
 Write-Ok "Provenance:   $provenancePath"
-Write-Host @"
-
-RUNTIME PROVENANCE
-  Platform branch/SHA: $platformBranch / $platformSha
-  POS branch/SHA:      $posBranch / $posSha
-  OLD_BLAZOR_ADMIN_USED_AS_REACT_ADMIN=NO
-  POS_DOWNGRADED=NO
-
-"@
+Write-Host ""
+Write-Host "RUNTIME PROVENANCE"
+Write-Host "  Platform branch/SHA: $platformBranch / $platformSha"
+Write-Host "  POS branch/SHA:      $posBranch / $posSha"
+Write-Host "  OLD_BLAZOR_ADMIN_USED_AS_REACT_ADMIN=NO"
+Write-Host "  POS_DOWNGRADED=NO"
+Write-Host ""
