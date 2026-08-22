@@ -33,13 +33,13 @@
     <!-- Sideloaded Debug APKs (adb install without Fast Deployment) need assemblies embedded;
          otherwise monodroid aborts with "No assemblies found ... Assuming this is part of Fast Deployment". -->
     <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
-    <!-- Default Debug Local Validation uses Tailscale/LAN PublicHost (100.120.79.81).
-         Pass -p:PosLocalValidationTarget=Emulator only for legacy 10.0.2.2 loopback experiments. -->
-    <PosLocalValidationTarget Condition="'$(PosLocalValidationTarget)' == ''">PhysicalDevice</PosLocalValidationTarget>
+    <!-- LEGACY-MAUI-ISO-01: default Debug Local Validation uses Android emulator loopback
+         (10.0.2.2:8191/8192) against exits-maui-local-validation — not React :8091/:8092.
+         Pass -p:PosLocalValidationTarget=PhysicalDevice for Tailscale/LAN :8191/:8192. -->
+    <PosLocalValidationTarget Condition="'$(PosLocalValidationTarget)' == ''">Emulator</PosLocalValidationTarget>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug' AND '$(PosLocalValidationTarget)' == 'Emulator'">
-    <!-- Legacy emulator host-loopback URLs (override defaults when explicitly requested). -->
     <DefineConstants>$(DefineConstants);POS_LOCAL_VALIDATION_EMULATOR_LOOPBACK</DefineConstants>
   </PropertyGroup>
 
@@ -105,7 +105,12 @@
     <EmbeddedResource Include="wwwroot\appsettings.Release.json" LogicalName="appsettings.json" Condition="'$(Configuration)' == 'Release'" />
   </ItemGroup>
 
-  <!-- PhysicalDevice Debug only: Tailscale/LAN Local Validation endpoints (never Release). -->
+  <!-- Emulator Debug: 10.0.2.2:8191/8192 against MAUI Local Validation stack (never Release). -->
+  <ItemGroup Condition="'$(Configuration)' == 'Debug' AND '$(PosLocalValidationTarget)' == 'Emulator'">
+    <EmbeddedResource Include="wwwroot\appsettings.LocalValidation.Emulator.json" LogicalName="appsettings.LocalValidation.Emulator.json" />
+  </ItemGroup>
+
+  <!-- PhysicalDevice Debug: Tailscale/LAN + MAUI ports 8191/8192 (never Release). -->
   <ItemGroup Condition="'$(Configuration)' == 'Debug' AND '$(PosLocalValidationTarget)' == 'PhysicalDevice'">
     <EmbeddedResource Include="wwwroot\appsettings.LocalValidation.PhysicalDevice.json" LogicalName="appsettings.LocalValidation.PhysicalDevice.json" />
   </ItemGroup>

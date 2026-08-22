@@ -7,6 +7,8 @@
 !.env.example
 !**/.env.local-validation.example
 !.env.local-validation.example
+!**/.env.maui-local-validation.example
+!.env.maui-local-validation.example
 !**/.env.production.example
 !.env.production.example
 
