@@ -1,5 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import "fake-indexeddb/auto";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SignInPage } from "@/features/auth/SignInPage";
@@ -12,8 +14,17 @@ vi.mock("@/api/platform/platform-auth-client", async (importOriginal) => {
   return {
     ...actual,
     probeExternalAuthProvider: vi.fn(async () => "disabled" as const),
+    registerPersonalAccount: vi.fn(async () => ({ ok: true as const })),
   };
 });
+
+vi.mock("@/offline/offline-pin-login-offer", () => ({
+  evaluateOfflinePinLoginOffer: vi.fn(async () => ({
+    canOfferPinUnlock: false,
+    grantExpired: false,
+    noEnrollment: true,
+  })),
+}));
 
 function renderSignInPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -32,19 +43,79 @@ function renderSignInPage() {
   );
 }
 
-describe("SignInPage login UX", () => {
-  it("renders MAUI-inspired auth shell with tabs and social row", async () => {
+describe("SignInPage LOGIN-UX-01", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    Object.defineProperty(window.navigator, "onLine", { configurable: true, value: true });
+  });
+
+  it("defaults to Sign In tab with active indicator", () => {
     renderSignInPage();
-    expect(screen.getByTestId("sign-in-page")).toBeInTheDocument();
-    expect(screen.getByTestId("auth-experience-hero")).toBeInTheDocument();
-    expect(screen.getByTestId("auth-experience-sheet")).toBeInTheDocument();
     expect(screen.getByTestId("auth-tab-sign-in")).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByTestId("auth-tab-sign-up")).toBeInTheDocument();
-    expect(screen.getByTestId("auth-social-row")).toBeInTheDocument();
-    expect(screen.getByTestId("auth-google-button")).toBeInTheDocument();
-    expect(screen.getByTestId("auth-facebook-button")).toBeInTheDocument();
-    expect(screen.getByTestId("auth-pin-button")).toBeInTheDocument();
+    expect(screen.getByTestId("auth-tab-sign-up")).toHaveAttribute("aria-selected", "false");
+  });
+
+  it("switches to Sign Up tab", async () => {
+    const user = userEvent.setup();
+    renderSignInPage();
+    await user.click(screen.getByTestId("auth-tab-sign-up"));
+    expect(screen.getByTestId("auth-tab-sign-up")).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("button", { name: "Create Personal account" })).toBeInTheDocument();
+  });
+
+  it("toggles password visibility without clearing value", async () => {
+    const user = userEvent.setup();
+    renderSignInPage();
+    const password = screen.getByLabelText("Password");
+    await user.type(password, "secret123");
+    await user.click(screen.getByRole("button", { name: "Toggle visibility" }));
+    expect(password).toHaveAttribute("type", "text");
+    expect(password).toHaveValue("secret123");
+  });
+
+  it("exposes accessible social and PIN action labels", () => {
+    renderSignInPage();
+    expect(screen.getByRole("button", { name: "Continue with Facebook" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue with Google" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Use Offline PIN" })).toBeInTheDocument();
+  });
+
+  it("shows staff login hint for org-scoped aliases", async () => {
+    const user = userEvent.setup();
+    renderSignInPage();
+    await user.type(screen.getByLabelText("Email or staff login"), "cashier@ORG123456");
+    expect(screen.getByTestId("staff-login-hint")).toBeInTheDocument();
+  });
+
+  it("does not persist plaintext password in localStorage", async () => {
+    const user = userEvent.setup();
+    renderSignInPage();
+    await user.type(screen.getByLabelText("Password"), "secret123");
+    await user.click(screen.getByRole("checkbox", { name: "Remember Me" }));
+    await user.click(screen.getByTestId("sign-in-submit"));
+    expect(JSON.stringify(window.localStorage)).not.toContain("secret123");
+  });
+
+  it("blocks password submit while offline", async () => {
+    Object.defineProperty(window.navigator, "onLine", { configurable: true, value: false });
+    renderSignInPage();
+    fireEvent(window, new Event("offline"));
+    expect(screen.getByTestId("sign-in-offline-banner")).toBeInTheDocument();
+    expect(screen.getByTestId("sign-in-submit")).toBeDisabled();
+  });
+
+  it("does not render dev test user selector in production builds", () => {
+    vi.stubEnv("MODE", "production");
+    renderSignInPage();
+    expect(screen.queryByText(/Development Test User/i)).not.toBeInTheDocument();
+    vi.unstubAllEnvs();
+  });
+
+  it("renders MAUI-inspired hero branding", () => {
+    renderSignInPage();
     expect(screen.getByText("Expert IT Solutions")).toBeInTheDocument();
     expect(screen.getByText("Pinoy Business POS")).toBeInTheDocument();
+    expect(screen.getByTestId("auth-experience-hero")).toBeInTheDocument();
+    expect(screen.getByTestId("auth-experience-sheet")).toBeInTheDocument();
   });
 });

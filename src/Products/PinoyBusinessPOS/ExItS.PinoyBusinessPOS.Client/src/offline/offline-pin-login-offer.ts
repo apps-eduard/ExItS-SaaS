@@ -1,5 +1,7 @@
-import { isOfflinePinAndDekConfigured } from "@/offline/local-store-key";
-import { evaluateColdStartOfflineGrant } from "@/offline/offline-operating-grant";
+import {
+  hasExpiredOfflineGrantOnInstallation,
+  listEligibleOfflinePinProfiles,
+} from "@/offline/offline-pin-profiles";
 
 export type OfflinePinLoginOffer = {
   canOfferPinUnlock: boolean;
@@ -9,22 +11,29 @@ export type OfflinePinLoginOffer = {
 
 /**
  * Whether the login screen may offer offline PIN unlock for this installation.
- * Branch/org come from the server-signed grant — no picker.
+ * Branch/org come from the server-signed grant — no picker on the sign-in screen.
  */
 export async function evaluateOfflinePinLoginOffer(): Promise<OfflinePinLoginOffer> {
-  const cold = await evaluateColdStartOfflineGrant();
-  if (!cold.ok) {
+  const profiles = await listEligibleOfflinePinProfiles();
+  if (profiles.length > 0) {
     return {
-      canOfferPinUnlock: false,
-      grantExpired: cold.reason === "grant_expired",
-      noEnrollment: cold.reason === "no_grant" || cold.reason === "unsupported_schema",
+      canOfferPinUnlock: true,
+      grantExpired: false,
+      noEnrollment: false,
     };
   }
 
-  const enrolled = isOfflinePinAndDekConfigured(cold.grant.userId);
+  if (hasExpiredOfflineGrantOnInstallation()) {
+    return {
+      canOfferPinUnlock: false,
+      grantExpired: true,
+      noEnrollment: false,
+    };
+  }
+
   return {
-    canOfferPinUnlock: enrolled,
+    canOfferPinUnlock: false,
     grantExpired: false,
-    noEnrollment: !enrolled,
+    noEnrollment: true,
   };
 }

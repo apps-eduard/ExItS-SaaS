@@ -62,6 +62,7 @@ type SessionContextValue = {
   refreshSession: () => Promise<SessionStatus>;
   unlockOfflinePin: (pin: string) => Promise<boolean>;
   enterColdStartOffline: () => void;
+  prepareOfflinePinUnlock: (grant: StoredOfflineOperatingGrant) => void;
 };
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -201,6 +202,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setStatus("cold_start_offline");
   }, [coldStartGrant]);
 
+  const prepareOfflinePinUnlock = useCallback((grant: StoredOfflineOperatingGrant) => {
+    setColdStartGrant(grant);
+    setColdStartDenial(null);
+  }, []);
+
   const unlockOfflinePin = useCallback(
     async (pin: string) => {
       const grant = coldStartGrant ?? (session?.userId ? peekStoredOfflineGrant(session.userId) : null);
@@ -211,15 +217,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (!unlocked) {
         return false;
       }
-      if (status === "offline_pin_required" || status === "needs_offline_unlock") {
-        setColdStartGrant(grant);
-        setSession(synthesizeSessionFromGrant(grant));
-        setStatus("cold_start_offline");
-        setColdStartDenial(null);
-      }
+      setColdStartGrant(grant);
+      setSession(synthesizeSessionFromGrant(grant));
+      setStatus("cold_start_offline");
+      setColdStartDenial(null);
       return true;
     },
-    [coldStartGrant, session?.userId, status],
+    [coldStartGrant, session?.userId],
   );
 
   const signIn = useCallback(
@@ -312,11 +316,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       refreshSession,
       unlockOfflinePin,
       enterColdStartOffline,
+      prepareOfflinePinUnlock,
     }),
     [
       coldStartDenial,
       coldStartGrant,
       enterColdStartOffline,
+      prepareOfflinePinUnlock,
       refreshSession,
       session,
       signIn,

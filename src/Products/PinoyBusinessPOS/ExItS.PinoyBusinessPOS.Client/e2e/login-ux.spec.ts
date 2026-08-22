@@ -4,23 +4,29 @@ import { mockBoundCashierSession, signInAndBindCashier } from "./mock-bound-sess
 import { buildSignedOfflineGrantDto } from "./mock-signed-offline-grant";
 
 test.describe("login UX", () => {
-  test("renders redesigned sign-in layout at phone, tablet, and desktop widths", async ({ page }) => {
+  const viewports = [
+    { width: 390, height: 844, label: "phone" },
+    { width: 464, height: 1018, label: "large-phone" },
+    { width: 768, height: 1024, label: "tablet-portrait" },
+    { width: 1024, height: 768, label: "tablet-landscape" },
+    { width: 1440, height: 900, label: "desktop" },
+  ] as const;
+
+  test("renders redesigned sign-in layout across required viewports", async ({ page }) => {
     await mockBoundCashierSession(page);
     await page.goto("/sign-in");
     await expect(page.getByTestId("sign-in-page")).toBeVisible();
     await expect(page.getByTestId("auth-experience-hero")).toBeVisible();
-    await expect(page.getByTestId("auth-tab-sign-in")).toBeVisible();
-    await expect(page.getByTestId("auth-tab-sign-up")).toBeVisible();
-    await expect(page.getByTestId("auth-social-row")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Continue with Facebook" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Use Offline PIN" })).toBeVisible();
 
-    await page.setViewportSize({ width: 390, height: 844 });
-    await expect(page.getByTestId("auth-experience-sheet")).toBeVisible();
-
-    await page.setViewportSize({ width: 768, height: 1024 });
-    await expect(page.getByTestId("auth-experience-sheet")).toBeVisible();
-
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await expect(page.getByTestId("auth-experience-sheet")).toBeVisible();
+    for (const viewport of viewports) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await expect(page.getByTestId("auth-experience-sheet")).toBeVisible();
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+      expect(overflow).toBe(false);
+    }
   });
 
   test("logout while offline routes to offline PIN unlock", async ({ page, context }) => {

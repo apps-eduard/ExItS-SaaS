@@ -1,8 +1,7 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ErrorState } from "@/components/exits/ErrorState";
 import { AuthExperienceLayout } from "@/features/auth/AuthExperienceLayout";
 import { useI18n } from "@/i18n/I18nProvider";
 import { requestPasswordReset } from "@/api/platform/platform-auth-client";
@@ -13,9 +12,26 @@ export function ForgotPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [isOffline, setIsOffline] = useState(
+    () => typeof navigator !== "undefined" && navigator.onLine === false,
+  );
+
+  useEffect(() => {
+    const syncOnline = () => setIsOffline(typeof navigator !== "undefined" && navigator.onLine === false);
+    window.addEventListener("online", syncOnline);
+    window.addEventListener("offline", syncOnline);
+    return () => {
+      window.removeEventListener("online", syncOnline);
+      window.removeEventListener("offline", syncOnline);
+    };
+  }, []);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    if (isOffline) {
+      setError(t("auth.forgotPasswordOffline"));
+      return;
+    }
     setSubmitting(true);
     setError(null);
     setInfo(null);
@@ -36,7 +52,7 @@ export function ForgotPasswordPage() {
             {t("auth.forgotPasswordTitle")}
           </h2>
           <p className="m-0 mt-2 text-[length:var(--exits-text-sm)] leading-relaxed text-muted">
-            {t("auth.forgotPasswordLede")}
+            {isOffline ? t("auth.forgotPasswordOffline") : t("auth.forgotPasswordLede")}
           </p>
         </div>
         {info ? (
@@ -44,7 +60,11 @@ export function ForgotPasswordPage() {
             {info}
           </p>
         ) : null}
-        {error ? <ErrorState title={t("error.title")} detail={error} /> : null}
+        {error ? (
+          <p role="alert" className="m-0 text-[length:var(--exits-text-sm)] text-destructive" data-testid="forgot-password-error">
+            {error}
+          </p>
+        ) : null}
         <form className="flex flex-col gap-4" onSubmit={(event) => void handleSubmit(event)}>
           <Input
             label={t("signIn.usernameLabel")}
@@ -53,9 +73,9 @@ export function ForgotPasswordPage() {
             value={usernameOrEmail}
             onChange={(event) => setUsernameOrEmail(event.target.value)}
             required
-            disabled={submitting}
+            disabled={submitting || isOffline}
           />
-          <Button type="submit" className="w-full min-h-11" disabled={submitting}>
+          <Button type="submit" className="w-full min-h-11" disabled={submitting || isOffline}>
             {submitting ? t("auth.forgotPasswordSubmitting") : t("auth.forgotPasswordSubmit")}
           </Button>
         </form>

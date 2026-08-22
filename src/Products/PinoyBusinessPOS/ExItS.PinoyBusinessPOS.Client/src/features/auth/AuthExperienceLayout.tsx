@@ -40,9 +40,9 @@ export function AuthExperienceLayout({
         </div>
       </div>
 
-      <div className="auth-experience__sheet-wrap relative z-[1] -mt-16 flex flex-1 flex-col px-[max(var(--exits-page-padding),env(safe-area-inset-left))] pr-[max(var(--exits-page-padding),env(safe-area-inset-right))] pb-[max(2rem,env(safe-area-inset-bottom))]">
+      <div className="auth-experience__sheet-wrap relative z-[1] -mt-16 flex flex-1 flex-col overflow-y-auto px-[max(var(--exits-page-padding),env(safe-area-inset-left))] pr-[max(var(--exits-page-padding),env(safe-area-inset-right))] pb-[max(2rem,env(safe-area-inset-bottom))]">
         <div
-          className="auth-experience__sheet mx-auto flex w-full max-w-[28rem] min-w-0 flex-col gap-5 rounded-[1.25rem] border border-border bg-surface p-5 shadow-[0_18px_40px_rgba(20,32,26,0.12)] sm:max-w-[32rem] sm:p-6 lg:max-w-[36rem]"
+          className="auth-experience__sheet mx-auto flex w-full max-w-[min(100%,28rem)] min-w-0 flex-col gap-5 rounded-[1.25rem] border border-border bg-surface p-5 shadow-[0_18px_40px_rgba(20,32,26,0.12)] sm:max-w-[min(100%,30rem)] sm:p-6 md:max-w-[min(100%,32rem)] lg:max-w-[min(100%,32rem)]"
           data-testid="auth-experience-sheet"
         >
           <div
@@ -56,10 +56,10 @@ export function AuthExperienceLayout({
               aria-selected={activeTab === "sign-in"}
               data-testid="auth-tab-sign-in"
               className={cn(
-                "min-h-11 rounded-[var(--exits-radius-md)] text-[length:var(--exits-text-sm)] font-semibold transition-colors",
+                "min-h-11 rounded-[var(--exits-radius-md)] border-b-2 text-[length:var(--exits-text-sm)] font-semibold transition-colors",
                 activeTab === "sign-in"
-                  ? "bg-surface text-foreground shadow-sm"
-                  : "text-muted hover:text-foreground",
+                  ? "border-primary bg-surface text-primary shadow-sm"
+                  : "border-transparent text-muted hover:text-foreground",
               )}
               onClick={() => onTabChange("sign-in")}
             >
@@ -71,10 +71,10 @@ export function AuthExperienceLayout({
               aria-selected={activeTab === "sign-up"}
               data-testid="auth-tab-sign-up"
               className={cn(
-                "min-h-11 rounded-[var(--exits-radius-md)] text-[length:var(--exits-text-sm)] font-semibold transition-colors",
+                "min-h-11 rounded-[var(--exits-radius-md)] border-b-2 text-[length:var(--exits-text-sm)] font-semibold transition-colors",
                 activeTab === "sign-up"
-                  ? "bg-surface text-foreground shadow-sm"
-                  : "text-muted hover:text-foreground",
+                  ? "border-primary bg-surface text-primary shadow-sm"
+                  : "border-transparent text-muted hover:text-foreground",
               )}
               onClick={() => onTabChange("sign-up")}
             >
@@ -88,7 +88,7 @@ export function AuthExperienceLayout({
         </div>
 
         {belowCard ? (
-          <div className="mx-auto mt-5 w-full max-w-[28rem] min-w-0 sm:max-w-[32rem] lg:max-w-[36rem]">
+          <div className="mx-auto mt-5 w-full max-w-[min(100%,28rem)] min-w-0 sm:max-w-[min(100%,30rem)] md:max-w-[min(100%,32rem)]">
             {belowCard}
           </div>
         ) : null}
