@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import {
+  canQueryPaymentPortfolio,
   getPayment,
   listPaymentPortfolio,
   type PaymentPortfolioUrlState,
@@ -23,7 +24,7 @@ export const paymentDetailQueryKey = (paymentId: string) =>
 export function usePaymentPortfolioQuery(state: PaymentPortfolioUrlState, enabled: boolean) {
   return useQuery({
     queryKey: paymentPortfolioQueryKey(state),
-    enabled,
+    enabled: enabled && canQueryPaymentPortfolio(state),
     queryFn: ({ signal }) => listPaymentPortfolio(env.platformApiBaseUrl, state, signal),
   });
 }

@@ -6,6 +6,8 @@ import {
   type OrganizationPaymentStatus,
 } from "@/api/organizations/billing-list-query";
 import {
+  canQueryPaymentPortfolio,
+  DEFAULT_PAYMENT_PORTFOLIO_STATUS,
   hasActivePaymentPortfolioFilters,
   parsePaymentPortfolioSearchParams,
   PAYMENT_PORTFOLIO_PAGE_SIZE,
@@ -72,7 +74,12 @@ export function PaymentsList({ enabled }: { enabled: boolean }) {
   }
 
   function resetFilters() {
-    replaceState({ page: 1, status: "", productCode: "", method: "" });
+    replaceState({
+      page: 1,
+      status: DEFAULT_PAYMENT_PORTFOLIO_STATUS,
+      productCode: "",
+      method: "",
+    });
   }
 
   function onFilterSubmit(event: FormEvent) {
@@ -80,6 +87,7 @@ export function PaymentsList({ enabled }: { enabled: boolean }) {
   }
 
   const filtersActive = hasActivePaymentPortfolioFilters(state);
+  const canQuery = canQueryPaymentPortfolio(state);
   const totalPages = query.data
     ? Math.max(1, Math.ceil(query.data.totalCount / PAYMENT_PORTFOLIO_PAGE_SIZE))
     : 1;
@@ -99,14 +107,17 @@ export function PaymentsList({ enabled }: { enabled: boolean }) {
             className={controlClass}
             value={state.status}
             aria-label={t("payments.portfolio.status")}
-            onChange={(event) =>
+            onChange={(event) => {
+              const next = event.target.value as OrganizationPaymentStatus | "";
               replaceState({
-                status: event.target.value as OrganizationPaymentStatus | "",
+                status: next || (state.productCode ? "" : DEFAULT_PAYMENT_PORTFOLIO_STATUS),
                 page: 1,
-              })
-            }
+              });
+            }}
           >
-            <option value="">{t("payments.portfolio.status.all")}</option>
+            {state.productCode ? (
+              <option value="">{t("payments.portfolio.status.all")}</option>
+            ) : null}
             {ORGANIZATION_PAYMENT_STATUSES.map((status) => (
               <option key={status} value={status}>
                 {STATUS_LABELS[status] ? t(STATUS_LABELS[status]!) : status}
@@ -121,7 +132,14 @@ export function PaymentsList({ enabled }: { enabled: boolean }) {
             value={state.productCode}
             aria-label={t("payments.portfolio.product")}
             disabled={productsQuery.isPending || productsQuery.isError}
-            onChange={(event) => replaceState({ productCode: event.target.value, page: 1 })}
+            onChange={(event) => {
+              const productCode = event.target.value;
+              replaceState({
+                productCode,
+                status: state.status || (productCode ? "" : DEFAULT_PAYMENT_PORTFOLIO_STATUS),
+                page: 1,
+              });
+            }}
           >
             <option value="">{t("payments.portfolio.product.all")}</option>
             {productsQuery.data?.items.map((product) => (
@@ -165,7 +183,15 @@ export function PaymentsList({ enabled }: { enabled: boolean }) {
         </Alert>
       ) : null}
 
-      {query.isPending ? (
+      {!canQuery ? (
+        <div className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-3">
+          <p className="text-[length:var(--exits-text-sm)] text-muted" role="status">
+            {t("payments.portfolio.filterRequired")}
+          </p>
+        </div>
+      ) : null}
+
+      {canQuery && query.isPending ? (
         <div
           className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-3"
           role="status"
@@ -176,7 +202,7 @@ export function PaymentsList({ enabled }: { enabled: boolean }) {
         </div>
       ) : null}
 
-      {query.isError && diagnostic ? (
+      {canQuery && query.isError && diagnostic ? (
         <ErrorState
           diagnostic={diagnostic}
           title={t("payments.portfolio.error")}
@@ -185,7 +211,7 @@ export function PaymentsList({ enabled }: { enabled: boolean }) {
         />
       ) : null}
 
-      {query.data ? (
+      {canQuery && query.data ? (
         <>
           {query.data.items.length === 0 ? (
             <div className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-3">

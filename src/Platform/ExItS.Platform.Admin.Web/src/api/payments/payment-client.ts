@@ -1,32 +1,44 @@
 import { parsePagedResult, type PagedResult } from "@/api/platform/paged-result";
 import { platformRequest } from "@/api/platform-http";
 import { mapOrganizationPayment } from "@/api/organizations/organization-client";
-import type { OrganizationPayment } from "@/api/organizations/billing-list-query";
+import {
+  isOrganizationPaymentStatus,
+  ORGANIZATION_PAYMENT_STATUSES,
+  type OrganizationPayment,
+  type OrganizationPaymentStatus,
+} from "@/api/organizations/billing-list-query";
 import { withQuery } from "@/lib/http/query-string";
 
 export const PAYMENT_PORTFOLIO_PAGE_SIZE = 20;
-export const PAYMENT_PORTFOLIO_STATUSES = [
-  "Pending",
-  "Confirmed",
-  "Rejected",
-  "Voided",
-] as const;
+
+/** Blazor Payments.razor default — API rejects unfiltered portfolio lists. */
+export const DEFAULT_PAYMENT_PORTFOLIO_STATUS: OrganizationPaymentStatus = "Confirmed";
+
+export const PAYMENT_PORTFOLIO_STATUSES = ORGANIZATION_PAYMENT_STATUSES;
 
 export type PaymentPortfolioUrlState = {
   page: number;
   pageSize: number;
-  status: string;
+  status: OrganizationPaymentStatus | "";
   productCode: string;
   method: string;
 };
 
 export function parsePaymentPortfolioSearchParams(params: URLSearchParams): PaymentPortfolioUrlState {
   const pageRaw = Number(params.get("page") ?? "1");
+  const statusRaw = params.get("status")?.trim() ?? "";
+  const productCode = params.get("productCode")?.trim() ?? "";
+  const status: OrganizationPaymentStatus | "" = isOrganizationPaymentStatus(statusRaw)
+    ? statusRaw
+    : productCode
+      ? ""
+      : DEFAULT_PAYMENT_PORTFOLIO_STATUS;
+
   return {
     page: Number.isFinite(pageRaw) && pageRaw >= 1 ? Math.floor(pageRaw) : 1,
     pageSize: PAYMENT_PORTFOLIO_PAGE_SIZE,
-    status: params.get("status")?.trim() ?? "",
-    productCode: params.get("productCode")?.trim() ?? "",
+    status,
+    productCode,
     method: params.get("method")?.trim() ?? "",
   };
 }
@@ -40,11 +52,22 @@ export function paymentPortfolioSearchParams(state: PaymentPortfolioUrlState): U
   return params;
 }
 
+/** API requires status, productCode, organizationId, or reference — never an empty list query. */
+export function canQueryPaymentPortfolio(state: PaymentPortfolioUrlState): boolean {
+  return Boolean(state.status || state.productCode);
+}
+
 export function listPaymentPortfolio(
   baseUrl: string,
   state: PaymentPortfolioUrlState,
   signal?: AbortSignal,
 ): Promise<PagedResult<OrganizationPayment>> {
+  if (!canQueryPaymentPortfolio(state)) {
+    return Promise.reject(
+      new Error("Provide a status or productCode filter to list payments."),
+    );
+  }
+
   return platformRequest<unknown>(baseUrl, {
     path: withQuery("/api/v1/platform/payments", {
       page: state.page,
@@ -82,7 +105,11 @@ export function paymentsListHref(): string {
 }
 
 export function hasActivePaymentPortfolioFilters(state: PaymentPortfolioUrlState): boolean {
-  return Boolean(state.status || state.productCode || state.method);
+  return (
+    state.status !== DEFAULT_PAYMENT_PORTFOLIO_STATUS ||
+    Boolean(state.productCode) ||
+    Boolean(state.method)
+  );
 }
 
 export function getPayment(

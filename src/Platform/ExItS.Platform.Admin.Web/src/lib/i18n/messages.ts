@@ -537,6 +537,8 @@ export const enMessages = {
   "payments.portfolio.method": "Method",
   "payments.portfolio.method.all": "All methods",
   "payments.portfolio.reset": "Reset filters",
+  "payments.portfolio.filterRequired":
+    "Choose a status or product to list payments. The portfolio API does not allow an unfiltered list.",
   "payments.portfolio.empty": "No payments",
   "payments.portfolio.zeroResult": "No payments match your filters.",
   "payments.portfolio.loading": "Loading payments",
@@ -2470,6 +2472,8 @@ export const filPhMessages: Record<MessageKey, string> = {
   "payments.portfolio.method": "Paraan",
   "payments.portfolio.method.all": "Lahat ng paraan",
   "payments.portfolio.reset": "I-reset ang mga filter",
+  "payments.portfolio.filterRequired":
+    "Pumili ng status o produkto upang ilista ang mga bayad. Hindi pinapayagan ng portfolio API ang walang filter na listahan.",
   "payments.portfolio.empty": "Walang bayad",
   "payments.portfolio.zeroResult": "Walang bayad na tumutugma sa iyong mga filter.",
   "payments.portfolio.loading": "Naglo-load ang mga bayad",
