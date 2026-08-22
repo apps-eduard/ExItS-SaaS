@@ -421,8 +421,8 @@ export async function completeOfflinePinSetupIfNeeded(page: Page, pin = "123456"
 export async function signInAndBindCashier(page: Page) {
   await page.goto("/sign-in");
   await page.getByLabel("Email or staff login").fill("cashier");
-  await page.getByLabel("Password").fill("secret");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("textbox", { name: "Password" }).fill("secret");
+  await page.getByTestId("sign-in-submit").click();
   const sellFloor = page.getByTestId("sell-floor");
   const readinessDevice = page.getByTestId("sell-readiness-device");
   const readinessShift = page.getByTestId("sell-readiness-shift");
@@ -446,15 +446,15 @@ export async function signInAndBindCashier(page: Page) {
 export async function signInAndBindOwner(page: Page) {
   await page.goto("/sign-in");
   await page.getByLabel("Email or staff login").fill("owner");
-  await page.getByLabel("Password").fill("secret");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("textbox", { name: "Password" }).fill("secret");
+  await page.getByTestId("sign-in-submit").click();
 }
 
 export async function signInAndBindManager(page: Page) {
   await page.goto("/sign-in");
   await page.getByLabel("Email or staff login").fill("manager");
-  await page.getByLabel("Password").fill("secret");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("textbox", { name: "Password" }).fill("secret");
+  await page.getByTestId("sign-in-submit").click();
   await page
     .getByTestId("workspace-destination-operations")
     .waitFor({ state: "visible", timeout: 15000 });
@@ -465,8 +465,8 @@ export async function signInAndBindManager(page: Page) {
 export async function signInAndBindOrgAdmin(page: Page) {
   await page.goto("/sign-in");
   await page.getByLabel("Email or staff login").fill("orgadmin");
-  await page.getByLabel("Password").fill("secret");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("textbox", { name: "Password" }).fill("secret");
+  await page.getByTestId("sign-in-submit").click();
   const orgPage = page.getByTestId("org-essentials-page");
   const manage = page.getByTestId("workspace-destination-manage_business");
   await Promise.race([
@@ -492,15 +492,15 @@ export async function chooseOwnerManageBusiness(page: Page) {
 export async function signInAsPersonal(page: Page) {
   await page.goto("/sign-in");
   await page.getByLabel("Email or staff login").fill("paul@gmail.com");
-  await page.getByLabel("Password").fill("secret");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("textbox", { name: "Password" }).fill("secret");
+  await page.getByTestId("sign-in-submit").click();
 }
 
 export async function signInAsStaffLogin(page: Page) {
   await page.goto("/sign-in");
   await page.getByLabel("Email or staff login").fill("paul@ORG907757");
-  await page.getByLabel("Password").fill("staff-secret");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("textbox", { name: "Password" }).fill("staff-secret");
+  await page.getByTestId("sign-in-submit").click();
 }
 
 export async function clientNavigate(page: Page, path: string) {

@@ -35,7 +35,7 @@ export function AppTopBar() {
       return;
     }
     clearBoundWorkspace();
-    navigate("/sign-in", { replace: true });
+    navigate(result.nextRoute, { replace: true });
   }
 
   const workspaceLabel = boundWorkspace

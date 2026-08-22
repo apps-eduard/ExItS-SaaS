@@ -4,11 +4,14 @@
  */
 
 import { toArrayBuffer } from "@/offline/crypto";
+import {
+  DEVELOPMENT_OFFLINE_OPERATING_GRANT_PUBLIC_KEY_PEM,
+  resolveOfflineOperatingGrantVerificationPublicKeyPem,
+} from "@/offline/offline-grant-verification-key";
 
-export const OFFLINE_OPERATING_GRANT_SIGNING_PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEkld6WGOTRLooj2ArP2UV2S+nTVtA
-yfFYSN1+JNozH4BKAVf5/c1MwCGTLCel38wB0fnM9/1cYKEGKrh9xldC7Q==
------END PUBLIC KEY-----`;
+/** Documented development verification key — use resolveOfflineOperatingGrantVerificationPublicKeyPem() at runtime. */
+export const OFFLINE_OPERATING_GRANT_SIGNING_PUBLIC_KEY_PEM =
+  DEVELOPMENT_OFFLINE_OPERATING_GRANT_PUBLIC_KEY_PEM;
 
 export const OFFLINE_OPERATING_GRANT_CANONICAL_VERSION = "v1";
 const ABSENT = "-";
@@ -101,14 +104,16 @@ function hexToBytes(hex: string): Uint8Array {
 }
 
 let cachedVerifyKey: CryptoKey | null = null;
+let cachedVerifyKeyPem: string | null = null;
 
-async function importVerifyPublicKey(): Promise<CryptoKey> {
-  if (cachedVerifyKey) {
+async function importVerifyPublicKey(publicKeyPem: string): Promise<CryptoKey> {
+  if (cachedVerifyKey && cachedVerifyKeyPem === publicKeyPem) {
     return cachedVerifyKey;
   }
+  cachedVerifyKeyPem = publicKeyPem;
   cachedVerifyKey = await crypto.subtle.importKey(
     "spki",
-    pemToSpkiDer(OFFLINE_OPERATING_GRANT_SIGNING_PUBLIC_KEY_PEM),
+    pemToSpkiDer(publicKeyPem),
     { name: "ECDSA", namedCurve: "P-256" },
     false,
     ["verify"],
@@ -119,7 +124,7 @@ async function importVerifyPublicKey(): Promise<CryptoKey> {
 export async function verifyOfflineOperatingGrantSignature(
   canonical: string,
   signatureHex: string | null | undefined,
-  publicKeyPem: string = OFFLINE_OPERATING_GRANT_SIGNING_PUBLIC_KEY_PEM,
+  publicKeyPem?: string,
 ): Promise<boolean> {
   if (!signatureHex?.trim() || !canonical.trim()) {
     return false;
@@ -132,16 +137,14 @@ export async function verifyOfflineOperatingGrantSignature(
     return false;
   }
 
-  const key =
-    publicKeyPem === OFFLINE_OPERATING_GRANT_SIGNING_PUBLIC_KEY_PEM
-      ? await importVerifyPublicKey()
-      : await crypto.subtle.importKey(
-          "spki",
-          pemToSpkiDer(publicKeyPem),
-          { name: "ECDSA", namedCurve: "P-256" },
-          false,
-          ["verify"],
-        );
+  let pem: string;
+  try {
+    pem = publicKeyPem?.trim() || resolveOfflineOperatingGrantVerificationPublicKeyPem();
+  } catch {
+    return false;
+  }
+
+  const key = await importVerifyPublicKey(pem);
 
   return crypto.subtle.verify(
     { name: "ECDSA", hash: "SHA-256" },

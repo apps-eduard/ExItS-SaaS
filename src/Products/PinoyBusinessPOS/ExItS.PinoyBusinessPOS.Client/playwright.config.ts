@@ -1,5 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const clientRoot = import.meta.dirname;
+const prepareProductionEnv =
+  process.platform === "win32"
+    ? "copy /Y .env.production.example .env.production.local >nul"
+    : "cp .env.production.example .env.production.local";
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -11,7 +17,8 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: "npm run build && npm run preview",
+    cwd: clientRoot,
+    command: `${prepareProductionEnv} && npm run build && npm run preview`,
     url: "http://127.0.0.1:4177",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

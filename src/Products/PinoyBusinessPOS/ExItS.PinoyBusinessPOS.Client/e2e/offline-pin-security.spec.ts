@@ -109,7 +109,7 @@ test.describe("offline PIN security", () => {
     await expectSellEntryVisible(page);
 
     await context.setOffline(true);
-    await page.route("**/platform-api/api/v1/platform/auth/session", async (route) => {
+    await page.route("**/platform-api/api/v1/platform/auth/me", async (route) => {
       await route.abort("failed");
     });
     await page.reload();
@@ -126,7 +126,7 @@ test.describe("offline PIN security", () => {
     await expect(page).not.toHaveURL(/\/offline-pin$/);
 
     await context.setOffline(false);
-    await page.unroute("**/platform-api/api/v1/platform/auth/session");
+    await page.unroute("**/platform-api/api/v1/platform/auth/me");
     await mockBoundCashierSession(page);
 
     await page.getByTestId("account-menu-trigger").click();

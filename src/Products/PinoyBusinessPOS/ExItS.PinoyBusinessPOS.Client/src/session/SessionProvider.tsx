@@ -17,11 +17,7 @@ import {
   loginWithPassword,
   logoutSession,
 } from "@/api/platform/platform-auth-client";
-import {
-  isPlatformAntiforgeryValidationError,
-  PlatformApiError,
-  clearPlatformAntiforgeryToken,
-} from "@/api/platform/platform-http";
+import { clearPlatformAntiforgeryToken } from "@/api/platform/platform-http";
 import { isOfflinePinAndDekConfigured, unlockOfflineCryptoWithPin } from "@/offline/local-store-key";
 import { clearUnlockedDek } from "@/offline/offline-unlock-session";
 import {
@@ -31,6 +27,12 @@ import {
   type ColdStartGrantDenialReason,
   type StoredOfflineOperatingGrant,
 } from "@/offline/offline-operating-grant";
+import {
+  clearPendingRemoteLogout,
+  completePendingRemoteLogoutIfNeeded,
+  hasPendingRemoteLogout,
+  markPendingRemoteLogout,
+} from "@/session/remote-logout-retry";
 
 export type SessionStatus =
   | "loading"
@@ -42,7 +44,12 @@ export type SessionStatus =
   | "needs_offline_unlock";
 
 export type SignOutResult =
-  | { ok: true; reason: "logged_out" | "already_signed_out" }
+  | {
+      ok: true;
+      reason: "logged_out" | "already_signed_out";
+      remoteLogoutPending?: boolean;
+      nextRoute: "/sign-in" | "/offline-pin";
+    }
   | { ok: false; detail: string };
 
 type SessionContextValue = {
@@ -70,34 +77,12 @@ function isBrowserOffline(): boolean {
   return typeof navigator !== "undefined" && navigator.onLine === false;
 }
 
-async function resolveBootstrapSession(): Promise<{
+async function resolveOfflineLockedBootstrap(): Promise<{
   status: SessionStatus;
   session: BrowserSessionSnapshot | null;
   coldStartGrant: StoredOfflineOperatingGrant | null;
   coldStartDenial: ColdStartGrantDenialReason | null;
 }> {
-  try {
-    const result = await fetchCurrentSession();
-    if (result.status === "authenticated") {
-      return {
-        status: "authenticated",
-        session: result.session,
-        coldStartGrant: null,
-        coldStartDenial: null,
-      };
-    }
-    if (result.status === "expired") {
-      return {
-        status: "expired",
-        session: null,
-        coldStartGrant: null,
-        coldStartDenial: null,
-      };
-    }
-  } catch {
-    // Network failure — fall through to offline grant evaluation when offline.
-  }
-
   const cold = await evaluateColdStartOfflineGrant();
   if (cold.ok) {
     if (isBrowserOffline()) {
@@ -139,6 +124,48 @@ async function resolveBootstrapSession(): Promise<{
     coldStartGrant: null,
     coldStartDenial: null,
   };
+}
+
+async function resolveBootstrapSession(): Promise<{
+  status: SessionStatus;
+  session: BrowserSessionSnapshot | null;
+  coldStartGrant: StoredOfflineOperatingGrant | null;
+  coldStartDenial: ColdStartGrantDenialReason | null;
+}> {
+  if (hasPendingRemoteLogout()) {
+    const cleared = await completePendingRemoteLogoutIfNeeded();
+    if (!cleared) {
+      clearPlatformAntiforgeryToken();
+      clearPosAccessToken();
+      clearPosSessionGrant();
+      return resolveOfflineLockedBootstrap();
+    }
+  }
+
+  try {
+    const result = await fetchCurrentSession();
+    if (result.status === "authenticated") {
+      clearPendingRemoteLogout();
+      return {
+        status: "authenticated",
+        session: result.session,
+        coldStartGrant: null,
+        coldStartDenial: null,
+      };
+    }
+    if (result.status === "expired") {
+      return {
+        status: "expired",
+        session: null,
+        coldStartGrant: null,
+        coldStartDenial: null,
+      };
+    }
+  } catch {
+    // Network failure — fall through to offline grant evaluation when offline.
+  }
+
+  return resolveOfflineLockedBootstrap();
 }
 
 export function SessionProvider({ children }: { children: ReactNode }) {
@@ -204,6 +231,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       try {
         clearClientSessionArtifacts(queryClient);
         clearUnlockedDek();
+        clearPendingRemoteLogout();
         const result = await loginWithPassword(usernameOrEmail, password);
         if (!result.ok) {
           return false;
@@ -226,29 +254,35 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
     signOutLock.current = true;
     try {
-      const reason = await logoutSession();
       clearClientSessionArtifacts(queryClient);
       clearUnlockedDek();
       setSession(null);
-      setColdStartGrant(null);
       setColdStartDenial(null);
 
       const cold = await evaluateColdStartOfflineGrant();
+      let nextRoute: "/sign-in" | "/offline-pin" = "/sign-in";
       if (cold.ok) {
         setColdStartGrant(cold.grant);
-        setStatus("needs_offline_unlock");
+        if (isOfflinePinAndDekConfigured(cold.grant.userId)) {
+          setStatus(isBrowserOffline() ? "offline_pin_required" : "needs_offline_unlock");
+          nextRoute = "/offline-pin";
+        } else {
+          setStatus("unauthenticated");
+          setColdStartGrant(null);
+        }
       } else {
+        setColdStartGrant(null);
         setStatus("unauthenticated");
       }
-      return { ok: true, reason };
-    } catch (error) {
-      const detail =
-        error instanceof PlatformApiError
-          ? isPlatformAntiforgeryValidationError(error)
-            ? "__ANTIFORGERY__"
-            : (error.problem.detail ?? error.message)
-          : "Sign out failed. Check your connection and try again.";
-      return { ok: false, detail };
+
+      try {
+        const reason = await logoutSession();
+        clearPendingRemoteLogout();
+        return { ok: true, reason, nextRoute };
+      } catch {
+        markPendingRemoteLogout();
+        return { ok: true, reason: "logged_out", remoteLogoutPending: true, nextRoute };
+      }
     } finally {
       signOutLock.current = false;
     }
@@ -309,4 +343,9 @@ export function isAuthenticatedOrColdStartOffline(status: SessionStatus): boolea
 
 export function isOfflinePinFlowStatus(status: SessionStatus): boolean {
   return status === "offline_pin_required" || status === "needs_offline_unlock";
+}
+
+/** @internal Vitest hook for bootstrap behavior without mounting SessionProvider. */
+export async function resolveBootstrapSessionForTests() {
+  return resolveBootstrapSession();
 }

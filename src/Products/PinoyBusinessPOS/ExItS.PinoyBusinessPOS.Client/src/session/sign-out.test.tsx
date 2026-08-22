@@ -319,7 +319,7 @@ describe("sign out", () => {
     expect(preferences.theme).toBe("light");
   });
 
-  it("does not clear local session when logout fails", async () => {
+  it("locks locally when remote logout fails and marks pending remote logout", async () => {
     const user = userEvent.setup();
     vi.stubGlobal("fetch", createSessionFetchMock({ logoutMode: "fail" }));
 
@@ -332,10 +332,13 @@ describe("sign out", () => {
     await user.click(screen.getByRole("button", { name: "Sign out" }));
 
     await waitFor(() => {
-      expect(screen.getByTestId("sign-out-result")).toHaveTextContent(/fail:logout unavailable/i);
+      expect(screen.getByTestId("sign-out-result")).toHaveTextContent("ok:logged_out");
     });
-    expect(screen.getByTestId("session-status")).toHaveTextContent("authenticated");
-    expect(getPosAccessToken()).toBe("in-memory-only-access-token");
+    expect(screen.getByTestId("session-status")).toHaveTextContent("unauthenticated");
+    expect(getPosAccessToken()).toBeNull();
+    expect(window.localStorage.getItem("exits.pos-client.pending-remote-logout.v1")).toContain(
+      "markedAtUtc",
+    );
   });
 
   it("clears local session when logout reports an already-expired session", async () => {
@@ -373,7 +376,7 @@ describe("sign out", () => {
     await user.click(screen.getByRole("menuitem", { name: "Sign out" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Sign in" })).toBeInTheDocument();
+      expect(screen.getByTestId("sign-in-page")).toBeInTheDocument();
     });
     expect(memoryRouter.state.location.pathname).toBe("/sign-in");
     expect(getPosAccessToken()).toBeNull();
@@ -381,16 +384,16 @@ describe("sign out", () => {
 
     await memoryRouter.navigate("/sell");
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Sign in" })).toBeInTheDocument();
+      expect(screen.getByTestId("sign-in-page")).toBeInTheDocument();
       expect(memoryRouter.state.location.pathname).toBe("/sign-in");
     });
   });
 
-  it("shell keeps authenticated content and shows an error when logout fails", async () => {
+  it("shell locks locally when remote logout fails", async () => {
     const user = userEvent.setup();
     vi.stubGlobal("fetch", createSessionFetchMock({ logoutMode: "fail" }));
 
-    renderCashierHome();
+    const { memoryRouter } = renderCashierHome();
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Sell floor" })).toBeInTheDocument();
@@ -400,9 +403,9 @@ describe("sign out", () => {
     await user.click(screen.getByRole("menuitem", { name: "Sign out" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent(/logout unavailable|Sign out failed/i);
+      expect(screen.getByTestId("sign-in-page")).toBeInTheDocument();
     });
-    expect(screen.getByRole("heading", { name: "Sell floor" })).toBeInTheDocument();
-    expect(getPosAccessToken()).toBe("in-memory-only-access-token");
+    expect(memoryRouter.state.location.pathname).toBe("/sign-in");
+    expect(getPosAccessToken()).toBeNull();
   });
 });

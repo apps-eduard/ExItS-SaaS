@@ -184,11 +184,12 @@ describe("offline PIN security", () => {
   });
 
   it("migration preserves legacy outbox after DEK unlock", async () => {
+    const installationDeviceId = "33333333-3333-4333-8333-333333333333";
     const scope = organizationScopeKey({
       userId: USER,
       organizationId: ORG,
       branchId: BRANCH,
-      installationDeviceId: INSTALLATION,
+      installationDeviceId,
     });
     const db = await openOfflineDatabase("Organization", scope);
     const legacyKey = await deriveScopeKeyFromBinding(scope);
@@ -199,7 +200,7 @@ describe("offline PIN security", () => {
       userId: USER,
       organizationId: ORG,
       branchId: BRANCH,
-      installationDeviceId: INSTALLATION,
+      installationDeviceId,
       posDeviceId: POS_DEVICE,
       productDomain: "pos.sale",
       operationType: "sale.checkout.cash",
@@ -210,7 +211,8 @@ describe("offline PIN security", () => {
     });
 
     await enrollOfflinePinAndDek(USER, PIN);
-    await migrateLegacyLocalStoreToFix02(db, scope, USER);
+    const migration = await migrateLegacyLocalStoreToFix02(db, scope, USER);
+    expect(migration.ok).toBe(true);
     const pending = await listSafeOutboxMetadata(db);
     expect(pending.some((row) => row.operationId === "legacy-op")).toBe(true);
     db.close();

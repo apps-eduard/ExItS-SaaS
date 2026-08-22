@@ -24,7 +24,7 @@ describe("POS React foundation", () => {
   it("renders the sign-in shell without privileged or financial content", async () => {
     renderAt("/sign-in");
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Sign in" })).toBeInTheDocument();
+      expect(screen.getByTestId("sign-in-page")).toBeInTheDocument();
     });
     const page = document.body.textContent ?? "";
     for (const phrase of forbiddenBusiness) {
@@ -96,7 +96,7 @@ describe("POS React foundation", () => {
   it("uses a min-width-safe shell structure", async () => {
     const { container } = renderAt("/sign-in");
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Sign in" })).toBeInTheDocument();
+      expect(screen.getByTestId("sign-in-page")).toBeInTheDocument();
     });
     expect(container.querySelector(".min-w-0")).not.toBeNull();
   });

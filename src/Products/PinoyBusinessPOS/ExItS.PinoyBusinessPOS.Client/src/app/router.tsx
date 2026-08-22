@@ -2,6 +2,7 @@
 import { SessionWorkspaceRoot } from "@/app/SessionWorkspaceRoot";
 import { RootLayout } from "@/app/RootLayout";
 import { SignInPage } from "@/features/auth/SignInPage";
+import { ForgotPasswordPage } from "@/features/auth/ForgotPasswordPage";
 import { OfflinePinEnrollPage } from "@/features/offline/OfflinePinEnrollPage";
 import { OfflinePinUnlockPage } from "@/features/offline/OfflinePinUnlockPage";
 import { HomePage } from "@/features/home/HomePage";
@@ -160,6 +161,14 @@ export const appRoutes = [
         element: (
           <GuestOnly>
             <SignInPage />
+          </GuestOnly>
+        ),
+      },
+      {
+        path: "/forgot-password",
+        element: (
+          <GuestOnly>
+            <ForgotPasswordPage />
           </GuestOnly>
         ),
       },

@@ -13,6 +13,8 @@ import {
   AUTH_ORGANIZATION_CONTEXT_PATH,
   AUTH_ORGANIZATIONS_PATH,
   AUTH_TOKEN_PATH,
+  AUTH_REGISTER_PATH,
+  AUTH_FORGOT_PASSWORD_PATH,
   LOCAL_VALIDATION_ENABLED_PATH,
   LOCAL_VALIDATION_IDENTITIES_PATH,
   organizationBranchContextPath,
@@ -491,4 +493,77 @@ export async function probeOrganizationSessionGrant(
   }
 
   return { ok: true, grant: grantResult.grant };
+}
+
+export type ExternalAuthProviderAvailability = "available" | "disabled" | "offline";
+
+export function buildExternalAuthChallengeUrl(provider: "google" | "facebook", returnUrl: string): string {
+  const safeReturn = encodeURIComponent(returnUrl);
+  return `/platform-api/api/v1/platform/auth/external/${provider}/challenge?returnUrl=${safeReturn}`;
+}
+
+export async function probeExternalAuthProvider(
+  provider: "google" | "facebook",
+): Promise<ExternalAuthProviderAvailability> {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return "offline";
+  }
+
+  try {
+    const response = await fetch(buildExternalAuthChallengeUrl(provider, `${window.location.origin}/sign-in`), {
+      method: "GET",
+      redirect: "manual",
+      credentials: "include",
+    });
+    if (response.status === 404 || response.status === 403) {
+      return "disabled";
+    }
+    if (response.status === 302 || response.status === 301 || response.status === 200) {
+      return "available";
+    }
+    return "disabled";
+  } catch {
+    return "offline";
+  }
+}
+
+export async function registerPersonalAccount(
+  displayName: string,
+  email: string,
+): Promise<{ ok: true } | { ok: false; detail: string }> {
+  try {
+    await platformRequest<{ message?: string }>({
+      method: "POST",
+      path: AUTH_REGISTER_PATH,
+      body: { displayName, email },
+      skipAntiforgery: true,
+    });
+    return { ok: true };
+  } catch (error) {
+    const detail =
+      error instanceof PlatformApiError
+        ? (error.problem.detail ?? error.message)
+        : "Registration failed. Check your connection and try again.";
+    return { ok: false, detail };
+  }
+}
+
+export async function requestPasswordReset(
+  usernameOrEmail: string,
+): Promise<{ ok: true } | { ok: false; detail: string }> {
+  try {
+    await platformRequest<{ message?: string }>({
+      method: "POST",
+      path: AUTH_FORGOT_PASSWORD_PATH,
+      body: { usernameOrEmail },
+      skipAntiforgery: true,
+    });
+    return { ok: true };
+  } catch (error) {
+    const detail =
+      error instanceof PlatformApiError
+        ? (error.problem.detail ?? error.message)
+        : "Password reset request failed. Check your connection and try again.";
+    return { ok: false, detail };
+  }
 }

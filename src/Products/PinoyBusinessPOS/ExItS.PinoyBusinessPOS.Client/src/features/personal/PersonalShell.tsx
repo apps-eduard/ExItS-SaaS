@@ -40,7 +40,7 @@ export function PersonalShell() {
       return;
     }
     clearBoundWorkspace();
-    navigate("/sign-in", { replace: true });
+    navigate(result.nextRoute, { replace: true });
   }
 
   return (
