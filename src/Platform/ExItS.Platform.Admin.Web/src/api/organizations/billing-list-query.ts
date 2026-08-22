@@ -27,6 +27,12 @@ export type OrganizationPayment = {
   voidedAtUtc?: string;
   createdAtUtc?: string;
   updatedAtUtc?: string;
+  confirmedBy?: string;
+  rejectedBy?: string;
+  rejectionReason?: string;
+  voidedBy?: string;
+  voidReason?: string;
+  version?: number;
 };
 
 export type OrganizationBillingUrlState = {

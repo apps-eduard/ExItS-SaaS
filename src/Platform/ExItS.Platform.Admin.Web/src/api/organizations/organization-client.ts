@@ -409,6 +409,23 @@ export function mapOrganizationSubscription(payload: unknown): OrganizationSubsc
     productDisplayName: readString(record, "productDisplayName", "ProductDisplayName"),
     planDisplayName: readString(record, "planDisplayName", "PlanDisplayName"),
     planKey: readString(record, "planKey", "PlanKey"),
+    planVersionId: readString(record, "planVersionId", "PlanVersionId"),
+    trialDefinitionId: readString(record, "trialDefinitionId", "TrialDefinitionId"),
+    billingCycle: readString(record, "billingCycle", "BillingCycle"),
+    agreedPrice: readNumber(record, "agreedPrice", "AgreedPrice"),
+    currencyCode: readString(record, "currencyCode", "CurrencyCode"),
+    pendingPlanId: readString(record, "pendingPlanId", "PendingPlanId"),
+    pendingPlanEffectiveAtUtc: readString(
+      record,
+      "pendingPlanEffectiveAtUtc",
+      "PendingPlanEffectiveAtUtc",
+    ),
+    gracePeriodEndUtc: readString(record, "gracePeriodEndUtc", "GracePeriodEndUtc"),
+    suspendedAtUtc: readString(record, "suspendedAtUtc", "SuspendedAtUtc"),
+    pastDueAtUtc: readString(record, "pastDueAtUtc", "PastDueAtUtc"),
+    cancelledAtUtc: readString(record, "cancelledAtUtc", "CancelledAtUtc"),
+    expiredAtUtc: readString(record, "expiredAtUtc", "ExpiredAtUtc"),
+    version: readNumber(record, "version", "Version"),
   };
 }
 
@@ -557,6 +574,12 @@ export function mapOrganizationPayment(payload: unknown): OrganizationPayment {
     voidedAtUtc: readString(record, "voidedAtUtc", "VoidedAtUtc"),
     createdAtUtc: readString(record, "createdAtUtc", "CreatedAtUtc"),
     updatedAtUtc: readString(record, "updatedAtUtc", "UpdatedAtUtc"),
+    confirmedBy: readString(record, "confirmedBy", "ConfirmedBy"),
+    rejectedBy: readString(record, "rejectedBy", "RejectedBy"),
+    rejectionReason: readString(record, "rejectionReason", "RejectionReason"),
+    voidedBy: readString(record, "voidedBy", "VoidedBy"),
+    voidReason: readString(record, "voidReason", "VoidReason"),
+    version: readNumber(record, "version", "Version"),
   };
 }
 

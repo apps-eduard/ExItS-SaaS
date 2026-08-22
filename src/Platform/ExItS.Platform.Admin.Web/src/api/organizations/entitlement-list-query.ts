@@ -30,6 +30,25 @@ export type EntitlementSnapshot = {
   grants: EntitlementGrant[];
 };
 
+export type FeatureOverride = {
+  id: string;
+  organizationId: string;
+  productCode: string;
+  featureCode: string;
+  enabled: boolean;
+  numericLimit?: number;
+  reason?: string;
+  effectiveFromUtc?: string;
+  expiresAtUtc?: string;
+  status: string;
+  createdAtUtc?: string;
+  createdByUserId?: string;
+  updatedAtUtc?: string;
+  revokedAtUtc?: string;
+  revokedByUserId?: string;
+  revocationReason?: string;
+};
+
 export type EntitlementProductOption = {
   productCode: string;
   productDisplayName?: string;

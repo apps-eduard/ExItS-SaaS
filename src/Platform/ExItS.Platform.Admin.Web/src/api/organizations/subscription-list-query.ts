@@ -43,6 +43,19 @@ export type OrganizationSubscription = {
   productDisplayName?: string;
   planDisplayName?: string;
   planKey?: string;
+  planVersionId?: string;
+  trialDefinitionId?: string;
+  billingCycle?: string;
+  agreedPrice?: number;
+  currencyCode?: string;
+  pendingPlanId?: string;
+  pendingPlanEffectiveAtUtc?: string;
+  gracePeriodEndUtc?: string;
+  suspendedAtUtc?: string;
+  pastDueAtUtc?: string;
+  cancelledAtUtc?: string;
+  expiredAtUtc?: string;
+  version?: number;
 };
 
 export type OrganizationSubscriptionUrlState = {

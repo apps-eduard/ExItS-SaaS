@@ -1,7 +1,7 @@
 import { parsePagedResult, type PagedResult } from "@/api/platform/paged-result";
 import { platformRequest } from "@/api/platform-http";
 import { catalogPlansListRequestPath } from "@/api/catalog/plan-list-query";
-import type { CatalogPlan, PlanListQuery } from "@/api/catalog/plan-catalog-types";
+import type { CatalogPlan, CatalogPlanVersion, PlanListQuery } from "@/api/catalog/plan-catalog-types";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : null;
@@ -128,6 +128,78 @@ export function listCatalogPlansByProductCode(
     }
     return payload.flatMap((item) => {
       const mapped = mapCatalogPlan(item);
+      return mapped ? [mapped] : [];
+    });
+  });
+}
+
+function mapCatalogFeatureGrant(payload: unknown): CatalogPlanVersion["grants"][number] | null {
+  const record = asRecord(payload);
+  if (!record) {
+    return null;
+  }
+  const featureCode = readString(record, "featureCode", "FeatureCode");
+  const enabled = readBoolean(record, "enabled", "Enabled");
+  if (!featureCode || enabled === undefined) {
+    return null;
+  }
+  return {
+    featureCode,
+    enabled,
+    numericLimit: readNumber(record, "numericLimit", "NumericLimit"),
+  };
+}
+
+export function mapCatalogPlanVersion(payload: unknown): CatalogPlanVersion | null {
+  const record = asRecord(payload);
+  if (!record) {
+    return null;
+  }
+  const id = readString(record, "id", "Id");
+  const planId = readString(record, "planId", "PlanId");
+  const productCode = readString(record, "productCode", "ProductCode");
+  const versionNumber = readNumber(record, "versionNumber", "VersionNumber");
+  const status = readString(record, "status", "Status");
+  if (!id || !planId || !productCode || versionNumber === undefined || !status) {
+    return null;
+  }
+  const grantsPayload = record.grants ?? record.Grants;
+  return {
+    id,
+    planId,
+    productCode,
+    versionNumber,
+    status,
+    billingPeriod: readString(record, "billingPeriod", "BillingPeriod"),
+    trialEligible: readBoolean(record, "trialEligible", "TrialEligible"),
+    effectiveFromUtc: readString(record, "effectiveFromUtc", "EffectiveFromUtc"),
+    effectiveToUtc: readString(record, "effectiveToUtc", "EffectiveToUtc"),
+    createdAtUtc: readString(record, "createdAtUtc", "CreatedAtUtc"),
+    updatedAtUtc: readString(record, "updatedAtUtc", "UpdatedAtUtc"),
+    grants: Array.isArray(grantsPayload)
+      ? grantsPayload.flatMap((item) => {
+          const mapped = mapCatalogFeatureGrant(item);
+          return mapped ? [mapped] : [];
+        })
+      : [],
+  };
+}
+
+export function listCatalogPlanVersions(
+  baseUrl: string,
+  productCode: string,
+  planId: string,
+  signal?: AbortSignal,
+): Promise<CatalogPlanVersion[]> {
+  return platformRequest<unknown>(baseUrl, {
+    path: `/api/v1/platform/catalog/products/${encodeURIComponent(productCode)}/plans/${planId}/versions`,
+    signal,
+  }).then((payload) => {
+    if (!Array.isArray(payload)) {
+      return [];
+    }
+    return payload.flatMap((item) => {
+      const mapped = mapCatalogPlanVersion(item);
       return mapped ? [mapped] : [];
     });
   });

@@ -39,6 +39,30 @@ export type CatalogPlan = {
   currencyCode?: string;
 };
 
+export const PLAN_VERSION_STATUSES = ["Draft", "Published", "Retired"] as const;
+export type PlanVersionStatus = (typeof PLAN_VERSION_STATUSES)[number];
+
+export type CatalogFeatureGrant = {
+  featureCode: string;
+  enabled: boolean;
+  numericLimit?: number;
+};
+
+export type CatalogPlanVersion = {
+  id: string;
+  planId: string;
+  productCode: string;
+  versionNumber: number;
+  status: string;
+  billingPeriod?: string;
+  trialEligible?: boolean;
+  effectiveFromUtc?: string;
+  effectiveToUtc?: string;
+  createdAtUtc?: string;
+  updatedAtUtc?: string;
+  grants: CatalogFeatureGrant[];
+};
+
 export type PlanListQuery = {
   page?: number;
   pageSize?: number;

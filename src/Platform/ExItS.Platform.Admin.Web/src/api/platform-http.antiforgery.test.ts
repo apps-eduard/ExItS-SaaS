@@ -76,4 +76,22 @@ describe("platformRequest antiforgery", () => {
       ).length,
     ).toBe(2);
   });
+
+  it("does not attach antiforgery on GET", async () => {
+    const fetchMock = vi.fn(async () => {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true }),
+      } as Response;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    await platformRequest("http://platform.test", {
+      path: "/api/v1/platform/catalog/plans",
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const firstCall = fetchMock.mock.calls[0] as unknown as [RequestInfo | URL, RequestInit];
+    const headers = new Headers(firstCall[1].headers);
+    expect(headers.get(PlatformAntiforgeryDefaults.headerName)).toBeNull();
+  });
 });

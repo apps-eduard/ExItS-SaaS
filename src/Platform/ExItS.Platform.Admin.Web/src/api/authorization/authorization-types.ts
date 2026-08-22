@@ -1,8 +1,10 @@
 export const PLATFORM_PERMISSIONS = {
   viewPortfolio: "platform.permission.view_portfolio",
   manageOrganizations: "platform.permission.manage_organizations",
+  manageCatalog: "platform.permission.manage_catalog",
   managePlatformUsers: "platform.permission.manage_platform_users",
   manageMemberships: "platform.permission.manage_memberships",
+  manageProductAccess: "platform.permission.manage_product_access",
   manageSubscriptions: "platform.permission.manage_subscriptions",
   manageManualPayments: "platform.permission.manage_manual_payments",
   manageEntitlementOverrides: "platform.permission.manage_entitlement_overrides",
