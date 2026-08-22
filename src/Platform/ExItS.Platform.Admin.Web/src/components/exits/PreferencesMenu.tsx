@@ -1,7 +1,13 @@
 import { SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { DevelopmentRuntimeStatus } from "@/features/auth/DevelopmentRuntimeStatus";
 import { usePreferences } from "@/hooks/use-preferences";
+import { areTestUserToolsPermitted } from "@/lib/auth/development-tools";
 import type { Density, Language, ThemeMode } from "@/lib/preferences/ui-preferences";
 
 export function PreferencesMenu({ includeDensity = true }: { includeDensity?: boolean }) {
@@ -58,6 +64,12 @@ export function PreferencesMenu({ includeDensity = true }: { includeDensity?: bo
             {t("preferences.density.compact")}
             {density === "compact" ? " ✓" : ""}
           </DropdownMenuItem>
+        </>
+      ) : null}
+      {areTestUserToolsPermitted() ? (
+        <>
+          <DropdownMenuSeparator />
+          <DevelopmentRuntimeStatus compact />
         </>
       ) : null}
     </DropdownMenu>

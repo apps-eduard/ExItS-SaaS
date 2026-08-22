@@ -9,6 +9,7 @@ using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace ExItS.Platform.Api.Identity;
@@ -760,7 +761,8 @@ internal static class AuthEndpoints
         PlatformSessionOptions options,
         IHostEnvironment env)
     {
-        var secure = !(env.IsDevelopment() || env.IsEnvironment("Testing"));
+        var configuration = http.RequestServices.GetRequiredService<IConfiguration>();
+        var secure = PlatformAuthCookiePolicy.SessionCookieSecure(http.Request, env, configuration);
         http.Response.Cookies.Append(
             options.CookieName,
             sessionToken,

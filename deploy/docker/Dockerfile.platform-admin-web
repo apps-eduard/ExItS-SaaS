@@ -6,7 +6,9 @@ WORKDIR /src
 COPY src/Platform/ExItS.Platform.Admin.Web/package.json src/Platform/ExItS.Platform.Admin.Web/package-lock.json ./
 RUN npm ci
 COPY src/Platform/ExItS.Platform.Admin.Web/ ./
+ARG EXITS_GIT_SHA=unknown
 ENV VITE_PLATFORM_API_BASE_URL=""
+ENV VITE_BUILD_SHA=$EXITS_GIT_SHA
 RUN npm run build
 
 FROM nginx:1.27-alpine AS final

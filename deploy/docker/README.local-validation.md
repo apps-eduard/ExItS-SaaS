@@ -15,6 +15,16 @@ From repository root:
 This keeps PostgreSQL and Mailpit in Docker while the five .NET apps run with `dotnet watch`
 and the React Admin production image listens on 8095 (parallel to Blazor Admin on 8090).
 
+After start, the launcher prints:
+
+```text
+Platform Admin React:
+  Local:     http://localhost:8095/admin/login
+  Tailscale: http://<tailscale-ip>:8095/admin/login   (omitted if Tailscale is unavailable)
+  API:       same-origin /api
+  Local Validation tools: Enabled
+```
+
 ## FULL Docker mode
 
 Use the production-shaped container topology for end-to-end image validation:

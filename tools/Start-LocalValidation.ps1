@@ -329,14 +329,14 @@ function Get-LocalValidationAllowedHosts([string]$PublicHostValue, $EnvMap) {
 }
 
 function Show-LocalValidationFirewallGuidance {
-    Write-Note 'Windows Firewall: allow inbound TCP 8090/8091/8092/8093/8094/8095 for Tailscale/LAN Admin+APIs+Org Web+Personal Web+React Admin. Do not open 15533/15534 (DB).'
+    Write-Note 'Windows Firewall: allow inbound TCP 8090-8095 for Tailscale/LAN. Prefer the Private profile. Do not open 15533/15534 (DB). This launcher does not create firewall rules.'
     Write-Host @'
-  New-NetFirewallRule -DisplayName "ExItS Local Validation Admin 8090" -Direction Inbound -Protocol TCP -LocalPort 8090 -Action Allow -Profile Any
-  New-NetFirewallRule -DisplayName "ExItS Local Validation Platform API 8091" -Direction Inbound -Protocol TCP -LocalPort 8091 -Action Allow -Profile Any
-  New-NetFirewallRule -DisplayName "ExItS Local Validation POS API 8092" -Direction Inbound -Protocol TCP -LocalPort 8092 -Action Allow -Profile Any
-  New-NetFirewallRule -DisplayName "ExItS Local Validation Org Web 8093" -Direction Inbound -Protocol TCP -LocalPort 8093 -Action Allow -Profile Any
-  New-NetFirewallRule -DisplayName "ExItS Local Validation Personal Web 8094" -Direction Inbound -Protocol TCP -LocalPort 8094 -Action Allow -Profile Any
-  New-NetFirewallRule -DisplayName "ExItS Local Validation React Admin 8095" -Direction Inbound -Protocol TCP -LocalPort 8095 -Action Allow -Profile Any
+  New-NetFirewallRule -DisplayName "ExItS Local Validation Admin 8090" -Direction Inbound -Protocol TCP -LocalPort 8090 -Action Allow -Profile Private
+  New-NetFirewallRule -DisplayName "ExItS Local Validation Platform API 8091" -Direction Inbound -Protocol TCP -LocalPort 8091 -Action Allow -Profile Private
+  New-NetFirewallRule -DisplayName "ExItS Local Validation POS API 8092" -Direction Inbound -Protocol TCP -LocalPort 8092 -Action Allow -Profile Private
+  New-NetFirewallRule -DisplayName "ExItS Local Validation Org Web 8093" -Direction Inbound -Protocol TCP -LocalPort 8093 -Action Allow -Profile Private
+  New-NetFirewallRule -DisplayName "ExItS Local Validation Personal Web 8094" -Direction Inbound -Protocol TCP -LocalPort 8094 -Action Allow -Profile Private
+  New-NetFirewallRule -DisplayName "ExItS Local Validation React Admin 8095" -Direction Inbound -Protocol TCP -LocalPort 8095 -Action Allow -Profile Private
 '@
 }
 
@@ -640,8 +640,13 @@ $windowPids += Start-AppWindow -Title 'ExItS LocalValidation - Personal Web' -Re
 Wait-TcpPort -Label 'Personal Web' -HostName '127.0.0.1' -Port $personalWebPort -TimeoutSeconds $PortWaitSeconds
 
 Write-Step 'Starting React Platform Admin (Docker production build on 8095)...'
+$gitSha = Get-LocalValidationGitSha -RepoRoot $repoRoot
+$reactApiProxyTarget = "http://host.docker.internal:$platformApiPort"
 Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_PLATFORM_API_PUBLIC_URL' -Value $publicPlatformApiUrl
 Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN' -Value $publicAdminWebReactUrl
+Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_PLATFORM_API_SAME_ORIGIN' -Value 'true'
+Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_PLATFORM_API_PROXY_TARGET' -Value $reactApiProxyTarget
+Set-Item -LiteralPath 'Env:EXITS_GIT_SHA' -Value $gitSha
 $reactUpArgs = @(
     'compose', '-p', $LocalValidationStack.ComposeProjectName,
     '-f', $composeFile, '--env-file', $envFile,
@@ -711,7 +716,8 @@ Write-Host "  POS API:      $publicPosApiUrl"
 Write-Host "  Org Web:      $publicOrgWebUrl"
 Write-Host "  Personal Web: $publicPersonalWebUrl"
 Write-Host "  React Admin:  $publicAdminWebReactUrl"
-Write-Host "  Bind:         0.0.0.0:$adminPort / 0.0.0.0:$platformApiPort / 0.0.0.0:$posApiPort / 0.0.0.0:$orgWebPort / 0.0.0.0:$personalWebPort"
+Write-LocalValidationReactAdminBanner -Port $adminWebReactPort -PublicHost $resolvedPublicHost -ApiDescription "same-origin /api (proxy $reactApiProxyTarget)" -GitSha $gitSha
+Write-Host "  Bind:         0.0.0.0:$adminPort / 0.0.0.0:$platformApiPort / 0.0.0.0:$posApiPort / 0.0.0.0:$orgWebPort / 0.0.0.0:$personalWebPort / 0.0.0.0:$adminWebReactPort"
 Write-Host "  Platform DB:  127.0.0.1:$platformDbPort"
 Write-Host "  POS DB:       127.0.0.1:$posDbPort"
 Write-Host "  Mailpit UI:   http://localhost:$mailpitUiPort"

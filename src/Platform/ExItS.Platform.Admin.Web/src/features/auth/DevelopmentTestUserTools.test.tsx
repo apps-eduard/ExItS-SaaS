@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getLocalValidationEnabled, listQuickLoginIdentities } from "@/api/auth/auth-client";
@@ -44,31 +44,54 @@ describe("DevelopmentTestUserTools", () => {
 
     expect(screen.queryByText("Development Tools")).not.toBeInTheDocument();
     expect(screen.queryByText("Local Validation")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("dev-test-user-diagnostic")).not.toBeInTheDocument();
     expect(getLocalValidationEnabled).not.toHaveBeenCalled();
     expect(listQuickLoginIdentities).not.toHaveBeenCalled();
   });
 
-  it("hides the selector when the backend Local Validation flag is false", async () => {
+  it("shows a development diagnostic when the backend Local Validation flag is false", async () => {
+    window.__EXITS_PLATFORM_ADMIN_WEB__ = {
+      platformApiSameOrigin: true,
+      localValidationToolsEnabled: true,
+    };
     vi.mocked(areTestUserToolsPermitted).mockReturnValue(true);
     vi.mocked(getLocalValidationEnabled).mockResolvedValue(false);
     renderTools();
 
-    await waitFor(() => {
-      expect(getLocalValidationEnabled).toHaveBeenCalledOnce();
-    });
+    expect(await screen.findByText("Test users unavailable")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Local Validation API is disabled or unreachable/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/API base URL: \(same-origin\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Local Validation API: Disabled/)).toBeInTheDocument();
     expect(listQuickLoginIdentities).not.toHaveBeenCalled();
     expect(screen.queryByLabelText(/test user/i)).not.toBeInTheDocument();
   });
 
-  it("hides the selector when the backend Local Validation request fails", async () => {
+  it("shows a development diagnostic when the backend Local Validation request fails", async () => {
+    window.__EXITS_PLATFORM_ADMIN_WEB__ = {
+      platformApiBaseUrl: "http://127.0.0.1:8091",
+      localValidationToolsEnabled: true,
+    };
     vi.mocked(areTestUserToolsPermitted).mockReturnValue(true);
     vi.mocked(getLocalValidationEnabled).mockRejectedValue(new Error("unreachable"));
     renderTools();
 
-    await waitFor(() => {
-      expect(getLocalValidationEnabled).toHaveBeenCalledOnce();
-    });
+    expect(await screen.findByText("Test users unavailable")).toBeInTheDocument();
+    expect(screen.getByText(/API base URL: http:\/\/127.0.0.1:8091/)).toBeInTheDocument();
+    expect(screen.getByText(/Identities: request failed/)).toBeInTheDocument();
     expect(listQuickLoginIdentities).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText(/test user/i)).not.toBeInTheDocument();
+  });
+
+  it("shows a development diagnostic when the identity list is empty", async () => {
+    vi.mocked(areTestUserToolsPermitted).mockReturnValue(true);
+    vi.mocked(getLocalValidationEnabled).mockResolvedValue(true);
+    vi.mocked(listQuickLoginIdentities).mockResolvedValue([]);
+    renderTools();
+
+    expect(await screen.findByText("Test users unavailable")).toBeInTheDocument();
+    expect(screen.getByText(/Identities: empty/)).toBeInTheDocument();
     expect(screen.queryByLabelText(/test user/i)).not.toBeInTheDocument();
   });
 
@@ -80,6 +103,7 @@ describe("DevelopmentTestUserTools", () => {
     renderTools();
 
     expect(await screen.findByLabelText("Test user")).toBeInTheDocument();
+    expect(screen.queryByText("Test users unavailable")).not.toBeInTheDocument();
     expect(getLocalValidationEnabled).toHaveBeenCalledOnce();
     expect(listQuickLoginIdentities).toHaveBeenCalledOnce();
   });
@@ -110,5 +134,19 @@ describe("DevelopmentTestUserTools", () => {
 
     expect(onSelectLogin).toHaveBeenCalledExactlyOnceWith("olivia.mendoza@exits.local");
     expect(JSON.stringify(onSelectLogin.mock.calls)).not.toMatch(/password/i);
+    expect(JSON.stringify(olivia)).not.toMatch(/password/i);
+  });
+
+  it("drops identities that include a password field", async () => {
+    vi.mocked(areTestUserToolsPermitted).mockReturnValue(true);
+    vi.mocked(getLocalValidationEnabled).mockResolvedValue(true);
+    vi.mocked(listQuickLoginIdentities).mockResolvedValue([
+      { ...olivia, password: "should-not-render" } as typeof olivia & { password: string },
+    ]);
+    renderTools();
+
+    expect(await screen.findByText("Test users unavailable")).toBeInTheDocument();
+    expect(screen.queryByText("should-not-render")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/test user/i)).not.toBeInTheDocument();
   });
 });

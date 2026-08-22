@@ -47,6 +47,14 @@ public sealed class ApiSessionAuthTests(PostgreSqlFixture fixture) : IAsyncLifet
             "/api/v1/platform/auth/login",
             new { usernameOrEmail = username, password });
         Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        var meViaCookie = await _client.GetAsync("/api/v1/platform/auth/me");
+        Assert.Equal(HttpStatusCode.OK, meViaCookie.StatusCode);
+        if (login.Headers.TryGetValues("Set-Cookie", out var setCookies))
+        {
+            var cookieHeader = string.Join("; ", setCookies);
+            Assert.Contains(".ExItS.Platform.Auth=", cookieHeader, StringComparison.Ordinal);
+            Assert.Contains("httponly", cookieHeader, StringComparison.OrdinalIgnoreCase);
+        }
         var body = await login.Content.ReadFromJsonAsync<JsonElement>();
         var token = body.GetProperty("sessionToken").GetString();
         Assert.False(string.IsNullOrWhiteSpace(token));

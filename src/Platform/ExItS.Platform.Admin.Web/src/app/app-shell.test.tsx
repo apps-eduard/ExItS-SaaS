@@ -197,6 +197,7 @@ describe("application shell", () => {
   it("omits DEV_TEST_ONLY navigation when the frontend mode is disallowed", async () => {
     stubDesktop(true);
     vi.spyOn(developmentTools, "areDevelopmentToolsAllowed").mockReturnValue(false);
+    vi.spyOn(developmentTools, "areTestUserToolsPermitted").mockReturnValue(false);
     mockAuthenticatedFetch();
     window.history.replaceState({}, "", "/admin");
     render(<App />);
@@ -236,6 +237,7 @@ describe("application shell", () => {
   it("keeps blueprint under-development items without Development tools, and hides DEV_TEST_ONLY", async () => {
     stubDesktop(true);
     vi.spyOn(developmentTools, "areDevelopmentToolsAllowed").mockReturnValue(false);
+    vi.spyOn(developmentTools, "areTestUserToolsPermitted").mockReturnValue(false);
     mockAuthenticatedFetch();
     window.history.replaceState({}, "", "/admin");
     render(<App />);

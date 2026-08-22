@@ -361,3 +361,38 @@ function Write-LocalValidationStartupDiagnostics {
         Write-Host ("  Launcher window PIDs:   {0}" -f ($WindowPids -join ', '))
     }
 }
+
+function Get-LocalValidationGitSha {
+    param([Parameter(Mandatory)][string]$RepoRoot)
+    try {
+        $sha = (& git -C $RepoRoot rev-parse --short HEAD 2>$null)
+        if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace([string]$sha)) {
+            return ([string]$sha).Trim()
+        }
+    }
+    catch { }
+    return 'unknown'
+}
+
+function Write-LocalValidationReactAdminBanner {
+    param(
+        [Parameter(Mandatory)][int]$Port,
+        [string]$PublicHost = '',
+        [Parameter(Mandatory)][string]$ApiDescription,
+        [string]$GitSha = 'unknown'
+    )
+    Write-Host ''
+    Write-Host 'Platform Admin React:' -ForegroundColor Green
+    Write-Host ("  Local:     http://localhost:{0}/admin/login" -f $Port)
+    if (-not [string]::IsNullOrWhiteSpace($PublicHost)) {
+        Write-Host ("  Tailscale: http://{0}:{1}/admin/login" -f $PublicHost, $Port)
+    }
+    else {
+        Write-Host '  Tailscale: (unavailable — no PublicHost / Tailscale IPv4 detected)'
+    }
+    Write-Host ("  API:       {0}" -f $ApiDescription)
+    Write-Host '  Local Validation tools: Enabled'
+    if (-not [string]::IsNullOrWhiteSpace($GitSha) -and $GitSha -ne 'unknown') {
+        Write-Host ("  Build:     {0}" -f $GitSha)
+    }
+}
