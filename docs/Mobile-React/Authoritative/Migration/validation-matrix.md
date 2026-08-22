@@ -38,7 +38,7 @@ UI WPs must also satisfy [06-react-ui-ux-and-responsive-foundation.md](../06-rea
 | Offline cash | OfflineSaleSnapshot* | Sync | LocalStore dispatch | Future LocalStore | Limited | Required | Device grant | | **Device Verified manual** | Not auto |
 | Customer ordering/delivery | Ordering domain | CustomerOrder API | BranchEdit+shop | | E2E pickup/delivery | OnlineRequired | Linked merchant | Cross-org | Browser + geo manual | Owner delivery setup |
 | Transaction Summary wording | SalesDocumentFoundation | | Phase26 wording guards | Copy tests | E2E disclaimer | | Compliance capability | | Browser | Never claim BIR certified; RMAP-TAX future |
-| Buyer purchase projection | — | — | — | — | — | — | — | — | NOT STARTED | RMAP-B04 |
+| Buyer purchase projection | LinkedCustomerAuthorization + sale projection unit tests | Phase-24 linked-customer APIs | MAUI linked merchant parity | `pos-linked-customers-client` + statement/receipt tests | B04 surfaces + RMAP-22H/RMAP-23 QR | N/A (online read) | Personal linked-customer chain | Cross-org deny tests | Browser viewports | PASS (Personal only; Org buyer unsupported) | RMAP-B04 COMPLETE; seller Sale authoritative |
 | Final tax activation | — | Platform capability | — | — | — | — | — | — | NOT STARTED | RMAP-TAX |
 | Reports | Report aggregates | Reports API | Reports pages | | Smoke E2E | OnlineRequired | Viewer+ | | Browser | No fake P&L; tax reports gated later |
 | UI responsive quality | N/A | N/A | N/A | Visual regression where practical | Phone/tablet/desktop screenshots | N/A | | | **Manual owner UX review** | Poor UX = PARTIAL |
