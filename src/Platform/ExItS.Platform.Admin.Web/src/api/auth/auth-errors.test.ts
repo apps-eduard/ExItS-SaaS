@@ -23,10 +23,24 @@ describe("classifySignInFailure", () => {
     ).toBe("invalid_credentials");
   });
 
-  it("maps unexpected server failures to unknown", () => {
+  it("maps unexpected server failures to service unavailable", () => {
     expect(
       classifySignInFailure(new PlatformApiError(500, { title: "Error", detail: "boom" })),
-    ).toBe("unknown");
+    ).toBe("service_unavailable");
+    expect(classifySignInFailure(new PlatformApiError(503, { title: "Service Unavailable" }))).toBe(
+      "service_unavailable",
+    );
+  });
+
+  it("maps 403 to sign in denied and 429 to rate limited", () => {
+    expect(classifySignInFailure(new PlatformApiError(403, { title: "Forbidden" }))).toBe(
+      "sign_in_denied",
+    );
+    expect(
+      classifySignInFailure(
+        new PlatformApiError(429, { errorCode: AUTH_ERROR_CODES.rateLimitExceeded }),
+      ),
+    ).toBe("rate_limited");
   });
 
   it("maps network failures separately", () => {

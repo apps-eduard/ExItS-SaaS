@@ -30,9 +30,7 @@ test("production-shaped config keeps the Test User selector hidden", async ({ pa
   });
   await page.goto("/admin/login");
   await expect(page.getByRole("heading", { name: "Sign In" })).toBeVisible();
-  await expect(page.getByText("Local Validation")).toHaveCount(0);
-  await expect(page.getByText("Development Tools")).toHaveCount(0);
-  await expect(page.getByText("Test users unavailable")).toHaveCount(0);
+  await expect(page.getByTestId("dev-test-user-tools")).toHaveCount(0);
   await expect(page.locator("#dev-test-user")).toHaveCount(0);
   await page.getByRole("button", { name: "Preferences" }).click();
   await expect(page.getByTestId("dev-runtime-status")).toHaveCount(0);
@@ -47,10 +45,11 @@ test("missing runtime flag keeps the Test User selector hidden in production", a
   });
   await mockUnauthenticated(page);
   await page.goto("/admin/login");
+  await expect(page.getByTestId("dev-test-user-tools")).toHaveCount(0);
   await expect(page.locator("#dev-test-user")).toHaveCount(0);
 });
 
-test("runtime flag true shows a diagnostic when the backend Local Validation flag is false", async ({
+test("runtime flag true shows empty state when the backend Local Validation flag is false", async ({
   page,
 }) => {
   await page.route("**/config.js", async (route) => {
@@ -64,14 +63,13 @@ test("runtime flag true shows a diagnostic when the backend Local Validation fla
     await route.fulfill({ json: false });
   });
   await page.goto("/admin/login");
-  await expect(page.getByText("Test users unavailable")).toBeVisible();
-  await expect(page.getByText("Local Validation API is disabled or unreachable.")).toBeVisible();
+  await expect(page.getByTestId("dev-test-user-tools")).toBeVisible();
+  await expect(page.getByText("Development Test User")).toBeVisible();
+  await expect(page.getByText("No test users are available.")).toBeVisible();
   await expect(page.locator("#dev-test-user")).toHaveCount(0);
 });
 
-test("runtime flag true shows a diagnostic when the backend Local Validation API fails", async ({
-  page,
-}) => {
+test("runtime flag true shows ErrorState when identity discovery fails", async ({ page }) => {
   await page.route("**/config.js", async (route) => {
     await route.fulfill({
       contentType: "application/javascript",
@@ -83,9 +81,37 @@ test("runtime flag true shows a diagnostic when the backend Local Validation API
     await route.abort("failed");
   });
   await page.goto("/admin/login");
-  await expect(page.getByText("Test users unavailable")).toBeVisible();
-  await expect(page.getByText(/Identities: request failed/)).toBeVisible();
+  await expect(page.getByTestId("dev-test-user-tools")).toBeVisible();
+  await expect(page.getByText("Unable to load development test users.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Copy error details/i })).toBeVisible();
   await expect(page.locator("#dev-test-user")).toHaveCount(0);
+});
+
+test("Retry reloads identities after discovery failure", async ({ page }) => {
+  let failEnabled = true;
+  await page.route("**/config.js", async (route) => {
+    await route.fulfill({
+      contentType: "application/javascript",
+      body: 'window.__EXITS_PLATFORM_ADMIN_WEB__={platformApiBaseUrl:"http://127.0.0.1:8091",localValidationToolsEnabled:true};',
+    });
+  });
+  await mockUnauthenticated(page);
+  await page.route("**/api/v1/platform/local-validation/enabled", async (route) => {
+    if (failEnabled) {
+      await route.abort("failed");
+      return;
+    }
+    await route.fulfill({ json: true });
+  });
+  await page.route("**/api/v1/platform/local-validation/quick-login-identities", async (route) => {
+    await route.fulfill({ json: [olivia] });
+  });
+  await page.goto("/admin/login");
+  await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
+  failEnabled = false;
+  await page.getByRole("button", { name: "Retry" }).click();
+  await expect(page.getByLabel("Select test user")).toBeVisible();
 });
 
 test("runtime flag true and backend enabled shows Test User, fills email only, and uses real login", async ({
@@ -181,8 +207,9 @@ test("runtime flag true and backend enabled shows Test User, fills email only, a
   });
 
   await page.goto("/admin/login");
-  const selector = page.getByLabel("Test User — Local Validation");
+  const selector = page.getByLabel("Select test user");
   await expect(selector).toBeVisible();
+  await expect(page.getByText("Development Test User")).toBeVisible();
   await page.getByRole("button", { name: "Preferences" }).click();
   await expect(page.getByTestId("dev-runtime-status")).toBeVisible();
   await expect(page.getByTestId("dev-runtime-status")).toContainText("Platform Admin React");

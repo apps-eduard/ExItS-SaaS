@@ -2,7 +2,14 @@ import { PlatformApiError, PlatformNetworkError } from "@/api/platform-http";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth-types";
 
 export type SignInFailureKind =
-  "invalid_credentials" | "account_locked" | "account_disabled" | "network" | "unknown";
+  | "invalid_credentials"
+  | "sign_in_denied"
+  | "account_locked"
+  | "account_disabled"
+  | "rate_limited"
+  | "service_unavailable"
+  | "network"
+  | "unknown";
 
 export function isNetworkFailure(error: unknown): boolean {
   return (
@@ -19,6 +26,16 @@ export function classifySignInFailure(error: unknown): SignInFailureKind {
 
   if (!(error instanceof PlatformApiError)) {
     return "unknown";
+  }
+
+  if (error.status === 429 || error.problem.errorCode === AUTH_ERROR_CODES.rateLimitExceeded) {
+    return "rate_limited";
+  }
+  if (error.status === 502 || error.status === 503 || error.status === 504 || error.status === 500) {
+    return "service_unavailable";
+  }
+  if (error.status === 403) {
+    return "sign_in_denied";
   }
 
   const code = error.problem.errorCode;

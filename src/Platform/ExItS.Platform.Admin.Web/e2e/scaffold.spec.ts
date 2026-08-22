@@ -7,7 +7,7 @@ test("sign-in page is visible and has no serious accessibility violations", asyn
   await expect(page.getByLabel("Email")).toBeVisible();
   await expect(page.locator("#sign-in-password")).toBeVisible();
   await expect(page.getByRole("button", { name: "Sign In" })).toBeVisible();
-  await expect(page.getByText("Development Tools")).toHaveCount(0);
+  await expect(page.getByText("Development Test User")).toHaveCount(0);
 
   const results = await new AxeBuilder({ page }).analyze();
   const serious = results.violations.filter(

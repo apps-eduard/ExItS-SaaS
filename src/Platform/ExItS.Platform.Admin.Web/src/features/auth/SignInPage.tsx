@@ -27,15 +27,33 @@ function failureMessageKey(kind: SignInFailureKind) {
   switch (kind) {
     case "invalid_credentials":
       return "auth.error.invalidCredentials" as const;
+    case "sign_in_denied":
+      return "auth.error.signInDenied" as const;
     case "account_locked":
       return "auth.error.accountLocked" as const;
     case "account_disabled":
       return "auth.error.accountDisabled" as const;
+    case "rate_limited":
+      return "auth.error.rateLimited" as const;
+    case "service_unavailable":
+      return "auth.error.serviceUnavailable" as const;
     case "network":
       return "auth.error.network" as const;
     default:
       return "auth.error.unknown" as const;
   }
+}
+
+function isHandledSignInAlert(kind: SignInFailureKind): boolean {
+  return (
+    kind === "invalid_credentials" ||
+    kind === "sign_in_denied" ||
+    kind === "account_locked" ||
+    kind === "account_disabled" ||
+    kind === "rate_limited" ||
+    kind === "service_unavailable" ||
+    kind === "network"
+  );
 }
 
 export function SignInPage() {
@@ -76,15 +94,19 @@ export function SignInPage() {
       navigate(resolvePostLoginPath(params.get("return")), { replace: true });
     } catch (error) {
       const kind = classifySignInFailure(error);
-      if (
-        kind === "invalid_credentials" ||
-        kind === "account_locked" ||
-        kind === "account_disabled"
-      ) {
+      if (isHandledSignInAlert(kind)) {
         setFormError(kind);
-        form.setValue("password", "");
+        if (
+          kind === "invalid_credentials" ||
+          kind === "sign_in_denied" ||
+          kind === "account_locked" ||
+          kind === "account_disabled"
+        ) {
+          form.setValue("password", "");
+        }
         return;
       }
+      // Unexpected / unclassified failures keep sanitized diagnostics; never ErrorBoundary.
       setDiagnostic(
         normalizeDiagnosticError({
           error,
