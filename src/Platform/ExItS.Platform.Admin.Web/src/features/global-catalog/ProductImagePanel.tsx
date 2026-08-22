@@ -89,9 +89,13 @@ export function ProductImagePanel({
 
       <input
         ref={inputRef}
+        id="gc-product-image-input"
         type="file"
         accept="image/jpeg,image/png,image/webp"
         className="sr-only"
+        aria-label={
+          product.hasImage ? t("globalCatalog.image.replace") : t("globalCatalog.image.upload")
+        }
         onChange={(event) => {
           const file = event.target.files?.[0];
           event.target.value = "";
