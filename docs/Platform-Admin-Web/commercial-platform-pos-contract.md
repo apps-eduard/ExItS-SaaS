@@ -182,14 +182,18 @@ Use these codes when verifying Activity after Admin actions (server-emitted):
 
 ## 9. What React Admin must provide for this contract to be testable
 
-Today: **inspection only**.
+Today: **inspection + entitlement operator mutations (PA-COM-05)**.
 
 Required to run the spine from Admin:
 
 1. Start trial / paid subscribe (PA-COM-04 + 06)
 2. Upgrade Growth → Pro (04 + 06)
 3. Suspend / reactivate (04)
-4. Visible entitlement snapshot after each change (05, or rely on server auto-generate + existing read UI)
+4. Entitlement operator UI: generate, reconcile, override create/revoke (**PA-COM-05**). Overrides require reconcile before effective snapshot reflects override grants (`source=Override`).
 5. A documented POS test mode that does not merge Development grants (07)
+
+**Entitlement override ≠ product permission.** Overrides adjust commercial feature grants only; they must not be used for POS roles, branch staff, or PLM operational permissions.
+
+**Override actor model (PA-COM-05):** create/revoke actor IDs are derived server-side from the authenticated Platform session; browsers cannot supply arbitrary `CreatedByUserId` / `RevokedByUserId`.
 
 No POS React changes in PA-COM packages unless a **separate** POS authorization is given.

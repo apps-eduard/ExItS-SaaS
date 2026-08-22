@@ -90,14 +90,12 @@ export type CreateFeatureOverrideBody = {
   featureCode: string;
   enabled: boolean;
   reason: string;
-  createdByUserId: string;
   numericLimit?: number | null;
   expiresAtUtc?: string | null;
 };
 
 export type RevokeFeatureOverrideBody = {
   reason: string;
-  revokedByUserId: string;
 };
 
 export function generateEntitlementSnapshot(

@@ -128,6 +128,15 @@ export type AuthenticatedFetchOptions = {
   forbiddenEntitlementSnapshots?: boolean;
   entitlementSnapshotItems?: Array<Record<string, unknown>>;
   entitlementSnapshotTotalCount?: number;
+  entitlementLatestSnapshot?: Record<string, unknown> | null;
+  failEntitlementLatest?: boolean;
+  forbiddenEntitlementLatest?: boolean;
+  featureOverrideItems?: Array<Record<string, unknown>>;
+  featureOverrideTotalCount?: number;
+  forbiddenFeatureOverrides?: boolean;
+  catalogFeatureItems?: Array<Record<string, unknown>>;
+  entitlementMutationError?: { status: number; errorCode: string; detail: string };
+  onEntitlementMutation?: (method: string, path: string, body: unknown) => void;
   failOrgPayments?: boolean;
   forbiddenOrgPayments?: boolean;
   orgPaymentItems?: Array<Record<string, unknown>>;
@@ -163,6 +172,12 @@ export function mockUnauthenticatedFetch(): void {
 
 export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) {
   let paymentItems = [...(options.orgPaymentItems ?? [])];
+  let entitlementSnapshotItems = [...(options.entitlementSnapshotItems ?? [])];
+  let latestEntitlementSnapshot =
+    options.entitlementLatestSnapshot === undefined
+      ? entitlementSnapshotItems[0] ?? null
+      : options.entitlementLatestSnapshot;
+  let featureOverrideItems = [...(options.featureOverrideItems ?? [])];
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const path = pathnameOf(url);
@@ -206,6 +221,30 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
       }
       if (/\/trials$/.test(path)) {
         return jsonResponse(200, options.catalogTrials ?? []);
+      }
+      const productFeaturesMatch = path.match(
+        /\/api\/v1\/platform\/catalog\/products\/([^/]+)\/features$/,
+      );
+      if (productFeaturesMatch) {
+        return jsonResponse(
+          200,
+          options.catalogFeatureItems ?? [
+            {
+              productCode: productFeaturesMatch[1],
+              featureCode: "store-customer-credit",
+              displayName: "Customer credit",
+              valueType: "Boolean",
+              status: "Active",
+            },
+            {
+              productCode: productFeaturesMatch[1],
+              featureCode: "store-export",
+              displayName: "Export",
+              valueType: "Boolean",
+              status: "Active",
+            },
+          ],
+        );
       }
       const productDetailMatch = path.match(
         /\/api\/v1\/platform\/catalog\/products\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/,
@@ -423,7 +462,7 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
     const entitlementSnapshotsGet = path.match(
       /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/products\/[^/]+\/entitlements\/snapshots$/,
     );
-    if (entitlementSnapshotsGet) {
+    if (entitlementSnapshotsGet && method === "GET") {
       if (options.forbiddenEntitlementSnapshots) {
         return jsonResponse(403, {
           title: "Forbidden",
@@ -438,11 +477,158 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
           detail: "Entitlement snapshot list failed.",
         });
       }
-      const items = options.entitlementSnapshotItems ?? [];
+      const items = entitlementSnapshotItems;
       return jsonResponse(
         200,
         pagedJson(items, options.entitlementSnapshotTotalCount ?? items.length, items.length || 20),
       );
+    }
+    const entitlementLatestGet = path.match(
+      /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/products\/[^/]+\/entitlements\/snapshots\/latest$/,
+    );
+    if (entitlementLatestGet) {
+      if (options.forbiddenEntitlementLatest || options.forbiddenEntitlementSnapshots) {
+        return jsonResponse(403, { title: "Forbidden", status: 403 });
+      }
+      if (options.failEntitlementLatest) {
+        return jsonResponse(500, { title: "Error", status: 500, detail: "Latest snapshot failed." });
+      }
+      if (!latestEntitlementSnapshot) {
+        return jsonResponse(404, {
+          title: "Not Found",
+          status: 404,
+          detail: "No entitlement snapshot was found for this organization and product.",
+          errorCode: "application.entitlement_snapshot.not_found",
+        });
+      }
+      return jsonResponse(200, latestEntitlementSnapshot);
+    }
+    const featureOverridesGet = path.match(
+      /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/products\/[^/]+\/feature-overrides$/,
+    );
+    if (featureOverridesGet && method === "GET") {
+      if (options.forbiddenFeatureOverrides) {
+        return jsonResponse(403, { title: "Forbidden", status: 403 });
+      }
+      const items = featureOverrideItems;
+      return jsonResponse(
+        200,
+        pagedJson(items, options.featureOverrideTotalCount ?? items.length, items.length || 20),
+      );
+    }
+    const entitlementGenerateMatch = path.match(
+      /\/api\/v1\/platform\/organizations\/([0-9a-fA-F-]{36})\/products\/([^/]+)\/entitlements\/snapshots$/,
+    );
+    if (entitlementGenerateMatch && method === "POST") {
+      if (options.entitlementMutationError) {
+        return jsonResponse(options.entitlementMutationError.status, {
+          title: "Error",
+          status: options.entitlementMutationError.status,
+          detail: options.entitlementMutationError.detail,
+          errorCode: options.entitlementMutationError.errorCode,
+        });
+      }
+      const body = parseBody();
+      options.onEntitlementMutation?.(method, path, body);
+      const currentVersion = Number(latestEntitlementSnapshot?.snapshotVersion ?? 0);
+      const expected = (body as Record<string, unknown> | null)?.expectedNextVersion;
+      if (expected != null && Number(expected) !== currentVersion + 1) {
+        return jsonResponse(409, {
+          title: "Conflict",
+          status: 409,
+          detail: "Snapshot version conflict.",
+          errorCode: "application.entitlement_snapshot.version_conflict",
+        });
+      }
+      const nextVersion = currentVersion + 1;
+      const created = {
+        ...(latestEntitlementSnapshot ?? entitlementSnapshotItems[0] ?? {}),
+        id: crypto.randomUUID(),
+        snapshotVersion: nextVersion,
+        generatedAtUtc: new Date().toISOString(),
+      };
+      latestEntitlementSnapshot = created;
+      entitlementSnapshotItems = [created, ...entitlementSnapshotItems];
+      return jsonResponse(201, created);
+    }
+    const entitlementReconcileMatch = path.match(
+      /\/api\/v1\/platform\/organizations\/([0-9a-fA-F-]{36})\/products\/([^/]+)\/entitlements\/reconcile$/,
+    );
+    if (entitlementReconcileMatch && method === "POST") {
+      if (options.entitlementMutationError) {
+        return jsonResponse(options.entitlementMutationError.status, {
+          title: "Error",
+          status: options.entitlementMutationError.status,
+          detail: options.entitlementMutationError.detail,
+          errorCode: options.entitlementMutationError.errorCode,
+        });
+      }
+      const body = parseBody();
+      options.onEntitlementMutation?.(method, path, body);
+      const currentVersion = Number(latestEntitlementSnapshot?.snapshotVersion ?? 0);
+      const created = {
+        ...(latestEntitlementSnapshot ?? entitlementSnapshotItems[0] ?? {}),
+        id: crypto.randomUUID(),
+        snapshotVersion: currentVersion + 1,
+        generatedAtUtc: new Date().toISOString(),
+      };
+      latestEntitlementSnapshot = created;
+      entitlementSnapshotItems = [created, ...entitlementSnapshotItems];
+      return jsonResponse(201, created);
+    }
+    const featureOverrideCreateMatch = path.match(
+      /\/api\/v1\/platform\/organizations\/([0-9a-fA-F-]{36})\/products\/([^/]+)\/feature-overrides$/,
+    );
+    if (featureOverrideCreateMatch && method === "POST") {
+      if (options.entitlementMutationError) {
+        return jsonResponse(options.entitlementMutationError.status, {
+          title: "Error",
+          status: options.entitlementMutationError.status,
+          detail: options.entitlementMutationError.detail,
+          errorCode: options.entitlementMutationError.errorCode,
+        });
+      }
+      const body = parseBody() as Record<string, unknown>;
+      options.onEntitlementMutation?.(method, path, body);
+      const created = {
+        id: crypto.randomUUID(),
+        organizationId: featureOverrideCreateMatch[1],
+        productCode: decodeURIComponent(featureOverrideCreateMatch[2]!),
+        featureCode: body.featureCode,
+        enabled: body.enabled,
+        numericLimit: body.numericLimit ?? null,
+        reason: body.reason,
+        effectiveFromUtc: new Date().toISOString(),
+        expiresAtUtc: body.expiresAtUtc ?? null,
+        status: "Active",
+        createdAtUtc: new Date().toISOString(),
+        createdByUserId: sampleSession.userId,
+      };
+      featureOverrideItems = [created, ...featureOverrideItems];
+      return jsonResponse(201, created);
+    }
+    const featureOverrideRevokeMatch = path.match(
+      /\/api\/v1\/platform\/feature-overrides\/([0-9a-fA-F-]{36})\/revoke$/,
+    );
+    if (featureOverrideRevokeMatch && method === "POST") {
+      const body = parseBody();
+      options.onEntitlementMutation?.(method, path, body);
+      const overrideId = featureOverrideRevokeMatch[1]!;
+      const existing = featureOverrideItems.find((item) => item.id === overrideId);
+      if (!existing) {
+        return jsonResponse(404, { title: "Not Found", status: 404 });
+      }
+      const revoked = {
+        ...existing,
+        status: "Revoked",
+        revokedAtUtc: new Date().toISOString(),
+        revokedByUserId: sampleSession.userId,
+        revocationReason: (body as Record<string, unknown> | null)?.reason,
+      };
+      featureOverrideItems = featureOverrideItems.map((item) =>
+        item.id === overrideId ? revoked : item,
+      );
+      return jsonResponse(200, revoked);
     }
     const orgPaymentsGet = path.match(
       /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\/payments$/,

@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ExItS.Platform.Domain.Catalog;
+using ExItS.Platform.Infrastructure.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -13,11 +14,15 @@ public sealed class ApiEntitlementTests(PostgreSqlFixture fixture) : IAsyncLifet
 {
     private EntitlementApiFactory _factory = null!;
     private HttpClient _client = null!;
+    private readonly Guid _operatorUserId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
 
     public Task InitializeAsync()
     {
         _factory = new EntitlementApiFactory(fixture.ConnectionString);
         _client = _factory.CreateClient();
+        _client.DefaultRequestHeaders.Add(
+            DevelopmentPlatformActorAccessor.DevPlatformUserIdHeader,
+            _operatorUserId.ToString("D"));
         return Task.CompletedTask;
     }
 
@@ -147,7 +152,6 @@ public sealed class ApiEntitlementTests(PostgreSqlFixture fixture) : IAsyncLifet
                 featureCode = FeatureCode.CustomerCreditCreate,
                 enabled = false,
                 reason = "Compliance hold",
-                createdByUserId = Guid.NewGuid(),
                 numericLimit = (int?)null,
                 expiresAtUtc = (DateTimeOffset?)null
             });
@@ -155,6 +159,7 @@ public sealed class ApiEntitlementTests(PostgreSqlFixture fixture) : IAsyncLifet
         var createdBody = await created.Content.ReadFromJsonAsync<JsonElement>();
         var overrideId = createdBody.GetProperty("id").GetGuid();
         Assert.Equal("Active", createdBody.GetProperty("status").GetString());
+        Assert.Equal(_operatorUserId, createdBody.GetProperty("createdByUserId").GetGuid());
 
         var byId = await _client.GetAsync($"/api/v1/platform/feature-overrides/{overrideId}");
         Assert.Equal(HttpStatusCode.OK, byId.StatusCode);
@@ -167,10 +172,11 @@ public sealed class ApiEntitlementTests(PostgreSqlFixture fixture) : IAsyncLifet
 
         var revoke = await _client.PostAsJsonAsync(
             $"/api/v1/platform/feature-overrides/{overrideId}/revoke",
-            new { reason = "No longer required", revokedByUserId = Guid.NewGuid() });
+            new { reason = "No longer required" });
         Assert.Equal(HttpStatusCode.OK, revoke.StatusCode);
         var revokedBody = await revoke.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("Revoked", revokedBody.GetProperty("status").GetString());
+        Assert.Equal(_operatorUserId, revokedBody.GetProperty("revokedByUserId").GetGuid());
 
         var missing = await _client.GetAsync($"/api/v1/platform/feature-overrides/{Guid.NewGuid()}");
         Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
@@ -186,7 +192,6 @@ public sealed class ApiEntitlementTests(PostgreSqlFixture fixture) : IAsyncLifet
             featureCode = FeatureCode.CustomerCreditCreate,
             enabled = false,
             reason = "Support hold",
-            createdByUserId = Guid.NewGuid(),
             numericLimit = (int?)null,
             expiresAtUtc = (DateTimeOffset?)null
         };
@@ -310,7 +315,6 @@ public sealed class ApiEntitlementTests(PostgreSqlFixture fixture) : IAsyncLifet
                 featureCode = FeatureCode.CustomerCreditCreate,
                 enabled = false,
                 reason = "Compliance hold",
-                createdByUserId = Guid.NewGuid(),
                 numericLimit = (int?)null,
                 expiresAtUtc = (DateTimeOffset?)null
             });
@@ -329,7 +333,7 @@ public sealed class ApiEntitlementTests(PostgreSqlFixture fixture) : IAsyncLifet
 
         var revoke = await _client.PostAsJsonAsync(
             $"/api/v1/platform/feature-overrides/{overrideId}/revoke",
-            new { reason = "No longer needed", revokedByUserId = Guid.NewGuid() });
+            new { reason = "No longer needed" });
         revoke.EnsureSuccessStatusCode();
 
         var revokedListAfterRevoke = await _client.GetAsync(
@@ -343,7 +347,7 @@ public sealed class ApiEntitlementTests(PostgreSqlFixture fixture) : IAsyncLifet
     {
         var revoke = await _client.PostAsJsonAsync(
             $"/api/v1/platform/feature-overrides/{Guid.NewGuid()}/revoke",
-            new { reason = "does not matter", revokedByUserId = Guid.NewGuid() });
+            new { reason = "does not matter" });
         Assert.Equal(HttpStatusCode.NotFound, revoke.StatusCode);
     }
 

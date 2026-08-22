@@ -10,6 +10,8 @@ export const commercialQueryKeyRoots = {
   organizationCommercialSummary: ["organizations", "commercial-summary"] as const,
   organizationSubscriptions: ["organizations", "subscriptions"] as const,
   organizationEntitlements: ["organizations", "entitlement-snapshots"] as const,
+  organizationLatestEntitlement: ["organizations", "latest-entitlement"] as const,
+  organizationFeatureOverrides: ["organizations", "feature-overrides"] as const,
   organizationBilling: ["organizations", "payments"] as const,
   organizationActivity: ["organizations", "audit"] as const,
   dashboardSubscriptions: ["dashboard", "subscriptions"] as const,
@@ -56,6 +58,8 @@ export async function invalidateCommercialQueries(
     enqueue([...commercialQueryKeyRoots.organizationCommercialSummary, scope.organizationId]);
     enqueue([...commercialQueryKeyRoots.organizationSubscriptions, scope.organizationId]);
     enqueue([...commercialQueryKeyRoots.organizationEntitlements, scope.organizationId]);
+    enqueue([...commercialQueryKeyRoots.organizationLatestEntitlement, scope.organizationId]);
+    enqueue([...commercialQueryKeyRoots.organizationFeatureOverrides, scope.organizationId]);
     enqueue([...commercialQueryKeyRoots.organizationBilling, scope.organizationId]);
     enqueue([...commercialQueryKeyRoots.organizationActivity, scope.organizationId]);
     enqueue(commercialQueryKeyRoots.dashboardSubscriptions);

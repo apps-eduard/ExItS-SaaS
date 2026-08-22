@@ -20,8 +20,10 @@ import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardW
 import { Button } from "@/components/ui/button";
 import {
   useOrganizationCommercialSummaryQuery,
+  useOrganizationDetailQuery,
   useOrganizationEntitlementSnapshotsQuery,
 } from "@/features/organizations/use-organization-workspace-queries";
+import { OrganizationEntitlementOperator } from "@/features/organizations/OrganizationEntitlementOperator";
 import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { usePreferences } from "@/hooks/use-preferences";
@@ -29,6 +31,7 @@ import {
   organizationSubscriptionStatusLabel,
   organizationSubscriptionStatusTone,
 } from "@/features/organizations/organization-subscription-status";
+import { grantSourceLabel } from "@/features/organizations/entitlement-operator-utils";
 import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
 import type { MessageKey } from "@/lib/i18n/messages";
 
@@ -101,6 +104,9 @@ function EntitlementGrantDetails({
               )}
             </span>
           ) : null}
+          {grant.source ? (
+            <span className="text-muted">{grantSourceLabel(grant.source, t)}</span>
+          ) : null}
         </li>
       ))}
     </ul>
@@ -166,6 +172,7 @@ export function OrganizationEntitlementsPage() {
     [searchParams],
   );
   const commercialQuery = useOrganizationCommercialSummaryQuery(organizationId);
+  const organizationQuery = useOrganizationDetailQuery(organizationId);
   const products = useMemo(
     () => uniqueEntitlementProductOptions(commercialQuery.data?.latestEntitlements ?? []),
     [commercialQuery.data],
@@ -303,6 +310,14 @@ export function OrganizationEntitlementsPage() {
         </p>
       ) : null}
 
+      {sanitizedProduct ? (
+        <OrganizationEntitlementOperator
+          organizationId={organizationId!}
+          productCode={sanitizedProduct}
+          organizationName={organizationQuery.data?.displayName ?? organizationId!}
+        />
+      ) : null}
+
       {sanitizedProduct && snapshotsQuery.isPending ? (
         <div
           className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-3"
@@ -331,6 +346,9 @@ export function OrganizationEntitlementsPage() {
 
       {snapshotsQuery.data ? (
         <>
+          <h2 className="text-[length:var(--exits-text-base)] font-semibold">
+            {t("organization.entitlements.history.title")}
+          </h2>
           {showTable ? (
             <div className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-3">
               <AdminTable

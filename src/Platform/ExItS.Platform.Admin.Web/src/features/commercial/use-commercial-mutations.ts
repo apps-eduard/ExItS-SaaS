@@ -48,8 +48,14 @@ import {
   type UpgradeSubscriptionBody,
 } from "@/api/subscriptions/subscription-mutations-client";
 import {
+  createFeatureOverride,
   generateEntitlementSnapshot,
+  reconcileEntitlementSnapshot,
+  revokeFeatureOverride,
+  type CreateFeatureOverrideBody,
   type GenerateEntitlementSnapshotBody,
+  type ReconcileEntitlementBody,
+  type RevokeFeatureOverrideBody,
 } from "@/api/entitlements/entitlement-mutations-client";
 import {
   invalidateCommercialQueries,
@@ -477,6 +483,66 @@ export function useGenerateEntitlementSnapshotMutation() {
       invalidateCommercialQueries(
         queryClient,
         organizationCommercialInvalidationScope(snapshot.organizationId),
+      ),
+  });
+}
+
+export function useReconcileEntitlementSnapshotMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: {
+      organizationId: string;
+      productCode: string;
+      body?: ReconcileEntitlementBody;
+    }) =>
+      reconcileEntitlementSnapshot(
+        env.platformApiBaseUrl,
+        input.organizationId,
+        input.productCode,
+        input.body,
+      ),
+    onSuccess: (snapshot) =>
+      invalidateCommercialQueries(
+        queryClient,
+        organizationCommercialInvalidationScope(snapshot.organizationId),
+      ),
+  });
+}
+
+export function useCreateFeatureOverrideMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: {
+      organizationId: string;
+      productCode: string;
+      body: CreateFeatureOverrideBody;
+    }) =>
+      createFeatureOverride(
+        env.platformApiBaseUrl,
+        input.organizationId,
+        input.productCode,
+        input.body,
+      ),
+    onSuccess: (featureOverride) =>
+      invalidateCommercialQueries(
+        queryClient,
+        organizationCommercialInvalidationScope(featureOverride.organizationId),
+      ),
+  });
+}
+
+export function useRevokeFeatureOverrideMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: { overrideId: string; body: RevokeFeatureOverrideBody }) =>
+      revokeFeatureOverride(env.platformApiBaseUrl, input.overrideId, input.body),
+    onSuccess: (featureOverride) =>
+      invalidateCommercialQueries(
+        queryClient,
+        organizationCommercialInvalidationScope(featureOverride.organizationId),
       ),
   });
 }

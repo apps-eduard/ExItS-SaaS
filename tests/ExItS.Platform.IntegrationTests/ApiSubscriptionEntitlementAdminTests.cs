@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ExItS.Platform.Domain.Catalog;
+using ExItS.Platform.Infrastructure.Authorization;
 using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.AspNetCore.Mvc.Testing;
 
@@ -310,6 +311,10 @@ public sealed class ApiSubscriptionEntitlementAdminTests(PostgreSqlFixture fixtu
     {
         var (organizationId, productCode, _, _, _) = await SeedCatalogAsync("ovd");
         var (userId, _, _) = await SeedUserAsync("ovd");
+        _admin.DefaultRequestHeaders.Remove(DevelopmentPlatformActorAccessor.DevPlatformUserIdHeader);
+        _admin.DefaultRequestHeaders.Add(
+            DevelopmentPlatformActorAccessor.DevPlatformUserIdHeader,
+            userId.ToString("D"));
 
         var create = await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/products/{productCode}/feature-overrides",
@@ -318,10 +323,11 @@ public sealed class ApiSubscriptionEntitlementAdminTests(PostgreSqlFixture fixtu
                 featureCode = FeatureCode.CustomerCreditView,
                 enabled = false,
                 reason = "temp disable",
-                createdByUserId = userId
             });
         Assert.Equal(HttpStatusCode.Created, create.StatusCode);
-        var overrideId = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        var createBody = await create.Content.ReadFromJsonAsync<JsonElement>();
+        var overrideId = createBody.GetProperty("id").GetGuid();
+        Assert.Equal(userId, createBody.GetProperty("createdByUserId").GetGuid());
 
         var duplicate = await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/products/{productCode}/feature-overrides",
@@ -330,13 +336,14 @@ public sealed class ApiSubscriptionEntitlementAdminTests(PostgreSqlFixture fixtu
                 featureCode = FeatureCode.CustomerCreditView,
                 enabled = true,
                 reason = "again",
-                createdByUserId = userId
             });
         Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
 
         var revoke = await _admin.PostAsJsonAsync(
             $"/api/v1/platform/feature-overrides/{overrideId}/revoke",
-            new { reason = "done", revokedByUserId = userId });
+            new { reason = "done" });
         Assert.Equal(HttpStatusCode.OK, revoke.StatusCode);
+        var revokeBody = await revoke.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(userId, revokeBody.GetProperty("revokedByUserId").GetGuid());
     }
 }

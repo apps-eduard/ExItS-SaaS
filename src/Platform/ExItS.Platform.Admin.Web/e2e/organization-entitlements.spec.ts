@@ -82,6 +82,19 @@ async function mockCore(page: import("@playwright/test").Page, summary?: unknown
       json: summary ?? { subscriptions: [], payments: [], latestEntitlements: entitlements },
     });
   });
+  await page.route("**/api/v1/platform/catalog/products/*/features", async (route) => {
+    await route.fulfill({
+      json: [
+        {
+          productCode: "POS",
+          featureCode: "store-customer-credit",
+          displayName: "Customer credit",
+          valueType: "Boolean",
+          status: "Active",
+        },
+      ],
+    });
+  });
   await page.route("**/api/v1/platform/subscriptions*", async (route) => {
     await route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 1 } });
   });
@@ -96,13 +109,22 @@ async function mockCore(page: import("@playwright/test").Page, summary?: unknown
   });
 }
 
-test("entitlement navigation, product selector, and no mutations", async ({ page }) => {
+test("entitlement navigation, product selector, and operator controls", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   const snapshotUrls: string[] = [];
   await mockCore(page);
   await page.route(/\/api\/v1\/platform\/organizations(\/|\?|$)/, async (route) => {
     const url = route.request().url();
-    if (url.includes("/entitlements/snapshots")) {
+    const method = route.request().method();
+    if (url.includes("/entitlements/snapshots/latest")) {
+      await route.fulfill({ json: snapshot });
+      return;
+    }
+    if (url.includes("/feature-overrides") && method === "GET") {
+      await route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 20 } });
+      return;
+    }
+    if (url.includes("/entitlements/snapshots") && method === "GET") {
       snapshotUrls.push(url);
       expect(url).toMatch(/page=/);
       expect(url).toMatch(/pageSize=20/);
@@ -134,18 +156,19 @@ test("entitlement navigation, product selector, and no mutations", async ({ page
   ).toBeVisible();
   await expect(page).toHaveURL(/product=POS/);
   await expect(page.getByText("starter")).toBeVisible();
-  await expect(page.getByText("1 enabled · 0 disabled")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Show grants" })).toBeVisible();
+  await expect(page.getByText("1 enabled · 0 disabled").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Show grants" }).first()).toBeVisible();
   await expect(page.getByText("pos.checkout")).toHaveCount(0);
-  await page.getByRole("button", { name: "Show grants" }).click();
+  await page.getByRole("button", { name: "Show grants" }).first().click();
   await expect(page.getByRole("button", { name: "Hide grants" })).toHaveAttribute(
     "aria-expanded",
     "true",
   );
   await expect(page.getByText("pos.checkout")).toBeVisible();
-  await expect(page.getByText("Enabled", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: /override/i })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /reconcile/i })).toHaveCount(0);
+  await expect(page.getByText("Enabled", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Generate snapshot" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Reconcile" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Create override" })).toBeVisible();
   await page.locator("#org-entitlement-product").selectOption("PLM");
   await expect(page).toHaveURL(/product=PLM/);
   expect(snapshotUrls.some((url) => url.includes("/products/UNKNOWN/"))).toBe(false);
@@ -197,13 +220,25 @@ test("entitlement error retry and forbidden fail-closed", async ({ page }) => {
       json: { subscriptions: [], payments: [], latestEntitlements: entitlements },
     });
   });
+  await page.route("**/api/v1/platform/catalog/products/*/features", async (route) => {
+    await route.fulfill({ json: [] });
+  });
   await page.route("**/health/**", async (route) => {
     await route.fulfill({ contentType: "text/plain", body: "Healthy" });
   });
   let fail = true;
   await page.route(/\/api\/v1\/platform\/organizations(\/|\?|$)/, async (route) => {
     const url = route.request().url();
-    if (url.includes("/entitlements/snapshots")) {
+    const method = route.request().method();
+    if (url.includes("/entitlements/snapshots/latest")) {
+      await route.fulfill({ json: snapshot });
+      return;
+    }
+    if (url.includes("/feature-overrides") && method === "GET") {
+      await route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 20 } });
+      return;
+    }
+    if (url.includes("/entitlements/snapshots") && method === "GET") {
       if (fail) {
         await route.fulfill({ status: 500, json: { title: "Error", status: 500, detail: "boom" } });
         return;
@@ -236,7 +271,7 @@ test("entitlement error retry and forbidden fail-closed", async ({ page }) => {
     await route.fulfill({ json: organization });
   });
   await page.reload();
-  await expect(page.getByText("This list is not available.")).toBeVisible();
+  await expect(page.getByText("This list is not available.").first()).toBeVisible();
   await expect(page.getByText("entitlement-secret")).toHaveCount(0);
 });
 
@@ -244,7 +279,16 @@ test("direct entitlements deep link, tablet, and 375 have no overflow", async ({
   await mockCore(page);
   await page.route(/\/api\/v1\/platform\/organizations(\/|\?|$)/, async (route) => {
     const url = route.request().url();
-    if (url.includes("/entitlements/snapshots")) {
+    const method = route.request().method();
+    if (url.includes("/entitlements/snapshots/latest")) {
+      await route.fulfill({ json: snapshot });
+      return;
+    }
+    if (url.includes("/feature-overrides") && method === "GET") {
+      await route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 20 } });
+      return;
+    }
+    if (url.includes("/entitlements/snapshots") && method === "GET") {
       await route.fulfill({
         json: { items: [snapshot], totalCount: 1, page: 1, pageSize: 20 },
       });
@@ -270,7 +314,16 @@ test("entitlements localize, theme, density, and axe", async ({ page }) => {
   await mockCore(page);
   await page.route(/\/api\/v1\/platform\/organizations(\/|\?|$)/, async (route) => {
     const url = route.request().url();
-    if (url.includes("/entitlements/snapshots")) {
+    const method = route.request().method();
+    if (url.includes("/entitlements/snapshots/latest")) {
+      await route.fulfill({ json: snapshot });
+      return;
+    }
+    if (url.includes("/feature-overrides") && method === "GET") {
+      await route.fulfill({ json: { items: [], totalCount: 0, page: 1, pageSize: 20 } });
+      return;
+    }
+    if (url.includes("/entitlements/snapshots") && method === "GET") {
       await route.fulfill({
         json: { items: [snapshot], totalCount: 1, page: 1, pageSize: 20 },
       });

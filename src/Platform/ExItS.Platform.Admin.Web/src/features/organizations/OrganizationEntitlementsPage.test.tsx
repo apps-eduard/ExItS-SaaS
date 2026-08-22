@@ -96,13 +96,12 @@ describe("organization workspace entitlements", () => {
       await screen.findByRole("heading", { name: "Entitlements", level: 1 }),
     ).toBeInTheDocument();
     expect(await screen.findByText("starter")).toBeInTheDocument();
-    expect(screen.getByText("1 enabled · 0 disabled")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Show grants" })).toBeInTheDocument();
+    expect(screen.getAllByText("1 enabled · 0 disabled").length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("button", { name: "Show grants" }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Generate snapshot" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reconcile" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create override" })).toBeInTheDocument();
     expect(screen.queryByText("pos.checkout")).not.toBeInTheDocument();
-    expect(screen.getByText("4")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /override/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /reconcile/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /snapshot/i })).not.toBeInTheDocument();
   });
 
   it("does not call snapshot history for an unsanitized product code", async () => {
@@ -278,7 +277,7 @@ describe("organization workspace entitlements", () => {
     expect(await screen.findByText("1 enabled · 1 disabled")).toBeInTheDocument();
     expect(screen.getByText("No grants")).toBeInTheDocument();
     expect(screen.queryByText("pos.checkout")).not.toBeInTheDocument();
-    const showButton = screen.getByRole("button", { name: "Show grants" });
+    const showButton = screen.getAllByRole("button", { name: "Show grants" })[0]!;
     expect(showButton).toHaveAttribute("aria-expanded", "false");
     await user.click(showButton);
     expect(screen.getByRole("button", { name: "Hide grants" })).toHaveAttribute(
@@ -308,11 +307,125 @@ describe("organization workspace entitlements", () => {
     );
     const user = userEvent.setup();
     render(<App />);
-    expect(await screen.findByText("1 enabled · 0 disabled")).toBeInTheDocument();
+    expect((await screen.findAllByText("1 enabled · 0 disabled")).length).toBeGreaterThan(0);
     expect(screen.getAllByText("Grants").length).toBeGreaterThan(0);
     expect(screen.queryByText("pos.checkout")).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Show grants" }));
+    await user.click(screen.getAllByRole("button", { name: "Show grants" })[0]!);
     expect(screen.getByText("pos.checkout")).toBeInTheDocument();
     expect(screen.getByText("Enabled")).toBeInTheDocument();
+  });
+
+  it("hides operator mutations without subscription and override permissions", async () => {
+    stubDesktop();
+    mockAuthenticatedFetch({
+      permissions: sampleAuthorization.permissions.filter(
+        (item) =>
+          item !== "platform.permission.manage_subscriptions" &&
+          item !== "platform.permission.manage_entitlement_overrides",
+      ),
+      organizationItems: [sampleOrg],
+      commercialSummary: {
+        latestEntitlements: [{ id: "e1", productCode: "POS", subscriptionStatus: "Active" }],
+      },
+      entitlementSnapshotItems: [snapshot],
+    });
+    window.history.replaceState(
+      {},
+      "",
+      `/admin/organizations/${sampleOrg.id}/entitlements?product=POS`,
+    );
+    render(<App />);
+    await screen.findByRole("heading", { name: "Entitlements", level: 1 });
+    expect(screen.queryByRole("button", { name: "Generate snapshot" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reconcile" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Create override" })).not.toBeInTheDocument();
+  });
+
+  it("generates a snapshot with expected next version and refreshes state", async () => {
+    stubDesktop();
+    const mutations: Array<{ method: string; path: string; body: unknown }> = [];
+    mockAuthenticatedFetch({
+      organizationItems: [sampleOrg],
+      commercialSummary: {
+        latestEntitlements: [{ id: "e1", productCode: "POS", subscriptionStatus: "Active" }],
+      },
+      entitlementSnapshotItems: [snapshot],
+      onEntitlementMutation: (method, path, body) => {
+        mutations.push({ method, path, body });
+      },
+    });
+    window.history.replaceState(
+      {},
+      "",
+      `/admin/organizations/${sampleOrg.id}/entitlements?product=POS`,
+    );
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole("heading", { name: "Current entitlement", level: 2 });
+    await user.click(screen.getByRole("button", { name: "Generate snapshot" }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Generate snapshot" }));
+    await waitFor(() => {
+      expect(screen.getByText("Entitlement snapshot generated.")).toBeInTheDocument();
+    });
+    expect(mutations.some((call) => call.path.includes("/entitlements/snapshots"))).toBe(true);
+    expect(
+      (mutations.find((call) => call.path.includes("/entitlements/snapshots"))?.body as Record<
+        string,
+        unknown
+      >)?.expectedNextVersion,
+    ).toBe(5);
+  });
+
+  it("creates an override from catalog features and shows reconcile hint", async () => {
+    stubDesktop();
+    mockAuthenticatedFetch({
+      organizationItems: [sampleOrg],
+      commercialSummary: {
+        latestEntitlements: [{ id: "e1", productCode: "POS", subscriptionStatus: "Active" }],
+      },
+      entitlementSnapshotItems: [snapshot],
+      featureOverrideItems: [],
+    });
+    window.history.replaceState(
+      {},
+      "",
+      `/admin/organizations/${sampleOrg.id}/entitlements?product=POS`,
+    );
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole("heading", { name: "Feature overrides", level: 2 });
+    await user.click(screen.getByRole("button", { name: "Create override" }));
+    await user.selectOptions(
+      await screen.findByLabelText("Feature"),
+      "store-customer-credit",
+    );
+    await user.click(screen.getByLabelText("Disabled"));
+    await user.type(screen.getByLabelText("Reason"), "Support hold");
+    await user.click(screen.getAllByRole("button", { name: "Create override" }).at(-1)!);
+    expect(await screen.findByText("Feature override created.")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Override saved. Reconcile entitlement to generate an updated snapshot.")
+        .length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("lists empty feature overrides truthfully", async () => {
+    stubDesktop();
+    mockAuthenticatedFetch({
+      organizationItems: [sampleOrg],
+      commercialSummary: {
+        latestEntitlements: [{ id: "e1", productCode: "POS", subscriptionStatus: "Active" }],
+      },
+      entitlementSnapshotItems: [snapshot],
+      featureOverrideItems: [],
+    });
+    window.history.replaceState(
+      {},
+      "",
+      `/admin/organizations/${sampleOrg.id}/entitlements?product=POS`,
+    );
+    render(<App />);
+    expect(await screen.findByText("No feature overrides")).toBeInTheDocument();
   });
 });

@@ -143,7 +143,7 @@ Never mix with POS Cash / POS Manual GCash / POS Utang.
 1. PA-COM-01 foundation  
 2. Local Validation org with no POS subscription  
 3. PA-COM-04: start **Growth** trial  
-4. PA-COM-05: confirm snapshot device limit 3  
+4. PA-COM-05: operator generate/reconcile/override UI; reconcile after override to refresh effective snapshot  
 5. POS React Device Management: 0/3 … 3/3 … 4th denied (real capacity, not mock)  
 6. PA-COM-06 + upgrade to **Pro**; confirm 4th device allowed  
 7. Suspend; confirm POS commercial deny; record device-API nuance  

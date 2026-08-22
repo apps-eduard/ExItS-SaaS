@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ExItS.Platform.Domain.Catalog;
+using ExItS.Platform.Infrastructure.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -17,11 +18,15 @@ public sealed class Phase3CommercialCloseoutTests(PostgreSqlFixture fixture) : I
 {
     private CloseoutApiFactory _factory = null!;
     private HttpClient _client = null!;
+    private readonly Guid _operatorUserId = Guid.Parse("bbbbbbbb-cccc-dddd-eeee-ffffffffffff");
 
     public Task InitializeAsync()
     {
         _factory = new CloseoutApiFactory(fixture.ConnectionString);
         _client = _factory.CreateClient();
+        _client.DefaultRequestHeaders.Add(
+            DevelopmentPlatformActorAccessor.DevPlatformUserIdHeader,
+            _operatorUserId.ToString("D"));
         return Task.CompletedTask;
     }
 
@@ -212,7 +217,6 @@ public sealed class Phase3CommercialCloseoutTests(PostgreSqlFixture fixture) : I
                 featureCode = FeatureCode.CustomerCreditCreate,
                 enabled = false,
                 reason = "Closeout hold",
-                createdByUserId = Guid.NewGuid()
             });
         Assert.Equal(HttpStatusCode.Created, overrideResponse.StatusCode);
         var overrideId = (await overrideResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();

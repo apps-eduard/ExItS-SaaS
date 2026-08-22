@@ -6,6 +6,7 @@ import {
   listCatalogPlanVersions,
 } from "@/api/catalog/plan-catalog-client";
 import { listCatalogTrialsByProductCode } from "@/api/catalog/trial-catalog-client";
+import { listCatalogFeaturesByProductCode } from "@/api/catalog/feature-catalog-client";
 import { PLAN_LIST_PAGE_SIZE, type PlanListQuery } from "@/api/catalog/plan-catalog-types";
 import { getCatalogProductById } from "@/api/catalog/product-catalog-client";
 import { env } from "@/lib/env";
@@ -91,5 +92,17 @@ export function useCatalogTrialsQuery(productCode: string | null, enabled = true
     enabled: enabled && Boolean(productCode),
     queryFn: ({ signal }) =>
       listCatalogTrialsByProductCode(env.platformApiBaseUrl, productCode!, signal),
+  });
+}
+
+export const catalogProductFeaturesQueryKey = (productCode: string) =>
+  ["catalog-products", "features", productCode] as const;
+
+export function useCatalogProductFeaturesQuery(productCode: string | null, enabled = true) {
+  return useQuery({
+    queryKey: catalogProductFeaturesQueryKey(productCode ?? ""),
+    enabled: enabled && Boolean(productCode),
+    queryFn: ({ signal }) =>
+      listCatalogFeaturesByProductCode(env.platformApiBaseUrl, productCode!, signal),
   });
 }

@@ -2,8 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getOrganization,
   getOrganizationCommercialSummary,
+  getOrganizationLatestEntitlementSnapshot,
   listOrganizationBranches,
   listOrganizationEntitlementSnapshots,
+  listOrganizationFeatureOverrides,
   listOrganizationInvitations,
   listOrganizationMembers,
   listOrganizationPayments,
@@ -13,7 +15,11 @@ import {
 import type { OrganizationBillingUrlState } from "@/api/organizations/billing-list-query";
 import type { OrganizationAuditUrlState } from "@/api/organizations/organization-audit-list-query";
 import { ORGANIZATION_PEOPLE_PAGE_SIZE } from "@/api/organizations/organization-types";
-import { ORGANIZATION_ENTITLEMENT_PAGE_SIZE } from "@/api/organizations/entitlement-list-query";
+import {
+  ORGANIZATION_ENTITLEMENT_PAGE_SIZE,
+  ORGANIZATION_FEATURE_OVERRIDE_PAGE_SIZE,
+  type FeatureOverrideStatusFilter,
+} from "@/api/organizations/entitlement-list-query";
 import type { OrganizationSubscriptionUrlState } from "@/api/organizations/subscription-list-query";
 import { env } from "@/lib/env";
 
@@ -146,6 +152,54 @@ export function useOrganizationEntitlementSnapshotsQuery(
       listOrganizationEntitlementSnapshots(env.platformApiBaseUrl, organizationId!, product!, {
         page,
         pageSize: ORGANIZATION_ENTITLEMENT_PAGE_SIZE,
+        signal,
+      }),
+  });
+}
+
+export const organizationLatestEntitlementQueryKey = (
+  organizationId: string,
+  product: string,
+) => ["organizations", "latest-entitlement", organizationId, product] as const;
+
+export function useOrganizationLatestEntitlementQuery(
+  organizationId: string | null,
+  product: string | null,
+) {
+  return useQuery({
+    queryKey: organizationLatestEntitlementQueryKey(organizationId ?? "", product ?? ""),
+    enabled: organizationId != null && product != null && product.length > 0,
+    retry: false,
+    queryFn: ({ signal }) =>
+      getOrganizationLatestEntitlementSnapshot(env.platformApiBaseUrl, organizationId!, product!, signal),
+  });
+}
+
+export const organizationFeatureOverridesQueryKey = (
+  organizationId: string,
+  product: string,
+  status: FeatureOverrideStatusFilter,
+  page: number,
+) => ["organizations", "feature-overrides", organizationId, product, status, page] as const;
+
+export function useOrganizationFeatureOverridesQuery(
+  organizationId: string | null,
+  product: string | null,
+  options: { status: FeatureOverrideStatusFilter; page: number },
+) {
+  return useQuery({
+    queryKey: organizationFeatureOverridesQueryKey(
+      organizationId ?? "",
+      product ?? "",
+      options.status,
+      options.page,
+    ),
+    enabled: organizationId != null && product != null && product.length > 0,
+    queryFn: ({ signal }) =>
+      listOrganizationFeatureOverrides(env.platformApiBaseUrl, organizationId!, product!, {
+        page: options.page,
+        pageSize: ORGANIZATION_FEATURE_OVERRIDE_PAGE_SIZE,
+        status: options.status,
         signal,
       }),
   });

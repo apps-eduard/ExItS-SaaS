@@ -27,6 +27,7 @@ export type EntitlementSnapshot = {
   effectiveAtUtc?: string;
   refreshByUtc?: string;
   expiresAtUtc?: string;
+  sourceAggregateVersion?: number;
   grants: EntitlementGrant[];
 };
 
@@ -124,6 +125,32 @@ export function organizationEntitlementSnapshotsRequestPath(
     {
       page: query.page,
       pageSize: query.pageSize ?? ORGANIZATION_ENTITLEMENT_PAGE_SIZE,
+    },
+  );
+}
+
+export function organizationLatestEntitlementSnapshotRequestPath(
+  organizationId: string,
+  productCode: string,
+): string {
+  return `/api/v1/platform/organizations/${organizationId}/products/${encodeURIComponent(productCode)}/entitlements/snapshots/latest`;
+}
+
+export const ORGANIZATION_FEATURE_OVERRIDE_PAGE_SIZE = 20;
+
+export type FeatureOverrideStatusFilter = "" | "Active" | "Revoked";
+
+export function organizationFeatureOverridesRequestPath(
+  organizationId: string,
+  productCode: string,
+  query: { page: number; pageSize?: number; status?: FeatureOverrideStatusFilter },
+): string {
+  return withQuery(
+    `/api/v1/platform/organizations/${organizationId}/products/${encodeURIComponent(productCode)}/feature-overrides`,
+    {
+      page: query.page,
+      pageSize: query.pageSize ?? ORGANIZATION_FEATURE_OVERRIDE_PAGE_SIZE,
+      status: query.status || undefined,
     },
   );
 }

@@ -18,9 +18,14 @@ import {
 } from "@/api/organizations/organization-audit-list-query";
 import {
   organizationEntitlementSnapshotsRequestPath,
+  organizationFeatureOverridesRequestPath,
+  organizationLatestEntitlementSnapshotRequestPath,
   type EntitlementGrant,
   type EntitlementSnapshot,
+  type FeatureOverride,
+  type FeatureOverrideStatusFilter,
 } from "@/api/organizations/entitlement-list-query";
+import { mapFeatureOverride } from "@/api/entitlements/entitlement-mutations-client";
 import {
   organizationSubscriptionsRequestPath,
   type OrganizationSubscription,
@@ -508,6 +513,7 @@ export function mapEntitlementSnapshot(payload: unknown): EntitlementSnapshot {
     effectiveAtUtc: readString(record, "effectiveAtUtc", "EffectiveAtUtc"),
     refreshByUtc: readString(record, "refreshByUtc", "RefreshByUtc"),
     expiresAtUtc: readString(record, "expiresAtUtc", "ExpiresAtUtc"),
+    sourceAggregateVersion: readNumber(record, "sourceAggregateVersion", "SourceAggregateVersion"),
     grants: Array.isArray(grantsPayload)
       ? grantsPayload.flatMap((item) => {
           const mapped = mapEntitlementGrant(item);
@@ -531,6 +537,41 @@ export function listOrganizationEntitlementSnapshots(
     return {
       ...page,
       items: page.items.map(mapEntitlementSnapshot),
+    };
+  });
+}
+
+export function getOrganizationLatestEntitlementSnapshot(
+  baseUrl: string,
+  organizationId: string,
+  productCode: string,
+  signal?: AbortSignal,
+): Promise<EntitlementSnapshot> {
+  return platformRequest<unknown>(baseUrl, {
+    path: organizationLatestEntitlementSnapshotRequestPath(organizationId, productCode),
+    signal,
+  }).then(mapEntitlementSnapshot);
+}
+
+export function listOrganizationFeatureOverrides(
+  baseUrl: string,
+  organizationId: string,
+  productCode: string,
+  options: {
+    page: number;
+    pageSize?: number;
+    status?: FeatureOverrideStatusFilter;
+    signal?: AbortSignal;
+  },
+): Promise<PagedResult<FeatureOverride>> {
+  return platformRequest<unknown>(baseUrl, {
+    path: organizationFeatureOverridesRequestPath(organizationId, productCode, options),
+    signal: options.signal,
+  }).then((payload) => {
+    const page = parsePagedResult<unknown>(payload);
+    return {
+      ...page,
+      items: page.items.map(mapFeatureOverride),
     };
   });
 }
