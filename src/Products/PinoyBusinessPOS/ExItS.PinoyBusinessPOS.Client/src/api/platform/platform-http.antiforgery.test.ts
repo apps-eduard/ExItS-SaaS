@@ -7,6 +7,7 @@ import {
   PlatformApiError,
   platformRequest,
   prefetchPlatformAntiforgeryToken,
+  refreshPlatformAntiforgeryToken,
 } from "@/api/platform/platform-http";
 
 describe("platformRequest antiforgery", () => {
@@ -19,7 +20,7 @@ describe("platformRequest antiforgery", () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
-        expect(init?.credentials).toBe("omit");
+        expect(init?.credentials).toBe("include");
         return {
           ok: true,
           status: 200,
@@ -278,6 +279,31 @@ describe("platformRequest antiforgery", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(prefetchPlatformAntiforgeryToken()).resolves.toBe(false);
+  });
+
+  it("refreshPlatformAntiforgeryToken re-bootstraps with credentials include", async () => {
+    let bootstrapCount = 0;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
+        bootstrapCount += 1;
+        expect(init?.credentials).toBe("include");
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            headerName: "X-XSRF-TOKEN",
+            token: `csrf-${bootstrapCount}`,
+          }),
+        } as Response;
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await prefetchPlatformAntiforgeryToken();
+    await refreshPlatformAntiforgeryToken();
+    expect(bootstrapCount).toBe(2);
   });
 
   it("identifies canonical antiforgery validation errors", () => {

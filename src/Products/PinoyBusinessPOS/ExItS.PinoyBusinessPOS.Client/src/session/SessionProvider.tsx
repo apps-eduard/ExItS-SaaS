@@ -21,6 +21,7 @@ import {
 import {
   clearPlatformAntiforgeryToken,
   prefetchPlatformAntiforgeryToken,
+  refreshPlatformAntiforgeryToken,
 } from "@/api/platform/platform-http";
 import { isOfflinePinAndDekConfigured, unlockOfflineCryptoWithPin } from "@/offline/local-store-key";
 import { clearUnlockedDek } from "@/offline/offline-unlock-session";
@@ -280,7 +281,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         if (!result.ok) {
           return false;
         }
-        await prefetchPlatformAntiforgeryToken();
+        await refreshPlatformAntiforgeryToken();
         setSession(result.session);
         setStatus("authenticated");
         setColdStartGrant(null);

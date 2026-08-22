@@ -25,12 +25,13 @@ describe("sign-in antiforgery preservation", () => {
     clearPlatformAntiforgeryToken();
   });
 
-  it("prefetches antiforgery without throwing when bootstrap succeeds", async () => {
+  it("prefetches antiforgery with credentials include when bootstrap succeeds", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (input: RequestInfo | URL) => {
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
         if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
+          expect(init?.credentials).toBe("include");
           return {
             ok: true,
             status: 200,
@@ -45,7 +46,7 @@ describe("sign-in antiforgery preservation", () => {
     expect(hasPlatformAntiforgeryToken()).toBe(true);
   });
 
-  it("does not clear prefetched antiforgery token during sign-in", async () => {
+  it("refreshes antiforgery after login so authenticated bootstrap can succeed", async () => {
     let antiforgeryBootstrapCount = 0;
     vi.stubGlobal(
       "fetch",
@@ -53,10 +54,14 @@ describe("sign-in antiforgery preservation", () => {
         const url = String(input);
         if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
           antiforgeryBootstrapCount += 1;
+          expect(init?.credentials).toBe("include");
           return {
             ok: true,
             status: 200,
-            json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf-token" }),
+            json: async () => ({
+              headerName: "X-XSRF-TOKEN",
+              token: `csrf-${antiforgeryBootstrapCount}`,
+            }),
           } as Response;
         }
         if (url.includes("/api/v1/platform/auth/login") && init?.method === "POST") {
@@ -104,6 +109,6 @@ describe("sign-in antiforgery preservation", () => {
     await waitFor(() => {
       expect(hasPlatformAntiforgeryToken()).toBe(true);
     });
-    expect(antiforgeryBootstrapCount).toBe(1);
+    expect(antiforgeryBootstrapCount).toBeGreaterThanOrEqual(2);
   });
 });
