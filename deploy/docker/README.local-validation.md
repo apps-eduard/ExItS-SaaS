@@ -78,7 +78,14 @@ Local .NET (dotnet watch)
 FULL Docker mode
 Docker Compose
 ├── Platform/POS PostgreSQL + Mailpit
-└── Platform API, POS API, Admin, Organization Web, Personal Web
+└── Platform API, POS API, Admin, Organization Web, Personal Web, React POS (:5177)
+
+React POS Docker notes:
+- Image: `deploy/docker/Dockerfile.pos-react` (nginx static SPA)
+- Same-origin proxies: `/platform-api` → Platform API, `/pos-api` → POS API
+- HTTP Local Validation strips `Secure` from Set-Cookie (parity with Vite DEV proxy)
+- Emulator: `http://10.0.2.2:5177` or `adb reverse tcp:5177 tcp:5177` → `http://127.0.0.1:5177`
+- Do not run `npm run dev` and Docker React POS on `:5177` at the same time
 ```
 
 Tailscale/LAN: pass `-PublicHost <tailscale-ip>` to either start launcher. Firewall and

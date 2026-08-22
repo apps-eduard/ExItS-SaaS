@@ -22,7 +22,6 @@ const username = "kizy@gmail.com";
 const password = "1";
 const signInUrl = "http://127.0.0.1:5177/sign-in";
 const pinSetupUrl = "http://127.0.0.1:5177/offline-pin-setup";
-const loginPath = "/platform-api/api/v1/platform/auth/login";
 const pin = String(600000 + Math.floor(Math.random() * 300000));
 
 function runAdb(args) {

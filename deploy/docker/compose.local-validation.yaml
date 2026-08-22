@@ -14,7 +14,8 @@
 #
 # Default host ports (do not collide with packaging baseline):
 #   admin-web 8090 · platform-api 8091 · pos-api 8092 · org-web 8093 · personal-web 8094
-#   platform-db 15533 · pos-db 15534
+#   react-pos 5177 · platform-db 15533 · pos-db 15534
+# React POS also supports npm run dev on :5177 (only one binder at a time).
 #
 # Boundaries: separate Platform and POS databases; no nested clinical product tree.
 # ASPNETCORE_ENVIRONMENT=Staging + LocalValidation:Enabled=true seeds approved Local Validation identities;
@@ -88,10 +89,13 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Staging
       ConnectionStrings__PlatformDatabase: Host=platform-db;Port=5432;Database=exits_platform;Username=${LOCAL_VALIDATION_PLATFORM_DB_USER};Password=${LOCAL_VALIDATION_PLATFORM_DB_PASSWORD}
-      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api;org-web;personal-web}
+      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api;org-web;personal-web;react-pos}
       Cors__AllowedOrigins__0: ${LOCAL_VALIDATION_ADMIN_ORIGIN:-http://localhost:8090}
       Cors__AllowedOrigins__1: ${LOCAL_VALIDATION_ORG_WEB_ORIGIN:-http://localhost:8093}
       Cors__AllowedOrigins__2: ${LOCAL_VALIDATION_PERSONAL_WEB_ORIGIN:-http://localhost:8094}
+      Cors__AllowedOrigins__3: ${LOCAL_VALIDATION_REACT_POS_ORIGIN:-http://127.0.0.1:5177}
+      Cors__AllowedOrigins__4: ${LOCAL_VALIDATION_REACT_POS_ORIGIN_LOCALHOST:-http://localhost:5177}
+      Cors__AllowedOrigins__5: ${LOCAL_VALIDATION_REACT_POS_ORIGIN_EMULATOR:-http://10.0.2.2:5177}
       Security__EnforceHttps: "false"
       LocalValidation__Enabled: "true"
       LocalValidation__SeedScope: ${LOCAL_VALIDATION_SEED_SCOPE:-PlatformAdministratorsOnly}
@@ -134,10 +138,13 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Staging
       ConnectionStrings__PosDatabase: Host=pos-db;Port=5432;Database=exits_pos;Username=${LOCAL_VALIDATION_POS_DB_USER};Password=${LOCAL_VALIDATION_POS_DB_PASSWORD}
-      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api;org-web;personal-web}
+      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api;org-web;personal-web;react-pos}
       Cors__AllowedOrigins__0: ${LOCAL_VALIDATION_ADMIN_ORIGIN:-http://localhost:8090}
       Cors__AllowedOrigins__1: ${LOCAL_VALIDATION_ORG_WEB_ORIGIN:-http://localhost:8093}
       Cors__AllowedOrigins__2: ${LOCAL_VALIDATION_PERSONAL_WEB_ORIGIN:-http://localhost:8094}
+      Cors__AllowedOrigins__3: ${LOCAL_VALIDATION_REACT_POS_ORIGIN:-http://127.0.0.1:5177}
+      Cors__AllowedOrigins__4: ${LOCAL_VALIDATION_REACT_POS_ORIGIN_LOCALHOST:-http://localhost:5177}
+      Cors__AllowedOrigins__5: ${LOCAL_VALIDATION_REACT_POS_ORIGIN_EMULATOR:-http://10.0.2.2:5177}
       Security__EnforceHttps: "false"
       LocalValidation__Enabled: "true"
       LocalValidation__PlatformApiBaseUrl: ${LOCAL_VALIDATION_PLATFORM_API_INTERNAL_URL:-http://platform-api:8080}
@@ -223,7 +230,7 @@ services:
       - platform-api
     environment:
       ASPNETCORE_ENVIRONMENT: Staging
-      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api;org-web;personal-web}
+      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api;org-web;personal-web;react-pos}
       LocalValidation__Enabled: "true"
       PlatformApi__BaseUrl: ${LOCAL_VALIDATION_PLATFORM_API_INTERNAL_URL:-http://platform-api:8080}
       ExItSWebHosts__PlatformAdmin: ${LOCAL_VALIDATION_ADMIN_ORIGIN:-http://localhost:8090}
@@ -237,6 +244,36 @@ services:
     tmpfs:
       - /tmp
     stop_grace_period: 30s
+
+  # React POS SPA (static nginx). Same-origin /platform-api + /pos-api proxies.
+  # Host :5177 — mutually exclusive with `npm run dev` on the same port.
+  # Standalone against host APIs: --profile react-pos with host.docker.internal upstreams.
+  react-pos:
+    profiles: ["apps", "react-pos"]
+    container_name: exits-local-validation-react-pos
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.pos-react
+    image: exits/react-pos:${LOCAL_VALIDATION_IMAGE_TAG:-local-validation}
+    environment:
+      PLATFORM_API_UPSTREAM: ${REACT_POS_PLATFORM_API_UPSTREAM:-http://platform-api:8080}
+      POS_API_UPSTREAM: ${REACT_POS_POS_API_UPSTREAM:-http://pos-api:8080}
+      PLATFORM_API_PROXY_HOST: ${REACT_POS_PLATFORM_API_PROXY_HOST:-platform-api:8080}
+      POS_API_PROXY_HOST: ${REACT_POS_POS_API_PROXY_HOST:-pos-api:8080}
+    ports:
+      - "${LOCAL_VALIDATION_REACT_POS_HOST_PORT:-5177}:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - exits-local-validation
+    # nginx entrypoint writes envsubst output under /etc/nginx/conf.d
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
+      - /etc/nginx/conf.d
+    stop_grace_period: 15s
 
 volumes:
   exits_local_validation_platform_db_data:

@@ -1,0 +1,37 @@
+# ExItS Pinoy Business POS React client — static SPA + nginx API proxy.
+# Build context: repository root.
+# Local Validation / packaging image only. Does not replace npm run dev.
+
+FROM node:22-alpine AS build
+WORKDIR /app
+
+COPY src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/package.json \
+     src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/package-lock.json ./
+RUN npm ci
+
+COPY src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/ ./
+
+# Public verification key (NOT a secret). Overridable at build time for Local Validation.
+ARG VITE_OFFLINE_OPERATING_GRANT_PUBLIC_KEY_PEM="-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEkld6WGOTRLooj2ArP2UV2S+nTVtA\nyfFYSN1+JNozH4BKAVf5/c1MwCGTLCel38wB0fnM9/1cYKEGKrh9xldC7Q==\n-----END PUBLIC KEY-----"
+ENV VITE_OFFLINE_OPERATING_GRANT_PUBLIC_KEY_PEM=$VITE_OFFLINE_OPERATING_GRANT_PUBLIC_KEY_PEM
+
+RUN npm run build
+
+FROM nginx:1.27-alpine AS final
+
+# Official nginx image auto-runs envsubst on /etc/nginx/templates/*.template
+COPY deploy/docker/nginx/pos-react.conf.template /etc/nginx/templates/default.conf.template
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Defaults match full Local Validation compose DNS. Override for host-run APIs:
+#   PLATFORM_API_UPSTREAM=http://host.docker.internal:8091
+#   PLATFORM_API_PROXY_HOST=127.0.0.1:8091
+ENV PLATFORM_API_UPSTREAM=http://platform-api:8080 \
+    POS_API_UPSTREAM=http://pos-api:8080 \
+    PLATFORM_API_PROXY_HOST=platform-api:8080 \
+    POS_API_PROXY_HOST=pos-api:8080 \
+    NGINX_ENVSUBST_FILTER=^(PLATFORM_API_UPSTREAM|POS_API_UPSTREAM|PLATFORM_API_PROXY_HOST|POS_API_PROXY_HOST)$
+
+EXPOSE 80
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=10 \
+  CMD wget -qO- http://127.0.0.1/ >/dev/null || exit 1
