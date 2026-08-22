@@ -86,6 +86,9 @@ public static class ApplicationErrorCodes
     public const string PaymentInvalidTransition = "application.payment.invalid_transition";
     public const string PaymentAmountInvalid = "application.payment.amount_invalid";
     public const string PaymentCurrencyInvalid = "application.payment.currency_invalid";
+    public const string PaymentAmountMismatch = "application.payment.amount_mismatch";
+    public const string PaymentCurrencyMismatch = "application.payment.currency_mismatch";
+    public const string PaymentPeriodMismatch = "application.payment.period_mismatch";
     public const string PaymentProductMismatch = "application.payment.product_mismatch";
     public const string PaymentOrganizationMismatch = "application.payment.organization_mismatch";
     public const string PaymentSubscriptionConflict = "application.payment.subscription_conflict";

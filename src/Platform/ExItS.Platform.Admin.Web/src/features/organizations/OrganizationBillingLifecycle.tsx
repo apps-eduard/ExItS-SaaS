@@ -32,16 +32,22 @@ import {
   useCreatePaidSubscriptionMutation,
   useRejectManualPaymentMutation,
   useSimulateLocalValidationPaymentMutation,
+  useUpgradeSubscriptionFromPaymentMutation,
   useVoidManualPaymentMutation,
 } from "@/features/commercial/use-commercial-mutations";
 import {
-  computeMonthlyPaidPeriod,
+  computePaidPeriod,
+  defaultBillingCycle,
   defaultPaymentAmountForPlan,
   findSubscriptionForPayment,
   MANUAL_PAYMENT_METHODS,
+  parseBillingUpgradeContext,
   paymentActionCapabilities,
   planPriceLabel,
   primaryBillingProductCode,
+  supportedBillingCycles,
+  type BillingCycleChoice,
+  type BillingUpgradeContext,
   type ManualPaymentMethod,
 } from "@/features/organizations/billing-lifecycle";
 import { commercialMutationFailureCopy } from "@/features/organizations/commercial-mutation-feedback";
@@ -75,7 +81,7 @@ const STATUS_LABELS: Record<string, MessageKey> = {
 const controlClass =
   "h-[var(--exits-control-height)] min-h-[var(--exits-touch-target-min)] rounded-[var(--exits-density-radius)] border border-input bg-surface px-3 text-[length:var(--exits-text-sm)] text-foreground";
 
-type ConfirmKind = "confirm" | "reject" | "void" | "activate";
+type ConfirmKind = "confirm" | "reject" | "void" | "activate" | "upgrade";
 
 function statusTone(status: string): "success" | "warning" | "danger" | "neutral" {
   if (status === "Confirmed") {
@@ -149,6 +155,11 @@ const confirmCopy: Record<
     description: "organization.billing.activate.description",
     confirm: "organization.billing.activate.action",
   },
+  upgrade: {
+    title: "organization.billing.upgrade.complete.title",
+    description: "organization.billing.upgrade.complete.description",
+    confirm: "organization.billing.upgrade.complete.action",
+  },
 };
 
 export function OrganizationBillingLifecycle({ organizationId }: { organizationId: string }) {
@@ -159,6 +170,7 @@ export function OrganizationBillingLifecycle({ organizationId }: { organizationI
   const showTable = useMediaQuery("(min-width: 768px)");
   const [searchParams, setSearchParams] = useSearchParams();
   const state = useMemo(() => parseOrganizationBillingSearchParams(searchParams), [searchParams]);
+  const upgradeContext = useMemo(() => parseBillingUpgradeContext(searchParams), [searchParams]);
   const paymentsQuery = useOrganizationPaymentsQuery(organizationId, state);
   const subscriptionsQuery = useOrganizationSubscriptionsQuery(organizationId, {
     page: 1,
@@ -184,16 +196,30 @@ export function OrganizationBillingLifecycle({ organizationId }: { organizationI
   );
   const [rejectReason, setRejectReason] = useState("");
   const [voidReason, setVoidReason] = useState("");
+  const [upgradeBillingCycle, setUpgradeBillingCycle] = useState<BillingCycleChoice>(
+    upgradeContext?.billingCycle ?? "Monthly",
+  );
 
   const createPayment = useCreateManualPaymentMutation();
   const confirmPayment = useConfirmManualPaymentMutation();
   const rejectPayment = useRejectManualPaymentMutation();
   const voidPayment = useVoidManualPaymentMutation();
   const activateFromPayment = useActivateSubscriptionFromPaymentMutation();
+  const upgradeFromPayment = useUpgradeSubscriptionFromPaymentMutation();
   const simulatePayment = useSimulateLocalValidationPaymentMutation();
 
   const subscriptions = subscriptionsQuery.data?.items ?? [];
   const payments = paymentsQuery.data?.items ?? [];
+  const posPlans = posPlansQuery.data ?? [];
+  const upgradeTargetPlan = upgradeContext
+    ? posPlans.find((plan) => plan.id === upgradeContext.targetPlanId)
+    : undefined;
+  const upgradeCurrentSubscription = upgradeContext
+    ? subscriptions.find((item) => item.id === upgradeContext.upgradeSubscriptionId)
+    : undefined;
+  const upgradeCurrentPlan = upgradeCurrentSubscription
+    ? posPlans.find((plan) => plan.id === upgradeCurrentSubscription.planId)
+    : undefined;
   const posSubscription = subscriptions.find(
     (item) => item.productCode === PINOY_BUSINESS_POS_PRODUCT_CODE,
   );
@@ -207,6 +233,7 @@ export function OrganizationBillingLifecycle({ organizationId }: { organizationI
     rejectPayment.isPending ||
     voidPayment.isPending ||
     activateFromPayment.isPending ||
+    upgradeFromPayment.isPending ||
     simulatePayment.isPending;
 
   function replaceState(patch: Partial<OrganizationBillingUrlState>) {
@@ -258,7 +285,11 @@ export function OrganizationBillingLifecycle({ organizationId }: { organizationI
           showError(new Error("No eligible subscription for this payment."));
           return;
         }
-        const period = computeMonthlyPaidPeriod();
+        const subscriptionPlan = posPlans.find((plan) => plan.id === subscription.planId);
+        const billingCycle: BillingCycleChoice = subscriptionPlan
+          ? defaultBillingCycle(subscriptionPlan)
+          : "Monthly";
+        const period = computePaidPeriod(billingCycle);
         await activateFromPayment.mutateAsync({
           paymentId: payment.id,
           body: {
@@ -266,9 +297,25 @@ export function OrganizationBillingLifecycle({ organizationId }: { organizationI
             subscriptionId: subscription.id,
             periodStartUtc: period.periodStartUtc,
             periodEndUtc: period.periodEndUtc,
+            billingCycle,
           },
         });
         showSuccess("organization.billing.activate.success");
+      } else if (kind === "upgrade") {
+        if (!upgradeContext || !upgradeTargetPlan) {
+          showError(new Error("Upgrade context is missing."));
+          return;
+        }
+        await upgradeFromPayment.mutateAsync({
+          paymentId: payment.id,
+          body: {
+            subscriptionId: upgradeContext.upgradeSubscriptionId,
+            targetPlanId: upgradeContext.targetPlanId,
+            billingCycle: upgradeBillingCycle,
+          },
+        });
+        showSuccess("organization.billing.upgrade.complete.success");
+        setSearchParams(organizationBillingSearchParams(state), { replace: true });
       }
       setConfirm(null);
       setRejectReason("");
@@ -301,10 +348,53 @@ export function OrganizationBillingLifecycle({ organizationId }: { organizationI
         subscription={posSubscription}
         latestPayment={latestPayment}
         pendingCount={pendingPayments.length}
-        plans={posPlansQuery.data ?? []}
+        plans={posPlans}
         language={language}
         t={t}
       />
+
+      {upgradeContext && upgradeTargetPlan && upgradeCurrentPlan ? (
+        <Card className="grid gap-2 px-3 py-3">
+          <p className="text-[length:var(--exits-text-sm)] font-medium">
+            {t("organization.billing.upgrade.panelTitle")}
+          </p>
+          <p className="text-[length:var(--exits-text-xs)] text-muted">
+            {t("organization.billing.upgrade.currentPlan")}: {upgradeCurrentPlan.displayName}
+          </p>
+          <p className="text-[length:var(--exits-text-xs)] text-muted">
+            {t("organization.billing.upgrade.targetPlan")}: {upgradeTargetPlan.displayName}
+          </p>
+          {supportedBillingCycles(upgradeTargetPlan).length > 1 ? (
+            <label className="grid max-w-xs gap-1 text-[length:var(--exits-text-xs)] font-medium">
+              {t("organization.billing.upgrade.billingCycle")}
+              <select
+                className={controlClass}
+                value={upgradeBillingCycle}
+                onChange={(event) =>
+                  setUpgradeBillingCycle(event.target.value as BillingCycleChoice)
+                }
+              >
+                {supportedBillingCycles(upgradeTargetPlan).map((cycle) => (
+                  <option key={cycle} value={cycle}>
+                    {cycle}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <p className="text-[length:var(--exits-text-xs)] text-muted">
+              {t("organization.billing.upgrade.billingCycle")}: {upgradeBillingCycle}
+            </p>
+          )}
+          <p className="text-[length:var(--exits-text-xs)] text-muted">
+            {t("organization.billing.upgrade.requiredPayment")}:{" "}
+            {planPriceLabel(upgradeTargetPlan, upgradeBillingCycle)}
+          </p>
+          <p className="text-[length:var(--exits-text-xs)] text-muted">
+            {t("organization.billing.upgrade.instructions")}
+          </p>
+        </Card>
+      ) : null}
 
       {canManagePayments ? (
         <div className="flex flex-wrap gap-2">
@@ -433,6 +523,9 @@ export function OrganizationBillingLifecycle({ organizationId }: { organizationI
                         canManagePayments={canManagePayments}
                         canManageSubscriptions={canManageSubscriptions}
                         pending={pending}
+                        upgradeContext={upgradeContext}
+                        targetPlan={upgradeTargetPlan}
+                        billingCycle={upgradeBillingCycle}
                         t={t}
                         onDetail={() => setDetailPayment(item)}
                         onConfirm={(kind) => setConfirm({ kind, payment: item })}
@@ -481,6 +574,9 @@ export function OrganizationBillingLifecycle({ organizationId }: { organizationI
                         canManagePayments={canManagePayments}
                         canManageSubscriptions={canManageSubscriptions}
                         pending={pending}
+                        upgradeContext={upgradeContext}
+                        targetPlan={upgradeTargetPlan}
+                        billingCycle={upgradeBillingCycle}
                         t={t}
                         onDetail={() => setDetailPayment(item)}
                         onConfirm={(kind) => setConfirm({ kind, payment: item })}
@@ -521,7 +617,9 @@ export function OrganizationBillingLifecycle({ organizationId }: { organizationI
         <RecordPaymentDialog
           organizationId={organizationId}
           productCode={primaryBillingProductCode(subscriptions)}
-          plans={posPlansQuery.data ?? []}
+          plans={posPlans}
+          targetPlan={upgradeTargetPlan}
+          billingCycle={upgradeBillingCycle}
           pending={createPayment.isPending}
           onCancel={() => {
             createPayment.reset();
@@ -542,7 +640,7 @@ export function OrganizationBillingLifecycle({ organizationId }: { organizationI
       {subscribeOpen ? (
         <SubscribeWithPaymentDialog
           organizationId={organizationId}
-          plans={posPlansQuery.data ?? []}
+          plans={posPlans}
           actorIdentifier={authorization.actorIdentifier}
           onCancel={() => setSubscribeOpen(false)}
           onComplete={() => {
@@ -561,6 +659,9 @@ export function OrganizationBillingLifecycle({ organizationId }: { organizationI
           canManagePayments={canManagePayments}
           canManageSubscriptions={canManageSubscriptions}
           pending={pending}
+          upgradeContext={upgradeContext}
+          targetPlan={upgradeTargetPlan}
+          billingCycle={upgradeBillingCycle}
           onClose={() => setDetailPayment(null)}
           onAction={(kind) => {
             setDetailPayment(null);
@@ -708,6 +809,9 @@ function PaymentActions({
   canManagePayments,
   canManageSubscriptions,
   pending,
+  upgradeContext,
+  targetPlan,
+  billingCycle,
   t,
   onDetail,
   onConfirm,
@@ -717,6 +821,9 @@ function PaymentActions({
   canManagePayments: boolean;
   canManageSubscriptions: boolean;
   pending: boolean;
+  upgradeContext?: BillingUpgradeContext | null;
+  targetPlan?: CatalogPlan | null;
+  billingCycle?: BillingCycleChoice;
   t: (key: MessageKey) => string;
   onDetail: () => void;
   onConfirm: (kind: ConfirmKind) => void;
@@ -725,6 +832,9 @@ function PaymentActions({
     canManagePayments,
     canManageSubscriptions,
     subscriptions,
+    upgradeContext,
+    targetPlan,
+    billingCycle,
   });
   return (
     <div className="flex flex-wrap gap-1">
@@ -763,6 +873,11 @@ function PaymentActions({
           {t("organization.billing.activate.action")}
         </Button>
       ) : null}
+      {caps.completeUpgradeFromPayment ? (
+        <Button type="button" size="sm" disabled={pending} onClick={() => onConfirm("upgrade")}>
+          {t("organization.billing.upgrade.complete.action")}
+        </Button>
+      ) : null}
     </div>
   );
 }
@@ -774,6 +889,9 @@ function PaymentDetailDialog({
   canManagePayments,
   canManageSubscriptions,
   pending,
+  upgradeContext,
+  targetPlan,
+  billingCycle,
   onClose,
   onAction,
 }: {
@@ -783,6 +901,9 @@ function PaymentDetailDialog({
   canManagePayments: boolean;
   canManageSubscriptions: boolean;
   pending: boolean;
+  upgradeContext?: BillingUpgradeContext | null;
+  targetPlan?: CatalogPlan | null;
+  billingCycle?: BillingCycleChoice;
   onClose: () => void;
   onAction: (kind: ConfirmKind) => void;
 }) {
@@ -792,6 +913,9 @@ function PaymentDetailDialog({
     canManagePayments,
     canManageSubscriptions,
     subscriptions,
+    upgradeContext,
+    targetPlan,
+    billingCycle,
   });
   return (
     <ConfirmActionDialog
@@ -875,6 +999,11 @@ function PaymentDetailDialog({
             {t("organization.billing.activate.action")}
           </Button>
         ) : null}
+        {caps.completeUpgradeFromPayment ? (
+          <Button type="button" size="sm" disabled={pending} onClick={() => onAction("upgrade")}>
+            {t("organization.billing.upgrade.complete.action")}
+          </Button>
+        ) : null}
       </div>
     </ConfirmActionDialog>
   );
@@ -884,6 +1013,8 @@ function RecordPaymentDialog({
   organizationId,
   productCode,
   plans,
+  targetPlan,
+  billingCycle = "Monthly",
   pending,
   onCancel,
   onSubmit,
@@ -891,6 +1022,8 @@ function RecordPaymentDialog({
   organizationId: string;
   productCode: string;
   plans: CatalogPlan[];
+  targetPlan?: CatalogPlan | null;
+  billingCycle?: BillingCycleChoice;
   pending: boolean;
   onCancel: () => void;
   onSubmit: (body: {
@@ -905,11 +1038,15 @@ function RecordPaymentDialog({
 }) {
   const { t } = usePreferences();
   const activePlans = plans.filter((plan) => plan.status === "Active");
-  const [planId, setPlanId] = useState(activePlans[0]?.id ?? "");
+  const initialPlan = targetPlan ?? activePlans[0];
+  const [planId, setPlanId] = useState(initialPlan?.id ?? "");
   const selectedPlan = activePlans.find((plan) => plan.id === planId);
+  const [cycle, setCycle] = useState<BillingCycleChoice>(
+    billingCycle ?? (selectedPlan ? defaultBillingCycle(selectedPlan) : "Monthly"),
+  );
   const [method, setMethod] = useState<ManualPaymentMethod>("GCash");
   const [amount, setAmount] = useState(
-    selectedPlan ? String(defaultPaymentAmountForPlan(selectedPlan) ?? "") : "",
+    selectedPlan ? String(defaultPaymentAmountForPlan(selectedPlan, cycle) ?? "") : "",
   );
   const [reference, setReference] = useState("");
   const [paidAtLocal, setPaidAtLocal] = useState(defaultPaidAtLocal());
@@ -957,13 +1094,38 @@ function RecordPaymentDialog({
               const nextPlan = activePlans.find((plan) => plan.id === event.target.value);
               setPlanId(event.target.value);
               if (nextPlan) {
-                setAmount(String(defaultPaymentAmountForPlan(nextPlan) ?? ""));
+                const nextCycle = defaultBillingCycle(nextPlan);
+                setCycle(nextCycle);
+                setAmount(String(defaultPaymentAmountForPlan(nextPlan, nextCycle) ?? ""));
               }
             }}
           >
             {activePlans.map((plan) => (
               <option key={plan.id} value={plan.id}>
-                {plan.displayName} ({planPriceLabel(plan)})
+                {plan.displayName} ({planPriceLabel(plan, cycle)})
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      {selectedPlan && supportedBillingCycles(selectedPlan).length > 1 ? (
+        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium" htmlFor="record-cycle">
+          {t("organization.billing.upgrade.billingCycle")}
+          <select
+            id="record-cycle"
+            className={controlClass}
+            value={cycle}
+            onChange={(event) => {
+              const nextCycle = event.target.value as BillingCycleChoice;
+              setCycle(nextCycle);
+              if (selectedPlan) {
+                setAmount(String(defaultPaymentAmountForPlan(selectedPlan, nextCycle) ?? ""));
+              }
+            }}
+          >
+            {supportedBillingCycles(selectedPlan).map((item) => (
+              <option key={item} value={item}>
+                {item}
               </option>
             ))}
           </select>
@@ -1030,6 +1192,9 @@ function SubscribeWithPaymentDialog({
   const activePlans = plans.filter((plan) => plan.status === "Active");
   const [planId, setPlanId] = useState(activePlans[0]?.id ?? "");
   const selectedPlan = activePlans.find((plan) => plan.id === planId);
+  const [billingCycle, setBillingCycle] = useState<BillingCycleChoice>(
+    selectedPlan ? defaultBillingCycle(selectedPlan) : "Monthly",
+  );
   const versionsQuery = useCatalogPlanVersionsQuery(selectedPlan?.productCode ?? null, planId || null);
   const versionId = publishedPlanVersionId(versionsQuery.data ?? []);
   const createPayment = useCreateManualPaymentMutation();
@@ -1054,21 +1219,21 @@ function SubscribeWithPaymentDialog({
         !selectedPlan ||
         !versionId ||
         reference.trim().length === 0 ||
-        defaultPaymentAmountForPlan(selectedPlan!) == null
+        defaultPaymentAmountForPlan(selectedPlan, billingCycle) == null
       }
       onCancel={onCancel}
       onConfirm={() => {
         if (!selectedPlan || !versionId || submitting) {
           return;
         }
-        const amount = defaultPaymentAmountForPlan(selectedPlan);
+        const amount = defaultPaymentAmountForPlan(selectedPlan, billingCycle);
         if (amount == null) {
           return;
         }
         setSubmitting(true);
         void (async () => {
           try {
-            const period = computeMonthlyPaidPeriod();
+            const period = computePaidPeriod(billingCycle);
             const payment = await createPayment.mutateAsync({
               organizationId,
               productCode: selectedPlan.productCode,
@@ -1090,7 +1255,7 @@ function SubscribeWithPaymentDialog({
                 periodStartUtc: period.periodStartUtc,
                 periodEndUtc: period.periodEndUtc,
                 paymentId: confirmed.id,
-                billingCycle: "Monthly",
+                billingCycle,
               },
             });
             onComplete();
@@ -1108,15 +1273,38 @@ function SubscribeWithPaymentDialog({
           id="subscribe-plan"
           className={controlClass}
           value={planId}
-          onChange={(event) => setPlanId(event.target.value)}
+          onChange={(event) => {
+            const nextPlan = activePlans.find((plan) => plan.id === event.target.value);
+            setPlanId(event.target.value);
+            if (nextPlan) {
+              setBillingCycle(defaultBillingCycle(nextPlan));
+            }
+          }}
         >
           {activePlans.map((plan) => (
             <option key={plan.id} value={plan.id}>
-              {plan.displayName} ({planPriceLabel(plan)})
+              {plan.displayName} ({planPriceLabel(plan, billingCycle)})
             </option>
           ))}
         </select>
       </label>
+      {selectedPlan && supportedBillingCycles(selectedPlan).length > 1 ? (
+        <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium" htmlFor="subscribe-cycle">
+          {t("organization.billing.upgrade.billingCycle")}
+          <select
+            id="subscribe-cycle"
+            className={controlClass}
+            value={billingCycle}
+            onChange={(event) => setBillingCycle(event.target.value as BillingCycleChoice)}
+          >
+            {supportedBillingCycles(selectedPlan).map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
       <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium" htmlFor="subscribe-reference">
         {t("organization.billing.column.reference")}
         <Input id="subscribe-reference" value={reference} onChange={(event) => setReference(event.target.value)} />

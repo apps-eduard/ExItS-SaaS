@@ -680,6 +680,18 @@ export const enMessages = {
   "organization.billing.activate.description":
     "Use this confirmed SaaS payment to activate or reactivate the linked subscription through Platform.",
   "organization.billing.activate.success": "Subscription activated.",
+  "organization.billing.upgrade.panelTitle": "Upgrade subscription",
+  "organization.billing.upgrade.currentPlan": "Current plan",
+  "organization.billing.upgrade.targetPlan": "Target plan",
+  "organization.billing.upgrade.billingCycle": "Billing cycle",
+  "organization.billing.upgrade.requiredPayment": "Required payment",
+  "organization.billing.upgrade.instructions":
+    "Record a manual payment for the catalog amount, confirm it, then use Complete upgrade on the matching confirmed payment.",
+  "organization.billing.upgrade.complete.action": "Complete upgrade",
+  "organization.billing.upgrade.complete.title": "Complete paid upgrade",
+  "organization.billing.upgrade.complete.description":
+    "Apply this confirmed manual payment to upgrade the active subscription to the target catalog plan.",
+  "organization.billing.upgrade.complete.success": "Subscription upgraded.",
   "organization.billing.subscribeWithPayment": "Subscribe with payment",
   "organization.billing.subscribe.title": "Subscribe with payment",
   "organization.billing.subscribe.description":
@@ -1460,6 +1472,18 @@ export const filPhMessages: Record<MessageKey, string> = {
   "organization.billing.activate.description":
     "Gamitin ang nakumpirmang bayad sa SaaS para i-activate o i-reactivate ang subscription sa Platform.",
   "organization.billing.activate.success": "Na-activate ang subscription.",
+  "organization.billing.upgrade.panelTitle": "I-upgrade ang subscription",
+  "organization.billing.upgrade.currentPlan": "Kasalukuyang plan",
+  "organization.billing.upgrade.targetPlan": "Target na plan",
+  "organization.billing.upgrade.billingCycle": "Billing cycle",
+  "organization.billing.upgrade.requiredPayment": "Kinakailangang bayad",
+  "organization.billing.upgrade.instructions":
+    "Mag-record ng manual payment para sa halaga sa catalog, kumpirmahin, pagkatapos gamitin ang Complete upgrade sa tumugmang kumpirmadong payment.",
+  "organization.billing.upgrade.complete.action": "Kumpletuhin ang upgrade",
+  "organization.billing.upgrade.complete.title": "Kumpletuhin ang paid upgrade",
+  "organization.billing.upgrade.complete.description":
+    "Ilapat ang kumpirmadong manual payment na ito para i-upgrade ang active subscription sa target catalog plan.",
+  "organization.billing.upgrade.complete.success": "Na-upgrade ang subscription.",
   "organization.billing.subscribeWithPayment": "Mag-subscribe na may bayad",
   "organization.billing.subscribe.title": "Mag-subscribe na may bayad",
   "organization.billing.subscribe.description":

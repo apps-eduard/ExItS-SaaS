@@ -4,6 +4,7 @@ using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Common;
+using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Payments;
 using ExItS.Platform.Domain.Products;
@@ -291,6 +292,7 @@ internal static class PaymentEndpoints
                 SubscriptionId.From(body.SubscriptionId),
                 body.PeriodStartUtc,
                 body.PeriodEndUtc,
+                ParseBillingCycle(body.BillingCycle),
                 ct).ConfigureAwait(false);
 
             if (result.IsSuccess)
@@ -311,6 +313,118 @@ internal static class PaymentEndpoints
                 subscription = MapSubscription(activation.Subscription)
             }));
         });
+
+        payments.MapPost("/{paymentId:guid}/upgrade-subscription", async (
+            Guid paymentId,
+            UpgradeSubscriptionFromPaymentRequest body,
+            UpgradeSubscriptionFromConfirmedPayment useCase,
+            SaaSPaymentQueryService queries,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await EnsurePaymentAndSubscriptionMutationAsync(
+                authz, queries, paymentId, PlatformAuditActions.SubscriptionUpgraded, ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            BillingCycle billingCycle;
+            try
+            {
+                billingCycle = ParseBillingCycle(body.BillingCycle);
+            }
+            catch (DomainException ex)
+            {
+                return PlatformApiResults.Problem(ex.ErrorCode, ex.Message, StatusCodes.Status400BadRequest);
+            }
+
+            var payment = await queries.GetByIdAsync(paymentId, ct).ConfigureAwait(false);
+            if (payment is null)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.PaymentNotFound,
+                    "Payment was not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            var result = await useCase.ExecuteAsync(
+                SaaSPaymentId.From(paymentId),
+                payment.OrganizationId,
+                SubscriptionId.From(body.SubscriptionId),
+                PlanId.From(body.TargetPlanId),
+                billingCycle,
+                ct).ConfigureAwait(false);
+
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.SubscriptionUpgraded,
+                    "SaaSPayment",
+                    paymentId.ToString("D"),
+                    result.Value!.Payment.OrganizationId.Value,
+                    result.Value.Payment.ProductCode.Value,
+                    summary: $"Manual payment upgraded subscription {result.Value.Subscription.Id.Value:D} to plan {body.TargetPlanId:D}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, activation => Results.Ok(new
+            {
+                payment = MapPayment(activation.Payment),
+                subscription = MapSubscription(activation.Subscription)
+            }));
+        });
+    }
+
+    private static async Task<IResult?> EnsurePaymentAndSubscriptionMutationAsync(
+        PlatformAuthz authz,
+        SaaSPaymentQueryService queries,
+        Guid paymentId,
+        string actionCode,
+        CancellationToken ct,
+        string? reason = null)
+    {
+        var existing = await queries.GetByIdAsync(paymentId, ct).ConfigureAwait(false);
+        var deniedPayments = await authz.EnsureAsync(
+            PlatformPermission.ManageManualPayments,
+            actionCode,
+            "SaaSPayment",
+            paymentId.ToString("D"),
+            existing?.OrganizationId,
+            existing?.ProductCode,
+            reason: reason,
+            cancellationToken: ct).ConfigureAwait(false);
+        if (deniedPayments is not null)
+        {
+            return deniedPayments;
+        }
+
+        return await authz.EnsureAsync(
+            PlatformPermission.ManageSubscriptions,
+            actionCode,
+            "SaaSPayment",
+            paymentId.ToString("D"),
+            existing?.OrganizationId,
+            existing?.ProductCode,
+            reason: reason,
+            cancellationToken: ct).ConfigureAwait(false);
+    }
+
+    private static BillingCycle ParseBillingCycle(string? billingCycle)
+    {
+        if (string.IsNullOrWhiteSpace(billingCycle))
+        {
+            return BillingCycle.Monthly;
+        }
+
+        if (!Enum.TryParse<BillingCycle>(billingCycle, ignoreCase: true, out var parsed))
+        {
+            throw new DomainException(
+                ApplicationErrorCodes.InvalidBillingCycle,
+                "BillingCycle must be Monthly or Annual.");
+        }
+
+        return parsed;
     }
 
     private static async Task<IResult?> EnsurePaymentMutationAsync(
@@ -452,4 +566,10 @@ internal sealed record ActivateSubscriptionForPaymentRequest(
     string ConfirmedBy,
     Guid SubscriptionId,
     DateTimeOffset PeriodStartUtc,
-    DateTimeOffset PeriodEndUtc);
+    DateTimeOffset PeriodEndUtc,
+    string? BillingCycle = null);
+
+internal sealed record UpgradeSubscriptionFromPaymentRequest(
+    Guid SubscriptionId,
+    Guid TargetPlanId,
+    string? BillingCycle = null);

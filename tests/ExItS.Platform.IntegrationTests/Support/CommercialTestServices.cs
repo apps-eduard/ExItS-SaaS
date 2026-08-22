@@ -57,6 +57,9 @@ internal static class CommercialTestServices
         services.AddScoped<ConfirmSaaSPayment>();
         services.AddScoped<RejectSaaSPayment>();
         services.AddScoped<VoidSaaSPayment>();
+        services.AddScoped<ActivatePaidSubscription>();
+        services.AddScoped<ActivatePaidSubscriptionFromConfirmedPayment>();
+        services.AddScoped<UpgradeSubscriptionFromConfirmedPayment>();
         services.AddScoped<ConfirmPaymentAndActivateSubscription>();
         services.AddScoped<SaaSPaymentQueryService>();
 

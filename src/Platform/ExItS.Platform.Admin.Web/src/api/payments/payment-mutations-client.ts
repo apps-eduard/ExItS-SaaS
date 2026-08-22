@@ -28,6 +28,13 @@ export type ActivateSubscriptionFromPaymentBody = {
   subscriptionId: string;
   periodStartUtc: string;
   periodEndUtc: string;
+  billingCycle?: string;
+};
+
+export type UpgradeSubscriptionFromPaymentBody = {
+  subscriptionId: string;
+  targetPlanId: string;
+  billingCycle?: string;
 };
 
 export type PaymentAndSubscriptionResult = {
@@ -146,6 +153,29 @@ export function activateSubscriptionFromPayment(
   }).then((payload) => {
     if (typeof payload !== "object" || payload === null) {
       throw new Error("Invalid payment activation result.");
+    }
+    const record = payload as Record<string, unknown>;
+    return {
+      payment: mapOrganizationPayment(record.payment ?? record.Payment),
+      subscription: mapOrganizationSubscription(record.subscription ?? record.Subscription),
+    };
+  });
+}
+
+export function upgradeSubscriptionFromPayment(
+  baseUrl: string,
+  paymentId: string,
+  body: UpgradeSubscriptionFromPaymentBody,
+  signal?: AbortSignal,
+): Promise<PaymentAndSubscriptionResult> {
+  return commercialMutationRequest<unknown>(baseUrl, {
+    method: "POST",
+    path: `/api/v1/platform/payments/${paymentId}/upgrade-subscription`,
+    body,
+    signal,
+  }).then((payload) => {
+    if (typeof payload !== "object" || payload === null) {
+      throw new Error("Invalid payment upgrade result.");
     }
     const record = payload as Record<string, unknown>;
     return {

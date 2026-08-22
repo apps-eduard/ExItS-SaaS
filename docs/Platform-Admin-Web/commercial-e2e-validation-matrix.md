@@ -47,7 +47,7 @@ Prerequisites: Pinoy Business POS product Active; Growth plan `MaxActivePosDevic
 | 7 | Device #2 → 2 of 3 | **PASS TODAY** | |
 | 8 | Device #3 → 3 of 3 | **PASS TODAY** | |
 | 9 | Device #4 denied | **PASS TODAY** (server + unit/integration) | Playwright often **mocks** capacity → **TEST HARNESS GAP** for browser proof |
-| 10 | Admin upgrade Growth → Pro | **REACT ADMIN AVAILABLE** | Trialing: upgrade API. Active paid: payment-required on Subscription → complete on Billing (PA-COM-06) |
+| 10 | Admin upgrade Growth → Pro | **REACT ADMIN AVAILABLE** | Trialing: upgrade API. Active paid: payment-required → Billing → record/confirm Pro payment → `POST .../payments/{id}/upgrade-subscription` (PA-COM-06-FIX01) |
 | 11 | Entitlement refreshed | **PASS TODAY** on upgrade use case | snapshot regenerated server-side |
 | 12 | POS shows higher device limit | **PASS TODAY** | capacity uses **live plan**, not token |
 | 13 | Additional device registration possible | **PASS TODAY** after upgrade | |

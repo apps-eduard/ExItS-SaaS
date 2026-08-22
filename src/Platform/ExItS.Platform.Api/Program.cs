@@ -449,6 +449,7 @@ builder.Services.AddScoped<RejectSaaSPayment>();
 builder.Services.AddScoped<VoidSaaSPayment>();
 builder.Services.AddScoped<ConfirmPaymentAndActivateSubscription>();
 builder.Services.AddScoped<ActivatePaidSubscriptionFromConfirmedPayment>();
+builder.Services.AddScoped<UpgradeSubscriptionFromConfirmedPayment>();
 builder.Services.AddScoped<RecordLinkedSuccessfulProviderPayment>();
 
 builder.Services.AddScoped<ProcessSubscriptionInitialPayment>();

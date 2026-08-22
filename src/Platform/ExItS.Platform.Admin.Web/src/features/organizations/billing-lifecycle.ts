@@ -6,13 +6,37 @@ import { isPinoyBusinessPosSubscription } from "@/features/organizations/subscri
 export const MANUAL_PAYMENT_METHODS = ["Cash", "BankTransfer", "GCash"] as const;
 export type ManualPaymentMethod = (typeof MANUAL_PAYMENT_METHODS)[number];
 
+export type BillingCycleChoice = "Monthly" | "Annual";
+
+export type BillingUpgradeContext = {
+  upgradeSubscriptionId: string;
+  targetPlanId: string;
+  billingCycle: BillingCycleChoice;
+};
+
 export type PaymentActionCapabilities = {
   confirm: boolean;
   reject: boolean;
   void: boolean;
   activateFromPayment: boolean;
   createPaidSubscription: boolean;
+  completeUpgradeFromPayment: boolean;
 };
+
+export function supportedBillingCycles(plan: CatalogPlan): BillingCycleChoice[] {
+  const cycles: BillingCycleChoice[] = [];
+  if (typeof plan.monthlyPrice === "number" && plan.monthlyPrice > 0) {
+    cycles.push("Monthly");
+  }
+  if (typeof plan.annualPrice === "number" && plan.annualPrice > 0) {
+    cycles.push("Annual");
+  }
+  return cycles;
+}
+
+export function defaultBillingCycle(plan: CatalogPlan): BillingCycleChoice {
+  return supportedBillingCycles(plan)[0] ?? "Monthly";
+}
 
 export function paymentActionCapabilities(
   payment: OrganizationPayment,
@@ -20,9 +44,19 @@ export function paymentActionCapabilities(
     canManagePayments: boolean;
     canManageSubscriptions: boolean;
     subscriptions: OrganizationSubscription[];
+    upgradeContext?: BillingUpgradeContext | null;
+    targetPlan?: CatalogPlan | null;
+    billingCycle?: BillingCycleChoice;
   },
 ): PaymentActionCapabilities {
-  const { canManagePayments, canManageSubscriptions, subscriptions } = options;
+  const {
+    canManagePayments,
+    canManageSubscriptions,
+    subscriptions,
+    upgradeContext,
+    targetPlan,
+    billingCycle,
+  } = options;
   const pending = payment.status === "PendingConfirmation";
   const confirmed = payment.status === "Confirmed";
   const unused = !payment.subscriptionId;
@@ -30,6 +64,17 @@ export function paymentActionCapabilities(
   const hasProductSubscription = subscriptions.some(
     (item) => item.productCode === payment.productCode,
   );
+  const cycle = billingCycle ?? (targetPlan ? defaultBillingCycle(targetPlan) : "Monthly");
+  const canCompleteUpgrade =
+    Boolean(upgradeContext) &&
+    Boolean(targetPlan) &&
+    paymentMatchesUpgradeTarget(payment, targetPlan!, cycle) &&
+    subscriptions.some(
+      (item) =>
+        item.id === upgradeContext!.upgradeSubscriptionId &&
+        item.status === "Active" &&
+        item.productCode === payment.productCode,
+    );
 
   return {
     confirm: canManagePayments && pending,
@@ -41,13 +86,17 @@ export function paymentActionCapabilities(
       confirmed &&
       unused &&
       matchingSubscription != null &&
-      isSubscriptionEligibleForPaymentActivation(matchingSubscription),
+      isSubscriptionEligibleForPaymentActivation(matchingSubscription) &&
+      !upgradeContext,
     createPaidSubscription:
       canManagePayments &&
       canManageSubscriptions &&
       confirmed &&
       unused &&
-      !hasProductSubscription,
+      !hasProductSubscription &&
+      !upgradeContext,
+    completeUpgradeFromPayment:
+      canManagePayments && canManageSubscriptions && confirmed && unused && canCompleteUpgrade,
   };
 }
 
@@ -75,7 +124,10 @@ export function findSubscriptionForPayment(
   );
 }
 
-export function computeMonthlyPaidPeriod(reference = new Date()): {
+export function computePaidPeriod(
+  billingCycle: BillingCycleChoice,
+  reference = new Date(),
+): {
   periodStartUtc: string;
   periodEndUtc: string;
 } {
@@ -83,11 +135,20 @@ export function computeMonthlyPaidPeriod(reference = new Date()): {
     Date.UTC(reference.getUTCFullYear(), reference.getUTCMonth(), reference.getUTCDate()),
   );
   const end = new Date(start);
-  end.setUTCMonth(end.getUTCMonth() + 1);
+  if (billingCycle === "Annual") {
+    end.setUTCFullYear(end.getUTCFullYear() + 1);
+  } else {
+    end.setUTCMonth(end.getUTCMonth() + 1);
+  }
   return { periodStartUtc: start.toISOString(), periodEndUtc: end.toISOString() };
 }
 
-export function planPriceLabel(plan: CatalogPlan, billingCycle: "Monthly" | "Annual" = "Monthly"): string {
+/** @deprecated Use computePaidPeriod with an explicit billing cycle. */
+export function computeMonthlyPaidPeriod(reference = new Date()) {
+  return computePaidPeriod("Monthly", reference);
+}
+
+export function planPriceLabel(plan: CatalogPlan, billingCycle: BillingCycleChoice = "Monthly"): string {
   const amount = billingCycle === "Annual" ? plan.annualPrice : plan.monthlyPrice;
   if (amount == null || !plan.currencyCode) {
     return "—";
@@ -97,10 +158,45 @@ export function planPriceLabel(plan: CatalogPlan, billingCycle: "Monthly" | "Ann
 
 export function defaultPaymentAmountForPlan(
   plan: CatalogPlan,
-  billingCycle: "Monthly" | "Annual" = "Monthly",
+  billingCycle: BillingCycleChoice = "Monthly",
 ): number | undefined {
   const amount = billingCycle === "Annual" ? plan.annualPrice : plan.monthlyPrice;
   return typeof amount === "number" && amount > 0 ? amount : undefined;
+}
+
+export function paymentMatchesUpgradeTarget(
+  payment: OrganizationPayment,
+  targetPlan: CatalogPlan,
+  billingCycle: BillingCycleChoice,
+): boolean {
+  const requiredAmount = defaultPaymentAmountForPlan(targetPlan, billingCycle);
+  if (requiredAmount == null) {
+    return false;
+  }
+  return (
+    payment.productCode === targetPlan.productCode &&
+    payment.amount === requiredAmount &&
+    payment.currencyCode === (targetPlan.currencyCode ?? "PHP")
+  );
+}
+
+export function parseBillingUpgradeContext(params: URLSearchParams): BillingUpgradeContext | null {
+  const upgradeSubscriptionId = params.get("upgradeSubscriptionId")?.trim() ?? "";
+  const targetPlanId = params.get("targetPlanId")?.trim() ?? "";
+  const billingCycleRaw = params.get("billingCycle")?.trim() ?? "Monthly";
+  if (!upgradeSubscriptionId || !targetPlanId) {
+    return null;
+  }
+  const billingCycle: BillingCycleChoice = billingCycleRaw === "Annual" ? "Annual" : "Monthly";
+  return { upgradeSubscriptionId, targetPlanId, billingCycle };
+}
+
+export function buildBillingUpgradeSearchParams(context: BillingUpgradeContext): URLSearchParams {
+  const params = new URLSearchParams();
+  params.set("upgradeSubscriptionId", context.upgradeSubscriptionId);
+  params.set("targetPlanId", context.targetPlanId);
+  params.set("billingCycle", context.billingCycle);
+  return params;
 }
 
 export function pinoyBusinessPosProductCode(): string {

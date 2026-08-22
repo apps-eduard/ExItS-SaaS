@@ -175,6 +175,9 @@ internal static class PlatformApiResults
 
         ApplicationErrorCodes.PaymentAmountInvalid
             or ApplicationErrorCodes.PaymentCurrencyInvalid
+            or ApplicationErrorCodes.PaymentAmountMismatch
+            or ApplicationErrorCodes.PaymentCurrencyMismatch
+            or ApplicationErrorCodes.PaymentPeriodMismatch
             or ApplicationErrorCodes.EntitlementSnapshotInvalid
             or ApplicationErrorCodes.EntitlementSchemaUnsupported
             or ApplicationErrorCodes.EntitlementRefreshPolicyMissing

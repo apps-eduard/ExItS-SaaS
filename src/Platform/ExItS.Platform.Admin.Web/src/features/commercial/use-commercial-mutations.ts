@@ -15,12 +15,14 @@ import {
   createManualPayment,
   rejectManualPayment,
   simulateLocalValidationPayment,
+  upgradeSubscriptionFromPayment,
   voidManualPayment,
   type ActivateSubscriptionFromPaymentBody,
   type ConfirmPaymentBody,
   type CreateManualPaymentBody,
   type RejectPaymentBody,
   type SimulateLocalValidationPaymentBody,
+  type UpgradeSubscriptionFromPaymentBody,
   type VoidPaymentBody,
 } from "@/api/payments/payment-mutations-client";
 import {
@@ -378,6 +380,20 @@ export function useActivateSubscriptionFromPaymentMutation() {
     ...noRetry,
     mutationFn: (input: { paymentId: string; body: ActivateSubscriptionFromPaymentBody }) =>
       activateSubscriptionFromPayment(env.platformApiBaseUrl, input.paymentId, input.body),
+    onSuccess: (result) =>
+      invalidateCommercialQueries(
+        queryClient,
+        organizationCommercialInvalidationScope(result.subscription.organizationId),
+      ),
+  });
+}
+
+export function useUpgradeSubscriptionFromPaymentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: { paymentId: string; body: UpgradeSubscriptionFromPaymentBody }) =>
+      upgradeSubscriptionFromPayment(env.platformApiBaseUrl, input.paymentId, input.body),
     onSuccess: (result) =>
       invalidateCommercialQueries(
         queryClient,

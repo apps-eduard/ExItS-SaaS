@@ -495,7 +495,7 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
       return jsonResponse(201, created);
     }
     const paymentActionMatch = path.match(
-      /\/api\/v1\/platform\/payments\/([0-9a-fA-F-]{36})\/(confirm|reject|void|activate-subscription)$/,
+      /\/api\/v1\/platform\/payments\/([0-9a-fA-F-]{36})\/(confirm|reject|void|activate-subscription|upgrade-subscription)$/,
     );
     if (paymentActionMatch && method === "POST") {
       if (options.paymentMutationError) {
@@ -554,6 +554,25 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
         confirmedAtUtc: existing.confirmedAtUtc ?? new Date().toISOString(),
       };
       paymentItems = paymentItems.map((item) => (item.id === paymentId ? updatedPayment : item));
+      if (action === "upgrade-subscription") {
+        const targetPlanId = activateBody?.targetPlanId;
+        return jsonResponse(200, {
+          payment: updatedPayment,
+          subscription: subscription
+            ? {
+                ...subscription,
+                planId: targetPlanId ?? subscription.planId,
+                status: "Active",
+              }
+            : {
+                id: subscriptionId,
+                organizationId: existing.organizationId,
+                productCode: existing.productCode,
+                planId: targetPlanId,
+                status: "Active",
+              },
+        });
+      }
       return jsonResponse(200, {
         payment: updatedPayment,
         subscription: subscription ?? {

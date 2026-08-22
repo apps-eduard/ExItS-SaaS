@@ -81,6 +81,16 @@ test("billing navigation, status filter, and no mutations", async ({ page }) => 
   await page.setViewportSize({ width: 1440, height: 900 });
   const paymentUrls: string[] = [];
   await mockCore(page);
+  await page.route("**/api/v1/platform/authorization/me", async (route) => {
+    await route.fulfill({
+      json: {
+        ...authorization,
+        permissions: authorization.permissions.filter(
+          (item) => item !== "platform.permission.manage_manual_payments",
+        ),
+      },
+    });
+  });
   await page.route(/\/api\/v1\/platform\/organizations(\/|\?|$)/, async (route) => {
     const url = route.request().url();
     if (url.includes("/payments")) {
@@ -111,7 +121,7 @@ test("billing navigation, status filter, and no mutations", async ({ page }) => 
   await workspaceNav.getByRole("link", { name: "Billing" }).click();
   await expect(page).toHaveURL(/\/billing/);
   await expect(page.getByRole("heading", { name: "Billing", exact: true, level: 1 })).toBeVisible();
-  await expect(page.getByText("1500 PHP")).toBeVisible();
+  await expect(page.getByText("1500 PHP").first()).toBeVisible();
   await expect(page.getByRole("button", { name: /record/i })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /confirm/i })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /reject/i })).toHaveCount(0);
@@ -170,7 +180,7 @@ test("billing error retry and forbidden fail-closed without amount leak", async 
   await expect(page.getByRole("heading", { name: "Unable to load billing." })).toBeVisible();
   fail = false;
   await page.getByRole("button", { name: "Retry" }).click();
-  await expect(page.getByText("1500 PHP")).toBeVisible();
+  await expect(page.getByText("1500 PHP").first()).toBeVisible();
 
   await page.route(/\/api\/v1\/platform\/organizations(\/|\?|$)/, async (route) => {
     const url = route.request().url();

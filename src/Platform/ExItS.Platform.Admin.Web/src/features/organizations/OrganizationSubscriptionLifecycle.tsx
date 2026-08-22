@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { PLATFORM_PERMISSIONS } from "@/api/authorization/authorization-types";
 import type { CatalogPlan } from "@/api/catalog/plan-catalog-types";
@@ -21,6 +22,10 @@ import {
   useCatalogTrialsQuery,
 } from "@/features/catalog/use-catalog-detail-queries";
 import { commercialMutationFailureCopy } from "@/features/organizations/commercial-mutation-feedback";
+import {
+  buildBillingUpgradeSearchParams,
+  defaultBillingCycle,
+} from "@/features/organizations/billing-lifecycle";
 import {
   organizationSubscriptionStatusLabel,
   organizationSubscriptionStatusTone,
@@ -104,6 +109,7 @@ export function OrganizationSubscriptionLifecycle({
   subscriptions: OrganizationSubscription[];
 }) {
   const { t, language } = usePreferences();
+  const navigate = useNavigate();
   const authorization = useAuthorization();
   const canManage = authorization.hasPermission(PLATFORM_PERMISSIONS.manageSubscriptions);
   const posPlansQuery = useCatalogProductPlansQuery(PINOY_BUSINESS_POS_PRODUCT_CODE);
@@ -516,11 +522,14 @@ export function OrganizationSubscriptionLifecycle({
             } catch (error) {
               const kind = classifyCommercialMutationFailure(error).kind;
               if (kind === "payment_required") {
-                setFeedback({
-                  tone: "danger",
-                  title: t("organization.subscriptions.mutation.error.payment"),
-                  detail: t("organization.subscriptions.upgrade.paidBlocked"),
-                });
+                setChangePlanItem(null);
+                navigate(
+                  `/admin/organizations/${organizationId}/billing?${buildBillingUpgradeSearchParams({
+                    upgradeSubscriptionId: changePlanItem.id,
+                    targetPlanId: target.id,
+                    billingCycle: defaultBillingCycle(target),
+                  }).toString()}`,
+                );
                 return;
               }
               showError(error);
