@@ -7,6 +7,7 @@ import { PLATFORM_PERMISSIONS } from "@/api/authorization/authorization-types";
 import { classifyGlobalCatalogMutationFailure } from "@/api/global-catalog/global-catalog-errors";
 import type { GlobalBusinessTypeDetail } from "@/api/global-catalog/global-catalog-types";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { ForbiddenState } from "@/components/exits/ForbiddenState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusIndicator } from "@/components/exits/StatusIndicator";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
@@ -32,7 +33,6 @@ import {
 } from "@/features/global-catalog/global-catalog-mutation-feedback";
 import { useGlobalBusinessTypeDetailQuery } from "@/features/global-catalog/use-global-business-type-queries";
 import { useGlobalCatalogMutations } from "@/features/global-catalog/use-global-catalog-mutations";
-import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
 import { useAuthorization } from "@/hooks/use-authorization";
 import { usePreferences } from "@/hooks/use-preferences";
 import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
@@ -66,7 +66,7 @@ export function BusinessTypeDetailPage() {
   }
 
   if (!canView) {
-    return <ShellNotFoundPage />;
+    return <ForbiddenState requiredPermission={PLATFORM_PERMISSIONS.viewGlobalCatalog} />;
   }
 
   const diagnostic = query.error
@@ -208,7 +208,15 @@ export function BusinessTypeFormPage({ mode }: { mode: "create" | "edit" }) {
   }
 
   if (!canView || !canManage) {
-    return <ShellNotFoundPage />;
+    return (
+      <ForbiddenState
+        requiredPermission={
+          !canView
+            ? PLATFORM_PERMISSIONS.viewGlobalCatalog
+            : PLATFORM_PERMISSIONS.manageGlobalCategories
+        }
+      />
+    );
   }
 
   if (mode === "edit") {

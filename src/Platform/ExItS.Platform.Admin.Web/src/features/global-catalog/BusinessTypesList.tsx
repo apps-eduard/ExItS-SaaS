@@ -14,11 +14,14 @@ import {
   type GlobalBusinessTypeStatus,
 } from "@/api/global-catalog/global-catalog-types";
 import { AdminTable } from "@/components/exits/AdminTable";
+import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { ForbiddenState } from "@/components/exits/ForbiddenState";
+import { LoadingState } from "@/components/exits/LoadingState";
 import { StatusIndicator } from "@/components/exits/StatusIndicator";
-import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { isPlatformForbidden } from "@/api/platform-http-status";
 import {
   formatGlobalCatalogInstant,
   globalCatalogControlClass,
@@ -86,10 +89,14 @@ export function BusinessTypesList({ enabled }: { enabled: boolean }) {
     ? normalizeDiagnosticError({ error: query.error, operation: "Load business types" })
     : null;
 
-  const items = query.data?.items ?? [];
-  const totalCount = query.data?.totalCount ?? 0;
-  const pageSize = query.data?.pageSize ?? GLOBAL_BUSINESS_TYPE_LIST_PAGE_SIZE;
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const totalPages = query.data
+    ? Math.max(1, Math.ceil(query.data.totalCount / (query.data.pageSize || GLOBAL_BUSINESS_TYPE_LIST_PAGE_SIZE)))
+    : 1;
+
+  function resetFilters() {
+    setSearchDraft("");
+    replaceState({ page: 1, search: "", status: "", sortBy: "SortOrder", sortDesc: false });
+  }
 
   return (
     <div className="grid gap-4">
@@ -164,23 +171,18 @@ export function BusinessTypesList({ enabled }: { enabled: boolean }) {
             {t("globalCatalog.searchSubmit")}
           </Button>
           {hasActiveGlobalBusinessTypeFilters(state) ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setSearchDraft("");
-                replaceState({ page: 1, search: "", status: "", sortBy: "SortOrder", sortDesc: false });
-              }}
-            >
+            <Button type="button" size="sm" variant="outline" onClick={resetFilters}>
               {t("globalCatalog.reset")}
             </Button>
           ) : null}
         </div>
       </form>
 
-      {query.isPending ? <DashboardWidgetSkeleton rows={4} /> : null}
-      {query.isError && diagnostic ? (
+      {query.isPending ? <LoadingState /> : null}
+
+      {query.isError && isPlatformForbidden(query.error) ? <ForbiddenState /> : null}
+
+      {query.isError && !isPlatformForbidden(query.error) && diagnostic ? (
         <ErrorState
           diagnostic={diagnostic}
           title={t("globalCatalog.error")}
@@ -189,15 +191,66 @@ export function BusinessTypesList({ enabled }: { enabled: boolean }) {
         />
       ) : null}
 
-      {query.isSuccess && items.length === 0 ? (
-        <p className="text-[length:var(--exits-text-sm)] text-muted">{t("globalCatalog.businessTypes.listEmpty")}</p>
+      {query.data ? (
+        <BusinessTypeResults
+          items={query.data.items}
+          totalCount={query.data.totalCount}
+          page={state.page}
+          totalPages={totalPages}
+          filtered={hasActiveGlobalBusinessTypeFilters(state)}
+          language={language}
+          showTable={showTable}
+          onPage={(nextPage) => replaceState({ page: nextPage })}
+          onReset={resetFilters}
+        />
       ) : null}
+    </div>
+  );
+}
 
-      {query.isSuccess && items.length > 0 && showTable ? (
+function BusinessTypeResults({
+  items,
+  totalCount,
+  page,
+  totalPages,
+  filtered,
+  language,
+  showTable,
+  onPage,
+  onReset,
+}: {
+  items: GlobalBusinessTypeItem[];
+  totalCount: number;
+  page: number;
+  totalPages: number;
+  filtered: boolean;
+  language: string;
+  showTable: boolean;
+  onPage: (page: number) => void;
+  onReset: () => void;
+}) {
+  const { t } = usePreferences();
+  const emptyTitle = filtered
+    ? t("globalCatalog.zeroResult")
+    : t("globalCatalog.businessTypes.listEmpty");
+
+  if (items.length === 0) {
+    return (
+      <EmptyState
+        title={emptyTitle}
+        actionLabel={filtered ? t("globalCatalog.reset") : undefined}
+        onAction={filtered ? onReset : undefined}
+      />
+    );
+  }
+
+  return (
+    <div className="grid gap-4">
+      {showTable ? (
         <div className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-3">
           <AdminTable
             caption={t("globalCatalog.businessTypes.caption")}
-            empty={t("globalCatalog.businessTypes.listEmpty")}
+            empty={emptyTitle}
             rows={items}
             columns={[
               {
@@ -264,9 +317,7 @@ export function BusinessTypesList({ enabled }: { enabled: boolean }) {
             ]}
           />
         </div>
-      ) : null}
-
-      {query.isSuccess && items.length > 0 && !showTable ? (
+      ) : (
         <ul className="grid gap-3">
           {items.map((item) => (
             <li
@@ -277,28 +328,28 @@ export function BusinessTypesList({ enabled }: { enabled: boolean }) {
             </li>
           ))}
         </ul>
-      ) : null}
+      )}
 
-      {query.isSuccess && totalPages > 1 ? (
+      {totalCount > 0 && totalPages > 1 ? (
         <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             size="sm"
             variant="outline"
-            disabled={state.page <= 1}
-            onClick={() => replaceState({ page: state.page - 1 })}
+            disabled={page <= 1}
+            onClick={() => onPage(page - 1)}
           >
             {t("globalCatalog.previous")}
           </Button>
           <span className="text-[length:var(--exits-text-sm)] text-muted">
-            {t("globalCatalog.page")} {state.page} / {totalPages}
+            {t("globalCatalog.page")} {page} / {totalPages}
           </span>
           <Button
             type="button"
             size="sm"
             variant="outline"
-            disabled={state.page >= totalPages}
-            onClick={() => replaceState({ page: state.page + 1 })}
+            disabled={page >= totalPages}
+            onClick={() => onPage(page + 1)}
           >
             {t("globalCatalog.next")}
           </Button>

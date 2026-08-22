@@ -423,7 +423,7 @@ describe("global catalog business types", () => {
     });
     window.history.replaceState({}, "", "/admin/global-catalog/business-types");
     render(<App />);
-    expect(await screen.findByRole("heading", { name: "Page not found" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Access denied" })).toBeInTheDocument();
   });
 
   it("hides mutation controls without manage permissions", async () => {

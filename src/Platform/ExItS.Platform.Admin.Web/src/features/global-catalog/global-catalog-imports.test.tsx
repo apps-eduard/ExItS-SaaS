@@ -72,7 +72,7 @@ describe("global catalog imports", () => {
     });
     window.history.replaceState({}, "", "/admin/global-catalog/imports");
     render(<App />);
-    expect(await screen.findByRole("heading", { name: "Page not found" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Access denied" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Imports" })).not.toBeInTheDocument();
   });
 

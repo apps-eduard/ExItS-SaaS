@@ -333,7 +333,7 @@ test.describe("global catalog imports", () => {
     await page.goto("/admin");
     await expect(page.getByRole("link", { name: "Imports" })).toHaveCount(0);
     await page.goto("/admin/global-catalog/imports");
-    await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Access denied" })).toBeVisible();
   });
 
   test("axe and viewport checks", async ({ page }) => {

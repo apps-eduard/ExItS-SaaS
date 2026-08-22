@@ -12,6 +12,7 @@ import {
   type GlobalCatalogTemplateStatus,
 } from "@/api/global-catalog/global-catalog-types";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { ForbiddenState } from "@/components/exits/ForbiddenState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusIndicator } from "@/components/exits/StatusIndicator";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
@@ -83,7 +84,7 @@ export function TemplateDetailPage() {
   }
 
   if (!canView) {
-    return <ShellNotFoundPage />;
+    return <ForbiddenState requiredPermission={PLATFORM_PERMISSIONS.viewGlobalCatalog} />;
   }
 
   const diagnostic = query.error
@@ -251,7 +252,15 @@ export function TemplateFormPage({ mode }: { mode: "create" | "edit" }) {
   }
 
   if (!canView || !canManage) {
-    return <ShellNotFoundPage />;
+    return (
+      <ForbiddenState
+        requiredPermission={
+          !canView
+            ? PLATFORM_PERMISSIONS.viewGlobalCatalog
+            : PLATFORM_PERMISSIONS.manageCatalogTemplates
+        }
+      />
+    );
   }
 
   if (mode === "edit") {

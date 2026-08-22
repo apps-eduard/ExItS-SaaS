@@ -10,6 +10,7 @@ import {
 import { AdminTable } from "@/components/exits/AdminTable";
 import { ConfirmActionDialog } from "@/components/exits/ConfirmActionDialog";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { ForbiddenState } from "@/components/exits/ForbiddenState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusIndicator } from "@/components/exits/StatusIndicator";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
@@ -28,7 +29,6 @@ import {
   useGlobalCatalogImportDetailQuery,
   useGlobalCatalogImportErrorsQuery,
 } from "@/features/global-catalog/use-global-import-queries";
-import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
 import { useAuthorization } from "@/hooks/use-authorization";
 import { usePreferences } from "@/hooks/use-preferences";
 import { classifyGlobalCatalogMutationFailure } from "@/api/global-catalog/global-catalog-errors";
@@ -73,7 +73,7 @@ export function ImportDetailPage() {
   }
 
   if (!canImport) {
-    return <ShellNotFoundPage />;
+    return <ForbiddenState requiredPermission={PLATFORM_PERMISSIONS.importGlobalProducts} />;
   }
 
   const diagnostic = detailQuery.error

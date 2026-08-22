@@ -11,6 +11,7 @@ import {
   type ProductUnit,
 } from "@/api/global-catalog/global-catalog-types";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { ForbiddenState } from "@/components/exits/ForbiddenState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusIndicator } from "@/components/exits/StatusIndicator";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
@@ -32,7 +33,6 @@ import { useGlobalBusinessTypesQuery } from "@/features/global-catalog/use-globa
 import { useGlobalCategoryLookupQuery } from "@/features/global-catalog/use-global-category-queries";
 import { useGlobalCatalogMutations } from "@/features/global-catalog/use-global-catalog-mutations";
 import { useGlobalProductDetailQuery } from "@/features/global-catalog/use-global-product-queries";
-import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
 import { useAuthorization } from "@/hooks/use-authorization";
 import { usePreferences } from "@/hooks/use-preferences";
 import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
@@ -73,7 +73,7 @@ export function ProductDetailPage() {
   }
 
   if (!canView) {
-    return <ShellNotFoundPage />;
+    return <ForbiddenState requiredPermission={PLATFORM_PERMISSIONS.viewGlobalCatalog} />;
   }
 
   const diagnostic = query.error
@@ -187,7 +187,7 @@ export function ProductFormPage({ mode }: { mode: "create" | "edit" }) {
   }
 
   if (!canManage) {
-    return <ShellNotFoundPage />;
+    return <ForbiddenState requiredPermission={PLATFORM_PERMISSIONS.manageGlobalProducts} />;
   }
 
   if (mode === "edit") {

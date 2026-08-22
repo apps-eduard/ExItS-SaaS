@@ -14,11 +14,14 @@ import {
   type GlobalProductStatus,
 } from "@/api/global-catalog/global-catalog-types";
 import { AdminTable } from "@/components/exits/AdminTable";
+import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { ForbiddenState } from "@/components/exits/ForbiddenState";
+import { LoadingState } from "@/components/exits/LoadingState";
 import { StatusIndicator } from "@/components/exits/StatusIndicator";
-import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { isPlatformForbidden } from "@/api/platform-http-status";
 import {
   formatGlobalCatalogInstant,
   globalCatalogControlClass,
@@ -245,13 +248,11 @@ export function ProductsList({ enabled }: { enabled: boolean }) {
         </div>
       </form>
 
-      {query.isPending ? (
-        <div role="status" aria-busy="true" aria-label={t("globalCatalog.loading")}>
-          <DashboardWidgetSkeleton rows={6} />
-        </div>
-      ) : null}
+      {query.isPending ? <LoadingState /> : null}
 
-      {query.isError && diagnostic ? (
+      {query.isError && isPlatformForbidden(query.error) ? <ForbiddenState /> : null}
+
+      {query.isError && !isPlatformForbidden(query.error) && diagnostic ? (
         <ErrorState
           diagnostic={diagnostic}
           title={t("globalCatalog.error")}
@@ -315,7 +316,17 @@ function ProductResults({
   onReset: () => void;
 }) {
   const { t } = usePreferences();
-  const empty = filtered ? t("globalCatalog.zeroResult") : t("globalCatalog.products.empty");
+  const emptyTitle = filtered ? t("globalCatalog.zeroResult") : t("globalCatalog.products.empty");
+
+  if (items.length === 0) {
+    return (
+      <EmptyState
+        title={emptyTitle}
+        actionLabel={filtered ? t("globalCatalog.reset") : undefined}
+        onAction={filtered ? onReset : undefined}
+      />
+    );
+  }
 
   return (
     <div className="grid gap-3">
@@ -323,7 +334,7 @@ function ProductResults({
         <div className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-3">
           <AdminTable
             caption={t("globalCatalog.products.caption")}
-            empty={empty}
+            empty={emptyTitle}
             columns={[
               {
                 id: "name",
@@ -388,41 +399,29 @@ function ProductResults({
         </div>
       ) : (
         <ul className="grid gap-2">
-          {items.length === 0 ? (
-            <li className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-3 py-3 text-[length:var(--exits-text-sm)] text-muted">
-              {empty}
+          {items.map((product) => (
+            <li
+              key={product.id}
+              className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-3 py-2.5"
+            >
+              <p className="font-medium">{product.name}</p>
+              <p className="mt-0.5 font-mono text-[length:var(--exits-text-xs)] text-muted">{product.sku}</p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <StatusIndicator
+                  tone={globalCatalogStatusTone(product.status)}
+                  label={t(STATUS_LABELS[product.status])}
+                />
+                <Link
+                  className="text-primary hover:underline"
+                  to={`/admin/global-catalog/products/${product.id}`}
+                >
+                  {t("globalCatalog.open")}
+                </Link>
+              </div>
             </li>
-          ) : (
-            items.map((product) => (
-              <li
-                key={product.id}
-                className="rounded-[var(--exits-density-radius)] border border-border bg-surface px-3 py-2.5"
-              >
-                <p className="font-medium">{product.name}</p>
-                <p className="mt-0.5 font-mono text-[length:var(--exits-text-xs)] text-muted">{product.sku}</p>
-                <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                  <StatusIndicator
-                    tone={globalCatalogStatusTone(product.status)}
-                    label={t(STATUS_LABELS[product.status])}
-                  />
-                  <Link
-                    className="text-primary hover:underline"
-                    to={`/admin/global-catalog/products/${product.id}`}
-                  >
-                    {t("globalCatalog.open")}
-                  </Link>
-                </div>
-              </li>
-            ))
-          )}
+          ))}
         </ul>
       )}
-
-      {filtered && items.length === 0 ? (
-        <Button type="button" size="sm" variant="outline" className="w-fit" onClick={onReset}>
-          {t("globalCatalog.reset")}
-        </Button>
-      ) : null}
 
       {totalCount > 0 ? (
         <div className="flex flex-wrap items-center gap-2">
