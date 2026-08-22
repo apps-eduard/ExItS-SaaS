@@ -1,3 +1,4 @@
+import { globalBusinessTypesListRequestPath } from "@/api/global-catalog/business-type-list-query";
 import { globalCategoriesListRequestPath } from "@/api/global-catalog/category-list-query";
 import {
   globalCatalogMultipartRequest,
@@ -8,9 +9,13 @@ import {
   GLOBAL_PRODUCT_STATUSES,
   PRODUCT_SELLING_MODES,
   PRODUCT_UNITS,
+  type CreateGlobalBusinessTypeInput,
   type CreateGlobalCategoryInput,
   type CreateGlobalProductInput,
+  type GlobalBusinessTypeDetail,
   type GlobalBusinessTypeItem,
+  type GlobalBusinessTypeListQuery,
+  type GlobalBusinessTypeStatus,
   type GlobalCategoryDetail,
   type GlobalCategoryListItem,
   type GlobalCategoryListQuery,
@@ -21,6 +26,7 @@ import {
   type GlobalProductStatus,
   type ProductSellingMode,
   type ProductUnit,
+  type UpdateGlobalBusinessTypeInput,
   type UpdateGlobalCategoryInput,
   type UpdateGlobalProductInput,
 } from "@/api/global-catalog/global-catalog-types";
@@ -145,7 +151,7 @@ function readSellingMode(record: Record<string, unknown>): ProductSellingMode {
   return "PerItem";
 }
 
-export function mapGlobalBusinessType(payload: unknown): GlobalBusinessTypeItem {
+export function mapGlobalBusinessType(payload: unknown): GlobalBusinessTypeDetail {
   const record = asRecord(payload);
   if (!record) {
     throw new Error("Invalid business type.");
@@ -153,8 +159,7 @@ export function mapGlobalBusinessType(payload: unknown): GlobalBusinessTypeItem 
   const id = readString(record, "id", "Id");
   const code = readString(record, "code", "Code");
   const name = readString(record, "name", "Name");
-  const status = readString(record, "status", "Status");
-  if (!id || !code || !name || !status) {
+  if (!id || !code || !name) {
     throw new Error("Invalid business type.");
   }
   return {
@@ -162,8 +167,16 @@ export function mapGlobalBusinessType(payload: unknown): GlobalBusinessTypeItem 
     code,
     name,
     description: readOptionalString(record, "description", "Description"),
-    status,
+    status: readStatus<GlobalBusinessTypeStatus>(
+      record,
+      ["Active", "Inactive", "Archived"],
+      "status",
+      "Status",
+    ),
     sortOrder: readNumber(record, "sortOrder", "SortOrder") ?? 0,
+    iconReference: readOptionalString(record, "iconReference", "IconReference"),
+    createdAtUtc: readOptionalString(record, "createdAtUtc", "CreatedAtUtc"),
+    updatedAtUtc: readOptionalString(record, "updatedAtUtc", "UpdatedAtUtc"),
   };
 }
 
@@ -237,7 +250,7 @@ export function mapGlobalProductListItem(payload: unknown): GlobalProductListIte
   };
 }
 
-export function listGlobalBusinessTypes(
+export function listActiveGlobalBusinessTypes(
   baseUrl: string,
   signal?: AbortSignal,
 ): Promise<PagedResult<GlobalBusinessTypeItem>> {
@@ -254,6 +267,87 @@ export function listGlobalBusinessTypes(
       items: page.items.map(mapGlobalBusinessType),
     };
   });
+}
+
+export function listGlobalBusinessTypes(
+  baseUrl: string,
+  query: GlobalBusinessTypeListQuery,
+): Promise<PagedResult<GlobalBusinessTypeItem>> {
+  return platformRequest<unknown>(baseUrl, {
+    path: globalBusinessTypesListRequestPath(query),
+    signal: query.signal,
+  }).then((payload) => {
+    const page = parsePagedResult<unknown>(payload);
+    return {
+      ...page,
+      items: page.items.map(mapGlobalBusinessType),
+    };
+  });
+}
+
+export function getGlobalBusinessType(
+  baseUrl: string,
+  businessTypeId: string,
+  signal?: AbortSignal,
+): Promise<GlobalBusinessTypeDetail> {
+  return platformRequest<unknown>(baseUrl, {
+    path: `/api/v1/platform/global-catalog/business-types/${businessTypeId}`,
+    signal,
+  }).then(mapGlobalBusinessType);
+}
+
+export function createGlobalBusinessType(
+  baseUrl: string,
+  input: CreateGlobalBusinessTypeInput,
+  signal?: AbortSignal,
+): Promise<GlobalBusinessTypeDetail> {
+  return globalCatalogMutationRequest<unknown>(baseUrl, {
+    method: "POST",
+    path: "/api/v1/platform/global-catalog/business-types",
+    body: {
+      code: input.code,
+      name: input.name,
+      description: input.description ?? null,
+      sortOrder: input.sortOrder ?? 0,
+      iconReference: input.iconReference ?? null,
+    },
+    signal,
+  }).then(mapGlobalBusinessType);
+}
+
+export function updateGlobalBusinessType(
+  baseUrl: string,
+  businessTypeId: string,
+  input: UpdateGlobalBusinessTypeInput,
+  signal?: AbortSignal,
+): Promise<GlobalBusinessTypeDetail> {
+  return globalCatalogMutationRequest<unknown>(baseUrl, {
+    method: "PUT",
+    path: `/api/v1/platform/global-catalog/business-types/${businessTypeId}`,
+    body: {
+      name: input.name,
+      description: input.description ?? null,
+      sortOrder: input.sortOrder ?? 0,
+      iconReference: input.iconReference ?? null,
+      expectedUpdatedAtUtc: input.expectedUpdatedAtUtc,
+    },
+    signal,
+  }).then(mapGlobalBusinessType);
+}
+
+export function setGlobalBusinessTypeStatus(
+  baseUrl: string,
+  businessTypeId: string,
+  status: GlobalBusinessTypeStatus,
+  expectedUpdatedAtUtc: string,
+  signal?: AbortSignal,
+): Promise<GlobalBusinessTypeDetail> {
+  return globalCatalogMutationRequest<unknown>(baseUrl, {
+    method: "POST",
+    path: `/api/v1/platform/global-catalog/business-types/${businessTypeId}/status`,
+    body: { status, expectedUpdatedAtUtc },
+    signal,
+  }).then(mapGlobalBusinessType);
 }
 
 export function listGlobalCategories(

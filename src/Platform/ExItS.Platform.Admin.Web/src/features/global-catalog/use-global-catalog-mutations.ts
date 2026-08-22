@@ -1,19 +1,25 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  createGlobalBusinessType,
   createGlobalCategory,
   createGlobalProduct,
   deleteGlobalProductImage,
+  setGlobalBusinessTypeStatus,
   setGlobalCategoryStatus,
   setGlobalProductStatus,
+  updateGlobalBusinessType,
   updateGlobalCategory,
   updateGlobalProduct,
   uploadGlobalProductImage,
 } from "@/api/global-catalog/global-catalog-client";
 import type {
+  CreateGlobalBusinessTypeInput,
   CreateGlobalCategoryInput,
   CreateGlobalProductInput,
+  GlobalBusinessTypeStatus,
   GlobalCategoryStatus,
   GlobalProductStatus,
+  UpdateGlobalBusinessTypeInput,
   UpdateGlobalCategoryInput,
   UpdateGlobalProductInput,
 } from "@/api/global-catalog/global-catalog-types";
@@ -23,6 +29,10 @@ import { env } from "@/lib/env";
 export function useGlobalCatalogMutations() {
   const queryClient = useQueryClient();
 
+  async function invalidateBusinessTypes() {
+    await queryClient.invalidateQueries({ queryKey: globalCatalogQueryKeys.businessTypes.all });
+  }
+
   async function invalidateCategories() {
     await queryClient.invalidateQueries({ queryKey: globalCatalogQueryKeys.categories.all });
   }
@@ -30,6 +40,52 @@ export function useGlobalCatalogMutations() {
   async function invalidateProducts() {
     await queryClient.invalidateQueries({ queryKey: globalCatalogQueryKeys.products.all });
   }
+
+  const createBusinessType = useMutation({
+    mutationFn: (input: CreateGlobalBusinessTypeInput) =>
+      createGlobalBusinessType(env.platformApiBaseUrl, input),
+    onSuccess: invalidateBusinessTypes,
+  });
+
+  const updateBusinessType = useMutation({
+    mutationFn: ({
+      businessTypeId,
+      input,
+    }: {
+      businessTypeId: string;
+      input: UpdateGlobalBusinessTypeInput;
+    }) => updateGlobalBusinessType(env.platformApiBaseUrl, businessTypeId, input),
+    onSuccess: async (_data, variables) => {
+      await invalidateBusinessTypes();
+      await queryClient.invalidateQueries({
+        queryKey: globalCatalogQueryKeys.businessTypes.detail(variables.businessTypeId),
+      });
+    },
+  });
+
+  const changeBusinessTypeStatus = useMutation({
+    mutationFn: ({
+      businessTypeId,
+      status,
+      expectedUpdatedAtUtc,
+    }: {
+      businessTypeId: string;
+      status: GlobalBusinessTypeStatus;
+      expectedUpdatedAtUtc: string;
+    }) =>
+      setGlobalBusinessTypeStatus(
+        env.platformApiBaseUrl,
+        businessTypeId,
+        status,
+        expectedUpdatedAtUtc,
+      ),
+    onSuccess: async (_data, variables) => {
+      await invalidateBusinessTypes();
+      await queryClient.invalidateQueries({
+        queryKey: globalCatalogQueryKeys.businessTypes.detail(variables.businessTypeId),
+      });
+    },
+  });
 
   const createCategory = useMutation({
     mutationFn: (input: CreateGlobalCategoryInput) =>
@@ -146,6 +202,9 @@ export function useGlobalCatalogMutations() {
   });
 
   return {
+    createBusinessType,
+    updateBusinessType,
+    changeBusinessTypeStatus,
     createCategory,
     updateCategory,
     changeCategoryStatus,

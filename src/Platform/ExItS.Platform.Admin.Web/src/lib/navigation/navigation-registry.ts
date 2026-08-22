@@ -195,7 +195,7 @@ export const navigationRegistry: NavigationSectionDefinition[] = [
         id: "PWEB-NAV-BUSINESS-TYPES",
         labelKey: "nav.businessTypes",
         icon: "tag",
-        href: "/admin/catalog/business-types",
+        href: "/admin/global-catalog/business-types",
         lifecycle: "AVAILABLE",
         permission: { kind: "any", codes: [P.viewGlobalCatalog] },
         order: 1,

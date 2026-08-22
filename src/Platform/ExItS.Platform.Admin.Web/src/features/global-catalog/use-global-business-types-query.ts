@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { listGlobalBusinessTypes } from "@/api/global-catalog/global-catalog-client";
+import { listActiveGlobalBusinessTypes } from "@/api/global-catalog/global-catalog-client";
 import { globalCatalogQueryKeys } from "@/api/global-catalog/global-catalog-query-keys";
 import { env } from "@/lib/env";
 
 export function useGlobalBusinessTypesQuery(enabled: boolean) {
   return useQuery({
-    queryKey: globalCatalogQueryKeys.businessTypes,
+    queryKey: globalCatalogQueryKeys.businessTypes.lookup,
     enabled,
-    queryFn: ({ signal }) => listGlobalBusinessTypes(env.platformApiBaseUrl, signal),
+    queryFn: ({ signal }) => listActiveGlobalBusinessTypes(env.platformApiBaseUrl, signal),
   });
 }

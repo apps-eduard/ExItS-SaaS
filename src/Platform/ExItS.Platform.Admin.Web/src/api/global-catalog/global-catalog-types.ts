@@ -1,3 +1,16 @@
+export const GLOBAL_BUSINESS_TYPE_STATUSES = ["Active", "Inactive", "Archived"] as const;
+export type GlobalBusinessTypeStatus = (typeof GLOBAL_BUSINESS_TYPE_STATUSES)[number];
+
+export const GLOBAL_BUSINESS_TYPE_LIST_SORT_BY = [
+  "SortOrder",
+  "Name",
+  "Code",
+  "Status",
+  "UpdatedAtUtc",
+  "CreatedAtUtc",
+] as const;
+export type GlobalBusinessTypeListSortBy = (typeof GLOBAL_BUSINESS_TYPE_LIST_SORT_BY)[number];
+
 export const GLOBAL_CATEGORY_STATUSES = ["Active", "Inactive", "Archived"] as const;
 export type GlobalCategoryStatus = (typeof GLOBAL_CATEGORY_STATUSES)[number];
 
@@ -51,6 +64,7 @@ export type GlobalProductImageVariant = (typeof GLOBAL_PRODUCT_IMAGE_VARIANTS)[n
 export const BUSINESS_TYPE_ASSIGNMENT_MODES = ["Add", "Remove", "Replace"] as const;
 export type BusinessTypeAssignmentMode = (typeof BUSINESS_TYPE_ASSIGNMENT_MODES)[number];
 
+export const GLOBAL_BUSINESS_TYPE_LIST_PAGE_SIZE = 20;
 export const GLOBAL_CATEGORY_LIST_PAGE_SIZE = 20;
 export const GLOBAL_PRODUCT_LIST_PAGE_SIZE = 20;
 export const GLOBAL_CATALOG_LOOKUP_PAGE_SIZE = 100;
@@ -60,8 +74,39 @@ export type GlobalBusinessTypeItem = {
   code: string;
   name: string;
   description?: string;
-  status: string;
+  status: GlobalBusinessTypeStatus;
   sortOrder: number;
+  iconReference?: string;
+  createdAtUtc?: string;
+  updatedAtUtc?: string;
+};
+
+export type GlobalBusinessTypeDetail = GlobalBusinessTypeItem;
+
+export type GlobalBusinessTypeListQuery = {
+  page?: number;
+  pageSize?: number;
+  status?: GlobalBusinessTypeStatus;
+  search?: string;
+  sortBy?: GlobalBusinessTypeListSortBy;
+  sortDesc?: boolean;
+  signal?: AbortSignal;
+};
+
+export type CreateGlobalBusinessTypeInput = {
+  code: string;
+  name: string;
+  description?: string;
+  sortOrder?: number;
+  iconReference?: string;
+};
+
+export type UpdateGlobalBusinessTypeInput = {
+  name: string;
+  description?: string;
+  sortOrder?: number;
+  iconReference?: string;
+  expectedUpdatedAtUtc: string;
 };
 
 export type GlobalCategoryListItem = {

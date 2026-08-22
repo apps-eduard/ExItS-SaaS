@@ -29,6 +29,11 @@ import {
   CategoryDetailPage,
   CategoryFormPage,
 } from "@/features/global-catalog/CategoryDetailPage";
+import { BusinessTypesPage } from "@/features/global-catalog/BusinessTypesPage";
+import {
+  BusinessTypeDetailPage,
+  BusinessTypeFormPage,
+} from "@/features/global-catalog/BusinessTypeDetailPage";
 import { GlobalProductsPage } from "@/features/global-catalog/GlobalProductsPage";
 import {
   ProductDetailPage as GlobalCatalogProductDetailPage,
@@ -142,6 +147,14 @@ export function App() {
                           <Route path=":userId" element={<UserDetailPage />} />
                         </Route>
                         <Route path="global-catalog">
+                          <Route path="business-types">
+                            <Route index element={<BusinessTypesPage />} />
+                            <Route path="new" element={<BusinessTypeFormPage mode="create" />} />
+                            <Route path=":businessTypeId">
+                              <Route index element={<BusinessTypeDetailPage />} />
+                              <Route path="edit" element={<BusinessTypeFormPage mode="edit" />} />
+                            </Route>
+                          </Route>
                           <Route path="categories">
                             <Route index element={<CategoriesPage />} />
                             <Route path="new" element={<CategoryFormPage mode="create" />} />
@@ -159,6 +172,10 @@ export function App() {
                             </Route>
                           </Route>
                         </Route>
+                        <Route
+                          path="catalog/business-types"
+                          element={<Navigate to="/admin/global-catalog/business-types" replace />}
+                        />
                         <Route path="*" element={<ShellCatchAllPage />} />
                       </Route>
                     </Route>
