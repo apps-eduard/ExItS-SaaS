@@ -105,6 +105,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "offline.pin.confirmMismatch": "Dili magkatugma ang mga PIN.",
   "offline.pin.invalidFormat": "Pagsulod og labing menos 6 ka digit.",
   "offline.pin.notSignedIn": "Sign in online una sa dili pa mag-set og offline PIN.",
+  "offline.pin.webCryptoUnavailable":
+    "Offline PIN encryption requires a secure browser context. On the Android emulator, run adb reverse tcp:5177 tcp:5177 and open http://127.0.0.1:5177 instead of http://10.0.2.2:5177.",
   "offline.pin.unlockTitle": "I-unlock ang offline",
   "offline.pin.unlockSubtitle":
     "Ibutang ang offline PIN aron maabli ang naka-save nga POS data niini nga device.",
@@ -301,7 +303,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "workspace.lede": "Pilia ang organization ug branch nga imong pagadumalahon.",
   "workspace.experienceLede": "Pagpili unsaon nimo pagtrabaho.",
   "workspace.loading": "Nagkarga og workspacesù",
-  "workspace.preparingPermissions": "Preparing workspace permissionsÖ",
+  "workspace.preparingPermissions": "Preparing workspace permissionsù",
   "workspace.loadingDestinations": "Nagkarga og available nga experiencesù",
   "workspace.opening": "Ginaabliù",
   "workspace.loadError": "Dili ma-load ang workspace data.",

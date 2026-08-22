@@ -1,4 +1,5 @@
 import { wrapDek, unwrapDek, deriveScopeKeyFromBinding, toArrayBuffer } from "@/offline/crypto";
+import { assertWebCryptoSubtleAvailable } from "@/lib/web-crypto-capability";
 import {
   enrollOfflinePin,
   hasOfflinePinConfigured,
@@ -102,6 +103,7 @@ export function clearAllWrappedDekRecords(): void {
 }
 
 async function derivePinWrapKey(pin: string, saltBase64: string, iterations: number): Promise<CryptoKey> {
+  assertWebCryptoSubtleAvailable();
   const salt = Uint8Array.from(atob(saltBase64), (c) => c.charCodeAt(0));
   const passwordBytes = new TextEncoder().encode(pin);
   try {
@@ -124,6 +126,7 @@ async function derivePinWrapKey(pin: string, saltBase64: string, iterations: num
 }
 
 export async function generateRandomDek(): Promise<CryptoKey> {
+  assertWebCryptoSubtleAvailable();
   return crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
 }
 

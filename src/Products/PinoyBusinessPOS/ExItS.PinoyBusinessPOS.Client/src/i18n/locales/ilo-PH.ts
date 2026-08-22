@@ -105,6 +105,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "offline.pin.confirmMismatch": "Saan a magtugma dagiti PIN.",
   "offline.pin.invalidFormat": "Mangikabil iti saan a basbassit ngem 6 a digit.",
   "offline.pin.notSignedIn": "Ag-sign in iti online sakbay nga ag-set ti offline PIN.",
+  "offline.pin.webCryptoUnavailable":
+    "Offline PIN encryption requires a secure browser context. On the Android emulator, run adb reverse tcp:5177 tcp:5177 and open http://127.0.0.1:5177 instead of http://10.0.2.2:5177.",
   "offline.pin.unlockTitle": "I-unlock ti offline",
   "offline.pin.unlockSubtitle":
     "Ikkam ti offline PIN tapno malukatan ti naidulin a POS data iti daytoy a device.",
@@ -302,7 +304,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "workspace.lede": "Pilien ti organization ken branch a pagtartrabahoam.",
   "workspace.experienceLede": "Agpili no kasano ti kayatmo a panagtrabaho.",
   "workspace.loading": "Agkarkarga kadagiti workspacesù",
-  "workspace.preparingPermissions": "Preparing workspace permissionsÖ",
+  "workspace.preparingPermissions": "Preparing workspace permissionsù",
   "workspace.loadingDestinations": "Agkarkarga kadagiti available a experiencesù",
   "workspace.opening": "Malukatanù",
   "workspace.loadError": "Saan a ma-load ti workspace data.",

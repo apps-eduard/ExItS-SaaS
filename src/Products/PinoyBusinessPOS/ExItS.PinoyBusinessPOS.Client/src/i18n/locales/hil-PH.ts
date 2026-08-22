@@ -106,6 +106,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "offline.pin.confirmMismatch": "Indi mag-ugma ang mga PIN.",
   "offline.pin.invalidFormat": "Magbutang sang indi menos 6 ka digit.",
   "offline.pin.notSignedIn": "Mag-sign in online anay antes mag-set sang offline PIN.",
+  "offline.pin.webCryptoUnavailable":
+    "Offline PIN encryption requires a secure browser context. On the Android emulator, run adb reverse tcp:5177 tcp:5177 and open http://127.0.0.1:5177 instead of http://10.0.2.2:5177.",
   "offline.pin.unlockTitle": "I-unlock ang offline",
   "offline.pin.unlockSubtitle":
     "Ibutang ang offline PIN agod mabuksan ang naka-save nga POS data sa sini nga device.",
@@ -303,7 +305,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "workspace.lede": "Pilia ang organization kag branch nga imo pagadumalahan.",
   "workspace.experienceLede": "Magpili paano mo gusto magtrabaho.",
   "workspace.loading": "Nagakarga sang workspacesù",
-  "workspace.preparingPermissions": "Preparing workspace permissionsÖ",
+  "workspace.preparingPermissions": "Preparing workspace permissionsù",
   "workspace.loadingDestinations": "Nagakarga sang available nga experiencesù",
   "workspace.opening": "Ginabuksanù",
   "workspace.loadError": "Indi ma-load ang workspace data.",

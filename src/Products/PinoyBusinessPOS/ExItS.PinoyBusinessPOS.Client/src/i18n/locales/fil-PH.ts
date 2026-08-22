@@ -104,6 +104,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "offline.pin.confirmMismatch": "Hindi magkatugma ang mga PIN.",
   "offline.pin.invalidFormat": "Maglagay ng hindi bababa sa 6 na digit.",
   "offline.pin.notSignedIn": "Mag-sign in online bago magtakda ng offline PIN.",
+  "offline.pin.webCryptoUnavailable":
+    "Offline PIN encryption requires a secure browser context. On the Android emulator, run adb reverse tcp:5177 tcp:5177 and open http://127.0.0.1:5177 instead of http://10.0.2.2:5177.",
   "offline.pin.unlockTitle": "I-unlock ang offline",
   "offline.pin.unlockSubtitle":
     "Ilagay ang offline PIN para buksan ang naka-save na POS data sa device na ito.",
@@ -298,7 +300,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "workspace.lede": "Piliin ang organization at branch na pagtatrabahuan.",
   "workspace.experienceLede": "Piliin kung paano mo gustong magtrabaho.",
   "workspace.loading": "Naglo-load ng mga workspaceù",
-  "workspace.preparingPermissions": "Preparing workspace permissionsÖ",
+  "workspace.preparingPermissions": "Preparing workspace permissionsù",
   "workspace.loadingDestinations": "Naglo-load ng available experiencesù",
   "workspace.opening": "Binubuksanù",
   "workspace.loadError": "Hindi ma-load ang workspace data.",

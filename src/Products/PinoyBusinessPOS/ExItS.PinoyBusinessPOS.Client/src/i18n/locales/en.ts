@@ -99,6 +99,8 @@ export const en = {
   "offline.pin.confirmMismatch": "PIN entries do not match.",
   "offline.pin.invalidFormat": "Enter at least 6 digits.",
   "offline.pin.notSignedIn": "Sign in online before setting an offline PIN.",
+  "offline.pin.webCryptoUnavailable":
+    "Offline PIN encryption requires a secure browser context. On the Android emulator, run adb reverse tcp:5177 tcp:5177 and open http://127.0.0.1:5177 instead of http://10.0.2.2:5177.",
   "offline.pin.unlockTitle": "Unlock offline",
   "offline.pin.unlockSubtitle": "Enter your offline PIN to open saved POS data on this device.",
   "offline.pin.label": "Offline PIN",

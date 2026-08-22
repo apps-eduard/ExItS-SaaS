@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { LockKeyhole } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useI18n } from "@/i18n/I18nProvider";
 import { enrollOfflinePinAndDek } from "@/offline/local-store-key";
+import { WebCryptoUnavailableError, isWebCryptoSubtleAvailable } from "@/lib/web-crypto-capability";
 import { useSession } from "@/session/SessionProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -23,6 +24,12 @@ export function OfflinePinEnrollPage() {
 
   const userId = session?.userId;
 
+  useEffect(() => {
+    if (!isWebCryptoSubtleAvailable()) {
+      setError(t("offline.pin.webCryptoUnavailable"));
+    }
+  }, [t]);
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
@@ -35,14 +42,23 @@ export function OfflinePinEnrollPage() {
       return;
     }
     setSubmitting(true);
-    const ok = await enrollOfflinePinAndDek(userId, pin);
-    setSubmitting(false);
-    if (!ok) {
-      setError(t("offline.pin.invalidFormat"));
-      return;
+    try {
+      const ok = await enrollOfflinePinAndDek(userId, pin);
+      if (!ok) {
+        setError(t("offline.pin.invalidFormat"));
+        return;
+      }
+      await refreshWorkspaces();
+      navigate("/", { replace: true });
+    } catch (caught) {
+      if (caught instanceof WebCryptoUnavailableError) {
+        setError(t("offline.pin.webCryptoUnavailable"));
+        return;
+      }
+      throw caught;
+    } finally {
+      setSubmitting(false);
     }
-    await refreshWorkspaces();
-    navigate("/", { replace: true });
   }
 
   return (
@@ -78,7 +94,11 @@ export function OfflinePinEnrollPage() {
             data-testid="offline-pin-enroll-confirm"
           />
           {error ? <ErrorState title={t("offline.pin.enrollTitle")} detail={error} /> : null}
-          <Button type="submit" disabled={submitting} data-testid="offline-pin-enroll-submit">
+          <Button
+            type="submit"
+            disabled={submitting || !isWebCryptoSubtleAvailable()}
+            data-testid="offline-pin-enroll-submit"
+          >
             {t("offline.pin.enrollAction")}
           </Button>
         </form>
