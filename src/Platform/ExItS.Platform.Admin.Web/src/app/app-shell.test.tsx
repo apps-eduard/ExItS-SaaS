@@ -223,7 +223,7 @@ describe("application shell", () => {
     window.history.replaceState({}, "", "/admin");
     render(<App />);
     await screen.findByRole("heading", { name: "Overview" });
-    expect(screen.getByText("Development", { exact: true })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Development" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "All Organizations" })).toBeInTheDocument();
     expect(await screen.findByRole("link", { name: "All Accounts" })).toHaveAttribute(
       "href",
@@ -269,7 +269,7 @@ describe("application shell", () => {
 
     window.history.replaceState({}, "", "/admin/platform-roles");
     const second = render(<App />);
-    expect(await screen.findByRole("heading", { name: "Under development" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Roles & Permissions" })).toBeInTheDocument();
     second.unmount();
 
     window.history.replaceState({}, "", "/admin/this-route-does-not-exist-xyz");

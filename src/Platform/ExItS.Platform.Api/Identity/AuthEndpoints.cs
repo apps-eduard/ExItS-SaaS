@@ -48,11 +48,12 @@ internal static class AuthEndpoints
             HttpContext http,
             LogoutPlatformSession useCase,
             IOptions<PlatformSessionOptions> sessionOptions,
+            IHostEnvironment env,
             CancellationToken ct) =>
         {
             var token = ExtractSessionToken(http, sessionOptions.Value);
             await useCase.ExecuteAsync(token, ct).ConfigureAwait(false);
-            DeleteSessionCookie(http, sessionOptions.Value);
+            DeleteSessionCookie(http, sessionOptions.Value, env);
             return Results.NoContent();
         })
         .AllowAnonymous();
@@ -118,6 +119,7 @@ internal static class AuthEndpoints
             HttpContext http,
             ChangePlatformUserPassword useCase,
             IOptions<PlatformSessionOptions> sessionOptions,
+            IHostEnvironment env,
             CancellationToken ct) =>
         {
             if (!TryGetAuthenticatedUserId(http, out var userId))
@@ -133,7 +135,7 @@ internal static class AuthEndpoints
                 .ConfigureAwait(false);
             if (result.IsSuccess)
             {
-                DeleteSessionCookie(http, sessionOptions.Value);
+                DeleteSessionCookie(http, sessionOptions.Value, env);
             }
 
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
@@ -777,9 +779,19 @@ internal static class AuthEndpoints
             });
     }
 
-    internal static void DeleteSessionCookie(HttpContext http, PlatformSessionOptions options)
+    internal static void DeleteSessionCookie(HttpContext http, PlatformSessionOptions options, IHostEnvironment env)
     {
-        http.Response.Cookies.Delete(options.CookieName, new CookieOptions { Path = "/" });
+        var configuration = http.RequestServices.GetRequiredService<IConfiguration>();
+        var secure = PlatformAuthCookiePolicy.SessionCookieSecure(http.Request, env, configuration);
+        http.Response.Cookies.Delete(
+            options.CookieName,
+            new CookieOptions
+            {
+                Path = "/",
+                Secure = secure,
+                SameSite = SameSiteMode.Lax,
+                HttpOnly = true,
+            });
     }
 
     internal sealed record LoginRequest(string? UsernameOrEmail, string? Password);
