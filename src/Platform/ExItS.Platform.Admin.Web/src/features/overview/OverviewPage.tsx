@@ -1,9 +1,12 @@
 import { PageHeader } from "@/components/exits/PageHeader";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
 import { AccountsReviewWidget } from "@/features/overview/widgets/AccountsReviewWidget";
-import { OrganizationsAttentionWidget } from "@/features/overview/widgets/OrganizationsAttentionWidget";
+import { NeedsAttentionCenter } from "@/features/overview/widgets/NeedsAttentionCenter";
 import { OrganizationsSummaryWidget } from "@/features/overview/widgets/OrganizationsSummaryWidget";
+import { PaymentsSummaryWidget } from "@/features/overview/widgets/PaymentsSummaryWidget";
 import { PlatformHealthWidget } from "@/features/overview/widgets/PlatformHealthWidget";
+import { PrivacySummaryWidget } from "@/features/overview/widgets/PrivacySummaryWidget";
+import { QuickAccessWidget } from "@/features/overview/widgets/QuickAccessWidget";
 import { RecentAuditWidget } from "@/features/overview/widgets/RecentAuditWidget";
 import { SubscriptionsSummaryWidget } from "@/features/overview/widgets/SubscriptionsSummaryWidget";
 import { useDashboardAuthorization } from "@/features/overview/use-dashboard-authorization";
@@ -16,10 +19,29 @@ export function OverviewPage() {
     access.canViewOrganizations ||
     access.canViewSubscriptions ||
     access.canReviewAccounts ||
+    access.canViewPayments ||
+    access.canViewPrivacy ||
     access.canViewAudit ||
-    access.canViewHealth;
+    access.canViewHealth ||
+    access.canViewCatalog ||
+    access.canViewMemberships ||
+    access.canViewPersonalFeatures ||
+    access.canViewGlobalCatalog ||
+    access.canViewPlans;
   const hasMetrics =
-    access.canViewOrganizations || access.canViewSubscriptions || access.canReviewAccounts;
+    access.canViewOrganizations ||
+    access.canViewSubscriptions ||
+    access.canReviewAccounts ||
+    access.canViewPayments ||
+    access.canViewPrivacy;
+  const hasAttention =
+    access.canViewOrganizations ||
+    access.canReviewAccounts ||
+    access.canViewSubscriptions ||
+    access.canViewPayments ||
+    access.canViewPrivacy ||
+    access.canViewHealth;
+  const hasRail = access.canViewHealth || hasAnyWidget;
 
   return (
     <section className="grid gap-5">
@@ -27,7 +49,7 @@ export function OverviewPage() {
 
       {access.status === "loading" ? (
         <div
-          className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5"
           role="status"
           aria-busy="true"
           aria-label={t("dashboard.loading")}
@@ -53,7 +75,7 @@ export function OverviewPage() {
       {access.status === "loaded" && hasAnyWidget ? (
         <>
           {hasMetrics ? (
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
               {access.canViewOrganizations ? (
                 <OrganizationsSummaryWidget enabled={access.canViewOrganizations} />
               ) : null}
@@ -63,22 +85,29 @@ export function OverviewPage() {
               {access.canReviewAccounts ? (
                 <AccountsReviewWidget enabled={access.canReviewAccounts} variant="metric" />
               ) : null}
+              {access.canViewPayments ? (
+                <PaymentsSummaryWidget enabled={access.canViewPayments} />
+              ) : null}
+              {access.canViewPrivacy ? (
+                <PrivacySummaryWidget enabled={access.canViewPrivacy} />
+              ) : null}
             </div>
           ) : null}
 
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_15rem] lg:items-start">
-            <div className="grid gap-5">
-              {access.canViewOrganizations ? (
-                <OrganizationsAttentionWidget enabled={access.canViewOrganizations} />
-              ) : null}
-              {access.canReviewAccounts ? (
-                <AccountsReviewWidget enabled={access.canReviewAccounts} variant="list" />
-              ) : null}
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(14rem,18rem)] lg:items-start">
+            <div className="grid min-w-0 gap-5">
+              {hasAttention ? <NeedsAttentionCenter access={access} /> : null}
+              {access.canViewAudit ? <RecentAuditWidget enabled={access.canViewAudit} /> : null}
             </div>
-            {access.canViewHealth ? <PlatformHealthWidget enabled={access.canViewHealth} /> : null}
+            {hasRail ? (
+              <aside className="grid min-w-0 gap-5">
+                {access.canViewHealth ? (
+                  <PlatformHealthWidget enabled={access.canViewHealth} />
+                ) : null}
+                <QuickAccessWidget access={access} />
+              </aside>
+            ) : null}
           </div>
-
-          {access.canViewAudit ? <RecentAuditWidget enabled={access.canViewAudit} /> : null}
         </>
       ) : null}
     </section>

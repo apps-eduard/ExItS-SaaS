@@ -1467,6 +1467,35 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
       );
       return jsonResponse(200, updated);
     }
+    if (path.endsWith("/api/v1/platform/payments") && method === "GET") {
+      const status = new URL(url, "http://local.test").searchParams.get("status") ?? "";
+      const totals: Record<string, number> = {
+        Confirmed: 12,
+        PendingConfirmation: 0,
+      };
+      return jsonResponse(200, pagedJson([], totals[status] ?? 0, 1));
+    }
+    if (path.endsWith("/api/v1/platform/privacy-compliance/overview") && method === "GET") {
+      return jsonResponse(200, {
+        totalRequirements: 10,
+        totalSystems: 2,
+        totalEvidence: 5,
+        requirementsByStatus: {},
+        requirementsByCategory: {},
+        lastUpdatedUtc: null,
+        overallReadiness: "Ready",
+        readyCount: 8,
+        actionNeededCount: 0,
+        externalLegalReviewCount: 0,
+        requirementsWithEvidenceCount: 5,
+        technicalSafeguardsSummary: "",
+        governanceDocumentationSummary: "",
+        legalReviewSummary: "",
+        npcVerificationSummary: "",
+        categorySummaries: [],
+        privacyImpactFollowUps: [],
+      });
+    }
     if (url.includes("/api/v1/platform/audit")) {
       return jsonResponse(200, pagedJson([], 0, 8));
     }

@@ -104,6 +104,35 @@ async function mockDashboardData(page: Page, options?: { failOrganizations?: boo
     }
     await route.fulfill({ json: paged([], 2) });
   });
+  await page.route("**/api/v1/platform/payments*", async (route) => {
+    const url = new URL(route.request().url());
+    const status = url.searchParams.get("status");
+    const totals: Record<string, number> = { Confirmed: 12, PendingConfirmation: 2 };
+    await route.fulfill({ json: paged([], status ? (totals[status] ?? 0) : 0) });
+  });
+  await page.route("**/api/v1/platform/privacy-compliance/overview", async (route) => {
+    await route.fulfill({
+      json: {
+        totalRequirements: 10,
+        totalSystems: 2,
+        totalEvidence: 5,
+        requirementsByStatus: {},
+        requirementsByCategory: {},
+        lastUpdatedUtc: null,
+        overallReadiness: "Ready",
+        readyCount: 8,
+        actionNeededCount: 0,
+        externalLegalReviewCount: 0,
+        requirementsWithEvidenceCount: 5,
+        technicalSafeguardsSummary: "",
+        governanceDocumentationSummary: "",
+        legalReviewSummary: "",
+        npcVerificationSummary: "",
+        categorySummaries: [],
+        privacyImpactFollowUps: [],
+      },
+    });
+  });
   await page.route("**/api/v1/platform/audit*", async (route) => {
     await route.fulfill({
       json: paged(
@@ -147,17 +176,18 @@ test("full-permission dashboard renders real summaries", async ({ page }) => {
   await mockDashboardData(page);
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Organizations", exact: true })).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Organizations needing attention" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Needs attention" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Subscriptions" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Accounts needing review" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Payments" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Privacy readiness" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Recent Platform activity" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Platform readiness" })).toBeVisible();
-  await expect(page.getByText("Harbor Market")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Quick access" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Suspended organizations/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Subscriptions in grace period/i })).toBeVisible();
   await expect(page.getByText("Platform access checked")).toBeVisible();
   await expect(page.locator('[title="platform.access.checked"]')).toBeVisible();
-  await expect(page.getByRole("link", { name: "View organizations" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "View audit log" })).toBeVisible();
 });
 
 test("limited-permission dashboard hides unauthorized widgets", async ({ page }) => {
@@ -170,7 +200,10 @@ test("limited-permission dashboard hides unauthorized widgets", async ({ page })
   await expect(page.getByRole("heading", { name: "Recent Platform activity" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Organizations", exact: true })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Subscriptions" })).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "Accounts needing review" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Payments" })).toHaveCount(0);
+  const quickAccess = page.locator("section").filter({ has: page.getByRole("heading", { name: "Quick access", exact: true }) });
+  await expect(quickAccess.getByRole("link", { name: "Audit", exact: true })).toBeVisible();
+  await expect(quickAccess.getByRole("link", { name: "Organizations", exact: true })).toHaveCount(0);
 });
 
 test("one widget error does not blank the dashboard", async ({ page }) => {
@@ -189,9 +222,7 @@ test("dashboard has no horizontal overflow at 375px", async ({ page }) => {
   await mockDashboardData(page);
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Organizations", exact: true })).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Organizations needing attention" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Needs attention" })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
 
@@ -201,9 +232,7 @@ test("dashboard has no horizontal overflow at 320px", async ({ page }) => {
   await mockDashboardData(page);
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Organizations", exact: true })).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Organizations needing attention" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Needs attention" })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
 
@@ -215,6 +244,7 @@ test("dashboard localizes to Filipino", async ({ page }) => {
   await page.getByRole("menuitem", { name: /Filipino/ }).click();
   await expect(page.getByRole("heading", { name: "Mga Organisasyon", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Mga Subskripsyon" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Kailangan ng pansin", exact: true })).toBeVisible();
 });
 
 test("dashboard Dark theme remains usable", async ({ page }) => {
@@ -225,9 +255,7 @@ test("dashboard Dark theme remains usable", async ({ page }) => {
   await page.getByRole("menuitem", { name: /Dark/ }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await expect(page.getByRole("heading", { name: "Organizations", exact: true })).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Organizations needing attention" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Needs attention" })).toBeVisible();
 });
 
 test("authenticated dashboard has no serious accessibility violations", async ({ page }) => {
@@ -236,9 +264,7 @@ test("authenticated dashboard has no serious accessibility violations", async ({
   await mockDashboardData(page);
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Organizations", exact: true })).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Organizations needing attention" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Needs attention" })).toBeVisible();
   const results = await new AxeBuilder({ page }).analyze();
   const serious = results.violations.filter(
     (violation) => violation.impact === "serious" || violation.impact === "critical",

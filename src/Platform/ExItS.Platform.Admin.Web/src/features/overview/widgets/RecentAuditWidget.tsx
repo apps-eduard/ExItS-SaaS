@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { RecentActivityList } from "@/components/exits/dashboard/RecentActivityList";
 import { DashboardSection } from "@/components/exits/dashboard/DashboardSection";
 import { DashboardWidgetError } from "@/components/exits/dashboard/DashboardWidgetError";
@@ -77,6 +78,14 @@ export function RecentAuditWidget({ enabled }: { enabled: boolean }) {
           })}
         />
       ) : null}
+      <p className="mt-3">
+        <Link
+          to="/admin/audit"
+          className="text-[length:var(--exits-text-xs)] font-medium text-foreground underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          {t("dashboard.audit.viewLog")}
+        </Link>
+      </p>
     </DashboardSection>
   );
 }
