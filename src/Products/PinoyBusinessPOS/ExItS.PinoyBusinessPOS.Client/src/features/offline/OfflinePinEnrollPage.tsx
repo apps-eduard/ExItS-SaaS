@@ -8,7 +8,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useI18n } from "@/i18n/I18nProvider";
 import { enrollOfflinePinAndDek } from "@/offline/local-store-key";
-import { WebCryptoUnavailableError, isWebCryptoSubtleAvailable } from "@/lib/web-crypto-capability";
+import { WebCryptoUnavailableError, isWebCryptoSubtleAvailable, resolveEmulatorHttpsDevUrl } from "@/lib/web-crypto-capability";
 import { useSession } from "@/session/SessionProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -23,6 +23,8 @@ export function OfflinePinEnrollPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const userId = session?.userId;
+  const secureDevUrl = resolveEmulatorHttpsDevUrl();
+  const webCryptoReady = isWebCryptoSubtleAvailable();
 
   useEffect(() => {
     if (!isWebCryptoSubtleAvailable()) {
@@ -94,9 +96,21 @@ export function OfflinePinEnrollPage() {
             data-testid="offline-pin-enroll-confirm"
           />
           {error ? <ErrorState title={t("offline.pin.enrollTitle")} detail={error} /> : null}
+          {secureDevUrl ? (
+            <Button
+              type="button"
+              className="w-full"
+              data-testid="offline-pin-open-secure-dev-url"
+              onClick={() => {
+                window.location.assign(secureDevUrl);
+              }}
+            >
+              {t("offline.pin.openSecureDevUrl")}
+            </Button>
+          ) : null}
           <Button
             type="submit"
-            disabled={submitting || !isWebCryptoSubtleAvailable()}
+            disabled={submitting || !webCryptoReady}
             data-testid="offline-pin-enroll-submit"
           >
             {t("offline.pin.enrollAction")}

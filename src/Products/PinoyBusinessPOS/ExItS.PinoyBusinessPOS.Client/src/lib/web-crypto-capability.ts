@@ -18,3 +18,15 @@ export function assertWebCryptoSubtleAvailable(): void {
     throw new WebCryptoUnavailableError();
   }
 }
+
+/** Emulator dev on http://10.0.2.2 needs HTTPS for crypto.subtle; Vite dev serves basic SSL. */
+export function resolveEmulatorHttpsDevUrl(): string | null {
+  if (typeof window === "undefined" || window.isSecureContext) {
+    return null;
+  }
+  const { protocol, hostname, port, pathname, search, hash } = window.location;
+  if (protocol !== "http:" || hostname !== "10.0.2.2") {
+    return null;
+  }
+  return `https://${hostname}${port ? `:${port}` : ""}${pathname}${search}${hash}`;
+}
