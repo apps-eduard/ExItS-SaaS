@@ -196,8 +196,22 @@ test("privacy compliance overview, documents, systems, evidence, and PIA routes"
   await expect(page.getByTestId("privacy-overview-page")).toBeVisible();
   await expect(page.getByTestId("privacy-disclaimer")).toBeVisible();
   await expect(page.getByText("Readiness tooling only")).toBeVisible();
+  await expect(page.getByTestId("privacy-overview-tablist")).toBeVisible();
+  await expect(page.getByTestId("privacy-overview-tab-category")).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+
+  await page.getByTestId("privacy-overview-tab-pia").click();
   await expect(page.getByText("Core processing PIA")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Important gaps" })).toBeVisible();
+
+  await page.getByTestId("privacy-overview-tab-gaps").click();
+  await expect(page.getByTestId("privacy-overview-tab-gaps")).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(page.getByTestId("privacy-overview-panel-gaps")).toBeVisible();
+  await expect(page.getByTestId("privacy-overview-panel-gaps").getByText("Important gaps")).toBeVisible();
 
   await page.getByRole("link", { name: "Documents" }).first().click();
   await expect(page.getByTestId("privacy-documents-page")).toBeVisible();
