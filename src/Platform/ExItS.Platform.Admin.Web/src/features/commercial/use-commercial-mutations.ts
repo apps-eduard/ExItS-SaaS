@@ -1,5 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  activateProduct,
+  deactivateProduct,
+  renameProduct,
+  retireProduct,
+} from "@/api/catalog/product-mutations-client";
+import {
   activatePlan,
   createDraftPlanVersion,
   deactivatePlan,
@@ -68,6 +74,16 @@ import { env } from "@/lib/env";
 
 const noRetry = { retry: false as const };
 
+function productMutationInvalidation(
+  queryClient: ReturnType<typeof useQueryClient>,
+  product: { id: string; code: string },
+) {
+  return invalidateCommercialQueries(queryClient, {
+    productId: product.id,
+    productCode: product.code,
+  });
+}
+
 function planMutationInvalidation(
   queryClient: ReturnType<typeof useQueryClient>,
   plan: { id: string; productCode: string },
@@ -77,6 +93,48 @@ function planMutationInvalidation(
     productCode: plan.productCode,
     invalidatePlanVersions: true,
     invalidateProductFeatures: true,
+  });
+}
+
+export function useRenameProductMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: {
+      productId: string;
+      body: { displayName: string; expectedUpdatedAtUtc?: string | null };
+    }) => renameProduct(env.platformApiBaseUrl, input.productId, input.body),
+    onSuccess: (product) => productMutationInvalidation(queryClient, product),
+  });
+}
+
+export function useActivateProductMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: { productId: string }) =>
+      activateProduct(env.platformApiBaseUrl, input.productId),
+    onSuccess: (product) => productMutationInvalidation(queryClient, product),
+  });
+}
+
+export function useDeactivateProductMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: { productId: string }) =>
+      deactivateProduct(env.platformApiBaseUrl, input.productId),
+    onSuccess: (product) => productMutationInvalidation(queryClient, product),
+  });
+}
+
+export function useRetireProductMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...noRetry,
+    mutationFn: (input: { productId: string }) =>
+      retireProduct(env.platformApiBaseUrl, input.productId),
+    onSuccess: (product) => productMutationInvalidation(queryClient, product),
   });
 }
 

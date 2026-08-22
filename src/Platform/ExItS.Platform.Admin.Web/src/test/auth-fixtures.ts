@@ -139,6 +139,8 @@ export type AuthenticatedFetchOptions = {
   onEntitlementMutation?: (method: string, path: string, body: unknown) => void;
   planMutationError?: { status: number; errorCode: string; detail: string };
   onPlanMutation?: (method: string, path: string, body: unknown) => void;
+  productMutationError?: { status: number; errorCode: string; detail: string };
+  onProductMutation?: (method: string, path: string, body: unknown) => void;
   failOrgPayments?: boolean;
   forbiddenOrgPayments?: boolean;
   orgPaymentItems?: Array<Record<string, unknown>>;
@@ -204,6 +206,17 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
   ];
   let catalogPlanItems = [...(options.catalogPlanItems ?? defaultCatalogPlanItems)];
   let catalogPlanVersions = [...(options.catalogPlanVersions ?? [])];
+  const defaultCatalogProductItems = [
+    {
+      id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      code: "pinoy-business-pos",
+      displayName: "Pinoy Business POS",
+      status: "Active",
+      createdAtUtc: "2026-01-01T08:00:00Z",
+      updatedAtUtc: "2026-08-01T08:00:00Z",
+    },
+  ];
+  let catalogProductItems = [...(options.catalogProductItems ?? defaultCatalogProductItems)];
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const path = pathnameOf(url);
@@ -414,6 +427,59 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
           ],
         );
       }
+      const productRenameMatch = path.match(
+        /\/api\/v1\/platform\/catalog\/products\/([0-9a-fA-F-]{36})\/rename$/,
+      );
+      if (productRenameMatch && method === "PATCH") {
+        const body = parseBody() as Record<string, unknown>;
+        options.onProductMutation?.(method, path, body);
+        if (options.productMutationError) {
+          return jsonResponse(options.productMutationError.status, {
+            title: "Error",
+            status: options.productMutationError.status,
+            detail: options.productMutationError.detail,
+            errorCode: options.productMutationError.errorCode,
+          });
+        }
+        const product = catalogProductItems.find((item) => item.id === productRenameMatch[1]);
+        if (!product) {
+          return jsonResponse(404, { title: "Not Found", status: 404 });
+        }
+        const updated = {
+          ...product,
+          displayName: typeof body.displayName === "string" ? body.displayName : product.displayName,
+          updatedAtUtc: new Date().toISOString(),
+        };
+        catalogProductItems = catalogProductItems.map((item) =>
+          item.id === productRenameMatch[1] ? updated : item,
+        );
+        return jsonResponse(200, updated);
+      }
+      const productLifecycleMatch = path.match(
+        /\/api\/v1\/platform\/catalog\/products\/([0-9a-fA-F-]{36})\/(activate|deactivate|retire)$/,
+      );
+      if (productLifecycleMatch && method === "POST") {
+        options.onProductMutation?.(method, path, null);
+        const product = catalogProductItems.find((item) => item.id === productLifecycleMatch[1]);
+        if (!product) {
+          return jsonResponse(404, { title: "Not Found", status: 404 });
+        }
+        const nextStatus =
+          productLifecycleMatch[2] === "activate"
+            ? "Active"
+            : productLifecycleMatch[2] === "deactivate"
+              ? "Inactive"
+              : "Retired";
+        const updated = {
+          ...product,
+          status: nextStatus,
+          updatedAtUtc: new Date().toISOString(),
+        };
+        catalogProductItems = catalogProductItems.map((item) =>
+          item.id === productLifecycleMatch[1] ? updated : item,
+        );
+        return jsonResponse(200, updated);
+      }
       const productDetailMatch = path.match(
         /\/api\/v1\/platform\/catalog\/products\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/,
       );
@@ -427,17 +493,7 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
         if (options.failCatalogProductDetail) {
           return jsonResponse(500, { title: "Error", status: 500 });
         }
-        const items = options.catalogProductItems ?? [
-          {
-            id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
-            code: "future-product-x",
-            displayName: "Future Product X",
-            status: "Active",
-            createdAtUtc: "2026-01-01T08:00:00Z",
-            updatedAtUtc: "2026-08-01T08:00:00Z",
-          },
-        ];
-        const match = items.find((item) => item.id === productDetailMatch[1]);
+        const match = catalogProductItems.find((item) => item.id === productDetailMatch[1]);
         if (!match) {
           return jsonResponse(404, { title: "Not Found", status: 404 });
         }
@@ -445,18 +501,7 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
       }
       return jsonResponse(
         200,
-        pagedJson(
-          options.catalogProductItems ?? [
-            {
-              id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
-              code: "future-product-x",
-              displayName: "Future Product X",
-              status: "Active",
-            },
-          ],
-          options.catalogProductItems?.length ?? 1,
-          100,
-        ),
+        pagedJson(catalogProductItems, catalogProductItems.length, 100),
       );
     }
     if (url.includes("/api/v1/platform/catalog/plans")) {

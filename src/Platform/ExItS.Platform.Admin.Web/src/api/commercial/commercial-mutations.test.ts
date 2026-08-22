@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PlatformAntiforgeryDefaults } from "@/api/platform-antiforgery";
 import { activatePlan, updatePlanCommercial } from "@/api/catalog/plan-mutations-client";
+import { renameProduct } from "@/api/catalog/product-mutations-client";
 import { startTrialSubscription, suspendSubscription } from "@/api/subscriptions/subscription-mutations-client";
 import { createManualPayment } from "@/api/payments/payment-mutations-client";
 import { generateEntitlementSnapshot } from "@/api/entitlements/entitlement-mutations-client";
@@ -13,11 +14,14 @@ import {
 import { COMMERCIAL_BACKEND_GAPS } from "@/api/commercial/commercial-backend-gaps";
 import { PlatformApiError, clearPlatformAntiforgeryToken, platformRequest } from "@/api/platform-http";
 import { mapCatalogPlan } from "@/api/catalog/plan-catalog-client";
+import { mapCatalogProduct } from "@/api/catalog/product-catalog-client";
 import { mapOrganizationSubscription } from "@/api/organizations/organization-client";
 import { mapOrganizationPayment } from "@/api/organizations/organization-client";
 import { mapEntitlementSnapshot } from "@/api/organizations/organization-client";
 import type { CatalogPlan } from "@/api/catalog/plan-catalog-types";
 import type { OrganizationSubscription } from "@/api/organizations/subscription-list-query";
+
+const productId = "cccccccc-cccc-cccc-cccc-cccccccccccc";
 
 const plan: CatalogPlan = {
   id: "dddddddd-dddd-dddd-dddd-dddddddddddd",
@@ -114,6 +118,38 @@ describe("commercial mutation transport", () => {
       expectedUpdatedAtUtc: "2026-08-22T00:00:00Z",
     });
     expect(result).toEqual(mapCatalogPlan(plan));
+  });
+
+  it("product rename uses existing antiforgery transport and serializes rename body", async () => {
+    const product = {
+      id: productId,
+      code: "pinoy-business-pos",
+      displayName: "Pinoy Business POS (Dev)",
+      status: "Active",
+      updatedAtUtc: "2026-08-22T00:00:00Z",
+    };
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
+        return jsonOk({ headerName: "X-XSRF-TOKEN", token: "csrf-token" });
+      }
+      expect(url).toContain(`/catalog/products/${productId}/rename`);
+      expect(init?.method).toBe("PATCH");
+      expect(init?.credentials).toBe("include");
+      expect(new Headers(init?.headers).get("X-XSRF-TOKEN")).toBe("csrf-token");
+      expect(JSON.parse(String(init?.body))).toMatchObject({
+        displayName: "Pinoy Business POS (Dev)",
+        expectedUpdatedAtUtc: "2026-08-22T00:00:00Z",
+      });
+      return jsonOk(product);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await renameProduct("http://platform.test", productId, {
+      displayName: "Pinoy Business POS (Dev)",
+      expectedUpdatedAtUtc: "2026-08-22T00:00:00Z",
+    });
+    expect(result).toEqual(mapCatalogProduct(product));
   });
 
   it("reuses the in-memory CSRF token instead of fetching per mutation", async () => {

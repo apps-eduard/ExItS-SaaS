@@ -38,6 +38,10 @@ export const COMMERCIAL_BACKEND_GAPS = {
 } as const;
 
 export const COMMERCIAL_OPERATOR_ENDPOINTS = {
+  renameProduct: "PATCH /api/v1/platform/catalog/products/{productId}/rename",
+  activateProduct: "POST /api/v1/platform/catalog/products/{productId}/activate",
+  deactivateProduct: "POST /api/v1/platform/catalog/products/{productId}/deactivate",
+  retireProduct: "POST /api/v1/platform/catalog/products/{productId}/retire",
   updatePlanCommercial: "PATCH /api/v1/platform/catalog/products/{productCode}/plans/{planId}/commercial",
   activatePlan: "POST /api/v1/platform/catalog/products/{productCode}/plans/{planId}/activate",
   deactivatePlan: "POST /api/v1/platform/catalog/products/{productCode}/plans/{planId}/deactivate",

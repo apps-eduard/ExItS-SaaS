@@ -15,6 +15,7 @@ import {
   useCatalogProductDetailQuery,
   useCatalogProductPlansQuery,
 } from "@/features/catalog/use-catalog-detail-queries";
+import { ProductLifecycleOperator } from "@/features/products/ProductLifecycleOperator";
 import { ProductNotFoundPage } from "@/features/products/ProductNotFoundPage";
 import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
 import { useAuthorization } from "@/hooks/use-authorization";
@@ -34,16 +35,6 @@ function statusTone(status: string): "success" | "warning" | "danger" | "neutral
   if (status === "Inactive") return "warning";
   if (status === "Retired") return "danger";
   return "neutral";
-}
-
-function formatInstant(value: string | undefined, language: string): string | null {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(language === "fil-PH" ? "fil-PH" : "en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
 }
 
 function isForbidden(error: unknown): boolean {
@@ -140,7 +131,7 @@ export function ProductDetailPage() {
       </p>
       <PageHeader
         title={product.displayName}
-        description={product.code}
+        description={t("products.editor.pageDescription").replace("{code}", product.code)}
         actions={
           <StatusIndicator
             tone={statusTone(product.status)}
@@ -150,40 +141,7 @@ export function ProductDetailPage() {
           />
         }
       />
-      <DashboardSection title={t("products.detail.identity")}>
-        <dl className="grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2">
-          <div className="min-w-0">
-            <dt className="text-[length:var(--exits-text-xs)] text-muted">
-              {t("products.column.code")}
-            </dt>
-            <dd className="break-all font-mono text-[length:var(--exits-text-xs)]">
-              {product.code}
-            </dd>
-          </div>
-          <div className="min-w-0">
-            <dt className="text-[length:var(--exits-text-xs)] text-muted">
-              {t("products.detail.field.id")}
-            </dt>
-            <dd className="break-all font-mono text-[length:var(--exits-text-xs)]">{product.id}</dd>
-          </div>
-          <div className="min-w-0">
-            <dt className="text-[length:var(--exits-text-xs)] text-muted">
-              {t("products.column.created")}
-            </dt>
-            <dd className="tabular-nums text-muted">
-              {formatInstant(product.createdAtUtc, language) ?? "—"}
-            </dd>
-          </div>
-          <div className="min-w-0">
-            <dt className="text-[length:var(--exits-text-xs)] text-muted">
-              {t("products.column.updated")}
-            </dt>
-            <dd className="tabular-nums text-muted">
-              {formatInstant(product.updatedAtUtc, language) ?? "—"}
-            </dd>
-          </div>
-        </dl>
-      </DashboardSection>
+      <ProductLifecycleOperator product={product} />
       <DashboardSection
         title={t("products.detail.plans")}
         description={t("products.detail.plans.hint")}

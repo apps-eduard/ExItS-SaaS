@@ -63,7 +63,8 @@ describe("organization workspace products", () => {
       expect(window.location.pathname).toBe(`/admin/organizations/${sampleOrg.id}/products`);
     });
     expect(await screen.findByRole("heading", { name: "Products", level: 1 })).toBeInTheDocument();
-    expect(screen.getByText("Pinoy Business POS")).toBeInTheDocument();
+    const productsTable = screen.getByRole("table");
+    expect(within(productsTable).getByText("Pinoy Business POS")).toBeInTheDocument();
     expect(screen.getByText("POS")).toBeInTheDocument();
     expect(screen.getByText("UNKNOWN_CODE")).toBeInTheDocument();
     expect(screen.getByText("Trialing")).toBeInTheDocument();
