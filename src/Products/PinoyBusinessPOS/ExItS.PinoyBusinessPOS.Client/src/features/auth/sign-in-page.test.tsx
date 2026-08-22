@@ -1,13 +1,14 @@
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SignInPage } from "@/features/auth/SignInPage";
 import { PreferencesProvider } from "@/hooks/usePreferences";
 import { I18nProvider } from "@/i18n/I18nProvider";
 import { SessionProvider } from "@/session/SessionProvider";
+import { probeExternalAuthProvider } from "@/api/platform/platform-auth-client";
 
 vi.mock("@/api/platform/platform-auth-client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/platform/platform-auth-client")>();
@@ -20,11 +21,25 @@ vi.mock("@/api/platform/platform-auth-client", async (importOriginal) => {
 
 vi.mock("@/offline/offline-pin-login-offer", () => ({
   evaluateOfflinePinLoginOffer: vi.fn(async () => ({
-    canOfferPinUnlock: false,
+    canOfferPinUnlock: true,
     grantExpired: false,
-    noEnrollment: true,
+    noEnrollment: false,
   })),
 }));
+
+const signInMock = vi.fn(async () => true);
+
+vi.mock("@/session/SessionProvider", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/session/SessionProvider")>();
+  return {
+    ...actual,
+    useSession: () => ({
+      signIn: signInMock,
+      status: "unauthenticated" as const,
+      coldStartDenial: null,
+    }),
+  };
+});
 
 function renderSignInPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -47,6 +62,8 @@ describe("SignInPage LOGIN-UX-01", () => {
   beforeEach(() => {
     window.localStorage.clear();
     Object.defineProperty(window.navigator, "onLine", { configurable: true, value: true });
+    signInMock.mockClear();
+    vi.mocked(probeExternalAuthProvider).mockClear();
   });
 
   it("defaults to Sign In tab with active indicator", () => {
@@ -73,11 +90,53 @@ describe("SignInPage LOGIN-UX-01", () => {
     expect(password).toHaveValue("secret123");
   });
 
-  it("exposes accessible social and PIN action labels", () => {
+  it("holds Google and Facebook login UI while keeping offline PIN alternative", () => {
     renderSignInPage();
-    expect(screen.getByRole("button", { name: "Continue with Facebook" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Continue with Google" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Continue with Facebook" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Continue with Google" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("auth-facebook-button")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("auth-google-button")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Use Offline PIN" })).toBeInTheDocument();
+  });
+
+  it("does not probe external auth providers on sign-in load", async () => {
+    renderSignInPage();
+    await waitFor(() => {
+      expect(probeExternalAuthProvider).not.toHaveBeenCalled();
+    });
+  });
+
+  it("submits username and password sign-in", async () => {
+    const user = userEvent.setup();
+    renderSignInPage();
+    await user.type(screen.getByLabelText("Email or staff login"), "owner@example.com");
+    await user.type(screen.getByLabelText("Password"), "secret123");
+    await user.click(screen.getByTestId("sign-in-submit"));
+    await waitFor(() => {
+      expect(signInMock).toHaveBeenCalledWith("owner@example.com", "secret123");
+    });
+  });
+
+  it("routes to offline PIN unlock from the alternate sign-in action", async () => {
+    const user = userEvent.setup();
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <PreferencesProvider>
+          <I18nProvider>
+            <SessionProvider>
+              <MemoryRouter initialEntries={["/sign-in"]}>
+                <Routes>
+                  <Route path="/sign-in" element={<SignInPage />} />
+                  <Route path="/offline-pin" element={<div data-testid="offline-pin-page" />} />
+                </Routes>
+              </MemoryRouter>
+            </SessionProvider>
+          </I18nProvider>
+        </PreferencesProvider>
+      </QueryClientProvider>,
+    );
+    await user.click(screen.getByTestId("auth-pin-button"));
+    expect(screen.getByTestId("offline-pin-page")).toBeInTheDocument();
   });
 
   it("toggles username help from the info icon", async () => {
@@ -106,18 +165,9 @@ describe("SignInPage LOGIN-UX-01", () => {
     expect(JSON.stringify(window.localStorage)).not.toContain("secret123");
   });
 
-  it("keeps alternate sign-in buttons enabled when providers are unconfigured", () => {
+  it("keeps offline PIN action enabled when PIN unlock is offered", () => {
     renderSignInPage();
-    expect(screen.getByTestId("auth-facebook-button")).toBeEnabled();
-    expect(screen.getByTestId("auth-google-button")).toBeEnabled();
     expect(screen.getByTestId("auth-pin-button")).toBeEnabled();
-  });
-
-  it("shows provider unavailable feedback without disabling social buttons", async () => {
-    const user = userEvent.setup();
-    renderSignInPage();
-    await user.click(screen.getByTestId("auth-google-button"));
-    expect(screen.getByTestId("auth-error")).toHaveTextContent(/not configured/i);
   });
 
   it("blocks password submit while offline", async () => {

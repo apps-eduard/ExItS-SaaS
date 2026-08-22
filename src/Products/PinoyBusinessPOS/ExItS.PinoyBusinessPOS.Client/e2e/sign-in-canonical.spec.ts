@@ -37,7 +37,7 @@ test.describe("canonical sign-in", () => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/sign-in");
     await expect(page.getByTestId("sign-in-page")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+    await expect(page.getByTestId("auth-tab-sign-in")).toBeVisible();
     await assertNoHorizontalOverflow(page);
 
     await page.evaluate(
@@ -48,7 +48,7 @@ test.describe("canonical sign-in", () => {
     );
     await page.reload();
     await expect(page.getByTestId("sign-in-page")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Mag-sign in" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Mag-sign in" })).toBeVisible();
     await expect(page.getByTestId("sign-in-page")).toBeVisible();
     await assertNoHorizontalOverflow(page);
   });

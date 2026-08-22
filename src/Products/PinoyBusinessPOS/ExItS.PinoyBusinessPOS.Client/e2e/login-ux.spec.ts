@@ -3,6 +3,23 @@ import { mockAuthorizedPosDevice, seedInstallationId } from "./mock-sell-ready";
 import { mockBoundCashierSession, signInAndBindCashier } from "./mock-bound-session";
 import { buildSignedOfflineGrantDto } from "./mock-signed-offline-grant";
 
+async function mockUnauthenticatedSignIn(page: import("@playwright/test").Page) {
+  await page.route("**/platform-api/**", async (route) => {
+    const url = route.request().url();
+    if (url.includes("/auth/me")) {
+      return route.fulfill({ status: 401, contentType: "application/json", body: "{}" });
+    }
+    if (url.includes("/antiforgery/token")) {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ headerName: "X-XSRF-TOKEN", token: "csrf-token" }),
+      });
+    }
+    return route.fulfill({ status: 404, contentType: "application/json", body: "{}" });
+  });
+}
+
 test.describe("login UX", () => {
   const viewports = [
     { width: 390, height: 844, label: "phone" },
@@ -12,14 +29,20 @@ test.describe("login UX", () => {
     { width: 1440, height: 900, label: "desktop" },
   ] as const;
 
-  test("renders redesigned sign-in layout across required viewports", async ({ page }) => {
-    await mockBoundCashierSession(page);
+  test("holds social login UI and keeps offline PIN alternative", async ({ page }) => {
+    const externalProbeUrls: string[] = [];
+    await page.route("**/platform-api/api/v1/platform/auth/external/**", async (route) => {
+      externalProbeUrls.push(route.request().url());
+      await route.fulfill({ status: 404, contentType: "application/json", body: "{}" });
+    });
+    await mockUnauthenticatedSignIn(page);
     await page.goto("/sign-in");
     await expect(page.getByTestId("sign-in-page")).toBeVisible();
     await expect(page.getByTestId("auth-experience-hero")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Continue with Facebook" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Continue with Google" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Continue with Facebook" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Use Offline PIN" })).toBeVisible();
+    expect(externalProbeUrls).toHaveLength(0);
 
     for (const viewport of viewports) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
@@ -27,6 +50,16 @@ test.describe("login UX", () => {
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
       expect(overflow).toBe(false);
     }
+  });
+
+  test("password sign-in remains available", async ({ page }) => {
+    await mockBoundCashierSession(page);
+    await page.goto("/sign-in");
+    await expect(page.getByTestId("sign-in-submit")).toBeVisible();
+    await expect(page.getByLabel("Email or staff login")).toBeVisible();
+    await expect(page.getByLabel("Password")).toBeVisible();
+    await expect(page.getByRole("checkbox", { name: "Remember Me" })).toBeVisible();
+    await expect(page.getByTestId("auth-forgot-password-link")).toBeVisible();
   });
 
   test("logout while offline routes to offline PIN unlock", async ({ page, context }) => {
