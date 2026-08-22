@@ -3,7 +3,7 @@
 **Package:** RMAP-21-FIX02  
 **Branch:** `feat/pos-react-client`  
 **Starting HEAD:** `f0358af6d11af73215d1240e517230cc78cf3668`  
-**Final HEAD:** `b6782268691cc8886dc0f53cdf989679e059fdc4`  
+**Final HEAD:** `8ddcad64ee684f1944d4b0f9d6d88c19030529b8` (feature `b6782268691cc8886dc0f53cdf989679e059fdc4`)  
 **Status:** COMPLETE (automated evidence; physical PWA not owner-verified)
 
 ---
