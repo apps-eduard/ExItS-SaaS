@@ -26,6 +26,8 @@ import { PlansPage } from "@/features/plans/PlansPage";
 import { PlanDetailPage } from "@/features/plans/PlanDetailPage";
 import { OverviewPage } from "@/features/overview/OverviewPage";
 import { SystemHealthPage } from "@/features/system-health/SystemHealthPage";
+import { AuditListPage } from "@/features/audit/AuditListPage";
+import { AuditDetailPage } from "@/features/audit/AuditDetailPage";
 import { UsersPage } from "@/features/users/UsersPage";
 import { UserDetailPage } from "@/features/users/UserDetailPage";
 import { ShellCatchAllPage } from "@/features/overview/ShellCatchAllPage";
@@ -144,6 +146,10 @@ export function App() {
                         <Route path="users">
                           <Route index element={<UsersPage />} />
                           <Route path=":userId" element={<UserDetailPage />} />
+                        </Route>
+                        <Route path="audit">
+                          <Route index element={<AuditListPage />} />
+                          <Route path=":auditId" element={<AuditDetailPage />} />
                         </Route>
                         <Route path="system-health" element={<SystemHealthPage />} />
                         <Route
