@@ -350,7 +350,7 @@ internal static class PaymentEndpoints
 
             var result = await useCase.ExecuteAsync(
                 SaaSPaymentId.From(paymentId),
-                payment.OrganizationId,
+                PlatformOrganizationId.From(payment.OrganizationId),
                 SubscriptionId.From(body.SubscriptionId),
                 PlanId.From(body.TargetPlanId),
                 billingCycle,

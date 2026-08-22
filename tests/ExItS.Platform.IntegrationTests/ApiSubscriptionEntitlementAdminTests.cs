@@ -1,7 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Domain.Catalog;
+using ExItS.Platform.Domain.Subscriptions;
 using ExItS.Platform.Infrastructure.Authorization;
 using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -33,6 +35,8 @@ public sealed class ApiSubscriptionEntitlementAdminTests(PostgreSqlFixture fixtu
 
     private static string Unique(string prefix) =>
         $"{prefix}{Guid.NewGuid():N}"[..Math.Min(20, prefix.Length + 32)].ToLowerInvariant();
+
+    private const decimal SeedPlanMonthlyPrice = 499m;
 
     private Task<(Guid UserId, string Username, string Password)> SeedUserAsync(string prefix) =>
         PlatformIntegrationTestUsers.CreatePlatformStaffWithPasswordAsync(_admin, prefix);
@@ -83,7 +87,13 @@ public sealed class ApiSubscriptionEntitlementAdminTests(PostgreSqlFixture fixtu
 
         var plan = await _admin.PostAsJsonAsync(
             $"/api/v1/platform/catalog/products/{productCode}/plans",
-            new { code = Unique("pln"), displayName = "Starter" });
+            new
+            {
+                code = Unique("pln"),
+                displayName = "Starter",
+                monthlyPrice = SeedPlanMonthlyPrice,
+                currencyCode = "PHP"
+            });
         plan.EnsureSuccessStatusCode();
         var planId = (await plan.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
         (await _admin.PostAsync(
@@ -130,7 +140,7 @@ public sealed class ApiSubscriptionEntitlementAdminTests(PostgreSqlFixture fixtu
             {
                 organizationId,
                 productCode,
-                amount = 100m,
+                amount = SeedPlanMonthlyPrice,
                 currencyCode = "PHP",
                 method = "GCash",
                 externalReference = $"{prefix}-{Guid.NewGuid():N}",
@@ -151,6 +161,7 @@ public sealed class ApiSubscriptionEntitlementAdminTests(PostgreSqlFixture fixtu
         _ = trialId;
 
         var now = DateTimeOffset.UtcNow;
+        var (_, periodEndUtc) = SubscriptionBillingPeriods.ComputePaidPeriod(now, BillingCycle.Monthly);
         var paymentId = await CreateConfirmedPaymentAsync(organizationId, productCode, "sea-pay");
         var createPaid = await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/subscriptions",
@@ -159,7 +170,7 @@ public sealed class ApiSubscriptionEntitlementAdminTests(PostgreSqlFixture fixtu
                 planId,
                 planVersionId = versionId,
                 periodStartUtc = now,
-                periodEndUtc = now.AddDays(30),
+                periodEndUtc,
                 paymentId
             });
         Assert.Equal(HttpStatusCode.Created, createPaid.StatusCode);
@@ -183,7 +194,7 @@ public sealed class ApiSubscriptionEntitlementAdminTests(PostgreSqlFixture fixtu
                 planId,
                 planVersionId = versionId,
                 periodStartUtc = now,
-                periodEndUtc = now.AddDays(30),
+                periodEndUtc,
                 paymentId = conflictPaymentId
             });
         Assert.Equal(HttpStatusCode.Conflict, conflictPaid.StatusCode);
@@ -219,6 +230,7 @@ public sealed class ApiSubscriptionEntitlementAdminTests(PostgreSqlFixture fixtu
             null)).EnsureSuccessStatusCode();
 
         var now = DateTimeOffset.UtcNow;
+        var (_, periodEndUtc) = SubscriptionBillingPeriods.ComputePaidPeriod(now, BillingCycle.Monthly);
         var retiredPaymentId = await CreateConfirmedPaymentAsync(organizationId, productCode, "blk-pay");
         var retiredPlan = await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/subscriptions",
@@ -227,10 +239,10 @@ public sealed class ApiSubscriptionEntitlementAdminTests(PostgreSqlFixture fixtu
                 planId,
                 planVersionId = versionId,
                 periodStartUtc = now,
-                periodEndUtc = now.AddDays(30),
+                periodEndUtc,
                 paymentId = retiredPaymentId
             });
-        Assert.Equal(HttpStatusCode.Conflict, retiredPlan.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, retiredPlan.StatusCode);
 
         var (organizationId2, productCode2, planId2, versionId2, _) = await SeedCatalogAsync("clo");
         var closedPaymentId = await CreateConfirmedPaymentAsync(organizationId2, productCode2, "clo-pay");
@@ -243,7 +255,7 @@ public sealed class ApiSubscriptionEntitlementAdminTests(PostgreSqlFixture fixtu
                 planId = planId2,
                 planVersionId = versionId2,
                 periodStartUtc = now,
-                periodEndUtc = now.AddDays(30),
+                periodEndUtc,
                 paymentId = closedPaymentId
             });
         Assert.Equal(HttpStatusCode.Conflict, closedOrg.StatusCode);
@@ -259,12 +271,20 @@ public sealed class ApiSubscriptionEntitlementAdminTests(PostgreSqlFixture fixtu
             new { planId, planVersionId = versionId, trialDefinitionId = trialId });
         start.EnsureSuccessStatusCode();
 
-        var (userId, username, password) = await SeedUserAsync("roa");
-        (await _admin.PostAsJsonAsync(
-            $"/api/v1/platform/organizations/{organizationId}/members",
-            new { userId, role = "OrganizationMember", reason = "integration-test-link" })).EnsureSuccessStatusCode();
+        var contactEmail = $"{Unique("roa")}@example.com";
+        var invite = await _admin.PostAsJsonAsync(
+            $"/api/v1/platform/organizations/{organizationId}/invitations",
+            new { email = contactEmail, role = "OrganizationMember", requireEmailVerification = false });
+        invite.EnsureSuccessStatusCode();
+        var acceptToken = (await invite.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("acceptToken").GetString();
+        var password = "Correct-Horse-9!";
+        var accept = await _client.PostAsJsonAsync(
+            "/api/v1/platform/invitations/accept",
+            new { token = acceptToken, password });
+        accept.EnsureSuccessStatusCode();
+        var staffLogin = (await accept.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("staffLogin").GetString()!;
 
-        var token = await LoginAsync(username, password);
+        var token = await LoginAsync(staffLogin, password);
         using (var select = Authed(
                    HttpMethod.Put,
                    "/api/v1/platform/auth/organization-context",
@@ -310,7 +330,10 @@ public sealed class ApiSubscriptionEntitlementAdminTests(PostgreSqlFixture fixtu
     public async Task Feature_override_duplicate_active_conflict_and_revoke()
     {
         var (organizationId, productCode, _, _, _) = await SeedCatalogAsync("ovd");
-        var (userId, _, _) = await SeedUserAsync("ovd");
+        var (userId, _, _) = await PlatformIntegrationTestUsers.CreatePlatformStaffWithPasswordAsync(
+            _admin,
+            "ovd",
+            "PlatformAdministrator");
         _admin.DefaultRequestHeaders.Remove(DevelopmentPlatformActorAccessor.DevPlatformUserIdHeader);
         _admin.DefaultRequestHeaders.Add(
             DevelopmentPlatformActorAccessor.DevPlatformUserIdHeader,
