@@ -546,6 +546,17 @@ See `docs/Platform-Admin-Web/Reports/PWEB-IMPL-16-platform-users-directory.md`.
 
 Next authorized implementation package: **PWEB-IMPL-21** (requires explicit start; documentation alone does not authorize implementation).
 
+### Commercial / subscription overlay (2026-08-22)
+
+Read-only commercial inspection (PWEB-18/19 catalog + PWEB-11…14 org commercial tabs) is **COMPLETE**. Commercial **mutations** are **NOT STARTED**.
+
+Authoritative next-agent plan (documentation only, **not authorized**):
+
+- [commercial-subscription-implementation-plan.md](./commercial-subscription-implementation-plan.md) — PA-COM-01…08
+- [Reports/PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01.md](./Reports/PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01.md)
+
+`PA_COM_01_AUTHORIZED=NO`. Full Platform Admin → POS commercial E2E is **NOT READY**. PWEB-IMPL-21 remains the identity/governance next package if that track is started first; commercial E2E does not require 21–23 when the operator is already Platform Administrator.
+
 Production Ready: **NO**
 Cutover Authorized: **NO**
 Create Organization in Platform Admin: **PROHIBITED**

@@ -163,3 +163,14 @@ Do **not** modify POS React or PLM PWA in packages 21–29. PWEB-30 validates ag
 
 **PWEB-IMPL-21** — only after Product Owner starts that package explicitly.  
 This documentation commit does **not** start implementation.
+
+## 11. Commercial E2E overlay (PA-COM) — 2026-08-22
+
+A separate documentation-only track covers React Platform Admin **commercial/subscription** readiness for Platform Admin → POS E2E:
+
+- [commercial-subscription-implementation-plan.md](./commercial-subscription-implementation-plan.md)
+- [Reports/PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01.md](./Reports/PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01.md)
+
+PA-COM-02…06 overlap PWEB-IMPL-25…29. Prefer the PA-COM execution order for commercial E2E (01 → 04 → 06 → 05…) because seed Starter/Growth/Pro already exist. PWEB-21…24 are **not** prerequisites for that spine.
+
+`PA_COM_01_AUTHORIZED=NO`. Do not start PA-COM-01 from this continuation-plan file.

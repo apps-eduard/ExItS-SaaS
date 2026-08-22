@@ -27,7 +27,7 @@ src/Platform/ExItS.Platform.Application/ (+ Catalog; Admin portfolio queries; Au
 src/Platform/ExItS.Platform.Infrastructure/ (PlatformDbContext, catalog + organization/subscription + payment + entitlement + role-assignment + audit persistence, Admin portfolio read store, Magick.NET shared GlobalProduct WebP pipeline + local/dev filesystem object store, migrations through **`20260817220000_AddGlobalProductImages`**; `Health/PlatformDatabaseReadyHealthCheck`)
 src/Platform/ExItS.Platform.Api/ (`/` + `/health` + `/health/ready` + catalog + organizations + subscriptions + payments + entitlements + identity/access + authorization + audit + admin read APIs + org/public-identity + `/api/v1/qr/resolve` + POS device registration-tokens + Platform/merchant GlobalProduct image endpoints; `PlatformAuthz`; Production security pipeline; phase marker `P10-WP08-phase-10-closeout`)
 src/Platform/ExItS.Platform.Admin/ (Blazor Web App — Ant Design Blazor shell per ADR-015/ADR-022; canonical browser sign-in; Platform operator console; typed API client; GlobalProduct image preview/upload/replace/remove; themes Light/Dark/System; AdminResources en/fil-PH; no Fluent/Tailwind)
-src/Platform/ExItS.Platform.Admin.Web/ (React + TypeScript + Vite Platform Admin Web; parallel to Blazor Admin; Login + shell + dashboard + read-only Organizations list as of PWEB-IMPL-07; consumes Platform API; no cutover)
+src/Platform/ExItS.Platform.Admin.Web/ (React + TypeScript + Vite Platform Admin Web; parallel to Blazor Admin; Login + shell + dashboard + read-only organizations workspace + product/plan catalog as of PWEB-IMPL-19; commercial mutations not started; consumes Platform API; no cutover)
 src/Platform/ExItS.Personal.Web/ (Personal Web — Ant Design Blazor presentation over existing Personal APIs; Local Validation :8094; no checkout)
 src/Shared/ExItS.Web.UI/ (shared AntDesign browser conventions: theme, culture, page header, pager, host options, handoff helpers; AntDesign 1.6.2)
 src/Shared/ExItS.DesignSystem/ (semantic tokens; forms/data/feedback overlays; DesignSystem/Validation/Error resources en/fil-PH; Blazor primitives; `IDensityPreferenceStore`)
@@ -329,6 +329,13 @@ docs/operations/pilot-and-deployment/README.md
 docs/reports/phase-02-extraction-closeout.md
 docs/reports/phase-01-architecture-approval.md
 docs/risks-and-issues.md
+docs/Platform-Admin-Web/README.md
+docs/Platform-Admin-Web/documentation-status.md
+docs/Platform-Admin-Web/implementation-status.md
+docs/Platform-Admin-Web/commercial-subscription-implementation-plan.md
+docs/Platform-Admin-Web/commercial-platform-pos-contract.md
+docs/Platform-Admin-Web/commercial-e2e-validation-matrix.md
+docs/Platform-Admin-Web/Reports/PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01.md
 
 ## Not tracked
 
