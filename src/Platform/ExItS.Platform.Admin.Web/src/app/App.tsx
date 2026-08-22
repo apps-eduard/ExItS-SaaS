@@ -45,6 +45,9 @@ import {
 } from "@/features/privacy-compliance/PrivacyRequirementsPages";
 import { PrivacySystemsPage } from "@/features/privacy-compliance/PrivacySystemsPage";
 import { PrivacyEvidencePage } from "@/features/privacy-compliance/PrivacyEvidencePage";
+import { MembershipsHubPage } from "@/features/memberships/MembershipsHubPage";
+import { PersonalFeaturesListPage } from "@/features/personal-features/PersonalFeaturesListPage";
+import { PersonalFeatureDetailPage } from "@/features/personal-features/PersonalFeatureDetailPage";
 import { UsersPage } from "@/features/users/UsersPage";
 import { UserDetailPage } from "@/features/users/UserDetailPage";
 import { UsersDirectoryRedirect } from "@/features/users/UsersDirectoryRedirect";
@@ -195,6 +198,11 @@ export function App() {
                           <Route path=":paymentId" element={<PaymentDetailPage />} />
                         </Route>
                         <Route path="entitlements" element={<EntitlementsPortfolioPage />} />
+                        <Route path="organization-users" element={<MembershipsHubPage />} />
+                        <Route path="personal-features">
+                          <Route index element={<PersonalFeaturesListPage />} />
+                          <Route path=":featureCode" element={<PersonalFeatureDetailPage />} />
+                        </Route>
                         <Route path="users">
                           <Route index element={<UsersPage />} />
                           <Route

@@ -100,14 +100,38 @@ test.describe("development frontend mode", () => {
     await expect(page.getByLabel("Event Delivery. Planned")).toBeVisible();
     await expect(page.getByRole("link", { name: "Event Delivery" })).toHaveCount(0);
   });
-});
 
-test("known /admin/personal-features is under development", async ({ page }) => {
-  await mockAuthenticatedSession(page);
-  await page.goto("/admin/personal-features");
-  await expect(page.getByRole("heading", { name: "Under development" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Back to Overview" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Copy error details" })).toHaveCount(0);
+  test("known DEV_TEST_ONLY route is under development", async ({ page }) => {
+    await mockAuthenticatedSession(page);
+    await page.goto("/admin/local-validation/test-payments");
+    await expect(page.getByRole("heading", { name: "Under development" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Back to Overview" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Copy error details" })).toHaveCount(0);
+  });
+
+  test("under-development page has no horizontal overflow at 375px", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await mockAuthenticatedSession(page);
+    await page.goto("/admin/local-validation/test-payments");
+    await expect(page.getByRole("heading", { name: "Under development" })).toBeVisible();
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+    expect(overflow).toBe(false);
+  });
+
+  test("under-development page has no serious accessibility violations", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await mockAuthenticatedSession(page);
+    await page.goto("/admin/local-validation/test-payments");
+    await expect(page.getByRole("heading", { name: "Under development" })).toBeVisible();
+
+    const results = await new AxeBuilder({ page }).analyze();
+    const serious = results.violations.filter(
+      (violation) => violation.impact === "serious" || violation.impact === "critical",
+    );
+    expect(serious).toEqual([]);
+  });
 });
 
 test("unknown platform route remains page not found", async ({ page }) => {
@@ -133,26 +157,14 @@ test("production preview shows blueprint and hides Development-only tools", asyn
   await expect(page).toHaveURL(/product=future-product-x/);
 });
 
-test("under-development page has no horizontal overflow at 375px", async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 812 });
-  await mockAuthenticatedSession(page);
-  await page.goto("/admin/personal-features");
-  await expect(page.getByRole("heading", { name: "Under development" })).toBeVisible();
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
-  );
-  expect(overflow).toBe(false);
-});
-
-test("under-development page has no serious accessibility violations", async ({ page }) => {
+test("memberships and personal features are implemented links in production preview", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await mockAuthenticatedSession(page);
-  await page.goto("/admin/personal-features");
-  await expect(page.getByRole("heading", { name: "Under development" })).toBeVisible();
-
-  const results = await new AxeBuilder({ page }).analyze();
-  const serious = results.violations.filter(
-    (violation) => violation.impact === "serious" || violation.impact === "critical",
-  );
-  expect(serious).toEqual([]);
+  await page.goto("/admin");
+  await expect(page.getByRole("link", { name: "Memberships" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Personal Features" })).toBeVisible();
+  await expect(page.getByLabel("Memberships. Under development")).toHaveCount(0);
+  await expect(page.getByLabel("Personal Features. Under development")).toHaveCount(0);
 });
