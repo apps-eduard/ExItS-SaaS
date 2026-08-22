@@ -25,6 +25,17 @@ describe("PLATFORM_PERMISSIONS", () => {
     expect(PLATFORM_PERMISSIONS.manageProductAccess).toBe(csharpConstant("ManageProductAccess"));
   });
 
+  it("manageGlobalCategories and manageGlobalProducts match backend canonical values", () => {
+    expect(PLATFORM_PERMISSIONS.manageGlobalCategories).toBe(
+      "platform.permission.manage_global_categories",
+    );
+    expect(PLATFORM_PERMISSIONS.manageGlobalCategories).toBe(csharpConstant("ManageGlobalCategories"));
+    expect(PLATFORM_PERMISSIONS.manageGlobalProducts).toBe(
+      "platform.permission.manage_global_products",
+    );
+    expect(PLATFORM_PERMISSIONS.manageGlobalProducts).toBe(csharpConstant("ManageGlobalProducts"));
+  });
+
   it("keeps existing permission constants aligned with backend", () => {
     expect(PLATFORM_PERMISSIONS.viewPortfolio).toBe(csharpConstant("ViewPortfolio"));
     expect(PLATFORM_PERMISSIONS.manageOrganizations).toBe(csharpConstant("ManageOrganizations"));

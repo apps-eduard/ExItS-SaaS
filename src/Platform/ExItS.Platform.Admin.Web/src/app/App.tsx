@@ -24,6 +24,16 @@ import { PlanDetailPage } from "@/features/plans/PlanDetailPage";
 import { OverviewPage } from "@/features/overview/OverviewPage";
 import { UsersPage } from "@/features/users/UsersPage";
 import { UserDetailPage } from "@/features/users/UserDetailPage";
+import { CategoriesPage } from "@/features/global-catalog/CategoriesPage";
+import {
+  CategoryDetailPage,
+  CategoryFormPage,
+} from "@/features/global-catalog/CategoryDetailPage";
+import { GlobalProductsPage } from "@/features/global-catalog/GlobalProductsPage";
+import {
+  ProductDetailPage as GlobalCatalogProductDetailPage,
+  ProductFormPage as GlobalCatalogProductFormPage,
+} from "@/features/global-catalog/ProductDetailPage";
 import { ShellCatchAllPage } from "@/features/overview/ShellCatchAllPage";
 import { AuthorizationProvider } from "@/hooks/use-authorization";
 import { DiagnosticsProvider } from "@/hooks/use-diagnostics";
@@ -130,6 +140,24 @@ export function App() {
                         <Route path="users">
                           <Route index element={<UsersPage />} />
                           <Route path=":userId" element={<UserDetailPage />} />
+                        </Route>
+                        <Route path="global-catalog">
+                          <Route path="categories">
+                            <Route index element={<CategoriesPage />} />
+                            <Route path="new" element={<CategoryFormPage mode="create" />} />
+                            <Route path=":categoryId">
+                              <Route index element={<CategoryDetailPage />} />
+                              <Route path="edit" element={<CategoryFormPage mode="edit" />} />
+                            </Route>
+                          </Route>
+                          <Route path="products">
+                            <Route index element={<GlobalProductsPage />} />
+                            <Route path="new" element={<GlobalCatalogProductFormPage mode="create" />} />
+                            <Route path=":productId">
+                              <Route index element={<GlobalCatalogProductDetailPage />} />
+                              <Route path="edit" element={<GlobalCatalogProductFormPage mode="edit" />} />
+                            </Route>
+                          </Route>
                         </Route>
                         <Route path="*" element={<ShellCatchAllPage />} />
                       </Route>
