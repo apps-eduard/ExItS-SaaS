@@ -19,13 +19,13 @@ public sealed class CashCountDenominationTests
     public void Default_php_seed_includes_current_useful_denominations()
     {
         Assert.Equal(
-            [1000.00m, 500.00m, 200.00m, 100.00m, 50.00m, 20.00m, 10.00m, 5.00m, 1.00m, 0.25m, 0.10m, 0.50m],
+            [1000.00m, 500.00m, 200.00m, 100.00m, 50.00m, 20.00m, 10.00m, 5.00m, 1.00m, 0.25m, 0.10m, 0.05m],
             PhilippineCashDenominationDefaults.Values);
         Assert.Contains(0.25m, PhilippineCashDenominationDefaults.Values);
         Assert.Contains(0.10m, PhilippineCashDenominationDefaults.Values);
-        Assert.Contains(0.50m, PhilippineCashDenominationDefaults.Values);
+        Assert.Contains(0.05m, PhilippineCashDenominationDefaults.Values);
         Assert.DoesNotContain(0.01m, PhilippineCashDenominationDefaults.Values);
-        Assert.DoesNotContain(0.05m, PhilippineCashDenominationDefaults.Values);
+        Assert.DoesNotContain(0.50m, PhilippineCashDenominationDefaults.Values);
     }
 
     [Fact]
@@ -259,37 +259,29 @@ public sealed class CashCountDenominationTests
         Assert.Equal(9 + 3, values.Count);
         Assert.Contains(0.25m, values);
         Assert.Contains(0.10m, values);
-        Assert.Contains(0.50m, values);
+        Assert.Contains(0.05m, values);
         Assert.DoesNotContain(0.01m, values);
         Assert.Contains(1000m, values);
         Assert.Equal(9, repo.Items.Count(d => d.SortOrder < 9));
     }
 
     [Fact]
-    public async Task Seeder_reconciles_legacy_sub_peso_defaults_on_existing_orgs()
+    public async Task Seeder_preserves_existing_custom_rows_including_0_01()
     {
         var repo = new InMemoryCashDenominationRepository();
-        var legacyValues = new[] { 1000m, 500m, 200m, 100m, 50m, 20m, 10m, 5m, 1m, 0.25m, 0.10m, 0.05m, 0.01m };
-        var legacy = legacyValues
-            .Select((value, index) => OrganizationCashDenomination.Rehydrate(
-                OrganizationCashDenominationId.New(),
-                Org,
-                value,
-                null,
-                true,
-                index,
-                Now,
-                Now))
+        var custom = PhilippineCashDenominationDefaults.Values
+            .Select((value, index) => OrganizationCashDenomination.Create(Org, value, index, Now))
             .ToList();
-        await repo.ReplaceAsync(Org, legacy);
+        custom.Add(OrganizationCashDenomination.Create(Org, 0.01m, custom.Count, Now));
+        await repo.ReplaceAsync(Org, custom);
 
         await DefaultCashDenominationSeeder.EnsureAsync(repo, Org, Now);
 
         var values = repo.Items.Select(d => d.Value).ToHashSet();
-        Assert.DoesNotContain(0.01m, values);
-        Assert.DoesNotContain(0.05m, values);
-        Assert.Contains(0.50m, values);
-        Assert.Equal(PhilippineCashDenominationDefaults.Values.Length, values.Count);
+        Assert.Contains(0.01m, values);
+        Assert.Contains(0.05m, values);
+        Assert.DoesNotContain(0.50m, values);
+        Assert.Equal(PhilippineCashDenominationDefaults.Values.Length + 1, values.Count);
     }
 
     [Fact]

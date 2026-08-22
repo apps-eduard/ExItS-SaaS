@@ -92,21 +92,17 @@ public static class DefaultCashDenominationSeeder
             return;
         }
 
-        var next = existing
-            .Where(denomination => !PhilippineCashDenominationDefaults.LegacyRemovedSubPesoValues.Contains(denomination.Value))
-            .ToList();
-        var reconciledLegacy = next.Count != existing.Count;
-
-        var existingValues = next.Select(d => d.Value).ToHashSet();
+        var existingValues = existing.Select(d => d.Value).ToHashSet();
         var missing = PhilippineCashDenominationDefaults.Values
             .Where(value => !existingValues.Contains(value))
             .ToList();
-        if (missing.Count == 0 && !reconciledLegacy)
+        if (missing.Count == 0)
         {
             return;
         }
 
-        var nextSort = next.Count == 0 ? 0 : next.Max(d => d.SortOrder) + 1;
+        var nextSort = existing.Max(d => d.SortOrder) + 1;
+        var next = existing.ToList();
         foreach (var value in missing)
         {
             next.Add(OrganizationCashDenomination.Create(
