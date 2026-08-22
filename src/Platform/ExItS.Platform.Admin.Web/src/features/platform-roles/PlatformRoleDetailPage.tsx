@@ -1,6 +1,15 @@
-import { useQueryClient } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { ForbiddenState } from "@/features/overview/ForbiddenState";
+import { PermissionChecklist } from "@/features/platform-roles/PermissionChecklist";
+import {
+  platformRoleDetailQueryKey,
+  usePlatformPermissionsQuery,
+  usePlatformRoleDetailQuery,
+} from "@/features/platform-roles/use-platform-roles-queries";
+import { useAuthorization } from "@/hooks/use-authorization";
+import { usePreferences } from "@/hooks/use-preferences";
+import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
+import { env } from "@/lib/env";
 import { PLATFORM_PERMISSIONS } from "@/api/authorization/authorization-types";
 import { PlatformApiError } from "@/api/platform-http";
 import {
@@ -17,18 +26,9 @@ import { StatusIndicator } from "@/components/exits/StatusIndicator";
 import { DashboardSection } from "@/components/exits/dashboard/DashboardSection";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
 import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
-import { PermissionChecklist } from "@/features/platform-roles/PermissionChecklist";
-import {
-  platformRoleDetailQueryKey,
-  usePlatformPermissionsQuery,
-  usePlatformRoleDetailQuery,
-} from "@/features/platform-roles/use-platform-roles-queries";
-import { useAuthorization } from "@/hooks/use-authorization";
-import { usePreferences } from "@/hooks/use-preferences";
-import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
-import { env } from "@/lib/env";
+import { useQueryClient } from "@tanstack/react-query";
+import { useState, type ReactNode } from "react";
+import { Link, useParams } from "react-router-dom";
 
 function statusTone(status: string): "success" | "warning" | "danger" | "neutral" {
   if (status === "Active") {
@@ -275,15 +275,24 @@ export function PlatformRoleDetailPage() {
     );
   }
 
-  if (!canManage || roleId == null) {
-    return <ShellNotFoundPage />;
+  if (!canManage) {
+    return <ForbiddenState requiredPermission={PLATFORM_PERMISSIONS.managePlatformUsers} />;
+  }
+
+  if (roleId == null) {
+    return (
+      <section className="grid gap-4" data-testid="platform-role-detail-not-found">
+        <PageHeader title={t("platformRoles.detail.title")} description={t("platformRoles.detail.notFound")} />
+        <Link to="/admin/platform-roles">{t("platformRoles.detail.back")}</Link>
+      </section>
+    );
   }
 
   if (
     query.error instanceof PlatformApiError &&
     (query.error.status === 401 || query.error.status === 403)
   ) {
-    return <ShellNotFoundPage />;
+    return <ForbiddenState requiredPermission={PLATFORM_PERMISSIONS.managePlatformUsers} />;
   }
 
   if (query.isPending) {

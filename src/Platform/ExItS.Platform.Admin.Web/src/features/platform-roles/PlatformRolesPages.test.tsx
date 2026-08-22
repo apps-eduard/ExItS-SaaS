@@ -179,7 +179,8 @@ describe("Platform Roles pages", () => {
   it("fails closed without manage_platform_users", async () => {
     mockRolesFetch({ permissions: ["platform.permission.view_portfolio"] });
     render(<App />);
-    expect(await screen.findByRole("heading", { name: /not found/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /access denied/i })).toBeInTheDocument();
+    expect(screen.getByTestId("forbidden-state")).toBeInTheDocument();
     expect(screen.queryByTestId("platform-roles-list-page")).not.toBeInTheDocument();
   });
 

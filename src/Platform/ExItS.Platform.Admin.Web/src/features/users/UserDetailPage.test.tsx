@@ -75,7 +75,27 @@ function createFetchMock(options?: {
     if (url.includes("/catalog/products")) {
       return jsonResponse(200, { items: [], totalCount: 0, page: 1, pageSize: 100 });
     }
-    if (url.includes(`/api/v1/platform/users/${userId}`)) {
+    if (url.includes(`/api/v1/platform/users/${userId}/credentials`)) {
+      return jsonResponse(200, {
+        userId,
+        hasPassword: true,
+        emailVerified: true,
+        isLockedOut: false,
+        failedAccessCount: 0,
+      });
+    }
+    if (url.includes(`/api/v1/platform/users/${userId}/memberships`)) {
+      return jsonResponse(200, { items: [], totalCount: 0, page: 1, pageSize: 50 });
+    }
+    if (url.includes(`/api/v1/platform/users/${userId}/product-access`)) {
+      return jsonResponse(200, { items: [], totalCount: 0, page: 1, pageSize: 50 });
+    }
+    if (
+      url.includes(`/api/v1/platform/users/${userId}`) &&
+      !url.includes("/memberships") &&
+      !url.includes("/product-access") &&
+      !url.includes("/credentials")
+    ) {
       return jsonResponse(options?.userStatus ?? 200, sampleUserDetail);
     }
     if (url.includes("/api/v1/platform/users")) {
@@ -102,6 +122,8 @@ describe("platform user detail", () => {
     expect(await screen.findByRole("heading", { name: "Olivia Mendoza" })).toBeInTheDocument();
     expect(screen.getByText("olivia@example.test")).toBeInTheDocument();
     expect(screen.getByText("Platform administrator")).toBeInTheDocument();
+    expect(screen.getByTestId("users-lifecycle-suspend")).toBeInTheDocument();
+    expect(screen.getByTestId("users-credentials-panel")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /assign/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /revoke/i })).not.toBeInTheDocument();
   });
@@ -127,7 +149,7 @@ describe("platform user detail", () => {
     mockAuthenticatedFetch({ permissions: ["platform.permission.view_portfolio"] });
     window.history.replaceState({}, "", `/admin/users/${userId}`);
     render(<App />);
-    expect(await screen.findByRole("heading", { name: "Page not found" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Access denied" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Olivia Mendoza" })).not.toBeInTheDocument();
   });
 

@@ -231,7 +231,8 @@ test("edit permissions, deactivate, activate, retire", async ({ page }) => {
 test("forbidden without manage_platform_users", async ({ page }) => {
   await mockSession(page, ["platform.permission.view_portfolio"]);
   await page.goto("/admin/platform-roles");
-  await expect(page.getByRole("heading", { name: /not found/i })).toBeVisible();
+  await expect(page.getByTestId("forbidden-state")).toBeVisible();
+  await expect(page.getByRole("heading", { name: /access denied/i })).toBeVisible();
   await expect(page.getByTestId("platform-roles-list-page")).toHaveCount(0);
 });
 

@@ -73,7 +73,7 @@ describe("platform users directory", () => {
     expect(await screen.findByRole("heading", { name: "All Accounts" })).toBeInTheDocument();
     expect(await screen.findByText("Olivia Mendoza")).toBeInTheDocument();
     expect(screen.getByText("olivia")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /create/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /create platform staff/i })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Olivia Mendoza" })).toHaveAttribute(
       "href",
       "/admin/users/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
@@ -130,12 +130,44 @@ describe("platform users directory", () => {
     });
   });
 
+  it("shows create platform staff only on PlatformStaff directory", async () => {
+    stubDesktop();
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/auth/me")) {
+        return jsonResponse(200, sampleSession);
+      }
+      if (url.includes("/authorization/me")) {
+        return jsonResponse(200, sampleAuthorization);
+      }
+      if (url.includes("/health")) {
+        return textResponse(200, "Healthy");
+      }
+      if (url.includes("/catalog/products")) {
+        return jsonResponse(200, { items: [], totalCount: 0, page: 1, pageSize: 100 });
+      }
+      if (url.includes("/api/v1/platform/users")) {
+        return jsonResponse(200, {
+          items: [sampleUser],
+          totalCount: 1,
+          page: 1,
+          pageSize: 20,
+        });
+      }
+      return jsonResponse(200, { items: [], totalCount: 0, page: 1, pageSize: 1 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    window.history.replaceState({}, "", "/admin/users?directory=PlatformStaff");
+    render(<App />);
+    expect(await screen.findByTestId("users-toggle-create")).toBeInTheDocument();
+  });
+
   it("fail-closes when unauthorized", async () => {
     stubDesktop();
     mockAuthenticatedFetch({ permissions: ["platform.permission.view_portfolio"] });
     window.history.replaceState({}, "", "/admin/users");
     render(<App />);
-    expect(await screen.findByRole("heading", { name: "Page not found" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Access denied" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "All Accounts" })).not.toBeInTheDocument();
   });
 

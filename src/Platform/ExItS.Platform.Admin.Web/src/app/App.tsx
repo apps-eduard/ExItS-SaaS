@@ -39,6 +39,7 @@ import { PrivacySystemsPage } from "@/features/privacy-compliance/PrivacySystems
 import { PrivacyEvidencePage } from "@/features/privacy-compliance/PrivacyEvidencePage";
 import { UsersPage } from "@/features/users/UsersPage";
 import { UserDetailPage } from "@/features/users/UserDetailPage";
+import { UsersDirectoryRedirect } from "@/features/users/UsersDirectoryRedirect";
 import { ShellCatchAllPage } from "@/features/overview/ShellCatchAllPage";
 import { AuthorizationProvider } from "@/hooks/use-authorization";
 import { DiagnosticsProvider } from "@/hooks/use-diagnostics";
@@ -154,6 +155,22 @@ export function App() {
                         </Route>
                         <Route path="users">
                           <Route index element={<UsersPage />} />
+                          <Route
+                            path="unassigned"
+                            element={<UsersDirectoryRedirect directory="Unassigned" />}
+                          />
+                          <Route
+                            path="organization"
+                            element={<UsersDirectoryRedirect directory="Organization" />}
+                          />
+                          <Route
+                            path="platform-staff"
+                            element={<UsersDirectoryRedirect directory="PlatformStaff" />}
+                          />
+                          <Route
+                            path="personal"
+                            element={<UsersDirectoryRedirect directory="Personal" />}
+                          />
                           <Route path=":userId" element={<UserDetailPage />} />
                         </Route>
                         <Route path="platform-roles">

@@ -1,5 +1,15 @@
-import { useMemo, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { ForbiddenState } from "@/features/overview/ForbiddenState";
+import { PermissionChecklist } from "@/features/platform-roles/PermissionChecklist";
+import {
+  usePlatformPermissionsQuery,
+  usePlatformRolesListQuery,
+} from "@/features/platform-roles/use-platform-roles-queries";
+import { useAuthorization } from "@/hooks/use-authorization";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { usePreferences } from "@/hooks/use-preferences";
+import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
+import { env } from "@/lib/env";
 import { PLATFORM_PERMISSIONS } from "@/api/authorization/authorization-types";
 import { PlatformApiError } from "@/api/platform-http";
 import { createPlatformRoleDefinition } from "@/api/platform-roles/platform-roles-client";
@@ -16,18 +26,8 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusIndicator } from "@/components/exits/StatusIndicator";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
 import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
-import { PermissionChecklist } from "@/features/platform-roles/PermissionChecklist";
-import {
-  usePlatformPermissionsQuery,
-  usePlatformRolesListQuery,
-} from "@/features/platform-roles/use-platform-roles-queries";
-import { useAuthorization } from "@/hooks/use-authorization";
-import { useMediaQuery } from "@/hooks/use-media-query";
-import { usePreferences } from "@/hooks/use-preferences";
-import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
-import { env } from "@/lib/env";
+import { useMemo, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 function formatInstant(value: string | undefined, language: string): string {
   if (!value) {
@@ -207,14 +207,14 @@ export function PlatformRolesListPage() {
   }
 
   if (!canManage) {
-    return <ShellNotFoundPage />;
+    return <ForbiddenState requiredPermission={PLATFORM_PERMISSIONS.managePlatformUsers} />;
   }
 
   if (
     listQuery.error instanceof PlatformApiError &&
     (listQuery.error.status === 401 || listQuery.error.status === 403)
   ) {
-    return <ShellNotFoundPage />;
+    return <ForbiddenState requiredPermission={PLATFORM_PERMISSIONS.managePlatformUsers} />;
   }
 
   function replaceState(patch: Partial<PlatformRolesUrlState>) {

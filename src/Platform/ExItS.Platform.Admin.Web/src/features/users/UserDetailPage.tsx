@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { PLATFORM_PERMISSIONS } from "@/api/authorization/authorization-types";
 import {
   assignmentsSearchParams,
@@ -22,9 +23,17 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusIndicator } from "@/components/exits/StatusIndicator";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
+import { ForbiddenState } from "@/features/overview/ForbiddenState";
+import { UserCredentialsPanel } from "@/features/users/UserCredentialsPanel";
+import { UserLifecycleActions } from "@/features/users/UserLifecycleActions";
 import { UserNotFoundPage } from "@/features/users/UserNotFoundPage";
+import { UserProfileEditor } from "@/features/users/UserProfileEditor";
 import {
+  UserMembershipsPanel,
+  UserProductAccessPanel,
+} from "@/features/users/UserRelatedPanels";
+import {
+  platformUserDetailQueryKey,
   usePlatformUserAssignmentsQuery,
   usePlatformUserDetailQuery,
 } from "@/features/users/use-user-detail-queries";
@@ -114,6 +123,7 @@ function assignmentRoleLabel(role: string, t: (key: MessageKey) => string): stri
 export function UserDetailPage() {
   const { t, language } = usePreferences();
   const authorization = useAuthorization();
+  const queryClient = useQueryClient();
   const params = useParams();
   const userId = parsePlatformUserId(params.userId);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -135,6 +145,11 @@ export function UserDetailPage() {
     setSearchParams(assignmentsSearchParams({ ...current, ...patch }), { replace: true });
   }
 
+  function onUserUpdated(next: PlatformUserDetail) {
+    queryClient.setQueryData(platformUserDetailQueryKey(next.id), next);
+    void queryClient.invalidateQueries({ queryKey: ["users", "list"] });
+  }
+
   if (authorization.status === "loading") {
     return (
       <section aria-busy="true">
@@ -145,7 +160,7 @@ export function UserDetailPage() {
   }
 
   if (!canView) {
-    return <ShellNotFoundPage />;
+    return <ForbiddenState requiredPermission={PLATFORM_PERMISSIONS.managePlatformUsers} />;
   }
 
   if (userId == null) {
@@ -166,7 +181,7 @@ export function UserDetailPage() {
   }
 
   if (userQuery.isError && isForbidden(userQuery.error)) {
-    return <ShellNotFoundPage />;
+    return <ForbiddenState requiredPermission={PLATFORM_PERMISSIONS.managePlatformUsers} />;
   }
 
   if (userQuery.isError && isNotFound(userQuery.error)) {
@@ -200,7 +215,7 @@ export function UserDetailPage() {
     : 1;
 
   return (
-    <section className="grid max-w-3xl gap-4">
+    <section className="grid max-w-3xl gap-4" data-testid="users-detail-page">
       <p className="text-[length:var(--exits-text-sm)]">
         <Link className="text-primary hover:underline" to={usersListHref()}>
           {t("users.detail.back")}
@@ -218,8 +233,13 @@ export function UserDetailPage() {
         }
       />
 
+      <DashboardSection title={t("users.lifecycle.title")}>
+        <UserLifecycleActions user={user} onUpdated={onUserUpdated} />
+      </DashboardSection>
+
       <DashboardSection title={t("users.detail.identity")}>
-        <dl className="grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2">
+        <UserProfileEditor user={user} onUpdated={onUserUpdated} />
+        <dl className="mt-3 grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2">
           <div className="min-w-0">
             <dt className="text-[length:var(--exits-text-xs)] text-muted">
               {t("users.detail.field.id")}
@@ -270,6 +290,8 @@ export function UserDetailPage() {
         </dl>
       </DashboardSection>
 
+      <UserCredentialsPanel userId={user.id} />
+
       <DashboardSection title={t("users.detail.organizations")}>
         {user.organizations && user.organizations.length > 0 ? (
           <ul className="grid gap-2 text-[length:var(--exits-text-sm)]">
@@ -292,6 +314,9 @@ export function UserDetailPage() {
           </p>
         )}
       </DashboardSection>
+
+      <UserMembershipsPanel userId={user.id} />
+      <UserProductAccessPanel userId={user.id} />
 
       <DashboardSection
         title={t("users.detail.assignments")}
