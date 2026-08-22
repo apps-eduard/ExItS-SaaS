@@ -67,10 +67,6 @@ export function RegisterPage() {
       setSucceeded(true);
     } catch (error) {
       const kind = classifyCredentialWorkflowFailure(error);
-      if (kind === "email_conflict") {
-        setSucceeded(true);
-        return;
-      }
       if (kind === "invalid_display_name") {
         form.setError("displayName", { message: t("auth.validation.displayNameLength") });
         return;

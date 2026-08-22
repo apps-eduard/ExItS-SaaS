@@ -134,11 +134,8 @@ describe("public auth pages", () => {
           return unauthenticated;
         }
         if (url.includes("/api/v1/platform/auth/register")) {
-          return jsonResponse(409, {
-            title: "Conflict",
-            status: 409,
-            detail: "An account with this email already exists.",
-            errorCode: AUTH_ERROR_CODES.emailConflict,
+          return jsonResponse(200, {
+            message: "If the email is eligible, a verification message was sent.",
           });
         }
         return jsonResponse(404, {});

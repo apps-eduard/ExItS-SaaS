@@ -19,6 +19,9 @@ public sealed record PersonalRegistrationAckDto(
 /// </summary>
 public sealed class RegisterPersonalAccount
 {
+    public const string GenericAcknowledgement =
+        "If the email is eligible, a verification message was sent. Open the message to activate your Personal Account.";
+
     private readonly IPlatformUserRepository _users;
     private readonly IPlatformUserCredentialRepository _credentials;
     private readonly IPlatformCredentialTokenRepository _tokens;
@@ -62,19 +65,42 @@ public sealed class RegisterPersonalAccount
         string email,
         CancellationToken cancellationToken = default)
     {
-        const string genericAck =
-            "If the email is eligible, a verification message was sent. Open the message to activate your Personal Account.";
-
         try
         {
             var utcNow = _clock.UtcNow;
             var normalizedEmail = PlatformUser.NormalizeEmail(email);
 
-            if (await _users.GetByNormalizedEmailAsync(normalizedEmail, cancellationToken).ConfigureAwait(false) is not null)
+            // Validate display-name rules before the existence lookup so invalid names
+            // fail the same way for new and existing emails.
+            _ = PlatformUser.CreatePendingVerification(
+                "signup-name-check",
+                displayName,
+                "signup-name-check@example.com",
+                utcNow);
+
+            var existing = await _users
+                .GetByNormalizedEmailAsync(normalizedEmail, cancellationToken)
+                .ConfigureAwait(false);
+            if (existing is not null)
             {
-                return ApplicationResult<PersonalRegistrationAckDto>.Failure(
-                    ApplicationErrorCodes.EmailConflict,
-                    "An account with this email already exists.");
+                if (existing.Status == AccountStatus.PendingVerification
+                    && !existing.IsOrganizationScopedStaff)
+                {
+                    var reissued = await IssueEmailVerificationAsync(existing, utcNow, cancellationToken)
+                        .ConfigureAwait(false);
+                    await _auditWriter.WriteAsync(
+                        $"platform-user:{existing.Id.Value:D}",
+                        AuditActorType.PlatformUser,
+                        PlatformAuditActions.PersonalAccountRegistrationStarted,
+                        nameof(PlatformUser),
+                        existing.Id.Value.ToString("D"),
+                        AuditOutcome.Succeeded,
+                        summary: "Pending Personal registration verification token reissued (token not recorded).",
+                        cancellationToken: cancellationToken).ConfigureAwait(false);
+                    return ApplicationResult<PersonalRegistrationAckDto>.Success(reissued);
+                }
+
+                return ApplicationResult<PersonalRegistrationAckDto>.Success(PublicAck());
             }
 
             var username = await AllocateUsernameFromEmailAsync(normalizedEmail, cancellationToken).ConfigureAwait(false);
@@ -95,25 +121,8 @@ public sealed class RegisterPersonalAccount
                     cancellationToken)
                 .ConfigureAwait(false);
 
-            var opaque = _tokenService.CreateOpaqueToken();
-            var lifetime = TimeSpan.FromHours(Math.Max(1, _lifecycle.EmailVerificationTokenLifetimeHours));
-            var token = PlatformCredentialToken.Create(
-                user.Id,
-                PlatformCredentialTokenPurpose.EmailVerification,
-                _tokenService.HashToken(opaque),
-                utcNow,
-                lifetime);
-            await _tokens.AddAsync(token, cancellationToken).ConfigureAwait(false);
-            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-            await _messages.PublishAsync(
-                new PlatformAuthOutboundMessage(
-                    PlatformAuthOutboundMessageKinds.EmailVerification,
-                    user.Id.Value,
-                    user.NormalizedEmail,
-                    opaque,
-                    token.ExpiresAtUtc),
-                cancellationToken).ConfigureAwait(false);
+            var issued = await IssueEmailVerificationAsync(user, utcNow, cancellationToken)
+                .ConfigureAwait(false);
 
             await _auditWriter.WriteAsync(
                 $"platform-user:{user.Id.Value:D}",
@@ -125,17 +134,53 @@ public sealed class RegisterPersonalAccount
                 summary: "Personal Account registration started (Pending Verification; token not recorded).",
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
-            return ApplicationResult<PersonalRegistrationAckDto>.Success(
-                new PersonalRegistrationAckDto(
-                    genericAck,
-                    _lifecycle.ExposeDebugTokens ? opaque : null,
-                    token.ExpiresAtUtc));
+            return ApplicationResult<PersonalRegistrationAckDto>.Success(issued);
         }
         catch (DomainException ex)
         {
             return ApplicationResult<PersonalRegistrationAckDto>.Failure(ex.ErrorCode, ex.Message);
         }
     }
+
+    private async Task<PersonalRegistrationAckDto> IssueEmailVerificationAsync(
+        PlatformUser user,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken)
+    {
+        await _tokens.InvalidateActiveForUserAsync(
+            user.Id,
+            PlatformCredentialTokenPurpose.EmailVerification,
+            utcNow,
+            cancellationToken).ConfigureAwait(false);
+
+        var opaque = _tokenService.CreateOpaqueToken();
+        var lifetime = TimeSpan.FromHours(Math.Max(1, _lifecycle.EmailVerificationTokenLifetimeHours));
+        var token = PlatformCredentialToken.Create(
+            user.Id,
+            PlatformCredentialTokenPurpose.EmailVerification,
+            _tokenService.HashToken(opaque),
+            utcNow,
+            lifetime);
+        await _tokens.AddAsync(token, cancellationToken).ConfigureAwait(false);
+        await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        await _messages.PublishAsync(
+            new PlatformAuthOutboundMessage(
+                PlatformAuthOutboundMessageKinds.EmailVerification,
+                user.Id.Value,
+                user.NormalizedEmail,
+                opaque,
+                token.ExpiresAtUtc),
+            cancellationToken).ConfigureAwait(false);
+
+        return PublicAck(opaque, token.ExpiresAtUtc);
+    }
+
+    private PersonalRegistrationAckDto PublicAck(string? opaque = null, DateTimeOffset? expiresAtUtc = null) =>
+        new(
+            GenericAcknowledgement,
+            _lifecycle.ExposeDebugTokens ? opaque : null,
+            _lifecycle.ExposeDebugTokens ? expiresAtUtc : null);
 
     /// <summary>
     /// Internal username derived from email local-part. Login uses email; username is not collected at signup.

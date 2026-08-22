@@ -35,17 +35,6 @@ describe("classifySignInFailure", () => {
 });
 
 describe("classifyCredentialWorkflowFailure", () => {
-  it("treats duplicate email as email_conflict without using login semantics", () => {
-    expect(
-      classifyCredentialWorkflowFailure(
-        new PlatformApiError(409, {
-          errorCode: AUTH_ERROR_CODES.emailConflict,
-          detail: "An account with this email already exists.",
-        }),
-      ),
-    ).toBe("email_conflict");
-  });
-
   it("maps invalid and expired tokens to invalid_token", () => {
     expect(
       classifyCredentialWorkflowFailure(

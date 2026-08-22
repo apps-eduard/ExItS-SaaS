@@ -76,11 +76,23 @@ Local Validation success screens may show **Open Mailpit** using `window.locatio
 ## Security
 
 - Forgot-password UI always uses the generic acknowledgement, including unknown emails.
-- Registration duplicate-email API still returns `application.user.email_conflict`; React shows the same generic “Check your email” success and does not render “already exists”.
+- **REGISTRATION_API_ENUMERATION=CLOSED (AUTH-MAILPIT-02):** `POST /api/v1/platform/auth/register` returns the same generic acknowledgement for new eligible emails, existing Active accounts, existing PendingVerification Personal accounts, and other existing/ineligible addresses. It does not return `application.user.email_conflict`, “already exists”, account status, or user/profile existence. HTTP 200 + uniform body shape when `ExposeDebugTokens` is false (Production).
+- **PendingVerification reissue:** when the normalized email belongs to an existing Personal `PendingVerification` account (`HomeOrganizationId` null), registration invalidates the prior active `EmailVerification` token, issues a fresh token, sends a fresh activation email, and returns the same generic acknowledgement without creating a duplicate user or Personal profile. Active or otherwise ineligible duplicates receive the generic acknowledgement with no account mutation and no outbound email.
 - Activation/reset tokens stay in the query string only long enough to submit. They are not stored in localStorage/sessionStorage and are not copied into diagnostics.
-- Debug tokens from the API are stripped in the React client.
+- Debug tokens from the API are stripped in the React client (and omitted entirely when `ExposeDebugTokens` is false).
 - Password reset continues to revoke sessions/access/recovery credentials in `ResetPasswordWithToken`.
 - Production cookie Secure policy is unchanged. Local Validation HTTP cookies remain the previous local-access package.
+
+## AUTH-MAILPIT-02 — registration enumeration closure
+
+**Starting HEAD:** `b6efcde096abcea3d6af61dad6deb3f7805a239d`  
+**Scope:** backend `RegisterPersonalAccount` + React removal of `EmailConflict` client workaround + tests.
+
+Generic acknowledgement (all public success branches):
+
+`If the email is eligible, a verification message was sent. Open the message to activate your Personal Account.`
+
+**Live runtime refresh (approved):** React `:8095` image `exits/platform-admin-web:auth-mailpit` with runtime `buildSha: b6efcde0`. Platform API recycled with `PlatformEmail__AdminPublicBaseUrl=http://<detected-host>:8095` (not `:8090`). Mailpit reset links verified at `:8095/admin/reset-password?token=...`.
 
 ## Explicit exclusions
 

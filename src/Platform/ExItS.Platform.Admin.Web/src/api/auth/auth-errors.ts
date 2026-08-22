@@ -32,7 +32,6 @@ export function classifySignInFailure(error: unknown): SignInFailureKind {
 }
 
 export type CredentialWorkflowFailureKind =
-  | "email_conflict"
   | "invalid_token"
   | "password_invalid"
   | "invalid_display_name"
@@ -50,9 +49,6 @@ export function classifyCredentialWorkflowFailure(error: unknown): CredentialWor
   }
 
   const code = error.problem.errorCode;
-  if (code === AUTH_ERROR_CODES.emailConflict) {
-    return "email_conflict";
-  }
   if (code === AUTH_ERROR_CODES.passwordInvalid) {
     return "password_invalid";
   }
