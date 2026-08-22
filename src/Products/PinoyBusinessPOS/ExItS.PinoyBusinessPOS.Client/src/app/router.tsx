@@ -2,6 +2,8 @@
 import { SessionWorkspaceRoot } from "@/app/SessionWorkspaceRoot";
 import { RootLayout } from "@/app/RootLayout";
 import { SignInPage } from "@/features/auth/SignInPage";
+import { OfflinePinEnrollPage } from "@/features/offline/OfflinePinEnrollPage";
+import { OfflinePinUnlockPage } from "@/features/offline/OfflinePinUnlockPage";
 import { HomePage } from "@/features/home/HomePage";
 import { NotFoundPage } from "@/features/not-found/NotFoundPage";
 import { PersonalHomePage } from "@/features/personal/PersonalHomePage";
@@ -106,6 +108,8 @@ import { AppShell } from "@/layouts/AppShell";
 import {
   AllowInvitationAccept,
   GuestOnly,
+  RequireOfflinePinFlow,
+  RequireOnlineSession,
   RequireAdminExperience,
   RequireCashierRoleHome,
   RequireCreateCustomer,
@@ -157,6 +161,22 @@ export const appRoutes = [
           <GuestOnly>
             <SignInPage />
           </GuestOnly>
+        ),
+      },
+      {
+        path: "/offline-pin-setup",
+        element: (
+          <RequireOnlineSession>
+            <OfflinePinEnrollPage />
+          </RequireOnlineSession>
+        ),
+      },
+      {
+        path: "/offline-pin",
+        element: (
+          <RequireOfflinePinFlow>
+            <OfflinePinUnlockPage />
+          </RequireOfflinePinFlow>
         ),
       },
       {

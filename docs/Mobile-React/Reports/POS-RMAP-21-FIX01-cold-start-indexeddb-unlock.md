@@ -12,7 +12,16 @@
 
 Closed the accepted RMAP-21 gap **Cold-start IndexedDB unlock** by introducing a **device-bound offline operating grant** stored in `localStorage`, evaluated when the browser/PWA cold-starts while offline. The grant restores session, workspace, POS device context, and the existing scope-derived AES-GCM key material so encrypted IndexedDB (outbox, customer caches) opens without storing passwords, bearer tokens, or Platform session cookies as encryption keys.
 
-**Validation flag:** `COLD_START_INDEXEDDB_UNLOCK=PASS`
+**Validation flags**
+
+| Flag | FIX01 result | FIX02 note |
+| ---- | ------------ | ---------- |
+| `FUNCTIONAL_COLD_START` | PASS | Still PASS — cold start works with PIN + server grant |
+| `SECURE_OFFLINE_UNLOCK` | **NOT CLOSED** | Closed in FIX02 (`POS-RMAP-21-FIX02-secure-offline-unlock.md`) |
+
+**Historical FIX01 flag:** `COLD_START_INDEXEDDB_UNLOCK=PASS` (functional only)
+
+**Security closure:** Product Owner rejected FIX01 security model (client-derived HMAC, public-ID AES keys, logout auto-restore). See FIX02 for `SECURE_OFFLINE_UNLOCK=PASS`.
 
 ---
 
@@ -58,11 +67,11 @@ Warm-session hooks (`organization-offline-context`, `OfflineSyncProvider`) could
 - **Org isolation:** IndexedDB name + scope binding include `organizationId`; grant includes org/branch/device; wrong-org grant cannot decrypt another org's DB without matching scope.
 - **Branch isolation:** `branchId` in scope binding and grant.
 - **Device binding:** Grant requires matching `installationDeviceId` and authorized `posDeviceId`.
-- **Logout:** Clears online session artifacts; grant retained so offline cold-start after logout still works if grant valid (documented MAUI parity). Online-only admin mutations still blocked offline.
+- **Logout:** Clears online session artifacts; **FIX01:** grant retained so offline cold-start after logout still worked without PIN (security gap). **FIX02:** grant envelope may remain but offline unlock requires PIN; no silent restore.
 - **Account switch:** New online bind writes grant for new userId; cold-start selects most recently validated grant for installation device; prior user's encrypted DB remains but is not selected unless that grant wins.
 - **Browser profile copy:** Copying IndexedDB without matching installation id + grant integrity fails closed.
 
-**Not implemented in FIX01:** offline PIN (MAUI has PIN). React uses grant-only unlock for browser PWA.
+**Not implemented in FIX01:** offline PIN (MAUI has PIN). React used grant-only unlock — **superseded by FIX02** (server-signed grant + PIN-wrapped DEK).
 
 ---
 

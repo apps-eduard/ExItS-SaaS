@@ -62,6 +62,12 @@ public static class ApplicationErrorCodes
     public const string OfflinePriceAuthorityLineMismatch = "pos.offline_price_authority.line_mismatch";
     public const string OfflinePriceAuthorityOnlineNotSupported =
         "pos.offline_price_authority.online_not_supported";
+    public const string OfflineOperatingGrantInvalidScope = "pos.offline_operating_grant.invalid_scope";
+    public const string OfflineOperatingGrantDeviceRequired = "pos.offline_operating_grant.device_required";
+    public const string OfflineOperatingGrantSigningUnavailable = "pos.offline_operating_grant.signing_unavailable";
+    public const string OfflineOperatingGrantTampered = "pos.offline_operating_grant.tampered";
+    public const string OfflineOperatingGrantExpired = "pos.offline_operating_grant.expired";
+    public const string OfflineOperatingGrantDenied = "pos.offline_operating_grant.denied";
     public const string CreditReversalRequiresSaleVoid = "pos.credit_entry.reversal.requires_sale_void";
     public const string SaleVoidBlockedBySubsequentUtangActivity = "pos.sale.void.blocked_by_subsequent_utang";
 

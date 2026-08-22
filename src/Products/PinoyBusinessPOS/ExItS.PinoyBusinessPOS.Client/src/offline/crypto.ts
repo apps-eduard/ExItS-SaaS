@@ -3,7 +3,7 @@
  * Not equivalent to native SecureStorage / Keystore / Keychain.
  */
 
-function toArrayBuffer(view: Uint8Array): ArrayBuffer {
+export function toArrayBuffer(view: Uint8Array): ArrayBuffer {
   return view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength) as ArrayBuffer;
 }
 
@@ -19,7 +19,10 @@ export async function importScopeAesKey(rawMaterial: Uint8Array): Promise<Crypto
   ]);
 }
 
-/** Derive a non-exportable AES-GCM key from scope binding material (not a password KDF for auth). */
+/**
+ * LEGACY_MIGRATION only — FIX01 scope-derived key.
+ * New writes must use the random DEK from local-store-key after PIN unlock.
+ */
 export async function deriveScopeKeyFromBinding(binding: string): Promise<CryptoKey> {
   const material = new TextEncoder().encode(`exits-offline-v1:${binding}`);
   const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", toArrayBuffer(material)));
@@ -30,6 +33,38 @@ export type EncryptedEnvelope = {
   ciphertext: ArrayBuffer;
   iv: ArrayBuffer;
 };
+
+export type WrappedDekEnvelope = {
+  ciphertext: Uint8Array;
+  iv: ArrayBuffer;
+};
+
+export async function wrapDek(wrapKey: CryptoKey, rawDek: Uint8Array): Promise<WrappedDekEnvelope> {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ciphertext = await crypto.subtle.encrypt(
+    {
+      name: "AES-GCM",
+      iv,
+      additionalData: new TextEncoder().encode("exits-offline-dek-wrap:v1"),
+    },
+    wrapKey,
+    toArrayBuffer(rawDek),
+  );
+  return { ciphertext: new Uint8Array(ciphertext), iv: toArrayBuffer(iv) };
+}
+
+export async function unwrapDek(wrapKey: CryptoKey, envelope: WrappedDekEnvelope): Promise<Uint8Array> {
+  const plain = await crypto.subtle.decrypt(
+    {
+      name: "AES-GCM",
+      iv: envelope.iv,
+      additionalData: new TextEncoder().encode("exits-offline-dek-wrap:v1"),
+    },
+    wrapKey,
+    toArrayBuffer(envelope.ciphertext),
+  );
+  return new Uint8Array(plain);
+}
 
 export async function encryptPayload(
   key: CryptoKey,

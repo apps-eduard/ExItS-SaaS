@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import type { OfflineDb } from "@/offline/db";
 import { openSharedOfflineDatabase, organizationScopeKey } from "@/offline/db";
+import { maybeMigrateLegacyLocalStoreWhenReady } from "@/offline/local-store-migration";
 import { useOfflineSync } from "@/offline/OfflineSyncProvider";
-import { useSession } from "@/session/SessionProvider";
+import { isAuthenticatedOrColdStartOffline, useSession } from "@/session/SessionProvider";
 import { peekDurableInstallationDeviceId } from "@/workspace/browser-installation-identity";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -23,7 +24,7 @@ export type OrganizationOfflineContext = {
 };
 
 export function useOrganizationOfflineContext(): OrganizationOfflineContext | null {
-  const { session } = useSession();
+  const { session, status: sessionStatus } = useSession();
   const { boundWorkspace, posDevice } = useWorkspace();
   const { bindDatabase } = useOfflineSync();
   const [opened, setOpened] = useState<{ db: OfflineDb; scopeBinding: string } | null>(null);
@@ -67,6 +68,19 @@ export function useOrganizationOfflineContext(): OrganizationOfflineContext | nu
       cancelled = true;
     };
   }, [bindDatabase, branchId, installationDeviceId, organizationId, userId]);
+
+  useEffect(() => {
+    if (!opened || !userId || !isAuthenticatedOrColdStartOffline(sessionStatus)) {
+      return;
+    }
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      return;
+    }
+    void maybeMigrateLegacyLocalStoreWhenReady(opened.db, opened.scopeBinding, userId, {
+      online: true,
+      trustedSession: true,
+    });
+  }, [opened, sessionStatus, userId]);
 
   return useMemo(() => {
     if (!opened || !userId || !organizationId || !branchId || !installationDeviceId) {

@@ -68,6 +68,23 @@ internal static class PosProductionSecurityGuard
                 "Production must not use the documented development offline price authority signing key.");
         }
 
+        var operatingGrantKey = builder.Configuration[
+            $"{OfflinePriceAuthorityOptions.SectionName}:{nameof(OfflinePriceAuthorityOptions.OperatingGrantSigningPrivateKeyPem)}"];
+        if (string.IsNullOrWhiteSpace(operatingGrantKey))
+        {
+            throw new InvalidOperationException(
+                "Production requires PosOffline:OperatingGrantSigningPrivateKeyPem from an approved secure configuration provider.");
+        }
+
+        if (string.Equals(
+                operatingGrantKey.Trim(),
+                OfflinePriceAuthorityOptions.DevelopmentOperatingGrantPrivateKeyPem.Trim(),
+                StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "Production must not use the documented development offline operating grant signing key.");
+        }
+
         var allowedHosts = builder.Configuration["AllowedHosts"];
         if (string.IsNullOrWhiteSpace(allowedHosts) || allowedHosts.Trim() == "*")
         {

@@ -75,6 +75,22 @@ public sealed class OfflinePriceAuthorityOptions
 
     /// <summary>How long an issued lease may be used to sell offline. Default 8 hours.</summary>
     public int PriceAuthorityValidityHours { get; set; } = 8;
+
+    /// <summary>Development-only ECDSA P-256 private key PEM for offline operating grants.</summary>
+    public const string DevelopmentOperatingGrantPrivateKeyPem =
+        """
+        -----BEGIN PRIVATE KEY-----
+        MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgJuN+Pa6hk6BZUISu
+        lodghNrUkSR+VQsjrIW49hJ21dihRANCAASSV3pYY5NEuiiPYCs/ZRXZL6dNW0DJ
+        8VhI3X4k2jMfgEoBV/n9zUzAIZMsJ6XfzAHR+cz3/VxgoQYquH3GV0Lt
+        -----END PRIVATE KEY-----
+        """;
+
+    /// <summary>ECDSA P-256 private key PEM used to sign offline operating grants.</summary>
+    public string OperatingGrantSigningPrivateKeyPem { get; set; } = DevelopmentOperatingGrantPrivateKeyPem;
+
+    /// <summary>Server-controlled offline operating grant lifetime. Default 168 hours (7 days).</summary>
+    public int OperatingGrantValidityHours { get; set; } = 168;
 }
 
 /// <summary>

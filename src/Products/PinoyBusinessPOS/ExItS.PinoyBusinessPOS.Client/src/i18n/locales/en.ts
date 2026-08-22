@@ -89,6 +89,23 @@ export const en = {
     "Reconnect to verify this device before using offline POS data on this browser.",
   "offline.coldStartReconnect":
     "Sign in online once to prepare offline access, then you can restart offline on this device.",
+  "offline.unsupportedGrantSchema":
+    "This device has an outdated offline grant. Sign in online once to refresh offline access.",
+  "offline.pin.enrollTitle": "Set offline PIN",
+  "offline.pin.enrollMessage":
+    "Choose a 6-digit PIN to unlock offline data on this device after sign-out or restart.",
+  "offline.pin.confirmLabel": "Confirm PIN",
+  "offline.pin.enrollAction": "Save offline PIN",
+  "offline.pin.confirmMismatch": "PIN entries do not match.",
+  "offline.pin.invalidFormat": "Enter at least 6 digits.",
+  "offline.pin.notSignedIn": "Sign in online before setting an offline PIN.",
+  "offline.pin.unlockTitle": "Unlock offline",
+  "offline.pin.unlockSubtitle": "Enter your offline PIN to open saved POS data on this device.",
+  "offline.pin.label": "Offline PIN",
+  "offline.pin.unlockAction": "Unlock",
+  "offline.pin.wrong": "Wrong PIN. Try again.",
+  "offline.pin.locked": "Too many wrong attempts. Wait and try again.",
+  "offline.pin.grantMissing": "Offline access is not prepared on this device.",
   "offline.queuedTitle": "Sale saved on this device",
   "offline.queuedDetail": "It is not recorded on the server yet.",
   "offline.queuedPending": "This Cash sale syncs automatically when you are back online.",

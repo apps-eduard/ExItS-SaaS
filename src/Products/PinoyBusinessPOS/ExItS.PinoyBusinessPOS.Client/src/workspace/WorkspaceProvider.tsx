@@ -29,11 +29,12 @@ import {
 } from "@/api/platform/platform-auth-client";
 import { clearPlatformAntiforgeryToken } from "@/api/platform/platform-http";
 import { selectOperationalBranch } from "@/api/pos/operational-branch-client";
+import { issueOfflineOperatingGrant } from "@/api/pos/pos-offline-operating-grant-client";
 import {
   buildBoundWorkspaceFromGrant,
   buildColdStartSessionGrantFacts,
   buildPosDeviceFromGrant,
-  establishOfflineOperatingGrant,
+  persistServerSignedGrantFromApi,
 } from "@/offline/offline-operating-grant";
 import { sessionAccountClass, isOrganizationContextLocked } from "@/session/account-class";
 import { ensureOrganizationSessionProfile } from "@/session/ensure-organization-profile";
@@ -653,25 +654,31 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         hydratedDevice.installationDeviceId &&
         hydratedDevice.posDeviceId
       ) {
-        void establishOfflineOperatingGrant({
-          userId: activeSession.userId,
-          scopeKind: "Organization",
-          organizationId: destination.organizationId,
-          organizationDisplayName:
-            findOrganizationLabel(workspaces, destination.organizationId) ??
-            destination.organizationDisplayName,
-          branchId: destination.branchId,
-          branchName:
-            destination.branchName ??
-            findBranchLabel(workspaces, destination.organizationId, destination.branchId)
-              ?.branchName ??
-            destination.branchId,
-          installationDeviceId: hydratedDevice.installationDeviceId,
-          posDeviceId: hydratedDevice.posDeviceId,
-          roleCode: result.grant.mappedPosRoleCode ?? null,
-          displayName: activeSession.displayName ?? null,
-          username: activeSession.username ?? null,
-        });
+        void issueOfflineOperatingGrant(
+          {
+            organizationId: destination.organizationId,
+            branchId: destination.branchId,
+          },
+          {
+            installationDeviceId: hydratedDevice.installationDeviceId,
+            organizationDisplayName:
+              findOrganizationLabel(workspaces, destination.organizationId) ??
+              destination.organizationDisplayName,
+            branchName:
+              destination.branchName ??
+              findBranchLabel(workspaces, destination.organizationId, destination.branchId)
+                ?.branchName ??
+              destination.branchId,
+            displayName: activeSession.displayName ?? null,
+            username: activeSession.username ?? null,
+          },
+        )
+          .then((grant) => {
+            persistServerSignedGrantFromApi(grant);
+          })
+          .catch((error: unknown) => {
+            console.warn("[offline-grant] server grant issuance failed", error);
+          });
       }
 
       return true;

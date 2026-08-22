@@ -217,6 +217,8 @@ builder.Services.AddScoped<SaleQueryService>();
 builder.Services.Configure<OfflinePriceAuthorityOptions>(
     builder.Configuration.GetSection(OfflinePriceAuthorityOptions.SectionName));
 builder.Services.AddScoped<IOfflinePriceAuthorityService, OfflinePriceAuthorityService>();
+builder.Services.AddScoped<IServerSignedOfflineOperatingGrantService, ServerSignedOfflineOperatingGrantService>();
+builder.Services.AddHttpClient(nameof(OfflineOperatingGrantEndpoints));
 builder.Services.AddScoped<CheckoutSale>();
 builder.Services.AddScoped<SelectOperationalBranch>();
 builder.Services.AddScoped<VoidSale>();
@@ -401,6 +403,7 @@ app.MapCatalogImportEndpoints();
 app.MapPlatformSupportCatalogEndpoints();
 app.MapSaleEndpoints();
 app.MapOfflinePriceAuthorityEndpoints();
+app.MapOfflineOperatingGrantEndpoints();
 app.MapOperationalBranchEndpoints();
 app.MapCustomerOrderEndpoints();
 app.MapSaleReturnEndpoints();

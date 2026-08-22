@@ -3,7 +3,8 @@ import type {
   PersonalDebtRelationshipSummaryDto,
   PersonalUtangEntryDto,
 } from "@/api/platform/personal-utang-client";
-import { decryptPayload, deriveScopeKeyFromBinding, encryptPayload } from "@/offline/crypto";
+import { decryptPayload, encryptPayload } from "@/offline/crypto";
+import { getActiveOfflineCryptoKeyForScope } from "@/offline/local-store-key";
 import { assertOfflineScope, getMeta, putMeta, type OfflineDb } from "@/offline/db";
 import {
   PERSONAL_USER_IDENTITY_META_KEY,
@@ -34,7 +35,7 @@ function aad(prefix: string, id: string): string {
 }
 
 async function seal(scopeBinding: string, value: unknown, associatedData: string) {
-  const key = await deriveScopeKeyFromBinding(scopeBinding);
+  const key = await getActiveOfflineCryptoKeyForScope(scopeBinding);
   return encryptPayload(key, new TextEncoder().encode(JSON.stringify(value)), associatedData);
 }
 
@@ -44,7 +45,7 @@ async function unseal<T>(
   associatedData: string,
 ): Promise<T | null> {
   try {
-    const key = await deriveScopeKeyFromBinding(scopeBinding);
+    const key = await getActiveOfflineCryptoKeyForScope(scopeBinding);
     const plaintext = await decryptPayload(key, envelope, associatedData);
     return JSON.parse(new TextDecoder().decode(plaintext)) as T;
   } catch {

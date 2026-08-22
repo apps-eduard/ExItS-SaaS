@@ -1,5 +1,6 @@
 import type { PosCustomerCreditSummary, PosCustomerListItem } from "@/api/pos/pos-customers-client";
-import { decryptPayload, deriveScopeKeyFromBinding, encryptPayload } from "@/offline/crypto";
+import { decryptPayload, encryptPayload } from "@/offline/crypto";
+import { getActiveOfflineCryptoKeyForScope } from "@/offline/local-store-key";
 import type { OfflineDb } from "@/offline/db";
 import type { CachedCustomerCreditRecord, CachedCustomerRecord } from "@/offline/types";
 
@@ -25,7 +26,7 @@ function creditAad(customerId: string): string {
 }
 
 async function sealJson(scopeBinding: string, value: unknown, associatedData: string) {
-  const key = await deriveScopeKeyFromBinding(scopeBinding);
+  const key = await getActiveOfflineCryptoKeyForScope(scopeBinding);
   return encryptPayload(key, new TextEncoder().encode(JSON.stringify(value)), associatedData);
 }
 
@@ -35,7 +36,7 @@ async function openSealed<T>(
   associatedData: string,
 ): Promise<T | null> {
   try {
-    const key = await deriveScopeKeyFromBinding(scopeBinding);
+    const key = await getActiveOfflineCryptoKeyForScope(scopeBinding);
     const plaintext = await decryptPayload(key, envelope, associatedData);
     return JSON.parse(new TextDecoder().decode(plaintext)) as T;
   } catch {

@@ -96,6 +96,24 @@ export const hilPH: Record<keyof typeof en, string> = {
     "Magkonektar sa internet agod ma-verify ini nga device antes gamiton ang offline POS data sa sini nga browser.",
   "offline.coldStartReconnect":
     "Mag-sign in online sing makaisa agod mag-andam sang offline access, dayon mahimo na mag-restart offline sa sini nga device.",
+  "offline.unsupportedGrantSchema":
+    "Daan na ang offline grant sa sini nga device. Mag-sign in online sing makaisa agod i-refresh ang offline access.",
+  "offline.pin.enrollTitle": "Mag-set sang offline PIN",
+  "offline.pin.enrollMessage":
+    "Pili sang 6-digit nga PIN agod ma-unlock ang offline data sa sini nga device pagkatapos mag-sign out ukon mag-restart.",
+  "offline.pin.confirmLabel": "Kumpirma ang PIN",
+  "offline.pin.enrollAction": "I-save ang offline PIN",
+  "offline.pin.confirmMismatch": "Indi mag-ugma ang mga PIN.",
+  "offline.pin.invalidFormat": "Magbutang sang indi menos 6 ka digit.",
+  "offline.pin.notSignedIn": "Mag-sign in online anay antes mag-set sang offline PIN.",
+  "offline.pin.unlockTitle": "I-unlock ang offline",
+  "offline.pin.unlockSubtitle":
+    "Ibutang ang offline PIN agod mabuksan ang naka-save nga POS data sa sini nga device.",
+  "offline.pin.label": "Offline PIN",
+  "offline.pin.unlockAction": "I-unlock",
+  "offline.pin.wrong": "Sayop nga PIN. Sulayi liwat.",
+  "offline.pin.locked": "Damo gid nga sayop. Hulat kag sulayi liwat.",
+  "offline.pin.grantMissing": "Wala pa handa ang offline access sa sini nga device.",
   "offline.queuedTitle": "Na-tipigan ang baligya sa sini nga device",
   "offline.queuedDetail": "Wala pa ini na-rekord sa server.",
   "offline.queuedPending":

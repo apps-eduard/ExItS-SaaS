@@ -1,5 +1,6 @@
 import type { OfflineDb } from "@/offline/db";
-import { deriveScopeKeyFromBinding, encryptPayload, sha256Hex } from "@/offline/crypto";
+import { encryptPayload, sha256Hex } from "@/offline/crypto";
+import { getActiveOfflineCryptoKey } from "@/offline/local-store-key";
 import {
   deriveOfflineQueueCounts,
   type OfflineOperationRecord,
@@ -31,6 +32,8 @@ export type EnqueueSensitiveOperationInput = {
   withLocalDomainWrite?: (tx: {
     putDomain: (storeName: never, value: never) => Promise<void>;
   }) => Promise<void>;
+  /** Test-only override — production uses the PIN-unlocked DEK. */
+  cryptoKey?: CryptoKey;
 };
 
 function associatedData(
@@ -48,7 +51,9 @@ export async function enqueueEncryptedOperation(
 ): Promise<OfflineOperationRecord> {
   const plaintext = new TextEncoder().encode(input.plaintextJson);
   const payloadHash = await sha256Hex(plaintext);
-  const key = await deriveScopeKeyFromBinding(input.scopeBinding);
+  const key =
+    input.cryptoKey ??
+    (await getActiveOfflineCryptoKey(input.userId, input.scopeBinding));
   const envelope = await encryptPayload(
     key,
     plaintext,

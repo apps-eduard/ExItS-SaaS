@@ -95,6 +95,24 @@ export const iloPH: Record<keyof typeof en, string> = {
     "Agkonekta iti internet tapno mapasingkedan daytoy a device sakbay a usaren ti offline POS data iti daytoy a browser.",
   "offline.coldStartReconnect":
     "Ag-sign in iti online maminsan tapno maisagana ti offline access, kalpasanna mabalin ti ag-restart offline iti daytoy a device.",
+  "offline.unsupportedGrantSchema":
+    "Daanen ti offline grant iti daytoy a device. Ag-sign in iti online maminsan tapno ma-refresh ti offline access.",
+  "offline.pin.enrollTitle": "I-set ti offline PIN",
+  "offline.pin.enrollMessage":
+    "Agpili ti 6-digit a PIN tapno ma-unlock ti offline data iti daytoy a device kalpasan ti sign-out wenno restart.",
+  "offline.pin.confirmLabel": "Kumpirmaen ti PIN",
+  "offline.pin.enrollAction": "I-save ti offline PIN",
+  "offline.pin.confirmMismatch": "Saan a magtugma dagiti PIN.",
+  "offline.pin.invalidFormat": "Mangikabil iti saan a basbassit ngem 6 a digit.",
+  "offline.pin.notSignedIn": "Ag-sign in iti online sakbay nga ag-set ti offline PIN.",
+  "offline.pin.unlockTitle": "I-unlock ti offline",
+  "offline.pin.unlockSubtitle":
+    "Ikkam ti offline PIN tapno malukatan ti naidulin a POS data iti daytoy a device.",
+  "offline.pin.label": "Offline PIN",
+  "offline.pin.unlockAction": "I-unlock",
+  "offline.pin.wrong": "Di umno a PIN. Padasen manen.",
+  "offline.pin.locked": "Adu unay a di umno. Aguray ken padasen manen.",
+  "offline.pin.grantMissing": "Saan pay a nakasagana ti offline access iti daytoy a device.",
   "offline.queuedTitle": "Naidulin ti panaglako iti daytoy a device",
   "offline.queuedDetail": "Saan pay a nairekord iti server.",
   "offline.queuedPending":

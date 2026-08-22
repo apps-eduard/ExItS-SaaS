@@ -23,7 +23,7 @@
 | Switch workspace / org | OnlineRequired | |
 | Personal ↔ Organization switch | OnlineRequired | |
 | Sign-in (first / cold) | OnlineRequired | |
-| Cold-start unlock of protected LocalStore | Queueable | Device-bound offline operating grant (RMAP-21-FIX01); requires prior online branch bind + authorized POS device |
+| Cold-start unlock of protected LocalStore | Queueable | Server-signed offline operating grant (RMAP-21-FIX02) + offline PIN-wrapped DEK; requires prior online branch bind, authorized POS device, and PIN enrollment |
 
 ## POS Sell / checkout
 

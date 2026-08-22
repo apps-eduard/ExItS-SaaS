@@ -10,8 +10,16 @@ import {
   listSafeOutboxMetadata,
   recoverAbandonedSyncing,
   setOperationState,
+  type EnqueueSensitiveOperationInput,
 } from "@/offline/outbox";
 import { isFullySynced, waitingSyncCount } from "@/offline/types";
+
+async function enqueueWithLegacyScopeKey(input: EnqueueSensitiveOperationInput) {
+  return enqueueEncryptedOperation({
+    ...input,
+    cryptoKey: await deriveScopeKeyFromBinding(input.scopeBinding),
+  });
+}
 
 describe("RMAP-21B offline LocalStore / outbox", () => {
   beforeEach(() => {
@@ -29,7 +37,7 @@ describe("RMAP-21B offline LocalStore / outbox", () => {
     const personalDb = await openOfflineDatabase("Personal", personalKey);
     const orgDb = await openOfflineDatabase("Organization", orgKey);
 
-    await enqueueEncryptedOperation({
+    await enqueueWithLegacyScopeKey({
       db: personalDb,
       scopeKind: "Personal",
       scopeBinding: personalKey,
@@ -42,7 +50,7 @@ describe("RMAP-21B offline LocalStore / outbox", () => {
       plaintextJson: JSON.stringify({ displayName: "Ana" }),
     });
 
-    await enqueueEncryptedOperation({
+    await enqueueWithLegacyScopeKey({
       db: orgDb,
       scopeKind: "Organization",
       scopeBinding: orgKey,
@@ -67,7 +75,7 @@ describe("RMAP-21B offline LocalStore / outbox", () => {
     const scopeKey = personalScopeKey("user-b", "profile-b");
     const db = await openOfflineDatabase("Personal", scopeKey);
     const secret = "debt-note-should-not-appear-as-plaintext";
-    await enqueueEncryptedOperation({
+    await enqueueWithLegacyScopeKey({
       db,
       scopeKind: "Personal",
       scopeBinding: scopeKey,
@@ -97,7 +105,7 @@ describe("RMAP-21B offline LocalStore / outbox", () => {
   it("preserves the same idempotency key across retries", async () => {
     const scopeKey = personalScopeKey("user-c", "profile-c");
     const db = await openOfflineDatabase("Personal", scopeKey);
-    await enqueueEncryptedOperation({
+    await enqueueWithLegacyScopeKey({
       db,
       scopeKind: "Personal",
       scopeBinding: scopeKey,
@@ -121,7 +129,7 @@ describe("RMAP-21B offline LocalStore / outbox", () => {
   it("orders dependents after predecessor succeeds", async () => {
     const scopeKey = personalScopeKey("user-d", "profile-d");
     const db = await openOfflineDatabase("Personal", scopeKey);
-    await enqueueEncryptedOperation({
+    await enqueueWithLegacyScopeKey({
       db,
       scopeKind: "Personal",
       scopeBinding: scopeKey,
@@ -134,7 +142,7 @@ describe("RMAP-21B offline LocalStore / outbox", () => {
       plaintextJson: JSON.stringify({ contactLocalId: "local-c1" }),
       dependsOnOperationId: "op-contact",
     });
-    await enqueueEncryptedOperation({
+    await enqueueWithLegacyScopeKey({
       db,
       scopeKind: "Personal",
       scopeBinding: scopeKey,
@@ -163,7 +171,7 @@ describe("RMAP-21B offline LocalStore / outbox", () => {
   it("recovers abandoned Syncing after restart", async () => {
     const scopeKey = personalScopeKey("user-e", "profile-e");
     const db = await openOfflineDatabase("Personal", scopeKey);
-    await enqueueEncryptedOperation({
+    await enqueueWithLegacyScopeKey({
       db,
       scopeKind: "Personal",
       scopeBinding: scopeKey,
@@ -185,7 +193,7 @@ describe("RMAP-21B offline LocalStore / outbox", () => {
   it("derives waiting / fully-synced counts for Connection & Sync", async () => {
     const scopeKey = personalScopeKey("user-f", "profile-f");
     const db = await openOfflineDatabase("Personal", scopeKey);
-    await enqueueEncryptedOperation({
+    await enqueueWithLegacyScopeKey({
       db,
       scopeKind: "Personal",
       scopeBinding: scopeKey,

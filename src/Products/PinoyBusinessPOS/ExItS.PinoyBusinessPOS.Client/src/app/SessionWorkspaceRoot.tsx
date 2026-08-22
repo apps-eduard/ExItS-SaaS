@@ -6,13 +6,15 @@ import { ShiftContextProvider } from "@/features/shifts/ShiftContextProvider";
 import { PwaUpdateHost } from "@/pwa/PwaUpdateHost";
 import { SellingModeLifecycle } from "@/selling/SellingModeLifecycle";
 import { SellingModeProvider } from "@/selling/SellingModeProvider";
+import { OfflinePinSetupGate } from "@/features/offline/OfflinePinSetupGate";
 import { SessionProvider } from "@/session/SessionProvider";
 import { WorkspaceProvider } from "@/workspace/WorkspaceProvider";
 
 export function SessionWorkspaceRoot() {
   return (
     <SessionProvider>
-      <WorkspaceProvider>
+      <OfflinePinSetupGate>
+        <WorkspaceProvider>
         <ShiftContextProvider>
           <SessionCartProvider>
             <SellingModeProvider>
@@ -24,7 +26,8 @@ export function SessionWorkspaceRoot() {
             </SellingModeProvider>
           </SessionCartProvider>
         </ShiftContextProvider>
-      </WorkspaceProvider>
+        </WorkspaceProvider>
+      </OfflinePinSetupGate>
     </SessionProvider>
   );
 }

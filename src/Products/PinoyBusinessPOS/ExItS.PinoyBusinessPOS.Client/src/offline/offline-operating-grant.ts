@@ -1,3 +1,4 @@
+import type { ServerSignedOfflineOperatingGrantDto } from "@/api/pos/pos-offline-operating-grant-client";
 import type { SessionGrantResponse } from "@/api/platform/platform-auth-client";
 import type { BrowserSessionSnapshot } from "@/api/platform/browser-session";
 import {
@@ -6,18 +7,24 @@ import {
 } from "@/workspace/browser-installation-identity";
 import { authorizedPosDeviceContext, type PosDeviceContext } from "@/workspace/pos-device-context";
 import type { BoundWorkspace } from "@/workspace/types";
+import {
+  canonicalizeOfflineOperatingGrant,
+  scopeKindToNumeric,
+  verifyOfflineOperatingGrantSignature,
+} from "@/offline/server-signed-offline-grant";
 
-/** Matches MAUI OfflineOperatingGrant.CurrentSchemaVersion (org + device binding). */
-export const OFFLINE_OPERATING_GRANT_SCHEMA_VERSION = 3;
+/** Matches server ServerSignedOfflineOperatingGrant.CurrentSchemaVersion. */
+export const OFFLINE_OPERATING_GRANT_SCHEMA_VERSION = 4;
 
 export const OFFLINE_OPERATING_GRANT_STORE_KEY = "exits.pos-client.offline-operating-grants.v1";
 
-/** Browser PWA grant window — shorter than MAUI defaults; PIN unlock not yet implemented. */
-export const OFFLINE_OPERATING_GRANT_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+/** Legacy FIX01 schema — rejected unless migrated to server-signed v4. */
+export const LEGACY_OFFLINE_OPERATING_GRANT_SCHEMA_VERSION = 3;
 
 export type OfflineGrantScopeKind = "Organization" | "Personal";
 
 export type StoredOfflineOperatingGrant = {
+  grantId: string;
   schemaVersion: typeof OFFLINE_OPERATING_GRANT_SCHEMA_VERSION;
   userId: string;
   scopeKind: OfflineGrantScopeKind;
@@ -33,7 +40,7 @@ export type StoredOfflineOperatingGrant = {
   issuedAtUtc: string;
   lastOnlineValidatedAtUtc: string;
   expiresAtUtc: string;
-  integrity: string;
+  signature: string;
 };
 
 type GrantStoreDocument = {
@@ -51,24 +58,10 @@ export type ColdStartGrantDenialReason =
   | "no_grant"
   | "grant_expired"
   | "device_mismatch"
-  | "integrity_failed"
+  | "signature_failed"
+  | "unsupported_schema"
   | "invalid_scope"
   | "user_mismatch";
-
-export type EstablishOfflineOperatingGrantInput = {
-  userId: string;
-  scopeKind: OfflineGrantScopeKind;
-  organizationId: string | null;
-  organizationDisplayName: string;
-  branchId: string | null;
-  branchName: string | null;
-  installationDeviceId: string;
-  posDeviceId: string | null;
-  roleCode?: string | null;
-  displayName?: string | null;
-  username?: string | null;
-  now?: Date;
-};
 
 function canUseLocalStorage(): boolean {
   if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
@@ -115,13 +108,45 @@ function writeStore(document: GrantStoreDocument): boolean {
   }
 }
 
-function canonicalGrantPayload(
-  grant: Omit<StoredOfflineOperatingGrant, "integrity">,
-): string {
-  return JSON.stringify({
+function isLegacyV3Grant(raw: unknown): boolean {
+  if (typeof raw !== "object" || raw === null) {
+    return false;
+  }
+  const record = raw as Record<string, unknown>;
+  return record.schemaVersion === LEGACY_OFFLINE_OPERATING_GRANT_SCHEMA_VERSION && "integrity" in record;
+}
+
+export function mapServerGrantDto(dto: ServerSignedOfflineOperatingGrantDto): StoredOfflineOperatingGrant {
+  return {
+    grantId: dto.grantId,
+    schemaVersion: OFFLINE_OPERATING_GRANT_SCHEMA_VERSION,
+    userId: dto.userId,
+    scopeKind: dto.scopeKind,
+    organizationId: dto.organizationId,
+    organizationDisplayName: dto.organizationDisplayName,
+    branchId: dto.branchId,
+    branchName: dto.branchName,
+    installationDeviceId: dto.installationDeviceId,
+    posDeviceId: dto.posDeviceId,
+    roleCode: dto.roleCode,
+    displayName: dto.displayName,
+    username: dto.username,
+    issuedAtUtc: dto.issuedAtUtc,
+    lastOnlineValidatedAtUtc: dto.lastOnlineValidatedAtUtc,
+    expiresAtUtc: dto.expiresAtUtc,
+    signature: dto.signature,
+  };
+}
+
+export async function verifyGrantSignature(grant: StoredOfflineOperatingGrant): Promise<boolean> {
+  if (grant.schemaVersion !== OFFLINE_OPERATING_GRANT_SCHEMA_VERSION) {
+    return false;
+  }
+  const canonical = canonicalizeOfflineOperatingGrant({
+    grantId: grant.grantId,
     schemaVersion: grant.schemaVersion,
     userId: grant.userId,
-    scopeKind: grant.scopeKind,
+    scopeKind: scopeKindToNumeric(grant.scopeKind),
     organizationId: grant.organizationId,
     organizationDisplayName: grant.organizationDisplayName,
     branchId: grant.branchId,
@@ -135,41 +160,7 @@ function canonicalGrantPayload(
     lastOnlineValidatedAtUtc: grant.lastOnlineValidatedAtUtc,
     expiresAtUtc: grant.expiresAtUtc,
   });
-}
-
-async function deriveIntegrityKey(installationDeviceId: string): Promise<CryptoKey> {
-  const material = new TextEncoder().encode(
-    `exits-offline-grant-integrity:v1:${installationDeviceId}`,
-  );
-  const hash = await crypto.subtle.digest("SHA-256", material);
-  return crypto.subtle.importKey(
-    "raw",
-    hash,
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign", "verify"],
-  );
-}
-
-export async function computeGrantIntegrity(
-  grant: Omit<StoredOfflineOperatingGrant, "integrity">,
-): Promise<string> {
-  const key = await deriveIntegrityKey(grant.installationDeviceId);
-  const signature = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    new TextEncoder().encode(canonicalGrantPayload(grant)),
-  );
-  return [...new Uint8Array(signature)].map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-async function verifyGrantIntegrity(grant: StoredOfflineOperatingGrant): Promise<boolean> {
-  if (!grant.integrity?.trim()) {
-    return false;
-  }
-  const { integrity, ...rest } = grant;
-  const expected = await computeGrantIntegrity(rest);
-  return expected === integrity;
+  return verifyOfflineOperatingGrantSignature(canonical, grant.signature);
 }
 
 export function isOrganizationOfflineGrant(
@@ -197,38 +188,23 @@ export function isGrantExpired(
   return !Number.isFinite(expiresAt) || now >= expiresAt;
 }
 
-export async function establishOfflineOperatingGrant(
-  input: EstablishOfflineOperatingGrantInput,
-): Promise<StoredOfflineOperatingGrant | null> {
-  const now = input.now ?? new Date();
-  const issuedAtUtc = now.toISOString();
-  const expiresAtUtc = new Date(now.getTime() + OFFLINE_OPERATING_GRANT_DURATION_MS).toISOString();
-  const withoutIntegrity: Omit<StoredOfflineOperatingGrant, "integrity"> = {
-    schemaVersion: OFFLINE_OPERATING_GRANT_SCHEMA_VERSION,
-    userId: input.userId,
-    scopeKind: input.scopeKind,
-    organizationId: input.organizationId,
-    organizationDisplayName: input.organizationDisplayName,
-    branchId: input.branchId,
-    branchName: input.branchName,
-    installationDeviceId: input.installationDeviceId,
-    posDeviceId: input.posDeviceId,
-    roleCode: input.roleCode ?? null,
-    displayName: input.displayName ?? null,
-    username: input.username ?? null,
-    issuedAtUtc,
-    lastOnlineValidatedAtUtc: issuedAtUtc,
-    expiresAtUtc,
-  };
-  const integrity = await computeGrantIntegrity(withoutIntegrity);
-  const grant: StoredOfflineOperatingGrant = { ...withoutIntegrity, integrity };
-
-  const store = readStore();
-  store.grants[input.userId] = grant;
-  if (!writeStore(store)) {
-    return null;
+/** Persist a server-issued grant. The browser cannot mint grants locally. */
+export function persistServerSignedGrant(grant: StoredOfflineOperatingGrant): boolean {
+  if (grant.schemaVersion !== OFFLINE_OPERATING_GRANT_SCHEMA_VERSION || !grant.signature?.trim()) {
+    return false;
   }
-  return grant;
+  const store = readStore();
+  store.grants[grant.userId] = grant;
+  return writeStore(store);
+}
+
+export function persistServerSignedGrantFromApi(dto: ServerSignedOfflineOperatingGrantDto): boolean {
+  return persistServerSignedGrant(mapServerGrantDto(dto));
+}
+
+export function peekStoredOfflineGrant(userId: string): StoredOfflineOperatingGrant | null {
+  const store = readStore();
+  return store.grants[userId] ?? null;
 }
 
 export function clearOfflineOperatingGrant(userId: string): void {
@@ -271,6 +247,13 @@ export async function evaluateColdStartOfflineGrant(options?: {
 
   const nowMs = (options?.now ?? new Date()).getTime();
   const store = readStore();
+
+  for (const raw of Object.values(store.grants)) {
+    if (isLegacyV3Grant(raw)) {
+      return { ok: false, reason: "unsupported_schema" };
+    }
+  }
+
   const candidates = Object.values(store.grants).filter((grant) => {
     if (options?.userId && grant.userId !== options.userId) {
       return false;
@@ -284,7 +267,7 @@ export async function evaluateColdStartOfflineGrant(options?: {
     if (grant.scopeKind === "Organization" && !isOrganizationOfflineGrant(grant, nowMs)) {
       return false;
     }
-    return true;
+    return grant.schemaVersion === OFFLINE_OPERATING_GRANT_SCHEMA_VERSION;
   });
 
   if (candidates.length === 0) {
@@ -300,13 +283,13 @@ export async function evaluateColdStartOfflineGrant(options?: {
     if (grant.installationDeviceId !== installationDeviceId) {
       continue;
     }
-    if (!(await verifyGrantIntegrity(grant))) {
+    if (!(await verifyGrantSignature(grant))) {
       continue;
     }
     return { ok: true, grant };
   }
 
-  return { ok: false, reason: "integrity_failed" };
+  return { ok: false, reason: "signature_failed" };
 }
 
 export function synthesizeSessionFromGrant(
@@ -376,7 +359,10 @@ export function buildColdStartSessionGrantFacts(
 
 export function mapColdStartDenialToMessageKey(
   reason: ColdStartGrantDenialReason,
-): "offline.coldStartLocked" | "offline.coldStartReconnect" {
+): "offline.coldStartLocked" | "offline.coldStartReconnect" | "offline.unsupportedGrantSchema" {
+  if (reason === "unsupported_schema") {
+    return "offline.unsupportedGrantSchema";
+  }
   if (reason === "no_grant" || reason === "grant_expired") {
     return "offline.coldStartReconnect";
   }

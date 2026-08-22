@@ -1,5 +1,6 @@
 import type { PersonalTodoDto } from "@/api/platform/personal-todo-client";
-import { decryptPayload, deriveScopeKeyFromBinding, encryptPayload } from "@/offline/crypto";
+import { decryptPayload, encryptPayload } from "@/offline/crypto";
+import { getActiveOfflineCryptoKeyForScope } from "@/offline/local-store-key";
 import { assertOfflineScope, type OfflineDb } from "@/offline/db";
 import type { CachedPersonalTodoRecord } from "@/offline/types";
 
@@ -22,7 +23,7 @@ function aad(todoId: string): string {
 }
 
 async function seal(scopeBinding: string, todo: PersonalTodoDto) {
-  const key = await deriveScopeKeyFromBinding(scopeBinding);
+  const key = await getActiveOfflineCryptoKeyForScope(scopeBinding);
   return encryptPayload(key, new TextEncoder().encode(JSON.stringify(todo)), aad(todo.id));
 }
 
@@ -31,7 +32,7 @@ async function unseal(
   row: CachedPersonalTodoRecord,
 ): Promise<PersonalTodoDto | null> {
   try {
-    const key = await deriveScopeKeyFromBinding(scopeBinding);
+    const key = await getActiveOfflineCryptoKeyForScope(scopeBinding);
     const plaintext = await decryptPayload(
       key,
       { ciphertext: row.ciphertext, iv: row.iv },

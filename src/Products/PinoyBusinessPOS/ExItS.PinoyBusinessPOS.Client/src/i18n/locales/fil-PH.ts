@@ -94,6 +94,24 @@ export const filPH: Record<keyof typeof en, string> = {
     "Kumonekta sa internet para i-verify ang device na ito bago gamitin ang offline POS data sa browser na ito.",
   "offline.coldStartReconnect":
     "Mag-sign in online nang isang beses para ihanda ang offline access, pagkatapos ay maaari nang mag-restart offline sa device na ito.",
+  "offline.unsupportedGrantSchema":
+    "Luma na ang offline grant sa device na ito. Mag-sign in online nang isang beses para i-refresh ang offline access.",
+  "offline.pin.enrollTitle": "Itakda ang offline PIN",
+  "offline.pin.enrollMessage":
+    "Pumili ng 6-digit na PIN para i-unlock ang offline data sa device na ito pagkatapos mag-sign out o mag-restart.",
+  "offline.pin.confirmLabel": "Kumpirmahin ang PIN",
+  "offline.pin.enrollAction": "I-save ang offline PIN",
+  "offline.pin.confirmMismatch": "Hindi magkatugma ang mga PIN.",
+  "offline.pin.invalidFormat": "Maglagay ng hindi bababa sa 6 na digit.",
+  "offline.pin.notSignedIn": "Mag-sign in online bago magtakda ng offline PIN.",
+  "offline.pin.unlockTitle": "I-unlock ang offline",
+  "offline.pin.unlockSubtitle":
+    "Ilagay ang offline PIN para buksan ang naka-save na POS data sa device na ito.",
+  "offline.pin.label": "Offline PIN",
+  "offline.pin.unlockAction": "I-unlock",
+  "offline.pin.wrong": "Maling PIN. Subukan muli.",
+  "offline.pin.locked": "Sobrang daming maling subok. Maghintay at subukan muli.",
+  "offline.pin.grantMissing": "Hindi pa handa ang offline access sa device na ito.",
   "offline.queuedTitle": "Nakaimbak ang benta sa device na ito",
   "offline.queuedDetail": "Hindi pa ito naitala sa server.",
   "offline.queuedPending":

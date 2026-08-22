@@ -1,8 +1,18 @@
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it } from "vitest";
 import { openOfflineDatabase, organizationScopeKey } from "@/offline/db";
-import { enrollOfflinePinAndDek } from "@/offline/local-store-key";
-import { getUnlockedDek, clearUnlockedDek } from "@/offline/offline-unlock-session";
+import { deriveScopeKeyFromBinding } from "@/offline/crypto";
+import {
+  enrollOfflinePinAndDek,
+  generateRandomDek,
+  WRAPPED_DEK_STORE_KEY,
+} from "@/offline/local-store-key";
+import { migrateLegacyLocalStoreToFix02 } from "@/offline/local-store-migration";
+import {
+  clearAllOfflinePinVerifiers,
+  OFFLINE_PIN_VERIFIER_STORE_KEY,
+} from "@/offline/offline-pin";
+import { clearUnlockedDek, getUnlockedDek } from "@/offline/offline-unlock-session";
 import {
   enqueueEncryptedOperation,
   listSafeOutboxMetadata,
@@ -20,8 +30,6 @@ import {
   scopeKindToNumeric,
   signOfflineOperatingGrantForTests,
 } from "@/offline/server-signed-offline-grant";
-import { clearAllOfflinePinVerifiers } from "@/offline/offline-pin";
-import { clearAllWrappedDekRecords } from "@/offline/local-store-key";
 import { INSTALLATION_DEVICE_ID_STORAGE_KEY } from "@/workspace/browser-installation-identity";
 
 const DEV_PRIVATE_KEY_PEM = `-----BEGIN PRIVATE KEY-----
@@ -86,11 +94,11 @@ describe("cold-start IndexedDB unlock", () => {
     window.localStorage.setItem(INSTALLATION_DEVICE_ID_STORAGE_KEY, INSTALLATION);
     clearUnlockedDek();
     clearAllOfflinePinVerifiers();
-    clearAllWrappedDekRecords();
+    window.localStorage.removeItem(WRAPPED_DEK_STORE_KEY);
     await enrollOfflinePinAndDek(USER, PIN);
   });
 
-  it("opens encrypted outbox after cold-start grant + PIN unlock", async () => {
+  it("opens encrypted outbox after grant + PIN unlock", async () => {
     persistServerSignedGrant(await buildSignedGrant());
 
     const warmScope = organizationScopeKey({
@@ -146,5 +154,74 @@ describe("cold-start IndexedDB unlock", () => {
     const pending = await listSafeOutboxMetadata(coldDb);
     expect(pending.some((row) => row.operationId === "op-1")).toBe(true);
     coldDb.close();
+  });
+});
+
+describe("offline PIN security", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    clearUnlockedDek();
+    clearAllOfflinePinVerifiers();
+  });
+
+  it("never stores plaintext PIN or DEK", async () => {
+    await enrollOfflinePinAndDek(USER, PIN);
+    const pinRaw = window.localStorage.getItem(OFFLINE_PIN_VERIFIER_STORE_KEY) ?? "";
+    const dekRaw = window.localStorage.getItem(WRAPPED_DEK_STORE_KEY) ?? "";
+    expect(pinRaw).not.toContain(PIN);
+    expect(dekRaw).not.toContain(PIN);
+    expect(dekRaw.toLowerCase()).not.toContain("plaintextdek");
+  });
+
+  it("rejects wrong PIN and accepts correct PIN unlock", async () => {
+    await enrollOfflinePinAndDek(USER, PIN);
+    clearUnlockedDek();
+    const { unlockOfflineCryptoWithPin } = await import("@/offline/local-store-key");
+    expect(await unlockOfflineCryptoWithPin(USER, "000000")).toBe(false);
+    expect(getUnlockedDek(USER)).toBeNull();
+    expect(await unlockOfflineCryptoWithPin(USER, PIN)).toBe(true);
+    expect(getUnlockedDek(USER)).not.toBeNull();
+  });
+
+  it("migration preserves legacy outbox after DEK unlock", async () => {
+    const scope = organizationScopeKey({
+      userId: USER,
+      organizationId: ORG,
+      branchId: BRANCH,
+      installationDeviceId: INSTALLATION,
+    });
+    const db = await openOfflineDatabase("Organization", scope);
+    const legacyKey = await deriveScopeKeyFromBinding(scope);
+    await enqueueEncryptedOperation({
+      db,
+      scopeKind: "Organization",
+      scopeBinding: scope,
+      userId: USER,
+      organizationId: ORG,
+      branchId: BRANCH,
+      installationDeviceId: INSTALLATION,
+      posDeviceId: POS_DEVICE,
+      productDomain: "pos.sale",
+      operationType: "sale.checkout.cash",
+      operationId: "legacy-op",
+      idempotencyKey: "legacy-sale",
+      plaintextJson: JSON.stringify({ saleId: "legacy-sale", total: 10 }),
+      cryptoKey: legacyKey,
+    });
+
+    await enrollOfflinePinAndDek(USER, PIN);
+    await migrateLegacyLocalStoreToFix02(db, scope, USER);
+    const pending = await listSafeOutboxMetadata(db);
+    expect(pending.some((row) => row.operationId === "legacy-op")).toBe(true);
+    db.close();
+  });
+
+  it("generates random DEK material distinct from legacy scope hash", async () => {
+    const dek = await generateRandomDek();
+    const dekRaw = new Uint8Array(await crypto.subtle.exportKey("raw", dek));
+    const legacyMaterial = new Uint8Array(
+      await crypto.subtle.digest("SHA-256", new TextEncoder().encode("exits-offline-v1:test-scope")),
+    );
+    expect(Array.from(dekRaw).join(",")).not.toBe(Array.from(legacyMaterial).join(","));
   });
 });

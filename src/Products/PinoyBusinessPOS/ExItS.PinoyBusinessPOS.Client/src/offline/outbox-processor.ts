@@ -4,7 +4,8 @@ import {
 } from "@/api/pos/pos-mutation-idempotency";
 import { PosApiError, posRequest } from "@/api/pos/pos-http";
 import { PlatformApiError, platformRequest } from "@/api/platform/platform-http";
-import { decryptPayload, deriveScopeKeyFromBinding } from "@/offline/crypto";
+import { decryptPayload } from "@/offline/crypto";
+import { getActiveOfflineCryptoKey } from "@/offline/local-store-key";
 import type { OfflineDb } from "@/offline/db";
 import { claimNextPending, recoverAbandonedSyncing, setOperationState } from "@/offline/outbox";
 import {
@@ -27,8 +28,9 @@ function associatedData(
 async function decryptOperationPlaintext(
   op: OfflineOperationRecord,
   scopeBinding: string,
+  cryptoKey?: CryptoKey,
 ): Promise<string> {
-  const key = await deriveScopeKeyFromBinding(scopeBinding);
+  const key = cryptoKey ?? (await getActiveOfflineCryptoKey(op.userId, scopeBinding));
   const bytes = await decryptPayload(
     key,
     { ciphertext: op.ciphertext, iv: op.iv },
@@ -245,6 +247,7 @@ export type ProcessOneResult =
 export async function processNextOutboxOperation(
   db: OfflineDb,
   scopeBinding: string,
+  cryptoKey?: CryptoKey,
 ): Promise<ProcessOneResult> {
   const claimed = await claimNextPending(db);
   if (!claimed) {
@@ -253,7 +256,7 @@ export async function processNextOutboxOperation(
 
   let plaintext: string;
   try {
-    plaintext = await decryptOperationPlaintext(claimed, scopeBinding);
+    plaintext = await decryptOperationPlaintext(claimed, scopeBinding, cryptoKey);
   } catch {
     await setOperationState(db, claimed.operationId, {
       queueState: "PermanentFailure",
@@ -372,6 +375,7 @@ export async function drainOutbox(
   db: OfflineDb,
   scopeBinding: string,
   limit = 25,
+  cryptoKey?: CryptoKey,
 ): Promise<DrainResult> {
   await recoverAbandonedSyncing(db);
   let processed = 0;
@@ -379,7 +383,7 @@ export async function drainOutbox(
   let failed = 0;
 
   while (processed < limit) {
-    const result = await processNextOutboxOperation(db, scopeBinding);
+    const result = await processNextOutboxOperation(db, scopeBinding, cryptoKey);
     if (result.status === "idle") {
       break;
     }

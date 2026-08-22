@@ -405,6 +405,19 @@ export async function expectSellEntryVisible(page: Page) {
   ).toBeVisible({ timeout: 15000 });
 }
 
+export async function completeOfflinePinSetupIfNeeded(page: Page, pin = "123456"): Promise<void> {
+  const onSetup =
+    page.url().includes("/offline-pin-setup") ||
+    (await page.getByTestId("offline-pin-setup-page").isVisible().catch(() => false));
+  if (!onSetup) {
+    return;
+  }
+  await page.getByTestId("offline-pin-enroll-input").fill(pin);
+  await page.getByTestId("offline-pin-enroll-confirm").fill(pin);
+  await page.getByTestId("offline-pin-enroll-submit").click();
+  await page.waitForURL((url) => !url.pathname.includes("/offline-pin-setup"), { timeout: 15000 });
+}
+
 export async function signInAndBindCashier(page: Page) {
   await page.goto("/sign-in");
   await page.getByLabel("Email or staff login").fill("cashier");
@@ -421,11 +434,13 @@ export async function signInAndBindCashier(page: Page) {
     readinessShift.waitFor({ state: "visible", timeout: 15000 }),
     startSelling.waitFor({ state: "visible", timeout: 15000 }),
     chooser.waitFor({ state: "visible", timeout: 15000 }),
+    page.getByTestId("offline-pin-setup-page").waitFor({ state: "visible", timeout: 15000 }),
   ]);
+  await completeOfflinePinSetupIfNeeded(page);
   if (await startSelling.isVisible().catch(() => false)) {
     await startSelling.click();
-    await waitForSellEntry(page);
   }
+  await waitForSellEntry(page);
 }
 
 export async function signInAndBindOwner(page: Page) {

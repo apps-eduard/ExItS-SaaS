@@ -38,7 +38,7 @@ import { ExperienceAccessDeniedPage } from "@/features/role/ExperienceAccessDeni
 import { SellAccessDeniedPage } from "@/features/sell/SellAccessDeniedPage";
 import { useI18n } from "@/i18n/I18nProvider";
 import { sessionAccountClass, type AccountClassName } from "@/session/account-class";
-import { isAuthenticatedOrColdStartOffline, useSession } from "@/session/SessionProvider";
+import { isAuthenticatedOrColdStartOffline, isOfflinePinFlowStatus, useSession } from "@/session/SessionProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { workspaceRouteForOutcome } from "@/workspace/workspace-resolver";
 
@@ -56,6 +56,9 @@ export function RequireSession({ children }: { children: ReactNode }) {
   }
   if (status === "expired") {
     return <Navigate to="/sign-in" replace state={{ expired: true, from: location.pathname }} />;
+  }
+  if (status === "offline_pin_required" || status === "needs_offline_unlock") {
+    return <Navigate to="/offline-pin" replace state={{ from: location.pathname }} />;
   }
   if (isAuthenticatedOrColdStartOffline(status)) {
     return children;
@@ -75,7 +78,37 @@ export function GuestOnly({ children }: { children: ReactNode }) {
   if (status === "cold_start_offline") {
     return <Navigate to="/" replace />;
   }
+  if (isOfflinePinFlowStatus(status)) {
+    return children;
+  }
   return children;
+}
+
+export function RequireOnlineSession({ children }: { children: ReactNode }) {
+  const { status } = useSession();
+
+  if (status === "loading") {
+    return <SessionLoading />;
+  }
+  if (status !== "authenticated") {
+    return <Navigate to="/sign-in" replace />;
+  }
+  return children;
+}
+
+export function RequireOfflinePinFlow({ children }: { children: ReactNode }) {
+  const { status } = useSession();
+
+  if (status === "loading") {
+    return <SessionLoading />;
+  }
+  if (status === "authenticated" || isOfflinePinFlowStatus(status)) {
+    return children;
+  }
+  if (status === "cold_start_offline") {
+    return <Navigate to="/" replace />;
+  }
+  return <Navigate to="/sign-in" replace />;
 }
 
 /**

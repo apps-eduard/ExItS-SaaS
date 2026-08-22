@@ -95,6 +95,24 @@ export const cebPH: Record<keyof typeof en, string> = {
     "Konekta sa internet aron ma-verify kini nga device una gamiton ang offline POS data sa browser.",
   "offline.coldStartReconnect":
     "Sign in online usab aron andam ang offline access, unya mahimo nang mag-restart offline niining device.",
+  "offline.unsupportedGrantSchema":
+    "Daan na ang offline grant niini nga device. Sign in online usab aron i-refresh ang offline access.",
+  "offline.pin.enrollTitle": "I-set ang offline PIN",
+  "offline.pin.enrollMessage":
+    "Pili og 6-digit nga PIN aron ma-unlock ang offline data niini nga device human sa sign-out o restart.",
+  "offline.pin.confirmLabel": "Kumpirma ang PIN",
+  "offline.pin.enrollAction": "I-save ang offline PIN",
+  "offline.pin.confirmMismatch": "Dili magkatugma ang mga PIN.",
+  "offline.pin.invalidFormat": "Pagsulod og labing menos 6 ka digit.",
+  "offline.pin.notSignedIn": "Sign in online una sa dili pa mag-set og offline PIN.",
+  "offline.pin.unlockTitle": "I-unlock ang offline",
+  "offline.pin.unlockSubtitle":
+    "Ibutang ang offline PIN aron maabli ang naka-save nga POS data niini nga device.",
+  "offline.pin.label": "Offline PIN",
+  "offline.pin.unlockAction": "I-unlock",
+  "offline.pin.wrong": "Sayop nga PIN. Sulayi pag-usab.",
+  "offline.pin.locked": "Daghan kaayong sayop. Hulat ug sulayi pag-usab.",
+  "offline.pin.grantMissing": "Wala pa andam ang offline access niini nga device.",
   "offline.queuedTitle": "Natipigan ang baligya sa device",
   "offline.queuedDetail": "Wala pa kini narekord sa server.",
   "offline.queuedPending":
