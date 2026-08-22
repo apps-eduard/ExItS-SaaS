@@ -17,6 +17,7 @@ internal sealed class PlatformBrowserAntiforgeryMiddleware(
     {
         "/api/v1/platform/auth/login",
         "/api/v1/platform/auth/register",
+        "/api/v1/platform/auth/activate-account",
         "/api/v1/platform/auth/forgot-password",
         "/api/v1/platform/auth/reset-password",
         "/api/v1/platform/auth/bootstrap",

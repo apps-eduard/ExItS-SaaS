@@ -329,7 +329,7 @@ function Get-LocalValidationAllowedHosts([string]$PublicHostValue, $EnvMap) {
 }
 
 function Show-LocalValidationFirewallGuidance {
-    Write-Note 'Windows Firewall: allow inbound TCP 8090-8095 for Tailscale/LAN. Prefer the Private profile. Do not open 15533/15534 (DB). This launcher does not create firewall rules.'
+    Write-Note 'Windows Firewall: allow inbound TCP 8090-8095 for Tailscale/LAN. Mailpit UI 8025 is optional. Prefer the Private profile. Do not open 15533/15534 (DB). This launcher does not create firewall rules.'
     Write-Host @'
   New-NetFirewallRule -DisplayName "ExItS Local Validation Admin 8090" -Direction Inbound -Protocol TCP -LocalPort 8090 -Action Allow -Profile Private
   New-NetFirewallRule -DisplayName "ExItS Local Validation Platform API 8091" -Direction Inbound -Protocol TCP -LocalPort 8091 -Action Allow -Profile Private
@@ -337,6 +337,8 @@ function Show-LocalValidationFirewallGuidance {
   New-NetFirewallRule -DisplayName "ExItS Local Validation Org Web 8093" -Direction Inbound -Protocol TCP -LocalPort 8093 -Action Allow -Profile Private
   New-NetFirewallRule -DisplayName "ExItS Local Validation Personal Web 8094" -Direction Inbound -Protocol TCP -LocalPort 8094 -Action Allow -Profile Private
   New-NetFirewallRule -DisplayName "ExItS Local Validation React Admin 8095" -Direction Inbound -Protocol TCP -LocalPort 8095 -Action Allow -Profile Private
+  # Optional (Mailpit UI for Tailscale devices). Prefer Private. Do not use Profile Any.
+  New-NetFirewallRule -DisplayName "ExItS Local Validation Mailpit 8025" -Direction Inbound -Protocol TCP -LocalPort 8025 -Action Allow -Profile Private
 '@
 }
 
@@ -556,7 +558,7 @@ $platformEnv = @{
     PlatformEmail__UseSsl = 'false'
     PlatformEmail__FromAddress = 'noreply@exits.local'
     PlatformEmail__FromDisplayName = 'ExItS Local Validation'
-    PlatformEmail__AdminPublicBaseUrl = $publicAdminUrl
+    PlatformEmail__AdminPublicBaseUrl = $publicAdminWebReactUrl
 }
 for ($i = 0; $i -lt $corsOrigins.Count; $i++) {
     $platformEnv["Cors__AllowedOrigins__$i"] = $corsOrigins[$i]
@@ -717,6 +719,7 @@ Write-Host "  Org Web:      $publicOrgWebUrl"
 Write-Host "  Personal Web: $publicPersonalWebUrl"
 Write-Host "  React Admin:  $publicAdminWebReactUrl"
 Write-LocalValidationReactAdminBanner -Port $adminWebReactPort -PublicHost $resolvedPublicHost -ApiDescription "same-origin /api (proxy $reactApiProxyTarget)" -GitSha $gitSha
+Write-LocalValidationMailpitBanner -UiPort $mailpitUiPort -PublicHost $resolvedPublicHost -EmailLinkBaseUrl $publicAdminWebReactUrl
 Write-Host "  Bind:         0.0.0.0:$adminPort / 0.0.0.0:$platformApiPort / 0.0.0.0:$posApiPort / 0.0.0.0:$orgWebPort / 0.0.0.0:$personalWebPort / 0.0.0.0:$adminWebReactPort"
 Write-Host "  Platform DB:  127.0.0.1:$platformDbPort"
 Write-Host "  POS DB:       127.0.0.1:$posDbPort"

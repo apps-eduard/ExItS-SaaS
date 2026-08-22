@@ -116,7 +116,7 @@ services:
       PlatformEmail__UseSsl: "false"
       PlatformEmail__FromAddress: noreply@exits.local
       PlatformEmail__FromDisplayName: ExItS Local Validation
-      PlatformEmail__AdminPublicBaseUrl: ${LOCAL_VALIDATION_ADMIN_ORIGIN:-http://localhost:8090}
+      PlatformEmail__AdminPublicBaseUrl: ${LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN:-http://localhost:8095}
     ports:
       - "${LOCAL_VALIDATION_PLATFORM_API_HOST_PORT:-8091}:8080"
     networks:

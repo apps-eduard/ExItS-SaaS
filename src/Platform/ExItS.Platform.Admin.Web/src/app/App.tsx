@@ -5,7 +5,10 @@ import { AppErrorBoundary } from "@/app/AppErrorBoundary";
 import { RedirectIfAuthenticated } from "@/app/RedirectIfAuthenticated";
 import { RequireSession } from "@/app/RequireSession";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthPlaceholderPage } from "@/features/auth/AuthPlaceholderPage";
+import { ActivateAccountPage } from "@/features/auth/ActivateAccountPage";
+import { ForgotPasswordPage } from "@/features/auth/ForgotPasswordPage";
+import { RegisterPage } from "@/features/auth/RegisterPage";
+import { ResetPasswordPage } from "@/features/auth/ResetPasswordPage";
 import { SignInPage } from "@/features/auth/SignInPage";
 import { OrganizationBranchesPage } from "@/features/organizations/OrganizationBranchesPage";
 import { OrganizationPeoplePage } from "@/features/organizations/OrganizationPeoplePage";
@@ -91,12 +94,22 @@ export function App() {
                       />
                       <Route
                         path="/admin/forgot-password"
-                        element={<AuthPlaceholderPage titleKey="auth.forgotPassword.title" />}
+                        element={
+                          <RedirectIfAuthenticated>
+                            <ForgotPasswordPage />
+                          </RedirectIfAuthenticated>
+                        }
                       />
                       <Route
                         path="/admin/register"
-                        element={<AuthPlaceholderPage titleKey="auth.createAccount.title" />}
+                        element={
+                          <RedirectIfAuthenticated>
+                            <RegisterPage />
+                          </RedirectIfAuthenticated>
+                        }
                       />
+                      <Route path="/admin/activate-account" element={<ActivateAccountPage />} />
+                      <Route path="/admin/reset-password" element={<ResetPasswordPage />} />
                     </Route>
                     <Route element={<ProtectedShell />}>
                       <Route path="/" element={<Navigate to="/admin" replace />} />

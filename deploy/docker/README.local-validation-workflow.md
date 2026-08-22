@@ -78,15 +78,18 @@ If you omit `-PublicHost`, Start still tries (in order): `LOCAL_VALIDATION_PUBLI
 
 ### Windows Firewall (apps only)
 
-Allow inbound TCP **8090 / 8091 / 8092 / 8093 / 8094 / 8095**. Do **not** open **15533 / 15534** (PostgreSQL stays local-only).
+Allow inbound TCP **8090 / 8091 / 8092 / 8093 / 8094 / 8095**. Mailpit UI **8025** is optional for Tailscale
+devices. Do **not** open **15533 / 15534** (PostgreSQL stays local-only). Prefer the **Private**
+profile. Do not use Profile Any.
 
 ```powershell
-New-NetFirewallRule -DisplayName "ExItS Local Validation Admin 8090" -Direction Inbound -Protocol TCP -LocalPort 8090 -Action Allow -Profile Any
-New-NetFirewallRule -DisplayName "ExItS Local Validation Platform API 8091" -Direction Inbound -Protocol TCP -LocalPort 8091 -Action Allow -Profile Any
-New-NetFirewallRule -DisplayName "ExItS Local Validation POS API 8092" -Direction Inbound -Protocol TCP -LocalPort 8092 -Action Allow -Profile Any
-New-NetFirewallRule -DisplayName "ExItS Local Validation Org Web 8093" -Direction Inbound -Protocol TCP -LocalPort 8093 -Action Allow -Profile Any
-New-NetFirewallRule -DisplayName "ExItS Local Validation Personal Web 8094" -Direction Inbound -Protocol TCP -LocalPort 8094 -Action Allow -Profile Any
-New-NetFirewallRule -DisplayName "ExItS Local Validation React Admin 8095" -Direction Inbound -Protocol TCP -LocalPort 8095 -Action Allow -Profile Any
+New-NetFirewallRule -DisplayName "ExItS Local Validation Admin 8090" -Direction Inbound -Protocol TCP -LocalPort 8090 -Action Allow -Profile Private
+New-NetFirewallRule -DisplayName "ExItS Local Validation Platform API 8091" -Direction Inbound -Protocol TCP -LocalPort 8091 -Action Allow -Profile Private
+New-NetFirewallRule -DisplayName "ExItS Local Validation POS API 8092" -Direction Inbound -Protocol TCP -LocalPort 8092 -Action Allow -Profile Private
+New-NetFirewallRule -DisplayName "ExItS Local Validation Org Web 8093" -Direction Inbound -Protocol TCP -LocalPort 8093 -Action Allow -Profile Private
+New-NetFirewallRule -DisplayName "ExItS Local Validation Personal Web 8094" -Direction Inbound -Protocol TCP -LocalPort 8094 -Action Allow -Profile Private
+New-NetFirewallRule -DisplayName "ExItS Local Validation React Admin 8095" -Direction Inbound -Protocol TCP -LocalPort 8095 -Action Allow -Profile Private
+New-NetFirewallRule -DisplayName "ExItS Local Validation Mailpit 8025" -Direction Inbound -Protocol TCP -LocalPort 8025 -Action Allow -Profile Private
 ```
 
 Requires an elevated PowerShell. The start script prints the same guidance after a successful launch.

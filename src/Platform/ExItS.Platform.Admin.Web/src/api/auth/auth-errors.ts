@@ -31,6 +31,47 @@ export function classifySignInFailure(error: unknown): SignInFailureKind {
   return "unknown";
 }
 
+export type CredentialWorkflowFailureKind =
+  | "email_conflict"
+  | "invalid_token"
+  | "password_invalid"
+  | "invalid_display_name"
+  | "invalid_email"
+  | "network"
+  | "unknown";
+
+export function classifyCredentialWorkflowFailure(error: unknown): CredentialWorkflowFailureKind {
+  if (isNetworkFailure(error)) {
+    return "network";
+  }
+
+  if (!(error instanceof PlatformApiError)) {
+    return "unknown";
+  }
+
+  const code = error.problem.errorCode;
+  if (code === AUTH_ERROR_CODES.emailConflict) {
+    return "email_conflict";
+  }
+  if (code === AUTH_ERROR_CODES.passwordInvalid) {
+    return "password_invalid";
+  }
+  if (code === AUTH_ERROR_CODES.invalidDisplayName) {
+    return "invalid_display_name";
+  }
+  if (code === AUTH_ERROR_CODES.invalidEmail) {
+    return "invalid_email";
+  }
+  if (
+    code === AUTH_ERROR_CODES.credentialTokenInvalid ||
+    code === AUTH_ERROR_CODES.credentialTokenExpired
+  ) {
+    return "invalid_token";
+  }
+
+  return "unknown";
+}
+
 export function isSessionInvalidError(error: unknown): boolean {
   if (!(error instanceof PlatformApiError)) {
     return false;

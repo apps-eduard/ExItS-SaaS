@@ -87,6 +87,10 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.Contains("PLATFORM_API_SAME_ORIGIN", startScript, StringComparison.Ordinal);
         Assert.Contains("PLATFORM_API_PROXY_TARGET", startScript, StringComparison.Ordinal);
         Assert.Contains("Write-LocalValidationReactAdminBanner", startScript, StringComparison.Ordinal);
+        Assert.Contains("Write-LocalValidationMailpitBanner", startScript, StringComparison.Ordinal);
+        Assert.Contains("PlatformEmail__AdminPublicBaseUrl = $publicAdminWebReactUrl", startScript, StringComparison.Ordinal);
+        Assert.Contains("Email links:", stackScript, StringComparison.Ordinal);
+        Assert.Contains("LocalPort 8025", startScript, StringComparison.Ordinal);
         Assert.DoesNotContain("LocalPort 15533", startScript, StringComparison.Ordinal);
         Assert.DoesNotContain("LocalPort 15534", startScript, StringComparison.Ordinal);
         Assert.DoesNotContain("docker compose down -v", startScript, StringComparison.Ordinal);
@@ -94,6 +98,7 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.DoesNotContain("down -v", dockerStopScript, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Mode = 'DockerApps'", dockerStartScript, StringComparison.Ordinal);
         Assert.Contains("Write-LocalValidationReactAdminBanner", dockerStartScript, StringComparison.Ordinal);
+        Assert.Contains("Write-LocalValidationMailpitBanner", dockerStartScript, StringComparison.Ordinal);
         Assert.Contains("PLATFORM_API_SAME_ORIGIN", dockerStartScript, StringComparison.Ordinal);
         Assert.Contains("Stop-LocalValidationDockerAppServices", dockerStopScript, StringComparison.Ordinal);
 
@@ -130,6 +135,10 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.Contains("PLATFORM_API_PROXY_TARGET", live, StringComparison.Ordinal);
         Assert.Contains("http://localhost:8095", live, StringComparison.Ordinal);
         Assert.Contains("http://127.0.0.1:8095", live, StringComparison.Ordinal);
+        Assert.Contains(
+            "PlatformEmail__AdminPublicBaseUrl: ${LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN:-http://localhost:8095}",
+            live,
+            StringComparison.Ordinal);
         Assert.DoesNotContain("100.120.79.81", live, StringComparison.Ordinal);
         Assert.Contains("${LOCAL_VALIDATION_PLATFORM_DB_HOST_PORT:-15533}:5432", live, StringComparison.Ordinal);
         Assert.Contains("${LOCAL_VALIDATION_POS_DB_HOST_PORT:-15534}:5432", live, StringComparison.Ordinal);
@@ -180,6 +189,13 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.Contains("PlatformAuthCookiePolicy.SessionCookieSecure", auth, StringComparison.Ordinal);
         Assert.Contains("PlatformAuthCookiePolicy.SecurePolicy", antiforgery, StringComparison.Ordinal);
         Assert.Contains("HttpOnly = true", antiforgery, StringComparison.Ordinal);
+        var browserAntiforgeryPath = Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Api", "Common", "PlatformBrowserAntiforgeryMiddleware.cs");
+        var browserAntiforgery = File.ReadAllText(browserAntiforgeryPath);
+        Assert.Contains("/api/v1/platform/auth/activate-account", browserAntiforgery, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/platform/auth/reset-password", browserAntiforgery, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/platform/auth/register", browserAntiforgery, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/platform/auth/forgot-password", browserAntiforgery, StringComparison.Ordinal);
     }
 
     [Fact]

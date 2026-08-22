@@ -238,7 +238,7 @@ Write-Host "  Org Web:      $orgWebOrigin"
 Write-Host "  Personal Web: $personalWebOrigin"
 Write-Host "  React Admin:  $adminWebReactOrigin"
 Write-LocalValidationReactAdminBanner -Port $adminWebReactPort -PublicHost $resolvedPublicHost -ApiDescription 'same-origin /api (proxy http://platform-api:8080)' -GitSha (Get-LocalValidationGitSha -RepoRoot $repoRoot)
-Write-Host "  Mailpit:      http://localhost:$mailpitUiPort"
+Write-LocalValidationMailpitBanner -UiPort $mailpitUiPort -PublicHost $resolvedPublicHost -EmailLinkBaseUrl $adminWebReactOrigin
 Write-Host '  Migrations:   API-hosted LocalValidation services'
 Write-Host '  Volumes:      preserved'
 Write-Host '================================================' -ForegroundColor Green

@@ -396,3 +396,23 @@ function Write-LocalValidationReactAdminBanner {
         Write-Host ("  Build:     {0}" -f $GitSha)
     }
 }
+
+function Write-LocalValidationMailpitBanner {
+    param(
+        [Parameter(Mandatory)][int]$UiPort,
+        [string]$PublicHost = '',
+        [Parameter(Mandatory)][string]$EmailLinkBaseUrl
+    )
+    Write-Host ''
+    Write-Host 'Mailpit:' -ForegroundColor Green
+    Write-Host ("  Local:     http://localhost:{0}" -f $UiPort)
+    if (-not [string]::IsNullOrWhiteSpace($PublicHost)) {
+        Write-Host ("  Tailscale: http://{0}:{1}" -f $PublicHost, $UiPort)
+    }
+    else {
+        Write-Host '  Tailscale: (unavailable — no PublicHost / Tailscale IPv4 detected)'
+    }
+    Write-Host ''
+    Write-Host 'Email links:' -ForegroundColor Green
+    Write-Host ("  {0}" -f $EmailLinkBaseUrl.TrimEnd('/'))
+}

@@ -95,14 +95,44 @@ Docker Compose
 Tailscale/LAN: pass `-PublicHost <tailscale-ip>` to either start launcher. Firewall and
 CORS details: [`README.local-validation-workflow.md`](README.local-validation-workflow.md).
 
-### Personal Account registration (Local Validation email)
+### Personal Account registration and password reset (React + Mailpit)
 
-1. Open Admin login → **Register**.
-2. Submit identity + email → creates **Pending Verification** Personal Account and sends verification email via Mailpit.
-3. Open [http://localhost:8025](http://localhost:8025), open the message, click **Activate your account**.
-4. Set password → account becomes **Active** → sign in normally.
+Owner validation uses the React Platform Admin on port **8095**. Email links are built from
+`PlatformEmail:AdminPublicBaseUrl`, which Local Validation sets to the React origin
+(`http://localhost:8095` or `http://<detected-host>:8095`). Do not hardcode a Tailscale IP.
 
-Mailpit is only the Local Validation catcher; tokens, activation, and authorization are real application behavior.
+**Registration**
+
+1. Open [http://localhost:8095/admin/register](http://localhost:8095/admin/register).
+2. Register a **new temporary** Personal email (display name + email only; no password yet).
+3. Open [http://localhost:8025](http://localhost:8025) (Mailpit).
+4. Open the activation message and follow **Activate your account**.
+5. Set a password. The account becomes **Active**.
+6. Sign in at [http://localhost:8095/admin/login](http://localhost:8095/admin/login).
+
+**Password reset**
+
+1. Open [http://localhost:8095/admin/forgot-password](http://localhost:8095/admin/forgot-password).
+2. Enter the account email or username. The UI always shows the same generic confirmation.
+3. Open [http://localhost:8025](http://localhost:8025).
+4. Open the reset message and follow **Reset password**.
+5. Set a new password, then sign in. The previous password must fail.
+
+**Tailscale equivalents** (use the detected public host from the launcher, not a hardcoded IP):
+
+- React register: `http://<detected-host>:8095/admin/register`
+- React forgot password: `http://<detected-host>:8095/admin/forgot-password`
+- Mailpit: `http://<detected-host>:8025`
+- Activation/reset links in email use `http://<detected-host>:8095`
+
+Mailpit is only the Local Validation catcher; tokens, activation, and authorization are real
+application behavior. Production builds must not show Mailpit links.
+
+Optional Windows Firewall for Mailpit on Tailscale: inbound TCP 8025, **Private** profile only.
+This launcher does not create firewall rules. Do not use Profile Any.
+
+See also
+[`docs/Platform-Admin-Web/Reports/PLATFORM-WEB-AUTH-MAILPIT-01-registration-password-reset.md`](../../docs/Platform-Admin-Web/Reports/PLATFORM-WEB-AUTH-MAILPIT-01-registration-password-reset.md).
 
 ## One-time setup
 

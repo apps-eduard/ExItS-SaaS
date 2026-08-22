@@ -22,4 +22,10 @@ describe("runtime /config.js contract", () => {
   it("does not enable Test User tools in production compose", () => {
     expect(productionCompose).not.toMatch(/LOCAL_VALIDATION_TOOLS_ENABLED\s*:\s*"?true"?/);
   });
+
+  it("does not expose Mailpit or Local Validation SMTP in production compose", () => {
+    expect(productionCompose).not.toMatch(/mailpit/i);
+    expect(productionCompose).not.toMatch(/8025/);
+    expect(productionCompose).not.toMatch(/PlatformEmail__SmtpHost:\s*mailpit/);
+  });
 });
