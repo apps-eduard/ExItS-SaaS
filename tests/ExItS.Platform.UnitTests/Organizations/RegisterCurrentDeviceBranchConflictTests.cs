@@ -64,9 +64,10 @@ public sealed class RegisterCurrentDeviceBranchConflictTests
             new RegisterPosDeviceCommand(harness.BranchA.Id.Value, installId, "Counter A"));
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(installId, result.Value!.InstallationDeviceId);
-        Assert.True(result.Value.LastSeenAtUtc > originalLastSeen);
-        Assert.Equal(harness.Clock.UtcNow, result.Value.LastSeenAtUtc);
+        Assert.Equal(PosDeviceRegisterKind.Reload, result.Value!.Kind);
+        Assert.Equal(installId, result.Value.Device.InstallationDeviceId);
+        Assert.True(result.Value.Device.LastSeenAtUtc > originalLastSeen);
+        Assert.Equal(harness.Clock.UtcNow, result.Value.Device.LastSeenAtUtc);
 
         var stored = await harness.Devices.GetByInstallationDeviceIdAsync(harness.Org.Id, installId);
         Assert.NotNull(stored);

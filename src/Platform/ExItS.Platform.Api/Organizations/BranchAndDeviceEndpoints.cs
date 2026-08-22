@@ -479,16 +479,30 @@ internal static class BranchAndDeviceEndpoints
                 new(body.BranchId, body.InstallationDeviceId ?? string.Empty, body.FriendlyName ?? string.Empty, body.Platform, body.Model, body.AppVersion), ct).ConfigureAwait(false);
             if (result.IsSuccess && result.Value is not null)
             {
-                await OrganizationGovernanceAuditWriter.WriteDeviceAsync(
-                    authz,
-                    PlatformAuditActions.PosDeviceRegistered,
-                    result.Value,
-                    organizationId,
-                    OrganizationGovernanceAuditWriter.DeviceSummary(result.Value, "Registered"),
-                    ct).ConfigureAwait(false);
+                var auditAction = result.Value.Kind switch
+                {
+                    PosDeviceRegisterKind.Reactivated => PlatformAuditActions.PosDeviceReactivated,
+                    PosDeviceRegisterKind.New => PlatformAuditActions.PosDeviceRegistered,
+                    _ => null,
+                };
+                if (auditAction is not null)
+                {
+                    var summaryLabel = result.Value.Kind == PosDeviceRegisterKind.Reactivated ? "Reactivated" : "Registered";
+                    await OrganizationGovernanceAuditWriter.WriteDeviceAsync(
+                        authz,
+                        auditAction,
+                        result.Value.Device,
+                        organizationId,
+                        OrganizationGovernanceAuditWriter.DeviceSummary(result.Value.Device, summaryLabel),
+                        ct).ConfigureAwait(false);
+                }
             }
 
-            return PlatformApiResults.FromResult(result, Results.Ok);
+            return PlatformApiResults.FromResult(
+                result.IsSuccess && result.Value is not null
+                    ? ApplicationResult<PosDeviceDto>.Success(result.Value.Device)
+                    : ApplicationResult<PosDeviceDto>.Failure(result.ErrorCode!, result.ErrorMessage!),
+                Results.Ok);
         });
         root.MapPost("/pos-devices/registration-tokens", async (
             Guid organizationId,

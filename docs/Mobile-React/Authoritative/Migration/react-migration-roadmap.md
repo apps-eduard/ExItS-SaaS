@@ -436,9 +436,13 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 
 | Field        | Content                                                                      |
 | ------------ | ---------------------------------------------------------------------------- |
-| Objective    | Authz matrix, cross-org denials, wording, a11y, performance, responsive debt |
-| Dependencies | Core WPs, RMAP-00                                                            |
-| Next         | RMAP-TAX                                                                     |
+| Status       | **COMPLETE**                                                                 |
+| Starting HEAD | `ef4aba01dfd1de75a1d0bbae86adf48e55dd0cf6` (post B04)                    |
+| Report       | [POS-REACT-RMAP-23-hardening.md](../../Reports/POS-REACT-RMAP-23-hardening.md) |
+| Objective    | Authz matrix, device concurrency proof, reactivation audit, QR responsive E2E, switching/a11y/terminology regression |
+| Dependencies | RMAP-B04, core WPs, RMAP-00, RMAP-21 offline baseline                      |
+| Delivered    | `PosDeviceReactivated` audit; PostgreSQL concurrent final-slot test; QR responsive Playwright; account-menu/switch test fixes |
+| Next         | RMAP-24                                                                       |
 
 ### RMAP-TAX — Final controlled tax activation
 
@@ -456,8 +460,10 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 
 | Field        | Content                                                                         |
 | ------------ | ------------------------------------------------------------------------------- |
+| Status       | **AWAITING_PRODUCT_OWNER_FINAL_REVIEW**                                         |
+| Report       | [POS-REACT-RMAP-24-final-validation.md](../../Reports/POS-REACT-RMAP-24-final-validation.md) |
 | Objective    | Execute [validation-matrix.md](validation-matrix.md) owner + automated evidence |
-| Dependencies | RMAP-23; RMAP-TAX when tax paths are claimed                                    |
+| Dependencies | RMAP-23 COMPLETE; RMAP-TAX **not** required for this closeout                   |
 | Next         | STOP — owner review for production readiness claims                             |
 
 ---
@@ -472,7 +478,7 @@ Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, 
 | ------------------ | ------------------------------------------------------------------------------------------ |
 | UI foundation      | 1 (RMAP-00)                                                                                |
 | Foundation         | 4 (RMAP-01, 01b, 02, 03)                                                                   |
-| Backend gaps       | 5 (B00; B01; B02 optional Milligram; B03 COMPLETE; B04 NOT STARTED) + RMAP-TAX NOT STARTED |
+| Backend gaps       | 5 (B00; B01; B02 optional Milligram; B03 COMPLETE; **B04 COMPLETE**) + RMAP-TAX NOT STARTED |
 | Core React parity  | 14 (RMAP-04..17 incl 12b)                                                                  |
 | Extended commerce  | 3 (18..20)                                                                                 |
 | Hardening          | 5 (21..24 + RMAP-TAX)                                                                      |
@@ -484,16 +490,16 @@ Scaffold, PWA shell, browser session/workspace, sell-floor shell, session cart, 
 2. **RMAP-B01** sale price policy — required before override UI
 3. **RMAP-B02** Milligram — only if owner approves
 4. **RMAP-B03** Sale discount / adjustment backend contract — **FINAL CLOSED**. Discount React UX = **RMAP-11b** (**COMPLETE**).
-5. **RMAP-B04** Linked ExItS buyer purchase projection — **NOT STARTED**
-6. **RMAP-TAX** Final controlled tax activation — **NOT STARTED** (after RMAP-23, before RMAP-24)
+5. **RMAP-B04** Linked ExItS buyer purchase projection — **COMPLETE**
+6. **RMAP-TAX** Final controlled tax activation — **NOT STARTED** (not authorized this run)
 
 ## APPROVED PROPOSED MASTER RUN 01
 
 **Name:** Foundation + Catalog/Inventory Baseline
 **Status:** RMAP-00…RMAP-20 PASS for delivered packages. Master Run 02 Review Repair 01/02 closed expiry-return, refund fidelity, and return/void concurrency. RMAP-14 React returns/refunds **COMPLETE**. RMAP-15 React manual suppliers **COMPLETE** (`RMAP_15_NATIVE_SPEAKER=PENDING`). RMAP-16 React connected suppliers **COMPLETE** (`RMAP_16_NATIVE_SPEAKER=PENDING`). RMAP-17 React purchasing + GRN + direct purchase **COMPLETE** (`RMAP_17_NATIVE_SPEAKER=PENDING`). RMAP-18 React branch fulfillment admin **COMPLETE** (`RMAP_18_NATIVE_SPEAKER=PENDING`; `RMAP_B05_AUTHORIZED=NO` not started). RMAP-19 React customer ordering / storefront / pickup / delivery **COMPLETE** (`RMAP_19_NATIVE_SPEAKER=PENDING`; `RMAP_B05 accidentally implemented=NO`). RMAP-20 React reports + management dashboard **COMPLETE** (`RMAP_20_NATIVE_SPEAKER=PENDING`; Tax UI exposed **NO**; Fake P&L **NO**; Buyer purchase projection **NO**). RMAP-B01 backend + RMAP-12b React price override **COMPLETE**. **Product Owner decision:** execute **RMAP-22 Personal Master Run 01 before RMAP-21 Offline** (order change only; RMAP-21 not cancelled). `RMAP_21_AUTHORIZED=NO` until separately authorized after Personal online validation.
 **Stop rule:** After Master Run packages + authorized B03 closeout → HARD STOP for Product Owner + ChatGPT review (historical). RMAP-08/09 completed after that stop when authorized. After RMAP-14 → HARD STOP pending RMAP-15 authorization (historical). After RMAP-15 → HARD STOP pending RMAP-16 authorization (historical). After RMAP-16 → HARD STOP pending RMAP-17 authorization (historical). After RMAP-17 → HARD STOP pending RMAP-18 authorization (historical). After RMAP-18 → HARD STOP pending RMAP-19 authorization (historical). After RMAP-19 → HARD STOP pending RMAP-20 authorization (historical). After RMAP-20 / 12b → Product Owner authorized **RMAP-22 Personal** ahead of RMAP-21.
-**Do not include (still gated):** RMAP-23; RMAP-B04; RMAP-B05 (`RMAP_B05_AUTHORIZED=NO`); RMAP-TAX implementation; production cutover
-**Active authorized track:** RMAP-21 Offline Master Run 01 **COMPLETE** (awaiting PO review) — [master report](../../Reports/POS-REACT-RMAP-21-OFFLINE-MASTER-RUN-01.md). Prior: RMAP-22 Personal Master Run 01 **APPROVED**; Owner quick-fix polish accepted at `86ded438`.
+**Do not include (still gated):** RMAP-B05 (`RMAP_B05_AUTHORIZED=NO`); RMAP-TAX implementation; production cutover; merge to main
+**Active authorized track:** RMAP-B04 **COMPLETE** (`ef4aba01`); RMAP-23 **COMPLETE**; RMAP-24 **AWAITING PO REVIEW**
 **Completed beyond Master Run 01 table:** RMAP-08 lots/expiry inventory surfaces; RMAP-09 sell floor + session cart; RMAP-10 registers + open shift gate; RMAP-10b browser POS device authorization; RMAP-11 online cash checkout; RMAP-11b commercial discount UX; RMAP-12 current payments (Cash/GCash/Utang) + void; RMAP-13 customers + Business Utang; RMAP-14 returns / refunds; RMAP-15 manual suppliers; RMAP-16 connected suppliers; RMAP-17 purchasing + goods receipt + direct purchase; RMAP-18 branch fulfillment admin + readiness; RMAP-19 customer ordering / storefront / pickup / delivery (linked merchants — no B05 public landing); RMAP-20 reports + management dashboard (no tax UI; no fake P&L; no B04 buyer purchase projection)
 **Distinction preserved:** Today's Price ≠ Cashier Price Override ≠ Commercial Discount ≠ Promotion ≠ Regulatory Discount
 **Completion report (B00):** [POS-REACT-RMAP-B00-identity-reconciliation.md](../../Reports/POS-REACT-RMAP-B00-identity-reconciliation.md)

@@ -9,6 +9,6 @@ describe("ops-ux-repair-01 encoding hygiene", () => {
     expect(buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf).toBe(false);
     const text = buf.toString("utf8");
     expect(text).not.toMatch(/â†’|ï»¿|â€”/);
-    expect(text).toContain("cashier unregistered -> device readiness");
+    expect(text).toContain("cashier unregistered -> view-only sell");
   });
 });

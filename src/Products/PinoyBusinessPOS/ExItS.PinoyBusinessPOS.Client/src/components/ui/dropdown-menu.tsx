@@ -1,4 +1,12 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ButtonHTMLAttributes,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import { cn } from "@/lib/cn";
 
 type MenuAlign = "start" | "end";
@@ -126,17 +134,19 @@ export function MenuItem({
   onSelect,
   destructive = false,
   disabled = false,
+  ...rest
 }: {
   children: ReactNode;
   onSelect: () => void;
   destructive?: boolean;
   disabled?: boolean;
-}) {
+} & ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       type="button"
       role="menuitem"
       disabled={disabled}
+      {...rest}
       className={cn(
         "flex w-full items-center gap-2 px-3 py-2.5 text-left text-[length:var(--exits-text-sm)] font-medium transition-colors duration-[var(--exits-motion-fast)] focus-visible:outline-none focus-visible:bg-[var(--exits-surface-muted)]",
         destructive

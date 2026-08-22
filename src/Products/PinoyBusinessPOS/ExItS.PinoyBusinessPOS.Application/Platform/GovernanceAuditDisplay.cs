@@ -43,6 +43,7 @@ public static class GovernanceAuditDisplay
             "platform.invitation.created" => "Staff invitation sent",
             "platform.invitation.revoked" => "Staff invitation revoked",
             "platform.pos_device.registered" => "Device registered",
+            "platform.pos_device.reactivated" => "Device reactivated",
             "platform.pos_device.revoked" => "Device revoked",
             "platform.pos_device.renamed" => "Device renamed",
             _ => actionCode

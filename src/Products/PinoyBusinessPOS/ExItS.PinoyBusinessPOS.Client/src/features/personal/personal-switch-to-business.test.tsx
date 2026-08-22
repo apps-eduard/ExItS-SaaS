@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
@@ -375,20 +375,27 @@ describe("Personal avatar account menu switch to business", () => {
   it("blocks avatar Switch to business while offline", async () => {
     const user = userEvent.setup();
     vi.stubGlobal("fetch", createPersonalWithOrgsFetchMock(1));
-    Object.defineProperty(window.navigator, "onLine", {
-      configurable: true,
-      value: false,
-    });
     renderAt("/personal/more");
 
     await waitFor(() => {
       expect(screen.getByTestId("more-switch-to-business")).toBeInTheDocument();
     });
 
+    Object.defineProperty(window.navigator, "onLine", {
+      configurable: true,
+      value: false,
+    });
+    window.dispatchEvent(new Event("offline"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("more-switch-to-business")).toBeDisabled();
+    });
+
     await user.click(screen.getByTestId("account-menu-trigger"));
     await waitFor(() => {
-      expect(screen.getByTestId("account-switch-to-business")).toBeDisabled();
+      const menu = screen.getByRole("menu");
+      expect(within(menu).getByTestId("account-switch-to-business")).toBeDisabled();
+      expect(within(menu).getByText("Switching to business needs internet.")).toBeInTheDocument();
     });
-    expect(screen.getByText("Switching to business needs internet.")).toBeInTheDocument();
   });
 });

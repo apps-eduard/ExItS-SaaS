@@ -4,6 +4,7 @@ using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Catalog;
+using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Products;
 using ExItS.Platform.Domain.Subscriptions;
@@ -48,6 +49,30 @@ public sealed class RegisterCurrentDeviceCapacityTests
             new RegisterPosDeviceCommand(harness.Branch.Id.Value, "install-2", "Laptop"));
         Assert.False(second.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.PosDeviceCapacityExceeded, second.ErrorCode);
+        Assert.Equal(1, await harness.Devices.CountActiveAsync(harness.Org.Id));
+    }
+
+    [Fact]
+    public async Task Register_reactivates_revoked_device_with_reactivated_kind()
+    {
+        var harness = await Harness.CreateAsync(maxActivePosDevices: 3);
+        const string installId = "install-reactivate";
+        var device = PosDevice.Register(
+            harness.Org.Id,
+            harness.Branch.Id,
+            installId,
+            "Counter",
+            T0);
+        device.Revoke(PlatformUserId.New(), T0);
+        await harness.Devices.AddAsync(device);
+
+        var result = await harness.Register.ExecuteAsync(
+            harness.Org.Id,
+            new RegisterPosDeviceCommand(harness.Branch.Id.Value, installId, "Counter"));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(PosDeviceRegisterKind.Reactivated, result.Value!.Kind);
+        Assert.Equal(PosDeviceStatus.Active, result.Value.Device.Status);
         Assert.Equal(1, await harness.Devices.CountActiveAsync(harness.Org.Id));
     }
 

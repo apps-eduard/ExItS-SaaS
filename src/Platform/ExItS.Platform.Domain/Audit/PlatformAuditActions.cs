@@ -42,6 +42,7 @@ public static class PlatformAuditActions
     public const string OrganizationBranchDeliveryPolicyUpdated = "platform.organization.branch.delivery_policy_updated";
     public const string OrganizationBranchOrdersPaused = "platform.organization.branch.orders_paused";
     public const string PosDeviceRegistered = "platform.pos_device.registered";
+    public const string PosDeviceReactivated = "platform.pos_device.reactivated";
     public const string PosDeviceRevoked = "platform.pos_device.revoked";
     public const string PosDeviceRenamed = "platform.pos_device.renamed";
 
