@@ -23,9 +23,11 @@ Isolates the **old MAUI + Blazor** Local Validation environment from the **React
 ```powershell
 # React (unchanged)
 .\tools\Start-ReactIntegrationLocalValidation.ps1
+.\tools\Start-ReactIntegrationLocalValidation.ps1 -PublicHost 100.x.x.x
 
 # Legacy MAUI/Blazor (this package) — safe while React is running
 .\tools\Start-MauiLegacyLocalValidation.ps1
+.\tools\Start-MauiLegacyLocalValidation.ps1 -PublicHost 100.x.x.x
 .\tools\Stop-MauiLegacyLocalValidation.ps1
 ```
 
@@ -34,6 +36,18 @@ Env file: copy `deploy/docker/.env.maui-local-validation.example` → `.env.maui
 Compose: `deploy/docker/compose.maui-local-validation.yaml`
 
 **Never** run `docker compose down -v` against either stack unless you intentionally wipe that stack’s volumes.
+
+### Tailscale / LAN (`-PublicHost`)
+
+When `-PublicHost <ip-or-hostname>` is supplied:
+
+- Blazor Admin / Org / Personal public URLs use `http://<PublicHost>:8190|8193|8194`
+- Platform/POS APIs accept that host in AllowedHosts; CORS includes PublicHost origins
+- localhost / `127.0.0.1` and Android emulator `10.0.2.2` remain supported
+- PostgreSQL host ports stay loopback-published only (`16533` / `16534`) — do not Tailscale-publish DB ports
+- Launchers print both LOCAL and PUBLIC URL lists
+
+Physical device MAUI Debug overlay: set `LocalValidation.PublicHost` and API base URLs to `http://<PublicHost>:8191` / `:8192` in `appsettings.LocalValidation.PhysicalDevice.json`.
 
 ## Client URLs (Local Validation / Debug only)
 

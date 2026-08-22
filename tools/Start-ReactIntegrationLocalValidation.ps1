@@ -18,8 +18,16 @@
   Does NOT merge to main. Does NOT start Blazor Admin as the React Admin surface.
   Does NOT copy or downgrade POS source into the Platform integration worktree.
 
+.PARAMETER PublicHost
+  Tailscale/LAN host or IP only (no scheme/port). When set, APIs/Vite bind 0.0.0.0,
+  AllowedHosts/CORS include PublicHost, and the launcher prints PUBLIC URLs.
+  Localhost/127.0.0.1 and Android emulator 10.0.2.2 remain supported.
+
 .EXAMPLE
   .\tools\Start-ReactIntegrationLocalValidation.ps1
+
+.EXAMPLE
+  .\tools\Start-ReactIntegrationLocalValidation.ps1 -PublicHost 100.x.x.x
 
 .EXAMPLE
   .\tools\Start-ReactIntegrationLocalValidation.ps1 -ReactPosDocker
@@ -30,6 +38,7 @@ param(
     [string]$PosRepoRoot = "C:\Users\speed\Desktop\ExItS-SaaS-pos-react-client",
     [string]$EnvFile = "",
     [int]$PortWaitSeconds = 180,
+    [string]$PublicHost = "",
     [switch]$SkipReactPos,
     [switch]$ReactPosDocker,
     [switch]$ReactPosDockerRebuild
@@ -102,15 +111,17 @@ function Start-NpmDevWindow {
         [string]$Title,
         [string]$WorkingDirectory,
         [hashtable]$EnvMap,
-        [string]$NpmScript = "dev"
+        [string]$NpmScript = "dev",
+        [string]$ExtraNpmArgs = ""
     )
     $prefix = ConvertTo-EnvAssignments -EnvMap $EnvMap
+    $extra = if ([string]::IsNullOrWhiteSpace($ExtraNpmArgs)) { "" } else { " -- $ExtraNpmArgs" }
     $run = @"
 `$Host.UI.RawUI.WindowTitle = '$Title';
 $prefix
 Set-Location '$WorkingDirectory';
 Write-Host ('=== {0} ===' -f '$Title') -ForegroundColor Cyan;
-npm run $NpmScript
+npm run $NpmScript$extra
 "@
     $proc = Start-Process -FilePath "powershell.exe" -PassThru -ArgumentList @(
         "-NoExit", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", $run
@@ -205,6 +216,7 @@ function Start-ReactPosDockerFromPosWorktree {
         [Parameter(Mandatory)][int]$PosApiPort,
         [Parameter(Mandatory)][int]$ReactPosPort,
         [Parameter(Mandatory)][string]$PosSha,
+        [string]$PublicHost = "",
         [switch]$Rebuild
     )
 
@@ -221,6 +233,12 @@ function Start-ReactPosDockerFromPosWorktree {
     $env:LOCAL_VALIDATION_REACT_POS_ORIGIN = "http://127.0.0.1:$ReactPosPort"
     $env:LOCAL_VALIDATION_REACT_POS_ORIGIN_LOCALHOST = "http://localhost:$ReactPosPort"
     $env:LOCAL_VALIDATION_REACT_POS_ORIGIN_EMULATOR = "http://10.0.2.2:$ReactPosPort"
+    if (-not [string]::IsNullOrWhiteSpace($PublicHost)) {
+        $env:LOCAL_VALIDATION_REACT_POS_ORIGIN_PUBLIC = "http://${PublicHost}:$ReactPosPort"
+    }
+    else {
+        Remove-Item Env:LOCAL_VALIDATION_REACT_POS_ORIGIN_PUBLIC -ErrorAction SilentlyContinue
+    }
 
     Stop-ReactPosDockerContainer -PosComposeFile $PosComposeFile -PosEnvFile $PosEnvFile
 
@@ -308,8 +326,12 @@ $platformSha = Get-GitHead -RepoRoot $PlatformRepoRoot
 $posBranch = Get-GitBranch -RepoRoot $PosRepoRoot
 $posSha = Get-GitHead -RepoRoot $PosRepoRoot
 
-if ($platformBranch -ne "feat/platform-admin-react-integration" -and $platformBranch -ne "") {
-    Write-Note "Platform branch is '$platformBranch' (expected feat/platform-admin-react-integration)."
+$expectedPlatformBranches = @(
+    "feat/platform-admin-react-integration",
+    "feat/tailscale-access-01"
+)
+if ($platformBranch -and ($expectedPlatformBranches -notcontains $platformBranch)) {
+    Write-Note "Platform branch is '$platformBranch' (expected one of: $($expectedPlatformBranches -join ', '))."
 }
 
 if ($posBranch -ne "feat/pos-react-client") {
@@ -400,17 +422,41 @@ Wait-TcpPort -Label "POS DB" -HostName "127.0.0.1" -Port $posDbPort -TimeoutSeco
 
 $platformCs = "Host=127.0.0.1;Port=$platformDbPort;Database=$($LocalValidationStack.PlatformDbName);Username=$($envMap["LOCAL_VALIDATION_PLATFORM_DB_USER"]);Password=$($envMap["LOCAL_VALIDATION_PLATFORM_DB_PASSWORD"])"
 $posCs = "Host=127.0.0.1;Port=$posDbPort;Database=$($LocalValidationStack.PosDbName);Username=$($envMap["LOCAL_VALIDATION_POS_DB_USER"]);Password=$($envMap["LOCAL_VALIDATION_POS_DB_PASSWORD"])"
+$stateDir = Join-Path $env:LOCALAPPDATA "ExItS\LocalValidation"
+New-Item -ItemType Directory -Force -Path $stateDir | Out-Null
+$stateFile = Join-Path $stateDir "pa-integration-launcher-state.json"
+$resolvedPublicHost = Resolve-LocalValidationEffectivePublicHost -ParamValue $PublicHost -EnvMap $envMap -StateFilePath $stateFile
+if ($resolvedPublicHost) {
+    Write-Ok "PublicHost: $resolvedPublicHost (Tailscale/LAN)"
+}
+else {
+    Write-Note "No PublicHost (localhost-only URLs). Pass -PublicHost <ip> for Tailscale/LAN."
+}
+
 $loopbackPlatformApiUrl = "http://127.0.0.1:$platformApiPort"
 $loopbackPosApiUrl = "http://127.0.0.1:$posApiPort"
 $reactAdminUrl = "http://127.0.0.1:$adminWebReactPort"
 $reactPosUrl = "http://127.0.0.1:$reactPosPort"
-$allowedHosts = Get-LocalValidationAllowedHostsList -PublicHostValue "" -EnvMap $envMap
+$publicReactAdminUrl = if ($resolvedPublicHost) { "http://${resolvedPublicHost}:$adminWebReactPort" } else { $null }
+$publicReactPosUrl = if ($resolvedPublicHost) { "http://${resolvedPublicHost}:$reactPosPort" } else { $null }
+$publicPlatformApiUrl = if ($resolvedPublicHost) { "http://${resolvedPublicHost}:$platformApiPort" } else { $null }
+$publicPosApiUrl = if ($resolvedPublicHost) { "http://${resolvedPublicHost}:$posApiPort" } else { $null }
+# Email magic links / AdminPublicBaseUrl: prefer PublicHost so phones on Tailscale open the right origin.
+$adminPublicBaseUrl = if ($resolvedPublicHost) { $publicReactAdminUrl } else { $reactAdminUrl }
+
+$allowedHosts = Get-LocalValidationAllowedHostsList -PublicHostValue $resolvedPublicHost -EnvMap $envMap
 $corsOrigins = @(
     "http://localhost:$adminWebReactPort",
     "http://127.0.0.1:$adminWebReactPort",
     "http://localhost:$reactPosPort",
     "http://127.0.0.1:$reactPosPort"
 )
+if ($resolvedPublicHost) {
+    $corsOrigins += "http://${resolvedPublicHost}:$adminWebReactPort"
+    $corsOrigins += "http://${resolvedPublicHost}:$reactPosPort"
+}
+Write-Ok "AllowedHosts: $allowedHosts"
+Write-Ok ("CORS origins: {0}" -f ($corsOrigins -join ', '))
 
 $platformProject = Join-Path $PlatformRepoRoot "src\Platform\ExItS.Platform.Api\ExItS.Platform.Api.csproj"
 $posProject = Join-Path $PosRepoRoot "src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.Api\ExItS.PinoyBusinessPOS.Api.csproj"
@@ -446,7 +492,7 @@ $platformEnv = @{
     PlatformEmail__UseSsl = "false"
     PlatformEmail__FromAddress = "noreply@exits.local"
     PlatformEmail__FromDisplayName = "ExItS Local Validation"
-    PlatformEmail__AdminPublicBaseUrl = $reactAdminUrl
+    PlatformEmail__AdminPublicBaseUrl = $adminPublicBaseUrl
 }
 for ($i = 0; $i -lt $corsOrigins.Count; $i++) {
     $platformEnv["Cors__AllowedOrigins__$i"] = $corsOrigins[$i]
@@ -483,7 +529,8 @@ $adminEnv = @{
     PLATFORM_API_SAME_ORIGIN = "true"
 }
 # Empty API base URL => browser same-origin /api via Vite proxy (cookie-friendly for Local Validation HTTP).
-$windowPids += Start-NpmDevWindow -Title "PA-INTEGRATION React Admin" -WorkingDirectory $adminWebDir -EnvMap $adminEnv -NpmScript "dev"
+# host 0.0.0.0 so Tailscale/LAN can reach Admin; localhost still works.
+$windowPids += Start-NpmDevWindow -Title "PA-INTEGRATION React Admin" -WorkingDirectory $adminWebDir -EnvMap $adminEnv -NpmScript "dev" -ExtraNpmArgs "--host 0.0.0.0 --port $adminWebReactPort"
 Wait-TcpPort -Label "React Admin" -HostName "127.0.0.1" -Port $adminWebReactPort -TimeoutSeconds $PortWaitSeconds
 
 if (-not $SkipReactPos) {
@@ -496,16 +543,17 @@ if (-not $SkipReactPos) {
             -PosApiPort $posApiPort `
             -ReactPosPort $reactPosPort `
             -PosSha $posSha `
+            -PublicHost $resolvedPublicHost `
             -Rebuild:$ReactPosDockerRebuild
         $null = Ensure-AdbReverse -Port $reactPosPort
         $null = Ensure-AdbReverse -Port $platformApiPort
     }
     else {
-        Write-Step "Starting React POS Vite on :$reactPosPort..."
+        Write-Step "Starting React POS Vite on :$reactPosPort (0.0.0.0 for Tailscale/LAN)..."
         $posClientEnv = @{
             VITE_POS_BUILD_SHA = $posSha
         }
-        $windowPids += Start-NpmDevWindow -Title "PA-INTEGRATION React POS" -WorkingDirectory $posClientDir -EnvMap $posClientEnv -NpmScript "dev"
+        $windowPids += Start-NpmDevWindow -Title "PA-INTEGRATION React POS" -WorkingDirectory $posClientDir -EnvMap $posClientEnv -NpmScript "dev" -ExtraNpmArgs "--host 0.0.0.0 --port $reactPosPort"
         Wait-TcpPort -Label "React POS" -HostName "127.0.0.1" -Port $reactPosPort -TimeoutSeconds $PortWaitSeconds
         $null = Ensure-AdbReverse -Port $reactPosPort
         $null = Ensure-AdbReverse -Port $platformApiPort
@@ -528,20 +576,26 @@ if ($ReactPosDocker -and -not $SkipReactPos) {
 $stateDir = Join-Path $env:LOCALAPPDATA "ExItS\LocalValidation"
 New-Item -ItemType Directory -Force -Path $stateDir | Out-Null
 $provenance = [ordered]@{
-    package = "PA-INTEGRATION-04"
+    package = "TAILSCALE-ACCESS-01"
     platformBranch = $platformBranch
     platformRuntimeSha = $platformSha
     posBranch = $posBranch
     posRuntimeSha = $posSha
+    publicHost = $resolvedPublicHost
     posDockerFromPosWorktree = [bool]$ReactPosDocker
     reactPosMode = $reactPosMode
     reactAdminUrl = "$reactAdminUrl/admin"
     platformApiUrl = $loopbackPlatformApiUrl
     posApiUrl = $loopbackPosApiUrl
     reactPosUrl = $reactPosUrl
+    publicReactAdminUrl = $(if ($publicReactAdminUrl) { "$publicReactAdminUrl/admin" } else { $null })
+    publicPlatformApiUrl = $publicPlatformApiUrl
+    publicPosApiUrl = $publicPosApiUrl
+    publicReactPosUrl = $publicReactPosUrl
     blazorAdminUsedAsReactAdmin = $false
     posDowngraded = $false
     mauiStackPortsUntouched = @("8190", "8191", "8192", "8193", "8194")
+    databasePortsHostLocalOnly = @("15533", "15534")
     envFile = $envFile
     posComposeFile = $(if ($ReactPosDocker) { $posComposeFile } else { $null })
     proxyValidation = $proxyValidation
@@ -551,9 +605,10 @@ $provenancePath = Join-Path $stateDir "pa-integration-provenance.json"
 $provenance | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $provenancePath -Encoding UTF8
 $launcherState = [ordered]@{
     Mode = "ReactIntegration"
-    Package = "PA-INTEGRATION-04"
+    Package = "TAILSCALE-ACCESS-01"
     PlatformRepoRoot = $PlatformRepoRoot
     PosRepoRoot = $PosRepoRoot
+    PublicHost = $resolvedPublicHost
     ReactPosMode = $reactPosMode
     WindowPids = $windowPids
     ProvenancePath = $provenancePath
@@ -561,21 +616,33 @@ $launcherState = [ordered]@{
 $launcherState | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stateDir "pa-integration-launcher-state.json") -Encoding UTF8
 
 Write-Host ""
-Write-Ok "React Admin:  $reactAdminUrl/admin"
-Write-Ok "Platform API: $loopbackPlatformApiUrl"
-Write-Ok "POS API:      $loopbackPosApiUrl"
-Write-Ok "React POS:    $reactPosUrl  (mode=$reactPosMode)"
-Write-Ok "Emulator POS: http://127.0.0.1:$reactPosPort  (after adb reverse)"
+Write-Ok "LOCAL URLs"
+Write-Ok "  React Admin:  $reactAdminUrl/admin"
+Write-Ok "  Platform API: $loopbackPlatformApiUrl"
+Write-Ok "  POS API:      $loopbackPosApiUrl"
+Write-Ok "  React POS:    $reactPosUrl  (mode=$reactPosMode)"
+Write-Ok "  Emulator POS: http://127.0.0.1:$reactPosPort  (after adb reverse) / 10.0.2.2 via reverse"
+if ($resolvedPublicHost) {
+    Write-Host ""
+    Write-Ok "PUBLIC URLs (Tailscale/LAN via $resolvedPublicHost)"
+    Write-Ok "  React Admin:  $publicReactAdminUrl/admin"
+    Write-Ok "  Platform API: $publicPlatformApiUrl"
+    Write-Ok "  POS API:      $publicPosApiUrl"
+    Write-Ok "  React POS:    $publicReactPosUrl"
+}
+Write-Ok "DB ports stay host-local: 127.0.0.1:$platformDbPort / 127.0.0.1:$posDbPort (not Tailscale-published)"
 Write-Ok "Provenance:   $provenancePath"
 Write-Host ""
 Write-Host "RUNTIME PROVENANCE"
 Write-Host "  Platform branch/SHA: $platformBranch / $platformSha"
 Write-Host "  POS branch/SHA:      $posBranch / $posSha"
+Write-Host "  PUBLIC_HOST=$(if ($resolvedPublicHost) { $resolvedPublicHost } else { '(none)' })"
 Write-Host "  POS_DOCKER_FROM_POS_WORKTREE=$(if ($ReactPosDocker) { 'YES' } else { 'NO' })"
 Write-Host "  REACT_POS_MODE=$reactPosMode"
 Write-Host "  OLD_BLAZOR_ADMIN_USED_AS_REACT_ADMIN=NO"
 Write-Host "  POS_DOWNGRADED=NO"
 Write-Host "  MAUI_STACK_UNCHANGED=YES (8190-8194 untouched)"
+Write-Host "  DATABASES_NOT_PUBLICLY_EXPOSED=YES"
 if ($proxyValidation) {
     Write-Host "  LOGIN=$($proxyValidation.Login)"
     Write-Host "  AUTH_ME=$($proxyValidation.AuthMe)"

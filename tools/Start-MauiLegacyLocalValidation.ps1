@@ -8,9 +8,15 @@
   Does NOT stop or modify the React Local Validation stack (8091/8092/8095/5177/15533/15534).
   Does NOT use docker compose down -v. Does NOT touch React volumes or network.
 
+.PARAMETER PublicHost
+  Tailscale/LAN host or IP only (no scheme/port). When set, AllowedHosts/CORS and
+  Blazor ExItSWebHosts / AdminPublicBaseUrl use http://PublicHost:819x while
+  localhost and 10.0.2.2 remain supported. DB ports stay host-local (16533/16534).
+
 .EXAMPLE
   .\tools\Start-MauiLegacyLocalValidation.ps1
   .\tools\Start-MauiLegacyLocalValidation.ps1 -Build
+  .\tools\Start-MauiLegacyLocalValidation.ps1 -PublicHost 100.x.x.x
 #>
 [CmdletBinding()]
 param(
@@ -18,6 +24,7 @@ param(
     [int]$DbHealthySeconds = 90,
     [ValidateSet('PlatformAdministratorsOnly', 'Full')]
     [string]$SeedScope = 'PlatformAdministratorsOnly',
+    [string]$PublicHost = '',
     [switch]$Build,
     [switch]$CleanBuild
 )
@@ -95,6 +102,19 @@ function Wait-HttpEndpoint {
     throw "$Label failed at $Url within ${TimeoutSeconds}s. Last error: $lastError"
 }
 
+function Resolve-MauiPublicHostValue([string]$Value) {
+    if ([string]::IsNullOrWhiteSpace($Value)) { return '' }
+    $hostName = $Value.Trim()
+    if ($hostName -match '://' -or
+        $hostName.Contains('/') -or
+        $hostName.Contains('\') -or
+        $hostName.Contains(' ') -or
+        $hostName -match ':\d+$') {
+        throw 'PublicHost must be a host or IP only (no scheme, port, path, or spaces). Example: -PublicHost 100.120.79.81'
+    }
+    return $hostName
+}
+
 function Assert-MauiPortsDisjointFromReact {
     foreach ($reactPort in @($MauiLocalValidationStack.ForbiddenReactPorts)) {
         foreach ($mauiPort in @(
@@ -112,6 +132,22 @@ function Assert-MauiPortsDisjointFromReact {
                 throw "MAUI port $mauiPort collides with React forbidden port $reactPort."
             }
         }
+    }
+}
+
+function Write-MauiPhysicalDeviceAppsettingsHint {
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$PublicHostValue,
+        [Parameter(Mandatory)][int]$PlatformApiPort,
+        [Parameter(Mandatory)][int]$PosApiPort
+    )
+    $path = Join-Path $RepoRoot 'src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.Maui\wwwroot\appsettings.LocalValidation.PhysicalDevice.json'
+    Write-Note "MAUI physical device should use:"
+    Write-Host "  PosApi BaseUrl:         http://${PublicHostValue}:$PlatformApiPort"
+    Write-Host "  PosBusinessApi BaseUrl: http://${PublicHostValue}:$PosApiPort"
+    if (Test-Path -LiteralPath $path) {
+        Write-Note "Update LocalValidation.PublicHost in: $path"
     }
 }
 
@@ -146,8 +182,62 @@ $platformApiPort = if ($envMap['MAUI_LOCAL_VALIDATION_PLATFORM_API_HOST_PORT']) 
 $posApiPort = if ($envMap['MAUI_LOCAL_VALIDATION_POS_API_HOST_PORT']) { [int]$envMap['MAUI_LOCAL_VALIDATION_POS_API_HOST_PORT'] } else { $MauiLocalValidationStack.DefaultPosApiPort }
 $orgPort = if ($envMap['MAUI_LOCAL_VALIDATION_ORG_WEB_HOST_PORT']) { [int]$envMap['MAUI_LOCAL_VALIDATION_ORG_WEB_HOST_PORT'] } else { $MauiLocalValidationStack.DefaultOrgWebPort }
 $personalPort = if ($envMap['MAUI_LOCAL_VALIDATION_PERSONAL_WEB_HOST_PORT']) { [int]$envMap['MAUI_LOCAL_VALIDATION_PERSONAL_WEB_HOST_PORT'] } else { $MauiLocalValidationStack.DefaultPersonalWebPort }
+$platformDbPort = if ($envMap['MAUI_LOCAL_VALIDATION_PLATFORM_DB_HOST_PORT']) { [int]$envMap['MAUI_LOCAL_VALIDATION_PLATFORM_DB_HOST_PORT'] } else { $MauiLocalValidationStack.DefaultPlatformDbPort }
+$posDbPort = if ($envMap['MAUI_LOCAL_VALIDATION_POS_DB_HOST_PORT']) { [int]$envMap['MAUI_LOCAL_VALIDATION_POS_DB_HOST_PORT'] } else { $MauiLocalValidationStack.DefaultPosDbPort }
+$mailpitUiPort = if ($envMap['MAUI_LOCAL_VALIDATION_MAILPIT_UI_HOST_PORT']) { [int]$envMap['MAUI_LOCAL_VALIDATION_MAILPIT_UI_HOST_PORT'] } else { $MauiLocalValidationStack.DefaultMailpitUiPort }
 
+$resolvedPublicHost = Resolve-MauiPublicHostValue -Value $PublicHost
+if (-not $resolvedPublicHost) {
+    $resolvedPublicHost = Resolve-MauiPublicHostValue -Value ([string]$envMap['MAUI_LOCAL_VALIDATION_PUBLIC_HOST'])
+}
+if ($resolvedPublicHost) {
+    Write-Ok "PublicHost: $resolvedPublicHost (Tailscale/LAN)"
+}
+else {
+    Write-Note "No PublicHost (localhost URLs). Pass -PublicHost <ip> for Tailscale/LAN."
+}
+
+$loopbackAdminUrl = "http://127.0.0.1:$adminPort"
+$loopbackPlatformApiUrl = "http://127.0.0.1:$platformApiPort"
+$loopbackPosApiUrl = "http://127.0.0.1:$posApiPort"
+$loopbackOrgUrl = "http://127.0.0.1:$orgPort"
+$loopbackPersonalUrl = "http://127.0.0.1:$personalPort"
+
+$publicAdminUrl = if ($resolvedPublicHost) { "http://${resolvedPublicHost}:$adminPort" } else { $null }
+$publicPlatformApiUrl = if ($resolvedPublicHost) { "http://${resolvedPublicHost}:$platformApiPort" } else { $null }
+$publicPosApiUrl = if ($resolvedPublicHost) { "http://${resolvedPublicHost}:$posApiPort" } else { $null }
+$publicOrgUrl = if ($resolvedPublicHost) { "http://${resolvedPublicHost}:$orgPort" } else { $null }
+$publicPersonalUrl = if ($resolvedPublicHost) { "http://${resolvedPublicHost}:$personalPort" } else { $null }
+
+# Compose substitutes these env vars into AllowedHosts / CORS / ExItSWebHosts / AdminPublicBaseUrl.
+$baseAllowed = if ($envMap['MAUI_LOCAL_VALIDATION_ALLOWED_HOSTS']) {
+    [string]$envMap['MAUI_LOCAL_VALIDATION_ALLOWED_HOSTS']
+} else {
+    'localhost;127.0.0.1;10.0.2.2;maui-platform-api;maui-admin-web;maui-pos-api;maui-org-web;maui-personal-web'
+}
+if ($resolvedPublicHost -and ($baseAllowed -notlike "*${resolvedPublicHost}*")) {
+    $baseAllowed = "$baseAllowed;$resolvedPublicHost"
+}
+$env:MAUI_LOCAL_VALIDATION_ALLOWED_HOSTS = $baseAllowed
 $env:MAUI_LOCAL_VALIDATION_SEED_SCOPE = $SeedScope
+
+if ($resolvedPublicHost) {
+    $env:MAUI_LOCAL_VALIDATION_ADMIN_ORIGIN = "http://${resolvedPublicHost}:$adminPort"
+    $env:MAUI_LOCAL_VALIDATION_ORG_WEB_ORIGIN = "http://${resolvedPublicHost}:$orgPort"
+    $env:MAUI_LOCAL_VALIDATION_PERSONAL_WEB_ORIGIN = "http://${resolvedPublicHost}:$personalPort"
+    # Extra CORS slots beyond compose defaults (localhost retained in __0..__5).
+    $env:MAUI_LOCAL_VALIDATION_CORS_PUBLIC_ADMIN = "http://${resolvedPublicHost}:$adminPort"
+    $env:MAUI_LOCAL_VALIDATION_CORS_PUBLIC_ORG = "http://${resolvedPublicHost}:$orgPort"
+    $env:MAUI_LOCAL_VALIDATION_CORS_PUBLIC_PERSONAL = "http://${resolvedPublicHost}:$personalPort"
+}
+else {
+    $env:MAUI_LOCAL_VALIDATION_ADMIN_ORIGIN = if ($envMap['MAUI_LOCAL_VALIDATION_ADMIN_ORIGIN']) { [string]$envMap['MAUI_LOCAL_VALIDATION_ADMIN_ORIGIN'] } else { "http://localhost:$adminPort" }
+    $env:MAUI_LOCAL_VALIDATION_ORG_WEB_ORIGIN = if ($envMap['MAUI_LOCAL_VALIDATION_ORG_WEB_ORIGIN']) { [string]$envMap['MAUI_LOCAL_VALIDATION_ORG_WEB_ORIGIN'] } else { "http://localhost:$orgPort" }
+    $env:MAUI_LOCAL_VALIDATION_PERSONAL_WEB_ORIGIN = if ($envMap['MAUI_LOCAL_VALIDATION_PERSONAL_WEB_ORIGIN']) { [string]$envMap['MAUI_LOCAL_VALIDATION_PERSONAL_WEB_ORIGIN'] } else { "http://localhost:$personalPort" }
+}
+
+Write-Ok "AllowedHosts: $env:MAUI_LOCAL_VALIDATION_ALLOWED_HOSTS"
+Write-Ok "Admin/Org/Personal origins: $env:MAUI_LOCAL_VALIDATION_ADMIN_ORIGIN | $env:MAUI_LOCAL_VALIDATION_ORG_WEB_ORIGIN | $env:MAUI_LOCAL_VALIDATION_PERSONAL_WEB_ORIGIN"
 
 $composeArgs = Get-MauiLocalValidationComposeArgs -RepoRoot $repoRoot -EnvFile $envFile
 
@@ -159,6 +249,14 @@ if ($CleanBuild) {
 }
 elseif ($Build) {
     $upArgs += '--build'
+}
+# Recreate app containers when PublicHost changes so env substitutions apply (keep DB volumes).
+if ($resolvedPublicHost -and -not $CleanBuild) {
+    $appServices = @(
+        'maui-platform-api', 'maui-pos-api', 'maui-admin-web', 'maui-org-web', 'maui-personal-web'
+    )
+    Write-Note "Recreating MAUI app containers so PublicHost AllowedHosts/CORS/origins apply."
+    $null = Invoke-MauiLocalValidationDocker -DockerArgs ($composeArgs + @('up', '-d', '--force-recreate') + $appServices)
 }
 
 $exit = Invoke-MauiLocalValidationDocker -DockerArgs $upArgs
@@ -202,14 +300,28 @@ foreach ($pair in $reactChecks) {
 Write-Host ""
 Write-Ok "MAUI/Blazor Local Validation is up."
 Write-Host "  Compose project:  $($MauiLocalValidationStack.ComposeProjectName)"
-Write-Host "  Admin:            http://127.0.0.1:$adminPort"
-Write-Host "  Platform API:     http://127.0.0.1:$platformApiPort"
-Write-Host "  POS API:          http://127.0.0.1:$posApiPort"
-Write-Host "  Org Web:          http://127.0.0.1:$orgPort"
-Write-Host "  Personal Web:     http://127.0.0.1:$personalPort"
-Write-Host "  Platform DB:      127.0.0.1:$($MauiLocalValidationStack.DefaultPlatformDbPort) / $($MauiLocalValidationStack.PlatformDbName)"
-Write-Host "  POS DB:           127.0.0.1:$($MauiLocalValidationStack.DefaultPosDbPort) / $($MauiLocalValidationStack.PosDbName)"
-Write-Host "  Mailpit:          http://127.0.0.1:$($MauiLocalValidationStack.DefaultMailpitUiPort)"
+Write-Host ""
+Write-Ok "LOCAL URLs"
+Write-Host "  Admin:            $loopbackAdminUrl"
+Write-Host "  Platform API:     $loopbackPlatformApiUrl"
+Write-Host "  POS API:          $loopbackPosApiUrl"
+Write-Host "  Org Web:          $loopbackOrgUrl"
+Write-Host "  Personal Web:     $loopbackPersonalUrl"
+Write-Host "  Platform DB:      127.0.0.1:$platformDbPort / $($MauiLocalValidationStack.PlatformDbName) (host-local only)"
+Write-Host "  POS DB:           127.0.0.1:$posDbPort / $($MauiLocalValidationStack.PosDbName) (host-local only)"
+Write-Host "  Mailpit:          http://127.0.0.1:$mailpitUiPort"
 Write-Host "  MAUI emulator:    http://10.0.2.2:$platformApiPort and :$posApiPort"
+if ($resolvedPublicHost) {
+    Write-Host ""
+    Write-Ok "PUBLIC URLs (Tailscale/LAN via $resolvedPublicHost)"
+    Write-Host "  Admin:            $publicAdminUrl"
+    Write-Host "  Platform API:     $publicPlatformApiUrl"
+    Write-Host "  POS API:          $publicPosApiUrl"
+    Write-Host "  Org Web:          $publicOrgUrl"
+    Write-Host "  Personal Web:     $publicPersonalUrl"
+    Write-MauiPhysicalDeviceAppsettingsHint -RepoRoot $repoRoot -PublicHostValue $resolvedPublicHost -PlatformApiPort $platformApiPort -PosApiPort $posApiPort
+}
 Write-Host "  Stop:             .\tools\Stop-MauiLegacyLocalValidation.ps1"
+Write-Host "  DATABASES_NOT_PUBLICLY_EXPOSED=YES"
+Write-Host "  REACT_STACK_ISOLATED=YES"
 Write-Host ""
