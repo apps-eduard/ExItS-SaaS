@@ -23,25 +23,34 @@ export function PageHeader({
 
   return (
     <header className="flex min-w-0 flex-col gap-1">
-      <div className="flex min-w-0 items-start gap-1">
+      <div className="flex min-w-0 items-center gap-1.5">
         {showBack ? (
           <Link
             to={backTo!}
             data-testid={backTestId}
             aria-label={backLabel}
             className={cn(
-              "inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-[var(--exits-radius-md)] text-foreground no-underline transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "-ml-2 inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-[var(--exits-radius-md)] text-foreground no-underline transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             )}
           >
             <ArrowLeft className="size-5 shrink-0" aria-hidden />
           </Link>
         ) : null}
-        <div className="min-w-0 flex-1 pt-0.5">
-          <h1 className="m-0 text-[length:var(--exits-text-xl)] font-bold tracking-tight">{title}</h1>
+        <div className="min-w-0 flex-1">
+          <h1 className="m-0 text-[length:var(--exits-text-xl)] font-bold leading-tight tracking-tight">
+            {title}
+          </h1>
         </div>
       </div>
       {description ? (
-        <p className="m-0 text-[length:var(--exits-text-sm)] leading-relaxed text-muted">{description}</p>
+        <p
+          className={cn(
+            "m-0 text-[length:var(--exits-text-sm)] leading-relaxed text-muted",
+            showBack && "pl-11",
+          )}
+        >
+          {description}
+        </p>
       ) : null}
     </header>
   );

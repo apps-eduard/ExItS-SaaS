@@ -53,8 +53,9 @@ type RoleHomeShellProps = {
   returnRoute: string;
   primarySell?: boolean;
   showExperienceChooser?: boolean;
-  /** Owner-dashboard-style sections + icon-left tiles (Manager home). */
+  /** Owner-dashboard-style sections + icon-left tiles (Manager / Cashier home). */
   dashboardGuide?: boolean;
+  homeTestId?: string;
 };
 
 type TileDef = ActionTileDef;
@@ -87,6 +88,7 @@ export function RoleHomeShell({
   primarySell = false,
   showExperienceChooser = false,
   dashboardGuide = false,
+  homeTestId = "manager-home",
 }: RoleHomeShellProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -285,7 +287,7 @@ export function RoleHomeShell({
     return (
       <div
         className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-5"
-        data-testid="manager-home"
+        data-testid={homeTestId}
       >
         <PageHeader title={t(titleKey)} description={t(ledeKey)} />
 
@@ -504,6 +506,7 @@ export function ManagerRoleHomePage() {
       bodyKey="role.managerBody"
       returnRoute="/role/manager"
       dashboardGuide
+      homeTestId="manager-home"
     />
   );
 }
@@ -517,6 +520,8 @@ export function CashierRoleHomePage() {
       bodyKey="role.cashierBody"
       returnRoute="/role/cashier"
       primarySell
+      dashboardGuide
+      homeTestId="cashier-home"
     />
   );
 }
