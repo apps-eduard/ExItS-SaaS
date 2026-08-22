@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { openOfflineDatabase, organizationScopeKey } from "@/offline/db";
 import { deriveScopeKeyFromBinding } from "@/offline/crypto";
 import { enrollOfflinePinAndDek } from "@/offline/local-store-key";
+import { clearUnlockedDek } from "@/offline/offline-unlock-session";
 import {
   FIX02_MIGRATION_META_KEY,
   isFix02MigrationComplete,
@@ -26,6 +27,7 @@ function testInstallation(suffix: string): string {
 describe("FIX02 migration all-or-nothing", () => {
   beforeEach(() => {
     window.localStorage.clear();
+    clearUnlockedDek();
   });
 
   it("fails safely when a legacy row cannot decrypt and leaves migration incomplete", async () => {
