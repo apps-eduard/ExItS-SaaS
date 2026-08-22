@@ -336,6 +336,7 @@ docs/Platform-Admin-Web/commercial-subscription-implementation-plan.md
 docs/Platform-Admin-Web/commercial-platform-pos-contract.md
 docs/Platform-Admin-Web/commercial-e2e-validation-matrix.md
 docs/Platform-Admin-Web/Reports/PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01.md
+docs/Platform-Admin-Web/Reports/PLATFORM-WEB-PA-COM-01-commercial-mutation-foundation.md
 
 ## Not tracked
 

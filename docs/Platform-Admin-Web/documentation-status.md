@@ -31,12 +31,14 @@ The header fields above are the **historical DOC-01…10 planning snapshot**. Th
 | Commercial audit branch | `docs/platform-admin-commercial-readiness` |
 | Audit baseline HEAD | `525bae3633fb7fde1bbc9b855435a05f5f616c09` (`feat/platform-admin-web-v2`) |
 | Current React commercial UI | Read-only catalog + organization workspace (see `implementation-status.md`) |
-| Commercial mutations | **NOT STARTED** |
+| Commercial mutations | PA-COM-01 foundation COMPLETE (no UI actions) |
 | Authoritative commercial plan | [commercial-subscription-implementation-plan.md](./commercial-subscription-implementation-plan.md) |
 | Platform→POS contract | [commercial-platform-pos-contract.md](./commercial-platform-pos-contract.md) |
 | E2E matrix | [commercial-e2e-validation-matrix.md](./commercial-e2e-validation-matrix.md) |
 | Audit report | [Reports/PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01.md](./Reports/PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01.md) |
-| PA-COM-01 authorized | **NO** |
+| PA-COM-01 report | [Reports/PLATFORM-WEB-PA-COM-01-commercial-mutation-foundation.md](./Reports/PLATFORM-WEB-PA-COM-01-commercial-mutation-foundation.md) |
+| PA-COM-01 | COMPLETE (awaiting Product Owner / ChatGPT review) |
+| PA-COM-04 authorized | **NO** |
 | Production cutover | **NO** |
 
 DOC-01…10 and AMEND-01 remain Complete as planning artifacts. Do not rewrite them.

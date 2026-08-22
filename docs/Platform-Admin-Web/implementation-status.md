@@ -548,14 +548,13 @@ Next authorized implementation package: **PWEB-IMPL-21** (requires explicit star
 
 ### Commercial / subscription overlay (2026-08-22)
 
-Read-only commercial inspection (PWEB-18/19 catalog + PWEB-11…14 org commercial tabs) is **COMPLETE**. Commercial **mutations** are **NOT STARTED**.
+Read-only commercial inspection (PWEB-18/19 catalog + PWEB-11…14 org commercial tabs) is **COMPLETE**. Commercial mutation **foundation** (PA-COM-01) is **COMPLETE** on `feat/platform-admin-pa-com-01` — typed clients + hooks + tests; **no** lifecycle UI.
 
-Authoritative next-agent plan (documentation only, **not authorized**):
-
-- [commercial-subscription-implementation-plan.md](./commercial-subscription-implementation-plan.md) — PA-COM-01…08
+- [commercial-subscription-implementation-plan.md](./commercial-subscription-implementation-plan.md) — PA-COM-01 COMPLETE; PA-COM-02…08 not authorized
 - [Reports/PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01.md](./Reports/PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01.md)
+- [Reports/PLATFORM-WEB-PA-COM-01-commercial-mutation-foundation.md](./Reports/PLATFORM-WEB-PA-COM-01-commercial-mutation-foundation.md)
 
-`PA_COM_01_AUTHORIZED=NO`. Full Platform Admin → POS commercial E2E is **NOT READY**. PWEB-IMPL-21 remains the identity/governance next package if that track is started first; commercial E2E does not require 21–23 when the operator is already Platform Administrator.
+`PA_COM_04_AUTHORIZED=NO`. Full Platform Admin → POS commercial E2E is **NOT READY**. PWEB-IMPL-21 remains the identity/governance next package if that track is started first; commercial E2E does not require 21–23 when the operator is already Platform Administrator.
 
 Production Ready: **NO**
 Cutover Authorized: **NO**

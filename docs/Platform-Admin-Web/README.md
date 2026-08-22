@@ -36,8 +36,9 @@ boundaries, and records a dedicated planning worktree (`docs/platform-admin-web-
 - `pweb-21-30-continuation-plan.md` — authoritative continuation plan for PWEB-IMPL-21..30 (planning only)
 - `Packages/PWEB-IMPL-21-*.md` … `Packages/PWEB-IMPL-30-*.md` — per-package specifications (not implemented)
 - `Reports/PWEB-IMPL-04C-parallel-react-local-validation-container.md` — parallel React local-validation container
-- `commercial-subscription-implementation-plan.md` — PA-COM-01…08 commercial/subscription implementation plan (documentation only; not authorized)
+- `commercial-subscription-implementation-plan.md` — PA-COM-01…08 commercial/subscription implementation plan (PA-COM-01 complete; PA-COM-04 not authorized)
 - `commercial-platform-pos-contract.md` — Platform → POS commercial runtime contract
 - `commercial-e2e-validation-matrix.md` — commercial E2E spine and device-limit matrix
 - `Reports/PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01.md` — commercial readiness audit (HEAD `525bae36`)
+- `Reports/PLATFORM-WEB-PA-COM-01-commercial-mutation-foundation.md` — PA-COM-01 typed clients + hooks foundation
 

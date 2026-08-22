@@ -1,14 +1,15 @@
 # React Platform Admin — Commercial / Subscription Implementation Plan
 
-**Status:** AUTHORITATIVE PLANNING (documentation only)  
-**Audit:** [PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01](./Reports/PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01.md)  
-**Contract:** [commercial-platform-pos-contract.md](./commercial-platform-pos-contract.md)  
-**E2E matrix:** [commercial-e2e-validation-matrix.md](./commercial-e2e-validation-matrix.md)  
-**Baseline HEAD:** `525bae3633fb7fde1bbc9b855435a05f5f616c09`  
-**Implementation started:** NO  
-**PA-COM-01 authorized:** NO  
-
-This is the implementation plan for the **next engineering agent**. It is not authorization to write production code.
+**Status:** PA-COM-01 COMPLETE (foundation only; awaiting Product Owner / ChatGPT review)
+**Audit:** [PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01](./Reports/PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01.md)
+**PA-COM-01 report:** [Reports/PLATFORM-WEB-PA-COM-01-commercial-mutation-foundation.md](./Reports/PLATFORM-WEB-PA-COM-01-commercial-mutation-foundation.md)
+**Contract:** [commercial-platform-pos-contract.md](./commercial-platform-pos-contract.md)
+**E2E matrix:** [commercial-e2e-validation-matrix.md](./commercial-e2e-validation-matrix.md)
+**Audit baseline HEAD:** `525bae3633fb7fde1bbc9b855435a05f5f616c09`
+**Implementation started:** YES (PA-COM-01 only)
+**PA-COM-01:** COMPLETE (typed clients + hooks + tests; **no** commercial UI actions)
+**PA-COM-04 authorized:** **NO**
+PA-COM-02…08 remain unauthorized. This plan does **not** authorize PA-COM-04.
 
 Target application: `src/Platform/ExItS.Platform.Admin.Web`  
 Stack (do not replace): React + TypeScript + Vite, Tailwind, shadcn/ui, Lucide, TanStack Query, TanStack Table, React Hook Form, Zod.  
@@ -127,7 +128,7 @@ Prefer org-workspace actions for subscription/entitlement/billing. Global `/admi
 
 Org commercial mutations also allow a **trusted organization Owner** on org-scoped routes (`EnsureCanManageOrganizationCommercialAsync`). Platform Admin UI must still send Platform session credentials and fail closed on 403.
 
-React today: `PLATFORM_PERMISSIONS` **omits** `manage_catalog`. PA-COM-01 must add it. Org commercial tabs currently rely on API 401/403 rather than per-tab permission checks — keep server authoritative; add UI gating as convenience.
+React `PLATFORM_PERMISSIONS` now includes `manage_catalog` and `manage_product_access` (PA-COM-01). Org commercial tabs still rely on API 401/403 rather than per-tab permission checks — keep server authoritative; add UI gating as convenience in later packages.
 
 `view_global_catalog` is the **SKU/global product catalog**, not SaaS Products/Plans. Do not gate `/admin/products` on it.
 
@@ -166,33 +167,33 @@ IDs are stable. **Execution order differs** from numeric ID order because seed p
 
 ## PA-COM-01 — Commercial contract + React gap-closure foundation
 
+**Status.** COMPLETE — [PLATFORM-WEB-PA-COM-01-commercial-mutation-foundation.md](./Reports/PLATFORM-WEB-PA-COM-01-commercial-mutation-foundation.md)
+**Branch.** `feat/platform-admin-pa-com-01`
+**Review.** `PA_COM_01=AWAITING_PRODUCT_OWNER_CHATGPT_REVIEW`
+
 **Objective.** Make React Admin able to call proven commercial mutations safely, without shipping lifecycle UI yet.
 
 **Dependencies.** PWEB-IMPL-20 CSRF (COMPLETE). No PWEB-21–24 requirement.
 
-**Files/areas likely affected**
+**Delivered**
 
-- `src/api/authorization/authorization-types.ts` — add `manageCatalog` (and `manageProductAccess` if needed later)
-- `src/api/catalog/*` — mutation functions using `platformRequest` POST/PATCH
-- `src/api/organizations/*` or new `src/api/subscriptions/*`, `payments/*`, `entitlements/*`
-- Shared mutation error mapper (problem+json, 409 conflict)
-- Query keys for invalidation
-- Vitest for clients (no UI buttons yet)
+- `PLATFORM_PERMISSIONS.manageCatalog` / `manageProductAccess` match `PlatformPermission.cs`
+- Commercial mutations reuse PWEB-20 `platformRequest` + antiforgery via `commercialMutationRequest`
+- Typed catalog, subscription, payment, and entitlement mutation clients for **existing** routes only
+- TanStack Query hooks with scoped invalidation and `retry: false`
+- Gap register in `src/api/commercial/commercial-backend-gaps.ts`
+- No commercial UI actions (no Start Trial / Suspend / plan edit / payment simulation forms)
 
-**Backend changes expected.** None.
-
-**React changes expected.** Typed clients + hooks only. Optional: permission helper. **No** activate/suspend buttons in this package.
-
-**Tests.** Client mapping; CSRF header on mutation methods; 403/409 handling; Production must not call Local Validation simulate.
+**Backend changes.** None.
 
 **Acceptance criteria**
 
-- All commercial mutation paths go through `platform-http` + antiforgery
-- `ManageCatalog` exists in React permission constants
-- No new routes required
-- No production payment provider
+- All commercial mutation paths go through `platform-http` + antiforgery — **PASS**
+- `ManageCatalog` exists in React permission constants — **PASS**
+- No new routes required — **PASS**
+- No production payment provider — **PASS**
 
-**STOP gate.** `PA_COM_01_MUTATION_TRANSPORT_UNSAFE` if any client bypasses CSRF. Do not start PA-COM-04 until 01 PASS.
+**STOP gate.** Do not start PA-COM-04 until Product Owner / ChatGPT authorizes it separately. `PA_COM_04_AUTHORIZED=NO`.
 
 ---
 
@@ -420,7 +421,7 @@ Unknown simulation currently maps to **Succeeded** — UI must not send unknown 
 | Track | Next package | Purpose |
 |---|---|---|
 | Identity/governance | PWEB-IMPL-21 (still not authorized by this audit) | Users/sessions/roles |
-| Commercial E2E | PA-COM-01 (not authorized) | Subscription spine |
+| Commercial E2E | PA-COM-04 (not authorized) | Subscription lifecycle UI; depends on PA-COM-01 |
 
 They share CSRF. They do not share screens. Either may start first if Product Owner authorizes that ID explicitly.
 
