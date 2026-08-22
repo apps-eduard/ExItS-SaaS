@@ -34,7 +34,7 @@ services:
     volumes:
       - exits_local_validation_platform_db_data:/var/lib/postgresql/data
     ports:
-      - "${LOCAL_VALIDATION_PLATFORM_DB_HOST_PORT:-15533}:5432"
+      - "127.0.0.1:${LOCAL_VALIDATION_PLATFORM_DB_HOST_PORT:-15533}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d exits_platform"]
       interval: 5s
@@ -53,7 +53,7 @@ services:
     volumes:
       - exits_local_validation_pos_db_data:/var/lib/postgresql/data
     ports:
-      - "${LOCAL_VALIDATION_POS_DB_HOST_PORT:-15534}:5432"
+      - "127.0.0.1:${LOCAL_VALIDATION_POS_DB_HOST_PORT:-15534}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d exits_pos"]
       interval: 5s
