@@ -1,16 +1,63 @@
 import type { OfflineDb } from "@/offline/db";
-import { getMeta, putMeta } from "@/offline/db";
+import { getMeta } from "@/offline/db";
 import { decryptPayload, deriveScopeKeyFromBinding, encryptPayload } from "@/offline/crypto";
 import { getActiveOfflineCryptoKey } from "@/offline/local-store-key";
 import type { OfflineOperationRecord } from "@/offline/types";
 
 export const FIX02_MIGRATION_META_KEY = "fix02MigrationComplete";
 
-export type Fix02MigrationFailureReason = "partial_decrypt_failure" | "dek_unavailable";
+export type Fix02MigrationFailureReason =
+  | "partial_decrypt_failure"
+  | "dek_unavailable"
+  | "commit_failure";
 
 export type Fix02MigrationResult =
   | { ok: true }
   | { ok: false; reason: Fix02MigrationFailureReason; failedRows?: number };
+
+/** @internal Vitest-only hook to simulate IndexedDB commit abort mid-transaction. */
+export type Fix02MigrationTestOptions = {
+  testAbortCommitOnStore?: StagedWrite["storeName"];
+};
+
+const FIX02_MIGRATION_TRANSACTION_STORES = [
+  "outbox",
+  "customers",
+  "customerCredit",
+  "personalTodos",
+  "personalContacts",
+  "personalRelationships",
+  "personalEntries",
+  "meta",
+] as const;
+
+async function commitStagedMigrationWrites(
+  db: OfflineDb,
+  staged: StagedWrite[],
+  options?: { abortOnStore?: StagedWrite["storeName"] },
+): Promise<void> {
+  const tx = db.transaction([...FIX02_MIGRATION_TRANSACTION_STORES], "readwrite");
+
+  for (const item of staged) {
+    if (options?.abortOnStore === item.storeName) {
+      tx.abort();
+      try {
+        await tx.done;
+      } catch {
+        // Expected when the migration commit is aborted.
+      }
+      throw new Error("FIX02 migration commit aborted");
+    }
+    await tx.objectStore(item.storeName).put(item.row as never);
+  }
+
+  await tx.objectStore("meta").put({
+    key: FIX02_MIGRATION_META_KEY,
+    value: "1",
+  });
+
+  await tx.done;
+}
 
 type EncryptedRow = {
   ciphertext: ArrayBuffer;
@@ -53,6 +100,7 @@ export async function migrateLegacyLocalStoreToFix02(
   db: OfflineDb,
   scopeBinding: string,
   userId: string,
+  options?: Fix02MigrationTestOptions,
 ): Promise<Fix02MigrationResult> {
   const existing = await getMeta(db, FIX02_MIGRATION_META_KEY);
   if (existing === "1") {
@@ -143,11 +191,18 @@ export async function migrateLegacyLocalStoreToFix02(
     }
   }
 
-  for (const item of staged) {
-    await db.put(item.storeName, item.row as never);
+  try {
+    await commitStagedMigrationWrites(
+      db,
+      staged,
+      options?.testAbortCommitOnStore
+        ? { abortOnStore: options.testAbortCommitOnStore }
+        : undefined,
+    );
+  } catch {
+    return { ok: false, reason: "commit_failure" };
   }
 
-  await putMeta(db, FIX02_MIGRATION_META_KEY, "1");
   return { ok: true };
 }
 
