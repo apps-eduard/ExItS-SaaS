@@ -9,15 +9,21 @@ const sessionState = vi.hoisted(() => ({
   session: null as BrowserSessionSnapshot | null,
 }));
 
-vi.mock("@/session/SessionProvider", () => ({
-  useSession: () => ({
-    status: sessionState.status,
-    session: sessionState.session,
-    signIn: vi.fn(),
-    signOut: vi.fn(),
-    refreshSession: vi.fn(),
-  }),
-}));
+vi.mock("@/session/SessionProvider", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/session/SessionProvider")>();
+  return {
+    ...actual,
+    useSession: () => ({
+      status: sessionState.status,
+      session: sessionState.session,
+      coldStartGrant: null,
+      coldStartDenial: null,
+      signIn: vi.fn(),
+      signOut: vi.fn(),
+      refreshSession: vi.fn(),
+    }),
+  };
+});
 
 vi.mock("@/i18n/I18nProvider", () => ({
   useI18n: () => ({

@@ -91,6 +91,11 @@ export const hilPH: Record<keyof typeof en, string> = {
   "offline.enqueueFailed": "Indi na-tipigan ini nga baligya sa device. Sulayi liwat.",
   "offline.notReady":
     "Kinahanglan sang device kag bukas nga shift nga nakumpirmar samtang online antes makabaligya offline.",
+  "offline.coldStartLockedTitle": "Na-lock ang offline data",
+  "offline.coldStartLocked":
+    "Magkonektar sa internet agod ma-verify ini nga device antes gamiton ang offline POS data sa sini nga browser.",
+  "offline.coldStartReconnect":
+    "Mag-sign in online sing makaisa agod mag-andam sang offline access, dayon mahimo na mag-restart offline sa sini nga device.",
   "offline.queuedTitle": "Na-tipigan ang baligya sa sini nga device",
   "offline.queuedDetail": "Wala pa ini na-rekord sa server.",
   "offline.queuedPending":

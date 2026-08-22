@@ -7,7 +7,7 @@ import {
 } from "@/features/shell/org-nav-config";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
-import { useSession } from "@/session/SessionProvider";
+import { isAuthenticatedOrColdStartOffline, useSession } from "@/session/SessionProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const ICONS = {
@@ -29,7 +29,7 @@ export function OrgBottomNav() {
   const { status: sessionStatus } = useSession();
   const { sessionGrant, boundWorkspace } = useWorkspace();
 
-  if (sessionStatus !== "authenticated" || !boundWorkspace) {
+  if (!isAuthenticatedOrColdStartOffline(sessionStatus) || !boundWorkspace) {
     return null;
   }
 

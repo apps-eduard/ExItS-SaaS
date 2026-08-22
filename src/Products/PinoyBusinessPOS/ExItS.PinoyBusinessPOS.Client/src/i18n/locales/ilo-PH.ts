@@ -90,6 +90,11 @@ export const iloPH: Record<keyof typeof en, string> = {
   "offline.enqueueFailed": "Saan a naidulin daytoy a panaglako iti device. Padasen manen.",
   "offline.notReady":
     "Masapul ti device ken nakalukat a shift a napasingkedan bayat ti online sakbay ti offline a panaglako.",
+  "offline.coldStartLockedTitle": "Nakandado ti offline a data",
+  "offline.coldStartLocked":
+    "Agkonekta iti internet tapno mapasingkedan daytoy a device sakbay a usaren ti offline POS data iti daytoy a browser.",
+  "offline.coldStartReconnect":
+    "Ag-sign in iti online maminsan tapno maisagana ti offline access, kalpasanna mabalin ti ag-restart offline iti daytoy a device.",
   "offline.queuedTitle": "Naidulin ti panaglako iti daytoy a device",
   "offline.queuedDetail": "Saan pay a nairekord iti server.",
   "offline.queuedPending":

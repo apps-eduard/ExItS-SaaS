@@ -38,7 +38,7 @@ import { ExperienceAccessDeniedPage } from "@/features/role/ExperienceAccessDeni
 import { SellAccessDeniedPage } from "@/features/sell/SellAccessDeniedPage";
 import { useI18n } from "@/i18n/I18nProvider";
 import { sessionAccountClass, type AccountClassName } from "@/session/account-class";
-import { useSession } from "@/session/SessionProvider";
+import { isAuthenticatedOrColdStartOffline, useSession } from "@/session/SessionProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { workspaceRouteForOutcome } from "@/workspace/workspace-resolver";
 
@@ -57,10 +57,10 @@ export function RequireSession({ children }: { children: ReactNode }) {
   if (status === "expired") {
     return <Navigate to="/sign-in" replace state={{ expired: true, from: location.pathname }} />;
   }
-  if (status !== "authenticated") {
-    return <Navigate to="/sign-in" replace state={{ from: location.pathname }} />;
+  if (isAuthenticatedOrColdStartOffline(status)) {
+    return children;
   }
-  return children;
+  return <Navigate to="/sign-in" replace state={{ from: location.pathname }} />;
 }
 
 export function GuestOnly({ children }: { children: ReactNode }) {
@@ -70,6 +70,9 @@ export function GuestOnly({ children }: { children: ReactNode }) {
     return <SessionLoading />;
   }
   if (status === "authenticated") {
+    return <Navigate to="/" replace />;
+  }
+  if (status === "cold_start_offline") {
     return <Navigate to="/" replace />;
   }
   return children;
@@ -92,7 +95,7 @@ export function RequireAccountClass({
   if (status === "loading") {
     return <SessionLoading />;
   }
-  if (status !== "authenticated") {
+  if (!isAuthenticatedOrColdStartOffline(status)) {
     return <Navigate to="/sign-in" replace />;
   }
 
@@ -201,6 +204,9 @@ export function WorkspaceBootGate({ children }: { children: ReactNode }) {
     return <SessionLoading />;
   }
   if (sessionStatus === "authenticated" && (status === "loading" || status === "binding")) {
+    return <SessionLoading />;
+  }
+  if (sessionStatus === "cold_start_offline" && status === "idle") {
     return <SessionLoading />;
   }
   return children;

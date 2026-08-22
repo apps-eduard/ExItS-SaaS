@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useSession } from "@/session/SessionProvider";
+import { isAuthenticatedOrColdStartOffline, useSession } from "@/session/SessionProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { workspaceRouteForOutcome } from "@/workspace/workspace-resolver";
 
@@ -12,7 +12,7 @@ export function WorkspaceBootNavigator() {
   const location = useLocation();
 
   useEffect(() => {
-    if (sessionStatus !== "authenticated" || boundWorkspace) {
+    if (!isAuthenticatedOrColdStartOffline(sessionStatus) || boundWorkspace) {
       return;
     }
     if (status !== "ready" && status !== "access_denied") {

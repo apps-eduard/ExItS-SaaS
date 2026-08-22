@@ -90,6 +90,11 @@ export const cebPH: Record<keyof typeof en, string> = {
   "offline.enqueueFailed": "Wala matipigan kini nga baligya sa device. Sulayi pag-usab.",
   "offline.notReady":
     "Kinahanglan og device ug abli nga shift nga nakonpirmar samtang online una makabaligya offline.",
+  "offline.coldStartLockedTitle": "Naka-lock ang offline data",
+  "offline.coldStartLocked":
+    "Konekta sa internet aron ma-verify kini nga device una gamiton ang offline POS data sa browser.",
+  "offline.coldStartReconnect":
+    "Sign in online usab aron andam ang offline access, unya mahimo nang mag-restart offline niining device.",
   "offline.queuedTitle": "Natipigan ang baligya sa device",
   "offline.queuedDetail": "Wala pa kini narekord sa server.",
   "offline.queuedPending":

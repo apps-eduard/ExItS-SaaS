@@ -7,13 +7,14 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { TestUserSelector } from "@/features/auth/TestUserSelector";
 import { useI18n } from "@/i18n/I18nProvider";
 import { looksLikeOrgScopedStaffLogin } from "@/session/account-class";
+import { mapColdStartDenialToMessageKey } from "@/offline/offline-operating-grant";
 import { useSession } from "@/session/SessionProvider";
 
 export function SignInPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
-  const { signIn } = useSession();
+  const { signIn, status, coldStartDenial } = useSession();
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +22,14 @@ export function SignInPage() {
 
   const expired = Boolean((location.state as { expired?: boolean } | null)?.expired);
   const staffLoginHint = looksLikeOrgScopedStaffLogin(usernameOrEmail);
+  const offlineLocked =
+    status === "unauthenticated" &&
+    coldStartDenial != null &&
+    typeof navigator !== "undefined" &&
+    navigator.onLine === false;
+  const offlineLockedDetail = offlineLocked
+    ? t(mapColdStartDenialToMessageKey(coldStartDenial))
+    : null;
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -66,6 +75,16 @@ export function SignInPage() {
           <Card>
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
               {t("signIn.expired")}
+            </p>
+          </Card>
+        ) : null}
+        {offlineLocked && offlineLockedDetail ? (
+          <Card data-testid="sign-in-offline-locked">
+            <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+              {t("offline.coldStartLockedTitle")}
+            </p>
+            <p className="m-0 mt-2 text-[length:var(--exits-text-sm)] leading-relaxed text-muted">
+              {offlineLockedDetail}
             </p>
           </Card>
         ) : null}

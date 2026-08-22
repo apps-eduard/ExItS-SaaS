@@ -4,8 +4,8 @@ import { drainOutbox } from "@/offline/outbox-processor";
 import { useOfflineSync } from "@/offline/OfflineSyncProvider";
 
 /**
- * Warm-session outbox drain on reconnect.
- * Does not unlock protected LocalStore on cold start — that remains DEFERRED_SECURITY_GAP.
+ * Warm-session and cold-start outbox drain on reconnect.
+ * Cold-start unlock uses the device-bound offline operating grant (RMAP-21-FIX01).
  */
 export function OutboxSyncHost() {
   const online = useBrowserOnline();

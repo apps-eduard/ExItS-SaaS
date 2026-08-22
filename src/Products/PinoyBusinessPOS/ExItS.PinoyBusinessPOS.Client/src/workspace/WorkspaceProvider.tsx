@@ -29,9 +29,15 @@ import {
 } from "@/api/platform/platform-auth-client";
 import { clearPlatformAntiforgeryToken } from "@/api/platform/platform-http";
 import { selectOperationalBranch } from "@/api/pos/operational-branch-client";
+import {
+  buildBoundWorkspaceFromGrant,
+  buildColdStartSessionGrantFacts,
+  buildPosDeviceFromGrant,
+  establishOfflineOperatingGrant,
+} from "@/offline/offline-operating-grant";
 import { sessionAccountClass, isOrganizationContextLocked } from "@/session/account-class";
 import { ensureOrganizationSessionProfile } from "@/session/ensure-organization-profile";
-import { useSession } from "@/session/SessionProvider";
+import { isAuthenticatedOrColdStartOffline, useSession } from "@/session/SessionProvider";
 import { INITIAL_POS_DEVICE_CONTEXT, type PosDeviceContext } from "@/workspace/pos-device-context";
 import { hydratePosDeviceContext } from "@/workspace/hydrate-pos-device";
 import type {
@@ -170,7 +176,7 @@ function boundFromDestination(
 }
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
-  const { status: sessionStatus, session, refreshSession } = useSession();
+  const { status: sessionStatus, session, refreshSession, coldStartGrant } = useSession();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const autoDestinationAttempted = useRef(false);
@@ -197,8 +203,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const refreshPosDevice = useCallback(
     async (options?: { branchId?: string | null }) => {
       const bound = boundWorkspaceRef.current;
-      if (sessionStatus !== "authenticated") {
+      if (!isAuthenticatedOrColdStartOffline(sessionStatus)) {
         setPosDevice(INITIAL_POS_DEVICE_CONTEXT);
+        return;
+      }
+      if (sessionStatus === "cold_start_offline") {
         return;
       }
       setPosDevice((current) => ({
@@ -217,12 +226,31 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    if (sessionStatus !== "authenticated") {
+    if (sessionStatus === "cold_start_offline") {
+      return;
+    }
+    if (!isAuthenticatedOrColdStartOffline(sessionStatus)) {
       setPosDevice(INITIAL_POS_DEVICE_CONTEXT);
       return;
     }
     void refreshPosDevice();
   }, [boundWorkspace?.organizationId, boundWorkspace?.branchId, refreshPosDevice, sessionStatus]);
+
+  useEffect(() => {
+    if (sessionStatus !== "cold_start_offline" || !coldStartGrant) {
+      return;
+    }
+    const bound = buildBoundWorkspaceFromGrant(coldStartGrant);
+    const device = buildPosDeviceFromGrant(coldStartGrant);
+    if (!bound || !device) {
+      setStatus("error");
+      return;
+    }
+    setBoundWorkspace(bound);
+    setPosDevice(device);
+    setSessionGrantState(buildColdStartSessionGrantFacts(coldStartGrant));
+    setStatus("bound");
+  }, [coldStartGrant, sessionStatus]);
 
   const clearBoundWorkspace = useCallback(() => {
     setBoundWorkspace(null);
@@ -612,6 +640,40 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setAccessDeniedDetail(null);
       setFailureDiagnostic(null);
       setStatus("bound");
+
+      const hydratedDevice = await hydratePosDeviceContext({
+        organizationId: destination.organizationId,
+        branchId: destination.branchId,
+      });
+      setPosDevice(hydratedDevice);
+      if (
+        destination.branchId &&
+        activeSession.userId &&
+        hydratedDevice.status === "authorized" &&
+        hydratedDevice.installationDeviceId &&
+        hydratedDevice.posDeviceId
+      ) {
+        void establishOfflineOperatingGrant({
+          userId: activeSession.userId,
+          scopeKind: "Organization",
+          organizationId: destination.organizationId,
+          organizationDisplayName:
+            findOrganizationLabel(workspaces, destination.organizationId) ??
+            destination.organizationDisplayName,
+          branchId: destination.branchId,
+          branchName:
+            destination.branchName ??
+            findBranchLabel(workspaces, destination.organizationId, destination.branchId)
+              ?.branchName ??
+            destination.branchId,
+          installationDeviceId: hydratedDevice.installationDeviceId,
+          posDeviceId: hydratedDevice.posDeviceId,
+          roleCode: result.grant.mappedPosRoleCode ?? null,
+          displayName: activeSession.displayName ?? null,
+          username: activeSession.username ?? null,
+        });
+      }
+
       return true;
     },
     [boundWorkspace?.branchId, denyBind, ensureOrganizationSession, session, workspaces],
@@ -635,6 +697,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
+    if (sessionStatus === "cold_start_offline") {
+      return;
+    }
     if (sessionStatus !== "authenticated") {
       setWorkspaces((current) => (current.length === 0 ? current : []));
       setRoutingPlan((current) => (current === null ? current : null));

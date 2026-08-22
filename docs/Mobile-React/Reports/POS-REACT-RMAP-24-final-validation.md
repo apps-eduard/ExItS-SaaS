@@ -144,7 +144,7 @@ See addendum: [POS-LIVE-QR-01](./POS-LIVE-QR-01-live-browser-camera-scanning.md)
 
 | Gap | Classification |
 | --- | -------------- |
-| Cold-start IndexedDB unlock | ACCEPTED security gap (RMAP-21) |
+| Cold-start IndexedDB unlock | **CLOSED** — RMAP-21-FIX01 device-bound offline operating grant (`ecd2113a` → FIX01 commit) |
 | Organization buyer purchase history | NO approved API — UI intentionally absent |
 | RMAP-TAX | NOT STARTED / NOT AUTHORIZED |
 | RMAP-B05 public discovery | NOT AUTHORIZED |

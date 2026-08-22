@@ -84,6 +84,11 @@ export const en = {
   "offline.blockedPriceOverride": "Use the regular price to finish this sale offline.",
   "offline.enqueueFailed": "Could not save this sale on this device. Try again.",
   "offline.notReady": "Offline selling needs a device and an open shift confirmed while online.",
+  "offline.coldStartLockedTitle": "Offline data is locked",
+  "offline.coldStartLocked":
+    "Reconnect to verify this device before using offline POS data on this browser.",
+  "offline.coldStartReconnect":
+    "Sign in online once to prepare offline access, then you can restart offline on this device.",
   "offline.queuedTitle": "Sale saved on this device",
   "offline.queuedDetail": "It is not recorded on the server yet.",
   "offline.queuedPending": "This Cash sale syncs automatically when you are back online.",

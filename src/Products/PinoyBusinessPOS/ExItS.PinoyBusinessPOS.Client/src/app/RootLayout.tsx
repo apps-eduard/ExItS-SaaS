@@ -3,7 +3,7 @@ import { AppTopBar } from "@/components/exits/AppTopBar";
 import { PersonalMerchantCartProvider } from "@/features/customer-ordering/PersonalMerchantCartProvider";
 import { OrgBottomNav } from "@/features/shell/OrgBottomNav";
 import { AppShell } from "@/layouts/AppShell";
-import { useSession } from "@/session/SessionProvider";
+import { isAuthenticatedOrColdStartOffline, useSession } from "@/session/SessionProvider";
 import { WorkspaceBootNavigator } from "@/workspace/WorkspaceBootNavigator";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -13,7 +13,7 @@ export function RootLayout() {
   const { status: sessionStatus } = useSession();
   const { boundWorkspace } = useWorkspace();
   const showOrgBottomNav =
-    !isPersonal && sessionStatus === "authenticated" && boundWorkspace != null;
+    !isPersonal && isAuthenticatedOrColdStartOffline(sessionStatus) && boundWorkspace != null;
 
   return (
     <>

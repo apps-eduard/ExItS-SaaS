@@ -89,6 +89,11 @@ export const filPH: Record<keyof typeof en, string> = {
   "offline.enqueueFailed": "Hindi nai-save ang bentang ito sa device. Subukan muli.",
   "offline.notReady":
     "Kailangan ng device at bukas na shift na nakumpirma habang online bago makapag-offline na bentahan.",
+  "offline.coldStartLockedTitle": "Naka-lock ang offline data",
+  "offline.coldStartLocked":
+    "Kumonekta sa internet para i-verify ang device na ito bago gamitin ang offline POS data sa browser na ito.",
+  "offline.coldStartReconnect":
+    "Mag-sign in online nang isang beses para ihanda ang offline access, pagkatapos ay maaari nang mag-restart offline sa device na ito.",
   "offline.queuedTitle": "Nakaimbak ang benta sa device na ito",
   "offline.queuedDetail": "Hindi pa ito naitala sa server.",
   "offline.queuedPending":

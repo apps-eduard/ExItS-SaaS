@@ -23,7 +23,7 @@
 | Switch workspace / org | OnlineRequired | |
 | Personal ↔ Organization switch | OnlineRequired | |
 | Sign-in (first / cold) | OnlineRequired | |
-| Cold-start unlock of protected LocalStore | Deferred | `DEFERRED_SECURITY_GAP` unless proven safe |
+| Cold-start unlock of protected LocalStore | Queueable | Device-bound offline operating grant (RMAP-21-FIX01); requires prior online branch bind + authorized POS device |
 
 ## POS Sell / checkout
 
