@@ -34,6 +34,8 @@ export const sampleAuthorization = {
     "platform.permission.manage_entitlement_overrides",
     "platform.permission.view_audit_records",
     "platform.permission.view_global_catalog",
+    "platform.permission.manage_global_categories",
+    "platform.permission.manage_global_products",
     "platform.permission.view_privacy_compliance",
   ],
 };
@@ -152,6 +154,13 @@ export type AuthenticatedFetchOptions = {
   forbiddenOrgAudit?: boolean;
   orgAuditItems?: Array<Record<string, unknown>>;
   orgAuditTotalCount?: number;
+  globalCategoryItems?: Array<Record<string, unknown>>;
+  globalCategoryTotalCount?: number;
+  globalProductItems?: Array<Record<string, unknown>>;
+  globalProductTotalCount?: number;
+  globalBusinessTypeItems?: Array<Record<string, unknown>>;
+  globalCatalogMutationError?: { status: number; errorCode: string; detail: string };
+  onGlobalCatalogMutation?: (method: string, path: string, body: unknown) => void;
 };
 
 export function mockUnauthenticatedFetch(): void {
@@ -218,6 +227,53 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
     },
   ];
   let catalogProductItems = [...(options.catalogProductItems ?? defaultCatalogProductItems)];
+  let globalCategoryItems = [
+    ...(options.globalCategoryItems ?? [
+      {
+        id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        name: "Beverages",
+        parentId: null,
+        sortOrder: 10,
+        status: "Active",
+        businessTypes: ["sari-sari"],
+        businessTypeIds: ["dddddddd-dddd-dddd-dddd-dddddddddddd"],
+        createdAtUtc: "2026-01-01T08:00:00Z",
+        updatedAtUtc: "2026-08-01T08:00:00Z",
+      },
+    ]),
+  ];
+  let globalProductItems = [
+    ...(options.globalProductItems ?? [
+      {
+        id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        name: "Bottled Water",
+        sku: "BW-500",
+        barcode: "4800123456789",
+        brand: "Refresh",
+        globalCategoryId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        unit: "Bottle",
+        sellingMode: "PerItem",
+        costPrice: 8,
+        sellingPrice: 15,
+        status: "Active",
+        searchTags: ["water"],
+        businessTypes: ["sari-sari"],
+        businessTypeIds: ["dddddddd-dddd-dddd-dddd-dddddddddddd"],
+        hasImage: false,
+        createdAtUtc: "2026-01-02T08:00:00Z",
+        updatedAtUtc: "2026-08-02T08:00:00Z",
+      },
+    ]),
+  ];
+  const globalBusinessTypeItems = options.globalBusinessTypeItems ?? [
+    {
+      id: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+      code: "sari-sari",
+      name: "Sari-Sari Store",
+      status: "Active",
+      sortOrder: 1,
+    },
+  ];
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const path = pathnameOf(url);
@@ -1141,6 +1197,264 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
     }
     if (url.includes("/api/v1/platform/users")) {
       return jsonResponse(200, pagedJson([], 0, 5));
+    }
+    if (url.includes("/api/v1/platform/global-catalog/business-types")) {
+      return jsonResponse(
+        200,
+        pagedJson(globalBusinessTypeItems, globalBusinessTypeItems.length, 100),
+      );
+    }
+    const globalCategoryDetailMatch = path.match(
+      /\/api\/v1\/platform\/global-catalog\/categories\/([0-9a-fA-F-]{36})$/,
+    );
+    if (globalCategoryDetailMatch && method === "GET") {
+      const match = globalCategoryItems.find((item) => item.id === globalCategoryDetailMatch[1]);
+      if (!match) {
+        return jsonResponse(404, { title: "Not Found", status: 404 });
+      }
+      return jsonResponse(200, match);
+    }
+    if (path.endsWith("/api/v1/platform/global-catalog/categories") && method === "GET") {
+      return jsonResponse(
+        200,
+        pagedJson(
+          globalCategoryItems,
+          options.globalCategoryTotalCount ?? globalCategoryItems.length,
+          20,
+        ),
+      );
+    }
+    if (path.endsWith("/api/v1/platform/global-catalog/categories") && method === "POST") {
+      if (options.globalCatalogMutationError) {
+        return jsonResponse(options.globalCatalogMutationError.status, {
+          title: "Error",
+          status: options.globalCatalogMutationError.status,
+          detail: options.globalCatalogMutationError.detail,
+          errorCode: options.globalCatalogMutationError.errorCode,
+        });
+      }
+      const body = parseBody() as Record<string, unknown>;
+      options.onGlobalCatalogMutation?.(method, path, body);
+      const created = {
+        id: crypto.randomUUID(),
+        name: body.name,
+        parentId: body.parentId ?? null,
+        sortOrder: body.sortOrder ?? 0,
+        status: "Active",
+        businessTypes: [],
+        businessTypeIds: body.businessTypeIds ?? [],
+        createdAtUtc: new Date().toISOString(),
+        updatedAtUtc: new Date().toISOString(),
+      };
+      globalCategoryItems = [created, ...globalCategoryItems];
+      return jsonResponse(201, created);
+    }
+    const globalCategoryUpdateMatch = path.match(
+      /\/api\/v1\/platform\/global-catalog\/categories\/([0-9a-fA-F-]{36})$/,
+    );
+    if (globalCategoryUpdateMatch && method === "PUT") {
+      if (options.globalCatalogMutationError) {
+        return jsonResponse(options.globalCatalogMutationError.status, {
+          title: "Error",
+          status: options.globalCatalogMutationError.status,
+          detail: options.globalCatalogMutationError.detail,
+          errorCode: options.globalCatalogMutationError.errorCode,
+        });
+      }
+      const body = parseBody() as Record<string, unknown>;
+      options.onGlobalCatalogMutation?.(method, path, body);
+      const categoryId = globalCategoryUpdateMatch[1]!;
+      const existing = globalCategoryItems.find((item) => item.id === categoryId);
+      if (!existing) {
+        return jsonResponse(404, { title: "Not Found", status: 404 });
+      }
+      if (
+        body.expectedUpdatedAtUtc &&
+        existing.updatedAtUtc &&
+        body.expectedUpdatedAtUtc !== existing.updatedAtUtc
+      ) {
+        return jsonResponse(409, {
+          title: "Conflict",
+          status: 409,
+          detail: "Category was updated by another operator.",
+          errorCode: "application.concurrency_conflict",
+        });
+      }
+      const updated = {
+        ...existing,
+        name: body.name,
+        parentId: body.parentId ?? null,
+        sortOrder: body.sortOrder ?? 0,
+        businessTypeIds: body.businessTypeIds ?? [],
+        updatedAtUtc: new Date().toISOString(),
+      };
+      globalCategoryItems = globalCategoryItems.map((item) =>
+        item.id === categoryId ? updated : item,
+      );
+      return jsonResponse(200, updated);
+    }
+    const globalCategoryStatusMatch = path.match(
+      /\/api\/v1\/platform\/global-catalog\/categories\/([0-9a-fA-F-]{36})\/status$/,
+    );
+    if (globalCategoryStatusMatch && method === "PATCH") {
+      const body = parseBody() as Record<string, unknown>;
+      options.onGlobalCatalogMutation?.(method, path, body);
+      const categoryId = globalCategoryStatusMatch[1]!;
+      const existing = globalCategoryItems.find((item) => item.id === categoryId);
+      if (!existing) {
+        return jsonResponse(404, { title: "Not Found", status: 404 });
+      }
+      const updated = {
+        ...existing,
+        status: body.status,
+        updatedAtUtc: new Date().toISOString(),
+      };
+      globalCategoryItems = globalCategoryItems.map((item) =>
+        item.id === categoryId ? updated : item,
+      );
+      return jsonResponse(200, updated);
+    }
+    const globalProductDetailMatch = path.match(
+      /\/api\/v1\/platform\/global-catalog\/products\/([0-9a-fA-F-]{36})$/,
+    );
+    if (globalProductDetailMatch && method === "GET") {
+      const match = globalProductItems.find((item) => item.id === globalProductDetailMatch[1]);
+      if (!match) {
+        return jsonResponse(404, { title: "Not Found", status: 404 });
+      }
+      return jsonResponse(200, match);
+    }
+    if (path.endsWith("/api/v1/platform/global-catalog/products") && method === "GET") {
+      return jsonResponse(
+        200,
+        pagedJson(
+          globalProductItems,
+          options.globalProductTotalCount ?? globalProductItems.length,
+          20,
+        ),
+      );
+    }
+    if (path.endsWith("/api/v1/platform/global-catalog/products") && method === "POST") {
+      const body = parseBody() as Record<string, unknown>;
+      options.onGlobalCatalogMutation?.(method, path, body);
+      const created = {
+        id: crypto.randomUUID(),
+        name: body.name,
+        sku: body.sku,
+        barcode: body.barcode ?? null,
+        brand: body.brand,
+        globalCategoryId: body.globalCategoryId,
+        unit: body.unit,
+        sellingMode: body.sellingMode ?? "PerItem",
+        costPrice: body.costPrice ?? null,
+        sellingPrice: body.sellingPrice ?? null,
+        status: "Draft",
+        searchTags: body.searchTags ?? [],
+        businessTypes: [],
+        businessTypeIds: body.businessTypeIds ?? [],
+        hasImage: false,
+        createdAtUtc: new Date().toISOString(),
+        updatedAtUtc: new Date().toISOString(),
+      };
+      globalProductItems = [created, ...globalProductItems];
+      return jsonResponse(201, created);
+    }
+    const globalProductUpdateMatch = path.match(
+      /\/api\/v1\/platform\/global-catalog\/products\/([0-9a-fA-F-]{36})$/,
+    );
+    if (globalProductUpdateMatch && method === "PUT" && !path.includes("/image")) {
+      const body = parseBody() as Record<string, unknown>;
+      options.onGlobalCatalogMutation?.(method, path, body);
+      const productId = globalProductUpdateMatch[1]!;
+      const existing = globalProductItems.find((item) => item.id === productId);
+      if (!existing) {
+        return jsonResponse(404, { title: "Not Found", status: 404 });
+      }
+      if (
+        body.expectedUpdatedAtUtc &&
+        existing.updatedAtUtc &&
+        body.expectedUpdatedAtUtc !== existing.updatedAtUtc
+      ) {
+        return jsonResponse(409, {
+          title: "Conflict",
+          status: 409,
+          detail: "Product was updated by another operator.",
+          errorCode: "application.concurrency_conflict",
+        });
+      }
+      const updated = {
+        ...existing,
+        name: body.name,
+        sku: body.sku,
+        barcode: body.barcode ?? null,
+        brand: body.brand,
+        globalCategoryId: body.globalCategoryId,
+        unit: body.unit,
+        sellingMode: body.sellingMode ?? "PerItem",
+        costPrice: body.costPrice ?? null,
+        sellingPrice: body.sellingPrice ?? null,
+        businessTypeIds: body.businessTypeIds ?? [],
+        updatedAtUtc: new Date().toISOString(),
+      };
+      globalProductItems = globalProductItems.map((item) =>
+        item.id === productId ? updated : item,
+      );
+      return jsonResponse(200, updated);
+    }
+    const globalProductImageMatch = path.match(
+      /\/api\/v1\/platform\/global-catalog\/products\/([0-9a-fA-F-]{36})\/image(?:\/(thumb|medium))?$/,
+    );
+    if (globalProductImageMatch && method === "GET") {
+      return {
+        ok: true,
+        status: 200,
+        blob: async () => new Blob(["fake-image"], { type: "image/webp" }),
+        json: async () => null,
+        text: async () => "",
+      } as Response;
+    }
+    if (globalProductImageMatch && method === "PUT") {
+      options.onGlobalCatalogMutation?.(method, path, null);
+      const productId = globalProductImageMatch[1]!;
+      const existing = globalProductItems.find((item) => item.id === productId);
+      if (!existing) {
+        return jsonResponse(404, { title: "Not Found", status: 404 });
+      }
+      const updated = {
+        ...existing,
+        hasImage: true,
+        imageVersion: Number(existing.imageVersion ?? 0) + 1,
+        updatedAtUtc: new Date().toISOString(),
+      };
+      globalProductItems = globalProductItems.map((item) =>
+        item.id === productId ? updated : item,
+      );
+      return jsonResponse(200, updated);
+    }
+    if (globalProductImageMatch && method === "DELETE") {
+      options.onGlobalCatalogMutation?.(method, path, null);
+      return { ok: true, status: 204, json: async () => null, text: async () => "" } as Response;
+    }
+    const globalProductStatusMatch = path.match(
+      /\/api\/v1\/platform\/global-catalog\/products\/([0-9a-fA-F-]{36})\/status$/,
+    );
+    if (globalProductStatusMatch && method === "PATCH") {
+      const body = parseBody() as Record<string, unknown>;
+      options.onGlobalCatalogMutation?.(method, path, body);
+      const productId = globalProductStatusMatch[1]!;
+      const existing = globalProductItems.find((item) => item.id === productId);
+      if (!existing) {
+        return jsonResponse(404, { title: "Not Found", status: 404 });
+      }
+      const updated = {
+        ...existing,
+        status: body.status,
+        updatedAtUtc: new Date().toISOString(),
+      };
+      globalProductItems = globalProductItems.map((item) =>
+        item.id === productId ? updated : item,
+      );
+      return jsonResponse(200, updated);
     }
     if (url.includes("/api/v1/platform/audit")) {
       return jsonResponse(200, pagedJson([], 0, 8));

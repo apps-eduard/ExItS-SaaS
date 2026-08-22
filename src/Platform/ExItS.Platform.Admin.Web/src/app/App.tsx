@@ -32,6 +32,28 @@ import { EntitlementsPortfolioPage } from "@/features/entitlements/EntitlementsP
 import { OverviewPage } from "@/features/overview/OverviewPage";
 import { UsersPage } from "@/features/users/UsersPage";
 import { UserDetailPage } from "@/features/users/UserDetailPage";
+import { CategoriesPage } from "@/features/global-catalog/CategoriesPage";
+import {
+  CategoryDetailPage,
+  CategoryFormPage,
+} from "@/features/global-catalog/CategoryDetailPage";
+import { BusinessTypesPage } from "@/features/global-catalog/BusinessTypesPage";
+import {
+  BusinessTypeDetailPage,
+  BusinessTypeFormPage,
+} from "@/features/global-catalog/BusinessTypeDetailPage";
+import { GlobalProductsPage } from "@/features/global-catalog/GlobalProductsPage";
+import {
+  ProductDetailPage as GlobalCatalogProductDetailPage,
+  ProductFormPage as GlobalCatalogProductFormPage,
+} from "@/features/global-catalog/ProductDetailPage";
+import { ImportsPage } from "@/features/global-catalog/ImportsPage";
+import { ImportDetailPage } from "@/features/global-catalog/ImportDetailPage";
+import { TemplatesPage } from "@/features/global-catalog/TemplatesPage";
+import {
+  TemplateDetailPage,
+  TemplateFormPage,
+} from "@/features/global-catalog/TemplateDetailPage";
 import { ShellCatchAllPage } from "@/features/overview/ShellCatchAllPage";
 import { AuthorizationProvider } from "@/hooks/use-authorization";
 import { DiagnosticsProvider } from "@/hooks/use-diagnostics";
@@ -151,6 +173,56 @@ export function App() {
                           <Route index element={<UsersPage />} />
                           <Route path=":userId" element={<UserDetailPage />} />
                         </Route>
+                        <Route path="global-catalog">
+                          <Route path="business-types">
+                            <Route index element={<BusinessTypesPage />} />
+                            <Route path="new" element={<BusinessTypeFormPage mode="create" />} />
+                            <Route path=":businessTypeId">
+                              <Route index element={<BusinessTypeDetailPage />} />
+                              <Route path="edit" element={<BusinessTypeFormPage mode="edit" />} />
+                            </Route>
+                          </Route>
+                          <Route path="categories">
+                            <Route index element={<CategoriesPage />} />
+                            <Route path="new" element={<CategoryFormPage mode="create" />} />
+                            <Route path=":categoryId">
+                              <Route index element={<CategoryDetailPage />} />
+                              <Route path="edit" element={<CategoryFormPage mode="edit" />} />
+                            </Route>
+                          </Route>
+                          <Route path="products">
+                            <Route index element={<GlobalProductsPage />} />
+                            <Route path="new" element={<GlobalCatalogProductFormPage mode="create" />} />
+                            <Route path=":productId">
+                              <Route index element={<GlobalCatalogProductDetailPage />} />
+                              <Route path="edit" element={<GlobalCatalogProductFormPage mode="edit" />} />
+                            </Route>
+                          </Route>
+                          <Route path="imports">
+                            <Route index element={<ImportsPage />} />
+                            <Route path=":jobId" element={<ImportDetailPage />} />
+                          </Route>
+                          <Route path="templates">
+                            <Route index element={<TemplatesPage />} />
+                            <Route path="new" element={<TemplateFormPage mode="create" />} />
+                            <Route path=":templateId">
+                              <Route index element={<TemplateDetailPage />} />
+                              <Route path="edit" element={<TemplateFormPage mode="edit" />} />
+                            </Route>
+                          </Route>
+                        </Route>
+                        <Route
+                          path="catalog/business-types"
+                          element={<Navigate to="/admin/global-catalog/business-types" replace />}
+                        />
+                        <Route
+                          path="catalog/templates"
+                          element={<Navigate to="/admin/global-catalog/templates" replace />}
+                        />
+                        <Route
+                          path="catalog/imports"
+                          element={<Navigate to="/admin/global-catalog/imports" replace />}
+                        />
                         <Route path="*" element={<ShellCatchAllPage />} />
                       </Route>
                     </Route>
