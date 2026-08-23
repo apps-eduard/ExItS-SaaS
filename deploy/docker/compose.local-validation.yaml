@@ -123,6 +123,9 @@ services:
       PlatformEmail__FromAddress: noreply@exits.local
       PlatformEmail__FromDisplayName: ExItS Local Validation
       PlatformEmail__AdminPublicBaseUrl: ${LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN:-http://localhost:8095}
+      DataProtection__KeysPath: /var/exits/dataprotection
+    volumes:
+      - exits_local_validation_platform_api_dataprotection_keys:/var/exits/dataprotection
     ports:
       - "${LOCAL_VALIDATION_PLATFORM_API_HOST_PORT:-8091}:8080"
     networks:
@@ -332,6 +335,8 @@ volumes:
     name: exits_local_validation_platform_db_data
   exits_local_validation_pos_db_data:
     name: exits_local_validation_pos_db_data
+  exits_local_validation_platform_api_dataprotection_keys:
+    name: exits_local_validation_platform_api_dataprotection_keys
 
 networks:
   exits-local-validation:

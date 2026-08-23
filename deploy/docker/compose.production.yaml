@@ -75,6 +75,9 @@ services:
       ForwardedHeaders__Enabled: "true"
       ForwardedHeaders__KnownNetworks__0: ${PRODUCTION_TRUSTED_PROXY_NETWORK:-172.16.0.0/12}
       ForwardedHeaders__KnownNetworks__1: "10.0.0.0/8"
+      DataProtection__KeysPath: /var/exits/dataprotection
+    volumes:
+      - platform_api_dataprotection_keys:/var/exits/dataprotection
     expose:
       - "8080"
     # Images intentionally omit curl/wget; verify via reverse-proxy /platform/health after start.
@@ -172,6 +175,7 @@ services:
 volumes:
   platform_db_data:
   pos_db_data:
+  platform_api_dataprotection_keys:
 
 networks:
   exits-production-internal:

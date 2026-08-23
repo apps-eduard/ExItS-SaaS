@@ -2,10 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ExItS.Platform.IntegrationTests.Support;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
 
 namespace ExItS.Platform.IntegrationTests;
-
 [Collection(PostgreSqlCollection.Name)]
 public sealed class PlatformSettingsApiTests(PostgreSqlFixture fixture) : IAsyncLifetime
 {
@@ -133,5 +134,103 @@ public sealed class PlatformSettingsApiTests(PostgreSqlFixture fixture) : IAsync
 
         var response = await _client.SendAsync(Authed(HttpMethod.Get, "/api/v1/platform/settings/general", token));
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Smtp_password_remains_configured_after_api_restart_when_key_ring_is_persisted()
+    {
+        var keysPath = Path.Combine(
+            Path.GetTempPath(),
+            "exits-platform-settings-dp-it",
+            Guid.NewGuid().ToString("N"));
+
+        try
+        {
+            await using (var factory = new PersistedDataProtectionApiFactory(fixture.ConnectionString, keysPath))
+            {
+                var admin = factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
+                var client = factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = true });
+                var token = await LoginAsPlatformAdministratorAsync(admin, client);
+
+                var get = await client.SendAsync(Authed(HttpMethod.Get, "/api/v1/platform/settings/email", token));
+                get.EnsureSuccessStatusCode();
+                var initial = await get.Content.ReadFromJsonAsync<JsonElement>();
+
+                var put = await client.SendAsync(
+                    Authed(
+                        HttpMethod.Put,
+                        "/api/v1/platform/settings/email",
+                        token,
+                        new
+                        {
+                            providerMode = "Smtp",
+                            smtpHost = "mailpit",
+                            smtpPort = 1025,
+                            smtpUsername = "smtp-user",
+                            replacePassword = true,
+                            smtpPassword = "persisted-secret",
+                            fromDisplayName = "ExItS",
+                            fromAddress = "noreply@example.test",
+                            securityMode = "None",
+                            adminPublicBaseUrl = "http://localhost:8095",
+                            expectedVersion = initial.GetProperty("version").GetInt32(),
+                        }));
+                put.EnsureSuccessStatusCode();
+            }
+
+            await using var restartedFactory = new PersistedDataProtectionApiFactory(fixture.ConnectionString, keysPath);
+            var restartedAdmin = restartedFactory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
+            var restartedClient = restartedFactory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = true });
+            var restartedToken = await LoginAsPlatformAdministratorAsync(restartedAdmin, restartedClient);
+
+            var restartedGet = await restartedClient.SendAsync(
+                Authed(HttpMethod.Get, "/api/v1/platform/settings/email", restartedToken));
+            restartedGet.EnsureSuccessStatusCode();
+            var json = await restartedGet.Content.ReadAsStringAsync();
+            Assert.DoesNotContain("smtpPassword", json, StringComparison.OrdinalIgnoreCase);
+            var restarted = JsonDocument.Parse(json).RootElement;
+            Assert.True(restarted.GetProperty("passwordConfigured").GetBoolean());
+        }
+        finally
+        {
+            if (Directory.Exists(keysPath))
+            {
+                Directory.Delete(keysPath, recursive: true);
+            }
+        }
+    }
+
+    private static async Task<string> LoginAsPlatformAdministratorAsync(HttpClient admin, HttpClient client)
+    {
+        var (_, username, password) = await PlatformIntegrationTestUsers.CreatePlatformStaffWithPasswordAsync(
+            admin,
+            "settings-restart",
+            platformRole: "PlatformAdministrator");
+        var login = await client.PostAsJsonAsync(
+            "/api/v1/platform/auth/login",
+            new { usernameOrEmail = username, password });
+        login.EnsureSuccessStatusCode();
+        return (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("sessionToken").GetString()!;
+    }
+
+    private sealed class PersistedDataProtectionApiFactory(string connectionString, string keysPath)
+        : WebApplicationFactory<Program>
+    {
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        {
+            builder.UseSetting("ConnectionStrings:PlatformDatabase", connectionString);
+            builder.UseEnvironment("Testing");
+            builder.ConfigureAppConfiguration((_, config) =>
+            {
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["ConnectionStrings:PlatformDatabase"] = connectionString,
+                    ["Security:EnforceHttps"] = "false",
+                    ["PlatformAuthentication:External:TestingEndpointEnabled"] = "true",
+                    ["PlatformAuthentication:Lifecycle:ExposeDebugTokens"] = "true",
+                    ["DataProtection:KeysPath"] = keysPath,
+                });
+            });
+        }
     }
 }

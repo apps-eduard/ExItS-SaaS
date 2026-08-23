@@ -44,6 +44,7 @@ using ExItS.Platform.Infrastructure.Payments;
 using ExItS.Platform.Infrastructure.LocalValidation;
 using ExItS.Platform.Infrastructure.Health;
 using ExItS.Platform.Infrastructure.Operations;
+using ExItS.Platform.Infrastructure.Security;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Authentication.Facebook;
 using Microsoft.AspNetCore.Authentication.Google;
@@ -70,7 +71,7 @@ builder.AddPlatformSecurity();
 builder.Services.AddPlatformBrowserAntiforgery(builder.Environment, builder.Configuration);
 builder.AddPlatformForwardedHeaders();
 builder.Services.AddPlatformPersistence(builder.Configuration);
-builder.Services.AddDataProtection();
+builder.Services.AddPlatformDataProtection(builder.Configuration, builder.Environment);
 builder.Services.AddPlatformPaymentProvider(builder.Configuration, builder.Environment);
 
 var externalAuthOptions = builder.Configuration

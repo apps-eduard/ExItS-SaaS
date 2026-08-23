@@ -68,6 +68,9 @@ services:
       ConnectionStrings__PlatformDatabase: Host=platform-db;Port=5432;Database=exits_platform;Username=${PLATFORM_DB_USER};Password=${PLATFORM_DB_PASSWORD}
       AllowedHosts: ${PACKAGING_ALLOWED_HOSTS:-localhost;127.0.0.1}
       Security__EnforceHttps: "false"
+      DataProtection__KeysPath: /var/exits/dataprotection
+    volumes:
+      - platform_api_dataprotection_keys:/var/exits/dataprotection
     ports:
       - "${PLATFORM_API_HOST_PORT:-8081}:8080"
     networks:
@@ -104,6 +107,7 @@ services:
 volumes:
   platform_db_data:
   pos_db_data:
+  platform_api_dataprotection_keys:
 
 networks:
   exits-packaging:

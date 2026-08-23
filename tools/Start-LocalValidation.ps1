@@ -11,6 +11,7 @@
   - Starts apps with dotnet watch in separate PowerShell windows, in order.
   - Uses deploy/docker/.env.local-validation (gitignored) - no secrets committed.
   - Admin DataProtection keys: %LOCALAPPDATA%\ExItS\LocalValidation\DataProtectionKeys
+  - Platform API DataProtection keys: same directory (shared path, distinct application name)
   - Sign in with approved Local Validation identities via the login dropdown (server-side normal
     Platform /auth/login) or manual credentials. Password from LOCAL_VALIDATION_SHARED_PASSWORD
     (never commit the secret; never exposed to the browser).
@@ -593,6 +594,7 @@ $platformEnv = @{
     PlatformEmail__FromDisplayName = 'ExItS Local Validation'
     # Must match React Admin (:8095) - hosts /admin/activate-account and /admin/reset-password.
     PlatformEmail__AdminPublicBaseUrl = $authPublicBaseUrl
+    DataProtection__KeysPath = $dpKeys
 }
 for ($i = 0; $i -lt $corsOrigins.Count; $i++) {
     $platformEnv["Cors__AllowedOrigins__$i"] = $corsOrigins[$i]

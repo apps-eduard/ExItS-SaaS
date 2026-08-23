@@ -104,12 +104,31 @@ public sealed class PlatformProductionHardeningApiTests(PostgreSqlFixture fixtur
         Assert.Contains("LifetimeHours", ex.ToString(), StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void Production_startup_fails_when_data_protection_keys_path_missing()
+    {
+        using var factory = new HardeningFactory(
+            fixture.ConnectionString,
+            "Production",
+            allowedHosts: "localhost",
+            includeDataProtectionKeysPath: false);
+
+        var ex = Assert.ThrowsAny<Exception>(() => factory.CreateClient());
+        Assert.Contains("DataProtection:KeysPath", ex.ToString(), StringComparison.OrdinalIgnoreCase);
+    }
+
     private sealed class HardeningFactory(
         string connectionString,
         string environmentName,
         string? allowedHosts = null,
-        IReadOnlyDictionary<string, string?>? extraSettings = null) : WebApplicationFactory<Program>
+        IReadOnlyDictionary<string, string?>? extraSettings = null,
+        bool includeDataProtectionKeysPath = true) : WebApplicationFactory<Program>
     {
+        private readonly string _dataProtectionKeysPath = Path.Combine(
+            Path.GetTempPath(),
+            "exits-platform-api-dp-hardening",
+            Guid.NewGuid().ToString("N"));
+
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment(environmentName);
@@ -130,6 +149,13 @@ public sealed class PlatformProductionHardeningApiTests(PostgreSqlFixture fixtur
             {
                 builder.UseSetting("AllowedHosts", hosts);
                 values["AllowedHosts"] = hosts;
+            }
+
+            if (includeDataProtectionKeysPath
+                && string.Equals(environmentName, "Production", StringComparison.OrdinalIgnoreCase))
+            {
+                builder.UseSetting("DataProtection:KeysPath", _dataProtectionKeysPath);
+                values["DataProtection:KeysPath"] = _dataProtectionKeysPath;
             }
 
             if (extraSettings is not null)

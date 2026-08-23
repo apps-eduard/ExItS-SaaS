@@ -85,6 +85,13 @@ internal static class PlatformSecurityPipeline
             throw new InvalidOperationException(
                 "Production requires PlatformAuthentication:AccessToken LifetimeHours between 1 and MaxLifetimeHours (MaxLifetimeHours ≤ 168).");
         }
+
+        var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
+        if (string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+        {
+            throw new InvalidOperationException(
+                "Production requires DataProtection:KeysPath for persisted encryption key storage.");
+        }
     }
 
     private static void ValidateExternalProviderOrThrow(WebApplicationBuilder builder, string provider)

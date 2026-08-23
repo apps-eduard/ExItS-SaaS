@@ -25,6 +25,8 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.Contains("profiles: [\"apps\"]", live, StringComparison.Ordinal);
         Assert.Contains("exits_local_validation_platform_db_data", live, StringComparison.Ordinal);
         Assert.Contains("exits_local_validation_pos_db_data", live, StringComparison.Ordinal);
+        Assert.Contains("exits_local_validation_platform_api_dataprotection_keys", live, StringComparison.Ordinal);
+        Assert.Contains("DataProtection__KeysPath", live, StringComparison.Ordinal);
         Assert.Contains("production-equivalent", live, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("ASPNETCORE_ENVIRONMENT: Staging", live, StringComparison.Ordinal);
         Assert.Contains("LocalValidation__Enabled", live, StringComparison.Ordinal);
