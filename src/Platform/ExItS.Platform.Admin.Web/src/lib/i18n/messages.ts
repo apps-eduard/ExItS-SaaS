@@ -2002,6 +2002,67 @@ export const enMessages = {
   "shell.forbidden.body": "You do not have permission to open this Platform Admin page.",
   "shell.forbidden.hint": "Ask a platform administrator if you need access.",
   "shell.forbidden.accessDenied": "Forbidden",
+  "settings.description":
+    "Platform-wide configuration. Only categories with real Platform API support are editable; others stay truthful until backend contracts exist.",
+  "settings.loading": "Loading platform settings",
+  "settings.workspace.nav": "Settings categories",
+  "settings.capability.unavailable": "Backend required",
+  "settings.capability.noLiveValues":
+    "No live platform settings values are shown here. The Platform API does not expose an admin settings contract for this category.",
+  "settings.nav.general": "General",
+  "settings.nav.email": "Email & Notifications",
+  "settings.nav.security": "Security Policies",
+  "settings.nav.integrations": "Integrations",
+  "settings.nav.featureFlags": "Feature Flags",
+  "settings.nav.regional": "Regional",
+  "settings.nav.advanced": "Advanced",
+  "settings.general.title": "General",
+  "settings.general.description":
+    "Platform display name, support contact, and platform-wide branding defaults.",
+  "settings.general.gap":
+    "No GET/PUT platform settings endpoint exists. Display name, support email, and branding defaults cannot be read or updated from Admin.",
+  "settings.email.title": "Email & Notifications",
+  "settings.email.description":
+    "Outbound email provider, SMTP host/port, sender identity, TLS mode, and test delivery.",
+  "settings.email.gap":
+    "SMTP and From-* values are deploy configuration (PlatformEmail) only. There is no admin API to read configuration status, replace secrets, or send a test message. Secrets must never be displayed; a future Replace flow requires a real contract.",
+  "settings.security.title": "Security Policies",
+  "settings.security.description":
+    "Platform-wide session, password, lockout, registration, and MFA defaults.",
+  "settings.security.gap":
+    "Authentication policy options are server configuration (PlatformAuthentication) only. No admin API exposes or mutates platform-wide security defaults.",
+  "settings.integrations.title": "Integrations",
+  "settings.integrations.description":
+    "Platform-owned external provider configuration and status (SMS, payment rails, webhooks).",
+  "settings.integrations.gap":
+    "No platform integrations settings API exists. Do not invent provider cards or fake connection status.",
+  "settings.featureFlags.title": "Feature Flags",
+  "settings.featureFlags.description": "Platform-level feature flags that are not subscription entitlements.",
+  "settings.featureFlags.gap":
+    "No global platform feature-flag settings store is exposed for Admin. Catalog features and personal/org entitlement overrides live elsewhere and are not duplicated here.",
+  "settings.regional.title": "Regional",
+  "settings.regional.description":
+    "Platform default timezone, locale, currency, country, and date-time conventions.",
+  "settings.regional.gap":
+    "No platform-wide regional defaults API exists for Admin. Organization locale/currency/profile fields belong to the organization workspace.",
+  "settings.advanced.title": "Advanced",
+  "settings.advanced.description": "Genuine platform-wide technical or global policy controls.",
+  "settings.advanced.gap":
+    "No advanced platform policy admin API is available. Placeholder fields are intentionally omitted.",
+  "settings.ownership.title": "Owned elsewhere",
+  "settings.ownership.organizationBranding":
+    "Organization profile and branding → Organization workspace.",
+  "settings.ownership.secrets":
+    "Secrets (SMTP passwords, API keys, tokens) must never be displayed. Future mutations must use Set/Replace only.",
+  "settings.ownership.peopleAccess":
+    "Users, roles, and memberships → People & Access. Individual user security is not managed here.",
+  "settings.ownership.billing": "Payments and commercial billing → Billing / Products & Commercial.",
+  "settings.ownership.operations": "Health and event delivery → Operations.",
+  "settings.ownership.productsCommercial":
+    "Plans, subscriptions, catalog features, and entitlements → Products & Commercial.",
+  "settings.ownership.organizationRegional":
+    "Organization locale, currency, and profile regional fields → Organization workspace.",
+  "settings.ownership.governance": "Audit and privacy → Governance.",
   "diagnostics.title": "Something went wrong",
   "diagnostics.body": "We couldn't complete this request.",
   "diagnostics.copy": "Copy error details",
@@ -4042,6 +4103,68 @@ export const filPhMessages: Record<MessageKey, string> = {
   "shell.forbidden.body": "Wala kang pahintulot na buksan ang Platform Admin page na ito.",
   "shell.forbidden.hint": "Makipag-ugnayan sa platform administrator kung kailangan mo ng access.",
   "shell.forbidden.accessDenied": "Forbidden",
+  "settings.description":
+    "Konpigurasyon para sa buong platform. Editable lang ang mga kategoryang may tunay na Platform API; ang iba ay nananatiling tapat hanggang may backend contract.",
+  "settings.loading": "Nilo-load ang mga setting ng platform",
+  "settings.workspace.nav": "Mga kategorya ng setting",
+  "settings.capability.unavailable": "Kailangan ang backend",
+  "settings.capability.noLiveValues":
+    "Walang live na platform settings value na ipinapakita dito. Walang admin settings contract ang Platform API para sa kategoryang ito.",
+  "settings.nav.general": "Pangkalahatan",
+  "settings.nav.email": "Email at Mga Abiso",
+  "settings.nav.security": "Mga Patakaran sa Seguridad",
+  "settings.nav.integrations": "Mga Integrasyon",
+  "settings.nav.featureFlags": "Mga Feature Flag",
+  "settings.nav.regional": "Rehiyonal",
+  "settings.nav.advanced": "Advanced",
+  "settings.general.title": "Pangkalahatan",
+  "settings.general.description":
+    "Display name ng platform, support contact, at branding defaults para sa buong platform.",
+  "settings.general.gap":
+    "Walang GET/PUT platform settings endpoint. Hindi mababasa o mae-edit mula sa Admin ang display name, support email, at branding defaults.",
+  "settings.email.title": "Email at Mga Abiso",
+  "settings.email.description":
+    "Outbound email provider, SMTP host/port, sender identity, TLS mode, at test delivery.",
+  "settings.email.gap":
+    "SMTP at From-* values ay deploy configuration (PlatformEmail) lang. Walang admin API para basahin ang status, magpalit ng secret, o magpadala ng test message. Huwag ipakita ang mga secret; ang future Replace flow ay nangangailangan ng tunay na contract.",
+  "settings.security.title": "Mga Patakaran sa Seguridad",
+  "settings.security.description":
+    "Mga default na session, password, lockout, registration, at MFA para sa buong platform.",
+  "settings.security.gap":
+    "Ang authentication policy options ay server configuration (PlatformAuthentication) lang. Walang admin API para sa platform-wide security defaults.",
+  "settings.integrations.title": "Mga Integrasyon",
+  "settings.integrations.description":
+    "Konpigurasyon at status ng external provider na pagmamay-ari ng platform (SMS, payment, webhook).",
+  "settings.integrations.gap":
+    "Walang platform integrations settings API. Huwag gumawa ng pekeng provider card o connection status.",
+  "settings.featureFlags.title": "Mga Feature Flag",
+  "settings.featureFlags.description":
+    "Mga feature flag sa antas ng platform na hindi subscription entitlement.",
+  "settings.featureFlags.gap":
+    "Walang global platform feature-flag settings store para sa Admin. Ang catalog features at entitlement overrides ay nasa ibang lugar at hindi dinuduplicate dito.",
+  "settings.regional.title": "Rehiyonal",
+  "settings.regional.description":
+    "Default na timezone, locale, currency, country, at date-time conventions ng platform.",
+  "settings.regional.gap":
+    "Walang platform-wide regional defaults API para sa Admin. Ang locale/currency/profile ng organisasyon ay sa organization workspace.",
+  "settings.advanced.title": "Advanced",
+  "settings.advanced.description": "Tunay na technical o global policy controls para sa buong platform.",
+  "settings.advanced.gap":
+    "Walang advanced platform policy admin API. Sadyang walang placeholder fields.",
+  "settings.ownership.title": "Nasa ibang workspace",
+  "settings.ownership.organizationBranding":
+    "Profile at branding ng organisasyon → Organization workspace.",
+  "settings.ownership.secrets":
+    "Hindi dapat ipakita ang mga secret (SMTP password, API key, token). Ang future mutation ay Set/Replace lang.",
+  "settings.ownership.peopleAccess":
+    "Users, roles, at memberships → People & Access. Hindi dito mina-manage ang individual user security.",
+  "settings.ownership.billing": "Payments at commercial billing → Billing / Products & Commercial.",
+  "settings.ownership.operations": "Health at event delivery → Operations.",
+  "settings.ownership.productsCommercial":
+    "Plans, subscriptions, catalog features, at entitlements → Products & Commercial.",
+  "settings.ownership.organizationRegional":
+    "Locale, currency, at regional profile ng organisasyon → Organization workspace.",
+  "settings.ownership.governance": "Audit at privacy → Governance.",
   "diagnostics.title": "May naganap na problema",
   "diagnostics.body": "Hindi namin matapos ang kahilingang ito.",
   "diagnostics.copy": "Kopyahin ang error details",

@@ -64,6 +64,16 @@ describe("resolveNavigation", () => {
         .find((section) => section.id === "operations")
         ?.items.find((item) => item.id === "PWEB-NAV-EVENT-DELIVERY")?.presentation,
     ).toBe("planned");
+    expect(
+      sections
+        .find((section) => section.id === "settings")
+        ?.items.find((item) => item.id === "PWEB-NAV-PLATFORM-SETTINGS")?.presentation,
+    ).toBe("link");
+    expect(
+      sections
+        .find((section) => section.id === "settings")
+        ?.items.find((item) => item.id === "PWEB-NAV-PLATFORM-SETTINGS")?.href,
+    ).toBe("/admin/settings");
   });
 
   it("keeps Development section for DEV_TEST_ONLY only when tools are allowed", () => {

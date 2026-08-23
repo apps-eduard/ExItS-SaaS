@@ -28,11 +28,14 @@ function pathMatches(href: string | undefined, pathname: string, search: string)
     return false;
   }
   const url = new URL(href, "http://local.invalid");
-  if (url.pathname !== pathname) {
+  const isSettingsWorkspace =
+    url.pathname === "/admin/settings" &&
+    (pathname === "/admin/settings" || pathname.startsWith("/admin/settings/"));
+  if (!isSettingsWorkspace && url.pathname !== pathname) {
     return false;
   }
   if (!url.search) {
-    return search.length === 0 || search === "?";
+    return search.length === 0 || search === "?" || isSettingsWorkspace;
   }
   return url.search === search;
 }

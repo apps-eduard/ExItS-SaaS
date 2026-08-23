@@ -74,6 +74,11 @@ import {
   TemplateFormPage,
 } from "@/features/global-catalog/TemplateDetailPage";
 import { ShellCatchAllPage } from "@/features/overview/ShellCatchAllPage";
+import {
+  PlatformSettingsIndexRedirect,
+  PlatformSettingsLayout,
+  PlatformSettingsSectionPage,
+} from "@/features/settings/PlatformSettingsPage";
 import { AuthorizationProvider } from "@/hooks/use-authorization";
 import { DiagnosticsProvider } from "@/hooks/use-diagnostics";
 import { PreferencesProvider } from "@/hooks/use-preferences";
@@ -319,6 +324,10 @@ export function App() {
                           path="catalog/imports"
                           element={<Navigate to="/admin/global-catalog/imports" replace />}
                         />
+                        <Route path="settings" element={<PlatformSettingsLayout />}>
+                          <Route index element={<PlatformSettingsIndexRedirect />} />
+                          <Route path=":section" element={<PlatformSettingsSectionPage />} />
+                        </Route>
                         <Route path="*" element={<ShellCatchAllPage />} />
                       </Route>
                     </Route>

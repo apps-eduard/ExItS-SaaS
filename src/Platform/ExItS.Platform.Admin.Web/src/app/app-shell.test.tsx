@@ -116,7 +116,11 @@ describe("application shell", () => {
     window.history.replaceState({}, "", "/admin");
     render(<App />);
     expect(await screen.findByLabelText("Event Delivery. Planned")).toBeInTheDocument();
-    expect(screen.getByLabelText("Platform Settings. Planned")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Platform Settings" })).toHaveAttribute(
+      "href",
+      "/admin/settings",
+    );
+    expect(screen.queryByLabelText("Platform Settings. Planned")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Event Delivery/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Event Delivery" })).not.toBeInTheDocument();
     expect(screen.getAllByText("Planned").length).toBeGreaterThan(0);
@@ -249,7 +253,11 @@ describe("application shell", () => {
       "/admin/users",
     );
     expect(screen.getByLabelText("Event Delivery. Planned")).toBeInTheDocument();
-    expect(screen.getByLabelText("Platform Settings. Planned")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Platform Settings" })).toHaveAttribute(
+      "href",
+      "/admin/settings",
+    );
+    expect(screen.queryByLabelText("Platform Settings. Planned")).not.toBeInTheDocument();
     expect(screen.queryByText("Test Payments")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Overview" })).toBeInTheDocument();
   });
