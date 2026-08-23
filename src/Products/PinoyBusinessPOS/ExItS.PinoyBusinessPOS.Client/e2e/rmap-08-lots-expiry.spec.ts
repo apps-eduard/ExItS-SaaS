@@ -316,7 +316,7 @@ test.describe("RMAP-08 lots / expiry", () => {
     await expect(page.getByTestId(`expiring-lot-${LOT_EXPIRED_ID}`)).toContainText("Expired");
     await expect(page.getByTestId(`expiring-lot-${LOT_NEAR_ID}`)).toContainText(/Expires in/i);
 
-    await page.getByTestId("inventory-expiry-window").selectOption("Expired");
+    await page.getByTestId("inventory-expiry-window-Expired").click();
     await expect(page.getByTestId(`expiring-lot-${LOT_EXPIRED_ID}`)).toBeVisible();
     await expect(page.getByTestId(`expiring-lot-${LOT_NEAR_ID}`)).toHaveCount(0);
 

@@ -24,7 +24,6 @@ export function SellCategoryFilter({
   allLabel,
   listLabel,
   onSelect,
-  allProductCount,
 }: SellCategoryFilterProps) {
   const activeName =
     activeCategoryId === "all"
@@ -32,87 +31,61 @@ export function SellCategoryFilter({
       : (categories.find((category) => category.categoryId === activeCategoryId)?.name ?? allLabel);
 
   return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <div className="flex min-w-0 items-baseline justify-between gap-2 px-0.5">
-        <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold tracking-wide uppercase text-muted">
-          {listLabel}
-        </p>
-        <p
-          className="m-0 min-w-0 truncate text-[length:var(--exits-text-xs)] text-muted"
-          data-testid="sell-category-active"
-          aria-live="polite"
-        >
-          {activeName}
-        </p>
-      </div>
-
-      <div className="sell-categories relative min-w-0">
-        <div
-          data-testid="sell-categories"
-          className="sell-categories-track flex gap-2 overflow-x-auto overscroll-x-contain pb-1"
-          role="list"
-          aria-label={listLabel}
-        >
-          <CategoryTile
-            pressed={activeCategoryId === "all"}
-            onClick={() => onSelect("all")}
-            label={allLabel}
-            productCount={allProductCount}
-            isAll
+    <nav className="sell-categories sell-categories--chips min-w-0" aria-label={listLabel}>
+      <p className="sr-only" data-testid="sell-category-active" aria-live="polite">
+        {activeName}
+      </p>
+      <div
+        data-testid="sell-categories"
+        className="sell-categories-track flex gap-1.5 overflow-x-auto overscroll-x-contain pb-0.5"
+        role="list"
+      >
+        <CategoryChip
+          pressed={activeCategoryId === "all"}
+          onClick={() => onSelect("all")}
+          label={allLabel}
+          isAll
+        />
+        {categories.map((category) => (
+          <CategoryChip
+            key={category.categoryId}
+            testId={`sell-category-${category.categoryId}`}
+            pressed={activeCategoryId === category.categoryId}
+            onClick={() => onSelect(category.categoryId)}
+            label={category.name}
           />
-          {categories.map((category) => (
-            <CategoryTile
-              key={category.categoryId}
-              testId={`sell-category-${category.categoryId}`}
-              pressed={activeCategoryId === category.categoryId}
-              onClick={() => onSelect(category.categoryId)}
-              label={category.name}
-              productCount={category.productCount}
-            />
-          ))}
-        </div>
+        ))}
       </div>
-    </div>
+    </nav>
   );
 }
 
-function CategoryTile({
+function CategoryChip({
   label,
   pressed,
   onClick,
   testId,
-  productCount,
   isAll = false,
 }: {
   label: string;
   pressed: boolean;
   onClick: () => void;
   testId?: string;
-  productCount?: number;
   isAll?: boolean;
 }) {
   const Icon = resolveSellCategoryIcon(isAll ? "all" : label);
-  const countLabel =
-    typeof productCount === "number" && Number.isFinite(productCount)
-      ? productCount === 1
-        ? "1 item"
-        : `${productCount} items`
-      : null;
 
   return (
     <button
       type="button"
       role="listitem"
       data-testid={testId}
-      className={cn("sell-category-tile", pressed && "sell-category-tile--active")}
+      className={cn("sell-category-chip", pressed && "sell-category-chip--active")}
       aria-pressed={pressed}
       onClick={onClick}
     >
-      <span className="sell-category-tile__icon" aria-hidden>
-        <Icon className="size-6" strokeWidth={1.75} />
-      </span>
-      <span className="sell-category-tile__name">{label}</span>
-      {countLabel ? <span className="sell-category-tile__count">{countLabel}</span> : null}
+      <Icon className="sell-category-chip__icon" aria-hidden strokeWidth={1.75} />
+      <span className="sell-category-chip__label">{label}</span>
     </button>
   );
 }

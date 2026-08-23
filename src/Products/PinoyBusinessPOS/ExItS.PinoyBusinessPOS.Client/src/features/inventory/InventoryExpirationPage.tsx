@@ -16,6 +16,7 @@ import {
   resolveLotExpiryLabel,
 } from "@/features/inventory/inventory-lot-status";
 import { useI18n } from "@/i18n/I18nProvider";
+import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const EXPIRING_PAGE_SIZE = 50;
@@ -119,7 +120,10 @@ export function InventoryExpirationPage() {
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="inventory-expiration-page">
+    <div
+      className="inventory-expiration-page flex min-w-0 flex-col gap-4"
+      data-testid="inventory-expiration-page"
+    >
       <PageHeader
         title={t("inventory.expirationTitle")}
         description={t("inventory.expirationLede")}
@@ -127,21 +131,42 @@ export function InventoryExpirationPage() {
         backLabel={t(pageBackNav.inventory.labelKey)}
         backTestId="page-header-back-inventory"
       />
-      <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
-        {t("inventory.expiryWindow")}
-        <select
-          className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3 font-normal"
-          value={windowCode}
-          onChange={(e) => setWindowCode(e.target.value as ExpiryWindowCode)}
-          data-testid="inventory-expiry-window"
+      <div className="inventory-expiry-window flex min-w-0 flex-col gap-2">
+        <span
+          id="inventory-expiry-window-label"
+          className="inventory-expiry-window__label text-[length:var(--exits-text-lg)] font-semibold text-foreground"
         >
-          {EXPIRY_WINDOWS.map((code) => (
-            <option key={code} value={code}>
-              {windowLabel(code, t)}
-            </option>
-          ))}
-        </select>
-      </label>
+          {t("inventory.expiryWindow")}
+        </span>
+        <div
+          role="radiogroup"
+          aria-labelledby="inventory-expiry-window-label"
+          data-testid="inventory-expiry-window"
+          className="inventory-expiry-window__options flex min-w-0 flex-col gap-2"
+        >
+          {EXPIRY_WINDOWS.map((code) => {
+            const selected = windowCode === code;
+            return (
+              <button
+                key={code}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                data-testid={`inventory-expiry-window-${code}`}
+                className={cn(
+                  "inventory-expiry-window__option flex min-h-14 w-full min-w-0 items-center rounded-[var(--exits-radius-md)] border px-3 text-left text-[1.125rem] font-medium leading-snug transition-[background-color,border-color,box-shadow] duration-[var(--exits-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  selected
+                    ? "border-primary bg-[color-mix(in_srgb,var(--exits-primary)_10%,var(--exits-surface))] text-foreground shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--exits-primary)_35%,transparent)]"
+                    : "border-border bg-background text-foreground hover:bg-[var(--exits-surface-muted)]",
+                )}
+                onClick={() => setWindowCode(code)}
+              >
+                <span className="min-w-0 truncate">{windowLabel(code, t)}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <SearchField
         label={t("inventory.searchExpiring")}
         value={search}

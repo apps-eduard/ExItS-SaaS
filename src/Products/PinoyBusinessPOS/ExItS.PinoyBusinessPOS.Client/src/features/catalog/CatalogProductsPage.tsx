@@ -49,6 +49,17 @@ export function CatalogProductsPage() {
         <Button asChild className="min-h-11">
           <Link to="/catalog/products/new">{t("catalog.newProduct")}</Link>
         </Button>
+        <Button asChild variant="ghost" className="min-h-11" data-testid="catalog-open-templates">
+          <Link to="/catalog/templates">{t("catalog.businessTemplate")}</Link>
+        </Button>
+        <Button
+          asChild
+          variant="ghost"
+          className="min-h-11"
+          data-testid="catalog-open-global-catalog"
+        >
+          <Link to="/catalog/global-catalog">{t("catalog.globalCatalog")}</Link>
+        </Button>
         <Button asChild variant="ghost" className="min-h-11">
           <Link to="/catalog/categories">{t("catalog.categoriesTitle")}</Link>
         </Button>

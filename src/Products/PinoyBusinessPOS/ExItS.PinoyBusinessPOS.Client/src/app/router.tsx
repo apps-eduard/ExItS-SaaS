@@ -1,4 +1,4 @@
-﻿import { createBrowserRouter, Outlet } from "react-router-dom";
+﻿import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { SessionWorkspaceRoot } from "@/app/SessionWorkspaceRoot";
 import { RootLayout } from "@/app/RootLayout";
 import { SignInPage } from "@/features/auth/SignInPage";
@@ -51,11 +51,14 @@ import { BranchFulfillmentListPage } from "@/features/branches/BranchFulfillment
 import { OrgEssentialsPage } from "@/features/role/OrgEssentialsPage";
 import { OrgBusinessQrPage } from "@/features/org/OrgBusinessQrPage";
 import { CatalogCategoriesPage } from "@/features/catalog/CatalogCategoriesPage";
+import { CatalogGlobalBrowsePage } from "@/features/catalog/CatalogGlobalBrowsePage";
+import { CatalogImportJobPage } from "@/features/catalog/CatalogImportJobPage";
 import {
   CatalogProductCreatePage,
   CatalogProductEditPage,
 } from "@/features/catalog/CatalogProductFormPage";
 import { CatalogProductsPage } from "@/features/catalog/CatalogProductsPage";
+import { CatalogTemplateImportPage } from "@/features/catalog/CatalogTemplateImportPage";
 import { TodaysPricesPage } from "@/features/catalog/TodaysPricesPage";
 import { CustomerDetailPage } from "@/features/customers/CustomerDetailPage";
 import { CustomerCreatePage, CustomerEditPage } from "@/features/customers/CustomerFormPage";
@@ -402,9 +405,20 @@ export const appRoutes = [
               { index: true, element: <CatalogProductsPage /> },
               { path: "categories", element: <CatalogCategoriesPage /> },
               { path: "todays-prices", element: <TodaysPricesPage /> },
+              { path: "templates", element: <CatalogTemplateImportPage /> },
+              { path: "global-catalog", element: <CatalogGlobalBrowsePage /> },
+              { path: "import-jobs/:jobId", element: <CatalogImportJobPage /> },
               { path: "products/new", element: <CatalogProductCreatePage /> },
               { path: "products/:productId/edit", element: <CatalogProductEditPage /> },
             ],
+          },
+          {
+            path: "products/templates",
+            element: <Navigate to="/catalog/templates" replace />,
+          },
+          {
+            path: "products/global-catalog",
+            element: <Navigate to="/catalog/global-catalog" replace />,
           },
           {
             path: "inventory",

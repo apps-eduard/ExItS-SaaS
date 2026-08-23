@@ -47,6 +47,9 @@ export type SessionCartLine = {
   allowsCustomQuantity: boolean;
   /** Pending per-sale price override — never mutates catalog / Today's Price. */
   priceOverride?: SessionCartLinePriceOverride | null;
+  /** Catalog thumb when the product was added — used for cart line imagery only. */
+  hasImage?: boolean;
+  imageVersion?: number | null;
 };
 
 export type AddCartLineOptions = {
@@ -129,6 +132,8 @@ function toCartLine(
     quantity: roundQuantity(quantity),
     baseUnitOfMeasure: product.unitOfMeasure,
     allowsCustomQuantity: resolveAllowsCustomQuantity(product, unit),
+    hasImage: product.hasImage === true,
+    imageVersion: product.imageVersion ?? null,
   };
 }
 

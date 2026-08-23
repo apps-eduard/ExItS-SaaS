@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ShoppingCart, Info } from "lucide-react";
 import { resolveCatalogLookup } from "@/api/pos/catalog-lookup";
@@ -34,6 +34,7 @@ import { SellCategoryFilter } from "@/features/sell/SellCategoryFilter";
 import { SellCustomQuantityDialog } from "@/features/sell/SellCustomQuantityDialog";
 import { SellPriceOverrideDialog } from "@/features/sell/SellPriceOverrideDialog";
 import { SellProductCard } from "@/features/sell/SellProductCard";
+import { SellReadinessStrip } from "@/features/sell/SellReadinessStrip";
 import { evaluateMidSessionSellBlock } from "@/features/sell/sell-readiness";
 import { SellUnitEntryDialog } from "@/features/sell/SellUnitEntryDialog";
 import { SellWeightEntryDialog } from "@/features/sell/SellWeightEntryDialog";
@@ -150,7 +151,15 @@ export function SellFloorPage() {
   const [infoOpen, setInfoOpen] = useState(false);
   const [entryStockError, setEntryStockError] = useState<string | null>(null);
   const [stockBanner, setStockBanner] = useState<string | null>(null);
+  const [flashedProductId, setFlashedProductId] = useState<string | null>(null);
   const lastExactScanRef = useRef<string | null>(null);
+
+  const flashProduct = useCallback((productId: string) => {
+    setFlashedProductId(productId);
+    window.setTimeout(() => {
+      setFlashedProductId((current) => (current === productId ? null : current));
+    }, 450);
+  }, []);
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") {
@@ -400,6 +409,7 @@ export function SellFloorPage() {
             return;
           }
           cart.addLine(product, { unit: flow.unit, quantity: 1 });
+          flashProduct(product.productId);
           return;
         case "unitSelector":
           openUnitEntry(product, flow.units);
@@ -409,10 +419,11 @@ export function SellFloorPage() {
             return;
           }
           cart.addProduct(product, 1);
+          flashProduct(product.productId);
           return;
       }
     },
-    [cart, openCustomQuantityEntry, openUnitEntry, openWeightEntry, tryGuardAdd],
+    [cart, flashProduct, openCustomQuantityEntry, openUnitEntry, openWeightEntry, tryGuardAdd],
   );
 
   useEffect(() => {
@@ -545,8 +556,9 @@ export function SellFloorPage() {
       }
       setUnitEntry(null);
       cart.addLine(product, { unit, quantity });
+      flashProduct(product.productId);
     },
-    [cart, openCustomQuantityEntry, openWeightEntry, tryGuardAdd, unitEntry],
+    [cart, flashProduct, openCustomQuantityEntry, openWeightEntry, tryGuardAdd, unitEntry],
   );
 
   const handleWeightConfirm = useCallback(
@@ -568,8 +580,9 @@ export function SellFloorPage() {
         replaceQuantity: true,
       });
       setWeightEntry(null);
+      flashProduct(weightEntry.product.productId);
     },
-    [cart, tryGuardAdd, weightEntry],
+    [cart, flashProduct, tryGuardAdd, weightEntry],
   );
 
   const handleCustomQuantityConfirm = useCallback(
@@ -591,8 +604,9 @@ export function SellFloorPage() {
         replaceQuantity: true,
       });
       setCustomQtyEntry(null);
+      flashProduct(customQtyEntry.product.productId);
     },
-    [cart, customQtyEntry, tryGuardAdd],
+    [cart, customQtyEntry, flashProduct, tryGuardAdd],
   );
 
   const synthesizeLineProduct = useCallback(
@@ -787,52 +801,37 @@ export function SellFloorPage() {
     midSessionBlock: midSessionBlock.kind,
     stockIssues: cartStockIssues,
     stockBanner,
+    suppressMidSessionWarning: true,
   };
 
-  const showFloatingCart = cart.lineCount > 0 && !cartSheetOpen && !sideCartLayout;
+  const showMobileCartBar = !sideCartLayout && !cartSheetOpen;
+  const showFloatingCart = showMobileCartBar && cart.lineCount > 0;
+  const showEmptyMobileCartBar = showMobileCartBar && cart.lineCount === 0;
 
   return (
     <div
       data-testid="sell-floor"
       className="sell-floor-root flex min-h-0 min-w-0 flex-col"
     >
-      <div className="mb-4 flex shrink-0 min-w-0 items-start justify-between gap-3">
-        <header className="flex min-w-0 flex-1 flex-col gap-1">
-          <div className="flex min-w-0 items-center gap-1.5">
-            <h1 className="m-0 text-[length:var(--exits-text-xl)] font-bold leading-tight tracking-tight">
-              {t("sell.title")}
-            </h1>
-            <button
-              type="button"
-              data-testid="sell-info-toggle"
-              className="inline-flex size-9 shrink-0 items-center justify-center rounded-[var(--exits-radius-md)] text-muted transition-colors hover:bg-[var(--exits-surface-muted)] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label={t("sell.infoToggle")}
-              aria-expanded={infoOpen}
-              aria-controls="sell-info-panel"
-              onClick={() => setInfoOpen((open) => !open)}
-            >
-              <Info className="size-4" aria-hidden />
-            </button>
-          </div>
-          {infoOpen ? (
-            <div
-              id="sell-info-panel"
-              data-testid="sell-info-panel"
-              className="mt-1 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] px-3 py-2"
-            >
-              <ul className="m-0 list-disc space-y-1 pl-4 text-[length:var(--exits-text-xs)] text-muted">
-                <li>{t("sell.info.search")}</li>
-                <li>{t("sell.info.shift")}</li>
-                <li>{t("sell.info.device")}</li>
-                <li>{t("sell.info.weighted")}</li>
-              </ul>
-            </div>
-          ) : null}
-        </header>
+      <header className="sell-floor-toolbar shrink-0">
+        <div className="sell-floor-toolbar__title">
+          <h1 className="sell-floor-toolbar__heading">{t("sell.title")}</h1>
+          <button
+            type="button"
+            data-testid="sell-info-toggle"
+            className="sell-floor-toolbar__info"
+            aria-label={t("sell.infoToggle")}
+            aria-expanded={infoOpen}
+            aria-controls="sell-info-panel"
+            onClick={() => setInfoOpen((open) => !open)}
+          >
+            <Info className="size-4" aria-hidden />
+          </button>
+        </div>
         <Button
           type="button"
           variant="ghost"
-          className="shrink-0"
+          className="sell-floor-toolbar__exit"
           onClick={() => {
             exit();
             navigate(returnRoute ?? "/");
@@ -840,7 +839,31 @@ export function SellFloorPage() {
         >
           {t("sell.exitSelling")}
         </Button>
-      </div>
+        {infoOpen ? (
+          <div
+            id="sell-info-panel"
+            data-testid="sell-info-panel"
+            className="sell-info-panel sell-floor-toolbar__tips"
+          >
+            <ul className="m-0 list-disc space-y-1 pl-4 text-[length:var(--exits-text-xs)] text-muted">
+              <li>{t("sell.info.search")}</li>
+              <li>{t("sell.info.shift")}</li>
+              <li>{t("sell.info.device")}</li>
+              <li>{t("sell.info.weighted")}</li>
+            </ul>
+          </div>
+        ) : null}
+      </header>
+
+      <SellReadinessStrip
+        continuedOffline={continuedOffline}
+        currentShift={currentShift}
+        hasOpenShift={hasOpenShift}
+        midSessionBlock={midSessionBlock.kind}
+        offlineShiftNumber={sellReadiness.openShiftNumber}
+        readiness={effectiveReadiness}
+        variant="banner"
+      />
 
       {stockBanner ? (
         <p
@@ -852,75 +875,16 @@ export function SellFloorPage() {
         </p>
       ) : null}
 
-      {!continuedOffline && midSessionBlock.kind === "device_lost" ? (
-        <div
-          role="status"
-          data-testid="sell-view-only-banner"
-          className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] px-3 py-2"
-        >
-          <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
-            {t("sell.viewOnlyBanner")}
-          </p>
-          <Button
-            asChild
-            variant="ghost"
-            className="min-h-11"
-            data-testid="sell-view-only-register"
-          >
-            <Link to="/devices/register?from=sell">{t("sell.readiness.registerDevice")}</Link>
-          </Button>
-        </div>
-      ) : null}
-
-      {continuedOffline ? (
-        sellReadiness.openShiftNumber ? (
-          <p
-            data-testid="sell-offline-shift-chip"
-            className="mb-3 m-0 shrink-0 text-[length:var(--exits-text-xs)] text-muted"
-          >
-            {t("offline.shiftContinued").replace("{shift}", sellReadiness.openShiftNumber)}
-          </p>
-        ) : null
-      ) : midSessionBlock.kind === "shift_lost" ||
-        (!hasOpenShift && midSessionBlock.kind !== "none") ? (
-        <div
-          data-testid="sell-shift-banner"
-          className="mb-4 inline-flex max-w-full shrink-0 flex-wrap items-center gap-2 rounded-full border border-border bg-[var(--exits-surface-muted)] px-3 py-1.5"
-        >
-          <span className="text-[length:var(--exits-text-xs)]">{t("sell.shiftClosedBanner")}</span>
-          <Button
-            asChild
-            variant="ghost"
-            className="min-h-9 px-2 text-[length:var(--exits-text-xs)]"
-            data-testid="sell-banner-open-shift"
-          >
-            <Link to="/shifts/open?from=sell">{t("shift.openTitle")}</Link>
-          </Button>
-        </div>
-      ) : hasOpenShift && currentShift ? (
-        <p
-          data-testid="sell-shift-chip"
-          className="mb-3 m-0 shrink-0 text-[length:var(--exits-text-xs)] text-muted"
-        >
-          {t("sell.shiftOpenBanner")
-            .replace("{shift}", currentShift.shiftNumber)
-            .replace(
-              "{register}",
-              currentShift.registerCode
-                ? `${currentShift.registerCode} — ${currentShift.registerName ?? ""}`
-                : t("shift.noRegisterOnShift"),
-            )}
-        </p>
-      ) : null}
-
       <div className="sell-floor-layout min-h-0 min-w-0 flex-1">
         <section
           className={cn(
-            "sell-floor-browse flex min-h-0 min-w-0 flex-col gap-3",
-            showFloatingCart && "pb-[calc(5.5rem+env(safe-area-inset-bottom))]",
+            "sell-floor-workspace sell-floor-browse flex min-h-0 min-w-0 flex-col",
+            (showFloatingCart || showEmptyMobileCartBar) &&
+              "pb-[calc(5.5rem+env(safe-area-inset-bottom))]",
           )}
         >
-          <SearchField
+          <div className="sell-floor-workspace__search">
+            <SearchField
             data-testid="sell-search"
             containerClassName="shrink-0"
             label={t("sell.searchLabel")}
@@ -937,7 +901,8 @@ export function SellFloorPage() {
               setSearchTerm("");
             }}
             placeholder={t("sell.searchPlaceholder")}
-          />
+            />
+          </div>
 
           {usingCachedCatalog ? (
             <p
@@ -958,7 +923,8 @@ export function SellFloorPage() {
             </p>
           ) : null}
 
-          <SellCategoryFilter
+          <div className="sell-floor-workspace__categories">
+            <SellCategoryFilter
             categories={
               (browseCategories ?? []).length > 0 || !usingCachedCatalog
                 ? (browseCategories ?? [])
@@ -968,11 +934,13 @@ export function SellFloorPage() {
             allLabel={t("sell.categoryAll")}
             listLabel={t("sell.categoriesLabel")}
             onSelect={setActiveCategory}
-          />
+            />
+          </div>
 
           <div
+            key={activeCategory}
             data-testid="sell-products"
-            className="sell-product-grid min-h-0 flex-1 content-start items-start overflow-y-auto rounded-[var(--exits-radius-lg)] border border-border bg-[var(--exits-surface-muted)] p-3"
+            className="sell-floor-product-pane sell-product-grid sell-product-grid--enter min-h-0 flex-1 content-start items-start overflow-y-auto"
             aria-label={t("sell.productsLabel")}
           >
             {productsLoading ? (
@@ -990,6 +958,7 @@ export function SellFloorPage() {
             {displayedProducts.map((product) => (
               <SellProductCard
                 key={product.productId}
+                addedFlash={flashedProductId === product.productId}
                 product={product}
                 workspace={workspaceScope}
                 onAdd={beginAddProduct}
@@ -1000,7 +969,7 @@ export function SellFloorPage() {
 
         <aside
           data-testid="sell-cart-landscape"
-          className="sell-cart-landscape hidden min-h-0 min-w-0 flex-col overflow-hidden rounded-[var(--exits-radius-lg)] border border-border bg-surface p-4 shadow-sm"
+          className="sell-cart-landscape sell-cart-shell hidden min-h-0 min-w-0 flex-col overflow-hidden"
           aria-label={t("sell.cartLabel")}
         >
           <SellCartPanel {...cartPanelProps} panelId="landscape" />
@@ -1011,7 +980,7 @@ export function SellFloorPage() {
         <button
           type="button"
           data-testid="sell-cart-bar"
-          className="sell-cart-floating sell-cart-bar"
+          className="sell-cart-floating sell-cart-bar sell-cart-bar--filled"
           onClick={() => setCartSheetOpen(true)}
           aria-expanded={cartSheetOpen}
           aria-controls="sell-cart-sheet-panel"
@@ -1031,23 +1000,49 @@ export function SellFloorPage() {
         </button>
       ) : null}
 
-      {cartSheetOpen ? (
+      {showEmptyMobileCartBar ? (
+        <button
+          type="button"
+          data-testid="sell-cart-bar-empty"
+          className="sell-cart-floating sell-cart-bar sell-cart-bar--empty"
+          onClick={() => setCartSheetOpen(true)}
+          aria-expanded={cartSheetOpen}
+          aria-controls="sell-cart-sheet-panel"
+        >
+          <span className="inline-flex min-w-0 items-center gap-2">
+            <ShoppingCart className="size-5 shrink-0" aria-hidden />
+            <span className="min-w-0 truncate text-[length:var(--exits-text-sm)] font-medium">
+              {t("sell.cartLabel")} · {t("sell.payAddItems")}
+            </span>
+          </span>
+          <span className="shrink-0 text-[length:var(--exits-text-sm)] font-medium">
+            {t("sell.floatingCartView")}
+          </span>
+        </button>
+      ) : null}
+
+      {!sideCartLayout ? (
         <div
-          className="sell-cart-sheet-backdrop fixed inset-0 z-30 bg-black/40"
+          className={cn(
+            "sell-cart-sheet-backdrop fixed inset-0 z-30 bg-black/40 transition-opacity duration-[var(--exits-motion-normal)]",
+            cartSheetOpen ? "opacity-100" : "pointer-events-none opacity-0",
+          )}
           role="presentation"
+          aria-hidden={!cartSheetOpen}
           onClick={() => setCartSheetOpen(false)}
         />
       ) : null}
 
-      <div
-        id="sell-cart-sheet-panel"
-        data-testid="sell-cart-sheet"
-        className={cn(
-          "sell-cart-sheet fixed inset-0 z-40 flex flex-col gap-3 border-border bg-surface p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] shadow-[0_-8px_32px_rgba(0,0,0,0.12)] transition-transform duration-[var(--exits-motion-normal)]",
-          cartSheetOpen ? "translate-y-0" : "translate-y-full pointer-events-none",
-        )}
-        aria-hidden={!cartSheetOpen}
-      >
+      {!sideCartLayout ? (
+        <div
+          id="sell-cart-sheet-panel"
+          data-testid="sell-cart-sheet"
+          className={cn(
+            "sell-cart-sheet fixed inset-0 z-40 flex flex-col gap-3 border-border bg-surface p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] shadow-[0_-8px_32px_rgba(0,0,0,0.12)] transition-transform duration-[var(--exits-motion-normal)] ease-[var(--exits-ease-emphasized)]",
+            cartSheetOpen ? "translate-y-0" : "pointer-events-none translate-y-full",
+          )}
+          aria-hidden={!cartSheetOpen}
+        >
         <SellCartPanel
           {...cartPanelProps}
           panelId="sheet"
@@ -1055,6 +1050,7 @@ export function SellFloorPage() {
           onClose={() => setCartSheetOpen(false)}
         />
       </div>
+      ) : null}
 
       <SellUnitEntryDialog
         open={unitEntry != null}

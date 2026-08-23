@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ShoppingCart, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { effectiveUnitPrice, lineAmount, type SessionCartLine } from "@/cart/SessionCartProvider";
 import { formatQuantityDisplay, isByWeightSellingMode } from "@/cart/sell-cart-helpers";
@@ -10,7 +10,7 @@ import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity"
 import type { CheckoutShiftReadiness } from "@/features/shifts/checkout-readiness";
 import type { MidSessionSellBlock } from "@/features/sell/sell-readiness";
 import { useI18n } from "@/i18n/I18nProvider";
-import { formatCartSummary } from "@/lib/format-money";
+import { cn } from "@/lib/cn";
 
 export type MidSessionBlockProp = MidSessionSellBlock["kind"];
 
@@ -28,19 +28,14 @@ type SellCartPanelProps = {
   onClear: () => void;
   showClose?: boolean;
   onClose?: () => void;
-  /** Disambiguates duplicate landscape + sheet markup (ids / optional test prefix). */
   panelId?: string;
   checkoutReadiness?: CheckoutShiftReadiness;
-  /** CreateSale capability — required with moneyPostReady to enable Pay. */
   canCreateSale?: boolean;
   canOverrideSalePrice?: boolean;
-  /**
-   * Compact mid-session warning after Sell opened.
-   * Prefer explicit value from evaluateMidSessionSellBlock; falls back from readiness.
-   */
   midSessionBlock?: MidSessionBlockProp;
   stockIssues?: CartLineStockIssue[];
   stockBanner?: string | null;
+  suppressMidSessionWarning?: boolean;
 };
 
 function deriveMidSessionBlock(
@@ -62,22 +57,6 @@ function deriveMidSessionBlock(
   return "device_lost";
 }
 
-function cartLineInitial(name: string): string {
-  const trimmed = name.trim();
-  return trimmed ? trimmed.charAt(0).toUpperCase() : "?";
-}
-
-function CartLineThumbnail({ name }: { name: string }) {
-  return (
-    <div
-      className="sell-cart-line__thumb"
-      aria-hidden
-    >
-      <span className="sell-cart-line__thumb-letter">{cartLineInitial(name)}</span>
-    </div>
-  );
-}
-
 export function SellCartPanel({
   lines,
   lineCount,
@@ -97,31 +76,46 @@ export function SellCartPanel({
   midSessionBlock: midSessionBlockProp,
   stockIssues = [],
   stockBanner = null,
+  suppressMidSessionWarning = false,
 }: SellCartPanelProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
-  const summary = formatCartSummary(lineCount, subtotal);
   const shiftGateReady = checkoutReadiness?.shiftGateReady === true;
   const moneyPostReady = checkoutReadiness?.moneyPostReady === true;
   const midSessionBlock = deriveMidSessionBlock(midSessionBlockProp, checkoutReadiness);
-  const showMidSessionWarning = midSessionBlock !== "none" && !moneyPostReady;
+  const showMidSessionWarning =
+    !suppressMidSessionWarning && midSessionBlock !== "none" && !moneyPostReady;
   const hasStockIssues = stockIssues.length > 0;
   const stockIssueByLine = new Map(stockIssues.map((issue) => [issue.lineKey, issue]));
   const payEnabled = lines.length > 0 && moneyPostReady && canCreateSale && !hasStockIssues;
 
   return (
-    <div className="sell-cart-panel flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+    <div className="sell-cart-panel flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="sell-cart-panel__header flex shrink-0 items-center justify-between gap-2">
-        <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-          {t("sell.cartLabel")}
-        </h2>
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="sell-cart-panel__title min-w-0">
+          <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("sell.cartLabel")}
+            {lines.length > 0 ? (
+              <>
+                <span className="font-normal text-muted">
+                  {" "}
+                  · {lineCount} {lineCount === 1 ? t("sell.cartItemSingular") : t("sell.cartItemPlural")}
+                </span>
+                <span className="font-semibold text-foreground" data-testid="sell-cart-header-subtotal">
+                  {" "}
+                  · <MoneyDisplay amount={subtotal} />
+                </span>
+              </>
+            ) : null}
+          </h2>
+        </div>
+        <div className="flex shrink-0 items-center gap-0.5">
           {lines.length > 0 ? (
             <Button
               type="button"
               variant="ghost"
-              className="min-h-9 px-2 text-[length:var(--exits-text-xs)] text-muted"
+              className="min-h-8 px-2 text-[length:var(--exits-text-xs)] text-muted"
               data-testid="sell-cart-clear"
               onClick={() => setClearConfirmOpen(true)}
             >
@@ -132,7 +126,7 @@ export function SellCartPanel({
             <Button
               type="button"
               variant="ghost"
-              className="min-h-9 px-2"
+              className="min-h-8 px-2 text-[length:var(--exits-text-xs)]"
               aria-label={t("sell.cartSheetClose")}
               onClick={onClose}
             >
@@ -143,7 +137,10 @@ export function SellCartPanel({
       </div>
 
       {lines.length === 0 ? (
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{summary}</p>
+        <div className="sell-cart-empty flex flex-1 flex-col items-center justify-center gap-1 px-2 py-6 text-center">
+          <ShoppingCart className="size-5 text-muted" strokeWidth={1.75} aria-hidden />
+          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("sell.payAddItems")}</p>
+        </div>
       ) : (
         <ul className="sell-cart-lines m-0 min-h-0 flex-1 list-none overflow-y-auto p-0">
           {lines.map((line) => {
@@ -161,191 +158,143 @@ export function SellCartPanel({
                 key={line.lineKey}
                 data-testid={`sell-cart-line-${line.lineKey}`}
                 data-stock-invalid={stockIssue ? "true" : undefined}
-                className="sell-cart-line"
+                className="sell-cart-line sell-cart-line--enter"
               >
-                <CartLineThumbnail name={line.name} />
+                <div className="sell-cart-line__top">
+                  <p className="sell-cart-line__name">{line.name}</p>
+                  <MoneyDisplay
+                    amount={amount}
+                    className={cn("sell-cart-line__amount", hasOverride && "sell-cart-line__price-now")}
+                    testId={`sell-cart-amount-${line.lineKey}`}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="sell-cart-line__remove"
+                    aria-label={t("sell.cartRemoveLine")}
+                    data-testid={`sell-cart-remove-${line.lineKey}`}
+                    onClick={() => onRemove(line.lineKey)}
+                  >
+                    <X className="size-3.5" aria-hidden />
+                  </Button>
+                </div>
 
-                <div className="sell-cart-line__body">
-                  <div className="sell-cart-line__head">
-                    <div className="min-w-0 flex-1">
-                      <p className="sell-cart-line__name">{line.name}</p>
-                      <p className="sell-cart-line__meta">
-                        {line.unitLabel}
-                        {line.sku ? ` · ${line.sku}` : ""}
-                      </p>
-                      {hasOverride ? (
-                        <p
-                          data-testid={`sell-cart-price-changed-${line.lineKey}`}
-                          className="sell-cart-line__override"
-                        >
-                          {t("sell.priceChanged")}
-                        </p>
-                      ) : null}
-                      {stockIssue ? (
-                        <p
-                          role="alert"
-                          data-testid={`sell-cart-stock-issue-${line.lineKey}`}
-                          className="m-0 text-[length:var(--exits-text-xs)] text-[var(--exits-danger)]"
-                        >
-                          {stockIssue.message}
-                        </p>
-                      ) : null}
-                    </div>
+                <div className="sell-cart-line__bottom">
+                  <span className="sell-cart-line__meta">
+                    {line.unitLabel}
+                    <span className="sell-cart-line__unit-price">
+                      {" "}
+                      · {qtyLabel}×₱{sellingPrice.toFixed(2)}
+                    </span>
+                  </span>
+
+                  {byWeight ? (
                     <Button
                       type="button"
                       variant="ghost"
-                      className="sell-cart-line__remove"
-                      aria-label={t("sell.cartRemoveLine")}
-                      data-testid={`sell-cart-remove-${line.lineKey}`}
-                      onClick={() => onRemove(line.lineKey)}
+                      className="sell-cart-line__edit"
+                      data-testid={`sell-cart-edit-weight-${line.lineKey}`}
+                      onClick={() => onEditWeight(line)}
                     >
-                      <X className="size-4" aria-hidden />
+                      {qtyLabel} {line.unitLabel}
                     </Button>
-                  </div>
-
-                  <div className="sell-cart-line__controls">
-                    {byWeight ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="sell-cart-line__edit"
-                        data-testid={`sell-cart-edit-weight-${line.lineKey}`}
-                        onClick={() => onEditWeight(line)}
-                      >
-                        {qtyLabel} {line.unitLabel} · {t("sell.editWeight")}
-                      </Button>
-                    ) : customMeasured && onEditCustomQuantity ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="sell-cart-line__edit"
-                        data-testid={`sell-cart-edit-custom-${line.lineKey}`}
-                        onClick={() => onEditCustomQuantity(line)}
-                      >
-                        {qtyLabel} {line.unitLabel} · {t("sell.editCustomQty")}
-                      </Button>
-                    ) : (
-                      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                        <QuantityStepper
-                          compact
-                          value={qtyLabel}
-                          valueTestId={`sell-cart-qty-${line.lineKey}`}
-                          decreaseLabel={t("sell.cartDecrease")}
-                          increaseLabel={t("sell.cartIncrease")}
-                          onDecrement={() => onDecrement(line.lineKey)}
-                          onIncrement={() => onIncrement(line.lineKey)}
-                        />
-                        {!wholeOnly ? (
-                          <>
-                            <label
-                              className="sr-only"
-                              htmlFor={`${panelId}-sell-qty-input-${line.lineKey}`}
-                            >
-                              {t("sell.quantityDirect")}
-                            </label>
-                            <input
-                              id={`${panelId}-sell-qty-input-${line.lineKey}`}
-                              data-testid={`sell-cart-qty-input-${line.lineKey}`}
-                              type="number"
-                              inputMode="decimal"
-                              min={0.001}
-                              step={0.001}
-                              value={line.quantity}
-                              className="sell-cart-line__qty-input"
-                              onChange={(event) => {
-                                const next = Number(event.target.value);
-                                if (!Number.isFinite(next)) {
-                                  return;
-                                }
-                                onSetQuantity(line.lineKey, next);
-                              }}
-                            />
-                          </>
-                        ) : null}
-                      </div>
-                    )}
-
-                    <div className="sell-cart-line__price">
-                      {hasOverride ? (
-                        <span
-                          data-testid={`sell-cart-regular-price-${line.lineKey}`}
-                          className="sell-cart-line__price-was"
-                        >
-                          {qtyLabel} × ₱{line.unitPrice.toFixed(2)}
-                        </span>
-                      ) : null}
-                      <MoneyDisplay
-                        amount={amount}
-                        className={hasOverride ? "sell-cart-line__price-now" : undefined}
-                        testId={`sell-cart-amount-${line.lineKey}`}
+                  ) : customMeasured && onEditCustomQuantity ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="sell-cart-line__edit"
+                      data-testid={`sell-cart-edit-custom-${line.lineKey}`}
+                      onClick={() => onEditCustomQuantity(line)}
+                    >
+                      {qtyLabel} {line.unitLabel}
+                    </Button>
+                  ) : (
+                    <div className="sell-cart-line__qty">
+                      <QuantityStepper
+                        compact
+                        value={qtyLabel}
+                        valueTestId={`sell-cart-qty-${line.lineKey}`}
+                        decreaseLabel={t("sell.cartDecrease")}
+                        increaseLabel={t("sell.cartIncrease")}
+                        onDecrement={() => onDecrement(line.lineKey)}
+                        onIncrement={() => onIncrement(line.lineKey)}
                       />
-                      <span className="sell-cart-line__price-unit">
-                        {qtyLabel} × ₱{sellingPrice.toFixed(2)}
-                      </span>
+                      {!wholeOnly ? (
+                        <>
+                          <label
+                            className="sr-only"
+                            htmlFor={`${panelId}-sell-qty-input-${line.lineKey}`}
+                          >
+                            {t("sell.quantityDirect")}
+                          </label>
+                          <input
+                            id={`${panelId}-sell-qty-input-${line.lineKey}`}
+                            data-testid={`sell-cart-qty-input-${line.lineKey}`}
+                            type="number"
+                            inputMode="decimal"
+                            min={0.001}
+                            step={0.001}
+                            value={line.quantity}
+                            className="sell-cart-line__qty-input"
+                            onChange={(event) => {
+                              const next = Number(event.target.value);
+                              if (!Number.isFinite(next)) {
+                                return;
+                              }
+                              onSetQuantity(line.lineKey, next);
+                            }}
+                          />
+                        </>
+                      ) : null}
                     </div>
-                  </div>
+                  )}
                 </div>
+
+                {hasOverride ? (
+                  <p
+                    data-testid={`sell-cart-price-changed-${line.lineKey}`}
+                    className="sell-cart-line__override"
+                  >
+                    {t("sell.priceChanged")}
+                    {hasOverride ? (
+                      <span
+                        data-testid={`sell-cart-regular-price-${line.lineKey}`}
+                        className="sell-cart-line__price-was"
+                      >
+                        {" "}
+                        (₱{line.unitPrice.toFixed(2)})
+                      </span>
+                    ) : null}
+                  </p>
+                ) : null}
+                {stockIssue ? (
+                  <p
+                    role="alert"
+                    data-testid={`sell-cart-stock-issue-${line.lineKey}`}
+                    className="sell-cart-line__stock"
+                  >
+                    {stockIssue.message}
+                  </p>
+                ) : null}
               </li>
             );
           })}
         </ul>
       )}
 
-      <div className="sell-cart-footer mt-auto flex shrink-0 flex-col gap-3">
-        {lines.length > 0 ? (
-          <dl className="sell-cart-summary m-0">
-            <div className="sell-cart-summary__row">
-              <dt>{t("sell.cartItemsLabel")}</dt>
-              <dd data-testid="sell-cart-item-count">
-                {lineCount} {lineCount === 1 ? t("sell.cartItemSingular") : t("sell.cartItemPlural")}
-              </dd>
-            </div>
-            <div className="sell-cart-summary__row">
-              <dt>{t("sell.cartSubtotalLabel")}</dt>
-              <dd data-testid="sell-cart-subtotal">
-                <MoneyDisplay amount={subtotal} />
-              </dd>
-            </div>
-            <div className="sell-cart-summary__row sell-cart-summary__row--total">
-              <dt>{t("sell.cartTotalLabel")}</dt>
-              <dd>
-                <MoneyDisplay amount={subtotal} />
-              </dd>
-            </div>
-          </dl>
-        ) : null}
-
+      <div className="sell-cart-footer mt-auto flex shrink-0 flex-col gap-2">
         {showMidSessionWarning ? (
           <div
             data-testid="sell-mid-session-warning"
             data-block={midSessionBlock}
-            className="rounded-[var(--exits-radius-md)] border border-[var(--exits-danger)]/40 bg-[var(--exits-surface-muted)] p-2"
+            className="rounded-[var(--exits-radius-md)] border border-[var(--exits-danger)]/40 bg-[var(--exits-surface-muted)] px-2 py-1.5"
             role="alert"
           >
-            <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold leading-snug">
+            <p className="m-0 text-[length:var(--exits-text-xs)] font-medium leading-snug">
               {midSessionBlock === "device_lost"
                 ? t("sell.midSession.deviceLost")
                 : t("sell.midSession.shiftLost")}
             </p>
-            {midSessionBlock === "device_lost" ? (
-              <Button
-                asChild
-                variant="ghost"
-                className="mt-1.5 min-h-9 w-full text-[length:var(--exits-text-xs)]"
-                data-testid="sell-mid-session-register"
-              >
-                <Link to="/devices/register?from=sell">{t("sell.midSession.fixDevice")}</Link>
-              </Button>
-            ) : (
-              <Button
-                asChild
-                variant="ghost"
-                className="mt-1.5 min-h-9 w-full text-[length:var(--exits-text-xs)]"
-                data-testid="sell-mid-session-open-shift"
-              >
-                <Link to="/shifts/open?from=sell">{t("sell.midSession.openShift")}</Link>
-              </Button>
-            )}
           </div>
         ) : null}
 
@@ -368,34 +317,44 @@ export function SellCartPanel({
               ? t("sell.payReadyTitle")
               : hasStockIssues
                 ? t("sell.payDisabledStock")
-              : !canCreateSale
-                ? t("sell.payDisabledTitle")
-                : !moneyPostReady
-                  ? shiftGateReady
-                    ? t("sell.payDisabledNeedsDevice")
-                    : t("sell.payDisabledNeedsShift")
-                  : t("sell.payDisabledEmpty")
+                : !canCreateSale
+                  ? t("sell.payDisabledTitle")
+                  : !moneyPostReady
+                    ? shiftGateReady
+                      ? t("sell.payDisabledNeedsDevice")
+                      : t("sell.payDisabledNeedsShift")
+                    : t("sell.payDisabledEmpty")
           }
-          className="sell-cart-pay w-full"
+          className={cn(
+            "sell-cart-pay w-full",
+            payEnabled ? "sell-cart-pay--ready" : "sell-cart-pay--disabled",
+          )}
           onClick={() => {
             if (payEnabled) {
               navigate("/sell/checkout");
             }
           }}
         >
-          {lineCount > 0 ? `${t("sell.payWithItems")} (${lineCount})` : t("sell.pay")}
-        </Button>
-        <p className="m-0 text-center text-[length:var(--exits-text-xs)] text-muted">
           {payEnabled
-            ? t("sell.payReadyHint")
-            : hasStockIssues
+            ? `${t("sell.payWithItems")} (${lineCount}) · ₱${subtotal.toFixed(2)}`
+            : lineCount > 0
+              ? `${t("sell.payWithItems")} (${lineCount})`
+              : t("sell.pay")}
+        </Button>
+        {!payEnabled ? (
+          <p className="sell-cart-footer__hint m-0 text-center text-[length:var(--exits-text-xs)] text-muted">
+            {hasStockIssues
               ? t("sell.payDisabledStock")
-            : moneyPostReady
-              ? t("sell.payAddItems")
-              : shiftGateReady
-                ? t("sell.payNeedsDevice")
-                : t("sell.payNotReady")}
-        </p>
+              : moneyPostReady
+                ? t("sell.payAddItems")
+                : shiftGateReady
+                  ? t("sell.payNeedsDevice")
+                  : t("sell.payNotReady")}
+          </p>
+        ) : null}
+        <span className="sr-only" data-testid="sell-cart-subtotal">
+          <MoneyDisplay amount={subtotal} />
+        </span>
       </div>
 
       <ConfirmationDialog

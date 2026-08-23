@@ -68,13 +68,13 @@ public static class MauiProgram
         // PhysicalDevice Debug also overlays wwwroot/appsettings.LocalValidation.PhysicalDevice.json.
         configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
-            // Local Validation stack (Start-LocalValidation.ps1 -PublicHost): Platform :8091, POS :8092.
-            ["PosApi:BaseUrl"] = "http://100.120.79.81:8091",
+            // LEGACY-MAUI-ISO-01: MAUI Docker stack (Start-MauiLegacyLocalValidation) :8191/:8192 — not React :8091/:8092.
+            ["PosApi:BaseUrl"] = "http://100.120.79.81:8191",
             ["PosApi:TimeoutSeconds"] = "15",
-            ["PosBusinessApi:BaseUrl"] = "http://100.120.79.81:8092",
+            ["PosBusinessApi:BaseUrl"] = "http://100.120.79.81:8192",
             ["PosBusinessApi:TimeoutSeconds"] = "15",
 #if DEBUG
-            // Matches deploy/docker/.env.local-validation LOCAL_VALIDATION_SHARED_PASSWORD (local only).
+            // Matches deploy/docker/.env.maui-local-validation shared password (local only).
             ["LocalValidation:Enabled"] = "true",
             ["LocalValidation:SharedPassword"] = "LivePreviewLocal1!",
 #else

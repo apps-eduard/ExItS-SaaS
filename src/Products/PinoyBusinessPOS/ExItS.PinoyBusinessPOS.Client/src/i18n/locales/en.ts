@@ -1144,6 +1144,8 @@ export const en = {
   "sell.readiness.registerBrowser": "Register this device",
   "sell.readiness.registerDevice": "Register this device",
   "sell.viewOnlyBanner": "View only — Register this device to make sales",
+  "sell.viewOnlyShort": "View only",
+  "sell.shiftClosedShort": "No open shift",
   "sell.readiness.deviceRevokedTitle": "This device was revoked",
   "sell.readiness.deviceRevokedDetail":
     "This device was revoked for {branch}, so selling is blocked here.",

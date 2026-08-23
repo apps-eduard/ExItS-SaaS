@@ -36,6 +36,7 @@ export const ONLINE_REQUIRED_CODES = {
   PersonalUtangReminder: "online_required.personal_utang_reminder",
   PersonalUtangAdjustment: "online_required.personal_utang_adjustment",
   PersonalTodoShare: "online_required.personal_todo_share",
+  CatalogImport: "online_required.catalog_import",
 } as const;
 
 export type OnlineRequiredCode = (typeof ONLINE_REQUIRED_CODES)[keyof typeof ONLINE_REQUIRED_CODES];
@@ -57,6 +58,7 @@ const DETAIL_KEYS: Record<OnlineRequiredCode, MessageKey> = {
   [ONLINE_REQUIRED_CODES.PersonalUtangReminder]: "offline.requiredPersonalUtangReminder",
   [ONLINE_REQUIRED_CODES.PersonalUtangAdjustment]: "offline.requiredPersonalUtangAdjustment",
   [ONLINE_REQUIRED_CODES.PersonalTodoShare]: "offline.requiredPersonalTodoShare",
+  [ONLINE_REQUIRED_CODES.CatalogImport]: "offline.requiredCatalogImport",
 };
 
 export function onlineRequiredDetailKey(code: OnlineRequiredCode): MessageKey {
