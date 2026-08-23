@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { App } from "@/app/App";
+import { SIDEBAR_ICON_RAIL_WIDTH_CLASS } from "@/components/exits/nav-item-styles";
 import * as developmentTools from "@/lib/auth/development-tools";
 import { UI_PREFERENCES_STORAGE_KEY } from "@/lib/preferences/ui-preferences";
 import { mockAuthenticatedFetch } from "@/test/auth-fixtures";
@@ -41,12 +42,12 @@ describe("AppSidebar icon rail", () => {
     await screen.findByRole("heading", { name: "Overview" });
 
     const sidebar = screen.getByTestId("app-sidebar");
-    expect(sidebar).toHaveClass("w-[4.25rem]");
+    expect(sidebar).toHaveClass(SIDEBAR_ICON_RAIL_WIDTH_CLASS);
     expect(screen.queryByRole("button", { name: /^Home$/i })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Overview" })).toBeInTheDocument();
 
     await user.hover(sidebar);
-    expect(sidebar).toHaveClass("w-[4.25rem]");
+    expect(sidebar).toHaveClass(SIDEBAR_ICON_RAIL_WIDTH_CLASS);
     expect(screen.queryByRole("button", { name: /^Home$/i })).not.toBeInTheDocument();
 
     expect(

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { NavExpandable } from "@/components/exits/nav-expandable";
 import { NavIcon } from "@/components/exits/nav-icons";
 import { NavRailHint } from "@/components/exits/nav-rail-hint";
-import { navLinkClass, navRowBase, navSectionHeaderClass } from "@/components/exits/nav-item-styles";
+import { navLinkClass, navNestedTextClass, navRowBase, navRowNested, navRowNestedChild, navSectionHeaderClass } from "@/components/exits/nav-item-styles";
 import { useNavAccordion } from "@/components/exits/nav-accordion-context";
 import { useAuthorizedCatalogProductsQuery } from "@/features/navigation/use-catalog-products-query";
 import { useAuthorization } from "@/hooks/use-authorization";
@@ -101,10 +101,13 @@ export function AppNav({
                 aria-expanded={sectionOpen}
                 onClick={() => toggleSection(section.id)}
               >
-                <span className="flex min-w-0 flex-1 items-center gap-2">
+                <span className="flex min-w-0 flex-1 items-center gap-1.5">
                   <NavIcon
-                    active={sectionHasActive}
-                    className="!size-7 shrink-0"
+                    active={false}
+                    className={cn(
+                      "!size-4 shrink-0 !bg-transparent",
+                      sectionHasActive ? "!text-primary" : "text-muted",
+                    )}
                     name={section.icon}
                   />
                   <span className="truncate">{t(section.labelKey)}</span>
@@ -130,6 +133,7 @@ export function AppNav({
                   <li key={item.id}>
                     <NavItem
                       collapsed={collapsed}
+                      nested={!collapsed}
                       railTooltipsEnabled={railTooltipsEnabled}
                       item={item}
                       onNavigate={onNavigate}
@@ -154,6 +158,8 @@ function NavItem({
   onNavigate,
   groupOpen,
   onToggleGroup,
+  nested = false,
+  nestedChild = false,
 }: {
   item: ResolvedNavigationItem;
   collapsed: boolean;
@@ -161,6 +167,8 @@ function NavItem({
   onNavigate?: () => void;
   groupOpen: boolean;
   onToggleGroup: () => void;
+  nested?: boolean;
+  nestedChild?: boolean;
 }) {
   const { t } = usePreferences();
   const location = useLocation();
@@ -178,7 +186,7 @@ function NavItem({
       <button
         type="button"
         className={cn(
-          navRowBase,
+          navRowNested,
           "group/nav text-muted hover:bg-surface-muted/70 hover:text-foreground",
           active && "text-foreground",
         )}
@@ -186,7 +194,7 @@ function NavItem({
         aria-label={label}
         onClick={onToggleGroup}
       >
-        <NavIcon name={item.icon} active={active} />
+        <NavIcon active={active} name={item.icon} size="sm" />
         <span className="min-w-0 flex-1 truncate text-left">{label}</span>
         <ChevronDown
           aria-hidden="true"
@@ -204,11 +212,13 @@ function NavItem({
       <div>
         {groupButton}
         <NavExpandable open={groupExpanded && children.length > 0} className="mt-0.5">
-          <ul className="ml-3 grid gap-0.5 border-l border-border/80 pl-2">
+          <ul className="grid gap-0.5">
             {children.map((child) => (
               <li key={child.id}>
                 <NavItem
                   collapsed={collapsed}
+                  nested
+                  nestedChild
                   railTooltipsEnabled={railTooltipsEnabled}
                   item={child}
                   onNavigate={onNavigate}
@@ -220,7 +230,7 @@ function NavItem({
           </ul>
         </NavExpandable>
         {groupExpanded && children.length === 0 ? (
-          <p className="mt-1 px-2 text-[length:var(--exits-text-xs)] text-muted">
+          <p className={cn("mt-1 px-2 text-muted", navNestedTextClass)}>
             {t("nav.byProduct.empty")}
           </p>
         ) : null}
@@ -228,16 +238,21 @@ function NavItem({
     );
   }
 
+  const rowClass =
+    nested && !collapsed ? (nestedChild ? navRowNestedChild : navRowNested) : navRowBase;
+  const iconSize = collapsed ? "rail" : nested ? "sm" : "md";
+
   const content = (
     <span
       className={cn(
-        navRowBase,
+        rowClass,
         "group/nav",
         collapsed && "justify-center px-0",
         !leafActive && !planned && !underDevelopment && "text-inherit",
+        nested && leafActive && "!text-foreground",
       )}
     >
-      <NavIcon name={item.icon} active={leafActive} compact={collapsed} />
+      <NavIcon active={leafActive} name={item.icon} size={iconSize} />
       {collapsed ? null : (
         <span className="flex min-w-0 flex-1 items-center justify-between gap-2 transition-[opacity,transform] duration-[var(--exits-motion-base)] ease-[var(--exits-ease)]">
           <span className="truncate">{label}</span>
@@ -259,7 +274,10 @@ function NavItem({
       <span
         aria-disabled="true"
         aria-label={`${label}. ${statusDescription}`}
-        className="block w-full cursor-default text-[length:var(--exits-text-sm)] text-muted"
+        className={cn(
+          "block w-full cursor-default text-muted",
+          nested ? navNestedTextClass : "text-[length:var(--exits-text-sm)]",
+        )}
       >
         {content}
       </span>
@@ -280,7 +298,7 @@ function NavItem({
       onClick={onNavigate}
       aria-label={collapsed ? label : undefined}
       data-nav-active={leafActive ? "true" : undefined}
-      className={() => navLinkClass(leafActive)}
+      className={() => navLinkClass(leafActive, nested)}
     >
       {content}
     </NavLink>

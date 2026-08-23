@@ -3,6 +3,7 @@ import {
   NavAccordionProvider,
   NavBulkAccordionToggle,
 } from "@/components/exits/nav-accordion-context";
+import { SIDEBAR_ICON_RAIL_WIDTH_CLASS } from "@/components/exits/nav-item-styles";
 import { usePreferences } from "@/hooks/use-preferences";
 import { cn } from "@/lib/utils";
 
@@ -14,7 +15,7 @@ export function AppSidebar() {
     <div
       className={cn(
         "relative shrink-0 transition-[width] duration-[var(--exits-motion-slow)] ease-[var(--exits-ease-emphasized)]",
-        sidebarCollapsed ? "w-[4.25rem]" : "w-[15.5rem]",
+        sidebarCollapsed ? SIDEBAR_ICON_RAIL_WIDTH_CLASS : "w-[15.5rem]",
       )}
       data-testid="app-sidebar-slot"
     >
@@ -23,7 +24,7 @@ export function AppSidebar() {
         className={cn(
           "relative flex h-dvh flex-col overflow-hidden border-r border-border bg-surface",
           "transition-[width] duration-[var(--exits-motion-slow)] ease-[var(--exits-ease-emphasized)]",
-          sidebarCollapsed ? "w-[4.25rem]" : "w-[15.5rem]",
+          sidebarCollapsed ? SIDEBAR_ICON_RAIL_WIDTH_CLASS : "w-[15.5rem]",
         )}
       >
         <NavAccordionProvider>

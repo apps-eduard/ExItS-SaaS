@@ -64,33 +64,54 @@ const icons: Record<string, LucideIcon> = {
   users: Users,
 };
 
+type NavIconSize = "md" | "sm" | "rail";
+
+const sizeClasses: Record<NavIconSize, string> = {
+  md: "size-8",
+  sm: "size-7",
+  rail: "size-9",
+};
+
+const iconSizes: Record<NavIconSize, number> = {
+  md: 18,
+  sm: 16,
+  rail: 20,
+};
+
 export function NavIcon({
   name,
   className,
   active = false,
   compact = false,
+  size,
 }: {
   name: string;
   className?: string;
   active?: boolean;
-  /** Icon-rail (collapsed sidebar) sizing */
+  /** @deprecated Prefer `size="rail"` when the sidebar is collapsed. */
   compact?: boolean;
+  size?: NavIconSize;
 }) {
+  const resolvedSize: NavIconSize = size ?? (compact ? "rail" : "md");
   const Icon = icons[name] ?? LayoutDashboard;
   return (
     <span
       className={cn(
         "grid shrink-0 place-items-center rounded-md transition-[background-color,color,transform] duration-[var(--exits-motion-fast)] ease-[var(--exits-ease)]",
-        compact ? "size-9" : "size-8",
+        sizeClasses[resolvedSize],
         active
           ? "bg-[var(--exits-primary-soft)] text-primary"
-          : compact
+          : resolvedSize === "rail"
             ? "text-muted group-hover/nav:text-primary group-hover/nav:bg-[var(--exits-primary-soft)]/70"
             : "text-muted group-hover/nav:text-foreground",
         className,
       )}
     >
-      <Icon aria-hidden="true" size={compact ? 20 : 18} strokeWidth={active ? 2.25 : 2} />
+      <Icon
+        aria-hidden="true"
+        size={iconSizes[resolvedSize]}
+        strokeWidth={active ? 2.25 : 2}
+      />
     </span>
   );
 }
