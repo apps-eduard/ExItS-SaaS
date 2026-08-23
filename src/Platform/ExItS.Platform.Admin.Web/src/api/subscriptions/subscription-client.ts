@@ -46,9 +46,12 @@ export function listSubscriptionPortfolio(
   baseUrl: string,
   state: SubscriptionPortfolioUrlState,
   signal?: AbortSignal,
+  organizationId?: string,
 ): Promise<PagedResult<OrganizationSubscription>> {
   return platformRequest<unknown>(baseUrl, {
-    path: subscriptionPortfolioRequestPath(state),
+    path: withQuery(subscriptionPortfolioRequestPath(state), {
+      organizationId: organizationId || undefined,
+    }),
     signal,
   }).then((payload) => {
     const page = parsePagedResult<unknown>(payload);

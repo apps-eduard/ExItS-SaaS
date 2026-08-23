@@ -61,6 +61,18 @@ public sealed class SaaSPaymentQueryService
         return payment is null ? null : Map(payment);
     }
 
+    public async Task<IReadOnlyList<SaaSPaymentDto>> FindByNormalizedReferenceAsync(
+        string reference,
+        SaaSPaymentMethod? method,
+        CancellationToken cancellationToken = default)
+    {
+        var normalized = SaaSPayment.NormalizeReference(reference);
+        var payments = await _payments
+            .FindByNormalizedReferenceAsync(normalized, method, cancellationToken)
+            .ConfigureAwait(false);
+        return payments.Select(Map).ToList();
+    }
+
     public async Task<PagedResult<SaaSPaymentDto>> ListByOrganizationAsync(
         Guid organizationId,
         SaaSPaymentStatus? status,

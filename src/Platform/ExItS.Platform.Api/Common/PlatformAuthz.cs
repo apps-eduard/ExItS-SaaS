@@ -1,6 +1,7 @@
 using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Authorization;
 using ExItS.Platform.Domain.Audit;
+using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Products;
 
@@ -73,6 +74,27 @@ internal sealed class PlatformAuthz
 
         return PlatformApiResults.Problem(result.ErrorCode!, result.ErrorMessage!, StatusCodes.Status403Forbidden);
     }
+
+    /// <summary>Requires a permission held only by Platform Administrator built-in roles (e.g. settings management).</summary>
+    public Task<IResult?> EnsurePlatformAdministratorAsync(
+        string actionCode,
+        string targetType,
+        string targetId,
+        Guid? organizationId = null,
+        string? productCode = null,
+        string? reason = null,
+        string? summary = null,
+        CancellationToken cancellationToken = default) =>
+        EnsureAsync(
+            PlatformPermission.ManagePlatformSettings,
+            actionCode,
+            targetType,
+            targetId,
+            organizationId,
+            productCode,
+            reason,
+            summary,
+            cancellationToken);
 
     /// <summary>Writes a <see cref="AuditOutcome.Succeeded"/> audit record for the current actor after a mutation completes.</summary>
     public Task AuditSucceededAsync(

@@ -78,6 +78,7 @@ public static class ApplicationErrorCodes
     public const string SensitiveMigrationDataDetected = "application.migration.sensitive_data";
 
     public const string PaymentNotFound = "application.payment.not_found";
+    public const string OperationsRequestInvalid = "application.operations.request_invalid";
     public const string PaymentReferenceConflict = "application.payment.reference_conflict";
     public const string PaymentAlreadyConfirmed = "application.payment.already_confirmed";
     public const string PaymentNotConfirmed = "application.payment.not_confirmed";

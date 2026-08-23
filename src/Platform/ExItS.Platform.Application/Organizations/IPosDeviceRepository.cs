@@ -10,4 +10,6 @@ public interface IPosDeviceRepository
     Task<int> CountActiveAsync(PlatformOrganizationId organizationId, CancellationToken cancellationToken = default);
     Task AddAsync(PosDevice device, CancellationToken cancellationToken = default);
     Task UpdateAsync(PosDevice device, CancellationToken cancellationToken = default);
+
+    Task<PosDevice?> FindByInstallationDeviceIdAsync(string installationDeviceId, CancellationToken cancellationToken = default);
 }

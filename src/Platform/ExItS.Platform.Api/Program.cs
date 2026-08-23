@@ -34,6 +34,7 @@ using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Personal;
 using ExItS.Platform.Application.Settings;
 using ExItS.Platform.Application.PrivacyCompliance;
+using ExItS.Platform.Application.Operations;
 using ExItS.Platform.Application.Qr;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Infrastructure;
@@ -483,6 +484,9 @@ builder.Services.AddScoped<GenerateEntitlementSnapshot>();
 builder.Services.AddScoped<ReconcileEntitlementSnapshot>();
 
 builder.Services.AddScoped<AdminPortfolioQueryService>();
+builder.Services.AddScoped<PlatformUsageLimitsQueryService>();
+builder.Services.AddScoped<PlatformSupportLookupService>();
+builder.Services.AddScoped<PlatformBackgroundJobsQueryService>();
 
 builder.Services.AddScoped<ListPlatformRoles>();
 builder.Services.AddScoped<AssignPlatformRole>();
@@ -572,6 +576,7 @@ app.MapPaymentEndpoints();
 app.MapEntitlementEndpoints();
 app.MapAdminEndpoints();
 app.MapSystemHealthEndpoints();
+app.MapPlatformOperationsEndpoints();
 app.MapAuthorizationEndpoints();
 app.MapOrganizationRbacEndpoints();
 app.MapAuditEndpoints();

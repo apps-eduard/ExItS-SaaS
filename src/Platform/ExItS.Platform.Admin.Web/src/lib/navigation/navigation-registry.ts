@@ -172,6 +172,15 @@ export const navigationRegistry: NavigationSectionDefinition[] = [
         permission: { kind: "any", codes: [P.viewPortfolio] },
         order: 5,
       },
+      {
+        id: "PWEB-NAV-USAGE-LIMITS",
+        labelKey: "nav.usageLimits",
+        icon: "gauge",
+        href: "/admin/usage",
+        lifecycle: "AVAILABLE",
+        permission: { kind: "any", codes: [P.viewPortfolio] },
+        order: 6,
+      },
     ],
   },
   {
@@ -245,10 +254,27 @@ export const navigationRegistry: NavigationSectionDefinition[] = [
     ],
   },
   {
+    id: "support",
+    labelKey: "nav.group.support",
+    icon: "life-buoy",
+    order: 7,
+    items: [
+      {
+        id: "PWEB-NAV-SUPPORT-CONSOLE",
+        labelKey: "nav.supportConsole",
+        icon: "search",
+        href: "/admin/support",
+        lifecycle: "AVAILABLE",
+        permission: { kind: "platformAdministrator" },
+        order: 1,
+      },
+    ],
+  },
+  {
     id: "governance",
     labelKey: "nav.group.governance",
     icon: "shield",
-    order: 7,
+    order: 8,
     items: [
       {
         id: "PWEB-NAV-AUDIT-LOG",
@@ -274,7 +300,7 @@ export const navigationRegistry: NavigationSectionDefinition[] = [
     id: "operations",
     labelKey: "nav.group.operations",
     icon: "activity",
-    order: 8,
+    order: 9,
     items: [
       {
         id: "PWEB-NAV-PLATFORM-HEALTH",
@@ -286,12 +312,30 @@ export const navigationRegistry: NavigationSectionDefinition[] = [
         order: 1,
       },
       {
+        id: "PWEB-NAV-PRODUCT-OPERATIONS",
+        labelKey: "nav.productOperations",
+        icon: "boxes",
+        href: "/admin/operations/products",
+        lifecycle: "AVAILABLE",
+        permission: { kind: "platformAdministrator" },
+        order: 2,
+      },
+      {
+        id: "PWEB-NAV-BACKGROUND-JOBS",
+        labelKey: "nav.backgroundJobs",
+        icon: "timer",
+        href: "/admin/operations/jobs",
+        lifecycle: "AVAILABLE",
+        permission: { kind: "platformAdministrator" },
+        order: 3,
+      },
+      {
         id: "PWEB-NAV-EVENT-DELIVERY",
         labelKey: "nav.eventDelivery",
         icon: "send",
         lifecycle: "PLANNED_DISABLED",
         permission: { kind: "platformAdministrator" },
-        order: 2,
+        order: 4,
       },
     ],
   },
@@ -299,7 +343,7 @@ export const navigationRegistry: NavigationSectionDefinition[] = [
     id: "settings",
     labelKey: "nav.group.settings",
     icon: "settings",
-    order: 9,
+    order: 10,
     items: [
       {
         id: "PWEB-NAV-PLATFORM-SETTINGS",
@@ -316,7 +360,7 @@ export const navigationRegistry: NavigationSectionDefinition[] = [
     id: "development",
     labelKey: "nav.group.development",
     icon: "flask-conical",
-    order: 10,
+    order: 11,
     items: [
       {
         id: "PWEB-NAV-TEST-PAYMENTS",

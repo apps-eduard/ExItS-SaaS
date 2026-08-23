@@ -35,6 +35,10 @@ import { TestPaymentsPage } from "@/features/local-validation/TestPaymentsPage";
 import { EntitlementsPortfolioPage } from "@/features/entitlements/EntitlementsPortfolioPage";
 import { OverviewPage } from "@/features/overview/OverviewPage";
 import { SystemHealthPage } from "@/features/system-health/SystemHealthPage";
+import { UsageLimitsPage } from "@/features/usage-limits/UsageLimitsPage";
+import { SupportConsolePage } from "@/features/support/SupportConsolePage";
+import { ProductOperationsPage } from "@/features/product-operations/ProductOperationsPage";
+import { BackgroundJobsPage } from "@/features/background-jobs/BackgroundJobsPage";
 import { AuditListPage } from "@/features/audit/AuditListPage";
 import { AuditDetailPage } from "@/features/audit/AuditDetailPage";
 import { PlatformRolesListPage } from "@/features/platform-roles/PlatformRolesListPage";
@@ -213,6 +217,8 @@ export function App() {
                           <Route index element={<PersonalFeaturesListPage />} />
                           <Route path=":featureCode" element={<PersonalFeatureDetailPage />} />
                         </Route>
+                        <Route path="usage" element={<UsageLimitsPage />} />
+                        <Route path="support" element={<SupportConsolePage />} />
                         <Route path="users">
                           <Route index element={<UsersPage />} />
                           <Route
@@ -269,6 +275,8 @@ export function App() {
                           />
                         </Route>
                         <Route path="system-health" element={<SystemHealthPage />} />
+                        <Route path="operations/products" element={<ProductOperationsPage />} />
+                        <Route path="operations/jobs" element={<BackgroundJobsPage />} />
                         <Route
                           path="operations/health"
                           element={<Navigate to="/admin/system-health" replace />}

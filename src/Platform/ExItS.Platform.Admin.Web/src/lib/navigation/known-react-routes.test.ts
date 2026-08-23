@@ -54,6 +54,30 @@ describe("resolveKnownReactRoute", () => {
     );
   });
 
+  it("treats /admin/usage as implemented", () => {
+    expect(resolveKnownReactRoute({ ...loadedAuthorized, pathname: "/admin/usage" })).toBe(
+      "implemented",
+    );
+  });
+
+  it("treats /admin/support as implemented", () => {
+    expect(resolveKnownReactRoute({ ...loadedAuthorized, pathname: "/admin/support" })).toBe(
+      "implemented",
+    );
+  });
+
+  it("treats /admin/operations/products as implemented", () => {
+    expect(
+      resolveKnownReactRoute({ ...loadedAuthorized, pathname: "/admin/operations/products" }),
+    ).toBe("implemented");
+  });
+
+  it("treats /admin/operations/jobs as implemented", () => {
+    expect(
+      resolveKnownReactRoute({ ...loadedAuthorized, pathname: "/admin/operations/jobs" }),
+    ).toBe("implemented");
+  });
+
   it("treats /admin/entitlements as implemented", () => {
     expect(resolveKnownReactRoute({ ...loadedAuthorized, pathname: "/admin/entitlements" })).toBe(
       "implemented",
