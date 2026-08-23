@@ -12,6 +12,7 @@ import {
   FlaskConical,
   Folder,
   Key,
+  Landmark,
   LayoutDashboard,
   Package,
   Receipt,
@@ -22,6 +23,7 @@ import {
   Shield,
   ShieldCheck,
   Star,
+  Store,
   Tag,
   Upload,
   User,
@@ -43,6 +45,7 @@ const icons: Record<string, LucideIcon> = {
   "flask-conical": FlaskConical,
   folder: Folder,
   key: Key,
+  landmark: Landmark,
   "layout-dashboard": LayoutDashboard,
   package: Package,
   receipt: Receipt,
@@ -53,6 +56,7 @@ const icons: Record<string, LucideIcon> = {
   shield: Shield,
   "shield-check": ShieldCheck,
   star: Star,
+  store: Store,
   tag: Tag,
   upload: Upload,
   user: User,
@@ -80,7 +84,9 @@ export function NavIcon({
         compact ? "size-9" : "size-8",
         active
           ? "bg-[var(--exits-primary-soft)] text-primary"
-          : "text-muted group-hover/nav:text-foreground",
+          : compact
+            ? "text-muted group-hover/nav:text-primary group-hover/nav:bg-[var(--exits-primary-soft)]/70"
+            : "text-muted group-hover/nav:text-foreground",
         className,
       )}
     >

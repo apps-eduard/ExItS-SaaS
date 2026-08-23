@@ -1,10 +1,10 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip } from "@/components/ui/tooltip";
 import { NavExpandable } from "@/components/exits/nav-expandable";
 import { NavIcon } from "@/components/exits/nav-icons";
+import { NavRailHint } from "@/components/exits/nav-rail-hint";
 import { navLinkClass, navRowBase, navSectionHeaderClass } from "@/components/exits/nav-item-styles";
 import { useNavAccordion } from "@/components/exits/nav-accordion-context";
 import { useAuthorizedCatalogProductsQuery } from "@/features/navigation/use-catalog-products-query";
@@ -12,6 +12,7 @@ import { useAuthorization } from "@/hooks/use-authorization";
 import { usePreferences } from "@/hooks/use-preferences";
 import { areDevelopmentToolsAllowed } from "@/lib/auth/development-tools";
 import type { MessageKey } from "@/lib/i18n/messages";
+import { itemIsActive, pathMatches } from "@/lib/navigation/nav-route-utils";
 import { resolveNavigation } from "@/lib/navigation/resolve-navigation";
 import type { ResolvedNavigationItem } from "@/lib/navigation/navigation-types";
 import { cn } from "@/lib/utils";
@@ -26,35 +27,28 @@ function itemLabel(item: ResolvedNavigationItem, t: (key: MessageKey) => string)
   return item.id;
 }
 
-function pathMatches(href: string | undefined, pathname: string, search: string): boolean {
-  if (!href) {
-    return false;
+/** Icon rail: one click per destination — expand groups into direct product links. */
+function itemsForNavPresentation(
+  items: ResolvedNavigationItem[],
+  collapsed: boolean,
+): ResolvedNavigationItem[] {
+  if (!collapsed) {
+    return items;
   }
-  const url = new URL(href, "http://local.invalid");
-  const isSettingsWorkspace =
-    url.pathname === "/admin/settings" &&
-    (pathname === "/admin/settings" || pathname.startsWith("/admin/settings/"));
-  if (!isSettingsWorkspace && url.pathname !== pathname) {
-    return false;
-  }
-  if (!url.search) {
-    return search.length === 0 || search === "?" || isSettingsWorkspace;
-  }
-  return url.search === search;
+  return items.flatMap((item) =>
+    item.presentation === "group" ? (item.children ?? []) : [item],
+  );
 }
 
-function itemIsActive(
-  item: ResolvedNavigationItem,
-  pathname: string,
-  search: string,
-): boolean {
-  if (pathMatches(item.href, pathname, search)) {
-    return true;
-  }
-  return (item.children ?? []).some((child) => itemIsActive(child, pathname, search));
-}
-
-export function AppNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
+export function AppNav({
+  collapsed,
+  railTooltipsEnabled = true,
+  onNavigate,
+}: {
+  collapsed: boolean;
+  railTooltipsEnabled?: boolean;
+  onNavigate?: () => void;
+}) {
   const { t } = usePreferences();
   const location = useLocation();
   const authorization = useAuthorization();
@@ -78,6 +72,13 @@ export function AppNav({ collapsed, onNavigate }: { collapsed: boolean; onNaviga
     catalogProducts,
   );
 
+  useEffect(() => {
+    const active = document.querySelector<HTMLElement>("[data-nav-active='true']");
+    if (active && typeof active.scrollIntoView === "function") {
+      active.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [location.pathname, location.search, collapsed]);
+
   return (
     <nav aria-label={t("shell.primaryNav")} className="flex flex-col gap-1 px-2 py-3">
       {sections.map((section, sectionIndex) => {
@@ -89,7 +90,8 @@ export function AppNav({ collapsed, onNavigate }: { collapsed: boolean; onNaviga
           <div
             key={section.id}
             className={cn(
-              sectionIndex > 0 && !collapsed && "border-t border-border/70 pt-2",
+              sectionIndex > 0 && "border-t border-border/70",
+              sectionIndex > 0 && (collapsed ? "pt-2" : "pt-2"),
             )}
           >
             {collapsed ? null : (
@@ -117,10 +119,11 @@ export function AppNav({ collapsed, onNavigate }: { collapsed: boolean; onNaviga
               contentClassName={cn(collapsed && sectionIndex > 0 && "pt-1")}
             >
               <ul className="grid gap-0.5">
-                {section.items.map((item) => (
+                {itemsForNavPresentation(section.items, collapsed).map((item) => (
                   <li key={item.id}>
                     <NavItem
                       collapsed={collapsed}
+                      railTooltipsEnabled={railTooltipsEnabled}
                       item={item}
                       onNavigate={onNavigate}
                       groupOpen={openGroups.has(item.id)}
@@ -140,12 +143,14 @@ export function AppNav({ collapsed, onNavigate }: { collapsed: boolean; onNaviga
 function NavItem({
   item,
   collapsed,
+  railTooltipsEnabled,
   onNavigate,
   groupOpen,
   onToggleGroup,
 }: {
   item: ResolvedNavigationItem;
   collapsed: boolean;
+  railTooltipsEnabled: boolean;
   onNavigate?: () => void;
   groupOpen: boolean;
   onToggleGroup: () => void;
@@ -161,55 +166,43 @@ function NavItem({
 
   if (isGroup) {
     const children = item.children ?? [];
-    const groupExpanded = collapsed ? true : groupOpen;
+    const groupExpanded = groupOpen;
     const groupButton = (
       <button
         type="button"
         className={cn(
           navRowBase,
           "group/nav text-muted hover:bg-surface-muted/70 hover:text-foreground",
-          collapsed && "justify-center px-0",
-          active && !collapsed && "text-foreground",
+          active && "text-foreground",
         )}
         aria-expanded={groupExpanded}
         aria-label={label}
         onClick={onToggleGroup}
       >
-        <NavIcon name={item.icon} active={active} compact={collapsed} />
-        {collapsed ? null : (
-          <>
-            <span className="min-w-0 flex-1 truncate text-left">{label}</span>
-            <ChevronDown
-              aria-hidden="true"
-              size={14}
-              className={cn(
-                "shrink-0 transition-transform duration-[var(--exits-motion-base)] ease-[var(--exits-ease-emphasized)]",
-                groupExpanded ? "rotate-0" : "-rotate-90",
-                active && "text-primary",
-              )}
-            />
-          </>
-        )}
+        <NavIcon name={item.icon} active={active} />
+        <span className="min-w-0 flex-1 truncate text-left">{label}</span>
+        <ChevronDown
+          aria-hidden="true"
+          size={14}
+          className={cn(
+            "shrink-0 transition-transform duration-[var(--exits-motion-base)] ease-[var(--exits-ease-emphasized)]",
+            groupExpanded ? "rotate-0" : "-rotate-90",
+            active && "text-primary",
+          )}
+        />
       </button>
     );
 
     return (
       <div>
-        {collapsed ? <Tooltip content={label}>{groupButton}</Tooltip> : groupButton}
-        <NavExpandable
-          open={groupExpanded && children.length > 0}
-          className={cn(!collapsed && "mt-0.5")}
-        >
-          <ul
-            className={cn(
-              "grid gap-0.5",
-              collapsed ? "mt-1" : "ml-3 border-l border-border/80 pl-2",
-            )}
-          >
+        {groupButton}
+        <NavExpandable open={groupExpanded && children.length > 0} className="mt-0.5">
+          <ul className="ml-3 grid gap-0.5 border-l border-border/80 pl-2">
             {children.map((child) => (
               <li key={child.id}>
                 <NavItem
                   collapsed={collapsed}
+                  railTooltipsEnabled={railTooltipsEnabled}
                   item={child}
                   onNavigate={onNavigate}
                   groupOpen={false}
@@ -219,7 +212,7 @@ function NavItem({
             ))}
           </ul>
         </NavExpandable>
-        {groupExpanded && children.length === 0 && !collapsed ? (
+        {groupExpanded && children.length === 0 ? (
           <p className="mt-1 px-2 text-[length:var(--exits-text-xs)] text-muted">
             {t("nav.byProduct.empty")}
           </p>
@@ -239,7 +232,7 @@ function NavItem({
     >
       <NavIcon name={item.icon} active={leafActive} compact={collapsed} />
       {collapsed ? null : (
-        <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+        <span className="flex min-w-0 flex-1 items-center justify-between gap-2 transition-[opacity,transform] duration-[var(--exits-motion-base)] ease-[var(--exits-ease)]">
           <span className="truncate">{label}</span>
           {planned ? <Badge tone="neutral">{t("nav.planned")}</Badge> : null}
           {underDevelopment ? <Badge tone="neutral">{t("nav.underDevelopment")}</Badge> : null}
@@ -250,21 +243,27 @@ function NavItem({
 
   if (underDevelopment || planned || !item.href) {
     const hint = item.presentation === "context" ? t("nav.contextHint") : t("nav.plannedHint");
-    const statusLabel = underDevelopment
-      ? `${label}. ${t("nav.underDevelopment")}`
+    const statusDescription = underDevelopment
+      ? t("nav.underDevelopment")
       : planned
-        ? `${label}. ${t("nav.planned")}`
-        : `${label}. ${hint}`;
+        ? t("nav.planned")
+        : hint;
     const status = (
       <span
         aria-disabled="true"
-        aria-label={statusLabel}
+        aria-label={`${label}. ${statusDescription}`}
         className="block w-full cursor-default text-[length:var(--exits-text-sm)] text-muted"
       >
         {content}
       </span>
     );
-    return collapsed ? <Tooltip content={statusLabel}>{status}</Tooltip> : status;
+    return collapsed && railTooltipsEnabled ? (
+      <NavRailHint label={label} description={statusDescription}>
+        {status}
+      </NavRailHint>
+    ) : (
+      status
+    );
   }
 
   const link = (
@@ -272,11 +271,19 @@ function NavItem({
       to={item.href}
       end={item.href === "/admin"}
       onClick={onNavigate}
+      aria-label={collapsed ? label : undefined}
+      data-nav-active={leafActive ? "true" : undefined}
       className={() => navLinkClass(leafActive)}
     >
       {content}
     </NavLink>
   );
 
-  return collapsed ? <Tooltip content={label}>{link}</Tooltip> : link;
+  return collapsed && railTooltipsEnabled ? (
+    <NavRailHint label={label} description={leafActive ? t("nav.currentPage") : undefined}>
+      {link}
+    </NavRailHint>
+  ) : (
+    link
+  );
 }

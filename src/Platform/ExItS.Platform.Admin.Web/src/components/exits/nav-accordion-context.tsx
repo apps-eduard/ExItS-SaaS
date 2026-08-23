@@ -1,15 +1,18 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
+import { useLocation } from "react-router-dom";
 import { ListCollapse, ListTree } from "lucide-react";
 import { useAuthorizedCatalogProductsQuery } from "@/features/navigation/use-catalog-products-query";
 import { useAuthorization } from "@/hooks/use-authorization";
 import { usePreferences } from "@/hooks/use-preferences";
 import { areDevelopmentToolsAllowed } from "@/lib/auth/development-tools";
+import { collectOpenStateForPath } from "@/lib/navigation/nav-route-utils";
 import { resolveNavigation } from "@/lib/navigation/resolve-navigation";
 import type { ResolvedNavigationItem } from "@/lib/navigation/navigation-types";
 import { cn } from "@/lib/utils";
@@ -62,14 +65,23 @@ export function NavAccordionProvider({ children }: { children: ReactNode }) {
       })),
     [catalogQuery.data],
   );
-  const sections = resolveNavigation(
-    {
-      permissionStatus: authorization.status,
-      hasAnyPermission: authorization.hasAnyPermission,
-      isPlatformAdministrator: authorization.isPlatformAdministrator,
-      developmentToolsAllowed: areDevelopmentToolsAllowed(),
-    },
-    catalogProducts,
+  const sections = useMemo(
+    () =>
+      resolveNavigation(
+        {
+          permissionStatus: authorization.status,
+          hasAnyPermission: authorization.hasAnyPermission,
+          isPlatformAdministrator: authorization.isPlatformAdministrator,
+          developmentToolsAllowed: areDevelopmentToolsAllowed(),
+        },
+        catalogProducts,
+      ),
+    [
+      authorization.hasAnyPermission,
+      authorization.isPlatformAdministrator,
+      authorization.status,
+      catalogProducts,
+    ],
   );
 
   const expandableSectionIds = useMemo(() => sections.map((section) => section.id), [sections]);
@@ -82,6 +94,25 @@ export function NavAccordionProvider({ children }: { children: ReactNode }) {
     () => new Set(DEFAULT_OPEN_SECTIONS),
   );
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set(["PWEB-NAV-BY-PRODUCT"]));
+  const location = useLocation();
+
+  useEffect(() => {
+    const { sectionIds, groupIds } = collectOpenStateForPath(
+      sections,
+      location.pathname,
+      location.search,
+    );
+    if (sectionIds.length === 0) {
+      return;
+    }
+    // Keep the active route's ancestors expanded after navigation without blocking manual toggles on the same page.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- route-driven accordion sync
+    setOpenSections((current) => new Set([...current, ...sectionIds]));
+    if (groupIds.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- route-driven accordion sync
+      setOpenGroups((current) => new Set([...current, ...groupIds]));
+    }
+  }, [location.pathname, location.search, sections]);
 
   const allExpanded =
     expandableSectionIds.every((id) => openSections.has(id)) &&

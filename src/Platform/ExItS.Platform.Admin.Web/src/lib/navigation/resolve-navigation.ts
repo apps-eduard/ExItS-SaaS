@@ -1,4 +1,5 @@
 import type { AuthorizationStatus } from "@/hooks/use-authorization";
+import { catalogProductNavIcon } from "@/lib/navigation/catalog-product-nav-icon";
 import { navigationRegistry } from "@/lib/navigation/navigation-registry";
 import { reactImplementationStatus } from "@/lib/navigation/react-implementation";
 import type {
@@ -92,7 +93,7 @@ export function resolveNavigation(
             resolved.children = catalogProducts.map((product) => ({
               id: catalogProductNavId(product.code),
               label: product.displayName || product.code,
-              icon: "package",
+              icon: catalogProductNavIcon(product.code),
               href: catalogProductNavHref(product.code),
               presentation: "link" as const,
             }));

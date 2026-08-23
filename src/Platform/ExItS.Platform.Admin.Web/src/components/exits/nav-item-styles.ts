@@ -11,7 +11,7 @@ export function navLinkClass(active: boolean) {
     "transition-[background-color,color,box-shadow] duration-[var(--exits-motion-fast)] ease-[var(--exits-ease)]",
     active
       ? "bg-[var(--exits-primary-soft)] text-foreground shadow-[inset_3px_0_0_0_var(--exits-primary)]"
-      : "text-muted hover:bg-surface-muted/70 hover:text-foreground",
+      : "text-muted hover:bg-surface-muted/70 hover:text-foreground hover:shadow-sm",
   );
 }
 

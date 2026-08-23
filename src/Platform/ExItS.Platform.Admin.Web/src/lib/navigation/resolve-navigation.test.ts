@@ -113,7 +113,9 @@ describe("resolveNavigation", () => {
       "PWEB-NAV-ORG-BY-PRODUCT:pinoy-business-pos",
     ]);
     expect(byProduct?.children?.[0]?.label).toBe("Future Product X");
+    expect(byProduct?.children?.[0]?.icon).toBe("box");
     expect(byProduct?.children?.[0]?.href).toBe("/admin/organizations?product=future-product-x");
+    expect(byProduct?.children?.[1]?.icon).toBe("store");
     expect(
       navigationRegistry.some((section) => JSON.stringify(section).includes("Future Product")),
     ).toBe(false);

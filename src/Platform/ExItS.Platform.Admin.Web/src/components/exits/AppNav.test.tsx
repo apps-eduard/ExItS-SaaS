@@ -107,14 +107,14 @@ describe("AppNav bulk accordion", () => {
     render(<App />);
 
     const nav = within(await screen.findByLabelText("Primary"));
-    const payments = nav.getByRole("link", { name: "Payments" });
+    const payments = await nav.findByRole("link", { name: "Payments" });
     expect(payments.className).toMatch(/primary-soft/);
 
-    const bulk = screen.getByTestId("nav-bulk-accordion");
+    const bulk = await screen.findByTestId("nav-bulk-accordion");
     await user.click(bulk);
     await user.click(bulk);
 
-    const paymentsAgain = nav.getByRole("link", { name: "Payments" });
+    const paymentsAgain = await nav.findByRole("link", { name: "Payments" });
     expect(paymentsAgain.className).toMatch(/primary-soft/);
   });
 
@@ -127,7 +127,25 @@ describe("AppNav bulk accordion", () => {
     render(<App />);
     expect(await screen.findByTestId("nav-bulk-accordion")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Collapse sidebar" }));
-    expect(screen.queryByTestId("nav-bulk-accordion")).not.toBeInTheDocument();
+    expect(screen.getByTestId("nav-bulk-accordion")).toBeInTheDocument();
     expect(primaryNav().querySelector('a[href="/admin"]')).not.toBeNull();
+  });
+
+  it("flattens By Product into direct product links in icon-rail mode", async () => {
+    stubDesktop(true);
+    vi.spyOn(developmentTools, "areDevelopmentToolsAllowed").mockReturnValue(true);
+    mockAuthenticatedFetch();
+    const user = userEvent.setup();
+    window.history.replaceState({}, "", "/admin");
+    render(<App />);
+    await screen.findByRole("link", { name: "All Organizations" });
+    await user.click(screen.getByRole("button", { name: "Collapse sidebar" }));
+
+    const nav = within(primaryNav());
+    expect(nav.queryByRole("button", { name: /^By Product$/i })).not.toBeInTheDocument();
+    expect(nav.getByRole("link", { name: "Pinoy Business POS" })).toHaveAttribute(
+      "href",
+      "/admin/organizations?product=pinoy-business-pos",
+    );
   });
 });

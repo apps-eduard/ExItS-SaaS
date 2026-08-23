@@ -465,6 +465,8 @@ export const enMessages = {
   "nav.testPayments": "Test Payments",
   "nav.expandAll": "Expand all",
   "nav.collapseAll": "Collapse all",
+  "nav.currentPage": "Current page",
+  "nav.openSubmenu": "Click or hold to open",
   "testPayments.title": "Test Payments",
   "testPayments.description":
     "Local Validation simulated provider payments. Development and Local Validation only — never a real gateway.",
@@ -2653,6 +2655,8 @@ export const filPhMessages: Record<MessageKey, string> = {
   "nav.testPayments": "Mga Pagsubok na Bayad",
   "nav.expandAll": "Palawakin lahat",
   "nav.collapseAll": "I-collapse lahat",
+  "nav.currentPage": "Kasalukuyang pahina",
+  "nav.openSubmenu": "I-click o i-hold para buksan",
   "testPayments.title": "Mga Pagsubok na Bayad",
   "testPayments.description":
     "Simulated provider payments para sa Local Validation. Development at Local Validation lamang — hindi totoong gateway.",
