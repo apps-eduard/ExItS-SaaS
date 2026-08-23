@@ -28,6 +28,7 @@ const IMPLEMENTED_NAV_IDS = new Set([
   "PWEB-NAV-PRIVACY-COMPLIANCE",
   "PWEB-NAV-PLATFORM-HEALTH",
   "PWEB-NAV-PLATFORM-SETTINGS",
+  "PWEB-NAV-TEST-PAYMENTS",
 ]);
 
 export function reactImplementationStatus(

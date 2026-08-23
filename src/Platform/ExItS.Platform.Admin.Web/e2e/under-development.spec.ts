@@ -88,43 +88,44 @@ async function mockAuthenticatedSession(page: import("@playwright/test").Page) {
 test.describe("development frontend mode", () => {
   test.use({ baseURL: "http://127.0.0.1:4174" });
 
-  test("Development section shows DEV_TEST_ONLY only", async ({ page }) => {
+  test("Development section shows DEV_TEST_ONLY Test Payments as implemented", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await mockAuthenticatedSession(page);
     await page.goto("/admin");
     await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
     await expect(page.getByText("Development", { exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "All Organizations" })).toBeVisible();
-    await expect(page.getByLabel("Test Payments. Under development")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Test Payments" })).toBeVisible();
+    await expect(page.getByLabel("Test Payments. Under development")).toHaveCount(0);
     await expect(page.getByRole("link", { name: "All Accounts" })).toBeVisible();
     await expect(page.getByLabel("Event Delivery. Planned")).toBeVisible();
     await expect(page.getByRole("link", { name: "Event Delivery" })).toHaveCount(0);
   });
 
-  test("known DEV_TEST_ONLY route is under development", async ({ page }) => {
+  test("known DEV_TEST_ONLY Test Payments route is implemented", async ({ page }) => {
     await mockAuthenticatedSession(page);
     await page.goto("/admin/local-validation/test-payments");
-    await expect(page.getByRole("heading", { name: "Under development" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Back to Overview" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Copy error details" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Test Payments" })).toBeVisible();
+    await expect(page.getByText("TEST / LOCAL VALIDATION ONLY")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Under development" })).toHaveCount(0);
   });
 
-  test("under-development page has no horizontal overflow at 375px", async ({ page }) => {
+  test("Test Payments page has no horizontal overflow at 375px", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await mockAuthenticatedSession(page);
     await page.goto("/admin/local-validation/test-payments");
-    await expect(page.getByRole("heading", { name: "Under development" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Test Payments" })).toBeVisible();
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
     );
     expect(overflow).toBe(false);
   });
 
-  test("under-development page has no serious accessibility violations", async ({ page }) => {
+  test("Test Payments page has no serious accessibility violations", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await mockAuthenticatedSession(page);
     await page.goto("/admin/local-validation/test-payments");
-    await expect(page.getByRole("heading", { name: "Under development" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Test Payments" })).toBeVisible();
 
     const results = await new AxeBuilder({ page }).analyze();
     const serious = results.violations.filter(

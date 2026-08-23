@@ -31,6 +31,7 @@ import { SubscriptionsPage } from "@/features/subscriptions/SubscriptionsPage";
 import { SubscriptionDetailPage } from "@/features/subscriptions/SubscriptionDetailPage";
 import { PaymentsPage } from "@/features/payments/PaymentsPage";
 import { PaymentDetailPage } from "@/features/payments/PaymentDetailPage";
+import { TestPaymentsPage } from "@/features/local-validation/TestPaymentsPage";
 import { EntitlementsPortfolioPage } from "@/features/entitlements/EntitlementsPortfolioPage";
 import { OverviewPage } from "@/features/overview/OverviewPage";
 import { SystemHealthPage } from "@/features/system-health/SystemHealthPage";
@@ -202,6 +203,10 @@ export function App() {
                           <Route index element={<PaymentsPage />} />
                           <Route path=":paymentId" element={<PaymentDetailPage />} />
                         </Route>
+                        <Route
+                          path="local-validation/test-payments"
+                          element={<TestPaymentsPage />}
+                        />
                         <Route path="entitlements" element={<EntitlementsPortfolioPage />} />
                         <Route path="organization-users" element={<MembershipsHubPage />} />
                         <Route path="personal-features">

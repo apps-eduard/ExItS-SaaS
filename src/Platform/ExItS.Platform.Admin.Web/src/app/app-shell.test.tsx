@@ -216,8 +216,11 @@ describe("application shell", () => {
     mockAuthenticatedFetch();
     window.history.replaceState({}, "", "/admin");
     render(<App />);
-    expect(await screen.findByLabelText("Test Payments. Under development")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Test Payments" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Test Payments" })).toHaveAttribute(
+      "href",
+      "/admin/local-validation/test-payments",
+    );
+    expect(screen.queryByLabelText("Test Payments. Under development")).not.toBeInTheDocument();
   });
 
   it("shows authorized under-development items in-place and Development only for DEV_TEST_ONLY", async () => {
@@ -234,8 +237,7 @@ describe("application shell", () => {
       "/admin/users",
     );
     expect(screen.getByLabelText("Event Delivery. Planned")).toBeInTheDocument();
-    expect(screen.getAllByText("Under development").length).toBeGreaterThan(0);
-    expect(screen.getByLabelText("Test Payments. Under development")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Test Payments" })).toBeInTheDocument();
   });
 
   it("keeps blueprint under-development items without Development tools, and hides DEV_TEST_ONLY", async () => {
@@ -262,18 +264,16 @@ describe("application shell", () => {
     expect(screen.getByRole("link", { name: "Overview" })).toBeInTheDocument();
   });
 
-  it("renders Under development for known unimplemented routes and Page not found for unknown routes", async () => {
+  it("renders Test Payments for known DEV_TEST_ONLY route and Page not found for unknown routes", async () => {
     stubDesktop(true);
     vi.spyOn(developmentTools, "areDevelopmentToolsAllowed").mockReturnValue(true);
     mockAuthenticatedFetch();
+    window.__EXITS_PLATFORM_ADMIN_WEB__ = { localValidationToolsEnabled: true };
     window.history.replaceState({}, "", "/admin/local-validation/test-payments");
     const { unmount } = render(<App />);
-    expect(await screen.findByRole("heading", { name: "Under development" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Back to Overview" })).toHaveAttribute(
-      "href",
-      "/admin",
-    );
-    expect(screen.queryByRole("button", { name: "Copy error details" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Test Payments" })).toBeInTheDocument();
+    expect(screen.getByText("TEST / LOCAL VALIDATION ONLY")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Under development" })).not.toBeInTheDocument();
     unmount();
 
     window.history.replaceState({}, "", "/admin/platform-roles");
@@ -343,21 +343,19 @@ describe("application shell", () => {
     expect(screen.getByLabelText("Event Delivery. Planned")).not.toHaveAttribute("href");
   });
 
-  it("localizes the under-development page to Filipino", async () => {
+  it("localizes the Test Payments page to Filipino", async () => {
     stubDesktop(true);
     vi.spyOn(developmentTools, "areDevelopmentToolsAllowed").mockReturnValue(true);
     mockAuthenticatedFetch();
+    window.__EXITS_PLATFORM_ADMIN_WEB__ = { localValidationToolsEnabled: true };
     window.history.replaceState({}, "", "/admin/local-validation/test-payments");
     const user = userEvent.setup();
     render(<App />);
-    expect(await screen.findByRole("heading", { name: "Under development" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Test Payments" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Preferences" }));
     await user.click(await screen.findByRole("menuitem", { name: /Filipino/i }));
     expect(
-      await screen.findByRole("heading", { name: "Kasalukuyang dinadagdag" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Bumalik sa Pangkalahatang-tanaw" }),
+      await screen.findByRole("heading", { name: "Mga Pagsubok na Bayad" }),
     ).toBeInTheDocument();
   });
 

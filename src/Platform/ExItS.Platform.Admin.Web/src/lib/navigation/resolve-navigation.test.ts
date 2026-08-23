@@ -83,9 +83,7 @@ describe("resolveNavigation", () => {
       isPlatformAdministrator: true,
       developmentToolsAllowed: true,
     });
-    expect(developmentItem(sections, "PWEB-NAV-TEST-PAYMENTS")?.presentation).toBe(
-      "underDevelopment",
-    );
+    expect(developmentItem(sections, "PWEB-NAV-TEST-PAYMENTS")?.presentation).toBe("link");
     expect(developmentItem(sections, "PWEB-NAV-EVENT-DELIVERY")).toBeUndefined();
     expect(developmentItem(sections, "PWEB-NAV-ALL-ACCOUNTS")).toBeUndefined();
     expect(

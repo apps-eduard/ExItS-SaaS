@@ -135,6 +135,16 @@ describe("resolveKnownReactRoute", () => {
     ).toBe("unknown");
   });
 
+  it("treats Test Payments as implemented when development tools are allowed", () => {
+    expect(
+      resolveKnownReactRoute({
+        ...loadedAuthorized,
+        pathname: "/admin/local-validation/test-payments",
+        developmentToolsAllowed: true,
+      }),
+    ).toBe("implemented");
+  });
+
   it("hides DEV_TEST_ONLY routes outside development tools", () => {
     expect(
       resolveKnownReactRoute({

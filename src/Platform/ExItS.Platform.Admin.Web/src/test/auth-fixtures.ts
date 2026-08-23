@@ -150,6 +150,7 @@ export type AuthenticatedFetchOptions = {
   orgPaymentTotalCount?: number;
   paymentMutationError?: { status: number; errorCode: string; detail: string };
   onPaymentMutation?: (method: string, path: string, body: unknown) => void;
+  failLocalValidationSimulate?: boolean;
   failOrgAudit?: boolean;
   forbiddenOrgAudit?: boolean;
   orgAuditItems?: Array<Record<string, unknown>>;
@@ -1059,6 +1060,14 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
     if (path.endsWith("/local-validation/payments/simulate") && method === "POST") {
       const body = parseBody() as Record<string, unknown>;
       options.onPaymentMutation?.(method, path, body);
+      if (options.failLocalValidationSimulate) {
+        return jsonResponse(500, {
+          title: "Error",
+          status: 500,
+          detail: "Local Validation payment simulation failed.",
+          errorCode: "application.domain_violation",
+        });
+      }
       return jsonResponse(200, {
         status: "Succeeded",
         provider: "local-validation",

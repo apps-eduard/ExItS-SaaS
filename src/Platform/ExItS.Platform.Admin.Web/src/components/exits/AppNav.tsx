@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip } from "@/components/ui/tooltip";
 import { NavIcon } from "@/components/exits/nav-icons";
@@ -12,6 +12,19 @@ import type { MessageKey } from "@/lib/i18n/messages";
 import { resolveNavigation } from "@/lib/navigation/resolve-navigation";
 import type { ResolvedNavigationItem } from "@/lib/navigation/navigation-types";
 import { cn } from "@/lib/utils";
+
+const DEFAULT_OPEN_SECTIONS = [
+  "home",
+  "organizations",
+  "people",
+  "products",
+  "billing",
+  "catalog",
+  "governance",
+  "operations",
+  "settings",
+  "development",
+] as const;
 
 function itemLabel(item: ResolvedNavigationItem, t: (key: MessageKey) => string): string {
   if (item.label) {
@@ -40,6 +53,19 @@ function pathMatches(href: string | undefined, pathname: string, search: string)
   return url.search === search;
 }
 
+function collectGroupIds(items: ResolvedNavigationItem[]): string[] {
+  const ids: string[] = [];
+  for (const item of items) {
+    if (item.presentation === "group") {
+      ids.push(item.id);
+    }
+    if (item.children?.length) {
+      ids.push(...collectGroupIds(item.children));
+    }
+  }
+  return ids;
+}
+
 export function AppNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
   const { t } = usePreferences();
   const location = useLocation();
@@ -63,22 +89,20 @@ export function AppNav({ collapsed, onNavigate }: { collapsed: boolean; onNaviga
     catalogProducts,
   );
 
+  const expandableSectionIds = useMemo(() => sections.map((section) => section.id), [sections]);
+  const expandableGroupIds = useMemo(
+    () => sections.flatMap((section) => collectGroupIds(section.items)),
+    [sections],
+  );
+
   const [openSections, setOpenSections] = useState<Set<string>>(
-    () =>
-      new Set([
-        "home",
-        "organizations",
-        "people",
-        "products",
-        "billing",
-        "catalog",
-        "governance",
-        "operations",
-        "settings",
-        "development",
-      ]),
+    () => new Set(DEFAULT_OPEN_SECTIONS),
   );
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set(["PWEB-NAV-BY-PRODUCT"]));
+
+  const allExpanded =
+    expandableSectionIds.every((id) => openSections.has(id)) &&
+    expandableGroupIds.every((id) => openGroups.has(id));
 
   function toggleSection(id: string) {
     setOpenSections((current) => {
@@ -104,8 +128,41 @@ export function AppNav({ collapsed, onNavigate }: { collapsed: boolean; onNaviga
     });
   }
 
+  function expandAll() {
+    setOpenSections(new Set(expandableSectionIds));
+    setOpenGroups(new Set(expandableGroupIds));
+  }
+
+  function collapseAll() {
+    setOpenSections(new Set());
+    setOpenGroups(new Set());
+  }
+
+  const bulkLabel = allExpanded ? t("nav.collapseAll") : t("nav.expandAll");
+  const BulkIcon = allExpanded ? ChevronsDownUp : ChevronsUpDown;
+
   return (
     <nav aria-label={t("shell.primaryNav")} className="flex flex-col gap-3 px-2 py-3">
+      {collapsed ? null : (
+        <div className="flex justify-end px-1">
+          <button
+            type="button"
+            data-testid="nav-bulk-accordion"
+            className="inline-flex size-8 items-center justify-center rounded-md text-muted hover:bg-surface-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={bulkLabel}
+            title={bulkLabel}
+            onClick={() => {
+              if (allExpanded) {
+                collapseAll();
+              } else {
+                expandAll();
+              }
+            }}
+          >
+            <BulkIcon aria-hidden="true" size={16} />
+          </button>
+        </div>
+      )}
       {sections.map((section) => {
         const sectionOpen = collapsed || openSections.has(section.id);
         const sectionHasActive = section.items.some(
