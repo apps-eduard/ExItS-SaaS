@@ -4,6 +4,10 @@ import { usePreferences } from "@/hooks/use-preferences";
 export function SettingsCapabilityPanel({ section }: { section: SettingsSectionDefinition }) {
   const { t } = usePreferences();
 
+  if (section.hasBackendApi || !section.gapBodyKey || !section.backendApiGap) {
+    return null;
+  }
+
   return (
     <article
       className="grid gap-4 rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-4"

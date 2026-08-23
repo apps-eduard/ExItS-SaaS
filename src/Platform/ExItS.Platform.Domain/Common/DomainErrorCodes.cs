@@ -171,6 +171,9 @@ public static class DomainErrorCodes
     public const string PersonalAccountSettingsConcurrencyConflict =
         "platform.personal.account_settings.concurrency_conflict";
 
+    public const string InvalidPlatformSettings = "platform.settings.invalid";
+    public const string PlatformSettingsConcurrencyConflict = "platform.settings.concurrency_conflict";
+
     public const string InvalidPersonalContactId = "platform.personal.contact.id.invalid";
     public const string InvalidPersonalContactDisplayName = "platform.personal.contact.display_name.invalid";
     public const string PersonalContactEmailConflict = "platform.personal.contact.email.conflict";

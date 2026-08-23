@@ -232,6 +232,12 @@ public static class PlatformAuditActions
     public const string PlatformAccessChecked = "platform.access.checked";
 
     public const string PersonalAccountSettingsUpdated = "platform.personal.account_settings.updated";
+
+    public const string PlatformSettingsGeneralUpdated = "platform.settings.general.updated";
+    public const string PlatformSettingsEmailUpdated = "platform.settings.email.updated";
+    public const string PlatformSettingsEmailTestSent = "platform.settings.email.test_sent";
+    public const string PlatformSettingsRegionalUpdated = "platform.settings.regional.updated";
+
     public const string PersonalContactCreated = "platform.personal.contact.created";
     public const string PersonalContactLinked = "platform.personal.contact.linked";
     public const string PersonalUtangRelationshipCreated = "platform.personal.utang_relationship.created";

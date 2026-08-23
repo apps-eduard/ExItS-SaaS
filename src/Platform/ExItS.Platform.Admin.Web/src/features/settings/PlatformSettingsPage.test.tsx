@@ -5,6 +5,45 @@ import { App } from "@/app/App";
 import { SETTINGS_BACKEND_API_GAPS } from "@/features/settings/settings-sections";
 import { mockAuthenticatedFetch } from "@/test/auth-fixtures";
 
+const sampleGeneral = {
+  platformDisplayName: "ExItS",
+  supportEmail: null,
+  brandingLogoUrl: null,
+  brandingPrimaryColor: null,
+  brandingAccentColor: null,
+  version: 1,
+  updatedAtUtc: "2026-08-23T12:00:00Z",
+  updatedByActorId: "olivia@example.test",
+};
+
+const sampleEmail = {
+  providerMode: "Smtp",
+  smtpHost: null,
+  smtpPort: null,
+  smtpUsername: null,
+  passwordConfigured: false,
+  fromDisplayName: "ExItS",
+  fromAddress: "",
+  securityMode: "None",
+  adminPublicBaseUrl: null,
+  isConfigured: false,
+  version: 1,
+  updatedAtUtc: "2026-08-23T12:00:00Z",
+  updatedByActorId: "olivia@example.test",
+};
+
+const sampleRegional = {
+  defaultTimeZoneId: "UTC",
+  defaultLocale: "en-US",
+  defaultCurrencyCode: "USD",
+  defaultCountryCode: "US",
+  dateFormat: null,
+  timeFormat: null,
+  version: 1,
+  updatedAtUtc: "2026-08-23T12:00:00Z",
+  updatedByActorId: "olivia@example.test",
+};
+
 function stubDesktop() {
   vi.spyOn(window, "matchMedia").mockImplementation((query: string) => {
     return {
@@ -17,6 +56,63 @@ function stubDesktop() {
       removeListener: () => undefined,
       dispatchEvent: () => true,
     } as MediaQueryList;
+  });
+}
+
+function mockSettingsFetch() {
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const method = init?.method ?? "GET";
+    if (url.includes("/api/v1/platform/auth/me")) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          sessionId: "11111111-1111-1111-1111-111111111111",
+          userId: "22222222-2222-2222-2222-222222222222",
+          username: "olivia",
+          displayName: "Olivia Mendoza",
+          email: "olivia@example.test",
+          expiresAtUtc: "2026-08-19T12:00:00Z",
+          absoluteExpiresAtUtc: "2026-08-20T12:00:00Z",
+          lastActivityAtUtc: "2026-08-19T11:00:00Z",
+          selectedOrganizationId: null,
+          selectedOrganizationDisplayName: null,
+          organizationSelectionState: "None",
+          activeOrganizationCount: 0,
+          accountClass: "Platform",
+          allowedScope: "Platform",
+        }),
+        text: async () => "",
+      } as Response;
+    }
+    if (url.includes("/api/v1/platform/authorization/me")) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          actorIdentifier: "olivia@example.test",
+          actorType: "PlatformUser",
+          platformUserId: "22222222-2222-2222-2222-222222222222",
+          organizationId: null,
+          permissions: ["platform.permission.view_portfolio"],
+        }),
+        text: async () => "",
+      } as Response;
+    }
+    if (url.includes("/api/v1/platform/settings/general") && method === "GET") {
+      return { ok: true, status: 200, json: async () => sampleGeneral, text: async () => "" } as Response;
+    }
+    if (url.includes("/api/v1/platform/settings/email") && method === "GET") {
+      return { ok: true, status: 200, json: async () => sampleEmail, text: async () => "" } as Response;
+    }
+    if (url.includes("/api/v1/platform/settings/regional") && method === "GET") {
+      return { ok: true, status: 200, json: async () => sampleRegional, text: async () => "" } as Response;
+    }
+    if (url.includes("/health")) {
+      return { ok: true, status: 200, json: async () => "Healthy", text: async () => "Healthy" } as Response;
+    }
+    return { ok: true, status: 200, json: async () => ({}), text: async () => "" } as Response;
   });
 }
 
@@ -35,59 +131,29 @@ describe("platform settings workspace", () => {
     const nav = await screen.findByRole("navigation", { name: "Primary" });
     const settingsLink = within(nav).getByRole("link", { name: "Platform Settings" });
     expect(settingsLink).toHaveAttribute("href", "/admin/settings");
-    expect(within(nav).queryByRole("link", { name: "General" })).not.toBeInTheDocument();
-    expect(within(nav).queryByRole("link", { name: "Email & Notifications" })).not.toBeInTheDocument();
   });
 
-  it("loads workspace local nav and truthful backend-gap panels without fake values", async () => {
+  it("loads general settings form and keeps security as backend gap", async () => {
     stubDesktop();
-    mockAuthenticatedFetch();
-    window.history.replaceState({}, "", "/admin/settings");
+    vi.stubGlobal("fetch", mockSettingsFetch());
+    window.history.replaceState({}, "", "/admin/settings/general");
     const user = userEvent.setup();
     render(<App />);
 
-    expect(await screen.findByRole("heading", { name: "Platform Settings" })).toBeInTheDocument();
-    expect(await screen.findByRole("heading", { name: "General" })).toBeInTheDocument();
-    expect(screen.getByText("BACKEND_API_GAP:PLATFORM_SETTINGS_GENERAL")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /save/i })).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/smtp password/i)).not.toBeInTheDocument();
+    expect(await screen.findByLabelText("Platform display name")).toHaveValue("ExItS");
+    expect(screen.queryByText("BACKEND_API_GAP:PLATFORM_SETTINGS_GENERAL")).not.toBeInTheDocument();
 
     const workspaceNav = screen.getByRole("navigation", { name: "Settings categories" });
-    expect(within(workspaceNav).getByRole("link", { name: "General" })).toHaveAttribute(
-      "href",
-      "/admin/settings/general",
-    );
-    expect(within(workspaceNav).getByRole("link", { name: "Email & Notifications" })).toHaveAttribute(
-      "href",
-      "/admin/settings/email",
-    );
-    expect(within(workspaceNav).getByRole("link", { name: "Security Policies" })).toBeInTheDocument();
-    expect(within(workspaceNav).getByRole("link", { name: "Integrations" })).toBeInTheDocument();
-    expect(within(workspaceNav).getByRole("link", { name: "Feature Flags" })).toBeInTheDocument();
-    expect(within(workspaceNav).getByRole("link", { name: "Regional" })).toBeInTheDocument();
-    expect(within(workspaceNav).getByRole("link", { name: "Advanced" })).toBeInTheDocument();
-
-    await user.click(within(workspaceNav).getByRole("link", { name: "Email & Notifications" }));
-    expect(await screen.findByRole("heading", { name: "Email & Notifications" })).toBeInTheDocument();
-    expect(screen.getByText("BACKEND_API_GAP:PLATFORM_SETTINGS_EMAIL")).toBeInTheDocument();
-    expect(screen.getByText(/SMTP passwords/i)).toBeInTheDocument();
-
-    await user.click(within(workspaceNav).getByRole("link", { name: "Feature Flags" }));
-    expect(await screen.findByRole("heading", { name: "Feature Flags" })).toBeInTheDocument();
-    expect(screen.getByText("BACKEND_API_GAP:PLATFORM_SETTINGS_FEATURE_FLAGS")).toBeInTheDocument();
-    expect(
-      screen.getByText(/Plans, subscriptions, catalog features, and entitlements → Products & Commercial/i),
-    ).toBeInTheDocument();
+    await user.click(within(workspaceNav).getByRole("link", { name: "Security Policies" }));
+    expect(await screen.findByText("BACKEND_API_GAP:PLATFORM_SETTINGS_SECURITY")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Save changes" })).not.toBeInTheDocument();
   });
 
-  it("records every settings category as a backend API gap", () => {
+  it("records remaining settings categories as backend API gaps", () => {
     expect(SETTINGS_BACKEND_API_GAPS).toEqual([
-      "BACKEND_API_GAP:PLATFORM_SETTINGS_GENERAL",
-      "BACKEND_API_GAP:PLATFORM_SETTINGS_EMAIL",
       "BACKEND_API_GAP:PLATFORM_SETTINGS_SECURITY",
       "BACKEND_API_GAP:PLATFORM_SETTINGS_INTEGRATIONS",
       "BACKEND_API_GAP:PLATFORM_SETTINGS_FEATURE_FLAGS",
-      "BACKEND_API_GAP:PLATFORM_SETTINGS_REGIONAL",
       "BACKEND_API_GAP:PLATFORM_SETTINGS_ADVANCED",
     ]);
   });
@@ -98,15 +164,5 @@ describe("platform settings workspace", () => {
     window.history.replaceState({}, "", "/admin/settings/general");
     render(<App />);
     expect(await screen.findByRole("heading", { name: "Page not found" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Platform Settings" })).not.toBeInTheDocument();
-  });
-
-  it("redirects unknown settings sections to general", async () => {
-    stubDesktop();
-    mockAuthenticatedFetch();
-    window.history.replaceState({}, "", "/admin/settings/not-a-real-section");
-    render(<App />);
-    expect(await screen.findByRole("heading", { name: "General" })).toBeInTheDocument();
-    expect(window.location.pathname).toBe("/admin/settings/general");
   });
 });

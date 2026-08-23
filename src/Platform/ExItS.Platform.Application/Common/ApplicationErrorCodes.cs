@@ -284,4 +284,8 @@ public static class ApplicationErrorCodes
         "application.personal.ads.ad_free_active";
     public const string PersonalAdsNotEligible =
         "application.personal.ads.not_eligible";
+
+    public const string InvalidPlatformSettings = "application.platform_settings.invalid";
+    public const string PlatformEmailNotConfigured = "application.platform_settings.email.not_configured";
+    public const string PlatformEmailTestFailed = "application.platform_settings.email.test_failed";
 }

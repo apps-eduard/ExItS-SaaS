@@ -1,8 +1,10 @@
 import { Navigate, Outlet, useParams } from "react-router-dom";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
+import { EmailSettingsPanel } from "@/features/settings/EmailSettingsPanel";
+import { GeneralSettingsPanel } from "@/features/settings/GeneralSettingsPanel";
 import { PlatformSettingsNav } from "@/features/settings/PlatformSettingsNav";
+import { RegionalSettingsPanel } from "@/features/settings/RegionalSettingsPanel";
 import { SettingsCapabilityPanel } from "@/features/settings/SettingsCapabilityPanel";
 import {
   PLATFORM_SETTINGS_BASE_PATH,
@@ -10,6 +12,7 @@ import {
   settingsSectionHref,
   SETTINGS_SECTIONS,
 } from "@/features/settings/settings-sections";
+import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
 import { useAuthorization } from "@/hooks/use-authorization";
 import { usePreferences } from "@/hooks/use-preferences";
 
@@ -47,6 +50,7 @@ export function PlatformSettingsIndexRedirect() {
 }
 
 export function PlatformSettingsSectionPage() {
+  const { t } = usePreferences();
   const params = useParams();
   const section = findSettingsSection(params.section);
 
@@ -54,5 +58,20 @@ export function PlatformSettingsSectionPage() {
     return <Navigate to={`${PLATFORM_SETTINGS_BASE_PATH}/general`} replace />;
   }
 
-  return <SettingsCapabilityPanel section={section} />;
+  return (
+    <div className="grid gap-4">
+      <div className="grid gap-1">
+        <h2 className="text-[length:var(--exits-text-base)] font-semibold tracking-tight">
+          {t(section.titleKey)}
+        </h2>
+        <p className="max-w-3xl text-[length:var(--exits-text-sm)] text-muted">
+          {t(section.descriptionKey)}
+        </p>
+      </div>
+      {section.id === "general" ? <GeneralSettingsPanel /> : null}
+      {section.id === "email" ? <EmailSettingsPanel /> : null}
+      {section.id === "regional" ? <RegionalSettingsPanel /> : null}
+      {!section.hasBackendApi ? <SettingsCapabilityPanel section={section} /> : null}
+    </div>
+  );
 }

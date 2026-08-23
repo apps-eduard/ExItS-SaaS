@@ -15,6 +15,7 @@ using ExItS.Platform.Api.Organizations;
 using ExItS.Platform.Api.Payments;
 using ExItS.Platform.Api.Personal;
 using ExItS.Platform.Api.PrivacyCompliance;
+using ExItS.Platform.Api.Settings;
 using ExItS.Platform.Api.Subscriptions;
 using ExItS.Platform.Application.LocalValidation;
 using ExItS.Platform.Application.Access;
@@ -31,6 +32,7 @@ using ExItS.Platform.Application.Integration.Pos;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Personal;
+using ExItS.Platform.Application.Settings;
 using ExItS.Platform.Application.PrivacyCompliance;
 using ExItS.Platform.Application.Qr;
 using ExItS.Platform.Application.Subscriptions;
@@ -67,6 +69,7 @@ builder.AddPlatformSecurity();
 builder.Services.AddPlatformBrowserAntiforgery(builder.Environment, builder.Configuration);
 builder.AddPlatformForwardedHeaders();
 builder.Services.AddPlatformPersistence(builder.Configuration);
+builder.Services.AddDataProtection();
 builder.Services.AddPlatformPaymentProvider(builder.Configuration, builder.Environment);
 
 var externalAuthOptions = builder.Configuration
@@ -288,6 +291,14 @@ builder.Services.AddScoped<GetPersonalDashboard>();
 builder.Services.AddScoped<GetPersonalProfile>();
 builder.Services.AddScoped<GetPersonalAccountSettings>();
 builder.Services.AddScoped<UpdatePersonalAccountSettings>();
+builder.Services.AddScoped<PlatformSettingsProvisioner>();
+builder.Services.AddScoped<GetPlatformGeneralSettings>();
+builder.Services.AddScoped<UpdatePlatformGeneralSettings>();
+builder.Services.AddScoped<GetPlatformEmailSettings>();
+builder.Services.AddScoped<UpdatePlatformEmailSettings>();
+builder.Services.AddScoped<SendPlatformEmailTest>();
+builder.Services.AddScoped<GetPlatformRegionalSettings>();
+builder.Services.AddScoped<UpdatePlatformRegionalSettings>();
 builder.Services.AddScoped<CreatePersonalContact>();
 builder.Services.AddScoped<ListPersonalContacts>();
 builder.Services.AddScoped<CreatePersonalDebtRelationship>();
@@ -565,6 +576,7 @@ app.MapAuthorizationEndpoints();
 app.MapOrganizationRbacEndpoints();
 app.MapAuditEndpoints();
 app.MapPrivacyComplianceEndpoints();
+app.MapPlatformSettingsEndpoints();
 app.MapLocalValidationEndpoints();
 
 if (app.Environment.IsEnvironment("Testing"))
