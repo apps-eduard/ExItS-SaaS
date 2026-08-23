@@ -9,6 +9,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { PLATFORM_PERMISSIONS } from "@/api/authorization/authorization-types";
+import { createCorrelationId } from "@/api/platform-http";
 import type { CatalogPlan } from "@/api/catalog/plan-catalog-types";
 import { classifyCommercialMutationFailure } from "@/api/commercial/commercial-errors";
 import type { OrganizationSubscription } from "@/api/organizations/subscription-list-query";
@@ -628,7 +629,7 @@ export function OrganizationSubscriptionLifecycle({
                   subscriptionId: changePlanItem.id,
                   body: {
                     planId: target.id,
-                    idempotencyKey: crypto.randomUUID(),
+                    idempotencyKey: createCorrelationId(),
                   },
                 });
                 showSuccess("organization.subscriptions.upgrade.success");
@@ -946,7 +947,7 @@ function ConvertTrialDialog({
         void onSubmit({
           planId: selected.id,
           billingCycle,
-          idempotencyKey: crypto.randomUUID(),
+          idempotencyKey: createCorrelationId(),
           expectedVersion: item.version,
         });
       }}

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { CreditCard, Plus } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { PLATFORM_PERMISSIONS } from "@/api/authorization/authorization-types";
+import { createCorrelationId } from "@/api/platform-http";
 import type { CatalogPlan } from "@/api/catalog/plan-catalog-types";
 import type { OrganizationPayment } from "@/api/organizations/billing-list-query";
 import {
@@ -1396,7 +1397,7 @@ function LocalValidationSimulateButton({
               subscriptionId: subscription.id,
               amount,
               currencyCode: plan?.currencyCode ?? "PHP",
-              idempotencyKey: crypto.randomUUID(),
+              idempotencyKey: createCorrelationId(),
               purpose: subscription.status === "Trialing" ? "convert-trial" : "initial",
               billingCycle: "Monthly",
             },

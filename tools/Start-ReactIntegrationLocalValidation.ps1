@@ -528,6 +528,10 @@ $adminEnv = @{
     LOCAL_VALIDATION_TOOLS_ENABLED = "true"
     PLATFORM_API_SAME_ORIGIN = "true"
 }
+if ($resolvedPublicHost) {
+    # Tailscale/LAN: allow Host header + HMR websocket client host (see Admin vite.config.ts).
+    $adminEnv["ADMIN_DEV_PUBLIC_HOST"] = $resolvedPublicHost
+}
 # Empty API base URL => browser same-origin /api via Vite proxy (cookie-friendly for Local Validation HTTP).
 # host 0.0.0.0 so Tailscale/LAN can reach Admin; localhost still works.
 $windowPids += Start-NpmDevWindow -Title "PA-INTEGRATION React Admin" -WorkingDirectory $adminWebDir -EnvMap $adminEnv -NpmScript "dev" -ExtraNpmArgs "--host 0.0.0.0 --port $adminWebReactPort"
@@ -552,6 +556,9 @@ if (-not $SkipReactPos) {
         Write-Step "Starting React POS Vite on :$reactPosPort (0.0.0.0 for Tailscale/LAN)..."
         $posClientEnv = @{
             VITE_POS_BUILD_SHA = $posSha
+            # DEV-only: Offline PIN enroll/unlock on Tailscale HTTP (crypto.subtle unavailable).
+            # Never set for production builds.
+            VITE_ALLOW_INSECURE_OFFLINE_PIN = "true"
         }
         if ($resolvedPublicHost) {
             $posClientEnv["POS_DEV_HOST"] = "0.0.0.0"

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   PlatformApiError,
   clearPlatformAntiforgeryToken,
+  createCorrelationId,
   platformRequest,
 } from "@/api/platform-http";
 
@@ -79,5 +80,47 @@ describe("platformRequest", () => {
     }).catch((caught: unknown) => caught);
 
     expect((error as PlatformApiError).errorCode).toBe("application.auth.login_failed");
+  });
+});
+
+describe("createCorrelationId", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("falls back to getRandomValues when randomUUID is missing (Tailscale HTTP)", () => {
+    const bytes = new Uint8Array(16);
+    for (let i = 0; i < 16; i += 1) {
+      bytes[i] = i;
+    }
+    vi.stubGlobal("crypto", {
+      getRandomValues: (target: Uint8Array) => {
+        target.set(bytes);
+        return target;
+      },
+    });
+
+    const correlationId = createCorrelationId();
+    expect(correlationId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
+  });
+
+  it("falls back when randomUUID throws outside a secure context", () => {
+    vi.stubGlobal("crypto", {
+      randomUUID: () => {
+        throw new Error("Secure context required");
+      },
+      getRandomValues: (target: Uint8Array) => {
+        for (let i = 0; i < target.length; i += 1) {
+          target[i] = (i * 7) & 0xff;
+        }
+        return target;
+      },
+    });
+
+    expect(createCorrelationId()).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
   });
 });
