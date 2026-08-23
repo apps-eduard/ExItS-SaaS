@@ -28,6 +28,7 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const icons: Record<string, LucideIcon> = {
   activity: Activity,
@@ -59,7 +60,31 @@ const icons: Record<string, LucideIcon> = {
   users: Users,
 };
 
-export function NavIcon({ name, className }: { name: string; className?: string }) {
+export function NavIcon({
+  name,
+  className,
+  active = false,
+  compact = false,
+}: {
+  name: string;
+  className?: string;
+  active?: boolean;
+  /** Icon-rail (collapsed sidebar) sizing */
+  compact?: boolean;
+}) {
   const Icon = icons[name] ?? LayoutDashboard;
-  return <Icon aria-hidden="true" className={className} size={18} />;
+  return (
+    <span
+      className={cn(
+        "grid shrink-0 place-items-center rounded-md transition-[background-color,color,transform] duration-[var(--exits-motion-fast)] ease-[var(--exits-ease)]",
+        compact ? "size-9" : "size-8",
+        active
+          ? "bg-[var(--exits-primary-soft)] text-primary"
+          : "text-muted group-hover/nav:text-foreground",
+        className,
+      )}
+    >
+      <Icon aria-hidden="true" size={compact ? 20 : 18} strokeWidth={active ? 2.25 : 2} />
+    </span>
+  );
 }

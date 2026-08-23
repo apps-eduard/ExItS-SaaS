@@ -42,8 +42,11 @@ describe("AppNav bulk accordion", () => {
     render(<App />);
 
     const nav = within(await screen.findByLabelText("Primary"));
-    expect(nav.getByRole("link", { name: "Overview" })).toBeInTheDocument();
-    expect(nav.getByRole("button", { name: /^Billing$/i })).toHaveAttribute("aria-expanded", "true");
+    expect(await nav.findByRole("link", { name: "Overview" })).toBeInTheDocument();
+    expect(await nav.findByRole("button", { name: /^Billing$/i })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
 
     const bulk = await screen.findByTestId("nav-bulk-accordion");
     expect(bulk).toHaveAttribute("aria-label", "Collapse all");
@@ -105,14 +108,14 @@ describe("AppNav bulk accordion", () => {
 
     const nav = within(await screen.findByLabelText("Primary"));
     const payments = nav.getByRole("link", { name: "Payments" });
-    expect(payments.className).toMatch(/bg-surface-muted/);
+    expect(payments.className).toMatch(/primary-soft/);
 
     const bulk = screen.getByTestId("nav-bulk-accordion");
     await user.click(bulk);
     await user.click(bulk);
 
     const paymentsAgain = nav.getByRole("link", { name: "Payments" });
-    expect(paymentsAgain.className).toMatch(/bg-surface-muted/);
+    expect(paymentsAgain.className).toMatch(/primary-soft/);
   });
 
   it("does not render the bulk control in icon-rail collapsed mode", async () => {
