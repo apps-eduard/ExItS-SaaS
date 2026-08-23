@@ -361,4 +361,63 @@ describe("SellFloorPage", () => {
       ).not.toBeInTheDocument();
     });
   });
+
+  it("shows New Sale heading and toggles info panel", async () => {
+    const user = userEvent.setup();
+    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
+    render(
+      <AppProviders>
+        <RouterProvider router={memoryRouter} />
+      </AppProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("sell-floor")).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole("heading", { name: "New Sale" })).toBeInTheDocument();
+    expect(screen.queryByTestId("sell-info-panel")).not.toBeInTheDocument();
+
+    const toggle = screen.getByTestId("sell-info-toggle");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByTestId("sell-info-panel")).toBeInTheDocument();
+    expect(
+      screen.getByText("Search or select products to start a sale."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Open a shift before checkout.")).toBeInTheDocument();
+
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByTestId("sell-info-panel")).not.toBeInTheDocument();
+  });
+
+  it("blocks weight that exceeds available stock", async () => {
+    const user = userEvent.setup();
+    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
+    render(
+      <AppProviders>
+        <RouterProvider router={memoryRouter} />
+      </AppProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`sell-product-${MOCK_MEAT_PRODUCT_ID}`)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId(`sell-product-${MOCK_MEAT_PRODUCT_ID}`));
+    await user.clear(screen.getByTestId("sell-weight-input"));
+    await user.type(screen.getByTestId("sell-weight-input"), "20");
+    await user.click(screen.getByTestId("sell-weight-confirm"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("sell-stock-error")).toHaveTextContent(
+        "Only 12.50 kg available.",
+      );
+    });
+    expect(
+      screen.queryByTestId(`sell-cart-line-${MOCK_MEAT_PRODUCT_ID}::base`),
+    ).not.toBeInTheDocument();
+  });
 });

@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { effectiveUnitPrice, lineAmount, type SessionCartLine } from "@/cart/SessionCartProvider";
 import { formatQuantityDisplay, isByWeightSellingMode } from "@/cart/sell-cart-helpers";
+import type { CartLineStockIssue } from "@/cart/sell-cart-helpers";
 import { ConfirmationDialog } from "@/components/exits/SheetDialog";
 import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
 import type { CheckoutShiftReadiness } from "@/features/shifts/checkout-readiness";
@@ -38,6 +39,8 @@ type SellCartPanelProps = {
    * Prefer explicit value from evaluateMidSessionSellBlock; falls back from readiness.
    */
   midSessionBlock?: MidSessionBlockProp;
+  stockIssues?: CartLineStockIssue[];
+  stockBanner?: string | null;
 };
 
 function deriveMidSessionBlock(
@@ -92,6 +95,8 @@ export function SellCartPanel({
   checkoutReadiness,
   canCreateSale = false,
   midSessionBlock: midSessionBlockProp,
+  stockIssues = [],
+  stockBanner = null,
 }: SellCartPanelProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -101,11 +106,13 @@ export function SellCartPanel({
   const moneyPostReady = checkoutReadiness?.moneyPostReady === true;
   const midSessionBlock = deriveMidSessionBlock(midSessionBlockProp, checkoutReadiness);
   const showMidSessionWarning = midSessionBlock !== "none" && !moneyPostReady;
-  const payEnabled = lines.length > 0 && moneyPostReady && canCreateSale;
+  const hasStockIssues = stockIssues.length > 0;
+  const stockIssueByLine = new Map(stockIssues.map((issue) => [issue.lineKey, issue]));
+  const payEnabled = lines.length > 0 && moneyPostReady && canCreateSale && !hasStockIssues;
 
   return (
-    <div className="sell-cart-panel flex min-h-0 flex-1 flex-col gap-3">
-      <div className="flex items-center justify-between gap-2">
+    <div className="sell-cart-panel flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+      <div className="sell-cart-panel__header flex shrink-0 items-center justify-between gap-2">
         <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
           {t("sell.cartLabel")}
         </h2>
@@ -147,11 +154,13 @@ export function SellCartPanel({
             const amount = lineAmount(line);
             const hasOverride = Boolean(line.priceOverride);
             const qtyLabel = formatQuantityDisplay(line.quantity);
+            const stockIssue = stockIssueByLine.get(line.lineKey);
 
             return (
               <li
                 key={line.lineKey}
                 data-testid={`sell-cart-line-${line.lineKey}`}
+                data-stock-invalid={stockIssue ? "true" : undefined}
                 className="sell-cart-line"
               >
                 <CartLineThumbnail name={line.name} />
@@ -170,6 +179,15 @@ export function SellCartPanel({
                           className="sell-cart-line__override"
                         >
                           {t("sell.priceChanged")}
+                        </p>
+                      ) : null}
+                      {stockIssue ? (
+                        <p
+                          role="alert"
+                          data-testid={`sell-cart-stock-issue-${line.lineKey}`}
+                          className="m-0 text-[length:var(--exits-text-xs)] text-[var(--exits-danger)]"
+                        >
+                          {stockIssue.message}
                         </p>
                       ) : null}
                     </div>
@@ -273,7 +291,7 @@ export function SellCartPanel({
         </ul>
       )}
 
-      <div className="sell-cart-footer mt-auto flex flex-col gap-3">
+      <div className="sell-cart-footer mt-auto flex shrink-0 flex-col gap-3">
         {lines.length > 0 ? (
           <dl className="sell-cart-summary m-0">
             <div className="sell-cart-summary__row">
@@ -331,6 +349,16 @@ export function SellCartPanel({
           </div>
         ) : null}
 
+        {stockBanner || hasStockIssues ? (
+          <p
+            role="alert"
+            data-testid="sell-cart-stock-alert"
+            className="m-0 text-[length:var(--exits-text-xs)] text-[var(--exits-danger)]"
+          >
+            {stockBanner ?? t("sell.payDisabledStock")}
+          </p>
+        ) : null}
+
         <Button
           data-testid="sell-pay"
           type="button"
@@ -338,6 +366,8 @@ export function SellCartPanel({
           title={
             payEnabled
               ? t("sell.payReadyTitle")
+              : hasStockIssues
+                ? t("sell.payDisabledStock")
               : !canCreateSale
                 ? t("sell.payDisabledTitle")
                 : !moneyPostReady
@@ -358,6 +388,8 @@ export function SellCartPanel({
         <p className="m-0 text-center text-[length:var(--exits-text-xs)] text-muted">
           {payEnabled
             ? t("sell.payReadyHint")
+            : hasStockIssues
+              ? t("sell.payDisabledStock")
             : moneyPostReady
               ? t("sell.payAddItems")
               : shiftGateReady

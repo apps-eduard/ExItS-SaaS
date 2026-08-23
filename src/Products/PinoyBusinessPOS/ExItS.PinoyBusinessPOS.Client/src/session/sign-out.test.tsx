@@ -367,7 +367,7 @@ describe("sign out", () => {
     const { memoryRouter } = renderCashierHome();
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Sell floor" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "New Sale" })).toBeInTheDocument();
     });
     expect(screen.getByTestId("workspace-context")).toHaveTextContent(/Kizy Store/);
     expect(screen.getByTestId("account-menu-trigger")).toHaveTextContent("CO");
@@ -396,7 +396,7 @@ describe("sign out", () => {
     const { memoryRouter } = renderCashierHome();
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Sell floor" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "New Sale" })).toBeInTheDocument();
     });
 
     await user.click(screen.getByTestId("account-menu-trigger"));

@@ -22,6 +22,7 @@ type SellCustomQuantityDialogProps = {
     sellableQuantity?: number | null;
     tracksExpiration?: boolean;
   } | null;
+  stockError?: string | null;
   onConfirm: (quantity: number) => void;
   onRemove?: () => void;
   onCancel: () => void;
@@ -33,6 +34,7 @@ export function SellCustomQuantityDialog({
   unit,
   initialQuantity = null,
   stockHint,
+  stockError = null,
   onConfirm,
   onRemove,
   onCancel,
@@ -158,6 +160,16 @@ export function SellCustomQuantityDialog({
             className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
           >
             {errorMessage}
+          </p>
+        ) : null}
+
+        {stockError ? (
+          <p
+            role="alert"
+            data-testid="sell-stock-error"
+            className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+          >
+            {stockError}
           </p>
         ) : null}
 

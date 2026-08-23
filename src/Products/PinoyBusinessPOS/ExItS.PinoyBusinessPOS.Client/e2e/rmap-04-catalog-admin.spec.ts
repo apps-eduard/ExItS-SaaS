@@ -50,7 +50,7 @@ test.describe("RMAP-04 catalog admin parity", () => {
     await mockBoundCashierSession(page);
     await mockPosCatalogAdminApi(page);
     await signInAndBindCashier(page);
-    await expect(page.getByRole("heading", { name: "Sell floor" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "New Sale" })).toBeVisible();
     await expect(page.getByTestId("open-catalog")).toHaveCount(0);
     // Keep SPA session/workspace bind — full page.goto remounts and drops in-memory bind.
     await clientNavigate(page, "/catalog");

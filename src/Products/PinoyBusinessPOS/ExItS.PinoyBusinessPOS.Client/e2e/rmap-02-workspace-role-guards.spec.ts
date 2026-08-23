@@ -10,7 +10,7 @@ import {
 test.describe("RMAP-02 workspace / role guards", () => {
   test.use({ serviceWorkers: "block" });
 
-  test("Personal session is denied sell floor", async ({ page }) => {
+  test("Personal session is denied New Sale", async ({ page }) => {
     await mockPersonalSession(page);
     await signInAsPersonal(page);
     await page.goto("/sell");

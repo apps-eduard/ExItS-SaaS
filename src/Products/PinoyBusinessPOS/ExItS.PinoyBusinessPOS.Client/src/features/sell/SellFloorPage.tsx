@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Info } from "lucide-react";
 import { resolveCatalogLookup } from "@/api/pos/catalog-lookup";
 import {
   CATALOG_BROWSE_PAGE_SIZE,
@@ -16,13 +16,17 @@ import type {
 import { getInventoryProduct } from "@/api/pos/pos-inventory-client";
 import {
   activeSellUnits,
+  cartLineKey,
+  evaluateStockGuard,
+  findCartStockIssues,
+  formatStockUnavailableMessage,
   isByWeightSellingMode,
   resolveAddFlow,
+  sumCartBaseQuantityForProduct,
+  type StockGuardInput,
 } from "@/cart/sell-cart-helpers";
-import { cartLineKey } from "@/cart/sell-cart-helpers";
 import { useSessionCart, type SessionCartLine } from "@/cart/SessionCartProvider";
 import { Button } from "@/components/ui/button";
-import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { SellCartPanel } from "@/features/sell/SellCartPanel";
@@ -32,7 +36,8 @@ import { SellPriceOverrideDialog } from "@/features/sell/SellPriceOverrideDialog
 import { SellProductCard } from "@/features/sell/SellProductCard";
 import { evaluateMidSessionSellBlock } from "@/features/sell/sell-readiness";
 import { SellUnitEntryDialog } from "@/features/sell/SellUnitEntryDialog";
-import { SellWeightEntryDialog } from "@/features/sell/SellWeightEntryDialog";import {
+import { SellWeightEntryDialog } from "@/features/sell/SellWeightEntryDialog";
+import {
   canCreateSale,
   canOverrideSalePrice,
   canOverrideSalePriceUnlimited,
@@ -53,6 +58,20 @@ import { useSellingMode } from "@/selling/SellingModeProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const SEARCH_DEBOUNCE_MS = 300;
+
+function stockInputFromProduct(
+  product: PosCatalogProductDto,
+  sellableQuantity?: number | null,
+): StockGuardInput {
+  return {
+    isTracked: product.isTracked,
+    onHandQuantity: product.onHandQuantity,
+    unitOfMeasure: product.unitOfMeasure,
+    tracksExpiration: product.tracksExpiration,
+    sellableQuantity: sellableQuantity ?? undefined,
+    sellingMode: product.sellingMode,
+  };
+}
 
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -128,6 +147,9 @@ export function SellFloorPage() {
   const [weightEntry, setWeightEntry] = useState<PendingWeightEntry | null>(null);
   const [customQtyEntry, setCustomQtyEntry] = useState<PendingCustomQuantityEntry | null>(null);
   const [priceOverrideLine, setPriceOverrideLine] = useState<SessionCartLine | null>(null);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [entryStockError, setEntryStockError] = useState<string | null>(null);
+  const [stockBanner, setStockBanner] = useState<string | null>(null);
   const lastExactScanRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -279,6 +301,7 @@ export function SellFloorPage() {
     ) => {
       const existing =
         initialKilograms ?? cart.getEnteredQuantity(product.productId, unit?.unitId ?? null);
+      setEntryStockError(null);
       setWeightEntry({
         product,
         unit,
@@ -290,6 +313,7 @@ export function SellFloorPage() {
 
   const openUnitEntry = useCallback(
     (product: PosCatalogProductDto, options: PosCatalogProductUnitDto[]) => {
+      setEntryStockError(null);
       setUnitEntry({
         product,
         options,
@@ -307,6 +331,7 @@ export function SellFloorPage() {
       initialQuantity?: number | null,
     ) => {
       const existing = initialQuantity ?? cart.getEnteredQuantity(product.productId, unit.unitId);
+      setEntryStockError(null);
       setCustomQtyEntry({
         product,
         unit,
@@ -314,6 +339,46 @@ export function SellFloorPage() {
       });
     },
     [cart],
+  );
+
+  const resolveSellableForProduct = useCallback(
+    (productId: string) =>
+      stockProductId === productId ? inventoryHintQuery.data?.sellableQuantity : undefined,
+    [inventoryHintQuery.data?.sellableQuantity, stockProductId],
+  );
+
+  const tryGuardAdd = useCallback(
+    (
+      product: PosCatalogProductDto,
+      quantity: number,
+      unit: PosCatalogProductUnitDto | null | undefined,
+      options?: { replaceQuantity?: boolean; reportTo?: "entry" | "banner" },
+    ): boolean => {
+      const key = cartLineKey(product.productId, unit?.unitId ?? null);
+      const replace = options?.replaceQuantity === true;
+      const otherBase = sumCartBaseQuantityForProduct(cart.lines, product.productId, key);
+      const existing = cart.getLine(key);
+      const requested = replace ? quantity : (existing?.quantity ?? 0) + quantity;
+      const check = evaluateStockGuard({
+        stock: stockInputFromProduct(product, resolveSellableForProduct(product.productId)),
+        requestedQuantity: requested,
+        multiplierToBase: unit && unit.multiplierToBase > 0 ? unit.multiplierToBase : 1,
+        otherCartBaseQuantity: otherBase,
+      });
+      if (check.ok) {
+        setEntryStockError(null);
+        setStockBanner(null);
+        return true;
+      }
+      const message = formatStockUnavailableMessage(check);
+      if (options?.reportTo === "entry") {
+        setEntryStockError(message);
+      } else {
+        setStockBanner(message);
+      }
+      return false;
+    },
+    [cart, resolveSellableForProduct],
   );
 
   const beginAddProduct = useCallback(
@@ -331,17 +396,23 @@ export function SellFloorPage() {
           openCustomQuantityEntry(product, flow.unit);
           return;
         case "direct":
+          if (!tryGuardAdd(product, 1, flow.unit, { reportTo: "banner" })) {
+            return;
+          }
           cart.addLine(product, { unit: flow.unit, quantity: 1 });
           return;
         case "unitSelector":
           openUnitEntry(product, flow.units);
           return;
         case "base":
+          if (!tryGuardAdd(product, 1, null, { reportTo: "banner" })) {
+            return;
+          }
           cart.addProduct(product, 1);
           return;
       }
     },
-    [cart, openCustomQuantityEntry, openUnitEntry, openWeightEntry],
+    [cart, openCustomQuantityEntry, openUnitEntry, openWeightEntry, tryGuardAdd],
   );
 
   useEffect(() => {
@@ -456,26 +527,39 @@ export function SellFloorPage() {
         return;
       }
       const { product } = unitEntry;
-      setUnitEntry(null);
 
       if (isByWeightSellingMode(product.sellingMode)) {
+        setUnitEntry(null);
         openWeightEntry(product, unit, quantity > 0 ? quantity : null);
         return;
       }
 
       if (unit.allowsCustomQuantity) {
+        setUnitEntry(null);
         openCustomQuantityEntry(product, unit, quantity > 0 ? quantity : null);
         return;
       }
 
+      if (!tryGuardAdd(product, quantity, unit, { reportTo: "entry" })) {
+        return;
+      }
+      setUnitEntry(null);
       cart.addLine(product, { unit, quantity });
     },
-    [cart, openCustomQuantityEntry, openWeightEntry, unitEntry],
+    [cart, openCustomQuantityEntry, openWeightEntry, tryGuardAdd, unitEntry],
   );
 
   const handleWeightConfirm = useCallback(
     (kilograms: number) => {
       if (!weightEntry) {
+        return;
+      }
+      if (
+        !tryGuardAdd(weightEntry.product, kilograms, weightEntry.unit, {
+          replaceQuantity: true,
+          reportTo: "entry",
+        })
+      ) {
         return;
       }
       cart.addLine(weightEntry.product, {
@@ -485,12 +569,20 @@ export function SellFloorPage() {
       });
       setWeightEntry(null);
     },
-    [cart, weightEntry],
+    [cart, tryGuardAdd, weightEntry],
   );
 
   const handleCustomQuantityConfirm = useCallback(
     (quantity: number) => {
       if (!customQtyEntry) {
+        return;
+      }
+      if (
+        !tryGuardAdd(customQtyEntry.product, quantity, customQtyEntry.unit, {
+          replaceQuantity: true,
+          reportTo: "entry",
+        })
+      ) {
         return;
       }
       cart.addLine(customQtyEntry.product, {
@@ -500,7 +592,7 @@ export function SellFloorPage() {
       });
       setCustomQtyEntry(null);
     },
-    [cart, customQtyEntry],
+    [cart, customQtyEntry, tryGuardAdd],
   );
 
   const synthesizeLineProduct = useCallback(
@@ -578,14 +670,113 @@ export function SellFloorPage() {
     setPriceOverrideLine(line);
   }, []);
 
+  const stockByProductId = useMemo(() => {
+    const map = new Map<string, StockGuardInput>();
+    const register = (product: PosCatalogProductDto) => {
+      const sellable =
+        stockProductId === product.productId
+          ? inventoryHintQuery.data?.sellableQuantity
+          : undefined;
+      const existing = map.get(product.productId);
+      map.set(product.productId, {
+        ...stockInputFromProduct(product, sellable ?? existing?.sellableQuantity),
+        onHandQuantity:
+          inventoryHintQuery.data?.productId === product.productId &&
+          inventoryHintQuery.data.onHandQuantity != null
+            ? inventoryHintQuery.data.onHandQuantity
+            : (product.onHandQuantity ?? existing?.onHandQuantity),
+        isTracked:
+          inventoryHintQuery.data?.productId === product.productId
+            ? (inventoryHintQuery.data.isTracked ?? product.isTracked)
+            : product.isTracked,
+      });
+    };
+    for (const product of displayedProducts) {
+      register(product);
+    }
+    for (const product of cachedProducts) {
+      if (!map.has(product.productId)) {
+        register(product);
+      }
+    }
+    return map;
+  }, [
+    cachedProducts,
+    displayedProducts,
+    inventoryHintQuery.data,
+    stockProductId,
+  ]);
+
+  const cartStockIssues = useMemo(
+    () => findCartStockIssues(cart.lines, stockByProductId),
+    [cart.lines, stockByProductId],
+  );
+
+  const handleCartIncrement = useCallback(
+    (lineKey: string) => {
+      const line = cart.getLine(lineKey);
+      if (!line) {
+        return;
+      }
+      const stock = stockByProductId.get(line.productId);
+      if (!stock?.isTracked) {
+        cart.incrementLine(lineKey);
+        return;
+      }
+      const step = line.allowsCustomQuantity || isByWeightSellingMode(line.sellingMode) ? 0.001 : 1;
+      const otherBase = sumCartBaseQuantityForProduct(cart.lines, line.productId, line.lineKey);
+      const check = evaluateStockGuard({
+        stock,
+        requestedQuantity: line.quantity + step,
+        multiplierToBase: line.multiplierToBase,
+        otherCartBaseQuantity: otherBase,
+      });
+      if (!check.ok) {
+        setStockBanner(formatStockUnavailableMessage(check));
+        return;
+      }
+      setStockBanner(null);
+      cart.incrementLine(lineKey);
+    },
+    [cart, stockByProductId],
+  );
+
+  const handleCartSetQuantity = useCallback(
+    (lineKey: string, quantity: number) => {
+      const line = cart.getLine(lineKey);
+      if (!line) {
+        return;
+      }
+      const stock = stockByProductId.get(line.productId);
+      if (!stock?.isTracked) {
+        cart.setLineQuantity(lineKey, quantity);
+        return;
+      }
+      const otherBase = sumCartBaseQuantityForProduct(cart.lines, line.productId, line.lineKey);
+      const check = evaluateStockGuard({
+        stock,
+        requestedQuantity: quantity,
+        multiplierToBase: line.multiplierToBase,
+        otherCartBaseQuantity: otherBase,
+      });
+      if (!check.ok) {
+        setStockBanner(formatStockUnavailableMessage(check));
+        return;
+      }
+      setStockBanner(null);
+      cart.setLineQuantity(lineKey, quantity);
+    },
+    [cart, stockByProductId],
+  );
+
   const cartPanelProps = {
     lines: cart.lines,
     lineCount: cart.lineCount,
     subtotal: cart.subtotal,
-    onIncrement: cart.incrementLine,
+    onIncrement: handleCartIncrement,
     onDecrement: cart.decrementLine,
     onRemove: cart.removeLine,
-    onSetQuantity: cart.setLineQuantity,
+    onSetQuantity: handleCartSetQuantity,
     onEditWeight: handleEditWeight,
     onEditCustomQuantity: handleEditCustomQuantity,
     onChangePrice: allowOverrideSalePrice ? handleChangePrice : undefined,
@@ -594,6 +785,8 @@ export function SellFloorPage() {
     canCreateSale: allowCreateSale,
     canOverrideSalePrice: allowOverrideSalePrice,
     midSessionBlock: midSessionBlock.kind,
+    stockIssues: cartStockIssues,
+    stockBanner,
   };
 
   const showFloatingCart = cart.lineCount > 0 && !cartSheetOpen && !sideCartLayout;
@@ -601,10 +794,41 @@ export function SellFloorPage() {
   return (
     <div
       data-testid="sell-floor"
-      className="sell-floor-root flex min-h-[calc(100dvh-12rem)] min-w-0 flex-col"
+      className="sell-floor-root flex min-h-0 min-w-0 flex-col"
     >
-      <div className="mb-4 flex min-w-0 items-start justify-between gap-3">
-        <PageHeader title={t("sell.title")} description={t("sell.lede")} />
+      <div className="mb-4 flex shrink-0 min-w-0 items-start justify-between gap-3">
+        <header className="flex min-w-0 flex-1 flex-col gap-1">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <h1 className="m-0 text-[length:var(--exits-text-xl)] font-bold leading-tight tracking-tight">
+              {t("sell.title")}
+            </h1>
+            <button
+              type="button"
+              data-testid="sell-info-toggle"
+              className="inline-flex size-9 shrink-0 items-center justify-center rounded-[var(--exits-radius-md)] text-muted transition-colors hover:bg-[var(--exits-surface-muted)] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label={t("sell.infoToggle")}
+              aria-expanded={infoOpen}
+              aria-controls="sell-info-panel"
+              onClick={() => setInfoOpen((open) => !open)}
+            >
+              <Info className="size-4" aria-hidden />
+            </button>
+          </div>
+          {infoOpen ? (
+            <div
+              id="sell-info-panel"
+              data-testid="sell-info-panel"
+              className="mt-1 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] px-3 py-2"
+            >
+              <ul className="m-0 list-disc space-y-1 pl-4 text-[length:var(--exits-text-xs)] text-muted">
+                <li>{t("sell.info.search")}</li>
+                <li>{t("sell.info.shift")}</li>
+                <li>{t("sell.info.device")}</li>
+                <li>{t("sell.info.weighted")}</li>
+              </ul>
+            </div>
+          ) : null}
+        </header>
         <Button
           type="button"
           variant="ghost"
@@ -618,11 +842,21 @@ export function SellFloorPage() {
         </Button>
       </div>
 
+      {stockBanner ? (
+        <p
+          role="alert"
+          data-testid="sell-stock-banner"
+          className="mb-3 m-0 shrink-0 rounded-[var(--exits-radius-md)] border border-[var(--exits-danger)]/40 bg-[var(--exits-surface-muted)] px-3 py-2 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+        >
+          {stockBanner}
+        </p>
+      ) : null}
+
       {!continuedOffline && midSessionBlock.kind === "device_lost" ? (
         <div
           role="status"
           data-testid="sell-view-only-banner"
-          className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] px-3 py-2"
+          className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] px-3 py-2"
         >
           <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
             {t("sell.viewOnlyBanner")}
@@ -642,7 +876,7 @@ export function SellFloorPage() {
         sellReadiness.openShiftNumber ? (
           <p
             data-testid="sell-offline-shift-chip"
-            className="mb-3 m-0 text-[length:var(--exits-text-xs)] text-muted"
+            className="mb-3 m-0 shrink-0 text-[length:var(--exits-text-xs)] text-muted"
           >
             {t("offline.shiftContinued").replace("{shift}", sellReadiness.openShiftNumber)}
           </p>
@@ -651,7 +885,7 @@ export function SellFloorPage() {
         (!hasOpenShift && midSessionBlock.kind !== "none") ? (
         <div
           data-testid="sell-shift-banner"
-          className="mb-4 inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border border-border bg-[var(--exits-surface-muted)] px-3 py-1.5"
+          className="mb-4 inline-flex max-w-full shrink-0 flex-wrap items-center gap-2 rounded-full border border-border bg-[var(--exits-surface-muted)] px-3 py-1.5"
         >
           <span className="text-[length:var(--exits-text-xs)]">{t("sell.shiftClosedBanner")}</span>
           <Button
@@ -666,7 +900,7 @@ export function SellFloorPage() {
       ) : hasOpenShift && currentShift ? (
         <p
           data-testid="sell-shift-chip"
-          className="mb-3 m-0 text-[length:var(--exits-text-xs)] text-muted"
+          className="mb-3 m-0 shrink-0 text-[length:var(--exits-text-xs)] text-muted"
         >
           {t("sell.shiftOpenBanner")
             .replace("{shift}", currentShift.shiftNumber)
@@ -688,6 +922,7 @@ export function SellFloorPage() {
         >
           <SearchField
             data-testid="sell-search"
+            containerClassName="shrink-0"
             label={t("sell.searchLabel")}
             autoFocus
             autoComplete="off"
@@ -737,7 +972,7 @@ export function SellFloorPage() {
 
           <div
             data-testid="sell-products"
-            className="sell-product-grid min-h-[12rem] content-start items-start rounded-[var(--exits-radius-lg)] border border-border bg-[var(--exits-surface-muted)] p-3"
+            className="sell-product-grid min-h-0 flex-1 content-start items-start overflow-y-auto rounded-[var(--exits-radius-lg)] border border-border bg-[var(--exits-surface-muted)] p-3"
             aria-label={t("sell.productsLabel")}
           >
             {productsLoading ? (
@@ -765,7 +1000,7 @@ export function SellFloorPage() {
 
         <aside
           data-testid="sell-cart-landscape"
-          className="sell-cart-landscape hidden min-h-0 min-w-0 flex-col rounded-[var(--exits-radius-lg)] border border-border bg-surface p-4 shadow-sm"
+          className="sell-cart-landscape hidden min-h-0 min-w-0 flex-col overflow-hidden rounded-[var(--exits-radius-lg)] border border-border bg-surface p-4 shadow-sm"
           aria-label={t("sell.cartLabel")}
         >
           <SellCartPanel {...cartPanelProps} panelId="landscape" />
@@ -808,7 +1043,7 @@ export function SellFloorPage() {
         id="sell-cart-sheet-panel"
         data-testid="sell-cart-sheet"
         className={cn(
-          "sell-cart-sheet fixed inset-x-0 bottom-0 z-40 flex max-h-[75dvh] flex-col gap-3 rounded-t-[var(--exits-radius-lg)] border border-border bg-surface p-4 shadow-[0_-8px_32px_rgba(0,0,0,0.12)] transition-transform duration-[var(--exits-motion-normal)]",
+          "sell-cart-sheet fixed inset-0 z-40 flex flex-col gap-3 border-border bg-surface p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] shadow-[0_-8px_32px_rgba(0,0,0,0.12)] transition-transform duration-[var(--exits-motion-normal)]",
           cartSheetOpen ? "translate-y-0" : "translate-y-full pointer-events-none",
         )}
         aria-hidden={!cartSheetOpen}
@@ -828,7 +1063,11 @@ export function SellFloorPage() {
         initialUnitId={unitEntry?.initialUnitId}
         initialQuantity={unitEntry?.initialQuantity}
         stockHint={dialogStockHint}
-        onCancel={() => setUnitEntry(null)}
+        stockError={entryStockError}
+        onCancel={() => {
+          setEntryStockError(null);
+          setUnitEntry(null);
+        }}
         onConfirm={handleUnitConfirm}
       />
 
@@ -838,12 +1077,17 @@ export function SellFloorPage() {
         unit={weightEntry?.unit ?? null}
         initialKilograms={weightEntry?.initialKilograms}
         stockHint={dialogStockHint}
-        onCancel={() => setWeightEntry(null)}
+        stockError={entryStockError}
+        onCancel={() => {
+          setEntryStockError(null);
+          setWeightEntry(null);
+        }}
         onRemove={() => {
           if (weightEntry) {
             cart.removeLine(
               cartLineKey(weightEntry.product.productId, weightEntry.unit?.unitId ?? null),
             );
+            setEntryStockError(null);
             setWeightEntry(null);
           }
         }}
@@ -856,12 +1100,17 @@ export function SellFloorPage() {
         unit={customQtyEntry?.unit ?? null}
         initialQuantity={customQtyEntry?.initialQuantity}
         stockHint={dialogStockHint}
-        onCancel={() => setCustomQtyEntry(null)}
+        stockError={entryStockError}
+        onCancel={() => {
+          setEntryStockError(null);
+          setCustomQtyEntry(null);
+        }}
         onRemove={() => {
           if (customQtyEntry) {
             cart.removeLine(
               cartLineKey(customQtyEntry.product.productId, customQtyEntry.unit.unitId),
             );
+            setEntryStockError(null);
             setCustomQtyEntry(null);
           }
         }}

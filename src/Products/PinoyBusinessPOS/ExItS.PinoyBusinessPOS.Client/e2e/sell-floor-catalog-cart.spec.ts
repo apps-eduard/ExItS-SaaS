@@ -17,7 +17,7 @@ const screenshotDir = path.resolve(
   "../../../../../docs/Mobile-React/Reports/impl-pos-react-05-catalog-session-cart",
 );
 
-test.describe("sell floor catalog and session cart", () => {
+test.describe("New Sale catalog and session cart", () => {
   test.beforeAll(() => {
     mkdirSync(screenshotDir, { recursive: true });
   });

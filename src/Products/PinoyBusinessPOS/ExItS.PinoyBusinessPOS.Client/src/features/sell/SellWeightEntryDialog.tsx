@@ -23,6 +23,7 @@ type SellWeightEntryDialogProps = {
     sellableQuantity?: number | null;
     tracksExpiration?: boolean;
   } | null;
+  stockError?: string | null;
   onConfirm: (kilograms: number) => void;
   onRemove?: () => void;
   onCancel: () => void;
@@ -34,6 +35,7 @@ export function SellWeightEntryDialog({
   unit = null,
   initialKilograms = null,
   stockHint,
+  stockError = null,
   onConfirm,
   onRemove,
   onCancel,
@@ -180,6 +182,16 @@ export function SellWeightEntryDialog({
             className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
           >
             {errorMessage}
+          </p>
+        ) : null}
+
+        {stockError ? (
+          <p
+            role="alert"
+            data-testid="sell-stock-error"
+            className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+          >
+            {stockError}
           </p>
         ) : null}
 

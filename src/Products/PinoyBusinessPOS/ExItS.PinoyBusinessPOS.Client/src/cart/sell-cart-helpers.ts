@@ -158,8 +158,9 @@ export type StockHint = {
 };
 
 /**
- * Advisory stock hint only — server remains authority at checkout.
+ * Stock availability for tracked products.
  * Prefer sellableQuantity for expiration-tracked products when present.
+ * Server remains authority at checkout (EnsureAvailableForSaleAsync).
  */
 export function resolveStockHint(input: {
   isTracked?: boolean | null;
@@ -192,4 +193,192 @@ export function resolveStockHint(input: {
     unitOfMeasure: input.unitOfMeasure,
     label: "onHand",
   };
+}
+
+/** Cart line quantity converted to product base UOM (kg for ByWeight). */
+export function lineBaseQuantity(line: {
+  quantity: number;
+  multiplierToBase: number;
+}): number {
+  const multiplier =
+    Number.isFinite(line.multiplierToBase) && line.multiplierToBase > 0
+      ? line.multiplierToBase
+      : 1;
+  return roundQuantity(line.quantity * multiplier);
+}
+
+/** Sum of base quantities already in cart for one product (optionally excluding a line). */
+export function sumCartBaseQuantityForProduct(
+  lines: ReadonlyArray<{
+    productId: string;
+    lineKey: string;
+    quantity: number;
+    multiplierToBase: number;
+  }>,
+  productId: string,
+  excludeLineKey?: string | null,
+): number {
+  let total = 0;
+  for (const line of lines) {
+    if (line.productId !== productId) {
+      continue;
+    }
+    if (excludeLineKey != null && line.lineKey === excludeLineKey) {
+      continue;
+    }
+    total = roundQuantity(total + lineBaseQuantity(line));
+  }
+  return total;
+}
+
+export type StockGuardInput = {
+  isTracked?: boolean | null;
+  onHandQuantity?: number | null;
+  unitOfMeasure: string;
+  tracksExpiration?: boolean | null;
+  sellableQuantity?: number | null;
+  sellingMode?: string | null;
+};
+
+export type StockGuardResult =
+  | { ok: true }
+  | {
+      ok: false;
+      available: number;
+      unitOfMeasure: string;
+      /** True when message should include the UOM (weighted / measured). */
+      includeUnit: boolean;
+    };
+
+/**
+ * Blocks overselling when the product is inventory-tracked.
+ * Compares requested + other cart base qty against authoritative available stock.
+ * No org setting currently allows negative stock — default is BLOCK.
+ */
+export function evaluateStockGuard(input: {
+  stock: StockGuardInput;
+  /** Quantity being added or set, in the sell-unit / entered UOM (kg for ByWeight). */
+  requestedQuantity: number;
+  multiplierToBase?: number;
+  /** Base qty already in cart for this product (excluding the line being replaced). */
+  otherCartBaseQuantity?: number;
+}): StockGuardResult {
+  const hint = resolveStockHint({
+    isTracked: input.stock.isTracked,
+    onHandQuantity: input.stock.onHandQuantity,
+    unitOfMeasure: input.stock.unitOfMeasure,
+    tracksExpiration: input.stock.tracksExpiration,
+    sellableQuantity: input.stock.sellableQuantity,
+  });
+
+  if (!hint) {
+    return { ok: true };
+  }
+
+  const multiplier =
+    input.multiplierToBase != null &&
+    Number.isFinite(input.multiplierToBase) &&
+    input.multiplierToBase > 0
+      ? input.multiplierToBase
+      : 1;
+  const requestedBase = roundQuantity(input.requestedQuantity * multiplier);
+  const other = roundQuantity(input.otherCartBaseQuantity ?? 0);
+  const total = roundQuantity(other + requestedBase);
+
+  if (total <= hint.quantity + 1e-9) {
+    return { ok: true };
+  }
+
+  const byWeight = isByWeightSellingMode(input.stock.sellingMode);
+
+  return {
+    ok: false,
+    available: hint.quantity,
+    unitOfMeasure: byWeight ? "kg" : hint.unitOfMeasure,
+    includeUnit: byWeight,
+  };
+}
+
+/** Message for blocked adds — matches cashier-facing stock copy. */
+export function formatStockUnavailableMessage(result: Extract<StockGuardResult, { ok: false }>): string {
+  if (result.includeUnit) {
+    const unit =
+      result.unitOfMeasure.trim().toLowerCase() === "kilogram" ? "kg" : result.unitOfMeasure;
+    return `Only ${result.available.toFixed(2)} ${unit} available.`;
+  }
+  return `Only ${formatQuantityDisplay(result.available)} available.`;
+}
+
+export type CartLineStockIssue = {
+  lineKey: string;
+  productId: string;
+  name: string;
+  available: number;
+  unitOfMeasure: string;
+  includeUnit: boolean;
+  message: string;
+};
+
+/**
+ * Revalidate cart lines against current stock snapshots.
+ * Groups by productId so multi-unit lines share one availability pool.
+ */
+export function findCartStockIssues(
+  lines: ReadonlyArray<{
+    lineKey: string;
+    productId: string;
+    name: string;
+    quantity: number;
+    multiplierToBase: number;
+    sellingMode: string;
+  }>,
+  stockByProductId: ReadonlyMap<string, StockGuardInput>,
+): CartLineStockIssue[] {
+  const issues: CartLineStockIssue[] = [];
+  const seenProducts = new Set<string>();
+
+  for (const line of lines) {
+    if (seenProducts.has(line.productId)) {
+      continue;
+    }
+    seenProducts.add(line.productId);
+
+    const stock = stockByProductId.get(line.productId);
+    if (!stock) {
+      continue;
+    }
+
+    const totalBase = sumCartBaseQuantityForProduct(lines, line.productId);
+    const check = evaluateStockGuard({
+      stock: { ...stock, sellingMode: stock.sellingMode ?? line.sellingMode },
+      requestedQuantity: totalBase,
+      multiplierToBase: 1,
+      otherCartBaseQuantity: 0,
+    });
+
+    if (check.ok) {
+      continue;
+    }
+
+    const productLines = lines.filter((item) => item.productId === line.productId);
+    const unit =
+      check.unitOfMeasure.trim().toLowerCase() === "kilogram" ? "kg" : check.unitOfMeasure;
+    const availableLabel = check.includeUnit
+      ? `${check.available.toFixed(2)} ${unit}`
+      : formatQuantityDisplay(check.available);
+
+    for (const productLine of productLines) {
+      issues.push({
+        lineKey: productLine.lineKey,
+        productId: productLine.productId,
+        name: productLine.name,
+        available: check.available,
+        unitOfMeasure: check.unitOfMeasure,
+        includeUnit: check.includeUnit,
+        message: `${productLine.name} exceeds available stock. Available: ${availableLabel}.`,
+      });
+    }
+  }
+
+  return issues;
 }

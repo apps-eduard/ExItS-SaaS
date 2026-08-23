@@ -176,7 +176,7 @@ test.describe("RMAP-01b staff identity flows", () => {
   test("Cashier cannot open staff invite route", async ({ page }) => {
     await mockBoundCashierSession(page);
     await signInAndBindCashier(page);
-    await expect(page.getByRole("heading", { name: "Sell floor" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "New Sale" })).toBeVisible();
     await clientNavigate(page, "/org/staff/invite");
     await expect(page.getByTestId("admin-experience-denied")).toBeVisible();
     await expect(page.getByTestId("staff-invite-page")).toHaveCount(0);

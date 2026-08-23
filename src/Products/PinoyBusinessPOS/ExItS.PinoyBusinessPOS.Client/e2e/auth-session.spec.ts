@@ -6,7 +6,7 @@ test.describe("auth session", () => {
     await mockBoundCashierSession(page);
     await signInAndBindCashier(page);
 
-    await expect(page.getByRole("heading", { name: "Sell floor" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "New Sale" })).toBeVisible();
     await expect(page.getByRole("banner").getByTestId("workspace-context")).toContainText(
       "Kizy Store",
     );
@@ -43,7 +43,7 @@ test.describe("auth session", () => {
     });
 
     await signInAndBindCashier(page);
-    await expect(page.getByRole("heading", { name: "Sell floor" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "New Sale" })).toBeVisible();
 
     await page.getByTestId("account-menu-trigger").click();
     await page.getByRole("menuitem", { name: "Sign out" }).click();
@@ -74,12 +74,12 @@ test.describe("auth session", () => {
     });
 
     await signInAndBindCashier(page);
-    await expect(page.getByRole("heading", { name: "Sell floor" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "New Sale" })).toBeVisible();
 
     await page.getByTestId("account-menu-trigger").click();
     await page.getByRole("menuitem", { name: "Sign out" }).click();
     await expect(page.getByRole("alert")).toContainText(/logout unavailable|Sign out failed/i);
-    await expect(page.getByRole("heading", { name: "Sell floor" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "New Sale" })).toBeVisible();
     await expect(page).not.toHaveURL(/\/sign-in/);
   });
 });

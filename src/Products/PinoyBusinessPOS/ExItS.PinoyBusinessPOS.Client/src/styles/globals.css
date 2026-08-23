@@ -160,16 +160,33 @@ body {
 
 /* POS-REACT-IMPL-04 / UX REPAIR 01 sell-floor responsive layout */
 .sell-cart-landscape {
-  position: sticky;
-  top: 1rem;
-  max-height: calc(100dvh - 6rem);
+  min-height: 0;
   overflow: hidden;
 }
 
-/* Detail-items cart (landscape / sheet) */
+.sell-cart-panel {
+  min-height: 0;
+  height: 100%;
+}
+
+/* Detail-items cart (landscape / sheet) — lines scroll; footer stays pinned */
 .sell-cart-lines {
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.sell-cart-footer {
+  flex: 0 0 auto;
+  z-index: 2;
+  margin-top: auto;
+  background: var(--exits-surface);
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--exits-border);
+  box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.04);
 }
 
 .sell-cart-line {
@@ -388,11 +405,17 @@ body {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(18.125rem, 20.625rem); /* 290–330px cart */
     gap: 0.875rem; /* ~14px between panes */
-    align-items: start;
+    align-items: stretch;
+    min-height: 0;
+    flex: 1 1 auto;
   }
 
   .sell-cart-landscape {
     display: flex !important;
+    align-self: stretch;
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
   }
 
   .sell-cart-bar,
@@ -405,12 +428,40 @@ body {
   /* No floating-cart bottom pad when side cart is permanent */
   .sell-floor-browse {
     padding-bottom: 0 !important;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .sell-product-grid {
+    min-height: 0;
   }
 }
 
 @media (max-width: 899.98px) {
   .sell-cart-landscape {
     display: none !important;
+  }
+
+  .sell-product-grid {
+    min-height: 12rem;
+  }
+
+  /* Full-screen cart on mobile so lines scroll and Pay stays visible */
+  .sell-cart-sheet {
+    inset: 0;
+    height: 100dvh;
+    max-height: 100dvh;
+    min-height: 0;
+    border-radius: 0;
+    border-width: 0;
+  }
+
+  .sell-cart-sheet .sell-cart-panel {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    height: 100%;
   }
 }
 
@@ -425,6 +476,14 @@ body {
   .app-shell:has(.sell-floor-root) {
     padding-left: max(1.25rem, env(safe-area-inset-left));
     padding-right: max(1.25rem, env(safe-area-inset-right));
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+
+  .app-shell:has(.sell-floor-root) #main-content {
+    min-height: 0;
+    overflow: hidden;
   }
 }
 
@@ -435,6 +494,7 @@ body {
   padding-left: max(1rem, env(safe-area-inset-left));
   padding-right: max(1rem, env(safe-area-inset-right));
   width: auto;
+  min-height: calc(100dvh - 12rem);
 }
 
 @media (min-width: 900px) {
@@ -443,6 +503,12 @@ body {
     margin-right: calc(-1 * max(1.25rem, env(safe-area-inset-right)));
     padding-left: max(1.25rem, env(safe-area-inset-left));
     padding-right: max(1.25rem, env(safe-area-inset-right));
+    /* Fill remaining shell height below top bar; cart/products scroll inside panes */
+    flex: 1 1 auto;
+    height: auto;
+    max-height: 100%;
+    min-height: 0;
+    overflow: hidden;
   }
 }
 

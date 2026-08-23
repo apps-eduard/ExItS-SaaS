@@ -19,7 +19,7 @@ test.describe("shell account UX evidence", () => {
     await mockBoundCashierSession(page);
     await page.setViewportSize({ width: 1440, height: 900 });
     await signInAndBindCashier(page);
-    await expect(page.getByRole("heading", { name: "Sell floor" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "New Sale" })).toBeVisible();
     await assertNoHorizontalOverflow(page);
     await page.screenshot({
       path: path.join(screenshotDir, "01-desktop-shell-1440x900-en-light.png"),
@@ -81,7 +81,7 @@ test.describe("shell account UX evidence", () => {
 
     await page.setViewportSize({ width: 768, height: 1024 });
     await signInAndBindCashier(page);
-    await expect(page.getByRole("heading", { name: "Sell floor" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "New Sale" })).toBeVisible();
     await assertNoHorizontalOverflow(page);
     await page.screenshot({
       path: path.join(screenshotDir, "07-tablet-portrait-shell-768x1024-en-light.png"),

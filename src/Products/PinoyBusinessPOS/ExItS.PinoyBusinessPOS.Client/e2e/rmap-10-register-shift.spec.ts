@@ -37,7 +37,7 @@ test.describe("RMAP-10 register and open shift gate", () => {
     await expect(page.getByTestId("shift-open-page")).toBeVisible();
   });
 
-  test("open shift then sell floor without permanent checkout readiness", async ({ page }) => {
+  test("open shift then New Sale without permanent checkout readiness", async ({ page }) => {
     await mockBoundCashierSession(page);
     await mockPosCatalogApi(page);
     await seedInstallationId(page);

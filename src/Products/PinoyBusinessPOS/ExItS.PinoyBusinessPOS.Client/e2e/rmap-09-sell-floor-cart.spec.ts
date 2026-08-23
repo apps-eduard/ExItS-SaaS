@@ -22,7 +22,7 @@ const VIEWPORTS = [
   { width: 1440, height: 900 },
 ] as const;
 
-test.describe("RMAP-09 sell floor and session cart parity", () => {
+test.describe("RMAP-09 New Sale and session cart parity", () => {
   test.use({ serviceWorkers: "block" });
 
   test.beforeEach(async ({ page }) => {
@@ -133,7 +133,7 @@ test.describe("RMAP-09 sell floor and session cart parity", () => {
   });
 
   for (const viewport of VIEWPORTS) {
-    test(`responsive sell floor ${viewport.width}x${viewport.height}`, async ({ page }) => {
+    test(`responsive New Sale ${viewport.width}x${viewport.height}`, async ({ page }) => {
       await page.setViewportSize(viewport);
       await expect(page.getByTestId("sell-floor")).toBeVisible();
       await expect(page.getByTestId("sell-search")).toBeVisible();

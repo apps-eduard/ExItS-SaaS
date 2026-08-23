@@ -170,7 +170,7 @@ async function openConnectionAndSync(page: Page) {
   return page.getByTestId(`${CONNECTION_BUTTON}-sync-status`);
 }
 
-/** Queue one offline Cash sale for the price the sell floor leased, tendering exactly. */
+/** Queue one offline Cash sale for the price the New Sale leased, tendering exactly. */
 async function queueOfflineCashSale(page: Page, tender: string) {
   await page.context().setOffline(true);
   await expect(page.getByTestId("checkout-offline-cash-notice")).toBeVisible();

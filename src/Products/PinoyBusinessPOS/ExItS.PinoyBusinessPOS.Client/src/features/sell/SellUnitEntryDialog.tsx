@@ -24,6 +24,7 @@ type SellUnitEntryDialogProps = {
     sellableQuantity?: number | null;
     tracksExpiration?: boolean;
   } | null;
+  stockError?: string | null;
   onConfirm: (unit: PosCatalogProductUnitDto, quantity: number) => void;
   onCancel: () => void;
 };
@@ -35,6 +36,7 @@ export function SellUnitEntryDialog({
   initialUnitId,
   initialQuantity = 1,
   stockHint,
+  stockError = null,
   onConfirm,
   onCancel,
 }: SellUnitEntryDialogProps) {
@@ -190,6 +192,16 @@ export function SellUnitEntryDialog({
         <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="sell-unit-subtotal">
           {t("sell.cartSubtotalLabel")}: <MoneyDisplay amount={subtotal} />
         </p>
+
+        {stockError ? (
+          <p
+            role="alert"
+            data-testid="sell-stock-error"
+            className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+          >
+            {stockError}
+          </p>
+        ) : null}
 
         <div className="flex flex-wrap justify-end gap-2">
           <Button type="button" variant="ghost" onClick={onCancel}>

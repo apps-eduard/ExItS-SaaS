@@ -72,7 +72,7 @@ test.describe("RMAP-02R role / experience reconciliation", () => {
     await signInAndBindCashier(page);
     await expect(
       page
-        .getByRole("heading", { name: "Sell floor" })
+        .getByRole("heading", { name: "New Sale" })
         .or(page.getByTestId("sell-readiness-device"))
         .or(page.getByTestId("sell-readiness-shift")),
     ).toBeVisible();

@@ -13,7 +13,7 @@ const screenshotDir = path.resolve(
   "../../../../../docs/Mobile-React/Reports/impl-pos-react-04-sell-floor-shell",
 );
 
-test.describe("sell floor shell", () => {
+test.describe("New Sale shell", () => {
   test.beforeAll(() => {
     mkdirSync(screenshotDir, { recursive: true });
   });
@@ -56,7 +56,7 @@ test.describe("sell floor shell", () => {
     });
   });
 
-  test("desktop 1440 shows operational sell floor layout", async ({ page }) => {
+  test("desktop 1440 shows operational New Sale layout", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await expect(page.getByTestId("sell-floor")).toBeVisible();
     await expect(page.getByTestId("sell-search")).toBeVisible();
