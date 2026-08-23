@@ -21,13 +21,13 @@ public sealed class SecureSessionStore(ISecureTokenStore tokens) : ISessionStore
             await tokens.SetAsync(SecureTokenKeys.AccessToken, session.AccessToken, ct).ConfigureAwait(false);
         }
 
-        if (string.IsNullOrWhiteSpace(session.PlatformSessionToken))
+        // Never wipe a durable Platform session when a partial shell omits it (e.g. offline PIN
+        // grant apply). Logout / ClearAsync still removes it. Start Business and Personal APIs
+        // require PlatformSession — clearing here stranded signed-in Personal users.
+        if (!string.IsNullOrWhiteSpace(session.PlatformSessionToken))
         {
-            await tokens.ClearAsync(SecureTokenKeys.PlatformSessionToken, ct).ConfigureAwait(false);
-        }
-        else
-        {
-            await tokens.SetAsync(SecureTokenKeys.PlatformSessionToken, session.PlatformSessionToken, ct).ConfigureAwait(false);
+            await tokens.SetAsync(SecureTokenKeys.PlatformSessionToken, session.PlatformSessionToken, ct)
+                .ConfigureAwait(false);
         }
 
         if (string.IsNullOrWhiteSpace(session.SubscriptionStatus))

@@ -1,0 +1,32 @@
+@using ExItS.PinoyBusinessPOS.Application.Options
+@using Microsoft.Extensions.Options
+@inject IOptions<LocalValidationClientOptions> LocalValidationOptions
+
+#if DEBUG
+@if (LocalValidationOptions.Value.Enabled)
+{
+    <InlineMessage Tone="InlineMessageTone.Info">
+        MAUI Mailpit (registration / reset mail): @MailpitUiUrl
+        — not React Mailpit :8025
+    </InlineMessage>
+}
+#endif
+
+@code {
+    private string MailpitUiUrl
+    {
+        get
+        {
+            var opts = LocalValidationOptions.Value;
+            var port = opts.MailpitUiPort > 0 ? opts.MailpitUiPort : 8125;
+            var host = string.IsNullOrWhiteSpace(opts.PublicHost) ? "127.0.0.1" : opts.PublicHost.Trim();
+            // Emulator PublicHost is 10.0.2.2 for APIs; Mailpit UI is opened on the PC browser.
+            if (string.Equals(host, "10.0.2.2", StringComparison.Ordinal))
+            {
+                host = "127.0.0.1";
+            }
+
+            return $"http://{host}:{port}";
+        }
+    }
+}

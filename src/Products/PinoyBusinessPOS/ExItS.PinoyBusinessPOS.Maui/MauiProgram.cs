@@ -16,11 +16,18 @@ using ExItS.PinoyBusinessPOS.Maui.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Maui.Devices;
 
 namespace ExItS.PinoyBusinessPOS.Maui;
 
 public static class MauiProgram
 {
+    private const string LocalValidationPublicHost = "100.120.79.81";
+    private const string AndroidEmulatorHostLoopback = "10.0.2.2";
+    // LEGACY-MAUI-ISO-01: MAUI Docker stack (Start-MauiLegacyLocalValidation), not React :8091/:8092.
+    private const int LocalValidationPlatformPort = 8191;
+    private const int LocalValidationPosPort = 8192;
+
     /// <summary>
     /// Development-stage notice (P7-WP04): authentication uses the approved Development/Testing
     /// Platform identity mechanism only. Local SQLite foundation, DeviceId, encrypted offline queue,
@@ -62,21 +69,16 @@ public static class MauiProgram
 
     private static void ConfigureAppConfiguration(ConfigurationManager configuration)
     {
-        // Local Validation default: Tailscale/LAN PublicHost (100.120.79.81).
-        // Same host for emulator and physical Debug builds when Local Validation is started with -PublicHost.
-        // Optional Emulator-only loopback remains available via network_security_config (10.0.2.2) if rebuilt for that target.
-        // PhysicalDevice Debug also overlays wwwroot/appsettings.LocalValidation.PhysicalDevice.json.
+        // LEGACY-MAUI-ISO-01: Debug targets exits-maui-local-validation (:8191/:8192), not React (:8091/:8092).
+        // Physical device: Tailscale PublicHost. Emulator: 10.0.2.2 host loopback.
         configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
-            // Local Validation stack (Start-LocalValidation.ps1 -PublicHost): Platform :8091, POS :8092.
-            ["PosApi:BaseUrl"] = "http://100.120.79.81:8091",
-            ["PosApi:TimeoutSeconds"] = "15",
-            ["PosBusinessApi:BaseUrl"] = "http://100.120.79.81:8092",
-            ["PosBusinessApi:TimeoutSeconds"] = "15",
 #if DEBUG
-            // Matches deploy/docker/.env.local-validation LOCAL_VALIDATION_SHARED_PASSWORD (local only).
+            // Matches deploy/docker/.env.maui-local-validation shared password (local only).
             ["LocalValidation:Enabled"] = "true",
             ["LocalValidation:SharedPassword"] = "LivePreviewLocal1!",
+            // MAUI Mailpit UI host port (compose maps 8125→8025). React stack uses 8025.
+            ["LocalValidation:MailpitUiPort"] = "8125",
 #else
             // Production/Release: API base URLs must be HTTPS (ApiClient MAUI-HTTPS validation).
             ["Security:RequireHttpsApiUrls"] = "true",
@@ -102,7 +104,81 @@ public static class MauiProgram
             }
         }
 #endif
+
+#if DEBUG && POS_LOCAL_VALIDATION_EMULATOR_LOOPBACK
+        using (var emulator = Assembly.GetExecutingAssembly()
+                   .GetManifestResourceStream("appsettings.LocalValidation.Emulator.json"))
+        {
+            if (emulator is not null)
+            {
+                configuration.AddJsonStream(emulator);
+            }
+        }
+#endif
+
+#if DEBUG
+        // Final override wins over embedded appsettings.json (Tailscale defaults).
+        ApplyLocalValidationApiEndpoints(configuration);
+        AssertMauiStackPortsNotReact(configuration);
+#endif
     }
+
+#if DEBUG
+    /// <summary>
+    /// Fail closed if Debug Local Validation is pointed at the React stack (:8091/:8092).
+    /// MAUI must use exits-maui-local-validation (:8191/:8192) only.
+    /// </summary>
+    private static void AssertMauiStackPortsNotReact(IConfiguration configuration)
+    {
+        var platform = configuration["PosApi:BaseUrl"] ?? string.Empty;
+        var pos = configuration["PosBusinessApi:BaseUrl"] ?? string.Empty;
+        if (ContainsPort(platform, 8091) || ContainsPort(pos, 8092))
+        {
+            throw new InvalidOperationException(
+                "MAUI Debug Local Validation must use Platform :8191 and POS :8192 " +
+                $"(exits-maui-local-validation), not React :8091/:8092. Configured PosApi={platform}; PosBusinessApi={pos}.");
+        }
+    }
+
+    private static bool ContainsPort(string baseUrl, int port) =>
+        Uri.TryCreate(baseUrl, UriKind.Absolute, out var uri) && uri.Port == port;
+
+    private static void ApplyLocalValidationApiEndpoints(IConfigurationBuilder configuration)
+    {
+        var (platformBaseUrl, posBaseUrl) = ResolveLocalValidationApiBaseUrls();
+        configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["PosApi:BaseUrl"] = platformBaseUrl,
+            ["PosApi:TimeoutSeconds"] = "15",
+            ["PosBusinessApi:BaseUrl"] = posBaseUrl,
+            ["PosBusinessApi:TimeoutSeconds"] = "15",
+        });
+    }
+
+    private static (string PlatformBaseUrl, string PosBaseUrl) ResolveLocalValidationApiBaseUrls()
+    {
+#if POS_LOCAL_VALIDATION_EMULATOR_LOOPBACK
+        return (
+            FormatLocalValidationBaseUrl(AndroidEmulatorHostLoopback, LocalValidationPlatformPort),
+            FormatLocalValidationBaseUrl(AndroidEmulatorHostLoopback, LocalValidationPosPort));
+#endif
+
+        if (DeviceInfo.Current.Platform == DevicePlatform.Android
+            && DeviceInfo.Current.DeviceType == DeviceType.Virtual)
+        {
+            return (
+                FormatLocalValidationBaseUrl(AndroidEmulatorHostLoopback, LocalValidationPlatformPort),
+                FormatLocalValidationBaseUrl(AndroidEmulatorHostLoopback, LocalValidationPosPort));
+        }
+
+        return (
+            FormatLocalValidationBaseUrl(LocalValidationPublicHost, LocalValidationPlatformPort),
+            FormatLocalValidationBaseUrl(LocalValidationPublicHost, LocalValidationPosPort));
+    }
+
+    private static string FormatLocalValidationBaseUrl(string host, int port) =>
+        $"http://{host}:{port}";
+#endif
 
     private static void RegisterApplicationServices(IServiceCollection services, IConfiguration configuration)
     {

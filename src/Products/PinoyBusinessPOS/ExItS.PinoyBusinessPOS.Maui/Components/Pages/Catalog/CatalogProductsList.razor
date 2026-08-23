@@ -344,52 +344,63 @@ else
         _errorMessage = null;
         StateHasChanged();
 
-        _isOffline = !await Connectivity.IsConnectedAsync();
-        if (_isOffline)
+        try
+        {
+            _isOffline = !await Connectivity.IsConnectedAsync();
+            if (_isOffline)
+            {
+                _items = Array.Empty<PosCatalogProductDto>();
+                _totalCount = 0;
+                _errorTitle = L["Catalog_OfflineTitle"];
+                _errorMessage = L["Catalog_OfflineMessage"];
+                return;
+            }
+
+            Guid? categoryId = Guid.TryParse(_categoryFilter, out var parsedCategory) ? parsedCategory : null;
+            var categoriesTask = LoadCategoriesAsync();
+            var productsTask = Catalog.ListProductsAsync(
+                _search,
+                string.IsNullOrWhiteSpace(_statusFilter) ? null : _statusFilter,
+                categoryId,
+                string.IsNullOrWhiteSpace(_unitFilter) ? null : _unitFilter,
+                _page,
+                _pageSize);
+            await Task.WhenAll(categoriesTask, productsTask);
+            var result = await productsTask;
+
+            if (result.IsSuccess && result.Data is not null)
+            {
+                _items = result.Data.Items;
+                _totalCount = result.Data.TotalCount;
+            }
+            else if (result.Status is ApiCallStatus.Offline or ApiCallStatus.Timeout or ApiCallStatus.Unavailable or ApiCallStatus.RateLimited)
+            {
+                _items = Array.Empty<PosCatalogProductDto>();
+                _totalCount = 0;
+                _isOffline = true;
+                _errorTitle = L["Catalog_OfflineTitle"];
+                _errorMessage = L["Catalog_OfflineMessage"];
+            }
+            else
+            {
+                _items = Array.Empty<PosCatalogProductDto>();
+                _totalCount = 0;
+                var described = ApiLocalizer.Describe(result.Status, result.Error);
+                _errorTitle = described.Title;
+                _errorMessage = described.Message;
+            }
+        }
+        catch
         {
             _items = Array.Empty<PosCatalogProductDto>();
             _totalCount = 0;
             _errorTitle = L["Catalog_OfflineTitle"];
             _errorMessage = L["Catalog_OfflineMessage"];
+        }
+        finally
+        {
             _loading = false;
-            return;
         }
-
-        Guid? categoryId = Guid.TryParse(_categoryFilter, out var parsedCategory) ? parsedCategory : null;
-        var categoriesTask = LoadCategoriesAsync();
-        var productsTask = Catalog.ListProductsAsync(
-            _search,
-            string.IsNullOrWhiteSpace(_statusFilter) ? null : _statusFilter,
-            categoryId,
-            string.IsNullOrWhiteSpace(_unitFilter) ? null : _unitFilter,
-            _page,
-            _pageSize);
-        await Task.WhenAll(categoriesTask, productsTask);
-        var result = await productsTask;
-
-        if (result.IsSuccess && result.Data is not null)
-        {
-            _items = result.Data.Items;
-            _totalCount = result.Data.TotalCount;
-        }
-        else if (result.Status is ApiCallStatus.Offline or ApiCallStatus.Timeout or ApiCallStatus.Unavailable or ApiCallStatus.RateLimited)
-        {
-            _items = Array.Empty<PosCatalogProductDto>();
-            _totalCount = 0;
-            _isOffline = true;
-            _errorTitle = L["Catalog_OfflineTitle"];
-            _errorMessage = L["Catalog_OfflineMessage"];
-        }
-        else
-        {
-            _items = Array.Empty<PosCatalogProductDto>();
-            _totalCount = 0;
-            var described = ApiLocalizer.Describe(result.Status, result.Error);
-            _errorTitle = described.Title;
-            _errorMessage = described.Message;
-        }
-
-        _loading = false;
     }
 
     private async Task LoadCategoriesAsync()

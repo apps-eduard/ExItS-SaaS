@@ -133,6 +133,34 @@ public sealed class OnlineLoginProgressControllerTests
     }
 
     [Fact]
+    public async Task Superseded_attempt_does_not_throw_when_online_finishes_after_new_attempt()
+    {
+        var controller = new OnlineLoginProgressController
+        {
+            SoftPromptDelay = TimeSpan.FromSeconds(5)
+        };
+        controller.BeginOnlineAttempt(TimeSpan.FromSeconds(10));
+        var releaseFirst = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var first = controller.RunAsync(async _ =>
+        {
+            await releaseFirst.Task.ConfigureAwait(false);
+            return "first";
+        });
+
+        controller.BeginOnlineAttempt(TimeSpan.FromSeconds(10));
+        var second = controller.RunAsync(_ => Task.FromResult("second"));
+        releaseFirst.SetResult(true);
+
+        var firstResult = await first;
+        var secondResult = await second;
+
+        Assert.Equal(OnlineLoginProgressOutcome.Discarded, firstResult.Outcome);
+        Assert.Equal(OnlineLoginProgressOutcome.Completed, secondResult.Outcome);
+        Assert.Equal("second", secondResult.Value);
+    }
+
+    [Fact]
     public void Default_soft_prompt_delay_is_three_seconds()
     {
         Assert.Equal(TimeSpan.FromSeconds(3), OnlineLoginProgressController.DefaultSoftPromptDelay);

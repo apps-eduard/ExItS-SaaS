@@ -6,6 +6,7 @@
 
 <AuthExperience Title="@L["Activate_Title"]" Lede="@L["Activate_Subtitle"]">
     <FormValidationSummary Messages="_errors" />
+    <LocalValidationMailpitHint />
 
     <div class="pos-signin__form">
         <TextInput Label="@L["Activate_Token"]" @bind-Value="_token" Disabled="_busy" IsInvalid="@_invalid" />

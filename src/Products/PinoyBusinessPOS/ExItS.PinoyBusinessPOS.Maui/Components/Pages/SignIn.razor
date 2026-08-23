@@ -14,6 +14,7 @@
 @inject IConnectivityService Connectivity
 @inject IOptions<LocalValidationClientOptions> LocalValidationOptions
 @inject IOptions<PosApiOptions> PosApi
+@inject IOptions<PosBusinessApiOptions> PosBusinessApi
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject PostSignInReturnRoute ReturnRoute
@@ -22,6 +23,13 @@
 <AuthExperience ActiveTab="AuthExperienceTab.SignIn">
     <ChildContent>
         <FormValidationSummary Messages="_errors" />
+
+#if DEBUG
+        <InlineMessage Tone="InlineMessageTone.Info">
+            MAUI Local Validation API: @PosApi.Value.BaseUrl · POS: @PosBusinessApi.Value.BaseUrl
+            (must be :8191/:8192, not React :8091/:8092)
+        </InlineMessage>
+#endif
 
         @if (_showSlowPrompt)
         {
@@ -450,6 +458,11 @@
 
     private async Task SignInPasswordAsync()
     {
+        if (_busy)
+        {
+            return;
+        }
+
         await RefreshOfflineStateAsync();
         // Do not hard-block on OS NetworkAccess alone. Local Validation (especially PhysicalDevice
         // / Tailscale) can report None while platform-api is reachable — that falsely shows
@@ -463,6 +476,12 @@
         string? password,
         Guid? accountProfileId)
     {
+        if (_busy)
+        {
+            return;
+        }
+
+        _busy = true;
         _errors = [];
         _invalid = false;
         _showSlowPrompt = false;
@@ -472,10 +491,10 @@
         {
             _invalid = true;
             _errors.Add(L["SignIn_CredentialsRequired"]);
+            _busy = false;
             return;
         }
 
-        _busy = true;
         try
         {
             var hardSeconds = Math.Clamp(PosApi.Value.TimeoutSeconds, 10, 30);
@@ -502,6 +521,11 @@
                 _showSlowPrompt = false;
                 await RefreshOfflineStateAsync();
                 RecordUnreachableSignInOutcome();
+                return;
+            }
+
+            if (progress.Outcome == OnlineLoginProgressOutcome.Discarded)
+            {
                 return;
             }
 

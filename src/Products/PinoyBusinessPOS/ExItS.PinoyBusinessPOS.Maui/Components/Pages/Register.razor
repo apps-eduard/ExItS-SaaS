@@ -1,11 +1,16 @@
 @page "/register"
 @layout Layout.AuthShell
+@using ExItS.PinoyBusinessPOS.Application.Options
+@using Microsoft.Extensions.Options
 @inject IPlatformAccessClient Platform
 @inject NavigationManager Nav
+@inject IOptions<LocalValidationClientOptions> LocalValidationOptions
 @inject IStringLocalizer<PosResources> L
 
 <AuthExperience ActiveTab="AuthExperienceTab.SignUp">
     <FormValidationSummary Messages="_errors" />
+
+    <LocalValidationMailpitHint />
 
     <div class="pos-signin__form">
         <TextInput Label="@L["Register_DisplayName"]"
@@ -27,10 +32,14 @@
         </div>
     </div>
 
-    @if (!string.IsNullOrWhiteSpace(_debugToken))
+    @if (_registered)
     {
         <Alert Tone="AlertTone.Info" Title="@L["Register_ActivationReadyTitle"]" Message="@L["Register_ActivationReadyMessage"]" />
-        <InlineMessage Tone="InlineMessageTone.Info">@_ackMessage</InlineMessage>
+        @if (!string.IsNullOrWhiteSpace(_ackMessage))
+        {
+            <InlineMessage Tone="InlineMessageTone.Info">@_ackMessage</InlineMessage>
+        }
+        <LocalValidationMailpitHint />
         <div class="pos-signin__submit">
             <Button Variant="ButtonVariant.Primary" OnClick="GoActivate">@L["Activate_Continue"]</Button>
         </div>
@@ -42,6 +51,7 @@
     private string? _email;
     private string? _debugToken;
     private string? _ackMessage;
+    private bool _registered;
     private bool _busy;
     private bool _invalid;
     private List<string> _errors = [];
@@ -51,6 +61,7 @@
         _errors = [];
         _invalid = false;
         _debugToken = null;
+        _registered = false;
         if (string.IsNullOrWhiteSpace(_displayName) || string.IsNullOrWhiteSpace(_email))
         {
             _invalid = true;
@@ -73,7 +84,10 @@
 
             _ackMessage = result.Data.Message;
             _debugToken = result.Data.DebugToken;
-            if (string.IsNullOrWhiteSpace(_debugToken))
+            _registered = true;
+
+            // Local Validation: keep the user here so they open MAUI Mailpit :8125 (not React :8025).
+            if (!LocalValidationOptions.Value.Enabled && string.IsNullOrWhiteSpace(_debugToken))
             {
                 Nav.NavigateTo("/activate");
             }
@@ -85,5 +99,7 @@
     }
 
     private void GoActivate() =>
-        Nav.NavigateTo($"/activate?token={Uri.EscapeDataString(_debugToken ?? string.Empty)}");
+        Nav.NavigateTo(string.IsNullOrWhiteSpace(_debugToken)
+            ? "/activate"
+            : $"/activate?token={Uri.EscapeDataString(_debugToken)}");
 }
