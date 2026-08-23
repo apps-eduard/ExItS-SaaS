@@ -10,7 +10,8 @@ import {
   listEligibleOfflinePinProfiles,
   type OfflinePinProfile,
 } from "@/offline/offline-pin-profiles";
-import { verifyOfflinePin } from "@/offline/offline-pin";
+import { verifyOfflinePinForUnlock } from "@/offline/local-store-key";
+import { shouldShowInsecureOfflinePinWarning } from "@/offline/insecure-offline-pin-gate";
 import { useSession } from "@/session/SessionProvider";
 
 export function OfflinePinUnlockPage() {
@@ -56,7 +57,7 @@ export function OfflinePinUnlockPage() {
     }
     prepareOfflinePinUnlock(active.grant);
     setSubmitting(true);
-    const precheck = await verifyOfflinePin(active.userId, pin);
+    const precheck = await verifyOfflinePinForUnlock(active.userId, pin);
     if (!precheck.ok) {
       setSubmitting(false);
       if (precheck.reason === "locked") {
@@ -156,6 +157,16 @@ export function OfflinePinUnlockPage() {
           ) : null}
         </Card>
       )}
+
+      {shouldShowInsecureOfflinePinWarning() ? (
+        <div
+          role="status"
+          data-testid="offline-pin-insecure-dev-warning"
+          className="rounded-[var(--exits-radius-md)] border border-[var(--exits-danger)]/50 bg-[var(--exits-surface-muted)] p-3 text-[length:var(--exits-text-xs)] font-medium text-foreground"
+        >
+          {t("offline.pin.insecureDevWarning")}
+        </div>
+      ) : null}
 
       <Card>
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>

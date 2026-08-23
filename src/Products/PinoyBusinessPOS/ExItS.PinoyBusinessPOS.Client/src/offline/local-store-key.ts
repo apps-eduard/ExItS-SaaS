@@ -1,14 +1,35 @@
 import { wrapDek, unwrapDek, deriveScopeKeyFromBinding, toArrayBuffer } from "@/offline/crypto";
-import { assertWebCryptoSubtleAvailable } from "@/lib/web-crypto-capability";
+import {
+  assertWebCryptoSubtleAvailable,
+  isWebCryptoSubtleAvailable,
+} from "@/lib/web-crypto-capability";
+import { isInsecureOfflinePinFallbackAllowed } from "@/offline/insecure-offline-pin-gate";
+import {
+  clearInsecureOfflinePinForUser,
+  clearInsecureOfflineSessionUnlock,
+  enrollInsecureOfflinePinAndDek,
+  isInsecureOfflinePinAndDekConfigured,
+  isInsecureOfflineSessionUnlocked,
+  unlockInsecureOfflineSession,
+  verifyInsecureOfflinePin,
+} from "@/offline/offline-pin-insecure-dev";
 import {
   enrollOfflinePin,
-  hasOfflinePinConfigured,
+  hasOfflinePinConfigured as hasSecureOfflinePinConfigured,
   loadOfflinePinVerifier,
-  verifyOfflinePin,
+  verifyOfflinePin as verifySecureOfflinePin,
+  type OfflinePinVerifyResult,
 } from "@/offline/offline-pin";
 import { getUnlockedDek, setUnlockedDek } from "@/offline/offline-unlock-session";
 
-export { hasOfflinePinConfigured, loadOfflinePinVerifier };
+export { loadOfflinePinVerifier };
+
+export function hasOfflinePinConfigured(userId: string): boolean {
+  if (hasSecureOfflinePinConfigured(userId)) {
+    return true;
+  }
+  return isInsecureOfflinePinAndDekConfigured(userId);
+}
 
 export const WRAPPED_DEK_STORE_KEY = "exits.pos-client.wrapped-dek.v1";
 
@@ -211,7 +232,19 @@ export async function getActiveOfflineCryptoKeyForScope(scopeBinding: string): P
 }
 
 export async function unlockOfflineCryptoWithPin(userId: string, pin: string): Promise<boolean> {
-  const verify = await verifyOfflinePin(userId, pin);
+  if (isInsecureOfflinePinFallbackAllowed() && isInsecureOfflinePinAndDekConfigured(userId)) {
+    // Prefer insecure path when that is what was enrolled (do not mix with secure verifier).
+    if (!hasSecureOfflinePinConfigured(userId)) {
+      const verify = verifyInsecureOfflinePin(userId, pin);
+      if (!verify.ok) {
+        return false;
+      }
+      unlockInsecureOfflineSession(userId);
+      return true;
+    }
+  }
+
+  const verify = await verifySecureOfflinePin(userId, pin);
   if (!verify.ok) {
     return false;
   }
@@ -220,10 +253,18 @@ export async function unlockOfflineCryptoWithPin(userId: string, pin: string): P
     return false;
   }
   setUnlockedDek(userId, dek);
+  clearInsecureOfflineSessionUnlock(userId);
   return true;
 }
 
 export async function enrollOfflinePinAndDek(userId: string, pin: string): Promise<boolean> {
+  // DEV Tailscale HTTP (or any context without crypto.subtle): separate insecure store.
+  if (isInsecureOfflinePinFallbackAllowed() && !isWebCryptoSubtleAvailable()) {
+    return enrollInsecureOfflinePinAndDek(userId, pin);
+  }
+
+  // Secure path (localhost / HTTPS). Clear insecure DEV records for this user.
+  clearInsecureOfflinePinForUser(userId);
   const dek = await generateRandomDek();
   const savedPin = await enrollOfflinePin(userId, pin);
   if (!savedPin) {
@@ -238,7 +279,24 @@ export async function enrollOfflinePinAndDek(userId: string, pin: string): Promi
 }
 
 export function isOfflinePinAndDekConfigured(userId: string): boolean {
-  return hasOfflinePinConfigured(userId) && loadWrappedDekRecord(userId) != null;
+  if (hasSecureOfflinePinConfigured(userId) && loadWrappedDekRecord(userId) != null) {
+    return true;
+  }
+  return isInsecureOfflinePinAndDekConfigured(userId);
+}
+
+/** Unified verify used by unlock UI — secure verifier first, then DEV insecure. */
+export async function verifyOfflinePinForUnlock(
+  userId: string,
+  pin: string,
+): Promise<OfflinePinVerifyResult> {
+  if (hasSecureOfflinePinConfigured(userId)) {
+    return verifySecureOfflinePin(userId, pin);
+  }
+  if (isInsecureOfflinePinFallbackAllowed() && isInsecureOfflinePinAndDekConfigured(userId)) {
+    return verifyInsecureOfflinePin(userId, pin);
+  }
+  return { ok: false, reason: "not_configured" };
 }
 
 /** Ensures wrapped DEK storage never contains exportable raw key material. */
@@ -254,3 +312,8 @@ export function parseUserIdFromScopeBinding(scopeBinding: string): string {
   }
   return userId;
 }
+
+export {
+  clearInsecureOfflineSessionUnlock,
+  isInsecureOfflineSessionUnlocked,
+};

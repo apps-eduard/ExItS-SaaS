@@ -103,6 +103,8 @@ export const en = {
   "offline.pin.notSignedIn": "Sign in online before setting an offline PIN.",
   "offline.pin.webCryptoUnavailable":
     "Offline PIN encryption requires a secure browser context. npm run dev sets up adb reverse automatically — open http://127.0.0.1:5177 in the emulator browser (not http://10.0.2.2).",
+  "offline.pin.insecureDevWarning":
+    "Development mode: Offline PIN protection is insecure on this HTTP connection.",
   "offline.pin.openEmulatorDevUrl": "Open http://127.0.0.1:5177",
   "offline.pin.unlockTitle": "Unlock offline",
   "offline.pin.unlockSubtitle": "Enter your offline PIN to open saved POS data on this device.",
@@ -705,6 +707,10 @@ export const en = {
   "sell.cartIncrease": "Increase quantity",
   "sell.cartDecrease": "Decrease quantity",
   "sell.cartSubtotalLabel": "Subtotal",
+  "sell.cartItemsLabel": "Items",
+  "sell.cartItemSingular": "item",
+  "sell.cartItemPlural": "items",
+  "sell.cartTotalLabel": "Total",
   "sell.cartBarHint": "View cart",
   "sell.cartSheetTitle": "Cart",
   "sell.cartSheetClose": "Close",
@@ -800,6 +806,8 @@ export const en = {
   "checkout.paymentMethod": "Payment method",
   "checkout.paymentCash": "Cash",
   "checkout.paymentGCash": "GCash",
+  "checkout.paymentGCashManual": "GCash / Manual",
+  "checkout.paymentGCashHint": "Enter reference after payment",
   "checkout.paymentUtang": "Utang",
   "checkout.gcashReference": "GCash reference",
   "checkout.gcashReferenceRequired": "Enter the GCash reference (max 64 characters).",

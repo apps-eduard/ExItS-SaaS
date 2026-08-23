@@ -8,7 +8,15 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useI18n } from "@/i18n/I18nProvider";
 import { enrollOfflinePinAndDek } from "@/offline/local-store-key";
-import { WebCryptoUnavailableError, isWebCryptoSubtleAvailable, resolveEmulatorLoopbackDevUrl } from "@/lib/web-crypto-capability";
+import {
+  shouldShowInsecureOfflinePinWarning,
+  isInsecureOfflinePinFallbackAllowed,
+} from "@/offline/insecure-offline-pin-gate";
+import {
+  WebCryptoUnavailableError,
+  isWebCryptoSubtleAvailable,
+  resolveEmulatorLoopbackDevUrl,
+} from "@/lib/web-crypto-capability";
 import { useSession } from "@/session/SessionProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -25,10 +33,13 @@ export function OfflinePinEnrollPage() {
 
   const userId = session?.userId;
   const emulatorDevUrl = resolveEmulatorLoopbackDevUrl();
+  const insecureFallback = isInsecureOfflinePinFallbackAllowed();
+  const showInsecureWarning = shouldShowInsecureOfflinePinWarning();
   const webCryptoReady = isWebCryptoSubtleAvailable();
+  const canSubmit = webCryptoReady || insecureFallback;
 
   useEffect(() => {
-    if (!isWebCryptoSubtleAvailable()) {
+    if (!isWebCryptoSubtleAvailable() && !isInsecureOfflinePinFallbackAllowed()) {
       setError(t("offline.pin.webCryptoUnavailable"));
     }
   }, [t]);
@@ -106,8 +117,17 @@ export function OfflinePinEnrollPage() {
             onChange={(event) => setConfirmPin(event.target.value.replace(/\D/g, ""))}
             data-testid="offline-pin-enroll-confirm"
           />
+          {showInsecureWarning ? (
+            <div
+              role="status"
+              data-testid="offline-pin-insecure-dev-warning"
+              className="rounded-[var(--exits-radius-md)] border border-[var(--exits-danger)]/50 bg-[var(--exits-surface-muted)] p-3 text-[length:var(--exits-text-xs)] font-medium text-foreground"
+            >
+              {t("offline.pin.insecureDevWarning")}
+            </div>
+          ) : null}
           {error ? <ErrorState title={t("offline.pin.enrollTitle")} detail={error} /> : null}
-          {emulatorDevUrl ? (
+          {emulatorDevUrl && !insecureFallback ? (
             <Button
               type="button"
               variant="ghost"
@@ -123,7 +143,7 @@ export function OfflinePinEnrollPage() {
           ) : null}
           <Button
             type="submit"
-            disabled={submitting || !webCryptoReady}
+            disabled={submitting || !canSubmit}
             className="w-full justify-start"
             data-testid="offline-pin-enroll-submit"
           >

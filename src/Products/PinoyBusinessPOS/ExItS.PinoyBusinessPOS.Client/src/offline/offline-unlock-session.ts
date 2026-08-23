@@ -3,6 +3,8 @@
  * Cleared on logout — never persisted in plaintext.
  */
 
+import { clearInsecureOfflineSessionUnlock } from "@/offline/offline-pin-insecure-dev";
+
 let unlockedDek: CryptoKey | null = null;
 let unlockedUserId: string | null = null;
 
@@ -34,4 +36,5 @@ export function setUnlockedDek(userId: string, dek: CryptoKey): void {
 export function clearUnlockedDek(): void {
   unlockedUserId = null;
   unlockedDek = null;
+  clearInsecureOfflineSessionUnlock();
 }
