@@ -1,4 +1,4 @@
-import { ChevronDown, LogOut, Menu, PanelLeftClose, PanelLeftOpen, User } from "lucide-react";
+import { ChevronDown, ChevronsLeft, ChevronsRight, LogOut, Menu, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import {
@@ -8,10 +8,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AppBreadcrumbs } from "@/components/exits/AppBreadcrumbs";
 import { PreferencesMenu } from "@/components/exits/PreferencesMenu";
-import {
-  areDevelopmentToolsAllowed,
-  areTestUserToolsPermitted,
-} from "@/lib/auth/development-tools";
 import { initialsFromIdentity } from "@/lib/identity/initials";
 import { usePreferences } from "@/hooks/use-preferences";
 import { useSession } from "@/hooks/use-session";
@@ -25,8 +21,6 @@ export function AppTopBar({
 }) {
   const { t, sidebarCollapsed, setSidebarCollapsed } = usePreferences();
   const { session, signOut } = useSession();
-  const showDev = areDevelopmentToolsAllowed();
-  const showRuntimeBadge = areTestUserToolsPermitted();
   const initials = initialsFromIdentity(session?.displayName, session?.username, session?.email);
 
   return (
@@ -51,20 +45,15 @@ export function AppTopBar({
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
         >
           {sidebarCollapsed ? (
-            <PanelLeftOpen aria-hidden="true" size={16} />
+            <ChevronsRight aria-hidden="true" className="text-muted" size={18} strokeWidth={2} />
           ) : (
-            <PanelLeftClose aria-hidden="true" size={16} />
+            <ChevronsLeft aria-hidden="true" className="text-muted" size={18} strokeWidth={2} />
           )}
         </Button>
       )}
       <div className="min-w-0 flex-1">
         <AppBreadcrumbs />
       </div>
-      {showRuntimeBadge ? (
-        <span className="hidden rounded-sm border border-border px-1.5 py-0.5 text-[length:var(--exits-text-xs)] text-muted sm:inline">
-          {showDev ? t("shell.environment.dev") : t("shell.environment.localValidation")}
-        </span>
-      ) : null}
       <PreferencesMenu />
       <DropdownMenu
         align="end"
