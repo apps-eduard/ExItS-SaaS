@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { effectiveUnitPrice, lineAmount, type SessionCartLine } from "@/cart/SessionCartProvider";
 import { formatQuantityDisplay, isByWeightSellingMode } from "@/cart/sell-cart-helpers";
@@ -31,7 +32,6 @@ type SellCartPanelProps = {
   checkoutReadiness?: CheckoutShiftReadiness;
   /** CreateSale capability — required with moneyPostReady to enable Pay. */
   canCreateSale?: boolean;
-  /** OverrideSalePrice UI gate — Change price action only when true. */
   canOverrideSalePrice?: boolean;
   /**
    * Compact mid-session warning after Sell opened.
@@ -59,6 +59,22 @@ function deriveMidSessionBlock(
   return "device_lost";
 }
 
+function cartLineInitial(name: string): string {
+  const trimmed = name.trim();
+  return trimmed ? trimmed.charAt(0).toUpperCase() : "?";
+}
+
+function CartLineThumbnail({ name }: { name: string }) {
+  return (
+    <div
+      className="sell-cart-line__thumb"
+      aria-hidden
+    >
+      <span className="sell-cart-line__thumb-letter">{cartLineInitial(name)}</span>
+    </div>
+  );
+}
+
 export function SellCartPanel({
   lines,
   lineCount,
@@ -69,14 +85,12 @@ export function SellCartPanel({
   onSetQuantity,
   onEditWeight,
   onEditCustomQuantity,
-  onChangePrice,
   onClear,
   showClose = false,
   onClose,
   panelId = "cart",
   checkoutReadiness,
   canCreateSale = false,
-  canOverrideSalePrice = false,
   midSessionBlock: midSessionBlockProp,
 }: SellCartPanelProps) {
   const { t } = useI18n();
@@ -90,8 +104,8 @@ export function SellCartPanel({
   const payEnabled = lines.length > 0 && moneyPostReady && canCreateSale;
 
   return (
-    <>
-      <div className="flex items-center justify-between gap-3">
+    <div className="sell-cart-panel flex min-h-0 flex-1 flex-col gap-3">
+      <div className="flex items-center justify-between gap-2">
         <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
           {t("sell.cartLabel")}
         </h2>
@@ -100,6 +114,7 @@ export function SellCartPanel({
             <Button
               type="button"
               variant="ghost"
+              className="min-h-9 px-2 text-[length:var(--exits-text-xs)] text-muted"
               data-testid="sell-cart-clear"
               onClick={() => setClearConfirmOpen(true)}
             >
@@ -110,6 +125,7 @@ export function SellCartPanel({
             <Button
               type="button"
               variant="ghost"
+              className="min-h-9 px-2"
               aria-label={t("sell.cartSheetClose")}
               onClick={onClose}
             >
@@ -122,7 +138,7 @@ export function SellCartPanel({
       {lines.length === 0 ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{summary}</p>
       ) : (
-        <ul className="m-0 flex min-h-0 flex-1 list-none flex-col gap-2 overflow-y-auto p-0">
+        <ul className="sell-cart-lines m-0 min-h-0 flex-1 list-none overflow-y-auto p-0">
           {lines.map((line) => {
             const byWeight = isByWeightSellingMode(line.sellingMode);
             const customMeasured = line.allowsCustomQuantity && !byWeight;
@@ -130,156 +146,165 @@ export function SellCartPanel({
             const sellingPrice = effectiveUnitPrice(line);
             const amount = lineAmount(line);
             const hasOverride = Boolean(line.priceOverride);
+            const qtyLabel = formatQuantityDisplay(line.quantity);
+
             return (
               <li
                 key={line.lineKey}
                 data-testid={`sell-cart-line-${line.lineKey}`}
-                className="rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] p-3"
+                className="sell-cart-line"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="m-0 truncate text-[length:var(--exits-text-sm)] font-semibold">
-                      {line.name}
-                    </p>
-                    {line.sku ? (
-                      <p className="m-0 truncate text-[length:var(--exits-text-xs)] text-muted">
-                        {line.sku}
+                <CartLineThumbnail name={line.name} />
+
+                <div className="sell-cart-line__body">
+                  <div className="sell-cart-line__head">
+                    <div className="min-w-0 flex-1">
+                      <p className="sell-cart-line__name">{line.name}</p>
+                      <p className="sell-cart-line__meta">
+                        {line.unitLabel}
+                        {line.sku ? ` · ${line.sku}` : ""}
                       </p>
-                    ) : null}
-                    {hasOverride ? (
-                      <p
-                        data-testid={`sell-cart-price-changed-${line.lineKey}`}
-                        className="m-0 text-[length:var(--exits-text-xs)] font-medium text-[var(--exits-accent,var(--exits-primary))]"
-                      >
-                        {t("sell.priceChanged")}
-                      </p>
-                    ) : null}
-                    <p className="m-0 break-words text-[length:var(--exits-text-xs)] text-muted">
-                      {t("sell.linePreview")
-                        .replace("{qty}", formatQuantityDisplay(line.quantity))
-                        .replace("{unit}", line.unitLabel)
-                        .replace("{price}", sellingPrice.toFixed(2))
-                        .replace("{amount}", amount.toFixed(2))}
-                    </p>
-                    {hasOverride ? (
-                      <p
-                        data-testid={`sell-cart-regular-price-${line.lineKey}`}
-                        className="m-0 text-[length:var(--exits-text-xs)] text-muted"
-                      >
-                        {t("sell.regularPrice")}: ₱{line.unitPrice.toFixed(2)}
-                      </p>
-                    ) : null}
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    aria-label={t("sell.cartRemoveLine")}
-                    data-testid={`sell-cart-remove-${line.lineKey}`}
-                    onClick={() => onRemove(line.lineKey)}
-                  >
-                    {t("sell.cartRemove")}
-                  </Button>
-                </div>
-                <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                  {byWeight ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="border border-border"
-                      data-testid={`sell-cart-edit-weight-${line.lineKey}`}
-                      onClick={() => onEditWeight(line)}
-                    >
-                      {formatQuantityDisplay(line.quantity)} {line.unitLabel} ·{" "}
-                      {t("sell.editWeight")}
-                    </Button>
-                  ) : customMeasured && onEditCustomQuantity ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="border border-border"
-                      data-testid={`sell-cart-edit-custom-${line.lineKey}`}
-                      onClick={() => onEditCustomQuantity(line)}
-                    >
-                      {formatQuantityDisplay(line.quantity)} {line.unitLabel} ·{" "}
-                      {t("sell.editCustomQty")}
-                    </Button>
-                  ) : (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <QuantityStepper
-                        value={formatQuantityDisplay(line.quantity)}
-                        valueTestId={`sell-cart-qty-${line.lineKey}`}
-                        decreaseLabel={t("sell.cartDecrease")}
-                        increaseLabel={t("sell.cartIncrease")}
-                        onDecrement={() => onDecrement(line.lineKey)}
-                        onIncrement={() => onIncrement(line.lineKey)}
-                      />
-                      <label
-                        className="sr-only"
-                        htmlFor={`${panelId}-sell-qty-input-${line.lineKey}`}
-                      >
-                        {t("sell.quantityDirect")}
-                      </label>
-                      <input
-                        id={`${panelId}-sell-qty-input-${line.lineKey}`}
-                        data-testid={`sell-cart-qty-input-${line.lineKey}`}
-                        type="number"
-                        inputMode={wholeOnly ? "numeric" : "decimal"}
-                        min={wholeOnly ? 1 : 0.001}
-                        step={wholeOnly ? 1 : 0.001}
-                        value={line.quantity}
-                        className="min-h-11 w-20 rounded-[var(--exits-radius-md)] border border-border bg-surface px-2 tabular-nums"
-                        onChange={(event) => {
-                          const next = Number(event.target.value);
-                          if (!Number.isFinite(next)) {
-                            return;
-                          }
-                          onSetQuantity(line.lineKey, next);
-                        }}
-                      />
+                      {hasOverride ? (
+                        <p
+                          data-testid={`sell-cart-price-changed-${line.lineKey}`}
+                          className="sell-cart-line__override"
+                        >
+                          {t("sell.priceChanged")}
+                        </p>
+                      ) : null}
                     </div>
-                  )}
-                  <MoneyDisplay
-                    amount={amount}
-                    className="max-w-[10rem] truncate"
-                    testId={`sell-cart-amount-${line.lineKey}`}
-                  />
-                </div>
-                {canOverrideSalePrice && onChangePrice ? (
-                  <div className="mt-2">
                     <Button
                       type="button"
                       variant="ghost"
-                      className="min-h-11 border border-border"
-                      data-testid={`sell-cart-change-price-${line.lineKey}`}
-                      onClick={() => onChangePrice(line)}
+                      className="sell-cart-line__remove"
+                      aria-label={t("sell.cartRemoveLine")}
+                      data-testid={`sell-cart-remove-${line.lineKey}`}
+                      onClick={() => onRemove(line.lineKey)}
                     >
-                      {t("sell.changePrice")}
+                      <X className="size-4" aria-hidden />
                     </Button>
                   </div>
-                ) : null}
+
+                  <div className="sell-cart-line__controls">
+                    {byWeight ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="sell-cart-line__edit"
+                        data-testid={`sell-cart-edit-weight-${line.lineKey}`}
+                        onClick={() => onEditWeight(line)}
+                      >
+                        {qtyLabel} {line.unitLabel} · {t("sell.editWeight")}
+                      </Button>
+                    ) : customMeasured && onEditCustomQuantity ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="sell-cart-line__edit"
+                        data-testid={`sell-cart-edit-custom-${line.lineKey}`}
+                        onClick={() => onEditCustomQuantity(line)}
+                      >
+                        {qtyLabel} {line.unitLabel} · {t("sell.editCustomQty")}
+                      </Button>
+                    ) : (
+                      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                        <QuantityStepper
+                          compact
+                          value={qtyLabel}
+                          valueTestId={`sell-cart-qty-${line.lineKey}`}
+                          decreaseLabel={t("sell.cartDecrease")}
+                          increaseLabel={t("sell.cartIncrease")}
+                          onDecrement={() => onDecrement(line.lineKey)}
+                          onIncrement={() => onIncrement(line.lineKey)}
+                        />
+                        {!wholeOnly ? (
+                          <>
+                            <label
+                              className="sr-only"
+                              htmlFor={`${panelId}-sell-qty-input-${line.lineKey}`}
+                            >
+                              {t("sell.quantityDirect")}
+                            </label>
+                            <input
+                              id={`${panelId}-sell-qty-input-${line.lineKey}`}
+                              data-testid={`sell-cart-qty-input-${line.lineKey}`}
+                              type="number"
+                              inputMode="decimal"
+                              min={0.001}
+                              step={0.001}
+                              value={line.quantity}
+                              className="sell-cart-line__qty-input"
+                              onChange={(event) => {
+                                const next = Number(event.target.value);
+                                if (!Number.isFinite(next)) {
+                                  return;
+                                }
+                                onSetQuantity(line.lineKey, next);
+                              }}
+                            />
+                          </>
+                        ) : null}
+                      </div>
+                    )}
+
+                    <div className="sell-cart-line__price">
+                      {hasOverride ? (
+                        <span
+                          data-testid={`sell-cart-regular-price-${line.lineKey}`}
+                          className="sell-cart-line__price-was"
+                        >
+                          {qtyLabel} × ₱{line.unitPrice.toFixed(2)}
+                        </span>
+                      ) : null}
+                      <MoneyDisplay
+                        amount={amount}
+                        className={hasOverride ? "sell-cart-line__price-now" : undefined}
+                        testId={`sell-cart-amount-${line.lineKey}`}
+                      />
+                      <span className="sell-cart-line__price-unit">
+                        {qtyLabel} × ₱{sellingPrice.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </li>
             );
           })}
         </ul>
       )}
 
-      <div className="mt-auto flex flex-col gap-2">
+      <div className="sell-cart-footer mt-auto flex flex-col gap-3">
         {lines.length > 0 ? (
-          <p
-            data-testid="sell-cart-subtotal"
-            className="m-0 break-words text-[length:var(--exits-text-sm)] font-semibold"
-          >
-            {t("sell.cartSubtotalLabel")}: <MoneyDisplay amount={subtotal} />
-          </p>
+          <dl className="sell-cart-summary m-0">
+            <div className="sell-cart-summary__row">
+              <dt>{t("sell.cartItemsLabel")}</dt>
+              <dd data-testid="sell-cart-item-count">
+                {lineCount} {lineCount === 1 ? t("sell.cartItemSingular") : t("sell.cartItemPlural")}
+              </dd>
+            </div>
+            <div className="sell-cart-summary__row">
+              <dt>{t("sell.cartSubtotalLabel")}</dt>
+              <dd data-testid="sell-cart-subtotal">
+                <MoneyDisplay amount={subtotal} />
+              </dd>
+            </div>
+            <div className="sell-cart-summary__row sell-cart-summary__row--total">
+              <dt>{t("sell.cartTotalLabel")}</dt>
+              <dd>
+                <MoneyDisplay amount={subtotal} />
+              </dd>
+            </div>
+          </dl>
         ) : null}
+
         {showMidSessionWarning ? (
           <div
             data-testid="sell-mid-session-warning"
             data-block={midSessionBlock}
-            className="rounded-[var(--exits-radius-md)] border border-[var(--exits-danger)]/40 bg-[var(--exits-surface-muted)] p-3"
+            className="rounded-[var(--exits-radius-md)] border border-[var(--exits-danger)]/40 bg-[var(--exits-surface-muted)] p-2"
             role="alert"
           >
-            <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+            <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold leading-snug">
               {midSessionBlock === "device_lost"
                 ? t("sell.midSession.deviceLost")
                 : t("sell.midSession.shiftLost")}
@@ -288,7 +313,7 @@ export function SellCartPanel({
               <Button
                 asChild
                 variant="ghost"
-                className="mt-2 min-h-11 w-full"
+                className="mt-1.5 min-h-9 w-full text-[length:var(--exits-text-xs)]"
                 data-testid="sell-mid-session-register"
               >
                 <Link to="/devices/register?from=sell">{t("sell.midSession.fixDevice")}</Link>
@@ -297,7 +322,7 @@ export function SellCartPanel({
               <Button
                 asChild
                 variant="ghost"
-                className="mt-2 min-h-11 w-full"
+                className="mt-1.5 min-h-9 w-full text-[length:var(--exits-text-xs)]"
                 data-testid="sell-mid-session-open-shift"
               >
                 <Link to="/shifts/open?from=sell">{t("sell.midSession.openShift")}</Link>
@@ -305,6 +330,7 @@ export function SellCartPanel({
             )}
           </div>
         ) : null}
+
         <Button
           data-testid="sell-pay"
           type="button"
@@ -320,7 +346,7 @@ export function SellCartPanel({
                     : t("sell.payDisabledNeedsShift")
                   : t("sell.payDisabledEmpty")
           }
-          className="w-full"
+          className="sell-cart-pay w-full"
           onClick={() => {
             if (payEnabled) {
               navigate("/sell/checkout");
@@ -329,7 +355,7 @@ export function SellCartPanel({
         >
           {lineCount > 0 ? `${t("sell.payWithItems")} (${lineCount})` : t("sell.pay")}
         </Button>
-        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+        <p className="m-0 text-center text-[length:var(--exits-text-xs)] text-muted">
           {payEnabled
             ? t("sell.payReadyHint")
             : moneyPostReady
@@ -353,6 +379,6 @@ export function SellCartPanel({
           setClearConfirmOpen(false);
         }}
       />
-    </>
+    </div>
   );
 }

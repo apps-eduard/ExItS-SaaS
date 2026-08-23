@@ -28,6 +28,11 @@ import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
 import { CheckoutPersonalCustomerPicker } from "@/features/checkout/CheckoutPersonalCustomerPicker";
 import {
+  CHECKOUT_PAYMENT_ICONS,
+  CheckoutPaymentMethodCards,
+  type CheckoutUiPaymentChoice,
+} from "@/features/checkout/CheckoutPaymentMethodCards";
+import {
   mapCartLinesToCheckoutRequest,
   mapCartLinesToOfflineCheckoutRequest,
 } from "@/features/checkout/map-cart-to-checkout";
@@ -46,7 +51,7 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type DiscountScope = CommercialDiscountIntentRequest["scope"];
 type DiscountMethod = CommercialDiscountIntentRequest["method"];
-type UiPaymentChoice = "Cash" | "GCash" | "Utang";
+type UiPaymentChoice = CheckoutUiPaymentChoice;
 
 type AppliedDiscount = CommercialDiscountIntentRequest & { localId: string };
 
@@ -816,35 +821,38 @@ export function CheckoutCashPage() {
         <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
           {t("checkout.paymentMethod")}
         </h2>
-        <div
-          className="mt-3 flex flex-wrap gap-2"
-          role="radiogroup"
-          aria-label={t("checkout.paymentMethod")}
-        >
-          {(
-            [
-              ["Cash", "checkout.paymentCash"],
-              ["GCash", "checkout.paymentGCash"],
-              ["Utang", "checkout.paymentUtang"],
-            ] as const
-          ).map(([value, labelKey]) => (
-            <Button
-              key={value}
-              type="button"
-              variant={paymentChoice === value ? "default" : "ghost"}
-              className="min-h-11"
-              data-testid={`checkout-pay-${value.toLowerCase()}`}
-              aria-pressed={paymentChoice === value}
-              disabled={saving || (!online && value !== "Cash")}
-              onClick={() => {
-                setPaymentChoice(value);
-                setSubmitError(null);
-              }}
-            >
-              {t(labelKey)}
-            </Button>
-          ))}
-        </div>
+        <CheckoutPaymentMethodCards
+          value={paymentChoice}
+          groupLabel={t("checkout.paymentMethod")}
+          onChange={(next) => {
+            setPaymentChoice(next);
+            setSubmitError(null);
+          }}
+          options={[
+            {
+              value: "Cash",
+              label: t("checkout.paymentCash"),
+              Icon: CHECKOUT_PAYMENT_ICONS.Cash,
+              testId: "checkout-pay-cash",
+              disabled: saving,
+            },
+            {
+              value: "GCash",
+              label: t("checkout.paymentGCashManual"),
+              hint: t("checkout.paymentGCashHint"),
+              Icon: CHECKOUT_PAYMENT_ICONS.GCash,
+              testId: "checkout-pay-gcash",
+              disabled: saving || !online,
+            },
+            {
+              value: "Utang",
+              label: t("checkout.paymentUtang"),
+              Icon: CHECKOUT_PAYMENT_ICONS.Utang,
+              testId: "checkout-pay-utang",
+              disabled: saving || !online,
+            },
+          ]}
+        />
         {!online ? (
           <p
             data-testid="checkout-offline-method-hint"
@@ -853,9 +861,12 @@ export function CheckoutCashPage() {
             {t("offline.requiredGCash")} {t("offline.requiredUtang")}
           </p>
         ) : null}
-        {/* Prove Card / provider GCash are not offered */}
+        {/* Prove Card / Debit / provider GCash are not offered */}
         <span data-testid="checkout-no-card" className="sr-only">
           no-card
+        </span>
+        <span data-testid="checkout-no-debit" className="sr-only">
+          no-debit
         </span>
         <span data-testid="checkout-no-provider-gcash" className="sr-only">
           no-provider-gcash

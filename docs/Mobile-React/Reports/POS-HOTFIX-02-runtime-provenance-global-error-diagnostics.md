@@ -63,7 +63,7 @@ ROOT_CAUSE=POS React (:5177) proxied to Docker Platform API on :8091 from Platfo
 
 ```
 PLATFORM_8091_EXPECTED_WORKTREE=C:\Users\speed\Desktop\ExItS-SaaS-pos-react-client
-PLATFORM_8091_EXPECTED_SHA=<final commit on feat/pos-react-client>
+PLATFORM_8091_EXPECTED_SHA=5cddf222a3c90f0a96988f5ad553df07284930d4
 ANTIFORGERY_TOKEN_ORG_SESSION_LIVE=PASS
 WORKSPACE_MAIN_BRANCH_LIVE=BLOCKER — live script branch-context returned 400 after antiforgery PASS (separate bind/data follow-up)
 WORKSPACE_SECOND_BRANCH_LIVE=BLOCKER — same

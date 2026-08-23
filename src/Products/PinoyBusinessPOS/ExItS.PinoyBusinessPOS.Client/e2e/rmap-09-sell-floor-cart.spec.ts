@@ -17,6 +17,7 @@ import { prepareSellReady } from "./mock-sell-ready";
 const VIEWPORTS = [
   { width: 375, height: 812 },
   { width: 768, height: 1024 },
+  { width: 1024, height: 1366 },
   { width: 1024, height: 768 },
   { width: 1440, height: 900 },
 ] as const;
@@ -80,15 +81,17 @@ test.describe("RMAP-09 sell floor and session cart parity", () => {
     await expect(cart.getByTestId("sell-cart-subtotal")).toContainText("120");
   });
 
-  test("whole quantity rejects decimal on non-custom line", async ({ page }) => {
+  test("whole quantity uses stepper only on non-custom line", async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 768 });
     await page.getByTestId(`sell-product-${MOCK_BOTTLE_PRODUCT_ID}`).click();
     const cart = page.getByTestId("sell-cart-landscape");
     const lineKey = `${MOCK_BOTTLE_PRODUCT_ID}::${MOCK_BOTTLE_UNIT_ID}`;
     await expect(cart.getByTestId(`sell-cart-line-${lineKey}`)).toBeVisible();
-    await cart.getByTestId(`sell-cart-qty-input-${lineKey}`).fill("1.5");
-    await expect(cart.getByTestId(`sell-cart-qty-${lineKey}`)).toHaveText("1");
-    await expect(cart.getByTestId("sell-cart-subtotal")).toContainText("95");
+    await expect(cart.getByTestId(`sell-cart-qty-input-${lineKey}`)).toHaveCount(0);
+    const line = cart.getByTestId(`sell-cart-line-${lineKey}`);
+    await line.getByRole("button", { name: "Increase quantity" }).click();
+    await expect(line.getByTestId(`sell-cart-qty-${lineKey}`)).toContainText("2");
+    await expect(cart.getByTestId("sell-cart-subtotal")).toContainText("190");
   });
 
   test("ByWeight meat opens weight entry with kg preview and sellable advisory", async ({
@@ -113,7 +116,12 @@ test.describe("RMAP-09 sell floor and session cart parity", () => {
     const cart = page.getByTestId("sell-cart-landscape");
     await expect(cart.getByTestId(`sell-cart-line-${MOCK_COKE_PRODUCT_ID}::base`)).toBeVisible();
 
-    await cart.getByTestId(`sell-cart-qty-input-${MOCK_COKE_PRODUCT_ID}::base`).fill("3");
+    const cokeLine = `${MOCK_COKE_PRODUCT_ID}::base`;
+    const cokeCartLine = cart.getByTestId(`sell-cart-line-${cokeLine}`);
+    const increase = cokeCartLine.getByRole("button", { name: "Increase quantity" });
+    await increase.click();
+    await increase.click();
+    await expect(cokeCartLine.getByTestId(`sell-cart-qty-${cokeLine}`)).toContainText("3");
     await expect(cart.getByTestId("sell-cart-subtotal")).toContainText("75");
 
     await cart.getByTestId("sell-cart-clear").click();

@@ -348,7 +348,8 @@ async function signInOwnerSelling(page: import("@playwright/test").Page) {
   await expect(page.getByTestId("sell-floor")).toBeVisible({ timeout: 15000 });
 }
 
-test.describe("RMAP-12b price override UX", () => {
+test.describe.skip("RMAP-12b price override UX", () => {
+  // Cart "Change price" removed for compact sell-floor UX; re-enable when override entry moves to checkout.
   test.use({ serviceWorkers: "block" });
 
   test("A manager 90% of baseline applies (22.50 on ₱25)", async ({ page }) => {

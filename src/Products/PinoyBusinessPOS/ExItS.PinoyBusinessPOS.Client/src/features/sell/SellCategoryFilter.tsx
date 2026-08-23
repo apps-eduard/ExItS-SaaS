@@ -1,8 +1,11 @@
 import { cn } from "@/lib/cn";
+import { resolveSellCategoryIcon } from "@/features/sell/sell-category-icon";
 
 export type SellCategoryOption = {
   categoryId: string;
   name: string;
+  /** Optional count when the caller already knows it — never invent from incomplete pages. */
+  productCount?: number;
 };
 
 type SellCategoryFilterProps = {
@@ -11,6 +14,8 @@ type SellCategoryFilterProps = {
   allLabel: string;
   listLabel: string;
   onSelect: (categoryId: string) => void;
+  /** Optional total for the All tile when known. */
+  allProductCount?: number;
 };
 
 export function SellCategoryFilter({
@@ -19,6 +24,7 @@ export function SellCategoryFilter({
   allLabel,
   listLabel,
   onSelect,
+  allProductCount,
 }: SellCategoryFilterProps) {
   const activeName =
     activeCategoryId === "all"
@@ -47,18 +53,21 @@ export function SellCategoryFilter({
           role="list"
           aria-label={listLabel}
         >
-          <CategoryChip
+          <CategoryTile
             pressed={activeCategoryId === "all"}
             onClick={() => onSelect("all")}
             label={allLabel}
+            productCount={allProductCount}
+            isAll
           />
           {categories.map((category) => (
-            <CategoryChip
+            <CategoryTile
               key={category.categoryId}
               testId={`sell-category-${category.categoryId}`}
               pressed={activeCategoryId === category.categoryId}
               onClick={() => onSelect(category.categoryId)}
               label={category.name}
+              productCount={category.productCount}
             />
           ))}
         </div>
@@ -67,32 +76,43 @@ export function SellCategoryFilter({
   );
 }
 
-function CategoryChip({
+function CategoryTile({
   label,
   pressed,
   onClick,
   testId,
+  productCount,
+  isAll = false,
 }: {
   label: string;
   pressed: boolean;
   onClick: () => void;
   testId?: string;
+  productCount?: number;
+  isAll?: boolean;
 }) {
+  const Icon = resolveSellCategoryIcon(isAll ? "all" : label);
+  const countLabel =
+    typeof productCount === "number" && Number.isFinite(productCount)
+      ? productCount === 1
+        ? "1 item"
+        : `${productCount} items`
+      : null;
+
   return (
     <button
       type="button"
       role="listitem"
       data-testid={testId}
-      className={cn(
-        "sell-category-chip shrink-0 snap-start whitespace-nowrap rounded-[var(--exits-radius-md)] border px-3 py-2 text-[length:var(--exits-text-sm)] font-semibold transition-[background-color,border-color,color] duration-[var(--exits-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        pressed
-          ? "border-primary bg-primary text-primary-foreground"
-          : "border-border bg-surface text-foreground hover:bg-[var(--exits-surface-muted)]",
-      )}
+      className={cn("sell-category-tile", pressed && "sell-category-tile--active")}
       aria-pressed={pressed}
       onClick={onClick}
     >
-      {label}
+      <span className="sell-category-tile__icon" aria-hidden>
+        <Icon className="size-6" strokeWidth={1.75} />
+      </span>
+      <span className="sell-category-tile__name">{label}</span>
+      {countLabel ? <span className="sell-category-tile__count">{countLabel}</span> : null}
     </button>
   );
 }

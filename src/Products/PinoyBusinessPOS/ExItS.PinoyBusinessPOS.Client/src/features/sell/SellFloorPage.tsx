@@ -16,10 +16,8 @@ import type {
 import { getInventoryProduct } from "@/api/pos/pos-inventory-client";
 import {
   activeSellUnits,
-  formatQuantityDisplay,
   isByWeightSellingMode,
   resolveAddFlow,
-  resolveStockHint,
 } from "@/cart/sell-cart-helpers";
 import { cartLineKey } from "@/cart/sell-cart-helpers";
 import { useSessionCart, type SessionCartLine } from "@/cart/SessionCartProvider";
@@ -27,15 +25,14 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
-import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { SellCartPanel } from "@/features/sell/SellCartPanel";
 import { SellCategoryFilter } from "@/features/sell/SellCategoryFilter";
 import { SellCustomQuantityDialog } from "@/features/sell/SellCustomQuantityDialog";
 import { SellPriceOverrideDialog } from "@/features/sell/SellPriceOverrideDialog";
+import { SellProductCard } from "@/features/sell/SellProductCard";
 import { evaluateMidSessionSellBlock } from "@/features/sell/sell-readiness";
 import { SellUnitEntryDialog } from "@/features/sell/SellUnitEntryDialog";
-import { SellWeightEntryDialog } from "@/features/sell/SellWeightEntryDialog";
-import {
+import { SellWeightEntryDialog } from "@/features/sell/SellWeightEntryDialog";import {
   canCreateSale,
   canOverrideSalePrice,
   canOverrideSalePriceUnlimited,
@@ -123,6 +120,7 @@ export function SellFloorPage() {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [cartSheetOpen, setCartSheetOpen] = useState(false);
+  const [sideCartLayout, setSideCartLayout] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [lookupProducts, setLookupProducts] = useState<PosCatalogProductDto[]>([]);
   const [lookupLoading, setLookupLoading] = useState(false);
@@ -131,6 +129,17 @@ export function SellFloorPage() {
   const [customQtyEntry, setCustomQtyEntry] = useState<PendingCustomQuantityEntry | null>(null);
   const [priceOverrideLine, setPriceOverrideLine] = useState<SessionCartLine | null>(null);
   const lastExactScanRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") {
+      return;
+    }
+    const media = window.matchMedia("(min-width: 900px)");
+    const sync = () => setSideCartLayout(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
 
   const debouncedSearch = useDebouncedValue(searchTerm, SEARCH_DEBOUNCE_MS);
   const workspaceScope = useMemo(() => {
@@ -587,12 +596,12 @@ export function SellFloorPage() {
     midSessionBlock: midSessionBlock.kind,
   };
 
-  const showFloatingCart = cart.lineCount > 0 && !cartSheetOpen;
+  const showFloatingCart = cart.lineCount > 0 && !cartSheetOpen && !sideCartLayout;
 
   return (
     <div
       data-testid="sell-floor"
-      className="sell-floor-root -mx-[max(var(--exits-page-padding),env(safe-area-inset-left))] flex min-h-[calc(100dvh-12rem)] min-w-0 flex-col px-[max(var(--exits-page-padding),env(safe-area-inset-left))]"
+      className="sell-floor-root flex min-h-[calc(100dvh-12rem)] min-w-0 flex-col"
     >
       <div className="mb-4 flex min-w-0 items-start justify-between gap-3">
         <PageHeader title={t("sell.title")} description={t("sell.lede")} />
@@ -728,12 +737,12 @@ export function SellFloorPage() {
 
           <div
             data-testid="sell-products"
-            className="sell-product-grid min-h-[12rem] content-start items-start gap-3 rounded-[var(--exits-radius-lg)] border border-border bg-[var(--exits-surface-muted)] p-4"
+            className="sell-product-grid min-h-[12rem] content-start items-start rounded-[var(--exits-radius-lg)] border border-border bg-[var(--exits-surface-muted)] p-3"
             aria-label={t("sell.productsLabel")}
           >
             {productsLoading ? (
               <div className="col-span-full">
-                <LoadingSkeleton count={6} className="grid grid-cols-2 gap-3 sm:grid-cols-3" />
+                <LoadingSkeleton count={8} className="sell-product-grid__skeleton gap-[0.375rem]" />
               </div>
             ) : null}
 
@@ -743,64 +752,20 @@ export function SellFloorPage() {
               </p>
             ) : null}
 
-            {displayedProducts.map((product) => {
-              const hint = resolveStockHint({
-                isTracked: product.isTracked,
-                onHandQuantity: product.onHandQuantity,
-                unitOfMeasure: product.unitOfMeasure,
-                tracksExpiration: product.tracksExpiration,
-                // Tile uses catalog on-hand; sellable is loaded in entry dialogs for expiry products.
-                sellableQuantity: undefined,
-              });
-              const flow = resolveAddFlow(product);
-              return (
-                <button
-                  key={product.productId}
-                  type="button"
-                  data-testid={`sell-product-${product.productId}`}
-                  className="flex min-h-[6rem] min-w-0 w-full flex-col items-start justify-between gap-2 self-stretch rounded-[var(--exits-radius-md)] border border-border bg-surface p-3 text-left transition-colors hover:border-primary"
-                  onClick={() => beginAddProduct(product)}
-                >
-                  <span className="line-clamp-2 break-words text-[length:var(--exits-text-sm)] font-semibold">
-                    {product.name}
-                  </span>
-                  <div className="flex w-full min-w-0 flex-col gap-1">
-                    <MoneyDisplay
-                      amount={product.sellingPrice}
-                      className="max-w-full truncate text-muted"
-                      testId={`sell-product-price-${product.productId}`}
-                    />
-                    {hint ? (
-                      <span
-                        data-testid={`sell-product-stock-${product.productId}`}
-                        className="truncate text-[length:var(--exits-text-xs)] text-muted"
-                      >
-                        {t("sell.stockOnHand")
-                          .replace("{qty}", formatQuantityDisplay(hint.quantity))
-                          .replace("{unit}", hint.unitOfMeasure)}
-                      </span>
-                    ) : null}
-                    {flow.kind === "weight" ||
-                    flow.kind === "customQuantity" ||
-                    flow.kind === "unitSelector" ? (
-                      <span className="truncate text-[length:var(--exits-text-xs)] text-muted">
-                        {flow.kind === "weight"
-                          ? t("sell.tileByWeight")
-                          : flow.kind === "customQuantity"
-                            ? t("sell.tileCustomQty")
-                            : t("sell.tileChooseUnit")}
-                      </span>
-                    ) : null}
-                  </div>
-                </button>
-              );
-            })}
+            {displayedProducts.map((product) => (
+              <SellProductCard
+                key={product.productId}
+                product={product}
+                workspace={workspaceScope}
+                onAdd={beginAddProduct}
+              />
+            ))}
           </div>
         </section>
 
         <aside
           data-testid="sell-cart-landscape"
-          className="sell-cart-landscape hidden min-h-0 min-w-0 flex-col gap-3 rounded-[var(--exits-radius-lg)] border border-border bg-surface p-4"
+          className="sell-cart-landscape hidden min-h-0 min-w-0 flex-col rounded-[var(--exits-radius-lg)] border border-border bg-surface p-4 shadow-sm"
           aria-label={t("sell.cartLabel")}
         >
           <SellCartPanel {...cartPanelProps} panelId="landscape" />

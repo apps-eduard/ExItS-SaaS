@@ -16,6 +16,7 @@ const screenshotDir = path.resolve(
 const viewports = [
   { name: "375x812", width: 375, height: 812, cart: "phone" as const },
   { name: "768x1024", width: 768, height: 1024, cart: "phone" as const },
+  { name: "1024x1366", width: 1024, height: 1366, cart: "landscape" as const },
   { name: "1024x768", width: 1024, height: 768, cart: "landscape" as const },
   { name: "1440x900", width: 1440, height: 900, cart: "landscape" as const },
 ];
@@ -94,4 +95,32 @@ test.describe("RMAP-00 shared responsive sell surface", () => {
       });
     });
   }
+
+  test("iPad Pro 1024x1366 uses full-width tablet layout with right cart", async ({ page }) => {
+    await mockBoundCashierSession(page);
+    await mockPosCatalogApi(page);
+    await prepareSellReady(page);
+    await page.setViewportSize({ width: 1024, height: 1366 });
+    await openSellFloor(page);
+
+    const floor = page.getByTestId("sell-floor");
+    await expect(floor).toBeVisible();
+    await expect(page.getByTestId("sell-cart-landscape")).toBeVisible();
+    await expect(page.getByTestId("sell-cart-bar")).toBeHidden();
+
+    const floorBox = await floor.boundingBox();
+    expect(floorBox).toBeTruthy();
+    // Nearly full width (allow gutters ~40px total)
+    expect(floorBox!.width).toBeGreaterThan(960);
+
+    await page.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`).click();
+    await expect(page.getByTestId("sell-cart-bar")).toHaveCount(0);
+
+    const columnCount = await page.locator('[data-testid="sell-products"]').evaluate((el) => {
+      return getComputedStyle(el).gridTemplateColumns.split(" ").filter(Boolean).length;
+    });
+    expect(columnCount).toBe(3);
+
+    await assertNoHorizontalOverflow(page);
+  });
 });
