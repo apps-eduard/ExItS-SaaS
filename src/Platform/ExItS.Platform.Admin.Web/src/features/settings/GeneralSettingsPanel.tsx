@@ -4,7 +4,16 @@ import { updatePlatformGeneralSettings } from "@/api/settings/settings-client";
 import type { PlatformGeneralSettings } from "@/api/settings/settings-types";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
 import { ErrorState } from "@/components/exits/ErrorState";
-import { SettingsField, SettingsFormShell } from "@/features/settings/SettingsFormShell";
+import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
+import {
+  SettingsField,
+  SettingsFieldGroup,
+  SettingsFormShell,
+} from "@/features/settings/SettingsFormShell";
+import {
+  isPlatformSettingsForbidden,
+  settingsControlClassName,
+} from "@/features/settings/settings-form-utils";
 import {
   platformGeneralSettingsQueryKey,
   usePlatformGeneralSettingsQuery,
@@ -21,6 +30,10 @@ export function GeneralSettingsPanel() {
     return <DashboardWidgetSkeleton rows={6} />;
   }
 
+  if (query.isError && isPlatformSettingsForbidden(query.error)) {
+    return <ShellNotFoundPage />;
+  }
+
   if (query.isError) {
     return (
       <ErrorState
@@ -34,7 +47,7 @@ export function GeneralSettingsPanel() {
     );
   }
 
-  return <GeneralSettingsForm key={query.data.version} data={query.data} />;
+  return <GeneralSettingsForm data={query.data} />;
 }
 
 function GeneralSettingsForm({ data }: { data: PlatformGeneralSettings }) {
@@ -104,47 +117,88 @@ function GeneralSettingsForm({ data }: { data: PlatformGeneralSettings }) {
         })();
       }}
     >
-      <SettingsField htmlFor="platform-display-name" label={t("settings.general.field.displayName")}>
-        <input
-          className="w-full rounded-[var(--exits-density-radius)] border border-border bg-background px-3 py-2 text-[length:var(--exits-text-sm)]"
-          id="platform-display-name"
-          value={platformDisplayName}
-          onChange={(event) => setPlatformDisplayName(event.target.value)}
-        />
-      </SettingsField>
-      <SettingsField htmlFor="support-email" label={t("settings.general.field.supportEmail")}>
-        <input
-          className="w-full rounded-[var(--exits-density-radius)] border border-border bg-background px-3 py-2 text-[length:var(--exits-text-sm)]"
-          id="support-email"
-          type="email"
-          value={supportEmail}
-          onChange={(event) => setSupportEmail(event.target.value)}
-        />
-      </SettingsField>
-      <SettingsField htmlFor="branding-logo-url" label={t("settings.general.field.logoUrl")}>
-        <input
-          className="w-full rounded-[var(--exits-density-radius)] border border-border bg-background px-3 py-2 text-[length:var(--exits-text-sm)]"
-          id="branding-logo-url"
-          value={brandingLogoUrl}
-          onChange={(event) => setBrandingLogoUrl(event.target.value)}
-        />
-      </SettingsField>
-      <SettingsField htmlFor="branding-primary-color" label={t("settings.general.field.primaryColor")}>
-        <input
-          className="w-full rounded-[var(--exits-density-radius)] border border-border bg-background px-3 py-2 text-[length:var(--exits-text-sm)]"
-          id="branding-primary-color"
-          value={brandingPrimaryColor}
-          onChange={(event) => setBrandingPrimaryColor(event.target.value)}
-        />
-      </SettingsField>
-      <SettingsField htmlFor="branding-accent-color" label={t("settings.general.field.accentColor")}>
-        <input
-          className="w-full rounded-[var(--exits-density-radius)] border border-border bg-background px-3 py-2 text-[length:var(--exits-text-sm)]"
-          id="branding-accent-color"
-          value={brandingAccentColor}
-          onChange={(event) => setBrandingAccentColor(event.target.value)}
-        />
-      </SettingsField>
+      <SettingsFieldGroup
+        description={t("settings.general.group.identityDescription")}
+        title={t("settings.general.group.identity")}
+      >
+        <SettingsField
+          className="sm:col-span-1"
+          hint={t("settings.general.field.displayNameHint")}
+          htmlFor="platform-display-name"
+          label={t("settings.general.field.displayName")}
+        >
+          <input
+            aria-describedby="platform-display-name-hint"
+            className={settingsControlClassName}
+            id="platform-display-name"
+            value={platformDisplayName}
+            onChange={(event) => setPlatformDisplayName(event.target.value)}
+          />
+        </SettingsField>
+        <SettingsField
+          className="sm:col-span-1"
+          hint={t("settings.general.field.supportEmailHint")}
+          htmlFor="support-email"
+          label={t("settings.general.field.supportEmail")}
+        >
+          <input
+            aria-describedby="support-email-hint"
+            className={settingsControlClassName}
+            id="support-email"
+            type="email"
+            value={supportEmail}
+            onChange={(event) => setSupportEmail(event.target.value)}
+          />
+        </SettingsField>
+      </SettingsFieldGroup>
+
+      <SettingsFieldGroup
+        description={t("settings.general.group.brandingDescription")}
+        title={t("settings.general.group.branding")}
+      >
+        <SettingsField
+          hint={t("settings.general.field.logoUrlHint")}
+          htmlFor="branding-logo-url"
+          label={t("settings.general.field.logoUrl")}
+        >
+          <input
+            aria-describedby="branding-logo-url-hint"
+            className={settingsControlClassName}
+            id="branding-logo-url"
+            type="url"
+            value={brandingLogoUrl}
+            onChange={(event) => setBrandingLogoUrl(event.target.value)}
+          />
+        </SettingsField>
+        <SettingsField
+          className="sm:col-span-1"
+          hint={t("settings.general.field.primaryColorHint")}
+          htmlFor="branding-primary-color"
+          label={t("settings.general.field.primaryColor")}
+        >
+          <input
+            aria-describedby="branding-primary-color-hint"
+            className={settingsControlClassName}
+            id="branding-primary-color"
+            value={brandingPrimaryColor}
+            onChange={(event) => setBrandingPrimaryColor(event.target.value)}
+          />
+        </SettingsField>
+        <SettingsField
+          className="sm:col-span-1"
+          hint={t("settings.general.field.accentColorHint")}
+          htmlFor="branding-accent-color"
+          label={t("settings.general.field.accentColor")}
+        >
+          <input
+            aria-describedby="branding-accent-color-hint"
+            className={settingsControlClassName}
+            id="branding-accent-color"
+            value={brandingAccentColor}
+            onChange={(event) => setBrandingAccentColor(event.target.value)}
+          />
+        </SettingsField>
+      </SettingsFieldGroup>
     </SettingsFormShell>
   );
 }

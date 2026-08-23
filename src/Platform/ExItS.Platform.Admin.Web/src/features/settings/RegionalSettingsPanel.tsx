@@ -4,7 +4,16 @@ import { updatePlatformRegionalSettings } from "@/api/settings/settings-client";
 import type { PlatformRegionalSettings } from "@/api/settings/settings-types";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
 import { ErrorState } from "@/components/exits/ErrorState";
-import { SettingsField, SettingsFormShell } from "@/features/settings/SettingsFormShell";
+import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
+import {
+  SettingsField,
+  SettingsFieldGroup,
+  SettingsFormShell,
+} from "@/features/settings/SettingsFormShell";
+import {
+  isPlatformSettingsForbidden,
+  settingsControlClassName,
+} from "@/features/settings/settings-form-utils";
 import {
   platformRegionalSettingsQueryKey,
   usePlatformRegionalSettingsQuery,
@@ -21,6 +30,10 @@ export function RegionalSettingsPanel() {
     return <DashboardWidgetSkeleton rows={6} />;
   }
 
+  if (query.isError && isPlatformSettingsForbidden(query.error)) {
+    return <ShellNotFoundPage />;
+  }
+
   if (query.isError) {
     return (
       <ErrorState
@@ -34,7 +47,7 @@ export function RegionalSettingsPanel() {
     );
   }
 
-  return <RegionalSettingsForm key={query.data.version} data={query.data} />;
+  return <RegionalSettingsForm data={query.data} />;
 }
 
 function RegionalSettingsForm({ data }: { data: PlatformRegionalSettings }) {
@@ -107,54 +120,95 @@ function RegionalSettingsForm({ data }: { data: PlatformRegionalSettings }) {
         })();
       }}
     >
-      <SettingsField htmlFor="default-timezone" label={t("settings.regional.field.timeZone")}>
-        <input
-          className="w-full rounded-[var(--exits-density-radius)] border border-border bg-background px-3 py-2 text-[length:var(--exits-text-sm)]"
-          id="default-timezone"
-          value={defaultTimeZoneId}
-          onChange={(event) => setDefaultTimeZoneId(event.target.value)}
-        />
-      </SettingsField>
-      <SettingsField htmlFor="default-locale" label={t("settings.regional.field.locale")}>
-        <input
-          className="w-full rounded-[var(--exits-density-radius)] border border-border bg-background px-3 py-2 text-[length:var(--exits-text-sm)]"
-          id="default-locale"
-          value={defaultLocale}
-          onChange={(event) => setDefaultLocale(event.target.value)}
-        />
-      </SettingsField>
-      <SettingsField htmlFor="default-currency" label={t("settings.regional.field.currency")}>
-        <input
-          className="w-full rounded-[var(--exits-density-radius)] border border-border bg-background px-3 py-2 text-[length:var(--exits-text-sm)]"
-          id="default-currency"
-          value={defaultCurrencyCode}
-          onChange={(event) => setDefaultCurrencyCode(event.target.value.toUpperCase())}
-        />
-      </SettingsField>
-      <SettingsField htmlFor="default-country" label={t("settings.regional.field.country")}>
-        <input
-          className="w-full rounded-[var(--exits-density-radius)] border border-border bg-background px-3 py-2 text-[length:var(--exits-text-sm)]"
-          id="default-country"
-          value={defaultCountryCode}
-          onChange={(event) => setDefaultCountryCode(event.target.value.toUpperCase())}
-        />
-      </SettingsField>
-      <SettingsField htmlFor="date-format" label={t("settings.regional.field.dateFormat")}>
-        <input
-          className="w-full rounded-[var(--exits-density-radius)] border border-border bg-background px-3 py-2 text-[length:var(--exits-text-sm)]"
-          id="date-format"
-          value={dateFormat}
-          onChange={(event) => setDateFormat(event.target.value)}
-        />
-      </SettingsField>
-      <SettingsField htmlFor="time-format" label={t("settings.regional.field.timeFormat")}>
-        <input
-          className="w-full rounded-[var(--exits-density-radius)] border border-border bg-background px-3 py-2 text-[length:var(--exits-text-sm)]"
-          id="time-format"
-          value={timeFormat}
-          onChange={(event) => setTimeFormat(event.target.value)}
-        />
-      </SettingsField>
+      <SettingsFieldGroup
+        description={t("settings.regional.group.defaultsDescription")}
+        title={t("settings.regional.group.defaults")}
+      >
+        <SettingsField
+          className="sm:col-span-1"
+          hint={t("settings.regional.field.timeZoneHint")}
+          htmlFor="default-timezone"
+          label={t("settings.regional.field.timeZone")}
+        >
+          <input
+            aria-describedby="default-timezone-hint"
+            className={settingsControlClassName}
+            id="default-timezone"
+            value={defaultTimeZoneId}
+            onChange={(event) => setDefaultTimeZoneId(event.target.value)}
+          />
+        </SettingsField>
+        <SettingsField
+          className="sm:col-span-1"
+          hint={t("settings.regional.field.localeHint")}
+          htmlFor="default-locale"
+          label={t("settings.regional.field.locale")}
+        >
+          <input
+            aria-describedby="default-locale-hint"
+            className={settingsControlClassName}
+            id="default-locale"
+            value={defaultLocale}
+            onChange={(event) => setDefaultLocale(event.target.value)}
+          />
+        </SettingsField>
+        <SettingsField
+          className="sm:col-span-1"
+          hint={t("settings.regional.field.currencyHint")}
+          htmlFor="default-currency"
+          label={t("settings.regional.field.currency")}
+        >
+          <input
+            aria-describedby="default-currency-hint"
+            className={settingsControlClassName}
+            id="default-currency"
+            value={defaultCurrencyCode}
+            onChange={(event) => setDefaultCurrencyCode(event.target.value.toUpperCase())}
+          />
+        </SettingsField>
+        <SettingsField
+          className="sm:col-span-1"
+          hint={t("settings.regional.field.countryHint")}
+          htmlFor="default-country"
+          label={t("settings.regional.field.country")}
+        >
+          <input
+            aria-describedby="default-country-hint"
+            className={settingsControlClassName}
+            id="default-country"
+            value={defaultCountryCode}
+            onChange={(event) => setDefaultCountryCode(event.target.value.toUpperCase())}
+          />
+        </SettingsField>
+        <SettingsField
+          className="sm:col-span-1"
+          hint={t("settings.regional.field.dateFormatHint")}
+          htmlFor="date-format"
+          label={t("settings.regional.field.dateFormat")}
+        >
+          <input
+            aria-describedby="date-format-hint"
+            className={settingsControlClassName}
+            id="date-format"
+            value={dateFormat}
+            onChange={(event) => setDateFormat(event.target.value)}
+          />
+        </SettingsField>
+        <SettingsField
+          className="sm:col-span-1"
+          hint={t("settings.regional.field.timeFormatHint")}
+          htmlFor="time-format"
+          label={t("settings.regional.field.timeFormat")}
+        >
+          <input
+            aria-describedby="time-format-hint"
+            className={settingsControlClassName}
+            id="time-format"
+            value={timeFormat}
+            onChange={(event) => setTimeFormat(event.target.value)}
+          />
+        </SettingsField>
+      </SettingsFieldGroup>
     </SettingsFormShell>
   );
 }

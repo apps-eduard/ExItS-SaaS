@@ -7,8 +7,19 @@ import {
 import type { PlatformEmailSettings } from "@/api/settings/settings-types";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { SettingsField, SettingsFormShell } from "@/features/settings/SettingsFormShell";
+import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
+import {
+  SettingsField,
+  SettingsFieldGroup,
+  SettingsFormShell,
+  SettingsSectionCard,
+} from "@/features/settings/SettingsFormShell";
+import {
+  isPlatformSettingsForbidden,
+  settingsControlClassName,
+} from "@/features/settings/settings-form-utils";
 import {
   platformEmailSettingsQueryKey,
   usePlatformEmailSettingsQuery,
@@ -16,6 +27,7 @@ import {
 import { usePreferences } from "@/hooks/use-preferences";
 import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
 import { env } from "@/lib/env";
+import { cn } from "@/lib/utils";
 
 export function EmailSettingsPanel() {
   const { t } = usePreferences();
@@ -23,6 +35,10 @@ export function EmailSettingsPanel() {
 
   if (query.isPending) {
     return <DashboardWidgetSkeleton rows={8} />;
+  }
+
+  if (query.isError && isPlatformSettingsForbidden(query.error)) {
+    return <ShellNotFoundPage />;
   }
 
   if (query.isError) {
@@ -38,7 +54,7 @@ export function EmailSettingsPanel() {
     );
   }
 
-  return <EmailSettingsForm key={query.data.version} data={query.data} />;
+  return <EmailSettingsForm data={query.data} />;
 }
 
 function EmailSettingsForm({ data }: { data: PlatformEmailSettings }) {
@@ -60,6 +76,7 @@ function EmailSettingsForm({ data }: { data: PlatformEmailSettings }) {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [testMessage, setTestMessage] = useState<string | null>(null);
+  const [testFailed, setTestFailed] = useState(false);
 
   const dirty = useMemo(() => {
     const port = smtpPort.length > 0 ? Number(smtpPort) : null;
@@ -94,9 +111,12 @@ function EmailSettingsForm({ data }: { data: PlatformEmailSettings }) {
     smtpUsername,
   ]);
 
+  const canSave = dirty && (!replacePassword || smtpPassword.length > 0);
+
   return (
-    <div className="grid max-w-2xl gap-4">
+    <div className="grid min-w-0 gap-4">
       <SettingsFormShell
+        canSave={canSave}
         dirty={dirty}
         dirtyMessage={t("settings.unsavedChanges")}
         errorMessage={errorMessage}
@@ -134,118 +154,180 @@ function EmailSettingsForm({ data }: { data: PlatformEmailSettings }) {
           })();
         }}
       >
-        <SettingsField htmlFor="provider-mode" label={t("settings.email.field.providerMode")}>
-          <select
-            className="w-full rounded-[var(--exits-density-radius)] border border-border bg-background px-3 py-2 text-[length:var(--exits-text-sm)]"
-            id="provider-mode"
-            value={providerMode}
-            onChange={(event) => setProviderMode(event.target.value)}
-          >
-            <option value="Smtp">SMTP</option>
-            <option value="Disabled">Disabled</option>
-          </select>
-        </SettingsField>
-        <SettingsField htmlFor="smtp-host" label={t("settings.email.field.smtpHost")}>
-          <input
-            className="w-full rounded-[var(--exits-density-radius)] border border-border bg-background px-3 py-2 text-[length:var(--exits-text-sm)]"
-            id="smtp-host"
-            value={smtpHost}
-            onChange={(event) => setSmtpHost(event.target.value)}
-          />
-        </SettingsField>
-        <SettingsField htmlFor="smtp-port" label={t("settings.email.field.smtpPort")}>
-          <input
-            className="w-full rounded-[var(--exits-density-radius)] border border-border bg-background px-3 py-2 text-[length:var(--exits-text-sm)]"
-            id="smtp-port"
-            inputMode="numeric"
-            value={smtpPort}
-            onChange={(event) => setSmtpPort(event.target.value)}
-          />
-        </SettingsField>
-        <SettingsField htmlFor="smtp-username" label={t("settings.email.field.smtpUsername")}>
-          <input
-            className="w-full rounded-[var(--exits-density-radius)] border border-border bg-background px-3 py-2 text-[length:var(--exits-text-sm)]"
-            id="smtp-username"
-            value={smtpUsername}
-            onChange={(event) => setSmtpUsername(event.target.value)}
-          />
-        </SettingsField>
-        <div className="grid gap-2">
-          <p className="text-[length:var(--exits-text-sm)] font-medium">
-            {t("settings.email.field.smtpPassword")}
-          </p>
-          <p className="text-[length:var(--exits-text-sm)] text-muted" role="status">
-            {data.passwordConfigured
-              ? t("settings.email.passwordConfigured")
-              : t("settings.email.passwordNotConfigured")}
-          </p>
-          <label className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
-            <input
-              checked={replacePassword}
-              type="checkbox"
-              onChange={(event) => setReplacePassword(event.target.checked)}
-            />
-            {t("settings.email.replacePassword")}
-          </label>
-          {replacePassword ? (
-            <input
-              aria-label={t("settings.email.newPassword")}
-              className="w-full rounded-[var(--exits-density-radius)] border border-border bg-background px-3 py-2 text-[length:var(--exits-text-sm)]"
-              type="password"
-              value={smtpPassword}
-              onChange={(event) => setSmtpPassword(event.target.value)}
-            />
-          ) : null}
-        </div>
-        <SettingsField htmlFor="from-display-name" label={t("settings.email.field.fromDisplayName")}>
-          <input
-            className="w-full rounded-[var(--exits-density-radius)] border border-border bg-background px-3 py-2 text-[length:var(--exits-text-sm)]"
-            id="from-display-name"
-            value={fromDisplayName}
-            onChange={(event) => setFromDisplayName(event.target.value)}
-          />
-        </SettingsField>
-        <SettingsField htmlFor="from-address" label={t("settings.email.field.fromAddress")}>
-          <input
-            className="w-full rounded-[var(--exits-density-radius)] border border-border bg-background px-3 py-2 text-[length:var(--exits-text-sm)]"
-            id="from-address"
-            type="email"
-            value={fromAddress}
-            onChange={(event) => setFromAddress(event.target.value)}
-          />
-        </SettingsField>
-        <SettingsField htmlFor="security-mode" label={t("settings.email.field.securityMode")}>
-          <select
-            className="w-full rounded-[var(--exits-density-radius)] border border-border bg-background px-3 py-2 text-[length:var(--exits-text-sm)]"
-            id="security-mode"
-            value={securityMode}
-            onChange={(event) => setSecurityMode(event.target.value)}
-          >
-            <option value="None">None</option>
-            <option value="StartTls">STARTTLS</option>
-            <option value="Ssl">SSL/TLS</option>
-          </select>
-        </SettingsField>
-        <SettingsField
-          htmlFor="admin-public-base-url"
-          label={t("settings.email.field.adminPublicBaseUrl")}
+        <SettingsFieldGroup
+          description={t("settings.email.group.providerDescription")}
+          title={t("settings.email.group.provider")}
         >
-          <input
-            className="w-full rounded-[var(--exits-density-radius)] border border-border bg-background px-3 py-2 text-[length:var(--exits-text-sm)]"
-            id="admin-public-base-url"
-            value={adminPublicBaseUrl}
-            onChange={(event) => setAdminPublicBaseUrl(event.target.value)}
-          />
-        </SettingsField>
+          <SettingsField htmlFor="provider-mode" label={t("settings.email.field.providerMode")}>
+            <select
+              className={settingsControlClassName}
+              id="provider-mode"
+              value={providerMode}
+              onChange={(event) => setProviderMode(event.target.value)}
+            >
+              <option value="Smtp">SMTP</option>
+              <option value="Disabled">Disabled</option>
+            </select>
+          </SettingsField>
+        </SettingsFieldGroup>
+
+        <SettingsFieldGroup
+          description={t("settings.email.group.smtpDescription")}
+          title={t("settings.email.group.smtp")}
+        >
+          <SettingsField
+            className="sm:col-span-1"
+            htmlFor="smtp-host"
+            label={t("settings.email.field.smtpHost")}
+          >
+            <input
+              className={settingsControlClassName}
+              id="smtp-host"
+              value={smtpHost}
+              onChange={(event) => setSmtpHost(event.target.value)}
+            />
+          </SettingsField>
+          <SettingsField
+            className="sm:col-span-1"
+            htmlFor="smtp-port"
+            label={t("settings.email.field.smtpPort")}
+          >
+            <input
+              className={settingsControlClassName}
+              id="smtp-port"
+              inputMode="numeric"
+              value={smtpPort}
+              onChange={(event) => setSmtpPort(event.target.value)}
+            />
+          </SettingsField>
+          <SettingsField htmlFor="smtp-username" label={t("settings.email.field.smtpUsername")}>
+            <input
+              className={settingsControlClassName}
+              id="smtp-username"
+              value={smtpUsername}
+              onChange={(event) => setSmtpUsername(event.target.value)}
+            />
+          </SettingsField>
+          <div className="grid gap-3 sm:col-span-2">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="grid gap-1">
+                <p className="text-[length:var(--exits-text-sm)] font-medium text-foreground">
+                  {t("settings.email.field.smtpPassword")}
+                </p>
+                <p className="flex items-center gap-2" role="status">
+                  <Badge tone={data.passwordConfigured ? "success" : "neutral"}>
+                    {data.passwordConfigured
+                      ? t("settings.email.passwordConfigured")
+                      : t("settings.email.passwordNotConfigured")}
+                  </Badge>
+                </p>
+              </div>
+              {replacePassword ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setReplacePassword(false);
+                    setSmtpPassword("");
+                  }}
+                >
+                  {t("settings.email.cancelReplace")}
+                </Button>
+              ) : (
+                <Button type="button" variant="outline" onClick={() => setReplacePassword(true)}>
+                  {t("settings.email.replaceAction")}
+                </Button>
+              )}
+            </div>
+            {replacePassword ? (
+              <input
+                autoComplete="new-password"
+                className={settingsControlClassName}
+                id="smtp-password"
+                aria-label={t("settings.email.newPassword")}
+                type="password"
+                value={smtpPassword}
+                onChange={(event) => setSmtpPassword(event.target.value)}
+              />
+            ) : null}
+          </div>
+        </SettingsFieldGroup>
+
+        <SettingsFieldGroup
+          description={t("settings.email.group.senderDescription")}
+          title={t("settings.email.group.sender")}
+        >
+          <SettingsField
+            className="sm:col-span-1"
+            htmlFor="from-display-name"
+            label={t("settings.email.field.fromDisplayName")}
+          >
+            <input
+              className={settingsControlClassName}
+              id="from-display-name"
+              value={fromDisplayName}
+              onChange={(event) => setFromDisplayName(event.target.value)}
+            />
+          </SettingsField>
+          <SettingsField
+            className="sm:col-span-1"
+            htmlFor="from-address"
+            label={t("settings.email.field.fromAddress")}
+          >
+            <input
+              className={settingsControlClassName}
+              id="from-address"
+              type="email"
+              value={fromAddress}
+              onChange={(event) => setFromAddress(event.target.value)}
+            />
+          </SettingsField>
+          <SettingsField
+            className="sm:col-span-1"
+            htmlFor="security-mode"
+            label={t("settings.email.field.securityMode")}
+          >
+            <select
+              className={settingsControlClassName}
+              id="security-mode"
+              value={securityMode}
+              onChange={(event) => setSecurityMode(event.target.value)}
+            >
+              <option value="None">None</option>
+              <option value="StartTls">STARTTLS</option>
+              <option value="Ssl">SSL/TLS</option>
+            </select>
+          </SettingsField>
+          <SettingsField
+            className="sm:col-span-1"
+            hint={t("settings.email.field.adminPublicBaseUrlHint")}
+            htmlFor="admin-public-base-url"
+            label={t("settings.email.field.adminPublicBaseUrl")}
+          >
+            <input
+              aria-describedby="admin-public-base-url-hint"
+              className={settingsControlClassName}
+              id="admin-public-base-url"
+              type="url"
+              value={adminPublicBaseUrl}
+              onChange={(event) => setAdminPublicBaseUrl(event.target.value)}
+            />
+          </SettingsField>
+        </SettingsFieldGroup>
       </SettingsFormShell>
 
-      <section className="grid gap-3 rounded-[var(--exits-density-radius)] border border-border bg-surface px-4 py-4">
-        <h2 className="text-[length:var(--exits-text-base)] font-semibold">
-          {t("settings.email.test.title")}
-        </h2>
+      <SettingsSectionCard className="border-dashed bg-surface-muted/20">
+        <header className="grid gap-1">
+          <h3 className="text-[length:var(--exits-text-base)] font-semibold text-foreground">
+            {t("settings.email.test.title")}
+          </h3>
+          <p className="text-[length:var(--exits-text-sm)] text-muted">
+            {t("settings.email.test.description")}
+          </p>
+        </header>
         <SettingsField htmlFor="test-recipient" label={t("settings.email.test.recipient")}>
           <input
-            className="w-full rounded-[var(--exits-density-radius)] border border-border bg-background px-3 py-2 text-[length:var(--exits-text-sm)]"
+            className={settingsControlClassName}
             id="test-recipient"
             type="email"
             value={testRecipient}
@@ -253,7 +335,14 @@ function EmailSettingsForm({ data }: { data: PlatformEmailSettings }) {
           />
         </SettingsField>
         {testMessage ? (
-          <p className="text-[length:var(--exits-text-sm)]" role="status">
+          <p
+            className={cn(
+              "text-[length:var(--exits-text-sm)]",
+              testFailed ? "text-destructive" : "text-foreground",
+            )}
+            role={testFailed ? "alert" : "status"}
+            aria-live="polite"
+          >
             {testMessage}
           </p>
         ) : null}
@@ -266,13 +355,24 @@ function EmailSettingsForm({ data }: { data: PlatformEmailSettings }) {
               void (async () => {
                 setTesting(true);
                 setTestMessage(null);
+                setTestFailed(false);
                 try {
                   const result = await sendPlatformEmailTest(env.platformApiBaseUrl, {
                     recipientEmail: testRecipient,
                   });
-                  setTestMessage(result.message);
+                  setTestFailed(!result.succeeded);
+                  setTestMessage(
+                    result.message.length > 0
+                      ? result.message
+                      : result.succeeded
+                        ? t("settings.email.test.send")
+                        : t("settings.email.test.failed"),
+                  );
                 } catch (error) {
-                  setTestMessage(error instanceof Error ? error.message : t("settings.email.test.failed"));
+                  setTestFailed(true);
+                  setTestMessage(
+                    error instanceof Error ? error.message : t("settings.email.test.failed"),
+                  );
                 } finally {
                   setTesting(false);
                 }
@@ -282,7 +382,7 @@ function EmailSettingsForm({ data }: { data: PlatformEmailSettings }) {
             {testing ? t("settings.email.test.sending") : t("settings.email.test.send")}
           </Button>
         </div>
-      </section>
+      </SettingsSectionCard>
     </div>
   );
 }
