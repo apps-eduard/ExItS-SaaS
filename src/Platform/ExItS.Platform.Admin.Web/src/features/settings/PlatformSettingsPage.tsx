@@ -27,7 +27,7 @@ export function PlatformSettingsLayout() {
       <section
         aria-busy="true"
         aria-label={t("settings.loading")}
-        className="grid max-w-3xl gap-4"
+        className="grid max-w-5xl gap-4"
         role="status"
       >
         <DashboardWidgetSkeleton rows={8} />
@@ -40,7 +40,7 @@ export function PlatformSettingsLayout() {
   }
 
   return (
-    <section className="grid min-w-0 max-w-3xl gap-4">
+    <section className="grid min-w-0 max-w-5xl gap-4">
       <PageHeader title={t("nav.platformSettings")} description={t("settings.description")} />
       <div className="min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface">
         <PlatformSettingsNav />
