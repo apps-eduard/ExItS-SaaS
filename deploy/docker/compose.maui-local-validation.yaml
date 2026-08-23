@@ -91,7 +91,7 @@ services:
       Cors__AllowedOrigins__8: ${MAUI_LOCAL_VALIDATION_PERSONAL_WEB_ORIGIN:-http://localhost:8194}
       Security__EnforceHttps: "false"
       LocalValidation__Enabled: "true"
-      LocalValidation__SeedScope: ${MAUI_LOCAL_VALIDATION_SEED_SCOPE:-PlatformAdministratorsOnly}
+      LocalValidation__SeedScope: ${MAUI_LOCAL_VALIDATION_SEED_SCOPE:-Full}
       LocalValidation__PurgeTransactionalOnSeed: ${MAUI_LOCAL_VALIDATION_PURGE_TRANSACTIONAL:-false}
       LocalValidation__SharedPassword: ${MAUI_LOCAL_VALIDATION_SHARED_PASSWORD}
       PlatformAuthentication__Password__MinimumLength: "1"

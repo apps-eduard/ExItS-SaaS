@@ -23,7 +23,7 @@ param(
     [int]$PortWaitSeconds = 240,
     [int]$DbHealthySeconds = 90,
     [ValidateSet('PlatformAdministratorsOnly', 'Full')]
-    [string]$SeedScope = 'PlatformAdministratorsOnly',
+    [string]$SeedScope = 'Full',
     [string]$PublicHost = '',
     [switch]$Build,
     [switch]$CleanBuild
@@ -309,7 +309,7 @@ Write-Host "  Org Web:          $loopbackOrgUrl"
 Write-Host "  Personal Web:     $loopbackPersonalUrl"
 Write-Host "  Platform DB:      127.0.0.1:$platformDbPort / $($MauiLocalValidationStack.PlatformDbName) (host-local only)"
 Write-Host "  POS DB:           127.0.0.1:$posDbPort / $($MauiLocalValidationStack.PosDbName) (host-local only)"
-Write-Host "  Mailpit:          http://127.0.0.1:$mailpitUiPort"
+Write-Host "  Mailpit:          http://127.0.0.1:$mailpitUiPort  (MAUI only — React Mailpit is :8025)"
 Write-Host "  MAUI emulator:    http://10.0.2.2:$platformApiPort and :$posApiPort"
 if ($resolvedPublicHost) {
     Write-Host ""
@@ -319,6 +319,7 @@ if ($resolvedPublicHost) {
     Write-Host "  POS API:          $publicPosApiUrl"
     Write-Host "  Org Web:          $publicOrgUrl"
     Write-Host "  Personal Web:     $publicPersonalUrl"
+    Write-Host "  Mailpit:          http://${resolvedPublicHost}:$mailpitUiPort  (if published; else use localhost:$mailpitUiPort on this PC)"
     Write-MauiPhysicalDeviceAppsettingsHint -RepoRoot $repoRoot -PublicHostValue $resolvedPublicHost -PlatformApiPort $platformApiPort -PosApiPort $posApiPort
 }
 Write-Host "  Stop:             .\tools\Stop-MauiLegacyLocalValidation.ps1"

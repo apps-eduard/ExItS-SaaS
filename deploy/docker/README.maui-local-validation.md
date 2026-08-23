@@ -66,4 +66,19 @@ Android emulator (MAUI Debug Emulator target):
 
 Physical device Debug overlay still uses Tailscale/LAN `PublicHost` but **ports 8191/8192**.
 
+Default seed scope is **`Full`** (fixture orgs ABC Sari-Sari / XYZ Mini Grocery + org users).  
+Kizy Store is **not** a MAUI seed identity — it lives on the React DB. A MAUI app that can sign in as Kizy is talking to React `:8091` by mistake.
+
+### Registration / password-reset email (Mailpit)
+
+MAUI Platform API (`:8191`) sends mail to **MAUI Mailpit** only (`UI :8125`, SMTP `:1125` → container `maui-mailpit`).  
+React Platform API (`:8091`) uses React Mailpit (`:8025` / `:1025`).
+
+| POS client talks to | Open Mailpit at |
+|---|---|
+| MAUI `:8191` | **http://127.0.0.1:8125** |
+| React `:8091` | http://127.0.0.1:8025 |
+
+If registration “succeeds” but nothing appears in `:8025`, you are looking at the wrong stack — check `:8125`.
+
 Production / Release API URLs are unchanged.
