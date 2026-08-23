@@ -7,6 +7,7 @@ export const navigationRegistry: NavigationSectionDefinition[] = [
   {
     id: "home",
     labelKey: "nav.group.home",
+    icon: "layout-dashboard",
     order: 1,
     items: [
       {
@@ -23,6 +24,7 @@ export const navigationRegistry: NavigationSectionDefinition[] = [
   {
     id: "organizations",
     labelKey: "nav.group.organizations",
+    icon: "building-2",
     order: 2,
     items: [
       {
@@ -48,6 +50,7 @@ export const navigationRegistry: NavigationSectionDefinition[] = [
   {
     id: "people",
     labelKey: "nav.group.people",
+    icon: "users",
     order: 3,
     items: [
       {
@@ -118,6 +121,7 @@ export const navigationRegistry: NavigationSectionDefinition[] = [
   {
     id: "products",
     labelKey: "nav.group.products",
+    icon: "package",
     order: 4,
     items: [
       {
@@ -173,6 +177,7 @@ export const navigationRegistry: NavigationSectionDefinition[] = [
   {
     id: "billing",
     labelKey: "nav.group.billing",
+    icon: "receipt",
     order: 5,
     items: [
       {
@@ -189,6 +194,7 @@ export const navigationRegistry: NavigationSectionDefinition[] = [
   {
     id: "catalog",
     labelKey: "nav.group.catalog",
+    icon: "folder",
     order: 6,
     items: [
       {
@@ -241,6 +247,7 @@ export const navigationRegistry: NavigationSectionDefinition[] = [
   {
     id: "governance",
     labelKey: "nav.group.governance",
+    icon: "shield",
     order: 7,
     items: [
       {
@@ -266,6 +273,7 @@ export const navigationRegistry: NavigationSectionDefinition[] = [
   {
     id: "operations",
     labelKey: "nav.group.operations",
+    icon: "activity",
     order: 8,
     items: [
       {
@@ -290,6 +298,7 @@ export const navigationRegistry: NavigationSectionDefinition[] = [
   {
     id: "settings",
     labelKey: "nav.group.settings",
+    icon: "settings",
     order: 9,
     items: [
       {
@@ -306,6 +315,7 @@ export const navigationRegistry: NavigationSectionDefinition[] = [
   {
     id: "development",
     labelKey: "nav.group.development",
+    icon: "flask-conical",
     order: 10,
     items: [
       {

@@ -101,7 +101,7 @@ export function resolveNavigation(
 
           return [resolved];
         });
-      return { id: section.id, labelKey: section.labelKey, items };
+      return { id: section.id, labelKey: section.labelKey, icon: section.icon, items };
     })
     .filter((section) => {
       if (section.id === "development") {

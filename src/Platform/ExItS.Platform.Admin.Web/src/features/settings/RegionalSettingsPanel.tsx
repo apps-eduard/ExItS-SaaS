@@ -4,16 +4,14 @@ import { updatePlatformRegionalSettings } from "@/api/settings/settings-client";
 import type { PlatformRegionalSettings } from "@/api/settings/settings-types";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { Input } from "@/components/ui/input";
 import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
 import {
   SettingsField,
   SettingsFieldGroup,
   SettingsFormShell,
 } from "@/features/settings/SettingsFormShell";
-import {
-  isPlatformSettingsForbidden,
-  settingsControlClassName,
-} from "@/features/settings/settings-form-utils";
+import { isPlatformSettingsForbidden } from "@/features/settings/settings-form-utils";
 import {
   platformRegionalSettingsQueryKey,
   usePlatformRegionalSettingsQuery,
@@ -125,84 +123,72 @@ function RegionalSettingsForm({ data }: { data: PlatformRegionalSettings }) {
         title={t("settings.regional.group.defaults")}
       >
         <SettingsField
-          className="sm:col-span-1"
           hint={t("settings.regional.field.timeZoneHint")}
           htmlFor="default-timezone"
           label={t("settings.regional.field.timeZone")}
         >
-          <input
+          <Input
             aria-describedby="default-timezone-hint"
-            className={settingsControlClassName}
             id="default-timezone"
             value={defaultTimeZoneId}
             onChange={(event) => setDefaultTimeZoneId(event.target.value)}
           />
         </SettingsField>
         <SettingsField
-          className="sm:col-span-1"
           hint={t("settings.regional.field.localeHint")}
           htmlFor="default-locale"
           label={t("settings.regional.field.locale")}
         >
-          <input
+          <Input
             aria-describedby="default-locale-hint"
-            className={settingsControlClassName}
             id="default-locale"
             value={defaultLocale}
             onChange={(event) => setDefaultLocale(event.target.value)}
           />
         </SettingsField>
         <SettingsField
-          className="sm:col-span-1"
           hint={t("settings.regional.field.currencyHint")}
           htmlFor="default-currency"
           label={t("settings.regional.field.currency")}
         >
-          <input
+          <Input
             aria-describedby="default-currency-hint"
-            className={settingsControlClassName}
             id="default-currency"
             value={defaultCurrencyCode}
             onChange={(event) => setDefaultCurrencyCode(event.target.value.toUpperCase())}
           />
         </SettingsField>
         <SettingsField
-          className="sm:col-span-1"
           hint={t("settings.regional.field.countryHint")}
           htmlFor="default-country"
           label={t("settings.regional.field.country")}
         >
-          <input
+          <Input
             aria-describedby="default-country-hint"
-            className={settingsControlClassName}
             id="default-country"
             value={defaultCountryCode}
             onChange={(event) => setDefaultCountryCode(event.target.value.toUpperCase())}
           />
         </SettingsField>
         <SettingsField
-          className="sm:col-span-1"
           hint={t("settings.regional.field.dateFormatHint")}
           htmlFor="date-format"
           label={t("settings.regional.field.dateFormat")}
         >
-          <input
+          <Input
             aria-describedby="date-format-hint"
-            className={settingsControlClassName}
             id="date-format"
             value={dateFormat}
             onChange={(event) => setDateFormat(event.target.value)}
           />
         </SettingsField>
         <SettingsField
-          className="sm:col-span-1"
           hint={t("settings.regional.field.timeFormatHint")}
           htmlFor="time-format"
           label={t("settings.regional.field.timeFormat")}
         >
-          <input
+          <Input
             aria-describedby="time-format-hint"
-            className={settingsControlClassName}
             id="time-format"
             value={timeFormat}
             onChange={(event) => setTimeFormat(event.target.value)}

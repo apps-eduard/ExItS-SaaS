@@ -101,7 +101,14 @@ export function AppNav({
                 aria-expanded={sectionOpen}
                 onClick={() => toggleSection(section.id)}
               >
-                <span>{t(section.labelKey)}</span>
+                <span className="flex min-w-0 flex-1 items-center gap-2">
+                  <NavIcon
+                    active={sectionHasActive}
+                    className="!size-7 shrink-0"
+                    name={section.icon}
+                  />
+                  <span className="truncate">{t(section.labelKey)}</span>
+                </span>
                 <ChevronDown
                   aria-hidden="true"
                   size={14}

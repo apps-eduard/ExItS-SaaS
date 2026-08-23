@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { App } from "@/app/App";
 import * as developmentTools from "@/lib/auth/development-tools";
@@ -21,13 +21,13 @@ function stubDesktop() {
   });
 }
 
-describe("AppSidebar hover peek", () => {
+describe("AppSidebar icon rail", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     window.localStorage.removeItem(UI_PREFERENCES_STORAGE_KEY);
   });
 
-  it("expands the icon rail on hover without changing the persisted collapsed preference", async () => {
+  it("stays collapsed on hover and keeps section headers hidden in icon rail mode", async () => {
     stubDesktop();
     vi.spyOn(developmentTools, "areDevelopmentToolsAllowed").mockReturnValue(true);
     mockAuthenticatedFetch();
@@ -41,15 +41,13 @@ describe("AppSidebar hover peek", () => {
     await screen.findByRole("heading", { name: "Overview" });
 
     const sidebar = screen.getByTestId("app-sidebar");
-    expect(sidebar).toHaveAttribute("data-sidebar-peek", "false");
+    expect(sidebar).toHaveClass("w-[4.25rem]");
     expect(screen.queryByRole("button", { name: /^Home$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Overview" })).toBeInTheDocument();
 
     await user.hover(sidebar);
-    expect(sidebar).toHaveAttribute("data-sidebar-peek", "true");
-    expect(await screen.findByRole("button", { name: /^Home$/i })).toBeInTheDocument();
-
-    await user.unhover(sidebar);
-    await waitFor(() => expect(sidebar).toHaveAttribute("data-sidebar-peek", "false"));
+    expect(sidebar).toHaveClass("w-[4.25rem]");
+    expect(screen.queryByRole("button", { name: /^Home$/i })).not.toBeInTheDocument();
 
     expect(
       JSON.parse(window.localStorage.getItem(UI_PREFERENCES_STORAGE_KEY) ?? "{}").sidebarCollapsed,

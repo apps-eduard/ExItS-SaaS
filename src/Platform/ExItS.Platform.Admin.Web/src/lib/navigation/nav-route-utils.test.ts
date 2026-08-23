@@ -6,6 +6,7 @@ const sections: ResolvedNavigationSection[] = [
   {
     id: "billing",
     labelKey: "nav.group.billing",
+    icon: "receipt",
     items: [
       {
         id: "payments",

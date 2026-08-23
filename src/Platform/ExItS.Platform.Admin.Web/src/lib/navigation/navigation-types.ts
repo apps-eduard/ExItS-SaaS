@@ -23,6 +23,7 @@ export type NavigationItemDefinition = {
 export type NavigationSectionDefinition = {
   id: string;
   labelKey: MessageKey;
+  icon: string;
   order: number;
   items: NavigationItemDefinition[];
 };
@@ -41,5 +42,6 @@ export type ResolvedNavigationItem = {
 export type ResolvedNavigationSection = {
   id: string;
   labelKey: MessageKey;
+  icon: string;
   items: ResolvedNavigationItem[];
 };

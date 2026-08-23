@@ -5,16 +5,17 @@ import {
   updatePlatformEmailSettings,
 } from "@/api/settings/settings-client";
 import type { PlatformEmailSettings } from "@/api/settings/settings-types";
+import { DashboardSection } from "@/components/exits/dashboard/DashboardSection";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
 import {
   SettingsField,
   SettingsFieldGroup,
   SettingsFormShell,
-  SettingsSectionCard,
 } from "@/features/settings/SettingsFormShell";
 import {
   isPlatformSettingsForbidden,
@@ -114,7 +115,7 @@ function EmailSettingsForm({ data }: { data: PlatformEmailSettings }) {
   const canSave = dirty && (!replacePassword || smtpPassword.length > 0);
 
   return (
-    <div className="grid min-w-0 gap-4">
+    <div className="grid min-w-0 gap-3">
       <SettingsFormShell
         canSave={canSave}
         dirty={dirty}
@@ -156,9 +157,14 @@ function EmailSettingsForm({ data }: { data: PlatformEmailSettings }) {
       >
         <SettingsFieldGroup
           description={t("settings.email.group.providerDescription")}
+          fieldsClassName="sm:grid-cols-1"
           title={t("settings.email.group.provider")}
         >
-          <SettingsField htmlFor="provider-mode" label={t("settings.email.field.providerMode")}>
+          <SettingsField
+            className="max-w-xs"
+            htmlFor="provider-mode"
+            label={t("settings.email.field.providerMode")}
+          >
             <select
               className={settingsControlClassName}
               id="provider-mode"
@@ -173,57 +179,50 @@ function EmailSettingsForm({ data }: { data: PlatformEmailSettings }) {
 
         <SettingsFieldGroup
           description={t("settings.email.group.smtpDescription")}
+          fieldsClassName="sm:grid-cols-[minmax(0,1fr)_6.5rem]"
           title={t("settings.email.group.smtp")}
         >
-          <SettingsField
-            className="sm:col-span-1"
-            htmlFor="smtp-host"
-            label={t("settings.email.field.smtpHost")}
-          >
-            <input
-              className={settingsControlClassName}
+          <SettingsField htmlFor="smtp-host" label={t("settings.email.field.smtpHost")}>
+            <Input
               id="smtp-host"
               value={smtpHost}
               onChange={(event) => setSmtpHost(event.target.value)}
             />
           </SettingsField>
-          <SettingsField
-            className="sm:col-span-1"
-            htmlFor="smtp-port"
-            label={t("settings.email.field.smtpPort")}
-          >
-            <input
-              className={settingsControlClassName}
+          <SettingsField htmlFor="smtp-port" label={t("settings.email.field.smtpPort")}>
+            <Input
               id="smtp-port"
               inputMode="numeric"
               value={smtpPort}
               onChange={(event) => setSmtpPort(event.target.value)}
             />
           </SettingsField>
-          <SettingsField htmlFor="smtp-username" label={t("settings.email.field.smtpUsername")}>
-            <input
-              className={settingsControlClassName}
+          <SettingsField
+            className="sm:col-span-2 max-w-md"
+            htmlFor="smtp-username"
+            label={t("settings.email.field.smtpUsername")}
+          >
+            <Input
               id="smtp-username"
               value={smtpUsername}
               onChange={(event) => setSmtpUsername(event.target.value)}
             />
           </SettingsField>
-          <div className="grid gap-3 sm:col-span-2">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="grid gap-1">
-                <p className="text-[length:var(--exits-text-sm)] font-medium text-foreground">
+          <div className="grid gap-2 sm:col-span-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <span className="text-[length:var(--exits-text-sm)] font-medium text-foreground">
                   {t("settings.email.field.smtpPassword")}
-                </p>
-                <p className="flex items-center gap-2" role="status">
-                  <Badge tone={data.passwordConfigured ? "success" : "neutral"}>
-                    {data.passwordConfigured
-                      ? t("settings.email.passwordConfigured")
-                      : t("settings.email.passwordNotConfigured")}
-                  </Badge>
-                </p>
+                </span>
+                <Badge tone={data.passwordConfigured ? "success" : "neutral"}>
+                  {data.passwordConfigured
+                    ? t("settings.email.passwordConfigured")
+                    : t("settings.email.passwordNotConfigured")}
+                </Badge>
               </div>
               {replacePassword ? (
                 <Button
+                  size="sm"
                   type="button"
                   variant="ghost"
                   onClick={() => {
@@ -234,17 +233,22 @@ function EmailSettingsForm({ data }: { data: PlatformEmailSettings }) {
                   {t("settings.email.cancelReplace")}
                 </Button>
               ) : (
-                <Button type="button" variant="outline" onClick={() => setReplacePassword(true)}>
+                <Button
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                  onClick={() => setReplacePassword(true)}
+                >
                   {t("settings.email.replaceAction")}
                 </Button>
               )}
             </div>
             {replacePassword ? (
-              <input
+              <Input
                 autoComplete="new-password"
-                className={settingsControlClassName}
-                id="smtp-password"
                 aria-label={t("settings.email.newPassword")}
+                className="max-w-md"
+                id="smtp-password"
                 type="password"
                 value={smtpPassword}
                 onChange={(event) => setSmtpPassword(event.target.value)}
@@ -257,36 +261,22 @@ function EmailSettingsForm({ data }: { data: PlatformEmailSettings }) {
           description={t("settings.email.group.senderDescription")}
           title={t("settings.email.group.sender")}
         >
-          <SettingsField
-            className="sm:col-span-1"
-            htmlFor="from-display-name"
-            label={t("settings.email.field.fromDisplayName")}
-          >
-            <input
-              className={settingsControlClassName}
+          <SettingsField htmlFor="from-display-name" label={t("settings.email.field.fromDisplayName")}>
+            <Input
               id="from-display-name"
               value={fromDisplayName}
               onChange={(event) => setFromDisplayName(event.target.value)}
             />
           </SettingsField>
-          <SettingsField
-            className="sm:col-span-1"
-            htmlFor="from-address"
-            label={t("settings.email.field.fromAddress")}
-          >
-            <input
-              className={settingsControlClassName}
+          <SettingsField htmlFor="from-address" label={t("settings.email.field.fromAddress")}>
+            <Input
               id="from-address"
               type="email"
               value={fromAddress}
               onChange={(event) => setFromAddress(event.target.value)}
             />
           </SettingsField>
-          <SettingsField
-            className="sm:col-span-1"
-            htmlFor="security-mode"
-            label={t("settings.email.field.securityMode")}
-          >
+          <SettingsField htmlFor="security-mode" label={t("settings.email.field.securityMode")}>
             <select
               className={settingsControlClassName}
               id="security-mode"
@@ -299,14 +289,12 @@ function EmailSettingsForm({ data }: { data: PlatformEmailSettings }) {
             </select>
           </SettingsField>
           <SettingsField
-            className="sm:col-span-1"
             hint={t("settings.email.field.adminPublicBaseUrlHint")}
             htmlFor="admin-public-base-url"
             label={t("settings.email.field.adminPublicBaseUrl")}
           >
-            <input
+            <Input
               aria-describedby="admin-public-base-url-hint"
-              className={settingsControlClassName}
               id="admin-public-base-url"
               type="url"
               value={adminPublicBaseUrl}
@@ -316,73 +304,70 @@ function EmailSettingsForm({ data }: { data: PlatformEmailSettings }) {
         </SettingsFieldGroup>
       </SettingsFormShell>
 
-      <SettingsSectionCard className="border-dashed bg-surface-muted/20">
-        <header className="grid gap-1">
-          <h3 className="text-[length:var(--exits-text-base)] font-semibold text-foreground">
-            {t("settings.email.test.title")}
-          </h3>
-          <p className="text-[length:var(--exits-text-sm)] text-muted">
-            {t("settings.email.test.description")}
-          </p>
-        </header>
-        <SettingsField htmlFor="test-recipient" label={t("settings.email.test.recipient")}>
-          <input
-            className={settingsControlClassName}
-            id="test-recipient"
-            type="email"
-            value={testRecipient}
-            onChange={(event) => setTestRecipient(event.target.value)}
-          />
-        </SettingsField>
-        {testMessage ? (
-          <p
-            className={cn(
-              "text-[length:var(--exits-text-sm)]",
-              testFailed ? "text-destructive" : "text-foreground",
-            )}
-            role={testFailed ? "alert" : "status"}
-            aria-live="polite"
-          >
-            {testMessage}
-          </p>
-        ) : null}
-        <div>
-          <Button
-            disabled={testing || testRecipient.length === 0}
-            type="button"
-            variant="secondary"
-            onClick={() => {
-              void (async () => {
-                setTesting(true);
-                setTestMessage(null);
-                setTestFailed(false);
-                try {
-                  const result = await sendPlatformEmailTest(env.platformApiBaseUrl, {
-                    recipientEmail: testRecipient,
-                  });
-                  setTestFailed(!result.succeeded);
-                  setTestMessage(
-                    result.message.length > 0
-                      ? result.message
-                      : result.succeeded
-                        ? t("settings.email.test.send")
-                        : t("settings.email.test.failed"),
-                  );
-                } catch (error) {
-                  setTestFailed(true);
-                  setTestMessage(
-                    error instanceof Error ? error.message : t("settings.email.test.failed"),
-                  );
-                } finally {
-                  setTesting(false);
-                }
-              })();
-            }}
-          >
-            {testing ? t("settings.email.test.sending") : t("settings.email.test.send")}
-          </Button>
+      <DashboardSection
+        description={t("settings.email.test.description")}
+        title={t("settings.email.test.title")}
+      >
+        <div className="grid gap-3 sm:max-w-md">
+          <SettingsField htmlFor="test-recipient" label={t("settings.email.test.recipient")}>
+            <Input
+              id="test-recipient"
+              type="email"
+              value={testRecipient}
+              onChange={(event) => setTestRecipient(event.target.value)}
+            />
+          </SettingsField>
+          {testMessage ? (
+            <p
+              className={cn(
+                "text-[length:var(--exits-text-xs)]",
+                testFailed ? "text-destructive" : "text-muted",
+              )}
+              role={testFailed ? "alert" : "status"}
+              aria-live="polite"
+            >
+              {testMessage}
+            </p>
+          ) : null}
+          <div>
+            <Button
+              disabled={testing || testRecipient.length === 0}
+              size="sm"
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                void (async () => {
+                  setTesting(true);
+                  setTestMessage(null);
+                  setTestFailed(false);
+                  try {
+                    const result = await sendPlatformEmailTest(env.platformApiBaseUrl, {
+                      recipientEmail: testRecipient,
+                    });
+                    setTestFailed(!result.succeeded);
+                    setTestMessage(
+                      result.message.length > 0
+                        ? result.message
+                        : result.succeeded
+                          ? t("settings.email.test.send")
+                          : t("settings.email.test.failed"),
+                    );
+                  } catch (error) {
+                    setTestFailed(true);
+                    setTestMessage(
+                      error instanceof Error ? error.message : t("settings.email.test.failed"),
+                    );
+                  } finally {
+                    setTesting(false);
+                  }
+                })();
+              }}
+            >
+              {testing ? t("settings.email.test.sending") : t("settings.email.test.send")}
+            </Button>
+          </div>
         </div>
-      </SettingsSectionCard>
+      </DashboardSection>
     </div>
   );
 }

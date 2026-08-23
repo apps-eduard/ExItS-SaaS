@@ -4,16 +4,14 @@ import { updatePlatformGeneralSettings } from "@/api/settings/settings-client";
 import type { PlatformGeneralSettings } from "@/api/settings/settings-types";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { Input } from "@/components/ui/input";
 import { ShellNotFoundPage } from "@/features/overview/ShellNotFoundPage";
 import {
   SettingsField,
   SettingsFieldGroup,
   SettingsFormShell,
 } from "@/features/settings/SettingsFormShell";
-import {
-  isPlatformSettingsForbidden,
-  settingsControlClassName,
-} from "@/features/settings/settings-form-utils";
+import { isPlatformSettingsForbidden } from "@/features/settings/settings-form-utils";
 import {
   platformGeneralSettingsQueryKey,
   usePlatformGeneralSettingsQuery,
@@ -122,28 +120,24 @@ function GeneralSettingsForm({ data }: { data: PlatformGeneralSettings }) {
         title={t("settings.general.group.identity")}
       >
         <SettingsField
-          className="sm:col-span-1"
           hint={t("settings.general.field.displayNameHint")}
           htmlFor="platform-display-name"
           label={t("settings.general.field.displayName")}
         >
-          <input
+          <Input
             aria-describedby="platform-display-name-hint"
-            className={settingsControlClassName}
             id="platform-display-name"
             value={platformDisplayName}
             onChange={(event) => setPlatformDisplayName(event.target.value)}
           />
         </SettingsField>
         <SettingsField
-          className="sm:col-span-1"
           hint={t("settings.general.field.supportEmailHint")}
           htmlFor="support-email"
           label={t("settings.general.field.supportEmail")}
         >
-          <input
+          <Input
             aria-describedby="support-email-hint"
-            className={settingsControlClassName}
             id="support-email"
             type="email"
             value={supportEmail}
@@ -157,13 +151,13 @@ function GeneralSettingsForm({ data }: { data: PlatformGeneralSettings }) {
         title={t("settings.general.group.branding")}
       >
         <SettingsField
+          className="sm:col-span-2"
           hint={t("settings.general.field.logoUrlHint")}
           htmlFor="branding-logo-url"
           label={t("settings.general.field.logoUrl")}
         >
-          <input
+          <Input
             aria-describedby="branding-logo-url-hint"
-            className={settingsControlClassName}
             id="branding-logo-url"
             type="url"
             value={brandingLogoUrl}
@@ -171,28 +165,24 @@ function GeneralSettingsForm({ data }: { data: PlatformGeneralSettings }) {
           />
         </SettingsField>
         <SettingsField
-          className="sm:col-span-1"
           hint={t("settings.general.field.primaryColorHint")}
           htmlFor="branding-primary-color"
           label={t("settings.general.field.primaryColor")}
         >
-          <input
+          <Input
             aria-describedby="branding-primary-color-hint"
-            className={settingsControlClassName}
             id="branding-primary-color"
             value={brandingPrimaryColor}
             onChange={(event) => setBrandingPrimaryColor(event.target.value)}
           />
         </SettingsField>
         <SettingsField
-          className="sm:col-span-1"
           hint={t("settings.general.field.accentColorHint")}
           htmlFor="branding-accent-color"
           label={t("settings.general.field.accentColor")}
         >
-          <input
+          <Input
             aria-describedby="branding-accent-color-hint"
-            className={settingsControlClassName}
             id="branding-accent-color"
             value={brandingAccentColor}
             onChange={(event) => setBrandingAccentColor(event.target.value)}
