@@ -60,7 +60,6 @@ internal sealed class SmtpPlatformAuthOutboundMessageSink(
                 "SMTP auth outbound delivery failed. Kind={Kind} UserId={UserId}",
                 message.Kind,
                 message.UserId);
-            throw;
         }
     }
 }
