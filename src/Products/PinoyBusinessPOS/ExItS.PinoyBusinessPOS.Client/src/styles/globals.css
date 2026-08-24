@@ -2523,6 +2523,100 @@ body {
   color: var(--exits-text);
 }
 
+.personal-todo-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 2.25rem;
+  column-gap: 0.35rem;
+  align-items: center;
+  height: auto;
+  min-width: 0;
+  isolation: isolate;
+}
+
+.personal-todo-row__body {
+  grid-column: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.personal-todo-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.personal-todo-row__nav {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  min-height: 2.75rem;
+  padding: 0 0.15rem;
+  border-radius: var(--exits-radius-sm);
+  color: var(--exits-text-muted);
+  text-decoration: none;
+  transition: color var(--exits-motion-fast) ease;
+}
+
+.personal-todo-list-section {
+  margin-top: 0.15rem;
+}
+
+.personal-todo-list-section .catalog-form-section__title {
+  margin-bottom: 0.1rem;
+}
+
+.personal-todo-list-section .exits-list {
+  margin-top: 0.35rem;
+}
+
+.personal-todo-hub .catalog-form-section + .catalog-form-section {
+  margin-top: 0.1rem;
+}
+
+@media (max-width: 520px) {
+  .personal-todo-row__actions {
+    flex-direction: column;
+  }
+
+  .personal-todo-row__actions .min-h-11 {
+    width: 100%;
+  }
+
+  .personal-todo-hub .catalog-form-section.exits-animate-panel,
+  .personal-todo-hub .exits-list__card.personal-todo-row {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.personal-todo-row__nav:hover,
+.personal-todo-row__nav:focus-visible {
+  color: var(--exits-text);
+}
+
+.personal-todo-row__chevron {
+  transition: transform var(--exits-motion-fast) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.personal-todo-row__nav:hover .personal-todo-row__chevron,
+.personal-todo-row__nav:focus-visible .personal-todo-row__chevron {
+  transform: translateX(2px);
+}
+
+@media (hover: none) {
+  .personal-page .personal-todo-row.exits-list__card:hover,
+  .personal-page .personal-todo-row.exits-list__card:active {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
 .customer-order-line {
   display: flex;
   min-width: 0;
@@ -2788,6 +2882,33 @@ body {
   .linked-merchant-card__action--solo {
     grid-column: 1 / -1;
   }
+}
+
+.storefront-product-thumb {
+  width: 3.5rem;
+  height: 3.5rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--exits-radius-md);
+  background: color-mix(in srgb, var(--exits-primary) 10%, var(--exits-surface-muted));
+  border: 1px solid color-mix(in srgb, var(--exits-primary) 18%, var(--exits-border));
+}
+
+.storefront-product-thumb__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.storefront-product-thumb__initial {
+  font-size: var(--exits-text-md);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--exits-primary);
 }
 
 .customer-order-detail__status {
@@ -5790,6 +5911,12 @@ a.exits-chip--primary:hover {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.55rem;
+}
+
+@media (max-width: 639px) {
+  .personal-summary-grid--todo {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (min-width: 640px) {

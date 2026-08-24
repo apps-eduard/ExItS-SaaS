@@ -20,11 +20,13 @@ import {
 } from "@/api/pos/pos-customer-orders-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { useBrowserOnline } from "@/connectivity/browser-online";
 import {
   displayOrderStatusKey,
   orderStatusChipTone,
@@ -49,6 +51,7 @@ function isDelivery(type: string): boolean {
 
 export function MyOrderDetailPage() {
   const { t } = useI18n();
+  const online = useBrowserOnline();
   const { orderId = "" } = useParams();
   const [tokenReady, setTokenReady] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -60,7 +63,7 @@ export function MyOrderDetailPage() {
 
   const query = useQuery({
     queryKey: ["personal", "my-order", orderId],
-    enabled: tokenReady && Boolean(orderId),
+    enabled: tokenReady && Boolean(orderId) && online,
     queryFn: ({ signal }) =>
       getMyCustomerOrder(
         sellerWorkspace("00000000-0000-4000-8000-000000000001"),
@@ -94,7 +97,7 @@ export function MyOrderDetailPage() {
     }
   }
 
-  if (!tokenReady || query.isLoading) {
+  if (!tokenReady || (online && query.isLoading)) {
     return (
       <div className="personal-page my-order-detail-page exits-page flex min-w-0 flex-col gap-3">
         <PageHeader
@@ -104,6 +107,26 @@ export function MyOrderDetailPage() {
           backTestId="page-header-back-order-detail"
         />
         <LoadingSkeleton label={t("loading.label")} />
+      </div>
+    );
+  }
+
+  if (!online) {
+    return (
+      <div
+        className="personal-page my-order-detail-page exits-page flex min-w-0 flex-col gap-3"
+        data-testid="my-order-detail-offline"
+      >
+        <PageHeader
+          title={t("personal.myOrdersTitle")}
+          backTo={personalPageBackNav.orders.to}
+          backLabel={t("orders.backToQueue")}
+          backTestId="page-header-back-order-detail"
+        />
+        <EmptyState
+          title={t("offline.internetRequiredTitle")}
+          detail={t("offline.internetRequiredDetail")}
+        />
       </div>
     );
   }

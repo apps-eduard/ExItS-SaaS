@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, CheckCheck, ChevronRight, Store, UserRoundCheck, X } from "lucide-react";
+import { Ban, Check, CheckCheck, ChevronRight, Send, Store, UserRoundCheck, X } from "lucide-react";
 import {
   acceptPersonalUtangInvitation,
   cancelPersonalReminder,
@@ -97,22 +97,26 @@ export function PersonalInvitationsPage() {
                 {invite.inviteTargetEmailMasked || t("personal.social.inviteNoEmail")}
               </p>
               {invite.status === "Pending" ? (
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="invitation-card__actions mt-2 grid grid-cols-2 gap-2">
                   <Button
                     type="button"
-                    className="min-h-11"
+                    className="min-h-11 w-full gap-2"
                     disabled={resend.isPending}
+                    data-testid={`utang-invite-resend-${invite.id}`}
                     onClick={() => resend.mutate(invite.id)}
                   >
+                    <Send className="size-4 shrink-0" aria-hidden />
                     {t("personal.social.resend")}
                   </Button>
                   <Button
                     type="button"
                     variant="ghost"
-                    className="min-h-11"
+                    className="min-h-11 w-full gap-2"
                     disabled={revoke.isPending}
+                    data-testid={`utang-invite-revoke-${invite.id}`}
                     onClick={() => revoke.mutate(invite.id)}
                   >
+                    <Ban className="size-4 shrink-0" aria-hidden />
                     {t("personal.social.revoke")}
                   </Button>
                 </div>

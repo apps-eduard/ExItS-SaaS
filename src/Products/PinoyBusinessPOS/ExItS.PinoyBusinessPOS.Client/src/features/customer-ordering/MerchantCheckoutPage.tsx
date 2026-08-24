@@ -17,6 +17,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { useBrowserOnline } from "@/connectivity/browser-online";
 import { usePersonalMerchantCart } from "@/features/customer-ordering/PersonalMerchantCartProvider";
 import {
   eligibleBranches,
@@ -40,6 +41,7 @@ function newClientOrderId(): string {
 export function MerchantCheckoutPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const online = useBrowserOnline();
   const { session } = useSession();
   const { organizationId = "" } = useParams();
   const { cart, merchandiseSubtotal, clearAll } = usePersonalMerchantCart();
@@ -71,7 +73,7 @@ export function MerchantCheckoutPage() {
 
   const storefrontQuery = useQuery({
     queryKey: ["storefront", "checkout", organizationId],
-    enabled: Boolean(workspace) && tokenReady,
+    enabled: Boolean(workspace) && tokenReady && online,
     queryFn: ({ signal }) =>
       getCustomerStorefront(workspace!, organizationId, { pageSize: 1 }, signal),
   });
@@ -212,8 +214,34 @@ export function MerchantCheckoutPage() {
     }
   }
 
-  if (!tokenReady || storefrontQuery.isLoading) {
+  if (!tokenReady || (online && storefrontQuery.isLoading)) {
     return <LoadingState label={t("loading.label")} />;
+  }
+
+  if (!online) {
+    return (
+      <div
+        className="personal-page exits-page flex min-w-0 flex-col gap-4"
+        data-testid="merchant-checkout-offline"
+      >
+        <PageHeader
+          title={t("orders.checkoutTitle")}
+          backTo={
+            organizationId
+              ? `/personal/linked-merchants/${organizationId}/shop`
+              : personalPageBackNav.merchants.to
+          }
+          backLabel={
+            organizationId ? t("orders.backToShop") : t(personalPageBackNav.merchants.labelKey)
+          }
+          backTestId="page-header-back-checkout"
+        />
+        <EmptyState
+          title={t("offline.internetRequiredTitle")}
+          detail={t("offline.internetRequiredDetail")}
+        />
+      </div>
+    );
   }
 
   if (cart.lines.length === 0 || cart.sellerOrganizationId !== organizationId) {

@@ -1,7 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, RefreshCw } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  AlertCircle,
+  CalendarCheck,
+  CalendarClock,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  CircleDot,
+  ListPlus,
+  RefreshCw,
+  RotateCcw,
+  X,
+} from "lucide-react";
 import {
   cancelPersonalTodo,
   completePersonalTodo,
@@ -24,7 +37,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
+import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
@@ -47,12 +60,12 @@ import {
   type PersonalTodoTransition,
 } from "@/offline/personal-todo-offline";
 
-const TABS: { id: TodoAgendaTab; labelKey: MessageKey }[] = [
-  { id: "today", labelKey: "personal.todo.filterToday" },
-  { id: "upcoming", labelKey: "personal.todo.filterUpcoming" },
-  { id: "overdue", labelKey: "personal.todo.filterOverdue" },
-  { id: "open", labelKey: "personal.todo.filterOpen" },
-  { id: "completed", labelKey: "personal.todo.filterCompleted" },
+const TABS: { id: TodoAgendaTab; labelKey: MessageKey; icon: LucideIcon }[] = [
+  { id: "today", labelKey: "personal.todo.filterToday", icon: CalendarCheck },
+  { id: "upcoming", labelKey: "personal.todo.filterUpcoming", icon: CalendarClock },
+  { id: "overdue", labelKey: "personal.todo.filterOverdue", icon: AlertCircle },
+  { id: "open", labelKey: "personal.todo.filterOpen", icon: CircleDot },
+  { id: "completed", labelKey: "personal.todo.filterCompleted", icon: CheckCircle2 },
 ];
 
 const PRIORITIES = ["None", "Low", "Normal", "High"] as const;
@@ -472,7 +485,7 @@ export function PersonalTodoHubPage() {
   }
 
   return (
-    <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="personal-todo-hub">
+    <div className="personal-page personal-todo-hub exits-page flex min-w-0 flex-col gap-3" data-testid="personal-todo-hub">
       <PageHeader
         title={t("personal.todo.title")}
         description={t("personal.todo.lede")}
@@ -483,33 +496,35 @@ export function PersonalTodoHubPage() {
 
       {usingCache ? <OfflineNotice message={t("offline.todoCachedNotice")} /> : null}
 
-      <div className="exits-animate-toolbar">
-        <UnderlineTabBar
-          items={TABS.map((item) => {
-            const count =
-              counts == null
-                ? 0
-                : item.id === "today"
-                  ? counts.today
-                  : item.id === "upcoming"
-                    ? counts.upcoming
-                    : item.id === "overdue"
-                      ? counts.overdue
-                      : item.id === "open"
-                        ? counts.open
-                        : counts.completed;
-            return {
-              key: item.id,
-              label: `${t(item.labelKey)} (${count})`,
-              testId: `todo-tab-${item.id}`,
-            };
-          })}
-          activeKey={tab}
-          onChange={(key) => setTab(key as TodoAgendaTab)}
-          ariaLabel={t("personal.todo.filters")}
-          testId="personal-todo-filters"
-        />
-      </div>
+      <ExitsChipBar
+        variant="filter"
+        ariaLabel={t("personal.todo.filters")}
+        testId="personal-todo-filters"
+        className="exits-animate-toolbar"
+        items={TABS.map((item) => {
+          const count =
+            counts == null
+              ? 0
+              : item.id === "today"
+                ? counts.today
+                : item.id === "upcoming"
+                  ? counts.upcoming
+                  : item.id === "overdue"
+                    ? counts.overdue
+                    : item.id === "open"
+                      ? counts.open
+                      : counts.completed;
+          const Icon = item.icon;
+          return {
+            key: item.id,
+            label: `${t(item.labelKey)} (${count})`,
+            icon: <Icon />,
+            state: tab === item.id ? "active" : "idle",
+            testId: `todo-tab-${item.id}`,
+            onSelect: () => setTab(item.id),
+          };
+        })}
+      />
 
       <form
         className="catalog-form-section exits-animate-panel personal-section flex flex-col gap-2"
@@ -541,10 +556,11 @@ export function PersonalTodoHubPage() {
         ) : null}
         <Button
           type="submit"
-          className="min-h-11"
+          className="min-h-11 w-full"
           disabled={createMutation.isPending || offlineBlocked}
           data-testid="todo-create-submit"
         >
+          <ListPlus className="size-4 shrink-0" aria-hidden />
           {t("personal.todo.add")}
         </Button>
       </form>
@@ -553,7 +569,7 @@ export function PersonalTodoHubPage() {
         <EmptyState title={t("personal.todo.emptyTitle")} detail={t("personal.todo.emptyDetail")} />
       ) : (
         <section
-          className="catalog-form-section exits-animate-panel personal-section gap-2"
+          className="catalog-form-section exits-animate-panel personal-section personal-todo-list-section gap-2"
           aria-label={activeTabLabel}
         >
           <h2 className="catalog-form-section__title text-muted">{activeTabLabel}</h2>
@@ -566,14 +582,11 @@ export function PersonalTodoHubPage() {
               return (
                 <li key={item.id}>
                   <div
-                    className="exits-list__card flex flex-col gap-2"
+                    className="exits-list__card personal-todo-row"
                     data-testid={`todo-item-${item.id}`}
                   >
-                    <Link
-                      to={`/personal/todo/${item.id}`}
-                      className="flex min-h-11 min-w-0 items-center justify-between gap-3 text-foreground no-underline"
-                    >
-                      <div className="min-w-0 flex-1">
+                    <div className="personal-todo-row__body">
+                      <div className="min-w-0">
                         <p className="exits-list__name m-0 truncate font-semibold">{item.title}</p>
                         <p className="m-0 truncate text-[length:var(--exits-text-sm)] text-muted">
                           {t(statusLabelKey(item.status))} · {t(priorityLabelKey(item.priority))}
@@ -588,50 +601,59 @@ export function PersonalTodoHubPage() {
                         ) : null}
                         <WaitingChip pending={pendingById.has(item.id)} />
                       </div>
-                      <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
+                      {hasActions ? (
+                        <div className="personal-todo-row__actions">
+                          {item.status === "Open" ? (
+                            <>
+                              <Button
+                                type="button"
+                                className="min-h-11 gap-2"
+                                data-testid={`todo-complete-${item.id}`}
+                                disabled={actionMutation.isPending || offlineBlocked}
+                                onClick={() =>
+                                  actionMutation.mutate({ action: "complete", todo: item })
+                                }
+                              >
+                                <Check className="size-4 shrink-0" aria-hidden />
+                                {t("personal.todo.complete")}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                className="min-h-11 gap-2"
+                                data-testid={`todo-cancel-${item.id}`}
+                                disabled={actionMutation.isPending || offlineBlocked}
+                                onClick={() =>
+                                  actionMutation.mutate({ action: "cancel", todo: item })
+                                }
+                              >
+                                <X className="size-4 shrink-0" aria-hidden />
+                                {t("personal.todo.cancel")}
+                              </Button>
+                            </>
+                          ) : null}
+                          {item.status === "Completed" || item.status === "Cancelled" ? (
+                            <Button
+                              type="button"
+                              className="min-h-11 gap-2"
+                              data-testid={`todo-reopen-${item.id}`}
+                              disabled={actionMutation.isPending || offlineBlocked}
+                              onClick={() => actionMutation.mutate({ action: "reopen", todo: item })}
+                            >
+                              <RotateCcw className="size-4 shrink-0" aria-hidden />
+                              {t("personal.todo.reopen")}
+                            </Button>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                    <Link
+                      to={`/personal/todo/${item.id}`}
+                      className="personal-todo-row__nav"
+                      aria-label={`${item.title} — ${t("orders.viewDetails")}`}
+                    >
+                      <ChevronRight className="personal-todo-row__chevron size-4 shrink-0" aria-hidden />
                     </Link>
-                    {hasActions ? (
-                      <div className="flex flex-wrap gap-2">
-                        {item.status === "Open" ? (
-                          <>
-                            <Button
-                              type="button"
-                              className="min-h-11"
-                              data-testid={`todo-complete-${item.id}`}
-                              disabled={actionMutation.isPending || offlineBlocked}
-                              onClick={() =>
-                                actionMutation.mutate({ action: "complete", todo: item })
-                              }
-                            >
-                              {t("personal.todo.complete")}
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              className="min-h-11"
-                              data-testid={`todo-cancel-${item.id}`}
-                              disabled={actionMutation.isPending || offlineBlocked}
-                              onClick={() =>
-                                actionMutation.mutate({ action: "cancel", todo: item })
-                              }
-                            >
-                              {t("personal.todo.cancel")}
-                            </Button>
-                          </>
-                        ) : null}
-                        {item.status === "Completed" || item.status === "Cancelled" ? (
-                          <Button
-                            type="button"
-                            className="min-h-11"
-                            data-testid={`todo-reopen-${item.id}`}
-                            disabled={actionMutation.isPending || offlineBlocked}
-                            onClick={() => actionMutation.mutate({ action: "reopen", todo: item })}
-                          >
-                            {t("personal.todo.reopen")}
-                          </Button>
-                        ) : null}
-                      </div>
-                    ) : null}
                   </div>
                 </li>
               );

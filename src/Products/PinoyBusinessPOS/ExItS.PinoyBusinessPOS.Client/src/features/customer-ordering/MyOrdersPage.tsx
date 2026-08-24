@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { ChevronRight, Package, RefreshCw, Store, Truck, UserRoundCheck } from "lucide-react";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import { listMyCustomerOrders, sellerWorkspace } from "@/api/pos/pos-customer-orders-client";
+import { Button } from "@/components/ui/button";
 import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -11,6 +12,7 @@ import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { useBrowserOnline } from "@/connectivity/browser-online";
 import {
   displayOrderStatusKey,
   orderStatusChipTone,
@@ -21,6 +23,7 @@ import { personalPageBackNav } from "@/navigation/page-back-nav";
 
 /** Buyer list uses a synthetic workspace org header (first seller on items or placeholder). */
 const BUYER_SCOPE_ORG = "00000000-0000-4000-8000-000000000001";
+const ORDERS_PAGE_SIZE = 40;
 
 function fulfillmentLabel(type: string, t: (key: MessageKey) => string): string {
   if (type.localeCompare("Delivery", undefined, { sensitivity: "accent" }) === 0) {
@@ -40,24 +43,32 @@ function FulfillmentIcon({ type }: { type: string }) {
 
 export function MyOrdersPage() {
   const { t } = useI18n();
+  const online = useBrowserOnline();
   const [tokenReady, setTokenReady] = useState(false);
 
   useEffect(() => {
     void ensurePersonalBuyerPosToken().then((r) => setTokenReady(r.ok));
   }, []);
 
-  const query = useQuery({
+  const query = useInfiniteQuery({
     queryKey: ["personal", "my-orders"],
-    enabled: tokenReady,
-    queryFn: ({ signal }) =>
+    enabled: tokenReady && online,
+    initialPageParam: 1,
+    queryFn: ({ pageParam, signal }) =>
       listMyCustomerOrders(
         sellerWorkspace(BUYER_SCOPE_ORG),
-        { partyType: "Personal", pageSize: 40 },
+        { partyType: "Personal", page: pageParam, pageSize: ORDERS_PAGE_SIZE },
         signal,
       ),
+    getNextPageParam: (lastPage) => {
+      const loaded = lastPage.page * lastPage.pageSize;
+      return loaded < lastPage.totalCount ? lastPage.page + 1 : undefined;
+    },
   });
 
-  if (!tokenReady || query.isLoading) {
+  const items = query.data?.pages.flatMap((page) => page.items) ?? [];
+
+  if (!tokenReady || (online && query.isLoading)) {
     return (
       <div className="personal-page my-orders-page exits-page flex min-w-0 flex-col gap-3">
         <PageHeader
@@ -68,6 +79,24 @@ export function MyOrdersPage() {
           backTestId="page-header-back-my-orders"
         />
         <LoadingSkeleton label={t("loading.label")} />
+      </div>
+    );
+  }
+
+  if (!online) {
+    return (
+      <div className="personal-page my-orders-page exits-page flex min-w-0 flex-col gap-3" data-testid="my-orders-offline">
+        <PageHeader
+          title={t("personal.myOrdersTitle")}
+          description={t("personal.myOrdersLede")}
+          backTo={personalPageBackNav.home.to}
+          backLabel={t(personalPageBackNav.home.labelKey)}
+          backTestId="page-header-back-my-orders"
+        />
+        <EmptyState
+          title={t("offline.internetRequiredTitle")}
+          detail={t("offline.internetRequiredDetail")}
+        />
       </div>
     );
   }
@@ -102,8 +131,6 @@ export function MyOrdersPage() {
       </div>
     );
   }
-
-  const items = query.data?.items ?? [];
 
   return (
     <div
@@ -197,6 +224,19 @@ export function MyOrdersPage() {
               </li>
             ))}
           </ul>
+
+          {query.hasNextPage ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 w-full"
+              data-testid="my-orders-load-more"
+              disabled={query.isFetchingNextPage}
+              onClick={() => void query.fetchNextPage()}
+            >
+              {query.isFetchingNextPage ? t("loading.label") : t("inventory.loadMore")}
+            </Button>
+          ) : null}
         </section>
       )}
     </div>

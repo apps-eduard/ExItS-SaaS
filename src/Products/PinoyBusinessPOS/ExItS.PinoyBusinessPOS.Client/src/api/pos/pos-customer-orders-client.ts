@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
-import { posRequest } from "@/api/pos/pos-http";
+import { posRequest, posRequestBlob } from "@/api/pos/pos-http";
 import {
   buildPosMutationIdempotencyHeaders,
   OFFLINE_OPERATION_TYPES,
@@ -409,6 +409,23 @@ export async function getMyCustomerOrder(
     signal,
   });
   return customerOrderSchema.parse(raw);
+}
+
+export type StorefrontProductImageVariant = "thumb" | "full";
+
+export function getCustomerStorefrontProductImage(
+  workspace: PosWorkspaceScope,
+  sellerOrganizationId: string,
+  productId: string,
+  variant: StorefrontProductImageVariant = "thumb",
+  signal?: AbortSignal,
+): Promise<Blob> {
+  return posRequestBlob({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${customerSellerPath(sellerOrganizationId)}/products/${productId}/image/${variant}`,
+  });
 }
 
 export async function getCustomerStorefront(

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   getCustomerStorefront,
+  getCustomerStorefrontProductImage,
   listSellerCustomerOrders,
   placeCustomerOrder,
   quoteCustomerDelivery,
@@ -139,6 +140,20 @@ describe("pos-customer-orders-client", () => {
     const headers = new Headers(init.headers);
     expect(headers.get("Idempotency-Key")).toBeTruthy();
     expect(headers.get("X-Pos-Operation-Type")).toBe("customer_order.place");
+  });
+
+  it("loads storefront product image blob", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(["img"], { type: "image/webp" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const blob = await getCustomerStorefrontProductImage(sellerWorkspace(ORG), ORG, PRODUCT, "thumb");
+    expect(blob.type).toBe("image/webp");
+    const url = String(fetchMock.mock.calls[0][0]);
+    expect(url).toContain(`/products/${PRODUCT}/image/thumb`);
   });
 
   it("lists seller orders under org path", async () => {
