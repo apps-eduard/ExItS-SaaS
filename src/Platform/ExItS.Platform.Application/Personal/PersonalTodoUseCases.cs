@@ -209,9 +209,11 @@ public sealed class ListPersonalTodos
 
     public async Task<IReadOnlyList<PersonalTodoDto>> ExecuteAsync(
         PlatformUserId ownerUserIdentityId,
+        PersonalTodoStatus? status = null,
         CancellationToken cancellationToken = default)
     {
-        var list = await _todos.ListByOwnerAsync(ownerUserIdentityId, cancellationToken).ConfigureAwait(false);
+        var list = await _todos.ListByOwnerAsync(ownerUserIdentityId, status, cancellationToken)
+            .ConfigureAwait(false);
         return list.Select(PersonalTodoAccess.ToDto).ToList();
     }
 }

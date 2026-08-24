@@ -1254,10 +1254,19 @@ internal sealed class PersonalTodoRepository(PlatformDbContext db) : IPersonalTo
 
     public async Task<IReadOnlyList<PersonalTodo>> ListByOwnerAsync(
         PlatformUserId ownerUserIdentityId,
+        PersonalTodoStatus? status = null,
         CancellationToken cancellationToken = default)
     {
-        var records = await db.PersonalTodos.AsNoTracking()
-            .Where(x => x.OwnerUserIdentityId == ownerUserIdentityId.Value)
+        var query = db.PersonalTodos.AsNoTracking()
+            .Where(x => x.OwnerUserIdentityId == ownerUserIdentityId.Value);
+
+        if (status is PersonalTodoStatus statusFilter)
+        {
+            var statusValue = statusFilter.ToString();
+            query = query.Where(x => x.Status == statusValue);
+        }
+
+        var records = await query
             .OrderByDescending(x => x.DueAtUtc.HasValue)
             .ThenBy(x => x.DueAtUtc)
             .ThenByDescending(x => x.UpdatedAtUtc)

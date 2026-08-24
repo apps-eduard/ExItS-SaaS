@@ -151,6 +151,105 @@ public sealed class ApiPersonalTodoTests(PostgreSqlFixture fixture) : IAsyncLife
     }
 
     [Fact]
+    public async Task Cancelled_todo_persists_and_reactivates_with_same_id()
+    {
+        var (token, _) = await SeedPersonalUserAsync("canc");
+
+        using var createRequest = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/todos",
+            token,
+            new { title = "Persist cancel test" });
+        var createResponse = await _client.SendAsync(createRequest);
+        createResponse.EnsureSuccessStatusCode();
+        var created = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var todoId = created.GetProperty("id").GetGuid();
+        Assert.Equal("Open", created.GetProperty("status").GetString());
+
+        using var cancelRequest = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/todos/{todoId}/cancel",
+            token,
+            new { expectedVersion = created.GetProperty("version").GetInt32() });
+        var cancelResponse = await _client.SendAsync(cancelRequest);
+        Assert.Equal(HttpStatusCode.OK, cancelResponse.StatusCode);
+        var cancelled = await cancelResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Cancelled", cancelled.GetProperty("status").GetString());
+        Assert.Equal(2, cancelled.GetProperty("version").GetInt32());
+
+        using var getCancelled = Authed(HttpMethod.Get, $"/api/v1/personal/todos/{todoId}", token);
+        var getCancelledResponse = await _client.SendAsync(getCancelled);
+        getCancelledResponse.EnsureSuccessStatusCode();
+        var fetchedCancelled = await getCancelledResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(todoId, fetchedCancelled.GetProperty("id").GetGuid());
+        Assert.Equal("Cancelled", fetchedCancelled.GetProperty("status").GetString());
+
+        using var listCancelled = Authed(HttpMethod.Get, "/api/v1/personal/todos?status=Cancelled", token);
+        var listCancelledResponse = await _client.SendAsync(listCancelled);
+        listCancelledResponse.EnsureSuccessStatusCode();
+        var cancelledItems = await listCancelledResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains(cancelledItems.EnumerateArray(), item => item.GetProperty("id").GetGuid() == todoId);
+
+        using var freshList = Authed(HttpMethod.Get, "/api/v1/personal/todos", token);
+        var freshListResponse = await _client.SendAsync(freshList);
+        freshListResponse.EnsureSuccessStatusCode();
+        Assert.Contains(
+            (await freshListResponse.Content.ReadFromJsonAsync<JsonElement>()).EnumerateArray(),
+            item => item.GetProperty("id").GetGuid() == todoId
+                && item.GetProperty("status").GetString() == "Cancelled");
+
+        using var reopenRequest = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/todos/{todoId}/reopen",
+            token,
+            new { expectedVersion = cancelled.GetProperty("version").GetInt32() });
+        var reopenResponse = await _client.SendAsync(reopenRequest);
+        Assert.Equal(HttpStatusCode.OK, reopenResponse.StatusCode);
+        var reopened = await reopenResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(todoId, reopened.GetProperty("id").GetGuid());
+        Assert.Equal("Open", reopened.GetProperty("status").GetString());
+        Assert.Equal(3, reopened.GetProperty("version").GetInt32());
+
+        using var getActive = Authed(HttpMethod.Get, $"/api/v1/personal/todos/{todoId}", token);
+        var getActiveResponse = await _client.SendAsync(getActive);
+        getActiveResponse.EnsureSuccessStatusCode();
+        var fetchedActive = await getActiveResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Open", fetchedActive.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task Unrelated_user_cannot_reactivate_cancelled_todo()
+    {
+        var (ownerToken, _) = await SeedPersonalUserAsync("cown");
+        var (otherToken, _) = await SeedPersonalUserAsync("coth");
+
+        using var createRequest = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/todos",
+            ownerToken,
+            new { title = "Owner cancelled" });
+        var createResponse = await _client.SendAsync(createRequest);
+        createResponse.EnsureSuccessStatusCode();
+        var created = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var todoId = created.GetProperty("id").GetGuid();
+
+        using var cancelRequest = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/todos/{todoId}/cancel",
+            ownerToken,
+            new { expectedVersion = created.GetProperty("version").GetInt32() });
+        (await _client.SendAsync(cancelRequest)).EnsureSuccessStatusCode();
+
+        using var deniedReopen = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/todos/{todoId}/reopen",
+            otherToken,
+            new { expectedVersion = 2 });
+        var reopenResponse = await _client.SendAsync(deniedReopen);
+        Assert.Equal(HttpStatusCode.Forbidden, reopenResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task Stale_expected_version_returns_conflict()
     {
         var (token, _) = await SeedPersonalUserAsync("toconf");

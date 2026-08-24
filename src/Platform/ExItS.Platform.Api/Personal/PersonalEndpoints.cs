@@ -5,8 +5,10 @@ using ExItS.Platform.Application.GlobalCatalog;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Personal;
+using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Personal;
 
 namespace ExItS.Platform.Api.Personal;
 
@@ -431,6 +433,7 @@ internal static class PersonalEndpoints
 
         todos.MapGet("/", async (
             HttpContext http,
+            string? status,
             ListPersonalTodos listTodos,
             CancellationToken ct) =>
         {
@@ -444,7 +447,14 @@ internal static class PersonalEndpoints
                 return scopeDenied!;
             }
 
-            var result = await listTodos.ExecuteAsync(PlatformUserId.From(userId), ct).ConfigureAwait(false);
+            if (!TryParsePersonalTodoListStatus(status, out var statusFilter, out var invalidStatus))
+            {
+                return invalidStatus!;
+            }
+
+            var result = await listTodos
+                .ExecuteAsync(PlatformUserId.From(userId), statusFilter, ct)
+                .ConfigureAwait(false);
             return Results.Ok(result);
         });
 
@@ -981,6 +991,46 @@ internal static class PersonalEndpoints
                 .ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         });
+    }
+
+    private static bool TryParsePersonalTodoListStatus(
+        string? statusRaw,
+        out PersonalTodoStatus? statusFilter,
+        out IResult? invalid)
+    {
+        statusFilter = null;
+        invalid = null;
+
+        if (string.IsNullOrWhiteSpace(statusRaw))
+        {
+            return true;
+        }
+
+        var normalized = statusRaw.Trim();
+        if (normalized.Equals("all", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (normalized.Equals("active", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("open", StringComparison.OrdinalIgnoreCase))
+        {
+            statusFilter = PersonalTodoStatus.Open;
+            return true;
+        }
+
+        if (Enum.TryParse<PersonalTodoStatus>(normalized, ignoreCase: true, out var parsed)
+            && Enum.IsDefined(parsed))
+        {
+            statusFilter = parsed;
+            return true;
+        }
+
+        invalid = PlatformApiResults.Problem(
+            DomainErrorCodes.InvalidPersonalTodo,
+            "To-do list status filter is invalid.",
+            StatusCodes.Status400BadRequest);
+        return false;
     }
 
     private static bool TryRequirePersonalAccountClass(

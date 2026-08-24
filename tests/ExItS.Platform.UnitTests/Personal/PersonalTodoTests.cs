@@ -72,16 +72,71 @@ public sealed class PersonalTodoTests
     }
 
     [Fact]
-    public void Cancel_from_open_is_terminal()
+    public void Cancel_from_open_persists_cancelled_status()
     {
         var todo = PersonalTodo.Create(OwnerId, "Skip this", T0);
+        var originalId = todo.Id;
+
         todo.Cancel(T0.AddMinutes(1), expectedVersion: 1);
 
+        Assert.Equal(originalId, todo.Id);
         Assert.Equal(PersonalTodoStatus.Cancelled, todo.Status);
         Assert.Equal(2, todo.Version);
+        Assert.Equal(T0, todo.CreatedAtUtc);
 
         var ex = Assert.Throws<DomainException>(() => todo.Complete(T0.AddMinutes(2), expectedVersion: 2));
         Assert.Equal(DomainErrorCodes.InvalidPersonalTodoStatusTransition, ex.ErrorCode);
+    }
+
+    [Fact]
+    public void Reopen_from_cancelled_restores_open_with_same_id()
+    {
+        var todo = PersonalTodo.Create(OwnerId, "Archived task", T0);
+        var originalId = todo.Id;
+        todo.Cancel(T0.AddMinutes(1), expectedVersion: 1);
+
+        todo.Reopen(T0.AddMinutes(2), expectedVersion: 2);
+
+        Assert.Equal(originalId, todo.Id);
+        Assert.Equal(PersonalTodoStatus.Open, todo.Status);
+        Assert.Null(todo.CompletedAtUtc);
+        Assert.Equal(3, todo.Version);
+    }
+
+    [Fact]
+    public void Cancel_from_completed_persists_cancelled_status()
+    {
+        var todo = PersonalTodo.Create(OwnerId, "Done but cancel", T0);
+        todo.Complete(T0.AddMinutes(1), expectedVersion: 1);
+
+        todo.Cancel(T0.AddMinutes(2), expectedVersion: 2);
+
+        Assert.Equal(PersonalTodoStatus.Cancelled, todo.Status);
+        Assert.Null(todo.CompletedAtUtc);
+        Assert.Equal(3, todo.Version);
+    }
+
+    [Fact]
+    public void Cancel_rejects_stale_expected_version()
+    {
+        var todo = PersonalTodo.Create(OwnerId, "Versioned cancel", T0);
+
+        var ex = Assert.Throws<DomainException>(() => todo.Cancel(T0.AddMinutes(1), expectedVersion: 0));
+
+        Assert.Equal(DomainErrorCodes.PersonalTodoConcurrencyConflict, ex.ErrorCode);
+        Assert.Equal(PersonalTodoStatus.Open, todo.Status);
+    }
+
+    [Fact]
+    public void Reopen_rejects_stale_expected_version_from_cancelled()
+    {
+        var todo = PersonalTodo.Create(OwnerId, "Versioned reopen", T0);
+        todo.Cancel(T0.AddMinutes(1), expectedVersion: 1);
+
+        var ex = Assert.Throws<DomainException>(() => todo.Reopen(T0.AddMinutes(2), expectedVersion: 1));
+
+        Assert.Equal(DomainErrorCodes.PersonalTodoConcurrencyConflict, ex.ErrorCode);
+        Assert.Equal(PersonalTodoStatus.Cancelled, todo.Status);
     }
 
     [Fact]

@@ -239,11 +239,16 @@ public sealed class PersonalTodo
         EnsureUtc(utcNow);
         EnsureVersion(expectedVersion);
 
-        if (Status is not PersonalTodoStatus.Completed)
+        if (Status is PersonalTodoStatus.Open)
+        {
+            return;
+        }
+
+        if (Status is not PersonalTodoStatus.Completed and not PersonalTodoStatus.Cancelled)
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidPersonalTodoStatusTransition,
-                "Only completed to-dos can be reopened.");
+                "Only completed or cancelled to-dos can be reopened.");
         }
 
         Status = PersonalTodoStatus.Open;
@@ -262,7 +267,7 @@ public sealed class PersonalTodo
             return;
         }
 
-        if (Status is not PersonalTodoStatus.Open)
+        if (Status is not PersonalTodoStatus.Open and not PersonalTodoStatus.Completed)
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidPersonalTodoStatusTransition,
@@ -270,6 +275,7 @@ public sealed class PersonalTodo
         }
 
         Status = PersonalTodoStatus.Cancelled;
+        CompletedAtUtc = null;
         UpdatedAtUtc = utcNow;
         Version++;
     }
