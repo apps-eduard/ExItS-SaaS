@@ -26,6 +26,16 @@ See [02-identity-personal-organization-lifecycle.md](02-identity-personal-organi
 
 MAUI surfaces: `/org/staff`, `/org/staff/invite`, `/org/staff/assign` (implement CURRENT model).
 
+React surfaces (Manage staff): `/org/staff`, `/org/staff/invite`, `/org/staff/assign` — product-local Owner/Manager/Cashier via Platform `product-local-roles`; invite/suspend/remove membership. Gate: Organization Owner (`RequireInviteStaff`). Does **not** include Org Web custom role catalogs or MAUI `/permissions` hub (POS DB assignments). See [POS-REACT-MANAGE-STAFF-AND-ADMIN-UX-01.md](../Reports/POS-REACT-MANAGE-STAFF-AND-ADMIN-UX-01.md).
+
+| Topic | React status |
+|-------|--------------|
+| Staff list + invite | PROVEN_CURRENT (`OrgStaffPage`, `OrgStaffInvitePage`) |
+| Assign/revoke product-local POS roles | PROVEN_CURRENT (`OrgStaffAssignPage` + `product-local-roles-client`) |
+| Suspend / remove membership | PROVEN_CURRENT |
+| Branch assignments per member | MISSING (MAUI only) |
+| POS `/permissions` hub | MISSING (deferred; not mobile essentials) |
+
 ## Branches
 
 **Branch ≠ Register ≠ Device.**
