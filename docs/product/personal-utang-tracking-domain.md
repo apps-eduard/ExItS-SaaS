@@ -147,25 +147,41 @@ Rules:
 
 ## Shared Record Behavior
 
-After linking, both participants may view the shared debt relationship.
+After linking, both participants may view the **same canonical** debt relationship (one `PersonalDebtRelationship` id — no dual ledgers).
+
+### Private (unlinked contact) mode
+
+The owner may record Loan / Payment / Adjustment immediately. Entries are **Confirmed** and update `CurrentBalance` at once. No counterparty confirmation is required.
+
+### Linked Personal↔Personal confirmation
+
+When both sides are linked Personal users (`IsSharedLinked`), new financial entries start as **Pending** and do **not** affect `CurrentBalance`, dashboard totals (Owed to me / I owe), or overdue confirmed debt until the **counterparty** confirms.
+
+Entry statuses: `Pending` | `Confirmed` | `Disputed` | `Cancelled`.
+
+Rules:
+
+- proposer ≠ confirmer / disputer
+- only **Confirmed** entries change balance (Loan +, Payment −, Adjustment ±)
+- Pending / Disputed / Cancelled have zero balance effect
+- proposer may cancel their own Pending entry
+- Confirm is idempotent; concurrent Confirm/Dispute participates in relationship optimistic concurrency
+- legacy rows (pre-confirmation) are backfilled as **Confirmed**; invite acceptance preserves relationship id, history, and confirmed balance — only **new** post-link entries use Pending → Confirm/Dispute
 
 Recommended shared visibility:
 
-- original amount
-- current balance
-- transaction history
+- confirmed current balance
+- confirmed history and pending / disputed proposals
 - due dates
-- payment records
-- adjustments
 - participant identities
 - reminder status where appropriate
 
 Recommended controls:
 
-- only authorized participants may add transactions
-- disputed or corrected entries should preserve history
-- signed or acknowledged entries should not be silently rewritten
-- corrections should use append-only adjustments where practical
+- only authorized participants may propose transactions
+- disputed entries remain in history without balance effect
+- confirmed historical amounts are not silently rewritten in place
+- corrections use append-only adjustments (also confirmed on shared ledgers)
 - every meaningful change should be timestamped and attributable
 
 ## Reminders and Notifications

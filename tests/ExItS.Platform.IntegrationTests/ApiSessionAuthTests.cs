@@ -194,7 +194,11 @@ internal sealed class SessionApiFactory(string connectionString) : WebApplicatio
                 ["ConnectionStrings:PlatformDatabase"] = connectionString,
                 ["Security:EnforceHttps"] = "false",
                 ["PlatformAuthentication:External:TestingEndpointEnabled"] = "true",
-                ["PlatformAuthentication:Lifecycle:ExposeDebugTokens"] = "true"
+                ["PlatformAuthentication:Lifecycle:ExposeDebugTokens"] = "true",
+                // Integration hosts must not inherit a developer LocalValidation__Enabled env var
+                // without SharedPassword — seed would fail host startup.
+                ["LocalValidation:Enabled"] = "false",
+                ["LocalValidation:RunHostedSeed"] = "false"
             });
         });
     }

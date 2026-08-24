@@ -18,7 +18,8 @@ public sealed record PersonalDashboardDto(
     int ContactCount,
     int ActiveRelationshipCount,
     decimal TotalLentBalance,
-    decimal TotalBorrowedBalance);
+    decimal TotalBorrowedBalance,
+    int PendingConfirmationCount);
 
 public sealed record PersonalProfileDto(
     Guid UserIdentityId,
@@ -54,17 +55,20 @@ public sealed class GetPersonalDashboard
     private readonly IAccountProfileRepository _profiles;
     private readonly IPersonalContactRepository _contacts;
     private readonly IPersonalDebtRelationshipRepository _relationships;
+    private readonly IPersonalUtangEntryRepository _entries;
 
     public GetPersonalDashboard(
         IPlatformUserRepository users,
         IAccountProfileRepository profiles,
         IPersonalContactRepository contacts,
-        IPersonalDebtRelationshipRepository relationships)
+        IPersonalDebtRelationshipRepository relationships,
+        IPersonalUtangEntryRepository entries)
     {
         _users = users;
         _profiles = profiles;
         _contacts = contacts;
         _relationships = relationships;
+        _entries = entries;
     }
 
     public async Task<ApplicationResult<PersonalDashboardDto>> ExecuteAsync(
@@ -114,6 +118,10 @@ public sealed class GetPersonalDashboard
             }
         }
 
+        var pendingConfirmationCount = await _entries
+            .CountPendingAwaitingConfirmationAsync(userIdentityId, cancellationToken)
+            .ConfigureAwait(false);
+
         return ApplicationResult<PersonalDashboardDto>.Success(new PersonalDashboardDto(
             userIdentityId.Value,
             accountProfileId.Value,
@@ -122,7 +130,8 @@ public sealed class GetPersonalDashboard
             contacts.Count,
             active.Count,
             lent,
-            borrowed));
+            borrowed,
+            pendingConfirmationCount));
     }
 }
 

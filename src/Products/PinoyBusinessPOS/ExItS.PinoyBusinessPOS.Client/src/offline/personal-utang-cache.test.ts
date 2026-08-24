@@ -42,6 +42,8 @@ const relationship: PersonalDebtRelationshipSummaryDto = {
   status: "Active",
   version: 7,
   updatedAtUtc: "2026-02-02T00:00:00.000Z",
+  isSharedLedger: false,
+  isPrivate: true,
 };
 
 const entry: PersonalUtangEntryDto = {
@@ -55,6 +57,15 @@ const entry: PersonalUtangEntryDto = {
   dueDateUtc: null,
   createdByUserIdentityId: "99999999-9999-4999-8999-999999999999",
   createdAtUtc: "2026-02-03T00:00:00.000Z",
+  status: "Confirmed",
+  resolvedByUserIdentityId: null,
+  resolvedAtUtc: null,
+  disputeReason: null,
+  canConfirm: false,
+  canDispute: false,
+  canCancel: false,
+  affectsBalance: true,
+  isSharedLedger: false,
 };
 
 async function openPersonal(userId: string) {

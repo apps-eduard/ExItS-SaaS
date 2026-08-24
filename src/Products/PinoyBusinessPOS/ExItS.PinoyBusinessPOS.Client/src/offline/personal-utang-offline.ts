@@ -270,6 +270,8 @@ export async function enqueuePersonalRelationshipCreate(
     status: "Active",
     version: 0,
     updatedAtUtc: operation.createdAt,
+    isSharedLedger: false,
+    isPrivate: true,
   };
   await cacheLocalPersonalRelationship(
     input.db,
@@ -367,6 +369,15 @@ export async function enqueuePersonalUtangEntry(
     dueDateUtc: input.dueDateUtc ?? null,
     createdByUserIdentityId: input.ownerUserIdentityId,
     createdAtUtc: operation.createdAt,
+    status: "Confirmed",
+    resolvedByUserIdentityId: null,
+    resolvedAtUtc: null,
+    disputeReason: null,
+    canConfirm: false,
+    canDispute: false,
+    canCancel: false,
+    affectsBalance: true,
+    isSharedLedger: false,
   };
   await cacheLocalPersonalEntry(input.db, input.scopeBinding, entry);
   return { operation, entry };

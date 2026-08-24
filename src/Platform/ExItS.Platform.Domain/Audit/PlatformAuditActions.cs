@@ -241,6 +241,10 @@ public static class PlatformAuditActions
     public const string PersonalUtangRelationshipCreated = "platform.personal.utang_relationship.created";
     public const string PersonalUtangParticipantAuthorized = "platform.personal.utang_participant.authorized";
     public const string PersonalUtangEntryRecorded = "platform.personal.utang_entry.recorded";
+    public const string PersonalUtangEntryProposed = "platform.personal.utang_entry.proposed";
+    public const string PersonalUtangEntryConfirmed = "platform.personal.utang_entry.confirmed";
+    public const string PersonalUtangEntryDisputed = "platform.personal.utang_entry.disputed";
+    public const string PersonalUtangEntryCancelled = "platform.personal.utang_entry.cancelled";
     public const string PersonalUtangInvitationCreated = "platform.personal.utang_invitation.created";
     public const string PersonalUtangInvitationResent = "platform.personal.utang_invitation.resent";
     public const string PersonalUtangInvitationRevoked = "platform.personal.utang_invitation.revoked";

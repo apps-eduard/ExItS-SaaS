@@ -15,8 +15,10 @@ public sealed class InitializePhase16PersonalUtangSeed
     private readonly IPlatformUserRepository _users;
     private readonly CreatePersonalContact _createContact;
     private readonly CreatePersonalDebtRelationship _createRelationship;
+    private readonly ConfirmPersonalUtangEntry _confirmEntry;
     private readonly IPersonalContactRepository _contacts;
     private readonly IPersonalDebtRelationshipRepository _relationships;
+    private readonly IPersonalUtangEntryRepository _entries;
     private readonly ILogger<InitializePhase16PersonalUtangSeed> _logger;
 
     public InitializePhase16PersonalUtangSeed(
@@ -24,16 +26,20 @@ public sealed class InitializePhase16PersonalUtangSeed
         IPlatformUserRepository users,
         CreatePersonalContact createContact,
         CreatePersonalDebtRelationship createRelationship,
+        ConfirmPersonalUtangEntry confirmEntry,
         IPersonalContactRepository contacts,
         IPersonalDebtRelationshipRepository relationships,
+        IPersonalUtangEntryRepository entries,
         ILogger<InitializePhase16PersonalUtangSeed> logger)
     {
         _environment = environment;
         _users = users;
         _createContact = createContact;
         _createRelationship = createRelationship;
+        _confirmEntry = confirmEntry;
         _contacts = contacts;
         _relationships = relationships;
+        _entries = entries;
         _logger = logger;
     }
 
@@ -100,6 +106,26 @@ public sealed class InitializePhase16PersonalUtangSeed
                 InitialLoanAmount: 200m,
                 InitialLoanNotes: "Seed borrowed from personal.user2"),
             cancellationToken).ConfigureAwait(false);
+
+        // Shared ledger seed loan starts Pending; debtor confirms so sample balances remain usable.
+        var shared = (await _relationships.ListForUserAsync(user1.Id, cancellationToken).ConfigureAwait(false))
+            .FirstOrDefault(r =>
+                r.CreditorUserIdentityId == user2.Id
+                && r.DebtorUserIdentityId == user1.Id);
+        if (shared is not null)
+        {
+            var entries = await _entries.ListByRelationshipAsync(shared.Id, cancellationToken).ConfigureAwait(false);
+            var pending = entries.FirstOrDefault(e => e.Status == PersonalUtangEntryStatus.Pending);
+            if (pending is not null)
+            {
+                await _confirmEntry.ExecuteAsync(
+                    user1.Id,
+                    shared.Id.Value,
+                    pending.Id.Value,
+                    new ConfirmPersonalUtangEntryRequest(ExpectedVersion: shared.Version),
+                    cancellationToken).ConfigureAwait(false);
+            }
+        }
 
         _logger.LogInformation("Phase 16 Personal Utang sample seed finished.");
     }

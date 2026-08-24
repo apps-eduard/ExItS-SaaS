@@ -1757,7 +1757,12 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.DueDateUtc).HasColumnName("due_date_utc");
             entity.Property(e => e.CreatedByUserIdentityId).HasColumnName("created_by_user_identity_id");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.ResolvedByUserIdentityId).HasColumnName("resolved_by_user_identity_id");
+            entity.Property(e => e.ResolvedAtUtc).HasColumnName("resolved_at_utc");
+            entity.Property(e => e.DisputeReason).HasColumnName("dispute_reason").HasMaxLength(256);
             entity.HasIndex(e => e.RelationshipId);
+            entity.HasIndex(e => new { e.RelationshipId, e.Status });
 
             entity.HasOne<PersonalDebtRelationshipRecord>()
                 .WithMany()
@@ -1767,6 +1772,11 @@ public sealed class PlatformDbContext : DbContext
             entity.HasOne<PlatformUserRecord>()
                 .WithMany()
                 .HasForeignKey(e => e.CreatedByUserIdentityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ResolvedByUserIdentityId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

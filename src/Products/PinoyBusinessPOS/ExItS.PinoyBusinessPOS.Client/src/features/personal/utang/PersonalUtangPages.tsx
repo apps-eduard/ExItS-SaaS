@@ -19,8 +19,11 @@ import {
   type ResolvedPublicUserDto,
 } from "@/api/platform/public-identity-client";
 import {
+  cancelPersonalUtangEntry,
+  confirmPersonalUtangEntry,
   createPersonalContact,
   createPersonalDebtRelationship,
+  disputePersonalUtangEntry,
   formatDueLabel,
   getPersonalDebtRelationship,
   getPersonalMe,
@@ -47,6 +50,7 @@ import { useBrowserOnline } from "@/connectivity/browser-online";
 import { QrScanOrEnter } from "@/features/qr/QrScanOrEnter";
 import { RelationshipInviteReminderPanel } from "@/features/personal/social/PersonalSocialPages";
 import { useI18n } from "@/i18n/I18nProvider";
+import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/cn";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
@@ -86,6 +90,41 @@ function contactLabel(
     return contacts.find((c) => c.id === contactId)?.displayName ?? "—";
   }
   return "—";
+}
+
+function entryTypeLabelKey(entryType: string): MessageKey {
+  if (entryType === "Payment") return "personal.utang.entryTypePayment";
+  if (entryType === "Adjustment") return "personal.utang.entryTypeAdjustment";
+  return "personal.utang.entryTypeLoan";
+}
+
+function entryStatusLabelKey(status: string | undefined): MessageKey {
+  switch (status) {
+    case "Pending":
+      return "personal.utang.statusPending";
+    case "Disputed":
+      return "personal.utang.statusDisputed";
+    case "Cancelled":
+      return "personal.utang.statusCancelled";
+    default:
+      return "personal.utang.statusConfirmed";
+  }
+}
+
+function isSharedRelationship(
+  row: Pick<PersonalDebtRelationshipSummaryDto, "isSharedLedger" | "isPrivate">,
+): boolean {
+  if (row.isSharedLedger) return true;
+  if (row.isPrivate) return false;
+  return false;
+}
+
+function contactLooksLinked(
+  contacts: ReadonlyArray<PersonalContactDto | CachedPersonalContact>,
+  contactId: string,
+): boolean {
+  const contact = contacts.find((c) => c.id === contactId);
+  return Boolean(contact?.linkedUserIdentityId);
 }
 
 function DueChip({ dueDateUtc }: { dueDateUtc: string | null | undefined }) {
@@ -935,6 +974,12 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
   const rows: CachedPersonalRelationship[] | PersonalDebtRelationshipSummaryDto[] = usingCache
     ? cachedRows
     : (listQuery.data ?? []);
+  const selectedLinked = contactId ? contactLooksLinked(contacts, contactId) : false;
+  const submitLabel = selectedLinked
+    ? t("personal.utang.sendForConfirmation")
+    : mode === "lent"
+      ? t("personal.utang.recordLent")
+      : t("personal.utang.recordOwe");
 
   return (
     <div
@@ -1017,6 +1062,14 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
           />
         </label>
         {!online ? <OfflineNotice message={t("offline.personalUtangWillQueue")} /> : null}
+        {selectedLinked ? (
+          <p
+            className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+            data-testid="utang-rel-confirm-hint"
+          >
+            {t("personal.utang.sendForConfirmationHint")}
+          </p>
+        ) : null}
         {formError ? (
           <p
             role="alert"
@@ -1042,7 +1095,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
           ) : (
             <Wallet className="size-4 shrink-0" aria-hidden />
           )}
-          {mode === "lent" ? t("personal.utang.recordLent") : t("personal.utang.recordOwe")}
+          {submitLabel}
         </Button>
         {contacts.length === 0 ? (
           <Button asChild variant="ghost" className="min-h-11">
@@ -1061,24 +1114,36 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
         />
       ) : (
         <ul className="exits-list m-0 grid list-none gap-2 p-0">
-          {rows.map((row) => (
-            <li key={row.id}>
-              <Link
-                to={`/personal/utang/relationships/${row.id}`}
-                className="exits-list__card flex min-h-11 items-center justify-between gap-3 text-foreground no-underline"
-                data-testid={`utang-rel-row-${row.id}`}
-              >
-                <div className="min-w-0">
-                  <p className="exits-list__name m-0 truncate font-semibold">
-                    {contactLabel(contacts, row)}
-                  </p>
-                  <DueChip dueDateUtc={row.dueDateUtc} />
-                  <WaitingChip origin={rowOrigin(row)} />
-                </div>
-                <MoneyDisplay amount={row.currentBalance} />
-              </Link>
-            </li>
-          ))}
+          {rows.map((row) => {
+            const name = contactLabel(contacts, row);
+            const shared = isSharedRelationship(row);
+            const ledgerLabel = shared
+              ? t("personal.utang.linked")
+              : t("personal.utang.notLinkedToExits");
+            const perspectiveLabel =
+              mode === "lent" ? t("personal.utang.owesYou") : t("personal.utang.youOwe");
+            return (
+              <li key={row.id}>
+                <Link
+                  to={`/personal/utang/relationships/${row.id}`}
+                  className="exits-list__card flex min-h-11 items-center justify-between gap-3 text-foreground no-underline"
+                  data-testid={`utang-rel-row-${row.id}`}
+                >
+                  <div className="min-w-0">
+                    <p className="exits-list__name m-0 truncate font-semibold">{name}</p>
+                    <p className="m-0 truncate text-[length:var(--exits-text-sm)] text-muted">
+                      {perspectiveLabel}
+                      {" · "}
+                      <span data-testid={`utang-rel-ledger-${row.id}`}>{ledgerLabel}</span>
+                    </p>
+                    <DueChip dueDateUtc={row.dueDateUtc} />
+                    <WaitingChip origin={rowOrigin(row)} />
+                  </div>
+                  <MoneyDisplay amount={row.currentBalance} />
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
@@ -1106,6 +1171,11 @@ export function PersonalRelationshipDetailPage() {
   const [notes, setNotes] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [cacheEpoch, setCacheEpoch] = useState(0);
+  const [disputeEntryId, setDisputeEntryId] = useState<string | null>(null);
+  const [disputeReasonKey, setDisputeReasonKey] = useState<
+    "amount" | "notReceived" | "other" | ""
+  >("");
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const contactsQuery = useQuery({
     queryKey: ["personal", "utang", "contacts"],
@@ -1175,6 +1245,11 @@ export function PersonalRelationshipDetailPage() {
     : (historyQuery.data ?? []);
   const relationshipIsLocal = cachedDetail?.origin === "Local";
 
+  const invalidateUtang = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["personal", "utang"] });
+    await queryClient.invalidateQueries({ queryKey: ["personal", "dashboard"] });
+  };
+
   const queueEntryOffline = async () => {
     if (!offline || !detail) {
       throw new Error("offline-unavailable");
@@ -1239,8 +1314,7 @@ export function PersonalRelationshipDetailPage() {
       setAdjustmentDelta("");
       setNotes("");
       setFormError(null);
-      await queryClient.invalidateQueries({ queryKey: ["personal", "utang"] });
-      await queryClient.invalidateQueries({ queryKey: ["personal", "dashboard"] });
+      await invalidateUtang();
     },
     onError: (error) => {
       if (!online) {
@@ -1259,6 +1333,48 @@ export function PersonalRelationshipDetailPage() {
         return;
       }
       setFormError(
+        error instanceof PlatformApiError ? error.message : t("personal.utang.genericError"),
+      );
+    },
+  });
+
+  const resolveMutation = useMutation({
+    mutationFn: async (input: {
+      action: "confirm" | "dispute" | "cancel";
+      entryId: string;
+      reason?: string | null;
+    }) => {
+      const version = balanceQuery.data?.version ?? detailQuery.data?.version ?? null;
+      if (input.action === "confirm") {
+        return confirmPersonalUtangEntry(relationshipId, input.entryId, {
+          expectedVersion: version,
+        });
+      }
+      if (input.action === "dispute") {
+        return disputePersonalUtangEntry(relationshipId, input.entryId, {
+          expectedVersion: version,
+          reason: input.reason ?? null,
+        });
+      }
+      return cancelPersonalUtangEntry(relationshipId, input.entryId, {
+        expectedVersion: version,
+      });
+    },
+    onSuccess: async () => {
+      setActionError(null);
+      setDisputeEntryId(null);
+      setDisputeReasonKey("");
+      await invalidateUtang();
+    },
+    onError: (error) => {
+      if (isUtangConcurrencyConflict(error)) {
+        setActionError(t("personal.utang.concurrencyConflict"));
+        void balanceQuery.refetch();
+        void detailQuery.refetch();
+        void historyQuery.refetch();
+        return;
+      }
+      setActionError(
         error instanceof PlatformApiError ? error.message : t("personal.utang.genericError"),
       );
     },
@@ -1286,42 +1402,67 @@ export function PersonalRelationshipDetailPage() {
     );
   }
 
-  const balanceLabel =
-    detail.perspective === "Borrowed" ? t("personal.home.iOwe") : t("personal.home.owedToMe");
+  const shared = isSharedRelationship(detail);
+  const perspectiveLabel =
+    detail.perspective === "Borrowed"
+      ? t("personal.utang.perspectiveDebtor")
+      : t("personal.utang.perspectiveCreditor");
+  const ledgerLabel = shared
+    ? t("personal.utang.sharedLedger")
+    : t("personal.utang.privateRecord");
   const listBack =
     detail.perspective === "Borrowed" ? personalPageBackNav.utangOwe : personalPageBackNav.utangLent;
   // An Adjustment rewrites a balance against a version this device may no longer be showing.
   const adjustmentBlocked = !online && entryType === "Adjustment";
+  const submitLabel = shared
+    ? t("personal.utang.sendForConfirmation")
+    : t("personal.utang.saveEntry");
+
+  const disputeReasonText = (): string | null => {
+    if (disputeReasonKey === "amount") return t("personal.utang.disputeReasonAmount");
+    if (disputeReasonKey === "notReceived") return t("personal.utang.disputeReasonNotReceived");
+    if (disputeReasonKey === "other") return t("personal.utang.disputeReasonOther");
+    return null;
+  };
 
   return (
-    <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="personal-utang-detail">
+    <div
+      className="personal-page exits-page flex min-w-0 flex-col gap-3"
+      data-testid="personal-utang-detail"
+    >
       <PageHeader
         title={personName}
-        description={balanceLabel}
+        description={perspectiveLabel}
         backTo={listBack.to}
         backLabel={t(listBack.labelKey)}
         backTestId="page-header-back-utang-detail"
       />
       {usingCache ? <OfflineNotice message={t("offline.personalCachedNotice")} /> : null}
       <div className="rounded-[var(--exits-radius-md)] border border-border px-3 py-3">
-        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{balanceLabel}</p>
+        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{perspectiveLabel}</p>
         <MoneyDisplay amount={currentBalance} className="text-[length:var(--exits-text-xl)]" />
+        <p
+          className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted"
+          data-testid="utang-detail-ledger"
+        >
+          {ledgerLabel}
+        </p>
         <DueChip dueDateUtc={detail.dueDateUtc} />
         <WaitingChip origin={relationshipIsLocal ? "Local" : "Server"} />
       </div>
 
       <form
-        className="catalog-form-section exits-animate-panel personal-section flex flex-col gap-2"
+        className="catalog-form-section exits-animate-panel personal-section flex min-w-0 flex-col gap-2 overflow-hidden"
         onSubmit={(event) => {
           event.preventDefault();
           recordMutation.mutate();
         }}
       >
-        <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
           {t("personal.utang.entryType")}
           <select
             data-testid="utang-entry-type"
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="min-h-11 w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
             value={entryType}
             onChange={(e) => setEntryType(e.target.value as typeof entryType)}
           >
@@ -1330,35 +1471,35 @@ export function PersonalRelationshipDetailPage() {
             <option value="Adjustment">{t("personal.utang.adjustBalance")}</option>
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
           {t("personal.utang.amount")}
           <input
             data-testid="utang-entry-amount"
             inputMode="decimal"
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="min-h-11 w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             required
           />
         </label>
         {entryType === "Adjustment" ? (
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+          <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
             {t("personal.utang.adjustmentDelta")}
             <input
               data-testid="utang-entry-delta"
               inputMode="decimal"
-              className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+              className="min-h-11 w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
               value={adjustmentDelta}
               onChange={(e) => setAdjustmentDelta(e.target.value)}
               required
             />
           </label>
         ) : null}
-        <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
           {t("personal.utang.note")}
           <input
             data-testid="utang-entry-notes"
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="min-h-11 w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
           />
@@ -1370,6 +1511,14 @@ export function PersonalRelationshipDetailPage() {
         ) : null}
         {!online && !adjustmentBlocked ? (
           <OfflineNotice message={t("offline.personalEntryWillQueue")} />
+        ) : null}
+        {shared && online ? (
+          <p
+            className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+            data-testid="utang-entry-confirm-hint"
+          >
+            {t("personal.utang.sendForConfirmationHint")}
+          </p>
         ) : null}
         {formError ? (
           <p
@@ -1385,7 +1534,7 @@ export function PersonalRelationshipDetailPage() {
           disabled={recordMutation.isPending || adjustmentBlocked || (!online && !offline)}
           data-testid="utang-entry-submit"
         >
-          {t("personal.utang.saveEntry")}
+          {submitLabel}
         </Button>
       </form>
 
@@ -1403,10 +1552,18 @@ export function PersonalRelationshipDetailPage() {
       )}
 
       <section
-        className="catalog-form-section exits-animate-panel personal-section gap-2"
+        className="catalog-form-section exits-animate-panel personal-section min-w-0 gap-2 overflow-hidden"
         aria-label={t("personal.utang.activity")}
       >
         <h2 className="catalog-form-section__title">{t("personal.utang.activity")}</h2>
+        {actionError ? (
+          <p
+            role="alert"
+            className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+          >
+            {actionError}
+          </p>
+        ) : null}
         {history.length === 0 ? (
           <EmptyState
             title={t("personal.utang.historyEmptyTitle")}
@@ -1414,21 +1571,199 @@ export function PersonalRelationshipDetailPage() {
           />
         ) : (
           <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="utang-history">
-            {history.map((entry) => (
-              <li key={entry.id}>
-                <div className="exits-list__card flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="exits-list__name m-0 font-medium">{entry.entryType}</p>
-                  <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                    {new Date(entry.createdAtUtc).toLocaleString()}
-                    {entry.notes ? ` · ${entry.notes}` : ""}
-                  </p>
-                  <WaitingChip origin={rowOrigin(entry)} />
-                </div>
-                <MoneyDisplay amount={entry.signedDelta} />
-                </div>
-              </li>
-            ))}
+            {history.map((entry) => {
+              const status = "status" in entry ? entry.status : "Confirmed";
+              const canConfirm = "canConfirm" in entry ? Boolean(entry.canConfirm) : false;
+              const canDispute = "canDispute" in entry ? Boolean(entry.canDispute) : false;
+              const canCancel = "canCancel" in entry ? Boolean(entry.canCancel) : false;
+              const affectsBalance =
+                "affectsBalance" in entry
+                  ? Boolean(entry.affectsBalance)
+                  : status === "Confirmed";
+              const disputeReason =
+                "disputeReason" in entry ? (entry.disputeReason ?? null) : null;
+              const pendingIncoming = status === "Pending" && (canConfirm || canDispute);
+              const pendingOutgoing = status === "Pending" && canCancel && !canConfirm;
+              const confirmLabel =
+                entry.entryType === "Payment"
+                  ? t("personal.utang.confirmReceived")
+                  : t("personal.utang.confirm");
+              const isDisputing = disputeEntryId === entry.id;
+
+              return (
+                <li key={entry.id}>
+                  <div
+                    className="exits-list__card flex min-w-0 flex-col gap-2"
+                    data-testid={`utang-history-entry-${entry.id}`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="exits-list__name m-0 font-medium">
+                          {t(entryTypeLabelKey(entry.entryType))}
+                        </p>
+                        <p
+                          className="m-0 text-[length:var(--exits-text-sm)]"
+                          data-testid={`utang-entry-status-${entry.id}`}
+                        >
+                          {t(entryStatusLabelKey(status))}
+                        </p>
+                        {pendingIncoming ? (
+                          <p
+                            className="m-0 text-[length:var(--exits-text-sm)] font-medium"
+                            data-testid={`utang-waiting-you-${entry.id}`}
+                          >
+                            {t("personal.utang.waitingForYou")}
+                          </p>
+                        ) : null}
+                        {pendingOutgoing ? (
+                          <p
+                            className="m-0 text-[length:var(--exits-text-sm)] font-medium"
+                            data-testid={`utang-waiting-other-${entry.id}`}
+                          >
+                            {t("personal.utang.waitingForName").replace("{name}", personName)}
+                          </p>
+                        ) : null}
+                        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                          {new Date(entry.createdAtUtc).toLocaleString()}
+                          {entry.notes ? ` · ${entry.notes}` : ""}
+                        </p>
+                        {disputeReason ? (
+                          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                            {disputeReason}
+                          </p>
+                        ) : null}
+                        <WaitingChip origin={rowOrigin(entry)} />
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <MoneyDisplay amount={entry.signedDelta} />
+                        {affectsBalance ? (
+                          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                            {t("personal.utang.balanceAfter")}:{" "}
+                            <MoneyDisplay amount={entry.balanceAfter} />
+                          </p>
+                        ) : (
+                          <p
+                            className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+                            data-testid={`utang-no-balance-${entry.id}`}
+                          >
+                            {t("personal.utang.noBalanceChange")}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {pendingIncoming && online ? (
+                      <div className="flex min-w-0 flex-wrap gap-2">
+                        {canConfirm ? (
+                          <Button
+                            type="button"
+                            className="min-h-11"
+                            disabled={resolveMutation.isPending}
+                            data-testid={`utang-confirm-${entry.id}`}
+                            onClick={() =>
+                              resolveMutation.mutate({ action: "confirm", entryId: entry.id })
+                            }
+                          >
+                            {confirmLabel}
+                          </Button>
+                        ) : null}
+                        {canDispute ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="min-h-11"
+                            disabled={resolveMutation.isPending}
+                            data-testid={`utang-dispute-${entry.id}`}
+                            onClick={() => {
+                              setDisputeEntryId(entry.id);
+                              setDisputeReasonKey("");
+                            }}
+                          >
+                            {t("personal.utang.dispute")}
+                          </Button>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {pendingOutgoing && online && canCancel ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="min-h-11 w-fit"
+                        disabled={resolveMutation.isPending}
+                        data-testid={`utang-cancel-${entry.id}`}
+                        onClick={() =>
+                          resolveMutation.mutate({ action: "cancel", entryId: entry.id })
+                        }
+                      >
+                        {t("personal.utang.cancelPending")}
+                      </Button>
+                    ) : null}
+
+                    {isDisputing ? (
+                      <div
+                        className="flex min-w-0 flex-col gap-2"
+                        data-testid={`utang-dispute-form-${entry.id}`}
+                      >
+                        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                          {t("personal.utang.disputeReason")}
+                          <select
+                            className="min-h-11 w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                            value={disputeReasonKey}
+                            data-testid={`utang-dispute-reason-${entry.id}`}
+                            onChange={(e) =>
+                              setDisputeReasonKey(
+                                e.target.value as typeof disputeReasonKey,
+                              )
+                            }
+                          >
+                            <option value="">—</option>
+                            <option value="amount">
+                              {t("personal.utang.disputeReasonAmount")}
+                            </option>
+                            <option value="notReceived">
+                              {t("personal.utang.disputeReasonNotReceived")}
+                            </option>
+                            <option value="other">
+                              {t("personal.utang.disputeReasonOther")}
+                            </option>
+                          </select>
+                        </label>
+                        <div className="flex min-w-0 flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            className="min-h-11"
+                            disabled={resolveMutation.isPending}
+                            data-testid={`utang-dispute-submit-${entry.id}`}
+                            onClick={() =>
+                              resolveMutation.mutate({
+                                action: "dispute",
+                                entryId: entry.id,
+                                reason: disputeReasonText(),
+                              })
+                            }
+                          >
+                            {t("personal.utang.disputeSubmit")}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="min-h-11"
+                            disabled={resolveMutation.isPending}
+                            onClick={() => {
+                              setDisputeEntryId(null);
+                              setDisputeReasonKey("");
+                            }}
+                          >
+                            {t("personal.utang.disputeKeep")}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
@@ -1439,3 +1774,4 @@ export function PersonalRelationshipDetailPage() {
     </div>
   );
 }
+

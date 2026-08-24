@@ -157,6 +157,30 @@ public sealed class PersonalDebtRelationship
         || (DebtorContactId is not null && contact.Id == DebtorContactId && contact.IsOwnedBy(ownerUserIdentityId));
 
     /// <summary>
+    /// Both sides are linked Personal users — shared ledger requiring counterparty confirmation.
+    /// </summary>
+    public bool IsSharedLinked =>
+        CreditorUserIdentityId is not null && DebtorUserIdentityId is not null;
+
+    public bool IsLinkedParticipant(PlatformUserId userIdentityId) =>
+        CreditorUserIdentityId == userIdentityId || DebtorUserIdentityId == userIdentityId;
+
+    public PlatformUserId? GetCounterpartyUserIdentityId(PlatformUserId actingUserIdentityId)
+    {
+        if (CreditorUserIdentityId == actingUserIdentityId)
+        {
+            return DebtorUserIdentityId;
+        }
+
+        if (DebtorUserIdentityId == actingUserIdentityId)
+        {
+            return CreditorUserIdentityId;
+        }
+
+        return null;
+    }
+
+    /// <summary>
     /// After explicit invitation acceptance, promote a contact participant to the linked user.
     /// Does not create Organization membership or product roles.
     /// </summary>
@@ -244,11 +268,26 @@ public sealed class PersonalDebtRelationship
             EnsureUtc(dueDateUtc.Value);
         }
 
-        var newBalance = CurrentBalance + signedDelta;
-        CurrentBalance = newBalance;
-        if (dueDateUtc is not null && entryType is PersonalUtangEntryType.Loan)
+        // Shared Personal↔Personal: propose Pending without changing confirmed balance.
+        // Private/unlinked: Confirmed immediately (existing behavior).
+        var requiresConfirmation = IsSharedLinked;
+        var status = requiresConfirmation
+            ? PersonalUtangEntryStatus.Pending
+            : PersonalUtangEntryStatus.Confirmed;
+
+        decimal balanceAfter;
+        if (requiresConfirmation)
         {
-            DueDateUtc = dueDateUtc;
+            balanceAfter = CurrentBalance;
+        }
+        else
+        {
+            balanceAfter = CurrentBalance + signedDelta;
+            CurrentBalance = balanceAfter;
+            if (dueDateUtc is not null && entryType is PersonalUtangEntryType.Loan)
+            {
+                DueDateUtc = dueDateUtc;
+            }
         }
 
         UpdatedAtUtc = utcNow;
@@ -260,12 +299,180 @@ public sealed class PersonalDebtRelationship
             entryType,
             amount,
             signedDelta,
-            newBalance,
+            balanceAfter,
             actingUserIdentityId,
             utcNow,
+            status,
             notes,
             dueDateUtc);
     }
+
+    /// <summary>
+    /// Counterparty confirms a Pending entry. Idempotent if already Confirmed.
+    /// Proposer cannot self-confirm.
+    /// </summary>
+    public PersonalUtangEntry ConfirmEntry(
+        PersonalUtangEntry entry,
+        PlatformUserId actingUserIdentityId,
+        DateTimeOffset utcNow,
+        int? expectedVersion = null)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        ArgumentNullException.ThrowIfNull(actingUserIdentityId);
+        EnsureUtc(utcNow);
+        EnsureEntryBelongs(entry);
+        EnsureVersion(expectedVersion);
+
+        if (Status is not PersonalDebtRelationshipStatus.Active)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPersonalDebtRelationship,
+                "Cannot confirm entries on a closed relationship.");
+        }
+
+        if (entry.Status is PersonalUtangEntryStatus.Confirmed)
+        {
+            // Idempotent retry: balance already applied once.
+            return entry;
+        }
+
+        if (entry.Status is not PersonalUtangEntryStatus.Pending)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangEntryInvalid,
+                $"Only pending entries can be confirmed (current status: {entry.Status}).");
+        }
+
+        EnsureCounterpartyMayResolve(entry, actingUserIdentityId);
+
+        var newBalance = CurrentBalance + entry.SignedDelta;
+        CurrentBalance = newBalance;
+        if (entry.DueDateUtc is not null && entry.EntryType is PersonalUtangEntryType.Loan)
+        {
+            DueDateUtc = entry.DueDateUtc;
+        }
+
+        entry.MarkConfirmed(actingUserIdentityId, utcNow, newBalance);
+        UpdatedAtUtc = utcNow;
+        Version++;
+        return entry;
+    }
+
+    /// <summary>
+    /// Counterparty disputes a Pending entry. No balance effect. Idempotent if already Disputed by same rules.
+    /// </summary>
+    public PersonalUtangEntry DisputeEntry(
+        PersonalUtangEntry entry,
+        PlatformUserId actingUserIdentityId,
+        DateTimeOffset utcNow,
+        int? expectedVersion = null,
+        string? disputeReason = null)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        ArgumentNullException.ThrowIfNull(actingUserIdentityId);
+        EnsureUtc(utcNow);
+        EnsureEntryBelongs(entry);
+        EnsureVersion(expectedVersion);
+
+        if (Status is not PersonalDebtRelationshipStatus.Active)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPersonalDebtRelationship,
+                "Cannot dispute entries on a closed relationship.");
+        }
+
+        if (entry.Status is PersonalUtangEntryStatus.Disputed)
+        {
+            return entry;
+        }
+
+        if (entry.Status is not PersonalUtangEntryStatus.Pending)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangEntryInvalid,
+                $"Only pending entries can be disputed (current status: {entry.Status}).");
+        }
+
+        EnsureCounterpartyMayResolve(entry, actingUserIdentityId);
+
+        entry.MarkDisputed(actingUserIdentityId, utcNow, disputeReason);
+        UpdatedAtUtc = utcNow;
+        Version++;
+        return entry;
+    }
+
+    /// <summary>Proposer withdraws their own Pending entry. No balance effect.</summary>
+    public PersonalUtangEntry CancelPendingEntry(
+        PersonalUtangEntry entry,
+        PlatformUserId actingUserIdentityId,
+        DateTimeOffset utcNow,
+        int? expectedVersion = null)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        ArgumentNullException.ThrowIfNull(actingUserIdentityId);
+        EnsureUtc(utcNow);
+        EnsureEntryBelongs(entry);
+        EnsureVersion(expectedVersion);
+
+        if (Status is not PersonalDebtRelationshipStatus.Active)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPersonalDebtRelationship,
+                "Cannot cancel entries on a closed relationship.");
+        }
+
+        if (entry.Status is PersonalUtangEntryStatus.Cancelled)
+        {
+            return entry;
+        }
+
+        if (entry.Status is not PersonalUtangEntryStatus.Pending)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangEntryInvalid,
+                $"Only pending entries can be cancelled (current status: {entry.Status}).");
+        }
+
+        if (entry.CreatedByUserIdentityId != actingUserIdentityId)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangUnauthorized,
+                "Only the proposer can cancel a pending entry.");
+        }
+
+        entry.MarkCancelled(actingUserIdentityId, utcNow);
+        UpdatedAtUtc = utcNow;
+        Version++;
+        return entry;
+    }
+
+    private void EnsureEntryBelongs(PersonalUtangEntry entry)
+    {
+        if (entry.RelationshipId != Id)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangEntryInvalid,
+                "Entry does not belong to this relationship.");
+        }
+    }
+
+    private void EnsureCounterpartyMayResolve(PersonalUtangEntry entry, PlatformUserId actingUserIdentityId)
+    {
+        if (!IsSharedLinked || !IsLinkedParticipant(actingUserIdentityId))
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangUnauthorized,
+                "Only a linked counterparty can confirm or dispute shared ledger entries.");
+        }
+
+        if (entry.CreatedByUserIdentityId == actingUserIdentityId)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangUnauthorized,
+                "The proposer cannot confirm or dispute their own entry.");
+        }
+    }
+
 
     public static decimal ComputeSignedDelta(PersonalUtangEntryType entryType, decimal amount, decimal? adjustmentDelta = null) =>
         entryType switch

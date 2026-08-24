@@ -49,11 +49,25 @@ public interface IPersonalDebtRelationshipRepository
 
 public interface IPersonalUtangEntryRepository
 {
+    Task<PersonalUtangEntry?> GetByIdAsync(
+        PersonalUtangEntryId id,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<PersonalUtangEntry>> ListByRelationshipAsync(
         PersonalDebtRelationshipId relationshipId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Counts Pending entries across relationships where <paramref name="userIdentityId"/> is a linked
+    /// participant but not the proposer (awaiting this user's confirmation).
+    /// </summary>
+    Task<int> CountPendingAwaitingConfirmationAsync(
+        PlatformUserId userIdentityId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(PersonalUtangEntry entry, CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(PersonalUtangEntry entry, CancellationToken cancellationToken = default);
 }
 
 public interface IPersonalUtangInvitationRepository

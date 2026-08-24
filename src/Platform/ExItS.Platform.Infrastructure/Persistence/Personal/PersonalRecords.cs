@@ -97,6 +97,10 @@ internal sealed class PersonalUtangEntryRecord
     public DateTimeOffset? DueDateUtc { get; set; }
     public Guid CreatedByUserIdentityId { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public Guid? ResolvedByUserIdentityId { get; set; }
+    public DateTimeOffset? ResolvedAtUtc { get; set; }
+    public string? DisputeReason { get; set; }
 }
 
 internal sealed class PersonalUtangInvitationRecord

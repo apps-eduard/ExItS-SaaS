@@ -28,6 +28,8 @@ export const personalDebtRelationshipSummarySchema = z.object({
   status: z.string(),
   version: z.number().int(),
   updatedAtUtc: z.string(),
+  isSharedLedger: z.boolean().optional().default(false),
+  isPrivate: z.boolean().optional().default(true),
 });
 
 export const personalUtangBalanceSchema = z.object({
@@ -49,6 +51,15 @@ export const personalUtangEntrySchema = z.object({
   dueDateUtc: z.string().nullable().optional().default(null),
   createdByUserIdentityId: guidSchema,
   createdAtUtc: z.string(),
+  status: z.string().optional().default("Confirmed"),
+  resolvedByUserIdentityId: guidSchema.nullable().optional().default(null),
+  resolvedAtUtc: z.string().nullable().optional().default(null),
+  disputeReason: z.string().nullable().optional().default(null),
+  canConfirm: z.boolean().optional().default(false),
+  canDispute: z.boolean().optional().default(false),
+  canCancel: z.boolean().optional().default(false),
+  affectsBalance: z.boolean().optional().default(true),
+  isSharedLedger: z.boolean().optional().default(false),
 });
 
 export type PersonalContactDto = z.infer<typeof personalContactSchema>;
@@ -86,6 +97,19 @@ export type RecordPersonalUtangEntryRequest = {
   dueDateUtc?: string | null;
 };
 
+export type ConfirmPersonalUtangEntryRequest = {
+  expectedVersion?: number | null;
+};
+
+export type DisputePersonalUtangEntryRequest = {
+  expectedVersion?: number | null;
+  reason?: string | null;
+};
+
+export type CancelPersonalUtangEntryRequest = {
+  expectedVersion?: number | null;
+};
+
 function pick(raw: Record<string, unknown>, camel: string, pascal: string): unknown {
   return raw[camel] ?? raw[pascal];
 }
@@ -107,6 +131,8 @@ function normalizeContact(raw: unknown): unknown {
 function normalizeRelationship(raw: unknown): unknown {
   if (!raw || typeof raw !== "object") return raw;
   const r = raw as Record<string, unknown>;
+  const isSharedLedger = Boolean(pick(r, "isSharedLedger", "IsSharedLedger") ?? false);
+  const isPrivateRaw = pick(r, "isPrivate", "IsPrivate");
   return {
     id: pick(r, "id", "Id"),
     perspective: pick(r, "perspective", "Perspective"),
@@ -120,6 +146,8 @@ function normalizeRelationship(raw: unknown): unknown {
     status: pick(r, "status", "Status"),
     version: Number(pick(r, "version", "Version") ?? 0),
     updatedAtUtc: pick(r, "updatedAtUtc", "UpdatedAtUtc"),
+    isSharedLedger,
+    isPrivate: isPrivateRaw == null ? !isSharedLedger : Boolean(isPrivateRaw),
   };
 }
 
@@ -138,6 +166,8 @@ function normalizeBalance(raw: unknown): unknown {
 function normalizeEntry(raw: unknown): unknown {
   if (!raw || typeof raw !== "object") return raw;
   const r = raw as Record<string, unknown>;
+  const status = String(pick(r, "status", "Status") ?? "Confirmed");
+  const affectsBalanceRaw = pick(r, "affectsBalance", "AffectsBalance");
   return {
     id: pick(r, "id", "Id"),
     relationshipId: pick(r, "relationshipId", "RelationshipId"),
@@ -149,6 +179,16 @@ function normalizeEntry(raw: unknown): unknown {
     dueDateUtc: pick(r, "dueDateUtc", "DueDateUtc") ?? null,
     createdByUserIdentityId: pick(r, "createdByUserIdentityId", "CreatedByUserIdentityId"),
     createdAtUtc: pick(r, "createdAtUtc", "CreatedAtUtc"),
+    status,
+    resolvedByUserIdentityId: pick(r, "resolvedByUserIdentityId", "ResolvedByUserIdentityId") ?? null,
+    resolvedAtUtc: pick(r, "resolvedAtUtc", "ResolvedAtUtc") ?? null,
+    disputeReason: pick(r, "disputeReason", "DisputeReason") ?? null,
+    canConfirm: Boolean(pick(r, "canConfirm", "CanConfirm") ?? false),
+    canDispute: Boolean(pick(r, "canDispute", "CanDispute") ?? false),
+    canCancel: Boolean(pick(r, "canCancel", "CanCancel") ?? false),
+    affectsBalance:
+      affectsBalanceRaw == null ? status === "Confirmed" : Boolean(affectsBalanceRaw),
+    isSharedLedger: Boolean(pick(r, "isSharedLedger", "IsSharedLedger") ?? false),
   };
 }
 
@@ -262,6 +302,51 @@ export async function recordPersonalUtangEntry(
   const raw = await platformRequest<unknown>({
     method: "POST",
     path: `${UTANG}/relationships/${relationshipId}/entries`,
+    body,
+    signal,
+  });
+  return personalUtangEntrySchema.parse(normalizeEntry(raw));
+}
+
+export async function confirmPersonalUtangEntry(
+  relationshipId: string,
+  entryId: string,
+  body: ConfirmPersonalUtangEntryRequest = {},
+  signal?: AbortSignal,
+): Promise<PersonalUtangEntryDto> {
+  const raw = await platformRequest<unknown>({
+    method: "POST",
+    path: `${UTANG}/relationships/${relationshipId}/entries/${entryId}/confirm`,
+    body,
+    signal,
+  });
+  return personalUtangEntrySchema.parse(normalizeEntry(raw));
+}
+
+export async function disputePersonalUtangEntry(
+  relationshipId: string,
+  entryId: string,
+  body: DisputePersonalUtangEntryRequest = {},
+  signal?: AbortSignal,
+): Promise<PersonalUtangEntryDto> {
+  const raw = await platformRequest<unknown>({
+    method: "POST",
+    path: `${UTANG}/relationships/${relationshipId}/entries/${entryId}/dispute`,
+    body,
+    signal,
+  });
+  return personalUtangEntrySchema.parse(normalizeEntry(raw));
+}
+
+export async function cancelPersonalUtangEntry(
+  relationshipId: string,
+  entryId: string,
+  body: CancelPersonalUtangEntryRequest = {},
+  signal?: AbortSignal,
+): Promise<PersonalUtangEntryDto> {
+  const raw = await platformRequest<unknown>({
+    method: "POST",
+    path: `${UTANG}/relationships/${relationshipId}/entries/${entryId}/cancel`,
     body,
     signal,
   });

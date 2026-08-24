@@ -181,6 +181,7 @@ public static class DomainErrorCodes
     public const string InvalidPersonalDebtRelationship = "platform.personal.debt_relationship.invalid";
     public const string InvalidPersonalUtangEntryId = "platform.personal.utang_entry.id.invalid";
     public const string InvalidPersonalUtangEntryType = "platform.personal.utang_entry.type.invalid";
+    public const string PersonalUtangEntryInvalid = "platform.personal.utang_entry.invalid";
     public const string PersonalUtangAmountInvalid = "platform.personal.utang.amount.invalid";
     public const string PersonalUtangUnauthorized = "platform.personal.utang.unauthorized";
     public const string PersonalUtangConcurrencyConflict = "platform.personal.utang.concurrency_conflict";

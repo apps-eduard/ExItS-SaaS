@@ -57,6 +57,18 @@ public enum PersonalUtangEntryType
     Adjustment
 }
 
+/// <summary>
+/// Lifecycle of a personal utang ledger entry.
+/// Only <see cref="Confirmed"/> entries affect relationship balance and dashboard totals.
+/// </summary>
+public enum PersonalUtangEntryStatus
+{
+    Pending,
+    Confirmed,
+    Disputed,
+    Cancelled
+}
+
 public enum PersonalUtangInvitationStatus
 {
     Pending,

@@ -266,6 +266,16 @@ internal sealed class PersonalDebtRelationshipRepository(PlatformDbContext db) :
 
 internal sealed class PersonalUtangEntryRepository(PlatformDbContext db) : IPersonalUtangEntryRepository
 {
+    public async Task<PersonalUtangEntry?> GetByIdAsync(
+        PersonalUtangEntryId id,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalUtangEntries.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
     public async Task<IReadOnlyList<PersonalUtangEntry>> ListByRelationshipAsync(
         PersonalDebtRelationshipId relationshipId,
         CancellationToken cancellationToken = default)
@@ -278,10 +288,45 @@ internal sealed class PersonalUtangEntryRepository(PlatformDbContext db) : IPers
         return records.Select(ToDomain).ToList();
     }
 
+    public async Task<int> CountPendingAwaitingConfirmationAsync(
+        PlatformUserId userIdentityId,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = userIdentityId.Value;
+        var pending = PersonalUtangEntryStatus.Pending.ToString();
+        return await (
+                from entry in db.PersonalUtangEntries.AsNoTracking()
+                join rel in db.PersonalDebtRelationships.AsNoTracking()
+                    on entry.RelationshipId equals rel.Id
+                where entry.Status == pending
+                      && entry.CreatedByUserIdentityId != userId
+                      && (rel.CreditorUserIdentityId == userId || rel.DebtorUserIdentityId == userId)
+                select entry.Id)
+            .CountAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public Task AddAsync(PersonalUtangEntry entry, CancellationToken cancellationToken = default)
     {
         db.PersonalUtangEntries.Add(ToRecord(entry));
         return Task.CompletedTask;
+    }
+
+    public async Task UpdateAsync(PersonalUtangEntry entry, CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalUtangEntries
+            .FirstOrDefaultAsync(x => x.Id == entry.Id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (record is null)
+        {
+            return;
+        }
+
+        record.BalanceAfter = entry.BalanceAfter;
+        record.Status = entry.Status.ToString();
+        record.ResolvedByUserIdentityId = entry.ResolvedByUserIdentityId?.Value;
+        record.ResolvedAtUtc = entry.ResolvedAtUtc;
+        record.DisputeReason = entry.DisputeReason;
     }
 
     private static PersonalUtangEntry ToDomain(PersonalUtangEntryRecord record) =>
@@ -295,7 +340,13 @@ internal sealed class PersonalUtangEntryRepository(PlatformDbContext db) : IPers
             record.Notes,
             record.DueDateUtc,
             PlatformUserId.From(record.CreatedByUserIdentityId),
-            record.CreatedAtUtc);
+            record.CreatedAtUtc,
+            Enum.Parse<PersonalUtangEntryStatus>(record.Status, ignoreCase: true),
+            record.ResolvedByUserIdentityId is Guid resolvedBy
+                ? PlatformUserId.From(resolvedBy)
+                : null,
+            record.ResolvedAtUtc,
+            record.DisputeReason);
 
     private static PersonalUtangEntryRecord ToRecord(PersonalUtangEntry entry) =>
         new()
@@ -309,7 +360,11 @@ internal sealed class PersonalUtangEntryRepository(PlatformDbContext db) : IPers
             Notes = entry.Notes,
             DueDateUtc = entry.DueDateUtc,
             CreatedByUserIdentityId = entry.CreatedByUserIdentityId.Value,
-            CreatedAtUtc = entry.CreatedAtUtc
+            CreatedAtUtc = entry.CreatedAtUtc,
+            Status = entry.Status.ToString(),
+            ResolvedByUserIdentityId = entry.ResolvedByUserIdentityId?.Value,
+            ResolvedAtUtc = entry.ResolvedAtUtc,
+            DisputeReason = entry.DisputeReason
         };
 }
 

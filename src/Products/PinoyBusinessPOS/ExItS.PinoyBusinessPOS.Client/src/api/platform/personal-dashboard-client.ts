@@ -14,6 +14,7 @@ export const personalDashboardSchema = z.object({
   activeRelationshipCount: z.number(),
   totalLentBalance: z.number(),
   totalBorrowedBalance: z.number(),
+  pendingConfirmationCount: z.number().optional().default(0),
 });
 
 export type PersonalDashboardDto = z.infer<typeof personalDashboardSchema>;
@@ -32,6 +33,9 @@ function normalizeDashboard(raw: unknown): unknown {
     activeRelationshipCount: r.activeRelationshipCount ?? r.ActiveRelationshipCount ?? 0,
     totalLentBalance: Number(r.totalLentBalance ?? r.TotalLentBalance ?? 0),
     totalBorrowedBalance: Number(r.totalBorrowedBalance ?? r.TotalBorrowedBalance ?? 0),
+    pendingConfirmationCount: Number(
+      r.pendingConfirmationCount ?? r.PendingConfirmationCount ?? 0,
+    ),
   };
 }
 

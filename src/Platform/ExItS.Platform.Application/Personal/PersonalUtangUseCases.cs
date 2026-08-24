@@ -34,7 +34,9 @@ public sealed record PersonalDebtRelationshipSummaryDto(
     DateTimeOffset? DueDateUtc,
     string Status,
     int Version,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    bool IsSharedLedger,
+    bool IsPrivate);
 
 public sealed record CreatePersonalDebtRelationshipRequest(
     Guid? CreditorUserIdentityId,
@@ -54,6 +56,12 @@ public sealed record RecordPersonalUtangEntryRequest(
     string? Notes,
     DateTimeOffset? DueDateUtc);
 
+public sealed record ConfirmPersonalUtangEntryRequest(int? ExpectedVersion);
+
+public sealed record DisputePersonalUtangEntryRequest(int? ExpectedVersion, string? Reason);
+
+public sealed record CancelPersonalUtangEntryRequest(int? ExpectedVersion);
+
 public sealed record PersonalUtangEntryDto(
     Guid Id,
     Guid RelationshipId,
@@ -64,7 +72,16 @@ public sealed record PersonalUtangEntryDto(
     string? Notes,
     DateTimeOffset? DueDateUtc,
     Guid CreatedByUserIdentityId,
-    DateTimeOffset CreatedAtUtc);
+    DateTimeOffset CreatedAtUtc,
+    string Status,
+    Guid? ResolvedByUserIdentityId,
+    DateTimeOffset? ResolvedAtUtc,
+    string? DisputeReason,
+    bool CanConfirm,
+    bool CanDispute,
+    bool CanCancel,
+    bool AffectsBalance,
+    bool IsSharedLedger);
 
 public sealed record PersonalUtangBalanceDto(
     Guid RelationshipId,
@@ -320,6 +337,8 @@ public sealed class CreatePersonalDebtRelationship
     private readonly IPersonalContactRepository _contacts;
     private readonly IPersonalDebtRelationshipRepository _relationships;
     private readonly IPersonalUtangEntryRepository _entries;
+    private readonly IPersonalAccountSettingsRepository _settings;
+    private readonly IPersonalInAppNotificationRepository _notifications;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -328,6 +347,8 @@ public sealed class CreatePersonalDebtRelationship
         IPersonalContactRepository contacts,
         IPersonalDebtRelationshipRepository relationships,
         IPersonalUtangEntryRepository entries,
+        IPersonalAccountSettingsRepository settings,
+        IPersonalInAppNotificationRepository notifications,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
@@ -335,6 +356,8 @@ public sealed class CreatePersonalDebtRelationship
         _contacts = contacts;
         _relationships = relationships;
         _entries = entries;
+        _settings = settings;
+        _notifications = notifications;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -430,6 +453,17 @@ public sealed class CreatePersonalDebtRelationship
             if (initialEntry is not null)
             {
                 await _entries.AddAsync(initialEntry, cancellationToken).ConfigureAwait(false);
+                if (initialEntry.Status is PersonalUtangEntryStatus.Pending)
+                {
+                    await PersonalUtangEntryNotifications.NotifyCounterpartyPendingAsync(
+                        relationship,
+                        initialEntry,
+                        actingUserIdentityId,
+                        _settings,
+                        _notifications,
+                        _clock,
+                        cancellationToken).ConfigureAwait(false);
+                }
             }
 
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -446,14 +480,20 @@ public sealed class CreatePersonalDebtRelationship
 
             if (initialEntry is not null)
             {
+                var initialAuditAction = initialEntry.Status is PersonalUtangEntryStatus.Pending
+                    ? PlatformAuditActions.PersonalUtangEntryProposed
+                    : PlatformAuditActions.PersonalUtangEntryRecorded;
+                var initialSummary = initialEntry.Status is PersonalUtangEntryStatus.Pending
+                    ? "Initial loan entry proposed for counterparty confirmation."
+                    : "Initial loan entry recorded.";
                 await _auditWriter.WriteAsync(
                     $"platform-user:{actingUserIdentityId.Value:D}",
                     AuditActorType.PlatformUser,
-                    PlatformAuditActions.PersonalUtangEntryRecorded,
+                    initialAuditAction,
                     nameof(PersonalUtangEntry),
                     initialEntry.Id.Value.ToString("D"),
                     AuditOutcome.Succeeded,
-                    summary: "Initial loan entry recorded.",
+                    summary: initialSummary,
                     cancellationToken: cancellationToken).ConfigureAwait(false);
             }
 
@@ -462,7 +502,9 @@ public sealed class CreatePersonalDebtRelationship
         }
         catch (DomainException ex)
         {
-            return ApplicationResult<PersonalDebtRelationshipSummaryDto>.Failure(ex.ErrorCode, ex.Message);
+            return ApplicationResult<PersonalDebtRelationshipSummaryDto>.Failure(
+                PersonalUtangEntryErrors.Map(ex),
+                ex.Message);
         }
     }
 
@@ -471,6 +513,7 @@ public sealed class CreatePersonalDebtRelationship
         PlatformUserId viewerUserIdentityId)
     {
         var perspective = relationship.DebtorUserIdentityId == viewerUserIdentityId ? "Borrowed" : "Lent";
+        var isShared = relationship.IsSharedLinked;
         return new PersonalDebtRelationshipSummaryDto(
             relationship.Id.Value,
             perspective,
@@ -483,7 +526,9 @@ public sealed class CreatePersonalDebtRelationship
             relationship.DueDateUtc,
             relationship.Status.ToString(),
             relationship.Version,
-            relationship.UpdatedAtUtc);
+            relationship.UpdatedAtUtc,
+            IsSharedLedger: isShared,
+            IsPrivate: !isShared);
     }
 }
 
@@ -617,14 +662,17 @@ public sealed class GetPersonalUtangBalance
 
 public sealed class ListPersonalUtangHistory
 {
-    private readonly GetPersonalUtangRelationship _getRelationship;
+    private readonly IPersonalDebtRelationshipRepository _relationships;
+    private readonly IPersonalContactRepository _contacts;
     private readonly IPersonalUtangEntryRepository _entries;
 
     public ListPersonalUtangHistory(
-        GetPersonalUtangRelationship getRelationship,
+        IPersonalDebtRelationshipRepository relationships,
+        IPersonalContactRepository contacts,
         IPersonalUtangEntryRepository entries)
     {
-        _getRelationship = getRelationship;
+        _relationships = relationships;
+        _contacts = contacts;
         _entries = entries;
     }
 
@@ -633,12 +681,22 @@ public sealed class ListPersonalUtangHistory
         Guid relationshipId,
         CancellationToken cancellationToken = default)
     {
-        var access = await _getRelationship.ExecuteAsync(userIdentityId, relationshipId, cancellationToken)
+        var relationship = await _relationships
+            .GetByIdAsync(PersonalDebtRelationshipId.From(relationshipId), cancellationToken)
             .ConfigureAwait(false);
-        if (!access.IsSuccess)
+        if (relationship is null)
         {
             return ApplicationResult<IReadOnlyList<PersonalUtangEntryDto>>.Failure(
-                access.ErrorCode!, access.ErrorMessage!);
+                ApplicationErrorCodes.PersonalUtangRelationshipNotFound,
+                "Personal debt relationship was not found.");
+        }
+
+        if (!await PersonalUtangAccess.CanViewAsync(relationship, userIdentityId, _contacts, cancellationToken)
+                .ConfigureAwait(false))
+        {
+            return ApplicationResult<IReadOnlyList<PersonalUtangEntryDto>>.Failure(
+                ApplicationErrorCodes.PersonalUtangUnauthorized,
+                "Personal debt relationship is not visible to this account.");
         }
 
         var list = await _entries
@@ -646,7 +704,8 @@ public sealed class ListPersonalUtangHistory
             .ConfigureAwait(false);
 
         return ApplicationResult<IReadOnlyList<PersonalUtangEntryDto>>.Success(
-            list.Select(RecordPersonalUtangEntry.ToDto).ToList());
+            list.Select(e => RecordPersonalUtangEntry.ToDto(e, userIdentityId, relationship.IsSharedLinked))
+                .ToList());
     }
 }
 
@@ -655,6 +714,8 @@ public sealed class RecordPersonalUtangEntry
     private readonly IPersonalDebtRelationshipRepository _relationships;
     private readonly IPersonalUtangEntryRepository _entries;
     private readonly IPersonalContactRepository _contacts;
+    private readonly IPersonalAccountSettingsRepository _settings;
+    private readonly IPersonalInAppNotificationRepository _notifications;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -663,6 +724,8 @@ public sealed class RecordPersonalUtangEntry
         IPersonalDebtRelationshipRepository relationships,
         IPersonalUtangEntryRepository entries,
         IPersonalContactRepository contacts,
+        IPersonalAccountSettingsRepository settings,
+        IPersonalInAppNotificationRepository notifications,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
@@ -670,6 +733,8 @@ public sealed class RecordPersonalUtangEntry
         _relationships = relationships;
         _entries = entries;
         _contacts = contacts;
+        _settings = settings;
+        _notifications = notifications;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -724,38 +789,63 @@ public sealed class RecordPersonalUtangEntry
 
             await _relationships.UpdateAsync(relationship, cancellationToken).ConfigureAwait(false);
             await _entries.AddAsync(entry, cancellationToken).ConfigureAwait(false);
+
+            if (entry.Status is PersonalUtangEntryStatus.Pending)
+            {
+                await PersonalUtangEntryNotifications.NotifyCounterpartyPendingAsync(
+                    relationship,
+                    entry,
+                    actingUserIdentityId,
+                    _settings,
+                    _notifications,
+                    _clock,
+                    cancellationToken).ConfigureAwait(false);
+            }
+
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
+            var auditAction = entry.Status is PersonalUtangEntryStatus.Pending
+                ? PlatformAuditActions.PersonalUtangEntryProposed
+                : PlatformAuditActions.PersonalUtangEntryRecorded;
+            var summary = entry.Status is PersonalUtangEntryStatus.Pending
+                ? $"{entryType} entry proposed for counterparty confirmation."
+                : $"{entryType} entry recorded.";
             await _auditWriter.WriteAsync(
                 $"platform-user:{actingUserIdentityId.Value:D}",
                 AuditActorType.PlatformUser,
-                PlatformAuditActions.PersonalUtangEntryRecorded,
+                auditAction,
                 nameof(PersonalUtangEntry),
                 entry.Id.Value.ToString("D"),
                 AuditOutcome.Succeeded,
-                summary: $"{entryType} entry recorded.",
+                summary: summary,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
-            return ApplicationResult<PersonalUtangEntryDto>.Success(ToDto(entry));
+            return ApplicationResult<PersonalUtangEntryDto>.Success(
+                ToDto(entry, actingUserIdentityId, relationship.IsSharedLinked));
         }
         catch (PersistenceConflictException ex)
         {
             return ApplicationResult<PersonalUtangEntryDto>.Failure(ex.ErrorCode, ex.Message);
         }
-        catch (DomainException ex) when (ex.ErrorCode == DomainErrorCodes.PersonalUtangConcurrencyConflict)
-        {
-            return ApplicationResult<PersonalUtangEntryDto>.Failure(
-                ApplicationErrorCodes.ConcurrencyConflict,
-                ex.Message);
-        }
         catch (DomainException ex)
         {
-            return ApplicationResult<PersonalUtangEntryDto>.Failure(ex.ErrorCode, ex.Message);
+            return ApplicationResult<PersonalUtangEntryDto>.Failure(
+                PersonalUtangEntryErrors.Map(ex),
+                ex.Message);
         }
     }
 
-    internal static PersonalUtangEntryDto ToDto(PersonalUtangEntry entry) =>
-        new(
+    internal static PersonalUtangEntryDto ToDto(
+        PersonalUtangEntry entry,
+        PlatformUserId viewerUserIdentityId,
+        bool isSharedLedger)
+    {
+        var isPending = entry.Status is PersonalUtangEntryStatus.Pending;
+        var isProposer = entry.CreatedByUserIdentityId == viewerUserIdentityId;
+        var canResolve = isPending && isSharedLedger && !isProposer;
+        var canCancel = isPending && isProposer;
+
+        return new PersonalUtangEntryDto(
             entry.Id.Value,
             entry.RelationshipId.Value,
             entry.EntryType.ToString(),
@@ -765,5 +855,481 @@ public sealed class RecordPersonalUtangEntry
             entry.Notes,
             entry.DueDateUtc,
             entry.CreatedByUserIdentityId.Value,
-            entry.CreatedAtUtc);
+            entry.CreatedAtUtc,
+            entry.Status.ToString(),
+            entry.ResolvedByUserIdentityId?.Value,
+            entry.ResolvedAtUtc,
+            entry.DisputeReason,
+            CanConfirm: canResolve,
+            CanDispute: canResolve,
+            CanCancel: canCancel,
+            AffectsBalance: entry.Status is PersonalUtangEntryStatus.Confirmed,
+            IsSharedLedger: isSharedLedger);
+    }
+}
+
+public sealed class ConfirmPersonalUtangEntry
+{
+    private readonly IPersonalDebtRelationshipRepository _relationships;
+    private readonly IPersonalUtangEntryRepository _entries;
+    private readonly IPersonalContactRepository _contacts;
+    private readonly IPersonalAccountSettingsRepository _settings;
+    private readonly IPersonalInAppNotificationRepository _notifications;
+    private readonly IAuditWriter _auditWriter;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public ConfirmPersonalUtangEntry(
+        IPersonalDebtRelationshipRepository relationships,
+        IPersonalUtangEntryRepository entries,
+        IPersonalContactRepository contacts,
+        IPersonalAccountSettingsRepository settings,
+        IPersonalInAppNotificationRepository notifications,
+        IAuditWriter auditWriter,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _relationships = relationships;
+        _entries = entries;
+        _contacts = contacts;
+        _settings = settings;
+        _notifications = notifications;
+        _auditWriter = auditWriter;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<PersonalUtangEntryDto>> ExecuteAsync(
+        PlatformUserId actingUserIdentityId,
+        Guid relationshipId,
+        Guid entryId,
+        ConfirmPersonalUtangEntryRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var loaded = await PersonalUtangEntryAccess.LoadForMutationAsync(
+            actingUserIdentityId,
+            relationshipId,
+            entryId,
+            _relationships,
+            _entries,
+            _contacts,
+            cancellationToken).ConfigureAwait(false);
+        if (!loaded.IsSuccess)
+        {
+            return ApplicationResult<PersonalUtangEntryDto>.Failure(loaded.ErrorCode!, loaded.ErrorMessage!);
+        }
+
+        var (relationship, entry) = loaded.Value!;
+
+        try
+        {
+            var priorStatus = entry.Status;
+            relationship.ConfirmEntry(entry, actingUserIdentityId, _clock.UtcNow, request.ExpectedVersion);
+            await _relationships.UpdateAsync(relationship, cancellationToken).ConfigureAwait(false);
+            await _entries.UpdateAsync(entry, cancellationToken).ConfigureAwait(false);
+            if (priorStatus is PersonalUtangEntryStatus.Pending)
+            {
+                await PersonalUtangEntryNotifications.NotifyProposerResolvedAsync(
+                    entry,
+                    title: "Personal Utang entry confirmed",
+                    preview: "Your Personal Utang entry was confirmed.",
+                    _settings,
+                    _notifications,
+                    _clock,
+                    cancellationToken).ConfigureAwait(false);
+            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            if (priorStatus is PersonalUtangEntryStatus.Pending)
+            {
+                await _auditWriter.WriteAsync(
+                    $"platform-user:{actingUserIdentityId.Value:D}",
+                    AuditActorType.PlatformUser,
+                    PlatformAuditActions.PersonalUtangEntryConfirmed,
+                    nameof(PersonalUtangEntry),
+                    entry.Id.Value.ToString("D"),
+                    AuditOutcome.Succeeded,
+                    summary: "Personal Utang entry confirmed.",
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
+            }
+
+            return ApplicationResult<PersonalUtangEntryDto>.Success(
+                RecordPersonalUtangEntry.ToDto(entry, actingUserIdentityId, relationship.IsSharedLinked));
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<PersonalUtangEntryDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<PersonalUtangEntryDto>.Failure(
+                PersonalUtangEntryErrors.Map(ex),
+                ex.Message);
+        }
+    }
+}
+
+public sealed class DisputePersonalUtangEntry
+{
+    private readonly IPersonalDebtRelationshipRepository _relationships;
+    private readonly IPersonalUtangEntryRepository _entries;
+    private readonly IPersonalContactRepository _contacts;
+    private readonly IPersonalAccountSettingsRepository _settings;
+    private readonly IPersonalInAppNotificationRepository _notifications;
+    private readonly IAuditWriter _auditWriter;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public DisputePersonalUtangEntry(
+        IPersonalDebtRelationshipRepository relationships,
+        IPersonalUtangEntryRepository entries,
+        IPersonalContactRepository contacts,
+        IPersonalAccountSettingsRepository settings,
+        IPersonalInAppNotificationRepository notifications,
+        IAuditWriter auditWriter,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _relationships = relationships;
+        _entries = entries;
+        _contacts = contacts;
+        _settings = settings;
+        _notifications = notifications;
+        _auditWriter = auditWriter;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<PersonalUtangEntryDto>> ExecuteAsync(
+        PlatformUserId actingUserIdentityId,
+        Guid relationshipId,
+        Guid entryId,
+        DisputePersonalUtangEntryRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var loaded = await PersonalUtangEntryAccess.LoadForMutationAsync(
+            actingUserIdentityId,
+            relationshipId,
+            entryId,
+            _relationships,
+            _entries,
+            _contacts,
+            cancellationToken).ConfigureAwait(false);
+        if (!loaded.IsSuccess)
+        {
+            return ApplicationResult<PersonalUtangEntryDto>.Failure(loaded.ErrorCode!, loaded.ErrorMessage!);
+        }
+
+        var (relationship, entry) = loaded.Value!;
+
+        try
+        {
+            var priorStatus = entry.Status;
+            relationship.DisputeEntry(
+                entry,
+                actingUserIdentityId,
+                _clock.UtcNow,
+                request.ExpectedVersion,
+                request.Reason);
+            await _relationships.UpdateAsync(relationship, cancellationToken).ConfigureAwait(false);
+            await _entries.UpdateAsync(entry, cancellationToken).ConfigureAwait(false);
+            if (priorStatus is PersonalUtangEntryStatus.Pending)
+            {
+                await PersonalUtangEntryNotifications.NotifyProposerResolvedAsync(
+                    entry,
+                    title: "Personal Utang entry disputed",
+                    preview: "Your Personal Utang entry was disputed.",
+                    _settings,
+                    _notifications,
+                    _clock,
+                    cancellationToken).ConfigureAwait(false);
+            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            if (priorStatus is PersonalUtangEntryStatus.Pending)
+            {
+                await _auditWriter.WriteAsync(
+                    $"platform-user:{actingUserIdentityId.Value:D}",
+                    AuditActorType.PlatformUser,
+                    PlatformAuditActions.PersonalUtangEntryDisputed,
+                    nameof(PersonalUtangEntry),
+                    entry.Id.Value.ToString("D"),
+                    AuditOutcome.Succeeded,
+                    summary: "Personal Utang entry disputed.",
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
+            }
+
+            return ApplicationResult<PersonalUtangEntryDto>.Success(
+                RecordPersonalUtangEntry.ToDto(entry, actingUserIdentityId, relationship.IsSharedLinked));
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<PersonalUtangEntryDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<PersonalUtangEntryDto>.Failure(
+                PersonalUtangEntryErrors.Map(ex),
+                ex.Message);
+        }
+    }
+}
+
+public sealed class CancelPersonalUtangEntry
+{
+    private readonly IPersonalDebtRelationshipRepository _relationships;
+    private readonly IPersonalUtangEntryRepository _entries;
+    private readonly IPersonalContactRepository _contacts;
+    private readonly IPersonalAccountSettingsRepository _settings;
+    private readonly IPersonalInAppNotificationRepository _notifications;
+    private readonly IAuditWriter _auditWriter;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public CancelPersonalUtangEntry(
+        IPersonalDebtRelationshipRepository relationships,
+        IPersonalUtangEntryRepository entries,
+        IPersonalContactRepository contacts,
+        IPersonalAccountSettingsRepository settings,
+        IPersonalInAppNotificationRepository notifications,
+        IAuditWriter auditWriter,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _relationships = relationships;
+        _entries = entries;
+        _contacts = contacts;
+        _settings = settings;
+        _notifications = notifications;
+        _auditWriter = auditWriter;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<PersonalUtangEntryDto>> ExecuteAsync(
+        PlatformUserId actingUserIdentityId,
+        Guid relationshipId,
+        Guid entryId,
+        CancelPersonalUtangEntryRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var loaded = await PersonalUtangEntryAccess.LoadForMutationAsync(
+            actingUserIdentityId,
+            relationshipId,
+            entryId,
+            _relationships,
+            _entries,
+            _contacts,
+            cancellationToken).ConfigureAwait(false);
+        if (!loaded.IsSuccess)
+        {
+            return ApplicationResult<PersonalUtangEntryDto>.Failure(loaded.ErrorCode!, loaded.ErrorMessage!);
+        }
+
+        var (relationship, entry) = loaded.Value!;
+
+        try
+        {
+            var priorStatus = entry.Status;
+            relationship.CancelPendingEntry(entry, actingUserIdentityId, _clock.UtcNow, request.ExpectedVersion);
+            await _relationships.UpdateAsync(relationship, cancellationToken).ConfigureAwait(false);
+            await _entries.UpdateAsync(entry, cancellationToken).ConfigureAwait(false);
+            if (priorStatus is PersonalUtangEntryStatus.Pending)
+            {
+                await PersonalUtangEntryNotifications.NotifyCounterpartyCancelledAsync(
+                    relationship,
+                    entry,
+                    actingUserIdentityId,
+                    _settings,
+                    _notifications,
+                    _clock,
+                    cancellationToken).ConfigureAwait(false);
+            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            if (priorStatus is PersonalUtangEntryStatus.Pending)
+            {
+                await _auditWriter.WriteAsync(
+                    $"platform-user:{actingUserIdentityId.Value:D}",
+                    AuditActorType.PlatformUser,
+                    PlatformAuditActions.PersonalUtangEntryCancelled,
+                    nameof(PersonalUtangEntry),
+                    entry.Id.Value.ToString("D"),
+                    AuditOutcome.Succeeded,
+                    summary: "Pending Personal Utang entry cancelled.",
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
+            }
+
+            return ApplicationResult<PersonalUtangEntryDto>.Success(
+                RecordPersonalUtangEntry.ToDto(entry, actingUserIdentityId, relationship.IsSharedLinked));
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<PersonalUtangEntryDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<PersonalUtangEntryDto>.Failure(
+                PersonalUtangEntryErrors.Map(ex),
+                ex.Message);
+        }
+    }
+}
+
+internal static class PersonalUtangEntryErrors
+{
+    public static string Map(DomainException ex) => ex.ErrorCode switch
+    {
+        DomainErrorCodes.PersonalUtangConcurrencyConflict => ApplicationErrorCodes.ConcurrencyConflict,
+        DomainErrorCodes.PersonalUtangEntryInvalid => ApplicationErrorCodes.PersonalUtangEntryInvalid,
+        DomainErrorCodes.PersonalUtangUnauthorized => ApplicationErrorCodes.PersonalUtangUnauthorized,
+        _ => ex.ErrorCode
+    };
+}
+
+internal static class PersonalUtangEntryAccess
+{
+    public static async Task<ApplicationResult<(PersonalDebtRelationship Relationship, PersonalUtangEntry Entry)>>
+        LoadForMutationAsync(
+            PlatformUserId actingUserIdentityId,
+            Guid relationshipId,
+            Guid entryId,
+            IPersonalDebtRelationshipRepository relationships,
+            IPersonalUtangEntryRepository entries,
+            IPersonalContactRepository contacts,
+            CancellationToken cancellationToken)
+    {
+        var relationship = await relationships
+            .GetByIdAsync(PersonalDebtRelationshipId.From(relationshipId), cancellationToken)
+            .ConfigureAwait(false);
+        if (relationship is null)
+        {
+            return ApplicationResult<(PersonalDebtRelationship, PersonalUtangEntry)>.Failure(
+                ApplicationErrorCodes.PersonalUtangRelationshipNotFound,
+                "Personal debt relationship was not found.");
+        }
+
+        if (!await PersonalUtangAccess.CanViewAsync(relationship, actingUserIdentityId, contacts, cancellationToken)
+                .ConfigureAwait(false))
+        {
+            return ApplicationResult<(PersonalDebtRelationship, PersonalUtangEntry)>.Failure(
+                ApplicationErrorCodes.PersonalUtangUnauthorized,
+                "Personal debt relationship is not visible to this account.");
+        }
+
+        var entry = await entries
+            .GetByIdAsync(PersonalUtangEntryId.From(entryId), cancellationToken)
+            .ConfigureAwait(false);
+        if (entry is null || entry.RelationshipId != relationship.Id)
+        {
+            return ApplicationResult<(PersonalDebtRelationship, PersonalUtangEntry)>.Failure(
+                ApplicationErrorCodes.PersonalUtangEntryInvalid,
+                "Personal Utang entry was not found on this relationship.");
+        }
+
+        return ApplicationResult<(PersonalDebtRelationship, PersonalUtangEntry)>.Success((relationship, entry));
+    }
+}
+
+internal static class PersonalUtangEntryNotifications
+{
+    public static async Task NotifyCounterpartyPendingAsync(
+        PersonalDebtRelationship relationship,
+        PersonalUtangEntry entry,
+        PlatformUserId proposerUserIdentityId,
+        IPersonalAccountSettingsRepository settings,
+        IPersonalInAppNotificationRepository notifications,
+        IClock clock,
+        CancellationToken cancellationToken)
+    {
+        var counterparty = relationship.GetCounterpartyUserIdentityId(proposerUserIdentityId);
+        if (counterparty is null)
+        {
+            return;
+        }
+
+        await TryNotifyAsync(
+            counterparty,
+            title: "Personal Utang entry proposed",
+            preview: "A counterparty proposed a Personal Utang entry for your review.",
+            entry,
+            settings,
+            notifications,
+            clock,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public static async Task NotifyProposerResolvedAsync(
+        PersonalUtangEntry entry,
+        string title,
+        string preview,
+        IPersonalAccountSettingsRepository settings,
+        IPersonalInAppNotificationRepository notifications,
+        IClock clock,
+        CancellationToken cancellationToken) =>
+        await TryNotifyAsync(
+            entry.CreatedByUserIdentityId,
+            title,
+            preview,
+            entry,
+            settings,
+            notifications,
+            clock,
+            cancellationToken).ConfigureAwait(false);
+
+    public static async Task NotifyCounterpartyCancelledAsync(
+        PersonalDebtRelationship relationship,
+        PersonalUtangEntry entry,
+        PlatformUserId proposerUserIdentityId,
+        IPersonalAccountSettingsRepository settings,
+        IPersonalInAppNotificationRepository notifications,
+        IClock clock,
+        CancellationToken cancellationToken)
+    {
+        var counterparty = relationship.GetCounterpartyUserIdentityId(proposerUserIdentityId);
+        if (counterparty is null)
+        {
+            return;
+        }
+
+        await TryNotifyAsync(
+            counterparty,
+            title: "Personal Utang entry cancelled",
+            preview: "A pending Personal Utang entry was cancelled.",
+            entry,
+            settings,
+            notifications,
+            clock,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task TryNotifyAsync(
+        PlatformUserId recipient,
+        string title,
+        string preview,
+        PersonalUtangEntry entry,
+        IPersonalAccountSettingsRepository settings,
+        IPersonalInAppNotificationRepository notifications,
+        IClock clock,
+        CancellationToken cancellationToken)
+    {
+        var prefs = await settings.GetByUserAsync(recipient, cancellationToken).ConfigureAwait(false)
+            ?? PersonalAccountSettings.CreateDefaults(recipient, clock.UtcNow);
+        if (!prefs.InAppNotificationsEnabled)
+        {
+            return;
+        }
+
+        var notification = PersonalInAppNotification.Create(
+            recipient,
+            title,
+            preview,
+            relatedType: "PersonalUtangEntry",
+            clock.UtcNow,
+            relatedId: entry.Id.Value.ToString("D"));
+        await notifications.AddAsync(notification, cancellationToken).ConfigureAwait(false);
+    }
 }
