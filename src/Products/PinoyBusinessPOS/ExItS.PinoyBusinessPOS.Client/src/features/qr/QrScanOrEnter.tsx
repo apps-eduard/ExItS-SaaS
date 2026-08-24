@@ -10,6 +10,7 @@ import {
 } from "@/lib/exits-qr/envelope";
 import { decodeQrFromImageFile } from "@/features/qr/decode-qr-from-image";
 import { LiveQrCameraScanner } from "@/features/qr/LiveQrCameraScanner";
+import { qrPurposeMismatchMessageKey } from "@/features/qr/qr-purpose-error";
 
 type Props = {
   expectedPurpose: ExItsQrPurpose;
@@ -41,7 +42,7 @@ export function QrScanOrEnter({ expectedPurpose, onResolvedPayload, disabled }: 
       onResolvedPayload(mapSubject(parsed.subject, raw));
     } catch (err) {
       if (err instanceof ExItsQrParseError) {
-        setError(err.code === "unknown_purpose" ? t("qr.wrongPurpose") : t("qr.invalidPayload"));
+        setError(t(qrPurposeMismatchMessageKey(raw, expectedPurpose, err)));
         return;
       }
       setError(t("qr.invalidPayload"));

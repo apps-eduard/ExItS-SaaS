@@ -449,7 +449,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.utang.addPersonManualTitle": "Pagdugang nga walay ExItS ID",
   "personal.utang.addByExitsTitle": "Pagdugang gamit ang ExItS ID / QR",
   "personal.utang.addByExitsHint":
-    "Resolve a user, confirm identity, then create a contact. Debt links still require acceptance when rules require it.",
+    "Use a personal ExItS ID (EX-…), not an organization ID (ORG…). Resolve the person, confirm identity, then create a contact.",
   "personal.utang.addPersonExits": "Pagdugang og tawo gamit ang ExItS ID",
   "personal.utang.addByExitsRequiresOnline":
     "Kinahanglan og internet aron magdugang gamit ang ExItS ID.",
@@ -622,6 +622,10 @@ export const cebPH: Record<keyof typeof en, string> = {
   "qr.decodeFailed": "No QR code was found in that photo.",
   "qr.invalidPayload": "That is not a valid ExItS QR or public ID.",
   "qr.wrongPurpose": "This QR code can't be used here.",
+  "qr.organizationNotAllowedHere":
+    "This is an organization ExItS ID (ORG…). Only a personal ExItS ID (EX-…) can be added here.",
+  "qr.personalNotAllowedHere":
+    "This is a personal ExItS ID (EX-…). Only an organization ExItS ID (ORG…) is allowed here.",
   "customers.personalLink.title": "Link ExItS Personal user",
   "customers.personalLink.lede":
     "Scan or enter a Personal ExItS ID. The person must Accept before the link becomes active.",
@@ -2434,6 +2438,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "orders.placeOrder": "Place order",
   "orders.placing": "Placing?",
   "orders.missingBuyerIdentity": "Signed-in user id is required to place an order.",
+  "orders.missingLinkedCustomer":
+    "Your account is not linked to this store yet. Open Stores and finish linking, then try again.",
   "orders.stockConflictTitle": "Stock changed",
   "orders.stockConflict":
     "Some items are no longer available. Refresh the storefront and update your cart.",

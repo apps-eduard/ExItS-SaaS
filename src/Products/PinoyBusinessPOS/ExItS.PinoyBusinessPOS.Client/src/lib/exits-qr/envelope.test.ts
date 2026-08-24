@@ -29,9 +29,14 @@ describe("exits-qr envelope", () => {
   });
 
   it("rejects wrong purpose and device registration for personal flows", () => {
-    expect(() =>
-      assertExItsQrPurpose(buildExItsQr("organization", "ORG000001"), "personal"),
-    ).toThrow(ExItsQrParseError);
+    try {
+      assertExItsQrPurpose(buildExItsQr("organization", "ORG000001"), "personal");
+      expect.unreachable("expected wrong_purpose");
+    } catch (err) {
+      expect(err).toBeInstanceOf(ExItsQrParseError);
+      expect((err as ExItsQrParseError).code).toBe("wrong_purpose");
+      expect((err as ExItsQrParseError).receivedPurpose).toBe("organization");
+    }
     expect(() =>
       assertExItsQrPurpose(buildExItsQr("pos-device-registration", "opaque-token"), "personal"),
     ).toThrow(ExItsQrParseError);

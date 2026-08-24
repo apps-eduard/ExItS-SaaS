@@ -142,7 +142,9 @@ test.describe("POS-LIVE-QR-01 mocked live camera", () => {
     await page.getByTestId("qr-live-camera-button").click();
     await page.getByTestId("live-qr-open-camera").click();
 
-    await expect(page.getByTestId("live-qr-inline-error")).toContainText("can't be used here");
+    await expect(page.getByTestId("live-qr-inline-error")).toContainText(
+      "organization ExItS ID",
+    );
     await expect(page.getByTestId("live-qr-preview")).toBeVisible();
   });
 

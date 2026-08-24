@@ -9,6 +9,7 @@ import {
   ExItsQrParseError,
   type ParsedExItsQr,
 } from "@/lib/exits-qr/envelope";
+import { qrPurposeMismatchMessageKey } from "@/features/qr/qr-purpose-error";
 import {
   isCameraApiAvailable,
   isCameraSecureContext,
@@ -128,9 +129,11 @@ export function LiveQrCameraScanner({
         handleClose();
       } catch (err) {
         if (err instanceof ExItsQrParseError) {
-          setInlineError(
-            err.code === "unknown_purpose" ? t("qr.wrongPurpose") : t("qr.unsupportedExitsQr"),
-          );
+          if (err.code === "wrong_purpose" || err.code === "unknown_purpose") {
+            setInlineError(t(qrPurposeMismatchMessageKey(rawPayload, expectedPurpose, err)));
+          } else {
+            setInlineError(t("qr.unsupportedExitsQr"));
+          }
           return;
         }
 

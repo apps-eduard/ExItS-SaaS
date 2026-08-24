@@ -12,12 +12,24 @@ export type ParsedExItsQr = {
 };
 
 export class ExItsQrParseError extends Error {
-  readonly code: "empty" | "unrecognized" | "malformed" | "unknown_purpose" | "invalid_subject";
+  readonly code:
+    | "empty"
+    | "unrecognized"
+    | "malformed"
+    | "unknown_purpose"
+    | "wrong_purpose"
+    | "invalid_subject";
+  readonly receivedPurpose?: ExItsQrPurpose;
 
-  constructor(code: ExItsQrParseError["code"], message: string) {
+  constructor(
+    code: ExItsQrParseError["code"],
+    message: string,
+    receivedPurpose?: ExItsQrPurpose,
+  ) {
     super(message);
     this.name = "ExItsQrParseError";
     this.code = code;
+    this.receivedPurpose = receivedPurpose;
   }
 }
 
@@ -126,8 +138,9 @@ export function assertExItsQrPurpose(payload: string, expected: ExItsQrPurpose):
   const parsed = parseExItsQr(payload);
   if (parsed.purpose !== expected) {
     throw new ExItsQrParseError(
-      "unknown_purpose",
+      "wrong_purpose",
       `Expected ${expected} QR but received ${parsed.purpose}.`,
+      parsed.purpose,
     );
   }
   return parsed;

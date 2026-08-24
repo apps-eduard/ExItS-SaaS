@@ -201,7 +201,7 @@ describe("LiveQrCameraScanner", () => {
     await vi.advanceTimersByTimeAsync(200);
 
     expect(await screen.findByTestId("live-qr-inline-error")).toHaveTextContent(
-      "This QR code can't be used here.",
+      "This is an organization ExItS ID (ORG…). Only a personal ExItS ID (EX-…) can be added here.",
     );
     expect(onScan).not.toHaveBeenCalled();
     expect(screen.getByTestId("live-qr-preview")).toBeInTheDocument();

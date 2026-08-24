@@ -445,7 +445,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.utang.addPersonManualTitle": "Magdagdag nang walang ExItS ID",
   "personal.utang.addByExitsTitle": "Magdagdag gamit ang ExItS ID / QR",
   "personal.utang.addByExitsHint":
-    "Hanapin ang user, kumpirmahin ang pagkakakilanlan, tapos gumawa ng contact. Maaaring kailangan pa rin ng pagtanggap ang utang link.",
+    "Personal ExItS ID (EX-…) lang, hindi organization ID (ORG…). Hanapin ang tao, kumpirmahin, tapos gumawa ng contact.",
   "personal.utang.addPersonExits": "Magdagdag ng tao gamit ang ExItS ID",
   "personal.utang.addByExitsRequiresOnline":
     "Kailangan ng internet para magdagdag gamit ang ExItS ID.",
@@ -618,6 +618,10 @@ export const filPH: Record<keyof typeof en, string> = {
   "qr.decodeFailed": "No QR code was found in that photo.",
   "qr.invalidPayload": "That is not a valid ExItS QR or public ID.",
   "qr.wrongPurpose": "This QR code can't be used here.",
+  "qr.organizationNotAllowedHere":
+    "Ito ay organization ExItS ID (ORG…). Personal ExItS ID (EX-…) lang ang puwedeng idagdag dito.",
+  "qr.personalNotAllowedHere":
+    "Ito ay personal ExItS ID (EX-…). Organization ExItS ID (ORG…) lang ang puwede dito.",
   "customers.personalLink.title": "Link ExItS Personal user",
   "customers.personalLink.lede":
     "Scan or enter a Personal ExItS ID. The person must Accept before the link becomes active.",
@@ -2433,6 +2437,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "orders.placeOrder": "Place order",
   "orders.placing": "Placing?",
   "orders.missingBuyerIdentity": "Signed-in user id is required to place an order.",
+  "orders.missingLinkedCustomer":
+    "Hindi pa naka-link ang account mo sa store na ito. Buksan ang Stores at tapusin ang pag-link, tapos subukan ulit.",
   "orders.stockConflictTitle": "Stock changed",
   "orders.stockConflict":
     "Some items are no longer available. Refresh the storefront and update your cart.",

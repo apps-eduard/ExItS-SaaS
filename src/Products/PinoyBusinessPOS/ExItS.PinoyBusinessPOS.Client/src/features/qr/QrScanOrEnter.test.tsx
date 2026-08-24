@@ -86,7 +86,23 @@ describe("QrScanOrEnter", () => {
     await user.click(screen.getByTestId("qr-manual-submit"));
 
     await waitFor(() => {
-      expect(screen.getByTestId("qr-error")).toHaveTextContent("This QR code can't be used here.");
+      expect(screen.getByTestId("qr-error")).toHaveTextContent(
+        "This is an organization ExItS ID (ORG…). Only a personal ExItS ID (EX-…) can be added here.",
+      );
+    });
+  });
+
+  it("rejects personal ID for organization workflow", async () => {
+    const user = userEvent.setup();
+    renderInput({ expectedPurpose: "organization" });
+
+    await user.type(screen.getByTestId("qr-manual-id"), "EX-4827-1936");
+    await user.click(screen.getByTestId("qr-manual-submit"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("qr-error")).toHaveTextContent(
+        "This is a personal ExItS ID (EX-…). Only an organization ExItS ID (ORG…) is allowed here.",
+      );
     });
   });
 

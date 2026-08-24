@@ -184,7 +184,9 @@ describe("CheckoutPersonalCustomerPicker", () => {
     await user.click(screen.getByTestId("qr-manual-submit"));
 
     await waitFor(() => {
-      expect(screen.getByTestId("qr-error")).toHaveTextContent("This QR code can't be used here.");
+      expect(screen.getByTestId("qr-error")).toHaveTextContent(
+        "This is an organization ExItS ID (ORG…). Only a personal ExItS ID (EX-…) can be added here.",
+      );
     });
     expect(resolvePublicUserId).not.toHaveBeenCalled();
   });
