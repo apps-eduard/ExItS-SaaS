@@ -2,7 +2,7 @@
 
 **Status:** COMPLETE  
 **Start SHA:** `bbd7ae41f7bda738743f4ab2b5826472750ddf05`  
-**Implementation commit:** _(filled after push)_  
+**Implementation commit:** `fe8ce554`  
 **Branch:** `feat/pos-react-client`
 
 ## Delivered
