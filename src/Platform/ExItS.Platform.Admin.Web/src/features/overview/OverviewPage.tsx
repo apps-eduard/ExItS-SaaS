@@ -1,7 +1,7 @@
 import { PageHeader } from "@/components/exits/PageHeader";
 import { DashboardWidgetSkeleton } from "@/components/exits/dashboard/DashboardWidgetSkeleton";
 import { AccountsReviewWidget } from "@/features/overview/widgets/AccountsReviewWidget";
-import { NeedsAttentionCenter } from "@/features/overview/widgets/NeedsAttentionCenter";
+import { ActionCenterWidget } from "@/features/overview/widgets/ActionCenterWidget";
 import { OrganizationsSummaryWidget } from "@/features/overview/widgets/OrganizationsSummaryWidget";
 import { PaymentsSummaryWidget } from "@/features/overview/widgets/PaymentsSummaryWidget";
 import { PlatformHealthWidget } from "@/features/overview/widgets/PlatformHealthWidget";
@@ -34,13 +34,6 @@ export function OverviewPage() {
     access.canReviewAccounts ||
     access.canViewPayments ||
     access.canViewPrivacy;
-  const hasAttention =
-    access.canViewOrganizations ||
-    access.canReviewAccounts ||
-    access.canViewSubscriptions ||
-    access.canViewPayments ||
-    access.canViewPrivacy ||
-    access.canViewHealth;
   const hasRail = access.canViewHealth || hasAnyWidget;
 
   return (
@@ -96,7 +89,7 @@ export function OverviewPage() {
 
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(14rem,18rem)] lg:items-start">
             <div className="grid min-w-0 gap-5">
-              {hasAttention ? <NeedsAttentionCenter access={access} /> : null}
+              {access.canViewPortfolio ? <ActionCenterWidget access={access} /> : null}
               {access.canViewAudit ? <RecentAuditWidget enabled={access.canViewAudit} /> : null}
             </div>
             {hasRail ? (

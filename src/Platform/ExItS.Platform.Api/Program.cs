@@ -484,6 +484,8 @@ builder.Services.AddScoped<GenerateEntitlementSnapshot>();
 builder.Services.AddScoped<ReconcileEntitlementSnapshot>();
 
 builder.Services.AddScoped<AdminPortfolioQueryService>();
+builder.Services.AddScoped<BillingOperationsQueryService>();
+builder.Services.AddScoped<ActionCenterQueryService>();
 builder.Services.AddScoped<PlatformUsageLimitsQueryService>();
 builder.Services.AddScoped<PlatformSupportLookupService>();
 builder.Services.AddScoped<PlatformBackgroundJobsQueryService>();

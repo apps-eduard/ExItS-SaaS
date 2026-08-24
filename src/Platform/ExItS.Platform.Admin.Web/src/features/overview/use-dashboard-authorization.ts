@@ -45,6 +45,7 @@ export function useDashboardAuthorization() {
         PLATFORM_PERMISSIONS.viewPortfolio,
         PLATFORM_PERMISSIONS.manageCatalog,
       ]),
+    canViewPortfolio: loaded && authorization.hasPermission(PLATFORM_PERMISSIONS.viewPortfolio),
   };
 }
 

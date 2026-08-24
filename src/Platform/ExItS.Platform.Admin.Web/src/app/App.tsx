@@ -29,7 +29,10 @@ import { PlansPage } from "@/features/plans/PlansPage";
 import { PlanDetailPage } from "@/features/plans/PlanDetailPage";
 import { SubscriptionsPage } from "@/features/subscriptions/SubscriptionsPage";
 import { SubscriptionDetailPage } from "@/features/subscriptions/SubscriptionDetailPage";
-import { PaymentsPage } from "@/features/payments/PaymentsPage";
+import { BillingWorkspaceLayout } from "@/features/billing/BillingWorkspaceLayout";
+import { BillingOverviewTab } from "@/features/billing/BillingOverviewTab";
+import { BillingPaymentsTab } from "@/features/billing/BillingPaymentsTab";
+import { BillingIssuesTab } from "@/features/billing/BillingIssuesTab";
 import { PaymentDetailPage } from "@/features/payments/PaymentDetailPage";
 import { TestPaymentsPage } from "@/features/local-validation/TestPaymentsPage";
 import { EntitlementsPortfolioPage } from "@/features/entitlements/EntitlementsPortfolioPage";
@@ -203,8 +206,11 @@ export function App() {
                           <Route index element={<SubscriptionsPage />} />
                           <Route path=":subscriptionId" element={<SubscriptionDetailPage />} />
                         </Route>
-                        <Route path="payments">
-                          <Route index element={<PaymentsPage />} />
+                        <Route path="payments" element={<BillingWorkspaceLayout />}>
+                          <Route index element={<Navigate to="overview" replace />} />
+                          <Route path="overview" element={<BillingOverviewTab />} />
+                          <Route path="list" element={<BillingPaymentsTab />} />
+                          <Route path="issues" element={<BillingIssuesTab />} />
                           <Route path=":paymentId" element={<PaymentDetailPage />} />
                         </Route>
                         <Route

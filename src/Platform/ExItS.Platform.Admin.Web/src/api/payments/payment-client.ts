@@ -101,7 +101,7 @@ export function paymentDetailHref(paymentId: string): string {
 }
 
 export function paymentsListHref(): string {
-  return "/admin/payments";
+  return "/admin/payments/list";
 }
 
 export function hasActivePaymentPortfolioFilters(state: PaymentPortfolioUrlState): boolean {
