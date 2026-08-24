@@ -217,6 +217,25 @@ export async function createPersonalContact(
   return personalContactSchema.parse(normalizeContact(raw));
 }
 
+export type LinkPersonalContactRequest = {
+  linkedUserIdentityId?: string | null;
+  publicUserId?: string | null;
+};
+
+export async function linkPersonalContact(
+  contactId: string,
+  body: LinkPersonalContactRequest,
+  signal?: AbortSignal,
+): Promise<PersonalContactDto> {
+  const raw = await platformRequest<unknown>({
+    method: "POST",
+    path: `${UTANG}/contacts/${contactId}/link`,
+    body,
+    signal,
+  });
+  return personalContactSchema.parse(normalizeContact(raw));
+}
+
 export async function updatePersonalContact(
   contactId: string,
   body: UpdatePersonalContactRequest,

@@ -161,6 +161,7 @@ internal static class PersonalUtangAccess
 public sealed class CreatePersonalContact
 {
     private readonly IPersonalContactRepository _contacts;
+    private readonly IPersonalDebtRelationshipRepository _relationships;
     private readonly IPlatformUserRepository _users;
     private readonly IPersonalAccountSettingsRepository _settings;
     private readonly IPersonalInAppNotificationRepository _notifications;
@@ -170,6 +171,7 @@ public sealed class CreatePersonalContact
 
     public CreatePersonalContact(
         IPersonalContactRepository contacts,
+        IPersonalDebtRelationshipRepository relationships,
         IPlatformUserRepository users,
         IPersonalAccountSettingsRepository settings,
         IPersonalInAppNotificationRepository notifications,
@@ -178,6 +180,7 @@ public sealed class CreatePersonalContact
         IClock clock)
     {
         _contacts = contacts;
+        _relationships = relationships;
         _users = users;
         _settings = settings;
         _notifications = notifications;
@@ -227,6 +230,14 @@ public sealed class CreatePersonalContact
                 {
                     orphan.LinkUser(linkedUser.Id, _clock.UtcNow);
                     await _contacts.UpdateAsync(orphan, cancellationToken).ConfigureAwait(false);
+                    await PersonalContactLinkSupport.PromoteRelationshipsForLinkedContactAsync(
+                        ownerUserIdentityId,
+                        orphan,
+                        linkedUser.Id,
+                        _relationships,
+                        _auditWriter,
+                        _clock,
+                        cancellationToken).ConfigureAwait(false);
                     await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
                     await _auditWriter.WriteAsync(
@@ -280,6 +291,17 @@ public sealed class CreatePersonalContact
             }
 
             await _contacts.AddAsync(contact, cancellationToken).ConfigureAwait(false);
+            if (linkedUser is not null)
+            {
+                await PersonalContactLinkSupport.PromoteRelationshipsForLinkedContactAsync(
+                    ownerUserIdentityId,
+                    contact,
+                    linkedUser.Id,
+                    _relationships,
+                    _auditWriter,
+                    _clock,
+                    cancellationToken).ConfigureAwait(false);
+            }
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
             await _auditWriter.WriteAsync(
@@ -337,75 +359,23 @@ public sealed class CreatePersonalContact
         CreatePersonalContactRequest request,
         CancellationToken cancellationToken)
     {
-        PlatformUser? target = null;
-        if (!string.IsNullOrWhiteSpace(request.PublicUserId))
-        {
-            string normalized;
-            try
-            {
-                normalized = PublicUserIdRules.TryExtractFromQrPayload(request.PublicUserId);
-            }
-            catch (DomainException)
-            {
-                return ApplicationResult<PlatformUser?>.Failure(
-                    DomainErrorCodes.InvalidPublicUserId,
-                    "ExItS ID format is invalid.");
-            }
-
-            target = await _users.GetByPublicUserIdAsync(normalized, cancellationToken).ConfigureAwait(false);
-            if (target is null || target.Status is not AccountStatus.Active)
-            {
-                return ApplicationResult<PlatformUser?>.Failure(
-                    ApplicationErrorCodes.UserNotFound,
-                    "No active user matched that ExItS ID.");
-            }
-
-            if (request.LinkedUserIdentityId is Guid providedId && providedId != target.Id.Value)
-            {
-                return ApplicationResult<PlatformUser?>.Failure(
-                    ApplicationErrorCodes.PersonalContactLinkInvalid,
-                    "ExItS ID does not match the confirmed person.");
-            }
-        }
-        else if (request.LinkedUserIdentityId is Guid linkedId)
-        {
-            target = await _users.GetByIdAsync(PlatformUserId.From(linkedId), cancellationToken)
-                .ConfigureAwait(false);
-            if (target is null || target.Status is not AccountStatus.Active)
-            {
-                return ApplicationResult<PlatformUser?>.Failure(
-                    ApplicationErrorCodes.UserNotFound,
-                    "No active user matched that ExItS ID.");
-            }
-        }
-
-        if (target is null)
+        if (string.IsNullOrWhiteSpace(request.PublicUserId) && request.LinkedUserIdentityId is null)
         {
             return ApplicationResult<PlatformUser?>.Success(null);
         }
 
-        if (target.Id == ownerUserIdentityId)
+        var resolved = await PersonalContactLinkSupport.ResolvePersonalLinkTargetAsync(
+            ownerUserIdentityId,
+            request.PublicUserId,
+            request.LinkedUserIdentityId,
+            _users,
+            cancellationToken).ConfigureAwait(false);
+        if (!resolved.IsSuccess)
         {
-            return ApplicationResult<PlatformUser?>.Failure(
-                ApplicationErrorCodes.PersonalContactLinkInvalid,
-                "Cannot link a contact to yourself.");
+            return ApplicationResult<PlatformUser?>.Failure(resolved.ErrorCode!, resolved.ErrorMessage!);
         }
 
-        if (target.IsOrganizationScopedStaff)
-        {
-            return ApplicationResult<PlatformUser?>.Failure(
-                ApplicationErrorCodes.PersonalContactLinkInvalid,
-                "Only Personal ExItS accounts can be linked here.");
-        }
-
-        if (string.IsNullOrWhiteSpace(target.PublicUserId))
-        {
-            return ApplicationResult<PlatformUser?>.Failure(
-                ApplicationErrorCodes.PersonalContactLinkInvalid,
-                "That person does not have an ExItS ID yet.");
-        }
-
-        return ApplicationResult<PlatformUser?>.Success(target);
+        return ApplicationResult<PlatformUser?>.Success(resolved.Value);
     }
 
     private async Task NotifyLinkedPersonAsync(
@@ -452,6 +422,163 @@ public sealed class CreatePersonalContact
             publicUserId,
             contact.Status.ToString(),
             contact.CreatedAtUtc);
+}
+
+public sealed record LinkPersonalContactRequest(
+    Guid? LinkedUserIdentityId = null,
+    string? PublicUserId = null);
+
+/// <summary>
+/// Explicitly link an existing owned PersonalContact to a resolved Personal ExItS ID.
+/// Prefer this over guessing by name when repairing orphans.
+/// </summary>
+public sealed class LinkPersonalContact
+{
+    private readonly IPersonalContactRepository _contacts;
+    private readonly IPersonalDebtRelationshipRepository _relationships;
+    private readonly IPlatformUserRepository _users;
+    private readonly IPersonalAccountSettingsRepository _settings;
+    private readonly IPersonalInAppNotificationRepository _notifications;
+    private readonly IAuditWriter _auditWriter;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public LinkPersonalContact(
+        IPersonalContactRepository contacts,
+        IPersonalDebtRelationshipRepository relationships,
+        IPlatformUserRepository users,
+        IPersonalAccountSettingsRepository settings,
+        IPersonalInAppNotificationRepository notifications,
+        IAuditWriter auditWriter,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _contacts = contacts;
+        _relationships = relationships;
+        _users = users;
+        _settings = settings;
+        _notifications = notifications;
+        _auditWriter = auditWriter;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<PersonalContactDto>> ExecuteAsync(
+        PlatformUserId ownerUserIdentityId,
+        Guid contactId,
+        LinkPersonalContactRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var owned = await PersonalUtangAccess.RequireOwnedContactAsync(
+                ownerUserIdentityId,
+                PersonalContactId.From(contactId),
+                _contacts,
+                cancellationToken).ConfigureAwait(false);
+            if (!owned.IsSuccess)
+            {
+                return ApplicationResult<PersonalContactDto>.Failure(owned.ErrorCode!, owned.ErrorMessage!);
+            }
+
+            var contact = owned.Value!;
+            if (contact.IsLinked)
+            {
+                if (contact.LinkedUserIdentityId is PlatformUserId already
+                    && request.LinkedUserIdentityId is Guid provided
+                    && already.Value != provided)
+                {
+                    return ApplicationResult<PersonalContactDto>.Failure(
+                        ApplicationErrorCodes.PersonalContactLinkConflict,
+                        "Personal contact is already linked to a different ExItS account.");
+                }
+
+                var existingLinked = await _users.GetByIdAsync(contact.LinkedUserIdentityId!, cancellationToken)
+                    .ConfigureAwait(false);
+                return ApplicationResult<PersonalContactDto>.Success(
+                    CreatePersonalContact.ToDto(contact, existingLinked?.PublicUserId));
+            }
+
+            var target = await PersonalContactLinkSupport.ResolvePersonalLinkTargetAsync(
+                ownerUserIdentityId,
+                request.PublicUserId,
+                request.LinkedUserIdentityId,
+                _users,
+                cancellationToken).ConfigureAwait(false);
+            if (!target.IsSuccess)
+            {
+                return ApplicationResult<PersonalContactDto>.Failure(target.ErrorCode!, target.ErrorMessage!);
+            }
+
+            var linkedUser = target.Value!;
+            var duplicate = await _contacts
+                .FindActiveByOwnerAndLinkedUserAsync(ownerUserIdentityId, linkedUser.Id, cancellationToken)
+                .ConfigureAwait(false);
+            if (duplicate is not null && duplicate.Id != contact.Id)
+            {
+                return ApplicationResult<PersonalContactDto>.Failure(
+                    ApplicationErrorCodes.PersonalContactLinkConflict,
+                    "Another People contact is already linked to that ExItS account.");
+            }
+
+            contact.LinkUser(linkedUser.Id, _clock.UtcNow);
+            await _contacts.UpdateAsync(contact, cancellationToken).ConfigureAwait(false);
+            await PersonalContactLinkSupport.PromoteRelationshipsForLinkedContactAsync(
+                ownerUserIdentityId,
+                contact,
+                linkedUser.Id,
+                _relationships,
+                _auditWriter,
+                _clock,
+                cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            await _auditWriter.WriteAsync(
+                $"platform-user:{ownerUserIdentityId.Value:D}",
+                AuditActorType.PlatformUser,
+                PlatformAuditActions.PersonalContactLinked,
+                nameof(PersonalContact),
+                contact.Id.Value.ToString("D"),
+                AuditOutcome.Succeeded,
+                summary: $"Personal contact '{contact.DisplayName}' linked via ExItS ID.",
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            var owner = await _users.GetByIdAsync(ownerUserIdentityId, cancellationToken).ConfigureAwait(false);
+            var ownerLabel = string.IsNullOrWhiteSpace(owner?.DisplayName) ? "Someone" : owner!.DisplayName.Trim();
+            var settings = await _settings.GetByUserAsync(linkedUser.Id, cancellationToken).ConfigureAwait(false);
+            if (settings is null || settings.InAppNotificationsEnabled)
+            {
+                var preview = $"{ownerLabel} added you to their People list.";
+                if (preview.Length > 200)
+                {
+                    preview = preview[..200];
+                }
+
+                var notification = PersonalInAppNotification.Create(
+                    linkedUser.Id,
+                    "Added to People",
+                    preview,
+                    relatedType: "personal_contact",
+                    utcNow: _clock.UtcNow,
+                    relatedId: contact.Id.Value.ToString("D"));
+                await _notifications.AddAsync(notification, cancellationToken).ConfigureAwait(false);
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            return ApplicationResult<PersonalContactDto>.Success(
+                CreatePersonalContact.ToDto(contact, linkedUser.PublicUserId));
+        }
+        catch (DomainException ex)
+        {
+            var code = ex.ErrorCode switch
+            {
+                DomainErrorCodes.PersonalContactAlreadyLinked => ApplicationErrorCodes.PersonalContactLinkConflict,
+                DomainErrorCodes.PersonalContactLinkInvalid => ApplicationErrorCodes.PersonalContactLinkInvalid,
+                _ => ex.ErrorCode
+            };
+            return ApplicationResult<PersonalContactDto>.Failure(code, ex.Message);
+        }
+    }
 }
 
 public sealed class UpdatePersonalContact
@@ -627,6 +754,13 @@ public sealed class CreatePersonalDebtRelationship
                 return ApplicationResult<PersonalDebtRelationshipSummaryDto>.Failure(
                     owned.ErrorCode!, owned.ErrorMessage!);
             }
+
+            // Linked People contact → canonicalize to Personal user participant (shared ledger).
+            if (owned.Value!.LinkedUserIdentityId is PlatformUserId linkedCreditor)
+            {
+                creditorUser = linkedCreditor;
+                creditorContact = null;
+            }
         }
 
         if (debtorContact is not null)
@@ -637,6 +771,12 @@ public sealed class CreatePersonalDebtRelationship
             {
                 return ApplicationResult<PersonalDebtRelationshipSummaryDto>.Failure(
                     owned.ErrorCode!, owned.ErrorMessage!);
+            }
+
+            if (owned.Value!.LinkedUserIdentityId is PlatformUserId linkedDebtor)
+            {
+                debtorUser = linkedDebtor;
+                debtorContact = null;
             }
         }
 

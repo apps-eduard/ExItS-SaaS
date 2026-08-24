@@ -98,6 +98,27 @@ describe("RMAP-21F Personal Utang cache", () => {
     ]);
   });
 
+  it("overwrites a stale unlinked contact cache with linked server fields", async () => {
+    const { db, scopeBinding } = await openPersonal("cache-link-refresh");
+    await cachePersonalContacts(db, scopeBinding, [contact]);
+
+    const linked: PersonalContactDto = {
+      ...contact,
+      linkedUserIdentityId: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+      publicUserId: "EX-1234-5678",
+    };
+    await cachePersonalContacts(db, scopeBinding, [linked]);
+
+    const cached = await listCachedPersonalContacts(db, scopeBinding);
+    expect(cached).toHaveLength(1);
+    expect(cached[0]).toMatchObject({
+      id: contact.id,
+      linkedUserIdentityId: linked.linkedUserIdentityId,
+      publicUserId: "EX-1234-5678",
+      origin: "Server",
+    });
+  });
+
   it("stores names, amounts and notes only as ciphertext", async () => {
     const { db, scopeBinding } = await openPersonal("cache-ciphertext");
 

@@ -30,6 +30,7 @@ import {
   getPersonalMe,
   getPersonalUtangBalance,
   isUtangConcurrencyConflict,
+  linkPersonalContact,
   listBorrowedRelationships,
   listLentRelationships,
   listPersonalContacts,
@@ -228,6 +229,7 @@ export function PersonalContactsPage() {
   const [resolveBusy, setResolveBusy] = useState(false);
   const [resolveError, setResolveError] = useState<string | null>(null);
   const [addKind, setAddKind] = useState<UtangContactAddKind | null>(null);
+  const [linkingContactId, setLinkingContactId] = useState<string | null>(null);
   const [cacheEpoch, setCacheEpoch] = useState(0);
 
   const contactsQuery = useQuery({
@@ -260,16 +262,27 @@ export function PersonalContactsPage() {
     setResolvedUser(null);
     setResolveError(null);
     setAddKind(null);
+    setLinkingContactId(null);
   }
 
   function clearAddKind() {
     setAddKind(null);
+    setLinkingContactId(null);
     setDisplayName("");
     setPhone("");
     setEmail("");
     setFormError(null);
     setResolvedUser(null);
     setResolveError(null);
+  }
+
+  function startLinkExisting(contact: PersonalContactDto) {
+    setLinkingContactId(contact.id);
+    setAddKind("exits");
+    setEditingId(null);
+    setResolvedUser(null);
+    setResolveError(null);
+    setFormError(null);
   }
 
   function startEdit(contact: PersonalContactDto) {
@@ -346,17 +359,54 @@ export function PersonalContactsPage() {
       if (!online) {
         throw new Error("online-required");
       }
-      await createPersonalContact({
+      const body = {
+        linkedUserIdentityId: user.userIdentityId,
+        publicUserId: user.publicUserId,
+      };
+      if (linkingContactId) {
+        return linkPersonalContact(linkingContactId, body);
+      }
+
+      const orphans = (contactsQuery.data ?? []).filter(
+        (c) =>
+          !c.linkedUserIdentityId &&
+          c.displayName.trim().toLowerCase() === user.displayName.trim().toLowerCase(),
+      );
+      if (orphans.length === 1) {
+        return linkPersonalContact(orphans[0].id, body);
+      }
+
+      return createPersonalContact({
         displayName: user.displayName.trim(),
         phone: null,
         email: null,
-        linkedUserIdentityId: user.userIdentityId,
-        publicUserId: user.publicUserId,
+        ...body,
       });
     },
-    onSuccess: async () => {
+    onSuccess: async (linked) => {
       resetForm();
+      queryClient.setQueryData<PersonalContactDto[]>(["personal", "utang", "contacts"], (prev) => {
+        const list = prev ?? [];
+        const idx = list.findIndex((c) => c.id === linked.id);
+        if (idx >= 0) {
+          const next = [...list];
+          next[idx] = linked;
+          return next;
+        }
+        return [linked, ...list];
+      });
+      if (offline) {
+        await cachePersonalContacts(offline.db, offline.scopeBinding, [
+          linked,
+          ...((queryClient.getQueryData<PersonalContactDto[]>(["personal", "utang", "contacts"]) ?? []).filter(
+            (c) => c.id !== linked.id,
+          )),
+        ]);
+        setCacheEpoch((epoch) => epoch + 1);
+      }
       await queryClient.invalidateQueries({ queryKey: ["personal", "utang", "contacts"] });
+      await queryClient.invalidateQueries({ queryKey: ["personal", "utang", "lent"] });
+      await queryClient.invalidateQueries({ queryKey: ["personal", "utang", "borrowed"] });
       await queryClient.invalidateQueries({ queryKey: ["personal", "dashboard"] });
       await queryClient.invalidateQueries({ queryKey: ["personal", "notifications"] });
     },
@@ -775,51 +825,71 @@ export function PersonalContactsPage() {
 
               return (
                 <li key={contact.id}>
-                  <button
-                    type="button"
+                  <div
                     className={cn(
                       "exits-list__card utang-contact-card min-h-11 w-full",
                       isActive && "exits-list__card--editing",
                     )}
                     data-testid={`utang-contact-${contact.id}`}
-                    aria-pressed={isActive}
-                    aria-label={
-                      isLinked && exitsIdLabel
-                        ? `${t("personal.utang.editPerson")}: ${exitsIdLabel}, ${contact.displayName}`
-                        : `${t("personal.utang.editPerson")}: ${contact.displayName}`
-                    }
-                    disabled={saveMutation.isPending}
-                    onClick={() => startEdit(contact)}
                   >
-                    <span className="utang-contact-card__avatar" aria-hidden>
-                      {isLinked ? <UserRoundCheck className="size-5" /> : <User className="size-5" />}
-                    </span>
-                    <div className="utang-contact-card__body min-w-0 flex-1 text-left">
-                      {isLinked && exitsIdLabel ? (
-                        <>
-                          <p className="m-0 flex min-w-0 items-center gap-1.5 text-[length:var(--exits-text-sm)] font-semibold text-[var(--exits-primary)]">
-                            <Link2 className="size-3.5 shrink-0" aria-hidden />
-                            <span className="truncate">{exitsIdLabel}</span>
-                          </p>
-                          <p className="exits-list__name m-0 truncate font-medium">
-                            {contact.displayName}
-                          </p>
-                        </>
-                      ) : (
-                        <>
-                          <p className="exits-list__name m-0 truncate font-semibold">
-                            {contact.displayName}
-                          </p>
-                          <p className="m-0 truncate text-[length:var(--exits-text-sm)] text-muted">
-                            {[contact.phone, contact.email].filter(Boolean).join(" · ") ||
-                              t("personal.utang.unlinkedContact")}
-                          </p>
-                        </>
-                      )}
-                      <WaitingChip origin={rowOrigin(contact)} />
-                    </div>
-                    <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
-                  </button>
+                    <button
+                      type="button"
+                      className="utang-contact-card__main flex min-w-0 flex-1 items-center gap-2 border-0 bg-transparent p-0 text-left"
+                      aria-pressed={isActive}
+                      aria-label={
+                        isLinked && exitsIdLabel
+                          ? `${t("personal.utang.editPerson")}: ${exitsIdLabel}, ${contact.displayName}`
+                          : `${t("personal.utang.editPerson")}: ${contact.displayName}`
+                      }
+                      disabled={saveMutation.isPending}
+                      onClick={() => startEdit(contact)}
+                    >
+                      <span className="utang-contact-card__avatar" aria-hidden>
+                        {isLinked ? <UserRoundCheck className="size-5" /> : <User className="size-5" />}
+                      </span>
+                      <div className="utang-contact-card__body min-w-0 flex-1 text-left">
+                        {isLinked && exitsIdLabel ? (
+                          <>
+                            <p className="m-0 flex min-w-0 items-center gap-1.5 text-[length:var(--exits-text-sm)] font-semibold text-[var(--exits-primary)]">
+                              <Link2 className="size-3.5 shrink-0" aria-hidden />
+                              <span className="truncate">{exitsIdLabel}</span>
+                            </p>
+                            <p className="exits-list__name m-0 truncate font-medium">
+                              {contact.displayName}
+                            </p>
+                            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                              {t("personal.utang.linkedBadge")}
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="exits-list__name m-0 truncate font-semibold">
+                              {contact.displayName}
+                            </p>
+                            <p className="m-0 truncate text-[length:var(--exits-text-sm)] text-muted">
+                              {[contact.phone, contact.email].filter(Boolean).join(" · ") ||
+                                t("personal.utang.unlinkedContact")}
+                            </p>
+                          </>
+                        )}
+                        <WaitingChip origin={rowOrigin(contact)} />
+                      </div>
+                      <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
+                    </button>
+                    {!isLinked && online ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="min-h-11 w-full"
+                        data-testid={`utang-contact-link-${contact.id}`}
+                        disabled={saveMutation.isPending || exitsAddMutation.isPending}
+                        onClick={() => startLinkExisting(contact)}
+                      >
+                        <Link2 className="size-4 shrink-0" aria-hidden />
+                        {t("personal.utang.linkExitsId")}
+                      </Button>
+                    ) : null}
+                  </div>
                 </li>
               );
             })}

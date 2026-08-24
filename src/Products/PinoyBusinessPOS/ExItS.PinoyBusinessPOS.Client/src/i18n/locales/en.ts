@@ -449,6 +449,8 @@ export const en = {
   "personal.utang.peopleEmptyTitle": "No people yet",
   "personal.utang.peopleEmptyDetail": "Add someone even if they are not on ExItS yet.",
   "personal.utang.unlinkedContact": "Not linked to an ExItS account",
+  "personal.utang.linkedBadge": "Linked",
+  "personal.utang.linkExitsId": "Link ExItS ID",
   "personal.utang.lentLede": "Money other people owe you.",
   "personal.utang.oweLede": "Money you owe other people.",
   "personal.utang.person": "Person",

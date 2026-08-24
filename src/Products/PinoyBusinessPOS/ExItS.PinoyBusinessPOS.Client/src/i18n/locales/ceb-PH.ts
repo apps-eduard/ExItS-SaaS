@@ -463,6 +463,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.utang.peopleEmptyTitle": "Wala pay mga tawo",
   "personal.utang.peopleEmptyDetail": "Pagdugang bisan wala pa sila sa ExItS.",
   "personal.utang.unlinkedContact": "Wala pa na-link sa ExItS account",
+  "personal.utang.linkedBadge": "Linked",
+  "personal.utang.linkExitsId": "Link ExItS ID",
   "personal.utang.lentLede": "Kwarta nga utang sa imo sa uban.",
   "personal.utang.oweLede": "Kwarta nga imong utang sa uban.",
   "personal.utang.person": "Tawo",

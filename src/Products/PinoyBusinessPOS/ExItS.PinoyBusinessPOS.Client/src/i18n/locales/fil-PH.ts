@@ -459,6 +459,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.utang.peopleEmptyTitle": "Wala pang tao",
   "personal.utang.peopleEmptyDetail": "Magdagdag kahit hindi pa sila nasa ExItS.",
   "personal.utang.unlinkedContact": "Hindi naka-link sa ExItS account",
+  "personal.utang.linkedBadge": "Naka-link",
+  "personal.utang.linkExitsId": "I-link ang ExItS ID",
   "personal.utang.lentLede": "Perang utang sa iyo ng ibang tao.",
   "personal.utang.oweLede": "Perang utang mo sa ibang tao.",
   "personal.utang.person": "Tao",

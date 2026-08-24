@@ -467,6 +467,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.utang.peopleEmptyTitle": "Wala pa mga tawo",
   "personal.utang.peopleEmptyDetail": "Magdugang bisan wala pa sila sa ExItS.",
   "personal.utang.unlinkedContact": "Wala pa na-link sa ExItS account",
+  "personal.utang.linkedBadge": "Linked",
+  "personal.utang.linkExitsId": "Link ExItS ID",
   "personal.utang.lentLede": "Kuwarta nga utang sang iban sa imo.",
   "personal.utang.oweLede": "Kuwarta nga utang mo sa iban.",
   "personal.utang.person": "Tawo",

@@ -291,6 +291,7 @@ builder.Services.AddScoped<GetPersonalProfile>();
 builder.Services.AddScoped<GetPersonalAccountSettings>();
 builder.Services.AddScoped<UpdatePersonalAccountSettings>();
 builder.Services.AddScoped<CreatePersonalContact>();
+builder.Services.AddScoped<LinkPersonalContact>();
 builder.Services.AddScoped<UpdatePersonalContact>();
 builder.Services.AddScoped<ListPersonalContacts>();
 builder.Services.AddScoped<CreatePersonalDebtRelationship>();

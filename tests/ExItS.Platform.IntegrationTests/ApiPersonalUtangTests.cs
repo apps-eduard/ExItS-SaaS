@@ -377,10 +377,19 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
         var (ownerToken, _) = await SeedPersonalUserAsync("adlnk");
         var (targetToken, targetId, _) = await SeedPersonalUserWithEmailAsync("tgtlk");
 
-        // Resolve target public id via /me/public-identity as target, then owner creates linked contact.
+        // Same resolve path React People uses before POST /contacts.
         using var identityRequest = Authed(HttpMethod.Get, "/api/v1/me/public-identity", targetToken);
         var identity = await contactResponse(await _client.SendAsync(identityRequest));
         var publicUserId = identity.GetProperty("publicUserId").GetString()!;
+
+        using var resolveRequest = Authed(
+            HttpMethod.Post,
+            "/api/v1/users/resolve-public-id",
+            ownerToken,
+            new { publicUserIdOrQrPayload = publicUserId, purpose = "utang-people" });
+        var resolved = await contactResponse(await _client.SendAsync(resolveRequest));
+        Assert.Equal(targetId, resolved.GetProperty("userIdentityId").GetGuid());
+        Assert.Equal(publicUserId, resolved.GetProperty("publicUserId").GetString());
 
         using var createRequest = Authed(
             HttpMethod.Post,
@@ -389,8 +398,8 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
             new
             {
                 displayName = "Should Be Overridden",
-                linkedUserIdentityId = targetId,
-                publicUserId
+                linkedUserIdentityId = resolved.GetProperty("userIdentityId").GetGuid(),
+                publicUserId = resolved.GetProperty("publicUserId").GetString()
             });
         var created = await contactResponse(await _client.SendAsync(createRequest));
         Assert.Equal(targetId, created.GetProperty("linkedUserIdentityId").GetGuid());
@@ -528,6 +537,197 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(ApplicationErrorCodes.PersonalContactEmailConflict, body.GetProperty("errorCode").GetString());
+    }
+
+    [Fact]
+    public async Task Create_relationship_with_linked_contact_canonicalizes_to_shared_user_participants()
+    {
+        var (ownerToken, ownerId) = await SeedPersonalUserAsync("canA");
+        var (targetToken, targetId, _) = await SeedPersonalUserWithEmailAsync("canB");
+
+        using var identityRequest = Authed(HttpMethod.Get, "/api/v1/me/public-identity", targetToken);
+        var publicUserId = (await contactResponse(await _client.SendAsync(identityRequest)))
+            .GetProperty("publicUserId").GetString()!;
+
+        using var createContact = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/contacts",
+            ownerToken,
+            new { displayName = "Linked B", linkedUserIdentityId = targetId, publicUserId });
+        var contactId = (await contactResponse(await _client.SendAsync(createContact)))
+            .GetProperty("id").GetGuid();
+
+        using var createRel = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/relationships",
+            ownerToken,
+            new
+            {
+                creditorUserIdentityId = ownerId,
+                debtorContactId = contactId,
+                initialLoanAmount = 1000m
+            });
+        var rel = await contactResponse(await _client.SendAsync(createRel));
+        Assert.True(rel.GetProperty("isSharedLedger").GetBoolean());
+        Assert.Equal(ownerId, rel.GetProperty("creditorUserIdentityId").GetGuid());
+        Assert.Equal(targetId, rel.GetProperty("debtorUserIdentityId").GetGuid());
+        Assert.True(rel.TryGetProperty("debtorContactId", out var debtorContact)
+            && debtorContact.ValueKind is JsonValueKind.Null);
+        Assert.Equal(0m, rel.GetProperty("currentBalance").GetDecimal());
+
+        var relationshipId = rel.GetProperty("id").GetGuid();
+        using var historyAsTarget = Authed(
+            HttpMethod.Get,
+            $"/api/v1/personal/utang/relationships/{relationshipId}/history",
+            targetToken);
+        var history = await contactResponse(await _client.SendAsync(historyAsTarget));
+        Assert.Contains(
+            history.EnumerateArray(),
+            e => e.GetProperty("status").GetString() == "Pending"
+                 && e.GetProperty("amount").GetDecimal() == 1000m);
+    }
+
+    [Fact]
+    public async Task I_borrowed_linked_contact_canonicalizes_creditor_to_linked_user()
+    {
+        var (ownerToken, ownerId) = await SeedPersonalUserAsync("borA");
+        var (targetToken, targetId, _) = await SeedPersonalUserWithEmailAsync("borB");
+
+        using var identityRequest = Authed(HttpMethod.Get, "/api/v1/me/public-identity", targetToken);
+        var publicUserId = (await contactResponse(await _client.SendAsync(identityRequest)))
+            .GetProperty("publicUserId").GetString()!;
+
+        using var createContact = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/contacts",
+            ownerToken,
+            new { displayName = "Creditor B", linkedUserIdentityId = targetId, publicUserId });
+        var contactId = (await contactResponse(await _client.SendAsync(createContact)))
+            .GetProperty("id").GetGuid();
+
+        using var createRel = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/relationships",
+            ownerToken,
+            new
+            {
+                creditorContactId = contactId,
+                debtorUserIdentityId = ownerId,
+                initialLoanAmount = 600m
+            });
+        var rel = await contactResponse(await _client.SendAsync(createRel));
+        Assert.True(rel.GetProperty("isSharedLedger").GetBoolean());
+        Assert.Equal(targetId, rel.GetProperty("creditorUserIdentityId").GetGuid());
+        Assert.Equal(ownerId, rel.GetProperty("debtorUserIdentityId").GetGuid());
+    }
+
+    [Fact]
+    public async Task Link_existing_orphan_contact_promotes_private_relationship()
+    {
+        var (ownerToken, ownerId) = await SeedPersonalUserAsync("prmA");
+        var (targetToken, targetId, _) = await SeedPersonalUserWithEmailAsync("prmB");
+
+        using var orphanRequest = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/contacts",
+            ownerToken,
+            new { displayName = "Orphan B" });
+        var orphan = await contactResponse(await _client.SendAsync(orphanRequest));
+        var contactId = orphan.GetProperty("id").GetGuid();
+        Assert.True(orphan.TryGetProperty("linkedUserIdentityId", out var linkedBefore)
+            && linkedBefore.ValueKind is JsonValueKind.Null);
+
+        using var createRel = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/relationships",
+            ownerToken,
+            new
+            {
+                creditorUserIdentityId = ownerId,
+                debtorContactId = contactId,
+                initialLoanAmount = 2000m
+            });
+        var relBefore = await contactResponse(await _client.SendAsync(createRel));
+        var relationshipId = relBefore.GetProperty("id").GetGuid();
+        Assert.False(relBefore.GetProperty("isSharedLedger").GetBoolean());
+        Assert.Equal(2000m, relBefore.GetProperty("currentBalance").GetDecimal());
+
+        using var payRequest = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/utang/relationships/{relationshipId}/entries",
+            ownerToken,
+            new { entryType = "Payment", amount = 500m, expectedVersion = relBefore.GetProperty("version").GetInt32() });
+        (await _client.SendAsync(payRequest)).EnsureSuccessStatusCode();
+
+        using var balBefore = Authed(
+            HttpMethod.Get,
+            $"/api/v1/personal/utang/relationships/{relationshipId}/balance",
+            ownerToken);
+        Assert.Equal(1500m, (await contactResponse(await _client.SendAsync(balBefore)))
+            .GetProperty("currentBalance").GetDecimal());
+
+        using var identityRequest = Authed(HttpMethod.Get, "/api/v1/me/public-identity", targetToken);
+        var publicUserId = (await contactResponse(await _client.SendAsync(identityRequest)))
+            .GetProperty("publicUserId").GetString()!;
+
+        using var linkRequest = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/utang/contacts/{contactId}/link",
+            ownerToken,
+            new { linkedUserIdentityId = targetId, publicUserId });
+        var linked = await contactResponse(await _client.SendAsync(linkRequest));
+        Assert.Equal(contactId, linked.GetProperty("id").GetGuid());
+        Assert.Equal(targetId, linked.GetProperty("linkedUserIdentityId").GetGuid());
+        Assert.Equal(publicUserId, linked.GetProperty("publicUserId").GetString());
+
+        using var listRequest = Authed(HttpMethod.Get, "/api/v1/personal/utang/contacts", ownerToken);
+        var list = await contactResponse(await _client.SendAsync(listRequest));
+        Assert.Equal(1, list.GetArrayLength());
+
+        using var relAfterRequest = Authed(
+            HttpMethod.Get,
+            $"/api/v1/personal/utang/relationships/{relationshipId}",
+            ownerToken);
+        var relAfter = await contactResponse(await _client.SendAsync(relAfterRequest));
+        Assert.Equal(relationshipId, relAfter.GetProperty("id").GetGuid());
+        Assert.True(relAfter.GetProperty("isSharedLedger").GetBoolean());
+        Assert.Equal(targetId, relAfter.GetProperty("debtorUserIdentityId").GetGuid());
+        Assert.Equal(1500m, relAfter.GetProperty("currentBalance").GetDecimal());
+
+        using var newLoan = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/utang/relationships/{relationshipId}/entries",
+            ownerToken,
+            new { entryType = "Loan", amount = 400m, expectedVersion = relAfter.GetProperty("version").GetInt32() });
+        var pending = await contactResponse(await _client.SendAsync(newLoan));
+        Assert.Equal("Pending", pending.GetProperty("status").GetString());
+
+        using var balPending = Authed(
+            HttpMethod.Get,
+            $"/api/v1/personal/utang/relationships/{relationshipId}/balance",
+            ownerToken);
+        Assert.Equal(1500m, (await contactResponse(await _client.SendAsync(balPending)))
+            .GetProperty("currentBalance").GetDecimal());
+
+        using var relForTarget = Authed(
+            HttpMethod.Get,
+            $"/api/v1/personal/utang/relationships/{relationshipId}",
+            targetToken);
+        var targetVersion = (await contactResponse(await _client.SendAsync(relForTarget)))
+            .GetProperty("version").GetInt32();
+        using var confirmOk = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/utang/relationships/{relationshipId}/entries/{pending.GetProperty("id").GetGuid()}/confirm",
+            targetToken,
+            new { expectedVersion = targetVersion });
+        (await _client.SendAsync(confirmOk)).EnsureSuccessStatusCode();
+
+        using var balFinal = Authed(
+            HttpMethod.Get,
+            $"/api/v1/personal/utang/relationships/{relationshipId}/balance",
+            ownerToken);
+        Assert.Equal(1900m, (await contactResponse(await _client.SendAsync(balFinal)))
+            .GetProperty("currentBalance").GetDecimal());
     }
 
     private static async Task<JsonElement> contactResponse(HttpResponseMessage response)

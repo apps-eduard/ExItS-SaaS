@@ -465,6 +465,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.utang.peopleEmptyTitle": "Awan pay ti tao",
   "personal.utang.peopleEmptyDetail": "Agnayon uray saanda pay a nakaidulin iti ExItS.",
   "personal.utang.unlinkedContact": "Saan pay a naka-link iti ExItS account",
+  "personal.utang.linkedBadge": "Linked",
+  "personal.utang.linkExitsId": "Link ExItS ID",
   "personal.utang.lentLede": "Kuarta a utang dagiti dadduma kenka.",
   "personal.utang.oweLede": "Kuarta a utangmo kadagiti dadduma.",
   "personal.utang.person": "Tao",
