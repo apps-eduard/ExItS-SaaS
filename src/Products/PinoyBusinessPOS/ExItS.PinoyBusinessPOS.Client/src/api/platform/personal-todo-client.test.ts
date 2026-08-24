@@ -4,7 +4,9 @@ import {
   filterTodosByTab,
   isTodoConcurrencyConflict,
   listPersonalTodos,
+  parseTodoAgendaTab,
   summarizeTodoCounts,
+  todoAgendaTabHref,
   type PersonalTodoDto,
 } from "@/api/platform/personal-todo-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
@@ -130,5 +132,19 @@ describe("personal-todo-client", () => {
       completed: 1,
       cancelled: 1,
     });
+  });
+});
+
+describe("todo agenda tab routing", () => {
+  it("parses known tabs and defaults to today", () => {
+    expect(parseTodoAgendaTab("upcoming")).toBe("upcoming");
+    expect(parseTodoAgendaTab("overdue")).toBe("overdue");
+    expect(parseTodoAgendaTab(null)).toBe("today");
+    expect(parseTodoAgendaTab("invalid")).toBe("today");
+  });
+
+  it("builds todo hub hrefs", () => {
+    expect(todoAgendaTabHref("today")).toBe("/personal/todo?tab=today");
+    expect(todoAgendaTabHref("upcoming")).toBe("/personal/todo?tab=upcoming");
   });
 });

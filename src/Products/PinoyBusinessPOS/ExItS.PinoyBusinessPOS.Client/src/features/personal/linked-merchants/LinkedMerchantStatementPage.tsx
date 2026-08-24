@@ -13,15 +13,17 @@ import {
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
-import { ErrorState } from "@/components/exits/ErrorState";
-import { LoadingState } from "@/components/exits/LoadingState";
+import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
 import { CommerceLoadMore } from "@/features/customer-ordering/personal-commerce-ui";
+import { useLinkedMerchantShopContext } from "@/features/customer-ordering/useLinkedMerchantShopContext";
 import {
   formatLinkedCustomerActivityAmount,
   formatLinkedCustomerActivityMeta,
 } from "@/features/personal/linked-merchants/format-linked-customer-activity";
+import { MerchantStatementStatusPanel } from "@/features/personal/linked-merchants/MerchantStatementStatusPanel";
 import { cn } from "@/lib/cn";
 import { useI18n } from "@/i18n/I18nProvider";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
@@ -121,8 +123,47 @@ export function LinkedMerchantStatementPage() {
   const [busyRecent, setBusyRecent] = useState(false);
   const [busyOlder, setBusyOlder] = useState(false);
 
+  const merchantContextQuery = useLinkedMerchantShopContext(organizationId, Boolean(organizationId));
+  const shopTo = organizationId ? `/personal/linked-merchants/${organizationId}/shop` : null;
+  const storeName =
+    merchantContextQuery.data?.organizationDisplayName ?? t("personal.merchantStatement.title");
+  const relationshipLabel = merchantContextQuery.data?.customerDisplayName ?? null;
+
   const pageShell =
     "personal-page personal-commerce-page linked-merchant-statement-page exits-page flex min-w-0 flex-col gap-3";
+
+  function statementPageHeader(title?: string) {
+    return (
+      <PageHeader
+        title={title ?? storeName}
+        description={t("personal.merchantStatement.lede")}
+        backTo={personalPageBackNav.merchants.to}
+        backLabel={t(personalPageBackNav.merchants.labelKey)}
+        backTestId="page-header-back-merchant-statement"
+      />
+    );
+  }
+
+  function statementStatusShell(
+    variant: "notFound" | "forbidden" | "error" | "offline",
+    detail?: string,
+    options?: { onRetry?: () => void; includeShop?: boolean },
+  ) {
+    return (
+      <div className={pageShell} data-testid="linked-merchant-statement-page">
+        {statementPageHeader()}
+        <PersonalCommerceNav active="stores" />
+        <MerchantStatementStatusPanel
+          variant={variant}
+          storeName={storeName}
+          relationshipLabel={relationshipLabel}
+          detail={detail}
+          onRetry={options?.onRetry}
+          shopTo={options?.includeShop === false ? null : shopTo}
+        />
+      </div>
+    );
+  }
 
   const loadInitial = useCallback(async () => {
     if (!organizationId || !businessCustomerId) {
@@ -282,75 +323,39 @@ export function LinkedMerchantStatementPage() {
   }
 
   if (state.kind === "loading") {
-    return <LoadingState label={t("loading.label")} />;
+    return (
+      <div className={pageShell} data-testid="linked-merchant-statement-page">
+        {statementPageHeader()}
+        <PersonalCommerceNav active="stores" />
+        <LoadingSkeleton label={t("loading.label")} />
+      </div>
+    );
   }
 
   if (state.kind === "offline") {
-    return (
-      <div className={pageShell} data-testid="linked-merchant-statement-page">
-        <PageHeader
-          title={t("personal.merchantStatement.title")}
-          backTo={personalPageBackNav.merchants.to}
-          backLabel={t(personalPageBackNav.merchants.labelKey)}
-          backTestId="page-header-back-merchant-statement"
-        />
-        <ErrorState
-          title={t("offline.internetRequiredTitle")}
-          detail={t("offline.requiredHistory")}
-        />
-        <Button type="button" className="min-h-11 w-fit" onClick={() => void loadInitial()}>
-          {t("orders.retry")}
-        </Button>
-      </div>
-    );
+    return statementStatusShell("offline", undefined, { onRetry: () => void loadInitial() });
   }
 
   if (state.kind === "forbidden") {
-    return (
-      <ErrorState
-        title={t("personal.merchantStatement.deniedTitle")}
-        detail={state.detail || t("personal.merchantStatement.denied")}
-      />
-    );
+    return statementStatusShell("forbidden", state.detail, { includeShop: false });
   }
 
   if (state.kind === "notFound") {
-    return (
-      <ErrorState
-        title={t("personal.merchantStatement.missingTitle")}
-        detail={state.detail || t("personal.merchantStatement.missing")}
-      />
-    );
+    return statementStatusShell("notFound", state.detail, { onRetry: () => void loadInitial() });
   }
 
   if (state.kind === "error") {
-    return (
-      <div className={pageShell} data-testid="linked-merchant-statement-page">
-        <PageHeader
-          title={t("personal.merchantStatement.title")}
-          backTo={personalPageBackNav.merchants.to}
-          backLabel={t(personalPageBackNav.merchants.labelKey)}
-          backTestId="page-header-back-merchant-statement"
-        />
-        <ErrorState title={t("personal.merchantStatement.errorTitle")} detail={state.detail} />
-        <Button type="button" className="min-h-11 w-fit" onClick={() => void loadInitial()}>
-          {t("orders.retry")}
-        </Button>
-      </div>
-    );
+    return statementStatusShell("error", state.detail, { onRetry: () => void loadInitial() });
   }
 
   const { summary, openDebt, openDebtHasMore, recent, recentHasMore } = state;
+  const hasNoActivity =
+    summary.outstandingBalance <= 0 && openDebt.length === 0 && recent.length === 0;
 
   return (
     <div className={pageShell} data-testid="linked-merchant-statement-page">
-      <PageHeader
-        title={summary.merchantDisplayName ?? t("personal.merchantStatement.title")}
-        description={t("personal.merchantStatement.lede")}
-        backTo={personalPageBackNav.merchants.to}
-        backLabel={t(personalPageBackNav.merchants.labelKey)}
-        backTestId="page-header-back-merchant-statement"
-      />
+      {statementPageHeader(summary.merchantDisplayName ?? undefined)}
+      <PersonalCommerceNav active="stores" />
 
       <section className="pc-balance-hero exits-animate-panel" data-testid="linked-merchant-outstanding">
         <p className="pc-balance-hero__label">{t("personal.merchantStatement.outstandingLabel")}</p>
@@ -365,6 +370,15 @@ export function LinkedMerchantStatementPage() {
         ) : null}
       </section>
 
+      {hasNoActivity ? (
+        <MerchantStatementStatusPanel
+          variant="empty"
+          storeName={summary.merchantDisplayName ?? storeName}
+          relationshipLabel={summary.customerDisplayName}
+          shopTo={shopTo}
+        />
+      ) : (
+        <>
       {summary.outstandingBalance > 0 ? (
         <section className="flex flex-col gap-3 exits-animate-panel">
           <h2 className="pc-section-heading">{t("personal.merchantStatement.openDebtSection")}</h2>
@@ -483,6 +497,8 @@ export function LinkedMerchantStatementPage() {
           </>
         )}
       </section>
+        </>
+      )}
     </div>
   );
 }

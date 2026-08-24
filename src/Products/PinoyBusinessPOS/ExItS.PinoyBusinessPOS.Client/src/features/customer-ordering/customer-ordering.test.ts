@@ -19,7 +19,10 @@ import {
   filterSellerOrdersClientSide,
 } from "@/features/customer-ordering/seller-order-actions";
 import type { CustomerOrderDto } from "@/api/pos/pos-customer-orders-client";
-import { isInsufficientStockError } from "@/api/pos/pos-customer-orders-client";
+import {
+  isCustomerOrderingUnavailable,
+  isInsufficientStockError,
+} from "@/api/pos/pos-customer-orders-client";
 import { PosApiError } from "@/api/pos/pos-http";
 
 const product = {
@@ -175,5 +178,21 @@ describe("stock conflict detection", () => {
       ),
     ).toBe(true);
     expect(isInsufficientStockError(new PosApiError(400, { errorCode: "other" }))).toBe(false);
+  });
+});
+
+describe("ordering unavailable detection", () => {
+  it("detects customer ordering unavailable PosApiError", () => {
+    expect(
+      isCustomerOrderingUnavailable(
+        new PosApiError(403, {
+          errorCode: "pos.customer_order.ordering.unavailable",
+          detail: "This merchant is not accepting customer orders.",
+        }),
+      ),
+    ).toBe(true);
+    expect(isCustomerOrderingUnavailable(new PosApiError(400, { errorCode: "other" }))).toBe(
+      false,
+    );
   });
 });

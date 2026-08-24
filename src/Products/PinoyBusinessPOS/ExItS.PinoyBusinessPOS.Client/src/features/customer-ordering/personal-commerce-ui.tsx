@@ -1,7 +1,43 @@
 import type { ReactNode } from "react";
 import { Loader2, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
+
+export function MerchantOrderingBadge({
+  available,
+  pending = false,
+}: {
+  available: boolean;
+  pending?: boolean;
+}) {
+  const { t } = useI18n();
+
+  if (pending) {
+    return (
+      <span
+        className="pc-store-card__ordering pc-store-card__ordering--pending"
+        aria-busy="true"
+        aria-label={t("loading.label")}
+      >
+        <Loader2 className="pc-store-card__ordering-spinner size-3.5 shrink-0" aria-hidden />
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={
+        available
+          ? "pc-store-card__ordering pc-store-card__ordering--available"
+          : "pc-store-card__ordering pc-store-card__ordering--unavailable"
+      }
+    >
+      <span className="pc-store-card__ordering-dot" aria-hidden />
+      {available ? t("personal.orderingAvailable") : t("personal.orderingUnavailable")}
+    </span>
+  );
+}
 
 export function storeDisplayInitial(name: string): string {
   const trimmed = name.trim();

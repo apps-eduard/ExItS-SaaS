@@ -2,8 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
   AlertCircle,
+  CalendarClock,
   CircleDot,
   HandCoins,
+  Home,
   ListPlus,
   ListTodo,
   RefreshCw,
@@ -11,7 +13,11 @@ import {
   Wallet,
 } from "lucide-react";
 import { getPersonalDashboard } from "@/api/platform/personal-dashboard-client";
-import { listPersonalTodos, summarizeTodoCounts } from "@/api/platform/personal-todo-client";
+import {
+  listPersonalTodos,
+  summarizeTodoCounts,
+  todoAgendaTabHref,
+} from "@/api/platform/personal-todo-client";
 import { Button } from "@/components/ui/button";
 import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
@@ -73,7 +79,11 @@ export function PersonalHomePage() {
       className="personal-page exits-page flex min-w-0 flex-col gap-3"
       data-testid="personal-home-page"
     >
-      <PageHeader title={t("personal.title")} description={t("personal.lede")} />
+      <PageHeader
+        title={t("personal.title")}
+        titleIcon={Home}
+        description={t("personal.lede")}
+      />
 
       <section
         className="catalog-form-section exits-animate-panel personal-section gap-3"
@@ -81,12 +91,13 @@ export function PersonalHomePage() {
         data-testid="personal-utang-summary"
       >
         <h2 className="catalog-form-section__title text-muted">{t("personal.home.utangSummary")}</h2>
-        <div className="personal-summary-grid" role="list">
+        <div className="personal-summary-grid personal-summary-grid--utang" role="list">
           <DashboardMetricCard
             label={t("personal.home.owedToMe")}
             icon={HandCoins}
             tone="emphasis"
             testId="personal-stat-lent"
+            to="/personal/utang/lent"
           >
             <MoneyDisplay amount={dashboard.totalLentBalance} />
           </DashboardMetricCard>
@@ -95,6 +106,7 @@ export function PersonalHomePage() {
             icon={Wallet}
             tone={dashboard.totalBorrowedBalance > 0 ? "attention" : "default"}
             testId="personal-stat-borrowed"
+            to="/personal/utang/owe"
           >
             <MoneyDisplay amount={dashboard.totalBorrowedBalance} />
           </DashboardMetricCard>
@@ -102,6 +114,7 @@ export function PersonalHomePage() {
             label={t("personal.home.people")}
             icon={UserPlus}
             testId="personal-stat-people"
+            to="/personal/utang/people"
           >
             {dashboard.contactCount}
           </DashboardMetricCard>
@@ -109,6 +122,7 @@ export function PersonalHomePage() {
             label={t("personal.home.active")}
             icon={Activity}
             testId="personal-stat-active"
+            to="/personal/utang"
           >
             {dashboard.activeRelationshipCount}
           </DashboardMetricCard>
@@ -150,7 +164,7 @@ export function PersonalHomePage() {
               label: t("personal.home.actionTodo"),
               icon: ListTodo,
               testId: "personal-qa-todo",
-              to: "/personal/todo",
+              to: "/personal/todo?add=1",
             },
           ]}
         />
@@ -167,7 +181,10 @@ export function PersonalHomePage() {
         aria-label={t("personal.home.todoSummary")}
         data-testid="personal-todo-summary"
       >
-        <h2 className="catalog-form-section__title text-muted">{t("personal.home.todoSummary")}</h2>
+        <h2 className="catalog-form-section__title personal-todo-create-form__title text-muted">
+          <ListTodo className="personal-todo-create-form__title-icon size-[1.1rem] shrink-0" aria-hidden />
+          {t("personal.home.todoSummary")}
+        </h2>
         {todosQuery.isPending ? (
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("personal.todo.loading")}
@@ -176,36 +193,54 @@ export function PersonalHomePage() {
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("personal.home.todoUnavailable")}
           </p>
-        ) : counts && counts.open === 0 && counts.completed === 0 ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("personal.home.todoEmpty")}
-          </p>
         ) : counts ? (
-          <div className="personal-summary-grid personal-summary-grid--todo" data-testid="personal-todo-counts">
-            <DashboardMetricCard
-              label={t("personal.todo.countToday")}
-              icon={ListTodo}
-              tone="emphasis"
-              testId="personal-todo-stat-today"
+          <>
+            <div
+              className="personal-summary-grid personal-summary-grid--todo"
+              data-testid="personal-todo-counts"
+              role="list"
             >
-              {counts.today}
-            </DashboardMetricCard>
-            <DashboardMetricCard
-              label={t("personal.todo.countOverdue")}
-              icon={AlertCircle}
-              tone={counts.overdue > 0 ? "attention" : "default"}
-              testId="personal-todo-stat-overdue"
-            >
-              {counts.overdue}
-            </DashboardMetricCard>
-            <DashboardMetricCard
-              label={t("personal.todo.countOpen")}
-              icon={CircleDot}
-              testId="personal-todo-stat-open"
-            >
-              {counts.open}
-            </DashboardMetricCard>
-          </div>
+              <DashboardMetricCard
+                label={t("personal.todo.countToday")}
+                icon={ListTodo}
+                tone="emphasis"
+                testId="personal-todo-stat-today"
+                to={todoAgendaTabHref("today")}
+              >
+                {counts.today}
+              </DashboardMetricCard>
+              <DashboardMetricCard
+                label={t("personal.todo.countUpcoming")}
+                icon={CalendarClock}
+                testId="personal-todo-stat-upcoming"
+                to={todoAgendaTabHref("upcoming")}
+              >
+                {counts.upcoming}
+              </DashboardMetricCard>
+              <DashboardMetricCard
+                label={t("personal.todo.countOverdue")}
+                icon={AlertCircle}
+                tone={counts.overdue > 0 ? "attention" : "default"}
+                testId="personal-todo-stat-overdue"
+                to={todoAgendaTabHref("overdue")}
+              >
+                {counts.overdue}
+              </DashboardMetricCard>
+              <DashboardMetricCard
+                label={t("personal.todo.countOpen")}
+                icon={CircleDot}
+                testId="personal-todo-stat-open"
+                to={todoAgendaTabHref("open")}
+              >
+                {counts.open}
+              </DashboardMetricCard>
+            </div>
+            {counts.open === 0 && counts.completed === 0 ? (
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("personal.home.todoEmpty")}
+              </p>
+            ) : null}
+          </>
         ) : null}
         <ExitsChipBar
           variant="actions"
@@ -216,7 +251,7 @@ export function PersonalHomePage() {
               key: "add",
               label: t("personal.home.actionTodo"),
               icon: <ListPlus />,
-              href: "/personal/todo",
+              href: "/personal/todo?add=1",
               testId: "personal-todo-add",
               emphasis: "primary",
             },

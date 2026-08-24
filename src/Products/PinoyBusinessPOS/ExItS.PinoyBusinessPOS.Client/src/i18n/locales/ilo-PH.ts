@@ -684,6 +684,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.todo.noDue": "Awan deadline",
   "personal.todo.dueLabel": "Deadline",
   "personal.todo.countToday": "Ita",
+  "personal.todo.countUpcoming": "Umadani",
   "personal.todo.countOverdue": "Nalabesen",
   "personal.todo.countOpen": "Nalukat",
   "personal.more.title": "Ad-adu pay",
@@ -2307,8 +2308,18 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.merchantStatement.loadFailed": "Saan a ma-load ti merchant activity. Padasen manen.",
   "personal.merchantStatement.deniedTitle": "Awan ti access",
   "personal.merchantStatement.denied": "Saan a mautorizado a kitaen ti activity daytoy a store.",
-  "personal.merchantStatement.missingTitle": "Saan a nabirukan",
-  "personal.merchantStatement.missing": "Saan a nabirukan daytoy a linked store activity.",
+  "personal.merchantStatement.missingTitle": "Saan a magun-od ti purchase history",
+  "personal.merchantStatement.missing":
+    "Saan pay a ma-load dagiti gatang para iti store link ditoy.",
+  "personal.merchantStatement.missingHint":
+    "Mabalin a pasardengen pay ti tindahan ti customer link mo, wenno awan pay na-record a sale. Padasen manen inton agangay.",
+  "personal.merchantStatement.deniedHint":
+    "Ti naka-link a Personal account laeng ti maka-kita iti purchase history daytoy a store.",
+  "personal.merchantStatement.noActivityTitle": "Awan pay dagiti gatang",
+  "personal.merchantStatement.noActivityDetail":
+    "Dagiti sale, resibo, ken Utang activity manipud iti store ket agparang ditoy inton na-recorden.",
+  "personal.merchantStatement.noActivityHint":
+    "Ag-gatang iti daytoy a store wenno agsubli inton adda in-store purchase mo.",
   "personal.merchantReceipt.backToStatement": "Agsubli iti aktibidad",
   "personal.merchantReceipt.lede": "Dagiti sale line manipud iti merchant ledger (read-only).",
   "personal.merchantReceipt.linesSection": "Dagiti linya",
@@ -2327,6 +2338,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.orderingUnavailable": "Saan a mabalin nga ag-order",
   "personal.orderingUnavailableDetail":
     "Saan nga awaten daytoy a store ti online customer orders ita.",
+  "personal.orderingUnavailableHint":
+    "Agawidka manen, wenno kitaen ti purchase history mo iti daytoy a store.",
   "personal.myOrdersLink": "Dagiti orderko",
   "personal.myOrdersTitle": "Dagiti orderko",
   "personal.myOrdersLede": "Dagiti pickup ken delivery order a naiyulogmo kadagiti naka-konekta a tendaan.",

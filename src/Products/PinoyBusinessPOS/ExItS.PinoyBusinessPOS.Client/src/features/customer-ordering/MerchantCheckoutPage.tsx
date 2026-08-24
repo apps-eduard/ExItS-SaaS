@@ -7,6 +7,7 @@ import { PosApiError } from "@/api/pos/pos-http";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import {
   getCustomerStorefront,
+  isCustomerOrderingUnavailable,
   isInsufficientStockError,
   placeCustomerOrder,
   quoteCustomerDelivery,
@@ -19,6 +20,8 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { usePersonalMerchantCart } from "@/features/customer-ordering/PersonalMerchantCartProvider";
+import { OrderingUnavailablePanel } from "@/features/customer-ordering/OrderingUnavailablePanel";
+import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
 import {
   CheckoutPlaceButton,
   SegmentedOption,
@@ -30,6 +33,7 @@ import {
   PAYMENT_METHOD_CODES,
   resolveFulfillmentSelection,
 } from "@/features/customer-ordering/personal-merchant-cart";
+import { useLinkedMerchantShopContext } from "@/features/customer-ordering/useLinkedMerchantShopContext";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { useSession } from "@/session/SessionProvider";
@@ -87,7 +91,21 @@ export function MerchantCheckoutPage() {
     enabled: Boolean(workspace) && tokenReady && online,
     queryFn: ({ signal }) =>
       getCustomerStorefront(workspace!, organizationId, { pageSize: 1 }, signal),
+    meta: { suppressGlobalError: true, operation: "load checkout storefront" },
   });
+
+  const checkoutOrderingUnavailable =
+    storefrontQuery.isError && isCustomerOrderingUnavailable(storefrontQuery.error);
+
+  const merchantContextQuery = useLinkedMerchantShopContext(
+    organizationId,
+    checkoutOrderingUnavailable,
+  );
+
+  const checkoutStoreName =
+    storefrontQuery.data?.organizationDisplayName ??
+    merchantContextQuery.data?.organizationDisplayName ??
+    t("personal.shopLink");
 
   const selection = useMemo(() => {
     if (!storefrontQuery.data) {
@@ -265,6 +283,32 @@ export function MerchantCheckoutPage() {
           backTestId="page-header-back-checkout"
         />
         <EmptyState title={t("orders.cartEmptyTitle")} detail={t("orders.cartEmptyDetail")} />
+      </div>
+    );
+  }
+
+  if (checkoutOrderingUnavailable) {
+    return (
+      <div className={pageShell} data-testid="checkout-ordering-unavailable">
+        <PageHeader
+          title={t("orders.checkoutTitle")}
+          description={checkoutStoreName}
+          backTo={
+            organizationId
+              ? `/personal/linked-merchants/${organizationId}/shop`
+              : personalPageBackNav.merchants.to
+          }
+          backLabel={
+            organizationId ? t("orders.backToShop") : t(personalPageBackNav.merchants.labelKey)
+          }
+          backTestId="page-header-back-checkout"
+        />
+        <PersonalCommerceNav active="stores" />
+        <OrderingUnavailablePanel
+          storeName={checkoutStoreName}
+          relationshipLabel={merchantContextQuery.data?.customerDisplayName}
+          statementTo={merchantContextQuery.data?.statementTo}
+        />
       </div>
     );
   }

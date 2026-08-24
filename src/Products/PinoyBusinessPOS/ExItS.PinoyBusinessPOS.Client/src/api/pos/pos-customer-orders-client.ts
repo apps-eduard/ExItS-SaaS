@@ -454,6 +454,30 @@ export async function getCustomerStorefront(
   return customerStorefrontSchema.parse(raw);
 }
 
+/** POS-authoritative ordering capability for a linked merchant (lightweight storefront probe). */
+export async function probeSellerCustomerOrderingCapability(
+  sellerOrganizationId: string,
+  signal?: AbortSignal,
+): Promise<{ canCustomerOrder: boolean; canCustomerDelivery: boolean }> {
+  try {
+    const storefront = await getCustomerStorefront(
+      sellerWorkspace(sellerOrganizationId),
+      sellerOrganizationId,
+      { page: 1, pageSize: 1 },
+      signal,
+    );
+    return {
+      canCustomerOrder: storefront.canCustomerOrder,
+      canCustomerDelivery: storefront.canCustomerDelivery,
+    };
+  } catch (error) {
+    if (isCustomerOrderingUnavailable(error)) {
+      return { canCustomerOrder: false, canCustomerDelivery: false };
+    }
+    throw error;
+  }
+}
+
 export async function quoteCustomerDelivery(
   workspace: PosWorkspaceScope,
   sellerOrganizationId: string,
@@ -507,6 +531,7 @@ export async function cancelMyCustomerOrder(
 }
 
 export const INSUFFICIENT_STOCK_ERROR = "pos.inventory.insufficient_stock";
+export const CUSTOMER_ORDER_ORDERING_UNAVAILABLE = "pos.customer_order.ordering.unavailable";
 
 export function isInsufficientStockError(error: unknown): boolean {
   if (!error || typeof error !== "object") {
@@ -523,4 +548,21 @@ export function isInsufficientStockError(error: unknown): boolean {
         ? (error.problem as { errorCode: string }).errorCode
         : undefined;
   return code === INSUFFICIENT_STOCK_ERROR;
+}
+
+export function isCustomerOrderingUnavailable(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+  const code =
+    "errorCode" in error && typeof error.errorCode === "string"
+      ? error.errorCode
+      : "problem" in error &&
+          error.problem &&
+          typeof error.problem === "object" &&
+          "errorCode" in error.problem &&
+          typeof (error.problem as { errorCode?: unknown }).errorCode === "string"
+        ? (error.problem as { errorCode: string }).errorCode
+        : undefined;
+  return code === CUSTOMER_ORDER_ORDERING_UNAVAILABLE;
 }

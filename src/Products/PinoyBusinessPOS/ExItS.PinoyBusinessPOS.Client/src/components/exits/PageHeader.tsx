@@ -1,4 +1,5 @@
 import { useId, useState, type ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
 import { ArrowLeft, Info } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/cn";
@@ -6,6 +7,8 @@ import { useI18n } from "@/i18n/I18nProvider";
 
 export type PageHeaderProps = {
   title: string;
+  /** Optional icon shown before the page title. */
+  titleIcon?: LucideIcon;
   /** Muted line under the title (e.g. record name on edit screens). */
   subtitle?: string;
   description?: string;
@@ -30,6 +33,7 @@ export type PageHeaderProps = {
  */
 export function PageHeader({
   title,
+  titleIcon: TitleIcon,
   subtitle,
   description,
   descriptionCollapsible = true,
@@ -73,6 +77,11 @@ export function PageHeader({
           onMouseLeave={() => setInfoHovered(false)}
         >
           <div className="flex min-h-11 min-w-0 items-center gap-1.5">
+            {TitleIcon ? (
+              <span className="page-header__title-icon shrink-0" aria-hidden>
+                <TitleIcon className="size-5" />
+              </span>
+            ) : null}
             <h1 className="page-header__title m-0 min-w-0 flex-1 truncate text-[length:var(--exits-text-xl)] font-bold leading-tight tracking-tight">
               {title}
             </h1>

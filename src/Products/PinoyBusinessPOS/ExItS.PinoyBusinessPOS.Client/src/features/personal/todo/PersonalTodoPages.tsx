@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
+  ChevronDown,
   ChevronRight,
   ListPlus,
   Loader2,
@@ -21,6 +22,7 @@ import {
   isTodoConcurrencyConflict,
   listPersonalTodos,
   localDateTimeToUtcIso,
+  parseTodoAgendaTab,
   reopenPersonalTodo,
   summarizeTodoCounts,
   updatePersonalTodo,
@@ -353,7 +355,40 @@ export function PersonalTodoHubPage() {
   const online = useBrowserOnline();
   const offline = usePersonalOfflineContext();
   const { refreshCounts } = useOfflineSync();
-  const [tab, setTab] = useState<TodoAgendaTab>("today");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [tab, setTab] = useState<TodoAgendaTab>(() => parseTodoAgendaTab(searchParams.get("tab")));
+  const [createFormOpen, setCreateFormOpen] = useState(() => searchParams.get("add") === "1");
+
+  useEffect(() => {
+    setTab(parseTodoAgendaTab(searchParams.get("tab")));
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (searchParams.get("add") !== "1") {
+      return;
+    }
+    setCreateFormOpen(true);
+    setSearchParams(
+      (prev) => {
+        const nextParams = new URLSearchParams(prev);
+        nextParams.delete("add");
+        return nextParams;
+      },
+      { replace: true },
+    );
+  }, [searchParams, setSearchParams]);
+
+  function changeTab(next: TodoAgendaTab) {
+    setTab(next);
+    setSearchParams(
+      (prev) => {
+        const nextParams = new URLSearchParams(prev);
+        nextParams.set("tab", next);
+        return nextParams;
+      },
+      { replace: true },
+    );
+  }
   const [form, setForm] = useState<TodoFormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [cachedTodos, setCachedTodos] = useState<CachedPersonalTodo[]>([]);
@@ -423,6 +458,7 @@ export function PersonalTodoHubPage() {
     onSuccess: async () => {
       setForm(emptyForm());
       setFormError(null);
+      setCreateFormOpen(false);
       await queryClient.invalidateQueries({ queryKey: ["personal", "todos"] });
     },
     onError: (error) =>
@@ -598,55 +634,97 @@ export function PersonalTodoHubPage() {
             };
           })}
           activeKey={tab}
-          onChange={(key) => setTab(key as TodoAgendaTab)}
+          onChange={(key) => changeTab(key as TodoAgendaTab)}
           ariaLabel={t("personal.todo.filters")}
           testId="personal-todo-filters"
         />
       </div>
 
-      <form
-        className="personal-todo-create-form catalog-form-section exits-animate-panel personal-section flex flex-col gap-2"
-        data-testid="todo-create-form"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (!form.title.trim()) {
-            setFormError(t("personal.todo.titleRequired"));
-            return;
-          }
-          createMutation.mutate();
-        }}
+      <section
+        className="personal-todo-create-shell catalog-form-section exits-animate-panel personal-section"
+        data-testid="todo-create-shell"
       >
-        <h2 className="catalog-form-section__title personal-todo-create-form__title">
-          <ListPlus className="personal-todo-create-form__title-icon size-[1.1rem] shrink-0" aria-hidden />
-          {t("personal.todo.createTitle")}
-        </h2>
-        <TodoFormFields form={form} setForm={setForm} idPrefix="todo-create" />
-        {!online ? (
-          <>
-            <OfflineNotice message={t("offline.todoWillQueue")} />
-            {form.reminderAtLocal ? <OfflineNotice message={t("offline.todoNoReminders")} /> : null}
-          </>
-        ) : null}
-        {formError ? (
-          <p
-            role="alert"
-            className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
-          >
-            {formError}
-          </p>
-        ) : null}
-        <Button
-          type="submit"
-          className="personal-todo-submit min-h-11"
-          disabled={createMutation.isPending || offlineBlocked}
-          data-testid="todo-create-submit"
+        <button
+          type="button"
+          className={cn(
+            "personal-todo-create-toggle",
+            createFormOpen && "personal-todo-create-toggle--open",
+          )}
+          data-testid="todo-create-toggle"
+          aria-expanded={createFormOpen}
+          aria-controls="todo-create-panel"
+          onClick={() => setCreateFormOpen((open) => !open)}
         >
-          <TodoActionIcon pending={createMutation.isPending}>
-            <ListPlus className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
-          </TodoActionIcon>
-          {t("personal.todo.add")}
-        </Button>
-      </form>
+          <span className="personal-todo-create-toggle__lead">
+            <ListPlus
+              className="personal-todo-create-form__title-icon size-[1.1rem] shrink-0"
+              aria-hidden
+            />
+            <span className="personal-todo-create-toggle__label">{t("personal.todo.createTitle")}</span>
+          </span>
+          <ChevronDown
+            className={cn(
+              "personal-todo-create-toggle__chevron size-4 shrink-0",
+              createFormOpen && "personal-todo-create-toggle__chevron--open",
+            )}
+            aria-hidden
+          />
+        </button>
+
+        <div
+          id="todo-create-panel"
+          className={cn(
+            "personal-todo-create-collapse",
+            createFormOpen && "personal-todo-create-collapse--open",
+          )}
+          aria-hidden={!createFormOpen}
+        >
+          <div className="personal-todo-create-collapse__inner">
+            <form
+              className="personal-todo-create-form flex flex-col gap-2"
+              data-testid="todo-create-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (!form.title.trim()) {
+                  setFormError(t("personal.todo.titleRequired"));
+                  return;
+                }
+                createMutation.mutate();
+              }}
+            >
+              <TodoFormFields form={form} setForm={setForm} idPrefix="todo-create" />
+              {!online ? (
+                <>
+                  <OfflineNotice message={t("offline.todoWillQueue")} />
+                  {form.reminderAtLocal ? (
+                    <OfflineNotice message={t("offline.todoNoReminders")} />
+                  ) : null}
+                </>
+              ) : null}
+              {formError ? (
+                <p
+                  role="alert"
+                  className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+                >
+                  {formError}
+                </p>
+              ) : null}
+              <Button
+                type="submit"
+                className="personal-todo-submit min-h-11"
+                disabled={createMutation.isPending || offlineBlocked}
+                data-testid="todo-create-submit"
+                tabIndex={createFormOpen ? undefined : -1}
+              >
+                <TodoActionIcon pending={createMutation.isPending}>
+                  <ListPlus className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
+                </TodoActionIcon>
+                {t("personal.todo.add")}
+              </Button>
+            </form>
+          </div>
+        </div>
+      </section>
 
       {filtered.length === 0 ? (
         <EmptyState title={t("personal.todo.emptyTitle")} detail={t("personal.todo.emptyDetail")} />

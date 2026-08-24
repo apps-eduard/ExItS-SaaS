@@ -200,6 +200,7 @@ test.describe("RMAP-21G Personal offline queue and reconnect sync", () => {
     await clientNavigate(page, "/personal/todo");
     await expect(page.getByTestId("personal-todo-hub")).toBeVisible({ timeout: 15000 });
 
+    await page.getByTestId("todo-create-toggle").click();
     await page.context().setOffline(true);
     await expect(
       page.getByTestId("todo-create-form").getByTestId("todo-offline-notice"),

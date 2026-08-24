@@ -667,6 +667,7 @@ export const en = {
   "personal.todo.noDue": "No due date",
   "personal.todo.dueLabel": "Due",
   "personal.todo.countToday": "Today",
+  "personal.todo.countUpcoming": "Upcoming",
   "personal.todo.countOverdue": "Overdue",
   "personal.todo.countOpen": "Open",
   "personal.more.title": "More",
@@ -2249,8 +2250,18 @@ export const en = {
   "personal.merchantStatement.loadFailed": "The merchant activity could not be loaded. Try again.",
   "personal.merchantStatement.deniedTitle": "Access denied",
   "personal.merchantStatement.denied": "You are not authorized to view this store activity.",
-  "personal.merchantStatement.missingTitle": "Not found",
-  "personal.merchantStatement.missing": "This linked store activity was not found.",
+  "personal.merchantStatement.missingTitle": "Purchase history unavailable",
+  "personal.merchantStatement.missing":
+    "We could not load purchases for this store link yet.",
+  "personal.merchantStatement.missingHint":
+    "The store may still be finishing your customer link, or no sales have been recorded under your profile yet. Try again later or ask the store if you expected activity here.",
+  "personal.merchantStatement.deniedHint":
+    "Only the linked Personal account can view this store's purchase history.",
+  "personal.merchantStatement.noActivityTitle": "No purchases yet",
+  "personal.merchantStatement.noActivityDetail":
+    "Sales, receipts, and Utang activity from this store will show up here once recorded.",
+  "personal.merchantStatement.noActivityHint":
+    "Shop with this store or visit again after your next in-store purchase.",
   "personal.merchantReceipt.backToStatement": "Back to activity",
   "personal.merchantReceipt.lede": "Sale lines from the merchant ledger (read-only).",
   "personal.merchantReceipt.linesSection": "Lines",
@@ -2269,6 +2280,8 @@ export const en = {
   "personal.orderingUnavailable": "Ordering unavailable",
   "personal.orderingUnavailableDetail":
     "This store is not accepting online customer orders right now.",
+  "personal.orderingUnavailableHint":
+    "Check back later, or view your purchase history with this store.",
   "personal.myOrdersLink": "My orders",
   "personal.myOrdersTitle": "My orders",
   "personal.myOrdersLede": "Pickup and delivery orders you placed with connected stores.",

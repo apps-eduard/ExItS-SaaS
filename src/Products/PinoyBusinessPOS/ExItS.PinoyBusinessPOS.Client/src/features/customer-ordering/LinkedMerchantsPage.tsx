@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
@@ -9,6 +10,7 @@ import {
   ShoppingBag,
   Truck,
 } from "lucide-react";
+import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import { listLinkedMerchants, type LinkedMerchantDto } from "@/api/platform/linked-merchants-client";
 import { Button } from "@/components/ui/button";
 import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
@@ -18,40 +20,33 @@ import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import {
   CommerceLoadMore,
+  MerchantOrderingBadge,
   storeDisplayInitial,
 } from "@/features/customer-ordering/personal-commerce-ui";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
+import {
+  type MerchantOrderingProbe,
+  useLinkedMerchantsOrderingProbes,
+} from "@/features/customer-ordering/useLinkedMerchantsOrderingProbes";
 import { useI18n } from "@/i18n/I18nProvider";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 
 const MERCHANTS_PAGE_SIZE = 50;
 
-function MerchantOrderingBadge({ available }: { available: boolean }) {
-  const { t } = useI18n();
-  return (
-    <span
-      className={
-        available
-          ? "pc-store-card__ordering pc-store-card__ordering--available"
-          : "pc-store-card__ordering pc-store-card__ordering--unavailable"
-      }
-    >
-      <span className="pc-store-card__ordering-dot" aria-hidden />
-      {available ? t("personal.orderingAvailable") : t("personal.orderingUnavailable")}
-    </span>
-  );
-}
-
 function LinkedMerchantStoreCard({
   merchant,
   index,
+  ordering,
 }: {
   merchant: LinkedMerchantDto;
   index: number;
+  ordering: MerchantOrderingProbe;
 }) {
   const { t } = useI18n();
   const statementTo = `/personal/linked-merchants/${merchant.organizationId}/${merchant.businessCustomerId}`;
   const shopTo = `/personal/linked-merchants/${merchant.organizationId}/shop`;
+  const canCustomerOrder = ordering.resolved && ordering.canCustomerOrder;
+  const canCustomerDelivery = ordering.resolved && ordering.canCustomerDelivery;
 
   return (
     <li
@@ -64,10 +59,16 @@ function LinkedMerchantStoreCard({
             {storeDisplayInitial(merchant.organizationDisplayName)}
           </span>
           <div className="pc-store-card__body">
-            <h3 className="pc-store-card__name">{merchant.organizationDisplayName}</h3>
-            <p className="pc-store-card__relationship">{merchant.customerDisplayName}</p>
-            <div className="pc-store-card__badges">
-              <MerchantOrderingBadge available={merchant.canCustomerOrder} />
+            <div className="pc-store-card__identity pc-store-card__identity--inline">
+              <h3 className="pc-store-card__name">{merchant.organizationDisplayName}</h3>
+              <Link2 className="pc-store-card__link-icon size-3.5 shrink-0" aria-hidden />
+              <span className="pc-store-card__relationship">{merchant.customerDisplayName}</span>
+            </div>
+            <div className="pc-store-card__badge-row">
+              <MerchantOrderingBadge
+                available={canCustomerOrder}
+                pending={ordering.pending}
+              />
             </div>
           </div>
         </div>
@@ -77,8 +78,8 @@ function LinkedMerchantStoreCard({
             <CalendarClock className="size-3.5 shrink-0" aria-hidden />
             {new Date(merchant.linkedAtUtc).toLocaleDateString()}
           </span>
-          {merchant.canCustomerOrder ? (
-            merchant.canCustomerDelivery ? (
+          {canCustomerOrder ? (
+            canCustomerDelivery ? (
               <span className="pc-store-card__meta-item">
                 <Truck className="size-3.5 shrink-0" aria-hidden />
                 {t("orders.delivery")}
@@ -94,12 +95,12 @@ function LinkedMerchantStoreCard({
 
         <div
           className={
-            merchant.canCustomerOrder
+            canCustomerOrder
               ? "pc-store-card__actions"
               : "pc-store-card__actions pc-store-card__actions--solo"
           }
         >
-          {merchant.canCustomerOrder ? (
+          {canCustomerOrder ? (
             <>
               <Button
                 asChild
@@ -143,6 +144,7 @@ function LinkedMerchantStoreCard({
 
 export function LinkedMerchantsPage() {
   const { t } = useI18n();
+  const [buyerTokenReady, setBuyerTokenReady] = useState(false);
   const query = useInfiniteQuery({
     queryKey: ["personal", "linked-merchants"],
     initialPageParam: 1,
@@ -153,7 +155,27 @@ export function LinkedMerchantsPage() {
     },
   });
 
+  useEffect(() => {
+    let cancelled = false;
+    void ensurePersonalBuyerPosToken().then((result) => {
+      if (!cancelled) {
+        setBuyerTokenReady(result.ok);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const items = query.data?.pages.flatMap((page) => page.items) ?? [];
+  const organizationIds = useMemo(
+    () => items.map((merchant) => merchant.organizationId),
+    [items],
+  );
+  const { byOrganizationId } = useLinkedMerchantsOrderingProbes(
+    organizationIds,
+    buyerTokenReady && items.length > 0,
+  );
 
   const pageShell = "personal-page personal-commerce-page linked-merchants-page exits-page flex min-w-0 flex-col gap-3";
 
@@ -242,6 +264,14 @@ export function LinkedMerchantsPage() {
                 key={merchant.linkedCustomerId}
                 merchant={merchant}
                 index={index}
+                ordering={
+                  byOrganizationId.get(merchant.organizationId) ?? {
+                    canCustomerOrder: false,
+                    canCustomerDelivery: false,
+                    pending: true,
+                    resolved: false,
+                  }
+                }
               />
             ))}
           </ul>

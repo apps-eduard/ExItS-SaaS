@@ -57,6 +57,26 @@ export type PersonalTodoVersionRequest = {
 
 export type TodoAgendaTab = "today" | "upcoming" | "overdue" | "open" | "completed" | "cancelled";
 
+const TODO_AGENDA_TABS: readonly TodoAgendaTab[] = [
+  "today",
+  "upcoming",
+  "overdue",
+  "open",
+  "completed",
+  "cancelled",
+];
+
+export function parseTodoAgendaTab(value: string | null | undefined): TodoAgendaTab {
+  if (value && TODO_AGENDA_TABS.includes(value as TodoAgendaTab)) {
+    return value as TodoAgendaTab;
+  }
+  return "today";
+}
+
+export function todoAgendaTabHref(tab: TodoAgendaTab): string {
+  return `/personal/todo?tab=${tab}`;
+}
+
 export type TodoDueBucket = "none" | "today" | "upcoming" | "overdue";
 
 export type PersonalTodoCounts = {

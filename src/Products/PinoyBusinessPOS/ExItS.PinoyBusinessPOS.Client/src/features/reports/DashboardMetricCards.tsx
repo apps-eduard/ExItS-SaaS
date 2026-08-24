@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -50,6 +51,7 @@ export function DashboardMetricCard({
   tone = "default",
   testId,
   className,
+  to,
 }: {
   label: string;
   children: ReactNode;
@@ -58,19 +60,19 @@ export function DashboardMetricCard({
   tone?: DashboardMetricTone;
   testId: string;
   className?: string;
+  to?: string;
 }) {
-  return (
-    <article
-      className={cn(
-        "dashboard-metric-card",
-        tone === "emphasis" && "dashboard-metric-card--emphasis",
-        tone === "attention" && "dashboard-metric-card--attention",
-        tone === "success" && "dashboard-metric-card--success",
-        className,
-      )}
-      data-testid={testId}
-      role="listitem"
-    >
+  const cardClassName = cn(
+    "dashboard-metric-card",
+    tone === "emphasis" && "dashboard-metric-card--emphasis",
+    tone === "attention" && "dashboard-metric-card--attention",
+    tone === "success" && "dashboard-metric-card--success",
+    to && "dashboard-metric-card--interactive",
+    className,
+  );
+
+  const body = (
+    <>
       <div className="dashboard-metric-card__head">
         {Icon ? (
           <span className="dashboard-metric-card__icon" aria-hidden>
@@ -81,6 +83,20 @@ export function DashboardMetricCard({
       </div>
       <div className="dashboard-metric-card__value">{children}</div>
       {meta ? <div className="dashboard-metric-card__meta">{meta}</div> : null}
+    </>
+  );
+
+  if (to) {
+    return (
+      <Link to={to} className={cardClassName} data-testid={testId} role="listitem">
+        {body}
+      </Link>
+    );
+  }
+
+  return (
+    <article className={cardClassName} data-testid={testId} role="listitem">
+      {body}
     </article>
   );
 }

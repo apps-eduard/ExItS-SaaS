@@ -2596,9 +2596,105 @@ body {
   gap: 0.45rem;
 }
 
+.personal-todo-create-shell {
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.personal-todo-create-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 2.85rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition:
+    background-color var(--exits-motion-fast) ease,
+    color var(--exits-motion-fast) ease;
+}
+
+.personal-todo-create-toggle:hover {
+  background: color-mix(in srgb, var(--exits-primary) 6%, var(--exits-surface));
+}
+
+.personal-todo-create-toggle:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--exits-primary) 55%, transparent);
+  outline-offset: -2px;
+}
+
+.personal-todo-create-toggle--open {
+  border-bottom: 1px solid color-mix(in srgb, var(--exits-border) 88%, transparent);
+  background: color-mix(in srgb, var(--exits-primary) 5%, var(--exits-surface));
+}
+
+.personal-todo-create-toggle__lead {
+  display: inline-flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.personal-todo-create-toggle__label {
+  font-size: var(--exits-text-sm);
+  font-weight: 600;
+}
+
+.personal-todo-create-toggle__chevron {
+  color: var(--exits-text-muted);
+  transition: transform var(--exits-motion-normal) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.personal-todo-create-toggle__chevron--open {
+  transform: rotate(180deg);
+  color: var(--exits-primary);
+}
+
+.personal-todo-create-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--exits-motion-normal) cubic-bezier(0.22, 1, 0.36, 1),
+    opacity var(--exits-motion-fast) ease;
+}
+
+.personal-todo-create-collapse--open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.personal-todo-create-collapse__inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.personal-todo-create-collapse .personal-todo-create-form {
+  padding: 0.85rem 1rem 1rem;
+}
+
 .personal-todo-create-form__title-icon {
   color: var(--exits-primary);
   transition: transform var(--exits-motion-fast) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .personal-todo-create-collapse,
+  .personal-todo-create-toggle__chevron {
+    transition: none;
+  }
+}
+
+.personal-todo-create-toggle--open .personal-todo-create-form__title-icon {
+  transform: scale(1.08) rotate(-4deg);
 }
 
 .personal-todo-create-form:focus-within .personal-todo-create-form__title-icon {
@@ -3420,6 +3516,21 @@ body {
   border-color: color-mix(in srgb, var(--exits-primary) 35%, var(--exits-border));
   box-shadow: 0 6px 18px color-mix(in srgb, var(--exits-text) 6%, transparent);
   transform: translateY(-1px);
+}
+
+a.dashboard-metric-card {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+a.dashboard-metric-card:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--exits-primary) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.dashboard-metric-card--interactive:active {
+  transform: translateY(0);
 }
 
 .dashboard-metric-card--emphasis {
@@ -4562,6 +4673,17 @@ body {
   font-size: var(--exits-text-sm);
   line-height: 1.45;
   color: var(--exits-text-muted);
+}
+
+.page-header__title-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--exits-radius-md);
+  background: color-mix(in srgb, var(--exits-primary) 10%, var(--exits-surface));
+  color: var(--exits-primary);
 }
 
 .page-header__info {
@@ -6048,19 +6170,17 @@ a.exits-chip--primary:hover {
   gap: 0.55rem;
 }
 
-@media (max-width: 639px) {
-  .personal-summary-grid--todo {
-    grid-template-columns: 1fr;
-  }
+.personal-summary-grid--todo {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.personal-summary-grid--utang {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 @media (min-width: 640px) {
   .personal-summary-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .personal-summary-grid--todo {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

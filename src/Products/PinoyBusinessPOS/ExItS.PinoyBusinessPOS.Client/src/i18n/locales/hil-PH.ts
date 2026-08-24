@@ -686,6 +686,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.todo.noDue": "Wala deadline",
   "personal.todo.dueLabel": "Deadline",
   "personal.todo.countToday": "Subong",
+  "personal.todo.countUpcoming": "Nagaabot",
   "personal.todo.countOverdue": "Nalapas",
   "personal.todo.countOpen": "Bukas",
   "personal.more.title": "Lain pa",
@@ -2312,8 +2313,18 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.merchantStatement.loadFailed": "Indi ma-load ang merchant activity. Tilawi liwat.",
   "personal.merchantStatement.deniedTitle": "Wala access",
   "personal.merchantStatement.denied": "Wala ka authorization sa activity sini nga store.",
-  "personal.merchantStatement.missingTitle": "Wala makita",
-  "personal.merchantStatement.missing": "Wala makita ini nga linked store activity.",
+  "personal.merchantStatement.missingTitle": "Indi available ang purchase history",
+  "personal.merchantStatement.missing":
+    "Indi pa ma-load ang mga bakal para sa store link sini.",
+  "personal.merchantStatement.missingHint":
+    "Posible ginapahuman pa sang tindahan ang imo customer link, ukon wala pa na-record nga baligya. Sulayi liwat sa ulihi.",
+  "personal.merchantStatement.deniedHint":
+    "Ang naka-link nga Personal account lang ang makatan-aw sini nga purchase history.",
+  "personal.merchantStatement.noActivityTitle": "Wala pa bakal",
+  "personal.merchantStatement.noActivityDetail":
+    "Ang mga baligya, resibo, kag Utang activity halin sini nga tindahan makita diri kon na-record na.",
+  "personal.merchantStatement.noActivityHint":
+    "Magbakal sa sini nga tindahan ukon balik pagkatapos sang imo sunod nga in-store purchase.",
   "personal.merchantReceipt.backToStatement": "Balik sa aktibidad",
   "personal.merchantReceipt.lede": "Mga sale line gikan sa merchant ledger (read-only).",
   "personal.merchantReceipt.linesSection": "Mga linya",
@@ -2332,6 +2343,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.orderingUnavailable": "Indi pwede mag-order",
   "personal.orderingUnavailableDetail":
     "Indi dawaton sini nga store ang online customer orders subong.",
+  "personal.orderingUnavailableHint":
+    "Balik lang liwat, ukon tan-awa ang imo purchase history sa sini nga tindahan.",
   "personal.myOrdersLink": "Akon nga mga order",
   "personal.myOrdersTitle": "Akon nga mga order",
   "personal.myOrdersLede": "Mga pickup kag delivery order nga ginbutang mo sa naka-konekta nga tindahan.",

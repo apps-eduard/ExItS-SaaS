@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import * as linkedClient from "@/api/pos/pos-linked-customers-client";
+import { PosApiError } from "@/api/pos/pos-http";
 import { LinkedMerchantStatementPage } from "@/features/personal/linked-merchants/LinkedMerchantStatementPage";
 
 vi.mock("@/api/pos/pos-linked-customers-client", async (importOriginal) => {
@@ -34,6 +35,16 @@ function renderStatement() {
     </AppProviders>,
   );
 }
+
+vi.mock("@/features/customer-ordering/useLinkedMerchantShopContext", () => ({
+  useLinkedMerchantShopContext: () => ({
+    data: {
+      organizationDisplayName: "mica store",
+      customerDisplayName: "Toto Uy",
+      statementTo: null,
+    },
+  }),
+}));
 
 describe("LinkedMerchantStatementPage", () => {
   it("renders outstanding balance and recent activity", async () => {
@@ -81,5 +92,56 @@ describe("LinkedMerchantStatementPage", () => {
     });
     expect(screen.getByTestId("linked-merchant-outstanding")).toHaveTextContent("0.00 PHP");
     expect(screen.getByTestId("linked-merchant-activity-receipt-link")).toBeInTheDocument();
+  });
+
+  it("renders a friendly not-found panel when the linked customer is missing", async () => {
+    vi.mocked(linkedClient.getLinkedCustomerStatement).mockRejectedValue(
+      new PosApiError(404, {
+        errorCode: "pos.linked_customer.not_found",
+        detail: "Linked customer was not found.",
+      }),
+    );
+
+    renderStatement();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("merchant-statement-status-notFound")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("page-header-back-merchant-statement")).toBeInTheDocument();
+    expect(screen.getByTestId("merchant-statement-back-stores")).toBeInTheDocument();
+    expect(screen.getByTestId("merchant-statement-retry")).toBeInTheDocument();
+    expect(screen.getByTestId("merchant-statement-status-notFound")).toHaveTextContent("mica store");
+  });
+
+  it("renders an empty-activity panel when balance and recent rows are zero", async () => {
+    vi.mocked(linkedClient.getLinkedCustomerStatement).mockResolvedValue({
+      organizationId,
+      platformBusinessCustomerId: businessCustomerId,
+      posCustomerId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+      linkedCustomerAppUserId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+      merchantDisplayName: "mica store",
+      customerDisplayName: "Toto Uy",
+      outstandingBalance: 0,
+      currency: "PHP",
+      asOfUtc: "2026-08-22T00:00:00Z",
+    });
+    vi.mocked(linkedClient.listLinkedCustomerRecentActivity).mockResolvedValue({
+      organizationId,
+      platformBusinessCustomerId: businessCustomerId,
+      posCustomerId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+      items: [],
+      page: 1,
+      pageSize: 10,
+      hasMore: false,
+      canAccessExtendedHistory: false,
+      freeHistoryStartsAtUtc: "2026-05-01T00:00:00Z",
+    });
+
+    renderStatement();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("merchant-statement-status-empty")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("linked-merchant-outstanding")).toHaveTextContent("0.00 PHP");
   });
 });

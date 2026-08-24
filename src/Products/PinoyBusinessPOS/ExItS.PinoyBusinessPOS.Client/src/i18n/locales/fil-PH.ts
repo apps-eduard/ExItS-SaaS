@@ -678,6 +678,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.todo.noDue": "Walang takdang petsa",
   "personal.todo.dueLabel": "Takda",
   "personal.todo.countToday": "Ngayon",
+  "personal.todo.countUpcoming": "Paparating",
   "personal.todo.countOverdue": "Lampas",
   "personal.todo.countOpen": "Bukas",
   "personal.more.title": "Iba pa",
@@ -2301,8 +2302,18 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.merchantStatement.deniedTitle": "Walang access",
   "personal.merchantStatement.denied":
     "Hindi ka authorized na tingnan ang activity ng store na ito.",
-  "personal.merchantStatement.missingTitle": "Hindi natagpuan",
-  "personal.merchantStatement.missing": "Hindi natagpuan ang linked store activity na ito.",
+  "personal.merchantStatement.missingTitle": "Hindi available ang purchase history",
+  "personal.merchantStatement.missing":
+    "Hindi pa ma-load ang mga bili para sa store link na ito.",
+  "personal.merchantStatement.missingHint":
+    "Maaaring inaayos pa ng tindahan ang iyong customer link, o wala pang na-record na benta sa profile mo. Subukan muli mamaya o tanungin ang tindahan kung inaasahan mo ang activity dito.",
+  "personal.merchantStatement.deniedHint":
+    "Ang naka-link na Personal account lang ang makakatingin sa purchase history ng store na ito.",
+  "personal.merchantStatement.noActivityTitle": "Wala pang bili",
+  "personal.merchantStatement.noActivityDetail":
+    "Lalabas dito ang mga benta, resibo, at Utang activity mula sa store na ito kapag na-record na.",
+  "personal.merchantStatement.noActivityHint":
+    "Mamili sa store na ito o bumalik pagkatapos ng susunod na in-store purchase.",
   "personal.merchantReceipt.backToStatement": "Bumalik sa aktibidad",
   "personal.merchantReceipt.lede": "Mga linya ng benta mula sa merchant ledger (read-only).",
   "personal.merchantReceipt.linesSection": "Mga linya",
@@ -2321,6 +2332,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.orderingUnavailable": "Hindi pwede mag-order",
   "personal.orderingUnavailableDetail":
     "Hindi tumatanggap ng online customer orders ang store na ito ngayon.",
+  "personal.orderingUnavailableHint":
+    "Bumalik mamaya, o tingnan ang iyong purchase history sa store na ito.",
   "personal.myOrdersLink": "Mga order ko",
   "personal.myOrdersTitle": "Mga order ko",
   "personal.myOrdersLede": "Mga pickup at delivery order na inilagay mo sa mga naka-konektang tindahan.",

@@ -4,6 +4,7 @@ import {
   getCustomerStorefrontProductImage,
   listSellerCustomerOrders,
   placeCustomerOrder,
+  probeSellerCustomerOrderingCapability,
   quoteCustomerDelivery,
   sellerWorkspace,
 } from "@/api/pos/pos-customer-orders-client";
@@ -67,6 +68,47 @@ describe("pos-customer-orders-client", () => {
     const url = String(fetchMock.mock.calls[0][0]);
     expect(url).toContain(`/customer-orders/organizations/${ORG}/storefront`);
     expect(url).toContain(`fulfillmentBranchId=${BRANCH}`);
+  });
+
+  it("probes ordering capability from lightweight storefront call", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        organizationId: ORG,
+        organizationDisplayName: "Store",
+        canCustomerOrder: true,
+        canCustomerDelivery: false,
+        categories: [],
+        products: [],
+        productTotalCount: 0,
+        page: 1,
+        pageSize: 1,
+        branches: [],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const capability = await probeSellerCustomerOrderingCapability(ORG);
+    expect(capability.canCustomerOrder).toBe(true);
+    expect(capability.canCustomerDelivery).toBe(false);
+    const url = String(fetchMock.mock.calls[0][0]);
+    expect(url).toContain("pageSize=1");
+  });
+
+  it("probe returns unavailable when storefront rejects ordering", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 403,
+      json: async () => ({
+        detail: "This merchant is not accepting customer orders.",
+        errorCode: "pos.customer_order.ordering.unavailable",
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const capability = await probeSellerCustomerOrderingCapability(ORG);
+    expect(capability).toEqual({ canCustomerOrder: false, canCustomerDelivery: false });
   });
 
   it("quotes delivery fee from server path", async () => {
