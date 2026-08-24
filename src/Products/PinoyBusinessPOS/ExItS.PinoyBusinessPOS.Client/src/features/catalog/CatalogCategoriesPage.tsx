@@ -9,13 +9,13 @@ import {
 } from "@/api/pos/pos-catalog-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { StatusChip } from "@/components/exits/StatusChip";
+import { Input } from "@/components/ui/input";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -59,7 +59,7 @@ export function CatalogCategoriesPage() {
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="catalog-categories-page">
+    <div className="catalog-page exits-page flex min-w-0 flex-col gap-3" data-testid="catalog-categories-page">
       <PageHeader
         title={t("catalog.categoriesTitle")}
         description={t("catalog.categoriesLede")}
@@ -68,7 +68,7 @@ export function CatalogCategoriesPage() {
         backTestId="page-header-back-catalog"
       />
       {error ? <ErrorState title={t("error.title")} detail={error} /> : null}
-      <Card>
+      <section className="exits-animate-panel rounded-[var(--exits-radius-md)] border border-border bg-surface p-3">
         <form
           className="flex flex-col gap-2 sm:flex-row sm:items-end"
           onSubmit={(event) => {
@@ -90,7 +90,7 @@ export function CatalogCategoriesPage() {
             {t("catalog.addCategory")}
           </Button>
         </form>
-      </Card>
+      </section>
       {query.isLoading ? <LoadingState label={t("loading.label")} /> : null}
       {query.isSuccess && query.data.items.length === 0 ? (
         <EmptyState
@@ -98,75 +98,78 @@ export function CatalogCategoriesPage() {
           detail={t("catalog.emptyCategoriesDetail")}
         />
       ) : null}
-      <ul className="m-0 flex list-none flex-col gap-2 p-0">
-        {query.data?.items.map((category) => (
-          <li key={category.categoryId}>
-            <Card className="flex flex-wrap items-center justify-between gap-2 p-3">
-              <div className="min-w-0">
-                <p className="m-0 truncate font-semibold">{category.name}</p>
-                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                  {category.status}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="min-h-11"
-                  onClick={() => {
-                    const next = window.prompt(t("catalog.renamePrompt"), category.name);
-                    if (!next?.trim() || !workspace) {
-                      return;
-                    }
-                    void updateCatalogCategory(workspace, category.categoryId, {
-                      name: next.trim(),
-                      expectedUpdatedAtUtc: category.updatedAtUtc,
-                    })
-                      .then(() =>
-                        queryClient.invalidateQueries({ queryKey: ["catalog", "categories"] }),
-                      )
-                      .catch((err) =>
-                        setError(
-                          err instanceof PosApiError
-                            ? (err.problem.detail ?? err.message)
-                            : (err as Error).message,
-                        ),
-                      );
-                  }}
-                >
-                  {t("catalog.rename")}
-                </Button>
-                {category.status === "Active" ? (
+      <ul className="exits-list m-0 grid list-none gap-2 p-0">
+        {query.data?.items.map((category) => {
+          const isActive = category.status === "Active";
+          return (
+            <li key={category.categoryId}>
+              <article className="exits-list__card flex flex-wrap items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="exits-list__name m-0 truncate font-semibold">{category.name}</p>
+                  <div className="mt-1">
+                    <StatusChip tone={isActive ? "success" : "warning"}>{category.status}</StatusChip>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"
                     variant="ghost"
                     className="min-h-11"
                     onClick={() => {
-                      void deactivateCatalogCategory(workspace, category.categoryId).then(() =>
-                        queryClient.invalidateQueries({ queryKey: ["catalog", "categories"] }),
-                      );
+                      const next = window.prompt(t("catalog.renamePrompt"), category.name);
+                      if (!next?.trim() || !workspace) {
+                        return;
+                      }
+                      void updateCatalogCategory(workspace, category.categoryId, {
+                        name: next.trim(),
+                        expectedUpdatedAtUtc: category.updatedAtUtc,
+                      })
+                        .then(() =>
+                          queryClient.invalidateQueries({ queryKey: ["catalog", "categories"] }),
+                        )
+                        .catch((err) =>
+                          setError(
+                            err instanceof PosApiError
+                              ? (err.problem.detail ?? err.message)
+                              : (err as Error).message,
+                          ),
+                        );
                     }}
                   >
-                    {t("catalog.deactivate")}
+                    {t("catalog.rename")}
                   </Button>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="min-h-11"
-                    onClick={() => {
-                      void reactivateCatalogCategory(workspace, category.categoryId).then(() =>
-                        queryClient.invalidateQueries({ queryKey: ["catalog", "categories"] }),
-                      );
-                    }}
-                  >
-                    {t("catalog.reactivate")}
-                  </Button>
-                )}
-              </div>
-            </Card>
-          </li>
-        ))}
+                  {isActive ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="min-h-11"
+                      onClick={() => {
+                        void deactivateCatalogCategory(workspace, category.categoryId).then(() =>
+                          queryClient.invalidateQueries({ queryKey: ["catalog", "categories"] }),
+                        );
+                      }}
+                    >
+                      {t("catalog.deactivate")}
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="min-h-11"
+                      onClick={() => {
+                        void reactivateCatalogCategory(workspace, category.categoryId).then(() =>
+                          queryClient.invalidateQueries({ queryKey: ["catalog", "categories"] }),
+                        );
+                      }}
+                    >
+                      {t("catalog.reactivate")}
+                    </Button>
+                  )}
+                </div>
+              </article>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

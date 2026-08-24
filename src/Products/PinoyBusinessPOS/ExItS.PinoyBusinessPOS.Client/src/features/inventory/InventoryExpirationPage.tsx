@@ -19,6 +19,7 @@ import {
   type LotExpiryLabel,
 } from "@/features/inventory/inventory-lot-status";
 import { useI18n } from "@/i18n/I18nProvider";
+import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const EXPIRING_PAGE_SIZE = 50;
@@ -148,7 +149,7 @@ export function InventoryExpirationPage() {
 
   return (
     <div
-      className="inventory-expiration-page flex min-w-0 flex-col gap-3"
+      className="inventory-expiration-page exits-page flex min-w-0 flex-col gap-3"
       data-testid="inventory-expiration-page"
     >
       <PageHeader
@@ -221,7 +222,7 @@ export function InventoryExpirationPage() {
         onChange={(event) => setSearch(event.target.value)}
         onClear={() => setSearch("")}
         placeholder={t("inventory.searchExpiring")}
-        containerClassName="inventory-expiration-page__search"
+        containerClassName="inventory-expiration-page__search exits-page__search"
       />
 
       {query.isSuccess && counts ? (

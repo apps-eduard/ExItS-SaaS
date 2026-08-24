@@ -99,7 +99,7 @@ export function SuppliersListPage() {
   const incomingCount = incomingQuery.data ?? 0;
 
   return (
-    <div className="suppliers-page flex min-w-0 flex-col gap-3" data-testid="suppliers-list-page">
+    <div className="suppliers-page exits-page flex min-w-0 flex-col gap-3" data-testid="suppliers-list-page">
       <PageHeader
         title={t("suppliers.title")}
         description={t("suppliers.lede")}
@@ -112,7 +112,7 @@ export function SuppliersListPage() {
         variant="actions"
         ariaLabel={t("suppliers.title")}
         testId="suppliers-toolbar"
-        className="suppliers-toolbar"
+        className="exits-animate-toolbar"
         items={[
           ...(allowManage
             ? [
@@ -160,7 +160,7 @@ export function SuppliersListPage() {
         onClear={() => setSearch("")}
         placeholder={t("suppliers.search")}
         data-testid="suppliers-search"
-        containerClassName="suppliers-page__search"
+        containerClassName="suppliers-page__search exits-page__search"
       />
 
       <ExitsChipBar
@@ -184,11 +184,11 @@ export function SuppliersListPage() {
         <EmptyState title={t("suppliers.empty")} detail={t("suppliers.emptyDetail")} />
       ) : null}
 
-      <ul className="suppliers-list m-0 grid list-none gap-2 p-0" data-testid="suppliers-list">
+      <ul className="exits-list suppliers-list m-0 grid list-none gap-2 p-0" data-testid="suppliers-list">
         {query.data?.items.map((supplier) => (
           <li key={supplier.supplierId}>
             <Link
-              className="suppliers-list__card block min-w-0 text-foreground no-underline"
+              className="exits-list__card suppliers-list__card block min-w-0 text-foreground no-underline"
               to={`/suppliers/${supplier.supplierId}`}
               data-testid={`supplier-row-${supplier.supplierId}`}
             >
@@ -210,7 +210,7 @@ export function SuppliersListPage() {
 
       {query.isSuccess && totalCount > 0 ? (
         <div
-          className="suppliers-pagination flex flex-wrap items-center justify-between gap-2"
+          className="exits-pagination suppliers-pagination"
           data-testid="suppliers-pagination"
         >
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
@@ -218,7 +218,7 @@ export function SuppliersListPage() {
               .replace("{page}", String(page))
               .replace("{totalPages}", String(totalPages))}
           </p>
-          <div className="suppliers-pagination__actions flex flex-wrap gap-2">
+          <div className="exits-pagination__actions suppliers-pagination__actions flex flex-wrap gap-2">
             <Button
               type="button"
               variant="ghost"

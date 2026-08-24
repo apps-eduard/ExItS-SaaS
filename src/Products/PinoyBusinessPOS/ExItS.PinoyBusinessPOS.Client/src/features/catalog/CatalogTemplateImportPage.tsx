@@ -20,6 +20,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { OnlineRequiredCard } from "@/components/exits/OnlineRequiredCard";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
@@ -28,8 +29,8 @@ import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import { ONLINE_REQUIRED_CODES } from "@/offline/online-required";
 import type { MessageKey } from "@/i18n/messages";
-import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { cn } from "@/lib/cn";
+import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type WizardStep = "choose" | "preview" | "confirm";
 
@@ -220,56 +221,31 @@ export function CatalogTemplateImportPage() {
   }
 
   return (
-    <div className="catalog-import-page flex min-w-0 flex-col gap-3" data-testid="catalog-templates-page">
+    <div className="catalog-import-page exits-page flex min-w-0 flex-col gap-3" data-testid="catalog-templates-page">
       <PageHeader title={t("catalogImport.title")} description={t("catalogImport.lede")} />
 
-      <nav
-        aria-label={t("catalogImport.stepsAria")}
-        className="catalog-import-steps flex min-w-0 items-center gap-1.5 overflow-x-auto overscroll-x-contain pb-0.5"
-      >
-        {STEPS.map((id, index) => {
+      <ExitsChipBar
+        variant="steps"
+        ariaLabel={t("catalogImport.stepsAria")}
+        testId="catalog-import-steps"
+        items={STEPS.map((id, index) => {
           const active = step === id;
           const stepIndex = STEPS.indexOf(step);
           const done = index < stepIndex;
           const reachable =
             id === "choose" ||
-            (id === "preview" && selectedId) ||
-            (id === "confirm" && selectedId && step !== "choose");
-          return (
-            <button
-              key={id}
-              type="button"
-              disabled={!reachable}
-              data-testid={`catalog-template-step-${id}`}
-              aria-current={active ? "step" : undefined}
-              className={cn(
-                "catalog-import-steps__chip inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-[length:var(--exits-text-xs)] font-medium whitespace-nowrap transition-[background-color,border-color,color] duration-[var(--exits-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45",
-                active
-                  ? "catalog-import-steps__chip--active border-primary bg-[color-mix(in_srgb,var(--exits-primary)_14%,var(--exits-surface))] text-primary"
-                  : done
-                    ? "border-primary/40 bg-surface text-foreground"
-                    : "border-border bg-surface text-muted",
-              )}
-              onClick={() => reachable && setStep(id)}
-            >
-              <span
-                className={cn(
-                  "catalog-import-steps__index inline-flex size-4 items-center justify-center rounded-full text-[0.65rem] font-semibold",
-                  active
-                    ? "bg-primary text-primary-foreground"
-                    : done
-                      ? "bg-[color-mix(in_srgb,var(--exits-primary)_30%,var(--exits-surface))] text-primary"
-                      : "bg-[var(--exits-surface-muted)] text-muted",
-                )}
-                aria-hidden
-              >
-                {index + 1}
-              </span>
-              {t(STEP_LABEL_KEYS[id])}
-            </button>
-          );
+            (id === "preview" && Boolean(selectedId)) ||
+            (id === "confirm" && Boolean(selectedId) && step !== "choose");
+          return {
+            key: id,
+            label: t(STEP_LABEL_KEYS[id]),
+            state: active ? "active" : done ? "done" : "idle",
+            disabled: !reachable,
+            testId: `catalog-template-step-${id}`,
+            onSelect: () => setStep(id),
+          };
         })}
-      </nav>
+      />
 
       {step === "choose" ? (
         <section className="flex flex-col gap-3" data-testid="catalog-template-choose">
@@ -280,7 +256,7 @@ export function CatalogTemplateImportPage() {
               onChange={(event) => setSearch(event.target.value)}
               onClear={() => setSearch("")}
               placeholder={t("catalogImport.searchTemplates")}
-              containerClassName="catalog-import-page__search min-w-0 flex-1"
+              containerClassName="catalog-import-page__search exits-page__search min-w-0 flex-1"
             />
             <Button
               type="button"
@@ -305,7 +281,7 @@ export function CatalogTemplateImportPage() {
               detail={t("catalogImport.emptyTemplatesDetail")}
             />
           ) : null}
-          <ul className="catalog-import-templates m-0 flex list-none flex-col gap-2 p-0">
+          <ul className="exits-list catalog-import-templates m-0 grid list-none gap-2 p-0">
             {templatesQuery.data?.items.map((item) => {
               const status = statusById.get(item.id);
               return (
