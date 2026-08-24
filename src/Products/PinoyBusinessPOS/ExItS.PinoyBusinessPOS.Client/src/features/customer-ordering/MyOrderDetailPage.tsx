@@ -8,7 +8,6 @@ import {
   Loader2,
   MapPin,
   Package,
-  Store,
   Truck,
   Wallet,
 } from "lucide-react";
@@ -97,9 +96,12 @@ export function MyOrderDetailPage() {
     }
   }
 
+  const pageShell =
+    "personal-page personal-commerce-page my-order-detail-page exits-page flex min-w-0 flex-col gap-3";
+
   if (!tokenReady || (online && query.isLoading)) {
     return (
-      <div className="personal-page my-order-detail-page exits-page flex min-w-0 flex-col gap-3">
+      <div className={pageShell}>
         <PageHeader
           title={t("personal.myOrdersTitle")}
           backTo={personalPageBackNav.orders.to}
@@ -113,10 +115,7 @@ export function MyOrderDetailPage() {
 
   if (!online) {
     return (
-      <div
-        className="personal-page my-order-detail-page exits-page flex min-w-0 flex-col gap-3"
-        data-testid="my-order-detail-offline"
-      >
+      <div className={pageShell} data-testid="my-order-detail-offline">
         <PageHeader
           title={t("personal.myOrdersTitle")}
           backTo={personalPageBackNav.orders.to}
@@ -133,7 +132,7 @@ export function MyOrderDetailPage() {
 
   if (query.isError || !query.data) {
     return (
-      <div className="personal-page my-order-detail-page exits-page flex min-w-0 flex-col gap-3">
+      <div className={pageShell}>
         <PageHeader
           title={t("personal.myOrdersTitle")}
           backTo={personalPageBackNav.orders.to}
@@ -151,99 +150,95 @@ export function MyOrderDetailPage() {
   const FulfillmentIcon = isDelivery(order.fulfillmentType) ? Truck : Package;
 
   return (
-    <div
-      className="personal-page my-order-detail-page exits-page flex min-w-0 flex-col gap-3"
-      data-testid="my-order-detail-page"
-    >
+    <div className={pageShell} data-testid="my-order-detail-page">
       <PageHeader
         title={`#${order.orderNumber}`}
-        subtitle={order.branchNameSnapshot}
-        description={fulfillmentLabel(order.fulfillmentType, t)}
         backTo={personalPageBackNav.orders.to}
         backLabel={t("orders.backToQueue")}
         backTestId="page-header-back-order-detail"
-        trailing={
+      />
+
+      <header className="pc-order-summary-hero exits-animate-panel">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="pc-order-summary-hero__store">{order.branchNameSnapshot}</p>
+            <p className="pc-order-summary-hero__meta">
+              {fulfillmentLabel(order.fulfillmentType, t)} ·{" "}
+              {new Date(order.createdAtUtc).toLocaleString()}
+            </p>
+          </div>
           <StatusChip tone={orderStatusChipTone(order)}>
             {t(displayOrderStatusKey(order) as MessageKey)}
           </StatusChip>
-        }
-      />
+        </div>
+      </header>
 
       {actionError ? <ErrorState title={t("orders.error")} detail={actionError} /> : null}
 
-      <section
-        className="catalog-form-section exits-animate-panel personal-section gap-2"
-        data-testid="order-facts"
-      >
-        <h2 className="catalog-form-section__title text-muted">{t("orders.fulfillmentType")}</h2>
-        <div className="customer-order-fact">
-          <Store className="customer-order-fact__icon size-4 shrink-0" aria-hidden />
-          <div className="customer-order-fact__body min-w-0">
-            <span className="customer-order-fact__label">{t("orders.branch")}</span>
-            <strong className="customer-order-fact__value truncate">{order.branchNameSnapshot}</strong>
+      <section className="pc-checkout-section exits-animate-panel" data-testid="order-facts">
+        <h2 className="pc-checkout-section__title">{t("orders.fulfillmentType")}</h2>
+        <div className="pc-facts-grid">
+          <div className="pc-fact-tile">
+            <span className="pc-fact-tile__label">{t("orders.branch")}</span>
+            <span className="pc-fact-tile__value">{order.branchNameSnapshot}</span>
           </div>
-        </div>
-        <div className="customer-order-fact">
-          <FulfillmentIcon className="customer-order-fact__icon size-4 shrink-0" aria-hidden />
-          <div className="customer-order-fact__body min-w-0">
-            <span className="customer-order-fact__label">{t("orders.fulfillmentType")}</span>
-            <strong className="customer-order-fact__value">
+          <div className="pc-fact-tile">
+            <span className="pc-fact-tile__label">{t("orders.fulfillmentType")}</span>
+            <span className="pc-fact-tile__value inline-flex items-center gap-1">
+              <FulfillmentIcon className="size-3.5 shrink-0" aria-hidden />
               {fulfillmentLabel(order.fulfillmentType, t)}
-            </strong>
+            </span>
           </div>
-        </div>
-        <div className="customer-order-fact">
-          <Wallet className="customer-order-fact__icon size-4 shrink-0" aria-hidden />
-          <div className="customer-order-fact__body min-w-0">
-            <span className="customer-order-fact__label">{t("orders.paymentMethod")}</span>
-            <strong className="customer-order-fact__value truncate">{order.paymentMethod}</strong>
+          <div className="pc-fact-tile">
+            <span className="pc-fact-tile__label">{t("orders.paymentMethod")}</span>
+            <span className="pc-fact-tile__value inline-flex items-center gap-1">
+              <Wallet className="size-3.5 shrink-0" aria-hidden />
+              {order.paymentMethod}
+            </span>
           </div>
-        </div>
-        <div className="customer-order-fact">
-          <CreditCard className="customer-order-fact__icon size-4 shrink-0" aria-hidden />
-          <div className="customer-order-fact__body min-w-0">
-            <span className="customer-order-fact__label">{t("orders.paymentStatus")}</span>
-            <strong className="customer-order-fact__value truncate">{order.paymentStatus}</strong>
+          <div className="pc-fact-tile">
+            <span className="pc-fact-tile__label">{t("orders.paymentStatus")}</span>
+            <span className="pc-fact-tile__value inline-flex items-center gap-1">
+              <CreditCard className="size-3.5 shrink-0" aria-hidden />
+              {order.paymentStatus}
+            </span>
           </div>
         </div>
       </section>
 
-      <section
-        className="catalog-form-section exits-animate-panel personal-section gap-2"
-        data-testid="order-lines"
-      >
-        <h2 className="catalog-form-section__title flex items-center gap-2">
+      <section className="pc-checkout-section exits-animate-panel" data-testid="order-lines">
+        <h2 className="pc-checkout-section__title flex items-center gap-2">
           <Package className="size-4 shrink-0 text-muted" aria-hidden />
           {t("orders.viewDetails")}
         </h2>
         {order.lines.map((line) => (
-          <div key={line.lineId} className="customer-order-line">
-            <span className="min-w-0 truncate">
-              {line.nameSnapshot} × {line.quantity}
+          <div key={line.lineId} className="pc-checkout-line">
+            <span className="pc-checkout-line__name">
+              {line.nameSnapshot}
+              <span className="pc-checkout-line__qty"> × {line.quantity}</span>
             </span>
-            <MoneyDisplay amount={line.lineTotal} />
+            <MoneyDisplay amount={line.lineTotal} className="pc-checkout-line__amount" />
           </div>
         ))}
-        <div className="customer-order-line">
-          <span>{t("orders.subtotal")}</span>
-          <MoneyDisplay amount={order.merchandiseSubtotal} />
-        </div>
-        <div className="customer-order-line">
-          <span>{t("orders.deliveryFee")}</span>
-          <MoneyDisplay amount={order.deliveryFee} />
-        </div>
-        <div className="customer-order-line customer-order-line--total">
-          <span>{t("orders.total")}</span>
-          <MoneyDisplay amount={order.total} />
+        <div className="pc-checkout-totals">
+          <div className="pc-checkout-totals__row">
+            <span>{t("orders.subtotal")}</span>
+            <MoneyDisplay amount={order.merchandiseSubtotal} />
+          </div>
+          <div className="pc-checkout-totals__row">
+            <span>{t("orders.deliveryFee")}</span>
+            <MoneyDisplay amount={order.deliveryFee} />
+          </div>
+          <div className="pc-checkout-totals__row pc-checkout-totals__row--grand">
+            <span>{t("orders.total")}</span>
+            <MoneyDisplay amount={order.total} />
+          </div>
         </div>
       </section>
 
       {order.delivery ? (
-        <section
-          className="catalog-form-section exits-animate-panel personal-section gap-2"
-          data-testid="order-delivery"
-        >
-          <h2 className="catalog-form-section__title flex items-center gap-2">
+        <section className="pc-checkout-section exits-animate-panel" data-testid="order-delivery">
+          <h2 className="pc-checkout-section__title flex items-center gap-2">
             <MapPin className="size-4 shrink-0 text-muted" aria-hidden />
             {t("orders.deliveryAddress")}
           </h2>
@@ -255,17 +250,17 @@ export function MyOrderDetailPage() {
         </section>
       ) : null}
 
-      <p className="customer-order-note exits-animate-toolbar m-0 flex items-start gap-2 text-[length:var(--exits-text-sm)] text-muted">
+      <p className="exits-animate-toolbar m-0 flex items-start gap-2 text-[length:var(--exits-text-sm)] text-muted">
         <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
         <span>{t("orders.noLiveTracking")}</span>
       </p>
 
       {canCancel ? (
-        <div className="exits-animate-toolbar customer-order-detail-actions">
+        <div className="exits-animate-toolbar">
           <Button
             type="button"
             variant="destructive"
-            className="min-h-11 w-fit"
+            className="pc-order-cancel gap-2"
             data-testid="cancel-order"
             disabled={busy}
             onClick={() => void cancelOrder()}

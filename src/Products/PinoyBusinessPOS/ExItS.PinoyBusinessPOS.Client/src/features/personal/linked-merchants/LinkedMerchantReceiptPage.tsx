@@ -37,6 +37,8 @@ export function LinkedMerchantReceiptPage() {
   const [state, setState] = useState<ReceiptState>({ kind: "loading" });
 
   const backHref = `/personal/linked-merchants/${organizationId}/${businessCustomerId}`;
+  const pageShell =
+    "personal-page personal-commerce-page linked-merchant-receipt-page exits-page flex min-w-0 flex-col gap-3";
 
   useEffect(() => {
     async function load() {
@@ -118,7 +120,7 @@ export function LinkedMerchantReceiptPage() {
 
   if (state.kind === "entitlement") {
     return (
-      <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="linked-merchant-receipt-page">
+      <div className={pageShell} data-testid="linked-merchant-receipt-page">
         <PageHeader
           title={t("personal.merchantReceipt.missingTitle")}
           backTo={backHref}
@@ -138,7 +140,7 @@ export function LinkedMerchantReceiptPage() {
 
   if (state.kind === "error") {
     return (
-      <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="linked-merchant-receipt-page">
+      <div className={pageShell} data-testid="linked-merchant-receipt-page">
         <PageHeader
           title={t("personal.merchantReceipt.errorTitle")}
           backTo={backHref}
@@ -153,7 +155,7 @@ export function LinkedMerchantReceiptPage() {
   const { receipt } = state;
 
   return (
-    <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="linked-merchant-receipt-page">
+    <div className={pageShell} data-testid="linked-merchant-receipt-page">
       <PageHeader
         title={receipt.receiptNumber}
         description={t("personal.merchantReceipt.lede")}
@@ -162,44 +164,35 @@ export function LinkedMerchantReceiptPage() {
         backTestId="page-header-back-merchant-receipt"
       />
 
-      <section
-        className="catalog-form-section exits-animate-panel personal-section gap-2"
-        data-testid="linked-merchant-receipt-summary"
-      >
-        <p className="m-0 text-[length:var(--exits-text-sm)]">
-          {new Date(receipt.occurredAtUtc).toLocaleString()}
+      <section className="pc-receipt-hero exits-animate-panel" data-testid="linked-merchant-receipt-summary">
+        <p className="pc-receipt-hero__number">{receipt.receiptNumber}</p>
+        <p className="pc-receipt-hero__meta">
+          {new Date(receipt.occurredAtUtc).toLocaleString()} · {receipt.paymentMethod} ·{" "}
+          {receipt.status}
         </p>
-        <p className="mb-0 text-[length:var(--exits-text-sm)] text-muted">
-          {receipt.paymentMethod} · {receipt.status}
-        </p>
-        <p className="mb-0 text-[length:var(--exits-text-xl)] font-semibold tabular-nums">
+        <p className="pc-receipt-hero__total">
           {receipt.total.toFixed(2)} {receipt.currency}
         </p>
       </section>
 
-      <section className="catalog-form-section exits-animate-panel personal-section gap-2">
-        <p className="catalog-form-section__title text-muted">
-          {t("summary.disclaimerTitle")}
-        </p>
-        <p className="mb-0 text-[length:var(--exits-text-xs)] text-muted">
-          {t("summary.disclaimerBody")}
-        </p>
+      <section className="pc-checkout-section exits-animate-panel">
+        <p className="pc-checkout-section__title">{t("summary.disclaimerTitle")}</p>
+        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("summary.disclaimerBody")}</p>
       </section>
 
-      <section className="catalog-form-section exits-animate-panel personal-section gap-2">
-        <h2 className="catalog-form-section__title">
-          {t("personal.merchantReceipt.linesSection")}
-        </h2>
-        <ul className="exits-list m-0 grid list-none gap-2 p-0">
+      <section className="flex flex-col gap-2 exits-animate-panel">
+        <h2 className="pc-section-heading">{t("personal.merchantReceipt.linesSection")}</h2>
+        <ul className="flex flex-col gap-2 m-0 p-0 list-none">
           {receipt.lines.map((line) => (
             <li key={line.lineNumber}>
-              <div className="exits-list__card">
-                <p className="exits-list__name m-0 font-semibold">
-                  {line.productNameSnapshot}
-                </p>
-                <p className="mb-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
-                  {line.quantity.toFixed(3)} {line.unitOfMeasure} · {line.lineTotal.toFixed(2)}
-                </p>
+              <div className="pc-receipt-line">
+                <div className="min-w-0">
+                  <p className="pc-receipt-line__name">{line.productNameSnapshot}</p>
+                  <p className="pc-receipt-line__detail">
+                    {line.quantity.toFixed(3)} {line.unitOfMeasure}
+                  </p>
+                </div>
+                <span className="pc-receipt-line__total">{line.lineTotal.toFixed(2)}</span>
               </div>
             </li>
           ))}

@@ -17,10 +17,12 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { CommerceLoadMore } from "@/features/customer-ordering/personal-commerce-ui";
 import {
+  formatLinkedCustomerActivityAmount,
   formatLinkedCustomerActivityMeta,
-  formatLinkedCustomerActivityTitle,
 } from "@/features/personal/linked-merchants/format-linked-customer-activity";
+import { cn } from "@/lib/cn";
 import { useI18n } from "@/i18n/I18nProvider";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 
@@ -50,36 +52,52 @@ function ActivityRow({
   businessCustomerId: string;
   openReceiptLabel: string;
 }) {
-  const title = formatLinkedCustomerActivityTitle(item);
+  const title = item.referenceNumber;
   const meta = formatLinkedCustomerActivityMeta(item);
+  const amount = formatLinkedCustomerActivityAmount(item);
+
+  const content = (
+    <>
+      <div className="pc-activity-row__main">
+        <span className="pc-activity-row__title">{title}</span>
+        <span className="pc-activity-row__meta">
+          {meta}
+          {item.sourceSaleId && item.hasDetails ? ` · ${openReceiptLabel}` : ""}
+        </span>
+      </div>
+      {amount ? (
+        <span
+          className={cn(
+            "pc-activity-row__amount",
+            amount.kind === "charge" && "pc-activity-row__amount--charge",
+            amount.kind === "payment" && "pc-activity-row__amount--payment",
+            amount.kind === "neutral" && "pc-activity-row__amount--neutral",
+          )}
+        >
+          {amount.text}
+        </span>
+      ) : null}
+      {item.sourceSaleId && item.hasDetails ? (
+        <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
+      ) : null}
+    </>
+  );
 
   if (item.sourceSaleId && item.hasDetails) {
     return (
       <Link
         to={`/personal/linked-merchants/${organizationId}/${businessCustomerId}/receipts/${item.sourceSaleId}`}
-        className="exits-list__card flex min-h-11 items-center gap-2 text-foreground no-underline"
+        className="pc-activity-row pc-activity-row--clickable"
         data-testid="linked-merchant-activity-receipt-link"
       >
-        <span className="min-w-0 flex-1">
-          <span className="exits-list__name block truncate font-semibold">
-            {title}
-          </span>
-          <span className="block truncate text-[length:var(--exits-text-xs)] text-muted">
-            {meta} · {openReceiptLabel}
-          </span>
-        </span>
-        <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
+        {content}
       </Link>
     );
   }
 
   return (
-    <div
-      className="exits-list__card"
-      data-testid="linked-merchant-activity-row"
-    >
-      <p className="exits-list__name m-0 truncate font-semibold">{title}</p>
-      <p className="m-0 truncate text-[length:var(--exits-text-xs)] text-muted">{meta}</p>
+    <div className="pc-activity-row" data-testid="linked-merchant-activity-row">
+      {content}
     </div>
   );
 }
@@ -102,6 +120,9 @@ export function LinkedMerchantStatementPage() {
   const [busyOpenDebt, setBusyOpenDebt] = useState(false);
   const [busyRecent, setBusyRecent] = useState(false);
   const [busyOlder, setBusyOlder] = useState(false);
+
+  const pageShell =
+    "personal-page personal-commerce-page linked-merchant-statement-page exits-page flex min-w-0 flex-col gap-3";
 
   const loadInitial = useCallback(async () => {
     if (!organizationId || !businessCustomerId) {
@@ -266,7 +287,7 @@ export function LinkedMerchantStatementPage() {
 
   if (state.kind === "offline") {
     return (
-      <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="linked-merchant-statement-page">
+      <div className={pageShell} data-testid="linked-merchant-statement-page">
         <PageHeader
           title={t("personal.merchantStatement.title")}
           backTo={personalPageBackNav.merchants.to}
@@ -304,7 +325,7 @@ export function LinkedMerchantStatementPage() {
 
   if (state.kind === "error") {
     return (
-      <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="linked-merchant-statement-page">
+      <div className={pageShell} data-testid="linked-merchant-statement-page">
         <PageHeader
           title={t("personal.merchantStatement.title")}
           backTo={personalPageBackNav.merchants.to}
@@ -322,7 +343,7 @@ export function LinkedMerchantStatementPage() {
   const { summary, openDebt, openDebtHasMore, recent, recentHasMore } = state;
 
   return (
-    <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="linked-merchant-statement-page">
+    <div className={pageShell} data-testid="linked-merchant-statement-page">
       <PageHeader
         title={summary.merchantDisplayName ?? t("personal.merchantStatement.title")}
         description={t("personal.merchantStatement.lede")}
@@ -331,33 +352,29 @@ export function LinkedMerchantStatementPage() {
         backTestId="page-header-back-merchant-statement"
       />
 
-      <section
-        className="catalog-form-section exits-animate-panel personal-section gap-2"
-        data-testid="linked-merchant-outstanding"
-      >
-        <p className="catalog-form-section__title text-muted">
-          {t("personal.merchantStatement.outstandingLabel")}
-        </p>
-        <p className="mb-0 text-[length:var(--exits-text-xl)] font-semibold tabular-nums">
+      <section className="pc-balance-hero exits-animate-panel" data-testid="linked-merchant-outstanding">
+        <p className="pc-balance-hero__label">{t("personal.merchantStatement.outstandingLabel")}</p>
+        <p className="pc-balance-hero__amount">
           {summary.outstandingBalance.toFixed(2)} {summary.currency}
         </p>
-        <p className="mb-0 text-[length:var(--exits-text-sm)] text-muted">
-          {summary.customerDisplayName}
-        </p>
+        <p className="pc-balance-hero__context">{summary.customerDisplayName}</p>
+        {summary.asOfUtc ? (
+          <p className="pc-balance-hero__as-of">
+            {new Date(summary.asOfUtc).toLocaleString()}
+          </p>
+        ) : null}
       </section>
 
       {summary.outstandingBalance > 0 ? (
-        <section className="catalog-form-section exits-animate-panel personal-section gap-2">
-          <h2 className="catalog-form-section__title">
-            {t("personal.merchantStatement.openDebtSection")}
-          </h2>
+        <section className="flex flex-col gap-3 exits-animate-panel">
+          <h2 className="pc-section-heading">{t("personal.merchantStatement.openDebtSection")}</h2>
           {openDebt.length === 0 ? (
             <EmptyState
               title={t("personal.merchantStatement.openDebtEmptyTitle")}
               detail={t("personal.merchantStatement.openDebtEmptyDetail")}
             />
           ) : (
-            <ul className="exits-list m-0 grid list-none gap-2 p-0">
+            <ul className="pc-activity-list">
               {openDebt.map((item) => (
                 <li key={item.activityId}>
                   <ActivityRow
@@ -371,30 +388,26 @@ export function LinkedMerchantStatementPage() {
             </ul>
           )}
           {openDebt.length > 0 && openDebtHasMore ? (
-            <Button
-              type="button"
-              className="min-h-11 w-fit"
-              disabled={busyOpenDebt}
-              data-testid="linked-merchant-open-debt-load-more"
+            <CommerceLoadMore
+              label={t("personal.merchantStatement.loadMore")}
+              loadingLabel={t("loading.label")}
+              busy={busyOpenDebt}
+              testId="linked-merchant-open-debt-load-more"
               onClick={() => void loadMoreOpenDebt()}
-            >
-              {t("personal.merchantStatement.loadMore")}
-            </Button>
+            />
           ) : null}
         </section>
       ) : null}
 
-      <section className="catalog-form-section exits-animate-panel personal-section gap-2">
-        <h2 className="catalog-form-section__title">
-          {t("personal.merchantStatement.recentSection")}
-        </h2>
+      <section className="flex flex-col gap-3 exits-animate-panel">
+        <h2 className="pc-section-heading">{t("personal.merchantStatement.recentSection")}</h2>
         {recent.length === 0 ? (
           <EmptyState
             title={t("personal.merchantStatement.recentEmptyTitle")}
             detail={t("personal.merchantStatement.recentEmptyDetail")}
           />
         ) : (
-          <ul className="exits-list m-0 grid list-none gap-2 p-0">
+          <ul className="pc-activity-list">
             {recent.map((item) => (
               <li key={item.activityId}>
                 <ActivityRow
@@ -408,24 +421,20 @@ export function LinkedMerchantStatementPage() {
           </ul>
         )}
         {recent.length > 0 && recentHasMore ? (
-          <Button
-            type="button"
-            className="min-h-11 w-fit"
-            disabled={busyRecent}
-            data-testid="linked-merchant-recent-load-more"
+          <CommerceLoadMore
+            label={t("personal.merchantStatement.loadMore")}
+            loadingLabel={t("loading.label")}
+            busy={busyRecent}
+            testId="linked-merchant-recent-load-more"
             onClick={() => void loadMoreRecent()}
-          >
-            {t("personal.merchantStatement.loadMore")}
-          </Button>
+          />
         ) : null}
       </section>
 
-      <section className="catalog-form-section exits-animate-panel personal-section gap-2">
-        <h2 className="catalog-form-section__title">
-          {t("personal.merchantStatement.olderSection")}
-        </h2>
+      <section className="flex flex-col gap-3 exits-animate-panel">
+        <h2 className="pc-section-heading">{t("personal.merchantStatement.olderSection")}</h2>
         {olderLocked ? (
-          <div data-testid="linked-merchant-older-locked" className="flex flex-col gap-3">
+          <div data-testid="linked-merchant-older-locked" className="pc-empty-panel flex flex-col gap-3">
             <p className="m-0 text-[length:var(--exits-text-sm)]">
               {t("personal.merchantStatement.historyLocked")}
             </p>
@@ -450,7 +459,7 @@ export function LinkedMerchantStatementPage() {
           />
         ) : (
           <>
-            <ul className="exits-list m-0 grid list-none gap-2 p-0">
+            <ul className="pc-activity-list">
               {olderItems.map((item) => (
                 <li key={item.activityId}>
                   <ActivityRow
@@ -463,15 +472,13 @@ export function LinkedMerchantStatementPage() {
               ))}
             </ul>
             {olderHasMore ? (
-              <Button
-                type="button"
-                className="min-h-11 w-fit"
-                disabled={busyOlder}
-                data-testid="linked-merchant-older-load-more"
+              <CommerceLoadMore
+                label={t("personal.merchantStatement.loadMore")}
+                loadingLabel={t("loading.label")}
+                busy={busyOlder}
+                testId="linked-merchant-older-load-more"
                 onClick={() => void loadMoreOlder()}
-              >
-                {t("personal.merchantStatement.loadMore")}
-              </Button>
+              />
             ) : null}
           </>
         )}

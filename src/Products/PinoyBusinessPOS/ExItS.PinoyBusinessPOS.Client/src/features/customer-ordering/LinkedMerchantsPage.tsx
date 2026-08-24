@@ -1,253 +1,299 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
-import {
-  CalendarClock,
-  ClipboardList,
-  Receipt,
-  RefreshCw,
-  ShoppingBag,
-  Store,
-  Truck,
-  UserRoundCheck,
-} from "lucide-react";
-import { listLinkedMerchants } from "@/api/platform/linked-merchants-client";
-import { Button } from "@/components/ui/button";
-import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
-import { EmptyState } from "@/components/exits/EmptyState";
-import { ErrorState } from "@/components/exits/ErrorState";
-import { LoadingSkeleton } from "@/components/exits/FoundationStates";
-import { PageHeader } from "@/components/exits/PageHeader";
-import { StatusChip } from "@/components/exits/StatusChip";
-import { useI18n } from "@/i18n/I18nProvider";
-import { personalPageBackNav } from "@/navigation/page-back-nav";
-
-const MERCHANTS_PAGE_SIZE = 50;
-
-export function LinkedMerchantsPage() {
-  const { t } = useI18n();
-  const query = useInfiniteQuery({
-    queryKey: ["personal", "linked-merchants"],
-    initialPageParam: 1,
-    queryFn: ({ pageParam, signal }) => listLinkedMerchants(pageParam, MERCHANTS_PAGE_SIZE, signal),
-    getNextPageParam: (lastPage) => {
-      const loaded = lastPage.page * lastPage.pageSize;
-      return loaded < lastPage.totalCount ? lastPage.page + 1 : undefined;
-    },
-  });
-
-  const items = query.data?.pages.flatMap((page) => page.items) ?? [];
-
-  if (query.isLoading) {
-    return (
-      <div className="personal-page linked-merchants-page exits-page flex min-w-0 flex-col gap-3">
-        <PageHeader
-          title={t("personal.merchantsTitle")}
-          description={t("personal.merchantsLede")}
-          backTo={personalPageBackNav.more.to}
-          backLabel={t(personalPageBackNav.more.labelKey)}
-          backTestId="page-header-back-linked-merchants"
-        />
-        <LoadingSkeleton label={t("loading.label")} />
-      </div>
-    );
-  }
-
-  if (query.isError) {
-    return (
-      <div className="personal-page linked-merchants-page exits-page flex min-w-0 flex-col gap-3">
-        <PageHeader
-          title={t("personal.merchantsTitle")}
-          description={t("personal.merchantsLede")}
-          backTo={personalPageBackNav.more.to}
-          backLabel={t(personalPageBackNav.more.labelKey)}
-          backTestId="page-header-back-linked-merchants"
-        />
-        <ErrorState
-          title={t("orders.error")}
-          detail={query.error instanceof Error ? query.error.message : t("error.detail")}
-        />
-        <div className="exits-animate-toolbar">
-          <ActionTileGrid
-            tiles={[
-              {
-                key: "retry",
-                label: t("orders.retry"),
-                icon: RefreshCw,
-                onClick: () => void query.refetch(),
-              },
-            ]}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className="personal-page linked-merchants-page exits-page flex min-w-0 flex-col gap-3"
-      data-testid="linked-merchants-page"
-    >
-      <PageHeader
-        title={t("personal.merchantsTitle")}
-        description={t("personal.merchantsLede")}
-        backTo={personalPageBackNav.more.to}
-        backLabel={t(personalPageBackNav.more.labelKey)}
-        backTestId="page-header-back-linked-merchants"
-      />
-
-      <div className="exits-animate-toolbar" data-testid="linked-merchants-toolbar">
-        <ActionTileGrid
-          tiles={[
-            {
-              key: "orders",
-              label: t("personal.myOrdersLink"),
-              icon: ClipboardList,
-              to: "/personal/orders",
-              testId: "open-my-orders",
-            },
-            {
-              key: "customer-links",
-              label: t("personal.customerLinks.title"),
-              icon: UserRoundCheck,
-              to: "/personal/customer-links",
-              testId: "open-customer-links",
-            },
-          ]}
-        />
-      </div>
-
-      {items.length === 0 ? (
-        <div className="exits-animate-panel flex flex-col gap-3">
-          <EmptyState
-            title={t("personal.merchantsEmptyTitle")}
-            detail={t("personal.merchantsEmptyDetail")}
-          />
-          <ActionTileGrid
-            tiles={[
-              {
-                key: "customer-links-empty",
-                label: t("personal.customerLinks.title"),
-                icon: UserRoundCheck,
-                to: "/personal/customer-links",
-                testId: "open-customer-links-empty",
-                primary: true,
-              },
-            ]}
-          />
-        </div>
-      ) : (
-        <section
-          className="catalog-form-section exits-animate-panel personal-section gap-2"
-          aria-label={t("personal.merchantsTitle")}
-        >
-          <h2 className="catalog-form-section__title text-muted">{t("personal.merchantsTitle")}</h2>
-          <ul className="exits-list m-0 grid list-none gap-2 p-0">
-            {items.map((merchant) => {
-              const statementTo = `/personal/linked-merchants/${merchant.organizationId}/${merchant.businessCustomerId}`;
-              const shopTo = `/personal/linked-merchants/${merchant.organizationId}/shop`;
-              return (
-                <li key={merchant.linkedCustomerId}>
-                  <article
-                    className="exits-list__card linked-merchant-card"
-                    data-testid="linked-merchant-card"
-                  >
-                    <div className="linked-merchant-card__header">
-                      <span className="linked-merchant-card__avatar" aria-hidden>
-                        <Store className="size-5" />
-                      </span>
-                      <div className="linked-merchant-card__heading min-w-0 flex-1">
-                        <div className="linked-merchant-card__title-row">
-                          <strong className="exits-list__name min-w-0 truncate">
-                            {merchant.organizationDisplayName}
-                          </strong>
-                          {merchant.canCustomerOrder ? (
-                            <StatusChip tone="success">
-                              {t("personal.orderingAvailable")}
-                            </StatusChip>
-                          ) : (
-                            <StatusChip tone="warning">
-                              {t("personal.orderingUnavailable")}
-                            </StatusChip>
-                          )}
-                        </div>
-                        <p className="linked-merchant-card__customer m-0 truncate">
-                          {merchant.customerDisplayName}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="linked-merchant-card__meta">
-                      <span className="linked-merchant-card__meta-item">
-                        <CalendarClock className="size-3.5 shrink-0" aria-hidden />
-                        <span>{new Date(merchant.linkedAtUtc).toLocaleDateString()}</span>
-                      </span>
-                      {merchant.canCustomerDelivery ? (
-                        <span className="linked-merchant-card__meta-item">
-                          <Truck className="size-3.5 shrink-0" aria-hidden />
-                          <span>{t("orders.delivery")}</span>
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <div className="linked-merchant-card__actions">
-                      {merchant.canCustomerOrder ? (
-                        <>
-                          <Button
-                            asChild
-                            className="linked-merchant-card__action min-h-11"
-                            data-testid="open-merchant-shop"
-                          >
-                            <Link to={shopTo}>
-                              <ShoppingBag className="size-4 shrink-0" aria-hidden />
-                              {t("personal.shopLink")}
-                            </Link>
-                          </Button>
-                          <Button
-                            asChild
-                            variant="outline"
-                            className="linked-merchant-card__action min-h-11"
-                            data-testid="open-merchant-statement"
-                          >
-                            <Link to={statementTo}>
-                              <Receipt className="size-4 shrink-0" aria-hidden />
-                              {t("personal.merchantStatement.openPurchases")}
-                            </Link>
-                          </Button>
-                        </>
-                      ) : (
-                        <Button
-                          asChild
-                          className="linked-merchant-card__action linked-merchant-card__action--solo min-h-11"
-                          data-testid="open-merchant-statement"
-                        >
-                          <Link to={statementTo}>
-                            <Receipt className="size-4 shrink-0" aria-hidden />
-                            {t("personal.merchantStatement.openPurchases")}
-                          </Link>
-                        </Button>
-                      )}
-                    </div>
-                  </article>
-                </li>
-              );
-            })}
-          </ul>
-
-          {query.hasNextPage ? (
-            <Button
-              type="button"
-              variant="outline"
-              className="min-h-11 w-full"
-              data-testid="linked-merchants-load-more"
-              disabled={query.isFetchingNextPage}
-              onClick={() => void query.fetchNextPage()}
-            >
-              {query.isFetchingNextPage ? t("loading.label") : t("inventory.loadMore")}
-            </Button>
-          ) : null}
-        </section>
-      )}
-    </div>
-  );
-}
-
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
+import {
+  CalendarClock,
+  ClipboardList,
+  Package,
+  Receipt,
+  RefreshCw,
+  ShoppingBag,
+  Store,
+  Truck,
+  UserRoundCheck,
+} from "lucide-react";
+import { listLinkedMerchants, type LinkedMerchantDto } from "@/api/platform/linked-merchants-client";
+import { Button } from "@/components/ui/button";
+import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
+import { EmptyState } from "@/components/exits/EmptyState";
+import { ErrorState } from "@/components/exits/ErrorState";
+import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
+import { LoadingSkeleton } from "@/components/exits/FoundationStates";
+import { PageHeader } from "@/components/exits/PageHeader";
+import {
+  CommerceLoadMore,
+  storeDisplayInitial,
+} from "@/features/customer-ordering/personal-commerce-ui";
+import { useI18n } from "@/i18n/I18nProvider";
+import { personalPageBackNav } from "@/navigation/page-back-nav";
+
+const MERCHANTS_PAGE_SIZE = 50;
+
+function MerchantOrderingBadge({ available }: { available: boolean }) {
+  const { t } = useI18n();
+  return (
+    <span
+      className={
+        available
+          ? "pc-store-card__ordering pc-store-card__ordering--available"
+          : "pc-store-card__ordering pc-store-card__ordering--unavailable"
+      }
+    >
+      <span className="pc-store-card__ordering-dot" aria-hidden />
+      {available ? t("personal.orderingAvailable") : t("personal.orderingUnavailable")}
+    </span>
+  );
+}
+
+function LinkedMerchantStoreCard({
+  merchant,
+  index,
+}: {
+  merchant: LinkedMerchantDto;
+  index: number;
+}) {
+  const { t } = useI18n();
+  const statementTo = `/personal/linked-merchants/${merchant.organizationId}/${merchant.businessCustomerId}`;
+  const shopTo = `/personal/linked-merchants/${merchant.organizationId}/shop`;
+
+  return (
+    <li
+      className="pc-store-directory__item"
+      style={{ animationDelay: `${Math.min(index, 8) * 45 + 40}ms` }}
+    >
+      <article className="pc-store-card" data-testid="linked-merchant-card">
+        <div className="pc-store-card__top">
+          <span className="pc-store-card__avatar" aria-hidden>
+            {storeDisplayInitial(merchant.organizationDisplayName)}
+          </span>
+          <div className="pc-store-card__body">
+            <h3 className="pc-store-card__name">{merchant.organizationDisplayName}</h3>
+            <p className="pc-store-card__relationship">{merchant.customerDisplayName}</p>
+            <div className="pc-store-card__badges">
+              <MerchantOrderingBadge available={merchant.canCustomerOrder} />
+            </div>
+          </div>
+        </div>
+
+        <div className="pc-store-card__meta">
+          <span className="pc-store-card__meta-item">
+            <CalendarClock className="size-3.5 shrink-0" aria-hidden />
+            {new Date(merchant.linkedAtUtc).toLocaleDateString()}
+          </span>
+          {merchant.canCustomerOrder ? (
+            merchant.canCustomerDelivery ? (
+              <span className="pc-store-card__meta-item">
+                <Truck className="size-3.5 shrink-0" aria-hidden />
+                {t("orders.delivery")}
+              </span>
+            ) : (
+              <span className="pc-store-card__meta-item">
+                <Package className="size-3.5 shrink-0" aria-hidden />
+                {t("orders.pickup")}
+              </span>
+            )
+          ) : null}
+        </div>
+
+        <div
+          className={
+            merchant.canCustomerOrder
+              ? "pc-store-card__actions"
+              : "pc-store-card__actions pc-store-card__actions--solo"
+          }
+        >
+          {merchant.canCustomerOrder ? (
+            <>
+              <Button
+                asChild
+                className="pc-store-card__action pc-store-card__action--shop"
+                data-testid="open-merchant-shop"
+              >
+                <Link to={shopTo}>
+                  <ShoppingBag className="pc-store-card__action-icon size-4 shrink-0" aria-hidden />
+                  {t("personal.shopLink")}
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                className="pc-store-card__action pc-store-card__action--statement"
+                data-testid="open-merchant-statement"
+              >
+                <Link to={statementTo}>
+                  <Receipt className="pc-store-card__action-icon size-4 shrink-0" aria-hidden />
+                  {t("personal.merchantStatement.openPurchases")}
+                </Link>
+              </Button>
+            </>
+          ) : (
+            <Button
+              asChild
+              className="pc-store-card__action pc-store-card__action--statement"
+              data-testid="open-merchant-statement"
+            >
+              <Link to={statementTo}>
+                <Receipt className="pc-store-card__action-icon size-4 shrink-0" aria-hidden />
+                {t("personal.merchantStatement.openPurchases")}
+              </Link>
+            </Button>
+          )}
+        </div>
+      </article>
+    </li>
+  );
+}
+
+function LinkedMerchantsToolbar() {
+  const { t } = useI18n();
+  return (
+    <ExitsChipBar
+      variant="actions"
+      className="pc-commerce-toolbar exits-animate-toolbar"
+      ariaLabel={t("personal.home.quickActions")}
+      testId="linked-merchants-toolbar"
+      items={[
+        {
+          key: "stores",
+          label: t("personal.merchantsTitle"),
+          icon: <Store className="size-4 shrink-0" />,
+          state: "active",
+          testId: "linked-merchants-tab-stores",
+        },
+        {
+          key: "orders",
+          label: t("personal.myOrdersLink"),
+          icon: <ClipboardList className="size-4 shrink-0" />,
+          href: "/personal/orders",
+          testId: "open-my-orders",
+        },
+        {
+          key: "links",
+          label: t("personal.customerLinks.title"),
+          icon: <UserRoundCheck className="size-4 shrink-0" />,
+          href: "/personal/customer-links",
+          testId: "open-customer-links",
+        },
+      ]}
+    />
+  );
+}
+
+export function LinkedMerchantsPage() {
+  const { t } = useI18n();
+  const query = useInfiniteQuery({
+    queryKey: ["personal", "linked-merchants"],
+    initialPageParam: 1,
+    queryFn: ({ pageParam, signal }) => listLinkedMerchants(pageParam, MERCHANTS_PAGE_SIZE, signal),
+    getNextPageParam: (lastPage) => {
+      const loaded = lastPage.page * lastPage.pageSize;
+      return loaded < lastPage.totalCount ? lastPage.page + 1 : undefined;
+    },
+  });
+
+  const items = query.data?.pages.flatMap((page) => page.items) ?? [];
+
+  const pageShell = "personal-page personal-commerce-page linked-merchants-page exits-page flex min-w-0 flex-col gap-3";
+
+  if (query.isLoading) {
+    return (
+      <div className={pageShell}>
+        <PageHeader
+          title={t("personal.merchantsTitle")}
+          description={t("personal.merchantsLede")}
+          backTo={personalPageBackNav.more.to}
+          backLabel={t(personalPageBackNav.more.labelKey)}
+          backTestId="page-header-back-linked-merchants"
+        />
+        <LoadingSkeleton label={t("loading.label")} />
+      </div>
+    );
+  }
+
+  if (query.isError) {
+    return (
+      <div className={pageShell}>
+        <PageHeader
+          title={t("personal.merchantsTitle")}
+          description={t("personal.merchantsLede")}
+          backTo={personalPageBackNav.more.to}
+          backLabel={t(personalPageBackNav.more.labelKey)}
+          backTestId="page-header-back-linked-merchants"
+        />
+        <ErrorState
+          title={t("orders.error")}
+          detail={query.error instanceof Error ? query.error.message : t("error.detail")}
+        />
+        <div className="exits-animate-toolbar">
+          <ActionTileGrid
+            tiles={[
+              {
+                key: "retry",
+                label: t("orders.retry"),
+                icon: RefreshCw,
+                onClick: () => void query.refetch(),
+              },
+            ]}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={pageShell} data-testid="linked-merchants-page">
+      <PageHeader
+        title={t("personal.merchantsTitle")}
+        description={t("personal.merchantsLede")}
+        backTo={personalPageBackNav.more.to}
+        backLabel={t(personalPageBackNav.more.labelKey)}
+        backTestId="page-header-back-linked-merchants"
+      />
+
+      <LinkedMerchantsToolbar />
+
+      {items.length === 0 ? (
+        <div className="pc-empty-panel exits-animate-panel flex flex-col gap-3">
+          <EmptyState
+            title={t("personal.merchantsEmptyTitle")}
+            detail={t("personal.merchantsEmptyDetail")}
+          />
+          <Button asChild className="min-h-11 w-full gap-2" data-testid="open-customer-links-empty">
+            <Link to="/personal/customer-links">
+              <UserRoundCheck className="size-4 shrink-0" aria-hidden />
+              {t("personal.customerLinks.title")}
+            </Link>
+          </Button>
+        </div>
+      ) : (
+        <section
+          className="pc-store-list-section exits-animate-panel flex flex-col gap-3"
+          aria-label={t("personal.merchantsTitle")}
+        >
+          <div className="pc-store-list-section__header">
+            <h2 className="pc-section-heading">{t("personal.merchantsTitle")}</h2>
+            <span className="pc-store-list-section__count">{items.length}</span>
+          </div>
+          <ul className="pc-store-directory">
+            {items.map((merchant, index) => (
+              <LinkedMerchantStoreCard
+                key={merchant.linkedCustomerId}
+                merchant={merchant}
+                index={index}
+              />
+            ))}
+          </ul>
+
+          {query.hasNextPage ? (
+            <CommerceLoadMore
+              label={t("inventory.loadMore")}
+              loadingLabel={t("loading.label")}
+              busy={query.isFetchingNextPage}
+              testId="linked-merchants-load-more"
+              onClick={() => void query.fetchNextPage()}
+            />
+          ) : null}
+        </section>
+      )}
+    </div>
+  );
+}

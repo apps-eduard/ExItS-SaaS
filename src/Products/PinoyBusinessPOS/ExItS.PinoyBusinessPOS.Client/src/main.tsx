@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { App } from "@/app/App";
 import { recoverDevelopmentOriginFromStaleServiceWorker } from "@/pwa/dev-service-worker-guard";
 import "@/styles/globals.css";
+import "@/styles/personal-commerce.css";
 
 async function bootstrap() {
   const recovery = await recoverDevelopmentOriginFromStaleServiceWorker();

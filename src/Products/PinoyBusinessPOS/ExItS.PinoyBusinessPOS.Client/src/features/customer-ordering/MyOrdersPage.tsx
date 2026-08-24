@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { ChevronRight, Package, RefreshCw, Store, Truck, UserRoundCheck } from "lucide-react";
+import { ChevronRight, ClipboardList, Package, RefreshCw, Store, Truck, UserRoundCheck } from "lucide-react";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import { listMyCustomerOrders, sellerWorkspace } from "@/api/pos/pos-customer-orders-client";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,10 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { CommerceLoadMore } from "@/features/customer-ordering/personal-commerce-ui";
 import {
   displayOrderStatusKey,
   orderStatusChipTone,
@@ -21,7 +23,6 @@ import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 
-/** Buyer list uses a synthetic workspace org header (first seller on items or placeholder). */
 const BUYER_SCOPE_ORG = "00000000-0000-4000-8000-000000000001";
 const ORDERS_PAGE_SIZE = 40;
 
@@ -38,7 +39,7 @@ function fulfillmentLabel(type: string, t: (key: MessageKey) => string): string 
 function FulfillmentIcon({ type }: { type: string }) {
   const isDelivery = type.localeCompare("Delivery", undefined, { sensitivity: "accent" }) === 0;
   const Icon = isDelivery ? Truck : Package;
-  return <Icon className="customer-order-row__fulfillment-icon size-3.5 shrink-0" aria-hidden />;
+  return <Icon className="size-3.5 shrink-0" aria-hidden />;
 }
 
 export function MyOrdersPage() {
@@ -67,10 +68,12 @@ export function MyOrdersPage() {
   });
 
   const items = query.data?.pages.flatMap((page) => page.items) ?? [];
+  const pageShell =
+    "personal-page personal-commerce-page my-orders-page exits-page flex min-w-0 flex-col gap-3";
 
   if (!tokenReady || (online && query.isLoading)) {
     return (
-      <div className="personal-page my-orders-page exits-page flex min-w-0 flex-col gap-3">
+      <div className={pageShell}>
         <PageHeader
           title={t("personal.myOrdersTitle")}
           description={t("personal.myOrdersLede")}
@@ -85,7 +88,7 @@ export function MyOrdersPage() {
 
   if (!online) {
     return (
-      <div className="personal-page my-orders-page exits-page flex min-w-0 flex-col gap-3" data-testid="my-orders-offline">
+      <div className={pageShell} data-testid="my-orders-offline">
         <PageHeader
           title={t("personal.myOrdersTitle")}
           description={t("personal.myOrdersLede")}
@@ -103,7 +106,7 @@ export function MyOrdersPage() {
 
   if (query.isError) {
     return (
-      <div className="personal-page my-orders-page exits-page flex min-w-0 flex-col gap-3">
+      <div className={pageShell}>
         <PageHeader
           title={t("personal.myOrdersTitle")}
           description={t("personal.myOrdersLede")}
@@ -133,10 +136,7 @@ export function MyOrdersPage() {
   }
 
   return (
-    <div
-      className="personal-page my-orders-page exits-page flex min-w-0 flex-col gap-3"
-      data-testid="my-orders-page"
-    >
+    <div className={pageShell} data-testid="my-orders-page">
       <PageHeader
         title={t("personal.myOrdersTitle")}
         description={t("personal.myOrdersLede")}
@@ -145,80 +145,78 @@ export function MyOrdersPage() {
         backTestId="page-header-back-my-orders"
       />
 
-      <div className="exits-animate-toolbar" data-testid="my-orders-toolbar">
-        <ActionTileGrid
-          tiles={[
-            {
-              key: "stores",
-              label: t("personal.merchantsTitle"),
-              icon: Store,
-              to: "/personal/linked-merchants",
-              testId: "my-orders-open-stores",
-            },
-            {
-              key: "customer-links",
-              label: t("personal.customerLinks.title"),
-              icon: UserRoundCheck,
-              to: "/personal/customer-links",
-              testId: "my-orders-open-customer-links",
-            },
-          ]}
-        />
-      </div>
+      <ExitsChipBar
+        variant="actions"
+        className="pc-commerce-toolbar exits-animate-toolbar"
+        ariaLabel={t("personal.home.quickActions")}
+        testId="my-orders-toolbar"
+        items={[
+          {
+            key: "stores",
+            label: t("personal.merchantsTitle"),
+            icon: <Store className="size-4 shrink-0" />,
+            href: "/personal/linked-merchants",
+            testId: "my-orders-open-stores",
+          },
+          {
+            key: "orders",
+            label: t("personal.myOrdersLink"),
+            icon: <ClipboardList className="size-4 shrink-0" />,
+            state: "active",
+            testId: "my-orders-tab-orders",
+          },
+          {
+            key: "links",
+            label: t("personal.customerLinks.title"),
+            icon: <UserRoundCheck className="size-4 shrink-0" />,
+            href: "/personal/customer-links",
+            testId: "my-orders-open-customer-links",
+          },
+        ]}
+      />
 
       {items.length === 0 ? (
-        <div className="exits-animate-panel flex flex-col gap-3">
+        <div className="pc-empty-panel exits-animate-panel flex flex-col gap-3">
           <EmptyState title={t("orders.emptyTitle")} detail={t("orders.emptyBuyerDetail")} />
-          <ActionTileGrid
-            tiles={[
-              {
-                key: "stores-empty",
-                label: t("personal.merchantsTitle"),
-                icon: Store,
-                to: "/personal/linked-merchants",
-                testId: "my-orders-open-stores-empty",
-                primary: true,
-              },
-            ]}
-          />
+          <Button asChild className="min-h-11 w-full gap-2" data-testid="my-orders-open-stores-empty">
+            <Link to="/personal/linked-merchants">
+              <Store className="size-4 shrink-0" aria-hidden />
+              {t("personal.merchantsTitle")}
+            </Link>
+          </Button>
         </div>
       ) : (
-        <section
-          className="catalog-form-section exits-animate-panel personal-section gap-2"
-          aria-label={t("personal.myOrdersTitle")}
-        >
-          <h2 className="catalog-form-section__title text-muted">{t("personal.myOrdersTitle")}</h2>
-          <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="my-orders-list">
+        <section className="exits-animate-panel flex flex-col gap-3" aria-label={t("personal.myOrdersTitle")}>
+          <h2 className="pc-section-heading">{t("personal.myOrdersTitle")}</h2>
+          <ul className="flex flex-col gap-2 m-0 p-0 list-none" data-testid="my-orders-list">
             {items.map((order) => (
               <li key={order.orderId}>
                 <Link
-                  className="exits-list__card customer-order-row min-w-0 text-foreground no-underline"
+                  className="pc-order-card"
                   to={`/personal/orders/${order.orderId}`}
                   data-testid="my-order-card"
                 >
-                  <div className="customer-order-row__main min-w-0">
-                    <div className="customer-order-row__title-row">
-                      <strong className="exits-list__name block min-w-0 truncate font-semibold">
-                        #{order.orderNumber}
-                      </strong>
+                  <div className="pc-order-card__main">
+                    <p className="pc-order-card__store">{order.branchNameSnapshot}</p>
+                    <p className="pc-order-card__ref">
+                      #{order.orderNumber} · {new Date(order.createdAtUtc).toLocaleString()}
+                    </p>
+                    <div className="pc-order-card__meta">
                       <StatusChip tone={orderStatusChipTone(order)}>
                         {t(displayOrderStatusKey(order) as MessageKey)}
                       </StatusChip>
-                    </div>
-                    <p className="customer-order-row__meta mb-0 mt-1 flex min-w-0 items-center gap-1.5 truncate text-[length:var(--exits-text-sm)] text-muted">
-                      <FulfillmentIcon type={order.fulfillmentType} />
-                      <span className="min-w-0 truncate">
-                        {order.branchNameSnapshot} · {fulfillmentLabel(order.fulfillmentType, t)} ·{" "}
+                      <span className="inline-flex items-center gap-1">
+                        <FulfillmentIcon type={order.fulfillmentType} />
+                        {fulfillmentLabel(order.fulfillmentType, t)}
+                      </span>
+                      <span>
                         {order.lineCount} {t("orders.items")}
                       </span>
-                    </p>
+                    </div>
                   </div>
-                  <div className="customer-order-row__aside">
-                    <MoneyDisplay amount={order.total} className="customer-order-row__total" />
-                    <ChevronRight
-                      className="customer-order-row__chevron size-4 shrink-0 text-muted"
-                      aria-hidden
-                    />
+                  <div className="pc-order-card__aside">
+                    <MoneyDisplay amount={order.total} className="pc-order-card__total" />
+                    <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
                   </div>
                 </Link>
               </li>
@@ -226,16 +224,13 @@ export function MyOrdersPage() {
           </ul>
 
           {query.hasNextPage ? (
-            <Button
-              type="button"
-              variant="outline"
-              className="min-h-11 w-full"
-              data-testid="my-orders-load-more"
-              disabled={query.isFetchingNextPage}
+            <CommerceLoadMore
+              label={t("inventory.loadMore")}
+              loadingLabel={t("loading.label")}
+              busy={query.isFetchingNextPage}
+              testId="my-orders-load-more"
               onClick={() => void query.fetchNextPage()}
-            >
-              {query.isFetchingNextPage ? t("loading.label") : t("inventory.loadMore")}
-            </Button>
+            />
           ) : null}
         </section>
       )}

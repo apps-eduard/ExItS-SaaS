@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Package, Smartphone, Truck, Wallet } from "lucide-react";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import { PosApiError } from "@/api/pos/pos-http";
 import { describePosApiError } from "@/access/pos-commercial-errors";
@@ -12,13 +13,16 @@ import {
   sellerWorkspace,
 } from "@/api/pos/pos-customer-orders-client";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { usePersonalMerchantCart } from "@/features/customer-ordering/PersonalMerchantCartProvider";
+import {
+  CheckoutPlaceButton,
+  SegmentedOption,
+} from "@/features/customer-ordering/personal-commerce-ui";
 import {
   eligibleBranches,
   FulfillmentDelivery,
@@ -27,6 +31,7 @@ import {
   resolveFulfillmentSelection,
 } from "@/features/customer-ordering/personal-merchant-cart";
 import { useI18n } from "@/i18n/I18nProvider";
+import type { MessageKey } from "@/i18n/messages";
 import { useSession } from "@/session/SessionProvider";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 
@@ -36,6 +41,12 @@ function money(n: number): string {
 
 function newClientOrderId(): string {
   return crypto.randomUUID();
+}
+
+function paymentLabel(code: string, t: (key: MessageKey) => string): string {
+  if (code === "Cash") return t("orders.paymentCash");
+  if (code === "ManualGCash") return t("orders.paymentGCash");
+  return t("orders.paymentUtang");
 }
 
 export function MerchantCheckoutPage() {
@@ -214,16 +225,16 @@ export function MerchantCheckoutPage() {
     }
   }
 
+  const pageShell =
+    "personal-page personal-commerce-page merchant-checkout-page exits-page flex min-w-0 flex-col gap-4";
+
   if (!tokenReady || (online && storefrontQuery.isLoading)) {
     return <LoadingState label={t("loading.label")} />;
   }
 
   if (!online) {
     return (
-      <div
-        className="personal-page exits-page flex min-w-0 flex-col gap-4"
-        data-testid="merchant-checkout-offline"
-      >
+      <div className={pageShell} data-testid="merchant-checkout-offline">
         <PageHeader
           title={t("orders.checkoutTitle")}
           backTo={
@@ -246,10 +257,7 @@ export function MerchantCheckoutPage() {
 
   if (cart.lines.length === 0 || cart.sellerOrganizationId !== organizationId) {
     return (
-      <div
-        className="personal-page exits-page flex min-w-0 flex-col gap-4"
-        data-testid="checkout-empty"
-      >
+      <div className={pageShell} data-testid="checkout-empty">
         <PageHeader
           title={t("orders.checkoutTitle")}
           backTo={`/personal/linked-merchants/${organizationId}/shop`}
@@ -263,7 +271,7 @@ export function MerchantCheckoutPage() {
 
   if (storefrontQuery.isError || !storefrontQuery.data || !selection) {
     return (
-      <div className="personal-page exits-page flex min-w-0 flex-col gap-4">
+      <div className={pageShell}>
         <PageHeader
           title={t("orders.checkoutTitle")}
           backTo={
@@ -302,10 +310,7 @@ export function MerchantCheckoutPage() {
   const total = Math.round((merchandiseSubtotal + deliveryFee) * 100) / 100;
 
   return (
-    <div
-      className="personal-page exits-page flex min-w-0 flex-col gap-4"
-      data-testid="merchant-checkout-page"
-    >
+    <div className={pageShell} data-testid="merchant-checkout-page">
       <PageHeader
         title={t("orders.checkoutTitle")}
         description={storefrontQuery.data.organizationDisplayName}
@@ -334,190 +339,209 @@ export function MerchantCheckoutPage() {
         </div>
       ) : null}
 
-      <Card className="flex flex-col gap-2" data-testid="checkout-lines">
-        {cart.lines.map((line) => (
-          <div key={line.productId} className="flex justify-between gap-2">
-            <span>
-              {line.name} × {line.quantity}
-            </span>
-            <strong>{money(Math.round(line.unitPrice * line.quantity * 100) / 100)}</strong>
-          </div>
-        ))}
-      </Card>
-
-      {selection.showFulfillmentToggle ? (
-        <div className="flex flex-wrap gap-2" role="group" aria-label={t("orders.fulfillmentType")}>
-          <Button
-            type="button"
-            variant={selection.fulfillmentType === FulfillmentPickup ? "default" : "ghost"}
-            className="min-h-11"
-            data-testid="fulfillment-pickup"
-            onClick={() => setFulfillmentType(FulfillmentPickup)}
-          >
-            {t("orders.pickup")}
-          </Button>
-          <Button
-            type="button"
-            variant={selection.fulfillmentType === FulfillmentDelivery ? "default" : "ghost"}
-            className="min-h-11"
-            data-testid="fulfillment-delivery"
-            onClick={() => setFulfillmentType(FulfillmentDelivery)}
-          >
-            {t("orders.delivery")}
-          </Button>
-        </div>
-      ) : null}
-
-      {selection.showBranchSelector ? (
-        <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-          <span>{t("orders.branch")}</span>
-          <select
-            className="min-h-11 rounded border px-3"
-            data-testid="checkout-branch-select"
-            value={branchId ?? ""}
-            onChange={(e) => setBranchId(e.target.value || null)}
-          >
-            {branches.map((b) => (
-              <option key={b.branchId} value={b.branchId}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
-
-      {selection.fulfillmentType === FulfillmentDelivery ? (
-        <Card className="flex flex-col gap-3" data-testid="delivery-fields">
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            <span>{t("orders.recipientName")}</span>
-            <input
-              className="min-h-11 rounded border px-3"
-              value={recipientName}
-              onChange={(e) => setRecipientName(e.target.value)}
-              data-testid="delivery-recipient"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            <span>{t("orders.recipientPhone")}</span>
-            <input
-              className="min-h-11 rounded border px-3"
-              value={recipientPhone}
-              onChange={(e) => setRecipientPhone(e.target.value)}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            <span>{t("orders.addressLine1")}</span>
-            <input
-              className="min-h-11 rounded border px-3"
-              value={addressLine1}
-              onChange={(e) => setAddressLine1(e.target.value)}
-              data-testid="delivery-address"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            <span>{t("orders.addressLine2")}</span>
-            <input
-              className="min-h-11 rounded border px-3"
-              value={addressLine2}
-              onChange={(e) => setAddressLine2(e.target.value)}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            <span>{t("orders.city")}</span>
-            <input
-              className="min-h-11 rounded border px-3"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            <span>{t("orders.deliveryNotes")}</span>
-            <input
-              className="min-h-11 rounded border px-3"
-              value={deliveryNotes}
-              onChange={(e) => setDeliveryNotes(e.target.value)}
-            />
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-              <span>{t("orders.latitude")}</span>
-              <input
-                className="min-h-11 rounded border px-3"
-                value={latitude}
-                onChange={(e) => setLatitude(e.target.value)}
-                data-testid="delivery-lat"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-              <span>{t("orders.longitude")}</span>
-              <input
-                className="min-h-11 rounded border px-3"
-                value={longitude}
-                onChange={(e) => setLongitude(e.target.value)}
-                data-testid="delivery-lng"
-              />
-            </label>
-          </div>
-          {quoteQuery.isFetching ? <LoadingState label={t("orders.quotingFee")} /> : null}
-          {quoteQuery.data ? (
-            <p className="m-0" data-testid="delivery-fee-quote">
-              {quoteQuery.data.available
-                ? `${t("orders.deliveryFee")}: ${money(quoteQuery.data.deliveryFee)}`
-                : (quoteQuery.data.unavailableReason ?? t("orders.deliveryUnavailable"))}
-            </p>
-          ) : null}
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("orders.feeServerAuthoritative")}
-          </p>
-        </Card>
-      ) : null}
-
-      <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-        <span>{t("orders.paymentMethod")}</span>
-        <select
-          className="min-h-11 rounded border px-3"
-          value={paymentMethod}
-          onChange={(e) => setPaymentMethod(e.target.value)}
-          data-testid="payment-method"
-        >
-          {PAYMENT_METHOD_CODES.map((code) => (
-            <option key={code} value={code}>
-              {t(
-                code === "Cash"
-                  ? "orders.paymentCash"
-                  : code === "ManualGCash"
-                    ? "orders.paymentGCash"
-                    : "orders.paymentUtang",
-              )}
-            </option>
+      <div className="pc-checkout-stack">
+        <section className="pc-checkout-section" data-testid="checkout-lines">
+          <h2 className="pc-checkout-section__title">{t("orders.viewDetails")}</h2>
+          {cart.lines.map((line) => (
+            <div key={line.productId} className="pc-checkout-line">
+              <span className="pc-checkout-line__name">
+                {line.name}
+                <span className="pc-checkout-line__qty"> × {line.quantity}</span>
+              </span>
+              <span className="pc-checkout-line__amount">
+                {money(Math.round(line.unitPrice * line.quantity * 100) / 100)}
+              </span>
+            </div>
           ))}
-        </select>
-      </label>
+        </section>
 
-      <Card className="flex flex-col gap-1" data-testid="checkout-totals">
-        <div className="flex justify-between">
-          <span>{t("orders.subtotal")}</span>
-          <strong>{money(merchandiseSubtotal)}</strong>
-        </div>
-        <div className="flex justify-between">
-          <span>{t("orders.deliveryFee")}</span>
-          <strong>{money(deliveryFee)}</strong>
-        </div>
-        <div className="flex justify-between">
-          <span>{t("orders.total")}</span>
-          <strong>{money(total)}</strong>
-        </div>
-      </Card>
+        <section className="pc-checkout-section">
+          <h2 className="pc-checkout-section__title">{t("orders.fulfillmentType")}</h2>
+          {selection.showFulfillmentToggle ? (
+            <div className="pc-segmented" role="radiogroup" aria-label={t("orders.fulfillmentType")}>
+              <SegmentedOption
+                pressed={selection.fulfillmentType === FulfillmentPickup}
+                testId="fulfillment-pickup"
+                onClick={() => setFulfillmentType(FulfillmentPickup)}
+              >
+                <Package className="size-4 shrink-0" aria-hidden />
+                {t("orders.pickup")}
+              </SegmentedOption>
+              <SegmentedOption
+                pressed={selection.fulfillmentType === FulfillmentDelivery}
+                testId="fulfillment-delivery"
+                onClick={() => setFulfillmentType(FulfillmentDelivery)}
+              >
+                <Truck className="size-4 shrink-0" aria-hidden />
+                {t("orders.delivery")}
+              </SegmentedOption>
+            </div>
+          ) : (
+            <p className="m-0 text-[length:var(--exits-text-sm)]">
+              {selection.fulfillmentType === FulfillmentDelivery
+                ? t("orders.delivery")
+                : t("orders.pickup")}
+            </p>
+          )}
 
-      <Button
-        type="button"
-        className="min-h-11"
-        data-testid="place-order"
-        disabled={busy || !selection.canPlace}
+          {selection.showBranchSelector ? (
+            <label className="pc-field">
+              <span className="pc-field__label">{t("orders.branch")}</span>
+              <select
+                className="pc-field__control"
+                data-testid="checkout-branch-select"
+                value={branchId ?? ""}
+                onChange={(e) => setBranchId(e.target.value || null)}
+              >
+                {branches.map((b) => (
+                  <option key={b.branchId} value={b.branchId}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
+          {selection.fulfillmentType === FulfillmentDelivery ? (
+            <div className="flex flex-col gap-3" data-testid="delivery-fields">
+              <label className="pc-field">
+                <span className="pc-field__label">{t("orders.recipientName")}</span>
+                <input
+                  className="pc-field__control"
+                  value={recipientName}
+                  onChange={(e) => setRecipientName(e.target.value)}
+                  data-testid="delivery-recipient"
+                />
+              </label>
+              <label className="pc-field">
+                <span className="pc-field__label">{t("orders.recipientPhone")}</span>
+                <input
+                  className="pc-field__control"
+                  value={recipientPhone}
+                  onChange={(e) => setRecipientPhone(e.target.value)}
+                />
+              </label>
+              <label className="pc-field">
+                <span className="pc-field__label">{t("orders.addressLine1")}</span>
+                <input
+                  className="pc-field__control"
+                  value={addressLine1}
+                  onChange={(e) => setAddressLine1(e.target.value)}
+                  data-testid="delivery-address"
+                />
+              </label>
+              <label className="pc-field">
+                <span className="pc-field__label">{t("orders.addressLine2")}</span>
+                <input
+                  className="pc-field__control"
+                  value={addressLine2}
+                  onChange={(e) => setAddressLine2(e.target.value)}
+                />
+              </label>
+              <label className="pc-field">
+                <span className="pc-field__label">{t("orders.city")}</span>
+                <input
+                  className="pc-field__control"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                />
+              </label>
+              <label className="pc-field">
+                <span className="pc-field__label">{t("orders.deliveryNotes")}</span>
+                <input
+                  className="pc-field__control"
+                  value={deliveryNotes}
+                  onChange={(e) => setDeliveryNotes(e.target.value)}
+                />
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="pc-field">
+                  <span className="pc-field__label">{t("orders.latitude")}</span>
+                  <input
+                    className="pc-field__control"
+                    value={latitude}
+                    onChange={(e) => setLatitude(e.target.value)}
+                    data-testid="delivery-lat"
+                  />
+                </label>
+                <label className="pc-field">
+                  <span className="pc-field__label">{t("orders.longitude")}</span>
+                  <input
+                    className="pc-field__control"
+                    value={longitude}
+                    onChange={(e) => setLongitude(e.target.value)}
+                    data-testid="delivery-lng"
+                  />
+                </label>
+              </div>
+              {quoteQuery.isFetching ? <LoadingState label={t("orders.quotingFee")} /> : null}
+              {quoteQuery.data ? (
+                <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="delivery-fee-quote">
+                  {quoteQuery.data.available
+                    ? `${t("orders.deliveryFee")}: ${money(quoteQuery.data.deliveryFee)}`
+                    : (quoteQuery.data.unavailableReason ?? t("orders.deliveryUnavailable"))}
+                </p>
+              ) : null}
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("orders.feeServerAuthoritative")}
+              </p>
+            </div>
+          ) : null}
+        </section>
+
+        <section className="pc-checkout-section">
+          <h2 className="pc-checkout-section__title">{t("orders.paymentMethod")}</h2>
+          <div
+            className="pc-segmented pc-segmented--payment"
+            role="radiogroup"
+            aria-label={t("orders.paymentMethod")}
+          >
+            {PAYMENT_METHOD_CODES.map((code) => (
+              <SegmentedOption
+                key={code}
+                pressed={paymentMethod === code}
+                testId={`payment-${code.toLowerCase()}`}
+                onClick={() => setPaymentMethod(code)}
+              >
+                {code === "Cash" ? (
+                  <Wallet className="size-4 shrink-0" aria-hidden />
+                ) : code === "ManualGCash" ? (
+                  <Smartphone className="size-4 shrink-0" aria-hidden />
+                ) : (
+                  <Wallet className="size-4 shrink-0" aria-hidden />
+                )}
+                {paymentLabel(code, t)}
+              </SegmentedOption>
+            ))}
+          </div>
+        </section>
+
+        <section className="pc-checkout-section" data-testid="checkout-totals">
+          <h2 className="pc-checkout-section__title">{t("orders.total")}</h2>
+          <div className="pc-checkout-totals">
+            <div className="pc-checkout-totals__row">
+              <span>{t("orders.subtotal")}</span>
+              <strong>{money(merchandiseSubtotal)}</strong>
+            </div>
+            <div className="pc-checkout-totals__row">
+              <span>{t("orders.deliveryFee")}</span>
+              <strong>{money(deliveryFee)}</strong>
+            </div>
+            <div className="pc-checkout-totals__row pc-checkout-totals__row--grand">
+              <span>{t("orders.total")}</span>
+              <strong>{money(total)}</strong>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <CheckoutPlaceButton
+        label={t("orders.placeOrder")}
+        busyLabel={t("orders.placing")}
+        busy={busy}
+        disabled={!selection.canPlace}
         onClick={() => void placeOrder()}
-      >
-        {busy ? t("orders.placing") : t("orders.placeOrder")}
-      </Button>
+      />
     </div>
   );
 }
