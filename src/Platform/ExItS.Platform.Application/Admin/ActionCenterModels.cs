@@ -1,3 +1,5 @@
+using ExItS.Platform.Domain.Authorization;
+
 namespace ExItS.Platform.Application.Admin;
 
 public static class ActionCenterCategories
@@ -35,3 +37,32 @@ public sealed record ActionCenterItemDto(
 public sealed record ActionCenterResponseDto(
     IReadOnlyList<ActionCenterItemDto> Items,
     int TotalCount);
+
+/// <summary>
+/// Permission-derived inclusion flags for Action Center composition.
+/// Categories are independent — lacking one never denies the whole response.
+/// </summary>
+public sealed record ActionCenterAccessScope(
+    bool IncludeUsage,
+    bool IncludeSubscriptions,
+    bool IncludePayments,
+    bool IncludeAccounts,
+    bool IncludeJobs,
+    bool IncludeHealth)
+{
+    public static ActionCenterAccessScope FromPermissions(IReadOnlySet<string> permissions)
+    {
+        ArgumentNullException.ThrowIfNull(permissions);
+        var isPlatformAdministrator = permissions.Contains(PlatformPermission.ManagePlatformSettings);
+        return new ActionCenterAccessScope(
+            IncludeUsage: permissions.Contains(PlatformPermission.ViewPortfolio),
+            IncludeSubscriptions: permissions.Contains(PlatformPermission.ManageSubscriptions),
+            IncludePayments: permissions.Contains(PlatformPermission.ManageManualPayments),
+            IncludeAccounts: permissions.Contains(PlatformPermission.ManagePlatformUsers),
+            IncludeJobs: isPlatformAdministrator,
+            IncludeHealth: isPlatformAdministrator);
+    }
+
+    public bool HasAnyCategory =>
+        IncludeUsage || IncludeSubscriptions || IncludePayments || IncludeAccounts || IncludeJobs || IncludeHealth;
+}

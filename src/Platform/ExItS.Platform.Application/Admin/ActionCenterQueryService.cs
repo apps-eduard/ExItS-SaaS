@@ -40,10 +40,54 @@ public sealed class ActionCenterQueryService
         _health = health;
     }
 
-    public async Task<ActionCenterResponseDto> GetAsync(CancellationToken cancellationToken = default)
+    public async Task<ActionCenterResponseDto> GetAsync(
+        ActionCenterAccessScope access,
+        CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(access);
         var items = new List<ActionCenterItemDto>();
 
+        if (access.IncludePayments)
+        {
+            await AddPaymentActionsAsync(items, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (access.IncludeSubscriptions)
+        {
+            await AddSubscriptionActionsAsync(items, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (access.IncludeAccounts)
+        {
+            await AddAccountActionsAsync(items, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (access.IncludeUsage)
+        {
+            await AddUsageActionsAsync(items, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (access.IncludeJobs)
+        {
+            await AddJobActionsAsync(items, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (access.IncludeHealth)
+        {
+            await AddHealthActionsAsync(items, cancellationToken).ConfigureAwait(false);
+        }
+
+        var ordered = items
+            .OrderByDescending(i => SeverityRank(i.Severity))
+            .ThenByDescending(i => i.OccurredAtUtc ?? DateTimeOffset.MinValue)
+            .Take(MaxItems)
+            .ToList();
+
+        return new ActionCenterResponseDto(ordered, ordered.Count);
+    }
+
+    private async Task AddPaymentActionsAsync(List<ActionCenterItemDto> items, CancellationToken cancellationToken)
+    {
         var pendingCount = await _store
             .CountPaymentsByStatusAsync(SaaSPaymentStatus.PendingConfirmation, cancellationToken)
             .ConfigureAwait(false);
@@ -64,6 +108,49 @@ public sealed class ActionCenterQueryService
                 null));
         }
 
+        var rejectedCount = await _store
+            .CountPaymentsByStatusAsync(SaaSPaymentStatus.Rejected, cancellationToken)
+            .ConfigureAwait(false);
+        if (rejectedCount > 0)
+        {
+            items.Add(new ActionCenterItemDto(
+                "summary-rejected-payments",
+                ActionCenterCategories.Payment,
+                ActionCenterSeverities.Danger,
+                "Rejected payments",
+                $"{rejectedCount} payment(s) were rejected",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null));
+        }
+
+        var pendingPayments = await _payments
+            .ListByStatusAsync(SaaSPaymentStatus.PendingConfirmation, 1, 5, cancellationToken)
+            .ConfigureAwait(false);
+        foreach (var payment in pendingPayments.Items)
+        {
+            items.Add(new ActionCenterItemDto(
+                $"payment-pending-{payment.Id:D}",
+                ActionCenterCategories.Payment,
+                ActionCenterSeverities.Warning,
+                "Pending payment confirmation",
+                payment.ExternalReference,
+                payment.OrganizationId,
+                null,
+                payment.ProductCode,
+                payment.SubscriptionId,
+                payment.Id,
+                null,
+                payment.UpdatedAtUtc));
+        }
+    }
+
+    private async Task AddSubscriptionActionsAsync(List<ActionCenterItemDto> items, CancellationToken cancellationToken)
+    {
         var pastDueCount = await _store
             .CountSubscriptionsByStatusAsync(SubscriptionStatus.PastDue, cancellationToken)
             .ConfigureAwait(false);
@@ -104,26 +191,29 @@ public sealed class ActionCenterQueryService
                 null));
         }
 
-        var rejectedCount = await _store
-            .CountPaymentsByStatusAsync(SaaSPaymentStatus.Rejected, cancellationToken)
+        var pastDue = await _subscriptions
+            .ListPastDueAsync(1, 5, cancellationToken)
             .ConfigureAwait(false);
-        if (rejectedCount > 0)
+        foreach (var subscription in pastDue.Items)
         {
             items.Add(new ActionCenterItemDto(
-                "summary-rejected-payments",
-                ActionCenterCategories.Payment,
+                $"subscription-past-due-{subscription.Id:D}",
+                ActionCenterCategories.Subscription,
                 ActionCenterSeverities.Danger,
-                "Rejected payments",
-                $"{rejectedCount} payment(s) were rejected",
+                "Past-due subscription",
+                subscription.ProductDisplayName ?? subscription.ProductCode,
+                subscription.OrganizationId,
+                subscription.OrganizationDisplayName,
+                subscription.ProductCode,
+                subscription.Id,
                 null,
                 null,
-                null,
-                null,
-                null,
-                null,
-                null));
+                subscription.PastDueAtUtc ?? subscription.UpdatedAtUtc));
         }
+    }
 
+    private async Task AddAccountActionsAsync(List<ActionCenterItemDto> items, CancellationToken cancellationToken)
+    {
         var unassigned = await _users
             .ListAsync(
                 status: null,
@@ -149,47 +239,10 @@ public sealed class ActionCenterQueryService
                 null,
                 null));
         }
+    }
 
-        var pendingPayments = await _payments
-            .ListByStatusAsync(SaaSPaymentStatus.PendingConfirmation, 1, 5, cancellationToken)
-            .ConfigureAwait(false);
-        foreach (var payment in pendingPayments.Items)
-        {
-            items.Add(new ActionCenterItemDto(
-                $"payment-pending-{payment.Id:D}",
-                ActionCenterCategories.Payment,
-                ActionCenterSeverities.Warning,
-                "Pending payment confirmation",
-                payment.ExternalReference,
-                payment.OrganizationId,
-                null,
-                payment.ProductCode,
-                payment.SubscriptionId,
-                payment.Id,
-                null,
-                payment.UpdatedAtUtc));
-        }
-
-        var pastDue = await _subscriptions
-            .ListPastDueAsync(1, 5, cancellationToken)
-            .ConfigureAwait(false);
-        foreach (var subscription in pastDue.Items)
-        {
-            items.Add(new ActionCenterItemDto(
-                $"subscription-past-due-{subscription.Id:D}",
-                ActionCenterCategories.Subscription,
-                ActionCenterSeverities.Danger,
-                "Past-due subscription",
-                subscription.ProductDisplayName ?? subscription.ProductCode,
-                subscription.OrganizationId,
-                subscription.OrganizationDisplayName,
-                subscription.ProductCode,
-                subscription.Id,
-                null,
-                null,
-                subscription.PastDueAtUtc ?? subscription.UpdatedAtUtc));
-        }
-
+    private async Task AddUsageActionsAsync(List<ActionCenterItemDto> items, CancellationToken cancellationToken)
+    {
         var usageRows = await _usageLimits
             .ListAsync(null, null, 1, 100, cancellationToken)
             .ConfigureAwait(false);
@@ -209,7 +262,10 @@ public sealed class ActionCenterQueryService
                 null,
                 null));
         }
+    }
 
+    private async Task AddJobActionsAsync(List<ActionCenterItemDto> items, CancellationToken cancellationToken)
+    {
         var failedJobs = await _jobs
             .ListAsync(CatalogImportJobStatus.Failed.ToString(), null, 1, 5, cancellationToken)
             .ConfigureAwait(false);
@@ -229,7 +285,10 @@ public sealed class ActionCenterQueryService
                 job.Id,
                 job.CompletedAtUtc ?? job.RequestedAtUtc));
         }
+    }
 
+    private async Task AddHealthActionsAsync(List<ActionCenterItemDto> items, CancellationToken cancellationToken)
+    {
         var health = await _health.GetSnapshotAsync(cancellationToken).ConfigureAwait(false);
         if (health.OverallStatus is SystemHealthStatuses.Unhealthy or SystemHealthStatuses.Degraded)
         {
@@ -269,14 +328,6 @@ public sealed class ActionCenterQueryService
                 null,
                 service.CheckedAtUtc));
         }
-
-        var ordered = items
-            .OrderByDescending(i => SeverityRank(i.Severity))
-            .ThenByDescending(i => i.OccurredAtUtc ?? DateTimeOffset.MinValue)
-            .Take(MaxItems)
-            .ToList();
-
-        return new ActionCenterResponseDto(ordered, ordered.Count);
     }
 
     private static bool IsUsageWarning(UsageLimitRowDto row) =>

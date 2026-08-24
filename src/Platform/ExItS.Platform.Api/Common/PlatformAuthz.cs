@@ -31,6 +31,10 @@ internal sealed class PlatformAuthz
     /// <summary>The actor resolved for the current request (development-stage; not production authentication).</summary>
     public PlatformActorContext CurrentActor => _actorAccessor.GetCurrent();
 
+    /// <summary>Resolves the current actor's Platform permissions (platform-wide scope).</summary>
+    public Task<IReadOnlySet<string>> ResolvePermissionsAsync(CancellationToken cancellationToken = default) =>
+        _authorizationService.ResolvePermissionsForActorAsync(_actorAccessor.GetCurrent(), organizationId: null, cancellationToken);
+
     /// <summary>
     /// Checks whether the current actor holds <paramref name="permission"/> (optionally scoped to
     /// <paramref name="organizationId"/>). On denial, writes a <see cref="AuditOutcome.Denied"/> audit

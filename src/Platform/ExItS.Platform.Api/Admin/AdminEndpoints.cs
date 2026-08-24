@@ -146,6 +146,8 @@ internal static class AdminEndpoints
             PlatformAuthz authz,
             CancellationToken ct) =>
         {
+            // Gate: actor must hold ViewPortfolio to open Action Center.
+            // Category composition is permission-aware — missing a category never 403s the whole call.
             var denied = await authz.EnsureAsync(
                 PlatformPermission.ViewPortfolio,
                 PlatformAuditActions.PlatformAccessChecked,
@@ -157,7 +159,9 @@ internal static class AdminEndpoints
                 return denied;
             }
 
-            var result = await queries.GetAsync(ct).ConfigureAwait(false);
+            var permissions = await authz.ResolvePermissionsAsync(ct).ConfigureAwait(false);
+            var access = ActionCenterAccessScope.FromPermissions(permissions);
+            var result = await queries.GetAsync(access, ct).ConfigureAwait(false);
             return Results.Ok(result);
         });
 

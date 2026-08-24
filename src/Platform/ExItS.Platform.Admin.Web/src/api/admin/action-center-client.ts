@@ -58,11 +58,8 @@ export function actionCenterItemHref(item: ActionCenterItem): string {
     if (item.subscriptionId) {
       return `/admin/subscriptions/${item.subscriptionId}`;
     }
-    if (item.id.includes("past-due")) {
-      return "/admin/payments/issues?issueType=past-due-subscription";
-    }
     if (item.id.includes("grace")) {
-      return "/admin/payments/issues?issueType=grace-period-subscription";
+      return "/admin/subscriptions?status=GracePeriod";
     }
     return "/admin/subscriptions?status=PastDue";
   }
