@@ -88,6 +88,7 @@ import { ShiftOpenPage } from "@/features/shifts/ShiftOpenPage";
 import { ShiftsHubPage } from "@/features/shifts/ShiftsHubPage";
 import { SupplierDetailPage } from "@/features/suppliers/SupplierDetailPage";
 import { SupplierCreatePage, SupplierEditPage } from "@/features/suppliers/SupplierFormPage";
+import { SupplierAddChooserPage } from "@/features/suppliers/SupplierAddChooserPage";
 import { SuppliersListPage } from "@/features/suppliers/SuppliersListPage";
 import { ConnectedRequestPage } from "@/features/suppliers/ConnectedRequestPage";
 import { ConnectedIncomingRequestsPage } from "@/features/suppliers/ConnectedIncomingRequestsPage";
@@ -536,6 +537,14 @@ export const appRoutes = [
               { index: true, element: <SuppliersListPage /> },
               {
                 path: "new",
+                element: (
+                  <RequireManageSuppliers>
+                    <SupplierAddChooserPage />
+                  </RequireManageSuppliers>
+                ),
+              },
+              {
+                path: "new/manual",
                 element: (
                   <RequireManageSuppliers>
                     <SupplierCreatePage />

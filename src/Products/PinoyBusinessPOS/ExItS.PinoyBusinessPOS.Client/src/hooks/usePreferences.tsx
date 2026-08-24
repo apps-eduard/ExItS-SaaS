@@ -1,9 +1,11 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import {
+  applyDensity,
   applyLocale,
   applyTheme,
   readUiPreferences,
   writeUiPreferences,
+  type DensityPreference,
   type LocalePreference,
   type ThemePreference,
   type UiPreferences,
@@ -13,6 +15,7 @@ type PreferencesContextValue = {
   preferences: UiPreferences;
   setTheme: (theme: ThemePreference) => void;
   setLocale: (locale: LocalePreference) => void;
+  setDensity: (density: DensityPreference) => void;
 };
 
 const PreferencesContext = createContext<PreferencesContextValue | null>(null);
@@ -21,6 +24,7 @@ function persist(next: UiPreferences) {
   writeUiPreferences(next);
   applyTheme(next.theme);
   applyLocale(next.locale);
+  applyDensity(next.density);
 }
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {
@@ -28,6 +32,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     const initial = readUiPreferences();
     applyTheme(initial.theme);
     applyLocale(initial.locale);
+    applyDensity(initial.density);
     return initial;
   });
 
@@ -47,9 +52,17 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const setDensity = useCallback((density: DensityPreference) => {
+    setPreferences((current) => {
+      const next = { ...current, density };
+      persist(next);
+      return next;
+    });
+  }, []);
+
   const value = useMemo(
-    () => ({ preferences, setTheme, setLocale }),
-    [preferences, setTheme, setLocale],
+    () => ({ preferences, setTheme, setLocale, setDensity }),
+    [preferences, setTheme, setLocale, setDensity],
   );
 
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;

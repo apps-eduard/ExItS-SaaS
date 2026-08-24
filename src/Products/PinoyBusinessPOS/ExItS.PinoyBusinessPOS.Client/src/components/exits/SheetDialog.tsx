@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/cn";
 
 export function BottomSheet({
   open,
@@ -19,24 +19,23 @@ export function BottomSheet({
   testId?: string;
   closeLabel?: string;
 }) {
-  return (
+  // Unmount when closed so transform animations on ancestors cannot trap `position: fixed`.
+  if (!open || typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(
     <>
-      {open ? (
-        <div
-          className="fixed inset-0 z-30 bg-black/40"
-          role="presentation"
-          onClick={onClose}
-          data-testid={`${testId}-backdrop`}
-        />
-      ) : null}
+      <div
+        className="fixed inset-0 z-30 bg-black/40"
+        role="presentation"
+        onClick={onClose}
+        data-testid={`${testId}-backdrop`}
+      />
       <div
         id={panelId}
         data-testid={testId}
-        className={cn(
-          "fixed inset-x-0 bottom-0 z-40 flex max-h-[75dvh] flex-col gap-3 rounded-t-[var(--exits-radius-lg)] border border-border bg-surface p-4 shadow-[0_-8px_32px_rgba(0,0,0,0.12)] transition-transform duration-[var(--exits-motion-normal)]",
-          open ? "translate-y-0" : "pointer-events-none translate-y-full",
-        )}
-        aria-hidden={!open}
+        className="fixed inset-x-0 bottom-0 z-40 flex max-h-[75dvh] flex-col gap-3 rounded-t-[var(--exits-radius-lg)] border border-border bg-surface p-4 shadow-[0_-8px_32px_rgba(0,0,0,0.12)]"
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -51,7 +50,8 @@ export function BottomSheet({
         ) : null}
         {children}
       </div>
-    </>
+    </>,
+    document.body,
   );
 }
 

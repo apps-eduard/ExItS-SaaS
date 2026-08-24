@@ -4,19 +4,24 @@ export const UI_PREFERENCES_STORAGE_KEY = "exits.pos-client.ui-preferences.v1";
 
 export const themePreferenceSchema = z.enum(["system", "light", "dark"]);
 export const localePreferenceSchema = z.enum(["en", "fil-PH", "ceb-PH", "ilo-PH", "hil-PH"]);
+export const densityPreferenceSchema = z.enum(["compact", "balance", "comfort"]);
 
 export const uiPreferencesSchema = z.object({
   theme: themePreferenceSchema,
   locale: localePreferenceSchema,
+  /** Missing in older storage → balance (Expiring-stock chip baseline). */
+  density: densityPreferenceSchema.default("balance"),
 });
 
 export type ThemePreference = z.infer<typeof themePreferenceSchema>;
 export type LocalePreference = z.infer<typeof localePreferenceSchema>;
+export type DensityPreference = z.infer<typeof densityPreferenceSchema>;
 export type UiPreferences = z.infer<typeof uiPreferencesSchema>;
 
 export const defaultUiPreferences: UiPreferences = {
   theme: "system",
   locale: "en",
+  density: "balance",
 };
 
 export function parseUiPreferences(raw: string | null): UiPreferences {
@@ -44,6 +49,10 @@ export function writeUiPreferences(preferences: UiPreferences): void {
 
 export function applyTheme(theme: ThemePreference): void {
   document.documentElement.dataset.theme = theme;
+}
+
+export function applyDensity(density: DensityPreference): void {
+  document.documentElement.dataset.density = density;
 }
 
 export function applyLocale(locale: LocalePreference): void {

@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { DensityControl } from "@/components/exits/DensityControl";
 import { LanguageControl } from "@/components/exits/LanguageControl";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { ThemeControl } from "@/components/exits/ThemeControl";
@@ -52,6 +53,7 @@ export function PreferencesPage() {
         <div className="divide-y divide-border px-4">
           <LanguageControl />
           <ThemeControl />
+          <DensityControl />
         </div>
       </section>
     </div>

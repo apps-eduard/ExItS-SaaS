@@ -306,6 +306,8 @@ test.describe("RMAP-15 suppliers", () => {
     const state = await mockSuppliersApi(page);
     await signInOwnerOperations(page);
     await clientNavigate(page, "/suppliers/new");
+    await expect(page.getByTestId("supplier-add-chooser")).toBeVisible();
+    await page.getByTestId("supplier-add-manual").click();
     await expect(page.getByTestId("supplier-form-page")).toBeVisible();
     await page.getByTestId("supplier-name").fill("Fresh Farms");
     await page.getByTestId("supplier-mobile").fill("09180001111");
@@ -347,6 +349,7 @@ test.describe("RMAP-15 suppliers", () => {
     state.duplicateField = "name";
     await signInOwnerOperations(page);
     await clientNavigate(page, "/suppliers/new");
+    await page.getByTestId("supplier-add-manual").click();
     await page.getByTestId("supplier-name").fill("Taken Name");
     await page.getByTestId("supplier-save").click();
     await expect(page.getByTestId("supplier-form-error")).toContainText(/name already exists/i);

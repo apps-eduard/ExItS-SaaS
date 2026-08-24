@@ -135,6 +135,15 @@ async function mockInventoryLotsApi(page: Page, harness: LotHarness) {
       let items = harness.expiring;
       if (windowParam === "Expired") {
         items = harness.expiring.filter((lot) => lot.expiryStatus === "Expired");
+      } else if (windowParam === "Custom") {
+        const from = parsed.searchParams.get("fromDate");
+        const to = parsed.searchParams.get("toDate");
+        items = harness.expiring.filter((lot) => {
+          const expiry = String(lot.expirationDate ?? "");
+          if (from && expiry < from) return false;
+          if (to && expiry > to) return false;
+          return true;
+        });
       }
       const start = (pageNum - 1) * pageSize;
       const slice = items.slice(start, start + pageSize);

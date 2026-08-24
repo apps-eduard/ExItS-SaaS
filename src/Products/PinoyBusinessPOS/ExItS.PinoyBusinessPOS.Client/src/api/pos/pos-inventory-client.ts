@@ -91,7 +91,7 @@ export type PosExpiringLotPagedResult = {
   nearExpiryCount: number;
 };
 
-export type PosExpiryWindow = "Expired" | "Days7" | "Days14" | "Days30";
+export type PosExpiryWindow = "Expired" | "Days7" | "Days14" | "Days30" | "Custom";
 
 function appendQuery(
   path: string,
@@ -231,6 +231,8 @@ export function listExpiringLots(
   workspace: PosWorkspaceScope,
   options: {
     window?: PosExpiryWindow | string;
+    fromDate?: string;
+    toDate?: string;
     search?: string;
     page?: number;
     pageSize?: number;
@@ -243,6 +245,8 @@ export function listExpiringLots(
     signal,
     path: appendQuery(`${INVENTORY_PATH}/lots`, {
       window: options.window ?? "Days30",
+      fromDate: options.fromDate,
+      toDate: options.toDate,
       search: options.search,
       page: options.page ?? 1,
       pageSize: options.pageSize ?? 50,

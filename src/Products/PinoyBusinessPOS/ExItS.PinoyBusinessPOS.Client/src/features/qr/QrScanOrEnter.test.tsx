@@ -65,6 +65,16 @@ describe("QrScanOrEnter", () => {
     expect(onResolvedPayload).toHaveBeenCalledWith("EX-4827-1936");
   });
 
+  it("resolves manual organization ExItS ID", async () => {
+    const user = userEvent.setup();
+    const { onResolvedPayload } = renderInput({ expectedPurpose: "organization" });
+
+    await user.type(screen.getByTestId("qr-manual-id"), "org000042");
+    await user.click(screen.getByTestId("qr-manual-submit"));
+
+    expect(onResolvedPayload).toHaveBeenCalledWith("ORG000042");
+  });
+
   it("rejects organization QR for personal workflow", async () => {
     const user = userEvent.setup();
     renderInput();

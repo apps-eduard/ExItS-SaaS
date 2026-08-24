@@ -82,5 +82,26 @@ export function requiresOpeningExpirationDate(
   return openingQuantity != null && !Number.isNaN(openingQuantity) && openingQuantity > 0;
 }
 
-export const EXPIRY_WINDOWS = ["Expired", "Days7", "Days14", "Days30"] as const;
+export const EXPIRY_WINDOWS = ["Expired", "Days7", "Days14", "Days30", "Custom"] as const;
 export type ExpiryWindowCode = (typeof EXPIRY_WINDOWS)[number];
+
+/** Local calendar day as `yyyy-MM-dd` (not UTC-shifted). */
+export function formatLocalDateOnly(date: Date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function addLocalDays(dateOnly: string, days: number): string {
+  const parsed = parseBusinessDate(dateOnly);
+  if (!parsed) {
+    return dateOnly;
+  }
+  const next = new Date(parsed);
+  next.setUTCDate(next.getUTCDate() + days);
+  const year = next.getUTCFullYear();
+  const month = String(next.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(next.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}

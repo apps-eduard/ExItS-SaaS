@@ -8,12 +8,12 @@ import {
   type CreatePosSupplierInput,
 } from "@/api/pos/pos-suppliers-client";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { describeSupplierError } from "@/features/suppliers/supplier-errors";
+import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -47,6 +47,25 @@ const emptyForm: FormState = {
   postalCode: "",
   taxOrRegistrationNumber: "",
   notes: "",
+};
+
+type FieldDef = {
+  key: keyof FormState;
+  labelKey:
+    | "suppliers.name"
+    | "suppliers.contactPerson"
+    | "suppliers.mobile"
+    | "suppliers.telephone"
+    | "suppliers.email"
+    | "suppliers.addressLine1"
+    | "suppliers.addressLine2"
+    | "suppliers.city"
+    | "suppliers.province"
+    | "suppliers.postalCode"
+    | "suppliers.taxNumber"
+    | "suppliers.notes";
+  testId: string;
+  multiline?: boolean;
 };
 
 export function SupplierCreatePage() {
@@ -171,87 +190,107 @@ function SupplierFormPage({ mode }: { mode: Mode }) {
     }
   }
 
-  const fields: Array<{
-    key: keyof FormState;
-    labelKey:
-      | "suppliers.name"
-      | "suppliers.contactPerson"
-      | "suppliers.mobile"
-      | "suppliers.telephone"
-      | "suppliers.email"
-      | "suppliers.addressLine1"
-      | "suppliers.addressLine2"
-      | "suppliers.city"
-      | "suppliers.province"
-      | "suppliers.postalCode"
-      | "suppliers.taxNumber"
-      | "suppliers.notes";
-    testId: string;
-    multiline?: boolean;
-  }> = [
+  const basics: FieldDef[] = [
     { key: "name", labelKey: "suppliers.name", testId: "supplier-name" },
+    { key: "taxOrRegistrationNumber", labelKey: "suppliers.taxNumber", testId: "supplier-tax" },
+  ];
+  const contact: FieldDef[] = [
     { key: "contactPerson", labelKey: "suppliers.contactPerson", testId: "supplier-contact" },
     { key: "mobileNumber", labelKey: "suppliers.mobile", testId: "supplier-mobile" },
     { key: "telephoneNumber", labelKey: "suppliers.telephone", testId: "supplier-telephone" },
     { key: "email", labelKey: "suppliers.email", testId: "supplier-email" },
+  ];
+  const address: FieldDef[] = [
     { key: "addressLine1", labelKey: "suppliers.addressLine1", testId: "supplier-address1" },
     { key: "addressLine2", labelKey: "suppliers.addressLine2", testId: "supplier-address2" },
     { key: "cityMunicipality", labelKey: "suppliers.city", testId: "supplier-city" },
     { key: "province", labelKey: "suppliers.province", testId: "supplier-province" },
     { key: "postalCode", labelKey: "suppliers.postalCode", testId: "supplier-postal" },
-    { key: "taxOrRegistrationNumber", labelKey: "suppliers.taxNumber", testId: "supplier-tax" },
+  ];
+  const notes: FieldDef[] = [
     { key: "notes", labelKey: "suppliers.notes", testId: "supplier-notes", multiline: true },
   ];
 
+  function renderFields(fields: FieldDef[]) {
+    return fields.map((field) => (
+      <label
+        key={field.key}
+        className="supplier-form-field flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+        htmlFor={field.testId}
+      >
+        {t(field.labelKey)}
+        {field.multiline ? (
+          <textarea
+            id={field.testId}
+            data-testid={field.testId}
+            className="supplier-form-control supplier-form-control--area min-h-24 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
+            value={form[field.key]}
+            disabled={saving}
+            onChange={(event) => setField(field.key, event.target.value)}
+          />
+        ) : (
+          <input
+            id={field.testId}
+            data-testid={field.testId}
+            className="supplier-form-control min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            value={form[field.key]}
+            disabled={saving}
+            onChange={(event) => setField(field.key, event.target.value)}
+          />
+        )}
+      </label>
+    ));
+  }
+
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="supplier-form-page">
+    <div className="supplier-form-page flex min-w-0 flex-col gap-3" data-testid="supplier-form-page">
       <PageHeader
         title={mode === "create" ? t("suppliers.newTitle") : t("suppliers.editTitle")}
         description={t("suppliers.formLede")}
-        backTo={
-          mode === "edit" && supplierId ? `/suppliers/${supplierId}` : pageBackNav.suppliers.to
-        }
+        backTo={mode === "edit" && supplierId ? `/suppliers/${supplierId}` : "/suppliers/new"}
         backLabel={t(pageBackNav.suppliers.labelKey)}
         backTestId="page-header-back-suppliers"
       />
-      {error ? (
-        <Card data-testid="supplier-form-error">
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">
-            {error}
-          </p>
-        </Card>
+
+      {mode === "create" ? (
+        <ExitsChipBar
+          variant="steps"
+          ariaLabel={t("suppliers.addStepsAria")}
+          testId="supplier-add-steps"
+          items={[
+            { key: "choose", label: t("suppliers.addStepChoose"), state: "done" },
+            { key: "manual", label: t("suppliers.addManual"), state: "active" },
+          ]}
+        />
       ) : null}
-      <Card className="flex flex-col gap-3">
-        {fields.map((field) => (
-          <label
-            key={field.key}
-            className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
-            htmlFor={field.testId}
-          >
-            {t(field.labelKey)}
-            {field.multiline ? (
-              <textarea
-                id={field.testId}
-                data-testid={field.testId}
-                className="min-h-24 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
-                value={form[field.key]}
-                disabled={saving}
-                onChange={(event) => setField(field.key, event.target.value)}
-              />
-            ) : (
-              <input
-                id={field.testId}
-                data-testid={field.testId}
-                className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-                value={form[field.key]}
-                disabled={saving}
-                onChange={(event) => setField(field.key, event.target.value)}
-              />
-            )}
-          </label>
-        ))}
-      </Card>
-      <div className="flex flex-wrap gap-2">
+
+      {error ? (
+        <div className="exits-alert exits-alert--error" data-testid="supplier-form-error" role="alert">
+          <p className="m-0 text-[length:var(--exits-text-sm)]">{error}</p>
+        </div>
+      ) : null}
+
+      <section className="supplier-form-section">
+        <h2 className="supplier-form-section__title">{t("suppliers.sectionBasics")}</h2>
+        <div className="supplier-form-section__grid">{renderFields(basics)}</div>
+      </section>
+
+      <section className="supplier-form-section">
+        <h2 className="supplier-form-section__title">{t("suppliers.sectionContact")}</h2>
+        <div className="supplier-form-section__grid">{renderFields(contact)}</div>
+      </section>
+
+      <section className="supplier-form-section">
+        <h2 className="supplier-form-section__title">{t("suppliers.sectionAddress")}</h2>
+        <div className="supplier-form-section__grid">{renderFields(address)}</div>
+      </section>
+
+      <section className="supplier-form-section">
+        <h2 className="supplier-form-section__title">{t("suppliers.sectionNotes")}</h2>
+        <div className="supplier-form-section__grid">{renderFields(notes)}</div>
+      </section>
+
+      <div className="supplier-form-actions sticky bottom-0 z-5 mt-1 flex flex-wrap gap-2 border-t border-border bg-[color-mix(in_srgb,var(--exits-bg)_92%,transparent)] py-3 backdrop-blur-sm">
         <Button
           type="button"
           className="min-h-11"
@@ -262,7 +301,7 @@ function SupplierFormPage({ mode }: { mode: Mode }) {
           {saving ? t("suppliers.saving") : t("suppliers.save")}
         </Button>
         <Button asChild variant="ghost" className="min-h-11" disabled={saving}>
-          <Link to={mode === "edit" && supplierId ? `/suppliers/${supplierId}` : "/suppliers"}>
+          <Link to={mode === "edit" && supplierId ? `/suppliers/${supplierId}` : "/suppliers/new"}>
             {t("suppliers.back")}
           </Link>
         </Button>

@@ -220,12 +220,17 @@ export function CatalogTemplateImportPage() {
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="catalog-templates-page">
+    <div className="catalog-import-page flex min-w-0 flex-col gap-3" data-testid="catalog-templates-page">
       <PageHeader title={t("catalogImport.title")} description={t("catalogImport.lede")} />
 
-      <nav aria-label={t("catalogImport.stepsAria")} className="flex gap-2 overflow-x-auto">
+      <nav
+        aria-label={t("catalogImport.stepsAria")}
+        className="catalog-import-steps flex min-w-0 items-center gap-1.5 overflow-x-auto overscroll-x-contain pb-0.5"
+      >
         {STEPS.map((id, index) => {
           const active = step === id;
+          const stepIndex = STEPS.indexOf(step);
+          const done = index < stepIndex;
           const reachable =
             id === "choose" ||
             (id === "preview" && selectedId) ||
@@ -238,14 +243,29 @@ export function CatalogTemplateImportPage() {
               data-testid={`catalog-template-step-${id}`}
               aria-current={active ? "step" : undefined}
               className={cn(
-                "min-h-11 shrink-0 rounded-[var(--exits-radius-md)] border px-3 text-[length:var(--exits-text-sm)] font-semibold",
+                "catalog-import-steps__chip inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-[length:var(--exits-text-xs)] font-medium whitespace-nowrap transition-[background-color,border-color,color] duration-[var(--exits-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45",
                 active
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-surface text-muted",
+                  ? "catalog-import-steps__chip--active border-primary bg-[color-mix(in_srgb,var(--exits-primary)_14%,var(--exits-surface))] text-primary"
+                  : done
+                    ? "border-primary/40 bg-surface text-foreground"
+                    : "border-border bg-surface text-muted",
               )}
               onClick={() => reachable && setStep(id)}
             >
-              {index + 1}. {t(STEP_LABEL_KEYS[id])}
+              <span
+                className={cn(
+                  "catalog-import-steps__index inline-flex size-4 items-center justify-center rounded-full text-[0.65rem] font-semibold",
+                  active
+                    ? "bg-primary text-primary-foreground"
+                    : done
+                      ? "bg-[color-mix(in_srgb,var(--exits-primary)_30%,var(--exits-surface))] text-primary"
+                      : "bg-[var(--exits-surface-muted)] text-muted",
+                )}
+                aria-hidden
+              >
+                {index + 1}
+              </span>
+              {t(STEP_LABEL_KEYS[id])}
             </button>
           );
         })}
@@ -253,18 +273,19 @@ export function CatalogTemplateImportPage() {
 
       {step === "choose" ? (
         <section className="flex flex-col gap-3" data-testid="catalog-template-choose">
-          <div className="flex flex-wrap gap-2">
+          <div className="catalog-import-toolbar flex min-w-0 flex-wrap items-center gap-2">
             <SearchField
               label={t("catalogImport.searchTemplates")}
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               onClear={() => setSearch("")}
               placeholder={t("catalogImport.searchTemplates")}
+              containerClassName="catalog-import-page__search min-w-0 flex-1"
             />
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
+              className="catalog-import-toolbar__refresh min-h-9 shrink-0"
               onClick={() => void templatesQuery.refetch()}
               disabled={templatesQuery.isFetching}
             >
@@ -284,20 +305,22 @@ export function CatalogTemplateImportPage() {
               detail={t("catalogImport.emptyTemplatesDetail")}
             />
           ) : null}
-          <ul className="m-0 flex list-none flex-col gap-2 p-0">
+          <ul className="catalog-import-templates m-0 flex list-none flex-col gap-2 p-0">
             {templatesQuery.data?.items.map((item) => {
               const status = statusById.get(item.id);
               return (
                 <li key={item.id}>
-                  <Card className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0">
-                      <p className="m-0 truncate font-semibold">{item.name}</p>
-                      <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                  <article className="catalog-import-template-card">
+                    <div className="catalog-import-template-card__body min-w-0">
+                      <p className="catalog-import-template-card__title m-0 truncate font-semibold">
+                        {item.name}
+                      </p>
+                      <p className="catalog-import-template-card__meta mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
                         {item.primaryBusinessType} · {t("catalogImport.firstBatchCount")}:{" "}
                         {item.firstBatchCount}
                       </p>
                       {item.description ? (
-                        <p className="mb-0 mt-1 line-clamp-2 text-[length:var(--exits-text-sm)] text-muted">
+                        <p className="catalog-import-template-card__desc mb-0 mt-1 line-clamp-2 text-[length:var(--exits-text-sm)] text-muted">
                           {item.description}
                         </p>
                       ) : null}
@@ -307,13 +330,13 @@ export function CatalogTemplateImportPage() {
                     </div>
                     <Button
                       type="button"
-                      className="min-h-11 shrink-0"
+                      className="catalog-import-template-card__select min-h-9 shrink-0"
                       data-testid={`catalog-template-select-${item.id}`}
                       onClick={() => selectTemplate(item)}
                     >
                       {t("catalogImport.select")}
                     </Button>
-                  </Card>
+                  </article>
                 </li>
               );
             })}
@@ -343,6 +366,7 @@ export function CatalogTemplateImportPage() {
             onChange={(event) => setPreviewSearch(event.target.value)}
             onClear={() => setPreviewSearch("")}
             placeholder={t("catalogImport.searchPreview")}
+            containerClassName="catalog-import-page__search"
           />
           {detailQuery.isLoading || importedQuery.isLoading ? (
             <LoadingState label={t("loading.label")} />

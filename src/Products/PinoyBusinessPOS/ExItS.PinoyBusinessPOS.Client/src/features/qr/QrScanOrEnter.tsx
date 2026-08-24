@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import { Camera, Keyboard, Upload, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Camera, Keyboard, Search, Upload, X } from "lucide-react";
+import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { useI18n } from "@/i18n/I18nProvider";
 import {
   assertExItsQrPurpose,
@@ -62,7 +62,9 @@ export function QrScanOrEnter({ expectedPurpose, onResolvedPayload, disabled }: 
       setError(t("qr.cameraUnavailable"));
     } finally {
       setScanningFile(false);
-      if (fileRef.current) fileRef.current.value = "";
+      if (fileRef.current) {
+        fileRef.current.value = "";
+      }
     }
   }
 
@@ -77,43 +79,41 @@ export function QrScanOrEnter({ expectedPurpose, onResolvedPayload, disabled }: 
         disabled={disabled || scanningFile}
         onChange={(event) => void onFileChange(event.target.files?.[0] ?? null)}
       />
-      <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          className="min-h-11"
-          data-testid="qr-live-camera-button"
-          disabled={disabled || scanningFile}
-          onClick={() => setLiveOpen(true)}
-        >
-          <Camera className="size-4" aria-hidden />
-          {t("qr.scanWithCamera")}
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          className="min-h-11"
-          data-testid="qr-upload-button"
-          disabled={disabled || scanningFile}
-          onClick={() => fileRef.current?.click()}
-        >
-          <Upload className="size-4" aria-hidden />
-          {scanningFile ? t("qr.scanning") : t("qr.uploadImage")}
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          className="min-h-11"
-          data-testid="qr-clear-button"
-          disabled={disabled}
-          onClick={() => {
-            setManual("");
-            setError(null);
-          }}
-        >
-          <X className="size-4" aria-hidden />
-          {t("qr.clear")}
-        </Button>
-      </div>
+      <ExitsChipBar
+        variant="actions"
+        ariaLabel={t("qr.scanWithCamera")}
+        testId="qr-scan-actions"
+        items={[
+          {
+            key: "camera",
+            label: t("qr.scanWithCamera"),
+            icon: <Camera />,
+            emphasis: "primary",
+            testId: "qr-live-camera-button",
+            disabled: disabled || scanningFile,
+            onSelect: () => setLiveOpen(true),
+          },
+          {
+            key: "upload",
+            label: scanningFile ? t("qr.scanning") : t("qr.uploadImage"),
+            icon: <Upload />,
+            testId: "qr-upload-button",
+            disabled: disabled || scanningFile,
+            onSelect: () => fileRef.current?.click(),
+          },
+          {
+            key: "clear",
+            label: t("qr.clear"),
+            icon: <X />,
+            testId: "qr-clear-button",
+            disabled: Boolean(disabled),
+            onSelect: () => {
+              setManual("");
+              setError(null);
+            },
+          },
+        ]}
+      />
       <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("qr.inputHint")}</p>
       <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
         <span className="inline-flex items-center gap-1.5">
@@ -136,16 +136,21 @@ export function QrScanOrEnter({ expectedPurpose, onResolvedPayload, disabled }: 
           }}
         />
       </label>
-      <Button
-        type="button"
-        variant="ghost"
-        className="min-h-11 w-fit"
-        data-testid="qr-manual-submit"
-        disabled={disabled || !manual.trim()}
-        onClick={() => applyRaw(manual)}
-      >
-        {t("qr.resolve")}
-      </Button>
+      <ExitsChipBar
+        variant="actions"
+        ariaLabel={t("qr.resolve")}
+        testId="qr-manual-actions"
+        items={[
+          {
+            key: "resolve",
+            label: t("qr.resolve"),
+            icon: <Search />,
+            testId: "qr-manual-submit",
+            disabled: Boolean(disabled) || !manual.trim(),
+            onSelect: () => applyRaw(manual),
+          },
+        ]}
+      />
       {error ? (
         <p
           className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"

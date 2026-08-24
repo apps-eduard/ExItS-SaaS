@@ -6,8 +6,8 @@ import {
 } from "@/lib/preferences/ui-preferences";
 
 describe("ui preferences", () => {
-  it("defaults to System and English", () => {
-    expect(defaultUiPreferences).toEqual({ theme: "system", locale: "en" });
+  it("defaults to System, English, and Balance density", () => {
+    expect(defaultUiPreferences).toEqual({ theme: "system", locale: "en", density: "balance" });
     expect(parseUiPreferences(null)).toEqual(defaultUiPreferences);
   });
 
@@ -27,9 +27,27 @@ describe("ui preferences", () => {
     expect(parseUiPreferences(JSON.stringify({ theme: "light", locale: "ceb-PH" }))).toEqual({
       theme: "light",
       locale: "ceb-PH",
+      density: "balance",
     });
     expect(parseUiPreferences(JSON.stringify({ theme: "light", locale: "ar" }))).toEqual(
       defaultUiPreferences,
     );
+  });
+
+  it("defaults missing density from older storage to balance", () => {
+    expect(parseUiPreferences(JSON.stringify({ theme: "dark", locale: "en" }))).toEqual({
+      theme: "dark",
+      locale: "en",
+      density: "balance",
+    });
+  });
+
+  it("accepts compact and comfort density", () => {
+    expect(
+      parseUiPreferences(JSON.stringify({ theme: "light", locale: "en", density: "comfort" })),
+    ).toEqual({ theme: "light", locale: "en", density: "comfort" });
+    expect(
+      parseUiPreferences(JSON.stringify({ theme: "light", locale: "en", density: "compact" })),
+    ).toEqual({ theme: "light", locale: "en", density: "compact" });
   });
 });

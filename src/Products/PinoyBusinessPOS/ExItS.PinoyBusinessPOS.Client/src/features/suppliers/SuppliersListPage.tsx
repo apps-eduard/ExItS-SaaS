@@ -5,26 +5,33 @@ import { canManageSuppliers, canViewSuppliers } from "@/access/pos-capabilities"
 import { listRelationships } from "@/api/pos/pos-connected-suppliers-client";
 import { listSuppliers, resolveSupplierSearchParams } from "@/api/pos/pos-suppliers-client";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
-import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { SearchField } from "@/components/exits/SearchField";
+import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const PAGE_SIZE = 20;
 
+type StatusFilter = "Active" | "Inactive" | "";
+
+const STATUS_FILTERS: Array<{ value: StatusFilter; key: string; labelKey: "suppliers.statusActive" | "suppliers.statusInactive" | "suppliers.statusAll" }> = [
+  { value: "Active", key: "Active", labelKey: "suppliers.statusActive" },
+  { value: "Inactive", key: "Inactive", labelKey: "suppliers.statusInactive" },
+  { value: "", key: "all", labelKey: "suppliers.statusAll" },
+];
+
 export function SuppliersListPage() {
   const { t } = useI18n();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
-  const [status, setStatus] = useState<"Active" | "Inactive" | "">("Active");
+  const [status, setStatus] = useState<StatusFilter>("Active");
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -92,7 +99,7 @@ export function SuppliersListPage() {
   const incomingCount = incomingQuery.data ?? 0;
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="suppliers-list-page">
+    <div className="suppliers-page flex min-w-0 flex-col gap-3" data-testid="suppliers-list-page">
       <PageHeader
         title={t("suppliers.title")}
         description={t("suppliers.lede")}
@@ -100,37 +107,52 @@ export function SuppliersListPage() {
         backLabel={t(pageBackNav.managerHome.labelKey)}
         backTestId="page-header-back-suppliers"
       />
-      <div className="flex flex-wrap gap-2">
-        {allowManage ? (
-          <Button asChild className="min-h-11" data-testid="suppliers-new">
-            <Link to="/suppliers/new">{t("suppliers.add")}</Link>
-          </Button>
-        ) : null}
-        {allowManage ? (
-          <Button asChild variant="ghost" className="min-h-11" data-testid="suppliers-connect">
-            <Link to="/suppliers/connected/request">{t("connected.requestConnection")}</Link>
-          </Button>
-        ) : null}
-        {allowView ? (
-          <Button asChild variant="ghost" className="min-h-11" data-testid="suppliers-incoming">
-            <Link to="/suppliers/connected/requests">
-              {incomingCount > 0
-                ? t("connected.incomingCompact").replace("{count}", String(incomingCount))
-                : t("connected.incomingRequests")}
-            </Link>
-          </Button>
-        ) : null}
-        {allowView ? (
-          <Button
-            asChild
-            variant="ghost"
-            className="min-h-11"
-            data-testid="suppliers-connected-buyers"
-          >
-            <Link to="/suppliers/connected/buyers">{t("connected.buyersTitle")}</Link>
-          </Button>
-        ) : null}
-      </div>
+
+      <ExitsChipBar
+        variant="actions"
+        ariaLabel={t("suppliers.title")}
+        testId="suppliers-toolbar"
+        className="suppliers-toolbar"
+        items={[
+          ...(allowManage
+            ? [
+                {
+                  key: "add",
+                  label: t("suppliers.add"),
+                  href: "/suppliers/new",
+                  testId: "suppliers-new",
+                  emphasis: "primary" as const,
+                },
+                {
+                  key: "connect",
+                  label: t("connected.requestConnection"),
+                  href: "/suppliers/connected/request",
+                  testId: "suppliers-connect",
+                },
+              ]
+            : []),
+          ...(allowView
+            ? [
+                {
+                  key: "incoming",
+                  label:
+                    incomingCount > 0
+                      ? t("connected.incomingCompact").replace("{count}", String(incomingCount))
+                      : t("connected.incomingRequests"),
+                  href: "/suppliers/connected/requests",
+                  testId: "suppliers-incoming",
+                },
+                {
+                  key: "buyers",
+                  label: t("connected.buyersTitle"),
+                  href: "/suppliers/connected/buyers",
+                  testId: "suppliers-connected-buyers",
+                },
+              ]
+            : []),
+        ]}
+      />
+
       <SearchField
         label={t("suppliers.search")}
         value={search}
@@ -138,23 +160,22 @@ export function SuppliersListPage() {
         onClear={() => setSearch("")}
         placeholder={t("suppliers.search")}
         data-testid="suppliers-search"
+        containerClassName="suppliers-page__search"
       />
-      <UnderlineTabBar
-        items={(
-          [
-            ["Active", "suppliers.statusActive"],
-            ["Inactive", "suppliers.statusInactive"],
-            ["", "suppliers.statusAll"],
-          ] as const
-        ).map(([value, labelKey]) => ({
-          key: value || "all",
-          label: t(labelKey),
-          testId: `suppliers-status-${value || "all"}`,
-        }))}
-        activeKey={status || "all"}
-        onChange={(key) => setStatus(key === "all" ? "" : (key as "Active" | "Inactive"))}
+
+      <ExitsChipBar
+        variant="filter"
         ariaLabel={t("suppliers.statusFilter")}
+        testId="suppliers-status-filters"
+        items={STATUS_FILTERS.map((filter) => ({
+          key: filter.key,
+          label: t(filter.labelKey),
+          state: (status || "all") === filter.key ? "active" : "idle",
+          testId: `suppliers-status-${filter.key === "all" ? "all" : filter.key}`,
+          onSelect: () => setStatus(filter.value),
+        }))}
       />
+
       {query.isLoading ? <LoadingState label={t("loading.label")} /> : null}
       {query.isError ? (
         <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
@@ -162,35 +183,34 @@ export function SuppliersListPage() {
       {query.isSuccess && query.data.items.length === 0 ? (
         <EmptyState title={t("suppliers.empty")} detail={t("suppliers.emptyDetail")} />
       ) : null}
-      <ul
-        className="m-0 grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2 lg:grid-cols-1"
-        data-testid="suppliers-list"
-      >
+
+      <ul className="suppliers-list m-0 grid list-none gap-2 p-0" data-testid="suppliers-list">
         {query.data?.items.map((supplier) => (
           <li key={supplier.supplierId}>
-            <Card className="p-3">
-              <Link
-                className="block min-w-0 text-foreground no-underline"
-                to={`/suppliers/${supplier.supplierId}`}
-                data-testid={`supplier-row-${supplier.supplierId}`}
-              >
-                <span className="block truncate font-semibold">{supplier.name}</span>
-                <span className="mt-1 flex flex-wrap items-center gap-2 text-[length:var(--exits-text-sm)] text-muted">
-                  <span className="truncate">{supplier.supplierCode}</span>
-                  <StatusChip
-                    tone={supplier.status.toLowerCase() === "active" ? "success" : "warning"}
-                  >
-                    {supplier.status}
-                  </StatusChip>
-                </span>
-              </Link>
-            </Card>
+            <Link
+              className="suppliers-list__card block min-w-0 text-foreground no-underline"
+              to={`/suppliers/${supplier.supplierId}`}
+              data-testid={`supplier-row-${supplier.supplierId}`}
+            >
+              <span className="suppliers-list__name block truncate font-semibold">
+                {supplier.name}
+              </span>
+              <span className="mt-1 flex min-w-0 flex-wrap items-center gap-2 text-[length:var(--exits-text-sm)] text-muted">
+                <span className="min-w-0 truncate">{supplier.supplierCode}</span>
+                <StatusChip
+                  tone={supplier.status.toLowerCase() === "active" ? "success" : "warning"}
+                >
+                  {supplier.status}
+                </StatusChip>
+              </span>
+            </Link>
           </li>
         ))}
       </ul>
+
       {query.isSuccess && totalCount > 0 ? (
         <div
-          className="flex flex-wrap items-center justify-between gap-2"
+          className="suppliers-pagination flex flex-wrap items-center justify-between gap-2"
           data-testid="suppliers-pagination"
         >
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
@@ -198,11 +218,11 @@ export function SuppliersListPage() {
               .replace("{page}", String(page))
               .replace("{totalPages}", String(totalPages))}
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="suppliers-pagination__actions flex flex-wrap gap-2">
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
+              className="min-h-9"
               data-testid="suppliers-prev"
               disabled={!canPrev}
               onClick={() => setPage((current) => Math.max(1, current - 1))}
@@ -212,7 +232,7 @@ export function SuppliersListPage() {
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
+              className="min-h-9"
               data-testid="suppliers-next"
               disabled={!canNext}
               onClick={() => setPage((current) => current + 1)}

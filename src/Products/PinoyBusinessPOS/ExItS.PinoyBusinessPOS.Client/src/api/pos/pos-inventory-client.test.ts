@@ -48,8 +48,13 @@ describe("pos-inventory-client lots", () => {
         }
 
         if (url.includes("/inventory/lots?") && method === "GET") {
-          expect(url).toContain("window=Days7");
-          expect(url).toContain("search=milk");
+          if (url.includes("window=Custom")) {
+            expect(url).toContain("fromDate=2026-08-01");
+            expect(url).toContain("toDate=2026-08-31");
+          } else {
+            expect(url).toContain("window=Days7");
+            expect(url).toContain("search=milk");
+          }
           return new Response(
             JSON.stringify({
               items: [],
@@ -107,6 +112,19 @@ describe("pos-inventory-client lots", () => {
   it("lists expiring lots with window and search", async () => {
     await listExpiringLots(workspace, { window: "Days7", search: "milk", pageSize: 20 });
     expect(fetch).toHaveBeenCalled();
+  });
+
+  it("lists expiring lots with custom from/to dates", async () => {
+    await listExpiringLots(workspace, {
+      window: "Custom",
+      fromDate: "2026-08-01",
+      toDate: "2026-08-31",
+    });
+    expect(fetch).toHaveBeenCalled();
+    const url = String(vi.mocked(fetch).mock.calls.at(-1)![0]);
+    expect(url).toContain("window=Custom");
+    expect(url).toContain("fromDate=2026-08-01");
+    expect(url).toContain("toDate=2026-08-31");
   });
 
   it("posts enable body with expirationDate and lotNumber", async () => {

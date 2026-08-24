@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  addLocalDays,
   calendarDaysBetween,
   daysUntilExpiration,
+  formatLocalDateOnly,
   parseBusinessDate,
   requiresOpeningExpirationDate,
   resolveLotExpiryLabel,
@@ -50,5 +52,10 @@ describe("inventory-lot-status", () => {
     expect(requiresOpeningExpirationDate(true, 0)).toBe(false);
     expect(requiresOpeningExpirationDate(true, null)).toBe(false);
     expect(requiresOpeningExpirationDate(true, 5)).toBe(true);
+  });
+
+  it("formats and shifts local date-only values", () => {
+    expect(formatLocalDateOnly(new Date(2026, 7, 24))).toBe("2026-08-24");
+    expect(addLocalDays("2026-08-24", 30)).toBe("2026-09-23");
   });
 });
