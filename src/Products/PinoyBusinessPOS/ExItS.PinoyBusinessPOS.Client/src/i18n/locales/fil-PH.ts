@@ -432,6 +432,25 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.utang.phone": "Telepono (opsyonal)",
   "personal.utang.email": "Email (opsyonal)",
   "personal.utang.addPerson": "Magdagdag ng tao",
+  "personal.utang.addPersonKindTitle": "Paano magdagdag",
+  "personal.utang.addPersonKindLede":
+    "Pumili ng walang ExItS ID o i-link ang Personal ExItS identity.",
+  "personal.utang.addPersonKindWalkIn": "Walang ExItS ID",
+  "personal.utang.addPersonKindWalkInHint":
+    "Pangalan at opsyonal na contact lang. Walang link sa ExItS account.",
+  "personal.utang.addPersonKindExits": "May ExItS Personal ID",
+  "personal.utang.addPersonKindExitsHint":
+    "I-scan o i-type ang Personal ExItS ID para idagdag sila sa listahan.",
+  "personal.utang.addPersonKindChange": "Palitan ang uri",
+  "personal.utang.addPersonManualTitle": "Magdagdag nang walang ExItS ID",
+  "personal.utang.addByExitsTitle": "Magdagdag gamit ang ExItS ID / QR",
+  "personal.utang.addByExitsHint":
+    "Hanapin ang user, kumpirmahin ang pagkakakilanlan, tapos gumawa ng contact. Maaaring kailangan pa rin ng pagtanggap ang utang link.",
+  "personal.utang.addPersonExits": "Magdagdag ng tao gamit ang ExItS ID",
+  "personal.utang.addByExitsRequiresOnline":
+    "Kailangan ng internet para magdagdag gamit ang ExItS ID.",
+  "personal.utang.addByExitsConfirmHint": "Kumpirmahin ang taong ito bago idagdag sa listahan.",
+  "personal.utang.resolveSelf": "Iyan ang sarili mong ExItS ID.",
   "personal.utang.editPerson": "I-edit ang tao",
   "personal.utang.savePerson": "I-save ang mga pagbabago",
   "personal.utang.cancelEdit": "Kanselahin",
@@ -539,7 +558,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "qr.uploadImage": "Upload QR image",
   "qr.scanning": "Reading?",
   "qr.enterId": "Enter ExItS ID manually",
-  "qr.resolve": "Look up",
+  "qr.resolve": "Search",
   "qr.clear": "Clear",
   "qr.copyId": "Copy ID",
   "qr.copied": "Copied",
@@ -595,6 +614,9 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.social.openCustomerLink": "Accept or decline",
   "personal.social.openCustomerLinkHint":
     "Bubuksan ang susunod na screen kung saan mo maaaring i-accept o i-decline ang store na ito.",
+  "personal.social.customerLinkAcceptedHint": "Aktibo na ang link ng tindahan sa iyong account.",
+  "personal.social.customerLinkDeclinedHint": "Hindi na nakabinbin ang link request na ito.",
+  "personal.social.openLinkedStores": "Tingnan ang mga naka-link na tindahan",
   "personal.social.notif.customerLinkTitle": "Kahilingan sa link ng tindahan",
   "personal.social.notif.customerLinkPreview":
     "Idinagdag ka ni {name} bilang customer at gusto niyang i-link ang iyong ExItS account.",
@@ -756,6 +778,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.customerLinks.acceptFailed": "Hindi matanggap ang kahilingan sa link.",
   "personal.customerLinks.declineFailed": "Hindi matanggihan ang kahilingan sa link.",
   "personal.customerLinks.statusPending": "Nakabinbin",
+  "personal.customerLinks.statusAccepted": "Tinanggap",
+  "personal.customerLinks.statusDeclined": "Tinanggihan",
   "personal.customerLinks.requestedAt": "Hiniling",
   "personal.customerLinks.expiresAt": "Mag-e-expire",
   "noLocation.title": "Walang accessible na branch",

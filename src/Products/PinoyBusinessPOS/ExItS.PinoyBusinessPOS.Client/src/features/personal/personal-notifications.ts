@@ -45,6 +45,39 @@ export function extractCustomerLinkMerchantName(preview: string): string | null 
   return name.length > 0 ? name : null;
 }
 
+export type CustomerLinkNotificationState = "pending" | "accepted" | "declined" | "unknown";
+
+/** Resolve inbox state for a customer-link notification from pending requests and linked stores. */
+export function resolveCustomerLinkNotificationState(
+  relatedId: string | null | undefined,
+  preview: string,
+  pendingRequests: ReadonlyArray<{ id: string }>,
+  linkedMerchants: ReadonlyArray<{ organizationDisplayName: string }>,
+): CustomerLinkNotificationState {
+  if (relatedId && pendingRequests.some((request) => request.id === relatedId)) {
+    return "pending";
+  }
+
+  const merchant = extractCustomerLinkMerchantName(preview);
+  if (
+    merchant
+    && linkedMerchants.some(
+      (row) =>
+        row.organizationDisplayName.localeCompare(merchant, undefined, {
+          sensitivity: "accent",
+        }) === 0,
+    )
+  ) {
+    return "accepted";
+  }
+
+  if (relatedId) {
+    return "declined";
+  }
+
+  return "unknown";
+}
+
 /**
  * Map stored (English) notification copy to the active UI locale.
  * User-authored preview text (todo title / reminder message) is kept as-is.

@@ -4,6 +4,7 @@ import {
   extractCustomerLinkMerchantName,
   formatUnreadNotificationBadge,
   localizePersonalNotification,
+  resolveCustomerLinkNotificationState,
 } from "@/features/personal/personal-notifications";
 import type { PersonalInAppNotificationDto } from "@/api/platform/personal-social-client";
 import type { MessageKey } from "@/i18n/messages";
@@ -106,5 +107,42 @@ describe("localizePersonalNotification", () => {
         tFil,
       ),
     ).toEqual({ title: "Other", preview: "Body" });
+  });
+});
+
+describe("resolveCustomerLinkNotificationState", () => {
+  const preview =
+    "mica store added you as a customer and wants to link your ExItS account.";
+
+  it("returns pending when relatedId matches a pending request", () => {
+    expect(
+      resolveCustomerLinkNotificationState(
+        "req-1",
+        preview,
+        [{ id: "req-1" }],
+        [],
+      ),
+    ).toBe("pending");
+  });
+
+  it("returns accepted when store is linked and request is no longer pending", () => {
+    expect(
+      resolveCustomerLinkNotificationState(
+        "req-1",
+        preview,
+        [],
+        [{ organizationDisplayName: "mica store" }],
+      ),
+    ).toBe("accepted");
+  });
+
+  it("returns declined when relatedId exists but request is resolved without a link", () => {
+    expect(
+      resolveCustomerLinkNotificationState("req-1", preview, [], []),
+    ).toBe("declined");
+  });
+
+  it("returns unknown without relatedId and without a linked store match", () => {
+    expect(resolveCustomerLinkNotificationState(null, preview, [], [])).toBe("unknown");
   });
 });

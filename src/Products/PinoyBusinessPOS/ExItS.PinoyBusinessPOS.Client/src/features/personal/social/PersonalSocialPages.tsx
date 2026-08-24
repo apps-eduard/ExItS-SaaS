@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, CheckCheck, ChevronRight, UserRoundCheck, X } from "lucide-react";
+import { Check, CheckCheck, ChevronRight, Store, UserRoundCheck, X } from "lucide-react";
 import {
   acceptPersonalUtangInvitation,
   cancelPersonalReminder,
@@ -15,6 +15,8 @@ import {
   resendPersonalUtangInvitation,
   revokePersonalUtangInvitation,
 } from "@/api/platform/personal-social-client";
+import { listPendingCustomerLinkRequests } from "@/api/platform/customer-link-requests-client";
+import { listLinkedMerchants } from "@/api/platform/linked-merchants-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -27,6 +29,7 @@ import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import {
   localizePersonalNotification,
   PERSONAL_NOTIFICATIONS_QUERY_KEY,
+  resolveCustomerLinkNotificationState,
 } from "@/features/personal/personal-notifications";
 import {
   peekNotificationsReturnTo,
@@ -207,6 +210,14 @@ export function PersonalNotificationsPage() {
     queryKey: PERSONAL_NOTIFICATIONS_QUERY_KEY,
     queryFn: ({ signal }) => listPersonalNotifications(signal),
   });
+  const pendingLinksQuery = useQuery({
+    queryKey: ["personal", "customer-link-requests"],
+    queryFn: ({ signal }) => listPendingCustomerLinkRequests(signal),
+  });
+  const linkedMerchantsQuery = useQuery({
+    queryKey: ["personal", "linked-merchants"],
+    queryFn: ({ signal }) => listLinkedMerchants(1, 50, signal),
+  });
   const markRead = useMutation({
     mutationFn: (id: string) => markPersonalNotificationRead(id),
     onSuccess: async () => {
@@ -275,6 +286,8 @@ export function PersonalNotificationsPage() {
 
   const items = query.data;
   const visible = tab === "unread" ? items.filter((item) => !item.isRead) : items;
+  const pendingLinks = pendingLinksQuery.data ?? [];
+  const linkedMerchants = linkedMerchantsQuery.data?.items ?? [];
 
   return (
     <div
@@ -341,11 +354,20 @@ export function PersonalNotificationsPage() {
                 sensitivity: "accent",
               }) === 0
               && Boolean(item.relatedId);
+            const customerLinkState = isCustomerLink
+              ? resolveCustomerLinkNotificationState(
+                  item.relatedId,
+                  item.preview,
+                  pendingLinks,
+                  linkedMerchants,
+                )
+              : null;
             return (
               <li key={item.id}>
                 <article
                   data-testid={`notification-row-${item.id}`}
                   data-read={item.isRead ? "true" : "false"}
+                  data-customer-link-state={customerLinkState ?? undefined}
                   className={cn(
                     "exits-list__card notification-row",
                     !item.isRead && "notification-row--unread",
@@ -359,6 +381,21 @@ export function PersonalNotificationsPage() {
                       {!item.isRead ? (
                         <StatusChip tone="warning">{t("personal.social.unread")}</StatusChip>
                       ) : null}
+                      {customerLinkState === "pending" ? (
+                        <StatusChip tone="warning">
+                          {t("personal.customerLinks.statusPending")}
+                        </StatusChip>
+                      ) : null}
+                      {customerLinkState === "accepted" ? (
+                        <StatusChip tone="success">
+                          {t("personal.customerLinks.statusAccepted")}
+                        </StatusChip>
+                      ) : null}
+                      {customerLinkState === "declined" ? (
+                        <StatusChip tone="danger">
+                          {t("personal.customerLinks.statusDeclined")}
+                        </StatusChip>
+                      ) : null}
                     </div>
                     <p className="notification-row__preview mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
                       {localized.preview}
@@ -368,11 +405,11 @@ export function PersonalNotificationsPage() {
                     </p>
                   </div>
                   <div className="notification-row__actions">
-                    {isCustomerLink ? (
+                    {isCustomerLink && customerLinkState === "pending" ? (
                       <div className="flex w-full min-w-0 flex-col gap-1.5">
                         <Button
                           asChild
-                          className="min-h-11 w-fit"
+                          className="min-h-11 w-full"
                           data-testid="notification-open-customer-links"
                         >
                           <Link
@@ -390,6 +427,52 @@ export function PersonalNotificationsPage() {
                         <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
                           {t("personal.social.openCustomerLinkHint")}
                         </p>
+                      </div>
+                    ) : null}
+                    {isCustomerLink && customerLinkState === "accepted" ? (
+                      <div className="flex w-full min-w-0 flex-col gap-1.5">
+                        <Button asChild className="min-h-11 w-full" data-testid="notification-open-linked-stores">
+                          <Link
+                            to="/personal/linked-merchants"
+                            onClick={() => {
+                              if (!item.isRead) {
+                                markRead.mutate(item.id);
+                              }
+                            }}
+                          >
+                            <Store className="size-4 shrink-0" aria-hidden />
+                            {t("personal.social.openLinkedStores")}
+                          </Link>
+                        </Button>
+                        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                          {t("personal.social.customerLinkAcceptedHint")}
+                        </p>
+                      </div>
+                    ) : null}
+                    {isCustomerLink && customerLinkState === "declined" ? (
+                      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                        {t("personal.social.customerLinkDeclinedHint")}
+                      </p>
+                    ) : null}
+                    {isCustomerLink && customerLinkState === "unknown" ? (
+                      <div className="flex w-full min-w-0 flex-col gap-1.5">
+                        <Button
+                          asChild
+                          className="min-h-11 w-full"
+                          data-testid="notification-open-customer-links"
+                        >
+                          <Link
+                            to="/personal/customer-links"
+                            onClick={() => {
+                              if (!item.isRead) {
+                                markRead.mutate(item.id);
+                              }
+                            }}
+                          >
+                            <UserRoundCheck className="size-4 shrink-0" aria-hidden />
+                            {t("personal.social.openCustomerLink")}
+                          </Link>
+                        </Button>
                       </div>
                     ) : null}
                     {isTodo ? (

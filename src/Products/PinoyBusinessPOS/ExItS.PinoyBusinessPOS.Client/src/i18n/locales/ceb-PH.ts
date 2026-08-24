@@ -436,6 +436,25 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.utang.phone": "Telepono (opsyonal)",
   "personal.utang.email": "Email (opsyonal)",
   "personal.utang.addPerson": "Pagdugang og tawo",
+  "personal.utang.addPersonKindTitle": "Unsaon pagdugang",
+  "personal.utang.addPersonKindLede":
+    "Pilia ang walay ExItS ID o i-link ang Personal ExItS identity.",
+  "personal.utang.addPersonKindWalkIn": "Walay ExItS ID",
+  "personal.utang.addPersonKindWalkInHint":
+    "Ngalan ug optional contact lang. Walay ExItS account link.",
+  "personal.utang.addPersonKindExits": "Adunay ExItS Personal ID",
+  "personal.utang.addPersonKindExitsHint":
+    "I-scan o i-type ang Personal ExItS ID aron idugang sila sa lista.",
+  "personal.utang.addPersonKindChange": "Usba ang tipo",
+  "personal.utang.addPersonManualTitle": "Pagdugang nga walay ExItS ID",
+  "personal.utang.addByExitsTitle": "Pagdugang gamit ang ExItS ID / QR",
+  "personal.utang.addByExitsHint":
+    "Resolve a user, confirm identity, then create a contact. Debt links still require acceptance when rules require it.",
+  "personal.utang.addPersonExits": "Pagdugang og tawo gamit ang ExItS ID",
+  "personal.utang.addByExitsRequiresOnline":
+    "Kinahanglan og internet aron magdugang gamit ang ExItS ID.",
+  "personal.utang.addByExitsConfirmHint": "Kumpirmaha kini nga tawo una sa pagdugang sa lista.",
+  "personal.utang.resolveSelf": "Kana ang imong kaugalingong ExItS ID.",
   "personal.utang.editPerson": "Usba ang tawo",
   "personal.utang.savePerson": "I-save ang mga kausaban",
   "personal.utang.cancelEdit": "Kanselahon",
@@ -543,7 +562,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "qr.uploadImage": "Upload QR image",
   "qr.scanning": "Reading?",
   "qr.enterId": "Enter ExItS ID manually",
-  "qr.resolve": "Look up",
+  "qr.resolve": "Search",
   "qr.clear": "Clear",
   "qr.copyId": "Copy ID",
   "qr.copied": "Copied",
@@ -599,6 +618,9 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.social.openCustomerLink": "Accept or decline",
   "personal.social.openCustomerLinkHint":
     "Opens the next screen where you can accept or decline this store.",
+  "personal.social.customerLinkAcceptedHint": "Active na ang store link sa imong account.",
+  "personal.social.customerLinkDeclinedHint": "Dili na pending kining link request.",
+  "personal.social.openLinkedStores": "Tan-awa ang linked stores",
   "personal.social.notif.customerLinkTitle": "Hangyo sa link sa tindahan",
   "personal.social.notif.customerLinkPreview":
     "Gidugang ka ni {name} isip customer ug gusto niyang i-link ang imong ExItS account.",
@@ -760,6 +782,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.customerLinks.acceptFailed": "Dili madawat ang hangyo sa link.",
   "personal.customerLinks.declineFailed": "Dili mabalibad ang hangyo sa link.",
   "personal.customerLinks.statusPending": "Naghulat",
+  "personal.customerLinks.statusAccepted": "Gi-dawat",
+  "personal.customerLinks.statusDeclined": "Gibalibaran",
   "personal.customerLinks.requestedAt": "Gi-request",
   "personal.customerLinks.expiresAt": "Mo-expire",
   "noLocation.title": "Walay accessible nga branch",

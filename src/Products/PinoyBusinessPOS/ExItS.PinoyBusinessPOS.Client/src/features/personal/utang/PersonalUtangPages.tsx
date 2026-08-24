@@ -1,7 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, HandCoins, Loader2, UserPlus, Wallet } from "lucide-react";
+import {
+  ChevronRight,
+  HandCoins,
+  IdCard,
+  Loader2,
+  Save,
+  User,
+  UserPlus,
+  UserRound,
+  UserRoundCheck,
+  Wallet,
+  X,
+} from "lucide-react";
+import {
+  resolvePublicUserId,
+  type ResolvedPublicUserDto,
+} from "@/api/platform/public-identity-client";
 import {
   createPersonalContact,
   createPersonalDebtRelationship,
@@ -28,6 +44,7 @@ import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { QrScanOrEnter } from "@/features/qr/QrScanOrEnter";
 import { RelationshipInviteReminderPanel } from "@/features/personal/social/PersonalSocialPages";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
@@ -152,6 +169,8 @@ function usePersonalUtangCache<T>(
   return value;
 }
 
+type UtangContactAddKind = "manual" | "exits";
+
 export function PersonalContactsPage() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
@@ -165,6 +184,10 @@ export function PersonalContactsPage() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [resolvedUser, setResolvedUser] = useState<ResolvedPublicUserDto | null>(null);
+  const [resolveBusy, setResolveBusy] = useState(false);
+  const [resolveError, setResolveError] = useState<string | null>(null);
+  const [addKind, setAddKind] = useState<UtangContactAddKind | null>(null);
   const [cacheEpoch, setCacheEpoch] = useState(0);
 
   const contactsQuery = useQuery({
@@ -194,6 +217,19 @@ export function PersonalContactsPage() {
     setPhone("");
     setEmail("");
     setFormError(null);
+    setResolvedUser(null);
+    setResolveError(null);
+    setAddKind(null);
+  }
+
+  function clearAddKind() {
+    setAddKind(null);
+    setDisplayName("");
+    setPhone("");
+    setEmail("");
+    setFormError(null);
+    setResolvedUser(null);
+    setResolveError(null);
   }
 
   function startEdit(contact: PersonalContactDto) {
@@ -202,6 +238,8 @@ export function PersonalContactsPage() {
     setPhone(contact.phone ?? "");
     setEmail(contact.email ?? "");
     setFormError(null);
+    setResolvedUser(null);
+    setResolveError(null);
   }
 
   useEffect(() => {
@@ -241,6 +279,50 @@ export function PersonalContactsPage() {
     await refreshOfflineSync();
     setCacheEpoch((epoch) => epoch + 1);
   };
+
+  async function onResolveExitsId(subjectOrPayload: string) {
+    if (!online) {
+      return;
+    }
+    setResolveBusy(true);
+    setResolveError(null);
+    try {
+      const user = await resolvePublicUserId(subjectOrPayload, "utang-people");
+      setResolvedUser(user);
+    } catch (error) {
+      setResolvedUser(null);
+      setResolveError(
+        error instanceof PlatformApiError
+          ? error.message
+          : t("customers.personalLink.resolveFailed"),
+      );
+    } finally {
+      setResolveBusy(false);
+    }
+  }
+
+  const exitsAddMutation = useMutation({
+    mutationFn: async (user: ResolvedPublicUserDto) => {
+      if (!online) {
+        throw new Error("online-required");
+      }
+      await createPersonalContact({
+        displayName: user.displayName.trim(),
+        phone: null,
+        email: null,
+      });
+    },
+    onSuccess: async () => {
+      resetForm();
+      await queryClient.invalidateQueries({ queryKey: ["personal", "utang", "contacts"] });
+      await queryClient.invalidateQueries({ queryKey: ["personal", "dashboard"] });
+    },
+    onError: (error) => {
+      setResolveError(
+        error instanceof PlatformApiError ? error.message : t("personal.utang.genericError"),
+      );
+    },
+  });
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -320,6 +402,176 @@ export function PersonalContactsPage() {
 
       {usingCache ? <OfflineNotice message={t("offline.personalCachedNotice")} /> : null}
 
+      {!isEditing && addKind === null ? (
+        <section
+          className="catalog-form-section exits-animate-panel customer-create-kind utang-contact-add-kind"
+          data-testid="utang-contact-add-kind"
+        >
+          <h2 className="catalog-form-section__title">{t("personal.utang.addPersonKindTitle")}</h2>
+          <p className="mb-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
+            {t("personal.utang.addPersonKindLede")}
+          </p>
+          <div
+            className="customer-create-kind__grid"
+            role="group"
+            aria-label={t("personal.utang.addPersonKindTitle")}
+          >
+            <button
+              type="button"
+              className="customer-create-kind__card"
+              data-testid="utang-contact-add-kind-manual"
+              onClick={() => setAddKind("manual")}
+            >
+              <span className="customer-create-kind__icon" aria-hidden>
+                <UserRound className="size-5" />
+              </span>
+              <span className="customer-create-kind__label">
+                {t("personal.utang.addPersonKindWalkIn")}
+              </span>
+              <span className="customer-create-kind__hint">
+                {t("personal.utang.addPersonKindWalkInHint")}
+              </span>
+            </button>
+            <button
+              type="button"
+              className="customer-create-kind__card"
+              data-testid="utang-contact-add-kind-exits"
+              onClick={() => setAddKind("exits")}
+            >
+              <span className="customer-create-kind__icon" aria-hidden>
+                <IdCard className="size-5" />
+              </span>
+              <span className="customer-create-kind__label">
+                {t("personal.utang.addPersonKindExits")}
+              </span>
+              <span className="customer-create-kind__hint">
+                {t("personal.utang.addPersonKindExitsHint")}
+              </span>
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {!isEditing && addKind !== null ? (
+        <div className="customer-create-kind__chosen exits-animate-toolbar">
+          <p className="m-0 min-w-0 text-[length:var(--exits-text-sm)]">
+            <span className="font-semibold">
+              {addKind === "exits"
+                ? t("personal.utang.addPersonKindExits")
+                : t("personal.utang.addPersonKindWalkIn")}
+            </span>
+          </p>
+          <Button
+            type="button"
+            variant="ghost"
+            className="min-h-9 shrink-0"
+            data-testid="utang-contact-add-kind-change"
+            disabled={saveMutation.isPending || exitsAddMutation.isPending || resolveBusy}
+            onClick={clearAddKind}
+          >
+            {t("personal.utang.addPersonKindChange")}
+          </Button>
+        </div>
+      ) : null}
+
+      {!isEditing && addKind === "exits" ? (
+        <section
+          className="catalog-form-section exits-animate-panel personal-section flex flex-col gap-2"
+          data-testid="utang-contact-exits"
+        >
+          <div className="flex items-start gap-2">
+            <span className="customer-personal-link__icon" aria-hidden>
+              <UserRoundCheck />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 className="catalog-form-section__title">{t("personal.utang.addByExitsTitle")}</h2>
+              <p className="mb-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
+                {t("personal.utang.addByExitsHint")}
+              </p>
+            </div>
+          </div>
+
+          {!online ? (
+            <OfflineNotice message={t("personal.utang.addByExitsRequiresOnline")} />
+          ) : resolvedUser ? (
+            <div className="customer-personal-link__confirm" data-testid="utang-contact-exits-confirm">
+              <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                {resolvedUser.displayName}
+              </p>
+              <p className="m-0 break-all text-[length:var(--exits-text-xs)] text-muted">
+                {resolvedUser.publicUserId}
+              </p>
+              {resolvedUser.maskedEmail ? (
+                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                  {resolvedUser.maskedEmail}
+                </p>
+              ) : null}
+              {resolvedUser.isSelf ? (
+                <p
+                  role="alert"
+                  className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+                >
+                  {t("personal.utang.resolveSelf")}
+                </p>
+              ) : (
+                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                  {t("personal.utang.addByExitsConfirmHint")}
+                </p>
+              )}
+              <div className="grid w-full grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="min-h-11 w-full"
+                  disabled={resolveBusy || exitsAddMutation.isPending}
+                  data-testid="utang-contact-exits-clear"
+                  onClick={() => {
+                    setResolvedUser(null);
+                    setResolveError(null);
+                  }}
+                >
+                  <X className="size-4 shrink-0" aria-hidden />
+                  {t("qr.clear")}
+                </Button>
+                <Button
+                  type="button"
+                  className="min-h-11 w-full"
+                  disabled={
+                    resolvedUser.isSelf || resolveBusy || exitsAddMutation.isPending || saveMutation.isPending
+                  }
+                  data-testid="utang-contact-exits-submit"
+                  onClick={() => exitsAddMutation.mutate(resolvedUser)}
+                >
+                  {exitsAddMutation.isPending ? (
+                    <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                  ) : (
+                    <UserPlus className="size-4 shrink-0" aria-hidden />
+                  )}
+                  {t("personal.utang.addPersonExits")}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <QrScanOrEnter
+              expectedPurpose="personal"
+              disabled={resolveBusy || exitsAddMutation.isPending || saveMutation.isPending}
+              onResolvedPayload={(value) => void onResolveExitsId(value)}
+            />
+          )}
+
+          {resolveError ? (
+            <p
+              role="alert"
+              className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+              data-testid="utang-contact-exits-error"
+            >
+              {resolveError}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
+      {isEditing || addKind === "manual" ? (
       <form
         ref={formRef}
         className={cn(
@@ -337,7 +589,7 @@ export function PersonalContactsPage() {
         }}
       >
         <h2 className="catalog-form-section__title">
-          {isEditing ? t("personal.utang.editPerson") : t("personal.utang.addPerson")}
+          {isEditing ? t("personal.utang.editPerson") : t("personal.utang.addPersonManualTitle")}
         </h2>
         <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]" htmlFor="utang-contact-name">
           {t("personal.utang.name")}
@@ -390,29 +642,38 @@ export function PersonalContactsPage() {
             {formError}
           </p>
         ) : null}
-        <div className="flex flex-wrap gap-2">
+        <div className={cn("grid w-full gap-2", isEditing ? "grid-cols-2" : "grid-cols-1")}>
           <Button
             type="submit"
-            className="min-h-11"
+            className="min-h-11 w-full"
             disabled={saveMutation.isPending || (!online && !offline) || (isEditing && !online)}
             data-testid="utang-contact-submit"
           >
+            {saveMutation.isPending ? (
+              <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+            ) : isEditing ? (
+              <Save className="size-4 shrink-0" aria-hidden />
+            ) : (
+              <UserPlus className="size-4 shrink-0" aria-hidden />
+            )}
             {isEditing ? t("personal.utang.savePerson") : t("personal.utang.addPerson")}
           </Button>
           {isEditing ? (
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
+              className="min-h-11 w-full"
               disabled={saveMutation.isPending}
               data-testid="utang-contact-cancel-edit"
               onClick={() => resetForm()}
             >
+              <X className="size-4 shrink-0" aria-hidden />
               {t("personal.utang.cancelEdit")}
             </Button>
           ) : null}
         </div>
       </form>
+      ) : null}
 
       {contacts.length === 0 ? (
         <EmptyState
@@ -437,12 +698,17 @@ export function PersonalContactsPage() {
                 return (
                   <li key={contact.id}>
                     <div
-                      className="exits-list__card flex flex-col gap-1"
+                      className="exits-list__card utang-contact-card"
                       data-testid={`utang-contact-${contact.id}`}
                     >
-                      <p className="exits-list__name m-0 font-semibold">{contact.displayName}</p>
-                      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{meta}</p>
-                      <WaitingChip origin="Local" />
+                      <span className="utang-contact-card__avatar" aria-hidden>
+                        <User className="size-5" />
+                      </span>
+                      <div className="utang-contact-card__body min-w-0 flex-1">
+                        <p className="exits-list__name m-0 font-semibold">{contact.displayName}</p>
+                        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{meta}</p>
+                        <WaitingChip origin="Local" />
+                      </div>
                     </div>
                   </li>
                 );
@@ -453,7 +719,7 @@ export function PersonalContactsPage() {
                   <button
                     type="button"
                     className={cn(
-                      "exits-list__card flex min-h-11 w-full items-center justify-between gap-3",
+                      "exits-list__card utang-contact-card min-h-11 w-full",
                       isActive && "exits-list__card--editing",
                     )}
                     data-testid={`utang-contact-${contact.id}`}
@@ -462,7 +728,10 @@ export function PersonalContactsPage() {
                     disabled={saveMutation.isPending}
                     onClick={() => startEdit(contact)}
                   >
-                    <div className="min-w-0 flex-1">
+                    <span className="utang-contact-card__avatar" aria-hidden>
+                      <User className="size-5" />
+                    </span>
+                    <div className="utang-contact-card__body min-w-0 flex-1">
                       <p className="exits-list__name m-0 truncate font-semibold">
                         {contact.displayName}
                       </p>

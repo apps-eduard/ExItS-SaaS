@@ -422,6 +422,25 @@ export const en = {
   "personal.utang.phone": "Phone (optional)",
   "personal.utang.email": "Email (optional)",
   "personal.utang.addPerson": "Add person",
+  "personal.utang.addPersonKindTitle": "How to add",
+  "personal.utang.addPersonKindLede":
+    "Choose without ExItS ID or link a Personal ExItS identity.",
+  "personal.utang.addPersonKindWalkIn": "Without ExItS ID",
+  "personal.utang.addPersonKindWalkInHint":
+    "Name and optional contact only. No ExItS account link.",
+  "personal.utang.addPersonKindExits": "With ExItS Personal ID",
+  "personal.utang.addPersonKindExitsHint":
+    "Scan or enter their Personal ExItS ID to add them to your list.",
+  "personal.utang.addPersonKindChange": "Change type",
+  "personal.utang.addPersonManualTitle": "Add without ExItS ID",
+  "personal.utang.addByExitsTitle": "Add by ExItS ID / QR",
+  "personal.utang.addByExitsHint":
+    "Resolve a user, confirm identity, then create a contact. Debt links still require acceptance when rules require it.",
+  "personal.utang.addPersonExits": "Add person with ExItS ID",
+  "personal.utang.addByExitsRequiresOnline":
+    "Adding by ExItS ID requires an internet connection.",
+  "personal.utang.addByExitsConfirmHint": "Confirm this person before adding them to your list.",
+  "personal.utang.resolveSelf": "That is your own ExItS ID.",
   "personal.utang.editPerson": "Edit person",
   "personal.utang.savePerson": "Save changes",
   "personal.utang.cancelEdit": "Cancel",
@@ -528,7 +547,7 @@ export const en = {
   "qr.uploadImage": "Upload QR image",
   "qr.scanning": "Reading…",
   "qr.enterId": "Enter ExItS ID manually",
-  "qr.resolve": "Look up",
+  "qr.resolve": "Search",
   "qr.clear": "Clear",
   "qr.copyId": "Copy ID",
   "qr.copied": "Copied",
@@ -584,6 +603,9 @@ export const en = {
   "personal.social.openCustomerLink": "Accept or decline",
   "personal.social.openCustomerLinkHint":
     "Opens the next screen where you can accept or decline this store.",
+  "personal.social.customerLinkAcceptedHint": "This store link is active on your account.",
+  "personal.social.customerLinkDeclinedHint": "This store link request is no longer pending.",
+  "personal.social.openLinkedStores": "View linked stores",
   "personal.social.notif.customerLinkTitle": "Store link request",
   "personal.social.notif.customerLinkPreview":
     "{name} added you as a customer and wants to link your ExItS account.",
@@ -747,6 +769,8 @@ export const en = {
   "personal.customerLinks.acceptFailed": "Could not accept the link request.",
   "personal.customerLinks.declineFailed": "Could not decline the link request.",
   "personal.customerLinks.statusPending": "Pending",
+  "personal.customerLinks.statusAccepted": "Accepted",
+  "personal.customerLinks.statusDeclined": "Declined",
   "personal.customerLinks.requestedAt": "Requested",
   "personal.customerLinks.expiresAt": "Expires",
   "noLocation.title": "No accessible branch",

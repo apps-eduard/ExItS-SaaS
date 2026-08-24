@@ -438,6 +438,25 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.utang.phone": "Telepono (opsyonal)",
   "personal.utang.email": "Email (opsyonal)",
   "personal.utang.addPerson": "Agnayon ti tao",
+  "personal.utang.addPersonKindTitle": "Kasano agnayon",
+  "personal.utang.addPersonKindLede":
+    "Pilien ti awan ExItS ID wenno i-link ti Personal ExItS identity.",
+  "personal.utang.addPersonKindWalkIn": "Awan ExItS ID",
+  "personal.utang.addPersonKindWalkInHint":
+    "Nagan ken optional contact laeng. Awan link iti ExItS account.",
+  "personal.utang.addPersonKindExits": "Adda ExItS Personal ID",
+  "personal.utang.addPersonKindExitsHint":
+    "I-scan wenno i-type ti Personal ExItS ID tapno inayon da iti listaan.",
+  "personal.utang.addPersonKindChange": "Sukatan ti tipo",
+  "personal.utang.addPersonManualTitle": "Agnayon nga awan ExItS ID",
+  "personal.utang.addByExitsTitle": "Agnayon babaen ti ExItS ID / QR",
+  "personal.utang.addByExitsHint":
+    "Resolve a user, confirm identity, then create a contact. Debt links still require acceptance when rules require it.",
+  "personal.utang.addPersonExits": "Agnayon ti tao babaen ti ExItS ID",
+  "personal.utang.addByExitsRequiresOnline":
+    "Masapul ti internet tapno agnayon babaen ti ExItS ID.",
+  "personal.utang.addByExitsConfirmHint": "Kumpirmarem daytoy a tao sakbay nga inayon iti listaan.",
+  "personal.utang.resolveSelf": "Dayta ti bukodmo nga ExItS ID.",
   "personal.utang.editPerson": "Baliwan ti tao",
   "personal.utang.savePerson": "I-save dagiti panagbaliw",
   "personal.utang.cancelEdit": "Ikansela",
@@ -545,7 +564,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "qr.uploadImage": "Upload QR image",
   "qr.scanning": "Reading?",
   "qr.enterId": "Enter ExItS ID manually",
-  "qr.resolve": "Look up",
+  "qr.resolve": "Search",
   "qr.clear": "Clear",
   "qr.copyId": "Copy ID",
   "qr.copied": "Copied",
@@ -601,6 +620,9 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.social.openCustomerLink": "Accept or decline",
   "personal.social.openCustomerLinkHint":
     "Opens the next screen where you can accept or decline this store.",
+  "personal.social.customerLinkAcceptedHint": "Active ti store link iti account-mo.",
+  "personal.social.customerLinkDeclinedHint": "Saanen a pending daytoy a link request.",
+  "personal.social.openLinkedStores": "Kitaen dagiti naka-link a stores",
   "personal.social.notif.customerLinkTitle": "Kiddaw iti link ti tendaan",
   "personal.social.notif.customerLinkPreview":
     "Inayon ka ni {name} kas customer ken kayatna nga i-link ti ExItS account-mo.",
@@ -762,6 +784,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.customerLinks.acceptFailed": "Saan a maawat ti kiddaw iti link.",
   "personal.customerLinks.declineFailed": "Saan a maibabawi ti kiddaw iti link.",
   "personal.customerLinks.statusPending": "Agur-uray",
+  "personal.customerLinks.statusAccepted": "Naawat",
+  "personal.customerLinks.statusDeclined": "Nagtuki",
   "personal.customerLinks.requestedAt": "Na-request",
   "personal.customerLinks.expiresAt": "Ag-expire",
   "noLocation.title": "Awan ti accessible a branch",

@@ -440,6 +440,25 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.utang.phone": "Telepono (opsyonal)",
   "personal.utang.email": "Email (opsyonal)",
   "personal.utang.addPerson": "Magdugang tawo",
+  "personal.utang.addPersonKindTitle": "Paano magdugang",
+  "personal.utang.addPersonKindLede":
+    "Pilia ang wala ExItS ID ukon i-link ang Personal ExItS identity.",
+  "personal.utang.addPersonKindWalkIn": "Wala ExItS ID",
+  "personal.utang.addPersonKindWalkInHint":
+    "Ngalan kag optional contact lang. Wala ExItS account link.",
+  "personal.utang.addPersonKindExits": "May ExItS Personal ID",
+  "personal.utang.addPersonKindExitsHint":
+    "I-scan ukon i-type ang Personal ExItS ID agud idugang sila sa listahan.",
+  "personal.utang.addPersonKindChange": "Bag-uhon ang tipo",
+  "personal.utang.addPersonManualTitle": "Magdugang nga wala ExItS ID",
+  "personal.utang.addByExitsTitle": "Magdugang gamit ang ExItS ID / QR",
+  "personal.utang.addByExitsHint":
+    "Resolve a user, confirm identity, then create a contact. Debt links still require acceptance when rules require it.",
+  "personal.utang.addPersonExits": "Magdugang tawo gamit ang ExItS ID",
+  "personal.utang.addByExitsRequiresOnline":
+    "Kinahanglan sang internet agod magdugang gamit ang ExItS ID.",
+  "personal.utang.addByExitsConfirmHint": "Kumpirmaha ini nga tawo antes idugang sa listahan.",
+  "personal.utang.resolveSelf": "Amo na ang imo mismo nga ExItS ID.",
   "personal.utang.editPerson": "I-edit ang tawo",
   "personal.utang.savePerson": "I-save ang mga kambyo",
   "personal.utang.cancelEdit": "Kanselahon",
@@ -547,7 +566,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "qr.uploadImage": "Upload QR image",
   "qr.scanning": "Reading?",
   "qr.enterId": "Enter ExItS ID manually",
-  "qr.resolve": "Look up",
+  "qr.resolve": "Search",
   "qr.clear": "Clear",
   "qr.copyId": "Copy ID",
   "qr.copied": "Copied",
@@ -603,6 +622,9 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.social.openCustomerLink": "Accept or decline",
   "personal.social.openCustomerLinkHint":
     "Opens the next screen where you can accept or decline this store.",
+  "personal.social.customerLinkAcceptedHint": "Active na ang store link sa imo account.",
+  "personal.social.customerLinkDeclinedHint": "Indi na pending ini nga link request.",
+  "personal.social.openLinkedStores": "Tan-awa ang linked stores",
   "personal.social.notif.customerLinkTitle": "Pangabay sa link sang tindahan",
   "personal.social.notif.customerLinkPreview":
     "Gindugang ka ni {name} bilang customer kag gusto niya i-link ang imo ExItS account.",
@@ -764,6 +786,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.customerLinks.acceptFailed": "Indi mabatun ang pangabay sa link.",
   "personal.customerLinks.declineFailed": "Indi mabalibad ang pangabay sa link.",
   "personal.customerLinks.statusPending": "Naga-hulat",
+  "personal.customerLinks.statusAccepted": "Ginbaton",
+  "personal.customerLinks.statusDeclined": "Ginbalibaran",
   "personal.customerLinks.requestedAt": "Gin-request",
   "personal.customerLinks.expiresAt": "Ma-expire",
   "noLocation.title": "Wala sing accessible nga branch",

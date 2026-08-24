@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Camera, Keyboard, Search, Upload, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { useI18n } from "@/i18n/I18nProvider";
 import {
@@ -120,37 +121,35 @@ export function QrScanOrEnter({ expectedPurpose, onResolvedPayload, disabled }: 
           <Keyboard className="size-4" aria-hidden />
           {t("qr.enterId")}
         </span>
-        <input
-          ref={manualInputRef}
-          className="min-h-11 rounded border border-[var(--exits-border)] bg-transparent px-3 uppercase"
-          data-testid="qr-manual-id"
-          value={manual}
-          disabled={disabled}
-          placeholder={expectedPurpose === "personal" ? "EX-4827-1936" : "ORG000001"}
-          onChange={(event) => setManual(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              applyRaw(manual);
-            }
-          }}
-        />
+        <div className="qr-manual-entry flex min-w-0 gap-2">
+          <input
+            ref={manualInputRef}
+            className="min-h-11 min-w-0 flex-1 rounded border border-[var(--exits-border)] bg-transparent px-3 uppercase"
+            data-testid="qr-manual-id"
+            value={manual}
+            disabled={disabled}
+            placeholder={expectedPurpose === "personal" ? "EX-4827-1936" : "ORG000001"}
+            onChange={(event) => setManual(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                applyRaw(manual);
+              }
+            }}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className="qr-manual-entry__search min-h-11 shrink-0"
+            data-testid="qr-manual-submit"
+            disabled={Boolean(disabled) || !manual.trim()}
+            onClick={() => applyRaw(manual)}
+          >
+            <Search className="size-4 shrink-0" aria-hidden />
+            {t("qr.resolve")}
+          </Button>
+        </div>
       </label>
-      <ExitsChipBar
-        variant="actions"
-        ariaLabel={t("qr.resolve")}
-        testId="qr-manual-actions"
-        items={[
-          {
-            key: "resolve",
-            label: t("qr.resolve"),
-            icon: <Search />,
-            testId: "qr-manual-submit",
-            disabled: Boolean(disabled) || !manual.trim(),
-            onSelect: () => applyRaw(manual),
-          },
-        ]}
-      />
       {error ? (
         <p
           className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"

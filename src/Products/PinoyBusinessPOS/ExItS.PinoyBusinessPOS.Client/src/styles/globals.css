@@ -1757,6 +1757,24 @@ body {
   }
 }
 
+/* Utang People: always two-up with centered icon + copy */
+.utang-contact-add-kind .customer-create-kind__grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.625rem;
+}
+
+.utang-contact-add-kind .customer-create-kind__card {
+  min-height: 6.75rem;
+  align-items: center;
+  text-align: center;
+  padding: 0.875rem 0.625rem;
+}
+
+.utang-contact-add-kind .customer-create-kind__label,
+.utang-contact-add-kind .customer-create-kind__hint {
+  width: 100%;
+}
+
 .customer-create-kind__card {
   display: flex;
   min-height: 7.5rem;
@@ -2677,6 +2695,33 @@ body {
   border-radius: var(--exits-radius-md);
   background: color-mix(in srgb, var(--exits-primary) 12%, var(--exits-surface));
   color: var(--exits-primary);
+}
+
+.utang-contact-card {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: left;
+}
+
+.utang-contact-card__avatar {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--exits-radius-md);
+  background: color-mix(in srgb, var(--exits-primary) 12%, var(--exits-surface));
+  color: var(--exits-primary);
+}
+
+.utang-contact-card__body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.15rem;
 }
 
 .linked-merchant-card__heading {
