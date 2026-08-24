@@ -60,7 +60,7 @@ type RoleHomeShellProps = {
 
 type TileDef = ActionTileDef;
 
-function Section({
+function GuideSection({
   title,
   children,
   testId,
@@ -70,10 +70,11 @@ function Section({
   testId?: string;
 }) {
   return (
-    <section className="flex min-w-0 flex-col gap-2" data-testid={testId}>
-      <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
-        {title}
-      </h2>
+    <section
+      className="catalog-form-section exits-animate-panel manager-home-section gap-3"
+      data-testid={testId}
+    >
+      <h2 className="catalog-form-section__title text-muted">{title}</h2>
       {children}
     </section>
   );
@@ -286,38 +287,42 @@ export function RoleHomeShell({
   if (dashboardGuide) {
     return (
       <div
-        className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-5"
+        className="manager-home-page exits-page mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-3"
         data-testid={homeTestId}
       >
         <PageHeader title={t(titleKey)} description={t(ledeKey)} />
 
         {quickTiles.length > 0 ? (
-          <Section title={t("role.section.quickActions")} testId="manager-quick-actions">
-            <ActionTileGrid tiles={quickTiles} />
+          <GuideSection title={t("role.section.quickActions")} testId="manager-quick-actions">
+            <ActionTileGrid
+              tiles={quickTiles}
+              /* Cashier: Open new sale + Switch workspace share one row. */
+              emphasizePrimary={!(primarySell && quickTiles.length > 1)}
+            />
             {canSell ? (
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+              <p className="manager-home-hint m-0 text-[length:var(--exits-text-xs)] text-muted">
                 {t("role.startSellingHint")}
               </p>
             ) : null}
-          </Section>
+          </GuideSection>
         ) : null}
 
         {operationTiles.length > 0 ? (
-          <Section title={t("role.section.operations")} testId="manager-operations">
+          <GuideSection title={t("role.section.operations")} testId="manager-operations">
             <ActionTileGrid tiles={operationTiles} />
-          </Section>
+          </GuideSection>
         ) : null}
 
         {deviceTiles.length > 0 ? (
-          <Section title={t("role.section.devices")} testId="manager-devices">
+          <GuideSection title={t("role.section.devices")} testId="manager-devices">
             <ActionTileGrid tiles={deviceTiles} />
-          </Section>
+          </GuideSection>
         ) : null}
 
         {insightTiles.length > 0 ? (
-          <Section title={t("role.section.insights")} testId="manager-insights">
+          <GuideSection title={t("role.section.insights")} testId="manager-insights">
             <ActionTileGrid tiles={insightTiles} />
-          </Section>
+          </GuideSection>
         ) : null}
       </div>
     );

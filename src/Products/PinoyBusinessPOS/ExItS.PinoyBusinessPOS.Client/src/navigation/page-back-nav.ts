@@ -5,6 +5,7 @@ export const pageBackNav = {
   managerHome: { to: "/role/manager", labelKey: "nav.backToManagerHome" as MessageKey },
   more: { to: "/more", labelKey: "org.more.back" as MessageKey },
   org: { to: "/org", labelKey: "devices.backOrg" as MessageKey },
+  orgStaff: { to: "/org/staff", labelKey: "staffManage.back" as MessageKey },
   shifts: { to: "/shifts", labelKey: "shift.backToShifts" as MessageKey },
   registers: { to: "/registers", labelKey: "registers.back" as MessageKey },
   customers: { to: "/customers", labelKey: "customers.back" as MessageKey },

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Save } from "lucide-react";
+import { IdCard, Loader2, Save, UserRound } from "lucide-react";
 import { createCustomer, getCustomer, updateCustomer } from "@/api/pos/pos-customers-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,8 +25,11 @@ import {
 import { useOfflineSync } from "@/offline/OfflineSyncProvider";
 import { useOrganizationOfflineContext } from "@/offline/organization-offline-context";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { cn } from "@/lib/cn";
 
 type Mode = "create" | "edit";
+/** Create path: walk-in (no ExItS ID) vs Personal ExItS link. */
+type CreateKind = "walkin" | "exits";
 
 export function CustomerCreatePage() {
   return <CustomerFormPage mode="create" />;
@@ -56,6 +59,9 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [personalLink, setPersonalLink] = useState<ConfirmedPersonalLink | null>(null);
+  const [createKind, setCreateKind] = useState<CreateKind | null>(() =>
+    linkPublicId?.trim() ? "exits" : null,
+  );
 
   const workspace = useMemo(
     () =>
@@ -109,6 +115,20 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
       cancelled = true;
     };
   }, [customerId, existing.data, mode, offlineContext, online, t]);
+
+  useEffect(() => {
+    if (mode !== "create") {
+      return;
+    }
+    if (!online) {
+      setCreateKind("walkin");
+      setPersonalLink(null);
+      return;
+    }
+    if (linkPublicId?.trim()) {
+      setCreateKind("exits");
+    }
+  }, [linkPublicId, mode, online]);
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
@@ -232,7 +252,15 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
     >
       <PageHeader
         title={mode === "create" ? t("customers.newTitle") : t("customers.editTitle")}
-        description={t("customers.formLede")}
+        description={
+          mode === "create"
+            ? createKind === "exits"
+              ? t("customers.formLedeExits")
+              : createKind === "walkin"
+                ? t("customers.formLedeWalkIn")
+                : t("customers.createKindLede")
+            : t("customers.formLede")
+        }
         backTo={
           mode === "edit" && customerId ? `/customers/${customerId}` : pageBackNav.customers.to
         }
@@ -254,109 +282,182 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
         </div>
       ) : null}
 
-      <section className="catalog-form-section exits-animate-panel">
-        <h2 className="catalog-form-section__title">{t("customers.sectionBasics")}</h2>
-        <div className="catalog-form-section__grid">
-          <Input
-            label={t("customers.displayName")}
-            id="customer-display-name"
-            name="customerDisplayName"
-            data-testid="customer-display-name"
-            autoComplete="name"
-            value={displayName}
-            disabled={saving}
-            onChange={(event) => setDisplayName(event.target.value)}
-          />
-          <Input
-            label={t("customers.mobile")}
-            id="customer-mobile"
-            name="customerMobile"
-            data-testid="customer-mobile"
-            inputMode="tel"
-            autoComplete="tel"
-            value={mobileNumber}
-            disabled={saving}
-            onChange={(event) => setMobileNumber(event.target.value)}
-          />
-        </div>
-      </section>
-
-      <section className="catalog-form-section exits-animate-panel">
-        <h2 className="catalog-form-section__title">{t("customers.sectionDetails")}</h2>
-        <div className="catalog-form-section__grid">
-          <Input
-            label={t("customers.address")}
-            id="customer-address"
-            name="customerAddress"
-            data-testid="customer-address"
-            autoComplete="street-address"
-            value={address}
-            disabled={saving}
-            onChange={(event) => setAddress(event.target.value)}
-          />
-          <label className="catalog-form-field--full flex min-w-0 flex-col gap-1.5" htmlFor="customer-notes">
-            <span className="text-[length:var(--exits-text-sm)] font-semibold">{t("customers.notes")}</span>
-            <textarea
-              id="customer-notes"
-              name="customerNotes"
-              data-testid="customer-notes"
-              className="customer-form-notes min-h-24 w-full rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2 text-[length:var(--exits-text-md)] text-foreground"
-              value={notes}
-              disabled={saving}
-              onChange={(event) => setNotes(event.target.value)}
-            />
-          </label>
-        </div>
-      </section>
-
-      {mode === "create" && online && workspace ? (
-        <CustomerPersonalLinkPanel
-          organizationId={workspace.organizationId}
-          displayName={displayName}
-          phone={mobileNumber}
-          notes={notes}
-          disabled={saving}
-          initialSubject={linkPublicId}
-          onLinked={(link) => {
-            setPersonalLink(link);
-            if (!displayName.trim()) {
-              setDisplayName(link.displayName);
-            }
-          }}
-          onCleared={() => setPersonalLink(null)}
-        />
-      ) : null}
-      {mode === "create" && !online ? (
-        <section className="catalog-form-section exits-animate-panel" data-testid="customer-personal-link-offline">
-          <h2 className="catalog-form-section__title">{t("customers.personalLink.title")}</h2>
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("customers.personalLink.requiresOnline")}
+      {mode === "create" && online && createKind === null ? (
+        <section
+          className="catalog-form-section exits-animate-panel customer-create-kind"
+          data-testid="customer-create-kind"
+        >
+          <h2 className="catalog-form-section__title">{t("customers.createKindTitle")}</h2>
+          <p className="mb-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
+            {t("customers.createKindLede")}
           </p>
+          <div className="customer-create-kind__grid" role="group" aria-label={t("customers.createKindTitle")}>
+            <button
+              type="button"
+              className="customer-create-kind__card"
+              data-testid="customer-create-kind-walkin"
+              onClick={() => {
+                setCreateKind("walkin");
+                setPersonalLink(null);
+              }}
+            >
+              <span className="customer-create-kind__icon" aria-hidden>
+                <UserRound className="size-5" />
+              </span>
+              <span className="customer-create-kind__label">{t("customers.createKindWalkIn")}</span>
+              <span className="customer-create-kind__hint">{t("customers.createKindWalkInHint")}</span>
+            </button>
+            <button
+              type="button"
+              className="customer-create-kind__card"
+              data-testid="customer-create-kind-exits"
+              onClick={() => setCreateKind("exits")}
+            >
+              <span className="customer-create-kind__icon" aria-hidden>
+                <IdCard className="size-5" />
+              </span>
+              <span className="customer-create-kind__label">{t("customers.createKindExits")}</span>
+              <span className="customer-create-kind__hint">{t("customers.createKindExitsHint")}</span>
+            </button>
+          </div>
         </section>
       ) : null}
 
-      <div className="catalog-form-actions customer-form-actions">
-        <div className="catalog-form-actions__primary">
-          <Button
-            type="submit"
-            className="catalog-form-actions__save"
-            data-testid="customer-save"
-            disabled={saving}
-          >
-            {saving ? (
-              <>
-                <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-                {t("customers.saving")}
-              </>
-            ) : (
-              <>
-                <Save className="size-4 shrink-0" aria-hidden />
-                {t("customers.save")}
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
+      {mode === "edit" || createKind !== null ? (
+        <>
+          {mode === "create" && online && createKind !== null ? (
+            <div className="customer-create-kind__chosen exits-animate-toolbar">
+              <p className="m-0 min-w-0 text-[length:var(--exits-text-sm)]">
+                <span className="font-semibold">
+                  {createKind === "exits"
+                    ? t("customers.createKindExits")
+                    : t("customers.createKindWalkIn")}
+                </span>
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                className="min-h-9 shrink-0"
+                data-testid="customer-create-kind-change"
+                disabled={saving || Boolean(linkPublicId?.trim())}
+                onClick={() => {
+                  setCreateKind(null);
+                  setPersonalLink(null);
+                }}
+              >
+                {t("customers.createKindChange")}
+              </Button>
+            </div>
+          ) : null}
+
+          <section className="catalog-form-section exits-animate-panel">
+            <h2 className="catalog-form-section__title">{t("customers.sectionBasics")}</h2>
+            <div className="catalog-form-section__grid">
+              <Input
+                label={t("customers.displayName")}
+                id="customer-display-name"
+                name="customerDisplayName"
+                data-testid="customer-display-name"
+                autoComplete="name"
+                value={displayName}
+                disabled={saving}
+                onChange={(event) => setDisplayName(event.target.value)}
+              />
+              <Input
+                label={t("customers.mobile")}
+                id="customer-mobile"
+                name="customerMobile"
+                data-testid="customer-mobile"
+                inputMode="tel"
+                autoComplete="tel"
+                value={mobileNumber}
+                disabled={saving}
+                onChange={(event) => setMobileNumber(event.target.value)}
+              />
+            </div>
+          </section>
+
+          <section className="catalog-form-section exits-animate-panel">
+            <h2 className="catalog-form-section__title">{t("customers.sectionDetails")}</h2>
+            <div className="catalog-form-section__grid">
+              <Input
+                label={t("customers.address")}
+                id="customer-address"
+                name="customerAddress"
+                data-testid="customer-address"
+                autoComplete="street-address"
+                value={address}
+                disabled={saving}
+                onChange={(event) => setAddress(event.target.value)}
+              />
+              <label className="catalog-form-field--full flex min-w-0 flex-col gap-1.5" htmlFor="customer-notes">
+                <span className="text-[length:var(--exits-text-sm)] font-semibold">{t("customers.notes")}</span>
+                <textarea
+                  id="customer-notes"
+                  name="customerNotes"
+                  data-testid="customer-notes"
+                  className="customer-form-notes min-h-24 w-full rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2 text-[length:var(--exits-text-md)] text-foreground"
+                  value={notes}
+                  disabled={saving}
+                  onChange={(event) => setNotes(event.target.value)}
+                />
+              </label>
+            </div>
+          </section>
+
+          {mode === "create" && online && workspace && createKind === "exits" ? (
+            <CustomerPersonalLinkPanel
+              organizationId={workspace.organizationId}
+              displayName={displayName}
+              phone={mobileNumber}
+              notes={notes}
+              disabled={saving}
+              initialSubject={linkPublicId}
+              onLinked={(link) => {
+                setPersonalLink(link);
+                if (!displayName.trim()) {
+                  setDisplayName(link.displayName);
+                }
+              }}
+              onCleared={() => setPersonalLink(null)}
+            />
+          ) : null}
+          {mode === "create" && !online ? (
+            <section
+              className="catalog-form-section exits-animate-panel"
+              data-testid="customer-personal-link-offline"
+            >
+              <h2 className="catalog-form-section__title">{t("customers.personalLink.title")}</h2>
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("customers.personalLink.requiresOnline")}
+              </p>
+            </section>
+          ) : null}
+
+          <div className={cn("catalog-form-actions", "customer-form-actions")}>
+            <div className="catalog-form-actions__primary">
+              <Button
+                type="submit"
+                className="catalog-form-actions__save"
+                data-testid="customer-save"
+                disabled={saving}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                    {t("customers.saving")}
+                  </>
+                ) : (
+                  <>
+                    <Save className="size-4 shrink-0" aria-hidden />
+                    {t("customers.save")}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </>
+      ) : null}
     </form>
   );
 }

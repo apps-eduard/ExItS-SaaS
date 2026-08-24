@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ShoppingCart, Info, PackageX, X } from "lucide-react";
+import { ShoppingCart, ChevronRight, Info, PackageX, X } from "lucide-react";
 import { resolveCatalogLookup } from "@/api/pos/catalog-lookup";
 import {
   CATALOG_BROWSE_PAGE_SIZE,
@@ -1045,16 +1045,21 @@ export function SellFloorPage() {
           aria-expanded={cartSheetOpen}
           aria-controls="sell-cart-sheet-panel"
         >
-          <span className="inline-flex min-w-0 items-center gap-2">
-            <ShoppingCart className="size-5 shrink-0" aria-hidden />
-            <span className="min-w-0 truncate text-[length:var(--exits-text-sm)] font-semibold">
-              {t("sell.floatingCartSummary")
-                .replace("{count}", String(cart.lineCount))
-                .replace("{subtotal}", cart.subtotal.toFixed(2))}
+          <span className="sell-cart-bar__summary">
+            <span className="sell-cart-bar__icon" aria-hidden>
+              <ShoppingCart className="size-4" />
+            </span>
+            <span className="sell-cart-bar__copy">
+              <span className="sell-cart-bar__count">
+                {cart.lineCount}{" "}
+                {cart.lineCount === 1 ? t("sell.cartItemSingular") : t("sell.cartItemPlural")}
+              </span>
+              <span className="sell-cart-bar__total">₱{cart.subtotal.toFixed(2)}</span>
             </span>
           </span>
-          <span className="shrink-0 text-[length:var(--exits-text-sm)] font-medium">
+          <span className="sell-cart-bar__action">
             {t("sell.floatingCartView")}
+            <ChevronRight className="size-4 shrink-0" aria-hidden />
           </span>
           <span className="sr-only">{cartSummary}</span>
         </button>
@@ -1069,14 +1074,18 @@ export function SellFloorPage() {
           aria-expanded={cartSheetOpen}
           aria-controls="sell-cart-sheet-panel"
         >
-          <span className="inline-flex min-w-0 items-center gap-2">
-            <ShoppingCart className="size-5 shrink-0" aria-hidden />
-            <span className="min-w-0 truncate text-[length:var(--exits-text-sm)] font-medium">
-              {t("sell.cartLabel")} · {t("sell.payAddItems")}
+          <span className="sell-cart-bar__summary">
+            <span className="sell-cart-bar__icon" aria-hidden>
+              <ShoppingCart className="size-4" />
+            </span>
+            <span className="sell-cart-bar__copy">
+              <span className="sell-cart-bar__count">{t("sell.cartLabel")}</span>
+              <span className="sell-cart-bar__total">₱0.00</span>
             </span>
           </span>
-          <span className="shrink-0 text-[length:var(--exits-text-sm)] font-medium">
+          <span className="sell-cart-bar__action">
             {t("sell.floatingCartView")}
+            <ChevronRight className="size-4 shrink-0" aria-hidden />
           </span>
         </button>
       ) : null}
@@ -1098,11 +1107,14 @@ export function SellFloorPage() {
           id="sell-cart-sheet-panel"
           data-testid="sell-cart-sheet"
           className={cn(
-            "sell-cart-sheet fixed inset-0 z-40 flex flex-col gap-3 border-border bg-surface p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] shadow-[0_-8px_32px_rgba(0,0,0,0.12)] transition-transform duration-[var(--exits-motion-normal)] ease-[var(--exits-ease-emphasized)]",
+            "sell-cart-sheet fixed inset-x-0 bottom-0 z-40 flex max-h-[min(92dvh,100dvh)] flex-col gap-2 border border-border border-b-0 bg-surface px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] shadow-[0_-8px_32px_rgba(0,0,0,0.18)] transition-transform duration-[var(--exits-motion-normal)] ease-[var(--exits-ease-emphasized)]",
             cartSheetOpen ? "translate-y-0" : "pointer-events-none translate-y-full",
           )}
           aria-hidden={!cartSheetOpen}
         >
+        <div className="sell-cart-sheet__handle" aria-hidden>
+          <span className="sell-cart-sheet__handle-bar" />
+        </div>
         <SellCartPanel
           {...cartPanelProps}
           panelId="sheet"

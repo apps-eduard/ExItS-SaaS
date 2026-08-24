@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { assertNoHorizontalOverflow } from "./helpers";
+import { assertNoHorizontalOverflow, fillCheckoutCashExact, openCheckoutPaymentMethods } from "./helpers";
 import {
   E2E_BRANCH_ID,
   E2E_ORG_ID,
@@ -311,9 +311,11 @@ test.describe("RMAP-12 payments + void", () => {
     await signInAndBindCashier(page);
     await clientNavigate(page, "/sell");
     await addCokeAndOpenCheckout(page);
+    await openCheckoutPaymentMethods(page);
     await expect(page.getByTestId("checkout-pay-cash")).toBeVisible();
     await expect(page.getByTestId("checkout-no-card")).toBeAttached();
     await expect(page.getByTestId("checkout-no-provider-gcash")).toBeAttached();
+    await fillCheckoutCashExact(page);
     await page.getByTestId("checkout-confirm").click();
     await expect(page.getByTestId("transaction-summary-page")).toBeVisible();
     expect(state.posts[0]?.paymentMethod).toBe("Cash");
@@ -334,6 +336,7 @@ test.describe("RMAP-12 payments + void", () => {
     await signInAndBindCashier(page);
     await clientNavigate(page, "/sell");
     await addCokeAndOpenCheckout(page);
+    await openCheckoutPaymentMethods(page);
     await page.getByTestId("checkout-pay-gcash").click();
     await expect(page.getByTestId("checkout-gcash-panel")).toBeVisible();
     await expect(page.getByText("ManualGCash")).toHaveCount(0);
@@ -357,6 +360,7 @@ test.describe("RMAP-12 payments + void", () => {
 
     await signInOwnerSelling(page);
     await addCokeAndOpenCheckout(page);
+    await openCheckoutPaymentMethods(page);
     await page.getByTestId("checkout-pay-utang").click();
     await expect(page.getByTestId("checkout-utang-panel")).toBeVisible();
     await page.getByTestId(`checkout-customer-${CUSTOMER_ID}`).click();
@@ -379,6 +383,7 @@ test.describe("RMAP-12 payments + void", () => {
 
     await signInOwnerSelling(page);
     await addCokeAndOpenCheckout(page);
+    await openCheckoutPaymentMethods(page);
     await page.getByTestId("checkout-pay-utang").click();
     await expect(page.getByTestId("checkout-utang-zero-blocked")).toBeVisible();
     await expect(page.getByTestId("checkout-confirm")).toBeDisabled();
@@ -397,6 +402,7 @@ test.describe("RMAP-12 payments + void", () => {
     await signInAndBindCashier(page);
     await clientNavigate(page, "/sell");
     await addCokeAndOpenCheckout(page);
+    await openCheckoutPaymentMethods(page);
     await page.getByTestId("checkout-pay-utang").click();
     await expect(page.getByTestId("checkout-utang-customer-denied")).toHaveCount(0);
     await expect(page.getByTestId("checkout-customer-search")).toBeVisible();
@@ -434,6 +440,7 @@ test.describe("RMAP-12 payments + void", () => {
       await signInAndBindCashier(page);
       await clientNavigate(page, "/sell");
       await addCokeAndOpenCheckout(page);
+      await openCheckoutPaymentMethods(page);
       await page.getByTestId("checkout-pay-utang").click();
       await expect(page.getByTestId("checkout-customer-search")).toBeVisible();
       await page.getByTestId("checkout-customer-search").fill("Juan");
@@ -453,6 +460,7 @@ test.describe("RMAP-12 payments + void", () => {
 
     await signInOwnerSelling(page);
     await addCokeAndOpenCheckout(page);
+    await fillCheckoutCashExact(page);
     await page.getByTestId("checkout-confirm").click();
     await expect(page.getByTestId("summary-void-panel")).toBeVisible();
     await page.getByTestId("summary-void-reason").fill("Wrong tender");
@@ -473,6 +481,7 @@ test.describe("RMAP-12 payments + void", () => {
     await signInAndBindCashier(page);
     await clientNavigate(page, "/sell");
     await addCokeAndOpenCheckout(page);
+    await fillCheckoutCashExact(page);
     await page.getByTestId("checkout-confirm").click();
     await expect(page.getByTestId("transaction-summary-page")).toBeVisible();
     await expect(page.getByTestId("summary-void-panel")).toHaveCount(0);
@@ -495,6 +504,7 @@ test.describe("RMAP-12 payments + void", () => {
       await signInAndBindCashier(page);
       await clientNavigate(page, "/sell");
       await addCokeAndOpenCheckout(page);
+      await openCheckoutPaymentMethods(page);
       await expect(page.getByTestId("checkout-pay-gcash")).toBeVisible();
       await assertNoHorizontalOverflow(page);
     });

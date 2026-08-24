@@ -3,7 +3,7 @@
  * Does NOT claim physical camera verification.
  */
 import { expect, test } from "@playwright/test";
-import { assertNoHorizontalOverflow } from "./helpers";
+import { assertNoHorizontalOverflow, chooseExitsCustomerCreate } from "./helpers";
 import { mockBoundOwnerSession, signInAndBindOwner, clientNavigate } from "./mock-bound-session";
 
 test.use({ serviceWorkers: "block" });
@@ -83,6 +83,7 @@ async function openCustomerLinkScanner(
   await signInOwnerOperations(page);
   await clientNavigate(page, "/customers/new");
   await expect(page.getByTestId("customer-form-page")).toBeVisible();
+  await chooseExitsCustomerCreate(page);
   await expect(page.getByTestId("customer-personal-link-panel")).toBeVisible();
 }
 

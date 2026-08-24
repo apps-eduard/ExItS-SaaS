@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Percent, Plus, UserRound, WalletCards } from "lucide-react";
 import {
   canApplyCommercialDiscount,
   canCreateCredit,
@@ -26,6 +27,7 @@ import { OnlineRequiredCard } from "@/components/exits/OnlineRequiredCard";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
+import { CheckoutCollapsibleSection } from "@/features/checkout/CheckoutCollapsibleSection";
 import { CheckoutPersonalCustomerPicker } from "@/features/checkout/CheckoutPersonalCustomerPicker";
 import {
   CHECKOUT_PAYMENT_ICONS,
@@ -126,17 +128,20 @@ export function CheckoutCashPage() {
   const online = sellReadiness.online;
 
   const [paymentChoice, setPaymentChoice] = useState<UiPaymentChoice>("Cash");
+  const [paymentMethodOpen, setPaymentMethodOpen] = useState(false);
   const [cashReceived, setCashReceived] = useState("");
   const [gcashReference, setGcashReference] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
   const [customers, setCustomers] = useState<CheckoutCustomerOption[]>([]);
   const [customersLoading, setCustomersLoading] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<CheckoutCustomerOption | null>(null);
+  const [customerPanelOpen, setCustomerPanelOpen] = useState(false);
   const [dueDate, setDueDate] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [appliedDiscounts, setAppliedDiscounts] = useState<AppliedDiscount[]>([]);
   const [discountsDroppedOffline, setDiscountsDroppedOffline] = useState(false);
+  const [discountFormOpen, setDiscountFormOpen] = useState(false);
   const [discountScope, setDiscountScope] = useState<DiscountScope>("Sale");
   const [discountMethod, setDiscountMethod] = useState<DiscountMethod>("Percentage");
   const [discountValue, setDiscountValue] = useState("");
@@ -322,7 +327,10 @@ export function CheckoutCashPage() {
       return;
     }
     setPaymentChoice("Cash");
+    setPaymentMethodOpen(false);
     setSelectedCustomer(null);
+    setCustomerPanelOpen(false);
+    setDiscountFormOpen(false);
     setQuote(null);
     setQuoteError(null);
     setQuoteLoading(false);
@@ -391,7 +399,7 @@ export function CheckoutCashPage() {
   ]);
 
   useEffect(() => {
-    if (paymentChoice !== "Cash" || (!quote && online)) {
+    if (paymentChoice !== "Cash") {
       return;
     }
     if (zeroTotal) {
@@ -400,19 +408,19 @@ export function CheckoutCashPage() {
       tenderEditedRef.current = false;
       return;
     }
+    // Leave cash received empty by default — cashier taps Exact or types tender.
     if (lastSeededTotalRef.current === null) {
-      if (!tenderEditedRef.current) {
-        setCashReceived(amountToPay.toFixed(2));
-      }
       lastSeededTotalRef.current = amountToPay;
       return;
     }
     if (Math.abs(lastSeededTotalRef.current - amountToPay) > 1e-9) {
-      setCashReceived(amountToPay.toFixed(2));
+      // Amount changed (e.g. discount) — clear auto-filled/exact only if cashier has not typed.
+      if (!tenderEditedRef.current) {
+        setCashReceived("");
+      }
       lastSeededTotalRef.current = amountToPay;
-      tenderEditedRef.current = false;
     }
-  }, [amountToPay, online, paymentChoice, quote, zeroTotal]);
+  }, [amountToPay, paymentChoice, zeroTotal]);
 
   useEffect(() => {
     if (!online || !workspaceScope) {
@@ -517,7 +525,15 @@ export function CheckoutCashPage() {
     setAppliedDiscounts((prev) => [...prev, intent]);
     setDiscountValue("");
     setDiscountReason("");
+    setDiscountFormOpen(false);
   }
+
+  const paymentMethodLabel =
+    paymentChoice === "GCash"
+      ? t("checkout.paymentGCashManual")
+      : paymentChoice === "Utang"
+        ? t("checkout.paymentUtang")
+        : t("checkout.paymentCash");
 
   function removeDiscount(localId: string) {
     setAppliedDiscounts((prev) => prev.filter((item) => item.localId !== localId));
@@ -725,7 +741,17 @@ export function CheckoutCashPage() {
 
   return (
     <div data-testid="checkout-cash-page" className="flex min-w-0 flex-col gap-4">
-      <PageHeader title={t("checkout.title")} description={t("checkout.cashLede")} />
+      <PageHeader
+        title={t("checkout.title")}
+        description={t("checkout.cashLede")}
+        subtitle={
+          currentShift
+            ? t("checkout.shiftHint")
+                .replace("{shift}", currentShift.shiftNumber)
+                .replace("{register}", currentShift.registerCode ?? "—")
+            : undefined
+        }
+      />
 
       {!online ? (
         <Card data-testid="checkout-offline-cash-notice">
@@ -771,7 +797,7 @@ export function CheckoutCashPage() {
         </Card>
       ) : null}
 
-      <Card>
+      <Card data-testid="checkout-money-summary" className="checkout-sale-preview">
         <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
           {t("checkout.orderPreview")}
         </h2>
@@ -808,58 +834,154 @@ export function CheckoutCashPage() {
             {t("checkout.priceOverrideNote")}
           </p>
         ) : null}
-        {currentShift ? (
-          <p className="mb-0 mt-3 text-[length:var(--exits-text-xs)] text-muted">
-            {t("checkout.shiftHint")
-              .replace("{shift}", currentShift.shiftNumber)
-              .replace("{register}", currentShift.registerCode ?? "—")}
+
+        <div className="checkout-sale-preview__totals">
+          {quoteLoading ? (
+            <p
+              data-testid="checkout-quote-loading"
+              className="mb-2 text-[length:var(--exits-text-xs)] text-muted"
+            >
+              {t("checkout.quoteLoading")}
+            </p>
+          ) : null}
+          {quoteError ? (
+            <p
+              data-testid="checkout-quote-error"
+              className="mb-2 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+            >
+              {quoteError}
+            </p>
+          ) : null}
+          <p
+            data-testid="checkout-total-amount"
+            className="m-0 flex justify-between gap-2 text-[length:var(--exits-text-sm)]"
+          >
+            <span className="text-muted">{t("checkout.totalAmount")}</span>
+            <MoneyDisplay amount={totalAmount} />
           </p>
-        ) : null}
+          <p
+            data-testid="checkout-discount-total"
+            className="m-0 mt-1 flex justify-between gap-2 text-[length:var(--exits-text-sm)]"
+          >
+            <span className="text-muted">{t("checkout.discount")}</span>
+            <span>
+              {discountTotal > 0 ? "−" : null}
+              <MoneyDisplay amount={discountTotal} />
+            </span>
+          </p>
+          <p
+            data-testid="checkout-amount-to-pay"
+            className="mb-0 mt-2 flex justify-between gap-2 text-[length:var(--exits-text-md)] font-semibold"
+          >
+            <span>{t("checkout.amountToPay")}</span>
+            <MoneyDisplay amount={amountToPay} />
+          </p>
+          <span data-testid="checkout-total" className="sr-only">
+            {amountToPay}
+          </span>
+          {zeroTotal && paymentChoice !== "Utang" ? (
+            <p
+              data-testid="checkout-no-payment-required"
+              className="mb-0 mt-3 text-[length:var(--exits-text-sm)] font-medium"
+            >
+              {t("checkout.noPaymentRequired")}
+            </p>
+          ) : null}
+          {utangBlockedZero ? (
+            <p
+              data-testid="checkout-utang-zero-blocked"
+              className="mb-0 mt-3 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+            >
+              {t("checkout.utangZeroBlocked")}
+            </p>
+          ) : null}
+        </div>
       </Card>
 
-      <Card data-testid="checkout-payment-method">
-        <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-          {t("checkout.paymentMethod")}
-        </h2>
-        <CheckoutPaymentMethodCards
-          value={paymentChoice}
-          groupLabel={t("checkout.paymentMethod")}
-          onChange={(next) => {
-            setPaymentChoice(next);
-            setSubmitError(null);
-          }}
-          options={[
-            {
-              value: "Cash",
-              label: t("checkout.paymentCash"),
-              Icon: CHECKOUT_PAYMENT_ICONS.Cash,
-              testId: "checkout-pay-cash",
-              disabled: saving,
-            },
-            {
-              value: "GCash",
-              label: t("checkout.paymentGCashManual"),
-              hint: t("checkout.paymentGCashHint"),
-              Icon: CHECKOUT_PAYMENT_ICONS.GCash,
-              testId: "checkout-pay-gcash",
-              disabled: saving || !online,
-            },
-            {
-              value: "Utang",
-              label: t("checkout.paymentUtang"),
-              Icon: CHECKOUT_PAYMENT_ICONS.Utang,
-              testId: "checkout-pay-utang",
-              disabled: saving || !online,
-            },
-          ]}
-        />
-        {!online ? (
-          <p
-            data-testid="checkout-offline-method-hint"
-            className="mb-0 mt-2 text-[length:var(--exits-text-xs)] text-muted"
+      <Card data-testid="checkout-payment-method" className="checkout-section-card">
+        <CheckoutCollapsibleSection
+          testId="checkout-payment-collapse"
+          title={t("checkout.paymentMethod")}
+          expandLabel={t("checkout.paymentMethodChoose")}
+          summary={paymentMethodLabel}
+          open={paymentMethodOpen}
+          onOpenChange={setPaymentMethodOpen}
+          icon={WalletCards}
+          disabled={saving}
+        >
+          <CheckoutPaymentMethodCards
+            value={paymentChoice}
+            groupLabel={t("checkout.paymentMethod")}
+            onChange={(next) => {
+              setPaymentChoice(next);
+              setSubmitError(null);
+              setPaymentMethodOpen(false);
+            }}
+            options={[
+              {
+                value: "Cash",
+                label: t("checkout.paymentCash"),
+                Icon: CHECKOUT_PAYMENT_ICONS.Cash,
+                testId: "checkout-pay-cash",
+                disabled: saving,
+              },
+              {
+                value: "GCash",
+                label: t("checkout.paymentGCashManual"),
+                Icon: CHECKOUT_PAYMENT_ICONS.GCash,
+                testId: "checkout-pay-gcash",
+                disabled: saving || !online,
+              },
+              {
+                value: "Utang",
+                label: t("checkout.paymentUtang"),
+                Icon: CHECKOUT_PAYMENT_ICONS.Utang,
+                testId: "checkout-pay-utang",
+                disabled: saving || !online,
+              },
+            ]}
+          />
+          {!online ? (
+            <p
+              data-testid="checkout-offline-method-hint"
+              className="mb-0 mt-2 text-[length:var(--exits-text-xs)] text-muted"
+            >
+              {t("offline.requiredGCash")} {t("offline.requiredUtang")}
+            </p>
+          ) : null}
+        </CheckoutCollapsibleSection>
+        {paymentChoice === "GCash" && !zeroTotal ? (
+          <div
+            data-testid="checkout-gcash-panel"
+            className="checkout-gcash-under-method exits-animate-panel"
           >
-            {t("offline.requiredGCash")} {t("offline.requiredUtang")}
-          </p>
+            <label
+              className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+              htmlFor="checkout-gcash-reference"
+            >
+              <span className="inline-flex flex-wrap items-baseline gap-1">
+                {t("checkout.gcashReference")}
+                <span className="text-[length:var(--exits-text-xs)] font-semibold text-[var(--exits-danger)]">
+                  {t("checkout.fieldRequired")}
+                </span>
+              </span>
+              <input
+                id="checkout-gcash-reference"
+                data-testid="checkout-gcash-reference"
+                type="text"
+                required
+                aria-required="true"
+                maxLength={GCASH_REFERENCE_MAX_LENGTH}
+                value={gcashReference}
+                disabled={saving}
+                className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                onChange={(event) => setGcashReference(event.target.value)}
+              />
+            </label>
+            <p className="mb-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
+              {t("checkout.gcashReferenceHint")}
+            </p>
+          </div>
         ) : null}
         {/* Prove Card / Debit / provider GCash are not offered */}
         <span data-testid="checkout-no-card" className="sr-only">
@@ -874,27 +996,154 @@ export function CheckoutCashPage() {
       </Card>
 
       {showDiscountPanel ? (
-        <Card data-testid="checkout-discount-panel">
-          <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-            {t("checkout.discountSection")}
-          </h2>
-          <p className="mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
-            {t("checkout.discountLede")}
-          </p>
+        <Card data-testid="checkout-discount-panel" className="checkout-section-card">
+          <CheckoutCollapsibleSection
+            testId="checkout-discount-collapse"
+            title={t("checkout.discountSection")}
+            expandLabel={t("checkout.discountAdd")}
+            summary={
+              appliedDiscounts.length > 0
+                ? t("checkout.discountAppliedCount").replace(
+                    "{count}",
+                    String(appliedDiscounts.length),
+                  )
+                : undefined
+            }
+            open={discountFormOpen}
+            onOpenChange={(next) => {
+              setDiscountFormOpen(next);
+              if (!next) {
+                setDiscountFormError(null);
+              }
+            }}
+            icon={Percent}
+            disabled={saving}
+          >
+            <p className="mb-0 text-[length:var(--exits-text-xs)] text-muted">
+              {t("checkout.discountLede")}
+            </p>
 
-          {appliedDiscounts.length === 0 ? (
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                {t("checkout.discountScope")}
+                <select
+                  data-testid="checkout-discount-scope"
+                  className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                  value={discountScope}
+                  disabled={saving}
+                  onChange={(event) => setDiscountScope(event.target.value as DiscountScope)}
+                >
+                  <option value="Sale">{t("checkout.discountScopeSale")}</option>
+                  <option value="Line">{t("checkout.discountScopeLine")}</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                {t("checkout.discountMethod")}
+                <select
+                  data-testid="checkout-discount-method"
+                  className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                  value={discountMethod}
+                  disabled={saving}
+                  onChange={(event) => setDiscountMethod(event.target.value as DiscountMethod)}
+                >
+                  <option value="Percentage">{t("checkout.discountMethodPercent")}</option>
+                  <option value="FixedAmount">{t("checkout.discountMethodFixed")}</option>
+                </select>
+              </label>
+              {discountScope === "Line" ? (
+                <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                  {t("checkout.discountLine")}
+                  <select
+                    data-testid="checkout-discount-line"
+                    className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                    value={discountLineNumber}
+                    disabled={saving}
+                    onChange={(event) => setDiscountLineNumber(Number(event.target.value))}
+                  >
+                    {cart.lines.map((line, index) => (
+                      <option key={line.lineKey} value={index + 1}>
+                        {index + 1}. {line.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+              <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                {t("checkout.discountValue")}
+                <input
+                  data-testid="checkout-discount-value"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="0.01"
+                  value={discountValue}
+                  disabled={saving}
+                  className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
+                  onChange={(event) => setDiscountValue(event.target.value)}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)] sm:col-span-2">
+                {t("checkout.discountReason")}
+                <input
+                  data-testid="checkout-discount-reason"
+                  type="text"
+                  value={discountReason}
+                  disabled={saving}
+                  className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                  onChange={(event) => setDiscountReason(event.target.value)}
+                />
+              </label>
+            </div>
+            {discountFormError ? (
+              <p
+                data-testid="checkout-discount-form-error"
+                className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+              >
+                {discountFormError}
+              </p>
+            ) : null}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                className="checkout-discount-apply min-h-11 flex-1 sm:flex-none"
+                data-testid="checkout-discount-add"
+                disabled={saving}
+                onClick={addDiscount}
+              >
+                <Plus className="size-4 shrink-0" aria-hidden />
+                {t("checkout.discountApply")}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="min-h-11"
+                data-testid="checkout-discount-cancel"
+                disabled={saving}
+                onClick={() => {
+                  setDiscountFormOpen(false);
+                  setDiscountFormError(null);
+                }}
+              >
+                {t("checkout.discountCancel")}
+              </Button>
+            </div>
+          </CheckoutCollapsibleSection>
+
+          {appliedDiscounts.length === 0 && !discountFormOpen ? (
             <p
               data-testid="checkout-discount-empty"
-              className="mb-0 mt-3 text-[length:var(--exits-text-sm)] text-muted"
+              className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-muted"
             >
               {t("checkout.discountEmpty")}
             </p>
-          ) : (
+          ) : null}
+
+          {appliedDiscounts.length > 0 ? (
             <ul className="mb-0 mt-3 list-none space-y-2 p-0" data-testid="checkout-discount-list">
               {appliedDiscounts.map((item) => (
                 <li
                   key={item.localId}
-                  className="flex items-start justify-between gap-2 text-[length:var(--exits-text-sm)]"
+                  className="checkout-discount-chip flex items-start justify-between gap-2 text-[length:var(--exits-text-sm)]"
                   data-testid={`checkout-discount-item-${item.localId}`}
                 >
                   <span className="min-w-0">
@@ -916,184 +1165,48 @@ export function CheckoutCashPage() {
                 </li>
               ))}
             </ul>
-          )}
-
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-              {t("checkout.discountScope")}
-              <select
-                data-testid="checkout-discount-scope"
-                className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-                value={discountScope}
-                disabled={saving}
-                onChange={(event) => setDiscountScope(event.target.value as DiscountScope)}
-              >
-                <option value="Sale">{t("checkout.discountScopeSale")}</option>
-                <option value="Line">{t("checkout.discountScopeLine")}</option>
-              </select>
-            </label>
-            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-              {t("checkout.discountMethod")}
-              <select
-                data-testid="checkout-discount-method"
-                className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-                value={discountMethod}
-                disabled={saving}
-                onChange={(event) => setDiscountMethod(event.target.value as DiscountMethod)}
-              >
-                <option value="Percentage">{t("checkout.discountMethodPercent")}</option>
-                <option value="FixedAmount">{t("checkout.discountMethodFixed")}</option>
-              </select>
-            </label>
-            {discountScope === "Line" ? (
-              <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                {t("checkout.discountLine")}
-                <select
-                  data-testid="checkout-discount-line"
-                  className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-                  value={discountLineNumber}
-                  disabled={saving}
-                  onChange={(event) => setDiscountLineNumber(Number(event.target.value))}
-                >
-                  {cart.lines.map((line, index) => (
-                    <option key={line.lineKey} value={index + 1}>
-                      {index + 1}. {line.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : null}
-            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-              {t("checkout.discountValue")}
-              <input
-                data-testid="checkout-discount-value"
-                type="number"
-                inputMode="decimal"
-                min={0}
-                step="0.01"
-                value={discountValue}
-                disabled={saving}
-                className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
-                onChange={(event) => setDiscountValue(event.target.value)}
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)] sm:col-span-2">
-              {t("checkout.discountReason")}
-              <input
-                data-testid="checkout-discount-reason"
-                type="text"
-                value={discountReason}
-                disabled={saving}
-                className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-                onChange={(event) => setDiscountReason(event.target.value)}
-              />
-            </label>
-          </div>
-          {discountFormError ? (
-            <p
-              data-testid="checkout-discount-form-error"
-              className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
-            >
-              {discountFormError}
-            </p>
           ) : null}
-          <Button
-            type="button"
-            className="mt-3 min-h-11"
-            data-testid="checkout-discount-add"
-            disabled={saving}
-            onClick={addDiscount}
-          >
-            {t("checkout.discountAdd")}
-          </Button>
         </Card>
       ) : null}
 
-      <Card data-testid="checkout-money-summary">
-        {quoteLoading ? (
-          <p
-            data-testid="checkout-quote-loading"
-            className="mb-2 text-[length:var(--exits-text-xs)] text-muted"
-          >
-            {t("checkout.quoteLoading")}
-          </p>
-        ) : null}
-        {quoteError ? (
-          <p
-            data-testid="checkout-quote-error"
-            className="mb-2 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
-          >
-            {quoteError}
-          </p>
-        ) : null}
-        <p
-          data-testid="checkout-total-amount"
-          className="m-0 flex justify-between gap-2 text-[length:var(--exits-text-sm)]"
-        >
-          <span className="text-muted">{t("checkout.totalAmount")}</span>
-          <MoneyDisplay amount={totalAmount} />
-        </p>
-        <p
-          data-testid="checkout-discount-total"
-          className="m-0 mt-1 flex justify-between gap-2 text-[length:var(--exits-text-sm)]"
-        >
-          <span className="text-muted">{t("checkout.discount")}</span>
-          <span>
-            {discountTotal > 0 ? "−" : null}
-            <MoneyDisplay amount={discountTotal} />
-          </span>
-        </p>
-        <p
-          data-testid="checkout-amount-to-pay"
-          className="mb-0 mt-2 flex justify-between gap-2 text-[length:var(--exits-text-md)] font-semibold"
-        >
-          <span>{t("checkout.amountToPay")}</span>
-          <MoneyDisplay amount={amountToPay} />
-        </p>
-        <span data-testid="checkout-total" className="sr-only">
-          {amountToPay}
-        </span>
-        {zeroTotal && paymentChoice !== "Utang" ? (
-          <p
-            data-testid="checkout-no-payment-required"
-            className="mb-0 mt-3 text-[length:var(--exits-text-sm)] font-medium"
-          >
-            {t("checkout.noPaymentRequired")}
-          </p>
-        ) : null}
-        {utangBlockedZero ? (
-          <p
-            data-testid="checkout-utang-zero-blocked"
-            className="mb-0 mt-3 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
-          >
-            {t("checkout.utangZeroBlocked")}
-          </p>
-        ) : null}
-      </Card>
-
       {paymentChoice === "Cash" ? (
         !zeroTotal ? (
-          <Card>
+          <Card className="checkout-detail-panel exits-animate-panel" key="checkout-cash-tender">
             <label
               className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
               htmlFor="checkout-cash-received"
             >
               {t("checkout.cashReceived")}
-              <input
-                id="checkout-cash-received"
-                data-testid="checkout-cash-received"
-                type="number"
-                inputMode="decimal"
-                min={0}
-                step="0.01"
-                value={cashReceived}
-                disabled={saving}
-                className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
-                onChange={(event) => {
-                  tenderEditedRef.current = true;
-                  setCashReceived(event.target.value);
-                }}
-              />
+              <span className="checkout-cash-received-row">
+                <input
+                  id="checkout-cash-received"
+                  data-testid="checkout-cash-received"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="0.01"
+                  value={cashReceived}
+                  disabled={saving}
+                  className="checkout-cash-received-row__input min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
+                  onChange={(event) => {
+                    tenderEditedRef.current = true;
+                    setCashReceived(event.target.value);
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="checkout-cash-received-row__exact min-h-11 shrink-0"
+                  data-testid="checkout-cash-exact"
+                  disabled={saving}
+                  onClick={() => {
+                    tenderEditedRef.current = true;
+                    setCashReceived(amountToPay.toFixed(2));
+                  }}
+                >
+                  {t("checkout.cashExact")}
+                </Button>
+              </span>
             </label>
             <p
               data-testid="checkout-change"
@@ -1111,7 +1224,11 @@ export function CheckoutCashPage() {
             </p>
           </Card>
         ) : (
-          <Card data-testid="checkout-zero-tender">
+          <Card
+            data-testid="checkout-zero-tender"
+            className="checkout-detail-panel exits-animate-panel"
+            key="checkout-zero-tender"
+          >
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
               {t("checkout.cashReceived")}: <MoneyDisplay amount={0} />
             </p>
@@ -1125,121 +1242,135 @@ export function CheckoutCashPage() {
         )
       ) : null}
 
-      {paymentChoice === "GCash" && !zeroTotal ? (
-        <Card data-testid="checkout-gcash-panel">
-          <label
-            className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
-            htmlFor="checkout-gcash-reference"
-          >
-            {t("checkout.gcashReference")}
-            <input
-              id="checkout-gcash-reference"
-              data-testid="checkout-gcash-reference"
-              type="text"
-              maxLength={GCASH_REFERENCE_MAX_LENGTH}
-              value={gcashReference}
-              disabled={saving}
-              className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-              onChange={(event) => setGcashReference(event.target.value)}
-            />
-          </label>
-          <p className="mb-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
-            {t("checkout.gcashReferenceHint")}
-          </p>
-        </Card>
-      ) : null}
-
       {(paymentChoice === "Cash" || paymentChoice === "GCash") && allowViewCustomers && online ? (
-        <Card data-testid="checkout-optional-customer-panel">
-          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-            {t("checkout.optionalCustomerHint")}
-          </p>
-          {workspaceScope ? (
-            <CheckoutPersonalCustomerPicker
-              workspace={workspaceScope}
-              disabled={saving}
-              canLinkCustomer={allowCreateCustomer}
-              returnTo={location.pathname}
-              onCustomerSelected={(customer) => {
-                setSelectedCustomer(customer);
-                setCustomerSearch(customer.displayName);
-              }}
-            />
-          ) : null}
-          <label
-            className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
-            htmlFor="checkout-optional-customer-search"
+        <Card data-testid="checkout-optional-customer-panel" className="checkout-section-card">
+          <CheckoutCollapsibleSection
+            testId="checkout-optional-customer-collapse"
+            title={t("checkout.customerSection")}
+            expandLabel={t("checkout.addCustomer")}
+            summary={selectedCustomer?.displayName}
+            open={customerPanelOpen}
+            onOpenChange={setCustomerPanelOpen}
+            icon={UserRound}
+            disabled={saving}
+            trailing={
+              selectedCustomer && !customerPanelOpen ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="min-h-9"
+                  data-testid="checkout-customer-clear"
+                  disabled={saving}
+                  onClick={() => setSelectedCustomer(null)}
+                >
+                  {t("checkout.customerClear")}
+                </Button>
+              ) : null
+            }
           >
-            {t("checkout.optionalCustomerSearch")}
-            <input
-              id="checkout-optional-customer-search"
-              data-testid="checkout-optional-customer-search"
-              type="search"
-              value={customerSearch}
-              disabled={saving}
-              className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-              onChange={(event) => setCustomerSearch(event.target.value)}
-            />
-          </label>
-          {selectedCustomer ? (
-            <div
-              data-testid="checkout-customer-selected"
-              className="mt-3 flex items-center justify-between gap-2 text-[length:var(--exits-text-sm)]"
-            >
-              <span>
-                {t("checkout.utangCustomer")}: <strong>{selectedCustomer.displayName}</strong>
-              </span>
-              <Button
-                type="button"
-                variant="ghost"
-                className="min-h-9"
-                data-testid="checkout-customer-clear"
+            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+              {t("checkout.optionalCustomerHint")}
+            </p>
+            {workspaceScope ? (
+              <CheckoutPersonalCustomerPicker
+                workspace={workspaceScope}
                 disabled={saving}
-                onClick={() => setSelectedCustomer(null)}
-              >
-                {t("checkout.customerClear")}
-              </Button>
-            </div>
-          ) : null}
-          {customersLoading ? (
-            <p className="mb-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
-              {t("checkout.customerLoading")}
-            </p>
-          ) : customers.length === 0 ? (
-            <p
-              data-testid="checkout-customer-empty"
-              className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-muted"
+                canLinkCustomer={allowCreateCustomer}
+                returnTo={location.pathname}
+                onCustomerSelected={(customer) => {
+                  setSelectedCustomer(customer);
+                  setCustomerSearch(customer.displayName);
+                  setCustomerPanelOpen(false);
+                }}
+              />
+            ) : null}
+            <label
+              className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+              htmlFor="checkout-optional-customer-search"
             >
-              {t("checkout.customerEmpty")}
-            </p>
-          ) : (
-            <ul className="mb-0 mt-2 list-none space-y-1 p-0" data-testid="checkout-customer-list">
-              {customers.map((customer) => (
-                <li key={customer.customerId}>
-                  <Button
-                    type="button"
-                    variant={
-                      selectedCustomer?.customerId === customer.customerId ? "default" : "ghost"
-                    }
-                    className="min-h-11 w-full justify-start"
-                    data-testid={`checkout-customer-${customer.customerId}`}
-                    disabled={saving}
-                    onClick={() => setSelectedCustomer(customer)}
-                  >
-                    {customer.displayName}
-                    {customer.mobileNumber ? ` · ${customer.mobileNumber}` : ""}
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          )}
+              {t("checkout.optionalCustomerSearch")}
+              <input
+                id="checkout-optional-customer-search"
+                data-testid="checkout-optional-customer-search"
+                type="search"
+                value={customerSearch}
+                disabled={saving}
+                className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                onChange={(event) => setCustomerSearch(event.target.value)}
+              />
+            </label>
+            {selectedCustomer ? (
+              <div
+                data-testid="checkout-customer-selected"
+                className="mt-3 flex items-center justify-between gap-2 text-[length:var(--exits-text-sm)]"
+              >
+                <span>
+                  {t("checkout.utangCustomer")}: <strong>{selectedCustomer.displayName}</strong>
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="min-h-9"
+                  data-testid="checkout-customer-clear"
+                  disabled={saving}
+                  onClick={() => setSelectedCustomer(null)}
+                >
+                  {t("checkout.customerClear")}
+                </Button>
+              </div>
+            ) : null}
+            {customersLoading ? (
+              <p className="mb-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
+                {t("checkout.customerLoading")}
+              </p>
+            ) : customers.length === 0 ? (
+              <p
+                data-testid="checkout-customer-empty"
+                className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-muted"
+              >
+                {t("checkout.customerEmpty")}
+              </p>
+            ) : (
+              <ul className="mb-0 mt-2 list-none space-y-1 p-0" data-testid="checkout-customer-list">
+                {customers.map((customer) => (
+                  <li key={customer.customerId}>
+                    <Button
+                      type="button"
+                      variant={
+                        selectedCustomer?.customerId === customer.customerId ? "default" : "ghost"
+                      }
+                      className="min-h-11 w-full justify-start"
+                      data-testid={`checkout-customer-${customer.customerId}`}
+                      disabled={saving}
+                      onClick={() => {
+                        setSelectedCustomer(customer);
+                        setCustomerPanelOpen(false);
+                      }}
+                    >
+                      {customer.displayName}
+                      {customer.mobileNumber ? ` · ${customer.mobileNumber}` : ""}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CheckoutCollapsibleSection>
         </Card>
       ) : null}
 
       {paymentChoice === "Utang" ? (
-        <Card data-testid="checkout-utang-panel">
-          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-            {t("checkout.utangDebtHint")}
+        <Card
+          data-testid="checkout-utang-panel"
+          className="checkout-section-card checkout-detail-panel exits-animate-panel"
+        >
+          <h2 className="m-0 inline-flex flex-wrap items-baseline gap-1.5 text-[length:var(--exits-text-md)] font-semibold">
+            {t("checkout.customerSection")}
+            <span className="text-[length:var(--exits-text-xs)] font-semibold text-[var(--exits-danger)]">
+              {t("checkout.fieldRequired")}
+            </span>
+          </h2>
+          <p className="mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
+            {t("checkout.utangDebtHint")} {t("checkout.utangCustomerRequired")}
           </p>
           {utangNeedsCustomerLookup ? (
             <p

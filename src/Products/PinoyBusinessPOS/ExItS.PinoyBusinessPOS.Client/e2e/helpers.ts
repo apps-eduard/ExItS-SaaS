@@ -8,6 +8,47 @@ export async function assertNoHorizontalOverflow(page: Page) {
   expect(overflow).toBeLessThanOrEqual(1);
 }
 
+export async function openCheckoutPaymentMethods(page: Page) {
+  const cash = page.getByTestId("checkout-pay-cash");
+  if (await cash.isVisible()) {
+    return;
+  }
+  await page.getByTestId("checkout-payment-collapse-toggle").click();
+  await expect(cash).toBeVisible();
+}
+
+export async function openCheckoutDiscountForm(page: Page) {
+  const value = page.getByTestId("checkout-discount-value");
+  if (await value.isVisible()) {
+    return;
+  }
+  await page.getByTestId("checkout-discount-collapse-toggle").click();
+  await expect(value).toBeVisible();
+}
+
+export async function chooseWalkInCustomerCreate(page: Page) {
+  const walkIn = page.getByTestId("customer-create-kind-walkin");
+  if (await walkIn.isVisible()) {
+    await walkIn.click();
+  }
+  await expect(page.getByTestId("customer-display-name")).toBeVisible();
+}
+
+export async function chooseExitsCustomerCreate(page: Page) {
+  const exits = page.getByTestId("customer-create-kind-exits");
+  if (await exits.isVisible()) {
+    await exits.click();
+  }
+  await expect(page.getByTestId("customer-personal-link-panel")).toBeVisible();
+}
+
+export async function fillCheckoutCashExact(page: Page) {
+  const exact = page.getByTestId("checkout-cash-exact");
+  if (await exact.isVisible()) {
+    await exact.click();
+  }
+}
+
 export async function assertMinTouchTarget(locator: import("@playwright/test").Locator) {
   const box = await locator.boundingBox();
   expect(box, "control should be visible for touch-target check").toBeTruthy();

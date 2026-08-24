@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { assertNoHorizontalOverflow } from "./helpers";
+import { assertNoHorizontalOverflow, fillCheckoutCashExact, openCheckoutDiscountForm, openCheckoutPaymentMethods } from "./helpers";
 import {
   E2E_BRANCH_ID,
   E2E_ORG_ID,
@@ -370,6 +370,7 @@ test.describe.skip("RMAP-12b price override UX", () => {
     ).toContainText("25.00");
     await goCheckout(page);
     await expect(page.getByTestId("checkout-amount-to-pay")).toContainText("22.5");
+    await fillCheckoutCashExact(page);
     await page.getByTestId("checkout-confirm").click();
     await expect(page.getByTestId("transaction-summary-page")).toBeVisible();
     expect(sales.posts[0].priceOverrides).toEqual([
@@ -433,6 +434,7 @@ test.describe.skip("RMAP-12b price override UX", () => {
     await changePriceOnCoke(page, "250.00", "Owner special");
     await goCheckout(page);
     await expect(page.getByTestId("checkout-amount-to-pay")).toContainText("250");
+    await fillCheckoutCashExact(page);
     await page.getByTestId("checkout-confirm").click();
     await expect(page.getByTestId("transaction-summary-page")).toBeVisible();
     expect(
@@ -488,10 +490,12 @@ test.describe.skip("RMAP-12b price override UX", () => {
     await changePriceOnCoke(page, "20.00", "Stack base");
     await goCheckout(page);
     await expect(page.getByTestId("checkout-price-override-note")).toBeVisible();
+    await openCheckoutDiscountForm(page);
     await page.getByTestId("checkout-discount-value").fill("10");
     await page.getByTestId("checkout-discount-reason").fill("Stack discount");
     await page.getByTestId("checkout-discount-add").click();
     await expect(page.getByTestId("checkout-amount-to-pay")).toContainText("18");
+    await fillCheckoutCashExact(page);
     await page.getByTestId("checkout-confirm").click();
     await expect(page.getByTestId("transaction-summary-page")).toBeVisible();
     expect(sales.posts[0].priceOverrides).toBeTruthy();
@@ -584,6 +588,7 @@ test.describe.skip("RMAP-12b price override UX", () => {
     await addCokeVisible(page);
     await changePriceOnCoke(page, "22.50", "Utang override");
     await goCheckout(page);
+    await openCheckoutPaymentMethods(page);
     await page.getByTestId("checkout-pay-utang").click();
     await page.getByTestId(`checkout-customer-${CUSTOMER_ID}`).click();
     await page.getByTestId("checkout-confirm").click();
@@ -610,6 +615,7 @@ test.describe.skip("RMAP-12b price override UX", () => {
     await page.getByTestId("sell-price-override-use-regular").click();
     await expect(page.getByTestId(`sell-cart-price-changed-${COKE_LINE_KEY}`)).toHaveCount(0);
     await goCheckout(page);
+    await fillCheckoutCashExact(page);
     await page.getByTestId("checkout-confirm").click();
     await expect(page.getByTestId("transaction-summary-page")).toBeVisible();
     expect(sales.posts[0].priceOverrides).toBeUndefined();

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { assertNoHorizontalOverflow } from "./helpers";
+import { assertNoHorizontalOverflow, fillCheckoutCashExact, openCheckoutDiscountForm } from "./helpers";
 import {
   E2E_BRANCH_ID,
   E2E_ORG_ID,
@@ -337,6 +337,7 @@ test.describe("RMAP-11b commercial discount UX", () => {
     await addCokeAndOpenCheckout(page);
 
     await expect(page.getByTestId("checkout-discount-panel")).toBeVisible();
+    await openCheckoutDiscountForm(page);
     await page.getByTestId("checkout-discount-value").fill("10");
     await page.getByTestId("checkout-discount-reason").fill("Bulk buyer courtesy");
     await page.getByTestId("checkout-discount-add").click();
@@ -344,6 +345,8 @@ test.describe("RMAP-11b commercial discount UX", () => {
     await expect(page.getByTestId("checkout-total-amount")).toContainText("25");
     await expect(page.getByTestId("checkout-discount-total")).toContainText("2.5");
     await expect(page.getByTestId("checkout-amount-to-pay")).toContainText("22.5");
+    await expect(page.getByTestId("checkout-cash-received")).toHaveValue("");
+    await fillCheckoutCashExact(page);
     await expect(page.getByTestId("checkout-cash-received")).toHaveValue("22.50");
 
     await page.getByTestId("checkout-confirm").click();
@@ -373,6 +376,7 @@ test.describe("RMAP-11b commercial discount UX", () => {
     await signInOwnerAndStartSelling(page);
     await addCokeAndOpenCheckout(page);
 
+    await openCheckoutDiscountForm(page);
     await page.getByTestId("checkout-discount-value").fill("100");
     await page.getByTestId("checkout-discount-reason").fill("Full courtesy");
     await page.getByTestId("checkout-discount-add").click();
@@ -395,6 +399,7 @@ test.describe("RMAP-11b commercial discount UX", () => {
     await signInOwnerAndStartSelling(page);
     await addCokeAndOpenCheckout(page);
 
+    await openCheckoutDiscountForm(page);
     await page.getByTestId("checkout-discount-value").fill("10");
     await page.getByTestId("checkout-discount-add").click();
     await expect(page.getByTestId("checkout-discount-form-error")).toContainText("reason");
@@ -412,10 +417,12 @@ test.describe("RMAP-11b commercial discount UX", () => {
       await mockPosSalesWithQuote(page);
       await signInOwnerAndStartSelling(page);
       await addCokeAndOpenCheckout(page);
+      await openCheckoutDiscountForm(page);
       await page.getByTestId("checkout-discount-value").fill("10");
       await page.getByTestId("checkout-discount-reason").fill("Viewport courtesy");
       await page.getByTestId("checkout-discount-add").click();
       await assertNoHorizontalOverflow(page);
+      await fillCheckoutCashExact(page);
       await page.getByTestId("checkout-confirm").click();
       await expect(page.getByTestId("transaction-summary-page")).toBeVisible();
       await assertNoHorizontalOverflow(page);

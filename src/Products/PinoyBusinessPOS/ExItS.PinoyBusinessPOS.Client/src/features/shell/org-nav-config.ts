@@ -10,7 +10,6 @@ import {
   RefreshCw,
   Settings,
   Truck,
-  UserPlus,
   Users,
 } from "lucide-react";
 import type { PosSessionGrantFacts } from "@/access/pos-capabilities";
@@ -155,12 +154,35 @@ export type OrgMoreLink = {
   icon: LucideIcon;
 };
 
-/** Secondary destinations for the More hub — permission-filtered. */
+export type OrgMoreSectionId = "operations" | "insights" | "organization" | "settings";
+
+export type OrgMoreSection = {
+  id: OrgMoreSectionId;
+  titleKey:
+    | "org.more.group.operations"
+    | "org.more.group.insights"
+    | "org.more.group.organization"
+    | "org.more.group.settings";
+  testId: string;
+  links: OrgMoreLink[];
+};
+
+/** Secondary destinations for the More hub — permission-filtered, flat list. */
 export function buildOrgMoreLinks(grant: PosSessionGrantFacts | null | undefined): OrgMoreLink[] {
-  const links: OrgMoreLink[] = [];
+  return buildOrgMoreSections(grant).flatMap((section) => section.links);
+}
+
+/** Grouped More hub sections for scannable UX (Manager-home style panels). */
+export function buildOrgMoreSections(
+  grant: PosSessionGrantFacts | null | undefined,
+): OrgMoreSection[] {
+  const operations: OrgMoreLink[] = [];
+  const insights: OrgMoreLink[] = [];
+  const organization: OrgMoreLink[] = [];
+  const settings: OrgMoreLink[] = [];
 
   if (canManageCatalog(grant) && canViewInventory(grant)) {
-    links.push({
+    operations.push({
       to: "/inventory",
       labelKey: "org.more.inventory",
       testId: "org-more-inventory",
@@ -168,7 +190,7 @@ export function buildOrgMoreLinks(grant: PosSessionGrantFacts | null | undefined
     });
   }
   if (canViewCustomers(grant)) {
-    links.push({
+    operations.push({
       to: "/customers",
       labelKey: "org.more.customers",
       testId: "org-more-customers",
@@ -176,7 +198,7 @@ export function buildOrgMoreLinks(grant: PosSessionGrantFacts | null | undefined
     });
   }
   if (canViewShifts(grant)) {
-    links.push({
+    operations.push({
       to: "/shifts",
       labelKey: "org.more.shifts",
       testId: "org-more-shifts",
@@ -184,7 +206,7 @@ export function buildOrgMoreLinks(grant: PosSessionGrantFacts | null | undefined
     });
   }
   if (canViewReturns(grant)) {
-    links.push({
+    operations.push({
       to: "/returns",
       labelKey: "org.more.returns",
       testId: "org-more-returns",
@@ -192,7 +214,7 @@ export function buildOrgMoreLinks(grant: PosSessionGrantFacts | null | undefined
     });
   }
   if (canViewPurchasing(grant)) {
-    links.push({
+    operations.push({
       to: "/purchasing",
       labelKey: "org.more.purchasing",
       testId: "org-more-purchasing",
@@ -200,15 +222,16 @@ export function buildOrgMoreLinks(grant: PosSessionGrantFacts | null | undefined
     });
   }
   if (canViewSuppliers(grant)) {
-    links.push({
+    operations.push({
       to: "/suppliers",
       labelKey: "org.more.suppliers",
       testId: "org-more-suppliers",
       icon: Truck,
     });
   }
+
   if (canViewDashboard(grant)) {
-    links.push({
+    insights.push({
       to: "/dashboard",
       labelKey: "org.more.dashboard",
       testId: "org-more-dashboard",
@@ -216,15 +239,16 @@ export function buildOrgMoreLinks(grant: PosSessionGrantFacts | null | undefined
     });
   }
   if (canAccessReportsHub(grant)) {
-    links.push({
+    insights.push({
       to: "/reports",
       labelKey: "org.more.reports",
       testId: "org-more-reports",
       icon: BarChart3,
     });
   }
+
   if (canUseAdminExperience(grant) || hasOrganizationManagementAuthority(grant)) {
-    links.push({
+    organization.push({
       to: "/org",
       labelKey: "org.more.organization",
       testId: "org-more-org",
@@ -232,7 +256,7 @@ export function buildOrgMoreLinks(grant: PosSessionGrantFacts | null | undefined
     });
   }
   if (hasOrganizationManagementAuthority(grant)) {
-    links.push({
+    organization.push({
       to: "/org/devices",
       labelKey: "org.more.devices",
       testId: "org-more-devices",
@@ -240,21 +264,47 @@ export function buildOrgMoreLinks(grant: PosSessionGrantFacts | null | undefined
     });
   }
   if (canInviteOrganizationStaff(grant)) {
-    links.push({
-      to: "/org/staff/invite",
+    organization.push({
+      to: "/org/staff",
       labelKey: "org.more.staff",
       testId: "org-more-staff",
-      icon: UserPlus,
+      icon: Users,
     });
   }
-  links.push({
+
+  settings.push({
     to: "/settings/preferences",
     labelKey: "org.more.preferences",
     testId: "org-more-preferences",
     icon: Settings,
   });
 
-  return links;
+  return [
+    {
+      id: "operations" as const,
+      titleKey: "org.more.group.operations" as const,
+      testId: "org-more-group-operations",
+      links: operations,
+    },
+    {
+      id: "insights" as const,
+      titleKey: "org.more.group.insights" as const,
+      testId: "org-more-group-insights",
+      links: insights,
+    },
+    {
+      id: "organization" as const,
+      titleKey: "org.more.group.organization" as const,
+      testId: "org-more-group-organization",
+      links: organization,
+    },
+    {
+      id: "settings" as const,
+      titleKey: "org.more.group.settings" as const,
+      testId: "org-more-group-settings",
+      links: settings,
+    },
+  ].filter((section) => section.links.length > 0);
 }
 
 /** Match nested routes to a primary tab (e.g. /sell/checkout → sell). */

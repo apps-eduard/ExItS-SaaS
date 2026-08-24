@@ -2,7 +2,6 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createStaffInvitation } from "@/api/platform/staff-invitation-client";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -42,23 +41,28 @@ export function OrgStaffInvitePage() {
     if (result.invitation.acceptToken) {
       setCreatedToken(result.invitation.acceptToken);
     } else {
-      navigate("/org", { replace: true });
+      navigate("/org/staff", { replace: true });
     }
   }
 
   if (createdToken) {
     const acceptPath = `/personal/invitations/accept?token=${encodeURIComponent(createdToken)}`;
     return (
-      <div className="flex min-w-0 flex-col gap-4" data-testid="staff-invite-created">
+      <div
+        className="staff-invite-page exits-page flex min-w-0 flex-col gap-3"
+        data-testid="staff-invite-created"
+      >
         <PageHeader
           title={t("staffInvite.createdTitle")}
           description={t("staffInvite.createdLede")}
-          backTo={pageBackNav.org.to}
-          backLabel={t(pageBackNav.org.labelKey)}
-          backTestId="page-header-back-org"
+          backTo={pageBackNav.orgStaff.to}
+          backLabel={t(pageBackNav.orgStaff.labelKey)}
+          backTestId="page-header-back-staff"
         />
-        <StatusChip tone="success">{t("staffInvite.createdBadge")}</StatusChip>
-        <Card className="flex flex-col gap-3">
+        <div className="exits-animate-toolbar">
+          <StatusChip tone="success">{t("staffInvite.createdBadge")}</StatusChip>
+        </div>
+        <section className="catalog-form-section exits-animate-panel flex flex-col gap-3">
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("staffInvite.contactIsNotLogin")}
           </p>
@@ -69,23 +73,28 @@ export function OrgStaffInvitePage() {
           <Button asChild className="min-h-11 w-full sm:w-auto">
             <Link to={acceptPath}>{t("staffInvite.openAccept")}</Link>
           </Button>
-        </Card>
+        </section>
       </div>
     );
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="staff-invite-page">
+    <div
+      className="staff-invite-page exits-page flex min-w-0 flex-col gap-3"
+      data-testid="staff-invite-page"
+    >
       <PageHeader
         title={t("staffInvite.title")}
         description={t("staffInvite.lede")}
-        backTo={pageBackNav.org.to}
-        backLabel={t(pageBackNav.org.labelKey)}
-        backTestId="page-header-back-org"
+        backTo={pageBackNav.orgStaff.to}
+        backLabel={t(pageBackNav.orgStaff.labelKey)}
+        backTestId="page-header-back-staff"
       />
-      <StatusChip tone="info">{t("staffInvite.badge")}</StatusChip>
+      <div className="exits-animate-toolbar">
+        <StatusChip tone="info">{t("staffInvite.badge")}</StatusChip>
+      </div>
       {error ? <ErrorState title={t("error.title")} detail={error} /> : null}
-      <Card>
+      <section className="catalog-form-section exits-animate-panel">
         <form className="flex flex-col gap-4" onSubmit={(event) => void handleSubmit(event)}>
           <Input
             label={t("staffInvite.contactEmailLabel")}
@@ -112,7 +121,7 @@ export function OrgStaffInvitePage() {
             {submitting ? t("staffInvite.submitting") : t("staffInvite.submit")}
           </Button>
         </form>
-      </Card>
+      </section>
     </div>
   );
 }

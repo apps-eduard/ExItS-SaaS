@@ -106,7 +106,9 @@ import { ReceivableOrdersPage } from "@/features/purchasing/ReceivableOrdersPage
 import { ReceiveStockPage } from "@/features/purchasing/ReceiveStockPage";
 import { DirectPurchasesListPage } from "@/features/purchasing/DirectPurchasesListPage";
 import { DirectPurchaseDetailPage } from "@/features/purchasing/DirectPurchaseDetailPage";
+import { OrgStaffAssignPage } from "@/features/staff/OrgStaffAssignPage";
 import { OrgStaffInvitePage } from "@/features/staff/OrgStaffInvitePage";
+import { OrgStaffPage } from "@/features/staff/OrgStaffPage";
 import { StaffInvitationAcceptPage } from "@/features/staff/StaffInvitationAcceptPage";
 import { NoAccessibleBranchPage } from "@/features/workspace/NoAccessibleBranchPage";
 import { WorkspaceChooserPage } from "@/features/workspace/WorkspaceChooserPage";
@@ -379,10 +381,26 @@ export const appRoutes = [
               { index: true, element: <OrgEssentialsPage /> },
               { path: "business-qr", element: <OrgBusinessQrPage /> },
               {
+                path: "staff",
+                element: (
+                  <RequireInviteStaff>
+                    <OrgStaffPage />
+                  </RequireInviteStaff>
+                ),
+              },
+              {
                 path: "staff/invite",
                 element: (
                   <RequireInviteStaff>
                     <OrgStaffInvitePage />
+                  </RequireInviteStaff>
+                ),
+              },
+              {
+                path: "staff/assign",
+                element: (
+                  <RequireInviteStaff>
+                    <OrgStaffAssignPage />
                   </RequireInviteStaff>
                 ),
               },

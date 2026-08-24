@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { assertNoHorizontalOverflow } from "./helpers";
+import { assertNoHorizontalOverflow, fillCheckoutCashExact } from "./helpers";
 import {
   E2E_BRANCH_ID,
   E2E_ORG_ID,
@@ -256,7 +256,7 @@ test.describe("RMAP-11 checkout cash sale", () => {
     await addCokeAndOpenCheckout(page);
 
     await expect(page.getByTestId("checkout-amount-to-pay")).toContainText("25");
-    await expect(page.getByTestId("checkout-cash-received")).toHaveValue("25.00");
+    await expect(page.getByTestId("checkout-cash-received")).toHaveValue("");
     await page.getByTestId("checkout-cash-received").fill("50");
     await expect(page.getByTestId("checkout-cash-received")).toHaveValue("50");
     await expect(page.getByTestId("checkout-change")).toContainText("25");
@@ -441,6 +441,7 @@ test.describe("RMAP-11 checkout cash sale", () => {
     await signInAndBindCashier(page);
     await clientNavigate(page, "/sell");
     await addCokeAndOpenCheckout(page);
+    await fillCheckoutCashExact(page);
     await page.getByTestId("checkout-confirm").click();
     await expect(page.getByTestId("checkout-error")).toContainText("stock");
     await page.getByTestId("checkout-confirm").click();
@@ -482,6 +483,7 @@ test.describe("RMAP-11 checkout cash sale", () => {
       await clientNavigate(page, "/sell");
       await addCokeAndOpenCheckout(page);
       await assertNoHorizontalOverflow(page);
+      await fillCheckoutCashExact(page);
       await page.getByTestId("checkout-confirm").click();
       await expect(page.getByTestId("transaction-summary-page")).toBeVisible();
       await assertNoHorizontalOverflow(page);

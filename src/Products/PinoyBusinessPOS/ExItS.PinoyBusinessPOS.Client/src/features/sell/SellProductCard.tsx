@@ -109,13 +109,13 @@ export function SellProductCard({
             </span>
           )}
         </div>
+        <span
+          data-testid={`sell-product-stock-${product.productId}`}
+          className={`sell-product-card__stock sell-product-card__stock--${stock.tone}`}
+        >
+          {sellStockCaption(t, stock)}
+        </span>
       </div>
-      <span
-        data-testid={`sell-product-stock-${product.productId}`}
-        className={`sell-product-card__stock sell-product-card__stock--${stock.tone}`}
-      >
-        {sellStockCaption(t, stock)}
-      </span>
     </button>
   );
 }

@@ -24,16 +24,22 @@ type PagedMembersWire = {
   totalCount?: number;
 };
 
-function membersPath(organizationId: string): string {
-  return `/api/v1/platform/organizations/${organizationId}/members?page=1&pageSize=50&status=Active`;
+function membersPath(organizationId: string, status?: string): string {
+  let path = `/api/v1/platform/organizations/${organizationId}/members?page=1&pageSize=100`;
+  if (status?.trim()) {
+    path += `&status=${encodeURIComponent(status.trim())}`;
+  }
+  return path;
 }
 
 /**
  * Owner ManageMemberships path. Returns null body on 403 — callers omit roster.
  * Informational only; never used as authorization.
+ * Defaults to Active for workspace roster; pass status undefined for staff management.
  */
 export async function listOrganizationMembers(
   organizationId: string,
+  status: string | undefined = "Active",
 ): Promise<
   | { ok: true; members: OrganizationMemberWire[] }
   | { ok: false; status: number; body: PlatformProblemDetails | null }
@@ -41,9 +47,53 @@ export async function listOrganizationMembers(
   try {
     const page = await platformRequest<PagedMembersWire>({
       method: "GET",
-      path: membersPath(organizationId),
+      path: membersPath(organizationId, status),
     });
     return { ok: true, members: page.items ?? [] };
+  } catch (error) {
+    if (error instanceof PlatformApiError) {
+      return { ok: false, status: error.status, body: error.problem };
+    }
+    throw error;
+  }
+}
+
+export async function suspendOrganizationMembership(input: {
+  membershipId: string;
+  reason?: string;
+}): Promise<
+  | { ok: true; member: OrganizationMemberWire }
+  | { ok: false; status: number; body: PlatformProblemDetails | null }
+> {
+  try {
+    const member = await platformRequest<OrganizationMemberWire>({
+      method: "POST",
+      path: `/api/v1/platform/memberships/${input.membershipId}/suspend`,
+      body: { reason: input.reason ?? null },
+    });
+    return { ok: true, member };
+  } catch (error) {
+    if (error instanceof PlatformApiError) {
+      return { ok: false, status: error.status, body: error.problem };
+    }
+    throw error;
+  }
+}
+
+export async function revokeOrganizationMembership(input: {
+  membershipId: string;
+  reason?: string;
+}): Promise<
+  | { ok: true; member: OrganizationMemberWire }
+  | { ok: false; status: number; body: PlatformProblemDetails | null }
+> {
+  try {
+    const member = await platformRequest<OrganizationMemberWire>({
+      method: "POST",
+      path: `/api/v1/platform/memberships/${input.membershipId}/revoke`,
+      body: { reason: input.reason ?? null },
+    });
+    return { ok: true, member };
   } catch (error) {
     if (error instanceof PlatformApiError) {
       return { ok: false, status: error.status, body: error.problem };

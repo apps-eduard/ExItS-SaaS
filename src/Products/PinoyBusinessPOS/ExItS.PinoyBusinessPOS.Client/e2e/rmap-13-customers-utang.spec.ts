@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { assertNoHorizontalOverflow } from "./helpers";
+import { assertNoHorizontalOverflow, chooseWalkInCustomerCreate } from "./helpers";
 import {
   E2E_ORG_ID,
   mockBoundCashierSession,
@@ -308,6 +308,7 @@ test.describe("RMAP-13 customers + Business Utang", () => {
     await signInOwnerOperations(page);
     await clientNavigate(page, "/customers/new");
     await expect(page.getByTestId("customer-form-page")).toBeVisible();
+    await chooseWalkInCustomerCreate(page);
     await page.getByTestId("customer-display-name").fill("Maria Santos");
     await page.getByTestId("customer-mobile").fill("09180001111");
     await page.getByTestId("customer-save").click();

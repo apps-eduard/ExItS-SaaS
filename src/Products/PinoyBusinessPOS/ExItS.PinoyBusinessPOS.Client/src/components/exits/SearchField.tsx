@@ -38,7 +38,7 @@ export function SearchField({
           enterKeyHint="search"
           value={value}
           className={cn(
-            "h-[var(--exits-control-height)] min-h-[var(--exits-touch-target-min)] w-full rounded-full border border-border bg-surface py-2 pr-10 pl-10 text-[length:var(--exits-text-md)] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "box-border h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] w-full rounded-full border border-border bg-surface py-0 pr-10 pl-10 text-[length:var(--exits-text-md)] leading-[var(--exits-control-height)] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring",
             className,
           )}
           {...props}

@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { RoleActionTile } from "@/components/exits/RoleActionTile";
+import { cn } from "@/lib/cn";
 
 export type ActionTileDef = {
   key: string;
@@ -11,17 +12,30 @@ export type ActionTileDef = {
   onClick?: () => void;
 };
 
-export function ActionTileGrid({ tiles }: { tiles: ActionTileDef[] }) {
+export function ActionTileGrid({
+  tiles,
+  emphasizePrimary = false,
+}: {
+  tiles: ActionTileDef[];
+  /** Primary tiles (e.g. Start Selling) span the full row and use hero sizing. */
+  emphasizePrimary?: boolean;
+}) {
   if (tiles.length === 0) {
     return null;
   }
 
   return (
-    <div className="grid min-w-0 grid-cols-2 gap-2" role="group">
+    <div className="role-action-tile-grid grid min-w-0 grid-cols-2 gap-2" role="group">
       {tiles.map((tile, index) => {
+        const isPrimaryHero = Boolean(emphasizePrimary && tile.primary);
         const fullWidth =
-          tiles.length === 1 || (tiles.length % 2 === 1 && index === tiles.length - 1);
-        const tileClassName = fullWidth ? "col-span-2" : undefined;
+          isPrimaryHero ||
+          tiles.length === 1 ||
+          (tiles.length % 2 === 1 && index === tiles.length - 1);
+        const tileClassName = cn(
+          fullWidth && "col-span-2",
+          isPrimaryHero && "role-action-tile--hero",
+        );
 
         return tile.onClick ? (
           <RoleActionTile
@@ -32,6 +46,7 @@ export function ActionTileGrid({ tiles }: { tiles: ActionTileDef[] }) {
             primary={tile.primary}
             onClick={tile.onClick}
             className={tileClassName}
+            style={{ animationDelay: `${40 + index * 35}ms` }}
           />
         ) : (
           <RoleActionTile
@@ -42,6 +57,7 @@ export function ActionTileGrid({ tiles }: { tiles: ActionTileDef[] }) {
             primary={tile.primary}
             to={tile.to!}
             className={tileClassName}
+            style={{ animationDelay: `${40 + index * 35}ms` }}
           />
         );
       })}
