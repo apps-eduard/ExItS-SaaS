@@ -26,6 +26,9 @@ public sealed class SecurityHardeningArchitectureTests
         Assert.Contains("PermitLimit = 240", platformPipeline, StringComparison.Ordinal);
         Assert.Contains("LocalValidation:Enabled", platformPipeline, StringComparison.Ordinal);
         Assert.Contains("PermitLimit = 20_000", platformPipeline, StringComparison.Ordinal);
+        Assert.Contains("LocalValidation:Enabled", posPipeline, StringComparison.Ordinal);
+        Assert.Contains("PermitLimit = 5_000", posPipeline, StringComparison.Ordinal);
+        Assert.Contains("PermitLimit = 240", posPipeline, StringComparison.Ordinal);
         Assert.DoesNotContain(".Migrate(", pos, StringComparison.Ordinal);
         Assert.DoesNotContain(".Migrate(", platform, StringComparison.Ordinal);
     }

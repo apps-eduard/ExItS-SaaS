@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ShoppingCart, Info } from "lucide-react";
+import { ShoppingCart, Info, PackageX, X } from "lucide-react";
 import { resolveCatalogLookup } from "@/api/pos/catalog-lookup";
 import {
   CATALOG_BROWSE_PAGE_SIZE,
@@ -21,6 +21,7 @@ import {
   findCartStockIssues,
   formatStockUnavailableMessage,
   isByWeightSellingMode,
+  isCommittedOutOfStock,
   resolveAddFlow,
   sumCartBaseQuantityForProduct,
   type StockGuardInput,
@@ -149,16 +150,30 @@ export function SellFloorPage() {
   const [customQtyEntry, setCustomQtyEntry] = useState<PendingCustomQuantityEntry | null>(null);
   const [priceOverrideLine, setPriceOverrideLine] = useState<SessionCartLine | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [showOutOfStock, setShowOutOfStock] = useState(false);
   const [entryStockError, setEntryStockError] = useState<string | null>(null);
   const [stockBanner, setStockBanner] = useState<string | null>(null);
   const [flashedProductId, setFlashedProductId] = useState<string | null>(null);
   const lastExactScanRef = useRef<string | null>(null);
+  const flashTimeoutRef = useRef<number | null>(null);
 
   const flashProduct = useCallback((productId: string) => {
     setFlashedProductId(productId);
-    window.setTimeout(() => {
+    if (flashTimeoutRef.current != null) {
+      window.clearTimeout(flashTimeoutRef.current);
+    }
+    flashTimeoutRef.current = window.setTimeout(() => {
+      flashTimeoutRef.current = null;
       setFlashedProductId((current) => (current === productId ? null : current));
     }, 450);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (flashTimeoutRef.current != null) {
+        window.clearTimeout(flashTimeoutRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -299,6 +314,8 @@ export function SellFloorPage() {
       onHandQuantity: inventoryHintQuery.data?.onHandQuantity ?? product.onHandQuantity,
       sellableQuantity: inventoryHintQuery.data?.sellableQuantity,
       tracksExpiration: inventoryHintQuery.data?.tracksExpiration ?? product.tracksExpiration,
+      stockStatus: inventoryHintQuery.data?.stockStatus ?? product.stockStatus,
+      isLowStock: inventoryHintQuery.data?.isLowStock,
     };
   }, [customQtyEntry?.product, inventoryHintQuery.data, unitEntry?.product, weightEntry?.product]);
 
@@ -525,6 +542,13 @@ export function SellFloorPage() {
     lookupProducts,
     usingCachedCatalog,
   ]);
+
+  const visibleProducts = useMemo(() => {
+    if (showOutOfStock) {
+      return displayedProducts.filter((product) => isCommittedOutOfStock(product));
+    }
+    return displayedProducts.filter((product) => !isCommittedOutOfStock(product));
+  }, [displayedProducts, showOutOfStock]);
 
   const productsLoading =
     (debouncedSearch.trim() ? lookupLoading : browseQuery.isLoading) &&
@@ -802,6 +826,7 @@ export function SellFloorPage() {
     stockIssues: cartStockIssues,
     stockBanner,
     suppressMidSessionWarning: true,
+    workspace: workspaceScope,
   };
 
   const showMobileCartBar = !sideCartLayout && !cartSheetOpen;
@@ -819,13 +844,25 @@ export function SellFloorPage() {
           <button
             type="button"
             data-testid="sell-info-toggle"
-            className="sell-floor-toolbar__info"
+            className="sell-floor-toolbar__info sell-floor-toolbar__chip"
             aria-label={t("sell.infoToggle")}
             aria-expanded={infoOpen}
             aria-controls="sell-info-panel"
             onClick={() => setInfoOpen((open) => !open)}
           >
-            <Info className="size-4" aria-hidden />
+            <Info className="size-3.5" aria-hidden />
+            <span>{t("sell.infoChip")}</span>
+          </button>
+          <button
+            type="button"
+            data-testid="sell-out-of-stock-toggle"
+            className="sell-floor-toolbar__info sell-floor-toolbar__chip"
+            aria-label={showOutOfStock ? t("sell.hideOutOfStock") : t("sell.showOutOfStock")}
+            aria-pressed={showOutOfStock}
+            onClick={() => setShowOutOfStock((open) => !open)}
+          >
+            <PackageX className="sell-floor-toolbar__chip-icon--oos" aria-hidden />
+            <span>{t("sell.stockOut")}</span>
           </button>
         </div>
         <Button
@@ -845,12 +882,24 @@ export function SellFloorPage() {
             data-testid="sell-info-panel"
             className="sell-info-panel sell-floor-toolbar__tips"
           >
-            <ul className="m-0 list-disc space-y-1 pl-4 text-[length:var(--exits-text-xs)] text-muted">
-              <li>{t("sell.info.search")}</li>
-              <li>{t("sell.info.shift")}</li>
-              <li>{t("sell.info.device")}</li>
-              <li>{t("sell.info.weighted")}</li>
-            </ul>
+            <div className="sell-info-panel__bar">
+              <ul className="m-0 min-w-0 flex-1 list-disc space-y-1 pl-4 text-[length:var(--exits-text-xs)] text-muted">
+                <li>{t("sell.info.search")}</li>
+                <li>{t("sell.info.shift")}</li>
+                <li>{t("sell.info.device")}</li>
+                <li>{t("sell.info.weighted")}</li>
+                <li>{t("sell.info.cartNotHeld")}</li>
+              </ul>
+              <button
+                type="button"
+                data-testid="sell-info-close"
+                className="sell-floor-toolbar__info sell-info-panel__close"
+                aria-label={t("sell.info.close")}
+                onClick={() => setInfoOpen(false)}
+              >
+                <X className="size-4" aria-hidden />
+              </button>
+            </div>
           </div>
         ) : null}
       </header>
@@ -933,7 +982,10 @@ export function SellFloorPage() {
             activeCategoryId={activeCategory}
             allLabel={t("sell.categoryAll")}
             listLabel={t("sell.categoriesLabel")}
-            onSelect={setActiveCategory}
+            onSelect={(categoryId) => {
+              setShowOutOfStock(false);
+              setActiveCategory(categoryId);
+            }}
             />
           </div>
 
@@ -949,19 +1001,27 @@ export function SellFloorPage() {
               </div>
             ) : null}
 
-            {!productsLoading && displayedProducts.length === 0 ? (
+            {!productsLoading && visibleProducts.length === 0 ? (
               <p className="col-span-full m-0 text-center text-[length:var(--exits-text-sm)] text-muted">
-                {debouncedSearch.trim() ? t("sell.catalogNoResults") : t("sell.catalogEmpty")}
+                {debouncedSearch.trim()
+                  ? t("sell.catalogNoResults")
+                  : showOutOfStock
+                    ? t("sell.outOfStockEmpty")
+                    : displayedProducts.length > 0
+                      ? t("sell.outOfStockHiddenEmpty")
+                      : t("sell.catalogEmpty")}
               </p>
             ) : null}
 
-            {displayedProducts.map((product) => (
+            {visibleProducts.map((product) => (
               <SellProductCard
                 key={product.productId}
                 addedFlash={flashedProductId === product.productId}
                 product={product}
                 workspace={workspaceScope}
                 onAdd={beginAddProduct}
+                cartReservedBaseQty={sumCartBaseQuantityForProduct(cart.lines, product.productId)}
+                unavailable={isCommittedOutOfStock(product)}
               />
             ))}
           </div>

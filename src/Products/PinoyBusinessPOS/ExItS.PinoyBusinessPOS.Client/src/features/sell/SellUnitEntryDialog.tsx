@@ -6,10 +6,11 @@ import {
   formatQuantityDisplay,
   requiresWholeEnteredQuantity,
   resolveSellUnitPrice,
-  resolveStockHint,
+  resolveSellCardStock,
   roundMoney,
   roundQuantity,
 } from "@/cart/sell-cart-helpers";
+import { sellStockCaption } from "@/features/sell/sell-stock-caption";
 import { useI18n } from "@/i18n/I18nProvider";
 
 type SellUnitEntryDialogProps = {
@@ -23,6 +24,8 @@ type SellUnitEntryDialogProps = {
     onHandQuantity?: number | null;
     sellableQuantity?: number | null;
     tracksExpiration?: boolean;
+    stockStatus?: string | null;
+    isLowStock?: boolean | null;
   } | null;
   stockError?: string | null;
   onConfirm: (unit: PosCatalogProductUnitDto, quantity: number) => void;
@@ -65,13 +68,15 @@ export function SellUnitEntryDialog({
   const subtotal = roundMoney(unitPrice * quantity);
   const whole = selectedUnit ? requiresWholeEnteredQuantity(selectedUnit) : true;
   const step = whole ? 1 : 0.001;
-  const hint = product
-    ? resolveStockHint({
+  const stock = product
+    ? resolveSellCardStock({
         isTracked: stockHint?.isTracked ?? product.isTracked,
         onHandQuantity: stockHint?.onHandQuantity ?? product.onHandQuantity,
         unitOfMeasure: product.unitOfMeasure,
         tracksExpiration: stockHint?.tracksExpiration ?? product.tracksExpiration,
         sellableQuantity: stockHint?.sellableQuantity,
+        stockStatus: stockHint?.stockStatus ?? product.stockStatus,
+        isLowStock: stockHint?.isLowStock,
       })
     : null;
 
@@ -103,18 +108,12 @@ export function SellUnitEntryDialog({
         <p className="m-0 truncate text-[length:var(--exits-text-sm)] font-semibold">
           {product.name}
         </p>
-        {hint ? (
+        {stock ? (
           <p
             data-testid="sell-stock-hint"
-            className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+            className={`m-0 text-[length:var(--exits-text-xs)] text-muted sell-product-card__stock--${stock.tone}`}
           >
-            {hint.label === "sellable"
-              ? t("sell.stockSellable")
-                  .replace("{qty}", formatQuantityDisplay(hint.quantity))
-                  .replace("{unit}", hint.unitOfMeasure)
-              : t("sell.stockOnHand")
-                  .replace("{qty}", formatQuantityDisplay(hint.quantity))
-                  .replace("{unit}", hint.unitOfMeasure)}
+            {sellStockCaption(t, stock)}
           </p>
         ) : null}
 

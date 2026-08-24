@@ -44,6 +44,7 @@ export function SellCategoryFilter({
           pressed={activeCategoryId === "all"}
           onClick={() => onSelect("all")}
           label={allLabel}
+          testId="sell-category-all"
           isAll
         />
         {categories.map((category) => (

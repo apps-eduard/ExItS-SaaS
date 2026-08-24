@@ -136,7 +136,13 @@ export function classifyWorkspaceBindFailure(input: {
     };
   }
 
-  if (status === 502 || status === 503 || status === 429) {
+  if (
+    status === 502 ||
+    status === 503 ||
+    status === 429 ||
+    errorCode === "pos.rate_limit.exceeded" ||
+    errorCode === "platform.rate_limit.exceeded"
+  ) {
     return {
       kind: "service_unavailable",
       detailKey: "accessDenied.serviceUnavailable",

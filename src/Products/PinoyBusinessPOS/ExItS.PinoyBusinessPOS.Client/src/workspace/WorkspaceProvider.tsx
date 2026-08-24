@@ -705,7 +705,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             error: new Error(operational.detail ?? "Operational branch bind failed"),
             operation: "operational branch bind",
             httpMethod: "PUT",
-            path: "/api/v1/platform/organizations/{organizationId}/branch-context",
+            path: "/api/v1/pos/operational-branch",
             screen: "Choose workspace",
             accountClass: sessionAccountClass(activeSession) ?? undefined,
             organizationName:

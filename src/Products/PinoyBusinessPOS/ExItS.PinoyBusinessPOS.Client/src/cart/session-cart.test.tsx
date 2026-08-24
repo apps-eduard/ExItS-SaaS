@@ -10,6 +10,9 @@ import {
   requiresWholeEnteredQuantity,
   resolveAddFlow,
   resolveStockHint,
+  resolveSellCardStock,
+  remainingQuantityAfterCart,
+  isCommittedOutOfStock,
 } from "@/cart/sell-cart-helpers";
 import { SessionCartProvider, useSessionCart } from "@/cart/SessionCartProvider";
 
@@ -314,5 +317,67 @@ describe("sell-cart-helpers", () => {
     });
     expect(sellable?.label).toBe("sellable");
     expect(sellable?.quantity).toBe(7);
+  });
+
+  it("labels untracked, low, and out of stock on sell tiles", () => {
+    expect(
+      resolveSellCardStock({
+        isTracked: false,
+        onHandQuantity: 12,
+        unitOfMeasure: "Piece",
+      }).tone,
+    ).toBe("untracked");
+
+    expect(
+      resolveSellCardStock({
+        isTracked: true,
+        onHandQuantity: 4,
+        unitOfMeasure: "Kilogram",
+        stockStatus: "LowStock",
+      }).tone,
+    ).toBe("low");
+
+    expect(
+      resolveSellCardStock({
+        isTracked: true,
+        onHandQuantity: 0,
+        unitOfMeasure: "Piece",
+        stockStatus: "InStock",
+      }).tone,
+    ).toBe("out");
+  });
+
+  it("subtracts this register's cart from remaining on-hand", () => {
+    expect(remainingQuantityAfterCart(48, 1)).toBe(47);
+    expect(remainingQuantityAfterCart(1, 1)).toBe(0);
+    expect(remainingQuantityAfterCart(1, 3)).toBe(0);
+  });
+
+  it("treats tracked zero/out status as committed out of stock", () => {
+    expect(
+      isCommittedOutOfStock({
+        isTracked: true,
+        onHandQuantity: 0,
+      }),
+    ).toBe(true);
+    expect(
+      isCommittedOutOfStock({
+        isTracked: true,
+        onHandQuantity: 4,
+        stockStatus: "OutOfStock",
+      }),
+    ).toBe(true);
+    expect(
+      isCommittedOutOfStock({
+        isTracked: false,
+        onHandQuantity: 0,
+      }),
+    ).toBe(false);
+    expect(
+      isCommittedOutOfStock({
+        isTracked: true,
+        onHandQuantity: 12,
+      }),
+    ).toBe(false);
   });
 });

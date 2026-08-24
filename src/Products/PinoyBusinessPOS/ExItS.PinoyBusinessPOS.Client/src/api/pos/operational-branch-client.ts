@@ -1,5 +1,11 @@
 import { posRequest, PosApiError } from "@/api/pos/pos-http";
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
 export type OperationalBranchContext = {
   organizationId: string;
   branchId: string;
@@ -21,30 +27,48 @@ export async function selectOperationalBranch(input: {
   | { ok: true; context: OperationalBranchContext }
   | { ok: false; status: number; errorCode?: string; detail?: string }
 > {
-  try {
-    const context = await posRequest<OperationalBranchContext>({
-      method: "PUT",
-      path: "/api/v1/pos/operational-branch",
-      workspace: {
-        organizationId: input.organizationId,
-        branchId: input.branchId,
-      },
-      body: {
-        branchId: input.branchId,
-        fromBranchId: input.fromBranchId ?? null,
-        deviceBoundBranchId: null,
-      },
-    });
-    return { ok: true, context };
-  } catch (error) {
-    if (error instanceof PosApiError) {
-      return {
-        ok: false,
-        status: error.status,
-        errorCode: error.errorCode,
-        detail: error.problem.detail,
-      };
+  const maxAttempts = 3;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      const context = await posRequest<OperationalBranchContext>({
+        method: "PUT",
+        path: "/api/v1/pos/operational-branch",
+        workspace: {
+          organizationId: input.organizationId,
+          branchId: input.branchId,
+        },
+        body: {
+          branchId: input.branchId,
+          fromBranchId: input.fromBranchId ?? null,
+          deviceBoundBranchId: null,
+        },
+      });
+      return { ok: true, context };
+    } catch (error) {
+      if (error instanceof PosApiError) {
+        const isRateLimited =
+          error.status === 429 || error.errorCode === "pos.rate_limit.exceeded";
+        if (isRateLimited && attempt + 1 < maxAttempts) {
+          await sleep(750 * (attempt + 1));
+          continue;
+        }
+
+        return {
+          ok: false,
+          status: error.status,
+          errorCode: error.errorCode,
+          detail: error.problem.detail,
+        };
+      }
+      throw error;
     }
-    throw error;
   }
+
+  return {
+    ok: false,
+    status: 429,
+    errorCode: "pos.rate_limit.exceeded",
+    detail: "Request rate limit exceeded. Retry later.",
+  };
 }

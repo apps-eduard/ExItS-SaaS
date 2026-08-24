@@ -37,7 +37,7 @@ test.describe("RMAP-09 New Sale and session cart parity", () => {
     await page.setViewportSize({ width: 1024, height: 768 });
     await page.getByTestId(`sell-product-${MOCK_RICE_PRODUCT_ID}`).click();
     await expect(page.getByTestId("sell-unit-entry")).toBeVisible();
-    await expect(page.getByTestId("sell-stock-hint")).toContainText("advisory");
+    await expect(page.getByTestId("sell-stock-hint")).toContainText("On hand");
     await page.getByTestId(`sell-unit-option-${MOCK_RICE_SACK_UNIT_ID}`).click();
     await page.getByTestId("sell-unit-add").click();
 

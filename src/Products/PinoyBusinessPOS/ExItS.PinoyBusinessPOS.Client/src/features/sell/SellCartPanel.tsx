@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ShoppingCart, X } from "lucide-react";
+import { ShoppingCart, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { effectiveUnitPrice, lineAmount, type SessionCartLine } from "@/cart/SessionCartProvider";
 import { formatQuantityDisplay, isByWeightSellingMode } from "@/cart/sell-cart-helpers";
 import type { CartLineStockIssue } from "@/cart/sell-cart-helpers";
+import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { ConfirmationDialog } from "@/components/exits/SheetDialog";
 import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
 import type { CheckoutShiftReadiness } from "@/features/shifts/checkout-readiness";
+import { useCatalogProductImageUrl } from "@/features/sell/use-catalog-product-image";
 import type { MidSessionSellBlock } from "@/features/sell/sell-readiness";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
@@ -36,6 +38,7 @@ type SellCartPanelProps = {
   stockIssues?: CartLineStockIssue[];
   stockBanner?: string | null;
   suppressMidSessionWarning?: boolean;
+  workspace?: PosWorkspaceScope | null;
 };
 
 function deriveMidSessionBlock(
@@ -55,6 +58,36 @@ function deriveMidSessionBlock(
     return "shift_lost";
   }
   return "device_lost";
+}
+
+function cartLineInitial(name: string): string {
+  const trimmed = name.trim();
+  return trimmed ? trimmed.charAt(0).toUpperCase() : "?";
+}
+
+function SellCartLineThumb({
+  workspace,
+  productId,
+  hasImage,
+  imageVersion,
+  name,
+}: {
+  workspace: PosWorkspaceScope | null;
+  productId: string;
+  hasImage: boolean;
+  imageVersion?: number | null;
+  name: string;
+}) {
+  const imageUrl = useCatalogProductImageUrl(workspace, productId, hasImage, imageVersion);
+  return (
+    <div className="sell-cart-line__media" aria-hidden>
+      {imageUrl ? (
+        <img src={imageUrl} alt="" className="sell-cart-line__image" />
+      ) : (
+        <span className="sell-cart-line__initial">{cartLineInitial(name)}</span>
+      )}
+    </div>
+  );
 }
 
 export function SellCartPanel({
@@ -77,6 +110,7 @@ export function SellCartPanel({
   stockIssues = [],
   stockBanner = null,
   suppressMidSessionWarning = false,
+  workspace = null,
 }: SellCartPanelProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -160,23 +194,33 @@ export function SellCartPanel({
                 data-stock-invalid={stockIssue ? "true" : undefined}
                 className="sell-cart-line sell-cart-line--enter"
               >
+                <SellCartLineThumb
+                  workspace={workspace}
+                  productId={line.productId}
+                  hasImage={line.hasImage === true}
+                  imageVersion={line.imageVersion}
+                  name={line.name}
+                />
+                <div className="sell-cart-line__body">
                 <div className="sell-cart-line__top">
                   <p className="sell-cart-line__name">{line.name}</p>
-                  <MoneyDisplay
-                    amount={amount}
-                    className={cn("sell-cart-line__amount", hasOverride && "sell-cart-line__price-now")}
-                    testId={`sell-cart-amount-${line.lineKey}`}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="sell-cart-line__remove"
-                    aria-label={t("sell.cartRemoveLine")}
-                    data-testid={`sell-cart-remove-${line.lineKey}`}
-                    onClick={() => onRemove(line.lineKey)}
-                  >
-                    <X className="size-3.5" aria-hidden />
-                  </Button>
+                  <div className="sell-cart-line__price-actions">
+                    <MoneyDisplay
+                      amount={amount}
+                      className={cn("sell-cart-line__amount", hasOverride && "sell-cart-line__price-now")}
+                      testId={`sell-cart-amount-${line.lineKey}`}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="sell-cart-line__remove"
+                      aria-label={t("sell.cartRemoveLine")}
+                      data-testid={`sell-cart-remove-${line.lineKey}`}
+                      onClick={() => onRemove(line.lineKey)}
+                    >
+                      <Trash2 className="size-4" aria-hidden strokeWidth={2} />
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="sell-cart-line__bottom">
@@ -276,6 +320,7 @@ export function SellCartPanel({
                     {stockIssue.message}
                   </p>
                 ) : null}
+                </div>
               </li>
             );
           })}

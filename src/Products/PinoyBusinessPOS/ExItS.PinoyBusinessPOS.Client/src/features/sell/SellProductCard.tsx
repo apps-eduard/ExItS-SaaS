@@ -1,10 +1,12 @@
-import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";import type { PosWorkspaceScope } from "@/api/pos/pos-http";
+import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
+import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import {
-  formatQuantityDisplay,
+  remainingQuantityAfterCart,
   resolveAddFlow,
-  resolveStockHint,
+  resolveSellCardStock,
 } from "@/cart/sell-cart-helpers";
+import { sellStockCaption } from "@/features/sell/sell-stock-caption";
 import { useCatalogProductImageUrl } from "@/features/sell/use-catalog-product-image";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
@@ -20,9 +22,20 @@ type SellProductCardProps = {
   onAdd: (product: PosCatalogProductDto) => void;
   /** Brief highlight after the product was added to cart. */
   addedFlash?: boolean;
+  /** Base quantity already in this register's cart (not a stock reservation). */
+  cartReservedBaseQty?: number;
+  /** Committed out of stock — visible for review, not addable. */
+  unavailable?: boolean;
 };
 
-export function SellProductCard({ product, workspace, onAdd, addedFlash = false }: SellProductCardProps) {
+export function SellProductCard({
+  product,
+  workspace,
+  onAdd,
+  addedFlash = false,
+  cartReservedBaseQty = 0,
+  unavailable = false,
+}: SellProductCardProps) {
   const { t } = useI18n();
   const imageUrl = useCatalogProductImageUrl(
     workspace,
@@ -30,12 +43,13 @@ export function SellProductCard({ product, workspace, onAdd, addedFlash = false 
     product.hasImage === true,
     product.imageVersion,
   );
-  const hint = resolveStockHint({
+  const remainingOnHand = remainingQuantityAfterCart(product.onHandQuantity, cartReservedBaseQty);
+  const stock = resolveSellCardStock({
     isTracked: product.isTracked,
-    onHandQuantity: product.onHandQuantity,
+    onHandQuantity: remainingOnHand,
     unitOfMeasure: product.unitOfMeasure,
     tracksExpiration: product.tracksExpiration,
-    sellableQuantity: undefined,
+    stockStatus: product.stockStatus,
   });
   const flow = resolveAddFlow(product);
 
@@ -43,8 +57,18 @@ export function SellProductCard({ product, workspace, onAdd, addedFlash = false 
     <button
       type="button"
       data-testid={`sell-product-${product.productId}`}
-      className={cn("sell-product-card", addedFlash && "sell-product-card--added")}
-      onClick={() => onAdd(product)}
+      className={cn(
+        "sell-product-card",
+        addedFlash && "sell-product-card--added",
+        unavailable && "sell-product-card--unavailable",
+      )}
+      disabled={unavailable}
+      aria-disabled={unavailable}
+      onClick={() => {
+        if (!unavailable) {
+          onAdd(product);
+        }
+      }}
     >
       <div className="sell-product-card__media">
         {imageUrl ? (
@@ -72,7 +96,7 @@ export function SellProductCard({ product, workspace, onAdd, addedFlash = false 
           {flow.kind === "weight" ||
           flow.kind === "customQuantity" ||
           flow.kind === "unitSelector" ? (
-            <span className="sell-product-card__badge">
+            <span className="sell-product-card__hint">
               {flow.kind === "weight"
                 ? t("sell.tileByWeight")
                 : flow.kind === "customQuantity"
@@ -80,22 +104,18 @@ export function SellProductCard({ product, workspace, onAdd, addedFlash = false 
                   : t("sell.tileChooseUnit")}
             </span>
           ) : (
-            <span className="sell-product-card__badge sell-product-card__badge--muted">
+            <span className="sell-product-card__hint sell-product-card__hint--muted">
               {product.unitOfMeasure}
             </span>
           )}
         </div>
-        {hint ? (
-          <span
-            data-testid={`sell-product-stock-${product.productId}`}
-            className="sell-product-card__stock"
-          >
-            {t("sell.stockOnHand")
-              .replace("{qty}", formatQuantityDisplay(hint.quantity))
-              .replace("{unit}", hint.unitOfMeasure)}
-          </span>
-        ) : null}
       </div>
+      <span
+        data-testid={`sell-product-stock-${product.productId}`}
+        className={`sell-product-card__stock sell-product-card__stock--${stock.tone}`}
+      >
+        {sellStockCaption(t, stock)}
+      </span>
     </button>
   );
 }

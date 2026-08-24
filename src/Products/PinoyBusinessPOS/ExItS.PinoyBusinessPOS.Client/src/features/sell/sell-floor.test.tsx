@@ -9,6 +9,7 @@ import {
   MOCK_COKE_PRODUCT_ID,
   MOCK_DRINKS_CATEGORY_ID,
   MOCK_MEAT_PRODUCT_ID,
+  MOCK_OOS_PRODUCT_ID,
   MOCK_RICE_PRODUCT_ID,
   MOCK_RICE_SACK_UNIT_ID,
 } from "@/test/mock-pos-catalog";
@@ -376,6 +377,8 @@ describe("SellFloorPage", () => {
     });
 
     expect(screen.getByRole("heading", { name: "New Sale" })).toBeInTheDocument();
+    expect(screen.getByTestId("sell-info-toggle")).toHaveTextContent("Info");
+    expect(screen.getByTestId("sell-out-of-stock-toggle")).toHaveTextContent("Out of stock");
     expect(screen.queryByTestId("sell-info-panel")).not.toBeInTheDocument();
 
     const toggle = screen.getByTestId("sell-info-toggle");
@@ -387,10 +390,104 @@ describe("SellFloorPage", () => {
       screen.getByText("Search or select products to start a sale."),
     ).toBeInTheDocument();
     expect(screen.getByText("Open a shift before checkout.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Quantities in this cart are not reserved. Other registers still see committed on-hand until checkout.",
+      ),
+    ).toBeInTheDocument();
 
-    await user.click(toggle);
+    await user.click(screen.getByTestId("sell-info-close"));
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByTestId("sell-info-panel")).not.toBeInTheDocument();
+  });
+
+  it("hides out-of-stock products until the cashier shows them", async () => {
+    const user = userEvent.setup();
+    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
+    render(
+      <AppProviders>
+        <RouterProvider router={memoryRouter} />
+      </AppProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`)).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId(`sell-product-${MOCK_OOS_PRODUCT_ID}`)).not.toBeInTheDocument();
+    expect(screen.getByTestId(`sell-product-stock-${MOCK_COKE_PRODUCT_ID}`)).toHaveTextContent(
+      "On hand: 48 Bottle",
+    );
+
+    const oosToggle = screen.getByTestId("sell-out-of-stock-toggle");
+    expect(oosToggle).toHaveTextContent("Out of stock");
+    expect(oosToggle).toHaveAttribute("aria-pressed", "false");
+    await user.click(oosToggle);
+    expect(oosToggle).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`)).not.toBeInTheDocument();
+
+    const oosCard = screen.getByTestId(`sell-product-${MOCK_OOS_PRODUCT_ID}`);
+    expect(oosCard).toBeDisabled();
+    expect(screen.getByTestId(`sell-product-stock-${MOCK_OOS_PRODUCT_ID}`)).toHaveTextContent(
+      "On hand: 0 Bottle",
+    );
+    expect(screen.getByTestId(`sell-product-stock-${MOCK_OOS_PRODUCT_ID}`)).toHaveTextContent(
+      "Out of stock",
+    );
+
+    await user.click(oosCard);
+    expect(screen.queryByTestId(`sell-cart-line-${MOCK_OOS_PRODUCT_ID}::base`)).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("sell-category-all"));
+    expect(oosToggle).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`)).toBeInTheDocument();
+    expect(screen.queryByTestId(`sell-product-${MOCK_OOS_PRODUCT_ID}`)).not.toBeInTheDocument();
+
+    await user.click(oosToggle);
+    expect(screen.getByTestId(`sell-product-${MOCK_OOS_PRODUCT_ID}`)).toBeInTheDocument();
+    await user.click(screen.getByTestId(`sell-category-${MOCK_DRINKS_CATEGORY_ID}`));
+    expect(oosToggle).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`)).toBeInTheDocument();
+    expect(screen.queryByTestId(`sell-product-${MOCK_OOS_PRODUCT_ID}`)).not.toBeInTheDocument();
+  });
+
+  it("reduces displayed on-hand when this register adds to cart and restores it on remove", async () => {
+    const user = userEvent.setup();
+    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
+    render(
+      <AppProviders>
+        <RouterProvider router={memoryRouter} />
+      </AppProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`)).toBeInTheDocument();
+    });
+    expect(screen.getByTestId(`sell-product-stock-${MOCK_COKE_PRODUCT_ID}`)).toHaveTextContent(
+      "On hand: 48 Bottle",
+    );
+
+    await user.click(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`));
+    const landscapeCart = screen.getByTestId("sell-cart-landscape");
+    await waitFor(() => {
+      expect(
+        within(landscapeCart).getByTestId(`sell-cart-line-${MOCK_COKE_PRODUCT_ID}::base`),
+      ).toBeInTheDocument();
+    });
+    expect(screen.getByTestId(`sell-product-stock-${MOCK_COKE_PRODUCT_ID}`)).toHaveTextContent(
+      "On hand: 47 Bottle",
+    );
+
+    await user.click(
+      within(landscapeCart).getByTestId(`sell-cart-remove-${MOCK_COKE_PRODUCT_ID}::base`),
+    );
+    await waitFor(() => {
+      expect(
+        within(landscapeCart).queryByTestId(`sell-cart-line-${MOCK_COKE_PRODUCT_ID}::base`),
+      ).not.toBeInTheDocument();
+    });
+    expect(screen.getByTestId(`sell-product-stock-${MOCK_COKE_PRODUCT_ID}`)).toHaveTextContent(
+      "On hand: 48 Bottle",
+    );
   });
 
   it("blocks weight that exceeds available stock", async () => {

@@ -11,6 +11,7 @@ export const MOCK_OIL_PRODUCT_ID = "oooooooo-oooo-oooo-oooo-oooooooooooo";
 export const MOCK_OIL_LITER_UNIT_ID = "ulululul-ulul-ulul-ulul-ulululululul";
 export const MOCK_RICE_KG_UNIT_ID = "ukukukuk-ukuk-ukuk-ukuk-ukukukukukuk";
 export const MOCK_RICE_SACK_UNIT_ID = "usususus-usus-usus-usus-usususususus";
+export const MOCK_OOS_PRODUCT_ID = "aaaaaaaa-0000-4000-8000-aaaaaaaaaaaa";
 
 export const mockCatalogCategories = {
   items: [
@@ -201,6 +202,25 @@ export const mockOilProduct = {
   ],
 };
 
+export const mockOutOfStockProduct = {
+  productId: MOCK_OOS_PRODUCT_ID,
+  organizationId: "11111111-1111-1111-1111-111111111111",
+  name: "Sold Out Juice",
+  sku: "JUICE-OOS",
+  barcode: "4800077777777",
+  categoryId: MOCK_DRINKS_CATEGORY_ID,
+  unitOfMeasure: "Bottle",
+  sellingMode: "PerItem",
+  sellingPrice: 20,
+  status: "Active",
+  canBeSold: true,
+  isTracked: true,
+  onHandQuantity: 0,
+  stockStatus: "OutOfStock",
+  createdAtUtc: "2026-01-01T00:00:00Z",
+  updatedAtUtc: "2026-01-01T00:00:00Z",
+};
+
 export const mockCatalogProducts = [
   mockCokeProduct,
   mockChipsProduct,
@@ -208,6 +228,7 @@ export const mockCatalogProducts = [
   mockMeatProduct,
   mockBottleProduct,
   mockOilProduct,
+  mockOutOfStockProduct,
 ];
 
 export function filterMockProducts(url: string) {

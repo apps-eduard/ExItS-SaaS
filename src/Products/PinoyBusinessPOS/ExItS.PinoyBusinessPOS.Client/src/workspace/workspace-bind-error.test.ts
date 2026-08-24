@@ -54,6 +54,12 @@ describe("workspace bind error classification", () => {
     ).toBe("service_unavailable");
     expect(
       classifyWorkspaceBindFailure({
+        status: 429,
+        errorCode: "pos.rate_limit.exceeded",
+      }).kind,
+    ).toBe("service_unavailable");
+    expect(
+      classifyWorkspaceBindFailure({
         status: 503,
         errorCode: "pos.platform_auth.unavailable",
       }).kind,

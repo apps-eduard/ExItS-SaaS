@@ -195,6 +195,90 @@ export function resolveStockHint(input: {
   };
 }
 
+export type SellCardStockTone = "ok" | "low" | "out" | "untracked";
+
+export type SellCardStock = {
+  tone: SellCardStockTone;
+  quantity: number;
+  unitOfMeasure: string;
+  quantityLabel: "onHand" | "sellable" | null;
+};
+
+function normalizeStockStatus(status?: string | null): "in" | "low" | "out" | null {
+  const code = (status ?? "").replace(/[\s_-]/g, "").toLowerCase();
+  if (code === "outofstock") {
+    return "out";
+  }
+  if (code === "lowstock") {
+    return "low";
+  }
+  if (code === "instock") {
+    return "in";
+  }
+  return null;
+}
+
+/** Committed on-hand minus this register's cart. Does not reserve stock for other registers. */
+export function remainingQuantityAfterCart(
+  committedQuantity: number | null | undefined,
+  cartBaseQuantity: number,
+): number {
+  const committed = Number.isFinite(committedQuantity) ? Number(committedQuantity) : 0;
+  const reserved = Number.isFinite(cartBaseQuantity) ? Math.max(0, cartBaseQuantity) : 0;
+  return roundQuantity(Math.max(0, committed - reserved));
+}
+
+/** Catalog/committed out of stock — hide from browse unless the cashier asks to see them. */
+export function isCommittedOutOfStock(input: {
+  isTracked?: boolean | null;
+  onHandQuantity?: number | null;
+  stockStatus?: string | null;
+}): boolean {
+  if (!input.isTracked) {
+    return false;
+  }
+  if (normalizeStockStatus(input.stockStatus) === "out") {
+    return true;
+  }
+  return (input.onHandQuantity ?? 0) <= 0;
+}
+
+/** Tile/dialog stock line: untracked, on-hand, plus low/out when the catalog says so. */
+export function resolveSellCardStock(input: {
+  isTracked?: boolean | null;
+  onHandQuantity?: number | null;
+  unitOfMeasure: string;
+  tracksExpiration?: boolean | null;
+  sellableQuantity?: number | null;
+  stockStatus?: string | null;
+  isLowStock?: boolean | null;
+}): SellCardStock {
+  if (!input.isTracked) {
+    return {
+      tone: "untracked",
+      quantity: 0,
+      unitOfMeasure: input.unitOfMeasure,
+      quantityLabel: null,
+    };
+  }
+
+  const hint = resolveStockHint(input)!;
+  const status = normalizeStockStatus(input.stockStatus);
+  let tone: SellCardStockTone = "ok";
+  if (hint.quantity <= 0 || status === "out") {
+    tone = "out";
+  } else if (status === "low" || input.isLowStock === true) {
+    tone = "low";
+  }
+
+  return {
+    tone,
+    quantity: hint.quantity,
+    unitOfMeasure: hint.unitOfMeasure,
+    quantityLabel: hint.label,
+  };
+}
+
 /** Cart line quantity converted to product base UOM (kg for ByWeight). */
 export function lineBaseQuantity(line: {
   quantity: number;
