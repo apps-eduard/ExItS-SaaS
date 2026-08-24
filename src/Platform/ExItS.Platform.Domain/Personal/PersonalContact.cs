@@ -81,8 +81,8 @@ public sealed class PersonalContact
         OwnerUserIdentityId == userIdentityId;
 
     /// <summary>
-    /// Links this contact to a Platform User after explicit invitation acceptance.
-    /// Never matches silently by name, email, or phone.
+    /// Links this contact to a Platform Personal user after an explicit confirmation step
+    /// (invitation acceptance or confirmed Add-by-ExItS-ID). Never matches silently by name, email, or phone.
     /// </summary>
     public void LinkUser(PlatformUserId linkedUserIdentityId, DateTimeOffset utcNow)
     {

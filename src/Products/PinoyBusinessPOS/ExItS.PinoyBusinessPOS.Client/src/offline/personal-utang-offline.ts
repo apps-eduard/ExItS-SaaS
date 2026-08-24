@@ -153,6 +153,7 @@ export async function enqueuePersonalContactCreate(
     phone: body.phone ?? null,
     email: body.email ?? null,
     linkedUserIdentityId: null,
+    publicUserId: null,
     status: "Active",
     createdAtUtc: operation.createdAt,
   };

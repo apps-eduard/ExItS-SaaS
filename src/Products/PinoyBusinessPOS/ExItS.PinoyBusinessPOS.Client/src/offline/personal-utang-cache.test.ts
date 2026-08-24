@@ -25,6 +25,7 @@ const contact: PersonalContactDto = {
   phone: "09171234567",
   email: "nena@example.com",
   linkedUserIdentityId: null,
+  publicUserId: null,
   status: "Active",
   createdAtUtc: "2026-02-01T00:00:00.000Z",
 };

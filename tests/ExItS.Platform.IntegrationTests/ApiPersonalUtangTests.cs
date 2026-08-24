@@ -371,6 +371,50 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
             .GetProperty("balanceAfter").GetDecimal());
     }
 
+    [Fact]
+    public async Task Add_by_exits_id_links_contact_and_notifies_counterparty()
+    {
+        var (ownerToken, _) = await SeedPersonalUserAsync("adlnk");
+        var (targetToken, targetId, _) = await SeedPersonalUserWithEmailAsync("tgtlk");
+
+        // Resolve target public id via /me/public-identity as target, then owner creates linked contact.
+        using var identityRequest = Authed(HttpMethod.Get, "/api/v1/me/public-identity", targetToken);
+        var identity = await contactResponse(await _client.SendAsync(identityRequest));
+        var publicUserId = identity.GetProperty("publicUserId").GetString()!;
+
+        using var createRequest = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/contacts",
+            ownerToken,
+            new
+            {
+                displayName = "Should Be Overridden",
+                linkedUserIdentityId = targetId,
+                publicUserId
+            });
+        var created = await contactResponse(await _client.SendAsync(createRequest));
+        Assert.Equal(targetId, created.GetProperty("linkedUserIdentityId").GetGuid());
+        Assert.Equal(publicUserId, created.GetProperty("publicUserId").GetString());
+        Assert.NotEqual("Should Be Overridden", created.GetProperty("displayName").GetString());
+
+        using var listRequest = Authed(HttpMethod.Get, "/api/v1/personal/utang/contacts", ownerToken);
+        var list = await contactResponse(await _client.SendAsync(listRequest));
+        Assert.Contains(
+            list.EnumerateArray(),
+            c => c.GetProperty("linkedUserIdentityId").GetGuid() == targetId
+                 && c.GetProperty("publicUserId").GetString() == publicUserId);
+
+        using var notificationsRequest = Authed(
+            HttpMethod.Get,
+            "/api/v1/personal/notifications",
+            targetToken);
+        var notifications = await contactResponse(await _client.SendAsync(notificationsRequest));
+        Assert.Contains(
+            notifications.EnumerateArray(),
+            n => n.GetProperty("relatedType").GetString() == "personal_contact"
+                 && n.GetProperty("title").GetString() == "Added to People");
+    }
+
     private async Task<(string Token, Guid UserId, string Email)> SeedPersonalUserWithEmailAsync(string prefix)
     {
         var (userId, email, password) = await PlatformIntegrationTestUsers.RegisterPersonalWithPasswordAsync(_client, prefix);

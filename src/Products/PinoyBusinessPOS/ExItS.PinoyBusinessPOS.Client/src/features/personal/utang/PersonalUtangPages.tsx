@@ -5,6 +5,7 @@ import {
   ChevronRight,
   HandCoins,
   IdCard,
+  Link2,
   Loader2,
   Save,
   User,
@@ -349,12 +350,15 @@ export function PersonalContactsPage() {
         displayName: user.displayName.trim(),
         phone: null,
         email: null,
+        linkedUserIdentityId: user.userIdentityId,
+        publicUserId: user.publicUserId,
       });
     },
     onSuccess: async () => {
       resetForm();
       await queryClient.invalidateQueries({ queryKey: ["personal", "utang", "contacts"] });
       await queryClient.invalidateQueries({ queryKey: ["personal", "dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["personal", "notifications"] });
     },
     onError: (error) => {
       setResolveError(
@@ -534,11 +538,12 @@ export function PersonalContactsPage() {
             <OfflineNotice message={t("personal.utang.addByExitsRequiresOnline")} />
           ) : resolvedUser ? (
             <div className="customer-personal-link__confirm" data-testid="utang-contact-exits-confirm">
-              <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-                {resolvedUser.displayName}
+              <p className="m-0 flex min-w-0 items-center gap-1.5 text-[length:var(--exits-text-sm)] font-semibold text-[var(--exits-primary)]">
+                <Link2 className="size-3.5 shrink-0" aria-hidden />
+                <span className="break-all">{resolvedUser.publicUserId}</span>
               </p>
-              <p className="m-0 break-all text-[length:var(--exits-text-xs)] text-muted">
-                {resolvedUser.publicUserId}
+              <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
+                {resolvedUser.displayName}
               </p>
               {resolvedUser.maskedEmail ? (
                 <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
@@ -729,9 +734,8 @@ export function PersonalContactsPage() {
             {contacts.map((contact) => {
               const isLocal = rowOrigin(contact) === "Local";
               const isActive = editingId === contact.id;
-              const meta =
-                [contact.phone, contact.email].filter(Boolean).join(" · ") ||
-                t("personal.utang.unlinkedContact");
+              const isLinked = Boolean(contact.linkedUserIdentityId || contact.publicUserId);
+              const exitsIdLabel = contact.publicUserId?.trim() || null;
 
               if (isLocal) {
                 return (
@@ -741,11 +745,27 @@ export function PersonalContactsPage() {
                       data-testid={`utang-contact-${contact.id}`}
                     >
                       <span className="utang-contact-card__avatar" aria-hidden>
-                        <User className="size-5" />
+                        {isLinked ? <UserRoundCheck className="size-5" /> : <User className="size-5" />}
                       </span>
                       <div className="utang-contact-card__body min-w-0 flex-1">
-                        <p className="exits-list__name m-0 font-semibold">{contact.displayName}</p>
-                        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{meta}</p>
+                        {isLinked && exitsIdLabel ? (
+                          <>
+                            <p className="m-0 flex min-w-0 items-center gap-1.5 text-[length:var(--exits-text-sm)] font-semibold text-[var(--exits-primary)]">
+                              <Link2 className="size-3.5 shrink-0" aria-hidden />
+                              <span className="truncate">{exitsIdLabel}</span>
+                            </p>
+                            <p className="exits-list__name m-0 truncate font-medium">
+                              {contact.displayName}
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="exits-list__name m-0 font-semibold">{contact.displayName}</p>
+                            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                              {t("personal.utang.unlinkedContact")}
+                            </p>
+                          </>
+                        )}
                         <WaitingChip origin="Local" />
                       </div>
                     </div>
@@ -763,20 +783,39 @@ export function PersonalContactsPage() {
                     )}
                     data-testid={`utang-contact-${contact.id}`}
                     aria-pressed={isActive}
-                    aria-label={`${t("personal.utang.editPerson")}: ${contact.displayName}`}
+                    aria-label={
+                      isLinked && exitsIdLabel
+                        ? `${t("personal.utang.editPerson")}: ${exitsIdLabel}, ${contact.displayName}`
+                        : `${t("personal.utang.editPerson")}: ${contact.displayName}`
+                    }
                     disabled={saveMutation.isPending}
                     onClick={() => startEdit(contact)}
                   >
                     <span className="utang-contact-card__avatar" aria-hidden>
-                      <User className="size-5" />
+                      {isLinked ? <UserRoundCheck className="size-5" /> : <User className="size-5" />}
                     </span>
-                    <div className="utang-contact-card__body min-w-0 flex-1">
-                      <p className="exits-list__name m-0 truncate font-semibold">
-                        {contact.displayName}
-                      </p>
-                      <p className="m-0 truncate text-[length:var(--exits-text-sm)] text-muted">
-                        {meta}
-                      </p>
+                    <div className="utang-contact-card__body min-w-0 flex-1 text-left">
+                      {isLinked && exitsIdLabel ? (
+                        <>
+                          <p className="m-0 flex min-w-0 items-center gap-1.5 text-[length:var(--exits-text-sm)] font-semibold text-[var(--exits-primary)]">
+                            <Link2 className="size-3.5 shrink-0" aria-hidden />
+                            <span className="truncate">{exitsIdLabel}</span>
+                          </p>
+                          <p className="exits-list__name m-0 truncate font-medium">
+                            {contact.displayName}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="exits-list__name m-0 truncate font-semibold">
+                            {contact.displayName}
+                          </p>
+                          <p className="m-0 truncate text-[length:var(--exits-text-sm)] text-muted">
+                            {[contact.phone, contact.email].filter(Boolean).join(" · ") ||
+                              t("personal.utang.unlinkedContact")}
+                          </p>
+                        </>
+                      )}
                       <WaitingChip origin={rowOrigin(contact)} />
                     </div>
                     <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />

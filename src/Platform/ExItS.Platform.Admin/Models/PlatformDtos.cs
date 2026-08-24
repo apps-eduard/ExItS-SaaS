@@ -1129,7 +1129,8 @@ public sealed record PersonalContactDto(
     string? Email,
     Guid? LinkedUserIdentityId,
     string Status,
-    DateTimeOffset CreatedAtUtc);
+    DateTimeOffset CreatedAtUtc,
+    string? PublicUserId = null);
 
 public sealed record PersonalDebtRelationshipSummaryDto(
     Guid Id,

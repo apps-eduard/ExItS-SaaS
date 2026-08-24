@@ -108,6 +108,21 @@ internal sealed class PersonalContactRepository(PlatformDbContext db) : IPersona
         return record is null ? null : ToDomain(record);
     }
 
+    public async Task<PersonalContact?> FindActiveByOwnerAndLinkedUserAsync(
+        PlatformUserId ownerUserIdentityId,
+        PlatformUserId linkedUserIdentityId,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalContacts.AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.OwnerUserIdentityId == ownerUserIdentityId.Value
+                     && x.LinkedUserIdentityId == linkedUserIdentityId.Value
+                     && x.Status == nameof(PersonalContactStatus.Active),
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
     public Task AddAsync(PersonalContact contact, CancellationToken cancellationToken = default)
     {
         db.PersonalContacts.Add(ToRecord(contact));

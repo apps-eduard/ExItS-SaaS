@@ -896,9 +896,15 @@ public sealed record PersonalContactDto(
     string? Email,
     Guid? LinkedUserIdentityId,
     string Status,
-    DateTimeOffset CreatedAtUtc);
+    DateTimeOffset CreatedAtUtc,
+    string? PublicUserId = null);
 
-public sealed record CreatePersonalContactRequest(string DisplayName, string? Phone, string? Email);
+public sealed record CreatePersonalContactRequest(
+    string DisplayName,
+    string? Phone,
+    string? Email,
+    Guid? LinkedUserIdentityId = null,
+    string? PublicUserId = null);
 
 /// <summary>Personal-facing linked merchant metadata (no balances — balances come from POS projection).</summary>
 public sealed record LinkedMerchantDto(
