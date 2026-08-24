@@ -578,6 +578,11 @@ export async function getCustomerStatement(
 }
 
 /** True when POS customer is linked to an ExItS Personal identity (read-only surface). */
+/**
+ * True when the POS customer row stores a Personal ExItS public user id.
+ * This is product-local identity correlation for checkout/lookup — NOT proof that
+ * Platform CustomerLink status is Linked / LinkedCustomerAppUser is Active.
+ */
 export function hasExItsPersonalLink(
   customer: Pick<PosCustomerListItem, "linkedPersonalPublicUserId">,
 ): boolean {

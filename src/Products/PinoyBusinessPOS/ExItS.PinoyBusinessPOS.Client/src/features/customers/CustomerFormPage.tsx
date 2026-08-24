@@ -12,7 +12,7 @@ import { pageBackNav } from "@/navigation/page-back-nav";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import {
   CustomerPersonalLinkPanel,
-  type ConfirmedPersonalLink,
+  type PendingPersonalCustomerLink,
 } from "@/features/customers/CustomerPersonalLinkPanel";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
@@ -58,7 +58,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
   const [expectedUpdatedAtUtc, setExpectedUpdatedAtUtc] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [personalLink, setPersonalLink] = useState<ConfirmedPersonalLink | null>(null);
+  const [personalLink, setPersonalLink] = useState<PendingPersonalCustomerLink | null>(null);
   const [createKind, setCreateKind] = useState<CreateKind | null>(() =>
     linkPublicId?.trim() ? "exits" : null,
   );
@@ -418,7 +418,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
                   setDisplayName(user.displayName.trim());
                 }
               }}
-              onLinked={(link) => {
+              onLinkRequestCreated={(link) => {
                 setPersonalLink(link);
                 if (!displayName.trim()) {
                   setDisplayName(link.displayName);

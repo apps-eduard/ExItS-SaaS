@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { canEditCustomer, canRecordRepayment, canViewStatement } from "@/access/pos-capabilities";
+import { getCustomerLinkStatus } from "@/api/platform/customer-link-status-client";
 import {
   deactivateCustomer,
   getCustomer,
   getCustomerCreditSummary,
-  hasExItsPersonalLink,
   listCustomerCreditEntries,
   listCustomerRepayments,
   reactivateCustomer,
@@ -22,6 +22,14 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import {
+  customerLinkStatusLabelKey,
+  customerLinkStatusTone,
+  extractPersonalExItsIdFromNotes,
+  mapPlatformCustomerLinkStatus,
+  resolveDisplayedPersonalExItsId,
+  type CustomerLinkUiStatus,
+} from "@/features/customers/customer-link-status";
 import { useI18n } from "@/i18n/I18nProvider";
 import {
   cacheCustomer,
@@ -36,6 +44,8 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 export function CustomerDetailPage() {
   const { t } = useI18n();
   const { customerId } = useParams<{ customerId: string }>();
+  const [searchParams] = useSearchParams();
+  const pendingLinkHint = searchParams.get("pendingLink") === "1";
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const queryClient = useQueryClient();
   const online = useBrowserOnline();
@@ -83,6 +93,24 @@ export function CustomerDetailPage() {
     enabled: enabledOnline,
     queryFn: ({ signal }) =>
       listCustomerRepayments(workspace!, customerId!, { pageSize: 20 }, signal),
+  });
+
+  const platformBusinessCustomerId =
+    customerQuery.data?.platformBusinessCustomerId?.trim() ||
+    cachedCustomer?.platformBusinessCustomerId?.trim() ||
+    null;
+
+  const linkStatusQuery = useQuery({
+    queryKey: [
+      "customers",
+      "platform-link-status",
+      workspace?.organizationId,
+      platformBusinessCustomerId,
+    ],
+    enabled: enabledOnline && Boolean(platformBusinessCustomerId),
+    queryFn: ({ signal }) =>
+      getCustomerLinkStatus(workspace!.organizationId, platformBusinessCustomerId!, signal),
+    refetchOnWindowFocus: true,
   });
 
   useEffect(() => {
@@ -148,15 +176,40 @@ export function CustomerDetailPage() {
 
   const usingCachedCustomer = !customerQuery.data;
   const amountOwed = summaryQuery.data?.outstandingAmount ?? cachedOwed ?? 0;
-  const linked = hasExItsPersonalLink(customer);
   const isActive = customer.status.toLowerCase() === "active";
+
+  const linkUiStatus: CustomerLinkUiStatus = (() => {
+    if (!customer.platformBusinessCustomerId?.trim()) {
+      return "NotLinked";
+    }
+    if (!online) {
+      return "Unavailable";
+    }
+    if (linkStatusQuery.isError) {
+      return "Unavailable";
+    }
+    if (linkStatusQuery.data) {
+      return mapPlatformCustomerLinkStatus(linkStatusQuery.data.status);
+    }
+    // Authoritative Platform status still loading — never invent Linked.
+    return "Unavailable";
+  })();
+
+  const showPendingBanner = linkUiStatus === "Pending";
+  const showAfterCreateHint =
+    pendingLinkHint && (linkUiStatus === "Pending" || (linkStatusQuery.isLoading && !linkStatusQuery.data));
+
+  const personalExItsId = resolveDisplayedPersonalExItsId({
+    linkedPersonalPublicUserId: customer.linkedPersonalPublicUserId,
+    notes: customer.notes,
+  });
+  const notesDisplay = extractPersonalExItsIdFromNotes(customer.notes).notesWithoutExItsTag;
 
   async function toggleStatus() {
     if (!allowEdit || acting || !workspace || !customerId) {
       return;
     }
     if (!online) {
-      // Activating or deactivating a customer is an authorization act the server owns.
       setActionError(t(onlineRequiredDetailKey(ONLINE_REQUIRED_CODES.CustomerStatus)));
       return;
     }
@@ -187,24 +240,38 @@ export function CustomerDetailPage() {
       />
       <div className="flex flex-wrap items-center gap-2">
         <StatusChip tone={isActive ? "success" : "warning"}>{customer.status}</StatusChip>
-        {linked ? (
-          <span data-testid="customer-link-status">
-            <StatusChip tone="info">{t("customers.linkedPersonal")}</StatusChip>
-          </span>
-        ) : (
-          <span
-            data-testid="customer-link-status-none"
-            className="text-[length:var(--exits-text-xs)] text-muted"
-          >
-            {t("customers.notLinked")}
-          </span>
-        )}
+        <span data-testid="customer-link-status">
+          <StatusChip tone={customerLinkStatusTone(linkUiStatus)}>
+            {t(customerLinkStatusLabelKey(linkUiStatus))}
+          </StatusChip>
+        </span>
       </div>
+
+      {showAfterCreateHint || showPendingBanner ? (
+        <Card data-testid="customer-link-pending-banner" className="border-[color-mix(in_srgb,var(--exits-info)_35%,var(--exits-border))]">
+          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("customers.linkPendingTitle")}
+          </p>
+          <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+            {pendingLinkHint && (linkUiStatus === "Pending" || linkStatusQuery.isLoading)
+              ? t("customers.linkPendingAfterCreate")
+              : t("customers.linkPendingBanner")}
+          </p>
+        </Card>
+      ) : null}
 
       {usingCachedCustomer ? (
         <Card data-testid="customer-detail-cached-notice">
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("offline.cachedBalanceNotice")}
+          </p>
+        </Card>
+      ) : null}
+
+      {!online && customer.platformBusinessCustomerId?.trim() ? (
+        <Card data-testid="customer-link-status-offline">
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("customers.linkStatus.unavailableOffline")}
           </p>
         </Card>
       ) : null}
@@ -229,6 +296,22 @@ export function CustomerDetailPage() {
       <Card>
         <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)]">
           <div>
+            <dt className="text-muted">{t("customers.exItsIdLabel")}</dt>
+            <dd className="m-0 break-all" data-testid="customer-exits-id">
+              {personalExItsId ?? t("customers.exItsIdNone")}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-muted">{t("customers.linkStatusLabel")}</dt>
+            <dd className="m-0" data-testid="customer-link-status-label">
+              {online && !customer.platformBusinessCustomerId?.trim()
+                ? t("customers.linkStatus.notLinked")
+                : !online && customer.platformBusinessCustomerId?.trim()
+                  ? t("customers.linkStatus.unavailableOffline")
+                  : t(customerLinkStatusLabelKey(linkUiStatus))}
+            </dd>
+          </div>
+          <div>
             <dt className="text-muted">{t("customers.mobile")}</dt>
             <dd className="m-0">{customer.mobileNumber?.trim() || "—"}</dd>
           </div>
@@ -238,7 +321,9 @@ export function CustomerDetailPage() {
           </div>
           <div>
             <dt className="text-muted">{t("customers.notes")}</dt>
-            <dd className="m-0 whitespace-pre-wrap">{customer.notes?.trim() || "—"}</dd>
+            <dd className="m-0 whitespace-pre-wrap" data-testid="customer-notes-display">
+              {notesDisplay || "—"}
+            </dd>
           </div>
         </dl>
       </Card>

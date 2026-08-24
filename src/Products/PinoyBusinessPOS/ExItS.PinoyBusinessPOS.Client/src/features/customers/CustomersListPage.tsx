@@ -40,11 +40,13 @@ function customerStatusTone(status: string): "success" | "warning" {
 
 function customerMeta(
   customer: PosCustomerListItem,
-  linkedLabel: string,
+  exItsIdHint: string,
 ): string {
   const parts = [customer.mobileNumber].filter(Boolean);
+  // POS-local ExItS ID / buyer org fields prove identity correlation only —
+  // not Platform CustomerLink / LinkedCustomerAppUser Active status.
   if (customer.linkedPersonalPublicUserId || customer.linkedBuyerPublicOrganizationId) {
-    parts.push(linkedLabel);
+    parts.push(exItsIdHint);
   }
   return parts.join(" · ");
 }
@@ -207,7 +209,7 @@ export function CustomersListPage() {
 
       <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="customers-list">
         {items.map((customer) => {
-          const meta = customerMeta(customer, t("customers.linkedPersonal"));
+          const meta = customerMeta(customer, t("customers.listExItsIdHint"));
           return (
             <li key={customer.customerId}>
               <Link

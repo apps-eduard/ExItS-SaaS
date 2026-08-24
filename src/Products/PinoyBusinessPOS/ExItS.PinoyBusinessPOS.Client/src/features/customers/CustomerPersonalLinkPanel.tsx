@@ -10,13 +10,16 @@ import { Button } from "@/components/ui/button";
 import { QrScanOrEnter } from "@/features/qr/QrScanOrEnter";
 import { useI18n } from "@/i18n/I18nProvider";
 
-export type ConfirmedPersonalLink = {
+export type PendingPersonalCustomerLink = {
   publicUserId: string;
   userIdentityId: string;
   displayName: string;
   platformBusinessCustomerId: string;
   linkRequestId: string | null;
 };
+
+/** @deprecated Use PendingPersonalCustomerLink — create sends a pending request, not an active link. */
+export type ConfirmedPersonalLink = PendingPersonalCustomerLink;
 
 type Props = {
   organizationId: string;
@@ -27,7 +30,7 @@ type Props = {
   initialSubject?: string | null;
   /** When lookup succeeds, parent may prefill Basics from the resolved Personal profile. */
   onResolved?: (user: ResolvedPublicUserDto) => void;
-  onLinked: (link: ConfirmedPersonalLink) => void;
+  onLinkRequestCreated: (link: PendingPersonalCustomerLink) => void;
   onCleared: () => void;
 };
 
@@ -43,20 +46,20 @@ export function CustomerPersonalLinkPanel({
   disabled,
   initialSubject,
   onResolved,
-  onLinked,
+  onLinkRequestCreated,
   onCleared,
 }: Props) {
   const { t } = useI18n();
   const [resolved, setResolved] = useState<ResolvedPublicUserDto | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [linkSent, setLinkSent] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
   const seededInitialSubject = useRef(false);
 
   async function onPayload(subjectOrPayload: string) {
     setBusy(true);
     setError(null);
-    setLinkSent(false);
+    setRequestSent(false);
     try {
       const user = await resolvePublicUserId(subjectOrPayload, "SaleCustomer");
       setResolved(user);
@@ -104,8 +107,8 @@ export function CustomerPersonalLinkPanel({
         publicUserId: resolved.publicUserId,
         targetUserIdentityId: resolved.userIdentityId,
       });
-      setLinkSent(true);
-      onLinked({
+      setRequestSent(true);
+      onLinkRequestCreated({
         publicUserId: resolved.publicUserId,
         userIdentityId: resolved.userIdentityId,
         displayName: name,
@@ -135,7 +138,7 @@ export function CustomerPersonalLinkPanel({
         </div>
       </div>
 
-      {!linkSent ? (
+      {!requestSent ? (
         <QrScanOrEnter
           expectedPurpose="personal"
           disabled={disabled || busy}
@@ -143,7 +146,7 @@ export function CustomerPersonalLinkPanel({
         />
       ) : null}
 
-      {resolved && !linkSent ? (
+      {resolved && !requestSent ? (
         <div
           className="customer-personal-link__confirm"
           data-testid="customer-personal-link-confirm"
@@ -195,7 +198,7 @@ export function CustomerPersonalLinkPanel({
         </div>
       ) : null}
 
-      {linkSent ? (
+      {requestSent ? (
         <p
           className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-success)]"
           data-testid="customer-personal-link-sent"
