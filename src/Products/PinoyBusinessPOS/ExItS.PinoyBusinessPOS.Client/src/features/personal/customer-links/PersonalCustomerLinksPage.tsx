@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CalendarClock,
   Check,
-  ClipboardList,
   Hourglass,
   Loader2,
   RefreshCw,
@@ -23,6 +22,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
 import { PERSONAL_NOTIFICATIONS_QUERY_KEY } from "@/features/personal/personal-notifications";
 import { useI18n } from "@/i18n/I18nProvider";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
@@ -139,26 +139,7 @@ export function PersonalCustomerLinksPage() {
         backTestId="page-header-back-customer-links"
       />
 
-      <div className="exits-animate-toolbar" data-testid="customer-links-toolbar">
-        <ActionTileGrid
-          tiles={[
-            {
-              key: "stores",
-              label: t("personal.merchantsTitle"),
-              icon: Store,
-              to: "/personal/linked-merchants",
-              testId: "customer-links-open-stores",
-            },
-            {
-              key: "orders",
-              label: t("personal.myOrdersLink"),
-              icon: ClipboardList,
-              to: "/personal/orders",
-              testId: "customer-links-open-orders",
-            },
-          ]}
-        />
-      </div>
+      <PersonalCommerceNav active="links" />
 
       {actionError ? (
         <p

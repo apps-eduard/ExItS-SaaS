@@ -2527,10 +2527,111 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 2.25rem;
   column-gap: 0.35rem;
-  align-items: center;
+  align-items: start;
   height: auto;
   min-width: 0;
   isolation: isolate;
+}
+
+.personal-todo-row__content {
+  display: block;
+  min-width: 0;
+  transition: color var(--exits-motion-fast) ease;
+}
+
+.personal-todo-row__content:hover,
+.personal-todo-row__content:focus-visible {
+  color: var(--exits-text);
+}
+
+.personal-todo-row--exit {
+  pointer-events: none;
+  animation: personal-todo-row-exit var(--exits-motion-normal) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.personal-todo-list__item--exit {
+  overflow: hidden;
+}
+
+.personal-todo-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.35rem;
+  margin-top: 0.15rem;
+}
+
+.personal-todo-meta__chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  font-size: var(--exits-text-xs);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.personal-todo-meta__chip--open {
+  background: color-mix(in srgb, var(--exits-info) 14%, transparent);
+  color: color-mix(in srgb, var(--exits-info) 78%, var(--exits-text));
+}
+
+.personal-todo-meta__chip--completed {
+  background: color-mix(in srgb, var(--exits-success) 14%, transparent);
+  color: color-mix(in srgb, var(--exits-success) 78%, var(--exits-text));
+}
+
+.personal-todo-meta__chip--cancelled {
+  background: color-mix(in srgb, var(--exits-text-muted) 18%, transparent);
+  color: var(--exits-text-muted);
+}
+
+.personal-todo-meta__sep {
+  opacity: 0.55;
+}
+
+.personal-todo-create-form__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.personal-todo-create-form__title-icon {
+  color: var(--exits-primary);
+  transition: transform var(--exits-motion-fast) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.personal-todo-create-form:focus-within .personal-todo-create-form__title-icon {
+  transform: scale(1.08) rotate(-4deg);
+}
+
+.personal-todo-submit:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.personal-todo-reactivate .personal-todo-btn-icon {
+  transition: transform var(--exits-motion-fast) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.personal-todo-reactivate:hover:not(:disabled) .personal-todo-btn-icon,
+.personal-todo-reactivate:focus-visible:not(:disabled) .personal-todo-btn-icon {
+  transform: rotate(-180deg);
+}
+
+.personal-todo-btn-icon {
+  transition: transform var(--exits-motion-fast) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes personal-todo-row-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
 }
 
 .personal-todo-row__body {
@@ -2542,9 +2643,42 @@ body {
 }
 
 .personal-todo-row__actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: 0.5rem;
+  align-items: stretch;
+}
+
+.personal-todo-row__actions--open {
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.personal-todo-row__actions--completed {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.personal-todo-row__actions--solo {
+  grid-template-columns: 1fr;
+}
+
+.personal-todo-row__action {
+  min-width: 0;
+  padding-inline: 0.55rem;
+  font-size: var(--exits-text-sm);
+  line-height: 1.2;
+  white-space: normal;
+  text-align: center;
+}
+
+.personal-todo-edit-form__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.personal-todo-edit-form__action {
+  width: 100%;
+  min-width: 0;
 }
 
 .personal-todo-row__nav {
@@ -2579,12 +2713,13 @@ body {
 }
 
 @media (max-width: 520px) {
-  .personal-todo-row__actions {
-    flex-direction: column;
+  .personal-todo-row__actions--open {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(0, 0.9fr);
   }
 
-  .personal-todo-row__actions .min-h-11 {
-    width: 100%;
+  .personal-todo-row__action {
+    padding-inline: 0.4rem;
+    font-size: var(--exits-text-xs);
   }
 
   .personal-todo-hub .catalog-form-section.exits-animate-panel,

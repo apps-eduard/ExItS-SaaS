@@ -108,6 +108,11 @@ describe("personal-todo-client", () => {
         status: "Completed",
         dueAtUtc: "2026-08-21T15:00:00",
       }),
+      todo({
+        id: "ffffffff-ffff-ffff-ffff-ffffffffffff",
+        title: "F",
+        status: "Cancelled",
+      }),
     ];
 
     expect(filterTodosByTab(items, "today", now).map((t) => t.title)).toEqual(["A"]);
@@ -115,6 +120,7 @@ describe("personal-todo-client", () => {
     expect(filterTodosByTab(items, "overdue", now).map((t) => t.title)).toEqual(["C"]);
     expect(filterTodosByTab(items, "open", now)).toHaveLength(4);
     expect(filterTodosByTab(items, "completed", now).map((t) => t.title)).toEqual(["E"]);
+    expect(filterTodosByTab(items, "cancelled", now).map((t) => t.title)).toEqual(["F"]);
 
     expect(summarizeTodoCounts(items, now)).toEqual({
       today: 1,
@@ -122,6 +128,7 @@ describe("personal-todo-client", () => {
       overdue: 1,
       open: 4,
       completed: 1,
+      cancelled: 1,
     });
   });
 });

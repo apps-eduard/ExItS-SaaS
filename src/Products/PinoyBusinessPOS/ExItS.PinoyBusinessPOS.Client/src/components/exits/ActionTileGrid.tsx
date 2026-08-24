@@ -8,6 +8,8 @@ export type ActionTileDef = {
   icon: LucideIcon;
   testId?: string;
   primary?: boolean;
+  /** Current page — primary styling without disabled fade. */
+  current?: boolean;
   disabled?: boolean;
   to?: string;
   onClick?: () => void;
@@ -29,6 +31,7 @@ export function ActionTileGrid({
     <div className="role-action-tile-grid grid min-w-0 grid-cols-2 gap-2" role="group">
       {tiles.map((tile, index) => {
         const isPrimaryHero = Boolean(emphasizePrimary && tile.primary);
+        const isPrimary = Boolean(tile.primary || tile.current);
         const fullWidth =
           isPrimaryHero ||
           tiles.length === 1 ||
@@ -38,13 +41,30 @@ export function ActionTileGrid({
           isPrimaryHero && "role-action-tile--hero",
         );
 
+        if (tile.current) {
+          return (
+            <RoleActionTile
+              key={tile.key}
+              label={tile.label}
+              icon={tile.icon}
+              testId={tile.testId}
+              primary={isPrimary}
+              current
+              onClick={() => {}}
+              className={tileClassName}
+              style={{ animationDelay: `${40 + index * 35}ms` }}
+            />
+          );
+        }
+
         return tile.onClick ? (
           <RoleActionTile
             key={tile.key}
             label={tile.label}
             icon={tile.icon}
             testId={tile.testId}
-            primary={tile.primary}
+            primary={isPrimary}
+            current={tile.current}
             disabled={tile.disabled}
             onClick={tile.onClick}
             className={tileClassName}
@@ -56,7 +76,8 @@ export function ActionTileGrid({
             label={tile.label}
             icon={tile.icon}
             testId={tile.testId}
-            primary={tile.primary}
+            primary={isPrimary}
+            current={tile.current}
             disabled={tile.disabled}
             to={tile.to!}
             className={tileClassName}

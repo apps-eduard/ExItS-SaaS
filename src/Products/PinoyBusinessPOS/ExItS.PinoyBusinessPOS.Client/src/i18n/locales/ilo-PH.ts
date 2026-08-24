@@ -639,6 +639,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.todo.filterOverdue": "Nalabesen",
   "personal.todo.filterOpen": "Nalukat",
   "personal.todo.filterCompleted": "Nalpasen",
+  "personal.todo.filterCancelled": "Naikansela",
+  "personal.todo.reactivate": "I-reactivate",
   "personal.todo.createTitle": "Baro nga aramiden",
   "personal.todo.titleField": "Titulo",
   "personal.todo.notes": "Dagiti nota (optional)",

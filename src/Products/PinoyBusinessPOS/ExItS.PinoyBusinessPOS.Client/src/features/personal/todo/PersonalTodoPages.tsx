@@ -1,18 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { LucideIcon } from "lucide-react";
 import {
-  AlertCircle,
-  CalendarCheck,
-  CalendarClock,
   Check,
-  CheckCircle2,
   ChevronRight,
-  CircleDot,
   ListPlus,
+  Loader2,
+  Pencil,
   RefreshCw,
   RotateCcw,
+  Save,
   X,
 } from "lucide-react";
 import {
@@ -37,7 +34,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
+import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
@@ -60,12 +57,13 @@ import {
   type PersonalTodoTransition,
 } from "@/offline/personal-todo-offline";
 
-const TABS: { id: TodoAgendaTab; labelKey: MessageKey; icon: LucideIcon }[] = [
-  { id: "today", labelKey: "personal.todo.filterToday", icon: CalendarCheck },
-  { id: "upcoming", labelKey: "personal.todo.filterUpcoming", icon: CalendarClock },
-  { id: "overdue", labelKey: "personal.todo.filterOverdue", icon: AlertCircle },
-  { id: "open", labelKey: "personal.todo.filterOpen", icon: CircleDot },
-  { id: "completed", labelKey: "personal.todo.filterCompleted", icon: CheckCircle2 },
+const TABS: { id: TodoAgendaTab; labelKey: MessageKey }[] = [
+  { id: "today", labelKey: "personal.todo.filterToday" },
+  { id: "upcoming", labelKey: "personal.todo.filterUpcoming" },
+  { id: "overdue", labelKey: "personal.todo.filterOverdue" },
+  { id: "open", labelKey: "personal.todo.filterOpen" },
+  { id: "completed", labelKey: "personal.todo.filterCompleted" },
+  { id: "cancelled", labelKey: "personal.todo.filterCancelled" },
 ];
 
 const PRIORITIES = ["None", "Low", "Normal", "High"] as const;
@@ -99,6 +97,48 @@ function statusLabelKey(status: string): MessageKey {
     default:
       return "personal.todo.statusOpen";
   }
+}
+
+function todoStatusTone(status: string): "open" | "completed" | "cancelled" {
+  switch (status) {
+    case "Completed":
+      return "completed";
+    case "Cancelled":
+      return "cancelled";
+    default:
+      return "open";
+  }
+}
+
+function TodoMetaLine({ todo }: { todo: PersonalTodoDto }) {
+  const { t } = useI18n();
+  const tone = todoStatusTone(todo.status);
+  return (
+    <p className="personal-todo-meta m-0 truncate text-[length:var(--exits-text-sm)] text-muted">
+      <span className={cn("personal-todo-meta__chip", `personal-todo-meta__chip--${tone}`)}>
+        {t(statusLabelKey(todo.status))}
+      </span>
+      <span className="personal-todo-meta__sep" aria-hidden>
+        ·
+      </span>
+      <span>{t(priorityLabelKey(todo.priority))}</span>
+      <span className="personal-todo-meta__sep" aria-hidden>
+        ·
+      </span>
+      <span>
+        {todo.dueAtUtc
+          ? `${t("personal.todo.dueLabel")}: ${new Date(todo.dueAtUtc).toLocaleString()}`
+          : t("personal.todo.noDue")}
+      </span>
+    </p>
+  );
+}
+
+function TodoActionIcon({ pending, children }: { pending: boolean; children: ReactNode }) {
+  if (pending) {
+    return <Loader2 className="personal-todo-btn-icon size-4 shrink-0 animate-spin" aria-hidden />;
+  }
+  return <>{children}</>;
 }
 
 function mutationErrorMessage(error: unknown, t: (key: MessageKey) => string): string {
@@ -318,6 +358,8 @@ export function PersonalTodoHubPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [cachedTodos, setCachedTodos] = useState<CachedPersonalTodo[]>([]);
   const [cacheEpoch, setCacheEpoch] = useState(0);
+  const [exitingIds, setExitingIds] = useState<Set<string>>(() => new Set());
+  const [activeTodoId, setActiveTodoId] = useState<string | null>(null);
 
   const todosQuery = useQuery({
     queryKey: ["personal", "todos"],
@@ -429,8 +471,41 @@ export function PersonalTodoHubPage() {
       }
       await cancelPersonalTodo(todo.id, body);
     },
-    onSuccess: async () => {
+    onMutate: (variables) => {
+      setActiveTodoId(variables.todo.id);
+      if (
+        variables.action === "reopen" &&
+        variables.todo.status === "Cancelled" &&
+        tab === "cancelled"
+      ) {
+        setExitingIds((prev) => new Set(prev).add(variables.todo.id));
+      }
+      if (variables.action === "complete" || variables.action === "cancel") {
+        setExitingIds((prev) => new Set(prev).add(variables.todo.id));
+      }
+    },
+    onSuccess: async (_data, variables) => {
+      const delay =
+        variables.action === "reopen" && variables.todo.status === "Cancelled" ? 280 : 180;
+      await new Promise((resolve) => window.setTimeout(resolve, delay));
       await queryClient.invalidateQueries({ queryKey: ["personal", "todos"] });
+      if (variables.action === "cancel") {
+        setTab("cancelled");
+      } else if (variables.action === "reopen") {
+        setTab("open");
+      }
+    },
+    onSettled: (_data, _error, variables) => {
+      setActiveTodoId(null);
+      if (variables) {
+        window.setTimeout(() => {
+          setExitingIds((prev) => {
+            const next = new Set(prev);
+            next.delete(variables.todo.id);
+            return next;
+          });
+        }, 320);
+      }
     },
     onError: (error) =>
       setFormError(online ? mutationErrorMessage(error, t) : offlineErrorMessage(error, t)),
@@ -485,7 +560,10 @@ export function PersonalTodoHubPage() {
   }
 
   return (
-    <div className="personal-page personal-todo-hub exits-page flex min-w-0 flex-col gap-3" data-testid="personal-todo-hub">
+    <div
+      className="personal-page personal-todo-hub exits-page flex min-w-0 flex-col gap-3"
+      data-testid="personal-todo-hub"
+    >
       <PageHeader
         title={t("personal.todo.title")}
         description={t("personal.todo.lede")}
@@ -496,38 +574,38 @@ export function PersonalTodoHubPage() {
 
       {usingCache ? <OfflineNotice message={t("offline.todoCachedNotice")} /> : null}
 
-      <ExitsChipBar
-        variant="filter"
-        ariaLabel={t("personal.todo.filters")}
-        testId="personal-todo-filters"
-        className="exits-animate-toolbar"
-        items={TABS.map((item) => {
-          const count =
-            counts == null
-              ? 0
-              : item.id === "today"
-                ? counts.today
-                : item.id === "upcoming"
-                  ? counts.upcoming
-                  : item.id === "overdue"
-                    ? counts.overdue
+      <div className="exits-animate-toolbar">
+        <UnderlineTabBar
+          items={TABS.map((item) => {
+            const count =
+              counts == null
+                ? 0
+                : item.id === "today"
+                  ? counts.today
+                  : item.id === "upcoming"
+                    ? counts.upcoming
+                    : item.id === "overdue"
+                      ? counts.overdue
                     : item.id === "open"
                       ? counts.open
-                      : counts.completed;
-          const Icon = item.icon;
-          return {
-            key: item.id,
-            label: `${t(item.labelKey)} (${count})`,
-            icon: <Icon />,
-            state: tab === item.id ? "active" : "idle",
-            testId: `todo-tab-${item.id}`,
-            onSelect: () => setTab(item.id),
-          };
-        })}
-      />
+                      : item.id === "completed"
+                        ? counts.completed
+                        : counts.cancelled;
+            return {
+              key: item.id,
+              label: `${t(item.labelKey)} (${count})`,
+              testId: `todo-tab-${item.id}`,
+            };
+          })}
+          activeKey={tab}
+          onChange={(key) => setTab(key as TodoAgendaTab)}
+          ariaLabel={t("personal.todo.filters")}
+          testId="personal-todo-filters"
+        />
+      </div>
 
       <form
-        className="catalog-form-section exits-animate-panel personal-section flex flex-col gap-2"
+        className="personal-todo-create-form catalog-form-section exits-animate-panel personal-section flex flex-col gap-2"
         data-testid="todo-create-form"
         onSubmit={(event) => {
           event.preventDefault();
@@ -538,7 +616,10 @@ export function PersonalTodoHubPage() {
           createMutation.mutate();
         }}
       >
-        <h2 className="catalog-form-section__title">{t("personal.todo.createTitle")}</h2>
+        <h2 className="catalog-form-section__title personal-todo-create-form__title">
+          <ListPlus className="personal-todo-create-form__title-icon size-[1.1rem] shrink-0" aria-hidden />
+          {t("personal.todo.createTitle")}
+        </h2>
         <TodoFormFields form={form} setForm={setForm} idPrefix="todo-create" />
         {!online ? (
           <>
@@ -556,11 +637,13 @@ export function PersonalTodoHubPage() {
         ) : null}
         <Button
           type="submit"
-          className="min-h-11 w-full"
+          className="personal-todo-submit min-h-11"
           disabled={createMutation.isPending || offlineBlocked}
           data-testid="todo-create-submit"
         >
-          <ListPlus className="size-4 shrink-0" aria-hidden />
+          <TodoActionIcon pending={createMutation.isPending}>
+            <ListPlus className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
+          </TodoActionIcon>
           {t("personal.todo.add")}
         </Button>
       </form>
@@ -569,79 +652,140 @@ export function PersonalTodoHubPage() {
         <EmptyState title={t("personal.todo.emptyTitle")} detail={t("personal.todo.emptyDetail")} />
       ) : (
         <section
-          className="catalog-form-section exits-animate-panel personal-section personal-todo-list-section gap-2"
+          className="personal-todo-list-section catalog-form-section exits-animate-panel personal-section gap-2"
           aria-label={activeTabLabel}
         >
           <h2 className="catalog-form-section__title text-muted">{activeTabLabel}</h2>
-          <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="todo-list">
+          <ul className="exits-list personal-todo-list m-0 grid list-none gap-2 p-0" data-testid="todo-list">
             {filtered.map((item) => {
               const hasActions =
                 item.status === "Open" ||
                 item.status === "Completed" ||
                 item.status === "Cancelled";
+              const isActing = actionMutation.isPending && activeTodoId === item.id;
+              const isExiting = exitingIds.has(item.id);
               return (
-                <li key={item.id}>
+                <li
+                  key={item.id}
+                  className={cn(isExiting && "personal-todo-list__item--exit")}
+                >
                   <div
-                    className="exits-list__card personal-todo-row"
+                    className={cn(
+                      "exits-list__card personal-todo-row",
+                      isExiting && "personal-todo-row--exit",
+                    )}
                     data-testid={`todo-item-${item.id}`}
                   >
                     <div className="personal-todo-row__body">
-                      <div className="min-w-0">
+                      <Link
+                        to={`/personal/todo/${item.id}`}
+                        className="personal-todo-row__content min-w-0 text-foreground no-underline"
+                      >
                         <p className="exits-list__name m-0 truncate font-semibold">{item.title}</p>
-                        <p className="m-0 truncate text-[length:var(--exits-text-sm)] text-muted">
-                          {t(statusLabelKey(item.status))} · {t(priorityLabelKey(item.priority))}
-                          {item.dueAtUtc
-                            ? ` · ${t("personal.todo.dueLabel")}: ${new Date(item.dueAtUtc).toLocaleString()}`
-                            : ` · ${t("personal.todo.noDue")}`}
-                        </p>
+                        <TodoMetaLine todo={item} />
                         {item.notes ? (
                           <p className="m-0 mt-1 line-clamp-2 text-[length:var(--exits-text-sm)] text-muted">
                             {item.notes}
                           </p>
                         ) : null}
-                        <WaitingChip pending={pendingById.has(item.id)} />
-                      </div>
+                      </Link>
+                      <WaitingChip pending={pendingById.has(item.id)} />
                       {hasActions ? (
-                        <div className="personal-todo-row__actions">
+                        <div
+                          className={cn(
+                            "personal-todo-row__actions",
+                            item.status === "Open" && "personal-todo-row__actions--open",
+                            item.status === "Completed" && "personal-todo-row__actions--completed",
+                            item.status === "Cancelled" && "personal-todo-row__actions--solo",
+                          )}
+                        >
                           {item.status === "Open" ? (
                             <>
                               <Button
                                 type="button"
-                                className="min-h-11 gap-2"
+                                className="personal-todo-row__action min-h-11"
                                 data-testid={`todo-complete-${item.id}`}
                                 disabled={actionMutation.isPending || offlineBlocked}
                                 onClick={() =>
                                   actionMutation.mutate({ action: "complete", todo: item })
                                 }
                               >
-                                <Check className="size-4 shrink-0" aria-hidden />
+                                <TodoActionIcon pending={isActing}>
+                                  <Check className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
+                                </TodoActionIcon>
                                 {t("personal.todo.complete")}
+                              </Button>
+                              <Button
+                                asChild
+                                variant="outline"
+                                className="personal-todo-row__action min-h-11"
+                                data-testid={`todo-edit-${item.id}`}
+                              >
+                                <Link to={`/personal/todo/${item.id}?edit=1`}>
+                                  <Pencil className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
+                                  {t("personal.todo.edit")}
+                                </Link>
                               </Button>
                               <Button
                                 type="button"
                                 variant="ghost"
-                                className="min-h-11 gap-2"
+                                className="personal-todo-row__action min-h-11"
                                 data-testid={`todo-cancel-${item.id}`}
                                 disabled={actionMutation.isPending || offlineBlocked}
                                 onClick={() =>
                                   actionMutation.mutate({ action: "cancel", todo: item })
                                 }
                               >
-                                <X className="size-4 shrink-0" aria-hidden />
+                                <TodoActionIcon pending={isActing}>
+                                  <X className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
+                                </TodoActionIcon>
                                 {t("personal.todo.cancel")}
                               </Button>
                             </>
                           ) : null}
-                          {item.status === "Completed" || item.status === "Cancelled" ? (
+                          {item.status === "Completed" ? (
+                            <>
+                              <Button
+                                type="button"
+                                className="personal-todo-row__action min-h-11"
+                                data-testid={`todo-reopen-${item.id}`}
+                                disabled={actionMutation.isPending || offlineBlocked}
+                                onClick={() => actionMutation.mutate({ action: "reopen", todo: item })}
+                              >
+                                <TodoActionIcon pending={isActing}>
+                                  <RotateCcw className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
+                                </TodoActionIcon>
+                                {t("personal.todo.reopen")}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                className="personal-todo-row__action min-h-11"
+                                data-testid={`todo-cancel-${item.id}`}
+                                disabled={actionMutation.isPending || offlineBlocked}
+                                onClick={() =>
+                                  actionMutation.mutate({ action: "cancel", todo: item })
+                                }
+                              >
+                                <TodoActionIcon pending={isActing}>
+                                  <X className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
+                                </TodoActionIcon>
+                                {t("personal.todo.cancel")}
+                              </Button>
+                            </>
+                          ) : null}
+                          {item.status === "Cancelled" ? (
                             <Button
                               type="button"
-                              className="min-h-11 gap-2"
-                              data-testid={`todo-reopen-${item.id}`}
+                              className="personal-todo-reactivate personal-todo-row__action min-h-11"
+                              data-testid={`todo-reactivate-${item.id}`}
                               disabled={actionMutation.isPending || offlineBlocked}
                               onClick={() => actionMutation.mutate({ action: "reopen", todo: item })}
                             >
-                              <RotateCcw className="size-4 shrink-0" aria-hidden />
-                              {t("personal.todo.reopen")}
+                              <TodoActionIcon pending={isActing}>
+                                <RotateCcw className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
+                              </TodoActionIcon>
+                              {t("personal.todo.reactivate")}
                             </Button>
                           ) : null}
                         </div>
@@ -650,7 +794,7 @@ export function PersonalTodoHubPage() {
                     <Link
                       to={`/personal/todo/${item.id}`}
                       className="personal-todo-row__nav"
-                      aria-label={`${item.title} — ${t("orders.viewDetails")}`}
+                      aria-label={`${t("personal.todo.detailTitle")}: ${item.title}`}
                     >
                       <ChevronRight className="personal-todo-row__chevron size-4 shrink-0" aria-hidden />
                     </Link>
@@ -668,6 +812,8 @@ export function PersonalTodoHubPage() {
 export function PersonalTodoDetailPage() {
   const { t } = useI18n();
   const { todoId = "" } = useParams();
+  const [searchParams] = useSearchParams();
+  const wantsEdit = searchParams.get("edit") === "1";
   const queryClient = useQueryClient();
   const online = useBrowserOnline();
   const offline = usePersonalOfflineContext();
@@ -716,6 +862,18 @@ export function PersonalTodoDetailPage() {
   }, [cacheEpoch, offline, todoId, todoQuery.dataUpdatedAt]);
 
   const usingCache = !online || todoQuery.isError;
+
+  useEffect(() => {
+    if (!wantsEdit || editing) {
+      return;
+    }
+    const todo = usingCache ? cachedTodo : (todoQuery.data ?? null);
+    if (!todo || todo.status !== "Open") {
+      return;
+    }
+    setForm(formFromTodo(todo));
+    setEditing(true);
+  }, [cachedTodo, editing, todoQuery.data, usingCache, wantsEdit]);
 
   const invalidate = async () => {
     await queryClient.invalidateQueries({ queryKey: ["personal", "todos"] });
@@ -895,25 +1053,30 @@ export function PersonalTodoDetailPage() {
               {formError}
             </p>
           ) : null}
-          <div className="flex flex-wrap gap-2">
+          <div className="personal-todo-edit-form__actions">
             <Button
               type="submit"
-              className="min-h-11"
+              className="personal-todo-edit-form__action min-h-11"
               disabled={saveMutation.isPending || offlineBlocked}
               data-testid="todo-edit-save"
             >
+              <TodoActionIcon pending={saveMutation.isPending}>
+                <Save className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
+              </TodoActionIcon>
               {t("personal.todo.save")}
             </Button>
             <Button
               type="button"
-              variant="ghost"
-              className="min-h-11"
+              variant="outline"
+              className="personal-todo-edit-form__action min-h-11"
+              data-testid="todo-edit-cancel"
               onClick={() => {
                 setEditing(false);
                 setForm(null);
                 setFormError(null);
               }}
             >
+              <X className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
               {t("personal.todo.cancel")}
             </Button>
           </div>
@@ -959,51 +1122,97 @@ export function PersonalTodoDetailPage() {
               {formError}
             </p>
           ) : null}
-          <div className="flex flex-wrap gap-2">
+          <div
+            className={cn(
+              "personal-todo-row__actions",
+              todo.status === "Open" && "personal-todo-row__actions--open",
+              todo.status === "Completed" && "personal-todo-row__actions--completed",
+              todo.status === "Cancelled" && "personal-todo-row__actions--solo",
+            )}
+          >
             {todo.status === "Open" ? (
               <>
                 <Button
                   type="button"
-                  className="min-h-11"
+                  className="personal-todo-row__action min-h-11"
                   data-testid="todo-detail-complete"
                   disabled={actionMutation.isPending || offlineBlocked}
                   onClick={() => actionMutation.mutate({ action: "complete", todo })}
                 >
+                  <TodoActionIcon pending={actionMutation.isPending}>
+                    <Check className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
+                  </TodoActionIcon>
                   {t("personal.todo.complete")}
                 </Button>
                 <Button
                   type="button"
-                  variant="ghost"
-                  className="min-h-11"
+                  variant="outline"
+                  className="personal-todo-row__action min-h-11"
                   data-testid="todo-detail-edit"
                   onClick={() => {
                     setForm(formFromTodo(todo));
                     setEditing(true);
                   }}
                 >
+                  <Pencil className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
                   {t("personal.todo.edit")}
                 </Button>
                 <Button
                   type="button"
                   variant="ghost"
-                  className="min-h-11"
+                  className="personal-todo-row__action min-h-11"
                   data-testid="todo-detail-cancel"
                   disabled={actionMutation.isPending || offlineBlocked}
                   onClick={() => actionMutation.mutate({ action: "cancel", todo })}
                 >
+                  <TodoActionIcon pending={actionMutation.isPending}>
+                    <X className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
+                  </TodoActionIcon>
                   {t("personal.todo.cancel")}
                 </Button>
               </>
             ) : null}
-            {todo.status === "Completed" || todo.status === "Cancelled" ? (
+            {todo.status === "Completed" ? (
+              <>
+                <Button
+                  type="button"
+                  className="personal-todo-row__action min-h-11"
+                  data-testid="todo-detail-reopen"
+                  disabled={actionMutation.isPending || offlineBlocked}
+                  onClick={() => actionMutation.mutate({ action: "reopen", todo })}
+                >
+                  <TodoActionIcon pending={actionMutation.isPending}>
+                    <RotateCcw className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
+                  </TodoActionIcon>
+                  {t("personal.todo.reopen")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="personal-todo-row__action min-h-11"
+                  data-testid="todo-detail-cancel-completed"
+                  disabled={actionMutation.isPending || offlineBlocked}
+                  onClick={() => actionMutation.mutate({ action: "cancel", todo })}
+                >
+                  <TodoActionIcon pending={actionMutation.isPending}>
+                    <X className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
+                  </TodoActionIcon>
+                  {t("personal.todo.cancel")}
+                </Button>
+              </>
+            ) : null}
+            {todo.status === "Cancelled" ? (
               <Button
                 type="button"
-                className="min-h-11"
-                data-testid="todo-detail-reopen"
+                className="personal-todo-reactivate personal-todo-row__action min-h-11"
+                data-testid="todo-detail-reactivate"
                 disabled={actionMutation.isPending || offlineBlocked}
                 onClick={() => actionMutation.mutate({ action: "reopen", todo })}
               >
-                {t("personal.todo.reopen")}
+                <TodoActionIcon pending={actionMutation.isPending}>
+                  <RotateCcw className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
+                </TodoActionIcon>
+                {t("personal.todo.reactivate")}
               </Button>
             ) : null}
           </div>

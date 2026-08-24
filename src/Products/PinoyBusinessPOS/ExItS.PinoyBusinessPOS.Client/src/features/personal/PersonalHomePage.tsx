@@ -1,10 +1,20 @@
-import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, HandCoins, ListTodo, RefreshCw, UserPlus, Wallet } from "lucide-react";
+import {
+  Activity,
+  AlertCircle,
+  CircleDot,
+  HandCoins,
+  ListPlus,
+  ListTodo,
+  RefreshCw,
+  UserPlus,
+  Wallet,
+} from "lucide-react";
 import { getPersonalDashboard } from "@/api/platform/personal-dashboard-client";
 import { listPersonalTodos, summarizeTodoCounts } from "@/api/platform/personal-todo-client";
 import { Button } from "@/components/ui/button";
 import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
+import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
@@ -182,6 +192,7 @@ export function PersonalHomePage() {
             </DashboardMetricCard>
             <DashboardMetricCard
               label={t("personal.todo.countOverdue")}
+              icon={AlertCircle}
               tone={counts.overdue > 0 ? "attention" : "default"}
               testId="personal-todo-stat-overdue"
             >
@@ -189,18 +200,28 @@ export function PersonalHomePage() {
             </DashboardMetricCard>
             <DashboardMetricCard
               label={t("personal.todo.countOpen")}
+              icon={CircleDot}
               testId="personal-todo-stat-open"
             >
               {counts.open}
             </DashboardMetricCard>
           </div>
         ) : null}
-        <Link
-          to="/personal/todo"
-          className="text-[length:var(--exits-text-sm)] font-semibold text-[var(--exits-primary)] no-underline"
-        >
-          {t("personal.home.actionTodo")}
-        </Link>
+        <ExitsChipBar
+          variant="actions"
+          ariaLabel={t("personal.home.actionTodo")}
+          testId="personal-todo-add-link"
+          items={[
+            {
+              key: "add",
+              label: t("personal.home.actionTodo"),
+              icon: <ListPlus />,
+              href: "/personal/todo",
+              testId: "personal-todo-add",
+              emphasis: "primary",
+            },
+          ]}
+        />
       </section>
     </div>
   );

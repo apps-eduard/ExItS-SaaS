@@ -2,17 +2,15 @@ import {
   Bell,
   Building2,
   HandCoins,
-  Link2,
   QrCode,
-  Receipt,
   Settings,
-  Store,
   UserPlus,
   Users,
   Wallet,
 } from "lucide-react";
 import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
 import { useI18n } from "@/i18n/I18nProvider";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 import { useSwitchToBusiness } from "@/workspace/use-switch-to-business";
@@ -74,7 +72,13 @@ export function PersonalMorePage() {
       className="personal-page exits-page flex min-w-0 flex-col gap-3"
       data-testid="personal-more-page"
     >
-      <PageHeader title={t("personal.more.title")} description={t("personal.more.lede")} />
+      <PageHeader
+        title={t("personal.more.title")}
+        description={t("personal.more.lede")}
+        backTo={personalPageBackNav.home.to}
+        backLabel={t(personalPageBackNav.home.labelKey)}
+        backTestId="page-header-back-more"
+      />
 
       {canSwitch ? (
         <section
@@ -110,40 +114,7 @@ export function PersonalMorePage() {
         </section>
       ) : null}
 
-      <section
-        className="catalog-form-section exits-animate-panel personal-section gap-3"
-        data-testid="personal-more-commerce"
-      >
-        <h2 className="catalog-form-section__title text-muted">
-          {t("personal.more.group.commerce")}
-        </h2>
-        <ActionTileGrid
-          tiles={[
-            {
-              key: "stores",
-              label: t("personal.more.stores"),
-              icon: Store,
-              testId: "more-open-stores",
-              to: "/personal/linked-merchants",
-              primary: true,
-            },
-            {
-              key: "orders",
-              label: t("personal.nav.orders"),
-              icon: Receipt,
-              testId: "more-open-orders",
-              to: "/personal/orders",
-            },
-            {
-              key: "links",
-              label: t("personal.customerLinks.title"),
-              icon: Link2,
-              testId: "more-open-customer-links",
-              to: "/personal/customer-links",
-            },
-          ]}
-        />
-      </section>
+      <PersonalCommerceNav active="none" variant="section" />
 
       <section
         className="catalog-form-section exits-animate-panel personal-section gap-3"

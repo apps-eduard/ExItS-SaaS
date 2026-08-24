@@ -46,6 +46,26 @@
   line-height: 1.2;
 }
 
+.pc-commerce-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-lg);
+  background: var(--exits-surface);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--exits-text) 4%, transparent);
+}
+
+.pc-commerce-nav__heading {
+  margin: 0;
+  font-size: var(--exits-text-sm);
+  font-weight: 700;
+  color: var(--exits-text-muted);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
 .pc-commerce-toolbar.exits-chip-bar--actions {
   width: 100%;
 }

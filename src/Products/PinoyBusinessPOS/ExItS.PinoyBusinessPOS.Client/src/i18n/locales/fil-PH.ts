@@ -633,6 +633,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.todo.filterOverdue": "Lampas na",
   "personal.todo.filterOpen": "Bukas",
   "personal.todo.filterCompleted": "Tapos na",
+  "personal.todo.filterCancelled": "Kinansela",
+  "personal.todo.reactivate": "I-activate muli",
   "personal.todo.createTitle": "Bagong gawain",
   "personal.todo.titleField": "Pamagat",
   "personal.todo.notes": "Tala (opsyonal)",

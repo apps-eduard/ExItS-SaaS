@@ -622,6 +622,8 @@ export const en = {
   "personal.todo.filterOverdue": "Overdue",
   "personal.todo.filterOpen": "Open",
   "personal.todo.filterCompleted": "Completed",
+  "personal.todo.filterCancelled": "Cancelled",
+  "personal.todo.reactivate": "Reactivate",
   "personal.todo.createTitle": "New to-do",
   "personal.todo.titleField": "Title",
   "personal.todo.notes": "Notes (optional)",

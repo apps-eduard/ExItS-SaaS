@@ -641,6 +641,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.todo.filterOverdue": "Nalapas na",
   "personal.todo.filterOpen": "Bukas",
   "personal.todo.filterCompleted": "Natapos",
+  "personal.todo.filterCancelled": "Ginkansela",
+  "personal.todo.reactivate": "I-reactivate",
   "personal.todo.createTitle": "Bag-o nga ihimo",
   "personal.todo.titleField": "Titulo",
   "personal.todo.notes": "Mga nota (opsyonal)",

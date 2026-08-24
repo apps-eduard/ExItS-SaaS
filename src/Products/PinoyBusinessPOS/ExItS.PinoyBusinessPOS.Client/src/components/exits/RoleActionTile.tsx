@@ -8,6 +8,8 @@ export type RoleActionTileProps = {
   icon: LucideIcon;
   testId?: string;
   primary?: boolean;
+  /** Marks the active route — same look as primary, not faded. */
+  current?: boolean;
   disabled?: boolean;
   className?: string;
   style?: CSSProperties;
@@ -23,6 +25,7 @@ export function RoleActionTile(props: RoleActionTileProps) {
     icon: Icon,
     testId,
     primary = false,
+    current = false,
     disabled = false,
     className,
     style,
@@ -32,7 +35,8 @@ export function RoleActionTile(props: RoleActionTileProps) {
     primary
       ? "role-action-tile--primary border-primary bg-primary text-primary-foreground"
       : "border-border bg-surface text-foreground",
-    disabled && "pointer-events-none opacity-50",
+    current && "role-action-tile--current pointer-events-none",
+    disabled && !current && "pointer-events-none opacity-50",
     className,
   );
   const content = (
@@ -49,6 +53,19 @@ export function RoleActionTile(props: RoleActionTileProps) {
       <span className="role-action-tile__label min-w-0 wrap-break-word">{label}</span>
     </>
   );
+
+  if (current) {
+    return (
+      <span
+        data-testid={testId}
+        className={classes}
+        style={style}
+        aria-current="page"
+      >
+        {content}
+      </span>
+    );
+  }
 
   if ("to" in props && props.to) {
     if (disabled) {

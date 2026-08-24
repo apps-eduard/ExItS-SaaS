@@ -637,6 +637,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.todo.filterOverdue": "Nalapas na",
   "personal.todo.filterOpen": "Abli",
   "personal.todo.filterCompleted": "Nahuman",
+  "personal.todo.filterCancelled": "Gikansela",
+  "personal.todo.reactivate": "I-activate pag-usab",
   "personal.todo.createTitle": "Bag-ong buhaton",
   "personal.todo.titleField": "Titulo",
   "personal.todo.notes": "Mga nota (opsyonal)",

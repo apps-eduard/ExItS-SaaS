@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { ChevronRight, ClipboardList, Package, RefreshCw, Store, Truck, UserRoundCheck } from "lucide-react";
+import { ChevronRight, Package, RefreshCw, Store, Truck } from "lucide-react";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import { listMyCustomerOrders, sellerWorkspace } from "@/api/pos/pos-customer-orders-client";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,9 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
 import { CommerceLoadMore } from "@/features/customer-ordering/personal-commerce-ui";
 import {
   displayOrderStatusKey,
@@ -77,8 +77,8 @@ export function MyOrdersPage() {
         <PageHeader
           title={t("personal.myOrdersTitle")}
           description={t("personal.myOrdersLede")}
-          backTo={personalPageBackNav.home.to}
-          backLabel={t(personalPageBackNav.home.labelKey)}
+          backTo={personalPageBackNav.more.to}
+          backLabel={t(personalPageBackNav.more.labelKey)}
           backTestId="page-header-back-my-orders"
         />
         <LoadingSkeleton label={t("loading.label")} />
@@ -92,8 +92,8 @@ export function MyOrdersPage() {
         <PageHeader
           title={t("personal.myOrdersTitle")}
           description={t("personal.myOrdersLede")}
-          backTo={personalPageBackNav.home.to}
-          backLabel={t(personalPageBackNav.home.labelKey)}
+          backTo={personalPageBackNav.more.to}
+          backLabel={t(personalPageBackNav.more.labelKey)}
           backTestId="page-header-back-my-orders"
         />
         <EmptyState
@@ -110,8 +110,8 @@ export function MyOrdersPage() {
         <PageHeader
           title={t("personal.myOrdersTitle")}
           description={t("personal.myOrdersLede")}
-          backTo={personalPageBackNav.home.to}
-          backLabel={t(personalPageBackNav.home.labelKey)}
+          backTo={personalPageBackNav.more.to}
+          backLabel={t(personalPageBackNav.more.labelKey)}
           backTestId="page-header-back-my-orders"
         />
         <ErrorState
@@ -145,35 +145,7 @@ export function MyOrdersPage() {
         backTestId="page-header-back-my-orders"
       />
 
-      <ExitsChipBar
-        variant="actions"
-        className="pc-commerce-toolbar exits-animate-toolbar"
-        ariaLabel={t("personal.home.quickActions")}
-        testId="my-orders-toolbar"
-        items={[
-          {
-            key: "stores",
-            label: t("personal.merchantsTitle"),
-            icon: <Store className="size-4 shrink-0" />,
-            href: "/personal/linked-merchants",
-            testId: "my-orders-open-stores",
-          },
-          {
-            key: "orders",
-            label: t("personal.myOrdersLink"),
-            icon: <ClipboardList className="size-4 shrink-0" />,
-            state: "active",
-            testId: "my-orders-tab-orders",
-          },
-          {
-            key: "links",
-            label: t("personal.customerLinks.title"),
-            icon: <UserRoundCheck className="size-4 shrink-0" />,
-            href: "/personal/customer-links",
-            testId: "my-orders-open-customer-links",
-          },
-        ]}
-      />
+      <PersonalCommerceNav active="orders" />
 
       {items.length === 0 ? (
         <div className="pc-empty-panel exits-animate-panel flex flex-col gap-3">

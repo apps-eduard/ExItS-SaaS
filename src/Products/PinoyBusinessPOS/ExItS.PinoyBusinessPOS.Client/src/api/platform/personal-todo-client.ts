@@ -55,7 +55,7 @@ export type PersonalTodoVersionRequest = {
   expectedVersion?: number | null;
 };
 
-export type TodoAgendaTab = "today" | "upcoming" | "overdue" | "open" | "completed";
+export type TodoAgendaTab = "today" | "upcoming" | "overdue" | "open" | "completed" | "cancelled";
 
 export type TodoDueBucket = "none" | "today" | "upcoming" | "overdue";
 
@@ -65,6 +65,7 @@ export type PersonalTodoCounts = {
   overdue: number;
   open: number;
   completed: number;
+  cancelled: number;
 };
 
 function pick(raw: Record<string, unknown>, camel: string, pascal: string): unknown {
@@ -95,8 +96,16 @@ function normalizeTodo(raw: unknown): unknown {
 
 const TODOS = "/api/v1/personal/todos";
 
-export async function listPersonalTodos(signal?: AbortSignal): Promise<PersonalTodoDto[]> {
-  const raw = await platformRequest<unknown>({ path: TODOS, signal });
+export async function listPersonalTodos(
+  signal?: AbortSignal,
+  options?: { status?: "Open" | "Completed" | "Cancelled" | "All" },
+): Promise<PersonalTodoDto[]> {
+  const status = options?.status;
+  const query =
+    status && status !== "All"
+      ? `?status=${encodeURIComponent(status === "Open" ? "Open" : status)}`
+      : "";
+  const raw = await platformRequest<unknown>({ path: `${TODOS}${query}`, signal });
   const items = Array.isArray(raw) ? raw : [];
   return items.map((item) => personalTodoSchema.parse(normalizeTodo(item)));
 }
@@ -215,6 +224,7 @@ export function filterTodosByTab(
 ): PersonalTodoDto[] {
   return todos.filter((todo) => {
     if (tab === "completed") return todo.status === "Completed";
+    if (tab === "cancelled") return todo.status === "Cancelled";
     if (todo.status !== "Open") return false;
     if (tab === "open") return true;
     const bucket = classifyTodoDue(todo.dueAtUtc, now);
@@ -235,6 +245,7 @@ export function summarizeTodoCounts(
     overdue: filterTodosByTab(todos, "overdue", now).length,
     open: filterTodosByTab(todos, "open", now).length,
     completed: filterTodosByTab(todos, "completed", now).length,
+    cancelled: filterTodosByTab(todos, "cancelled", now).length,
   };
 }
 

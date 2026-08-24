@@ -2,27 +2,25 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
   CalendarClock,
-  ClipboardList,
+  Link2,
   Package,
   Receipt,
   RefreshCw,
   ShoppingBag,
-  Store,
   Truck,
-  UserRoundCheck,
 } from "lucide-react";
 import { listLinkedMerchants, type LinkedMerchantDto } from "@/api/platform/linked-merchants-client";
 import { Button } from "@/components/ui/button";
 import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
-import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import {
   CommerceLoadMore,
   storeDisplayInitial,
 } from "@/features/customer-ordering/personal-commerce-ui";
+import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
 import { useI18n } from "@/i18n/I18nProvider";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 
@@ -143,41 +141,6 @@ function LinkedMerchantStoreCard({
   );
 }
 
-function LinkedMerchantsToolbar() {
-  const { t } = useI18n();
-  return (
-    <ExitsChipBar
-      variant="actions"
-      className="pc-commerce-toolbar exits-animate-toolbar"
-      ariaLabel={t("personal.home.quickActions")}
-      testId="linked-merchants-toolbar"
-      items={[
-        {
-          key: "stores",
-          label: t("personal.merchantsTitle"),
-          icon: <Store className="size-4 shrink-0" />,
-          state: "active",
-          testId: "linked-merchants-tab-stores",
-        },
-        {
-          key: "orders",
-          label: t("personal.myOrdersLink"),
-          icon: <ClipboardList className="size-4 shrink-0" />,
-          href: "/personal/orders",
-          testId: "open-my-orders",
-        },
-        {
-          key: "links",
-          label: t("personal.customerLinks.title"),
-          icon: <UserRoundCheck className="size-4 shrink-0" />,
-          href: "/personal/customer-links",
-          testId: "open-customer-links",
-        },
-      ]}
-    />
-  );
-}
-
 export function LinkedMerchantsPage() {
   const { t } = useI18n();
   const query = useInfiniteQuery({
@@ -249,7 +212,7 @@ export function LinkedMerchantsPage() {
         backTestId="page-header-back-linked-merchants"
       />
 
-      <LinkedMerchantsToolbar />
+      <PersonalCommerceNav active="stores" />
 
       {items.length === 0 ? (
         <div className="pc-empty-panel exits-animate-panel flex flex-col gap-3">
@@ -259,7 +222,7 @@ export function LinkedMerchantsPage() {
           />
           <Button asChild className="min-h-11 w-full gap-2" data-testid="open-customer-links-empty">
             <Link to="/personal/customer-links">
-              <UserRoundCheck className="size-4 shrink-0" aria-hidden />
+              <Link2 className="size-4 shrink-0" aria-hidden />
               {t("personal.customerLinks.title")}
             </Link>
           </Button>
