@@ -1,16 +1,17 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { ChevronRight } from "lucide-react";
 import { listSellerCustomerOrders, sellerWorkspace } from "@/api/pos/pos-customer-orders-client";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import {
   displayOrderStatusKey,
   filterSellerOrdersClientSide,
@@ -79,39 +80,58 @@ export function SellerOrdersPage() {
   const items = filterSellerOrdersClientSide(query.data?.items ?? [], filter);
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="seller-orders-page">
-      <PageHeader title={t("orders.sellerTitle")} description={t("orders.sellerLede")} />
-      <UnderlineTabBar
+    <div
+      className="customer-orders-page exits-page flex min-w-0 flex-col gap-3"
+      data-testid="seller-orders-page"
+    >
+      <PageHeader
+        title={t("orders.sellerTitle")}
+        description={t("orders.sellerLede")}
+        backTo={pageBackNav.managerHome.to}
+        backLabel={t(pageBackNav.managerHome.labelKey)}
+        backTestId="page-header-back-customer-orders"
+      />
+
+      <ExitsChipBar
+        variant="filter"
+        ariaLabel={t("orders.filterLabel")}
+        testId="seller-orders-filters"
         items={FILTERS.map((f) => ({
           key: f,
           label: t(`orders.filter${f}` as MessageKey),
+          state: filter === f ? "active" : "idle",
           testId: `orders-filter-${f.toLowerCase()}`,
+          onSelect: () => setFilter(f),
         }))}
-        activeKey={filter}
-        onChange={(key) => setFilter(key as SellerOrderFilter)}
-        ariaLabel={t("orders.filterLabel")}
       />
+
       {items.length === 0 ? (
         <EmptyState title={t("orders.emptyTitle")} detail={t("orders.emptySellerDetail")} />
       ) : (
-        <ul className="m-0 flex list-none flex-col gap-3 p-0" data-testid="seller-orders-list">
+        <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="seller-orders-list">
           {items.map((order) => (
             <li key={order.orderId}>
-              <Card className="flex flex-col gap-2" data-testid="seller-order-card">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <strong>{order.customerDisplayName}</strong>
+              <Link
+                className="exits-list__card customer-order-row block min-w-0 text-foreground no-underline"
+                to={`/orders/${order.orderId}`}
+                data-testid="seller-order-card"
+              >
+                <div className="customer-order-row__main min-w-0">
+                  <strong className="exits-list__name block truncate font-semibold">
+                    {order.customerDisplayName}
+                  </strong>
+                  <p className="customer-order-row__meta mb-0 mt-1 truncate text-[length:var(--exits-text-sm)] text-muted">
+                    #{order.orderNumber} · {order.fulfillmentType} · {order.lineCount} {t("orders.items")}
+                  </p>
+                </div>
+                <div className="customer-order-row__aside">
+                  <span className="customer-order-row__total">{money(order.total)}</span>
                   <StatusChip tone="info">
                     {t(displayOrderStatusKey(order) as MessageKey)}
                   </StatusChip>
+                  <ChevronRight className="customer-order-row__chevron size-4 shrink-0 text-muted" aria-hidden />
                 </div>
-                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                  #{order.orderNumber} · {order.fulfillmentType} · {money(order.total)} ·{" "}
-                  {order.lineCount} {t("orders.items")}
-                </p>
-                <Button asChild className="min-h-11 w-fit">
-                  <Link to={`/orders/${order.orderId}`}>{t("orders.open")}</Link>
-                </Button>
-              </Card>
+              </Link>
             </li>
           ))}
         </ul>

@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { ChevronRight, Plus } from "lucide-react";
 import { canManagePurchasing } from "@/access/pos-capabilities";
 import { listPurchaseOrders, type PosPurchaseOrderDto } from "@/api/pos/pos-purchase-orders-client";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
@@ -16,6 +17,27 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const PAGE_SIZE = 20;
+
+type StatusFilter = "" | "Draft" | "Ordered" | "PartiallyReceived" | "Received" | "Cancelled";
+
+const STATUS_FILTERS: Array<{
+  value: StatusFilter;
+  key: string;
+  labelKey:
+    | "purchasing.statusAll"
+    | "purchasing.statusDraft"
+    | "purchasing.statusOrdered"
+    | "purchasing.statusPartial"
+    | "purchasing.statusReceived"
+    | "purchasing.statusCancelled";
+}> = [
+  { value: "", key: "all", labelKey: "purchasing.statusAll" },
+  { value: "Draft", key: "Draft", labelKey: "purchasing.statusDraft" },
+  { value: "Ordered", key: "Ordered", labelKey: "purchasing.statusOrdered" },
+  { value: "PartiallyReceived", key: "PartiallyReceived", labelKey: "purchasing.statusPartial" },
+  { value: "Received", key: "Received", labelKey: "purchasing.statusReceived" },
+  { value: "Cancelled", key: "Cancelled", labelKey: "purchasing.statusCancelled" },
+];
 
 function statusTone(status: string): "success" | "warning" | "info" | "danger" {
   switch (status) {
@@ -39,7 +61,7 @@ export function PurchaseOrdersListPage() {
   const online = useBrowserOnline();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const [page, setPage] = useState(1);
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState<StatusFilter>("");
 
   const workspace = useMemo(
     () =>
@@ -69,9 +91,14 @@ export function PurchaseOrdersListPage() {
   const totalCount = query.data?.totalCount ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const items: PosPurchaseOrderDto[] = query.data?.items ?? [];
+  const canPrev = page > 1;
+  const canNext = page < totalPages && totalCount > 0;
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="purchase-orders-list-page">
+    <div
+      className="purchasing-orders-page exits-page flex min-w-0 flex-col gap-3"
+      data-testid="purchase-orders-list-page"
+    >
       <PageHeader
         title={t("purchasing.orders")}
         description={t("purchasing.ordersLede")}
@@ -79,97 +106,110 @@ export function PurchaseOrdersListPage() {
         backLabel={t(pageBackNav.purchasing.labelKey)}
         backTestId="page-header-back-purchasing"
       />
-      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-        {t("purchasing.ordersNoStock")}
-      </p>
+      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("purchasing.ordersNoStock")}</p>
       {!online ? (
-        <Card data-testid="purchasing-offline">
-          <p className="m-0">{t("purchasing.offline")}</p>
-        </Card>
+        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="purchasing-offline">
+          {t("purchasing.offline")}
+        </p>
       ) : null}
-      <div className="flex flex-wrap gap-2">
-        {allowManage ? (
-          <Button asChild className="min-h-11" disabled={!online} data-testid="po-new">
-            <Link to="/purchasing/new">{t("purchasing.newOrder")}</Link>
-          </Button>
-        ) : null}
-      </div>
-      <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-        {t("purchasing.statusFilter")}
-        <select
-          className="min-h-11 rounded-md border border-border bg-background px-3"
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value);
+
+      {allowManage ? (
+        <ExitsChipBar
+          variant="actions"
+          ariaLabel={t("purchasing.orders")}
+          testId="po-toolbar"
+          className="exits-animate-toolbar"
+          items={[
+            {
+              key: "new",
+              label: t("purchasing.newOrder"),
+              icon: <Plus />,
+              href: online ? "/purchasing/new" : undefined,
+              disabled: !online,
+              testId: "po-new",
+              emphasis: "primary",
+            },
+          ]}
+        />
+      ) : null}
+
+      <ExitsChipBar
+        variant="filter"
+        ariaLabel={t("purchasing.statusFilter")}
+        testId="po-status-filter"
+        items={STATUS_FILTERS.map((filter) => ({
+          key: filter.key,
+          label: t(filter.labelKey),
+          state: status === filter.value ? "active" : "idle",
+          testId: `po-status-${filter.key}`,
+          onSelect: () => {
+            setStatus(filter.value);
             setPage(1);
-          }}
-          data-testid="po-status-filter"
-        >
-          <option value="">{t("purchasing.statusAll")}</option>
-          <option value="Draft">Draft</option>
-          <option value="Ordered">Ordered</option>
-          <option value="PartiallyReceived">PartiallyReceived</option>
-          <option value="Received">Received</option>
-          <option value="Cancelled">Cancelled</option>
-        </select>
-      </label>
+          },
+        }))}
+      />
+
       {query.isLoading ? <LoadingState label={t("purchasing.loading")} /> : null}
       {query.isError ? (
         <ErrorState title={t("purchasing.errorTitle")} detail={t("purchasing.loadFailed")} />
       ) : null}
       {!query.isLoading && !query.isError && items.length === 0 ? (
-        <EmptyState
-          title={t("purchasing.ordersEmpty")}
-          detail={t("purchasing.ordersEmptyDetail")}
-        />
+        <EmptyState title={t("purchasing.ordersEmpty")} detail={t("purchasing.ordersEmptyDetail")} />
       ) : null}
-      <ul className="m-0 flex list-none flex-col gap-2 p-0">
+
+      <ul className="exits-list m-0 grid list-none gap-2 p-0">
         {items.map((po) => (
           <li key={po.purchaseOrderId}>
             <Link
               to={`/purchasing/${po.purchaseOrderId}`}
-              className="block rounded-md border border-border p-3 no-underline text-inherit"
+              className="exits-list__card purchasing-row block min-w-0 text-foreground no-underline"
               data-testid={`po-row-${po.purchaseOrderId}`}
             >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-medium">{po.poNumber ?? t("purchasing.unnamedPo")}</span>
-                <StatusChip tone={statusTone(po.status)}>
-                  {po.displayStatus || po.status}
-                </StatusChip>
-              </div>
-              <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted">
-                {po.supplierName ?? t("purchasing.unknownSupplier")} · {po.orderDate} ·{" "}
-                {t("purchasing.linesCount").replace("{count}", String(po.lines.length))}
-              </p>
+              <span className="purchasing-row__main min-w-0">
+                <span className="exits-list__name block truncate font-semibold">
+                  {po.poNumber ?? t("purchasing.unnamedPo")}
+                </span>
+                <span className="purchasing-row__meta mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
+                  {po.supplierName ?? t("purchasing.unknownSupplier")} · {po.orderDate} ·{" "}
+                  {t("purchasing.linesCount").replace("{count}", String(po.lines.length))}
+                </span>
+              </span>
+              <span className="purchasing-row__aside">
+                <StatusChip tone={statusTone(po.status)}>{po.displayStatus || po.status}</StatusChip>
+                <ChevronRight className="purchasing-row__chevron size-4 shrink-0 text-muted" aria-hidden />
+              </span>
             </Link>
           </li>
         ))}
       </ul>
-      {totalCount > PAGE_SIZE ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            className="min-h-11"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-          >
-            {t("purchasing.prevPage")}
-          </Button>
-          <span className="text-[length:var(--exits-text-sm)]">
+
+      {query.isSuccess && totalCount > 0 ? (
+        <div className="exits-pagination">
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("purchasing.pageLabel")
               .replace("{page}", String(page))
               .replace("{totalPages}", String(totalPages))}
-          </span>
-          <Button
-            type="button"
-            variant="ghost"
-            className="min-h-11"
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            {t("purchasing.nextPage")}
-          </Button>
+          </p>
+          <div className="exits-pagination__actions flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              className="min-h-9"
+              disabled={!canPrev}
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+            >
+              {t("purchasing.prevPage")}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="min-h-9"
+              disabled={!canNext}
+              onClick={() => setPage((current) => current + 1)}
+            >
+              {t("purchasing.nextPage")}
+            </Button>
+          </div>
         </div>
       ) : null}
     </div>

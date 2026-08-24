@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { UserRoundCheck } from "lucide-react";
+import { Loader2, UserRoundCheck } from "lucide-react";
 import {
   createBusinessCustomerWithPersonalLink,
   resolvePublicUserId,
@@ -7,7 +7,6 @@ import {
 } from "@/api/platform/public-identity-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { QrScanOrEnter } from "@/features/qr/QrScanOrEnter";
 import { useI18n } from "@/i18n/I18nProvider";
 
@@ -117,14 +116,14 @@ export function CustomerPersonalLinkPanel({
   }
 
   return (
-    <Card className="flex flex-col gap-3 p-3" data-testid="customer-personal-link-panel">
+    <section className="catalog-form-section exits-animate-panel" data-testid="customer-personal-link-panel">
       <div className="flex items-start gap-2">
-        <UserRoundCheck className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+        <span className="customer-personal-link__icon" aria-hidden>
+          <UserRoundCheck />
+        </span>
         <div className="min-w-0 flex-1">
-          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-            {t("customers.personalLink.title")}
-          </p>
-          <p className="mb-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
+          <h2 className="catalog-form-section__title">{t("customers.personalLink.title")}</h2>
+          <p className="mb-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
             {t("customers.personalLink.lede")}
           </p>
         </div>
@@ -140,7 +139,7 @@ export function CustomerPersonalLinkPanel({
 
       {resolved && !linkSent ? (
         <div
-          className="flex flex-col gap-2 rounded border border-[var(--exits-border)] p-3"
+          className="customer-personal-link__confirm"
           data-testid="customer-personal-link-confirm"
         >
           <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
@@ -157,14 +156,20 @@ export function CustomerPersonalLinkPanel({
           <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
             {t("customers.personalLink.confirmHint")}
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="mt-2 flex flex-wrap gap-2">
             <Button
               type="button"
+              variant="outline"
               className="min-h-11"
               data-testid="customer-personal-link-confirm-btn"
               disabled={disabled || busy}
               onClick={() => void confirmLink()}
             >
+              {busy ? (
+                <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+              ) : (
+                <UserRoundCheck className="size-4 shrink-0" aria-hidden />
+              )}
               {busy ? t("customers.personalLink.sending") : t("customers.personalLink.confirm")}
             </Button>
             <Button
@@ -202,6 +207,6 @@ export function CustomerPersonalLinkPanel({
           {error}
         </p>
       ) : null}
-    </Card>
+    </section>
   );
 }

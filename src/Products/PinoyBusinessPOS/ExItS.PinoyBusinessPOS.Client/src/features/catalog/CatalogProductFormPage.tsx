@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { Ban, Loader2, RotateCcw, Save } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Ban, Loader2, Plus, RotateCcw, Save } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -390,27 +390,25 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
     },
   });
 
-  async function handleCreateCategory(event: FormEvent) {
-    event.preventDefault();
-
-    if (!workspace || !newCategoryName.trim()) {
-      return;
-    }
-
-    try {
-      const created = await createCatalogCategory(workspace, { name: newCategoryName.trim() });
-
+  const createCategoryMutation = useMutation({
+    mutationFn: async () => {
+      if (!workspace || !newCategoryName.trim()) {
+        throw new Error("Category name required");
+      }
+      return createCatalogCategory(workspace, { name: newCategoryName.trim() });
+    },
+    onSuccess: async (created) => {
       await queryClient.invalidateQueries({ queryKey: ["catalog", "categories"] });
-
       setCategoryId(created.categoryId);
-
       setNewCategoryName("");
-    } catch (err) {
+      setError(null);
+    },
+    onError: (err) => {
       setError(
         err instanceof PosApiError ? (err.problem.detail ?? err.message) : (err as Error).message,
       );
-    }
-  }
+    },
+  });
 
   function updateDraft(key: string, patch: Partial<ProductUnitDraft>) {
     setUnitDrafts((current) =>
@@ -531,34 +529,43 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
             </FormSelect>
           </div>
 
-          <div className="catalog-form-section__grid border-t border-border pt-3">
-            <p className="catalog-form-field--full m-0 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
-              {t("catalog.sectionCategoryQuickAdd")}
-            </p>
-
-            <Input
-              label={t("catalog.newCategoryPlaceholder")}
-
-              name="inlineCategoryName"
-
-              value={newCategoryName}
-
-              onChange={(e) => setNewCategoryName(e.target.value)}
-
-              placeholder={t("catalog.newCategoryPlaceholder")}
-            />
-
-            <div className="flex items-end">
+          <div className="catalog-form-quick-add">
+            <p className="catalog-form-quick-add__label">{t("catalog.sectionCategoryQuickAdd")}</p>
+            <div className="catalog-form-quick-add__row">
+              <div className="catalog-form-quick-add__field">
+                <Input
+                  label={t("catalog.newCategoryPlaceholder")}
+                  name="inlineCategoryName"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder={t("catalog.newCategoryPlaceholder")}
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter") {
+                      return;
+                    }
+                    event.preventDefault();
+                    if (newCategoryName.trim() && !createCategoryMutation.isPending) {
+                      createCategoryMutation.mutate();
+                    }
+                  }}
+                />
+              </div>
               <Button
                 type="button"
-
-                variant="ghost"
-
-                className="min-h-11 w-full sm:w-auto"
-
-                onClick={(event) => void handleCreateCategory(event)}
+                variant="outline"
+                className="catalog-form-quick-add__button"
+                data-testid="catalog-add-category"
+                disabled={!newCategoryName.trim() || createCategoryMutation.isPending}
+                onClick={() => createCategoryMutation.mutate()}
               >
-                {t("catalog.addCategory")}
+                {createCategoryMutation.isPending ? (
+                  <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                ) : (
+                  <Plus className="size-4 shrink-0" aria-hidden />
+                )}
+                {createCategoryMutation.isPending
+                  ? t("catalog.addingCategory")
+                  : t("catalog.addCategory")}
               </Button>
             </div>
           </div>

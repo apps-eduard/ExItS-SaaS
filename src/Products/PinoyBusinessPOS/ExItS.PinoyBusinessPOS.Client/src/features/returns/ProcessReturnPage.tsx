@@ -314,13 +314,13 @@ export function ProcessReturnPage() {
 
   if (step === "confirm") {
     return (
-      <div data-testid="process-return-confirm" className="flex min-w-0 flex-col gap-4">
+      <div data-testid="process-return-confirm" className="flex min-w-0 flex-col gap-3">
         <PageHeader
           title={t("returns.confirmTitle")}
           description={`${t("returns.confirmLede")} · ${refundable.saleNumber}`}
           {...headerBack}
         />
-        <Card>
+        <section className="catalog-form-section exits-animate-panel gap-0">
           <ul className="m-0 list-none space-y-2 p-0">
             {selectedLines.map(({ line, quantity, disposition }) => (
               <li key={line.saleLineId} className="text-[length:var(--exits-text-sm)]">
@@ -349,7 +349,7 @@ export function ProcessReturnPage() {
           <p className="mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
             {t("returns.estimateDisclaimer")}
           </p>
-        </Card>
+        </section>
         {error ? (
           <p
             data-testid="returns-confirm-error"
@@ -358,55 +358,66 @@ export function ProcessReturnPage() {
             {error}
           </p>
         ) : null}
-        <div className="flex flex-wrap gap-2">
+        <div className="catalog-form-actions process-return-confirm-actions">
+          <div className="catalog-form-actions__primary">
           <Button
             type="button"
-            className="min-h-11"
+            className="catalog-form-actions__save"
             data-testid="returns-confirm-submit"
             disabled={submitting}
             onClick={() => void onConfirmSubmit()}
           >
             {submitting ? t("returns.submitting") : t("returns.confirmSubmit")}
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            className="min-h-11"
-            disabled={submitting}
-            data-testid="returns-confirm-back"
-            onClick={() => {
-              setStep("edit");
-              setError(null);
-            }}
-          >
-            {t("returns.backToEdit")}
-          </Button>
+          </div>
+          <div className="catalog-form-actions__secondary">
+            <Button
+              type="button"
+              variant="ghost"
+              className="min-h-11 w-full sm:w-auto"
+              disabled={submitting}
+              data-testid="returns-confirm-back"
+              onClick={() => {
+                setStep("edit");
+                setError(null);
+              }}
+            >
+              {t("returns.backToEdit")}
+            </Button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div data-testid="process-return-page" className="flex min-w-0 flex-col gap-4">
+    <div data-testid="process-return-page" className="flex min-w-0 flex-col gap-3">
       <PageHeader
         title={t("returns.returnItems")}
         description={`${t("returns.processLede")} · ${refundable.saleNumber}`}
         {...headerBack}
       />
 
-      <Card data-testid="returns-payment-method">
+      <section
+        className="catalog-form-section exits-animate-panel gap-0"
+        data-testid="returns-payment-method"
+      >
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
           {t("returns.refundMethod")}
         </p>
         <p className="mb-0 mt-1 font-semibold">
           {formatRefundMethodLabel(refundable.paymentMethod)}
         </p>
-      </Card>
+      </section>
 
       {staleNotice ? (
-        <Card data-testid="returns-stale-banner">
+        <div
+          data-testid="returns-stale-banner"
+          className="exits-alert exits-alert--error"
+          role="alert"
+        >
           <p className="m-0 text-[length:var(--exits-text-sm)]">{t("returns.errorStale")}</p>
-        </Card>
+        </div>
       ) : null}
 
       <ul className="m-0 flex list-none flex-col gap-3 p-0" data-testid="returns-lines">
@@ -530,7 +541,7 @@ export function ProcessReturnPage() {
         })}
       </ul>
 
-      <Card>
+      <section className="catalog-form-section exits-animate-panel gap-0">
         <label
           className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
           htmlFor="returns-reason"
@@ -570,7 +581,7 @@ export function ProcessReturnPage() {
         <p className="mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
           {t("returns.estimateDisclaimer")}
         </p>
-      </Card>
+      </section>
 
       {error ? (
         <p
@@ -581,24 +592,26 @@ export function ProcessReturnPage() {
         </p>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          className="min-h-11"
-          data-testid="returns-continue"
-          disabled={!canContinue}
-          onClick={() => {
-            if (!reason.trim()) {
-              setError(t("returns.reasonRequired"));
-              return;
-            }
-            setError(null);
-            setStaleNotice(false);
-            setStep("confirm");
-          }}
-        >
-          {t("returns.continue")}
-        </Button>
+      <div className="catalog-form-actions process-return-edit-actions">
+        <div className="catalog-form-actions__primary">
+          <Button
+            type="button"
+            className="catalog-form-actions__save"
+            data-testid="returns-continue"
+            disabled={!canContinue}
+            onClick={() => {
+              if (!reason.trim()) {
+                setError(t("returns.reasonRequired"));
+                return;
+              }
+              setError(null);
+              setStaleNotice(false);
+              setStep("confirm");
+            }}
+          >
+            {t("returns.continue")}
+          </Button>
+        </div>
       </div>
     </div>
   );

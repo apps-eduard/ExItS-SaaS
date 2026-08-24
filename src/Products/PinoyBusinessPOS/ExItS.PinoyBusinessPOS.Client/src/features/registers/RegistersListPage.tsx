@@ -49,7 +49,10 @@ export function RegistersListPage() {
   }
 
   return (
-    <div data-testid="registers-list-page" className="flex min-w-0 flex-col gap-4">
+    <div
+      data-testid="registers-list-page"
+      className="registers-page exits-page flex min-w-0 flex-col gap-3"
+    >
       <PageHeader
         title={t("register.listTitle")}
         description={t("register.listLede")}
@@ -75,24 +78,30 @@ export function RegistersListPage() {
         </Card>
       ) : null}
 
-      <ul className="m-0 flex list-none flex-col gap-2 p-0" data-testid="registers-list">
+      <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="registers-list">
         {(registersQuery.data?.items ?? []).map((register) => (
           <li key={register.registerId}>
-            <Card data-testid={`register-row-${register.registerId}`}>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p className="m-0 font-semibold">
-                    {register.registerCode} — {register.name}
-                  </p>
-                  <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-                    {register.hasOpenShift ? t("register.hasOpenShift") : t("register.noOpenShift")}
-                  </p>
-                </div>
-                <StatusChip tone={register.status === "Active" ? "success" : "info"}>
-                  {register.status}
-                </StatusChip>
-              </div>
-            </Card>
+            <div
+              data-testid={`register-row-${register.registerId}`}
+              className="exits-list__card catalog-product-row min-w-0"
+            >
+              <span className="min-w-0">
+                <span className="exits-list__name block truncate font-semibold">
+                  {register.registerCode} — {register.name}
+                </span>
+                <span className="mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
+                  {register.hasOpenShift ? t("register.hasOpenShift") : t("register.noOpenShift")}
+                </span>
+              </span>
+
+              <span className="catalog-product-row__aside">
+                <span className="catalog-product-row__status">
+                  <StatusChip tone={register.status === "Active" ? "success" : "info"}>
+                    {register.status}
+                  </StatusChip>
+                </span>
+              </span>
+            </div>
           </li>
         ))}
       </ul>

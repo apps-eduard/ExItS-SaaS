@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/cn";
 
 export function BottomSheet({
   open,
@@ -10,6 +11,7 @@ export function BottomSheet({
   panelId,
   testId = "bottom-sheet",
   closeLabel = "Close",
+  panelClassName,
 }: {
   open: boolean;
   onClose: () => void;
@@ -18,6 +20,8 @@ export function BottomSheet({
   panelId: string;
   testId?: string;
   closeLabel?: string;
+  /** Extra classes for the dialog panel (e.g. desktop max-width). */
+  panelClassName?: string;
 }) {
   // Unmount when closed so transform animations on ancestors cannot trap `position: fixed`.
   if (!open || typeof document === "undefined") {
@@ -35,7 +39,10 @@ export function BottomSheet({
       <div
         id={panelId}
         data-testid={testId}
-        className="fixed inset-x-0 bottom-0 z-40 flex max-h-[75dvh] flex-col gap-3 rounded-t-[var(--exits-radius-lg)] border border-border bg-surface p-4 shadow-[0_-8px_32px_rgba(0,0,0,0.12)]"
+        className={cn(
+          "fixed inset-x-0 bottom-0 z-40 flex max-h-[75dvh] flex-col gap-3 rounded-t-[var(--exits-radius-lg)] border border-border bg-surface p-4 shadow-[0_-8px_32px_rgba(0,0,0,0.12)]",
+          panelClassName,
+        )}
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -43,7 +50,7 @@ export function BottomSheet({
         {title ? (
           <div className="flex items-center justify-between gap-3">
             <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">{title}</h2>
-            <Button type="button" variant="ghost" onClick={onClose}>
+            <Button type="button" variant="ghost" className="min-h-11 shrink-0" onClick={onClose}>
               {closeLabel}
             </Button>
           </div>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Coins, Minus, Plus, RotateCcw } from "lucide-react";
+import { Coins, Minus, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
 import {
@@ -7,6 +7,8 @@ import {
   type CashDenominationCountItem,
 } from "@/api/pos/pos-operational-setup-client";
 import type { CashCountDenominationLineDto } from "@/api/pos/pos-shifts-client";
+import { formatPeso } from "@/lib/format-money";
+import { cn } from "@/lib/cn";
 
 export type DenominationHelperItem = CashDenominationCountItem;
 
@@ -37,10 +39,7 @@ export function DenominationCountHelper({
   const [quantities, setQuantities] = useState<Record<string, number>>({});
 
   const sorted = useMemo(
-    () =>
-      [...denominations].sort(
-        (a, b) => a.sortOrder - b.sortOrder || b.value - a.value,
-      ),
+    () => [...denominations].sort((a, b) => a.sortOrder - b.sortOrder || b.value - a.value),
     [denominations],
   );
 
@@ -90,12 +89,15 @@ export function DenominationCountHelper({
     emit({});
   }
 
+  const totalAmount = Number(total);
+  const totalLabel =
+    total.trim().length > 0 && Number.isFinite(totalAmount)
+      ? formatPeso(totalAmount)
+      : formatPeso(0);
+
   if (sorted.length === 0) {
     return (
-      <div
-        data-testid={`${testIdPrefix}-empty`}
-        className="rounded-[var(--exits-radius-md)] border border-dashed border-border bg-surface-muted/40 px-3 py-3"
-      >
+      <div data-testid={`${testIdPrefix}-empty`} className="denom-helper denom-helper--empty">
         <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
           {t("shift.denomEmpty")}
         </p>
@@ -107,7 +109,7 @@ export function DenominationCountHelper({
   }
 
   return (
-    <div data-testid={`${testIdPrefix}-helper`} className="flex flex-col gap-3">
+    <div data-testid={`${testIdPrefix}-helper`} className="denom-helper flex flex-col gap-3">
       <div className="flex items-start gap-2">
         <Coins className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
         <div>
@@ -119,73 +121,81 @@ export function DenominationCountHelper({
           </p>
         </div>
       </div>
-      <ul className="m-0 grid list-none grid-cols-2 gap-2 p-0">
+
+      <ul className="denom-helper__grid m-0 grid list-none gap-2 p-0">
         {sorted.map((denom) => {
           const key = String(denom.value);
           const quantity = quantities[key] ?? 0;
           const active = quantity > 0;
+          const label = denom.label?.trim() || formatDenominationValue(denom.value);
+          const lineTotal = roundMoney(denom.value * quantity);
+
           return (
-            <li
-              key={key}
-              className={`flex min-w-0 flex-col gap-1 rounded-[var(--exits-radius-md)] border px-2 py-1.5 transition-colors ${
-                active
-                  ? "border-primary/40 bg-primary/5"
-                  : "border-border bg-surface"
-              }`}
-              data-testid={`${testIdPrefix}-row-${key}`}
-            >
-              <span className="truncate tabular-nums text-[length:var(--exits-text-sm)] font-medium">
-                {denom.label?.trim() || formatDenominationValue(denom.value)}
-              </span>
-              <div className="flex items-center justify-end gap-0.5">
-                <Button
+            <li key={key} className="min-w-0" data-testid={`${testIdPrefix}-row-${key}`}>
+              <div
+                className={cn(
+                  "denom-helper__tile",
+                  active && "denom-helper__tile--active",
+                  disabled && "denom-helper__tile--disabled",
+                )}
+              >
+                <button
                   type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-9 shrink-0"
+                  className="denom-helper__tap"
+                  disabled={disabled}
+                  aria-label={t("shift.denomIncreaseAria").replace("{denom}", label)}
+                  data-testid={`${testIdPrefix}-inc-${key}`}
+                  onClick={() => setQuantity(denom.value, quantity + 1)}
+                >
+                  <span className="denom-helper__value tabular-nums">{label}</span>
+                  <span
+                    className={cn(
+                      "denom-helper__qty tabular-nums",
+                      active && "denom-helper__qty--active",
+                    )}
+                    data-testid={`${testIdPrefix}-qty-${key}`}
+                  >
+                    ×{quantity}
+                  </span>
+                  {active ? (
+                    <span className="denom-helper__line-total tabular-nums">
+                      {formatPeso(lineTotal)}
+                    </span>
+                  ) : (
+                    <span className="denom-helper__tap-hint">{t("shift.denomTapToAdd")}</span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  className="denom-helper__dec"
                   disabled={disabled || quantity <= 0}
-                  aria-label={`Decrease ${formatDenominationValue(denom.value)}`}
+                  aria-label={t("shift.denomDecreaseAria").replace("{denom}", label)}
                   data-testid={`${testIdPrefix}-dec-${key}`}
                   onClick={() => setQuantity(denom.value, quantity - 1)}
                 >
                   <Minus className="size-4" aria-hidden />
-                </Button>
-                <span
-                  className="min-w-8 text-center tabular-nums text-[length:var(--exits-text-sm)] font-semibold"
-                  data-testid={`${testIdPrefix}-qty-${key}`}
-                >
-                  {quantity}
-                </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-9 shrink-0"
-                  disabled={disabled}
-                  aria-label={`Increase ${formatDenominationValue(denom.value)}`}
-                  data-testid={`${testIdPrefix}-inc-${key}`}
-                  onClick={() => setQuantity(denom.value, quantity + 1)}
-                >
-                  <Plus className="size-4" aria-hidden />
-                </Button>
+                </button>
               </div>
             </li>
           );
         })}
       </ul>
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2">
-        <p className="m-0 inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+
+      <div className="denom-helper__footer">
+        <p className="m-0 inline-flex min-w-0 flex-wrap items-center gap-2 text-[length:var(--exits-text-sm)]">
           <Coins className="size-4 shrink-0 text-primary" aria-hidden />
-          {t("shift.cashOnHand")}:{" "}
-          <span className="tabular-nums font-semibold">
-            {total || "0.00"} {currencyCode}
+          <span>{t("shift.cashOnHand")}:</span>
+          <span className="tabular-nums font-semibold" data-testid={`${testIdPrefix}-total`}>
+            {totalLabel}
           </span>
+          <span className="text-muted">({currencyCode})</span>
         </p>
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           className="min-h-9 shrink-0"
-          disabled={disabled}
+          disabled={disabled || Object.keys(quantities).length === 0}
           data-testid={`${testIdPrefix}-reset`}
           onClick={reset}
         >

@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  ChevronRight,
+  Loader2,
+  RotateCcw,
+  Upload,
+} from "lucide-react";
 import {
   getPublishedTemplate,
   listPublishedTemplates,
@@ -16,11 +25,10 @@ import type { PosTemplateImportStatus } from "@/api/pos/pos-catalog-import-types
 import { PosApiError } from "@/api/pos/pos-http";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
-import { LoadingState } from "@/components/exits/LoadingState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
+import { LoadingState } from "@/components/exits/LoadingState";
 import { OnlineRequiredCard } from "@/components/exits/OnlineRequiredCard";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
@@ -29,7 +37,9 @@ import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import { ONLINE_REQUIRED_CODES } from "@/offline/online-required";
 import type { MessageKey } from "@/i18n/messages";
+import { formatPeso } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type WizardStep = "choose" | "preview" | "confirm";
@@ -59,6 +69,13 @@ function statusLabel(
   }
   if (status.firstBatchComplete) return t("catalogImport.statusFirstDone");
   return t("catalogImport.statusPartial");
+}
+
+function statusTone(status: PosTemplateImportStatus | undefined): "info" | "success" | "warning" {
+  if (!status) return "info";
+  if (status.canImportFirstBatch || status.canImportNextBatch) return "success";
+  if (status.firstBatchComplete && !status.hasSubsequentBatches) return "warning";
+  return "info";
 }
 
 export function CatalogTemplateImportPage() {
@@ -201,8 +218,19 @@ export function CatalogTemplateImportPage() {
     setSelectedId(item.id);
     setConfirmed(false);
     setStartError(null);
+    setPreviewSearch("");
     setStep("preview");
   }
+
+  const pageHeader = (
+    <PageHeader
+      title={t("catalogImport.title")}
+      description={t("catalogImport.lede")}
+      backTo={pageBackNav.catalog.to}
+      backLabel={t(pageBackNav.catalog.labelKey)}
+      backTestId="page-header-back-catalog"
+    />
+  );
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
@@ -210,24 +238,35 @@ export function CatalogTemplateImportPage() {
 
   if (!online) {
     return (
-      <div className="flex flex-col gap-4" data-testid="catalog-templates-page">
-        <PageHeader title={t("catalogImport.title")} description={t("catalogImport.lede")} />
+      <div
+        className="catalog-import-page exits-page flex min-w-0 flex-col gap-3"
+        data-testid="catalog-templates-page"
+      >
+        {pageHeader}
         <OnlineRequiredCard code={ONLINE_REQUIRED_CODES.CatalogImport} />
-        <Button asChild variant="ghost" className="min-h-11 self-start">
-          <Link to="/catalog">{t("catalogImport.backToProducts")}</Link>
-        </Button>
       </div>
     );
   }
 
+  const confirmItems = [
+    t("catalogImport.confirmStockZero"),
+    t("catalogImport.confirmPricesEditable"),
+    t("catalogImport.confirmDuplicates"),
+    t("catalogImport.confirmOpeningStock"),
+  ] as const;
+
   return (
-    <div className="catalog-import-page exits-page flex min-w-0 flex-col gap-3" data-testid="catalog-templates-page">
-      <PageHeader title={t("catalogImport.title")} description={t("catalogImport.lede")} />
+    <div
+      className="catalog-import-page exits-page flex min-w-0 flex-col gap-3"
+      data-testid="catalog-templates-page"
+    >
+      {pageHeader}
 
       <ExitsChipBar
         variant="steps"
         ariaLabel={t("catalogImport.stepsAria")}
         testId="catalog-import-steps"
+        className="exits-animate-toolbar"
         items={STEPS.map((id, index) => {
           const active = step === id;
           const stepIndex = STEPS.indexOf(step);
@@ -249,7 +288,7 @@ export function CatalogTemplateImportPage() {
 
       {step === "choose" ? (
         <section className="flex flex-col gap-3" data-testid="catalog-template-choose">
-          <div className="catalog-import-toolbar flex min-w-0 flex-wrap items-center gap-2">
+          <div className="catalog-import-toolbar exits-animate-toolbar flex min-w-0 flex-wrap items-center gap-2">
             <SearchField
               label={t("catalogImport.searchTemplates")}
               value={search}
@@ -260,20 +299,22 @@ export function CatalogTemplateImportPage() {
             />
             <Button
               type="button"
-              variant="ghost"
-              className="catalog-import-toolbar__refresh min-h-9 shrink-0"
+              variant="outline"
+              className="catalog-import-toolbar__refresh min-h-11 shrink-0"
               onClick={() => void templatesQuery.refetch()}
               disabled={templatesQuery.isFetching}
             >
+              <RotateCcw
+                className={cn("size-4 shrink-0", templatesQuery.isFetching && "animate-spin")}
+                aria-hidden
+              />
               {t("catalogImport.refresh")}
             </Button>
           </div>
+
           {templatesQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
           {templatesQuery.isError ? (
-            <ErrorState
-              title={t("error.title")}
-              detail={(templatesQuery.error as Error).message}
-            />
+            <ErrorState title={t("error.title")} detail={(templatesQuery.error as Error).message} />
           ) : null}
           {templatesQuery.isSuccess && templatesQuery.data.items.length === 0 ? (
             <EmptyState
@@ -281,17 +322,18 @@ export function CatalogTemplateImportPage() {
               detail={t("catalogImport.emptyTemplatesDetail")}
             />
           ) : null}
+
           <ul className="exits-list catalog-import-templates m-0 grid list-none gap-2 p-0">
             {templatesQuery.data?.items.map((item) => {
               const status = statusById.get(item.id);
               return (
                 <li key={item.id}>
-                  <article className="catalog-import-template-card">
-                    <div className="catalog-import-template-card__body min-w-0">
+                  <article className="catalog-import-template-card exits-list__card">
+                    <div className="catalog-import-template-card__body min-w-0 flex-1">
                       <p className="catalog-import-template-card__title m-0 truncate font-semibold">
                         {item.name}
                       </p>
-                      <p className="catalog-import-template-card__meta mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                      <p className="catalog-import-template-card__meta mb-0 mt-1 truncate text-[length:var(--exits-text-sm)] text-muted">
                         {item.primaryBusinessType} · {t("catalogImport.firstBatchCount")}:{" "}
                         {item.firstBatchCount}
                       </p>
@@ -301,16 +343,18 @@ export function CatalogTemplateImportPage() {
                         </p>
                       ) : null}
                       <div className="mt-2">
-                        <StatusChip>{statusLabel(status, t)}</StatusChip>
+                        <StatusChip tone={statusTone(status)}>{statusLabel(status, t)}</StatusChip>
                       </div>
                     </div>
                     <Button
                       type="button"
-                      className="catalog-import-template-card__select min-h-9 shrink-0"
+                      variant="outline"
+                      className="catalog-import-template-card__select min-h-11 shrink-0"
                       data-testid={`catalog-template-select-${item.id}`}
                       onClick={() => selectTemplate(item)}
                     >
                       {t("catalogImport.select")}
+                      <ChevronRight className="size-4 shrink-0" aria-hidden />
                     </Button>
                   </article>
                 </li>
@@ -322,134 +366,190 @@ export function CatalogTemplateImportPage() {
 
       {step === "preview" && selectedSummary ? (
         <section className="flex flex-col gap-3" data-testid="catalog-template-preview">
-          <Card className="p-3">
-            <p className="m-0 font-semibold">{selectedSummary.name}</p>
-            <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-              {selectedSummary.primaryBusinessType}
-            </p>
-            <p className="mb-0 mt-2 text-[length:var(--exits-text-sm)]">
+          <article className="catalog-import-summary exits-animate-panel">
+            <div className="catalog-import-summary__header">
+              <div className="min-w-0 flex-1">
+                <h2 className="catalog-import-summary__title m-0 truncate">
+                  {selectedSummary.name}
+                </h2>
+                <p className="catalog-import-summary__meta m-0 mt-1 truncate text-[length:var(--exits-text-sm)] text-muted">
+                  {selectedSummary.primaryBusinessType}
+                </p>
+              </div>
+              {selectedStatusQuery.data ? (
+                <StatusChip tone={statusTone(selectedStatusQuery.data)}>
+                  {statusLabel(selectedStatusQuery.data, t)}
+                </StatusChip>
+              ) : null}
+            </div>
+            <p className="catalog-import-summary__lede m-0 text-[length:var(--exits-text-sm)] leading-relaxed text-muted">
               {t("catalogImport.localOwnership")}
             </p>
-            {selectedStatusQuery.data ? (
-              <p className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-muted">
-                {statusLabel(selectedStatusQuery.data, t)}
-              </p>
-            ) : null}
-          </Card>
+            <p className="catalog-import-summary__count m-0 text-[length:var(--exits-text-sm)] font-semibold">
+              {t("catalogImport.previewBatchCount").replace(
+                "{count}",
+                String(previewProducts.length),
+              )}
+            </p>
+          </article>
+
           <SearchField
             label={t("catalogImport.searchPreview")}
             value={previewSearch}
             onChange={(event) => setPreviewSearch(event.target.value)}
             onClear={() => setPreviewSearch("")}
             placeholder={t("catalogImport.searchPreview")}
-            containerClassName="catalog-import-page__search"
+            containerClassName="catalog-import-page__search exits-page__search"
           />
+
           {detailQuery.isLoading || importedQuery.isLoading ? (
             <LoadingState label={t("loading.label")} />
           ) : null}
           {detailQuery.isError ? (
             <ErrorState title={t("error.title")} detail={(detailQuery.error as Error).message} />
           ) : null}
-          <ul className="m-0 flex list-none flex-col gap-2 p-0">
+
+          {detailQuery.isSuccess && previewProducts.length === 0 ? (
+            <EmptyState
+              title={t("catalogImport.emptyPreview")}
+              detail={t("catalogImport.emptyPreviewDetail")}
+            />
+          ) : null}
+
+          <ul className="exits-list m-0 grid list-none gap-2 p-0">
             {previewProducts.map((product) => {
               const already = importedSet.has(product.globalProductId);
+              const meta = [product.categoryName, product.unit, product.brand]
+                .filter(Boolean)
+                .join(" · ");
               return (
                 <li key={product.id}>
-                  <Card
-                    className={cn("p-3", already && "opacity-70")}
+                  <article
+                    className={cn(
+                      "catalog-import-product-row exits-list__card",
+                      already && "catalog-import-product-row--added",
+                    )}
                     data-testid={`catalog-template-preview-row-${product.globalProductId}`}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="m-0 truncate font-semibold">
-                          {product.productName ?? t("catalogImport.unnamedProduct")}
+                    <div className="catalog-import-product-row__main min-w-0">
+                      <p className="exits-list__name m-0 truncate font-semibold">
+                        {product.productName ?? t("catalogImport.unnamedProduct")}
+                      </p>
+                      {meta ? (
+                        <p className="catalog-import-product-row__meta m-0 mt-1 truncate text-[length:var(--exits-text-sm)] text-muted">
+                          {meta}
                         </p>
-                        <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-                          {[product.categoryName, product.unit, product.brand]
-                            .filter(Boolean)
-                            .join(" · ")}
-                        </p>
-                        {product.sellingPrice != null ? (
-                          <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)]">
-                            {t("catalogImport.suggestedPrice")}: {product.sellingPrice}
-                          </p>
-                        ) : null}
-                      </div>
-                      {already ? (
-                        <StatusChip>{t("catalogImport.alreadyAdded")}</StatusChip>
                       ) : null}
                     </div>
-                  </Card>
+                    <div className="catalog-import-product-row__aside">
+                      {product.sellingPrice != null ? (
+                        <span className="catalog-import-product-row__price">
+                          {formatPeso(product.sellingPrice)}
+                        </span>
+                      ) : null}
+                      {already ? (
+                        <StatusChip tone="warning">{t("catalogImport.alreadyAdded")}</StatusChip>
+                      ) : null}
+                    </div>
+                  </article>
                 </li>
               );
             })}
           </ul>
-          <div className="sticky bottom-0 z-10 flex flex-wrap gap-2 border-t border-border bg-[var(--exits-bg)] py-3">
-            <Button
-              type="button"
-              variant="ghost"
-              className="min-h-11"
-              onClick={() => setStep("choose")}
-            >
-              {t("catalogImport.back")}
-            </Button>
-            <Button
-              type="button"
-              className="min-h-11"
-              data-testid="catalog-template-continue-confirm"
-              onClick={() => setStep("confirm")}
-            >
-              {t("catalogImport.continueConfirm")}
-            </Button>
+
+          <div className="catalog-form-actions">
+            <div className="catalog-form-actions__primary">
+              <Button
+                type="button"
+                variant="ghost"
+                className="catalog-form-actions__restore min-h-11 w-full sm:w-auto"
+                onClick={() => setStep("choose")}
+              >
+                <ArrowLeft className="size-4 shrink-0" aria-hidden />
+                {t("catalogImport.back")}
+              </Button>
+            </div>
+            <div className="catalog-form-actions__secondary">
+              <Button
+                type="button"
+                className="catalog-form-actions__save min-h-11"
+                data-testid="catalog-template-continue-confirm"
+                onClick={() => setStep("confirm")}
+              >
+                {t("catalogImport.continueConfirm")}
+                <ArrowRight className="size-4 shrink-0" aria-hidden />
+              </Button>
+            </div>
           </div>
         </section>
       ) : null}
 
       {step === "confirm" && selectedSummary ? (
         <section className="flex flex-col gap-3" data-testid="catalog-template-confirm">
-          <Card className="flex flex-col gap-2 p-3">
-            <p className="m-0 font-semibold">{selectedSummary.name}</p>
-            <ul className="m-0 list-disc space-y-1 pl-5 text-[length:var(--exits-text-sm)] text-muted">
-              <li>{t("catalogImport.confirmStockZero")}</li>
-              <li>{t("catalogImport.confirmPricesEditable")}</li>
-              <li>{t("catalogImport.confirmDuplicates")}</li>
-              <li>{t("catalogImport.confirmOpeningStock")}</li>
+          <article className="catalog-import-confirm-panel exits-animate-panel">
+            <h2 className="catalog-import-confirm-panel__title m-0">
+              {t("catalogImport.confirmTitle")}
+            </h2>
+            <p className="catalog-import-confirm-panel__template m-0 mt-1 font-semibold">
+              {selectedSummary.name}
+            </p>
+            <ul className="catalog-import-confirm-panel__list m-0 list-none p-0">
+              {confirmItems.map((item) => (
+                <li key={item} className="catalog-import-confirm-panel__item">
+                  <Check
+                    className="catalog-import-confirm-panel__icon size-4 shrink-0"
+                    aria-hidden
+                  />
+                  <span>{item}</span>
+                </li>
+              ))}
             </ul>
-            <label className="mt-2 flex min-h-11 items-start gap-3 text-[length:var(--exits-text-sm)]">
+            <label className="catalog-form-check catalog-import-confirm-panel__ack mt-3">
               <input
                 type="checkbox"
-                className="mt-1 size-5"
                 checked={confirmed}
                 data-testid="catalog-template-confirm-checkbox"
                 onChange={(event) => setConfirmed(event.target.checked)}
               />
               <span>{t("catalogImport.confirmCheckbox")}</span>
             </label>
-          </Card>
+          </article>
+
           {startError ? <ErrorState title={t("error.title")} detail={startError} /> : null}
-          <div className="sticky bottom-0 z-10 flex flex-wrap gap-2 border-t border-border bg-[var(--exits-bg)] py-3">
-            <Button
-              type="button"
-              variant="ghost"
-              className="min-h-11"
-              onClick={() => setStep("preview")}
-            >
-              {t("catalogImport.back")}
-            </Button>
-            <Button
-              type="button"
-              className="min-h-11"
-              data-testid="catalog-template-start-import"
-              disabled={!confirmed || startMutation.isPending}
-              onClick={() => {
-                setStartError(null);
-                startMutation.mutate();
-              }}
-            >
-              {startMutation.isPending
-                ? t("catalogImport.starting")
-                : t("catalogImport.startImport")}
-            </Button>
+
+          <div className="catalog-form-actions">
+            <div className="catalog-form-actions__primary">
+              <Button
+                type="button"
+                variant="ghost"
+                className="catalog-form-actions__restore min-h-11 w-full sm:w-auto"
+                onClick={() => setStep("preview")}
+              >
+                <ArrowLeft className="size-4 shrink-0" aria-hidden />
+                {t("catalogImport.back")}
+              </Button>
+            </div>
+            <div className="catalog-form-actions__secondary">
+              <Button
+                type="button"
+                className="catalog-form-actions__save min-h-11"
+                data-testid="catalog-template-start-import"
+                disabled={!confirmed || startMutation.isPending}
+                onClick={() => {
+                  setStartError(null);
+                  startMutation.mutate();
+                }}
+              >
+                {startMutation.isPending ? (
+                  <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                ) : (
+                  <Upload className="size-4 shrink-0" aria-hidden />
+                )}
+                {startMutation.isPending
+                  ? t("catalogImport.starting")
+                  : t("catalogImport.startImport")}
+              </Button>
+            </div>
           </div>
         </section>
       ) : null}

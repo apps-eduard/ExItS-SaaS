@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { ChevronRight, Search } from "lucide-react";
 import { canProcessReturn } from "@/access/pos-capabilities";
 import { listSaleReturns } from "@/api/pos/pos-sale-returns-client";
 import { formatPaymentMethodLabel, listSales } from "@/api/pos/pos-sales-client";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -70,14 +71,18 @@ export function ReturnsHubPage() {
     return <LoadingState label={t("session.loading")} />;
   }
 
-  function onSearchSubmit(event: React.FormEvent) {
-    event.preventDefault();
+  function runSearch() {
     const value = debounced || search.trim();
     setSearchedNumber(value || null);
   }
 
+  function onSearchSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    runSearch();
+  }
+
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="returns-hub-page">
+    <div className="returns-hub-page exits-page flex min-w-0 flex-col gap-3" data-testid="returns-hub-page">
       <PageHeader
         title={t("returns.title")}
         description={t("returns.lede")}
@@ -97,17 +102,32 @@ export function ReturnsHubPage() {
           }}
           placeholder={t("returns.transactionNumber")}
           data-testid="returns-search-input"
+          containerClassName="returns-hub-page__search exits-page__search"
         />
-        <Button type="submit" className="min-h-11 w-fit" data-testid="returns-search-submit">
-          {t("returns.search")}
-        </Button>
+        <ExitsChipBar
+          variant="actions"
+          ariaLabel={t("returns.search")}
+          testId="returns-toolbar"
+          className="exits-animate-toolbar"
+          items={[
+            {
+              key: "search",
+              label: t("returns.search"),
+              icon: <Search />,
+              testId: "returns-search-submit",
+              emphasis: "primary",
+              onSelect: runSearch,
+            },
+          ]}
+        />
       </form>
 
       {searchedNumber ? (
-        <section className="flex flex-col gap-2" data-testid="returns-search-results">
-          <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-            {t("returns.searchResults")}
-          </h2>
+        <section
+          className="catalog-form-section exits-animate-panel gap-2"
+          data-testid="returns-search-results"
+        >
+          <h2 className="catalog-form-section__title">{t("returns.searchResults")}</h2>
           {saleSearchQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
           {saleSearchQuery.isError ? (
             <ErrorState
@@ -118,25 +138,29 @@ export function ReturnsHubPage() {
           {saleSearchQuery.isSuccess && saleSearchQuery.data.items.length === 0 ? (
             <EmptyState title={t("returns.transactionNotFound")} detail={t("returns.tryAnother")} />
           ) : null}
-          <ul className="m-0 flex list-none flex-col gap-2 p-0">
+          <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="returns-search-list">
             {saleSearchQuery.data?.items.map((sale) => {
               const voided = sale.status === "Voided" || Boolean(sale.voidedAtUtc);
               const canReturn = allowProcess && !voided && sale.status === "Completed";
               return (
                 <li key={sale.saleId}>
-                  <Card className="p-3">
-                    <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p
-                          className="m-0 font-semibold"
-                          data-testid={`returns-sale-${sale.saleId}`}
-                        >
-                          {sale.saleNumber}
-                        </p>
-                        <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-                          {formatPaymentMethodLabel(sale.paymentMethod)} · {sale.status}
-                        </p>
-                      </div>
+                  <div
+                    className="exits-list__card returns-row min-w-0"
+                    data-testid={`returns-row-${sale.saleId}`}
+                  >
+                    <span className="min-w-0">
+                      <span
+                        className="exits-list__name block truncate font-semibold"
+                        data-testid={`returns-sale-${sale.saleId}`}
+                      >
+                        {sale.saleNumber}
+                      </span>
+                      <span className="mb-0 mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
+                        {formatPaymentMethodLabel(sale.paymentMethod)} · {sale.status}
+                      </span>
+                    </span>
+
+                    <span className="returns-row__aside">
                       {canReturn ? (
                         <Button
                           type="button"
@@ -147,7 +171,7 @@ export function ReturnsHubPage() {
                           {t("returns.returnItems")}
                         </Button>
                       ) : (
-                        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted text-right">
                           {voided
                             ? t("returns.cannotReturnVoided")
                             : allowProcess
@@ -155,8 +179,8 @@ export function ReturnsHubPage() {
                               : t("returns.processDenied")}
                         </p>
                       )}
-                    </div>
-                  </Card>
+                    </span>
+                  </div>
                 </li>
               );
             })}
@@ -164,10 +188,11 @@ export function ReturnsHubPage() {
         </section>
       ) : null}
 
-      <section className="flex flex-col gap-2" data-testid="returns-recent-list">
-        <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-          {t("returns.recentTitle")}
-        </h2>
+      <section
+        className="catalog-form-section exits-animate-panel gap-2"
+        data-testid="returns-recent-list"
+      >
+        <h2 className="catalog-form-section__title">{t("returns.recentTitle")}</h2>
         {recentReturnsQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
         {recentReturnsQuery.isError ? (
           <ErrorState
@@ -178,22 +203,28 @@ export function ReturnsHubPage() {
         {recentReturnsQuery.isSuccess && recentReturnsQuery.data.items.length === 0 ? (
           <EmptyState title={t("returns.recentEmpty")} detail={t("returns.recentEmptyDetail")} />
         ) : null}
-        <ul className="m-0 flex list-none flex-col gap-2 p-0">
+        <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="returns-recent-list-items">
           {recentReturnsQuery.data?.items.map((item) => (
             <li key={item.returnId}>
-              <Card className="p-3">
-                <Link
-                  className="block min-w-0 text-foreground no-underline"
-                  to={`/returns/${item.returnId}`}
-                  data-testid={`returns-row-${item.returnId}`}
-                >
-                  <span className="block truncate font-semibold">{item.returnNumber}</span>
-                  <span className="mt-1 flex justify-between gap-2 text-[length:var(--exits-text-sm)] text-muted">
-                    <span>{item.reason}</span>
-                    <MoneyDisplay amount={item.totalRefundAmount} />
+              <Link
+                className="exits-list__card returns-row block min-w-0 text-foreground no-underline"
+                to={`/returns/${item.returnId}`}
+                data-testid={`returns-row-${item.returnId}`}
+              >
+                <span className="min-w-0">
+                  <span className="exits-list__name block truncate font-semibold">
+                    {item.returnNumber}
                   </span>
-                </Link>
-              </Card>
+                  <span className="mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
+                    {item.reason}
+                  </span>
+                </span>
+
+                <span className="returns-row__aside">
+                  <MoneyDisplay amount={item.totalRefundAmount} />
+                  <ChevronRight className="returns-row__chevron size-4 shrink-0 text-muted" aria-hidden />
+                </span>
+              </Link>
             </li>
           ))}
         </ul>

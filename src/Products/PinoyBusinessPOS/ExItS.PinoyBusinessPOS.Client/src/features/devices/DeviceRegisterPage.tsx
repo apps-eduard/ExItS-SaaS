@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { CircleAlert, MonitorSmartphone } from "lucide-react";
 import { getPosDeviceCapacity, registerPosDevice } from "@/api/platform/pos-devices-client";
@@ -12,7 +12,7 @@ import {
 import { formatPosDeviceCapacity } from "@/features/devices/device-capacity";
 import { getDurableInstallationDeviceId } from "@/workspace/browser-installation-identity";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -110,7 +110,10 @@ export function DeviceRegisterPage() {
   });
 
   return (
-    <div data-testid="device-register-page" className="flex min-w-0 flex-col gap-4">
+    <div
+      data-testid="device-register-page"
+      className="device-register-page exits-page flex min-w-0 flex-col gap-3"
+    >
       <PageHeader
         title={t("devices.registerTitle")}
         description={t("devices.registerLede")}
@@ -119,17 +122,39 @@ export function DeviceRegisterPage() {
         backTestId="page-header-back-org"
       />
 
-      <Card className="flex flex-col gap-3 p-4">
+      {canManageDevices ? (
+        <ExitsChipBar
+          variant="actions"
+          ariaLabel={t("devices.registerTitle")}
+          testId="device-register-toolbar"
+          className="exits-animate-toolbar"
+          items={[
+            {
+              key: "manage",
+              label: t("devices.manageDevices"),
+              href: "/org/devices",
+              testId: "devices-open-manage",
+            },
+          ]}
+        />
+      ) : null}
+
+      <section className="catalog-form-section exits-animate-panel device-register-panel gap-3">
         <div className="flex items-start gap-3">
-          <MonitorSmartphone className="mt-0.5 size-6 shrink-0 text-primary" aria-hidden />
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("devices.registerHint")}
-          </p>
+          <span className="devices-panel__icon" aria-hidden>
+            <MonitorSmartphone />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 className="catalog-form-section__title">{t("devices.registerTitle")}</h2>
+            <p className="mb-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
+              {t("devices.registerHint")}
+            </p>
+          </div>
         </div>
 
         {capacity ? (
           <p
-            className="m-0 text-[length:var(--exits-text-sm)]"
+            className="m-0 text-[length:var(--exits-text-sm)] font-semibold"
             data-testid="devices-register-capacity"
           >
             {t("devices.capacity.activeOfAllowed")
@@ -141,23 +166,25 @@ export function DeviceRegisterPage() {
         {capacityBlocked ? (
           <div
             role="alert"
-            className="flex gap-3 rounded-[var(--exits-radius-md)] border border-destructive px-4 py-3"
+            className="exits-alert exits-alert--error"
             data-testid="devices-register-capacity-blocked"
           >
-            <CircleAlert className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden />
-            <div className="flex min-w-0 flex-col gap-1">
-              <p className="m-0 font-semibold">{t("devices.capacity.limitReached")}</p>
-              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                {t("devices.capacity.limitReachedDetail")}
-              </p>
+            <div className="flex gap-3">
+              <CircleAlert className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden />
+              <div className="flex min-w-0 flex-col gap-1">
+                <p className="m-0 font-semibold">{t("devices.capacity.limitReached")}</p>
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("devices.capacity.limitReachedDetail")}
+                </p>
+              </div>
             </div>
           </div>
         ) : null}
 
-        <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+        <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
           {t("devices.deviceNameLabel")}
           <input
-            className="min-h-11 rounded border border-[var(--exits-border)] bg-transparent px-3"
+            className="catalog-form-select"
             data-testid="devices-name-input"
             value={deviceName}
             onChange={(event) => setDeviceName(event.target.value)}
@@ -170,10 +197,10 @@ export function DeviceRegisterPage() {
             {t("devices.branchLocked").replace("{branch}", boundBranchName)}
           </p>
         ) : (
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+          <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("devices.branchLabel")}
             <select
-              className="min-h-11 rounded border border-[var(--exits-border)] bg-transparent px-3"
+              className="catalog-form-select"
               data-testid="devices-branch-select"
               value={branchId}
               onChange={(event) => setBranchId(event.target.value)}
@@ -192,30 +219,37 @@ export function DeviceRegisterPage() {
         {error ? (
           <div
             role="alert"
-            className="flex gap-3 rounded-[var(--exits-radius-md)] border border-destructive px-4 py-3"
+            className="exits-alert exits-alert--error"
             data-testid="devices-register-error"
           >
-            <CircleAlert className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden />
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-destructive">{error}</p>
+            <div className="flex gap-3">
+              <CircleAlert className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden />
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-destructive">{error}</p>
+            </div>
           </div>
         ) : null}
 
-        <Button
-          type="button"
-          className="min-h-11"
-          data-testid="devices-register-submit"
-          disabled={registerMutation.isPending || capacityBlocked}
-          onClick={() => registerMutation.mutate()}
-        >
-          {registerMutation.isPending ? t("devices.registering") : t("devices.registerThisDevice")}
-        </Button>
-
-        {canManageDevices ? (
-          <Button asChild variant="ghost" className="min-h-11" data-testid="devices-open-manage">
-            <Link to="/org/devices">{t("devices.manageDevices")}</Link>
+        <div className="device-register-actions">
+          <Button
+            type="button"
+            variant="outline"
+            className="device-register-actions__cancel min-h-11"
+            data-testid="devices-register-cancel"
+            onClick={() => navigate(pageBackNav.orgDevices.to)}
+          >
+            {t("devices.cancel")}
           </Button>
-        ) : null}
-      </Card>
+          <Button
+            type="button"
+            className="device-register-actions__submit min-h-11"
+            data-testid="devices-register-submit"
+            disabled={registerMutation.isPending || capacityBlocked}
+            onClick={() => registerMutation.mutate()}
+          >
+            {registerMutation.isPending ? t("devices.registering") : t("devices.registerThisDevice")}
+          </Button>
+        </div>
+      </section>
     </div>
   );
 }

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Loader2, Save } from "lucide-react";
 import { createCustomer, getCustomer, updateCustomer } from "@/api/pos/pos-customers-client";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -221,7 +222,14 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="customer-form-page">
+    <form
+      className="customer-form-page exits-page flex min-w-0 flex-col gap-3"
+      data-testid="customer-form-page"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void onSubmit();
+      }}
+    >
       <PageHeader
         title={mode === "create" ? t("customers.newTitle") : t("customers.editTitle")}
         description={t("customers.formLede")}
@@ -234,77 +242,73 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
         backTestId="page-header-back-customers"
       />
       {!online ? (
-        <Card data-testid="customer-form-offline-notice">
+        <div className="exits-alert" data-testid="customer-form-offline-notice" role="status">
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("offline.customerWillQueue")}
           </p>
-        </Card>
+        </div>
       ) : null}
       {error ? (
-        <Card data-testid="customer-form-error">
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">
-            {error}
-          </p>
-        </Card>
+        <div className="exits-alert exits-alert--error" data-testid="customer-form-error" role="alert">
+          <p className="m-0 text-[length:var(--exits-text-sm)]">{error}</p>
+        </div>
       ) : null}
-      <Card className="flex flex-col gap-3">
-        <label
-          className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
-          htmlFor="customer-display-name"
-        >
-          {t("customers.displayName")}
-          <input
+
+      <section className="catalog-form-section exits-animate-panel">
+        <h2 className="catalog-form-section__title">{t("customers.sectionBasics")}</h2>
+        <div className="catalog-form-section__grid">
+          <Input
+            label={t("customers.displayName")}
             id="customer-display-name"
+            name="customerDisplayName"
             data-testid="customer-display-name"
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            autoComplete="name"
             value={displayName}
             disabled={saving}
             onChange={(event) => setDisplayName(event.target.value)}
           />
-        </label>
-        <label
-          className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
-          htmlFor="customer-mobile"
-        >
-          {t("customers.mobile")}
-          <input
+          <Input
+            label={t("customers.mobile")}
             id="customer-mobile"
+            name="customerMobile"
             data-testid="customer-mobile"
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            inputMode="tel"
+            autoComplete="tel"
             value={mobileNumber}
             disabled={saving}
             onChange={(event) => setMobileNumber(event.target.value)}
           />
-        </label>
-        <label
-          className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
-          htmlFor="customer-address"
-        >
-          {t("customers.address")}
-          <input
+        </div>
+      </section>
+
+      <section className="catalog-form-section exits-animate-panel">
+        <h2 className="catalog-form-section__title">{t("customers.sectionDetails")}</h2>
+        <div className="catalog-form-section__grid">
+          <Input
+            label={t("customers.address")}
             id="customer-address"
+            name="customerAddress"
             data-testid="customer-address"
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            autoComplete="street-address"
             value={address}
             disabled={saving}
             onChange={(event) => setAddress(event.target.value)}
           />
-        </label>
-        <label
-          className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
-          htmlFor="customer-notes"
-        >
-          {t("customers.notes")}
-          <textarea
-            id="customer-notes"
-            data-testid="customer-notes"
-            className="min-h-24 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
-            value={notes}
-            disabled={saving}
-            onChange={(event) => setNotes(event.target.value)}
-          />
-        </label>
-      </Card>
+          <label className="catalog-form-field--full flex min-w-0 flex-col gap-1.5" htmlFor="customer-notes">
+            <span className="text-[length:var(--exits-text-sm)] font-semibold">{t("customers.notes")}</span>
+            <textarea
+              id="customer-notes"
+              name="customerNotes"
+              data-testid="customer-notes"
+              className="customer-form-notes min-h-24 w-full rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2 text-[length:var(--exits-text-md)] text-foreground"
+              value={notes}
+              disabled={saving}
+              onChange={(event) => setNotes(event.target.value)}
+            />
+          </label>
+        </div>
+      </section>
+
       {mode === "create" && online && workspace ? (
         <CustomerPersonalLinkPanel
           organizationId={workspace.organizationId}
@@ -323,23 +327,36 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
         />
       ) : null}
       {mode === "create" && !online ? (
-        <Card data-testid="customer-personal-link-offline">
+        <section className="catalog-form-section exits-animate-panel" data-testid="customer-personal-link-offline">
+          <h2 className="catalog-form-section__title">{t("customers.personalLink.title")}</h2>
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("customers.personalLink.requiresOnline")}
           </p>
-        </Card>
+        </section>
       ) : null}
-      <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          className="min-h-11"
-          data-testid="customer-save"
-          disabled={saving}
-          onClick={() => void onSubmit()}
-        >
-          {saving ? t("customers.saving") : t("customers.save")}
-        </Button>
+
+      <div className="catalog-form-actions customer-form-actions">
+        <div className="catalog-form-actions__primary">
+          <Button
+            type="submit"
+            className="catalog-form-actions__save"
+            data-testid="customer-save"
+            disabled={saving}
+          >
+            {saving ? (
+              <>
+                <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                {t("customers.saving")}
+              </>
+            ) : (
+              <>
+                <Save className="size-4 shrink-0" aria-hidden />
+                {t("customers.save")}
+              </>
+            )}
+          </Button>
+        </div>
       </div>
-    </div>
+    </form>
   );
 }

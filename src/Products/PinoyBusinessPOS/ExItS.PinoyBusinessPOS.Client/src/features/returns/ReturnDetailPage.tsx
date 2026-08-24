@@ -8,7 +8,6 @@ import {
   isUtangRefundMethod,
 } from "@/api/pos/pos-sale-returns-client";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
@@ -73,7 +72,10 @@ export function ReturnDetailPage() {
   const methodLabel = formatRefundMethodLabel(detail.refundMethod);
 
   return (
-    <div data-testid="return-detail-page" className="flex min-w-0 flex-col gap-4">
+    <div
+      data-testid="return-detail-page"
+      className="return-detail-page exits-page flex min-w-0 flex-col gap-3"
+    >
       <PageHeader
         title={t("returns.detailTitle")}
         description={`${detail.returnNumber} · ${detail.returnDate}`}
@@ -82,7 +84,7 @@ export function ReturnDetailPage() {
         backTestId="page-header-back-returns"
       />
 
-      <Card>
+      <section className="catalog-form-section exits-animate-panel gap-0">
         <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)]">
           <div className="flex justify-between gap-2">
             <dt className="text-muted">{t("returns.returnNumber")}</dt>
@@ -138,10 +140,10 @@ export function ReturnDetailPage() {
             {t("returns.successUtang")}
           </p>
         ) : null}
-      </Card>
+      </section>
 
-      <Card>
-        <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+      <section className="catalog-form-section exits-animate-panel gap-0">
+        <h2 className="catalog-form-section__title">
           {t("returns.linesTitle")}
         </h2>
         <ul className="mb-0 mt-3 list-none space-y-2 p-0">
@@ -164,7 +166,7 @@ export function ReturnDetailPage() {
             </li>
           ))}
         </ul>
-      </Card>
+      </section>
 
       <div className="flex flex-wrap gap-2">
         <Button asChild variant="ghost" className="min-h-11">

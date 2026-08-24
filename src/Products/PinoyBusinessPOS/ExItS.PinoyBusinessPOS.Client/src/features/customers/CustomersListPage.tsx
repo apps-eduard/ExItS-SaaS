@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { ChevronRight, Plus } from "lucide-react";
 import { canCreateCustomer } from "@/access/pos-capabilities";
 import { listCustomers, type PosCustomerListItem } from "@/api/pos/pos-customers-client";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
-import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { SearchField } from "@/components/exits/SearchField";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import {
@@ -22,6 +22,33 @@ import {
 import { useOrganizationOfflineContext } from "@/offline/organization-offline-context";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
+type StatusFilter = "Active" | "Inactive" | "";
+
+const STATUS_FILTERS: Array<{
+  value: StatusFilter;
+  key: string;
+  labelKey: "customers.statusActive" | "customers.statusInactive" | "customers.statusAll";
+}> = [
+  { value: "Active", key: "Active", labelKey: "customers.statusActive" },
+  { value: "Inactive", key: "Inactive", labelKey: "customers.statusInactive" },
+  { value: "", key: "all", labelKey: "customers.statusAll" },
+];
+
+function customerStatusTone(status: string): "success" | "warning" {
+  return status.toLowerCase() === "active" ? "success" : "warning";
+}
+
+function customerMeta(
+  customer: PosCustomerListItem,
+  linkedLabel: string,
+): string {
+  const parts = [customer.mobileNumber].filter(Boolean);
+  if (customer.linkedPersonalPublicUserId || customer.linkedBuyerPublicOrganizationId) {
+    parts.push(linkedLabel);
+  }
+  return parts.join(" · ");
+}
+
 export function CustomersListPage() {
   const { t } = useI18n();
   const { boundWorkspace, sessionGrant } = useWorkspace();
@@ -29,7 +56,7 @@ export function CustomersListPage() {
   const offlineContext = useOrganizationOfflineContext();
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
-  const [status, setStatus] = useState<"Active" | "Inactive" | "">("Active");
+  const [status, setStatus] = useState<StatusFilter>("Active");
   const [cached, setCached] = useState<PosCustomerListItem[] | null>(null);
 
   useEffect(() => {
@@ -56,7 +83,6 @@ export function CustomersListPage() {
       debounced,
       status,
     ],
-    // Offline reads come from the cache below instead of burning retries on a dead network.
     enabled: Boolean(workspace) && online,
     queryFn: ({ signal }) =>
       listCustomers(
@@ -70,7 +96,6 @@ export function CustomersListPage() {
       ),
   });
 
-  // Write-through only from a successful online read, so the cache can never invent a customer.
   useEffect(() => {
     if (!offlineContext || !query.isSuccess || !online) {
       return;
@@ -110,7 +135,10 @@ export function CustomersListPage() {
     : (query.data?.items ?? []);
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="customers-list-page">
+    <div
+      className="customers-page exits-page flex min-w-0 flex-col gap-3"
+      data-testid="customers-list-page"
+    >
       <PageHeader
         title={t("customers.title")}
         description={t("customers.lede")}
@@ -118,45 +146,57 @@ export function CustomersListPage() {
         backLabel={t(pageBackNav.managerHome.labelKey)}
         backTestId="page-header-back-customers"
       />
-      <div className="flex flex-wrap gap-2">
-        {allowCreate ? (
-          <Button asChild className="min-h-11" data-testid="customers-new">
-            <Link to="/customers/new">{t("customers.add")}</Link>
-          </Button>
-        ) : null}
-      </div>
+
+      {allowCreate ? (
+        <ExitsChipBar
+          variant="actions"
+          ariaLabel={t("customers.title")}
+          testId="customers-toolbar"
+          className="exits-animate-toolbar"
+          items={[
+            {
+              key: "new",
+              label: t("customers.add"),
+              icon: <Plus />,
+              href: "/customers/new",
+              testId: "customers-new",
+              emphasis: "primary",
+            },
+          ]}
+        />
+      ) : null}
+
       <SearchField
         label={t("customers.search")}
         value={search}
         onChange={(event) => setSearch(event.target.value)}
         onClear={() => setSearch("")}
         placeholder={t("customers.search")}
+        data-testid="customers-search"
+        containerClassName="customers-page__search exits-page__search"
       />
-      <UnderlineTabBar
-        items={(
-          [
-            ["Active", "customers.statusActive"],
-            ["Inactive", "customers.statusInactive"],
-            ["", "customers.statusAll"],
-          ] as const
-        ).map(([value, labelKey]) => ({
-          key: value || "all",
-          label: t(labelKey),
-          testId: `customers-status-${value || "all"}`,
-        }))}
-        activeKey={status || "all"}
-        onChange={(key) =>
-          setStatus(key === "all" ? "" : (key as "Active" | "Inactive"))
-        }
+
+      <ExitsChipBar
+        variant="filter"
         ariaLabel={t("customers.statusFilter")}
+        testId="customers-status-filters"
+        items={STATUS_FILTERS.map((filter) => ({
+          key: filter.key,
+          label: t(filter.labelKey),
+          state: (status || "all") === filter.key ? "active" : "idle",
+          testId: `customers-status-${filter.key === "all" ? "all" : filter.key}`,
+          onSelect: () => setStatus(filter.value),
+        }))}
       />
+
       {usingCache ? (
-        <Card data-testid="customers-cached-notice">
+        <div className="exits-alert" data-testid="customers-cached-notice" role="status">
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("offline.cachedCustomersNotice")}
           </p>
-        </Card>
+        </div>
       ) : null}
+
       {query.isLoading && !usingCache ? <LoadingState label={t("loading.label")} /> : null}
       {query.isError && !usingCache ? (
         <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
@@ -164,23 +204,35 @@ export function CustomersListPage() {
       {(query.isSuccess || usingCache) && items.length === 0 ? (
         <EmptyState title={t("customers.empty")} detail={t("customers.emptyDetail")} />
       ) : null}
-      <ul className="m-0 flex list-none flex-col gap-2 p-0" data-testid="customers-list">
-        {items.map((customer) => (
-          <li key={customer.customerId}>
-            <Card className="p-3">
+
+      <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="customers-list">
+        {items.map((customer) => {
+          const meta = customerMeta(customer, t("customers.linkedPersonal"));
+          return (
+            <li key={customer.customerId}>
               <Link
-                className="block min-w-0 text-foreground no-underline"
+                className="exits-list__card customer-row block min-w-0 text-foreground no-underline"
                 to={`/customers/${customer.customerId}`}
                 data-testid={`customer-row-${customer.customerId}`}
               >
-                <span className="block truncate font-semibold">{customer.displayName}</span>
-                <span className="block truncate text-[length:var(--exits-text-sm)] text-muted">
-                  {[customer.mobileNumber, customer.status].filter(Boolean).join(" · ")}
+                <span className="customer-row__main min-w-0">
+                  <span className="exits-list__name block truncate font-semibold">
+                    {customer.displayName}
+                  </span>
+                  {meta ? (
+                    <span className="customer-row__meta mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
+                      {meta}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="customer-row__aside">
+                  <StatusChip tone={customerStatusTone(customer.status)}>{customer.status}</StatusChip>
+                  <ChevronRight className="customer-row__chevron size-4 shrink-0 text-muted" aria-hidden />
                 </span>
               </Link>
-            </Card>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

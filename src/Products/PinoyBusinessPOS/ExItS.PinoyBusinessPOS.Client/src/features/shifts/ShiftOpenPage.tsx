@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Loader2, Play, RotateCcw } from "lucide-react";
 import { canManageShifts, canViewShifts } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
 import {
@@ -18,13 +19,16 @@ import {
   type CashCountDenominationLineDto,
 } from "@/api/pos/pos-shifts-client";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/exits/EmptyState";
+import { ErrorState } from "@/components/exits/ErrorState";
+import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
+import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
-import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { DenominationCountHelper } from "@/features/shifts/DenominationCountHelper";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
 import { useI18n } from "@/i18n/I18nProvider";
+import { formatPeso } from "@/lib/format-money";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export function ShiftOpenPage() {
@@ -85,6 +89,12 @@ export function ShiftOpenPage() {
     [denomsQuery.data],
   );
 
+  const openingCashAmount = Number(openingCash);
+  const openingCashPreview =
+    openingCash.trim().length > 0 && Number.isFinite(openingCashAmount) && openingCashAmount >= 0
+      ? formatPeso(openingCashAmount)
+      : null;
+
   useEffect(() => {
     if (registers.length === 1) {
       setSelectedRegisterId(registers[0]!.registerId);
@@ -113,7 +123,10 @@ export function ShiftOpenPage() {
 
   if (!canView) {
     return (
-      <div data-testid="shift-open-denied" className="flex flex-col gap-3">
+      <div
+        data-testid="shift-open-denied"
+        className="shift-open-page exits-page flex flex-col gap-3"
+      >
         <PageHeader
           title={t("shift.openTitle")}
           description={t("shift.deniedDetail")}
@@ -127,7 +140,10 @@ export function ShiftOpenPage() {
 
   if (!canManage) {
     return (
-      <div data-testid="shift-open-denied" className="flex flex-col gap-3">
+      <div
+        data-testid="shift-open-denied"
+        className="shift-open-page exits-page flex flex-col gap-3"
+      >
         <PageHeader
           title={t("shift.openTitle")}
           description={t("shift.manageDeniedDetail")}
@@ -140,7 +156,7 @@ export function ShiftOpenPage() {
   }
 
   if (!workspaceScope) {
-    return <LoadingSkeleton label={t("loading.label")} />;
+    return <LoadingState label={t("loading.label")} />;
   }
 
   async function onOpen(skipOpeningCash: boolean) {
@@ -202,7 +218,10 @@ export function ShiftOpenPage() {
     Boolean(registersQuery.error);
 
   return (
-    <div data-testid="shift-open-page" className="flex min-w-0 flex-col gap-4">
+    <div
+      data-testid="shift-open-page"
+      className="shift-open-page exits-page flex min-w-0 flex-col gap-3"
+    >
       <PageHeader
         title={t("shift.openTitle")}
         description={t("shift.openLede")}
@@ -212,46 +231,61 @@ export function ShiftOpenPage() {
       />
 
       {submitError ? (
-        <Card data-testid="shift-open-error">
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">
-            {submitError}
-          </p>
+        <div className="exits-alert exits-alert--error" data-testid="shift-open-error" role="alert">
+          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">{t("error.title")}</p>
+          <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)]">{submitError}</p>
           <Button
             type="button"
-            variant="ghost"
-            className="mt-2 min-h-11"
+            variant="outline"
+            className="mt-3 min-h-11"
             onClick={() => void registersQuery.refetch()}
           >
+            <RotateCcw className="size-4 shrink-0" aria-hidden />
             {t("shift.retry")}
           </Button>
-        </Card>
+        </div>
       ) : null}
 
-      <Card>
-        <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-          {t("shift.registerSection")}
-        </h2>
-        {registersQuery.isLoading ? (
-          <LoadingSkeleton label={t("loading.label")} />
-        ) : registersQuery.isError ? (
-          <p className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">
-            {t("shift.registersLoadError")}
-          </p>
-        ) : registers.length === 0 ? (
-          <p
-            className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-muted"
-            data-testid="shift-open-no-register"
-          >
-            {t("shift.noRegisterMessage")}
-          </p>
-        ) : (
-          <label className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            <span>{t("shift.registerLabel")}</span>
+      <section className="catalog-form-section exits-animate-panel">
+        <h2 className="catalog-form-section__title">{t("shift.registerSection")}</h2>
+        {registersQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
+        {registersQuery.isError ? (
+          <ErrorState title={t("error.title")} detail={t("shift.registersLoadError")} />
+        ) : null}
+        {registersQuery.isSuccess && registers.length === 0 ? (
+          <div data-testid="shift-open-no-register">
+            <EmptyState title={t("shift.noRegisterTitle")} detail={t("shift.noRegisterMessage")} />
+            <Button asChild variant="outline" className="mt-3 min-h-11">
+              <Link to="/registers">{t("shift.goToRegisters")}</Link>
+            </Button>
+          </div>
+        ) : null}
+        {registers.length > 0 ? (
+          <>
+            <ExitsChipBar
+              variant="filter"
+              ariaLabel={t("shift.registerLabel")}
+              testId="shift-register-chips"
+              items={registers.map((register) => ({
+                key: register.registerId,
+                label: `${register.registerCode} — ${register.name}`,
+                state: selectedRegisterId === register.registerId ? "active" : "idle",
+                testId: `shift-register-chip-${register.registerId}`,
+                onSelect: () => setSelectedRegisterId(register.registerId),
+              }))}
+            />
+            {/* Native select kept for keyboard / e2e compatibility; chips are the primary UI. */}
+            <label className="sr-only" htmlFor="shift-register-select">
+              {t("shift.registerLabel")}
+            </label>
             <select
+              id="shift-register-select"
               data-testid="shift-register-select"
-              className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+              className="sr-only"
               value={selectedRegisterId}
               onChange={(event) => setSelectedRegisterId(event.target.value)}
+              tabIndex={-1}
+              aria-hidden
             >
               <option value="">{t("shift.registerPlaceholder")}</option>
               {registers.map((register) => (
@@ -260,21 +294,19 @@ export function ShiftOpenPage() {
                 </option>
               ))}
             </select>
-          </label>
-        )}
-      </Card>
+          </>
+        ) : null}
+      </section>
 
       {showOpeningCash ? (
-        <Card>
-          <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-            {t("shift.openingCashSection")}
-          </h2>
-          <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted">
+        <section className="catalog-form-section exits-animate-panel">
+          <h2 className="catalog-form-section__title">{t("shift.openingCashSection")}</h2>
+          <p className="m-0 text-[length:var(--exits-text-sm)] leading-relaxed text-muted">
             {openingRequired
               ? t("shift.openingCashHelpRequired")
               : t("shift.openingCashHelpOptional")}
           </p>
-          <div className="mt-3">
+          <div className="mt-1">
             <DenominationCountHelper
               denominations={enabledDenoms}
               currencyCode={currencyCode}
@@ -285,7 +317,7 @@ export function ShiftOpenPage() {
               testIdPrefix="opening-denom"
             />
           </div>
-          <label className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+          <label className="mt-2 flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             <span>
               {t("shift.openingCashLabel")} ({currencyCode})
             </span>
@@ -295,7 +327,7 @@ export function ShiftOpenPage() {
               inputMode="decimal"
               min={0}
               step="0.01"
-              className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
+              className="catalog-form-select tabular-nums"
               value={openingCash}
               onChange={(event) => {
                 setOpeningCash(event.target.value);
@@ -303,36 +335,54 @@ export function ShiftOpenPage() {
               }}
             />
           </label>
+          {openingCashPreview ? (
+            <p className="shift-open-cash-preview m-0 text-[length:var(--exits-text-sm)] font-semibold">
+              {t("shift.openingCashPreview").replace("{amount}", openingCashPreview)}
+            </p>
+          ) : null}
           {openingCashError ? (
-            <p className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">
+            <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-destructive">
               {openingCashError}
             </p>
           ) : null}
-        </Card>
+        </section>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
-        {showOpeningCash && !openingRequired ? (
+      <div className="catalog-form-actions shift-open-actions">
+        <div className="catalog-form-actions__primary">
+          {showOpeningCash && !openingRequired ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="catalog-form-actions__restore min-h-11 w-full sm:w-auto"
+              disabled={startBlocked}
+              data-testid="shift-open-skip-cash"
+              onClick={() => void onOpen(true)}
+            >
+              {t("shift.skipOpeningCash")}
+            </Button>
+          ) : (
+            <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted">
+              {selectedRegisterId ? t("shift.openReadyHint") : t("shift.openSelectRegisterHint")}
+            </p>
+          )}
+        </div>
+        <div className="catalog-form-actions__secondary">
           <Button
             type="button"
-            variant="ghost"
-            className="min-h-11"
+            className="catalog-form-actions__save min-h-11"
             disabled={startBlocked}
-            data-testid="shift-open-skip-cash"
-            onClick={() => void onOpen(true)}
+            data-testid="shift-open-confirm"
+            onClick={() => void onOpen(!showOpeningCash)}
           >
-            {t("shift.skipOpeningCash")}
+            {saving ? (
+              <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+            ) : (
+              <Play className="size-4 shrink-0" aria-hidden />
+            )}
+            {saving ? t("shift.opening") : t("shift.openConfirm")}
           </Button>
-        ) : null}
-        <Button
-          type="button"
-          className="min-h-11"
-          disabled={startBlocked}
-          data-testid="shift-open-confirm"
-          onClick={() => void onOpen(!showOpeningCash)}
-        >
-          {saving ? t("shift.opening") : t("shift.openConfirm")}
-        </Button>
+        </div>
       </div>
     </div>
   );

@@ -16,9 +16,9 @@ import {
 } from "@/api/pos/pos-customer-orders-client";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { StatusChip } from "@/components/exits/StatusChip";
@@ -162,7 +162,10 @@ export function SellerOrderDetailPage() {
   const actions = availableSellerActions(order);
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="seller-order-detail-page">
+    <div
+      className="customer-order-detail-page exits-page flex min-w-0 flex-col gap-3"
+      data-testid="seller-order-detail-page"
+    >
       <PageHeader
         title={`#${order.orderNumber}`}
         description={`${order.customerDisplayName} · ${order.fulfillmentType}`}
@@ -170,10 +173,15 @@ export function SellerOrderDetailPage() {
         backLabel={t(pageBackNav.orders.labelKey)}
         backTestId="page-header-back-orders"
       />
-      <StatusChip tone="info">{t(displayOrderStatusKey(order) as MessageKey)}</StatusChip>
+      <div className="customer-order-detail__status exits-animate-toolbar">
+        <StatusChip tone="info">{t(displayOrderStatusKey(order) as MessageKey)}</StatusChip>
+      </div>
       {error ? <ErrorState title={t("orders.error")} detail={error} /> : null}
 
-      <Card className="grid gap-2 text-[length:var(--exits-text-sm)]" data-testid="order-facts">
+      <section
+        className="catalog-form-section exits-animate-panel gap-2 text-[length:var(--exits-text-sm)]"
+        data-testid="order-facts"
+      >
         <div>
           {t("orders.branch")}: <strong>{order.branchNameSnapshot}</strong>
         </div>
@@ -183,40 +191,47 @@ export function SellerOrderDetailPage() {
         <div>
           {t("orders.paymentStatus")}: <strong>{order.paymentStatus}</strong>
         </div>
-      </Card>
+      </section>
 
       {order.delivery ? (
-        <Card data-testid="seller-delivery">
+        <section className="catalog-form-section exits-animate-panel gap-2" data-testid="seller-delivery">
           <p className="m-0 font-semibold">{t("orders.deliveryAddress")}</p>
           <p className="m-0">{order.delivery.recipientName}</p>
           <p className="m-0">{order.delivery.addressLine1}</p>
           <p className="m-0 text-muted">
             {t("orders.deliveryFee")}: {money(order.delivery.finalDeliveryFee)}
           </p>
-        </Card>
+        </section>
       ) : null}
 
-      <Card className="flex flex-col gap-2" data-testid="seller-order-lines">
-        {order.lines.map((line) => (
-          <div key={line.lineId} className="flex justify-between gap-2">
-            <span>
-              {line.nameSnapshot} × {line.quantity}
-            </span>
-            <strong>{money(line.lineTotal)}</strong>
-          </div>
-        ))}
-        <div className="flex justify-between">
+      <section className="catalog-form-section exits-animate-panel gap-2" data-testid="seller-order-lines">
+        <h2 className="catalog-form-section__title">{t("orders.items")}</h2>
+        <ul className="m-0 list-none space-y-2 p-0">
+          {order.lines.map((line) => (
+            <li key={line.lineId} className="customer-order-line">
+              <span className="min-w-0 truncate">
+                {line.nameSnapshot} × {line.quantity}
+              </span>
+              <strong>
+                <MoneyDisplay amount={line.lineTotal} />
+              </strong>
+            </li>
+          ))}
+        </ul>
+        <div className="customer-order-line customer-order-line--total">
           <span>{t("orders.total")}</span>
-          <strong>{money(order.total)}</strong>
+          <strong>
+            <MoneyDisplay amount={order.total} />
+          </strong>
         </div>
-      </Card>
+      </section>
 
       {showReject ? (
-        <Card className="flex flex-col gap-3" data-testid="reject-panel">
+        <section className="catalog-form-section exits-animate-panel gap-3" data-testid="reject-panel">
           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
             <span>{t("orders.rejectReason")}</span>
             <select
-              className="min-h-11 rounded border px-3"
+              className="catalog-form-select"
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
             >
@@ -230,46 +245,68 @@ export function SellerOrderDetailPage() {
           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
             <span>{t("orders.rejectNotes")}</span>
             <input
-              className="min-h-11 rounded border px-3"
+              className="catalog-form-select"
               value={rejectNotes}
               onChange={(e) => setRejectNotes(e.target.value)}
             />
           </label>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={busy}
-              onClick={() => setShowReject(false)}
-            >
-              {t("orders.cancel")}
-            </Button>
-            <Button
-              type="button"
-              className="min-h-11"
-              data-testid="confirm-reject"
-              disabled={busy || !canManage}
-              onClick={() => void confirmReject()}
-            >
-              {t("orders.reject")}
-            </Button>
+          <div className="catalog-form-actions customer-order-detail-actions">
+            <div className="catalog-form-actions__primary">
+              <Button
+                type="button"
+                className="catalog-form-actions__save"
+                data-testid="confirm-reject"
+                disabled={busy || !canManage}
+                onClick={() => void confirmReject()}
+              >
+                {t("orders.reject")}
+              </Button>
+            </div>
+            <div className="catalog-form-actions__secondary">
+              <Button
+                type="button"
+                variant="ghost"
+                className="catalog-form-actions__danger"
+                disabled={busy}
+                onClick={() => setShowReject(false)}
+              >
+                {t("orders.cancel")}
+              </Button>
+            </div>
           </div>
-        </Card>
+        </section>
       ) : (
-        <div className="flex flex-wrap gap-2" data-testid="seller-order-actions">
-          {actions.map((action) => (
-            <Button
-              key={action}
-              type="button"
-              className="min-h-11"
-              variant={action === "Reject" ? "ghost" : "default"}
-              data-testid={`seller-action-${action.toLowerCase()}`}
-              disabled={busy || !canManage}
-              onClick={() => void runAction(action)}
-            >
-              {actionLabel(action)}
-            </Button>
-          ))}
+        <div className="catalog-form-actions customer-order-detail-actions" data-testid="seller-order-actions">
+          <div className="catalog-form-actions__primary">
+            {actions
+              .filter((action) => action !== "Reject")
+              .map((action) => (
+                <Button
+                  key={action}
+                  type="button"
+                  className="catalog-form-actions__save"
+                  data-testid={`seller-action-${action.toLowerCase()}`}
+                  disabled={busy || !canManage}
+                  onClick={() => void runAction(action)}
+                >
+                  {actionLabel(action)}
+                </Button>
+              ))}
+          </div>
+          {actions.includes("Reject") ? (
+            <div className="catalog-form-actions__secondary">
+              <Button
+                type="button"
+                variant="ghost"
+                className="catalog-form-actions__danger"
+                data-testid="seller-action-reject"
+                disabled={busy || !canManage}
+                onClick={() => void runAction("Reject")}
+              >
+                {actionLabel("Reject")}
+              </Button>
+            </div>
+          ) : null}
         </div>
       )}
     </div>

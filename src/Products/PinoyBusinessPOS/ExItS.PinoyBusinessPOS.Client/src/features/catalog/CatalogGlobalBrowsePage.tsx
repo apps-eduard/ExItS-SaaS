@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Upload } from "lucide-react";
 import {
   globalProductImageUrl,
   listActiveGlobalCategories,
@@ -13,9 +14,9 @@ import {
 import { PosApiError } from "@/api/pos/pos-http";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { OnlineRequiredCard } from "@/components/exits/OnlineRequiredCard";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -23,9 +24,11 @@ import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
+import { formatPeso } from "@/lib/format-money";
+import { cn } from "@/lib/cn";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { ONLINE_REQUIRED_CODES } from "@/offline/online-required";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
-import { cn } from "@/lib/cn";
 
 export function CatalogGlobalBrowsePage() {
   const { t } = useI18n();
@@ -134,51 +137,72 @@ export function CatalogGlobalBrowsePage() {
     });
   }
 
+  const pageHeader = (
+    <PageHeader
+      title={t("catalogGlobal.title")}
+      description={t("catalogGlobal.lede")}
+      backTo={pageBackNav.catalog.to}
+      backLabel={t(pageBackNav.catalog.labelKey)}
+      backTestId="page-header-back-catalog"
+    />
+  );
+
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
   }
 
   if (!online) {
     return (
-      <div className="flex flex-col gap-4" data-testid="catalog-global-page">
-        <PageHeader title={t("catalogGlobal.title")} description={t("catalogGlobal.lede")} />
+      <div
+        className="catalog-global-page exits-page flex min-w-0 flex-col gap-3"
+        data-testid="catalog-global-page"
+      >
+        {pageHeader}
         <OnlineRequiredCard code={ONLINE_REQUIRED_CODES.CatalogImport} />
-        <Button asChild variant="ghost" className="min-h-11 self-start">
-          <Link to="/catalog">{t("catalogImport.backToProducts")}</Link>
-        </Button>
       </div>
     );
   }
 
-  return (
-    <div className="flex min-w-0 flex-col gap-4 pb-24" data-testid="catalog-global-page">
-      <PageHeader title={t("catalogGlobal.title")} description={t("catalogGlobal.lede")} />
+  const categoryFilters = [
+    { key: "all", value: "", label: t("catalogGlobal.allCategories") },
+    ...(categoriesQuery.data?.items.map((category) => ({
+      key: category.id,
+      value: category.id,
+      label: category.name,
+    })) ?? []),
+  ];
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-        <SearchField
-          label={t("catalogGlobal.search")}
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          onClear={() => setSearch("")}
-          placeholder={t("catalogGlobal.search")}
+  return (
+    <div
+      className="catalog-global-page exits-page flex min-w-0 flex-col gap-3"
+      data-testid="catalog-global-page"
+    >
+      {pageHeader}
+
+      <SearchField
+        label={t("catalogGlobal.search")}
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+        onClear={() => setSearch("")}
+        placeholder={t("catalogGlobal.search")}
+        data-testid="catalog-global-search"
+        containerClassName="catalog-global-page__search exits-page__search exits-animate-toolbar"
+      />
+
+      {categoriesQuery.isSuccess && categoryFilters.length > 1 ? (
+        <ExitsChipBar
+          variant="filter"
+          ariaLabel={t("catalogGlobal.categoryFilter")}
+          testId="catalog-global-category-filters"
+          items={categoryFilters.map((filter) => ({
+            key: filter.key,
+            label: filter.label,
+            state: (categoryId || "all") === (filter.value || "all") ? "active" : "idle",
+            testId: `catalog-global-category-${filter.key}`,
+            onSelect: () => setCategoryId(filter.value),
+          }))}
         />
-        <label className="grid min-w-0 flex-1 gap-1 text-[length:var(--exits-text-xs)] font-medium text-muted">
-          {t("catalogGlobal.category")}
-          <select
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 text-[length:var(--exits-text-sm)] text-foreground"
-            value={categoryId}
-            data-testid="catalog-global-category"
-            onChange={(event) => setCategoryId(event.target.value)}
-          >
-            <option value="">{t("catalogGlobal.allCategories")}</option>
-            {categoriesQuery.data?.items.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+      ) : null}
 
       {productsQuery.isLoading || importedQuery.isLoading ? (
         <LoadingState label={t("loading.label")} />
@@ -187,76 +211,80 @@ export function CatalogGlobalBrowsePage() {
         <ErrorState title={t("error.title")} detail={(productsQuery.error as Error).message} />
       ) : null}
       {productsQuery.isSuccess && productsQuery.data.items.length === 0 ? (
-        <EmptyState
-          title={t("catalogGlobal.empty")}
-          detail={t("catalogGlobal.emptyDetail")}
-        />
+        <EmptyState title={t("catalogGlobal.empty")} detail={t("catalogGlobal.emptyDetail")} />
       ) : null}
 
-      <ul
-        className="m-0 grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2 lg:grid-cols-3"
-        data-testid="catalog-global-list"
-      >
+      <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="catalog-global-list">
         {productsQuery.data?.items.map((product) => {
           const already = importedSet.has(product.id);
           const isSelected = selected.has(product.id);
           const categoryName = product.globalCategoryId
             ? categoryNameById.get(product.globalCategoryId)
             : null;
+          const meta = [categoryName, product.unit, product.sellingMode]
+            .filter(Boolean)
+            .join(" · ");
+          const identity = [product.sku, product.barcode].filter(Boolean).join(" · ");
+
           return (
             <li key={product.id}>
-              <Card
+              <article
                 className={cn(
-                  "flex h-full flex-col gap-2 p-3",
-                  already && "opacity-70",
-                  isSelected && !already && "ring-2 ring-primary",
+                  "catalog-global-product-row exits-list__card",
+                  already && "catalog-global-product-row--added",
+                  isSelected && !already && "catalog-global-product-row--selected",
                 )}
               >
-                <div className="flex gap-3">
+                <div className="catalog-global-product-row__media">
                   {product.hasImage ? (
                     <img
                       src={globalProductImageUrl(product.id, "thumb", product.imageVersion)}
                       alt=""
-                      className="size-16 shrink-0 rounded-[var(--exits-radius-md)] object-cover"
+                      className="catalog-global-product-row__image"
                       loading="lazy"
                     />
                   ) : (
-                    <div
-                      className="flex size-16 shrink-0 items-center justify-center rounded-[var(--exits-radius-md)] bg-[var(--exits-surface-muted)] text-[length:var(--exits-text-xs)] text-muted"
-                      aria-hidden
-                    >
+                    <div className="catalog-global-product-row__placeholder" aria-hidden>
                       —
                     </div>
                   )}
-                  <div className="min-w-0 flex-1">
-                    <p className="m-0 truncate font-semibold">{product.name}</p>
-                    <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-                      {[categoryName, product.unit, product.sellingMode]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </p>
-                    <p className="mb-0 mt-1 truncate text-[length:var(--exits-text-xs)] text-muted">
-                      {[product.sku, product.barcode].filter(Boolean).join(" · ") || "—"}
-                    </p>
-                  </div>
                 </div>
-                <div className="mt-auto flex items-center justify-between gap-2">
+
+                <div className="catalog-global-product-row__main min-w-0">
+                  <p className="exits-list__name m-0 truncate font-semibold">{product.name}</p>
+                  {meta ? (
+                    <p className="catalog-global-product-row__meta m-0 mt-1 truncate text-[length:var(--exits-text-sm)] text-muted">
+                      {meta}
+                    </p>
+                  ) : null}
+                  {identity ? (
+                    <p className="catalog-global-product-row__identity m-0 mt-1 truncate text-[length:var(--exits-text-xs)] text-muted">
+                      {identity}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="catalog-global-product-row__aside">
+                  {product.sellingPrice != null ? (
+                    <span className="catalog-global-product-row__price">
+                      {formatPeso(product.sellingPrice)}
+                    </span>
+                  ) : null}
                   {already ? (
-                    <StatusChip>{t("catalogImport.alreadyAdded")}</StatusChip>
+                    <StatusChip tone="warning">{t("catalogImport.alreadyAdded")}</StatusChip>
                   ) : (
-                    <label className="flex min-h-11 items-center gap-2 text-[length:var(--exits-text-sm)]">
+                    <label className="catalog-global-product-row__select catalog-form-check">
                       <input
                         type="checkbox"
-                        className="size-5"
                         checked={isSelected}
                         data-testid={`catalog-global-select-${product.id}`}
                         onChange={() => toggleSelect(product.id, already)}
                       />
-                      {t("catalogGlobal.select")}
+                      <span>{t("catalogGlobal.select")}</span>
                     </label>
                   )}
                 </div>
-              </Card>
+              </article>
             </li>
           );
         })}
@@ -264,30 +292,32 @@ export function CatalogGlobalBrowsePage() {
 
       {importError ? <ErrorState title={t("error.title")} detail={importError} /> : null}
 
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-[var(--exits-bg)] p-3 md:static md:border-0 md:bg-transparent md:p-0">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2">
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+      <div className="catalog-form-actions catalog-global-actions">
+        <div className="catalog-form-actions__primary">
+          <p className="catalog-global-actions__count m-0 text-[length:var(--exits-text-sm)] font-semibold">
             {t("catalogGlobal.selectedCount").replace("{count}", String(selectedNewCount))}
           </p>
-          <div className="flex flex-wrap gap-2">
-            <Button asChild variant="ghost" className="min-h-11">
-              <Link to="/catalog">{t("catalogImport.backToProducts")}</Link>
-            </Button>
-            <Button
-              type="button"
-              className="min-h-11"
-              data-testid="catalog-global-import"
-              disabled={selectedNewCount === 0 || importMutation.isPending}
-              onClick={() => {
-                setImportError(null);
-                importMutation.mutate();
-              }}
-            >
-              {importMutation.isPending
-                ? t("catalogImport.starting")
-                : t("catalogGlobal.importSelected")}
-            </Button>
-          </div>
+        </div>
+        <div className="catalog-form-actions__secondary">
+          <Button
+            type="button"
+            className="catalog-form-actions__save min-h-11"
+            data-testid="catalog-global-import"
+            disabled={selectedNewCount === 0 || importMutation.isPending}
+            onClick={() => {
+              setImportError(null);
+              importMutation.mutate();
+            }}
+          >
+            {importMutation.isPending ? (
+              <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+            ) : (
+              <Upload className="size-4 shrink-0" aria-hidden />
+            )}
+            {importMutation.isPending
+              ? t("catalogImport.starting")
+              : t("catalogGlobal.importSelected")}
+          </Button>
         </div>
       </div>
     </div>
