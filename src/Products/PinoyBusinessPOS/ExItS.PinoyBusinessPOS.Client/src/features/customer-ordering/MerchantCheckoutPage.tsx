@@ -97,9 +97,11 @@ export function MerchantCheckoutPage() {
   const checkoutOrderingUnavailable =
     storefrontQuery.isError && isCustomerOrderingUnavailable(storefrontQuery.error);
 
+  // Always resolve Platform business-customer id for place (and statement link).
+  // Shop page uses an inverted "only when unavailable" gate; that must not be reused here.
   const merchantContextQuery = useLinkedMerchantShopContext(
     organizationId,
-    checkoutOrderingUnavailable,
+    Boolean(organizationId) && tokenReady && online,
   );
 
   const checkoutStoreName =
@@ -185,6 +187,12 @@ export function MerchantCheckoutPage() {
       return;
     }
 
+    const platformBusinessCustomerId = merchantContextQuery.data?.businessCustomerId;
+    if (!platformBusinessCustomerId) {
+      setError(t("orders.missingLinkedCustomer"));
+      return;
+    }
+
     const isDelivery = selection.fulfillmentType === FulfillmentDelivery;
     if (isDelivery) {
       if (!recipientName.trim() || !addressLine1.trim() || !coordsValid) {
@@ -207,7 +215,7 @@ export function MerchantCheckoutPage() {
         customerPartyType: "Personal",
         customerDisplayName: session.displayName ?? session.email ?? "Customer",
         customerPlatformUserId: session.userId,
-        platformBusinessCustomerId: merchantContextQuery.data?.businessCustomerId ?? undefined,
+        platformBusinessCustomerId,
         lines: cart.lines.map((l) => ({
           productId: l.productId,
           quantity: l.quantity,
@@ -583,8 +591,8 @@ export function MerchantCheckoutPage() {
       <CheckoutPlaceButton
         label={t("orders.placeOrder")}
         busyLabel={t("orders.placing")}
-        busy={busy}
-        disabled={!selection.canPlace}
+        busy={busy || merchantContextQuery.isLoading}
+        disabled={!selection.canPlace || merchantContextQuery.isLoading}
         onClick={() => void placeOrder()}
       />
     </div>

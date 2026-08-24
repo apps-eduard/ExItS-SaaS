@@ -29,6 +29,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="ExItS.PinoyBusinessPOS.IntegrationTests" />
+    <InternalsVisibleTo Include="ExItS.PinoyBusinessPOS.UnitTests" />
   </ItemGroup>
 
 </Project>
