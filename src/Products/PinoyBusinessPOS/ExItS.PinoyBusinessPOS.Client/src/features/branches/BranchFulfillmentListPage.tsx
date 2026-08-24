@@ -1,12 +1,12 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { ChevronRight } from "lucide-react";
 import { canManageBranchFulfillment } from "@/access/pos-capabilities";
 import { listOrganizationBranchesForFulfillment } from "@/api/platform/branch-fulfillment-client";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
-import { LoadingSkeleton } from "@/components/exits/FoundationStates";
+import { ErrorState } from "@/components/exits/ErrorState";
+import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { StatusChip } from "@/components/exits/StatusChip";
@@ -37,7 +37,10 @@ export function BranchFulfillmentListPage() {
 
   if (!canManage) {
     return (
-      <div data-testid="branch-fulfillment-denied" className="flex flex-col gap-3">
+      <div
+        data-testid="branch-fulfillment-denied"
+        className="branch-fulfillment-page exits-page flex min-w-0 flex-col gap-3"
+      >
         <PageHeader
           title={t("branches.listTitle")}
           description={t("branches.denied")}
@@ -50,25 +53,32 @@ export function BranchFulfillmentListPage() {
   }
 
   if (!organizationId || branchesQuery.isLoading) {
-    return <LoadingSkeleton label={t("loading.label")} />;
+    return <LoadingState label={t("loading.label")} />;
   }
 
   if (branchesQuery.isError) {
     return (
-      <div data-testid="branch-fulfillment-list-error" className="flex flex-col gap-3">
+      <div
+        data-testid="branch-fulfillment-list-error"
+        className="branch-fulfillment-page exits-page flex min-w-0 flex-col gap-3"
+      >
         <PageHeader
           title={t("branches.listTitle")}
-          description={t("branches.loadError")}
+          description={t("branches.listLede")}
           backTo={pageBackNav.org.to}
           backLabel={t(pageBackNav.org.labelKey)}
           backTestId="page-header-back-org"
         />
+        <ErrorState title={t("branches.loadError")} detail={t("branches.listLede")} />
       </div>
     );
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="branch-fulfillment-list">
+    <div
+      className="branch-fulfillment-page exits-page flex min-w-0 flex-col gap-3"
+      data-testid="branch-fulfillment-list"
+    >
       <PageHeader
         title={t("branches.listTitle")}
         description={t("branches.listLede")}
@@ -80,45 +90,52 @@ export function BranchFulfillmentListPage() {
       {branches.length === 0 ? (
         <EmptyState title={t("branches.emptyTitle")} detail={t("branches.emptyDetail")} />
       ) : (
-        <ul className="m-0 flex list-none flex-col gap-3 p-0">
-          {branches.map((branch) => (
-            <li key={branch.id}>
-              <Card className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <p className="m-0 text-[length:var(--exits-text-md)] font-medium">
-                    {branch.name}
-                  </p>
-                  <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted">
-                    {branch.code}
-                    {branch.city ? ` · ${branch.city}` : ""}
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <StatusChip tone={branch.status === "Active" ? "success" : "warning"}>
-                      {branch.status}
-                    </StatusChip>
-                    <StatusChip tone={branch.pickupEnabled ? "success" : "info"}>
-                      {branch.pickupEnabled
-                        ? t("branches.pickupEnabled")
-                        : t("branches.pickupDisabled")}
-                    </StatusChip>
-                    <StatusChip tone={branch.deliveryEnabled ? "success" : "info"}>
-                      {branch.deliveryEnabled
-                        ? t("branches.deliveryEnabled")
-                        : t("branches.deliveryDisabled")}
-                    </StatusChip>
+        <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="branch-fulfillment-items">
+          {branches.map((branch) => {
+            const meta = [branch.code, branch.city].filter(Boolean).join(" · ");
+            return (
+              <li key={branch.id}>
+                <Link
+                  className="exits-list__card branch-row block min-w-0 text-foreground no-underline"
+                  to={`/org/branches/${branch.id}`}
+                  data-testid={`open-branch-fulfillment-${branch.id}`}
+                >
+                  <div className="branch-row__main min-w-0">
+                    <strong className="exits-list__name block truncate font-semibold">
+                      {branch.name}
+                    </strong>
+                    {meta ? (
+                      <p className="branch-row__meta mb-0 mt-1 truncate text-[length:var(--exits-text-sm)] text-muted">
+                        {meta}
+                      </p>
+                    ) : null}
+                    <div className="branch-row__chips mt-2 flex flex-wrap gap-1.5">
+                      <StatusChip tone={branch.status === "Active" ? "success" : "warning"}>
+                        {branch.status}
+                      </StatusChip>
+                      <StatusChip tone={branch.pickupEnabled ? "success" : "info"}>
+                        {branch.pickupEnabled
+                          ? t("branches.pickupEnabled")
+                          : t("branches.pickupDisabled")}
+                      </StatusChip>
+                      <StatusChip tone={branch.deliveryEnabled ? "success" : "info"}>
+                        {branch.deliveryEnabled
+                          ? t("branches.deliveryEnabled")
+                          : t("branches.deliveryDisabled")}
+                      </StatusChip>
+                    </div>
                   </div>
-                </div>
-                <Button asChild className="min-h-11 w-full sm:w-auto">
-                  <Link
-                    to={`/org/branches/${branch.id}`}
-                    data-testid={`open-branch-fulfillment-${branch.id}`}
-                  >
-                    {t("branches.configure")}
-                  </Link>
-                </Button>
-              </Card>
-            </li>
-          ))}
+                  <span className="branch-row__aside">
+                    <span className="sr-only">{t("branches.configure")}</span>
+                    <ChevronRight
+                      className="branch-row__chevron size-4 shrink-0 text-muted"
+                      aria-hidden
+                    />
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

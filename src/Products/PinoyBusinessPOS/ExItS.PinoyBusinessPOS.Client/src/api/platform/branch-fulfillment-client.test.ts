@@ -19,6 +19,7 @@ import { hoursFromDto, hoursToRequest } from "@/features/branches/branch-hours";
 import { externalMapLinks, requestGpsAssistOnce } from "@/features/branches/branch-map-links";
 import {
   deliveryEnablementLabel,
+  filterRedundantReasonCodes,
   missingRequirementMessageKey,
   pickupEnablementLabel,
 } from "@/features/branches/branch-readiness-labels";
@@ -113,6 +114,22 @@ describe("RMAP-18 readiness labels", () => {
     expect(deliveryEnablementLabel({ deliveryEnabled: false, deliveryReady: true })).toBe(
       "disabled",
     );
+  });
+
+  it("drops reason codes already covered by missing requirements", () => {
+    expect(
+      filterRedundantReasonCodes(
+        ["timezone", "map_location", "branch_address"],
+        [
+          "timezone_missing",
+          "map_location_missing",
+          "branch_address_incomplete",
+          "pickup_disabled",
+          "delivery_disabled",
+          "customer_ordering_disabled",
+        ],
+      ),
+    ).toEqual(["pickup_disabled", "delivery_disabled", "customer_ordering_disabled"]);
   });
 });
 

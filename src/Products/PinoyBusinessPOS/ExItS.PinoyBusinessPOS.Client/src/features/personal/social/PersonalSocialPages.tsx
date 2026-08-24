@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { X } from "lucide-react";
 import {
   acceptPersonalUtangInvitation,
   cancelPersonalReminder,
@@ -19,10 +20,17 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
+import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { PERSONAL_NOTIFICATIONS_QUERY_KEY } from "@/features/personal/personal-notifications";
+import {
+  peekNotificationsReturnTo,
+  resolveNotificationsReturnTo,
+} from "@/features/personal/notifications-return";
 import { useI18n } from "@/i18n/I18nProvider";
+import { cn } from "@/lib/cn";
 
 export function PersonalInvitationsPage() {
   const { t } = useI18n();
@@ -177,8 +185,11 @@ export function PersonalUtangInviteAcceptPage() {
 
 export function PersonalNotificationsPage() {
   const { t } = useI18n();
+  const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<"unread" | "all">("unread");
+  const [leaving, setLeaving] = useState(false);
   const query = useQuery({
     queryKey: PERSONAL_NOTIFICATIONS_QUERY_KEY,
     queryFn: ({ signal }) => listPersonalNotifications(signal),
@@ -190,13 +201,62 @@ export function PersonalNotificationsPage() {
     },
   });
 
-  if (query.isPending) return <LoadingSkeleton />;
+  function leaveNotifications() {
+    if (leaving) {
+      return;
+    }
+    setLeaving(true);
+    try {
+      const returnContext = resolveNotificationsReturnTo(location.state);
+      const returnTo = returnContext?.returnTo;
+      if (returnTo?.startsWith("/personal")) {
+        navigate(returnTo, { replace: true });
+        return;
+      }
+      navigate("/personal", { replace: true });
+    } finally {
+      setLeaving(false);
+    }
+  }
+
+  const returnContext = peekNotificationsReturnTo(location.state);
+  const backTo =
+    returnContext?.returnTo?.startsWith("/personal") === true
+      ? returnContext.returnTo
+      : "/personal";
+
+  const closeButton = (
+    <button
+      type="button"
+      className="page-header__info notifications-page__close"
+      data-testid="notifications-close"
+      aria-label={t("personal.social.notificationsClose")}
+      disabled={leaving}
+      onClick={leaveNotifications}
+    >
+      <X className="size-4 shrink-0" aria-hidden />
+    </button>
+  );
+
+  if (query.isPending) {
+    return <LoadingState label={t("loading.label")} />;
+  }
   if (query.isError) {
     return (
-      <ErrorState
-        title={t("personal.social.loadErrorTitle")}
-        detail={t("personal.social.loadErrorDetail")}
-      />
+      <div className="notifications-page exits-page flex min-w-0 flex-col gap-3">
+        <PageHeader
+          title={t("personal.social.notificationsTitle")}
+          description={t("personal.social.notificationsLede")}
+          backTo={backTo}
+          backLabel={t("personal.nav.home")}
+          backTestId="page-header-back-notifications"
+          trailing={closeButton}
+        />
+        <ErrorState
+          title={t("personal.social.loadErrorTitle")}
+          detail={t("personal.social.loadErrorDetail")}
+        />
+      </div>
     );
   }
 
@@ -204,11 +264,19 @@ export function PersonalNotificationsPage() {
   const visible = tab === "unread" ? items.filter((item) => !item.isRead) : items;
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="personal-notifications-page">
+    <div
+      className="notifications-page exits-page flex min-w-0 flex-col gap-3"
+      data-testid="personal-notifications-page"
+    >
       <PageHeader
         title={t("personal.social.notificationsTitle")}
         description={t("personal.social.notificationsLede")}
+        backTo={backTo}
+        backLabel={t("personal.nav.home")}
+        backTestId="page-header-back-notifications"
+        trailing={closeButton}
       />
+
       <UnderlineTabBar
         items={[
           {
@@ -241,47 +309,64 @@ export function PersonalNotificationsPage() {
           }
         />
       ) : (
-        <ul className="m-0 flex list-none flex-col gap-2 p-0" data-testid="notifications-list">
+        <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="notifications-list">
           {visible.map((item) => {
             const isCustomerLink =
               item.relatedType.localeCompare("CustomerLinkRequest", undefined, {
                 sensitivity: "accent",
               }) === 0;
             return (
-              <li
-                key={item.id}
-                data-testid={`notification-row-${item.id}`}
-                data-read={item.isRead ? "true" : "false"}
-                className="rounded-[var(--exits-radius-md)] border border-border px-3 py-3"
-              >
-                <p className="m-0 font-semibold">{item.title}</p>
-                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{item.preview}</p>
-                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                  {new Date(item.createdAtUtc).toLocaleString()}
-                  {item.isRead ? "" : ` · ${t("personal.social.unread")}`}
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {isCustomerLink ? (
-                    <Button
-                      asChild
-                      className="min-h-11"
-                      data-testid="notification-open-customer-links"
-                    >
-                      <Link to="/personal/customer-links">{t("personal.customerLinks.title")}</Link>
-                    </Button>
-                  ) : null}
-                  {!item.isRead ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="min-h-11"
-                      data-testid={`notification-mark-read-${item.id}`}
-                      onClick={() => markRead.mutate(item.id)}
-                    >
-                      {t("personal.social.markRead")}
-                    </Button>
-                  ) : null}
-                </div>
+              <li key={item.id}>
+                <article
+                  data-testid={`notification-row-${item.id}`}
+                  data-read={item.isRead ? "true" : "false"}
+                  className={cn(
+                    "exits-list__card notification-row",
+                    !item.isRead && "notification-row--unread",
+                  )}
+                >
+                  <div className="notification-row__main min-w-0">
+                    <div className="notification-row__title-row">
+                      <strong className="exits-list__name block min-w-0 truncate font-semibold">
+                        {item.title}
+                      </strong>
+                      {!item.isRead ? (
+                        <StatusChip tone="warning">{t("personal.social.unread")}</StatusChip>
+                      ) : null}
+                    </div>
+                    <p className="notification-row__preview mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                      {item.preview}
+                    </p>
+                    <p className="notification-row__meta mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
+                      {new Date(item.createdAtUtc).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="notification-row__actions">
+                    {isCustomerLink ? (
+                      <Button
+                        asChild
+                        className="min-h-11"
+                        data-testid="notification-open-customer-links"
+                      >
+                        <Link to="/personal/customer-links">
+                          {t("personal.customerLinks.title")}
+                        </Link>
+                      </Button>
+                    ) : null}
+                    {!item.isRead ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="min-h-11"
+                        data-testid={`notification-mark-read-${item.id}`}
+                        disabled={markRead.isPending}
+                        onClick={() => markRead.mutate(item.id)}
+                      >
+                        {t("personal.social.markRead")}
+                      </Button>
+                    ) : null}
+                  </div>
+                </article>
               </li>
             );
           })}

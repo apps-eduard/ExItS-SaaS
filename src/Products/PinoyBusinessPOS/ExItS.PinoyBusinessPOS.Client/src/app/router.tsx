@@ -50,6 +50,7 @@ import { BranchFulfillmentEditPage } from "@/features/branches/BranchFulfillment
 import { BranchFulfillmentListPage } from "@/features/branches/BranchFulfillmentListPage";
 import { OrgEssentialsPage } from "@/features/role/OrgEssentialsPage";
 import { OrgBusinessQrPage } from "@/features/org/OrgBusinessQrPage";
+import { OrgNotificationsPage } from "@/features/org/OrgNotificationsPage";
 import { CatalogCategoriesPage } from "@/features/catalog/CatalogCategoriesPage";
 import { CatalogGlobalBrowsePage } from "@/features/catalog/CatalogGlobalBrowsePage";
 import { CatalogImportJobPage } from "@/features/catalog/CatalogImportJobPage";
@@ -350,6 +351,16 @@ export const appRoutes = [
                     <CashierRoleHomePage />
                   </RequireCashierRoleHome>
                 </RequireWorkspaceBound>
+              </RequireOrganizationSession>
+            ),
+          },
+          {
+            path: "org/notifications",
+            element: (
+              <RequireOrganizationSession>
+                <RequireOrganizationBound>
+                  <OrgNotificationsPage />
+                </RequireOrganizationBound>
               </RequireOrganizationSession>
             ),
           },

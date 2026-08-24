@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { CircleAlert, CircleCheck, Loader2, Save } from "lucide-react";
 import { canManageBranchFulfillment } from "@/access/pos-capabilities";
 import {
   getBranchFulfillmentReadiness,
@@ -16,8 +17,8 @@ import {
 } from "@/api/platform/branch-fulfillment-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { LoadingSkeleton } from "@/components/exits/FoundationStates";
+import { ErrorState } from "@/components/exits/ErrorState";
+import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { StatusChip } from "@/components/exits/StatusChip";
@@ -37,6 +38,7 @@ import {
 import { externalMapLinks, requestGpsAssistOnce } from "@/features/branches/branch-map-links";
 import {
   deliveryEnablementLabel,
+  filterRedundantReasonCodes,
   missingRequirementMessageKey,
   orderingEnablementLabel,
   pickupEnablementLabel,
@@ -49,29 +51,21 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 function enablementTone(label: EnablementLabel): "success" | "warning" | "info" | "danger" {
   if (label === "enabled") return "success";
-  if (label === "paused") return "warning";
-  if (label === "notReady") return "danger";
+  if (label === "paused" || label === "notReady") return "warning";
   return "info";
 }
 
-function enablementKey(
-  kind: "ordering" | "pickup" | "delivery",
-  label: EnablementLabel,
-): MessageKey {
-  if (kind === "ordering") {
-    if (label === "enabled") return "branches.orderingEnabled";
-    if (label === "paused") return "branches.orderingPaused";
-    if (label === "notReady") return "branches.orderingNotReady";
-    return "branches.orderingDisabled";
-  }
-  if (kind === "pickup") {
-    if (label === "enabled") return "branches.pickupEnabled";
-    if (label === "notReady") return "branches.pickupNotReady";
-    return "branches.pickupDisabled";
-  }
-  if (label === "enabled") return "branches.deliveryEnabled";
-  if (label === "notReady") return "branches.deliveryNotReady";
-  return "branches.deliveryDisabled";
+function enablementStatusWord(label: EnablementLabel): MessageKey {
+  if (label === "enabled") return "branches.status.enabled";
+  if (label === "paused") return "branches.status.paused";
+  if (label === "notReady") return "branches.status.notReady";
+  return "branches.status.disabled";
+}
+
+function enablementChannelKey(kind: "ordering" | "pickup" | "delivery"): MessageKey {
+  if (kind === "ordering") return "branches.channel.ordering";
+  if (kind === "pickup") return "branches.channel.pickup";
+  return "branches.channel.delivery";
 }
 
 function dayLabelKey(day: string): MessageKey {
@@ -181,7 +175,10 @@ export function BranchFulfillmentEditPage() {
 
   if (!canManage) {
     return (
-      <div data-testid="branch-fulfillment-denied" className="flex flex-col gap-3">
+      <div
+        data-testid="branch-fulfillment-denied"
+        className="branch-fulfillment-edit-page exits-page flex min-w-0 flex-col gap-3"
+      >
         <PageHeader
           title={t("branches.editTitle")}
           description={t("branches.denied")}
@@ -194,25 +191,29 @@ export function BranchFulfillmentEditPage() {
   }
 
   if (!organizationId || detailQuery.isLoading) {
-    return <LoadingSkeleton label={t("loading.label")} />;
+    return <LoadingState label={t("loading.label")} />;
   }
 
   if (detailQuery.isError || !detailQuery.data?.branch) {
     return (
-      <div data-testid="branch-fulfillment-not-found" className="flex flex-col gap-3">
+      <div
+        data-testid="branch-fulfillment-not-found"
+        className="branch-fulfillment-edit-page exits-page flex min-w-0 flex-col gap-3"
+      >
         <PageHeader
           title={t("branches.editTitle")}
-          description={t("branches.notFound")}
+          description={t("branches.editLede")}
           backTo={pageBackNav.orgBranches.to}
           backLabel={t(pageBackNav.orgBranches.labelKey)}
           backTestId="page-header-back-org"
         />
+        <ErrorState title={t("branches.notFound")} detail={t("branches.editLede")} />
       </div>
     );
   }
 
   if (!hydrated) {
-    return <LoadingSkeleton label={t("loading.label")} />;
+    return <LoadingState label={t("loading.label")} />;
   }
 
   const branch = detailQuery.data.branch;
@@ -220,6 +221,12 @@ export function BranchFulfillmentEditPage() {
   const orderingLabel = orderingEnablementLabel(currentReadiness);
   const pickupLabel = pickupEnablementLabel(currentReadiness);
   const deliveryLabel = deliveryEnablementLabel(currentReadiness);
+  const missingRequirements = currentReadiness.missingRequirements;
+  const extraReasonCodes = filterRedundantReasonCodes(
+    missingRequirements,
+    currentReadiness.reasonCodes,
+  );
+  const setupComplete = missingRequirements.length === 0;
 
   async function saveAll() {
     if (!organizationId || busy) {
@@ -366,7 +373,10 @@ export function BranchFulfillmentEditPage() {
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-4 pb-24" data-testid="branch-fulfillment-edit">
+    <div
+      className="branch-fulfillment-edit-page exits-page flex min-w-0 flex-col gap-3 pb-4"
+      data-testid="branch-fulfillment-edit"
+    >
       <PageHeader
         title={branch.name}
         description={t("branches.editLede")}
@@ -376,188 +386,227 @@ export function BranchFulfillmentEditPage() {
       />
 
       {error ? (
-        <p
-          className="m-0 text-[length:var(--exits-text-sm)] text-danger"
+        <div
+          className="exits-alert exits-alert--error"
           role="alert"
           data-testid="branch-fulfillment-error"
         >
-          {error}
-        </p>
+          <div className="flex gap-3">
+            <CircleAlert className="mt-0.5 size-5 shrink-0" aria-hidden />
+            <p className="m-0 text-[length:var(--exits-text-sm)]">{error}</p>
+          </div>
+        </div>
       ) : null}
       {okMessage ? (
-        <p
-          className="m-0 text-[length:var(--exits-text-sm)] text-success"
+        <div
+          className="exits-alert exits-alert--success"
+          role="status"
           data-testid="branch-fulfillment-ok"
         >
-          {okMessage}
-        </p>
+          <div className="flex gap-3">
+            <CircleCheck className="mt-0.5 size-5 shrink-0" aria-hidden />
+            <p className="m-0 text-[length:var(--exits-text-sm)]">{okMessage}</p>
+          </div>
+        </div>
       ) : null}
 
-      <Card className="flex flex-col gap-3" data-testid="branch-readiness-panel">
-        <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">
-          {t("branches.readinessTitle")}
-        </h2>
-        {currentReadiness.storeStatusMessage ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {currentReadiness.storeStatusMessage}
-          </p>
-        ) : null}
-        <div className="flex flex-wrap gap-2">
-          <span data-testid="ordering-status">
-            <StatusChip tone={enablementTone(orderingLabel)}>
-              {t(enablementKey("ordering", orderingLabel))}
-            </StatusChip>
-          </span>
-          <span data-testid="pickup-status">
-            <StatusChip tone={enablementTone(pickupLabel)}>
-              {t(enablementKey("pickup", pickupLabel))}
-            </StatusChip>
-          </span>
-          <span data-testid="delivery-status">
-            <StatusChip tone={enablementTone(deliveryLabel)}>
-              {t(enablementKey("delivery", deliveryLabel))}
-            </StatusChip>
-          </span>
-        </div>
-        {currentReadiness.missingRequirements.length > 0 ? (
-          <div data-testid="branch-missing-requirements">
-            <p className="m-0 mb-2 text-[length:var(--exits-text-sm)] font-medium">
-              {t("branches.missingTitle")}
+      <section
+        className="catalog-form-section exits-animate-panel branch-readiness gap-3"
+        data-testid="branch-readiness-panel"
+      >
+        <div className="branch-readiness__header">
+          <h2 className="catalog-form-section__title">{t("branches.readinessTitle")}</h2>
+          {currentReadiness.storeStatusMessage ? (
+            <p className="branch-readiness__store-status m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {currentReadiness.storeStatusMessage}
             </p>
-            <ul className="m-0 list-disc ps-5 text-[length:var(--exits-text-sm)]">
-              {currentReadiness.missingRequirements.map((code) => (
-                <li key={code}>{t(missingRequirementMessageKey(code))}</li>
+          ) : null}
+        </div>
+
+        <div className="branch-readiness__channels" role="list">
+          {(
+            [
+              { kind: "ordering" as const, label: orderingLabel, testId: "ordering-status" },
+              { kind: "pickup" as const, label: pickupLabel, testId: "pickup-status" },
+              { kind: "delivery" as const, label: deliveryLabel, testId: "delivery-status" },
+            ] as const
+          ).map((channel) => (
+            <div
+              key={channel.kind}
+              className="branch-readiness__channel"
+              role="listitem"
+              data-testid={channel.testId}
+            >
+              <span className="branch-readiness__channel-label">
+                {t(enablementChannelKey(channel.kind))}
+              </span>
+              <StatusChip tone={enablementTone(channel.label)}>
+                {t(enablementStatusWord(channel.label))}
+              </StatusChip>
+            </div>
+          ))}
+        </div>
+
+        {!setupComplete ? (
+          <div
+            className="branch-readiness__checklist"
+            data-testid="branch-missing-requirements"
+          >
+            <p className="branch-readiness__checklist-title m-0">
+              {t("branches.setupGapsTitle")}
+            </p>
+            <p className="branch-readiness__checklist-lede m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("branches.setupGapsLede")}
+            </p>
+            <ul className="branch-readiness__items m-0 list-none p-0">
+              {missingRequirements.map((code) => (
+                <li key={code} className="branch-readiness__item">
+                  <CircleAlert className="branch-readiness__item-icon" aria-hidden />
+                  <span>{t(missingRequirementMessageKey(code))}</span>
+                </li>
               ))}
             </ul>
           </div>
         ) : (
-          <p
-            className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+          <div
+            className="branch-readiness__ready"
             data-testid="branch-missing-none"
+            role="status"
           >
-            {t("branches.missingNone")}
-          </p>
+            <CircleCheck className="branch-readiness__ready-icon" aria-hidden />
+            <p className="m-0 text-[length:var(--exits-text-sm)]">{t("branches.missingNone")}</p>
+          </div>
         )}
-        {currentReadiness.reasonCodes.length > 0 ? (
-          <ul
-            className="m-0 list-disc ps-5 text-[length:var(--exits-text-sm)] text-muted"
+
+        {extraReasonCodes.length > 0 ? (
+          <div
+            className="branch-readiness__checklist branch-readiness__checklist--secondary"
             data-testid="branch-reason-codes"
           >
-            {currentReadiness.reasonCodes.map((code) => (
-              <li key={code}>{t(reasonCodeMessageKey(code))}</li>
-            ))}
-          </ul>
+            <p className="branch-readiness__checklist-title m-0">
+              {t("branches.enablementGapsTitle")}
+            </p>
+            <ul className="branch-readiness__items m-0 list-none p-0">
+              {extraReasonCodes.map((code) => (
+                <li key={code} className="branch-readiness__item branch-readiness__item--muted">
+                  <span className="branch-readiness__item-dot" aria-hidden />
+                  <span>{t(reasonCodeMessageKey(code))}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         ) : null}
-      </Card>
+      </section>
 
-      <Card className="flex flex-col gap-3">
-        <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">
-          {t("branches.detailsTitle")}
-        </h2>
-        <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-          {t("branches.name")}
-          <input
-            className="min-h-11 rounded-md border border-border bg-surface px-3"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            data-testid="branch-name"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-          {t("branches.contactPhone")}
-          <input
-            className="min-h-11 rounded-md border border-border bg-surface px-3"
-            value={contactPhone}
-            onChange={(e) => setContactPhone(e.target.value)}
-            data-testid="branch-phone"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-          {t("branches.timeZone")}
-          <input
-            className="min-h-11 rounded-md border border-border bg-surface px-3"
-            value={timeZoneId}
-            onChange={(e) => setTimeZoneId(e.target.value)}
-            placeholder="Asia/Manila"
-            data-testid="branch-timezone"
-          />
-        </label>
-      </Card>
+      <section className="catalog-form-section exits-animate-panel gap-3">
+        <h2 className="catalog-form-section__title">{t("branches.detailsTitle")}</h2>
+        <div className="catalog-form-section__grid">
+          <label className="catalog-form-field--full flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("branches.name")}
+            <input
+              className="catalog-form-select font-normal"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              data-testid="branch-name"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("branches.contactPhone")}
+            <input
+              className="catalog-form-select font-normal"
+              value={contactPhone}
+              onChange={(e) => setContactPhone(e.target.value)}
+              data-testid="branch-phone"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("branches.timeZone")}
+            <input
+              className="catalog-form-select font-normal"
+              value={timeZoneId}
+              onChange={(e) => setTimeZoneId(e.target.value)}
+              placeholder="Asia/Manila"
+              data-testid="branch-timezone"
+            />
+          </label>
+        </div>
+      </section>
 
-      <Card className="flex flex-col gap-3" data-testid="branch-address-section">
-        <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">
-          {t("branches.addressTitle")}
-        </h2>
-        <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-          {t("branches.addressLine1")}
-          <input
-            className="min-h-11 rounded-md border border-border bg-surface px-3"
-            value={addressLine1}
-            onChange={(e) => setAddressLine1(e.target.value)}
-            data-testid="branch-address1"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-          {t("branches.addressLine2")}
-          <input
-            className="min-h-11 rounded-md border border-border bg-surface px-3"
-            value={addressLine2}
-            onChange={(e) => setAddressLine2(e.target.value)}
-            data-testid="branch-address2"
-          />
-        </label>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+      <section
+        className="catalog-form-section exits-animate-panel gap-3"
+        data-testid="branch-address-section"
+      >
+        <h2 className="catalog-form-section__title">{t("branches.addressTitle")}</h2>
+        <div className="catalog-form-section__grid">
+          <label className="catalog-form-field--full flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("branches.addressLine1")}
+            <input
+              className="catalog-form-select font-normal"
+              value={addressLine1}
+              onChange={(e) => setAddressLine1(e.target.value)}
+              data-testid="branch-address1"
+            />
+          </label>
+          <label className="catalog-form-field--full flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("branches.addressLine2")}
+            <input
+              className="catalog-form-select font-normal"
+              value={addressLine2}
+              onChange={(e) => setAddressLine2(e.target.value)}
+              data-testid="branch-address2"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.city")}
             <input
-              className="min-h-11 rounded-md border border-border bg-surface px-3"
+              className="catalog-form-select font-normal"
               value={city}
               onChange={(e) => setCity(e.target.value)}
               data-testid="branch-city"
             />
           </label>
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+          <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.region")}
             <input
-              className="min-h-11 rounded-md border border-border bg-surface px-3"
+              className="catalog-form-select font-normal"
               value={region}
               onChange={(e) => setRegion(e.target.value)}
               data-testid="branch-region"
             />
           </label>
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+          <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.postalCode")}
             <input
-              className="min-h-11 rounded-md border border-border bg-surface px-3"
+              className="catalog-form-select font-normal"
               value={postalCode}
               onChange={(e) => setPostalCode(e.target.value)}
               data-testid="branch-postal"
             />
           </label>
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+          <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.countryCode")}
             <input
-              className="min-h-11 rounded-md border border-border bg-surface px-3"
+              className="catalog-form-select font-normal"
               value={countryCode}
               onChange={(e) => setCountryCode(e.target.value)}
               data-testid="branch-country"
             />
           </label>
         </div>
-      </Card>
+      </section>
 
-      <Card className="flex flex-col gap-3" data-testid="branch-map-section">
-        <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">
-          {t("branches.mapTitle")}
-        </h2>
+      <section
+        className="catalog-form-section exits-animate-panel gap-3"
+        data-testid="branch-map-section"
+      >
+        <h2 className="catalog-form-section__title">{t("branches.mapTitle")}</h2>
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("branches.mapHint")}</p>
         {!mapProviderReady ? (
-          <p
-            className="m-0 rounded-md border border-border bg-muted/30 p-3 text-[length:var(--exits-text-sm)]"
-            data-testid="branch-map-fallback"
-          >
-            {t("branches.mapFallback")}
-          </p>
+          <div className="exits-alert" data-testid="branch-map-fallback" role="status">
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("branches.mapFallback")}
+            </p>
+          </div>
         ) : (
           <p
             className="m-0 text-[length:var(--exits-text-sm)] text-muted"
@@ -566,24 +615,24 @@ export function BranchFulfillmentEditPage() {
             {t("branches.mapProviderReady")}
           </p>
         )}
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+        <div className="catalog-form-section__grid">
+          <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.latitude")}
             <input
               type="number"
               step="any"
-              className="min-h-11 rounded-md border border-border bg-surface px-3"
+              className="catalog-form-select font-normal"
               value={latitude}
               onChange={(e) => setLatitude(e.target.value)}
               data-testid="branch-latitude"
             />
           </label>
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+          <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.longitude")}
             <input
               type="number"
               step="any"
-              className="min-h-11 rounded-md border border-border bg-surface px-3"
+              className="catalog-form-select font-normal"
               value={longitude}
               onChange={(e) => setLongitude(e.target.value)}
               data-testid="branch-longitude"
@@ -593,7 +642,7 @@ export function BranchFulfillmentEditPage() {
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             className="min-h-11"
             disabled={gpsBusy || busy}
             onClick={() => void captureGpsOnce()}
@@ -603,7 +652,7 @@ export function BranchFulfillmentEditPage() {
           </Button>
           {mapLinks ? (
             <>
-              <Button asChild variant="ghost" className="min-h-11">
+              <Button asChild variant="outline" className="min-h-11">
                 <a
                   href={mapLinks.google}
                   target="_blank"
@@ -613,7 +662,7 @@ export function BranchFulfillmentEditPage() {
                   {t("branches.openGoogleMaps")}
                 </a>
               </Button>
-              <Button asChild variant="ghost" className="min-h-11">
+              <Button asChild variant="outline" className="min-h-11">
                 <a
                   href={mapLinks.osm}
                   target="_blank"
@@ -626,24 +675,27 @@ export function BranchFulfillmentEditPage() {
             </>
           ) : null}
         </div>
-      </Card>
+      </section>
 
-      <Card className="flex flex-col gap-3" data-testid="branch-hours-section">
-        <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">
-          {t("branches.hoursTitle")}
-        </h2>
+      <section
+        className="catalog-form-section exits-animate-panel gap-3"
+        data-testid="branch-hours-section"
+      >
+        <h2 className="catalog-form-section__title">{t("branches.hoursTitle")}</h2>
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
           {hasConfiguredHours(hours)
             ? t("branches.hoursConfigured")
             : t("branches.hoursNotConfigured")}
         </p>
-        <ul className="m-0 flex list-none flex-col gap-3 p-0">
+        <ul className="m-0 flex list-none flex-col gap-2 p-0">
           {ORDERED_WEEKDAYS.map((dayName) => {
             const day = hours.find((h) => h.dayOfWeek === dayName)!;
             return (
-              <li key={dayName} className="rounded-md border border-border p-3">
-                <p className="m-0 mb-2 font-medium">{t(dayLabelKey(dayName))}</p>
-                <div className="flex flex-wrap gap-2">
+              <li key={dayName} className="branch-hours-day">
+                <p className="m-0 mb-2 text-[length:var(--exits-text-sm)] font-semibold">
+                  {t(dayLabelKey(dayName))}
+                </p>
+                <div className="flex flex-wrap gap-3">
                   <label className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
                     <input
                       type="radio"
@@ -679,21 +731,21 @@ export function BranchFulfillmentEditPage() {
                 </div>
                 {!day.isClosed && !day.isOpen24Hours ? (
                   <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                    <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                    <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
                       {t("branches.hoursStart")}
                       <input
                         type="time"
-                        className="min-h-11 rounded-md border border-border bg-surface px-3"
+                        className="catalog-form-select font-normal"
                         value={day.openTime}
                         onChange={(e) => updateHour(dayName, { openTime: e.target.value })}
                         data-testid={`hours-start-${dayName}`}
                       />
                     </label>
-                    <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                    <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
                       {t("branches.hoursEnd")}
                       <input
                         type="time"
-                        className="min-h-11 rounded-md border border-border bg-surface px-3"
+                        className="catalog-form-select font-normal"
                         value={day.closeTime}
                         onChange={(e) => updateHour(dayName, { closeTime: e.target.value })}
                         data-testid={`hours-end-${dayName}`}
@@ -705,12 +757,13 @@ export function BranchFulfillmentEditPage() {
             );
           })}
         </ul>
-      </Card>
+      </section>
 
-      <Card className="flex flex-col gap-3" data-testid="branch-fulfillment-toggles">
-        <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">
-          {t("branches.fulfillmentTitle")}
-        </h2>
+      <section
+        className="catalog-form-section exits-animate-panel gap-3"
+        data-testid="branch-fulfillment-toggles"
+      >
+        <h2 className="catalog-form-section__title">{t("branches.fulfillmentTitle")}</h2>
         <div className="flex flex-wrap gap-2">
           {currentReadiness.canUseCustomerOrdering &&
           !currentReadiness.customerOrderingEnabled &&
@@ -728,7 +781,7 @@ export function BranchFulfillmentEditPage() {
           {currentReadiness.customerOrderingEnabled && !currentReadiness.onlineOrdersPaused ? (
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               className="min-h-11"
               disabled={busy}
               onClick={() => void pauseOrders(true)}
@@ -778,7 +831,7 @@ export function BranchFulfillmentEditPage() {
           {currentReadiness.deliveryEnabled ? (
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               className="min-h-11"
               disabled={busy}
               onClick={() => void toggleFulfillment({ deliveryEnabled: false })}
@@ -788,99 +841,114 @@ export function BranchFulfillmentEditPage() {
             </Button>
           ) : null}
         </div>
-      </Card>
+      </section>
 
-      <Card className="flex flex-col gap-3" data-testid="branch-delivery-policy">
-        <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">
-          {t("branches.deliveryPolicyTitle")}
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+      <section
+        className="catalog-form-section exits-animate-panel gap-3"
+        data-testid="branch-delivery-policy"
+      >
+        <h2 className="catalog-form-section__title">{t("branches.deliveryPolicyTitle")}</h2>
+        <div className="catalog-form-section__grid">
+          <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.minimumOrder")}
             <input
               type="number"
               step="any"
-              className="min-h-11 rounded-md border border-border bg-surface px-3"
+              className="catalog-form-select font-normal"
               value={minimumOrder}
               onChange={(e) => setMinimumOrder(e.target.value)}
               data-testid="policy-minimum"
             />
           </label>
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+          <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.baseFee")}
             <input
               type="number"
               step="any"
-              className="min-h-11 rounded-md border border-border bg-surface px-3"
+              className="catalog-form-select font-normal"
               value={baseFee}
               onChange={(e) => setBaseFee(e.target.value)}
               data-testid="policy-base-fee"
             />
           </label>
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+          <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.includedKm")}
             <input
               type="number"
               step="any"
-              className="min-h-11 rounded-md border border-border bg-surface px-3"
+              className="catalog-form-select font-normal"
               value={includedKm}
               onChange={(e) => setIncludedKm(e.target.value)}
               data-testid="policy-included-km"
             />
           </label>
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+          <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.additionalPerKm")}
             <input
               type="number"
               step="any"
-              className="min-h-11 rounded-md border border-border bg-surface px-3"
+              className="catalog-form-select font-normal"
               value={additionalPerKm}
               onChange={(e) => setAdditionalPerKm(e.target.value)}
               data-testid="policy-additional-km"
             />
           </label>
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+          <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.maximumKm")}
             <input
               type="number"
               step="any"
-              className="min-h-11 rounded-md border border-border bg-surface px-3"
+              className="catalog-form-select font-normal"
               value={maximumKm}
               onChange={(e) => setMaximumKm(e.target.value)}
               data-testid="policy-maximum-km"
             />
           </label>
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+          <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.freeThreshold")}
             <input
               type="number"
               step="any"
-              className="min-h-11 rounded-md border border-border bg-surface px-3"
+              className="catalog-form-select font-normal"
               value={freeThreshold}
               onChange={(e) => setFreeThreshold(e.target.value)}
               data-testid="policy-free-threshold"
             />
           </label>
         </div>
-      </Card>
+      </section>
 
       <div
-        className="sticky bottom-0 z-10 flex flex-wrap gap-2 border-t border-border bg-surface/95 p-3 backdrop-blur"
+        className="catalog-form-actions branch-fulfillment-actions"
         role="region"
         aria-label={t("branches.saveActions")}
       >
-        <Button asChild variant="ghost" className="min-h-11">
-          <Link to="/org/branches">{t("branches.cancel")}</Link>
-        </Button>
-        <Button
-          type="button"
-          className="min-h-11"
-          disabled={busy}
-          onClick={() => void saveAll()}
-          data-testid="branch-save"
-        >
-          {busy ? t("branches.saving") : t("branches.save")}
-        </Button>
+        <div className="catalog-form-actions__primary">
+          <Button
+            type="button"
+            className="catalog-form-actions__save"
+            disabled={busy}
+            onClick={() => void saveAll()}
+            data-testid="branch-save"
+          >
+            {busy ? (
+              <>
+                <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                {t("branches.saving")}
+              </>
+            ) : (
+              <>
+                <Save className="size-4 shrink-0" aria-hidden />
+                {t("branches.save")}
+              </>
+            )}
+          </Button>
+        </div>
+        <div className="catalog-form-actions__secondary">
+          <Button asChild variant="outline" className="min-h-11 w-full sm:w-auto">
+            <Link to="/org/branches">{t("branches.cancel")}</Link>
+          </Button>
+        </div>
       </div>
     </div>
   );

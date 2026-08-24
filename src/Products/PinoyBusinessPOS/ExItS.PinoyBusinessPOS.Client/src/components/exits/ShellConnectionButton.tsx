@@ -1,4 +1,11 @@
-import { Cloud, CloudOff } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Cloud,
+  CloudOff,
+  RefreshCw,
+  RotateCcw,
+} from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { Button } from "@/components/ui/button";
@@ -28,6 +35,7 @@ export function ShellConnectionButton({
   const { counts, lastSuccessfulSyncAt, refreshCounts, retrySync } = useOfflineSync();
   const summary = describeSyncSummary(counts);
   const title = t("shell.connectionSync.title");
+  const synced = summary.kind === "synced";
 
   let syncLabel = t("shell.connectionSync.allSynced");
   if (summary.kind === "access") {
@@ -50,6 +58,13 @@ export function ShellConnectionButton({
     summary.kind === "attention" ||
     summary.kind === "access" ||
     counts.syncing > 0;
+
+  const SyncIcon =
+    summary.kind === "attention" || summary.kind === "access"
+      ? AlertTriangle
+      : summary.kind === "waiting" || summary.kind === "syncing"
+        ? RefreshCw
+        : CheckCircle2;
 
   return (
     <DropdownMenu
@@ -74,7 +89,8 @@ export function ShellConnectionButton({
           onClick={onClick}
           onKeyDown={onKeyDown}
           className={cn(
-            "inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-[var(--exits-radius-md)] text-foreground transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "shell-connection-trigger inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            online ? "shell-connection-trigger--online" : "shell-connection-trigger--offline",
             className,
           )}
         >
@@ -87,22 +103,30 @@ export function ShellConnectionButton({
       )}
     >
       <div
-        className="flex min-w-[15rem] max-w-[20rem] flex-col gap-3 p-3"
+        className="shell-connection-panel flex min-w-[16rem] max-w-[20rem] flex-col p-3"
         data-testid={`${testId}-panel`}
         role="group"
         aria-label={title}
       >
-        <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">{title}</p>
+        <p className="shell-connection-panel__title m-0 text-[length:var(--exits-text-sm)] font-semibold">
+          {title}
+        </p>
 
-        <div className="flex items-start gap-2">
+        <div className="shell-connection-panel__divider" role="separator" />
+
+        <div className="shell-connection-panel__row">
           <span
             className={cn(
-              "mt-1 inline-block size-2 shrink-0 rounded-full",
-              online ? "bg-primary" : "bg-muted-foreground",
+              "shell-connection-panel__icon",
+              online
+                ? "shell-connection-panel__icon--online"
+                : "shell-connection-panel__icon--offline",
             )}
             aria-hidden
-          />
-          <div className="min-w-0">
+          >
+            {online ? <Cloud className="size-4" /> : <CloudOff className="size-4" />}
+          </span>
+          <div className="min-w-0 flex-1">
             <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
               {t("shell.connectionSync.connectionSection")}
             </p>
@@ -118,60 +142,91 @@ export function ShellConnectionButton({
           </div>
         </div>
 
-        <div className="min-w-0" data-testid={`${testId}-sync`}>
-          <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
-            {t("shell.connectionSync.syncSection")}
-          </p>
-          <p
-            className="m-0 text-[length:var(--exits-text-sm)] font-medium"
-            data-testid={`${testId}-sync-status`}
+        <div className="shell-connection-panel__divider" role="separator" />
+
+        <div className="shell-connection-panel__row" data-testid={`${testId}-sync`}>
+          <span
+            className={cn(
+              "shell-connection-panel__icon",
+              synced
+                ? "shell-connection-panel__icon--synced"
+                : summary.kind === "attention" || summary.kind === "access"
+                  ? "shell-connection-panel__icon--attention"
+                  : "shell-connection-panel__icon--pending",
+            )}
+            aria-hidden
           >
-            {syncLabel}
-          </p>
-          {lastSuccessfulSyncAt && isFullySynced(counts) ? (
-            <p
-              className="m-0 text-[length:var(--exits-text-xs)] text-muted"
-              data-testid={`${testId}-last-synced`}
-            >
-              {t("shell.connectionSync.lastSynced").replace(
-                "{time}",
-                new Date(lastSuccessfulSyncAt).toLocaleString(),
+            <SyncIcon
+              className={cn(
+                "size-4",
+                (summary.kind === "syncing" || summary.kind === "waiting") &&
+                  online &&
+                  "animate-spin",
               )}
+            />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
+              {t("shell.connectionSync.syncSection")}
             </p>
-          ) : null}
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] font-medium"
+              data-testid={`${testId}-sync-status`}
+            >
+              {syncLabel}
+            </p>
+            {lastSuccessfulSyncAt && isFullySynced(counts) ? (
+              <p
+                className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+                data-testid={`${testId}-last-synced`}
+              >
+                {t("shell.connectionSync.lastSynced").replace(
+                  "{time}",
+                  new Date(lastSuccessfulSyncAt).toLocaleString(),
+                )}
+              </p>
+            ) : null}
+          </div>
         </div>
 
-        <div className="flex flex-col gap-1">
-          {online ? (
-            <Button
-              type="button"
-              variant="ghost"
-              className="min-h-11 w-full justify-start"
-              data-testid={`${testId}-refresh`}
-              onClick={() => {
-                void queryClient.invalidateQueries();
-                void refreshCounts();
-                menu.close();
-              }}
-            >
-              {t("shell.connectionSync.refreshFromServer")}
-            </Button>
-          ) : null}
-          {showRetry ? (
-            <Button
-              type="button"
-              variant="ghost"
-              className="min-h-11 w-full justify-start"
-              data-testid={`${testId}-retry-sync`}
-              onClick={() => {
-                void retrySync();
-                menu.close();
-              }}
-            >
-              {t("shell.connectionSync.retrySync")}
-            </Button>
-          ) : null}
-        </div>
+        {online || showRetry ? (
+          <>
+            <div className="shell-connection-panel__divider" role="separator" />
+            <div className="flex flex-col gap-1">
+              {online ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="shell-connection-panel__action min-h-11 w-full justify-start gap-2"
+                  data-testid={`${testId}-refresh`}
+                  onClick={() => {
+                    void queryClient.invalidateQueries();
+                    void refreshCounts();
+                    menu.close();
+                  }}
+                >
+                  <RefreshCw className="size-4 shrink-0" aria-hidden />
+                  {t("shell.connectionSync.refreshFromServer")}
+                </Button>
+              ) : null}
+              {showRetry ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="shell-connection-panel__action min-h-11 w-full justify-start gap-2"
+                  data-testid={`${testId}-retry-sync`}
+                  onClick={() => {
+                    void retrySync();
+                    menu.close();
+                  }}
+                >
+                  <RotateCcw className="size-4 shrink-0" aria-hidden />
+                  {t("shell.connectionSync.retrySync")}
+                </Button>
+              ) : null}
+            </div>
+          </>
+        ) : null}
       </div>
     </DropdownMenu>
   );

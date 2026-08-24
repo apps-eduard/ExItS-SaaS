@@ -1,16 +1,15 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { BarChart3, RefreshCw } from "lucide-react";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import {
   formatReportPaymentMethod,
   getDashboard,
   getManagementOverview,
 } from "@/api/pos/pos-reporting-client";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -23,27 +22,34 @@ import {
 } from "@/features/reports/report-date-range";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { cn } from "@/lib/cn";
 
 function MetricCard({
   label,
   children,
   meta,
   testId,
+  tone = "default",
 }: {
   label: string;
   children: React.ReactNode;
   meta?: React.ReactNode;
   testId: string;
+  tone?: "default" | "emphasis" | "attention";
 }) {
   return (
     <div
-      className="flex min-w-0 flex-col gap-1 rounded-[var(--exits-radius-md)] border border-border p-3"
+      className={cn(
+        "dashboard-kpi",
+        tone === "emphasis" && "dashboard-kpi--emphasis",
+        tone === "attention" && "dashboard-kpi--attention",
+      )}
       data-testid={testId}
       role="listitem"
     >
-      <span className="text-[length:var(--exits-text-sm)] text-muted">{label}</span>
-      <span className="text-[length:var(--exits-text-lg)] font-semibold">{children}</span>
-      {meta ? <span className="text-[length:var(--exits-text-xs)] text-muted">{meta}</span> : null}
+      <span className="dashboard-kpi__label">{label}</span>
+      <span className="dashboard-kpi__value">{children}</span>
+      {meta ? <span className="dashboard-kpi__meta">{meta}</span> : null}
     </div>
   );
 }
@@ -118,9 +124,14 @@ export function ManagementDashboardPage() {
   const dashboardError = dashboardQuery.isError
     ? describePosApiError(dashboardQuery.error, t, "reports.loadError")
     : null;
+  const refreshing = overviewQuery.isFetching || dashboardQuery.isFetching;
+  const overview = overviewQuery.data;
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="management-dashboard-page">
+    <div
+      className="dashboard-page exits-page flex min-w-0 flex-col gap-3"
+      data-testid="management-dashboard-page"
+    >
       <PageHeader
         title={t("dashboard.title")}
         description={t("dashboard.lede")}
@@ -129,24 +140,32 @@ export function ManagementDashboardPage() {
         backTestId="page-header-back-reports"
       />
 
-      <div className="flex min-w-0 flex-wrap gap-2">
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-reports-hub">
-          <Link to="/reports">{t("reports.open")}</Link>
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          className="min-h-11 w-fit"
-          data-testid="dashboard-refresh"
-          disabled={overviewQuery.isFetching || dashboardQuery.isFetching}
-          onClick={() => {
-            void overviewQuery.refetch();
-            void dashboardQuery.refetch();
-          }}
-        >
-          {t("dashboard.refresh")}
-        </Button>
-      </div>
+      <ExitsChipBar
+        variant="actions"
+        ariaLabel={t("dashboard.title")}
+        testId="dashboard-toolbar"
+        className="exits-animate-toolbar"
+        items={[
+          {
+            key: "reports",
+            label: t("reports.open"),
+            icon: <BarChart3 />,
+            href: "/reports",
+            testId: "open-reports-hub",
+          },
+          {
+            key: "refresh",
+            label: t("dashboard.refresh"),
+            icon: <RefreshCw />,
+            testId: "dashboard-refresh",
+            disabled: refreshing,
+            onSelect: () => {
+              void overviewQuery.refetch();
+              void dashboardQuery.refetch();
+            },
+          },
+        ]}
+      />
 
       <ReportFilters
         preset={preset}
@@ -159,78 +178,93 @@ export function ManagementDashboardPage() {
         loading={dashboardQuery.isFetching}
       />
 
-      <Card data-testid="management-overview-panel">
-        <h2 className="m-0 mb-2 text-[length:var(--exits-text-md)] font-semibold">
-          {t("dashboard.todayOverview")}
-        </h2>
+      <section
+        className="catalog-form-section exits-animate-panel gap-3"
+        data-testid="management-overview-panel"
+      >
+        <h2 className="catalog-form-section__title">{t("dashboard.todayOverview")}</h2>
         {overviewQuery.isLoading ? <LoadingState label={t("reports.loading")} /> : null}
         {overviewError ? (
           <ErrorState title={t("reports.errorTitle")} detail={overviewError} />
         ) : null}
-        {overviewQuery.data ? (
-          <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3" role="list">
+        {overview ? (
+          <div className="dashboard-kpi-grid" role="list">
             <MetricCard label={t("dashboard.businessDate")} testId="kpi-business-date">
-              {overviewQuery.data.businessDate}
+              {overview.businessDate}
             </MetricCard>
             <MetricCard
               label={t("dashboard.todaySales")}
-              meta={`${overviewQuery.data.todaySaleCount} ${t("dashboard.transactions")}`}
+              meta={`${overview.todaySaleCount} ${t("dashboard.transactions")}`}
               testId="kpi-today-sales"
+              tone="emphasis"
             >
-              <MoneyDisplay amount={overviewQuery.data.todaySalesTotal} />
+              <MoneyDisplay amount={overview.todaySalesTotal} />
             </MetricCard>
             <MetricCard label={t("dashboard.todayCash")} testId="kpi-today-cash">
-              <MoneyDisplay amount={overviewQuery.data.todayCashSalesTotal} />
+              <MoneyDisplay amount={overview.todayCashSalesTotal} />
             </MetricCard>
             <MetricCard label={t("dashboard.todayUtang")} testId="kpi-today-utang">
-              <MoneyDisplay amount={overviewQuery.data.todayUtangSalesTotal} />
+              <MoneyDisplay amount={overview.todayUtangSalesTotal} />
             </MetricCard>
             <MetricCard label={t("dashboard.paymentsReceived")} testId="kpi-payments-received">
-              <MoneyDisplay amount={overviewQuery.data.todayPaymentsReceived} />
+              <MoneyDisplay amount={overview.todayPaymentsReceived} />
             </MetricCard>
             <MetricCard label={t("dashboard.openUtang")} testId="kpi-open-utang">
-              <MoneyDisplay amount={overviewQuery.data.openUtangOutstanding} />
+              <MoneyDisplay amount={overview.openUtangOutstanding} />
             </MetricCard>
-            <MetricCard label={t("dashboard.lowStock")} testId="kpi-low-stock">
-              {overviewQuery.data.lowStockProductCount}
+            <MetricCard
+              label={t("dashboard.lowStock")}
+              testId="kpi-low-stock"
+              tone={overview.lowStockProductCount > 0 ? "attention" : "default"}
+            >
+              {overview.lowStockProductCount}
             </MetricCard>
-            <MetricCard label={t("dashboard.expiredLots")} testId="kpi-expired-lots">
-              {overviewQuery.data.expiredLotCount}
+            <MetricCard
+              label={t("dashboard.expiredLots")}
+              testId="kpi-expired-lots"
+              tone={overview.expiredLotCount > 0 ? "attention" : "default"}
+            >
+              {overview.expiredLotCount}
             </MetricCard>
-            <MetricCard label={t("dashboard.nearExpiryLots")} testId="kpi-near-expiry">
-              {overviewQuery.data.nearExpiryLotCount}
+            <MetricCard
+              label={t("dashboard.nearExpiryLots")}
+              testId="kpi-near-expiry"
+              tone={overview.nearExpiryLotCount > 0 ? "attention" : "default"}
+            >
+              {overview.nearExpiryLotCount}
             </MetricCard>
             <MetricCard label={t("dashboard.openShifts")} testId="kpi-open-shifts">
-              {overviewQuery.data.openShiftCount}
+              {overview.openShiftCount}
             </MetricCard>
             <MetricCard label={t("dashboard.activeRegisters")} testId="kpi-active-registers">
-              {overviewQuery.data.activeRegisterCount}
+              {overview.activeRegisterCount}
             </MetricCard>
           </div>
         ) : null}
-      </Card>
+      </section>
 
-      <Card data-testid="period-dashboard-panel">
-        <h2 className="m-0 mb-2 text-[length:var(--exits-text-md)] font-semibold">
-          {t("dashboard.periodTitle")}
-        </h2>
-        <p className="mt-0 mb-3 text-[length:var(--exits-text-sm)] text-muted">
-          {applied.fromDate} → {applied.toDate}
-        </p>
+      <section
+        className="catalog-form-section exits-animate-panel gap-3"
+        data-testid="period-dashboard-panel"
+      >
+        <div className="dashboard-period-header">
+          <h2 className="catalog-form-section__title">{t("dashboard.periodTitle")}</h2>
+          <p className="dashboard-period-range m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {applied.fromDate} → {applied.toDate}
+          </p>
+        </div>
         {dashboardQuery.isLoading ? <LoadingState label={t("reports.loading")} /> : null}
         {dashboardError ? (
           <ErrorState title={t("reports.errorTitle")} detail={dashboardError} />
         ) : null}
         {dashboardQuery.data ? (
           <>
-            <div
-              className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3"
-              role="list"
-            >
+            <div className="dashboard-kpi-grid" role="list">
               <MetricCard
                 label={t("dashboard.completedSales")}
                 meta={`${dashboardQuery.data.completedSaleCount} ${t("dashboard.transactions")}`}
                 testId="kpi-period-sales"
+                tone="emphasis"
               >
                 <MoneyDisplay amount={dashboardQuery.data.completedSalesTotal} />
               </MetricCard>
@@ -251,30 +285,38 @@ export function ManagementDashboardPage() {
               </MetricCard>
             </div>
 
-            <h3 className="mb-2 mt-4 text-[length:var(--exits-text-sm)] font-semibold">
-              {t("dashboard.paymentBreakdown")}
-            </h3>
-            {dashboardQuery.data.paymentMethodBreakdown.length === 0 ? (
-              <EmptyState title={t("reports.emptyTitle")} detail={t("reports.emptyDetail")} />
-            ) : (
-              <ul className="m-0 flex list-none flex-col gap-2 p-0" data-testid="payment-breakdown">
-                {dashboardQuery.data.paymentMethodBreakdown.map((row) => (
-                  <li
-                    key={row.paymentMethod}
-                    className="flex min-w-0 items-center justify-between gap-2 border-b border-border pb-2"
-                  >
-                    <span>
-                      {formatReportPaymentMethod(row.paymentMethod)}
-                      <span className="ml-2 text-muted">({row.count})</span>
-                    </span>
-                    <MoneyDisplay amount={row.amount} />
-                  </li>
-                ))}
-              </ul>
-            )}
+            <div className="dashboard-breakdown">
+              <h3 className="catalog-form-section__title">{t("dashboard.paymentBreakdown")}</h3>
+              {dashboardQuery.data.paymentMethodBreakdown.length === 0 ? (
+                <EmptyState title={t("reports.emptyTitle")} detail={t("reports.emptyDetail")} />
+              ) : (
+                <ul
+                  className="exits-list m-0 grid list-none gap-2 p-0"
+                  data-testid="payment-breakdown"
+                >
+                  {dashboardQuery.data.paymentMethodBreakdown.map((row) => (
+                    <li key={row.paymentMethod}>
+                      <div className="exits-list__card dashboard-payment-row">
+                        <div className="dashboard-payment-row__main min-w-0">
+                          <strong className="exits-list__name block truncate font-semibold">
+                            {formatReportPaymentMethod(row.paymentMethod)}
+                          </strong>
+                          <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                            {row.count} {t("dashboard.transactions")}
+                          </p>
+                        </div>
+                        <span className="dashboard-payment-row__amount">
+                          <MoneyDisplay amount={row.amount} />
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </>
         ) : null}
-      </Card>
+      </section>
     </div>
   );
 }

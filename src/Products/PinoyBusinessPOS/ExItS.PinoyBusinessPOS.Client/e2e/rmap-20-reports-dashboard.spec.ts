@@ -219,6 +219,7 @@ test.describe("RMAP-20 reports + management dashboard", () => {
 
     await expect(page.getByTestId("management-dashboard-page")).toBeVisible();
     await expect(page.getByTestId("kpi-today-sales")).toBeVisible();
+    await page.getByTestId("report-filters-info-toggle").click();
     await expect(page.getByTestId("report-timezone-note")).toBeVisible();
     await expect(page.getByTestId("report-branch-filter")).toBeVisible();
     await expect(page.getByTestId("dashboard-no-pnl")).toHaveCount(0);

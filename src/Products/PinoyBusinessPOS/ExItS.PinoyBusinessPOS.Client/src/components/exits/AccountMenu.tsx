@@ -8,12 +8,15 @@ import { sessionAccountClass, isOrganizationContextLocked } from "@/session/acco
 import { ensurePersonalSessionProfile } from "@/session/ensure-personal-profile";
 import { useSwitchToBusiness } from "@/workspace/use-switch-to-business";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
-import { resolveEffectivePosRoleCode } from "@/access/pos-capabilities";
+import {
+  isOrganizationAdministratorMembership,
+  isOrganizationOwnerMembership,
+  resolveEffectivePosRoleCode,
+} from "@/access/pos-capabilities";
 import {
   deriveUserInitials,
   resolveFriendlyPosRole,
   resolveUserDisplayName,
-  resolveUserSecondaryIdentity,
 } from "@/lib/user-display";
 import { cn } from "@/lib/cn";
 
@@ -41,6 +44,27 @@ function experienceLabel(
   return null;
 }
 
+function resolveMenuRoleLabel(
+  session: Parameters<typeof sessionAccountClass>[0],
+  sessionGrant: Parameters<typeof resolveEffectivePosRoleCode>[0],
+  t: (key: "personal.badge" | "account.role.owner" | "account.role.admin" | "account.role.manager" | "account.role.cashier") => string,
+): string | null {
+  if (sessionAccountClass(session) === "Personal") {
+    return t("personal.badge");
+  }
+  if (isOrganizationOwnerMembership(sessionGrant)) {
+    return t("account.role.owner");
+  }
+  if (isOrganizationAdministratorMembership(sessionGrant)) {
+    return t("account.role.admin");
+  }
+  const friendlyRole = resolveFriendlyPosRole(resolveEffectivePosRoleCode(sessionGrant));
+  if (friendlyRole === "owner") return t("account.role.owner");
+  if (friendlyRole === "manager") return t("account.role.manager");
+  if (friendlyRole === "cashier") return t("account.role.cashier");
+  return null;
+}
+
 export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountMenuProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -56,17 +80,8 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
   } = useSwitchToBusiness();
 
   const displayName = resolveUserDisplayName(session) || t("account.signedIn");
-  const secondary = resolveUserSecondaryIdentity(session);
   const initials = deriveUserInitials(session);
-  const friendlyRole = resolveFriendlyPosRole(resolveEffectivePosRoleCode(sessionGrant));
-  const roleLabel =
-    friendlyRole === "owner"
-      ? t("account.role.owner")
-      : friendlyRole === "manager"
-        ? t("account.role.manager")
-        : friendlyRole === "cashier"
-          ? t("account.role.cashier")
-          : null;
+  const roleLabel = resolveMenuRoleLabel(session, sessionGrant, t);
   const currentExperience = experienceLabel(boundWorkspace?.experience, t);
   const canReturnToPersonal =
     sessionAccountClass(session) === "Organization" && !isOrganizationContextLocked(session);
@@ -101,9 +116,10 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
           type="button"
           data-testid="account-menu-trigger"
           className={cn(
-            "inline-flex min-h-[var(--exits-touch-target-min)] items-center gap-2 rounded-full border border-border bg-surface px-1.5 py-1 text-foreground transition-colors duration-[var(--exits-motion-fast)] hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            compact
+              ? "app-top-bar__avatar inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-foreground transition-colors duration-[var(--exits-motion-fast)] hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              : "inline-flex min-h-[var(--exits-touch-target-min)] items-center gap-2 rounded-full border border-border bg-surface px-1.5 py-1 text-foreground transition-colors duration-[var(--exits-motion-fast)] hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:pr-2.5",
             expanded && "bg-[var(--exits-surface-muted)]",
-            !compact && "sm:pr-2.5",
           )}
           aria-haspopup="menu"
           aria-expanded={expanded}
@@ -137,13 +153,11 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
         <p className="m-0 truncate text-[length:var(--exits-text-sm)] font-semibold text-foreground">
           {displayName}
         </p>
-        {secondary ? (
-          <p className="m-0 mt-0.5 truncate text-[length:var(--exits-text-xs)] text-muted">
-            {secondary}
-          </p>
-        ) : null}
         {roleLabel ? (
-          <p className="m-0 mt-1 truncate text-[length:var(--exits-text-xs)] font-semibold text-muted">
+          <p
+            className="m-0 mt-0.5 truncate text-[length:var(--exits-text-xs)] font-semibold text-muted"
+            data-testid="account-menu-role"
+          >
             {roleLabel}
           </p>
         ) : null}

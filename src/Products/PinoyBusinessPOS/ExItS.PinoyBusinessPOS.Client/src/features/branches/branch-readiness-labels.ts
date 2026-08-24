@@ -32,12 +32,42 @@ const REASON_KEYS: Record<string, MessageKey> = {
   store_closed: "branches.reason.storeClosed",
 };
 
+/** Reason codes already explained by a matching missingRequirements entry. */
+const REQUIREMENT_COVERED_REASONS: Record<string, readonly string[]> = {
+  timezone: ["timezone_missing"],
+  branch_active: ["branch_inactive"],
+  branch_address: ["branch_address_incomplete"],
+  store_hours: ["store_hours_missing", "store_hours_invalid"],
+  store_contact: ["store_contact_missing"],
+  ordering_entitlement: ["ordering_entitlement_missing"],
+  delivery_entitlement: ["delivery_entitlement_missing"],
+  map_location: ["map_location_missing"],
+  delivery_policy: ["delivery_policy_missing", "delivery_policy_incomplete"],
+};
+
 export function missingRequirementMessageKey(code: string): MessageKey {
   return REQUIREMENT_KEYS[code] ?? "branches.missing.unknown";
 }
 
 export function reasonCodeMessageKey(code: string): MessageKey {
   return REASON_KEYS[code] ?? "branches.reason.unknown";
+}
+
+/**
+ * Keep reason codes that add new information beyond missingRequirements
+ * (e.g. pickup_disabled), dropping duplicates like timezone + timezone_missing.
+ */
+export function filterRedundantReasonCodes(
+  missingRequirements: readonly string[],
+  reasonCodes: readonly string[],
+): string[] {
+  const covered = new Set<string>();
+  for (const requirement of missingRequirements) {
+    for (const reason of REQUIREMENT_COVERED_REASONS[requirement] ?? []) {
+      covered.add(reason);
+    }
+  }
+  return reasonCodes.filter((code) => !covered.has(code));
 }
 
 export type EnablementLabel = "enabled" | "disabled" | "paused" | "notReady";

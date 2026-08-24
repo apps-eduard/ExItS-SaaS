@@ -315,8 +315,10 @@ test.describe("RMAP-18 branch fulfillment", () => {
     await expect(page.getByTestId("branch-map-fallback")).toBeVisible();
     await expect(page.getByTestId("branch-address1")).toHaveValue("123 Rizal St");
     await expect(page.getByTestId("branch-latitude")).toHaveValue("14.5995");
-    await expect(page.getByTestId("pickup-status")).toContainText("Pickup: Disabled");
-    await expect(page.getByTestId("delivery-status")).toContainText("Delivery: Disabled");
+    await expect(page.getByTestId("pickup-status")).toContainText("Disabled");
+    await expect(page.getByTestId("pickup-status")).toContainText("Pickup");
+    await expect(page.getByTestId("delivery-status")).toContainText("Disabled");
+    await expect(page.getByTestId("delivery-status")).toContainText("Delivery");
 
     await page.getByTestId("branch-address1").fill("456 Mabini Ave");
     await page.getByTestId("branch-city").fill("Quezon City");
@@ -339,11 +341,13 @@ test.describe("RMAP-18 branch fulfillment", () => {
 
     await page.getByTestId("branch-latitude").fill("14.65");
     await page.getByTestId("enable-pickup").click();
-    await expect(page.getByTestId("pickup-status")).toContainText("Pickup: Enabled");
+    await expect(page.getByTestId("pickup-status")).toContainText("Enabled");
+    await expect(page.getByTestId("pickup-status")).toContainText("Pickup");
     expect(state.fulfillmentUpdates.some((u) => u.pickupEnabled === true)).toBe(true);
 
     await page.getByTestId("enable-delivery").click();
-    await expect(page.getByTestId("delivery-status")).toContainText("Delivery: Enabled");
+    await expect(page.getByTestId("delivery-status")).toContainText("Enabled");
+    await expect(page.getByTestId("delivery-status")).toContainText("Delivery");
     expect(state.fulfillmentUpdates.some((u) => u.deliveryEnabled === true)).toBe(true);
 
     await expect(page.getByTestId("branch-maps-google")).toBeVisible();

@@ -248,8 +248,8 @@ describe("account shell", () => {
     await user.click(trigger);
     const menu = await screen.findByRole("menu");
     expect(within(menu).getByText("Olivia Mendoza")).toBeInTheDocument();
-    expect(within(menu).getByText("olivia")).toBeInTheDocument();
-    expect(within(menu).getByText("Cashier")).toBeInTheDocument();
+    expect(within(menu).getByTestId("account-menu-role")).toHaveTextContent("Cashier");
+    expect(within(menu).queryByText("olivia")).not.toBeInTheDocument();
 
     await user.click(within(menu).getByRole("menuitem", { name: "Preferences" }));
     await waitFor(() => {

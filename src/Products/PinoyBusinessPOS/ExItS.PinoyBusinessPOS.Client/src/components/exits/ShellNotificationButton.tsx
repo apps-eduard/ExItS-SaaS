@@ -9,6 +9,11 @@ export type ShellNotificationButtonProps = {
   badge: string | null;
   testId?: string;
   className?: string;
+  /** When set, click runs this instead of a plain route Link (e.g. switch profile then go). */
+  onNavigate?: () => void | Promise<void>;
+  disabled?: boolean;
+  /** Router location state passed through the Link. */
+  linkState?: unknown;
 };
 
 /**
@@ -22,19 +27,19 @@ export function ShellNotificationButton({
   badge,
   testId = "shell-notification-bell",
   className,
+  onNavigate,
+  disabled = false,
+  linkState,
 }: ShellNotificationButtonProps) {
   const accessibleName = badge ? unreadLabel.replace("{count}", badge) : label;
+  const sharedClassName = cn(
+    "relative inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-foreground no-underline transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+    disabled && "pointer-events-none opacity-60",
+    className,
+  );
 
-  return (
-    <Link
-      to={to}
-      data-testid={testId}
-      aria-label={accessibleName}
-      className={cn(
-        "relative inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-[var(--exits-radius-md)] text-foreground no-underline transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        className,
-      )}
-    >
+  const content = (
+    <>
       <Bell className="size-5" aria-hidden />
       {badge ? (
         <span
@@ -46,6 +51,35 @@ export function ShellNotificationButton({
         </span>
       ) : null}
       <span className="sr-only">{accessibleName}</span>
+    </>
+  );
+
+  if (onNavigate) {
+    return (
+      <button
+        type="button"
+        data-testid={testId}
+        aria-label={accessibleName}
+        className={sharedClassName}
+        disabled={disabled}
+        onClick={() => {
+          void onNavigate();
+        }}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <Link
+      to={to}
+      state={linkState}
+      data-testid={testId}
+      aria-label={accessibleName}
+      className={sharedClassName}
+    >
+      {content}
     </Link>
   );
 }
