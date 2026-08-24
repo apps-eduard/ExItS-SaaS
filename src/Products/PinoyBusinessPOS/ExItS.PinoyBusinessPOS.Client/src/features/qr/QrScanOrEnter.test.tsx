@@ -46,13 +46,27 @@ function renderInput(
 }
 
 describe("QrScanOrEnter", () => {
-  it("keeps upload and manual fallback controls visible", () => {
+  it("defaults to manual entry and toggles QR controls", async () => {
+    const user = userEvent.setup();
     renderInput();
 
+    expect(screen.getByTestId("qr-scan-or-enter")).toHaveAttribute("data-mode", "manual");
+    expect(screen.getByTestId("qr-manual-panel")).toBeInTheDocument();
+    expect(screen.getByTestId("qr-manual-id")).toBeInTheDocument();
+    expect(screen.queryByTestId("qr-live-camera-button")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("qr-mode-scan"));
+
+    expect(screen.getByTestId("qr-scan-or-enter")).toHaveAttribute("data-mode", "qr");
+    expect(screen.getByTestId("qr-scan-panel")).toBeInTheDocument();
     expect(screen.getByTestId("qr-live-camera-button")).toBeInTheDocument();
     expect(screen.getByTestId("qr-upload-button")).toBeInTheDocument();
+    expect(screen.queryByTestId("qr-manual-id")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("qr-mode-manual"));
+
     expect(screen.getByTestId("qr-manual-id")).toBeInTheDocument();
-    expect(screen.getByTestId("qr-manual-submit")).toBeInTheDocument();
+    expect(screen.queryByTestId("qr-live-camera-button")).not.toBeInTheDocument();
   });
 
   it("resolves manual Personal ExItS ID", async () => {
@@ -125,6 +139,7 @@ describe("QrScanOrEnter", () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const { onResolvedPayload } = renderInput();
 
+    await user.click(screen.getByTestId("qr-mode-scan"));
     await user.click(screen.getByTestId("qr-live-camera-button"));
     await user.click(screen.getByTestId("live-qr-open-camera"));
     await vi.advanceTimersByTimeAsync(200);

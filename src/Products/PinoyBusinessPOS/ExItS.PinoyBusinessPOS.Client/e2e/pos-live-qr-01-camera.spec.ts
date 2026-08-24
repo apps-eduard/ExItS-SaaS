@@ -108,10 +108,15 @@ async function mockPersonalResolve(page: import("@playwright/test").Page) {
 }
 
 test.describe("POS-LIVE-QR-01 mocked live camera", () => {
+  async function openScanMode(page: import("@playwright/test").Page) {
+    await page.getByTestId("qr-mode-scan").click();
+  }
+
   test("opens camera and shows live preview", async ({ page }) => {
     await installMockCamera(page);
     await openCustomerLinkScanner(page);
 
+    await openScanMode(page);
     await page.getByTestId("qr-live-camera-button").click();
     await page.getByTestId("live-qr-open-camera").click();
 
@@ -123,6 +128,7 @@ test.describe("POS-LIVE-QR-01 mocked live camera", () => {
     await installMockCamera(page, { decodePayload: PERSONAL_QR_PAYLOAD });
     await openCustomerLinkScanner(page, { mockResolve: true });
 
+    await openScanMode(page);
     await page.getByTestId("qr-live-camera-button").click();
     await page.getByTestId("live-qr-open-camera").click();
     await expect(page.getByTestId("live-qr-preview")).toBeVisible();
@@ -139,6 +145,7 @@ test.describe("POS-LIVE-QR-01 mocked live camera", () => {
     await installMockCamera(page, { decodePayload: ORG_QR_PAYLOAD });
     await openCustomerLinkScanner(page);
 
+    await openScanMode(page);
     await page.getByTestId("qr-live-camera-button").click();
     await page.getByTestId("live-qr-open-camera").click();
 
@@ -152,6 +159,7 @@ test.describe("POS-LIVE-QR-01 mocked live camera", () => {
     await installMockCamera(page, { deny: true });
     await openCustomerLinkScanner(page);
 
+    await openScanMode(page);
     await page.getByTestId("qr-live-camera-button").click();
     await page.getByTestId("live-qr-open-camera").click();
 
@@ -164,6 +172,7 @@ test.describe("POS-LIVE-QR-01 mocked live camera", () => {
     await installMockCamera(page);
     await openCustomerLinkScanner(page);
 
+    await openScanMode(page);
     await page.getByTestId("qr-live-camera-button").click();
     await page.getByTestId("live-qr-open-camera").click();
     await expect(page.getByTestId("live-qr-preview")).toBeVisible();
@@ -179,6 +188,7 @@ test.describe("POS-LIVE-QR-01 mocked live camera", () => {
     await installMockCamera(page);
     await openCustomerLinkScanner(page);
 
+    await openScanMode(page);
     await page.getByTestId("qr-live-camera-button").click();
     await page.getByTestId("live-qr-open-camera").click();
     await expect(page.getByTestId("live-qr-preview")).toBeVisible();
@@ -190,6 +200,7 @@ test.describe("POS-LIVE-QR-01 mocked live camera", () => {
     await installMockCamera(page);
     await openCustomerLinkScanner(page);
 
+    await openScanMode(page);
     await page.getByTestId("qr-live-camera-button").click();
     await page.getByTestId("live-qr-open-camera").click();
     await expect(page.getByTestId("live-qr-preview")).toBeVisible();

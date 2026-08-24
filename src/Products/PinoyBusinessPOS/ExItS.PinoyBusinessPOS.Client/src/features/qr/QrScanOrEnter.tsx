@@ -12,6 +12,8 @@ import { decodeQrFromImageFile } from "@/features/qr/decode-qr-from-image";
 import { LiveQrCameraScanner } from "@/features/qr/LiveQrCameraScanner";
 import { qrPurposeMismatchMessageKey } from "@/features/qr/qr-purpose-error";
 
+type EntryMode = "manual" | "qr";
+
 type Props = {
   expectedPurpose: ExItsQrPurpose;
   onResolvedPayload: (payload: string) => void;
@@ -22,10 +24,23 @@ export function QrScanOrEnter({ expectedPurpose, onResolvedPayload, disabled }: 
   const { t } = useI18n();
   const fileRef = useRef<HTMLInputElement>(null);
   const manualInputRef = useRef<HTMLInputElement>(null);
+  const [mode, setMode] = useState<EntryMode>("manual");
   const [manual, setManual] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [scanningFile, setScanningFile] = useState(false);
   const [liveOpen, setLiveOpen] = useState(false);
+
+  function switchMode(next: EntryMode) {
+    if (next === mode) return;
+    setMode(next);
+    setError(null);
+    if (next === "manual") {
+      setLiveOpen(false);
+      window.setTimeout(() => manualInputRef.current?.focus(), 0);
+    } else {
+      setManual("");
+    }
+  }
 
   function mapSubject(parsedSubject: string, rawPayload: string): string {
     if (expectedPurpose === "pos-device-registration") {
@@ -71,7 +86,7 @@ export function QrScanOrEnter({ expectedPurpose, onResolvedPayload, disabled }: 
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-3" data-testid="qr-scan-or-enter">
+    <div className="flex min-w-0 flex-col gap-3" data-testid="qr-scan-or-enter" data-mode={mode}>
       <input
         ref={fileRef}
         type="file"
@@ -81,76 +96,115 @@ export function QrScanOrEnter({ expectedPurpose, onResolvedPayload, disabled }: 
         disabled={disabled || scanningFile}
         onChange={(event) => void onFileChange(event.target.files?.[0] ?? null)}
       />
+
       <ExitsChipBar
-        variant="actions"
-        ariaLabel={t("qr.scanWithCamera")}
-        testId="qr-scan-actions"
+        variant="filter"
+        ariaLabel={t("qr.modeToggleAria")}
+        testId="qr-entry-mode"
         items={[
           {
-            key: "camera",
-            label: t("qr.scanWithCamera"),
-            icon: <Camera />,
-            emphasis: "primary",
-            testId: "qr-live-camera-button",
-            disabled: disabled || scanningFile,
-            onSelect: () => setLiveOpen(true),
-          },
-          {
-            key: "upload",
-            label: scanningFile ? t("qr.scanning") : t("qr.uploadImage"),
-            icon: <Upload />,
-            testId: "qr-upload-button",
-            disabled: disabled || scanningFile,
-            onSelect: () => fileRef.current?.click(),
-          },
-          {
-            key: "clear",
-            label: t("qr.clear"),
-            icon: <X />,
-            testId: "qr-clear-button",
+            key: "manual",
+            label: t("qr.modeManual"),
+            icon: <Keyboard />,
+            state: mode === "manual" ? "active" : "idle",
+            testId: "qr-mode-manual",
             disabled: Boolean(disabled),
-            onSelect: () => {
-              setManual("");
-              setError(null);
-            },
+            onSelect: () => switchMode("manual"),
+          },
+          {
+            key: "qr",
+            label: t("qr.modeScan"),
+            icon: <Camera />,
+            state: mode === "qr" ? "active" : "idle",
+            testId: "qr-mode-scan",
+            disabled: Boolean(disabled),
+            onSelect: () => switchMode("qr"),
           },
         ]}
       />
-      <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("qr.inputHint")}</p>
-      <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-        <span className="inline-flex items-center gap-1.5">
-          <Keyboard className="size-4" aria-hidden />
-          {t("qr.enterId")}
-        </span>
-        <div className="qr-manual-entry flex min-w-0 gap-2">
-          <input
-            ref={manualInputRef}
-            className="min-h-11 min-w-0 flex-1 rounded border border-[var(--exits-border)] bg-transparent px-3 uppercase"
-            data-testid="qr-manual-id"
-            value={manual}
-            disabled={disabled}
-            placeholder={expectedPurpose === "personal" ? "EX-4827-1936" : "ORG000001"}
-            onChange={(event) => setManual(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                applyRaw(manual);
-              }
-            }}
-          />
+
+      {mode === "manual" ? (
+        <div className="flex min-w-0 flex-col gap-2" data-testid="qr-manual-panel">
+          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("qr.manualHint")}</p>
+          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+            <span className="inline-flex items-center gap-1.5">
+              <Keyboard className="size-4" aria-hidden />
+              {t("qr.enterId")}
+            </span>
+            <div className="qr-manual-entry flex min-w-0 gap-2">
+              <input
+                ref={manualInputRef}
+                className="min-h-11 min-w-0 flex-1 rounded border border-[var(--exits-border)] bg-transparent px-3 uppercase"
+                data-testid="qr-manual-id"
+                value={manual}
+                disabled={disabled}
+                placeholder={expectedPurpose === "personal" ? "EX-4827-1936" : "ORG000001"}
+                onChange={(event) => setManual(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    applyRaw(manual);
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                className="qr-manual-entry__search min-h-11 shrink-0"
+                data-testid="qr-manual-submit"
+                disabled={Boolean(disabled) || !manual.trim()}
+                onClick={() => applyRaw(manual)}
+              >
+                <Search className="size-4 shrink-0" aria-hidden />
+                {t("qr.resolve")}
+              </Button>
+            </div>
+          </label>
           <Button
             type="button"
-            variant="outline"
-            className="qr-manual-entry__search min-h-11 shrink-0"
-            data-testid="qr-manual-submit"
-            disabled={Boolean(disabled) || !manual.trim()}
-            onClick={() => applyRaw(manual)}
+            variant="ghost"
+            className="min-h-11 w-full"
+            data-testid="qr-clear-button"
+            disabled={Boolean(disabled) || (!manual && !error)}
+            onClick={() => {
+              setManual("");
+              setError(null);
+            }}
           >
-            <Search className="size-4 shrink-0" aria-hidden />
-            {t("qr.resolve")}
+            <X className="size-4 shrink-0" aria-hidden />
+            {t("qr.clear")}
           </Button>
         </div>
-      </label>
+      ) : (
+        <div className="flex min-w-0 flex-col gap-2" data-testid="qr-scan-panel">
+          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("qr.scanHint")}</p>
+          <ExitsChipBar
+            variant="actions"
+            ariaLabel={t("qr.scanWithCamera")}
+            testId="qr-scan-actions"
+            items={[
+              {
+                key: "camera",
+                label: t("qr.scanWithCamera"),
+                icon: <Camera />,
+                emphasis: "primary",
+                testId: "qr-live-camera-button",
+                disabled: disabled || scanningFile,
+                onSelect: () => setLiveOpen(true),
+              },
+              {
+                key: "upload",
+                label: scanningFile ? t("qr.scanning") : t("qr.uploadImage"),
+                icon: <Upload />,
+                testId: "qr-upload-button",
+                disabled: disabled || scanningFile,
+                onSelect: () => fileRef.current?.click(),
+              },
+            ]}
+          />
+        </div>
+      )}
+
       {error ? (
         <p
           className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
@@ -170,7 +224,7 @@ export function QrScanOrEnter({ expectedPurpose, onResolvedPayload, disabled }: 
         }}
         onUploadFallback={() => fileRef.current?.click()}
         onManualFallback={() => {
-          manualInputRef.current?.focus();
+          switchMode("manual");
         }}
       />
     </div>

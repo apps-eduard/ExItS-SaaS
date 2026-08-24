@@ -243,6 +243,7 @@ describe("CheckoutPersonalCustomerPicker", () => {
 
     const { onCustomerSelected } = renderPicker();
 
+    await user.click(screen.getByTestId("qr-mode-scan"));
     await user.click(screen.getByTestId("qr-live-camera-button"));
     await user.click(screen.getByTestId("live-qr-open-camera"));
     await vi.advanceTimersByTimeAsync(200);
