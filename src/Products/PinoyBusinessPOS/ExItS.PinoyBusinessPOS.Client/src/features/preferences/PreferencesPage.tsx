@@ -6,14 +6,20 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { ThemeControl } from "@/components/exits/ThemeControl";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
-import { pageBackNav } from "@/navigation/page-back-nav";
+import { pageBackNav, personalPageBackNav } from "@/navigation/page-back-nav";
+import { sessionAccountClass } from "@/session/account-class";
+import { useSession } from "@/session/SessionProvider";
 
 export function PreferencesPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const { session } = useSession();
+  const isPersonal = sessionAccountClass(session) === "Personal";
+  const back = isPersonal ? personalPageBackNav.more : pageBackNav.more;
+  const closeTo = isPersonal ? personalPageBackNav.more.to : pageBackNav.more.to;
 
   function onClose() {
-    navigate("/more", { replace: true });
+    navigate(closeTo, { replace: true });
   }
 
   return (
@@ -22,8 +28,8 @@ export function PreferencesPage() {
         <PageHeader
           title={t("preferences.title")}
           description={t("preferences.lede")}
-          backTo={pageBackNav.more.to}
-          backLabel={t(pageBackNav.more.labelKey)}
+          backTo={back.to}
+          backLabel={t(back.labelKey)}
           backTestId="page-header-back-preferences"
         />
         <Button

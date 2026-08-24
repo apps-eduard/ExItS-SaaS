@@ -1,37 +1,66 @@
-import { Building2 } from "lucide-react";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import {
+  Bell,
+  Building2,
+  HandCoins,
+  Link2,
+  QrCode,
+  Receipt,
+  Settings,
+  Store,
+  UserPlus,
+  Users,
+  Wallet,
+} from "lucide-react";
+import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useI18n } from "@/i18n/I18nProvider";
+import { personalPageBackNav } from "@/navigation/page-back-nav";
 import { useSwitchToBusiness } from "@/workspace/use-switch-to-business";
 
 export function PersonalUtangHubPage() {
   const { t } = useI18n();
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="personal-utang-hub">
-      <PageHeader title={t("personal.utang.title")} description={t("personal.utang.lede")} />
-      <div className="flex flex-col gap-2">
-        <Button asChild className="min-h-11 justify-start" data-testid="utang-open-people">
-          <Link to="/personal/utang/people">{t("personal.utang.people")}</Link>
-        </Button>
-        <Button
-          asChild
-          variant="ghost"
-          className="min-h-11 justify-start"
-          data-testid="utang-open-lent"
-        >
-          <Link to="/personal/utang/lent">{t("personal.utang.lent")}</Link>
-        </Button>
-        <Button
-          asChild
-          variant="ghost"
-          className="min-h-11 justify-start"
-          data-testid="utang-open-owe"
-        >
-          <Link to="/personal/utang/owe">{t("personal.utang.owe")}</Link>
-        </Button>
-      </div>
+    <div
+      className="personal-page exits-page flex min-w-0 flex-col gap-3"
+      data-testid="personal-utang-hub"
+    >
+      <PageHeader
+        title={t("personal.utang.title")}
+        description={t("personal.utang.lede")}
+        backTo={personalPageBackNav.home.to}
+        backLabel={t(personalPageBackNav.home.labelKey)}
+        backTestId="page-header-back-utang-hub"
+      />
+      <section className="catalog-form-section exits-animate-panel personal-section gap-3">
+        <h2 className="catalog-form-section__title text-muted">{t("personal.home.quickActions")}</h2>
+        <ActionTileGrid
+          tiles={[
+            {
+              key: "people",
+              label: t("personal.utang.people"),
+              icon: Users,
+              testId: "utang-open-people",
+              to: "/personal/utang/people",
+              primary: true,
+            },
+            {
+              key: "lent",
+              label: t("personal.utang.lent"),
+              icon: HandCoins,
+              testId: "utang-open-lent",
+              to: "/personal/utang/lent",
+            },
+            {
+              key: "owe",
+              label: t("personal.utang.owe"),
+              icon: Wallet,
+              testId: "utang-open-owe",
+              to: "/personal/utang/owe",
+            },
+          ]}
+        />
+      </section>
     </div>
   );
 }
@@ -41,86 +70,142 @@ export function PersonalMorePage() {
   const { canSwitch, switching, switchToBusiness, online } = useSwitchToBusiness();
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="personal-more-page">
+    <div
+      className="personal-page exits-page flex min-w-0 flex-col gap-3"
+      data-testid="personal-more-page"
+    >
       <PageHeader title={t("personal.more.title")} description={t("personal.more.lede")} />
-      <div className="flex flex-col gap-2">
-        {canSwitch ? (
-          <Button
-            type="button"
-            className="min-h-11 justify-start gap-2"
-            data-testid="more-switch-to-business"
-            disabled={switching || !online}
-            onClick={() => void switchToBusiness()}
-          >
-            <Building2 className="size-4 shrink-0" aria-hidden="true" />
-            {switching ? t("personal.more.switchingBusiness") : t("personal.more.switchToBusiness")}
-          </Button>
-        ) : null}
-        {!online && canSwitch ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="more-switch-offline">
-            {t("offline.requiredContextSwitch")}
-          </p>
-        ) : null}
-        <Button asChild className="min-h-11 justify-start" data-testid="more-open-stores">
-          <Link to="/personal/linked-merchants">{t("personal.more.stores")}</Link>
-        </Button>
-        <Button
-          asChild
-          variant="ghost"
-          className="min-h-11 justify-start"
-          data-testid="more-open-customer-links"
+
+      {canSwitch ? (
+        <section
+          className="catalog-form-section exits-animate-panel personal-section gap-3"
+          data-testid="personal-more-account"
         >
-          <Link to="/personal/customer-links">{t("personal.customerLinks.title")}</Link>
-        </Button>
-        <Button
-          asChild
-          variant="ghost"
-          className="min-h-11 justify-start"
-          data-testid="more-open-invitations"
-        >
-          <Link to="/personal/utang/invitations">{t("personal.social.invitationsTitle")}</Link>
-        </Button>
-        <Button
-          asChild
-          variant="ghost"
-          className="min-h-11 justify-start"
-          data-testid="more-open-notifications"
-        >
-          <Link to="/personal/notifications">{t("personal.social.notificationsTitle")}</Link>
-        </Button>
-        <Button
-          asChild
-          variant="ghost"
-          className="min-h-11 justify-start"
-          data-testid="more-open-qr"
-        >
-          <Link to="/personal/my-qr">{t("personal.social.qrTitle")}</Link>
-        </Button>
-        <Button
-          asChild
-          variant="ghost"
-          className="min-h-11 justify-start"
-          data-testid="more-open-orders"
-        >
-          <Link to="/personal/orders">{t("personal.nav.orders")}</Link>
-        </Button>
-        <Button
-          asChild
-          variant="ghost"
-          className="min-h-11 justify-start"
-          data-testid="more-open-preferences"
-        >
-          <Link to="/settings/preferences">{t("preferences.title")}</Link>
-        </Button>
-        <Button
-          asChild
-          variant="ghost"
-          className="min-h-11 justify-start"
-          data-testid="more-open-start-business"
-        >
-          <Link to="/personal/explore-pos">{t("personal.more.startBusiness")}</Link>
-        </Button>
-      </div>
+          <h2 className="catalog-form-section__title text-muted">
+            {t("personal.more.group.account")}
+          </h2>
+          <ActionTileGrid
+            tiles={[
+              {
+                key: "switch",
+                label: switching
+                  ? t("personal.more.switchingBusiness")
+                  : t("personal.more.switchToBusiness"),
+                icon: Building2,
+                testId: "more-switch-to-business",
+                primary: true,
+                disabled: switching || !online,
+                onClick: () => void switchToBusiness(),
+              },
+            ]}
+          />
+          {!online ? (
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+              data-testid="more-switch-offline"
+            >
+              {t("offline.requiredContextSwitch")}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
+      <section
+        className="catalog-form-section exits-animate-panel personal-section gap-3"
+        data-testid="personal-more-commerce"
+      >
+        <h2 className="catalog-form-section__title text-muted">
+          {t("personal.more.group.commerce")}
+        </h2>
+        <ActionTileGrid
+          tiles={[
+            {
+              key: "stores",
+              label: t("personal.more.stores"),
+              icon: Store,
+              testId: "more-open-stores",
+              to: "/personal/linked-merchants",
+              primary: true,
+            },
+            {
+              key: "orders",
+              label: t("personal.nav.orders"),
+              icon: Receipt,
+              testId: "more-open-orders",
+              to: "/personal/orders",
+            },
+            {
+              key: "links",
+              label: t("personal.customerLinks.title"),
+              icon: Link2,
+              testId: "more-open-customer-links",
+              to: "/personal/customer-links",
+            },
+          ]}
+        />
+      </section>
+
+      <section
+        className="catalog-form-section exits-animate-panel personal-section gap-3"
+        data-testid="personal-more-social"
+      >
+        <h2 className="catalog-form-section__title text-muted">
+          {t("personal.more.group.social")}
+        </h2>
+        <ActionTileGrid
+          tiles={[
+            {
+              key: "invites",
+              label: t("personal.social.invitationsTitle"),
+              icon: UserPlus,
+              testId: "more-open-invitations",
+              to: "/personal/utang/invitations",
+            },
+            {
+              key: "notifications",
+              label: t("personal.social.notificationsTitle"),
+              icon: Bell,
+              testId: "more-open-notifications",
+              to: "/personal/notifications",
+            },
+            {
+              key: "qr",
+              label: t("personal.social.qrTitle"),
+              icon: QrCode,
+              testId: "more-open-qr",
+              to: "/personal/my-qr",
+            },
+          ]}
+        />
+      </section>
+
+      <section
+        className="catalog-form-section exits-animate-panel personal-section gap-3"
+        data-testid="personal-more-business"
+      >
+        <h2 className="catalog-form-section__title text-muted">
+          {t("personal.more.group.business")}
+        </h2>
+        <ActionTileGrid
+          tiles={[
+            {
+              key: "preferences",
+              label: t("preferences.title"),
+              icon: Settings,
+              testId: "more-open-preferences",
+              to: "/settings/preferences",
+            },
+            {
+              key: "start",
+              label: t("personal.more.startBusiness"),
+              icon: Building2,
+              testId: "more-open-start-business",
+              to: "/personal/explore-pos",
+              primary: true,
+            },
+          ]}
+        />
+      </section>
     </div>
   );
 }

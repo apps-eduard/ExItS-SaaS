@@ -2338,6 +2338,7 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.Notes).HasColumnName("notes").HasMaxLength(2000);
             entity.Property(e => e.DueAtUtc).HasColumnName("due_at_utc");
             entity.Property(e => e.ReminderAtUtc).HasColumnName("reminder_at_utc");
+            entity.Property(e => e.ReminderNotifiedAtUtc).HasColumnName("reminder_notified_at_utc");
             entity.Property(e => e.Priority).HasColumnName("priority").HasMaxLength(16).IsRequired();
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(16).IsRequired();
             entity.Property(e => e.RelatedEntityType).HasColumnName("related_entity_type").HasMaxLength(64);
@@ -2358,6 +2359,9 @@ public sealed class PlatformDbContext : DbContext
                 .HasDatabaseName("ix_personal_todos_owner_status");
             entity.HasIndex(e => new { e.OwnerUserIdentityId, e.DueAtUtc })
                 .HasDatabaseName("ix_personal_todos_owner_due");
+            entity.HasIndex(e => new { e.Status, e.ReminderAtUtc })
+                .HasDatabaseName("ix_personal_todos_status_reminder")
+                .HasFilter("reminder_at_utc IS NOT NULL AND reminder_notified_at_utc IS NULL");
 
             entity.HasOne<PlatformUserRecord>()
                 .WithMany()

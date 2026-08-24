@@ -154,6 +154,7 @@ export async function enqueuePersonalTodoCreate(
     notes: body.notes ?? null,
     dueAtUtc: body.dueAtUtc ?? null,
     reminderAtUtc: body.reminderAtUtc ?? null,
+    reminderNotifiedAtUtc: null,
     priority: body.priority ?? "None",
     status: "Open",
     relatedEntityType: body.relatedEntityType ?? null,
@@ -216,6 +217,8 @@ export async function enqueuePersonalTodoUpdate(
       notes: body.notes,
       dueAtUtc: body.dueAtUtc,
       reminderAtUtc: body.reminderAtUtc,
+      reminderNotifiedAtUtc:
+        current.reminderAtUtc === body.reminderAtUtc ? current.reminderNotifiedAtUtc : null,
       priority: body.priority ?? current.priority,
       relatedEntityType: body.relatedEntityType,
       relatedEntityId: body.relatedEntityId,

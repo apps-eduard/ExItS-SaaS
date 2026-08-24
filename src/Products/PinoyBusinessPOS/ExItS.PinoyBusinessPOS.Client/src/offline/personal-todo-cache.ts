@@ -1,6 +1,9 @@
 import type { PersonalTodoDto } from "@/api/platform/personal-todo-client";
 import { decryptPayload, encryptPayload } from "@/offline/crypto";
-import { getActiveOfflineCryptoKeyForScope } from "@/offline/local-store-key";
+import {
+  getActiveOfflineCryptoKeyForScope,
+  OfflineCryptoLockedError,
+} from "@/offline/local-store-key";
 import { assertOfflineScope, type OfflineDb } from "@/offline/db";
 import type { CachedPersonalTodoRecord } from "@/offline/types";
 
@@ -92,27 +95,34 @@ export async function cachePersonalTodos(
   if (todos.length === 0) {
     return;
   }
-  const records = await Promise.all(
-    todos.map(async (todo) => {
-      const existing = await db.get("personalTodos", todo.id);
-      if (existing?.pendingLocalChange) {
-        return null;
+  try {
+    const records = await Promise.all(
+      todos.map(async (todo) => {
+        const existing = await db.get("personalTodos", todo.id);
+        if (existing?.pendingLocalChange) {
+          return null;
+        }
+        return toRecord(scopeBinding, todo, {
+          origin: "Server",
+          serverId: todo.id,
+          version: todo.version,
+          pendingLocalChange: false,
+        });
+      }),
+    );
+    const tx = db.transaction("personalTodos", "readwrite");
+    for (const record of records) {
+      if (record) {
+        await tx.store.put(record);
       }
-      return toRecord(scopeBinding, todo, {
-        origin: "Server",
-        serverId: todo.id,
-        version: todo.version,
-        pendingLocalChange: false,
-      });
-    }),
-  );
-  const tx = db.transaction("personalTodos", "readwrite");
-  for (const record of records) {
-    if (record) {
-      await tx.store.put(record);
     }
+    await tx.done;
+  } catch (error) {
+    if (error instanceof OfflineCryptoLockedError) {
+      return;
+    }
+    throw error;
   }
-  await tx.done;
 }
 
 export async function cachePersonalTodo(

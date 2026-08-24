@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import { PosApiError } from "@/api/pos/pos-http";
@@ -27,6 +27,7 @@ import {
 } from "@/features/customer-ordering/personal-merchant-cart";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSession } from "@/session/SessionProvider";
+import { personalPageBackNav } from "@/navigation/page-back-nav";
 
 function money(n: number): string {
   return `₱${n.toFixed(2)}`;
@@ -217,20 +218,36 @@ export function MerchantCheckoutPage() {
 
   if (cart.lines.length === 0 || cart.sellerOrganizationId !== organizationId) {
     return (
-      <div className="flex min-w-0 flex-col gap-4" data-testid="checkout-empty">
+      <div
+        className="personal-page exits-page flex min-w-0 flex-col gap-4"
+        data-testid="checkout-empty"
+      >
+        <PageHeader
+          title={t("orders.checkoutTitle")}
+          backTo={`/personal/linked-merchants/${organizationId}/shop`}
+          backLabel={t("orders.backToShop")}
+          backTestId="page-header-back-checkout"
+        />
         <EmptyState title={t("orders.cartEmptyTitle")} detail={t("orders.cartEmptyDetail")} />
-        <Button asChild className="min-h-11 w-fit">
-          <Link to={`/personal/linked-merchants/${organizationId}/shop`}>
-            {t("orders.backToShop")}
-          </Link>
-        </Button>
       </div>
     );
   }
 
   if (storefrontQuery.isError || !storefrontQuery.data || !selection) {
     return (
-      <div className="flex min-w-0 flex-col gap-4">
+      <div className="personal-page exits-page flex min-w-0 flex-col gap-4">
+        <PageHeader
+          title={t("orders.checkoutTitle")}
+          backTo={
+            organizationId
+              ? `/personal/linked-merchants/${organizationId}/shop`
+              : personalPageBackNav.merchants.to
+          }
+          backLabel={
+            organizationId ? t("orders.backToShop") : t(personalPageBackNav.merchants.labelKey)
+          }
+          backTestId="page-header-back-checkout"
+        />
         <ErrorState
           title={t("orders.error")}
           detail={
@@ -257,16 +274,17 @@ export function MerchantCheckoutPage() {
   const total = Math.round((merchandiseSubtotal + deliveryFee) * 100) / 100;
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="merchant-checkout-page">
+    <div
+      className="personal-page exits-page flex min-w-0 flex-col gap-4"
+      data-testid="merchant-checkout-page"
+    >
       <PageHeader
         title={t("orders.checkoutTitle")}
         description={storefrontQuery.data.organizationDisplayName}
+        backTo={`/personal/linked-merchants/${organizationId}/shop`}
+        backLabel={t("orders.backToShop")}
+        backTestId="page-header-back-checkout"
       />
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to={`/personal/linked-merchants/${organizationId}/shop`}>
-          {t("orders.backToShop")}
-        </Link>
-      </Button>
 
       {error ? (
         <div className="flex flex-col gap-2">

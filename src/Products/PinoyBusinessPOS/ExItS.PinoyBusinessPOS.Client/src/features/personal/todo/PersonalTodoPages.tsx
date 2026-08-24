@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronRight, RefreshCw } from "lucide-react";
 import {
   cancelPersonalTodo,
   completePersonalTodo,
@@ -27,7 +28,9 @@ import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
+import { cn } from "@/lib/cn";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
+import { personalPageBackNav } from "@/navigation/page-back-nav";
 import { useOfflineSync } from "@/offline/OfflineSyncProvider";
 import { usePersonalOfflineContext } from "@/offline/personal-offline-context";
 import {
@@ -89,6 +92,16 @@ function mutationErrorMessage(error: unknown, t: (key: MessageKey) => string): s
   if (isTodoConcurrencyConflict(error)) return t("personal.todo.concurrencyConflict");
   if (error instanceof PlatformApiError) return error.message;
   return t("personal.todo.genericError");
+}
+
+function loadErrorDetail(error: unknown, t: (key: MessageKey) => string): string {
+  if (error instanceof PlatformApiError) {
+    return error.problem.detail ?? error.message;
+  }
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+  return t("personal.todo.loadErrorDetail");
 }
 
 function offlineErrorMessage(error: unknown, t: (key: MessageKey) => string): string {
@@ -170,18 +183,25 @@ function TodoFormFields({
   form,
   setForm,
   idPrefix,
+  titleAutoFocus = false,
 }: {
   form: TodoFormState;
   setForm: (next: TodoFormState) => void;
   idPrefix: string;
+  titleAutoFocus?: boolean;
 }) {
   const { t } = useI18n();
   return (
     <>
-      <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+      <label
+        className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+        htmlFor={`${idPrefix}-title`}
+      >
         {t("personal.todo.titleField")}
         <input
+          id={`${idPrefix}-title`}
           data-testid={`${idPrefix}-title`}
+          autoFocus={titleAutoFocus}
           className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
           value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -216,6 +236,11 @@ function TodoFormFields({
           value={form.reminderAtLocal}
           onChange={(e) => setForm({ ...form, reminderAtLocal: e.target.value })}
         />
+        {form.reminderAtLocal ? (
+          <span className="text-[length:var(--exits-text-xs)] text-muted">
+            {t("personal.todo.reminderServerHint")}
+          </span>
+        ) : null}
       </label>
       <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
         {t("personal.todo.priority")}
@@ -285,6 +310,7 @@ export function PersonalTodoHubPage() {
     queryKey: ["personal", "todos"],
     queryFn: ({ signal }) => listPersonalTodos(signal),
     enabled: online,
+    meta: { suppressGlobalError: true, operation: "list personal todos" },
   });
 
   useEffect(() => {
@@ -411,54 +437,82 @@ export function PersonalTodoHubPage() {
   if (online && todosQuery.isPending) {
     return <LoadingSkeleton label={t("personal.todo.loading")} />;
   }
+  const activeTabLabel = t(TABS.find((item) => item.id === tab)?.labelKey ?? "personal.todo.title");
+  const offlineBlocked = !online && !offline;
+
   if (online && todosQuery.isError && cachedTodos.length === 0) {
     return (
-      <div className="flex flex-col gap-3">
+      <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="personal-todo-hub-error">
+        <PageHeader
+          title={t("personal.todo.title")}
+          description={t("personal.todo.lede")}
+          backTo={personalPageBackNav.home.to}
+          backLabel={t(personalPageBackNav.home.labelKey)}
+          backTestId="page-header-back-todo-hub"
+        />
         <ErrorState
           title={t("personal.todo.loadErrorTitle")}
-          detail={t("personal.todo.loadErrorDetail")}
+          detail={loadErrorDetail(todosQuery.error, t)}
+          error={todosQuery.error}
+          operation="list personal todos"
         />
-        <Button type="button" className="min-h-11 w-fit" onClick={() => void todosQuery.refetch()}>
-          {t("personal.home.retry")}
-        </Button>
+        <div className="exits-animate-toolbar flex w-full justify-center">
+          <Button
+            type="button"
+            className="personal-error-retry min-h-11 w-full"
+            onClick={() => void todosQuery.refetch()}
+            data-testid="todo-hub-retry"
+          >
+            <RefreshCw className="size-4 shrink-0" aria-hidden />
+            {t("personal.home.retry")}
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="personal-todo-hub">
-      <PageHeader title={t("personal.todo.title")} description={t("personal.todo.lede")} />
+    <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="personal-todo-hub">
+      <PageHeader
+        title={t("personal.todo.title")}
+        description={t("personal.todo.lede")}
+        backTo={personalPageBackNav.home.to}
+        backLabel={t(personalPageBackNav.home.labelKey)}
+        backTestId="page-header-back-todo-hub"
+      />
 
       {usingCache ? <OfflineNotice message={t("offline.todoCachedNotice")} /> : null}
 
-      <UnderlineTabBar
-        items={TABS.map((item) => {
-          const count =
-            counts == null
-              ? 0
-              : item.id === "today"
-                ? counts.today
-                : item.id === "upcoming"
-                  ? counts.upcoming
-                  : item.id === "overdue"
-                    ? counts.overdue
-                    : item.id === "open"
-                      ? counts.open
-                      : counts.completed;
-          return {
-            key: item.id,
-            label: `${t(item.labelKey)} (${count})`,
-            testId: `todo-tab-${item.id}`,
-          };
-        })}
-        activeKey={tab}
-        onChange={(key) => setTab(key as TodoAgendaTab)}
-        ariaLabel={t("personal.todo.filters")}
-        testId="personal-todo-filters"
-      />
+      <div className="exits-animate-toolbar">
+        <UnderlineTabBar
+          items={TABS.map((item) => {
+            const count =
+              counts == null
+                ? 0
+                : item.id === "today"
+                  ? counts.today
+                  : item.id === "upcoming"
+                    ? counts.upcoming
+                    : item.id === "overdue"
+                      ? counts.overdue
+                      : item.id === "open"
+                        ? counts.open
+                        : counts.completed;
+            return {
+              key: item.id,
+              label: `${t(item.labelKey)} (${count})`,
+              testId: `todo-tab-${item.id}`,
+            };
+          })}
+          activeKey={tab}
+          onChange={(key) => setTab(key as TodoAgendaTab)}
+          ariaLabel={t("personal.todo.filters")}
+          testId="personal-todo-filters"
+        />
+      </div>
 
       <form
-        className="flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border p-3"
+        className="catalog-form-section exits-animate-panel personal-section flex flex-col gap-2"
         data-testid="todo-create-form"
         onSubmit={(event) => {
           event.preventDefault();
@@ -469,9 +523,7 @@ export function PersonalTodoHubPage() {
           createMutation.mutate();
         }}
       >
-        <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-          {t("personal.todo.createTitle")}
-        </h2>
+        <h2 className="catalog-form-section__title">{t("personal.todo.createTitle")}</h2>
         <TodoFormFields form={form} setForm={setForm} idPrefix="todo-create" />
         {!online ? (
           <>
@@ -490,7 +542,7 @@ export function PersonalTodoHubPage() {
         <Button
           type="submit"
           className="min-h-11"
-          disabled={createMutation.isPending || (!online && !offline)}
+          disabled={createMutation.isPending || offlineBlocked}
           data-testid="todo-create-submit"
         >
           {t("personal.todo.add")}
@@ -500,77 +552,92 @@ export function PersonalTodoHubPage() {
       {filtered.length === 0 ? (
         <EmptyState title={t("personal.todo.emptyTitle")} detail={t("personal.todo.emptyDetail")} />
       ) : (
-        <ul className="m-0 flex list-none flex-col gap-2 p-0" data-testid="todo-list">
-          {filtered.map((item) => (
-            <li
-              key={item.id}
-              className="rounded-[var(--exits-radius-md)] border border-border px-3 py-3"
-              data-testid={`todo-item-${item.id}`}
-            >
-              <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                  <Link
-                    to={`/personal/todo/${item.id}`}
-                    className="font-semibold text-foreground underline-offset-2 hover:underline"
+        <section
+          className="catalog-form-section exits-animate-panel personal-section gap-2"
+          aria-label={activeTabLabel}
+        >
+          <h2 className="catalog-form-section__title text-muted">{activeTabLabel}</h2>
+          <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="todo-list">
+            {filtered.map((item) => {
+              const hasActions =
+                item.status === "Open" ||
+                item.status === "Completed" ||
+                item.status === "Cancelled";
+              return (
+                <li key={item.id}>
+                  <div
+                    className="exits-list__card flex flex-col gap-2"
+                    data-testid={`todo-item-${item.id}`}
                   >
-                    {item.title}
-                  </Link>
-                  <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                    {t(statusLabelKey(item.status))} · {t(priorityLabelKey(item.priority))}
-                    {item.dueAtUtc
-                      ? ` · ${t("personal.todo.dueLabel")}: ${new Date(item.dueAtUtc).toLocaleString()}`
-                      : ` · ${t("personal.todo.noDue")}`}
-                  </p>
-                  {item.notes ? (
-                    <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-                      {item.notes}
-                    </p>
-                  ) : null}
-                  <WaitingChip pending={pendingById.has(item.id)} />
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {item.status === "Open" ? (
-                    <>
-                      <Button
-                        type="button"
-                        className="min-h-11"
-                        data-testid={`todo-complete-${item.id}`}
-                        disabled={actionMutation.isPending || (!online && !offline)}
-                        onClick={() => actionMutation.mutate({ action: "complete", todo: item })}
-                      >
-                        {t("personal.todo.complete")}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="min-h-11"
-                        data-testid={`todo-cancel-${item.id}`}
-                        disabled={actionMutation.isPending || (!online && !offline)}
-                        onClick={() => actionMutation.mutate({ action: "cancel", todo: item })}
-                      >
-                        {t("personal.todo.cancel")}
-                      </Button>
-                    </>
-                  ) : null}
-                  {item.status === "Completed" || item.status === "Cancelled" ? (
-                    <Button
-                      type="button"
-                      className="min-h-11"
-                      data-testid={`todo-reopen-${item.id}`}
-                      disabled={actionMutation.isPending || (!online && !offline)}
-                      onClick={() => actionMutation.mutate({ action: "reopen", todo: item })}
+                    <Link
+                      to={`/personal/todo/${item.id}`}
+                      className="flex min-h-11 min-w-0 items-center justify-between gap-3 text-foreground no-underline"
                     >
-                      {t("personal.todo.reopen")}
-                    </Button>
-                  ) : null}
-                  <Button asChild variant="ghost" className="min-h-11">
-                    <Link to={`/personal/todo/${item.id}`}>{t("personal.todo.edit")}</Link>
-                  </Button>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
+                      <div className="min-w-0 flex-1">
+                        <p className="exits-list__name m-0 truncate font-semibold">{item.title}</p>
+                        <p className="m-0 truncate text-[length:var(--exits-text-sm)] text-muted">
+                          {t(statusLabelKey(item.status))} · {t(priorityLabelKey(item.priority))}
+                          {item.dueAtUtc
+                            ? ` · ${t("personal.todo.dueLabel")}: ${new Date(item.dueAtUtc).toLocaleString()}`
+                            : ` · ${t("personal.todo.noDue")}`}
+                        </p>
+                        {item.notes ? (
+                          <p className="m-0 mt-1 line-clamp-2 text-[length:var(--exits-text-sm)] text-muted">
+                            {item.notes}
+                          </p>
+                        ) : null}
+                        <WaitingChip pending={pendingById.has(item.id)} />
+                      </div>
+                      <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
+                    </Link>
+                    {hasActions ? (
+                      <div className="flex flex-wrap gap-2">
+                        {item.status === "Open" ? (
+                          <>
+                            <Button
+                              type="button"
+                              className="min-h-11"
+                              data-testid={`todo-complete-${item.id}`}
+                              disabled={actionMutation.isPending || offlineBlocked}
+                              onClick={() =>
+                                actionMutation.mutate({ action: "complete", todo: item })
+                              }
+                            >
+                              {t("personal.todo.complete")}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              className="min-h-11"
+                              data-testid={`todo-cancel-${item.id}`}
+                              disabled={actionMutation.isPending || offlineBlocked}
+                              onClick={() =>
+                                actionMutation.mutate({ action: "cancel", todo: item })
+                              }
+                            >
+                              {t("personal.todo.cancel")}
+                            </Button>
+                          </>
+                        ) : null}
+                        {item.status === "Completed" || item.status === "Cancelled" ? (
+                          <Button
+                            type="button"
+                            className="min-h-11"
+                            data-testid={`todo-reopen-${item.id}`}
+                            disabled={actionMutation.isPending || offlineBlocked}
+                            onClick={() => actionMutation.mutate({ action: "reopen", todo: item })}
+                          >
+                            {t("personal.todo.reopen")}
+                          </Button>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       )}
     </div>
   );
@@ -579,11 +646,11 @@ export function PersonalTodoHubPage() {
 export function PersonalTodoDetailPage() {
   const { t } = useI18n();
   const { todoId = "" } = useParams();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const online = useBrowserOnline();
   const offline = usePersonalOfflineContext();
   const { refreshCounts } = useOfflineSync();
+  const editFormRef = useRef<HTMLFormElement>(null);
   const [form, setForm] = useState<TodoFormState | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -594,7 +661,15 @@ export function PersonalTodoDetailPage() {
     queryKey: ["personal", "todos", todoId],
     queryFn: ({ signal }) => getPersonalTodo(todoId, signal),
     enabled: Boolean(todoId) && online,
+    meta: { suppressGlobalError: true, operation: "get personal todo" },
   });
+
+  useEffect(() => {
+    if (!editing) {
+      return;
+    }
+    editFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [editing]);
 
   useEffect(() => {
     if (!offline || !todoQuery.data) {
@@ -720,14 +795,23 @@ export function PersonalTodoDetailPage() {
   const todo: PersonalTodoDto | null = usingCache ? cachedTodo : (todoQuery.data ?? null);
   if (!todo) {
     return (
-      <div className="flex flex-col gap-3">
+      <div className="personal-page exits-page flex flex-col gap-3">
+        <PageHeader
+          title={t("personal.todo.detailTitle")}
+          backTo={personalPageBackNav.todo.to}
+          backLabel={t("personal.todo.back")}
+          backTestId="page-header-back-todo-detail"
+        />
         <ErrorState
           title={t("personal.todo.loadErrorTitle")}
-          detail={usingCache ? t("offline.todoNotCached") : t("personal.todo.loadErrorDetail")}
+          detail={
+            usingCache
+              ? t("offline.todoNotCached")
+              : loadErrorDetail(todoQuery.error, t)
+          }
+          error={usingCache ? undefined : todoQuery.error}
+          operation="get personal todo"
         />
-        <Button asChild variant="ghost" className="min-h-11 w-fit">
-          <Link to="/personal/todo">{t("personal.todo.back")}</Link>
-        </Button>
       </div>
     );
   }
@@ -736,11 +820,15 @@ export function PersonalTodoDetailPage() {
   const offlineBlocked = !online && !offline;
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="personal-todo-detail">
-      <PageHeader title={t("personal.todo.detailTitle")} description={todo.title} />
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/personal/todo">{t("personal.todo.back")}</Link>
-      </Button>
+    <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="personal-todo-detail">
+      <PageHeader
+        title={t("personal.todo.detailTitle")}
+        subtitle={todo.title}
+        description={t("personal.todo.lede")}
+        backTo={personalPageBackNav.todo.to}
+        backLabel={t("personal.todo.back")}
+        backTestId="page-header-back-todo-detail"
+      />
 
       {usingCache ? <OfflineNotice message={t("offline.todoCachedNotice")} /> : null}
 
@@ -752,7 +840,11 @@ export function PersonalTodoDetailPage() {
 
       {editing ? (
         <form
-          className="flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border p-3"
+          ref={editFormRef}
+          className={cn(
+            "catalog-form-section exits-animate-panel personal-section flex flex-col gap-2",
+            "catalog-form-section--editing",
+          )}
           data-testid="todo-edit-form"
           onSubmit={(event) => {
             event.preventDefault();
@@ -763,12 +855,14 @@ export function PersonalTodoDetailPage() {
             saveMutation.mutate({ current: todo, next: activeForm });
           }}
         >
+          <h2 className="catalog-form-section__title">{t("personal.todo.edit")}</h2>
           <TodoFormFields
             form={activeForm}
             setForm={(next) => {
               setForm(next);
             }}
             idPrefix="todo-edit"
+            titleAutoFocus
           />
           {!online ? <OfflineNotice message={t("offline.todoWillQueue")} /> : null}
           {formError ? (
@@ -803,7 +897,8 @@ export function PersonalTodoDetailPage() {
           </div>
         </form>
       ) : (
-        <div className="flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border p-3">
+        <section className="catalog-form-section exits-animate-panel personal-section flex flex-col gap-2">
+          <h2 className="catalog-form-section__title text-muted">{t("personal.todo.detailTitle")}</h2>
           {todo.notes ? <p className="m-0 whitespace-pre-wrap">{todo.notes}</p> : null}
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {todo.dueAtUtc
@@ -814,9 +909,18 @@ export function PersonalTodoDetailPage() {
             <>
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                 {t("personal.todo.reminderAt")}: {new Date(todo.reminderAtUtc).toLocaleString()}
+                {" · "}
+                {todo.reminderNotifiedAtUtc
+                  ? t("personal.todo.reminderDelivered")
+                  : t("personal.todo.reminderPending")}
               </p>
-              {/* The device never raises a reminder itself, so say who does. */}
-              {!online ? <OfflineNotice message={t("offline.todoNoReminders")} /> : null}
+              {online ? (
+                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                  {t("personal.todo.reminderServerHint")}
+                </p>
+              ) : (
+                <OfflineNotice message={t("offline.todoNoReminders")} />
+              )}
             </>
           ) : null}
           {todo.relatedEntityType ? (
@@ -849,6 +953,18 @@ export function PersonalTodoDetailPage() {
                   type="button"
                   variant="ghost"
                   className="min-h-11"
+                  data-testid="todo-detail-edit"
+                  onClick={() => {
+                    setForm(formFromTodo(todo));
+                    setEditing(true);
+                  }}
+                >
+                  {t("personal.todo.edit")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="min-h-11"
                   data-testid="todo-detail-cancel"
                   disabled={actionMutation.isPending || offlineBlocked}
                   onClick={() => actionMutation.mutate({ action: "cancel", todo })}
@@ -868,30 +984,8 @@ export function PersonalTodoDetailPage() {
                 {t("personal.todo.reopen")}
               </Button>
             ) : null}
-            {todo.status === "Open" ? (
-              <Button
-                type="button"
-                variant="ghost"
-                className="min-h-11"
-                data-testid="todo-detail-edit"
-                onClick={() => {
-                  setForm(formFromTodo(todo));
-                  setEditing(true);
-                }}
-              >
-                {t("personal.todo.edit")}
-              </Button>
-            ) : null}
-            <Button
-              type="button"
-              variant="ghost"
-              className="min-h-11"
-              onClick={() => navigate("/personal/todo")}
-            >
-              {t("personal.todo.back")}
-            </Button>
           </div>
-        </div>
+        </section>
       )}
     </div>
   );

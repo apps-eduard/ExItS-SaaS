@@ -1,8 +1,10 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
+import { isFrontendLocalValidationMode } from "@/api/platform/local-validation-gate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AuthExperienceLayout } from "@/features/auth/AuthExperienceLayout";
+import { resolveMailpitConvenienceUrl } from "@/features/auth/mailpit-url";
 import { useI18n } from "@/i18n/I18nProvider";
 import { requestPasswordReset } from "@/api/platform/platform-auth-client";
 
@@ -15,6 +17,7 @@ export function ForgotPasswordPage() {
   const [isOffline, setIsOffline] = useState(
     () => typeof navigator !== "undefined" && navigator.onLine === false,
   );
+  const mailpitHref = isFrontendLocalValidationMode() ? resolveMailpitConvenienceUrl() : null;
 
   useEffect(() => {
     const syncOnline = () => setIsOffline(typeof navigator !== "undefined" && navigator.onLine === false);
@@ -58,6 +61,14 @@ export function ForgotPasswordPage() {
         {info ? (
           <p className="m-0 text-[length:var(--exits-text-sm)] text-success" data-testid="forgot-password-info">
             {info}
+          </p>
+        ) : null}
+        {info && mailpitHref ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="forgot-password-mailpit">
+            {t("auth.mailpitHint")}{" "}
+            <a className="text-primary underline-offset-4 hover:underline" href={mailpitHref} rel="noreferrer" target="_blank">
+              {t("auth.mailpitOpen")}
+            </a>
           </p>
         ) : null}
         {error ? (

@@ -49,14 +49,14 @@ test.describe("Bottom nav visual validation screenshots", () => {
     });
 
     await page.setViewportSize({ width: 1024, height: 768 });
-    await expect(page.getByTestId("org-bottom-nav")).toBeHidden();
+    await expect(page.getByTestId("org-bottom-nav")).toBeVisible();
     await page.screenshot({
       path: path.join(outDir, "tablet-landscape-1024x768.png"),
       fullPage: false,
     });
 
     await page.setViewportSize({ width: 1440, height: 900 });
-    await expect(page.getByTestId("org-bottom-nav")).toBeHidden();
+    await expect(page.getByTestId("org-bottom-nav")).toBeVisible();
     await page.screenshot({
       path: path.join(outDir, "desktop-1440x900.png"),
       fullPage: false,

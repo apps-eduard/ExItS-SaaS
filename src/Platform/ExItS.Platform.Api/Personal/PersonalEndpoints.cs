@@ -644,6 +644,24 @@ internal static class PersonalEndpoints
             return PlatformApiResults.FromResult(result, dto => Results.Created($"/api/v1/personal/utang/contacts/{dto.Id}", dto));
         });
 
+        utang.MapPut("/contacts/{contactId:guid}", async (
+            HttpContext http,
+            Guid contactId,
+            UpdatePersonalContactRequest body,
+            UpdatePersonalContact updateContact,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await updateContact
+                .ExecuteAsync(PlatformUserId.From(userId), contactId, body, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
         utang.MapGet("/contacts", async (
             HttpContext http,
             ListPersonalContacts listContacts,

@@ -91,6 +91,11 @@ public interface IPersonalTodoRepository
     Task AddAsync(PersonalTodo todo, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(PersonalTodo todo, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PersonalTodo>> ListDueRemindersAsync(
+        DateTimeOffset asOfUtc,
+        int take,
+        CancellationToken cancellationToken = default);
 }
 
 public interface IPersonalReminderRepository

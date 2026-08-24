@@ -4,7 +4,10 @@ import type {
   PersonalUtangEntryDto,
 } from "@/api/platform/personal-utang-client";
 import { decryptPayload, encryptPayload } from "@/offline/crypto";
-import { getActiveOfflineCryptoKeyForScope } from "@/offline/local-store-key";
+import {
+  getActiveOfflineCryptoKeyForScope,
+  OfflineCryptoLockedError,
+} from "@/offline/local-store-key";
 import { assertOfflineScope, getMeta, putMeta, type OfflineDb } from "@/offline/db";
 import {
   PERSONAL_USER_IDENTITY_META_KEY,
@@ -37,6 +40,11 @@ function aad(prefix: string, id: string): string {
 async function seal(scopeBinding: string, value: unknown, associatedData: string) {
   const key = await getActiveOfflineCryptoKeyForScope(scopeBinding);
   return encryptPayload(key, new TextEncoder().encode(JSON.stringify(value)), associatedData);
+}
+
+/** Online write-through must never crash the page when the Offline PIN DEK is locked. */
+function isWriteThroughCryptoLock(error: unknown): boolean {
+  return error instanceof OfflineCryptoLockedError;
 }
 
 async function unseal<T>(
@@ -104,26 +112,33 @@ export async function cachePersonalContacts(
   if (contacts.length === 0) {
     return;
   }
-  const cachedAtUtc = new Date().toISOString();
-  const records = await Promise.all(
-    contacts.map(async (contact): Promise<CachedPersonalContactRecord> => {
-      const envelope = await seal(scopeBinding, contact, aad(CONTACT_AAD, contact.id));
-      return {
-        contactId: contact.id,
-        serverId: contact.id,
-        origin: "Server",
-        updatedAtUtc: contact.createdAtUtc,
-        cachedAtUtc,
-        ciphertext: envelope.ciphertext,
-        iv: envelope.iv,
-      };
-    }),
-  );
-  const tx = db.transaction("personalContacts", "readwrite");
-  for (const record of records) {
-    await tx.store.put(record);
+  try {
+    const cachedAtUtc = new Date().toISOString();
+    const records = await Promise.all(
+      contacts.map(async (contact): Promise<CachedPersonalContactRecord> => {
+        const envelope = await seal(scopeBinding, contact, aad(CONTACT_AAD, contact.id));
+        return {
+          contactId: contact.id,
+          serverId: contact.id,
+          origin: "Server",
+          updatedAtUtc: contact.createdAtUtc,
+          cachedAtUtc,
+          ciphertext: envelope.ciphertext,
+          iv: envelope.iv,
+        };
+      }),
+    );
+    const tx = db.transaction("personalContacts", "readwrite");
+    for (const record of records) {
+      await tx.store.put(record);
+    }
+    await tx.done;
+  } catch (error) {
+    if (isWriteThroughCryptoLock(error)) {
+      return;
+    }
+    throw error;
   }
-  await tx.done;
 }
 
 /** Optimistic row for a contact queued on this device — not yet agreed to by the server. */
@@ -180,32 +195,39 @@ export async function cachePersonalRelationships(
   if (relationships.length === 0) {
     return;
   }
-  const cachedAtUtc = new Date().toISOString();
-  const records = await Promise.all(
-    relationships.map(async (relationship): Promise<CachedPersonalRelationshipRecord> => {
-      const envelope = await seal(
-        scopeBinding,
-        relationship,
-        aad(RELATIONSHIP_AAD, relationship.id),
-      );
-      return {
-        relationshipId: relationship.id,
-        serverId: relationship.id,
-        perspective,
-        origin: "Server",
-        version: relationship.version,
-        updatedAtUtc: relationship.updatedAtUtc,
-        cachedAtUtc,
-        ciphertext: envelope.ciphertext,
-        iv: envelope.iv,
-      };
-    }),
-  );
-  const tx = db.transaction("personalRelationships", "readwrite");
-  for (const record of records) {
-    await tx.store.put(record);
+  try {
+    const cachedAtUtc = new Date().toISOString();
+    const records = await Promise.all(
+      relationships.map(async (relationship): Promise<CachedPersonalRelationshipRecord> => {
+        const envelope = await seal(
+          scopeBinding,
+          relationship,
+          aad(RELATIONSHIP_AAD, relationship.id),
+        );
+        return {
+          relationshipId: relationship.id,
+          serverId: relationship.id,
+          perspective,
+          origin: "Server",
+          version: relationship.version,
+          updatedAtUtc: relationship.updatedAtUtc,
+          cachedAtUtc,
+          ciphertext: envelope.ciphertext,
+          iv: envelope.iv,
+        };
+      }),
+    );
+    const tx = db.transaction("personalRelationships", "readwrite");
+    for (const record of records) {
+      await tx.store.put(record);
+    }
+    await tx.done;
+  } catch (error) {
+    if (isWriteThroughCryptoLock(error)) {
+      return;
+    }
+    throw error;
   }
-  await tx.done;
 }
 
 export async function cachePersonalRelationship(
@@ -298,27 +320,34 @@ export async function cachePersonalEntries(
   if (entries.length === 0) {
     return;
   }
-  const cachedAtUtc = new Date().toISOString();
-  const records = await Promise.all(
-    entries.map(async (entry): Promise<CachedPersonalEntryRecord> => {
-      const envelope = await seal(scopeBinding, entry, aad(ENTRY_AAD, entry.id));
-      return {
-        entryId: entry.id,
-        relationshipId: entry.relationshipId,
-        serverId: entry.id,
-        origin: "Server",
-        occurredAtUtc: entry.createdAtUtc,
-        cachedAtUtc,
-        ciphertext: envelope.ciphertext,
-        iv: envelope.iv,
-      };
-    }),
-  );
-  const tx = db.transaction("personalEntries", "readwrite");
-  for (const record of records) {
-    await tx.store.put(record);
+  try {
+    const cachedAtUtc = new Date().toISOString();
+    const records = await Promise.all(
+      entries.map(async (entry): Promise<CachedPersonalEntryRecord> => {
+        const envelope = await seal(scopeBinding, entry, aad(ENTRY_AAD, entry.id));
+        return {
+          entryId: entry.id,
+          relationshipId: entry.relationshipId,
+          serverId: entry.id,
+          origin: "Server",
+          occurredAtUtc: entry.createdAtUtc,
+          cachedAtUtc,
+          ciphertext: envelope.ciphertext,
+          iv: envelope.iv,
+        };
+      }),
+    );
+    const tx = db.transaction("personalEntries", "readwrite");
+    for (const record of records) {
+      await tx.store.put(record);
+    }
+    await tx.done;
+  } catch (error) {
+    if (isWriteThroughCryptoLock(error)) {
+      return;
+    }
+    throw error;
   }
-  await tx.done;
 }
 
 /**

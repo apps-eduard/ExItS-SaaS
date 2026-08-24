@@ -64,6 +64,8 @@ export type CreatePersonalContactRequest = {
   email?: string | null;
 };
 
+export type UpdatePersonalContactRequest = CreatePersonalContactRequest;
+
 export type CreatePersonalDebtRelationshipRequest = {
   creditorUserIdentityId: string | null;
   creditorContactId: string | null;
@@ -165,6 +167,20 @@ export async function createPersonalContact(
   const raw = await platformRequest<unknown>({
     method: "POST",
     path: `${UTANG}/contacts`,
+    body,
+    signal,
+  });
+  return personalContactSchema.parse(normalizeContact(raw));
+}
+
+export async function updatePersonalContact(
+  contactId: string,
+  body: UpdatePersonalContactRequest,
+  signal?: AbortSignal,
+): Promise<PersonalContactDto> {
+  const raw = await platformRequest<unknown>({
+    method: "PUT",
+    path: `${UTANG}/contacts/${contactId}`,
     body,
     signal,
   });

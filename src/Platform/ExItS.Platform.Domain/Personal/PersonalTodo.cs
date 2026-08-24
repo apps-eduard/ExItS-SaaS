@@ -45,6 +45,11 @@ public sealed class PersonalTodo
     public string? Notes { get; private set; }
     public DateTimeOffset? DueAtUtc { get; private set; }
     public DateTimeOffset? ReminderAtUtc { get; private set; }
+    /// <summary>
+    /// When set, the current <see cref="ReminderAtUtc"/> was already delivered as an in-app reminder.
+    /// Cleared when the reminder timestamp changes so a reschedule can fire again.
+    /// </summary>
+    public DateTimeOffset? ReminderNotifiedAtUtc { get; private set; }
     public PersonalTodoPriority Priority { get; private set; }
     public PersonalTodoStatus Status { get; private set; }
     public PersonalTodoRelatedEntityType RelatedEntityType { get; private set; }
@@ -68,7 +73,8 @@ public sealed class PersonalTodo
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
         DateTimeOffset? completedAtUtc,
-        int version)
+        int version,
+        DateTimeOffset? reminderNotifiedAtUtc = null)
     {
         Id = id;
         OwnerUserIdentityId = ownerUserIdentityId;
@@ -76,6 +82,7 @@ public sealed class PersonalTodo
         Notes = notes;
         DueAtUtc = dueAtUtc;
         ReminderAtUtc = reminderAtUtc;
+        ReminderNotifiedAtUtc = reminderNotifiedAtUtc;
         Priority = priority;
         Status = status;
         RelatedEntityType = relatedEntityType;
@@ -119,7 +126,8 @@ public sealed class PersonalTodo
             utcNow,
             utcNow,
             completedAtUtc: null,
-            version: 1);
+            version: 1,
+            reminderNotifiedAtUtc: null);
     }
 
     public static PersonalTodo Rehydrate(
@@ -136,7 +144,8 @@ public sealed class PersonalTodo
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
         DateTimeOffset? completedAtUtc,
-        int version) =>
+        int version,
+        DateTimeOffset? reminderNotifiedAtUtc = null) =>
         new(
             id,
             ownerUserIdentityId,
@@ -151,7 +160,8 @@ public sealed class PersonalTodo
             createdAtUtc,
             updatedAtUtc,
             completedAtUtc,
-            version);
+            version,
+            reminderNotifiedAtUtc);
 
     public bool IsOwnedBy(PlatformUserId userIdentityId) =>
         OwnerUserIdentityId == userIdentityId;
@@ -188,6 +198,11 @@ public sealed class PersonalTodo
         Title = NormalizeTitle(title);
         Notes = NormalizeNotes(notes);
         DueAtUtc = dueAtUtc;
+        if (ReminderAtUtc != reminderAtUtc)
+        {
+            ReminderNotifiedAtUtc = null;
+        }
+
         ReminderAtUtc = reminderAtUtc;
         Priority = priority;
         RelatedEntityType = relatedEntityType;
@@ -255,6 +270,42 @@ public sealed class PersonalTodo
         }
 
         Status = PersonalTodoStatus.Cancelled;
+        UpdatedAtUtc = utcNow;
+        Version++;
+    }
+
+    public bool IsReminderDue(DateTimeOffset asOfUtc)
+    {
+        EnsureUtc(asOfUtc);
+        return Status is PersonalTodoStatus.Open
+            && ReminderAtUtc is DateTimeOffset reminderAt
+            && reminderAt <= asOfUtc
+            && ReminderNotifiedAtUtc is null;
+    }
+
+    public void MarkReminderNotified(DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        if (ReminderAtUtc is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPersonalTodo,
+                "Cannot notify a to-do without a reminder time.");
+        }
+
+        if (Status is not PersonalTodoStatus.Open)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPersonalTodoStatusTransition,
+                $"Cannot deliver a reminder for a to-do in status {Status}.");
+        }
+
+        if (ReminderNotifiedAtUtc is not null)
+        {
+            return;
+        }
+
+        ReminderNotifiedAtUtc = utcNow;
         UpdatedAtUtc = utcNow;
         Version++;
     }

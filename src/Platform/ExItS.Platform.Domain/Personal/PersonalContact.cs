@@ -114,6 +114,23 @@ public sealed class PersonalContact
         UpdatedAtUtc = utcNow;
     }
 
+    /// <summary>Updates display name / phone / email for an owned active contact.</summary>
+    public void UpdateDetails(string displayName, string? phone, string? email, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        if (Status is not PersonalContactStatus.Active)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalContactLinkInvalid,
+                "Only active contacts can be updated.");
+        }
+
+        DisplayName = NormalizeDisplayName(displayName);
+        Phone = NormalizeOptional(phone, 32);
+        Email = NormalizeOptionalEmail(email);
+        UpdatedAtUtc = utcNow;
+    }
+
     public void Archive(DateTimeOffset utcNow)
     {
         EnsureUtc(utcNow);

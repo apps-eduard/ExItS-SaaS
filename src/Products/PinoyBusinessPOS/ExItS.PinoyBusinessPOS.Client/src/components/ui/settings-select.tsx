@@ -26,12 +26,15 @@ export function SettingsSelect<T extends string>({
   onChange,
 }: SettingsSelectProps<T>) {
   const labelId = useId();
+  // Theme/Density (3): stacked on small screens, one row from ~480px.
+  // Language (5+): 2 columns; odd last option spans full width.
   const layoutClass =
-    options.length === 2
-      ? "grid grid-cols-1 gap-2 min-[380px]:grid-cols-2"
-      : options.length === 3
-        ? "grid grid-cols-1 gap-2 min-[480px]:grid-cols-3"
-        : "flex flex-col gap-2";
+    options.length === 3
+      ? "grid grid-cols-1 gap-2 min-[480px]:grid-cols-3"
+      : options.length === 2
+        ? "grid grid-cols-2 gap-2"
+        : "grid grid-cols-2 gap-2";
+  const oddLastSpansFull = options.length > 3 && options.length % 2 === 1;
 
   return (
     <div className="flex min-w-0 flex-col gap-3 py-4">
@@ -42,8 +45,9 @@ export function SettingsSelect<T extends string>({
         {label}
       </span>
       <div role="radiogroup" aria-labelledby={labelId} className={layoutClass}>
-        {options.map((option) => {
+        {options.map((option, index) => {
           const selected = option.value === value;
+          const isLastOdd = oddLastSpansFull && index === options.length - 1;
           return (
             <button
               key={option.value}
@@ -53,6 +57,7 @@ export function SettingsSelect<T extends string>({
               aria-label={`${label}: ${option.label}`}
               className={cn(
                 "flex min-h-[var(--exits-touch-target-min)] min-w-0 items-center gap-2.5 rounded-[var(--exits-radius-md)] border px-3 py-2.5 text-left text-[length:var(--exits-text-sm)] font-semibold transition-[background-color,border-color,color,box-shadow] duration-[var(--exits-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                isLastOdd && "col-span-2",
                 selected
                   ? "border-primary bg-[color-mix(in_srgb,var(--exits-primary)_10%,var(--exits-surface))] text-foreground shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--exits-primary)_35%,transparent)]"
                   : "border-border bg-background text-foreground hover:bg-[var(--exits-surface-muted)]",

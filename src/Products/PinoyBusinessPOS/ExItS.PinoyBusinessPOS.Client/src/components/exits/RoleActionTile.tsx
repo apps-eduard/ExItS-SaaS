@@ -8,6 +8,7 @@ export type RoleActionTileProps = {
   icon: LucideIcon;
   testId?: string;
   primary?: boolean;
+  disabled?: boolean;
   className?: string;
   style?: CSSProperties;
 } & ({ to: string; onClick?: never } | { to?: never; onClick: () => void });
@@ -17,12 +18,21 @@ export type RoleActionTileProps = {
  * Used by Manager (and related) role homes for touch-friendly grids.
  */
 export function RoleActionTile(props: RoleActionTileProps) {
-  const { label, icon: Icon, testId, primary = false, className, style } = props;
+  const {
+    label,
+    icon: Icon,
+    testId,
+    primary = false,
+    disabled = false,
+    className,
+    style,
+  } = props;
   const classes = cn(
     "role-action-tile inline-flex min-h-11 w-full items-center gap-2 rounded-[var(--exits-radius-md)] border px-3 py-2.5 text-left text-[length:var(--exits-text-sm)] font-semibold no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
     primary
       ? "role-action-tile--primary border-primary bg-primary text-primary-foreground"
       : "border-border bg-surface text-foreground",
+    disabled && "pointer-events-none opacity-50",
     className,
   );
   const content = (
@@ -41,6 +51,19 @@ export function RoleActionTile(props: RoleActionTileProps) {
   );
 
   if ("to" in props && props.to) {
+    if (disabled) {
+      return (
+        <span
+          data-testid={testId}
+          className={classes}
+          style={style}
+          aria-disabled="true"
+          role="link"
+        >
+          {content}
+        </span>
+      );
+    }
     return (
       <Link to={props.to} data-testid={testId} className={classes} style={style}>
         {content}
@@ -54,6 +77,7 @@ export function RoleActionTile(props: RoleActionTileProps) {
       data-testid={testId}
       className={classes}
       style={style}
+      disabled={disabled}
       onClick={props.onClick}
     >
       {content}

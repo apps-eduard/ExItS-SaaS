@@ -8,6 +8,7 @@ export type ActionTileDef = {
   icon: LucideIcon;
   testId?: string;
   primary?: boolean;
+  disabled?: boolean;
   to?: string;
   onClick?: () => void;
 };
@@ -33,7 +34,7 @@ export function ActionTileGrid({
           tiles.length === 1 ||
           (tiles.length % 2 === 1 && index === tiles.length - 1);
         const tileClassName = cn(
-          fullWidth && "col-span-2",
+          fullWidth && "col-span-2 role-action-tile--center",
           isPrimaryHero && "role-action-tile--hero",
         );
 
@@ -44,6 +45,7 @@ export function ActionTileGrid({
             icon={tile.icon}
             testId={tile.testId}
             primary={tile.primary}
+            disabled={tile.disabled}
             onClick={tile.onClick}
             className={tileClassName}
             style={{ animationDelay: `${40 + index * 35}ms` }}
@@ -55,6 +57,7 @@ export function ActionTileGrid({
             icon={tile.icon}
             testId={tile.testId}
             primary={tile.primary}
+            disabled={tile.disabled}
             to={tile.to!}
             className={tileClassName}
             style={{ animationDelay: `${40 + index * 35}ms` }}

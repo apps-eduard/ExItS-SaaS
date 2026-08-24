@@ -230,6 +230,7 @@ internal sealed class PersonalTodoRecord
     public string? Notes { get; set; }
     public DateTimeOffset? DueAtUtc { get; set; }
     public DateTimeOffset? ReminderAtUtc { get; set; }
+    public DateTimeOffset? ReminderNotifiedAtUtc { get; set; }
     public string Priority { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public string? RelatedEntityType { get; set; }

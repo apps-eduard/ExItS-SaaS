@@ -20,6 +20,8 @@ public sealed record PersonalContactDto(
 
 public sealed record CreatePersonalContactRequest(string DisplayName, string? Phone, string? Email);
 
+public sealed record UpdatePersonalContactRequest(string DisplayName, string? Phone, string? Email);
+
 public sealed record PersonalDebtRelationshipSummaryDto(
     Guid Id,
     string Perspective,
@@ -215,6 +217,87 @@ public sealed class CreatePersonalContact
             contact.LinkedUserIdentityId?.Value,
             contact.Status.ToString(),
             contact.CreatedAtUtc);
+}
+
+public sealed class UpdatePersonalContact
+{
+    private readonly IPersonalContactRepository _contacts;
+    private readonly IAuditWriter _auditWriter;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public UpdatePersonalContact(
+        IPersonalContactRepository contacts,
+        IAuditWriter auditWriter,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _contacts = contacts;
+        _auditWriter = auditWriter;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<PersonalContactDto>> ExecuteAsync(
+        PlatformUserId ownerUserIdentityId,
+        Guid contactId,
+        UpdatePersonalContactRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var contact = await _contacts
+                .GetByIdAsync(PersonalContactId.From(contactId), cancellationToken)
+                .ConfigureAwait(false);
+            if (contact is null || !contact.IsOwnedBy(ownerUserIdentityId))
+            {
+                return ApplicationResult<PersonalContactDto>.Failure(
+                    ApplicationErrorCodes.PersonalContactNotFound,
+                    "Personal contact was not found.");
+            }
+
+            contact.UpdateDetails(request.DisplayName, request.Phone, request.Email, _clock.UtcNow);
+
+            if (contact.Email is not null)
+            {
+                var existing = await _contacts
+                    .FindActiveByOwnerAndNormalizedEmailAsync(
+                        ownerUserIdentityId,
+                        contact.Email,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (existing is not null && existing.Id != contact.Id)
+                {
+                    return ApplicationResult<PersonalContactDto>.Failure(
+                        ApplicationErrorCodes.PersonalContactEmailConflict,
+                        "An active personal contact with this email already exists.");
+                }
+            }
+
+            await _contacts.UpdateAsync(contact, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            await _auditWriter.WriteAsync(
+                $"platform-user:{ownerUserIdentityId.Value:D}",
+                AuditActorType.PlatformUser,
+                PlatformAuditActions.PersonalContactUpdated,
+                nameof(PersonalContact),
+                contact.Id.Value.ToString("D"),
+                AuditOutcome.Succeeded,
+                summary: $"Personal contact '{contact.DisplayName}' updated.",
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            return ApplicationResult<PersonalContactDto>.Success(CreatePersonalContact.ToDto(contact));
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<PersonalContactDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<PersonalContactDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
 }
 
 public sealed class ListPersonalContacts

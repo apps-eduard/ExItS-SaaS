@@ -44,4 +44,31 @@ describe("ErrorState diagnostics", () => {
     expect(details.value).toContain("application.auth.account_scope_denied");
     expect(details.value).toContain("trace-live-001");
   });
+
+  it("builds diagnostics automatically from an error prop", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue(undefined);
+
+    render(
+      <PreferencesProvider>
+        <I18nProvider>
+          <ErrorState
+            title="Could not load todos"
+            detail="Not Found"
+            error={new PlatformApiError(404, {
+              errorCode: "application.not_found",
+              traceId: "trace-todo-404",
+            })}
+            operation="list personal todos"
+          />
+        </I18nProvider>
+      </PreferencesProvider>,
+    );
+
+    expect(screen.getByRole("button", { name: "Copy error details" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Technical details" }));
+    const details = screen.getByTestId("technical-error-details") as HTMLTextAreaElement;
+    expect(details.value).toContain("application.not_found");
+    expect(details.value).toContain("list personal todos");
+  });
 });

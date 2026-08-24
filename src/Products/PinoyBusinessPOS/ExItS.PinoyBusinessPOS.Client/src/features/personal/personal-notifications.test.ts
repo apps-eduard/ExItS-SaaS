@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   countUnreadPersonalNotifications,
+  extractCustomerLinkMerchantName,
   formatUnreadNotificationBadge,
+  localizePersonalNotification,
 } from "@/features/personal/personal-notifications";
 import type { PersonalInAppNotificationDto } from "@/api/platform/personal-social-client";
+import type { MessageKey } from "@/i18n/messages";
+import { catalogs } from "@/i18n/messages";
 
 function note(partial: Partial<PersonalInAppNotificationDto>): PersonalInAppNotificationDto {
   return {
@@ -35,5 +39,72 @@ describe("personal notification unread helpers", () => {
     expect(formatUnreadNotificationBadge(9)).toBe("9");
     expect(formatUnreadNotificationBadge(10)).toBe("9+");
     expect(formatUnreadNotificationBadge(99)).toBe("9+");
+  });
+});
+
+describe("localizePersonalNotification", () => {
+  const tFil = (key: MessageKey) => catalogs["fil-PH"][key];
+
+  it("extracts merchant name from English customer-link preview", () => {
+    expect(
+      extractCustomerLinkMerchantName(
+        "Sari-Sari Ni Ana added you as a customer and wants to link your ExItS account.",
+      ),
+    ).toBe("Sari-Sari Ni Ana");
+    expect(extractCustomerLinkMerchantName("unrelated preview")).toBeNull();
+  });
+
+  it("localizes customer-link title and preview", () => {
+    const result = localizePersonalNotification(
+      note({
+        title: "Customer link request",
+        preview:
+          "Sari-Sari Ni Ana added you as a customer and wants to link your ExItS account.",
+        relatedType: "CustomerLinkRequest",
+      }),
+      tFil,
+    );
+    expect(result.title).toBe(catalogs["fil-PH"]["personal.social.notif.customerLinkTitle"]);
+    expect(result.preview).toContain("Sari-Sari Ni Ana");
+    expect(result.preview).not.toContain("added you as a customer");
+  });
+
+  it("localizes todo and utang titles but keeps user preview", () => {
+    expect(
+      localizePersonalNotification(
+        note({
+          title: "Personal to-do reminder",
+          preview: "Bayad kuryente",
+          relatedType: "PersonalTodo",
+        }),
+        tFil,
+      ),
+    ).toEqual({
+      title: catalogs["fil-PH"]["personal.social.notif.todoReminderTitle"],
+      preview: "Bayad kuryente",
+    });
+
+    expect(
+      localizePersonalNotification(
+        note({
+          title: "Personal Utang reminder",
+          preview: "Pay Juan",
+          relatedType: "PersonalDebtRelationship",
+        }),
+        tFil,
+      ),
+    ).toEqual({
+      title: catalogs["fil-PH"]["personal.social.notif.utangReminderTitle"],
+      preview: "Pay Juan",
+    });
+  });
+
+  it("leaves unknown related types unchanged", () => {
+    expect(
+      localizePersonalNotification(
+        note({ title: "Other", preview: "Body", relatedType: "SomethingElse" }),
+        tFil,
+      ),
+    ).toEqual({ title: "Other", preview: "Body" });
   });
 });

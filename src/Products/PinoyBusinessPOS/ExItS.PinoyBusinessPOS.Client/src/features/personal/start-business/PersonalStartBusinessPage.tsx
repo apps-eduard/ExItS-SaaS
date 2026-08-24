@@ -14,6 +14,7 @@ import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useI18n } from "@/i18n/I18nProvider";
 import { ensureOrganizationSlug } from "@/lib/organization-slug";
+import { personalPageBackNav } from "@/navigation/page-back-nav";
 import { useSession } from "@/session/SessionProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -134,10 +135,16 @@ export function PersonalStartBusinessPage() {
 
   if (!planKey) {
     return (
-      <div className="flex min-w-0 flex-col gap-4" data-testid="personal-start-business-no-plan">
+      <div
+        className="personal-page exits-page flex min-w-0 flex-col gap-4"
+        data-testid="personal-start-business-no-plan"
+      >
         <PageHeader
           title={t("personal.startBusiness.title")}
           description={t("personal.startBusiness.lede")}
+          backTo={personalPageBackNav.explore.to}
+          backLabel={t(personalPageBackNav.explore.labelKey)}
+          backTestId="page-header-back-start-business"
         />
         <ErrorState
           title={t("personal.startBusiness.planRequired")}
@@ -156,7 +163,16 @@ export function PersonalStartBusinessPage() {
 
   if (plansQuery.isError || !plan) {
     return (
-      <div className="flex flex-col gap-3" data-testid="personal-start-business-plan-error">
+      <div
+        className="personal-page exits-page flex flex-col gap-3"
+        data-testid="personal-start-business-plan-error"
+      >
+        <PageHeader
+          title={t("personal.startBusiness.title")}
+          backTo={personalPageBackNav.explore.to}
+          backLabel={t(personalPageBackNav.explore.labelKey)}
+          backTestId="page-header-back-start-business"
+        />
         <ErrorState
           title={t("personal.startBusiness.planLoadFailed")}
           detail={t("personal.startBusiness.planLoadFailedDetail")}
@@ -175,23 +191,20 @@ export function PersonalStartBusinessPage() {
       : t("personal.startBusiness.modeSubscribe");
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="personal-start-business-page">
+    <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="personal-start-business-page">
       <PageHeader
         title={t("personal.startBusiness.title")}
         description={t("personal.startBusiness.lede")}
+        backTo={personalPageBackNav.explore.to}
+        backLabel={t(personalPageBackNav.explore.labelKey)}
+        backTestId="page-header-back-start-business"
       />
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/personal/explore-pos">{t("personal.startBusiness.changePlan")}</Link>
-      </Button>
 
       <section
         aria-labelledby="start-business-type-heading"
-        className="rounded-[var(--exits-radius-md)] border border-border bg-surface p-4"
+        className="catalog-form-section exits-animate-panel personal-section gap-3"
       >
-        <h2
-          id="start-business-type-heading"
-          className="m-0 text-[length:var(--exits-text-base)] font-semibold"
-        >
+        <h2 id="start-business-type-heading" className="catalog-form-section__title">
           {t("personal.startBusiness.primaryTypeTitle")}
         </h2>
         <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
@@ -239,12 +252,9 @@ export function PersonalStartBusinessPage() {
 
       <section
         aria-labelledby="start-business-form-heading"
-        className="rounded-[var(--exits-radius-md)] border border-border bg-surface p-4"
+        className="catalog-form-section exits-animate-panel personal-section gap-3"
       >
-        <h2
-          id="start-business-form-heading"
-          className="m-0 text-[length:var(--exits-text-base)] font-semibold"
-        >
+        <h2 id="start-business-form-heading" className="catalog-form-section__title">
           {t("personal.startBusiness.formTitle")}
         </h2>
         <label className="mt-3 flex flex-col gap-1">
@@ -283,12 +293,9 @@ export function PersonalStartBusinessPage() {
 
       <section
         aria-labelledby="start-business-contact-heading"
-        className="rounded-[var(--exits-radius-md)] border border-border bg-surface p-4"
+        className="catalog-form-section exits-animate-panel personal-section gap-3"
       >
-        <h2
-          id="start-business-contact-heading"
-          className="m-0 text-[length:var(--exits-text-base)] font-semibold"
-        >
+        <h2 id="start-business-contact-heading" className="catalog-form-section__title">
           {t("personal.startBusiness.contactTitle")}
         </h2>
         <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
@@ -359,19 +366,19 @@ export function PersonalStartBusinessPage() {
 
       <section
         aria-labelledby="start-business-plan-heading"
-        className="rounded-[var(--exits-radius-md)] border border-border bg-surface p-4"
+        className="catalog-form-section exits-animate-panel personal-section gap-3"
         data-testid="start-business-plan-summary"
       >
         <p
           id="start-business-plan-heading"
-          className="m-0 text-[length:var(--exits-text-xs)] uppercase tracking-wide text-muted"
+          className="catalog-form-section__title text-muted"
         >
           {t("personal.startBusiness.selectedPlan")}
         </p>
-        <h2 className="m-0 mt-1 text-[length:var(--exits-text-lg)] font-semibold">
+        <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
           {plan.displayName}
         </h2>
-        <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
           {modeLabel} ·{" "}
           {billingCycle === "Annual"
             ? t("personal.explore.billingYear")

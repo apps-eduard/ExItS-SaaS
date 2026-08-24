@@ -413,6 +413,11 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
               notes={notes}
               disabled={saving}
               initialSubject={linkPublicId}
+              onResolved={(user) => {
+                if (!displayName.trim() && user.displayName.trim()) {
+                  setDisplayName(user.displayName.trim());
+                }
+              }}
               onLinked={(link) => {
                 setPersonalLink(link);
                 if (!displayName.trim()) {

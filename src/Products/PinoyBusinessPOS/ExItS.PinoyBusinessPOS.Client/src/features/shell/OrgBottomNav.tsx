@@ -19,9 +19,8 @@ const ICONS = {
 } as const;
 
 /**
- * Compact/tablet org bottom navigation.
- * Hidden on Personal routes and on large desktop (lg+) via CSS.
- * Centered max-width keeps tablet landscape balanced.
+ * Org bottom navigation (phone → desktop).
+ * Hidden on Personal routes. Centered max-width keeps wide layouts balanced.
  */
 export function OrgBottomNav() {
   const { t } = useI18n();
@@ -45,9 +44,9 @@ export function OrgBottomNav() {
     <nav
       data-testid="org-bottom-nav"
       aria-label={t("org.nav.aria")}
-      className="org-bottom-nav fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden"
+      className="org-bottom-nav fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)]"
     >
-      <ul className="org-bottom-nav-inner mx-auto flex w-full max-w-lg items-stretch justify-between gap-0.5 px-2 pt-1 sm:max-w-xl md:max-w-2xl">
+      <ul className="org-bottom-nav-inner mx-auto flex w-full max-w-lg items-stretch justify-between gap-0.5 px-2 pt-1 sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
         {tabs.map((tab) => {
           const Icon = ICONS[tab.id as OrgNavTabId];
           const isActive = activeId === tab.id;

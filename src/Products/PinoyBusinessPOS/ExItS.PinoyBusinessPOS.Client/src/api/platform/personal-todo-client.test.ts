@@ -19,6 +19,7 @@ function todo(
     notes: null,
     dueAtUtc: null,
     reminderAtUtc: null,
+    reminderNotifiedAtUtc: null,
     priority: "Normal",
     status: "Open",
     relatedEntityType: null,

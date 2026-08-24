@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import {
@@ -19,6 +19,7 @@ import { usePersonalMerchantCart } from "@/features/customer-ordering/PersonalMe
 import { canIncrementStorefrontQuantity } from "@/features/customer-ordering/storefront-availability";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
+import { personalPageBackNav } from "@/navigation/page-back-nav";
 
 function money(n: number): string {
   return `₱${n.toFixed(2)}`;
@@ -119,7 +120,13 @@ export function MerchantShopPage() {
 
   if (query.isError || !query.data) {
     return (
-      <div className="flex min-w-0 flex-col gap-4">
+      <div className="personal-page exits-page flex min-w-0 flex-col gap-4">
+        <PageHeader
+          title={t("personal.shopLede")}
+          backTo={personalPageBackNav.merchants.to}
+          backLabel={t(personalPageBackNav.merchants.labelKey)}
+          backTestId="page-header-back-merchant-shop"
+        />
         <ErrorState
           title={t("orders.error")}
           detail={query.error instanceof Error ? query.error.message : t("error.detail")}
@@ -135,28 +142,37 @@ export function MerchantShopPage() {
 
   if (!storefront.canCustomerOrder) {
     return (
-      <div className="flex min-w-0 flex-col gap-4" data-testid="merchant-shop-unavailable">
+      <div
+        className="personal-page exits-page flex min-w-0 flex-col gap-4"
+        data-testid="merchant-shop-unavailable"
+      >
         <PageHeader
           title={storefront.organizationDisplayName}
           description={t("personal.shopLede")}
+          backTo={personalPageBackNav.merchants.to}
+          backLabel={t(personalPageBackNav.merchants.labelKey)}
+          backTestId="page-header-back-merchant-shop"
         />
         <EmptyState
           title={t("personal.orderingUnavailable")}
           detail={t("personal.orderingUnavailableDetail")}
         />
-        <Button asChild variant="ghost" className="min-h-11 w-fit">
-          <Link to="/personal/linked-merchants">{t("personal.backToMerchants")}</Link>
-        </Button>
       </div>
     );
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="merchant-shop-page">
-      <PageHeader title={storefront.organizationDisplayName} description={t("personal.shopLede")} />
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/personal/linked-merchants">{t("personal.backToMerchants")}</Link>
-      </Button>
+    <div
+      className="personal-page exits-page flex min-w-0 flex-col gap-4"
+      data-testid="merchant-shop-page"
+    >
+      <PageHeader
+        title={storefront.organizationDisplayName}
+        description={t("personal.shopLede")}
+        backTo={personalPageBackNav.merchants.to}
+        backLabel={t(personalPageBackNav.merchants.labelKey)}
+        backTestId="page-header-back-merchant-shop"
+      />
 
       {storefront.branches.length > 1 ? (
         <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">

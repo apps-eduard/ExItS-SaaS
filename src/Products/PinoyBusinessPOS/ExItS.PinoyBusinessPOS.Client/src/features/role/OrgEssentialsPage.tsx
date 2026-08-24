@@ -28,9 +28,12 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import {
+  DashboardHeroMetric,
+  DashboardMetricCard,
+} from "@/features/reports/DashboardMetricCards";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
-import { cn } from "@/lib/cn";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -51,36 +54,6 @@ function GuideSection({
       <h2 className="catalog-form-section__title text-muted">{title}</h2>
       {children}
     </section>
-  );
-}
-
-function GlanceMetric({
-  label,
-  children,
-  meta,
-  testId,
-  tone = "default",
-}: {
-  label: string;
-  children: React.ReactNode;
-  meta?: React.ReactNode;
-  testId: string;
-  tone?: "default" | "emphasis" | "attention";
-}) {
-  return (
-    <div
-      className={cn(
-        "dashboard-kpi",
-        tone === "emphasis" && "dashboard-kpi--emphasis",
-        tone === "attention" && "dashboard-kpi--attention",
-      )}
-      data-testid={testId}
-      role="listitem"
-    >
-      <span className="dashboard-kpi__label">{label}</span>
-      <span className="dashboard-kpi__value">{children}</span>
-      {meta ? <span className="dashboard-kpi__meta">{meta}</span> : null}
-    </div>
   );
 }
 
@@ -249,34 +222,51 @@ export function OrgEssentialsPage() {
           ) : null}
           {online && overview ? (
             <>
-              <div className="dashboard-kpi-grid" role="list" data-testid="org-admin-overview">
-                <GlanceMetric
+              <div className="dashboard-metrics" data-testid="org-admin-overview">
+                <DashboardHeroMetric
                   label={t("dashboard.todaySales")}
                   meta={`${overview.todaySaleCount} ${t("dashboard.transactions")}`}
                   testId="org-kpi-today-sales"
-                  tone="emphasis"
                 >
                   <MoneyDisplay amount={overview.todaySalesTotal} />
-                </GlanceMetric>
-                <GlanceMetric label={t("dashboard.todayCash")} testId="org-kpi-today-cash">
-                  <MoneyDisplay amount={overview.todayCashSalesTotal} />
-                </GlanceMetric>
-                <GlanceMetric label={t("dashboard.openUtang")} testId="org-kpi-open-utang">
-                  <MoneyDisplay amount={overview.openUtangOutstanding} />
-                </GlanceMetric>
-                <GlanceMetric
-                  label={t("dashboard.lowStock")}
-                  testId="org-kpi-low-stock"
-                  tone={overview.lowStockProductCount > 0 ? "attention" : "default"}
-                >
-                  {overview.lowStockProductCount}
-                </GlanceMetric>
-                <GlanceMetric label={t("dashboard.openShifts")} testId="org-kpi-open-shifts">
-                  {overview.openShiftCount}
-                </GlanceMetric>
-                <GlanceMetric label={t("dashboard.activeRegisters")} testId="org-kpi-active-registers">
-                  {overview.activeRegisterCount}
-                </GlanceMetric>
+                </DashboardHeroMetric>
+                <div className="dashboard-metric-grid" role="list">
+                  <DashboardMetricCard
+                    label={t("dashboard.todayCash")}
+                    icon={Banknote}
+                    testId="org-kpi-today-cash"
+                    tone="emphasis"
+                  >
+                    <MoneyDisplay amount={overview.todayCashSalesTotal} />
+                  </DashboardMetricCard>
+                  <DashboardMetricCard
+                    label={t("dashboard.openUtang")}
+                    testId="org-kpi-open-utang"
+                    tone={overview.openUtangOutstanding > 0 ? "attention" : "default"}
+                  >
+                    <MoneyDisplay amount={overview.openUtangOutstanding} />
+                  </DashboardMetricCard>
+                  <DashboardMetricCard
+                    label={t("dashboard.lowStock")}
+                    icon={Package}
+                    testId="org-kpi-low-stock"
+                    tone={overview.lowStockProductCount > 0 ? "attention" : "success"}
+                  >
+                    {overview.lowStockProductCount}
+                  </DashboardMetricCard>
+                  <DashboardMetricCard
+                    label={t("dashboard.openShifts")}
+                    testId="org-kpi-open-shifts"
+                  >
+                    {overview.openShiftCount}
+                  </DashboardMetricCard>
+                  <DashboardMetricCard
+                    label={t("dashboard.activeRegisters")}
+                    testId="org-kpi-active-registers"
+                  >
+                    {overview.activeRegisterCount}
+                  </DashboardMetricCard>
+                </div>
               </div>
               <Link
                 to="/dashboard"

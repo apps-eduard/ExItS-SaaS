@@ -5114,6 +5114,10 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("reminder_at_utc");
 
+                    b.Property<DateTimeOffset?>("ReminderNotifiedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reminder_notified_at_utc");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(16)
@@ -5151,6 +5155,10 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("OwnerUserIdentityId", "Status")
                         .HasDatabaseName("ix_personal_todos_owner_status");
+
+                    b.HasIndex("Status", "ReminderAtUtc")
+                        .HasDatabaseName("ix_personal_todos_status_reminder")
+                        .HasFilter("reminder_at_utc IS NOT NULL AND reminder_notified_at_utc IS NULL");
 
                     b.ToTable("personal_todos", "platform");
                 });

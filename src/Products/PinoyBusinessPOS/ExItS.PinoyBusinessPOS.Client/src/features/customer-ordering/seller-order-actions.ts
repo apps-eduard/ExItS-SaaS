@@ -111,3 +111,24 @@ export function displayOrderStatusKey(order: {
   if (is(order.fulfillmentStatus, "Collected")) return "orders.statusCollected";
   return "orders.statusAccepted";
 }
+
+/** Chip tone for buyer/seller order status display. */
+export function orderStatusChipTone(order: {
+  status: string;
+  fulfillmentStatus: string;
+}): "info" | "success" | "warning" | "danger" {
+  if (is(order.status, "Rejected") || is(order.status, "Cancelled")) {
+    return "danger";
+  }
+  if (is(order.status, "Submitted")) {
+    return "warning";
+  }
+  if (
+    is(order.status, "Completed")
+    || is(order.fulfillmentStatus, "Delivered")
+    || is(order.fulfillmentStatus, "Collected")
+  ) {
+    return "success";
+  }
+  return "info";
+}

@@ -83,4 +83,32 @@ public sealed class PersonalTodoTests
         var ex = Assert.Throws<DomainException>(() => todo.Complete(T0.AddMinutes(2), expectedVersion: 2));
         Assert.Equal(DomainErrorCodes.InvalidPersonalTodoStatusTransition, ex.ErrorCode);
     }
+
+    [Fact]
+    public void Reminder_due_until_notified_and_reschedule_clears_notified()
+    {
+        var reminderAt = T0.AddHours(2);
+        var todo = PersonalTodo.Create(OwnerId, "Pay bill", T0, reminderAtUtc: reminderAt);
+
+        Assert.False(todo.IsReminderDue(T0.AddHours(1)));
+        Assert.True(todo.IsReminderDue(reminderAt));
+
+        todo.MarkReminderNotified(reminderAt.AddMinutes(1));
+        Assert.False(todo.IsReminderDue(reminderAt.AddHours(1)));
+        Assert.NotNull(todo.ReminderNotifiedAtUtc);
+
+        todo.Update(
+            "Pay bill",
+            notes: null,
+            dueAtUtc: null,
+            reminderAtUtc: reminderAt.AddDays(1),
+            priority: PersonalTodoPriority.None,
+            relatedEntityType: PersonalTodoRelatedEntityType.None,
+            relatedEntityId: null,
+            utcNow: reminderAt.AddHours(2),
+            expectedVersion: todo.Version);
+
+        Assert.Null(todo.ReminderNotifiedAtUtc);
+        Assert.True(todo.IsReminderDue(reminderAt.AddDays(1)));
+    }
 }

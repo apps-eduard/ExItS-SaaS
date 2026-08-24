@@ -12,7 +12,6 @@ import {
 } from "@/api/pos/pos-linked-customers-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
@@ -23,6 +22,7 @@ import {
   formatLinkedCustomerActivityTitle,
 } from "@/features/personal/linked-merchants/format-linked-customer-activity";
 import { useI18n } from "@/i18n/I18nProvider";
+import { personalPageBackNav } from "@/navigation/page-back-nav";
 
 type LoadState =
   | { kind: "loading" }
@@ -57,11 +57,11 @@ function ActivityRow({
     return (
       <Link
         to={`/personal/linked-merchants/${organizationId}/${businessCustomerId}/receipts/${item.sourceSaleId}`}
-        className="flex min-h-11 items-center gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2 no-underline text-foreground transition-colors hover:bg-[var(--exits-surface-muted)]"
+        className="exits-list__card flex min-h-11 items-center gap-2 text-foreground no-underline"
         data-testid="linked-merchant-activity-receipt-link"
       >
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[length:var(--exits-text-sm)] font-semibold">
+          <span className="exits-list__name block truncate font-semibold">
             {title}
           </span>
           <span className="block truncate text-[length:var(--exits-text-xs)] text-muted">
@@ -75,10 +75,10 @@ function ActivityRow({
 
   return (
     <div
-      className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
+      className="exits-list__card"
       data-testid="linked-merchant-activity-row"
     >
-      <p className="m-0 truncate text-[length:var(--exits-text-sm)] font-semibold">{title}</p>
+      <p className="exits-list__name m-0 truncate font-semibold">{title}</p>
       <p className="m-0 truncate text-[length:var(--exits-text-xs)] text-muted">{meta}</p>
     </div>
   );
@@ -266,7 +266,13 @@ export function LinkedMerchantStatementPage() {
 
   if (state.kind === "offline") {
     return (
-      <div className="flex min-w-0 flex-col gap-4" data-testid="linked-merchant-statement-page">
+      <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="linked-merchant-statement-page">
+        <PageHeader
+          title={t("personal.merchantStatement.title")}
+          backTo={personalPageBackNav.merchants.to}
+          backLabel={t(personalPageBackNav.merchants.labelKey)}
+          backTestId="page-header-back-merchant-statement"
+        />
         <ErrorState
           title={t("offline.internetRequiredTitle")}
           detail={t("offline.requiredHistory")}
@@ -298,7 +304,13 @@ export function LinkedMerchantStatementPage() {
 
   if (state.kind === "error") {
     return (
-      <div className="flex min-w-0 flex-col gap-4" data-testid="linked-merchant-statement-page">
+      <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="linked-merchant-statement-page">
+        <PageHeader
+          title={t("personal.merchantStatement.title")}
+          backTo={personalPageBackNav.merchants.to}
+          backLabel={t(personalPageBackNav.merchants.labelKey)}
+          backTestId="page-header-back-merchant-statement"
+        />
         <ErrorState title={t("personal.merchantStatement.errorTitle")} detail={state.detail} />
         <Button type="button" className="min-h-11 w-fit" onClick={() => void loadInitial()}>
           {t("orders.retry")}
@@ -310,30 +322,33 @@ export function LinkedMerchantStatementPage() {
   const { summary, openDebt, openDebtHasMore, recent, recentHasMore } = state;
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="linked-merchant-statement-page">
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/personal/linked-merchants">{t("personal.merchantStatement.backToStores")}</Link>
-      </Button>
+    <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="linked-merchant-statement-page">
       <PageHeader
         title={summary.merchantDisplayName ?? t("personal.merchantStatement.title")}
         description={t("personal.merchantStatement.lede")}
+        backTo={personalPageBackNav.merchants.to}
+        backLabel={t(personalPageBackNav.merchants.labelKey)}
+        backTestId="page-header-back-merchant-statement"
       />
 
-      <Card data-testid="linked-merchant-outstanding">
-        <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
+      <section
+        className="catalog-form-section exits-animate-panel personal-section gap-2"
+        data-testid="linked-merchant-outstanding"
+      >
+        <p className="catalog-form-section__title text-muted">
           {t("personal.merchantStatement.outstandingLabel")}
         </p>
-        <p className="mb-0 mt-1 text-[length:var(--exits-text-xl)] font-semibold tabular-nums">
+        <p className="mb-0 text-[length:var(--exits-text-xl)] font-semibold tabular-nums">
           {summary.outstandingBalance.toFixed(2)} {summary.currency}
         </p>
-        <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+        <p className="mb-0 text-[length:var(--exits-text-sm)] text-muted">
           {summary.customerDisplayName}
         </p>
-      </Card>
+      </section>
 
       {summary.outstandingBalance > 0 ? (
-        <section className="flex flex-col gap-2">
-          <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+        <section className="catalog-form-section exits-animate-panel personal-section gap-2">
+          <h2 className="catalog-form-section__title">
             {t("personal.merchantStatement.openDebtSection")}
           </h2>
           {openDebt.length === 0 ? (
@@ -342,34 +357,35 @@ export function LinkedMerchantStatementPage() {
               detail={t("personal.merchantStatement.openDebtEmptyDetail")}
             />
           ) : (
-            <div className="flex flex-col gap-2">
+            <ul className="exits-list m-0 grid list-none gap-2 p-0">
               {openDebt.map((item) => (
-                <ActivityRow
-                  key={item.activityId}
-                  item={item}
-                  organizationId={organizationId}
-                  businessCustomerId={businessCustomerId}
-                  openReceiptLabel={t("personal.merchantStatement.openReceipt")}
-                />
+                <li key={item.activityId}>
+                  <ActivityRow
+                    item={item}
+                    organizationId={organizationId}
+                    businessCustomerId={businessCustomerId}
+                    openReceiptLabel={t("personal.merchantStatement.openReceipt")}
+                  />
+                </li>
               ))}
-              {openDebtHasMore ? (
-                <Button
-                  type="button"
-                  className="min-h-11 w-fit"
-                  disabled={busyOpenDebt}
-                  data-testid="linked-merchant-open-debt-load-more"
-                  onClick={() => void loadMoreOpenDebt()}
-                >
-                  {t("personal.merchantStatement.loadMore")}
-                </Button>
-              ) : null}
-            </div>
+            </ul>
           )}
+          {openDebt.length > 0 && openDebtHasMore ? (
+            <Button
+              type="button"
+              className="min-h-11 w-fit"
+              disabled={busyOpenDebt}
+              data-testid="linked-merchant-open-debt-load-more"
+              onClick={() => void loadMoreOpenDebt()}
+            >
+              {t("personal.merchantStatement.loadMore")}
+            </Button>
+          ) : null}
         </section>
       ) : null}
 
-      <section className="flex flex-col gap-2">
-        <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+      <section className="catalog-form-section exits-animate-panel personal-section gap-2">
+        <h2 className="catalog-form-section__title">
           {t("personal.merchantStatement.recentSection")}
         </h2>
         {recent.length === 0 ? (
@@ -378,44 +394,45 @@ export function LinkedMerchantStatementPage() {
             detail={t("personal.merchantStatement.recentEmptyDetail")}
           />
         ) : (
-          <div className="flex flex-col gap-2">
+          <ul className="exits-list m-0 grid list-none gap-2 p-0">
             {recent.map((item) => (
-              <ActivityRow
-                key={item.activityId}
-                item={item}
-                organizationId={organizationId}
-                businessCustomerId={businessCustomerId}
-                openReceiptLabel={t("personal.merchantStatement.openReceipt")}
-              />
+              <li key={item.activityId}>
+                <ActivityRow
+                  item={item}
+                  organizationId={organizationId}
+                  businessCustomerId={businessCustomerId}
+                  openReceiptLabel={t("personal.merchantStatement.openReceipt")}
+                />
+              </li>
             ))}
-            {recentHasMore ? (
-              <Button
-                type="button"
-                className="min-h-11 w-fit"
-                disabled={busyRecent}
-                data-testid="linked-merchant-recent-load-more"
-                onClick={() => void loadMoreRecent()}
-              >
-                {t("personal.merchantStatement.loadMore")}
-              </Button>
-            ) : null}
-          </div>
+          </ul>
         )}
+        {recent.length > 0 && recentHasMore ? (
+          <Button
+            type="button"
+            className="min-h-11 w-fit"
+            disabled={busyRecent}
+            data-testid="linked-merchant-recent-load-more"
+            onClick={() => void loadMoreRecent()}
+          >
+            {t("personal.merchantStatement.loadMore")}
+          </Button>
+        ) : null}
       </section>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+      <section className="catalog-form-section exits-animate-panel personal-section gap-2">
+        <h2 className="catalog-form-section__title">
           {t("personal.merchantStatement.olderSection")}
         </h2>
         {olderLocked ? (
-          <Card data-testid="linked-merchant-older-locked">
+          <div data-testid="linked-merchant-older-locked" className="flex flex-col gap-3">
             <p className="m-0 text-[length:var(--exits-text-sm)]">
               {t("personal.merchantStatement.historyLocked")}
             </p>
-            <Button asChild className="mt-3 min-h-11 w-fit">
+            <Button asChild className="min-h-11 w-fit">
               <Link to="/personal/rewards">{t("personal.merchantStatement.historyUnlock")}</Link>
             </Button>
-          </Card>
+          </div>
         ) : olderItems.length === 0 && !olderLoadAttempted ? (
           <Button
             type="button"
@@ -432,16 +449,19 @@ export function LinkedMerchantStatementPage() {
             detail={t("personal.merchantStatement.olderEmptyDetail")}
           />
         ) : (
-          <div className="flex flex-col gap-2">
-            {olderItems.map((item) => (
-              <ActivityRow
-                key={item.activityId}
-                item={item}
-                organizationId={organizationId}
-                businessCustomerId={businessCustomerId}
-                openReceiptLabel={t("personal.merchantStatement.openReceipt")}
-              />
-            ))}
+          <>
+            <ul className="exits-list m-0 grid list-none gap-2 p-0">
+              {olderItems.map((item) => (
+                <li key={item.activityId}>
+                  <ActivityRow
+                    item={item}
+                    organizationId={organizationId}
+                    businessCustomerId={businessCustomerId}
+                    openReceiptLabel={t("personal.merchantStatement.openReceipt")}
+                  />
+                </li>
+              ))}
+            </ul>
             {olderHasMore ? (
               <Button
                 type="button"
@@ -453,7 +473,7 @@ export function LinkedMerchantStatementPage() {
                 {t("personal.merchantStatement.loadMore")}
               </Button>
             ) : null}
-          </div>
+          </>
         )}
       </section>
     </div>

@@ -7,7 +7,6 @@ import {
 } from "@/api/pos/pos-linked-customers-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -119,7 +118,13 @@ export function LinkedMerchantReceiptPage() {
 
   if (state.kind === "entitlement") {
     return (
-      <div className="flex min-w-0 flex-col gap-4" data-testid="linked-merchant-receipt-page">
+      <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="linked-merchant-receipt-page">
+        <PageHeader
+          title={t("personal.merchantReceipt.missingTitle")}
+          backTo={backHref}
+          backLabel={t("personal.merchantReceipt.backToStatement")}
+          backTestId="page-header-back-merchant-receipt"
+        />
         <ErrorState
           title={t("personal.merchantStatement.historyLockedTitle")}
           detail={state.detail}
@@ -132,54 +137,70 @@ export function LinkedMerchantReceiptPage() {
   }
 
   if (state.kind === "error") {
-    return <ErrorState title={t("personal.merchantReceipt.errorTitle")} detail={state.detail} />;
+    return (
+      <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="linked-merchant-receipt-page">
+        <PageHeader
+          title={t("personal.merchantReceipt.errorTitle")}
+          backTo={backHref}
+          backLabel={t("personal.merchantReceipt.backToStatement")}
+          backTestId="page-header-back-merchant-receipt"
+        />
+        <ErrorState title={t("personal.merchantReceipt.errorTitle")} detail={state.detail} />
+      </div>
+    );
   }
 
   const { receipt } = state;
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="linked-merchant-receipt-page">
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to={backHref}>{t("personal.merchantReceipt.backToStatement")}</Link>
-      </Button>
-      <PageHeader title={receipt.receiptNumber} description={t("personal.merchantReceipt.lede")} />
+    <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="linked-merchant-receipt-page">
+      <PageHeader
+        title={receipt.receiptNumber}
+        description={t("personal.merchantReceipt.lede")}
+        backTo={backHref}
+        backLabel={t("personal.merchantReceipt.backToStatement")}
+        backTestId="page-header-back-merchant-receipt"
+      />
 
-      <Card data-testid="linked-merchant-receipt-summary">
+      <section
+        className="catalog-form-section exits-animate-panel personal-section gap-2"
+        data-testid="linked-merchant-receipt-summary"
+      >
         <p className="m-0 text-[length:var(--exits-text-sm)]">
           {new Date(receipt.occurredAtUtc).toLocaleString()}
         </p>
-        <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+        <p className="mb-0 text-[length:var(--exits-text-sm)] text-muted">
           {receipt.paymentMethod} · {receipt.status}
         </p>
-        <p className="mb-0 mt-2 text-[length:var(--exits-text-xl)] font-semibold tabular-nums">
+        <p className="mb-0 text-[length:var(--exits-text-xl)] font-semibold tabular-nums">
           {receipt.total.toFixed(2)} {receipt.currency}
         </p>
-      </Card>
+      </section>
 
-      <Card className="border-[var(--exits-border)] bg-[var(--exits-surface-muted)]">
-        <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
+      <section className="catalog-form-section exits-animate-panel personal-section gap-2">
+        <p className="catalog-form-section__title text-muted">
           {t("summary.disclaimerTitle")}
         </p>
-        <p className="mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
+        <p className="mb-0 text-[length:var(--exits-text-xs)] text-muted">
           {t("summary.disclaimerBody")}
         </p>
-      </Card>
+      </section>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+      <section className="catalog-form-section exits-animate-panel personal-section gap-2">
+        <h2 className="catalog-form-section__title">
           {t("personal.merchantReceipt.linesSection")}
         </h2>
-        <ul className="m-0 flex list-none flex-col gap-2 p-0">
+        <ul className="exits-list m-0 grid list-none gap-2 p-0">
           {receipt.lines.map((line) => (
             <li key={line.lineNumber}>
-              <Card className="px-3 py-2">
-                <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+              <div className="exits-list__card">
+                <p className="exits-list__name m-0 font-semibold">
                   {line.productNameSnapshot}
                 </p>
                 <p className="mb-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
                   {line.quantity.toFixed(3)} {line.unitOfMeasure} · {line.lineTotal.toFixed(2)}
                 </p>
-              </Card>
+              </div>
             </li>
           ))}
         </ul>

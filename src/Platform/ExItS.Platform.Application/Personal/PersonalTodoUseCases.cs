@@ -16,6 +16,7 @@ public sealed record PersonalTodoDto(
     string? Notes,
     DateTimeOffset? DueAtUtc,
     DateTimeOffset? ReminderAtUtc,
+    DateTimeOffset? ReminderNotifiedAtUtc,
     string Priority,
     string Status,
     string? RelatedEntityType,
@@ -80,6 +81,7 @@ internal static class PersonalTodoAccess
             todo.Notes,
             todo.DueAtUtc,
             todo.ReminderAtUtc,
+            todo.ReminderNotifiedAtUtc,
             todo.Priority.ToString(),
             todo.Status.ToString(),
             todo.RelatedEntityType is PersonalTodoRelatedEntityType.None
@@ -491,6 +493,157 @@ public sealed class CancelPersonalTodo
                 todo.Id.Value.ToString("D"),
                 AuditOutcome.Succeeded,
                 summary: $"Personal to-do '{todo.Title}' cancelled.",
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            return ApplicationResult<PersonalTodoDto>.Success(PersonalTodoAccess.ToDto(todo));
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<PersonalTodoDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            return PersonalTodoAccess.MapMutationFailure(ex);
+        }
+    }
+}
+
+public sealed class DeliverPersonalTodoReminder
+{
+    private readonly IPersonalTodoRepository _todos;
+    private readonly IPersonalAccountSettingsRepository _settings;
+    private readonly IPersonalInAppNotificationRepository _notifications;
+    private readonly IPersonalNotificationDeliveryRepository _deliveries;
+    private readonly IPersonalPushNotificationSink _pushSink;
+    private readonly IAuditWriter _auditWriter;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public DeliverPersonalTodoReminder(
+        IPersonalTodoRepository todos,
+        IPersonalAccountSettingsRepository settings,
+        IPersonalInAppNotificationRepository notifications,
+        IPersonalNotificationDeliveryRepository deliveries,
+        IPersonalPushNotificationSink pushSink,
+        IAuditWriter auditWriter,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _todos = todos;
+        _settings = settings;
+        _notifications = notifications;
+        _deliveries = deliveries;
+        _pushSink = pushSink;
+        _auditWriter = auditWriter;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<PersonalTodoDto>> ExecuteAsync(
+        Guid todoId,
+        CancellationToken cancellationToken = default)
+    {
+        var todo = await _todos.GetByIdAsync(PersonalTodoId.From(todoId), cancellationToken)
+            .ConfigureAwait(false);
+        if (todo is null)
+        {
+            return ApplicationResult<PersonalTodoDto>.Failure(
+                ApplicationErrorCodes.PersonalTodoNotFound,
+                "Personal to-do was not found.");
+        }
+
+        if (!todo.IsReminderDue(_clock.UtcNow))
+        {
+            return ApplicationResult<PersonalTodoDto>.Success(PersonalTodoAccess.ToDto(todo));
+        }
+
+        try
+        {
+            var relatedType = "PersonalTodo";
+            var relatedId = todo.Id.Value.ToString("D");
+            var existing = await _notifications
+                .FindByRecipientRelatedAsync(todo.OwnerUserIdentityId, relatedType, relatedId, cancellationToken)
+                .ConfigureAwait(false);
+
+            var prefs = await _settings.GetByUserAsync(todo.OwnerUserIdentityId, cancellationToken)
+                .ConfigureAwait(false)
+                ?? PersonalAccountSettings.CreateDefaults(todo.OwnerUserIdentityId, _clock.UtcNow);
+
+            const string title = "Personal to-do reminder";
+            var preview = todo.Title.Length <= 120 ? todo.Title : todo.Title[..117] + "...";
+
+            if (existing is null
+                && prefs.ReminderNotificationsEnabled
+                && prefs.InAppNotificationsEnabled)
+            {
+                var notification = PersonalInAppNotification.Create(
+                    todo.OwnerUserIdentityId,
+                    title,
+                    preview,
+                    relatedType,
+                    _clock.UtcNow,
+                    relatedId);
+                await _notifications.AddAsync(notification, cancellationToken).ConfigureAwait(false);
+
+                var inAppDelivery = PersonalNotificationDelivery.Create(
+                    todo.OwnerUserIdentityId,
+                    PersonalNotificationChannel.InApp,
+                    preview,
+                    _clock.UtcNow,
+                    notificationId: notification.Id);
+                inAppDelivery.MarkDelivered(_clock.UtcNow);
+                await _deliveries.AddAsync(inAppDelivery, cancellationToken).ConfigureAwait(false);
+            }
+            else if (existing is null)
+            {
+                var skipped = PersonalNotificationDelivery.Create(
+                    todo.OwnerUserIdentityId,
+                    PersonalNotificationChannel.InApp,
+                    preview,
+                    _clock.UtcNow);
+                skipped.MarkSkipped("In-app or reminder notifications disabled by recipient preferences.");
+                await _deliveries.AddAsync(skipped, cancellationToken).ConfigureAwait(false);
+            }
+
+            var pushDelivery = PersonalNotificationDelivery.Create(
+                todo.OwnerUserIdentityId,
+                PersonalNotificationChannel.Push,
+                preview,
+                _clock.UtcNow);
+
+            if (prefs.ReminderNotificationsEnabled && prefs.PushNotificationsEnabled)
+            {
+                var pushed = await _pushSink
+                    .TryDeliverAsync(todo.OwnerUserIdentityId, title, preview, cancellationToken)
+                    .ConfigureAwait(false);
+                if (pushed)
+                {
+                    pushDelivery.MarkDelivered(_clock.UtcNow);
+                }
+                else
+                {
+                    pushDelivery.MarkSkipped("Push sink unavailable or no vendor configured.");
+                }
+            }
+            else
+            {
+                pushDelivery.MarkSkipped("Push or reminder notifications disabled by recipient preferences.");
+            }
+
+            await _deliveries.AddAsync(pushDelivery, cancellationToken).ConfigureAwait(false);
+
+            todo.MarkReminderNotified(_clock.UtcNow);
+            await _todos.UpdateAsync(todo, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            await _auditWriter.WriteAsync(
+                "system:personal-reminder-worker",
+                AuditActorType.System,
+                PlatformAuditActions.PersonalTodoReminderDelivered,
+                nameof(PersonalTodo),
+                todo.Id.Value.ToString("D"),
+                AuditOutcome.Succeeded,
+                summary: $"Personal to-do reminder delivered for '{todo.Title}'.",
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
             return ApplicationResult<PersonalTodoDto>.Success(PersonalTodoAccess.ToDto(todo));

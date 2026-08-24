@@ -39,19 +39,18 @@ test.describe("Responsive org bottom navigation", () => {
     await expect(page.getByTestId("org-nav-more")).toHaveAttribute("aria-current", "page");
   });
 
-  test("hides bottom nav on desktop while keeping top bar", async ({ page }) => {
+  test("shows bottom nav on desktop with top bar", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await signInOpsReady(page);
-    await expect(page.getByTestId("org-bottom-nav")).toBeAttached();
-    await expect(page.getByTestId("org-bottom-nav")).toBeHidden();
+    await expect(page.getByTestId("org-bottom-nav")).toBeVisible();
+    await expect(page.getByTestId("org-nav-home")).toBeVisible();
     await expect(page.getByRole("banner")).toBeVisible();
   });
 
-  test("shows balanced bottom nav on tablet portrait; hides at lg landscape", async ({ page }) => {
+  test("shows balanced bottom nav on tablet portrait and landscape", async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 768 });
     await signInOpsReady(page);
-    await expect(page.getByTestId("org-bottom-nav")).toBeAttached();
-    await expect(page.getByTestId("org-bottom-nav")).toBeHidden();
+    await expect(page.getByTestId("org-bottom-nav")).toBeVisible();
 
     await page.setViewportSize({ width: 768, height: 1024 });
     await expect(page.getByTestId("org-bottom-nav")).toBeVisible();

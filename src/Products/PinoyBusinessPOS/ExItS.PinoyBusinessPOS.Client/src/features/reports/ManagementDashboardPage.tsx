@@ -1,6 +1,17 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart3, RefreshCw } from "lucide-react";
+import {
+  AlertTriangle,
+  Banknote,
+  BarChart3,
+  CalendarDays,
+  Clock3,
+  Package,
+  RefreshCw,
+  ShieldAlert,
+  Smartphone,
+  Wallet,
+} from "lucide-react";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import {
   formatReportPaymentMethod,
@@ -14,6 +25,13 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import {
+  DashboardComparisonTrend,
+  DashboardHeroMetric,
+  DashboardMetricCard,
+  DashboardShareRow,
+  DashboardSparkBars,
+} from "@/features/reports/DashboardMetricCards";
 import { ReportFilters } from "@/features/reports/ReportFilters";
 import {
   resolveReportDatePreset,
@@ -22,36 +40,10 @@ import {
 } from "@/features/reports/report-date-range";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
-import { cn } from "@/lib/cn";
 
-function MetricCard({
-  label,
-  children,
-  meta,
-  testId,
-  tone = "default",
-}: {
-  label: string;
-  children: React.ReactNode;
-  meta?: React.ReactNode;
-  testId: string;
-  tone?: "default" | "emphasis" | "attention";
-}) {
-  return (
-    <div
-      className={cn(
-        "dashboard-kpi",
-        tone === "emphasis" && "dashboard-kpi--emphasis",
-        tone === "attention" && "dashboard-kpi--attention",
-      )}
-      data-testid={testId}
-      role="listitem"
-    >
-      <span className="dashboard-kpi__label">{label}</span>
-      <span className="dashboard-kpi__value">{children}</span>
-      {meta ? <span className="dashboard-kpi__meta">{meta}</span> : null}
-    </div>
-  );
+function shortDayLabel(date: string): string {
+  const parts = date.split("-");
+  return parts[2] ?? date;
 }
 
 export function ManagementDashboardPage() {
@@ -114,10 +106,6 @@ export function ManagementDashboardPage() {
     setApplied(range);
   }
 
-  if (!workspace) {
-    return <LoadingState label={t("session.loading")} />;
-  }
-
   const overviewError = overviewQuery.isError
     ? describePosApiError(overviewQuery.error, t, "reports.loadError")
     : null;
@@ -126,6 +114,29 @@ export function ManagementDashboardPage() {
     : null;
   const refreshing = overviewQuery.isFetching || dashboardQuery.isFetching;
   const overview = overviewQuery.data;
+  const dashboard = dashboardQuery.data;
+
+  const sparkPoints = useMemo(() => {
+    if (!dashboard?.salesByDay.length) {
+      return [];
+    }
+    return dashboard.salesByDay.map((day) => ({
+      key: shortDayLabel(day.date),
+      value: day.amount,
+      title: `${day.date}: ${day.amount.toLocaleString()} (${day.count} txns)`,
+    }));
+  }, [dashboard?.salesByDay]);
+
+  const paymentTotal = useMemo(() => {
+    if (!dashboard) {
+      return 0;
+    }
+    return dashboard.paymentMethodBreakdown.reduce((sum, row) => sum + row.amount, 0);
+  }, [dashboard]);
+
+  if (!workspace) {
+    return <LoadingState label={t("session.loading")} />;
+  }
 
   return (
     <div
@@ -188,57 +199,95 @@ export function ManagementDashboardPage() {
           <ErrorState title={t("reports.errorTitle")} detail={overviewError} />
         ) : null}
         {overview ? (
-          <div className="dashboard-kpi-grid" role="list">
-            <MetricCard label={t("dashboard.businessDate")} testId="kpi-business-date">
-              {overview.businessDate}
-            </MetricCard>
-            <MetricCard
+          <div className="dashboard-metrics" role="list">
+            <DashboardHeroMetric
               label={t("dashboard.todaySales")}
-              meta={`${overview.todaySaleCount} ${t("dashboard.transactions")}`}
+              meta={`${overview.todaySaleCount} ${t("dashboard.transactions")} · ${overview.businessDate}`}
               testId="kpi-today-sales"
-              tone="emphasis"
             >
               <MoneyDisplay amount={overview.todaySalesTotal} />
-            </MetricCard>
-            <MetricCard label={t("dashboard.todayCash")} testId="kpi-today-cash">
-              <MoneyDisplay amount={overview.todayCashSalesTotal} />
-            </MetricCard>
-            <MetricCard label={t("dashboard.todayUtang")} testId="kpi-today-utang">
-              <MoneyDisplay amount={overview.todayUtangSalesTotal} />
-            </MetricCard>
-            <MetricCard label={t("dashboard.paymentsReceived")} testId="kpi-payments-received">
-              <MoneyDisplay amount={overview.todayPaymentsReceived} />
-            </MetricCard>
-            <MetricCard label={t("dashboard.openUtang")} testId="kpi-open-utang">
-              <MoneyDisplay amount={overview.openUtangOutstanding} />
-            </MetricCard>
-            <MetricCard
-              label={t("dashboard.lowStock")}
-              testId="kpi-low-stock"
-              tone={overview.lowStockProductCount > 0 ? "attention" : "default"}
-            >
-              {overview.lowStockProductCount}
-            </MetricCard>
-            <MetricCard
-              label={t("dashboard.expiredLots")}
-              testId="kpi-expired-lots"
-              tone={overview.expiredLotCount > 0 ? "attention" : "default"}
-            >
-              {overview.expiredLotCount}
-            </MetricCard>
-            <MetricCard
-              label={t("dashboard.nearExpiryLots")}
-              testId="kpi-near-expiry"
-              tone={overview.nearExpiryLotCount > 0 ? "attention" : "default"}
-            >
-              {overview.nearExpiryLotCount}
-            </MetricCard>
-            <MetricCard label={t("dashboard.openShifts")} testId="kpi-open-shifts">
-              {overview.openShiftCount}
-            </MetricCard>
-            <MetricCard label={t("dashboard.activeRegisters")} testId="kpi-active-registers">
-              {overview.activeRegisterCount}
-            </MetricCard>
+            </DashboardHeroMetric>
+
+            <div className="dashboard-metric-grid" role="list">
+              <DashboardMetricCard
+                label={t("dashboard.todayCash")}
+                icon={Banknote}
+                testId="kpi-today-cash"
+                tone="emphasis"
+              >
+                <MoneyDisplay amount={overview.todayCashSalesTotal} />
+              </DashboardMetricCard>
+              <DashboardMetricCard
+                label={t("dashboard.todayUtang")}
+                icon={Wallet}
+                testId="kpi-today-utang"
+              >
+                <MoneyDisplay amount={overview.todayUtangSalesTotal} />
+              </DashboardMetricCard>
+              <DashboardMetricCard
+                label={t("dashboard.paymentsReceived")}
+                icon={Smartphone}
+                testId="kpi-payments-received"
+              >
+                <MoneyDisplay amount={overview.todayPaymentsReceived} />
+              </DashboardMetricCard>
+              <DashboardMetricCard
+                label={t("dashboard.openUtang")}
+                icon={Wallet}
+                testId="kpi-open-utang"
+                tone={overview.openUtangOutstanding > 0 ? "attention" : "default"}
+              >
+                <MoneyDisplay amount={overview.openUtangOutstanding} />
+              </DashboardMetricCard>
+            </div>
+
+            <div className="dashboard-metric-grid dashboard-metric-grid--ops" role="list">
+              <DashboardMetricCard
+                label={t("dashboard.businessDate")}
+                icon={CalendarDays}
+                testId="kpi-business-date"
+              >
+                {overview.businessDate}
+              </DashboardMetricCard>
+              <DashboardMetricCard
+                label={t("dashboard.lowStock")}
+                icon={Package}
+                testId="kpi-low-stock"
+                tone={overview.lowStockProductCount > 0 ? "attention" : "success"}
+              >
+                {overview.lowStockProductCount}
+              </DashboardMetricCard>
+              <DashboardMetricCard
+                label={t("dashboard.expiredLots")}
+                icon={ShieldAlert}
+                testId="kpi-expired-lots"
+                tone={overview.expiredLotCount > 0 ? "attention" : "default"}
+              >
+                {overview.expiredLotCount}
+              </DashboardMetricCard>
+              <DashboardMetricCard
+                label={t("dashboard.nearExpiryLots")}
+                icon={AlertTriangle}
+                testId="kpi-near-expiry"
+                tone={overview.nearExpiryLotCount > 0 ? "attention" : "default"}
+              >
+                {overview.nearExpiryLotCount}
+              </DashboardMetricCard>
+              <DashboardMetricCard
+                label={t("dashboard.openShifts")}
+                icon={Clock3}
+                testId="kpi-open-shifts"
+              >
+                {overview.openShiftCount}
+              </DashboardMetricCard>
+              <DashboardMetricCard
+                label={t("dashboard.activeRegisters")}
+                icon={BarChart3}
+                testId="kpi-active-registers"
+              >
+                {overview.activeRegisterCount}
+              </DashboardMetricCard>
+            </div>
           </div>
         ) : null}
       </section>
@@ -257,64 +306,123 @@ export function ManagementDashboardPage() {
         {dashboardError ? (
           <ErrorState title={t("reports.errorTitle")} detail={dashboardError} />
         ) : null}
-        {dashboardQuery.data ? (
-          <>
-            <div className="dashboard-kpi-grid" role="list">
-              <MetricCard
-                label={t("dashboard.completedSales")}
-                meta={`${dashboardQuery.data.completedSaleCount} ${t("dashboard.transactions")}`}
-                testId="kpi-period-sales"
+        {dashboard ? (
+          <div className="dashboard-metrics" role="list">
+            <DashboardHeroMetric
+              label={t("dashboard.completedSales")}
+              meta={`${dashboard.completedSaleCount} ${t("dashboard.transactions")}`}
+              testId="kpi-period-sales"
+              trend={
+                dashboard.salesTotalComparison ? (
+                  <DashboardComparisonTrend
+                    comparison={dashboard.salesTotalComparison}
+                    absoluteLabel={<MoneyDisplay amount={dashboard.salesTotalComparison.absoluteChange ?? 0} />}
+                    pctUnavailableLabel={t("dashboard.pctUnavailable")}
+                    vsPriorLabel={t("dashboard.vsPriorPeriod")}
+                  />
+                ) : null
+              }
+            >
+              <MoneyDisplay amount={dashboard.completedSalesTotal} />
+            </DashboardHeroMetric>
+
+            <div className="dashboard-chart-panel">
+              <h3 className="catalog-form-section__title">{t("dashboard.salesByDay")}</h3>
+              <DashboardSparkBars
+                points={sparkPoints}
+                ariaLabel={t("dashboard.salesByDay")}
+                emptyLabel={t("dashboard.salesByDayEmpty")}
+              />
+            </div>
+
+            <div className="dashboard-metric-grid" role="list">
+              <DashboardMetricCard
+                label={t("dashboard.cashSales")}
+                icon={Banknote}
+                testId="kpi-period-cash"
                 tone="emphasis"
               >
-                <MoneyDisplay amount={dashboardQuery.data.completedSalesTotal} />
-              </MetricCard>
-              <MetricCard label={t("dashboard.cashSales")} testId="kpi-period-cash">
-                <MoneyDisplay amount={dashboardQuery.data.cashSalesTotal} />
-              </MetricCard>
-              <MetricCard label={t("dashboard.gcashSales")} testId="kpi-period-gcash">
-                <MoneyDisplay amount={dashboardQuery.data.manualGCashSalesTotal} />
-              </MetricCard>
-              <MetricCard label={t("dashboard.utangSales")} testId="kpi-period-utang">
-                <MoneyDisplay amount={dashboardQuery.data.utangSalesTotal} />
-              </MetricCard>
-              <MetricCard label={t("dashboard.voidedSales")} testId="kpi-period-voids">
-                {dashboardQuery.data.voidedSaleCount}
-              </MetricCard>
-              <MetricCard label={t("dashboard.expenses")} testId="kpi-period-expenses">
-                <MoneyDisplay amount={dashboardQuery.data.recordedExpenseTotal} />
-              </MetricCard>
+                <MoneyDisplay amount={dashboard.cashSalesTotal} />
+              </DashboardMetricCard>
+              <DashboardMetricCard
+                label={t("dashboard.gcashSales")}
+                icon={Smartphone}
+                testId="kpi-period-gcash"
+              >
+                <MoneyDisplay amount={dashboard.manualGCashSalesTotal} />
+              </DashboardMetricCard>
+              <DashboardMetricCard
+                label={t("dashboard.utangSales")}
+                icon={Wallet}
+                testId="kpi-period-utang"
+              >
+                <MoneyDisplay amount={dashboard.utangSalesTotal} />
+              </DashboardMetricCard>
+              <DashboardMetricCard
+                label={t("dashboard.expenses")}
+                icon={Wallet}
+                testId="kpi-period-expenses"
+              >
+                <MoneyDisplay amount={dashboard.recordedExpenseTotal} />
+              </DashboardMetricCard>
+              <DashboardMetricCard
+                label={t("dashboard.utangOutstanding")}
+                icon={Wallet}
+                testId="kpi-period-utang-outstanding"
+                tone={dashboard.activeCustomerUtangOutstanding > 0 ? "attention" : "default"}
+              >
+                <MoneyDisplay amount={dashboard.activeCustomerUtangOutstanding} />
+              </DashboardMetricCard>
+              <DashboardMetricCard
+                label={t("dashboard.overdueUtang")}
+                icon={AlertTriangle}
+                testId="kpi-period-overdue-utang"
+                tone={dashboard.overdueUtangAmount > 0 ? "attention" : "default"}
+              >
+                <MoneyDisplay amount={dashboard.overdueUtangAmount} />
+              </DashboardMetricCard>
+              <DashboardMetricCard
+                label={t("dashboard.voidedSales")}
+                icon={ShieldAlert}
+                testId="kpi-period-voids"
+                tone={dashboard.voidedSaleCount > 0 ? "attention" : "default"}
+              >
+                {dashboard.voidedSaleCount}
+              </DashboardMetricCard>
+              <DashboardMetricCard
+                label={t("dashboard.lowStock")}
+                icon={Package}
+                testId="kpi-period-low-stock"
+                tone={dashboard.lowStockProductCount > 0 ? "attention" : "success"}
+              >
+                {dashboard.lowStockProductCount}
+              </DashboardMetricCard>
             </div>
 
             <div className="dashboard-breakdown">
               <h3 className="catalog-form-section__title">{t("dashboard.paymentBreakdown")}</h3>
-              {dashboardQuery.data.paymentMethodBreakdown.length === 0 ? (
+              {dashboard.paymentMethodBreakdown.length === 0 ? (
                 <EmptyState title={t("reports.emptyTitle")} detail={t("reports.emptyDetail")} />
               ) : (
-                <ul
-                  className="exits-list m-0 grid list-none gap-2 p-0"
-                  data-testid="payment-breakdown"
-                >
-                  {dashboardQuery.data.paymentMethodBreakdown.map((row) => (
-                    <li key={row.paymentMethod}>
-                      <div className="exits-list__card dashboard-payment-row">
-                        <div className="dashboard-payment-row__main min-w-0">
-                          <strong className="exits-list__name block truncate font-semibold">
-                            {formatReportPaymentMethod(row.paymentMethod)}
-                          </strong>
-                          <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-                            {row.count} {t("dashboard.transactions")}
-                          </p>
-                        </div>
-                        <span className="dashboard-payment-row__amount">
-                          <MoneyDisplay amount={row.amount} />
-                        </span>
-                      </div>
-                    </li>
+                <ul className="dashboard-share-list m-0 list-none p-0" data-testid="payment-breakdown">
+                  {dashboard.paymentMethodBreakdown.map((row) => (
+                    <DashboardShareRow
+                      key={row.paymentMethod}
+                      testId={`payment-share-${row.paymentMethod}`}
+                      label={formatReportPaymentMethod(row.paymentMethod)}
+                      meta={`${row.count} ${t("dashboard.transactions")}${
+                        paymentTotal > 0
+                          ? ` · ${Math.round((row.amount / paymentTotal) * 100)}%`
+                          : ""
+                      }`}
+                      amount={<MoneyDisplay amount={row.amount} />}
+                      share={paymentTotal > 0 ? row.amount / paymentTotal : 0}
+                    />
                   ))}
                 </ul>
               )}
             </div>
-          </>
+          </div>
         ) : null}
       </section>
     </div>

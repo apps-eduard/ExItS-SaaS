@@ -9,6 +9,7 @@ import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { QrCodeImage } from "@/features/qr/QrCodeImage";
 import { useI18n } from "@/i18n/I18nProvider";
+import { personalPageBackNav } from "@/navigation/page-back-nav";
 
 export function PersonalMyQrPage() {
   const { t } = useI18n();
@@ -55,11 +56,17 @@ export function PersonalMyQrPage() {
 
   return (
     <div
-      className="mx-auto flex w-full max-w-md min-w-0 flex-col gap-4"
+      className="personal-page exits-page mx-auto flex w-full max-w-md min-w-0 flex-col gap-3"
       data-testid="personal-my-qr-page"
     >
-      <PageHeader title={t("personal.social.qrTitle")} description={t("personal.social.qrLede")} />
-      <Card className="flex flex-col items-center gap-3 p-4 text-center">
+      <PageHeader
+        title={t("personal.social.qrTitle")}
+        description={t("personal.social.qrLede")}
+        backTo={personalPageBackNav.more.to}
+        backLabel={t(personalPageBackNav.more.labelKey)}
+        backTestId="page-header-back-my-qr"
+      />
+      <Card className="catalog-form-section exits-animate-panel personal-section flex flex-col items-center gap-3 p-4 text-center">
         <QrCodeImage
           payload={query.data.qrPayload}
           label={t("personal.social.qrImageAlt")}

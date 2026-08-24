@@ -191,6 +191,10 @@ builder.Services.AddScoped<CreateCatalogImport>();
 builder.Services.AddScoped<ConfirmCatalogImport>();
 builder.Services.AddScoped<ProcessCatalogImportChunk>();
 builder.Services.AddHostedService<CatalogImportBackgroundService>();
+builder.Services.AddScoped<ProcessDuePersonalReminders>();
+builder.Services.AddScoped<DeliverPersonalTodoReminder>();
+builder.Services.AddHostedService<ExItS.Platform.Infrastructure.Personal.PersonalReminderDeliveryBackgroundService>();
+
 
 builder.Services.AddScoped<OrganizationQueryService>();
 builder.Services.AddScoped<CreatePlatformOrganization>();
@@ -287,6 +291,7 @@ builder.Services.AddScoped<GetPersonalProfile>();
 builder.Services.AddScoped<GetPersonalAccountSettings>();
 builder.Services.AddScoped<UpdatePersonalAccountSettings>();
 builder.Services.AddScoped<CreatePersonalContact>();
+builder.Services.AddScoped<UpdatePersonalContact>();
 builder.Services.AddScoped<ListPersonalContacts>();
 builder.Services.AddScoped<CreatePersonalDebtRelationship>();
 builder.Services.AddScoped<ListPersonalUtangRelationships>();

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { X } from "lucide-react";
+import { Check, CheckCheck, ChevronRight, UserRoundCheck, X } from "lucide-react";
 import {
   acceptPersonalUtangInvitation,
   cancelPersonalReminder,
@@ -24,13 +24,17 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
-import { PERSONAL_NOTIFICATIONS_QUERY_KEY } from "@/features/personal/personal-notifications";
+import {
+  localizePersonalNotification,
+  PERSONAL_NOTIFICATIONS_QUERY_KEY,
+} from "@/features/personal/personal-notifications";
 import {
   peekNotificationsReturnTo,
   resolveNotificationsReturnTo,
 } from "@/features/personal/notifications-return";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
+import { personalPageBackNav } from "@/navigation/page-back-nav";
 
 export function PersonalInvitationsPage() {
   const { t } = useI18n();
@@ -64,10 +68,13 @@ export function PersonalInvitationsPage() {
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="personal-invitations-page">
+    <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="personal-invitations-page">
       <PageHeader
         title={t("personal.social.invitationsTitle")}
         description={t("personal.social.invitationsLede")}
+        backTo={personalPageBackNav.more.to}
+        backLabel={t(personalPageBackNav.more.labelKey)}
+        backTestId="page-header-back-invitations"
       />
       {query.data.length === 0 ? (
         <EmptyState
@@ -75,14 +82,14 @@ export function PersonalInvitationsPage() {
           detail={t("personal.social.invitationsEmptyDetail")}
         />
       ) : (
-        <ul className="m-0 flex list-none flex-col gap-2 p-0">
+        <ul className="exits-list m-0 grid list-none gap-2 p-0">
           {query.data.map((invite) => (
-            <li
-              key={invite.id}
-              className="rounded-[var(--exits-radius-md)] border border-border px-3 py-3"
-              data-testid={`utang-invite-${invite.id}`}
-            >
-              <p className="m-0 font-semibold">{invite.status}</p>
+            <li key={invite.id}>
+              <div
+                className="exits-list__card"
+                data-testid={`utang-invite-${invite.id}`}
+              >
+              <p className="exits-list__name m-0 font-semibold">{invite.status}</p>
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                 {invite.inviteTargetEmailMasked || t("personal.social.inviteNoEmail")}
               </p>
@@ -107,6 +114,7 @@ export function PersonalInvitationsPage() {
                   </Button>
                 </div>
               ) : null}
+              </div>
             </li>
           ))}
         </ul>
@@ -140,12 +148,15 @@ export function PersonalUtangInviteAcceptPage() {
 
   return (
     <div
-      className="mx-auto flex min-h-[100dvh] max-w-lg flex-col gap-4 p-4"
+      className="personal-page exits-page mx-auto flex min-h-[100dvh] max-w-lg flex-col gap-4 p-4"
       data-testid="utang-invite-accept"
     >
       <PageHeader
         title={t("personal.social.acceptTitle")}
         description={t("personal.social.acceptLede")}
+        backTo={personalPageBackNav.home.to}
+        backLabel={t(personalPageBackNav.home.labelKey)}
+        backTestId="page-header-back-utang-invite-accept"
       />
       {!token ? (
         <ErrorState
@@ -153,32 +164,34 @@ export function PersonalUtangInviteAcceptPage() {
           detail={t("personal.social.missingTokenDetail")}
         />
       ) : (
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            className="min-h-11"
-            disabled={accept.isPending || decline.isPending}
-            onClick={() => accept.mutate()}
-            data-testid="utang-invite-accept-btn"
-          >
-            {t("personal.social.accept")}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            className="min-h-11"
-            disabled={accept.isPending || decline.isPending}
-            onClick={() => decline.mutate()}
-            data-testid="utang-invite-decline-btn"
-          >
-            {t("personal.social.decline")}
-          </Button>
-        </div>
+        <section className="catalog-form-section exits-animate-panel personal-section gap-3">
+          <h2 className="catalog-form-section__title">{t("personal.social.acceptTitle")}</h2>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              className="min-h-11"
+              disabled={accept.isPending || decline.isPending}
+              onClick={() => accept.mutate()}
+              data-testid="utang-invite-accept-btn"
+            >
+              <Check className="size-4 shrink-0" aria-hidden />
+              {t("personal.social.accept")}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="min-h-11"
+              disabled={accept.isPending || decline.isPending}
+              onClick={() => decline.mutate()}
+              data-testid="utang-invite-decline-btn"
+            >
+              <X className="size-4 shrink-0" aria-hidden />
+              {t("personal.social.decline")}
+            </Button>
+          </div>
+        </section>
       )}
       {message ? <p role="status">{message}</p> : null}
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/personal">{t("personal.nav.home")}</Link>
-      </Button>
     </div>
   );
 }
@@ -243,7 +256,7 @@ export function PersonalNotificationsPage() {
   }
   if (query.isError) {
     return (
-      <div className="notifications-page exits-page flex min-w-0 flex-col gap-3">
+      <div className="personal-page notifications-page exits-page flex min-w-0 flex-col gap-3">
         <PageHeader
           title={t("personal.social.notificationsTitle")}
           description={t("personal.social.notificationsLede")}
@@ -265,7 +278,7 @@ export function PersonalNotificationsPage() {
 
   return (
     <div
-      className="notifications-page exits-page flex min-w-0 flex-col gap-3"
+      className="personal-page notifications-page exits-page flex min-w-0 flex-col gap-3"
       data-testid="personal-notifications-page"
     >
       <PageHeader
@@ -277,23 +290,25 @@ export function PersonalNotificationsPage() {
         trailing={closeButton}
       />
 
-      <UnderlineTabBar
-        items={[
-          {
-            key: "unread",
-            label: t("personal.social.tabUnread"),
-            testId: "notifications-tab-unread",
-          },
-          {
-            key: "all",
-            label: t("personal.social.tabAll"),
-            testId: "notifications-tab-all",
-          },
-        ]}
-        activeKey={tab}
-        onChange={(key) => setTab(key as "unread" | "all")}
-        ariaLabel={t("personal.social.notificationsTitle")}
-      />
+      <div className="exits-animate-toolbar">
+        <UnderlineTabBar
+          items={[
+            {
+              key: "unread",
+              label: t("personal.social.tabUnread"),
+              testId: "notifications-tab-unread",
+            },
+            {
+              key: "all",
+              label: t("personal.social.tabAll"),
+              testId: "notifications-tab-all",
+            },
+          ]}
+          activeKey={tab}
+          onChange={(key) => setTab(key as "unread" | "all")}
+          ariaLabel={t("personal.social.notificationsTitle")}
+        />
+      </div>
 
       {visible.length === 0 ? (
         <EmptyState
@@ -311,10 +326,21 @@ export function PersonalNotificationsPage() {
       ) : (
         <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="notifications-list">
           {visible.map((item) => {
+            const localized = localizePersonalNotification(item, t);
             const isCustomerLink =
               item.relatedType.localeCompare("CustomerLinkRequest", undefined, {
                 sensitivity: "accent",
               }) === 0;
+            const isTodo =
+              item.relatedType.localeCompare("PersonalTodo", undefined, {
+                sensitivity: "accent",
+              }) === 0
+              && Boolean(item.relatedId);
+            const isUtang =
+              item.relatedType.localeCompare("PersonalDebtRelationship", undefined, {
+                sensitivity: "accent",
+              }) === 0
+              && Boolean(item.relatedId);
             return (
               <li key={item.id}>
                 <article
@@ -328,14 +354,14 @@ export function PersonalNotificationsPage() {
                   <div className="notification-row__main min-w-0">
                     <div className="notification-row__title-row">
                       <strong className="exits-list__name block min-w-0 truncate font-semibold">
-                        {item.title}
+                        {localized.title}
                       </strong>
                       {!item.isRead ? (
                         <StatusChip tone="warning">{t("personal.social.unread")}</StatusChip>
                       ) : null}
                     </div>
                     <p className="notification-row__preview mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-                      {item.preview}
+                      {localized.preview}
                     </p>
                     <p className="notification-row__meta mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
                       {new Date(item.createdAtUtc).toLocaleString()}
@@ -343,25 +369,77 @@ export function PersonalNotificationsPage() {
                   </div>
                   <div className="notification-row__actions">
                     {isCustomerLink ? (
+                      <div className="flex w-full min-w-0 flex-col gap-1.5">
+                        <Button
+                          asChild
+                          className="min-h-11 w-fit"
+                          data-testid="notification-open-customer-links"
+                        >
+                          <Link
+                            to="/personal/customer-links"
+                            onClick={() => {
+                              if (!item.isRead) {
+                                markRead.mutate(item.id);
+                              }
+                            }}
+                          >
+                            <UserRoundCheck className="size-4 shrink-0" aria-hidden />
+                            {t("personal.social.openCustomerLink")}
+                          </Link>
+                        </Button>
+                        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                          {t("personal.social.openCustomerLinkHint")}
+                        </p>
+                      </div>
+                    ) : null}
+                    {isTodo ? (
                       <Button
                         asChild
                         className="min-h-11"
-                        data-testid="notification-open-customer-links"
+                        data-testid="notification-open-todo"
                       >
-                        <Link to="/personal/customer-links">
-                          {t("personal.customerLinks.title")}
+                        <Link
+                          to={`/personal/todo/${item.relatedId}`}
+                          onClick={() => {
+                            if (!item.isRead) {
+                              markRead.mutate(item.id);
+                            }
+                          }}
+                        >
+                          <ChevronRight className="size-4 shrink-0" aria-hidden />
+                          {t("personal.social.openTodo")}
+                        </Link>
+                      </Button>
+                    ) : null}
+                    {isUtang ? (
+                      <Button
+                        asChild
+                        className="min-h-11"
+                        data-testid="notification-open-utang"
+                      >
+                        <Link
+                          to={`/personal/utang/relationships/${item.relatedId}`}
+                          onClick={() => {
+                            if (!item.isRead) {
+                              markRead.mutate(item.id);
+                            }
+                          }}
+                        >
+                          <ChevronRight className="size-4 shrink-0" aria-hidden />
+                          {t("personal.social.openUtang")}
                         </Link>
                       </Button>
                     ) : null}
                     {!item.isRead ? (
                       <Button
                         type="button"
-                        variant="outline"
+                        variant="ghost"
                         className="min-h-11"
                         data-testid={`notification-mark-read-${item.id}`}
                         disabled={markRead.isPending}
                         onClick={() => markRead.mutate(item.id)}
                       >
+                        <CheckCheck className="size-4 shrink-0" aria-hidden />
                         {t("personal.social.markRead")}
                       </Button>
                     ) : null}
@@ -434,9 +512,26 @@ export function RelationshipInviteReminderPanel({
     },
   });
 
+  function toLocalInputValue(date: Date): string {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  function setPreset(kind: "hour" | "tomorrow") {
+    const next = new Date();
+    if (kind === "hour") {
+      next.setHours(next.getHours() + 1);
+    } else {
+      next.setDate(next.getDate() + 1);
+      next.setHours(9, 0, 0, 0);
+    }
+    setScheduledFor(toLocalInputValue(next));
+    setError(null);
+  }
+
   return (
-    <section className="flex flex-col gap-3" data-testid="utang-invite-reminder-panel">
-      <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+    <section className="catalog-form-section exits-animate-panel personal-section flex flex-col gap-3" data-testid="utang-invite-reminder-panel">
+      <h2 className="catalog-form-section__title">
         {t("personal.social.inviteAndRemind")}
       </h2>
       {inviteeContactId ? (
@@ -471,6 +566,29 @@ export function RelationshipInviteReminderPanel({
             data-testid="utang-reminder-when"
           />
         </label>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11"
+            data-testid="utang-reminder-preset-hour"
+            onClick={() => setPreset("hour")}
+          >
+            {t("personal.social.reminderInOneHour")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11"
+            data-testid="utang-reminder-preset-tomorrow"
+            onClick={() => setPreset("tomorrow")}
+          >
+            {t("personal.social.reminderTomorrow")}
+          </Button>
+        </div>
+        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+          {t("personal.social.reminderServerHint")}
+        </p>
         <Button type="submit" className="min-h-11 w-fit" disabled={createReminder.isPending}>
           {t("personal.social.addReminder")}
         </Button>
@@ -484,28 +602,29 @@ export function RelationshipInviteReminderPanel({
         </p>
       ) : null}
       {remindersQuery.data?.length ? (
-        <ul className="m-0 flex list-none flex-col gap-2 p-0">
+        <ul className="exits-list m-0 grid list-none gap-2 p-0">
           {remindersQuery.data.map((reminder) => (
-            <li
-              key={reminder.id}
-              className="flex items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border px-3 py-2"
-            >
-              <div className="min-w-0">
-                <p className="m-0 text-[length:var(--exits-text-sm)]">{reminder.scheduleType}</p>
-                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                  {new Date(reminder.scheduledForUtc).toLocaleString()} · {reminder.status}
-                </p>
+            <li key={reminder.id}>
+              <div className="exits-list__card flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="exits-list__name m-0 text-[length:var(--exits-text-sm)]">
+                    {reminder.scheduleType}
+                  </p>
+                  <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                    {new Date(reminder.scheduledForUtc).toLocaleString()} · {reminder.status}
+                  </p>
+                </div>
+                {reminder.status === "Scheduled" ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="min-h-11"
+                    onClick={() => cancel.mutate(reminder.id)}
+                  >
+                    {t("personal.social.cancelReminder")}
+                  </Button>
+                ) : null}
               </div>
-              {reminder.status !== "Cancelled" ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="min-h-11"
-                  onClick={() => cancel.mutate(reminder.id)}
-                >
-                  {t("personal.social.cancelReminder")}
-                </Button>
-              ) : null}
             </li>
           ))}
         </ul>

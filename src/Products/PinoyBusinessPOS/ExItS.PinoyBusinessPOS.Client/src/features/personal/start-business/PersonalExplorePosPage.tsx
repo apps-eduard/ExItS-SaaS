@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   listCommercialPlans,
@@ -12,6 +12,7 @@ import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
+import { personalPageBackNav } from "@/navigation/page-back-nav";
 
 function planFeatureLines(plan: CommercialPlanDto, t: (key: MessageKey) => string): string[] {
   const lines = [
@@ -45,16 +46,22 @@ export function PersonalExplorePosPage() {
 
   if (plansQuery.isError) {
     return (
-      <div className="flex flex-col gap-3" data-testid="personal-explore-pos-error">
+      <div
+        className="personal-page exits-page flex flex-col gap-3"
+        data-testid="personal-explore-pos-error"
+      >
+        <PageHeader
+          title={t("personal.explore.title")}
+          backTo={personalPageBackNav.more.to}
+          backLabel={t(personalPageBackNav.more.labelKey)}
+          backTestId="page-header-back-explore-pos"
+        />
         <ErrorState
           title={t("personal.explore.errorTitle")}
           detail={t("personal.explore.errorDetail")}
         />
         <Button type="button" className="min-h-11 w-fit" onClick={() => void plansQuery.refetch()}>
           {t("personal.explore.retry")}
-        </Button>
-        <Button asChild variant="ghost" className="min-h-11 w-fit">
-          <Link to="/personal/more">{t("personal.more.back")}</Link>
         </Button>
       </div>
     );
@@ -63,11 +70,14 @@ export function PersonalExplorePosPage() {
   const plans = plansQuery.data;
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="personal-explore-pos-page">
-      <PageHeader title={t("personal.explore.title")} description={t("personal.explore.lede")} />
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
-        <Link to="/personal/more">{t("personal.more.back")}</Link>
-      </Button>
+    <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="personal-explore-pos-page">
+      <PageHeader
+        title={t("personal.explore.title")}
+        description={t("personal.explore.lede")}
+        backTo={personalPageBackNav.more.to}
+        backLabel={t(personalPageBackNav.more.labelKey)}
+        backTestId="page-header-back-explore-pos"
+      />
 
       {plans.length === 0 ? (
         <EmptyState
@@ -76,18 +86,17 @@ export function PersonalExplorePosPage() {
         />
       ) : (
         <>
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted exits-animate-panel">
             {t("personal.explore.selectHint")}
           </p>
-          <div className="flex flex-col gap-3" role="list">
+          <ul className="exits-list m-0 grid list-none gap-2 p-0" role="list">
             {plans.map((plan) => {
               const trialAvailable = plan.trialAllowed && plan.defaultTrialDays > 0;
               const planKey = plan.planKey ?? plan.code;
               return (
+                <li key={plan.id}>
                 <article
-                  key={plan.id}
-                  role="listitem"
-                  className="rounded-[var(--exits-radius-md)] border border-border bg-surface p-4"
+                  className="exits-list__card flex flex-col gap-2 p-4"
                   data-testid={`explore-plan-${planKey}`}
                 >
                   <header className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
@@ -153,9 +162,10 @@ export function PersonalExplorePosPage() {
                     ) : null}
                   </div>
                 </article>
+                </li>
               );
             })}
-          </div>
+          </ul>
           {!localValidation ? (
             <p
               className="m-0 text-[length:var(--exits-text-xs)] text-muted"

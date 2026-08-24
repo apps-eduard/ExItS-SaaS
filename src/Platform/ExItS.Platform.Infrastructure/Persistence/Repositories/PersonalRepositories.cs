@@ -1266,6 +1266,26 @@ internal sealed class PersonalTodoRepository(PlatformDbContext db) : IPersonalTo
         return records.Select(ToDomain).ToList();
     }
 
+    public async Task<IReadOnlyList<PersonalTodo>> ListDueRemindersAsync(
+        DateTimeOffset asOfUtc,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var limit = Math.Clamp(take, 1, 200);
+        var open = PersonalTodoStatus.Open.ToString();
+        var records = await db.PersonalTodos.AsNoTracking()
+            .Where(x =>
+                x.Status == open
+                && x.ReminderAtUtc != null
+                && x.ReminderAtUtc <= asOfUtc
+                && x.ReminderNotifiedAtUtc == null)
+            .OrderBy(x => x.ReminderAtUtc)
+            .Take(limit)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(ToDomain).ToList();
+    }
+
     public Task AddAsync(PersonalTodo todo, CancellationToken cancellationToken = default)
     {
         db.PersonalTodos.Add(ToRecord(todo));
@@ -1286,6 +1306,7 @@ internal sealed class PersonalTodoRepository(PlatformDbContext db) : IPersonalTo
         record.Notes = todo.Notes;
         record.DueAtUtc = todo.DueAtUtc;
         record.ReminderAtUtc = todo.ReminderAtUtc;
+        record.ReminderNotifiedAtUtc = todo.ReminderNotifiedAtUtc;
         record.Priority = todo.Priority.ToString();
         record.Status = todo.Status.ToString();
         record.RelatedEntityType = todo.RelatedEntityType is PersonalTodoRelatedEntityType.None
@@ -1319,7 +1340,8 @@ internal sealed class PersonalTodoRepository(PlatformDbContext db) : IPersonalTo
             record.CreatedAtUtc,
             record.UpdatedAtUtc,
             record.CompletedAtUtc,
-            record.Version);
+            record.Version,
+            record.ReminderNotifiedAtUtc);
     }
 
     private static PersonalTodoRecord ToRecord(PersonalTodo todo) =>
@@ -1331,6 +1353,7 @@ internal sealed class PersonalTodoRepository(PlatformDbContext db) : IPersonalTo
             Notes = todo.Notes,
             DueAtUtc = todo.DueAtUtc,
             ReminderAtUtc = todo.ReminderAtUtc,
+            ReminderNotifiedAtUtc = todo.ReminderNotifiedAtUtc,
             Priority = todo.Priority.ToString(),
             Status = todo.Status.ToString(),
             RelatedEntityType = todo.RelatedEntityType is PersonalTodoRelatedEntityType.None

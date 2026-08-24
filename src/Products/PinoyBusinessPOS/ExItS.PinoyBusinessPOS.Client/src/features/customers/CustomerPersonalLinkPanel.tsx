@@ -25,6 +25,8 @@ type Props = {
   notes: string;
   disabled?: boolean;
   initialSubject?: string | null;
+  /** When lookup succeeds, parent may prefill Basics from the resolved Personal profile. */
+  onResolved?: (user: ResolvedPublicUserDto) => void;
   onLinked: (link: ConfirmedPersonalLink) => void;
   onCleared: () => void;
 };
@@ -40,6 +42,7 @@ export function CustomerPersonalLinkPanel({
   notes,
   disabled,
   initialSubject,
+  onResolved,
   onLinked,
   onCleared,
 }: Props) {
@@ -57,6 +60,7 @@ export function CustomerPersonalLinkPanel({
     try {
       const user = await resolvePublicUserId(subjectOrPayload, "SaleCustomer");
       setResolved(user);
+      onResolved?.(user);
     } catch (err) {
       setResolved(null);
       setError(
@@ -80,7 +84,9 @@ export function CustomerPersonalLinkPanel({
 
   async function confirmLink() {
     if (!resolved) return;
-    if (!displayName.trim()) {
+    // Prefer the Basics field when filled; otherwise use the looked-up Personal display name.
+    const name = displayName.trim() || resolved.displayName.trim();
+    if (!name) {
       setError(t("customers.personalLink.nameRequired"));
       return;
     }
@@ -91,7 +97,7 @@ export function CustomerPersonalLinkPanel({
         ? `${notes.trim()}\nexits-id:${resolved.publicUserId}`
         : `exits-id:${resolved.publicUserId}`;
       const result = await createBusinessCustomerWithPersonalLink(organizationId, {
-        displayName: displayName.trim(),
+        displayName: name,
         phone: phone.trim() || null,
         notes: taggedNotes,
         owningProductCode: "PinoyBusinessPOS",
@@ -102,7 +108,7 @@ export function CustomerPersonalLinkPanel({
       onLinked({
         publicUserId: resolved.publicUserId,
         userIdentityId: resolved.userIdentityId,
-        displayName: resolved.displayName,
+        displayName: name,
         platformBusinessCustomerId: result.customerId,
         linkRequestId: result.linkRequestId,
       });
