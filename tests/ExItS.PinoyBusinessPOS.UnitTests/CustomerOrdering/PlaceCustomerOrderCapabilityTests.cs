@@ -139,6 +139,8 @@ public sealed class PlaceCustomerOrderCapabilityTests
             new FixedCapability(Seller, canOrder, canDelivery));
     }
 
+    private static readonly Guid BusinessCustomer = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
     private static PlaceCustomerOrderRequest PickupRequest(
         string? idempotencyKey = null,
         string? paymentMethod = null) =>
@@ -148,6 +150,7 @@ public sealed class PlaceCustomerOrderCapabilityTests
             "Personal",
             "Ana",
             Actor,
+            BusinessCustomer,
             null,
             null,
             [new PlaceCustomerOrderLineRequest(ProductGuid, 2m)],
@@ -163,6 +166,7 @@ public sealed class PlaceCustomerOrderCapabilityTests
             "Personal",
             "Ana",
             Actor,
+            BusinessCustomer,
             null,
             null,
             [new PlaceCustomerOrderLineRequest(ProductGuid, 1m)],

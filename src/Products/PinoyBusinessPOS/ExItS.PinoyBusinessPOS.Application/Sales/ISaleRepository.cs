@@ -104,6 +104,19 @@ public interface ISaleRepository
 
     Task UpdateAsync(Sale sale, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Persists a sale and its lines within the caller's transaction (no nested checkout transaction).
+    /// </summary>
+    Task AddAsync(Sale sale, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Allocates the next organization business-date sale number inside the caller's transaction.
+    /// </summary>
+    Task<string> ReserveNextSaleNumberAsync(
+        PosOrganizationId organizationId,
+        DateOnly businessDateUtc,
+        CancellationToken cancellationToken = default);
+
     /// <summary>True when the sale has one or more completed returns (blocks void).</summary>
     Task<bool> HasReturnsForSaleAsync(
         PosOrganizationId organizationId,

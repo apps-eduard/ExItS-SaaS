@@ -207,6 +207,7 @@ export function MerchantCheckoutPage() {
         customerPartyType: "Personal",
         customerDisplayName: session.displayName ?? session.email ?? "Customer",
         customerPlatformUserId: session.userId,
+        platformBusinessCustomerId: merchantContextQuery.data?.businessCustomerId ?? undefined,
         lines: cart.lines.map((l) => ({
           productId: l.productId,
           quantity: l.quantity,

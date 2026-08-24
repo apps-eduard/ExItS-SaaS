@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
+using ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.OperationalSetup;
@@ -366,6 +367,88 @@ public sealed class Sale
             SaleStockReservationState.None,
             discountAdjustments,
             priceOverrideAdjustments);
+    }
+
+    /// <summary>
+    /// Records a completed Product-Based Utang sale for a fulfilled Personal customer order.
+    /// Inventory was already consumed via the customer-order stock path; this sale is accounting-only.
+    /// No cashier shift or register is required. <paramref name="authoritativeTotal"/> must match
+    /// <see cref="CustomerOrder.Total"/> exactly.
+    /// </summary>
+    public static Sale RecordCustomerOrderUtangSettlement(
+        PosOrganizationId organizationId,
+        string saleNumber,
+        CustomerOrder sourceOrder,
+        decimal authoritativeTotal,
+        IReadOnlyList<SaleLineDraft> lines,
+        Guid recordedBy,
+        DateTimeOffset utcNow,
+        POSCustomerId customerId,
+        CreditEntryId linkedCreditEntryId,
+        SaleBuyerParty? buyerParty = null,
+        PosBranchId? branchId = null,
+        SaleId? id = null)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+        SaleMoney.EnsureActor(recordedBy);
+        ArgumentNullException.ThrowIfNull(sourceOrder);
+        EnsureLineCount(lines);
+
+        var saleId = id ?? SaleId.New();
+        var normalizedNumber = SaleNumbers.Normalize(saleNumber);
+        var saleLines = BuildLines(saleId, organizationId, lines);
+        var grossSubtotal = SaleMoney.RoundMoney(saleLines.Sum(l => l.GrossLineTotal));
+        var subtotal = SaleMoney.RoundMoney(saleLines.Sum(l => l.LineTotal));
+        var total = subtotal;
+
+        if (total != SaleMoney.RoundMoney(authoritativeTotal))
+        {
+            throw new DomainException(
+                DomainErrorCodes.SaleTotalMismatch,
+                "Customer order Utang settlement total must match the authoritative order total.");
+        }
+
+        if (total > MaxTotal)
+        {
+            throw new DomainException(DomainErrorCodes.SaleTotalTooLarge, "The sale total is too large.");
+        }
+
+        ValidatePaymentLinkage(SalePaymentMethod.Utang, customerId, linkedCreditEntryId, total);
+
+        var resolvedBuyer = buyerParty ?? SaleBuyerParty.FromLegacyCustomer(customerId);
+        resolvedBuyer.EnsureConsistentWith(customerId);
+
+        return new Sale(
+            saleId,
+            organizationId,
+            normalizedNumber,
+            SaleStatus.Completed,
+            SalePaymentMethod.Utang,
+            subtotal,
+            total,
+            taxAmount: 0m,
+            grossSubtotal,
+            lineDiscountTotal: 0m,
+            saleDiscountTotal: 0m,
+            amountTendered: null,
+            changeAmount: null,
+            gcashReference: null,
+            customerId,
+            resolvedBuyer,
+            linkedCreditEntryId,
+            cashierShiftId: null,
+            registerId: null,
+            branchId,
+            utcNow,
+            recordedBy,
+            null,
+            null,
+            null,
+            utcNow,
+            saleLines,
+            SaleStockReservationState.Consumed,
+            [],
+            []);
     }
 
     /// <summary>

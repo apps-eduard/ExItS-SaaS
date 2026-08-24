@@ -159,6 +159,8 @@ public sealed class PersonalStorefrontAuthorizationTests
     private static QuoteCustomerOrderDeliveryRequest QuoteRequest() =>
         new(Branch, MerchandiseSubtotal: 100m, DestinationLatitude: 14.6m, DestinationLongitude: 120.98m);
 
+    private static readonly Guid BusinessCustomer = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
     private static PlaceCustomerOrderRequest PickupRequest() =>
         new(
             "Pickup",
@@ -166,6 +168,7 @@ public sealed class PersonalStorefrontAuthorizationTests
             "Personal",
             "Ana",
             Actor,
+            BusinessCustomer,
             null,
             null,
             [new PlaceCustomerOrderLineRequest(ProductGuid, 2m)]);
@@ -177,6 +180,7 @@ public sealed class PersonalStorefrontAuthorizationTests
             "Personal",
             "Ana",
             Actor,
+            BusinessCustomer,
             null,
             null,
             [new PlaceCustomerOrderLineRequest(ProductGuid, 1m)],

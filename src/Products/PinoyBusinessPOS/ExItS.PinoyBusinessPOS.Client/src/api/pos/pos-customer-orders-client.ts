@@ -61,6 +61,7 @@ export const customerOrderSchema = z.object({
   customerPartyType: z.string(),
   customerDisplayName: z.string(),
   customerPlatformUserId: guidSchema.nullable().optional(),
+  platformBusinessCustomerId: guidSchema.nullable().optional(),
   customerBuyerOrganizationId: guidSchema.nullable().optional(),
   customerBuyerPublicOrganizationId: z.string().nullable().optional(),
   merchandiseSubtotal: z.number(),
@@ -198,6 +199,7 @@ export type PlaceCustomerOrderRequest = {
   customerPartyType: string;
   customerDisplayName: string;
   customerPlatformUserId?: string | null;
+  platformBusinessCustomerId?: string | null;
   customerBuyerOrganizationId?: string | null;
   customerBuyerPublicOrganizationId?: string | null;
   lines: PlaceCustomerOrderLineRequest[];

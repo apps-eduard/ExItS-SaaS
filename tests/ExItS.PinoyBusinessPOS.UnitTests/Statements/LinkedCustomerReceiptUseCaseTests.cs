@@ -626,11 +626,17 @@ public sealed class LinkedCustomerReceiptUseCaseTests
     {
         private readonly List<Sale> _items = [];
 
-        public Task AddAsync(Sale sale)
+        public Task AddAsync(Sale sale, CancellationToken cancellationToken = default)
         {
             _items.Add(sale);
             return Task.CompletedTask;
         }
+
+        public Task<string> ReserveNextSaleNumberAsync(
+            PosOrganizationId organizationId,
+            DateOnly businessDateUtc,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult($"S-{businessDateUtc:yyyyMMdd}-001");
 
         public Task<Sale?> GetByIdAsync(
             PosOrganizationId organizationId,

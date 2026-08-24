@@ -5,6 +5,24 @@ import {
 } from "@/features/personal/linked-merchants/format-linked-customer-activity";
 
 describe("formatLinkedCustomerActivity", () => {
+  it("formats online purchase utang charges with order reference", () => {
+    expect(
+      formatLinkedCustomerActivityTitle({
+        activityId: "a",
+        occurredAtUtc: "2026-08-24T02:00:00Z",
+        type: "UtangCharge",
+        referenceNumber: "SO-000123",
+        chargeAmount: 800,
+        paymentAmount: null,
+        adjustmentAmount: null,
+        balanceAfter: 1300,
+        status: "Active",
+        hasDetails: true,
+        sourceSaleId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      }),
+    ).toBe("Online purchase · Order SO-000123 · +800.00");
+  });
+
   it("formats charge and payment titles", () => {
     expect(
       formatLinkedCustomerActivityTitle({

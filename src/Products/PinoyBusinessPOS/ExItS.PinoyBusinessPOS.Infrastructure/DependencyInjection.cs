@@ -53,6 +53,7 @@ public static class DependencyInjection
         services.AddScoped<ISaleMutationLock, PosSaleMutationLock>();
         services.AddScoped<ICustomerOrderRepository, CustomerOrderRepository>();
         services.AddScoped<ICustomerOrderStockService, CustomerOrderStockService>();
+        services.AddScoped<ICustomerOrderUtangLedgerService, CustomerOrderUtangLedgerService>();
         services.AddScoped<ISaleReturnRepository, SaleReturnRepository>();
         services.AddScoped<IInventoryRepository, InventoryRepository>();
         services.AddScoped<IInventoryLotRepository, InventoryLotRepository>();

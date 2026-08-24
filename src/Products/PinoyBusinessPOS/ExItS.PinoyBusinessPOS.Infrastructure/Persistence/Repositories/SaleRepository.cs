@@ -468,6 +468,38 @@ internal sealed class SaleRepository : ISaleRepository
         }
     }
 
+    public Task AddAsync(Sale sale, CancellationToken cancellationToken = default)
+    {
+        var saleRecord = SaleEntityMapper.ToRecord(sale);
+        _db.Sales.Add(saleRecord);
+        foreach (var line in sale.Lines)
+        {
+            _db.SaleLines.Add(SaleEntityMapper.ToRecord(line));
+        }
+
+        foreach (var adjustment in sale.CommercialDiscounts)
+        {
+            _db.SaleCommercialDiscountAdjustments.Add(SaleEntityMapper.ToRecord(adjustment));
+        }
+
+        foreach (var adjustment in sale.PriceOverrides)
+        {
+            _db.SalePriceOverrideAdjustments.Add(SaleEntityMapper.ToRecord(adjustment));
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public async Task<string> ReserveNextSaleNumberAsync(
+        PosOrganizationId organizationId,
+        DateOnly businessDateUtc,
+        CancellationToken cancellationToken = default)
+    {
+        var sequence = await ReserveNextSequenceAsync(organizationId, businessDateUtc, cancellationToken)
+            .ConfigureAwait(false);
+        return SaleNumbers.Format(businessDateUtc, sequence);
+    }
+
     public async Task UpdateAsync(Sale sale, CancellationToken cancellationToken = default)
     {
         var record = await _db.Sales

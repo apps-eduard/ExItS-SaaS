@@ -65,7 +65,8 @@ Remaining Phase 28 residuals:
 - Per-product customer storefront exposure flag / schema migration
 - Personal lifecycle notification expansion
 - Offline customer-order queue
-- Automated CustomerOrder settlement/payment rails (gateway `PaymentAttempt`, automatic Paid, automatic Utang debt/ledger posting)
+- Automated CustomerOrder settlement/payment rails (gateway `PaymentAttempt`, automatic Paid)
+- ~~Automatic Utang debt/ledger posting at submit~~ — **delivered:** Utang posts once at seller `Completed` via canonical Product-Based Utang sale + credit (idempotent; see engineering doc)
 - P28-WP10 E2E / device / browser validation and closeout
 
 Connected Purchase Order payment terms (Cash default; GCash manual/unverified; Utang B2B settlement) remain a **separate** commerce path and must not be merged into Personal `CustomerOrder`.

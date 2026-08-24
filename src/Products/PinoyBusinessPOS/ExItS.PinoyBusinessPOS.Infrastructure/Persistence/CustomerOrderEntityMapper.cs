@@ -71,8 +71,8 @@ internal static class CustomerOrderEntityMapper
                 Enum.Parse<CustomerPartyType>(record.CustomerPartyType, ignoreCase: true),
                 record.CustomerDisplayNameSnapshot,
                 record.CustomerPlatformUserId,
-                record.CustomerBuyerOrganizationId,
-                record.CustomerBuyerPublicOrganizationId),
+            record.CustomerBuyerOrganizationId,
+            record.CustomerBuyerPublicOrganizationId),
             lines,
             record.MerchandiseSubtotal,
             record.DeliveryFee,
@@ -103,7 +103,8 @@ internal static class CustomerOrderEntityMapper
             record.DeliveredBy,
             record.CollectedAtUtc,
             record.CollectedBy,
-            record.UpdatedAtUtc);
+            record.UpdatedAtUtc,
+            record.PlatformBusinessCustomerId);
     }
 
     public static CustomerOrderRecord ToRecord(CustomerOrder order)
@@ -123,6 +124,7 @@ internal static class CustomerOrderEntityMapper
             CustomerPartyType = order.CustomerParty.PartyType.ToString(),
             CustomerDisplayNameSnapshot = order.CustomerParty.DisplayNameSnapshot,
             CustomerPlatformUserId = order.CustomerParty.PlatformUserId,
+            PlatformBusinessCustomerId = order.PlatformBusinessCustomerId,
             CustomerBuyerOrganizationId = order.CustomerParty.BuyerOrganizationId,
             CustomerBuyerPublicOrganizationId = order.CustomerParty.BuyerPublicOrganizationId,
             MerchandiseSubtotal = order.MerchandiseSubtotal,

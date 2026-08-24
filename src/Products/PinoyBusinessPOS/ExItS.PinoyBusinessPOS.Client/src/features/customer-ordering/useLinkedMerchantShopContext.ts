@@ -9,6 +9,7 @@ import {
 export type LinkedMerchantShopContext = {
   organizationDisplayName: string;
   customerDisplayName: string | null;
+  businessCustomerId: string | null;
   statementTo: string | null;
 };
 
@@ -21,6 +22,7 @@ function toContext(merchant: LinkedMerchantDto): LinkedMerchantShopContext {
   return {
     organizationDisplayName: merchant.organizationDisplayName,
     customerDisplayName: merchant.customerDisplayName || null,
+    businessCustomerId: merchant.businessCustomerId || null,
     statementTo,
   };
 }
@@ -56,6 +58,7 @@ export function useLinkedMerchantShopContext(organizationId: string, enabled: bo
       return {
         organizationDisplayName: name || organizationId,
         customerDisplayName: null,
+        businessCustomerId: null,
         statementTo: null,
       };
     },

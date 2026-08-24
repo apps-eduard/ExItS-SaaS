@@ -16,6 +16,7 @@ internal sealed class CustomerOrderRecord
     public string CustomerPartyType { get; set; } = string.Empty;
     public string CustomerDisplayNameSnapshot { get; set; } = string.Empty;
     public Guid? CustomerPlatformUserId { get; set; }
+    public Guid? PlatformBusinessCustomerId { get; set; }
     public Guid? CustomerBuyerOrganizationId { get; set; }
     public string? CustomerBuyerPublicOrganizationId { get; set; }
 

@@ -95,6 +95,8 @@ public sealed class PlaceCustomerOrder
     private readonly ICustomerOrderStockService _stock;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
     private readonly ISellerCustomerOrderingCapability _sellerCapability;
+    private readonly ILinkedCustomerPlatformAuthorization? _linkedCustomerAuth;
+    private readonly IPOSCustomerRepository? _customers;
     private readonly IClock _clock;
 
     public PlaceCustomerOrder(
@@ -104,7 +106,9 @@ public sealed class PlaceCustomerOrder
         ICustomerOrderStockService stock,
         IClock clock,
         ISellerCustomerOrderingCapability? sellerCapability = null,
-        IOrganizationBusinessNotificationPublisher? notifications = null)
+        IOrganizationBusinessNotificationPublisher? notifications = null,
+        ILinkedCustomerPlatformAuthorization? linkedCustomerAuth = null,
+        IPOSCustomerRepository? customers = null)
     {
         _orders = orders;
         _products = products;
@@ -113,6 +117,8 @@ public sealed class PlaceCustomerOrder
         _clock = clock;
         _sellerCapability = sellerCapability ?? new AllowAllSellerCustomerOrderingCapability();
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
+        _linkedCustomerAuth = linkedCustomerAuth;
+        _customers = customers;
     }
 
     public async Task<ApplicationResult<CustomerOrderDto>> ExecuteAsync(
@@ -175,6 +181,23 @@ public sealed class PlaceCustomerOrder
                     request.CustomerBuyerOrganizationId ?? Guid.Empty,
                     request.CustomerBuyerPublicOrganizationId ?? string.Empty,
                     request.CustomerDisplayName);
+
+            Guid? platformBusinessCustomerId = null;
+            if (partyType == CustomerPartyType.Personal)
+            {
+                var linked = await ValidatePersonalLinkedCustomerAsync(
+                        orgId,
+                        sellerOrganizationId,
+                        request,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (!linked.IsSuccess)
+                {
+                    return ApplicationResult<CustomerOrderDto>.Failure(linked.ErrorCode!, linked.ErrorMessage!);
+                }
+
+                platformBusinessCustomerId = linked.Value;
+            }
 
             var branch = await _branches
                 .GetBranchAsync(sellerOrganizationId, request.FulfillmentBranchId, cancellationToken)
@@ -312,7 +335,8 @@ public sealed class PlaceCustomerOrder
                         delivery,
                         request.IdempotencyKey,
                         orderId,
-                        CustomerOrderPaymentMethods.Parse(request.PaymentMethod)),
+                        CustomerOrderPaymentMethods.Parse(request.PaymentMethod),
+                        platformBusinessCustomerId),
                     cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
 
@@ -419,6 +443,59 @@ public sealed class PlaceCustomerOrder
             local.DeliveryFee,
             local.FreeDeliveryApplied);
         return ApplicationResult<CustomerOrderDeliverySnapshot>.Success(snapshot);
+    }
+
+    private async Task<ApplicationResult<Guid>> ValidatePersonalLinkedCustomerAsync(
+        PosOrganizationId orgId,
+        Guid sellerOrganizationId,
+        PlaceCustomerOrderRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (request.PlatformBusinessCustomerId is not Guid platformBusinessCustomerId
+            || platformBusinessCustomerId == Guid.Empty)
+        {
+            return ApplicationResult<Guid>.Failure(
+                ApplicationErrorCodes.CustomerOrderLinkedCustomerRequired,
+                "A linked business customer is required for personal orders.");
+        }
+
+        if (request.CustomerPlatformUserId is not Guid personalUserId || personalUserId == Guid.Empty)
+        {
+            return ApplicationResult<Guid>.Failure(
+                ApplicationErrorCodes.CustomerOrderPartyMismatch,
+                "Customer party must match the authenticated caller.");
+        }
+
+        if (_linkedCustomerAuth is not null)
+        {
+            var platform = await _linkedCustomerAuth
+                .VerifyAsync(sellerOrganizationId, platformBusinessCustomerId, cancellationToken)
+                .ConfigureAwait(false);
+            if (platform.Outcome != LinkedCustomerPlatformAuthorizationOutcome.Authorized
+                || platform.Proof is null
+                || platform.Proof.PersonalUserId != personalUserId
+                || platform.Proof.OrganizationId != sellerOrganizationId)
+            {
+                return ApplicationResult<Guid>.Failure(
+                    ApplicationErrorCodes.LinkedCustomerNotFound,
+                    "Linked customer was not found.");
+            }
+        }
+
+        if (_customers is not null)
+        {
+            var posCustomer = await _customers
+                .FindByPlatformBusinessCustomerIdAsync(orgId, platformBusinessCustomerId, cancellationToken)
+                .ConfigureAwait(false);
+            if (posCustomer is null)
+            {
+                return ApplicationResult<Guid>.Failure(
+                    ApplicationErrorCodes.LinkedCustomerNotFound,
+                    "Linked customer was not found.");
+            }
+        }
+
+        return ApplicationResult<Guid>.Success(platformBusinessCustomerId);
     }
 }
 
@@ -933,6 +1010,7 @@ public sealed class CompleteCustomerOrder
     private readonly ICustomerOrderRepository _orders;
     private readonly ICatalogProductRepository _products;
     private readonly ICustomerOrderStockService _stock;
+    private readonly ICustomerOrderUtangLedgerService _utangLedger;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -941,6 +1019,7 @@ public sealed class CompleteCustomerOrder
         ICustomerOrderRepository orders,
         ICatalogProductRepository products,
         ICustomerOrderStockService stock,
+        ICustomerOrderUtangLedgerService utangLedger,
         IPosUnitOfWork unitOfWork,
         IClock clock,
         IOrganizationBusinessNotificationPublisher? notifications = null)
@@ -948,6 +1027,7 @@ public sealed class CompleteCustomerOrder
         _orders = orders;
         _products = products;
         _stock = stock;
+        _utangLedger = utangLedger;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
@@ -983,6 +1063,9 @@ public sealed class CompleteCustomerOrder
                     var products = await _products.ListByIdsAsync(orgId, productIds, ct).ConfigureAwait(false);
                     var byId = products.ToDictionary(p => p.Id.Value);
                     await _stock.ConsumeOnCompleteAsync(order, byId, actorId, now, ct).ConfigureAwait(false);
+                    await _utangLedger
+                        .PostOnCompleteIfNeededAsync(order, actorId, now, ct)
+                        .ConfigureAwait(false);
                     await _orders.UpdateAsync(order, ct).ConfigureAwait(false);
                     completed = order;
                     return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));

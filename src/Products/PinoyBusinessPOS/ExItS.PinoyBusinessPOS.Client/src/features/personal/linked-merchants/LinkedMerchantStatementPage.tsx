@@ -21,7 +21,9 @@ import { CommerceLoadMore } from "@/features/customer-ordering/personal-commerce
 import { useLinkedMerchantShopContext } from "@/features/customer-ordering/useLinkedMerchantShopContext";
 import {
   formatLinkedCustomerActivityAmount,
+  formatLinkedCustomerActivityLabel,
   formatLinkedCustomerActivityMeta,
+  formatLinkedCustomerActivityReference,
 } from "@/features/personal/linked-merchants/format-linked-customer-activity";
 import { MerchantStatementStatusPanel } from "@/features/personal/linked-merchants/MerchantStatementStatusPanel";
 import { cn } from "@/lib/cn";
@@ -54,7 +56,9 @@ function ActivityRow({
   businessCustomerId: string;
   openReceiptLabel: string;
 }) {
-  const title = item.referenceNumber;
+  const label = formatLinkedCustomerActivityLabel(item);
+  const title = label ?? formatLinkedCustomerActivityReference(item);
+  const subtitle = label ? formatLinkedCustomerActivityReference(item) : null;
   const meta = formatLinkedCustomerActivityMeta(item);
   const amount = formatLinkedCustomerActivityAmount(item);
 
@@ -62,6 +66,7 @@ function ActivityRow({
     <>
       <div className="pc-activity-row__main">
         <span className="pc-activity-row__title">{title}</span>
+        {subtitle ? <span className="pc-activity-row__meta">{subtitle}</span> : null}
         <span className="pc-activity-row__meta">
           {meta}
           {item.sourceSaleId && item.hasDetails ? ` · ${openReceiptLabel}` : ""}

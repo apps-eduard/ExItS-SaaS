@@ -41,7 +41,9 @@ internal sealed class LinkedCustomerRecentActivityQuery : ILinkedCustomerRecentA
                 signed_effect AS "SignedEffect",
                 status AS "Status",
                 recorded_at_utc AS "RecordedAtUtc",
-                source_sale_id AS "SourceSaleId"
+                source_sale_id AS "SourceSaleId",
+                source_sale_number AS "SourceSaleNumber",
+                source_remarks AS "SourceRemarks"
             FROM (
                 SELECT
                     c.id,
@@ -50,8 +52,12 @@ internal sealed class LinkedCustomerRecentActivityQuery : ILinkedCustomerRecentA
                     CASE WHEN c.status = 'Active' THEN c.amount ELSE 0 END AS signed_effect,
                     c.status,
                     c.created_at_utc AS recorded_at_utc,
-                    c.source_sale_id
+                    c.source_sale_id,
+                    s.sale_number AS source_sale_number,
+                    c.remarks AS source_remarks
                 FROM pos.credit_entries c
+                LEFT JOIN pos.sales s
+                    ON s.id = c.source_sale_id AND s.organization_id = c.organization_id
                 WHERE c.organization_id = @org AND c.customer_id = @customer
                   AND (@not_before IS NULL OR c.created_at_utc >= @not_before)
                   AND (@before IS NULL OR c.created_at_utc < @before)
@@ -63,7 +69,9 @@ internal sealed class LinkedCustomerRecentActivityQuery : ILinkedCustomerRecentA
                     CASE WHEN r.status = 'Active' THEN -r.amount ELSE 0 END AS signed_effect,
                     r.status,
                     r.recorded_at_utc,
-                    NULL::uuid AS source_sale_id
+                    NULL::uuid AS source_sale_id,
+                    NULL::text AS source_sale_number,
+                    NULL::text AS source_remarks
                 FROM pos.repayments r
                 WHERE r.organization_id = @org AND r.customer_id = @customer
                   AND (@not_before IS NULL OR r.recorded_at_utc >= @not_before)
@@ -76,7 +84,9 @@ internal sealed class LinkedCustomerRecentActivityQuery : ILinkedCustomerRecentA
                     0::numeric AS signed_effect,
                     s.status,
                     s.recorded_at_utc,
-                    s.id AS source_sale_id
+                    s.id AS source_sale_id,
+                    s.sale_number AS source_sale_number,
+                    NULL::text AS source_remarks
                 FROM pos.sales s
                 WHERE s.organization_id = @org
                   AND s.customer_id = @customer
@@ -136,7 +146,9 @@ internal sealed class LinkedCustomerRecentActivityQuery : ILinkedCustomerRecentA
                 signed_effect AS "SignedEffect",
                 status AS "Status",
                 recorded_at_utc AS "RecordedAtUtc",
-                source_sale_id AS "SourceSaleId"
+                source_sale_id AS "SourceSaleId",
+                source_sale_number AS "SourceSaleNumber",
+                source_remarks AS "SourceRemarks"
             FROM (
                 SELECT
                     c.id,
@@ -145,8 +157,12 @@ internal sealed class LinkedCustomerRecentActivityQuery : ILinkedCustomerRecentA
                     c.amount AS signed_effect,
                     c.status,
                     c.created_at_utc AS recorded_at_utc,
-                    c.source_sale_id
+                    c.source_sale_id,
+                    s.sale_number AS source_sale_number,
+                    c.remarks AS source_remarks
                 FROM pos.credit_entries c
+                LEFT JOIN pos.sales s
+                    ON s.id = c.source_sale_id AND s.organization_id = c.organization_id
                 WHERE c.organization_id = @org AND c.customer_id = @customer AND c.status = 'Active'
                 UNION ALL
                 SELECT
@@ -156,7 +172,9 @@ internal sealed class LinkedCustomerRecentActivityQuery : ILinkedCustomerRecentA
                     -r.amount AS signed_effect,
                     r.status,
                     r.recorded_at_utc,
-                    NULL::uuid AS source_sale_id
+                    NULL::uuid AS source_sale_id,
+                    NULL::text AS source_sale_number,
+                    NULL::text AS source_remarks
                 FROM pos.repayments r
                 WHERE r.organization_id = @org AND r.customer_id = @customer AND r.status = 'Active'
             ) ledger
@@ -187,7 +205,9 @@ internal sealed class LinkedCustomerRecentActivityQuery : ILinkedCustomerRecentA
                 r.SignedEffect,
                 r.Status,
                 r.RecordedAtUtc,
-                r.SourceSaleId))
+                r.SourceSaleId,
+                r.SourceSaleNumber,
+                r.SourceRemarks))
             .ToList();
 
     private sealed class ActivitySqlRow
@@ -199,5 +219,7 @@ internal sealed class LinkedCustomerRecentActivityQuery : ILinkedCustomerRecentA
         public string Status { get; set; } = string.Empty;
         public DateTimeOffset RecordedAtUtc { get; set; }
         public Guid? SourceSaleId { get; set; }
+        public string? SourceSaleNumber { get; set; }
+        public string? SourceRemarks { get; set; }
     }
 }

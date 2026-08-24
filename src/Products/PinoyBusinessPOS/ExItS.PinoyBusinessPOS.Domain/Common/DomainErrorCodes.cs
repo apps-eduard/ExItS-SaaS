@@ -76,6 +76,7 @@ public static class DomainErrorCodes
     public const string InvalidSaleActor = "pos.sale.actor.invalid";
     public const string SaleRequiresAtLeastOneLine = "pos.sale.lines.required";
     public const string SaleTotalTooLarge = "pos.sale.total.too_large";
+    public const string SaleTotalMismatch = "pos.sale.total.mismatch";
     public const string InvalidSaleAmountTendered = "pos.sale.amount_tendered.invalid";
     public const string SaleAmountTenderedBelowTotal = "pos.sale.amount_tendered.below_total";
     public const string InvalidSaleGCashReference = "pos.sale.gcash_reference.invalid";

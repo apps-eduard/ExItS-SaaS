@@ -1348,6 +1348,7 @@ public sealed class PosDbContext : DbContext
                 .HasMaxLength(CustomerOrderParty.DisplayNameMaxLength)
                 .IsRequired();
             entity.Property(e => e.CustomerPlatformUserId).HasColumnName("customer_platform_user_id");
+            entity.Property(e => e.PlatformBusinessCustomerId).HasColumnName("platform_business_customer_id");
             entity.Property(e => e.CustomerBuyerOrganizationId).HasColumnName("customer_buyer_organization_id");
             entity.Property(e => e.CustomerBuyerPublicOrganizationId)
                 .HasColumnName("customer_buyer_public_organization_id")

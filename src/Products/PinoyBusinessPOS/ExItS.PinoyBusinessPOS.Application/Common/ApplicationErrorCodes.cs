@@ -168,6 +168,7 @@ public static class ApplicationErrorCodes
     public const string CustomerOrderPartyMismatch = "pos.customer_order.party.mismatch";
     public const string CustomerOrderDeliveryUnavailable = "pos.customer_order.delivery.unavailable";
     public const string CustomerOrderOrderingUnavailable = "pos.customer_order.ordering.unavailable";
+    public const string CustomerOrderLinkedCustomerRequired = "pos.customer_order.linked_customer.required";
 }
 
 public sealed class PersistenceConflictException : Exception

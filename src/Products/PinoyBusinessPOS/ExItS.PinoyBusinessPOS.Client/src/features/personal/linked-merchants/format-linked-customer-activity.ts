@@ -1,20 +1,54 @@
 import type { LinkedCustomerActivityItem } from "@/api/pos/pos-linked-customers-client";
 
-export function formatLinkedCustomerActivityTitle(item: LinkedCustomerActivityItem): string {
-  if (item.chargeAmount != null) {
-    return `${item.referenceNumber} · +${item.chargeAmount.toFixed(2)}`;
+const customerOrderNumberPattern = /^SO-\d+$/i;
+
+export function formatLinkedCustomerActivityLabel(item: LinkedCustomerActivityItem): string | null {
+  if (
+    item.type === "UtangCharge"
+    && customerOrderNumberPattern.test(item.referenceNumber.trim())
+  ) {
+    return "Online purchase";
   }
-  if (item.paymentAmount != null) {
-    return `${item.referenceNumber} · −${item.paymentAmount.toFixed(2)}`;
-  }
-  if (item.adjustmentAmount != null) {
-    return `${item.referenceNumber} · ${item.adjustmentAmount.toFixed(2)}`;
+  return null;
+}
+
+export function formatLinkedCustomerActivityReference(item: LinkedCustomerActivityItem): string {
+  if (
+    item.type === "UtangCharge"
+    && customerOrderNumberPattern.test(item.referenceNumber.trim())
+  ) {
+    return `Order ${item.referenceNumber.trim().toUpperCase()}`;
   }
   return item.referenceNumber;
 }
 
+export function formatLinkedCustomerActivityTitle(item: LinkedCustomerActivityItem): string {
+  const label = formatLinkedCustomerActivityLabel(item);
+  const reference = formatLinkedCustomerActivityReference(item);
+  if (label) {
+    if (item.chargeAmount != null) {
+      return `${label} · ${reference} · +${item.chargeAmount.toFixed(2)}`;
+    }
+    return `${label} · ${reference}`;
+  }
+  if (item.chargeAmount != null) {
+    return `${reference} · +${item.chargeAmount.toFixed(2)}`;
+  }
+  if (item.paymentAmount != null) {
+    return `${reference} · −${item.paymentAmount.toFixed(2)}`;
+  }
+  if (item.adjustmentAmount != null) {
+    return `${reference} · ${item.adjustmentAmount.toFixed(2)}`;
+  }
+  return reference;
+}
+
 export function formatLinkedCustomerActivityMeta(item: LinkedCustomerActivityItem): string {
-  return `${new Date(item.occurredAtUtc).toLocaleString()} · ${item.type}`;
+  const typeLabel =
+    item.type === "UtangCharge" && formatLinkedCustomerActivityLabel(item)
+      ? "Open credit"
+      : item.type;
+  return `${new Date(item.occurredAtUtc).toLocaleString()} · ${typeLabel}`;
 }
 
 export type LinkedCustomerActivityAmountKind = "charge" | "payment" | "neutral";
