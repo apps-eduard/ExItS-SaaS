@@ -255,6 +255,12 @@ public static class PlatformAuditActions
     public const string PersonalReminderDelivered = "platform.personal.reminder.delivered";
     public const string PersonalReminderCancelled = "platform.personal.reminder.cancelled";
     public const string PersonalNotificationDelivered = "platform.personal.notification.delivered";
+    public const string PersonalTodoCreated = "platform.personal.todo.created";
+    public const string PersonalTodoUpdated = "platform.personal.todo.updated";
+    public const string PersonalTodoCompleted = "platform.personal.todo.completed";
+    public const string PersonalTodoReopened = "platform.personal.todo.reopened";
+    public const string PersonalTodoCancelled = "platform.personal.todo.cancelled";
+    public const string PersonalTodoReminderDelivered = "platform.personal.todo.reminder.delivered";
 
     public const string BusinessUpgradeStarted = "platform.business_upgrade.started";
     public const string BusinessUpgradeCompleted = "platform.business_upgrade.completed";

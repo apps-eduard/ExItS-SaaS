@@ -1241,3 +1241,128 @@ internal sealed class PersonalRewardClaimRepository(PlatformDbContext db) : IPer
             ClaimedAtUtc = claim.ClaimedAtUtc
         };
 }
+
+internal sealed class PersonalTodoRepository(PlatformDbContext db) : IPersonalTodoRepository
+{
+    public async Task<PersonalTodo?> GetByIdAsync(PersonalTodoId id, CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalTodos.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public async Task<IReadOnlyList<PersonalTodo>> ListByOwnerAsync(
+        PlatformUserId ownerUserIdentityId,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await db.PersonalTodos.AsNoTracking()
+            .Where(x => x.OwnerUserIdentityId == ownerUserIdentityId.Value)
+            .OrderByDescending(x => x.DueAtUtc.HasValue)
+            .ThenBy(x => x.DueAtUtc)
+            .ThenByDescending(x => x.UpdatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(ToDomain).ToList();
+    }
+
+    public async Task<IReadOnlyList<PersonalTodo>> ListDueRemindersAsync(
+        DateTimeOffset asOfUtc,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var limit = Math.Clamp(take, 1, 200);
+        var open = PersonalTodoStatus.Open.ToString();
+        var records = await db.PersonalTodos.AsNoTracking()
+            .Where(x =>
+                x.Status == open
+                && x.ReminderAtUtc != null
+                && x.ReminderAtUtc <= asOfUtc
+                && x.ReminderNotifiedAtUtc == null)
+            .OrderBy(x => x.ReminderAtUtc)
+            .Take(limit)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(ToDomain).ToList();
+    }
+
+    public Task AddAsync(PersonalTodo todo, CancellationToken cancellationToken = default)
+    {
+        db.PersonalTodos.Add(ToRecord(todo));
+        return Task.CompletedTask;
+    }
+
+    public async Task UpdateAsync(PersonalTodo todo, CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalTodos
+            .FirstOrDefaultAsync(x => x.Id == todo.Id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (record is null)
+        {
+            return;
+        }
+
+        record.Title = todo.Title;
+        record.Notes = todo.Notes;
+        record.DueAtUtc = todo.DueAtUtc;
+        record.ReminderAtUtc = todo.ReminderAtUtc;
+        record.ReminderNotifiedAtUtc = todo.ReminderNotifiedAtUtc;
+        record.Priority = todo.Priority.ToString();
+        record.Status = todo.Status.ToString();
+        record.RelatedEntityType = todo.RelatedEntityType is PersonalTodoRelatedEntityType.None
+            ? null
+            : todo.RelatedEntityType.ToString();
+        record.RelatedEntityId = todo.RelatedEntityId;
+        record.UpdatedAtUtc = todo.UpdatedAtUtc;
+        record.CompletedAtUtc = todo.CompletedAtUtc;
+        record.Version = todo.Version;
+    }
+
+    private static PersonalTodo ToDomain(PersonalTodoRecord record)
+    {
+        var relatedType = PersonalTodoRelatedEntityType.None;
+        if (!string.IsNullOrWhiteSpace(record.RelatedEntityType))
+        {
+            relatedType = Enum.Parse<PersonalTodoRelatedEntityType>(record.RelatedEntityType, ignoreCase: true);
+        }
+
+        return PersonalTodo.Rehydrate(
+            PersonalTodoId.From(record.Id),
+            PlatformUserId.From(record.OwnerUserIdentityId),
+            record.Title,
+            record.Notes,
+            record.DueAtUtc,
+            record.ReminderAtUtc,
+            Enum.Parse<PersonalTodoPriority>(record.Priority, ignoreCase: true),
+            Enum.Parse<PersonalTodoStatus>(record.Status, ignoreCase: true),
+            relatedType,
+            record.RelatedEntityId,
+            record.CreatedAtUtc,
+            record.UpdatedAtUtc,
+            record.CompletedAtUtc,
+            record.Version,
+            record.ReminderNotifiedAtUtc);
+    }
+
+    private static PersonalTodoRecord ToRecord(PersonalTodo todo) =>
+        new()
+        {
+            Id = todo.Id.Value,
+            OwnerUserIdentityId = todo.OwnerUserIdentityId.Value,
+            Title = todo.Title,
+            Notes = todo.Notes,
+            DueAtUtc = todo.DueAtUtc,
+            ReminderAtUtc = todo.ReminderAtUtc,
+            ReminderNotifiedAtUtc = todo.ReminderNotifiedAtUtc,
+            Priority = todo.Priority.ToString(),
+            Status = todo.Status.ToString(),
+            RelatedEntityType = todo.RelatedEntityType is PersonalTodoRelatedEntityType.None
+                ? null
+                : todo.RelatedEntityType.ToString(),
+            RelatedEntityId = todo.RelatedEntityId,
+            CreatedAtUtc = todo.CreatedAtUtc,
+            UpdatedAtUtc = todo.UpdatedAtUtc,
+            CompletedAtUtc = todo.CompletedAtUtc,
+            Version = todo.Version
+        };
+}

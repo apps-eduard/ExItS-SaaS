@@ -3,6 +3,7 @@ using System;
 using ExItS.Platform.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ExItS.Platform.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(PlatformDbContext))]
-    partial class PlatformDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260821163128_AddPersonalTodos")]
+    partial class AddPersonalTodos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2621,6 +2624,10 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("last_name");
 
+                    b.Property<Guid?>("LinkedPersonalUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("linked_personal_user_id");
+
                     b.Property<string>("NormalizedContactEmail")
                         .HasMaxLength(320)
                         .HasColumnType("character varying(320)")
@@ -2689,6 +2696,9 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                     b.HasIndex("HomeOrganizationId")
                         .HasDatabaseName("ix_platform_users_home_organization_id");
 
+                    b.HasIndex("LinkedPersonalUserId")
+                        .HasDatabaseName("ix_platform_users_linked_personal_user_id");
+
                     b.HasIndex("NormalizedContactEmail")
                         .HasDatabaseName("ix_platform_users_normalized_contact_email");
 
@@ -2710,7 +2720,10 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_platform_users_staff_number")
                         .HasFilter("staff_number IS NOT NULL");
 
-                    b.ToTable("platform_users", "platform");
+                    b.ToTable("platform_users", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_platform_users_linked_personal_staff_only", "linked_personal_user_id IS NULL OR (home_organization_id IS NOT NULL AND linked_personal_user_id <> id)");
+                        });
                 });
 
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.OrganizationComplianceProfileRecord", b =>
@@ -5104,10 +5117,6 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("reminder_at_utc");
 
-                    b.Property<DateTimeOffset?>("ReminderNotifiedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("reminder_notified_at_utc");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(16)
@@ -5145,10 +5154,6 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("OwnerUserIdentityId", "Status")
                         .HasDatabaseName("ix_personal_todos_owner_status");
-
-                    b.HasIndex("Status", "ReminderAtUtc")
-                        .HasDatabaseName("ix_personal_todos_status_reminder")
-                        .HasFilter("reminder_at_utc IS NOT NULL AND reminder_notified_at_utc IS NULL");
 
                     b.ToTable("personal_todos", "platform");
                 });
@@ -5703,152 +5708,6 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                     b.ToTable("privacy_compliance_processing_systems", "platform");
                 });
 
-            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Settings.PlatformSettingsRecord", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AdminPublicBaseUrl")
-                        .HasMaxLength(2048)
-                        .HasColumnType("character varying(2048)")
-                        .HasColumnName("admin_public_base_url");
-
-                    b.Property<string>("BrandingAccentColor")
-                        .HasMaxLength(7)
-                        .HasColumnType("character varying(7)")
-                        .HasColumnName("branding_accent_color");
-
-                    b.Property<string>("BrandingLogoUrl")
-                        .HasMaxLength(2048)
-                        .HasColumnType("character varying(2048)")
-                        .HasColumnName("branding_logo_url");
-
-                    b.Property<string>("BrandingPrimaryColor")
-                        .HasMaxLength(7)
-                        .HasColumnType("character varying(7)")
-                        .HasColumnName("branding_primary_color");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at_utc");
-
-                    b.Property<string>("DateFormat")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("date_format");
-
-                    b.Property<string>("DefaultCountryCode")
-                        .HasMaxLength(2)
-                        .HasColumnType("character varying(2)")
-                        .HasColumnName("default_country_code");
-
-                    b.Property<string>("DefaultCurrencyCode")
-                        .HasMaxLength(3)
-                        .HasColumnType("character varying(3)")
-                        .HasColumnName("default_currency_code");
-
-                    b.Property<string>("DefaultLocale")
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("default_locale");
-
-                    b.Property<string>("DefaultTimeZoneId")
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)")
-                        .HasColumnName("default_time_zone_id");
-
-                    b.Property<string>("EmailProviderMode")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("email_provider_mode");
-
-                    b.Property<string>("FromAddress")
-                        .HasMaxLength(320)
-                        .HasColumnType("character varying(320)")
-                        .HasColumnName("from_address");
-
-                    b.Property<string>("FromDisplayName")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("from_display_name");
-
-                    b.Property<string>("PlatformDisplayName")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("platform_display_name");
-
-                    b.Property<string>("ProtectedSmtpPassword")
-                        .HasMaxLength(4096)
-                        .HasColumnType("character varying(4096)")
-                        .HasColumnName("protected_smtp_password");
-
-                    b.Property<string>("SmtpHost")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("smtp_host");
-
-                    b.Property<bool>("SmtpPasswordConfigured")
-                        .HasColumnType("boolean")
-                        .HasColumnName("smtp_password_configured");
-
-                    b.Property<int?>("SmtpPort")
-                        .HasColumnType("integer")
-                        .HasColumnName("smtp_port");
-
-                    b.Property<string>("SmtpSecurityMode")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("smtp_security_mode");
-
-                    b.Property<string>("SmtpUsername")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("smtp_username");
-
-                    b.Property<string>("SupportEmail")
-                        .HasMaxLength(320)
-                        .HasColumnType("character varying(320)")
-                        .HasColumnName("support_email");
-
-                    b.Property<string>("TimeFormat")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("time_format");
-
-                    b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at_utc");
-
-                    b.Property<string>("UpdatedByActorId")
-                        .HasMaxLength(320)
-                        .HasColumnType("character varying(320)")
-                        .HasColumnName("updated_by_actor_id");
-
-                    b.Property<int>("Version")
-                        .IsConcurrencyToken()
-                        .HasColumnType("integer")
-                        .HasColumnName("version");
-
-                    b.Property<uint>("Xmin")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid")
-                        .HasColumnName("xmin");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("platform_settings", "platform", t =>
-                        {
-                            t.HasCheckConstraint("ck_platform_settings_singleton", "id = 1");
-                        });
-                });
-
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Subscriptions.SubscriptionRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -6389,6 +6248,15 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ExItS.Platform.Infrastructure.Persistence.Identity.PlatformUserCredentialRecord", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Identity.PlatformUserRecord", b =>
+                {
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Identity.PlatformUserRecord", null)
+                        .WithMany()
+                        .HasForeignKey("LinkedPersonalUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_platform_users_linked_personal_user");
                 });
 
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.OrganizationComplianceProfileRecord", b =>

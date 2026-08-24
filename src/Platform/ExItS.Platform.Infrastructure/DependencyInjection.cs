@@ -141,6 +141,7 @@ public static class DependencyInjection
         services.AddScoped<IPersonalRewardBalanceRepository, PersonalRewardBalanceRepository>();
         services.AddScoped<IPersonalRewardTransactionRepository, PersonalRewardTransactionRepository>();
         services.AddScoped<IPersonalRewardClaimRepository, PersonalRewardClaimRepository>();
+        services.AddScoped<IPersonalTodoRepository, PersonalTodoRepository>();
         services.AddSingleton<IRewardedAdClaimVerifier, NullRewardedAdClaimVerifier>();
         services.AddScoped<IPersonalAdEligibility, DefaultPersonalAdEligibility>();
         services.Configure<PersonalRewardClaimOptions>(config.GetSection(PersonalRewardClaimOptions.SectionName));

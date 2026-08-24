@@ -43,7 +43,9 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.ProductLocalRoleMissing
             or ApplicationErrorCodes.BranchAccessDenied
             or ApplicationErrorCodes.PersonalUtangUnauthorized
+            or ApplicationErrorCodes.PersonalTodoUnauthorized
             or DomainErrorCodes.PersonalReminderUnauthorized
+            or DomainErrorCodes.PersonalTodoUnauthorized
             or DomainErrorCodes.CustomerToStaffConversionDenied
             or DomainErrorCodes.CustomerLinkMustNotCreateStaff
             or DomainErrorCodes.CustomerLinkPersonalIdentityRequired
@@ -85,6 +87,7 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.PersonalUtangInvitationNotFound
             or ApplicationErrorCodes.PersonalReminderNotFound
             or ApplicationErrorCodes.PersonalNotificationNotFound
+            or ApplicationErrorCodes.PersonalTodoNotFound
             or ApplicationErrorCodes.BusinessCustomerNotFound
             or ApplicationErrorCodes.CreditCustomerNotFound
             or ApplicationErrorCodes.CustomerLinkRequestNotFound

@@ -616,6 +616,20 @@ internal sealed class InMemorySaaSPaymentRepository : ISaaSPaymentRepository
         return Task.FromResult(found);
     }
 
+    public Task<IReadOnlyList<SaaSPayment>> FindByNormalizedReferenceAsync(
+        string normalizedReference,
+        SaaSPaymentMethod? method,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _items.Values.Where(p => p.NormalizedReference == normalizedReference);
+        if (method is not null)
+        {
+            query = query.Where(p => p.Method == method.Value);
+        }
+
+        return Task.FromResult<IReadOnlyList<SaaSPayment>>(query.ToList());
+    }
+
     public Task<(IReadOnlyList<SaaSPayment> Items, int TotalCount)> ListByOrganizationAsync(
         PlatformOrganizationId orgId,
         SaaSPaymentStatus? status,

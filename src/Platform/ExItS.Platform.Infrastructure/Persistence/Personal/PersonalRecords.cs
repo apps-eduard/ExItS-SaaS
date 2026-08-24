@@ -221,3 +221,23 @@ internal sealed class PersonalRewardClaimRecord
     public Guid RewardTransactionId { get; set; }
     public DateTimeOffset ClaimedAtUtc { get; set; }
 }
+
+internal sealed class PersonalTodoRecord
+{
+    public Guid Id { get; set; }
+    public Guid OwnerUserIdentityId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string? Notes { get; set; }
+    public DateTimeOffset? DueAtUtc { get; set; }
+    public DateTimeOffset? ReminderAtUtc { get; set; }
+    public DateTimeOffset? ReminderNotifiedAtUtc { get; set; }
+    public string Priority { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public string? RelatedEntityType { get; set; }
+    public Guid? RelatedEntityId { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+    public DateTimeOffset? CompletedAtUtc { get; set; }
+    public int Version { get; set; }
+    public uint Xmin { get; set; }
+}
