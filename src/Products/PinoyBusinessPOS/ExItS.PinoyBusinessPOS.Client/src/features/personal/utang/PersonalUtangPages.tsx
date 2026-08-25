@@ -129,6 +129,23 @@ function contactLooksLinked(
   return Boolean(contact?.linkedUserIdentityId);
 }
 
+function isPersonalContactLinked(
+  contact: Pick<PersonalContactDto, "linkedUserIdentityId" | "publicUserId">,
+): boolean {
+  return Boolean(contact.linkedUserIdentityId || contact.publicUserId?.trim());
+}
+
+function sortPeopleContacts<T extends Pick<PersonalContactDto, "displayName" | "linkedUserIdentityId" | "publicUserId">>(
+  contacts: ReadonlyArray<T>,
+): T[] {
+  return [...contacts].sort((a, b) => {
+    const aLinked = isPersonalContactLinked(a) ? 0 : 1;
+    const bLinked = isPersonalContactLinked(b) ? 0 : 1;
+    if (aLinked !== bLinked) return aLinked - bLinked;
+    return a.displayName.localeCompare(b.displayName, undefined, { sensitivity: "base" });
+  });
+}
+
 function DueChip({ dueDateUtc }: { dueDateUtc: string | null | undefined }) {
   const { t } = useI18n();
   const due = formatDueLabel(dueDateUtc);
@@ -454,6 +471,13 @@ export function PersonalContactsPage() {
     },
   });
 
+  const contacts: CachedPersonalContact[] | PersonalContactDto[] = usingCache
+    ? cachedContacts
+    : (contactsQuery.data ?? []);
+  const orderedContacts = sortPeopleContacts(contacts);
+  const linkedPeopleCount = orderedContacts.filter((c) => isPersonalContactLinked(c)).length;
+  const unlinkedPeopleCount = orderedContacts.length - linkedPeopleCount;
+
   if (online && contactsQuery.isPending) return <LoadingSkeleton />;
   if (online && contactsQuery.isError && cachedContacts.length === 0) {
     return (
@@ -472,10 +496,6 @@ export function PersonalContactsPage() {
       </div>
     );
   }
-
-  const contacts: CachedPersonalContact[] | PersonalContactDto[] = usingCache
-    ? cachedContacts
-    : (contactsQuery.data ?? []);
 
   const isEditing = editingId != null;
   const editingContact = isEditing
@@ -779,44 +799,63 @@ export function PersonalContactsPage() {
           className="catalog-form-section exits-animate-panel personal-section gap-2"
           aria-label={t("personal.utang.people")}
         >
-          <h2 className="catalog-form-section__title text-muted">{t("personal.utang.people")}</h2>
+          <div className="flex flex-col gap-1">
+            <h2 className="catalog-form-section__title text-muted">{t("personal.utang.people")}</h2>
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+              data-testid="utang-people-summary"
+            >
+              {linkedPeopleCount} {t("personal.utang.peopleLinkedLabel")}
+              {" · "}
+              {unlinkedPeopleCount} {t("personal.utang.peopleUnlinkedLabel")}
+            </p>
+          </div>
           <ul className="exits-list m-0 grid list-none gap-2 p-0">
-            {contacts.map((contact) => {
+            {orderedContacts.map((contact) => {
               const isLocal = rowOrigin(contact) === "Local";
               const isActive = editingId === contact.id;
-              const isLinked = Boolean(contact.linkedUserIdentityId || contact.publicUserId);
+              const isLinked = isPersonalContactLinked(contact);
               const exitsIdLabel = contact.publicUserId?.trim() || null;
+
+              const body = isLinked && exitsIdLabel ? (
+                <>
+                  <p className="exits-list__name m-0 truncate font-semibold">{contact.displayName}</p>
+                  <p className="utang-contact-card__exits-id" data-testid={`utang-contact-linked-row-${contact.id}`}>
+                    <Link2 className="size-3.5 shrink-0" aria-hidden />
+                    <span className="truncate">{exitsIdLabel}</span>
+                    <span className="utang-contact-card__linked-inline shrink-0">
+                      {t("personal.utang.linkedBadge")}
+                    </span>
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="exits-list__name m-0 truncate font-semibold">{contact.displayName}</p>
+                  <p className="m-0 truncate text-[length:var(--exits-text-sm)] text-muted">
+                    {[contact.phone, contact.email].filter(Boolean).join(" · ") ||
+                      t("personal.utang.unlinkedContact")}
+                  </p>
+                </>
+              );
 
               if (isLocal) {
                 return (
                   <li key={contact.id}>
                     <div
-                      className="exits-list__card utang-contact-card"
+                      className={cn(
+                        "exits-list__card utang-contact-card",
+                        isLinked && "utang-contact-card--linked",
+                      )}
                       data-testid={`utang-contact-${contact.id}`}
                     >
-                      <span className="utang-contact-card__avatar" aria-hidden>
-                        {isLinked ? <UserRoundCheck className="size-5" /> : <User className="size-5" />}
-                      </span>
-                      <div className="utang-contact-card__body min-w-0 flex-1">
-                        {isLinked && exitsIdLabel ? (
-                          <>
-                            <p className="m-0 flex min-w-0 items-center gap-1.5 text-[length:var(--exits-text-sm)] font-semibold text-[var(--exits-primary)]">
-                              <Link2 className="size-3.5 shrink-0" aria-hidden />
-                              <span className="truncate">{exitsIdLabel}</span>
-                            </p>
-                            <p className="exits-list__name m-0 truncate font-medium">
-                              {contact.displayName}
-                            </p>
-                          </>
-                        ) : (
-                          <>
-                            <p className="exits-list__name m-0 font-semibold">{contact.displayName}</p>
-                            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                              {t("personal.utang.unlinkedContact")}
-                            </p>
-                          </>
-                        )}
-                        <WaitingChip origin="Local" />
+                      <div className="utang-contact-card__main">
+                        <span className="utang-contact-card__avatar" aria-hidden>
+                          {isLinked ? <UserRoundCheck className="size-5" /> : <User className="size-5" />}
+                        </span>
+                        <div className="utang-contact-card__body">
+                          {body}
+                          <WaitingChip origin="Local" />
+                        </div>
                       </div>
                     </div>
                   </li>
@@ -828,17 +867,18 @@ export function PersonalContactsPage() {
                   <div
                     className={cn(
                       "exits-list__card utang-contact-card min-h-11 w-full",
+                      isLinked && "utang-contact-card--linked",
                       isActive && "exits-list__card--editing",
                     )}
                     data-testid={`utang-contact-${contact.id}`}
                   >
                     <button
                       type="button"
-                      className="utang-contact-card__main flex min-w-0 flex-1 items-center gap-2 border-0 bg-transparent p-0 text-left"
+                      className="utang-contact-card__main border-0 bg-transparent p-0 text-left"
                       aria-pressed={isActive}
                       aria-label={
                         isLinked && exitsIdLabel
-                          ? `${t("personal.utang.editPerson")}: ${exitsIdLabel}, ${contact.displayName}`
+                          ? `${t("personal.utang.editPerson")}: ${contact.displayName}, ${exitsIdLabel}`
                           : `${t("personal.utang.editPerson")}: ${contact.displayName}`
                       }
                       disabled={saveMutation.isPending}
@@ -847,31 +887,8 @@ export function PersonalContactsPage() {
                       <span className="utang-contact-card__avatar" aria-hidden>
                         {isLinked ? <UserRoundCheck className="size-5" /> : <User className="size-5" />}
                       </span>
-                      <div className="utang-contact-card__body min-w-0 flex-1 text-left">
-                        {isLinked && exitsIdLabel ? (
-                          <>
-                            <p className="m-0 flex min-w-0 items-center gap-1.5 text-[length:var(--exits-text-sm)] font-semibold text-[var(--exits-primary)]">
-                              <Link2 className="size-3.5 shrink-0" aria-hidden />
-                              <span className="truncate">{exitsIdLabel}</span>
-                            </p>
-                            <p className="exits-list__name m-0 truncate font-medium">
-                              {contact.displayName}
-                            </p>
-                            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                              {t("personal.utang.linkedBadge")}
-                            </p>
-                          </>
-                        ) : (
-                          <>
-                            <p className="exits-list__name m-0 truncate font-semibold">
-                              {contact.displayName}
-                            </p>
-                            <p className="m-0 truncate text-[length:var(--exits-text-sm)] text-muted">
-                              {[contact.phone, contact.email].filter(Boolean).join(" · ") ||
-                                t("personal.utang.unlinkedContact")}
-                            </p>
-                          </>
-                        )}
+                      <div className="utang-contact-card__body text-left">
+                        {body}
                         <WaitingChip origin={rowOrigin(contact)} />
                       </div>
                       <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
@@ -880,7 +897,7 @@ export function PersonalContactsPage() {
                       <Button
                         type="button"
                         variant="outline"
-                        className="min-h-11 w-full"
+                        className="utang-contact-card__link-action min-h-11"
                         data-testid={`utang-contact-link-${contact.id}`}
                         disabled={saveMutation.isPending || exitsAddMutation.isPending}
                         onClick={() => startLinkExisting(contact)}

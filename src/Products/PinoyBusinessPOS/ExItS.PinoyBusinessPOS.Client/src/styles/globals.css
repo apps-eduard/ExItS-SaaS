@@ -3025,9 +3025,23 @@ body {
 .utang-contact-card {
   display: flex;
   min-width: 0;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  text-align: left;
+}
+
+.utang-contact-card--linked {
+  border-color: color-mix(in srgb, var(--exits-primary) 35%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary) 6%, var(--exits-surface));
+}
+
+.utang-contact-card__main {
+  display: flex;
+  min-width: 0;
+  width: 100%;
   align-items: center;
   gap: 0.75rem;
-  text-align: left;
 }
 
 .utang-contact-card__avatar {
@@ -3045,8 +3059,33 @@ body {
 .utang-contact-card__body {
   display: flex;
   min-width: 0;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 0.15rem;
+}
+
+.utang-contact-card__exits-id {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.35rem;
+  margin: 0;
+  color: var(--exits-primary);
+  font-size: var(--exits-text-sm);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-align: left;
+}
+
+.utang-contact-card__linked-inline {
+  color: var(--exits-text-muted, var(--exits-muted, #6b7280));
+  font-size: var(--exits-text-xs);
+  font-weight: 500;
+}
+
+.utang-contact-card__link-action {
+  width: 100%;
 }
 
 .linked-merchant-card__heading {

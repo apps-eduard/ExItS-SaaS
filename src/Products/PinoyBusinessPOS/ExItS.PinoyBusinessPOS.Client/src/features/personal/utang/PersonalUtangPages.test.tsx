@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import { PersonalUtangHubPage } from "@/features/personal/PersonalHubPages";
 import {
+  PersonalContactsPage,
   PersonalLentPage,
   PersonalRelationshipDetailPage,
 } from "@/features/personal/utang/PersonalUtangPages";
@@ -254,6 +255,7 @@ function renderPath(path: string) {
         <Routes>
           <Route path="/personal/utang" element={<PersonalUtangHubPage />} />
           <Route path="/personal/utang/lent" element={<PersonalLentPage />} />
+          <Route path="/personal/utang/people" element={<PersonalContactsPage />} />
           <Route
             path="/personal/utang/relationships/:relationshipId"
             element={<PersonalRelationshipDetailPage />}
@@ -277,6 +279,34 @@ describe("Personal Utang shared-ledger UI", () => {
     expect(screen.getByTestId("utang-open-lent")).toBeInTheDocument();
     expect(screen.getByTestId("utang-open-owe")).toBeInTheDocument();
     expect(screen.getByTestId("utang-open-people")).toBeInTheDocument();
+  });
+
+  it("lists linked people first with ExItS ID under the name, and keeps unlinked names visible", async () => {
+    renderPath("/personal/utang/people");
+    expect(await screen.findByTestId("utang-people-summary")).toHaveTextContent(
+      "1 linked with ExItS ID · 1 without ExItS ID",
+    );
+
+    const linked = await screen.findByTestId(`utang-contact-${linkedContactId}`);
+    expect(linked).toHaveTextContent("Linked Ben");
+    expect(linked).toHaveTextContent("EX-1111-2222");
+    const linkedRow = screen.getByTestId(`utang-contact-linked-row-${linkedContactId}`);
+    expect(linkedRow).toHaveTextContent("EX-1111-2222");
+    expect(linkedRow).toHaveTextContent("Linked");
+    expect(within(linked).getByText("Linked Ben").compareDocumentPosition(linkedRow)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+
+    const unlinked = screen.getByTestId(`utang-contact-${contactId}`);
+    expect(unlinked).toHaveTextContent("Walk-in Ana");
+    expect(unlinked).toHaveTextContent("Not linked to an ExItS account");
+    expect(screen.getByTestId(`utang-contact-link-${contactId}`)).toBeInTheDocument();
+
+    const cards = screen.getAllByTestId(/utang-contact-/).filter((el) =>
+      /^utang-contact-[0-9a-f-]{36}$/i.test(el.getAttribute("data-testid") ?? ""),
+    );
+    expect(cards[0]).toHaveAttribute("data-testid", `utang-contact-${linkedContactId}`);
+    expect(cards[1]).toHaveAttribute("data-testid", `utang-contact-${contactId}`);
   });
 
   it("uses owes-you wording and linked vs private labels on I Lent", async () => {
