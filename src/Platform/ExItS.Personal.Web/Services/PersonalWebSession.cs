@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.GlobalCatalog;
+using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Personal;
 using ExItS.Web.UI;
 using Microsoft.AspNetCore.Authentication;
@@ -176,14 +177,73 @@ public sealed class PersonalApiClient(IHttpClientFactory httpClientFactory, Pers
     public Task<IReadOnlyList<PersonalContactDto>?> GetContactsAsync(CancellationToken ct = default) =>
         GetAsync<IReadOnlyList<PersonalContactDto>>("/api/v1/personal/utang/contacts", ct);
 
+    public Task<(bool Ok, PersonalContactDto? Data, string? Error)> CreateContactAsync(
+        CreatePersonalContactRequest request,
+        CancellationToken ct = default) =>
+        PostAsync<PersonalContactDto>("/api/v1/personal/utang/contacts", request, ct);
+
+    public Task<(bool Ok, ResolvedPublicUserDto? Data, string? Error)> ResolvePublicUserIdAsync(
+        string publicUserIdOrQrPayload,
+        CancellationToken ct = default) =>
+        PostAsync<ResolvedPublicUserDto>(
+            "/api/v1/users/resolve-public-id",
+            new ResolvePublicUserIdRequest(publicUserIdOrQrPayload, "utang-people"),
+            ct);
+
     public Task<IReadOnlyList<PersonalDebtRelationshipSummaryDto>?> GetLentAsync(CancellationToken ct = default) =>
         GetAsync<IReadOnlyList<PersonalDebtRelationshipSummaryDto>>("/api/v1/personal/utang/relationships/lent", ct);
 
     public Task<IReadOnlyList<PersonalDebtRelationshipSummaryDto>?> GetBorrowedAsync(CancellationToken ct = default) =>
         GetAsync<IReadOnlyList<PersonalDebtRelationshipSummaryDto>>("/api/v1/personal/utang/relationships/borrowed", ct);
 
+    public Task<(bool Ok, PersonalDebtRelationshipSummaryDto? Data, string? Error)> CreateRelationshipAsync(
+        CreatePersonalDebtRelationshipRequest request,
+        CancellationToken ct = default) =>
+        PostAsync<PersonalDebtRelationshipSummaryDto>("/api/v1/personal/utang/relationships", request, ct);
+
+    public Task<(bool Ok, PersonalUtangInvitationDto? Data, string? Error)> CreateInvitationAsync(
+        Guid relationshipId,
+        Guid inviteeContactId,
+        CancellationToken ct = default) =>
+        PostAsync<PersonalUtangInvitationDto>(
+            $"/api/v1/personal/utang/relationships/{relationshipId:D}/invitations",
+            new CreatePersonalUtangInvitationRequest(inviteeContactId),
+            ct);
+
     public Task<IReadOnlyList<PersonalUtangInvitationDto>?> GetInvitationsAsync(CancellationToken ct = default) =>
         GetAsync<IReadOnlyList<PersonalUtangInvitationDto>>("/api/v1/personal/utang/invitations", ct);
+
+    public Task<(bool Ok, PersonalUtangInvitationAcceptResultDto? Data, string? Error)> AcceptInvitationByIdAsync(
+        Guid invitationId,
+        CancellationToken ct = default) =>
+        PostAsync<PersonalUtangInvitationAcceptResultDto>(
+            "/api/v1/personal/utang/invitations/accept-by-id",
+            new AcceptPersonalUtangInvitationByIdRequest(invitationId),
+            ct);
+
+    public Task<(bool Ok, PersonalUtangInvitationDto? Data, string? Error)> DeclineInvitationByIdAsync(
+        Guid invitationId,
+        CancellationToken ct = default) =>
+        PostAsync<PersonalUtangInvitationDto>(
+            "/api/v1/personal/utang/invitations/decline-by-id",
+            new DeclinePersonalUtangInvitationByIdRequest(invitationId),
+            ct);
+
+    public Task<(bool Ok, PersonalUtangInvitationDto? Data, string? Error)> ResendInvitationAsync(
+        Guid invitationId,
+        CancellationToken ct = default) =>
+        PostAsync<PersonalUtangInvitationDto>(
+            $"/api/v1/personal/utang/invitations/{invitationId:D}/resend",
+            new { },
+            ct);
+
+    public Task<(bool Ok, PersonalUtangInvitationDto? Data, string? Error)> RevokeInvitationAsync(
+        Guid invitationId,
+        CancellationToken ct = default) =>
+        PostAsync<PersonalUtangInvitationDto>(
+            $"/api/v1/personal/utang/invitations/{invitationId:D}/revoke",
+            new { },
+            ct);
 
     public Task<IReadOnlyList<PersonalInAppNotificationDto>?> GetNotificationsAsync(CancellationToken ct = default) =>
         GetAsync<IReadOnlyList<PersonalInAppNotificationDto>>("/api/v1/personal/notifications", ct);

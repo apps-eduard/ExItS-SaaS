@@ -1,4 +1,3 @@
-@page "/utang/people"
 @page "/utang/lent"
 @page "/utang/borrowed"
 @page "/utang/invitations"
@@ -21,14 +20,6 @@ else if (!string.IsNullOrWhiteSpace(_error))
 {
     <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
 }
-else if (_mode == "people")
-{
-    <Table TItem="PersonalContactDto" DataSource="_contacts" Size="@TableSize.Small" Bordered>
-        <PropertyColumn Property="c => c.DisplayName" Title="Name" />
-        <PropertyColumn Property="c => c.Email" Title="Email" />
-        <PropertyColumn Property="c => c.Status" Title="Status" />
-    </Table>
-}
 else if (_mode is "lent" or "borrowed")
 {
     <Table TItem="PersonalDebtRelationshipSummaryDto" DataSource="_relationships" Size="@TableSize.Small" Bordered>
@@ -40,18 +31,84 @@ else if (_mode is "lent" or "borrowed")
 }
 else if (_mode == "invitations")
 {
-    <Table TItem="PersonalUtangInvitationDto" DataSource="_invitations" Size="@TableSize.Small" Bordered>
-        <PropertyColumn Property="c => c.InviteTargetEmailMasked" Title="Email" />
-        <PropertyColumn Property="c => c.Status" Title="Status" />
-    </Table>
+    <div style="max-width:560px;width:100%;">
+        <h3 style="margin:0 0 8px;font-size:16px;">Received</h3>
+        @if (_received.Count == 0)
+        {
+            <Empty Description="@("No pending invitations")" Style="margin-bottom:24px;" />
+        }
+        else
+        {
+            @foreach (var inv in _received)
+            {
+                <div style="border:1px solid var(--ant-color-border);border-radius:8px;padding:12px;margin-bottom:8px;">
+                    <div style="font-weight:600;">Personal Utang invitation</div>
+                    <div style="font-size:13px;color:var(--ant-color-text-secondary);">
+                        @(inv.InviteTargetEmailMasked ?? "Pending") · @inv.Status
+                    </div>
+                    <div style="font-size:13px;color:var(--ant-color-text-secondary);margin-bottom:8px;">
+                        Sent @inv.CreatedAtUtc.ToLocalTime().ToString("MMM d")
+                    </div>
+                    @if (string.Equals(inv.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <Space Wrap>
+                            <Button Danger Loading="_inviteBusyId == inv.Id" OnClick="() => DeclineAsync(inv.Id)">Decline</Button>
+                            <Button Type="@ButtonType.Primary" Loading="_inviteBusyId == inv.Id" OnClick="() => AcceptAsync(inv.Id)">Accept</Button>
+                        </Space>
+                    }
+                </div>
+            }
+        }
+
+        <h3 style="margin:16px 0 8px;font-size:16px;">Sent</h3>
+        @if (_sent.Count == 0)
+        {
+            <Empty Description="@("No sent invitations")" />
+        }
+        else
+        {
+            @foreach (var inv in _sent)
+            {
+                <div style="border:1px solid var(--ant-color-border);border-radius:8px;padding:12px;margin-bottom:8px;">
+                    <div style="font-weight:600;">@(inv.InviteTargetEmailMasked ?? "Contact")</div>
+                    <div style="font-size:13px;color:var(--ant-color-text-secondary);margin-bottom:8px;">
+                        @inv.Status · @inv.CreatedAtUtc.ToLocalTime().ToString("MMM d")
+                    </div>
+                    @if (string.Equals(inv.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <Space Wrap>
+                            <Button Danger Loading="_inviteBusyId == inv.Id" OnClick="() => RevokeAsync(inv.Id)">Cancel request</Button>
+                            <Button Loading="_inviteBusyId == inv.Id" OnClick="() => ResendAsync(inv.Id)">Send again</Button>
+                        </Space>
+                    }
+                </div>
+            }
+        }
+    </div>
 }
 else if (_mode == "notifications")
 {
-    <Table TItem="PersonalInAppNotificationDto" DataSource="_notifications" Size="@TableSize.Small" Bordered>
-        <PropertyColumn Property="c => c.Title" Title="Title" />
-        <PropertyColumn Property="c => c.Preview" Title="Preview" />
-        <PropertyColumn Property="c => c.IsRead" Title="Read" />
-    </Table>
+    @if (_notifications.Count == 0)
+    {
+        <Empty Description="@("No notifications")" />
+    }
+    else
+    {
+        <div style="max-width:560px;width:100%;display:flex;flex-direction:column;gap:8px;">
+            @foreach (var n in _notifications)
+            {
+                <button type="button"
+                        style="text-align:left;padding:12px;border:1px solid var(--ant-color-border);border-radius:8px;background:var(--ant-color-bg-container);cursor:pointer;"
+                        @onclick="() => OpenNotification(n)">
+                    <div style="font-weight:600;">@n.Title</div>
+                    <div style="font-size:13px;color:var(--ant-color-text-secondary);">@n.Preview</div>
+                    <div style="font-size:12px;color:var(--ant-color-text-tertiary);margin-top:4px;">
+                        @(n.IsRead ? "Read" : "Unread") · @n.CreatedAtUtc.ToLocalTime().ToString("MMM d")
+                    </div>
+                </button>
+            }
+        </div>
+    }
 }
 else if (_mode == "profile" && _profile is not null)
 {
@@ -107,12 +164,13 @@ else if (_mode == "settings" && _settings is not null)
 
 @code {
     private bool _loading = true;
-    private string _mode = "people";
-    private string _title = "Contacts";
+    private string _mode = "lent";
+    private string _title = "I Lent";
     private string? _error;
-    private IReadOnlyList<PersonalContactDto> _contacts = [];
     private IReadOnlyList<PersonalDebtRelationshipSummaryDto> _relationships = [];
     private IReadOnlyList<PersonalUtangInvitationDto> _invitations = [];
+    private IReadOnlyList<PersonalUtangInvitationDto> _received = [];
+    private IReadOnlyList<PersonalUtangInvitationDto> _sent = [];
     private IReadOnlyList<PersonalInAppNotificationDto> _notifications = [];
     private PersonalProfileDto? _profile;
     private PersonalAccountSettingsDto? _settings;
@@ -120,29 +178,30 @@ else if (_mode == "settings" && _settings is not null)
     private bool _profileSaving;
     private string _editDisplayName = "";
     private string? _profileEditError;
+    private Guid? _inviteBusyId;
 
     protected override async Task OnInitializedAsync()
     {
         var path = new Uri(Nav.Uri).AbsolutePath.TrimEnd('/');
         (_mode, _title) = path switch
         {
-            "/utang/lent" => ("lent", "I Lent"),
             "/utang/borrowed" => ("borrowed", "I Borrowed"),
             "/utang/invitations" => ("invitations", "Invitations"),
             "/notifications" => ("notifications", "Notifications"),
             "/profile" => ("profile", "Profile"),
             "/settings" => ("settings", "Settings"),
-            _ => ("people", "Contacts")
+            _ => ("lent", "I Lent")
         };
 
         try
         {
             switch (_mode)
             {
-                case "people": _contacts = await Api.GetContactsAsync() ?? []; break;
                 case "lent": _relationships = await Api.GetLentAsync() ?? []; break;
                 case "borrowed": _relationships = await Api.GetBorrowedAsync() ?? []; break;
-                case "invitations": _invitations = await Api.GetInvitationsAsync() ?? []; break;
+                case "invitations":
+                    await LoadInvitationsAsync();
+                    break;
                 case "notifications": _notifications = await Api.GetNotificationsAsync() ?? []; break;
                 case "profile": _profile = await Api.GetProfileAsync(); break;
                 case "settings": _settings = await Api.GetSettingsAsync(); break;
@@ -156,6 +215,110 @@ else if (_mode == "settings" && _settings is not null)
         {
             _loading = false;
         }
+    }
+
+    private async Task LoadInvitationsAsync()
+    {
+        _profile ??= await Api.GetProfileAsync();
+        _invitations = await Api.GetInvitationsAsync() ?? [];
+        var me = _profile?.UserIdentityId;
+        _sent = _invitations
+            .Where(i => me is Guid id && i.InvitedByUserIdentityId == id)
+            .ToList();
+        _received = _invitations
+            .Where(i => me is null || i.InvitedByUserIdentityId != me)
+            .ToList();
+    }
+
+    private async Task AcceptAsync(Guid invitationId)
+    {
+        _inviteBusyId = invitationId;
+        try
+        {
+            var (ok, _, error) = await Api.AcceptInvitationByIdAsync(invitationId);
+            if (!ok)
+            {
+                await Message.ErrorAsync(error ?? "Could not accept invitation.");
+                return;
+            }
+
+            await Message.SuccessAsync("Invitation accepted.");
+            await LoadInvitationsAsync();
+        }
+        finally
+        {
+            _inviteBusyId = null;
+        }
+    }
+
+    private async Task DeclineAsync(Guid invitationId)
+    {
+        _inviteBusyId = invitationId;
+        try
+        {
+            var (ok, _, error) = await Api.DeclineInvitationByIdAsync(invitationId);
+            if (!ok)
+            {
+                await Message.ErrorAsync(error ?? "Could not decline invitation.");
+                return;
+            }
+
+            await Message.SuccessAsync("Invitation declined.");
+            await LoadInvitationsAsync();
+        }
+        finally
+        {
+            _inviteBusyId = null;
+        }
+    }
+
+    private async Task ResendAsync(Guid invitationId)
+    {
+        _inviteBusyId = invitationId;
+        try
+        {
+            var (ok, _, error) = await Api.ResendInvitationAsync(invitationId);
+            if (!ok)
+            {
+                await Message.ErrorAsync(error ?? "Could not resend.");
+                return;
+            }
+
+            await Message.SuccessAsync("Invitation resent.");
+            await LoadInvitationsAsync();
+        }
+        finally
+        {
+            _inviteBusyId = null;
+        }
+    }
+
+    private async Task RevokeAsync(Guid invitationId)
+    {
+        _inviteBusyId = invitationId;
+        try
+        {
+            var (ok, _, error) = await Api.RevokeInvitationAsync(invitationId);
+            if (!ok)
+            {
+                await Message.ErrorAsync(error ?? "Could not cancel.");
+                return;
+            }
+
+            await Message.SuccessAsync("Request cancelled.");
+            await LoadInvitationsAsync();
+        }
+        finally
+        {
+            _inviteBusyId = null;
+        }
+    }
+
+    private void OpenNotification(PersonalInAppNotificationDto notification)
+    {
+        // Notifications alert; Invitations remains the decision surface. Dismissal does not clear pending invites.
+        _ = notification;
+        Nav.NavigateTo("/utang/invitations");
     }
 
     private void BeginEditProfile()

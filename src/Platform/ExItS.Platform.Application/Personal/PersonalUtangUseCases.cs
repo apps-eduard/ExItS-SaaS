@@ -1,6 +1,7 @@
 using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
@@ -15,10 +16,16 @@ public sealed record PersonalContactDto(
     string? Phone,
     string? Email,
     Guid? LinkedUserIdentityId,
+    string? PublicUserId,
     string Status,
     DateTimeOffset CreatedAtUtc);
 
-public sealed record CreatePersonalContactRequest(string DisplayName, string? Phone, string? Email);
+public sealed record CreatePersonalContactRequest(
+    string DisplayName,
+    string? Phone,
+    string? Email,
+    string? PublicUserId = null,
+    Guid? LinkedUserIdentityId = null);
 
 public sealed record PersonalDebtRelationshipSummaryDto(
     Guid Id,
@@ -135,17 +142,20 @@ internal static class PersonalUtangAccess
 public sealed class CreatePersonalContact
 {
     private readonly IPersonalContactRepository _contacts;
+    private readonly IPlatformUserRepository _users;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public CreatePersonalContact(
         IPersonalContactRepository contacts,
+        IPlatformUserRepository users,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _contacts = contacts;
+        _users = users;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -158,9 +168,37 @@ public sealed class CreatePersonalContact
     {
         try
         {
+            PlatformUser? linkedUser = null;
+            if (!string.IsNullOrWhiteSpace(request.PublicUserId) || request.LinkedUserIdentityId is not null)
+            {
+                var resolved = await PersonalContactLinkSupport.ResolvePersonalLinkTargetAsync(
+                    ownerUserIdentityId,
+                    request.PublicUserId,
+                    request.LinkedUserIdentityId,
+                    _users,
+                    cancellationToken).ConfigureAwait(false);
+                if (!resolved.IsSuccess)
+                {
+                    return ApplicationResult<PersonalContactDto>.Failure(
+                        resolved.ErrorCode!,
+                        resolved.ErrorMessage!);
+                }
+
+                linkedUser = resolved.Value;
+                var existingLinked = await _contacts
+                    .FindActiveByOwnerAndLinkedUserAsync(ownerUserIdentityId, linkedUser!.Id, cancellationToken)
+                    .ConfigureAwait(false);
+                if (existingLinked is not null)
+                {
+                    return ApplicationResult<PersonalContactDto>.Success(
+                        ToDto(existingLinked, linkedUser.PublicUserId));
+                }
+            }
+
+            var displayName = linkedUser?.DisplayName ?? request.DisplayName;
             var contact = PersonalContact.Create(
                 ownerUserIdentityId,
-                request.DisplayName,
+                displayName,
                 request.Phone,
                 request.Email,
                 _clock.UtcNow);
@@ -181,6 +219,12 @@ public sealed class CreatePersonalContact
                 }
             }
 
+            // Identity association only — does not create Utang invitations or in-app notifications.
+            if (linkedUser is not null)
+            {
+                contact.LinkUser(linkedUser.Id, _clock.UtcNow);
+            }
+
             await _contacts.AddAsync(contact, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
@@ -191,10 +235,26 @@ public sealed class CreatePersonalContact
                 nameof(PersonalContact),
                 contact.Id.Value.ToString("D"),
                 AuditOutcome.Succeeded,
-                summary: $"Personal contact '{contact.DisplayName}' created.",
+                summary: linkedUser is null
+                    ? $"Personal contact '{contact.DisplayName}' created."
+                    : $"Personal contact '{contact.DisplayName}' created with ExItS identity (no Utang link).",
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
-            return ApplicationResult<PersonalContactDto>.Success(ToDto(contact));
+            if (linkedUser is not null)
+            {
+                await _auditWriter.WriteAsync(
+                    $"platform-user:{ownerUserIdentityId.Value:D}",
+                    AuditActorType.PlatformUser,
+                    PlatformAuditActions.PersonalContactLinked,
+                    nameof(PersonalContact),
+                    contact.Id.Value.ToString("D"),
+                    AuditOutcome.Succeeded,
+                    summary: "Personal contact associated to ExItS identity for People.",
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
+            }
+
+            return ApplicationResult<PersonalContactDto>.Success(
+                ToDto(contact, linkedUser?.PublicUserId));
         }
         catch (PersistenceConflictException ex)
         {
@@ -202,17 +262,24 @@ public sealed class CreatePersonalContact
         }
         catch (DomainException ex)
         {
-            return ApplicationResult<PersonalContactDto>.Failure(ex.ErrorCode, ex.Message);
+            var code = ex.ErrorCode switch
+            {
+                DomainErrorCodes.PersonalContactAlreadyLinked => ApplicationErrorCodes.PersonalContactLinkConflict,
+                DomainErrorCodes.PersonalContactLinkInvalid => ApplicationErrorCodes.PersonalContactLinkInvalid,
+                _ => ex.ErrorCode
+            };
+            return ApplicationResult<PersonalContactDto>.Failure(code, ex.Message);
         }
     }
 
-    internal static PersonalContactDto ToDto(PersonalContact contact) =>
+    internal static PersonalContactDto ToDto(PersonalContact contact, string? publicUserId = null) =>
         new(
             contact.Id.Value,
             contact.DisplayName,
             contact.Phone,
             contact.Email,
             contact.LinkedUserIdentityId?.Value,
+            publicUserId,
             contact.Status.ToString(),
             contact.CreatedAtUtc);
 }
@@ -220,15 +287,36 @@ public sealed class CreatePersonalContact
 public sealed class ListPersonalContacts
 {
     private readonly IPersonalContactRepository _contacts;
+    private readonly IPlatformUserRepository _users;
 
-    public ListPersonalContacts(IPersonalContactRepository contacts) => _contacts = contacts;
+    public ListPersonalContacts(
+        IPersonalContactRepository contacts,
+        IPlatformUserRepository users)
+    {
+        _contacts = contacts;
+        _users = users;
+    }
 
     public async Task<IReadOnlyList<PersonalContactDto>> ExecuteAsync(
         PlatformUserId ownerUserIdentityId,
         CancellationToken cancellationToken = default)
     {
         var list = await _contacts.ListByOwnerAsync(ownerUserIdentityId, cancellationToken).ConfigureAwait(false);
-        return list.Select(CreatePersonalContact.ToDto).ToList();
+        var results = new List<PersonalContactDto>(list.Count);
+        foreach (var contact in list)
+        {
+            string? publicUserId = null;
+            if (contact.LinkedUserIdentityId is not null)
+            {
+                var linked = await _users.GetByIdAsync(contact.LinkedUserIdentityId, cancellationToken)
+                    .ConfigureAwait(false);
+                publicUserId = linked?.PublicUserId;
+            }
+
+            results.Add(CreatePersonalContact.ToDto(contact, publicUserId));
+        }
+
+        return results;
     }
 }
 

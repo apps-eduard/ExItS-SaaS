@@ -315,6 +315,8 @@ builder.Services.AddScoped<ResendPersonalUtangInvitation>();
 builder.Services.AddScoped<RevokePersonalUtangInvitation>();
 builder.Services.AddScoped<DeclinePersonalUtangInvitation>();
 builder.Services.AddScoped<AcceptPersonalUtangInvitation>();
+builder.Services.AddScoped<AcceptPersonalUtangInvitationById>();
+builder.Services.AddScoped<DeclinePersonalUtangInvitationById>();
 builder.Services.AddScoped<CreatePersonalReminder>();
 builder.Services.AddScoped<ListPersonalReminders>();
 builder.Services.AddScoped<ListDuePersonalReminders>();

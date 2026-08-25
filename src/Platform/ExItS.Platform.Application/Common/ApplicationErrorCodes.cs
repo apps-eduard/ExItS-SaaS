@@ -167,6 +167,8 @@ public static class ApplicationErrorCodes
 
     public const string PersonalContactNotFound = "application.personal.contact.not_found";
     public const string PersonalContactEmailConflict = "application.personal.contact.email.conflict";
+    public const string PersonalContactLinkConflict = "application.personal.contact.link.conflict";
+    public const string PersonalContactLinkInvalid = "application.personal.contact.link.invalid";
     public const string PersonalUtangRelationshipNotFound = "application.personal.utang_relationship.not_found";
     public const string PersonalUtangUnauthorized = "application.personal.utang.unauthorized";
     public const string PersonalUtangEntryInvalid = "application.personal.utang_entry.invalid";

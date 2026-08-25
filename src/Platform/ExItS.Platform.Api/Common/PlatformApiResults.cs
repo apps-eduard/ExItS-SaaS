@@ -161,6 +161,7 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.PersonalUtangInvitationConflict
             or ApplicationErrorCodes.OwnershipTransferConflict
             or ApplicationErrorCodes.PersonalContactEmailConflict
+            or ApplicationErrorCodes.PersonalContactLinkConflict
             or ApplicationErrorCodes.CreditCustomerConflict
             or ApplicationErrorCodes.CustomerLinkRequestConflict
             or DomainErrorCodes.CustomerLinkRequestExpired

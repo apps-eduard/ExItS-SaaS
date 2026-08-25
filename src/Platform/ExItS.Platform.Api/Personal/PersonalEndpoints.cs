@@ -833,6 +833,22 @@ internal static class PersonalEndpoints
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         });
 
+        utang.MapPost("/invitations/accept-by-id", async (
+            HttpContext http,
+            AcceptPersonalUtangInvitationByIdRequest body,
+            AcceptPersonalUtangInvitationById acceptInvitation,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await acceptInvitation.ExecuteAsync(PlatformUserId.From(userId), body, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
         utang.MapPost("/invitations/decline", async (
             HttpContext http,
             AcceptPersonalUtangInvitationRequest body,
@@ -845,6 +861,22 @@ internal static class PersonalEndpoints
             }
 
             var result = await declineInvitation.ExecuteAsync(PlatformUserId.From(userId), body.Token, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
+        utang.MapPost("/invitations/decline-by-id", async (
+            HttpContext http,
+            DeclinePersonalUtangInvitationByIdRequest body,
+            DeclinePersonalUtangInvitationById declineInvitation,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await declineInvitation.ExecuteAsync(PlatformUserId.From(userId), body, ct)
                 .ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         });
