@@ -62,7 +62,35 @@ function createPersonalFetchMock() {
           activeRelationshipCount: 1,
           totalLentBalance: 500,
           totalBorrowedBalance: 150,
+          pendingConfirmationCount: 1,
         }),
+        text: async () => "",
+      } as Response;
+    }
+
+    if (url.includes("/api/v1/personal/utang/contacts")) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => [],
+        text: async () => "",
+      } as Response;
+    }
+
+    if (url.includes("/api/v1/personal/utang/relationships/lent")) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => [],
+        text: async () => "",
+      } as Response;
+    }
+
+    if (url.includes("/api/v1/personal/utang/relationships/borrowed")) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => [],
         text: async () => "",
       } as Response;
     }
@@ -163,6 +191,8 @@ describe("Personal shell and home (RMAP-22B)", () => {
     expect(screen.getByTestId("personal-quick-actions")).toBeInTheDocument();
     expect(screen.getByTestId("personal-qa-lent")).toBeInTheDocument();
     expect(screen.getByTestId("personal-stat-people")).toHaveTextContent("2");
+    expect(await screen.findByTestId("personal-needs-attention")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-attention-pendingConfirmation")).toBeInTheDocument();
   });
 
   it("opens Stores and customer link requests under Personal More", async () => {

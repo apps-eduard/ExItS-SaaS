@@ -273,14 +273,27 @@ describe("Personal Utang shared-ledger UI", () => {
     confirmMock.mockClear();
   });
 
-  it("shows hub owed/i-owe totals and pending confirmation count", async () => {
+  it("shows hub owed/i-owe totals, pending confirmation, and active accounts", async () => {
     renderPath("/personal/utang");
     expect(await screen.findByTestId("utang-hub-owed-to-me")).toBeInTheDocument();
     expect(screen.getByTestId("utang-hub-i-owe")).toBeInTheDocument();
     expect(screen.getByTestId("utang-hub-pending")).toHaveTextContent("Waiting for you (2)");
+    expect(await screen.findByTestId("utang-hub-segments")).toBeInTheDocument();
+    expect(screen.getByTestId(`utang-account-${relationshipId}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`utang-account-${sharedRelationshipId}`)).toBeInTheDocument();
     expect(screen.getByTestId("utang-open-lent")).toBeInTheDocument();
     expect(screen.getByTestId("utang-open-owe")).toBeInTheDocument();
     expect(screen.getByTestId("utang-open-people")).toBeInTheDocument();
+  });
+
+  it("filters hub accounts by Owed to me segment", async () => {
+    const user = userEvent.setup();
+    renderPath("/personal/utang");
+    expect(await screen.findByTestId("utang-hub-segments")).toBeInTheDocument();
+    await user.click(screen.getByTestId("utang-segment-lent"));
+    expect(screen.getByTestId(`utang-account-${relationshipId}`)).toBeInTheDocument();
+    await user.click(screen.getByTestId("utang-segment-owe"));
+    expect(screen.queryByTestId(`utang-account-${relationshipId}`)).not.toBeInTheDocument();
   });
 
   it("lists linked people first with ExItS ID under the name, and keeps unlinked names visible", async () => {

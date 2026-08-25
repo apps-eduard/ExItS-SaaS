@@ -6227,7 +6227,7 @@ a.exits-chip--primary:hover {
 
 .personal-page {
   width: 100%;
-  max-width: 42rem;
+  max-width: 52rem;
   margin-inline: auto;
 }
 
@@ -6274,9 +6274,58 @@ a.exits-chip--primary:hover {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.personal-summary-grid--balances {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.utang-segment-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.utang-segment {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  padding: 0.35rem 0.75rem;
+  font-size: var(--exits-text-sm);
+  font-weight: 600;
+  color: var(--exits-text);
+  cursor: pointer;
+}
+
+.utang-segment--selected {
+  border-color: color-mix(in srgb, var(--exits-primary) 55%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary) 12%, transparent);
+  color: var(--exits-primary);
+}
+
+.utang-segment__count {
+  opacity: 0.75;
+  font-weight: 500;
+}
+
+.utang-account-card {
+  width: 100%;
+}
+
+.personal-attention-row {
+  width: 100%;
+}
+
 @media (min-width: 640px) {
   .personal-summary-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .personal-summary-grid--balances {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 28rem;
   }
 }
 

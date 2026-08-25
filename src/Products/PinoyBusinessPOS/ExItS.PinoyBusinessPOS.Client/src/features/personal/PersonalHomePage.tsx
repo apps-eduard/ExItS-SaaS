@@ -1,9 +1,8 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import {
-  Activity,
-  AlertCircle,
-  CalendarClock,
-  CircleDot,
+  ChevronRight,
   HandCoins,
   Home,
   ListPlus,
@@ -13,6 +12,11 @@ import {
   Wallet,
 } from "lucide-react";
 import { getPersonalDashboard } from "@/api/platform/personal-dashboard-client";
+import {
+  listBorrowedRelationships,
+  listLentRelationships,
+  listPersonalContacts,
+} from "@/api/platform/personal-utang-client";
 import {
   listPersonalTodos,
   summarizeTodoCounts,
@@ -27,10 +31,18 @@ import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { DashboardMetricCard } from "@/features/reports/DashboardMetricCards";
+import {
+  buildHomeAttentionItems,
+  isActiveUtangAccount,
+  mergeUtangAccounts,
+} from "@/features/personal/utang/utang-workspace";
 import { useI18n } from "@/i18n/I18nProvider";
+import { useBrowserOnline } from "@/connectivity/browser-online";
 
 export function PersonalHomePage() {
   const { t } = useI18n();
+  const online = useBrowserOnline();
+
   const dashboardQuery = useQuery({
     queryKey: ["personal", "dashboard"],
     queryFn: ({ signal }) => getPersonalDashboard(signal),
@@ -39,6 +51,38 @@ export function PersonalHomePage() {
     queryKey: ["personal", "todos"],
     queryFn: ({ signal }) => listPersonalTodos(signal),
   });
+  const contactsQuery = useQuery({
+    queryKey: ["personal", "utang", "contacts"],
+    queryFn: ({ signal }) => listPersonalContacts(signal),
+    enabled: online,
+  });
+  const lentQuery = useQuery({
+    queryKey: ["personal", "utang", "lent"],
+    queryFn: ({ signal }) => listLentRelationships(signal),
+    enabled: online,
+  });
+  const oweQuery = useQuery({
+    queryKey: ["personal", "utang", "owe"],
+    queryFn: ({ signal }) => listBorrowedRelationships(signal),
+    enabled: online,
+  });
+
+  const accounts = useMemo(() => {
+    if (!contactsQuery.data || !lentQuery.data || !oweQuery.data) {
+      return [];
+    }
+    return mergeUtangAccounts(lentQuery.data, oweQuery.data, contactsQuery.data).filter(
+      isActiveUtangAccount,
+    );
+  }, [contactsQuery.data, lentQuery.data, oweQuery.data]);
+
+  const attentionItems = useMemo(() => {
+    const pending = dashboardQuery.data?.pendingConfirmationCount ?? 0;
+    return buildHomeAttentionItems({
+      pendingConfirmationCount: pending,
+      accounts,
+    });
+  }, [accounts, dashboardQuery.data?.pendingConfirmationCount]);
 
   if (dashboardQuery.isPending) {
     return <LoadingSkeleton label={t("personal.home.loading")} />;
@@ -74,6 +118,22 @@ export function PersonalHomePage() {
 
   const counts = todosQuery.isSuccess ? summarizeTodoCounts(todosQuery.data) : null;
 
+  function attentionTitle(item: (typeof attentionItems)[number]): string {
+    if (item.kind === "pendingConfirmation") {
+      return t("personal.home.attentionPending").replace("{count}", String(item.count));
+    }
+    if (item.kind === "overdue") {
+      if (item.displayName) {
+        return t("personal.home.attentionOverdueOne").replace("{name}", item.displayName);
+      }
+      return t("personal.home.attentionOverdue").replace("{count}", String(item.count));
+    }
+    if (item.displayName) {
+      return t("personal.home.attentionDueSoonOne").replace("{name}", item.displayName);
+    }
+    return t("personal.home.attentionDueSoon").replace("{count}", String(item.count));
+  }
+
   return (
     <div
       className="personal-page exits-page flex min-w-0 flex-col gap-3"
@@ -90,8 +150,8 @@ export function PersonalHomePage() {
         aria-label={t("personal.home.utangSummary")}
         data-testid="personal-utang-summary"
       >
-        <h2 className="catalog-form-section__title text-muted">{t("personal.home.utangSummary")}</h2>
-        <div className="personal-summary-grid personal-summary-grid--utang" role="list">
+        <h2 className="catalog-form-section__title text-muted">{t("personal.home.utangSnapshot")}</h2>
+        <div className="personal-summary-grid personal-summary-grid--balances" role="list">
           <DashboardMetricCard
             label={t("personal.home.owedToMe")}
             icon={HandCoins}
@@ -110,24 +170,58 @@ export function PersonalHomePage() {
           >
             <MoneyDisplay amount={dashboard.totalBorrowedBalance} />
           </DashboardMetricCard>
-          <DashboardMetricCard
-            label={t("personal.home.people")}
-            icon={UserPlus}
-            testId="personal-stat-people"
-            to="/personal/utang/people"
-          >
-            {dashboard.contactCount}
-          </DashboardMetricCard>
-          <DashboardMetricCard
-            label={t("personal.home.active")}
-            icon={Activity}
-            testId="personal-stat-active"
-            to="/personal/utang"
-          >
-            {dashboard.activeRelationshipCount}
-          </DashboardMetricCard>
+        </div>
+        <div
+          className="personal-home-meta flex flex-wrap gap-x-4 gap-y-1 text-[length:var(--exits-text-sm)] text-muted"
+          data-testid="personal-home-meta"
+        >
+          <Link to="/personal/utang/people" className="text-muted no-underline hover:underline">
+            <span data-testid="personal-stat-people">
+              {t("personal.home.people")}: {dashboard.contactCount}
+            </span>
+          </Link>
+          <Link to="/personal/utang" className="text-muted no-underline hover:underline">
+            <span data-testid="personal-stat-active">
+              {t("personal.home.active")}: {dashboard.activeRelationshipCount}
+            </span>
+          </Link>
         </div>
       </section>
+
+      {attentionItems.length > 0 ? (
+        <section
+          className="catalog-form-section exits-animate-panel personal-section gap-2"
+          aria-label={t("personal.home.needsAttention")}
+          data-testid="personal-needs-attention"
+        >
+          <h2 className="catalog-form-section__title text-muted">
+            {t("personal.home.needsAttention")}
+          </h2>
+          <ul className="m-0 grid list-none gap-2 p-0">
+            {attentionItems.map((item) => (
+              <li key={item.key}>
+                <Link
+                  to={item.href}
+                  className="personal-attention-row exits-list__card flex min-h-11 items-center justify-between gap-3 text-foreground no-underline"
+                  data-testid={`personal-attention-${item.kind}`}
+                >
+                  <span className="min-w-0 truncate text-[length:var(--exits-text-sm)] font-medium">
+                    {attentionTitle(item)}
+                  </span>
+                  <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <Link
+            to="/personal/utang"
+            className="text-[length:var(--exits-text-sm)] font-medium text-[var(--exits-primary)] no-underline"
+            data-testid="personal-attention-view-all"
+          >
+            {t("personal.home.viewAllUtang")}
+          </Link>
+        </section>
+      ) : null}
 
       <section
         className="catalog-form-section exits-animate-panel personal-section gap-3"
@@ -136,6 +230,7 @@ export function PersonalHomePage() {
       >
         <h2 className="catalog-form-section__title text-muted">{t("personal.home.quickActions")}</h2>
         <ActionTileGrid
+          emphasizePrimary
           tiles={[
             {
               key: "lent",
@@ -196,44 +291,34 @@ export function PersonalHomePage() {
         ) : counts ? (
           <>
             <div
-              className="personal-summary-grid personal-summary-grid--todo"
+              className="personal-todo-compact flex flex-wrap gap-x-4 gap-y-1 text-[length:var(--exits-text-sm)]"
               data-testid="personal-todo-counts"
               role="list"
             >
-              <DashboardMetricCard
-                label={t("personal.todo.countToday")}
-                icon={ListTodo}
-                tone="emphasis"
-                testId="personal-todo-stat-today"
+              <Link
                 to={todoAgendaTabHref("today")}
+                className="text-foreground no-underline"
+                data-testid="personal-todo-stat-today"
               >
-                {counts.today}
-              </DashboardMetricCard>
-              <DashboardMetricCard
-                label={t("personal.todo.countUpcoming")}
-                icon={CalendarClock}
-                testId="personal-todo-stat-upcoming"
-                to={todoAgendaTabHref("upcoming")}
-              >
-                {counts.upcoming}
-              </DashboardMetricCard>
-              <DashboardMetricCard
-                label={t("personal.todo.countOverdue")}
-                icon={AlertCircle}
-                tone={counts.overdue > 0 ? "attention" : "default"}
-                testId="personal-todo-stat-overdue"
+                {t("personal.todo.countToday")}{" "}
+                <span className="font-semibold tabular-nums">{counts.today}</span>
+              </Link>
+              <Link
                 to={todoAgendaTabHref("overdue")}
+                className="text-foreground no-underline"
+                data-testid="personal-todo-stat-overdue"
               >
-                {counts.overdue}
-              </DashboardMetricCard>
-              <DashboardMetricCard
-                label={t("personal.todo.countOpen")}
-                icon={CircleDot}
-                testId="personal-todo-stat-open"
-                to={todoAgendaTabHref("open")}
+                {t("personal.todo.countOverdue")}{" "}
+                <span className="font-semibold tabular-nums">{counts.overdue}</span>
+              </Link>
+              <Link
+                to={todoAgendaTabHref("upcoming")}
+                className="text-foreground no-underline"
+                data-testid="personal-todo-stat-upcoming"
               >
-                {counts.open}
-              </DashboardMetricCard>
+                {t("personal.todo.countUpcoming")}{" "}
+                <span className="font-semibold tabular-nums">{counts.upcoming}</span>
+              </Link>
             </div>
             {counts.open === 0 && counts.completed === 0 ? (
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
