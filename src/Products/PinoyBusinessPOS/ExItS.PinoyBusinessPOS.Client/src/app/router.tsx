@@ -12,6 +12,7 @@ import { PersonalMorePage, PersonalUtangHubPage } from "@/features/personal/Pers
 import { PersonalExplorePosPage } from "@/features/personal/start-business/PersonalExplorePosPage";
 import { PersonalStartBusinessPage } from "@/features/personal/start-business/PersonalStartBusinessPage";
 import { PersonalShell } from "@/features/personal/PersonalShell";
+import { PostSubscriptionOnboardingPage } from "@/features/onboarding/PostSubscriptionOnboardingPage";
 import { OrgMorePage } from "@/features/shell/OrgMorePage";
 import {
   PersonalInvitationsPage,
@@ -225,6 +226,14 @@ export const appRoutes = [
         ),
         children: [
           { index: true, element: <HomePage /> },
+          {
+            path: "onboarding",
+            element: (
+              <RequireOrganizationSession>
+                <PostSubscriptionOnboardingPage />
+              </RequireOrganizationSession>
+            ),
+          },
           {
             path: "workspace",
             element: (

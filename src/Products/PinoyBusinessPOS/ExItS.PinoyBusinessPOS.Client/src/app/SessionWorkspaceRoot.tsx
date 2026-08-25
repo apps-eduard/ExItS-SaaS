@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import { SessionCartLifecycle } from "@/cart/SessionCartLifecycle";
 import { SessionCartProvider } from "@/cart/SessionCartProvider";
 import { ConnectivityHost } from "@/connectivity/ConnectivityHost";
+import { OnboardingResumeGate } from "@/features/onboarding/OnboardingResumeGate";
 import { ShiftContextProvider } from "@/features/shifts/ShiftContextProvider";
 import { PwaUpdateHost } from "@/pwa/PwaUpdateHost";
 import { SellingModeLifecycle } from "@/selling/SellingModeLifecycle";
@@ -21,6 +22,7 @@ export function SessionWorkspaceRoot() {
                 <SessionCartLifecycle />
                 <ConnectivityHost />
                 <PwaUpdateHost />
+                <OnboardingResumeGate />
                 <Outlet />
               </SellingModeProvider>
             </SessionCartProvider>

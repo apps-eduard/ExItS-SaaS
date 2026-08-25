@@ -151,6 +151,9 @@ public static class ApplicationErrorCodes
     public const string OperationalSetupConcurrencyConflict = "pos.operational_setup.concurrency_conflict";
     public const string TaxConfigurationNotEnabled = "pos.operational_setup.tax_configuration_not_enabled";
 
+    public const string OnboardingProgressNotFound = "pos.onboarding.progress.not_found";
+    public const string OnboardingProgressConcurrencyConflict = "pos.onboarding.progress.concurrency_conflict";
+
     public const string CatalogImportJobNotFound = "pos.catalog_import.job.not_found";
     public const string CatalogImportIdempotencyConflict = "pos.catalog_import.idempotency.conflict";
     public const string CatalogImportPlatformUnavailable = "pos.catalog_import.platform_unavailable";

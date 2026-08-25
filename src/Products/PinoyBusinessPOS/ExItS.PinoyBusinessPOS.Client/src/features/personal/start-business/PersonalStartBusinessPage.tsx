@@ -8,6 +8,7 @@ import {
   listOnboardingBusinessTypes,
   startBusiness,
 } from "@/api/platform/start-business-client";
+import { ensureOnboardingProgress } from "@/api/pos/pos-onboarding-client";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
@@ -33,7 +34,7 @@ export function PersonalStartBusinessPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { refreshSession } = useSession();
-  const { clearBoundWorkspace, refreshWorkspaces } = useWorkspace();
+  const { clearBoundWorkspace, refreshWorkspaces, bindDestination } = useWorkspace();
 
   const planKey = (searchParams.get("planKey") ?? "").trim();
   const startAsTrial = parseBoolFlag(searchParams.get("trial"), true);
@@ -118,11 +119,45 @@ export function PersonalStartBusinessPage() {
         countryCode: nullIfBlank(countryCode),
       });
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
       clearBoundWorkspace();
       await refreshSession();
       await refreshWorkspaces();
-      navigate("/workspace", { replace: true });
+
+      const orgId = result.organizationId;
+      const workspace = { organizationId: orgId, branchId: result.primaryBranchId };
+      const orgLabel = displayName.trim() || t("onboarding.ready.businessFallback");
+      try {
+        await bindDestination({
+          organizationId: orgId,
+          organizationDisplayName: orgLabel,
+          branchId: null,
+          branchName: null,
+          experience: "manage_business",
+          route: "/org",
+          labelKey: "experience.manageBusiness",
+        });
+        await ensureOnboardingProgress(workspace, {
+          primaryBusinessTypeId: result.primaryBusinessTypeId,
+        });
+        sessionStorage.setItem(
+          "exits.postSubscriptionOnboarding",
+          JSON.stringify({
+            organizationId: orgId,
+            primaryBusinessTypeId: result.primaryBusinessTypeId,
+          }),
+        );
+      } catch {
+        // Still enter onboarding; page can ensure progress again from session flag.
+        sessionStorage.setItem(
+          "exits.postSubscriptionOnboarding",
+          JSON.stringify({
+            organizationId: orgId,
+            primaryBusinessTypeId: result.primaryBusinessTypeId,
+          }),
+        );
+      }
+      navigate("/onboarding", { replace: true });
     },
     onError: (error) => {
       if (error instanceof PlatformApiError) {

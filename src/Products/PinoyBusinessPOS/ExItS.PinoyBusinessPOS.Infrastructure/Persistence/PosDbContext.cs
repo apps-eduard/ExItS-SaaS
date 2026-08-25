@@ -8,6 +8,7 @@ using ExItS.PinoyBusinessPOS.Domain.Expenses;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Registers;
+using ExItS.PinoyBusinessPOS.Domain.Onboarding;
 using ExItS.PinoyBusinessPOS.Domain.OperationalSetup;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
@@ -22,6 +23,7 @@ using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Expenses;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Idempotency;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Payments;
+using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Onboarding;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.OperationalSetup;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Registers;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Sales;
@@ -110,6 +112,8 @@ public sealed class PosDbContext : DbContext
     internal DbSet<RegisterRecord> Registers => Set<RegisterRecord>();
     internal DbSet<RegisterCodeSequenceRecord> RegisterCodeSequences => Set<RegisterCodeSequenceRecord>();
     internal DbSet<OperationalSetupRecord> OperationalSetups => Set<OperationalSetupRecord>();
+    internal DbSet<OrganizationOnboardingProgressRecord> OrganizationOnboardingProgressRows =>
+        Set<OrganizationOnboardingProgressRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -3288,6 +3292,47 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.DefaultRegisterId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_operational_setups_default_register");
+        });
+
+        modelBuilder.Entity<OrganizationOnboardingProgressRecord>(entity =>
+        {
+            entity.ToTable("organization_onboarding_progress", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_organization_onboarding_progress_organization_setup_status",
+                    "organization_setup_status IN ('NotStarted', 'Completed', 'Skipped')");
+                tb.HasCheckConstraint(
+                    "ck_organization_onboarding_progress_business_setup_status",
+                    "business_setup_status IN ('NotStarted', 'Completed', 'Skipped')");
+                tb.HasCheckConstraint(
+                    "ck_organization_onboarding_progress_product_template_status",
+                    "product_template_status IN ('NotStarted', 'Completed', 'Skipped')");
+                tb.HasCheckConstraint(
+                    "ck_organization_onboarding_progress_overall_status",
+                    "overall_status IN ('InProgress', 'Completed', 'FinishedLater')");
+            });
+
+            entity.HasKey(e => e.OrganizationId);
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.OrganizationSetupStatus)
+                .HasColumnName("organization_setup_status")
+                .HasMaxLength(OrganizationOnboardingProgress.StatusMaxLength)
+                .IsRequired();
+            entity.Property(e => e.BusinessSetupStatus)
+                .HasColumnName("business_setup_status")
+                .HasMaxLength(OrganizationOnboardingProgress.StatusMaxLength)
+                .IsRequired();
+            entity.Property(e => e.ProductTemplateStatus)
+                .HasColumnName("product_template_status")
+                .HasMaxLength(OrganizationOnboardingProgress.StatusMaxLength)
+                .IsRequired();
+            entity.Property(e => e.OverallStatus)
+                .HasColumnName("overall_status")
+                .HasMaxLength(OrganizationOnboardingProgress.StatusMaxLength)
+                .IsRequired();
+            entity.Property(e => e.PrimaryBusinessTypeId).HasColumnName("primary_business_type_id");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc").IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
         });
 
         modelBuilder.Entity<OrganizationCashDenominationRecord>(entity =>

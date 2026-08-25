@@ -4,6 +4,7 @@ import {
   Boxes,
   ClipboardList,
   LayoutDashboard,
+  ListChecks,
   MonitorSmartphone,
   PackagePlus,
   Receipt,
@@ -149,7 +150,8 @@ export type OrgMoreLink = {
     | "org.more.organization"
     | "org.more.devices"
     | "org.more.staff"
-    | "org.more.preferences";
+    | "org.more.preferences"
+    | "org.more.finishSetup";
   testId: string;
   icon: LucideIcon;
 };
@@ -175,6 +177,7 @@ export function buildOrgMoreLinks(grant: PosSessionGrantFacts | null | undefined
 /** Grouped More hub sections for scannable UX (Manager-home style panels). */
 export function buildOrgMoreSections(
   grant: PosSessionGrantFacts | null | undefined,
+  options?: { showFinishSetup?: boolean },
 ): OrgMoreSection[] {
   const operations: OrgMoreLink[] = [];
   const insights: OrgMoreLink[] = [];
@@ -253,6 +256,14 @@ export function buildOrgMoreSections(
       labelKey: "org.more.organization",
       testId: "org-more-org",
       icon: ClipboardList,
+    });
+  }
+  if (options?.showFinishSetup && hasOrganizationManagementAuthority(grant)) {
+    organization.unshift({
+      to: "/onboarding",
+      labelKey: "org.more.finishSetup",
+      testId: "org-more-finish-setup",
+      icon: ListChecks,
     });
   }
   if (hasOrganizationManagementAuthority(grant)) {

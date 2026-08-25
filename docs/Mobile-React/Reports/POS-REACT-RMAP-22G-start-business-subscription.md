@@ -12,7 +12,7 @@
 - Explore plans at `/personal/explore-pos` → trial CTA; Local Validation subscribe CTA only when frontend Local Validation mode is on
 - `POST /api/v1/personal/start-business` + `GET /api/v1/personal/onboarding/business-types` + `GET /api/v1/commercial/plans` + `GET /api/v1/personal/profile` clients
 - Platform cookie refresh on start-business success (`AppendSessionCookie` + `ExpiresAtUtc` on result) so browser session rotates Personal → Organization
-- After success: `refreshSession` → `refreshWorkspaces` → `/workspace` (existing workspace resolver / chooser)
+- After success: `refreshSession` → `refreshWorkspaces` → bind org → ensure onboarding progress → `/onboarding` (optional post-subscription setup; see [POS-POST-SUBSCRIPTION-ONBOARDING-01](../../reports/POS-POST-SUBSCRIPTION-ONBOARDING-01.md)). Historical note: earlier builds navigated to `/workspace` immediately.
 - Owner return to Personal: Account menu **Switch to Personal** via `ensurePersonalSessionProfile` (blocked when `OrganizationContextLocked`)
 - Staff principals cannot use Personal Start Business (`RequirePersonalSession` retained)
 - Five locales + message-key parity (`en`, `fil-PH`, `ceb-PH`, `ilo-PH`, `hil-PH`)

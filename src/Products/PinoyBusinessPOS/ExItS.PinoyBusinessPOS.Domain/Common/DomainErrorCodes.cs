@@ -363,6 +363,11 @@ public static class DomainErrorCodes
     public const string OperationalSetupIncomplete = "pos.operational_setup.incomplete";
     public const string OperationalSetupDefaultRegisterRequired = "pos.operational_setup.default_register.required";
 
+    public const string InvalidOnboardingStepStatus = "pos.onboarding.step_status.invalid";
+    public const string InvalidOnboardingOverallStatusTransition = "pos.onboarding.overall_status.invalid_transition";
+    public const string InvalidOnboardingCompletion = "pos.onboarding.completion.invalid";
+    public const string InvalidOnboardingPrimaryBusinessTypeId = "pos.onboarding.primary_business_type_id.invalid";
+
     public const string InvalidCatalogImportJobId = "pos.catalog_import.job.id.invalid";
     public const string InvalidCatalogImportItemId = "pos.catalog_import.item.id.invalid";
     public const string InvalidCatalogImportJob = "pos.catalog_import.job.invalid";
