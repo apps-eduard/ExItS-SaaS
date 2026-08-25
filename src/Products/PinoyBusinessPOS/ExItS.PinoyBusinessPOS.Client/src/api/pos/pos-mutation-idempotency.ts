@@ -3,6 +3,10 @@
  * Headers are optional on the server; when present both key + payload hash are required.
  */
 
+import { sha256 as nobleSha256 } from "@noble/hashes/sha256";
+import { bytesToHex } from "@noble/hashes/utils";
+import { isWebCryptoSubtleAvailable } from "@/lib/web-crypto-capability";
+
 export const IDEMPOTENCY_KEY_HEADER = "Idempotency-Key";
 export const PAYLOAD_HASH_HEADER = "X-Pos-Payload-Hash";
 export const OPERATION_ID_HEADER = "X-Pos-Operation-Id";
@@ -30,12 +34,21 @@ function guidToD(guid: string): string {
   return guid.toLowerCase();
 }
 
+function sha256HexFallback(payload: string): string {
+  // Standards-correct SHA-256 for non-secure contexts (e.g. plain HTTP Tailscale LV)
+  // where crypto.subtle is undefined. Must match Web Crypto output exactly.
+  return bytesToHex(nobleSha256(new TextEncoder().encode(payload)));
+}
+
 export async function sha256Hex(payload: string): Promise<string> {
-  const data = new TextEncoder().encode(payload);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+  if (isWebCryptoSubtleAvailable()) {
+    const data = new TextEncoder().encode(payload);
+    const digest = await crypto.subtle.digest("SHA-256", data);
+    return Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+  }
+  return sha256HexFallback(payload);
 }
 
 /**

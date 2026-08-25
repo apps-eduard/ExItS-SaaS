@@ -151,9 +151,11 @@ export function ShiftOpenPage() {
             ? t("shift.pwaRegisterBusy")
             : error instanceof PosApiError
               ? (error.problem.detail ?? error.message)
-              : error instanceof Error
-                ? error.message
-                : t("shift.pwaRegisterError");
+              : error instanceof TypeError && /digest/i.test(error.message)
+                ? t("shift.pwaRegisterError")
+                : error instanceof Error
+                  ? error.message
+                  : t("shift.pwaRegisterError");
         setPwaRegisterError(message);
       } finally {
         if (!cancelled) {

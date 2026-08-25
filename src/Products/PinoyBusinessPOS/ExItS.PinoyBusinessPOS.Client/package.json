@@ -16,6 +16,7 @@
     "test:pwa": "npm run build && node scripts/validate-pwa.mjs"
   },
   "dependencies": {
+    "@noble/hashes": "^1.8.0",
     "@radix-ui/react-slot": "^1.2.3",
     "@tanstack/react-query": "^5.85.5",
     "class-variance-authority": "^0.7.1",

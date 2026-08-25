@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { listRegisters, listRegistersAvailableForShift } from "@/api/pos/pos-registers-client";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createRegister, listRegisters, listRegistersAvailableForShift } from "@/api/pos/pos-registers-client";
 import {
   closeCashierShift,
   getCurrentCashierShift,
@@ -11,6 +11,7 @@ import {
   resolveOpeningCashVisible,
 } from "@/api/pos/pos-operational-setup-client";
 import { PosApiError } from "@/api/pos/pos-http";
+import { sha256Hex } from "@/api/pos/pos-mutation-idempotency";
 
 const workspace = {
   organizationId: "11111111-1111-1111-1111-111111111111",
@@ -45,6 +46,10 @@ function openShiftJson(extra: Record<string, unknown> = {}) {
 describe("pos-registers-client / pos-shifts-client", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("lists available registers with branch-scoped headers", async () => {
@@ -160,5 +165,52 @@ describe("pos-registers-client / pos-shifts-client", () => {
     await expect(
       openCashierShift(workspace, { registerId, openingCashAmount: 0 }),
     ).rejects.toBeInstanceOf(PosApiError);
+  });
+
+  it("createRegister sends idempotency headers when crypto.subtle is unavailable", async () => {
+    const originalCrypto = globalThis.crypto;
+    vi.stubGlobal("crypto", {
+      ...originalCrypto,
+      subtle: undefined,
+      randomUUID: () => "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+    });
+
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          registerId,
+          organizationId: workspace.organizationId,
+          registerCode: "REG-000001",
+          name: "PWA-0001",
+          description: "Auto-created cash register for web POS (PWA).",
+          status: "Active",
+          createdAtUtc: "2026-08-25T01:00:00Z",
+          createdBy: "actor",
+          updatedAtUtc: "2026-08-25T01:00:00Z",
+          updatedBy: "actor",
+          hasOpenShift: false,
+        }),
+        { status: 201, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const created = await createRegister(workspace, {
+      name: "PWA-0001",
+      description: "Auto-created cash register for web POS (PWA).",
+    });
+    expect(created.name).toBe("PWA-0001");
+
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
+    const [url, init] = vi.mocked(fetch).mock.calls[0];
+    expect(String(url)).toContain("/api/v1/pos/registers");
+    expect(init?.method).toBe("POST");
+
+    const headers = new Headers(init?.headers);
+    expect(headers.get("Idempotency-Key")).toBe("aaaaaaaabbbb4ccc8dddeeeeeeeeeeee");
+    expect(headers.get("X-Pos-Operation-Id")).toBe("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
+    expect(headers.get("X-Pos-Operation-Type")).toBe("pos.register.create");
+    const payloadHash = headers.get("X-Pos-Payload-Hash");
+    expect(payloadHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(payloadHash).toBe(await sha256Hex(String(init?.body ?? "")));
   });
 });
