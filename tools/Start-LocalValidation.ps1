@@ -733,7 +733,7 @@ Write-Host "  Auth emails:  $authPublicBaseUrl/admin/activate-account|reset-pass
 Write-Host "  DP keys:      $dpKeys"
 Write-Host '=========================================' -ForegroundColor Green
 Show-LocalValidationFirewallGuidance
-Write-Note 'Activation/reset Mailpit links open React Admin (:8095), not Blazor Admin (:8090).'
+Write-Note 'Activation/reset Mailpit links default to React Admin http://127.0.0.1:8095 (not Tailscale). Override with EXITS_ADMIN_PUBLIC_BASE_URL when testing from another device.'
 Write-Note 'If the browser still has an old localhost antiforgery cookie, open an Incognito window or clear localhost site data once.'
 Write-Host 'Stop apps:  .\tools\Stop-LocalValidation.ps1'
 Write-Host 'Stop DBs:   .\tools\Stop-LocalValidation.ps1 -StopDatabases   (volumes preserved)'

@@ -47,6 +47,9 @@ function Resolve-LocalValidationAuthPublicBaseUrl {
       Public base URL embedded in PlatformEmail activation/reset links.
       Must point at the frontend that hosts /admin/activate-account and /admin/reset-password
       (React Admin Vite on :8095), not Blazor Admin :8090.
+
+      -PublicHost is NETWORK EXPOSURE only. It must NOT force Mailpit links onto Tailscale.
+      Explicit override: EXITS_ADMIN_PUBLIC_BASE_URL (or LOCAL_VALIDATION_REACT_ADMIN_ORIGIN).
     #>
     param(
         [hashtable]$EnvMap,
@@ -58,14 +61,12 @@ function Resolve-LocalValidationAuthPublicBaseUrl {
         $ReactAdminPort = [int]$LocalValidationStack.DefaultReactAdminPort
     }
 
+    # Keep parameter for call-site compatibility; PublicHost must not select email links.
+    $null = $ResolvedPublicHost
+
     $override = [string]$env:EXITS_ADMIN_PUBLIC_BASE_URL
     if (-not [string]::IsNullOrWhiteSpace($override)) {
         return $override.TrimEnd('/')
-    }
-
-    # Prefer Tailscale/LAN PublicHost so Mailpit activate/reset links open on phone/other devices.
-    if (-not [string]::IsNullOrWhiteSpace($ResolvedPublicHost)) {
-        return "http://$($ResolvedPublicHost.Trim()):$ReactAdminPort"
     }
 
     $fromEnv = if ($EnvMap -and $EnvMap['LOCAL_VALIDATION_REACT_ADMIN_ORIGIN']) {

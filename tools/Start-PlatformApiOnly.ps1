@@ -17,11 +17,11 @@ $platformCs = "Host=127.0.0.1;Port=15533;Database=exits_platform;Username=$($map
 $mailpitSmtpPort = if ($map['LOCAL_VALIDATION_MAILPIT_SMTP_HOST_PORT']) { [int]$map['LOCAL_VALIDATION_MAILPIT_SMTP_HOST_PORT'] } else { 1025 }
 $mailpitUiPort = if ($map['LOCAL_VALIDATION_MAILPIT_UI_HOST_PORT']) { [int]$map['LOCAL_VALIDATION_MAILPIT_UI_HOST_PORT'] } else { 8025 }
 $publicHost = if ($map['LOCAL_VALIDATION_PUBLIC_HOST']) { [string]$map['LOCAL_VALIDATION_PUBLIC_HOST'].Trim() } else { '' }
-# React Admin Vite :8095 (never Blazor :8090). Prefer Tailscale PublicHost for Mailpit links off-box.
+# React Admin Vite :8095 (never Blazor :8090).
+# -PublicHost / dotenv PUBLIC_HOST is network exposure only — do NOT force Mailpit links to Tailscale.
+# Explicit remote-device Mailpit links: set EXITS_ADMIN_PUBLIC_BASE_URL=http://<host>:8095
 $adminOrigin = if ($env:EXITS_ADMIN_PUBLIC_BASE_URL) {
     [string]$env:EXITS_ADMIN_PUBLIC_BASE_URL
-} elseif ($publicHost) {
-    "http://${publicHost}:8095"
 } elseif ($map['LOCAL_VALIDATION_REACT_ADMIN_ORIGIN']) {
     [string]$map['LOCAL_VALIDATION_REACT_ADMIN_ORIGIN']
 } else {

@@ -6,14 +6,24 @@
 .DESCRIPTION
   Local Validation helper (not Production).
   - Frees ports 5177 and 8095 if something is already listening
-  - Resolves Tailscale / PublicHost automatically when not passed
-  - Starts both Vite apps in separate PowerShell windows, bound for LAN/Tailscale
+  - Binds Vite for LAN/Tailscale when -PublicHost is set (network exposure only)
+  - React Admin uses SAME-ORIGIN /api (Vite proxies to 127.0.0.1:8091) for both
+    localhost and Tailscale page hosts — PublicHost does not change browser API routing
+
+  Admin worktree selection (deterministic):
+  1. -AdminWebPath (explicit)
+  2. EXITS_REACT_ADMIN_WEB_PATH environment variable
+  3. Desktop\ExItS-SaaS-PlatformWeb-local-access\...\Admin.Web (Local Validation :8095)
+  4. Fail clearly if none found (do not silently fall back to a different port worktree)
 
 .EXAMPLE
   .\tools\Start-ReactFrontends.ps1
 
 .EXAMPLE
   .\tools\Start-ReactFrontends.ps1 -PublicHost 100.120.79.81
+
+.EXAMPLE
+  .\tools\Start-ReactFrontends.ps1 -AdminWebPath 'C:\Users\speed\Desktop\ExItS-SaaS-PlatformWeb-local-access\src\Platform\ExItS.Platform.Admin.Web'
 #>
 [CmdletBinding()]
 param(
@@ -108,17 +118,42 @@ function Resolve-DefaultPosClientPath {
 }
 
 function Resolve-DefaultAdminWebPath {
-    $desktop = [Environment]::GetFolderPath('Desktop')
-    $candidates = @(
-        (Join-Path $desktop 'ExItS-SaaS-PlatformWeb-local-access\src\Platform\ExItS.Platform.Admin.Web'),
-        (Join-Path $desktop 'ExItS-SaaS-PlatformWeb\src\Platform\ExItS.Platform.Admin.Web')
-    )
-    foreach ($c in $candidates) {
-        if (Test-Path -LiteralPath (Join-Path $c 'package.json')) {
-            return [System.IO.Path]::GetFullPath($c)
-        }
+    $fromEnv = [string]$env:EXITS_REACT_ADMIN_WEB_PATH
+    if (-not [string]::IsNullOrWhiteSpace($fromEnv)) {
+        return [System.IO.Path]::GetFullPath($fromEnv.Trim())
     }
-    return [System.IO.Path]::GetFullPath($candidates[0])
+
+    # Deterministic Local Validation Admin (:8095). Do not silently pick PlatformWeb (:5173).
+    $desktop = [Environment]::GetFolderPath('Desktop')
+    $canonical = Join-Path $desktop 'ExItS-SaaS-PlatformWeb-local-access\src\Platform\ExItS.Platform.Admin.Web'
+    if (Test-Path -LiteralPath (Join-Path $canonical 'package.json')) {
+        return [System.IO.Path]::GetFullPath($canonical)
+    }
+
+    throw @"
+React Admin Web path not found.
+Expected Local Validation Admin (:8095):
+  $canonical
+Set -AdminWebPath or EXITS_REACT_ADMIN_WEB_PATH to the Admin.Web folder that binds port 8095.
+"@
+}
+
+function Get-GitIdentity([string]$Path) {
+    $dir = $Path
+    $branch = '?'
+    $head = '?'
+    try {
+        $prev = Get-Location
+        Set-Location -LiteralPath $dir
+        $branch = (& git rev-parse --abbrev-ref HEAD 2>$null)
+        if (-not $branch) { $branch = '?' }
+        $head = (& git rev-parse --short HEAD 2>$null)
+        if (-not $head) { $head = '?' }
+        Set-Location -LiteralPath $prev.Path
+    } catch {
+        try { Set-Location -LiteralPath $prev.Path } catch { }
+    }
+    return [pscustomobject]@{ Branch = [string]$branch; Head = [string]$head }
 }
 
 function Assert-NpmProject([string]$Path, [string]$Label) {
@@ -184,13 +219,13 @@ function New-AdminLauncherScript {
         ('$Host.UI.RawUI.WindowTitle = ''ExItS React Admin :{0}''' -f $Port),
         ('Set-Location -LiteralPath ''{0}''' -f $WorkingDirectory),
         '$env:VITE_LOCAL_VALIDATION_TOOLS = ''true''',
-        # Same-origin /api via Vite proxy so Tailscale :8095 reaches Platform API.
+        # Same-origin /api via Vite proxy for localhost AND Tailscale page hosts.
         'Remove-Item Env:VITE_PLATFORM_API_BASE_URL -ErrorAction SilentlyContinue',
-        ('Write-Host ''[react-admin] http://127.0.0.1:{0}/''' -f $Port)
+        ('Write-Host ''[react-admin] http://127.0.0.1:{0}/ (API: same-origin /api -> 127.0.0.1:8091)''' -f $Port)
     )
 
     if (-not [string]::IsNullOrWhiteSpace($PublicHostValue)) {
-        $lines += ('Write-Host ''[react-admin] Tailscale/LAN http://{0}:{1}/''' -f $PublicHostValue, $Port)
+        $lines += ('Write-Host ''[react-admin] Tailscale/LAN http://{0}:{1}/ (API still same-origin /api)''' -f $PublicHostValue, $Port)
     }
 
     $lines += 'npm run dev'
@@ -202,12 +237,12 @@ $resolvedPublicHost = Resolve-PublicHost -Value $PublicHost
 if ([string]::IsNullOrWhiteSpace($resolvedPublicHost)) {
     $resolvedPublicHost = Get-TailscalePublicHost
     if (-not [string]::IsNullOrWhiteSpace($resolvedPublicHost)) {
-        Write-Ok ("PublicHost auto-detected Tailscale: {0}" -f $resolvedPublicHost)
+        Write-Ok ("PublicHost auto-detected Tailscale (network exposure only): {0}" -f $resolvedPublicHost)
     } else {
         Write-Note 'No Tailscale PublicHost detected; Vite still binds for LAN. Localhost works.'
     }
 } else {
-    Write-Ok ("PublicHost from -PublicHost: {0}" -f $resolvedPublicHost)
+    Write-Ok ("PublicHost from -PublicHost (network exposure only): {0}" -f $resolvedPublicHost)
 }
 
 if ([string]::IsNullOrWhiteSpace($PosClientPath)) {
@@ -223,8 +258,11 @@ $AdminWebPath = [System.IO.Path]::GetFullPath($AdminWebPath)
 Assert-NpmProject -Path $PosClientPath -Label 'React POS'
 Assert-NpmProject -Path $AdminWebPath -Label 'React Admin'
 
+$adminGit = Get-GitIdentity -Path $AdminWebPath
 Write-Step ("React POS:    {0}  (port {1})" -f $PosClientPath, $PosPort)
 Write-Step ("React Admin:  {0}  (port {1})" -f $AdminWebPath, $AdminPort)
+Write-Ok ("Admin git:    branch={0} HEAD={1}" -f $adminGit.Branch, $adminGit.Head)
+Write-Note 'Browser API routing: same-origin /api (Vite proxy -> 127.0.0.1:8091) for localhost and Tailscale.'
 
 Write-Step ("Freeing ports {0} and {1} if occupied..." -f $PosPort, $AdminPort)
 Stop-PortListeners -Port $PosPort
@@ -249,3 +287,4 @@ if (-not [string]::IsNullOrWhiteSpace($resolvedPublicHost)) {
     Write-Host ("Tailscale Admin: http://{0}:{1}/" -f $resolvedPublicHost, $AdminPort)
 }
 Write-Note 'Leave those two windows open while developing.'
+Write-Note 'Mailpit auth links default to http://127.0.0.1:8095 — set EXITS_ADMIN_PUBLIC_BASE_URL for Tailscale Mailpit links.'
