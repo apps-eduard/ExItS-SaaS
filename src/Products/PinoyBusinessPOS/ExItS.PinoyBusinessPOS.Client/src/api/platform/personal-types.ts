@@ -4,6 +4,10 @@ export type PersonalContactDto = {
   phone?: string | null;
   email?: string | null;
   linkedUserIdentityId?: string | null;
+  resolvedUserIdentityId?: string | null;
+  resolvedPublicUserId?: string | null;
+  connectedAtUtc?: string | null;
+  blockedAtUtc?: string | null;
   status: string;
   createdAtUtc: string;
 };
@@ -12,6 +16,26 @@ export type CreatePersonalContactRequest = {
   displayName: string;
   phone?: string | null;
   email?: string | null;
+  resolvedUserIdentityId?: string | null;
+  resolvedPublicUserId?: string | null;
+};
+
+export type PersonalConnectionRequestDto = {
+  id: string;
+  requesterUserIdentityId: string;
+  targetUserIdentityId: string;
+  requesterContactId: string;
+  requesterDisplayName: string;
+  requesterPublicUserId?: string | null;
+  targetPublicUserId?: string | null;
+  status: string;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+  expiresAtUtc: string;
+  acceptedAtUtc?: string | null;
+  declinedAtUtc?: string | null;
+  revokedAtUtc?: string | null;
+  direction: string;
 };
 
 export type PersonalDebtRelationshipSummaryDto = {

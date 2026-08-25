@@ -1,70 +1,52 @@
 import type {
+  PersonalConnectionRequestDto,
   PersonalContactDto,
   PersonalDebtRelationshipSummaryDto,
-  PersonalUtangInvitationDto,
 } from "@/api/platform/personal-types";
 
-export type PeopleConnectionStatus = "not_connected" | "request_pending" | "connected";
+export type PeopleConnectionStatus =
+  | "local"
+  | "not_connected"
+  | "request_pending"
+  | "connected"
+  | "blocked";
 
 export type PeopleRowModel = {
   contact: PersonalContactDto;
   connectionStatus: PeopleConnectionStatus;
   identityLine: "local" | "exits";
   publicUserId?: string;
-  pendingInvitation?: PersonalUtangInvitationDto;
+  pendingConnectionRequest?: PersonalConnectionRequestDto;
   utangSummary?: string;
 };
 
-const RESOLVED_ID_CACHE_KEY = "exits.personal.resolvedPublicIds";
-
-export function readResolvedPublicIdCache(): Record<string, string> {
-  try {
-    const raw = sessionStorage.getItem(RESOLVED_ID_CACHE_KEY);
-    if (!raw) {
-      return {};
-    }
-    const parsed = JSON.parse(raw) as unknown;
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-      return {};
-    }
-    const out: Record<string, string> = {};
-    for (const [key, value] of Object.entries(parsed)) {
-      if (typeof value === "string" && value.trim()) {
-        out[key] = value;
-      }
-    }
-    return out;
-  } catch {
-    return {};
-  }
-}
-
-export function rememberResolvedPublicId(contactId: string, publicUserId: string): void {
-  const next = { ...readResolvedPublicIdCache(), [contactId]: publicUserId };
-  sessionStorage.setItem(RESOLVED_ID_CACHE_KEY, JSON.stringify(next));
-}
-
-export function isPendingInvitation(invite: PersonalUtangInvitationDto): boolean {
-  return invite.status.toLowerCase() === "pending";
+export function isPendingConnectionRequest(request: PersonalConnectionRequestDto): boolean {
+  return request.status.toLowerCase() === "pending";
 }
 
 export function deriveConnectionStatus(
   contact: PersonalContactDto,
-  invitations: PersonalUtangInvitationDto[],
-): { status: PeopleConnectionStatus; pendingInvitation?: PersonalUtangInvitationDto } {
+  connectionRequests: PersonalConnectionRequestDto[],
+): { status: PeopleConnectionStatus; pendingConnectionRequest?: PersonalConnectionRequestDto } {
+  if (contact.blockedAtUtc) {
+    return { status: "blocked" };
+  }
+
   if (contact.linkedUserIdentityId) {
     return { status: "connected" };
   }
 
-  const pendingInvitation = invitations.find(
-    (invite) =>
-      invite.inviteeContactId === contact.id &&
-      isPendingInvitation(invite) &&
-      !invite.acceptedByUserIdentityId,
+  const pendingOutgoing = connectionRequests.find(
+    (request) =>
+      request.requesterContactId === contact.id && isPendingConnectionRequest(request),
   );
 
-  if (pendingInvitation) {
-    return { status: "request_pending", pendingInvitation };
+  if (pendingOutgoing) {
+    return { status: "request_pending", pendingConnectionRequest: pendingOutgoing };
+  }
+
+  if (!contact.resolvedUserIdentityId && !contact.resolvedPublicUserId) {
+    return { status: "local" };
   }
 
   return { status: "not_connected" };
@@ -84,19 +66,20 @@ function formatMoney(amount: number, currencyCode: string): string {
 
 export function buildPeopleRows(input: {
   contacts: PersonalContactDto[];
-  invitations: PersonalUtangInvitationDto[];
+  connectionRequests: PersonalConnectionRequestDto[];
   lent: PersonalDebtRelationshipSummaryDto[];
   borrowed: PersonalDebtRelationshipSummaryDto[];
-  resolvedPublicIds?: Record<string, string>;
   search?: string;
 }): PeopleRowModel[] {
-  const resolved = input.resolvedPublicIds ?? {};
   const needle = input.search?.trim().toLowerCase() ?? "";
 
   const active = input.contacts.filter((c) => c.status.toLowerCase() !== "archived");
   const rows = active.map((contact) => {
-    const { status, pendingInvitation } = deriveConnectionStatus(contact, input.invitations);
-    const publicUserId = resolved[contact.id];
+    const { status, pendingConnectionRequest } = deriveConnectionStatus(
+      contact,
+      input.connectionRequests,
+    );
+    const publicUserId = contact.resolvedPublicUserId ?? undefined;
     const related = [...input.lent, ...input.borrowed].filter(
       (rel) =>
         rel.creditorContactId === contact.id ||
@@ -124,7 +107,7 @@ export function buildPeopleRows(input: {
       connectionStatus: status,
       identityLine: publicUserId ? ("exits" as const) : ("local" as const),
       publicUserId,
-      pendingInvitation,
+      pendingConnectionRequest,
       utangSummary,
     };
   });

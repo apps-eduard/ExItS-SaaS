@@ -1,22 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  acceptPersonalInvitation,
+  acceptPersonalConnectionRequest,
+  blockPersonalContact,
   createPersonalContact,
   createPersonalDebtRelationship,
-  createPersonalInvitation,
-  declinePersonalInvitation,
+  declinePersonalConnectionRequest,
   listBorrowedRelationships,
   listLentRelationships,
+  listPersonalConnectionRequests,
   listPersonalContacts,
-  listPersonalInvitations,
   listPersonalNotifications,
   markPersonalNotificationRead,
   personalPeopleKeys,
-  resendPersonalInvitation,
+  requestPersonalConnection,
   resolvePublicUserId,
-  revokePersonalInvitation,
+  revokePersonalConnectionRequest,
+  unlinkPersonalContact,
+  unblockPersonalContact,
 } from "@/api/platform/personal-people-client";
-import type { CreatePersonalDebtRelationshipRequest } from "@/api/platform/personal-types";
+import type { CreatePersonalContactRequest, CreatePersonalDebtRelationshipRequest } from "@/api/platform/personal-types";
 
 export function usePersonalContactsQuery() {
   return useQuery({
@@ -25,10 +27,10 @@ export function usePersonalContactsQuery() {
   });
 }
 
-export function usePersonalInvitationsQuery() {
+export function usePersonalConnectionRequestsQuery() {
   return useQuery({
-    queryKey: personalPeopleKeys.invitations(),
-    queryFn: ({ signal }) => listPersonalInvitations(signal),
+    queryKey: personalPeopleKeys.connections(),
+    queryFn: ({ signal }) => listPersonalConnectionRequests(signal),
   });
 }
 
@@ -57,7 +59,7 @@ export function useInvalidatePersonalPeople() {
   return () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: personalPeopleKeys.contacts() }),
-      queryClient.invalidateQueries({ queryKey: personalPeopleKeys.invitations() }),
+      queryClient.invalidateQueries({ queryKey: personalPeopleKeys.connections() }),
       queryClient.invalidateQueries({ queryKey: personalPeopleKeys.notifications() }),
       queryClient.invalidateQueries({ queryKey: [...personalPeopleKeys.all, "utang-summaries"] }),
     ]);
@@ -72,52 +74,77 @@ export function useResolvePublicUserMutation() {
 export function useCreateContactMutation() {
   const invalidate = useInvalidatePersonalPeople();
   return useMutation({
-    mutationFn: (input: { displayName: string; email?: string | null }) =>
-      createPersonalContact({
-        displayName: input.displayName,
-        email: input.email ?? null,
-        phone: null,
-      }),
+    mutationFn: (input: CreatePersonalContactRequest) => createPersonalContact(input),
     onSuccess: async () => {
       await invalidate();
     },
   });
 }
 
-export function useAcceptInvitationMutation() {
+export function useRequestConnectionMutation() {
   const invalidate = useInvalidatePersonalPeople();
   return useMutation({
-    mutationFn: (token: string) => acceptPersonalInvitation(token),
+    mutationFn: (contactId: string) => requestPersonalConnection(contactId),
     onSuccess: async () => {
       await invalidate();
     },
   });
 }
 
-export function useDeclineInvitationMutation() {
+export function useAcceptConnectionMutation() {
   const invalidate = useInvalidatePersonalPeople();
   return useMutation({
-    mutationFn: (token: string) => declinePersonalInvitation(token),
+    mutationFn: (requestId: string) => acceptPersonalConnectionRequest(requestId),
     onSuccess: async () => {
       await invalidate();
     },
   });
 }
 
-export function useRevokeInvitationMutation() {
+export function useDeclineConnectionMutation() {
   const invalidate = useInvalidatePersonalPeople();
   return useMutation({
-    mutationFn: (invitationId: string) => revokePersonalInvitation(invitationId),
+    mutationFn: (requestId: string) => declinePersonalConnectionRequest(requestId),
     onSuccess: async () => {
       await invalidate();
     },
   });
 }
 
-export function useResendInvitationMutation() {
+export function useRevokeConnectionMutation() {
   const invalidate = useInvalidatePersonalPeople();
   return useMutation({
-    mutationFn: (invitationId: string) => resendPersonalInvitation(invitationId),
+    mutationFn: (requestId: string) => revokePersonalConnectionRequest(requestId),
+    onSuccess: async () => {
+      await invalidate();
+    },
+  });
+}
+
+export function useUnlinkContactMutation() {
+  const invalidate = useInvalidatePersonalPeople();
+  return useMutation({
+    mutationFn: (contactId: string) => unlinkPersonalContact(contactId),
+    onSuccess: async () => {
+      await invalidate();
+    },
+  });
+}
+
+export function useBlockContactMutation() {
+  const invalidate = useInvalidatePersonalPeople();
+  return useMutation({
+    mutationFn: (contactId: string) => blockPersonalContact(contactId),
+    onSuccess: async () => {
+      await invalidate();
+    },
+  });
+}
+
+export function useUnblockContactMutation() {
+  const invalidate = useInvalidatePersonalPeople();
+  return useMutation({
+    mutationFn: (contactId: string) => unblockPersonalContact(contactId),
     onSuccess: async () => {
       await invalidate();
     },
@@ -134,20 +161,11 @@ export function useMarkNotificationReadMutation() {
   });
 }
 
-export function useCreateUtangWithOptionalInviteMutation() {
+export function useCreateUtangMutation() {
   const invalidate = useInvalidatePersonalPeople();
   return useMutation({
-    mutationFn: async (input: {
-      relationship: CreatePersonalDebtRelationshipRequest;
-      inviteeContactId?: string;
-      shouldInvite: boolean;
-    }) => {
-      const relationship = await createPersonalDebtRelationship(input.relationship);
-      if (input.shouldInvite && input.inviteeContactId) {
-        await createPersonalInvitation(relationship.id, input.inviteeContactId);
-      }
-      return relationship;
-    },
+    mutationFn: (relationship: CreatePersonalDebtRelationshipRequest) =>
+      createPersonalDebtRelationship(relationship),
     onSuccess: async () => {
       await invalidate();
     },

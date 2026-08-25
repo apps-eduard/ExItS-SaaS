@@ -111,6 +111,7 @@ public sealed class PlatformDbContext : DbContext
         Set<OrganizationSalesDocumentAcknowledgmentRecord>();
     internal DbSet<PersonalAccountSettingsRecord> PersonalAccountSettings => Set<PersonalAccountSettingsRecord>();
     internal DbSet<PersonalContactRecord> PersonalContacts => Set<PersonalContactRecord>();
+    internal DbSet<PersonalConnectionRequestRecord> PersonalConnectionRequests => Set<PersonalConnectionRequestRecord>();
     internal DbSet<PersonalDebtRelationshipRecord> PersonalDebtRelationships => Set<PersonalDebtRelationshipRecord>();
     internal DbSet<PersonalUtangEntryRecord> PersonalUtangEntries => Set<PersonalUtangEntryRecord>();
     internal DbSet<PersonalUtangInvitationRecord> PersonalUtangInvitations => Set<PersonalUtangInvitationRecord>();
@@ -1645,6 +1646,10 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.Phone).HasColumnName("phone").HasMaxLength(32);
             entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(320);
             entity.Property(e => e.LinkedUserIdentityId).HasColumnName("linked_user_identity_id");
+            entity.Property(e => e.ResolvedUserIdentityId).HasColumnName("resolved_user_identity_id");
+            entity.Property(e => e.ResolvedPublicUserId).HasColumnName("resolved_public_user_id").HasMaxLength(32);
+            entity.Property(e => e.ConnectedAtUtc).HasColumnName("connected_at_utc");
+            entity.Property(e => e.BlockedAtUtc).HasColumnName("blocked_at_utc");
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
@@ -1668,6 +1673,47 @@ public sealed class PlatformDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.LinkedUserIdentityId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ResolvedUserIdentityId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<PersonalConnectionRequestRecord>(entity =>
+        {
+            entity.ToTable("personal_connection_requests");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.RequesterUserIdentityId).HasColumnName("requester_user_identity_id");
+            entity.Property(e => e.TargetUserIdentityId).HasColumnName("target_user_identity_id");
+            entity.Property(e => e.RequesterContactId).HasColumnName("requester_contact_id");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
+            entity.Property(e => e.AcceptedAtUtc).HasColumnName("accepted_at_utc");
+            entity.Property(e => e.DeclinedAtUtc).HasColumnName("declined_at_utc");
+            entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc");
+            entity.Property(e => e.RespondedByUserIdentityId).HasColumnName("responded_by_user_identity_id");
+            entity.HasIndex(e => new { e.RequesterUserIdentityId, e.TargetUserIdentityId, e.Status })
+                .HasDatabaseName("ix_personal_connection_requests_requester_target_status");
+            entity.HasIndex(e => e.RequesterContactId);
+
+            entity.HasOne<PersonalContactRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.RequesterContactId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.RequesterUserIdentityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.TargetUserIdentityId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<PersonalDebtRelationshipRecord>(entity =>

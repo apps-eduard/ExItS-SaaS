@@ -234,6 +234,13 @@ public static class PlatformAuditActions
     public const string PersonalAccountSettingsUpdated = "platform.personal.account_settings.updated";
     public const string PersonalContactCreated = "platform.personal.contact.created";
     public const string PersonalContactLinked = "platform.personal.contact.linked";
+    public const string PersonalContactUnlinked = "platform.personal.contact.unlinked";
+    public const string PersonalContactBlocked = "platform.personal.contact.blocked";
+    public const string PersonalContactUnblocked = "platform.personal.contact.unblocked";
+    public const string PersonalConnectionRequestCreated = "platform.personal.connection_request.created";
+    public const string PersonalConnectionRequestAccepted = "platform.personal.connection_request.accepted";
+    public const string PersonalConnectionRequestDeclined = "platform.personal.connection_request.declined";
+    public const string PersonalConnectionRequestRevoked = "platform.personal.connection_request.revoked";
     public const string PersonalUtangRelationshipCreated = "platform.personal.utang_relationship.created";
     public const string PersonalUtangParticipantAuthorized = "platform.personal.utang_participant.authorized";
     public const string PersonalUtangEntryRecorded = "platform.personal.utang_entry.recorded";

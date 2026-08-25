@@ -121,7 +121,7 @@ public sealed class InitializePhase16PersonalUtangSeed
 
         var created = await _createContact.ExecuteAsync(
             ownerUserIdentityId,
-            new CreatePersonalContactRequest(displayName, phone, email),
+            new CreatePersonalContactRequest(displayName, phone, email, null, null),
             cancellationToken).ConfigureAwait(false);
         if (!created.IsSuccess || created.Value is null)
         {

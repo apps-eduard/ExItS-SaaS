@@ -29,9 +29,43 @@ public interface IPersonalContactRepository
         string normalizedEmail,
         CancellationToken cancellationToken = default);
 
+    Task<PersonalContact?> FindActiveByOwnerAndResolvedUserAsync(
+        PlatformUserId ownerUserIdentityId,
+        PlatformUserId resolvedUserIdentityId,
+        CancellationToken cancellationToken = default);
+
+    Task<PersonalContact?> FindActiveBlockedByOwnerForUserAsync(
+        PlatformUserId ownerUserIdentityId,
+        PlatformUserId blockedUserIdentityId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(PersonalContact contact, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(PersonalContact contact, CancellationToken cancellationToken = default);
+}
+
+public interface IPersonalConnectionRequestRepository
+{
+    Task<PersonalConnectionRequest?> GetByIdAsync(
+        PersonalConnectionRequestId id,
+        CancellationToken cancellationToken = default);
+
+    Task<PersonalConnectionRequest?> FindPendingByRequesterAndTargetAsync(
+        PlatformUserId requesterUserIdentityId,
+        PlatformUserId targetUserIdentityId,
+        CancellationToken cancellationToken = default);
+
+    Task<PersonalConnectionRequest?> FindPendingForContactAsync(
+        PersonalContactId requesterContactId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PersonalConnectionRequest>> ListForUserAsync(
+        PlatformUserId userIdentityId,
+        CancellationToken cancellationToken = default);
+
+    Task AddAsync(PersonalConnectionRequest request, CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(PersonalConnectionRequest request, CancellationToken cancellationToken = default);
 }
 
 public interface IPersonalDebtRelationshipRepository

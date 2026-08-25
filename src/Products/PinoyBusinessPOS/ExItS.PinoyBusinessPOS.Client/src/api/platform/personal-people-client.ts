@@ -2,6 +2,7 @@ import { platformRequest } from "@/api/http";
 import type {
   CreatePersonalContactRequest,
   CreatePersonalDebtRelationshipRequest,
+  PersonalConnectionRequestDto,
   PersonalContactDto,
   PersonalDebtRelationshipSummaryDto,
   PersonalInAppNotificationDto,
@@ -13,6 +14,7 @@ import type {
 export const personalPeopleKeys = {
   all: ["personal-people"] as const,
   contacts: () => [...personalPeopleKeys.all, "contacts"] as const,
+  connections: () => [...personalPeopleKeys.all, "connections"] as const,
   invitations: () => [...personalPeopleKeys.all, "invitations"] as const,
   notifications: () => [...personalPeopleKeys.all, "notifications"] as const,
   lent: () => [...personalPeopleKeys.all, "lent"] as const,
@@ -47,6 +49,92 @@ export async function resolvePublicUserId(
     method: "POST",
     path: "/api/v1/users/resolve-public-id",
     body: { publicUserIdOrQrPayload, purpose },
+    signal,
+  });
+}
+
+export async function listPersonalConnectionRequests(
+  signal?: AbortSignal,
+): Promise<PersonalConnectionRequestDto[]> {
+  return platformRequest<PersonalConnectionRequestDto[]>({
+    path: "/api/v1/personal/connections",
+    signal,
+  });
+}
+
+export async function requestPersonalConnection(
+  contactId: string,
+  signal?: AbortSignal,
+): Promise<PersonalConnectionRequestDto> {
+  return platformRequest<PersonalConnectionRequestDto>({
+    method: "POST",
+    path: `/api/v1/personal/people/${contactId}/connection-request`,
+    signal,
+  });
+}
+
+export async function acceptPersonalConnectionRequest(
+  requestId: string,
+  signal?: AbortSignal,
+): Promise<PersonalConnectionRequestDto> {
+  return platformRequest<PersonalConnectionRequestDto>({
+    method: "POST",
+    path: `/api/v1/personal/connections/${requestId}/accept`,
+    signal,
+  });
+}
+
+export async function declinePersonalConnectionRequest(
+  requestId: string,
+  signal?: AbortSignal,
+): Promise<PersonalConnectionRequestDto> {
+  return platformRequest<PersonalConnectionRequestDto>({
+    method: "POST",
+    path: `/api/v1/personal/connections/${requestId}/decline`,
+    signal,
+  });
+}
+
+export async function revokePersonalConnectionRequest(
+  requestId: string,
+  signal?: AbortSignal,
+): Promise<PersonalConnectionRequestDto> {
+  return platformRequest<PersonalConnectionRequestDto>({
+    method: "POST",
+    path: `/api/v1/personal/connections/${requestId}/revoke`,
+    signal,
+  });
+}
+
+export async function unlinkPersonalContact(
+  contactId: string,
+  signal?: AbortSignal,
+): Promise<PersonalContactDto> {
+  return platformRequest<PersonalContactDto>({
+    method: "POST",
+    path: `/api/v1/personal/people/${contactId}/unlink`,
+    signal,
+  });
+}
+
+export async function blockPersonalContact(
+  contactId: string,
+  signal?: AbortSignal,
+): Promise<PersonalContactDto> {
+  return platformRequest<PersonalContactDto>({
+    method: "POST",
+    path: `/api/v1/personal/people/${contactId}/block`,
+    signal,
+  });
+}
+
+export async function unblockPersonalContact(
+  contactId: string,
+  signal?: AbortSignal,
+): Promise<PersonalContactDto> {
+  return platformRequest<PersonalContactDto>({
+    method: "POST",
+    path: `/api/v1/personal/people/${contactId}/unblock`,
     signal,
   });
 }

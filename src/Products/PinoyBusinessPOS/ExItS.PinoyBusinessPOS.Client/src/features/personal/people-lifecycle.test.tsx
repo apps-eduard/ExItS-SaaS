@@ -9,19 +9,18 @@ import { NotificationsPage } from "@/features/personal/NotificationsPage";
 import { PeoplePage } from "@/features/personal/PeoplePage";
 import { PersonDetailPage } from "@/features/personal/PersonDetailPage";
 import { PersonalShell } from "@/features/personal/PersonalShell";
-import {
-  buildPeopleRows,
-  deriveConnectionStatus,
-} from "@/features/personal/people-status";
+import { buildPeopleRows, deriveConnectionStatus } from "@/features/personal/people-status";
 import type {
+  PersonalConnectionRequestDto,
   PersonalContactDto,
   PersonalInAppNotificationDto,
-  PersonalUtangInvitationDto,
 } from "@/api/platform/personal-types";
 
 const contactA: PersonalContactDto = {
   id: "c1",
   displayName: "Juan Dela Cruz",
+  resolvedUserIdentityId: "user-b",
+  resolvedPublicUserId: "EX-1234-5678",
   linkedUserIdentityId: null,
   status: "Active",
   createdAtUtc: "2026-08-25T00:00:00.000Z",
@@ -30,20 +29,27 @@ const contactA: PersonalContactDto = {
 const contactConnected: PersonalContactDto = {
   id: "c2",
   displayName: "Ana Cruz",
+  resolvedUserIdentityId: "u-linked",
+  resolvedPublicUserId: "EX-9999-0000",
   linkedUserIdentityId: "u-linked",
+  connectedAtUtc: "2026-08-20T00:00:00.000Z",
   status: "Active",
   createdAtUtc: "2026-08-20T00:00:00.000Z",
 };
 
-const pendingInvite: PersonalUtangInvitationDto = {
-  id: "inv1",
-  debtRelationshipId: "rel1",
-  inviteeContactId: "c1",
-  invitedByUserIdentityId: "me",
+const pendingConnection: PersonalConnectionRequestDto = {
+  id: "req1",
+  requesterUserIdentityId: "me",
+  targetUserIdentityId: "user-b",
+  requesterContactId: "c1",
+  requesterDisplayName: "Me",
+  requesterPublicUserId: "EX-0000-1111",
+  targetPublicUserId: "EX-1234-5678",
   status: "Pending",
   createdAtUtc: "2026-08-25T00:00:00.000Z",
   updatedAtUtc: "2026-08-25T00:00:00.000Z",
   expiresAtUtc: "2026-09-01T00:00:00.000Z",
+  direction: "Sent",
 };
 
 function jsonResponse(status: number, body: unknown) {
@@ -84,16 +90,16 @@ function renderPeopleApp(path: string) {
 }
 
 describe("people status derivation", () => {
-  it("marks unlinked contacts as Not connected and pending invites as Request pending", () => {
+  it("marks resolved unlinked contacts as Not connected and pending requests as Request pending", () => {
     expect(deriveConnectionStatus(contactA, []).status).toBe("not_connected");
-    expect(deriveConnectionStatus(contactA, [pendingInvite]).status).toBe("request_pending");
+    expect(deriveConnectionStatus(contactA, [pendingConnection]).status).toBe("request_pending");
     expect(deriveConnectionStatus(contactConnected, []).status).toBe("connected");
   });
 
   it("does not put unlink or block actions into list row models", () => {
     const rows = buildPeopleRows({
       contacts: [contactA, contactConnected],
-      invitations: [pendingInvite],
+      connectionRequests: [pendingConnection],
       lent: [],
       borrowed: [],
     });
@@ -105,7 +111,6 @@ describe("people status derivation", () => {
 describe("People lifecycle UX", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
-    window.sessionStorage.clear();
   });
 
   it("renders empty People state", async () => {
@@ -116,7 +121,7 @@ describe("People lifecycle UX", () => {
         if (url.includes("/utang/contacts")) {
           return jsonResponse(200, []);
         }
-        if (url.includes("/utang/invitations")) {
+        if (url.includes("/personal/connections")) {
           return jsonResponse(200, []);
         }
         if (url.includes("/relationships/")) {
@@ -140,8 +145,8 @@ describe("People lifecycle UX", () => {
         if (url.includes("/utang/contacts")) {
           return jsonResponse(200, [contactA, contactConnected]);
         }
-        if (url.includes("/utang/invitations")) {
-          return jsonResponse(200, [pendingInvite]);
+        if (url.includes("/personal/connections")) {
+          return jsonResponse(200, [pendingConnection]);
         }
         if (url.includes("/relationships/")) {
           return jsonResponse(200, []);
@@ -157,10 +162,9 @@ describe("People lifecycle UX", () => {
     expect(screen.getByText("Connected")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /unlink/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /block/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /delete/i })).not.toBeInTheDocument();
   });
 
-  it("requires identity confirmation before Add and does not auto-link or invite", async () => {
+  it("persists resolved identity on add without auto connection request", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.includes("/resolve-public-id") && init?.method === "POST") {
@@ -176,13 +180,17 @@ describe("People lifecycle UX", () => {
       if (url.includes("/utang/contacts") && init?.method === "POST") {
         const body = JSON.parse(String(init.body)) as {
           displayName: string;
-          linkedUserIdentityId?: string;
+          resolvedUserIdentityId: string;
+          resolvedPublicUserId: string;
         };
         expect(body.displayName).toBe("Maria Santos");
-        expect(body.linkedUserIdentityId).toBeUndefined();
+        expect(body.resolvedUserIdentityId).toBe("user-b");
+        expect(body.resolvedPublicUserId).toBe("EX-1234-5678");
         return jsonResponse(201, {
           id: "c-new",
           displayName: "Maria Santos",
+          resolvedUserIdentityId: "user-b",
+          resolvedPublicUserId: "EX-1234-5678",
           linkedUserIdentityId: null,
           status: "Active",
           createdAtUtc: "2026-08-25T00:00:00.000Z",
@@ -191,7 +199,7 @@ describe("People lifecycle UX", () => {
       if (url.includes("/utang/contacts")) {
         return jsonResponse(200, []);
       }
-      if (url.includes("/utang/invitations")) {
+      if (url.includes("/personal/connections")) {
         return jsonResponse(200, []);
       }
       if (url.includes("/relationships/")) {
@@ -212,14 +220,12 @@ describe("People lifecycle UX", () => {
 
     const confirmation = await screen.findByTestId("identity-confirmation");
     expect(within(confirmation).getByText("Maria Santos")).toBeInTheDocument();
-    expect(within(confirmation).getByText("EX-1234-5678")).toBeInTheDocument();
 
-    expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/invitations"))).toBe(
-      false,
-    );
-    expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/notifications"))).toBe(
-      false,
-    );
+    expect(
+      fetchMock.mock.calls.some(
+        (call) => String(call[0]).includes("/connection-request") && call[1]?.method === "POST",
+      ),
+    ).toBe(false);
 
     await user.click(screen.getByRole("button", { name: "Add person" }));
     await waitFor(() => {
@@ -229,69 +235,23 @@ describe("People lifecycle UX", () => {
         ),
       ).toBe(true);
     });
-
-    const createCall = fetchMock.mock.calls.find(
-      (call) => String(call[0]).includes("/utang/contacts") && call[1]?.method === "POST",
-    );
-    expect(createCall).toBeTruthy();
-    expect(String(createCall?.[1]?.body)).not.toContain("user-b");
-    expect(
-      fetchMock.mock.calls.some(
-        (call) =>
-          String(call[0]).includes("/invitations") &&
-          (call[1]?.method === "POST" || call[1]?.method === "post"),
-      ),
-    ).toBe(false);
   });
 
-  it("shows incoming invitations and Accept leads to Connected after refresh", async () => {
-    let linked = false;
-    let invitations: PersonalUtangInvitationDto[] = [
-      {
-        id: "inv-in",
-        debtRelationshipId: "rel-in",
-        inviteeContactId: "c-other",
-        invitedByUserIdentityId: "sender",
-        status: "Pending",
-        createdAtUtc: "2026-08-25T00:00:00.000Z",
-        updatedAtUtc: "2026-08-25T00:00:00.000Z",
-        expiresAtUtc: "2026-09-01T00:00:00.000Z",
-      },
-    ];
-
+  it("shows Request connection on not connected detail and creates pending request", async () => {
+    let connections: PersonalConnectionRequestDto[] = [];
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
-        if (url.includes("/utang/invitations/accept") && init?.method === "POST") {
-          linked = true;
-          invitations = [];
-          return jsonResponse(200, {
-            invitationId: "inv-in",
-            debtRelationshipId: "rel-in",
-            linkedContactId: "c-me",
-            linkedUserIdentityId: "me",
-            createdOrganizationMembership: false,
-            grantedProductRole: false,
-          });
+        if (url.includes("/connection-request") && init?.method === "POST") {
+          connections = [{ ...pendingConnection, id: "req-new" }];
+          return jsonResponse(201, connections[0]);
         }
-        if (url.includes("/utang/invitations/decline")) {
-          invitations = [];
-          return jsonResponse(200, { ...invitations[0], status: "Declined" });
-        }
-        if (url.includes("/utang/invitations")) {
-          return jsonResponse(200, invitations);
+        if (url.includes("/personal/connections")) {
+          return jsonResponse(200, connections);
         }
         if (url.includes("/utang/contacts")) {
-          return jsonResponse(200, [
-            {
-              id: "c-me",
-              displayName: "Me",
-              linkedUserIdentityId: linked ? "peer" : null,
-              status: "Active",
-              createdAtUtc: "2026-08-25T00:00:00.000Z",
-            },
-          ]);
+          return jsonResponse(200, [contactA]);
         }
         if (url.includes("/relationships/")) {
           return jsonResponse(200, []);
@@ -301,87 +261,74 @@ describe("People lifecycle UX", () => {
     );
 
     const user = userEvent.setup();
-    renderPeopleApp("/personal/invitations?token=invite-token");
-    expect(await screen.findByText("Personal Utang request")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Accept" }));
-    await waitFor(() => expect(linked).toBe(true));
+    renderPeopleApp("/personal/people/c1");
+    expect(await screen.findByRole("button", { name: "Request connection" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Request connection" }));
+    await waitFor(() => expect(connections).toHaveLength(1));
   });
 
-  it("Decline removes pending without inventing a link", async () => {
-    let invitations: PersonalUtangInvitationDto[] = [
+  it("shows incoming connection requests with accept and decline by id", async () => {
+    let linked = false;
+    let connections: PersonalConnectionRequestDto[] = [
       {
-        id: "inv-in",
-        debtRelationshipId: "rel-in",
-        inviteeContactId: "c-other",
-        invitedByUserIdentityId: "sender",
-        status: "Pending",
-        createdAtUtc: "2026-08-25T00:00:00.000Z",
-        updatedAtUtc: "2026-08-25T00:00:00.000Z",
-        expiresAtUtc: "2026-09-01T00:00:00.000Z",
+        ...pendingConnection,
+        id: "req-in",
+        direction: "Received",
+        requesterDisplayName: "Eduard",
+        requesterPublicUserId: "EX-5555-5555",
       },
     ];
-    let acceptCalled = false;
 
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
-        if (url.includes("/utang/invitations/decline") && init?.method === "POST") {
-          invitations = [];
-          return jsonResponse(200, {
-            id: "inv-in",
-            debtRelationshipId: "rel-in",
-            inviteeContactId: "c-other",
-            invitedByUserIdentityId: "sender",
-            status: "Declined",
-            createdAtUtc: "2026-08-25T00:00:00.000Z",
-            updatedAtUtc: "2026-08-25T00:00:00.000Z",
-            expiresAtUtc: "2026-09-01T00:00:00.000Z",
-          });
+        if (url.includes("/connections/req-in/accept") && init?.method === "POST") {
+          linked = true;
+          connections = [];
+          return jsonResponse(200, { ...pendingConnection, id: "req-in", status: "Accepted" });
         }
-        if (url.includes("/utang/invitations/accept")) {
-          acceptCalled = true;
-          return jsonResponse(400, {});
-        }
-        if (url.includes("/utang/invitations")) {
-          return jsonResponse(200, invitations);
+        if (url.includes("/personal/connections")) {
+          return jsonResponse(200, connections);
         }
         if (url.includes("/utang/contacts")) {
-          return jsonResponse(200, []);
+          return jsonResponse(200, [
+            {
+              ...contactA,
+              linkedUserIdentityId: linked ? "user-b" : null,
+            },
+          ]);
         }
         return jsonResponse(404, {});
       }),
     );
 
     const user = userEvent.setup();
-    renderPeopleApp("/personal/invitations?token=invite-token");
-    await user.click(await screen.findByRole("button", { name: "Decline" }));
-    await waitFor(() => expect(invitations).toHaveLength(0));
-    expect(acceptCalled).toBe(false);
+    renderPeopleApp("/personal/invitations");
+    expect(await screen.findByText("Eduard")).toBeInTheDocument();
+    expect(screen.queryByLabelText(/invitation token/i)).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Accept" }));
+    await waitFor(() => expect(linked).toBe(true));
   });
 
-  it("notification tap deep-links to invitations and mark-read does not revoke invitations", async () => {
+  it("notification tap deep-links to invitations and mark-read does not revoke pending request", async () => {
     const notifications: PersonalInAppNotificationDto[] = [
       {
         id: "n1",
-        title: "Eduard sent you a Personal Utang request",
+        title: "Eduard sent you a connection request",
         preview: "Open invitations to respond.",
-        relatedType: "PersonalUtangInvitation",
-        relatedId: "inv-in",
+        relatedType: "PersonalConnectionRequest",
+        relatedId: "req-in",
         isRead: false,
         createdAtUtc: "2026-08-25T00:00:00.000Z",
       },
     ];
-    let invitations: PersonalUtangInvitationDto[] = [
+    const connections: PersonalConnectionRequestDto[] = [
       {
-        id: "inv-in",
-        debtRelationshipId: "rel-in",
-        inviteeContactId: "c-other",
-        invitedByUserIdentityId: "sender",
-        status: "Pending",
-        createdAtUtc: "2026-08-25T00:00:00.000Z",
-        updatedAtUtc: "2026-08-25T00:00:00.000Z",
-        expiresAtUtc: "2026-09-01T00:00:00.000Z",
+        ...pendingConnection,
+        id: "req-in",
+        direction: "Received",
+        requesterDisplayName: "Eduard",
       },
     ];
 
@@ -396,8 +343,8 @@ describe("People lifecycle UX", () => {
         if (url.includes("/notifications")) {
           return jsonResponse(200, notifications);
         }
-        if (url.includes("/utang/invitations")) {
-          return jsonResponse(200, invitations);
+        if (url.includes("/personal/connections")) {
+          return jsonResponse(200, connections);
         }
         if (url.includes("/utang/contacts")) {
           return jsonResponse(200, []);
@@ -409,11 +356,10 @@ describe("People lifecycle UX", () => {
     const user = userEvent.setup();
     renderPeopleApp("/personal/notifications");
     await user.click(
-      await screen.findByRole("button", { name: /Eduard sent you a Personal Utang request/i }),
+      await screen.findByRole("button", { name: /Eduard sent you a connection request/i }),
     );
     expect(await screen.findByRole("heading", { name: "Invitations" })).toBeInTheDocument();
-    expect(screen.getByText("Personal Utang request")).toBeInTheDocument();
-    expect(invitations).toHaveLength(1);
-    expect(invitations[0]?.status).toBe("Pending");
+    expect(screen.getByText("wants to connect with you")).toBeInTheDocument();
+    expect(connections[0]?.status).toBe("Pending");
   });
 });

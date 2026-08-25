@@ -21,10 +21,30 @@ internal sealed class PersonalContactRecord
     public string? Phone { get; set; }
     public string? Email { get; set; }
     public Guid? LinkedUserIdentityId { get; set; }
+    public Guid? ResolvedUserIdentityId { get; set; }
+    public string? ResolvedPublicUserId { get; set; }
+    public DateTimeOffset? ConnectedAtUtc { get; set; }
+    public DateTimeOffset? BlockedAtUtc { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public uint Xmin { get; set; }
+}
+
+internal sealed class PersonalConnectionRequestRecord
+{
+    public Guid Id { get; set; }
+    public Guid RequesterUserIdentityId { get; set; }
+    public Guid TargetUserIdentityId { get; set; }
+    public Guid RequesterContactId { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+    public DateTimeOffset ExpiresAtUtc { get; set; }
+    public DateTimeOffset? AcceptedAtUtc { get; set; }
+    public DateTimeOffset? DeclinedAtUtc { get; set; }
+    public DateTimeOffset? RevokedAtUtc { get; set; }
+    public Guid? RespondedByUserIdentityId { get; set; }
 }
 
 internal sealed class PersonalDebtRelationshipRecord

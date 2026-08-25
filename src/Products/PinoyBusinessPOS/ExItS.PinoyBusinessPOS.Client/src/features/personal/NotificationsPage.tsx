@@ -16,12 +16,14 @@ import { usePreferences } from "@/hooks/usePreferences";
 import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
 import { cn } from "@/lib/cn";
 
-function invitationDeepLink(relatedType: string, relatedId?: string | null): string {
+function invitationDeepLink(relatedType: string): string {
   const type = relatedType.toLowerCase();
-  if (type.includes("invitation") || type.includes("utang")) {
-    return relatedId
-      ? `/personal/invitations?relatedId=${encodeURIComponent(relatedId)}`
-      : "/personal/invitations";
+  if (
+    type.includes("connection") ||
+    type.includes("invitation") ||
+    type.includes("utang")
+  ) {
+    return "/personal/invitations";
   }
   return "/personal/invitations";
 }
@@ -74,7 +76,7 @@ export function NotificationsPage() {
                   className="flex flex-col items-start gap-1 bg-transparent p-0 text-left text-inherit"
                   onClick={() => {
                     void markRead.mutateAsync(item.id).finally(() => {
-                      void navigate(invitationDeepLink(item.relatedType, item.relatedId));
+                      void navigate(invitationDeepLink(item.relatedType));
                     });
                   }}
                 >

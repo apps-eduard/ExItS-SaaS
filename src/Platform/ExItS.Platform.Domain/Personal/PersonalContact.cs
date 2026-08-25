@@ -11,11 +11,18 @@ public sealed class PersonalContact
     public string? Phone { get; private set; }
     public string? Email { get; private set; }
     public PlatformUserId? LinkedUserIdentityId { get; private set; }
+    public PlatformUserId? ResolvedUserIdentityId { get; private set; }
+    public string? ResolvedPublicUserId { get; private set; }
+    public DateTimeOffset? ConnectedAtUtc { get; private set; }
+    public DateTimeOffset? BlockedAtUtc { get; private set; }
     public PersonalContactStatus Status { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
     public bool IsLinked => LinkedUserIdentityId is not null;
+    public bool IsBlocked => BlockedAtUtc is not null;
+    public bool IsConnected => LinkedUserIdentityId is not null;
+    public bool HasResolvedIdentity => ResolvedUserIdentityId is not null;
 
     private PersonalContact(
         PersonalContactId id,
@@ -24,6 +31,10 @@ public sealed class PersonalContact
         string? phone,
         string? email,
         PlatformUserId? linkedUserIdentityId,
+        PlatformUserId? resolvedUserIdentityId,
+        string? resolvedPublicUserId,
+        DateTimeOffset? connectedAtUtc,
+        DateTimeOffset? blockedAtUtc,
         PersonalContactStatus status,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc)
@@ -34,6 +45,10 @@ public sealed class PersonalContact
         Phone = phone;
         Email = email;
         LinkedUserIdentityId = linkedUserIdentityId;
+        ResolvedUserIdentityId = resolvedUserIdentityId;
+        ResolvedPublicUserId = resolvedPublicUserId;
+        ConnectedAtUtc = connectedAtUtc;
+        BlockedAtUtc = blockedAtUtc;
         Status = status;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
@@ -60,6 +75,10 @@ public sealed class PersonalContact
             phone,
             email,
             linkedUserIdentityId: null,
+            resolvedUserIdentityId: null,
+            resolvedPublicUserId: null,
+            connectedAtUtc: null,
+            blockedAtUtc: null,
             PersonalContactStatus.Active,
             utcNow,
             utcNow);
@@ -72,22 +91,66 @@ public sealed class PersonalContact
         string? phone,
         string? email,
         PlatformUserId? linkedUserIdentityId,
+        PlatformUserId? resolvedUserIdentityId,
+        string? resolvedPublicUserId,
+        DateTimeOffset? connectedAtUtc,
+        DateTimeOffset? blockedAtUtc,
         PersonalContactStatus status,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc) =>
-        new(id, ownerUserIdentityId, displayName, phone, email, linkedUserIdentityId, status, createdAtUtc, updatedAtUtc);
+        new(
+            id,
+            ownerUserIdentityId,
+            displayName,
+            phone,
+            email,
+            linkedUserIdentityId,
+            resolvedUserIdentityId,
+            resolvedPublicUserId,
+            connectedAtUtc,
+            blockedAtUtc,
+            status,
+            createdAtUtc,
+            updatedAtUtc);
 
     public bool IsOwnedBy(PlatformUserId userIdentityId) =>
         OwnerUserIdentityId == userIdentityId;
 
-    /// <summary>
-    /// Links this contact to a Platform User after explicit invitation acceptance.
-    /// Never matches silently by name, email, or phone.
-    /// </summary>
+    public void ResolveIdentity(
+        PlatformUserId resolvedUserIdentityId,
+        string resolvedPublicUserId,
+        DateTimeOffset utcNow)
+    {
+        ArgumentNullException.ThrowIfNull(resolvedUserIdentityId);
+        EnsureUtc(utcNow);
+        EnsureActive();
+
+        if (resolvedUserIdentityId == OwnerUserIdentityId)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalContactLinkInvalid,
+                "Cannot resolve a contact to its owner.");
+        }
+
+        resolvedPublicUserId = NormalizePublicUserId(resolvedPublicUserId);
+
+        if (ResolvedUserIdentityId is not null && ResolvedUserIdentityId != resolvedUserIdentityId)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalContactResolvedConflict,
+                "Contact already resolves to a different ExItS identity.");
+        }
+
+        ResolvedUserIdentityId = resolvedUserIdentityId;
+        ResolvedPublicUserId = resolvedPublicUserId;
+        UpdatedAtUtc = utcNow;
+    }
+
     public void LinkUser(PlatformUserId linkedUserIdentityId, DateTimeOffset utcNow)
     {
         ArgumentNullException.ThrowIfNull(linkedUserIdentityId);
         EnsureUtc(utcNow);
+        EnsureActive();
 
         if (LinkedUserIdentityId is not null)
         {
@@ -103,14 +166,59 @@ public sealed class PersonalContact
                 "Cannot link a contact to its owner.");
         }
 
-        if (Status is not PersonalContactStatus.Active)
+        if (IsBlocked)
         {
             throw new DomainException(
-                DomainErrorCodes.PersonalContactLinkInvalid,
-                "Only active contacts can be linked.");
+                DomainErrorCodes.PersonalContactBlocked,
+                "Blocked contacts cannot be linked.");
         }
 
         LinkedUserIdentityId = linkedUserIdentityId;
+        ConnectedAtUtc = utcNow;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void Unlink(DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        EnsureActive();
+
+        if (LinkedUserIdentityId is null)
+        {
+            return;
+        }
+
+        LinkedUserIdentityId = null;
+        ConnectedAtUtc = null;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void Block(DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        EnsureActive();
+
+        if (BlockedAtUtc is not null)
+        {
+            return;
+        }
+
+        Unlink(utcNow);
+        BlockedAtUtc = utcNow;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void Unblock(DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        EnsureActive();
+
+        if (BlockedAtUtc is null)
+        {
+            return;
+        }
+
+        BlockedAtUtc = null;
         UpdatedAtUtc = utcNow;
     }
 
@@ -124,6 +232,36 @@ public sealed class PersonalContact
 
         Status = PersonalContactStatus.Archived;
         UpdatedAtUtc = utcNow;
+    }
+
+    private void EnsureActive()
+    {
+        if (Status is not PersonalContactStatus.Active)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalContactLinkInvalid,
+                "Only active contacts can be updated.");
+        }
+    }
+
+    private static string NormalizePublicUserId(string publicUserId)
+    {
+        if (string.IsNullOrWhiteSpace(publicUserId))
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalContactNotResolved,
+                "Resolved public user id is required.");
+        }
+
+        var trimmed = publicUserId.Trim();
+        if (trimmed.Length > 32)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalContactNotResolved,
+                "Resolved public user id is too long.");
+        }
+
+        return trimmed;
     }
 
     private static string NormalizeDisplayName(string displayName)
@@ -158,7 +296,6 @@ public sealed class PersonalContact
         return trimmed;
     }
 
-    /// <summary>Trims and uppercases email for storage/lookup; null when blank.</summary>
     public static string? NormalizeOptionalEmail(string? email)
     {
         if (string.IsNullOrWhiteSpace(email))

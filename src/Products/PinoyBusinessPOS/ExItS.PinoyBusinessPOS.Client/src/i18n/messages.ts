@@ -55,6 +55,8 @@ export type MessageKey =
   | "people.status.notConnected"
   | "people.status.requestPending"
   | "people.status.connected"
+  | "people.status.local"
+  | "people.status.blocked"
   | "people.add.lede"
   | "people.add.scanQr"
   | "people.add.scanHint"
@@ -83,7 +85,21 @@ export type MessageKey =
   | "people.detail.confirmUtang"
   | "people.detail.relationship"
   | "people.detail.connectedSince"
+  | "people.detail.connection"
+  | "people.detail.connectionHelp"
+  | "people.detail.requestConnection"
+  | "people.detail.unlink"
+  | "people.detail.unlinkConfirmTitle"
+  | "people.detail.unlinkConfirmBody"
+  | "people.detail.unlinkConfirmAction"
+  | "people.detail.safety"
+  | "people.detail.block"
+  | "people.detail.blockConfirmBody"
+  | "people.detail.blockedHelp"
+  | "people.detail.unblock"
   | "invitations.title"
+  | "invitations.connectionRequests"
+  | "invitations.connectionRequestBody"
   | "invitations.received"
   | "invitations.sent"
   | "invitations.emptyTitle"
@@ -163,6 +179,8 @@ export const en: Record<MessageKey, string> = {
   "people.status.notConnected": "Not connected",
   "people.status.requestPending": "Request pending",
   "people.status.connected": "Connected",
+  "people.status.local": "Local contact",
+  "people.status.blocked": "Blocked",
   "people.add.lede": "Find someone with their exact ExItS ID or QR payload.",
   "people.add.scanQr": "Scan QR",
   "people.add.scanHint": "Paste the QR payload into ExItS ID, then find the person.",
@@ -178,7 +196,7 @@ export const en: Record<MessageKey, string> = {
   "people.detail.notFoundTitle": "Person not found",
   "people.detail.notFoundBody": "This person is not in your People list.",
   "people.detail.notConnectedHelp":
-    "You can keep this person in People without sharing Utang activity.",
+    "Connecting lets both accounts recognize this Personal relationship. It does not create debt or organization access.",
   "people.detail.waitingTitle": "Request pending",
   "people.detail.waitingBody": "Waiting for {name} to respond.",
   "people.detail.sentOn": "Sent {date}",
@@ -192,11 +210,28 @@ export const en: Record<MessageKey, string> = {
   "people.detail.confirmUtang": "Continue",
   "people.detail.relationship": "Relationship",
   "people.detail.connectedSince": "Connected since {date}",
+  "people.detail.connection": "Connection",
+  "people.detail.connectionHelp":
+    "Connecting lets both accounts recognize this Personal relationship. It does not create debt or organization access.",
+  "people.detail.requestConnection": "Request connection",
+  "people.detail.unlink": "Unlink",
+  "people.detail.unlinkConfirmTitle": "Unlink {name}?",
+  "people.detail.unlinkConfirmBody":
+    "You will no longer be connected. Existing financial records will not be deleted.",
+  "people.detail.unlinkConfirmAction": "Unlink",
+  "people.detail.safety": "Safety",
+  "people.detail.block": "Block person",
+  "people.detail.blockConfirmBody":
+    "This person cannot send you new connection requests until you unblock them.",
+  "people.detail.blockedHelp": "This person cannot send you new connection requests.",
+  "people.detail.unblock": "Unblock",
   "invitations.title": "Invitations",
+  "invitations.connectionRequests": "Connection requests",
+  "invitations.connectionRequestBody": "wants to connect with you",
   "invitations.received": "Received",
   "invitations.sent": "Sent",
   "invitations.emptyTitle": "No pending invitations",
-  "invitations.emptyBody": "When someone invites you to a Personal Utang, it appears here.",
+  "invitations.emptyBody": "When someone sends you a connection request, it appears here.",
   "invitations.sentEmpty": "No outgoing pending invitations.",
   "invitations.personalUtangRequest": "Personal Utang request",
   "invitations.waitingResponse": "Waiting for response",
@@ -210,7 +245,7 @@ export const en: Record<MessageKey, string> = {
   "invitations.decline": "Decline",
   "notifications.title": "Notifications",
   "notifications.emptyTitle": "No notifications",
-  "notifications.emptyBody": "Alerts about Personal Utang requests appear here.",
+  "notifications.emptyBody": "Alerts about connection requests and Personal activity appear here.",
   "notifications.unread": "Unread",
   "notifications.markRead": "Mark read",
 };
@@ -274,6 +309,8 @@ export const filPH: Record<MessageKey, string> = {
   "people.status.notConnected": "Hindi konektado",
   "people.status.requestPending": "Nakabinbing request",
   "people.status.connected": "Konektado",
+  "people.status.local": "Lokal na contact",
+  "people.status.blocked": "Naka-block",
   "people.add.lede": "Hanapin gamit ang eksaktong ExItS ID o QR payload.",
   "people.add.scanQr": "I-scan ang QR",
   "people.add.scanHint": "I-paste ang QR payload sa ExItS ID, tapos hanapin.",
@@ -289,7 +326,7 @@ export const filPH: Record<MessageKey, string> = {
   "people.detail.notFoundTitle": "Hindi nahanap ang tao",
   "people.detail.notFoundBody": "Wala ang taong ito sa iyong listahan.",
   "people.detail.notConnectedHelp":
-    "Pwede mo siyang itago sa Mga tao nang hindi nagbabahagi ng Utang.",
+    "Ang pagkonekta ay nagpapahintulot sa parehong account na kilalanin ang Personal na relasyon. Hindi ito gumagawa ng utang o org access.",
   "people.detail.waitingTitle": "Nakabinbing request",
   "people.detail.waitingBody": "Naghihintay ng sagot mula kay {name}.",
   "people.detail.sentOn": "Ipinadala noong {date}",
@@ -303,11 +340,28 @@ export const filPH: Record<MessageKey, string> = {
   "people.detail.confirmUtang": "Magpatuloy",
   "people.detail.relationship": "Relasyon",
   "people.detail.connectedSince": "Konektado mula {date}",
+  "people.detail.connection": "Koneksyon",
+  "people.detail.connectionHelp":
+    "Ang pagkonekta ay nagpapahintulot sa parehong account na kilalanin ang Personal na relasyon. Hindi ito gumagawa ng utang o org access.",
+  "people.detail.requestConnection": "Humiling ng koneksyon",
+  "people.detail.unlink": "I-unlink",
+  "people.detail.unlinkConfirmTitle": "I-unlink si {name}?",
+  "people.detail.unlinkConfirmBody":
+    "Hindi na kayo konektado. Hindi mabubura ang mga dati nang financial record.",
+  "people.detail.unlinkConfirmAction": "I-unlink",
+  "people.detail.safety": "Kaligtasan",
+  "people.detail.block": "I-block ang tao",
+  "people.detail.blockConfirmBody":
+    "Hindi makakapagpadala ng bagong connection request ang taong ito hanggang i-unblock mo.",
+  "people.detail.blockedHelp": "Hindi makakapagpadala ng bagong connection request ang taong ito.",
+  "people.detail.unblock": "I-unblock",
   "invitations.title": "Mga imbitasyon",
+  "invitations.connectionRequests": "Mga connection request",
+  "invitations.connectionRequestBody": "gustong kumonekta sa iyo",
   "invitations.received": "Natanggap",
   "invitations.sent": "Ipinadala",
   "invitations.emptyTitle": "Walang nakabinbing imbitasyon",
-  "invitations.emptyBody": "Kapag may Personal Utang invitation, lalabas ito rito.",
+  "invitations.emptyBody": "Kapag may nagpadala ng connection request, lalabas ito rito.",
   "invitations.sentEmpty": "Walang papalabas na nakabinbing imbitasyon.",
   "invitations.personalUtangRequest": "Personal Utang request",
   "invitations.waitingResponse": "Naghihintay ng sagot",

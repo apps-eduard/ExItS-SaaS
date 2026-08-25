@@ -121,6 +121,7 @@ public static class DependencyInjection
         services.AddScoped<IPrivacyCompliancePdfExporter, PrivacyCompliancePdfExporter>();
         services.AddScoped<IPersonalAccountSettingsRepository, PersonalAccountSettingsRepository>();
         services.AddScoped<IPersonalContactRepository, PersonalContactRepository>();
+        services.AddScoped<IPersonalConnectionRequestRepository, PersonalConnectionRequestRepository>();
         services.AddScoped<IPersonalDebtRelationshipRepository, PersonalDebtRelationshipRepository>();
         services.AddScoped<IPersonalUtangEntryRepository, PersonalUtangEntryRepository>();
         services.AddScoped<IPersonalUtangInvitationRepository, PersonalUtangInvitationRepository>();

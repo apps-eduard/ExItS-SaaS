@@ -15,10 +15,19 @@ public sealed record PersonalContactDto(
     string? Phone,
     string? Email,
     Guid? LinkedUserIdentityId,
+    Guid? ResolvedUserIdentityId,
+    string? ResolvedPublicUserId,
+    DateTimeOffset? ConnectedAtUtc,
+    DateTimeOffset? BlockedAtUtc,
     string Status,
     DateTimeOffset CreatedAtUtc);
 
-public sealed record CreatePersonalContactRequest(string DisplayName, string? Phone, string? Email);
+public sealed record CreatePersonalContactRequest(
+    string DisplayName,
+    string? Phone,
+    string? Email,
+    Guid? ResolvedUserIdentityId,
+    string? ResolvedPublicUserId);
 
 public sealed record PersonalDebtRelationshipSummaryDto(
     Guid Id,
@@ -165,6 +174,34 @@ public sealed class CreatePersonalContact
                 request.Email,
                 _clock.UtcNow);
 
+            if (request.ResolvedUserIdentityId is Guid resolvedUserId && resolvedUserId != Guid.Empty)
+            {
+                if (string.IsNullOrWhiteSpace(request.ResolvedPublicUserId))
+                {
+                    return ApplicationResult<PersonalContactDto>.Failure(
+                        ApplicationErrorCodes.PersonalContactNotFound,
+                        "Resolved public user id is required when resolving identity.");
+                }
+
+                var duplicate = await _contacts
+                    .FindActiveByOwnerAndResolvedUserAsync(
+                        ownerUserIdentityId,
+                        PlatformUserId.From(resolvedUserId),
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (duplicate is not null)
+                {
+                    return ApplicationResult<PersonalContactDto>.Failure(
+                        ApplicationErrorCodes.PersonalContactEmailConflict,
+                        "An active contact for this ExItS identity already exists.");
+                }
+
+                contact.ResolveIdentity(
+                    PlatformUserId.From(resolvedUserId),
+                    request.ResolvedPublicUserId.Trim(),
+                    _clock.UtcNow);
+            }
+
             if (contact.Email is not null)
             {
                 var existing = await _contacts
@@ -213,6 +250,10 @@ public sealed class CreatePersonalContact
             contact.Phone,
             contact.Email,
             contact.LinkedUserIdentityId?.Value,
+            contact.ResolvedUserIdentityId?.Value,
+            contact.ResolvedPublicUserId,
+            contact.ConnectedAtUtc,
+            contact.BlockedAtUtc,
             contact.Status.ToString(),
             contact.CreatedAtUtc);
 }

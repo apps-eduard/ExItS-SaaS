@@ -108,6 +108,37 @@ internal sealed class PersonalContactRepository(PlatformDbContext db) : IPersona
         return record is null ? null : ToDomain(record);
     }
 
+    public async Task<PersonalContact?> FindActiveByOwnerAndResolvedUserAsync(
+        PlatformUserId ownerUserIdentityId,
+        PlatformUserId resolvedUserIdentityId,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalContacts.AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.OwnerUserIdentityId == ownerUserIdentityId.Value
+                     && x.ResolvedUserIdentityId == resolvedUserIdentityId.Value
+                     && x.Status == nameof(PersonalContactStatus.Active),
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public async Task<PersonalContact?> FindActiveBlockedByOwnerForUserAsync(
+        PlatformUserId ownerUserIdentityId,
+        PlatformUserId blockedUserIdentityId,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalContacts.AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.OwnerUserIdentityId == ownerUserIdentityId.Value
+                     && x.ResolvedUserIdentityId == blockedUserIdentityId.Value
+                     && x.BlockedAtUtc != null
+                     && x.Status == nameof(PersonalContactStatus.Active),
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
     public Task AddAsync(PersonalContact contact, CancellationToken cancellationToken = default)
     {
         db.PersonalContacts.Add(ToRecord(contact));
@@ -128,6 +159,10 @@ internal sealed class PersonalContactRepository(PlatformDbContext db) : IPersona
         record.Phone = contact.Phone;
         record.Email = contact.Email;
         record.LinkedUserIdentityId = contact.LinkedUserIdentityId?.Value;
+        record.ResolvedUserIdentityId = contact.ResolvedUserIdentityId?.Value;
+        record.ResolvedPublicUserId = contact.ResolvedPublicUserId;
+        record.ConnectedAtUtc = contact.ConnectedAtUtc;
+        record.BlockedAtUtc = contact.BlockedAtUtc;
         record.Status = contact.Status.ToString();
         record.UpdatedAtUtc = contact.UpdatedAtUtc;
     }
@@ -140,6 +175,10 @@ internal sealed class PersonalContactRepository(PlatformDbContext db) : IPersona
             record.Phone,
             record.Email,
             record.LinkedUserIdentityId is Guid linked ? PlatformUserId.From(linked) : null,
+            record.ResolvedUserIdentityId is Guid resolved ? PlatformUserId.From(resolved) : null,
+            record.ResolvedPublicUserId,
+            record.ConnectedAtUtc,
+            record.BlockedAtUtc,
             Enum.Parse<PersonalContactStatus>(record.Status, ignoreCase: true),
             record.CreatedAtUtc,
             record.UpdatedAtUtc);
@@ -153,9 +192,124 @@ internal sealed class PersonalContactRepository(PlatformDbContext db) : IPersona
             Phone = contact.Phone,
             Email = contact.Email,
             LinkedUserIdentityId = contact.LinkedUserIdentityId?.Value,
+            ResolvedUserIdentityId = contact.ResolvedUserIdentityId?.Value,
+            ResolvedPublicUserId = contact.ResolvedPublicUserId,
+            ConnectedAtUtc = contact.ConnectedAtUtc,
+            BlockedAtUtc = contact.BlockedAtUtc,
             Status = contact.Status.ToString(),
             CreatedAtUtc = contact.CreatedAtUtc,
             UpdatedAtUtc = contact.UpdatedAtUtc
+        };
+}
+
+internal sealed class PersonalConnectionRequestRepository(PlatformDbContext db) : IPersonalConnectionRequestRepository
+{
+    public async Task<PersonalConnectionRequest?> GetByIdAsync(
+        PersonalConnectionRequestId id,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalConnectionRequests.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public async Task<PersonalConnectionRequest?> FindPendingByRequesterAndTargetAsync(
+        PlatformUserId requesterUserIdentityId,
+        PlatformUserId targetUserIdentityId,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalConnectionRequests.AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.RequesterUserIdentityId == requesterUserIdentityId.Value
+                     && x.TargetUserIdentityId == targetUserIdentityId.Value
+                     && x.Status == nameof(PersonalConnectionRequestStatus.Pending),
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public async Task<PersonalConnectionRequest?> FindPendingForContactAsync(
+        PersonalContactId requesterContactId,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalConnectionRequests.AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.RequesterContactId == requesterContactId.Value
+                     && x.Status == nameof(PersonalConnectionRequestStatus.Pending),
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public async Task<IReadOnlyList<PersonalConnectionRequest>> ListForUserAsync(
+        PlatformUserId userIdentityId,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = userIdentityId.Value;
+        var records = await db.PersonalConnectionRequests.AsNoTracking()
+            .Where(x => x.RequesterUserIdentityId == userId || x.TargetUserIdentityId == userId)
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(ToDomain).ToList();
+    }
+
+    public Task AddAsync(PersonalConnectionRequest request, CancellationToken cancellationToken = default)
+    {
+        db.PersonalConnectionRequests.Add(ToRecord(request));
+        return Task.CompletedTask;
+    }
+
+    public async Task UpdateAsync(PersonalConnectionRequest request, CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalConnectionRequests
+            .FirstOrDefaultAsync(x => x.Id == request.Id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (record is null)
+        {
+            return;
+        }
+
+        record.Status = request.Status.ToString();
+        record.UpdatedAtUtc = request.UpdatedAtUtc;
+        record.ExpiresAtUtc = request.ExpiresAtUtc;
+        record.AcceptedAtUtc = request.AcceptedAtUtc;
+        record.DeclinedAtUtc = request.DeclinedAtUtc;
+        record.RevokedAtUtc = request.RevokedAtUtc;
+        record.RespondedByUserIdentityId = request.RespondedByUserIdentityId?.Value;
+    }
+
+    private static PersonalConnectionRequest ToDomain(PersonalConnectionRequestRecord record) =>
+        PersonalConnectionRequest.Rehydrate(
+            PersonalConnectionRequestId.From(record.Id),
+            PlatformUserId.From(record.RequesterUserIdentityId),
+            PlatformUserId.From(record.TargetUserIdentityId),
+            PersonalContactId.From(record.RequesterContactId),
+            Enum.Parse<PersonalConnectionRequestStatus>(record.Status, ignoreCase: true),
+            record.CreatedAtUtc,
+            record.UpdatedAtUtc,
+            record.ExpiresAtUtc,
+            record.AcceptedAtUtc,
+            record.DeclinedAtUtc,
+            record.RevokedAtUtc,
+            record.RespondedByUserIdentityId is Guid responded ? PlatformUserId.From(responded) : null);
+
+    private static PersonalConnectionRequestRecord ToRecord(PersonalConnectionRequest request) =>
+        new()
+        {
+            Id = request.Id.Value,
+            RequesterUserIdentityId = request.RequesterUserIdentityId.Value,
+            TargetUserIdentityId = request.TargetUserIdentityId.Value,
+            RequesterContactId = request.RequesterContactId.Value,
+            Status = request.Status.ToString(),
+            CreatedAtUtc = request.CreatedAtUtc,
+            UpdatedAtUtc = request.UpdatedAtUtc,
+            ExpiresAtUtc = request.ExpiresAtUtc,
+            AcceptedAtUtc = request.AcceptedAtUtc,
+            DeclinedAtUtc = request.DeclinedAtUtc,
+            RevokedAtUtc = request.RevokedAtUtc,
+            RespondedByUserIdentityId = request.RespondedByUserIdentityId?.Value
         };
 }
 

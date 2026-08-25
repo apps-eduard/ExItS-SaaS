@@ -6,6 +6,15 @@ public enum PersonalContactStatus
     Archived
 }
 
+public enum PersonalConnectionRequestStatus
+{
+    Pending,
+    Accepted,
+    Declined,
+    Revoked,
+    Expired
+}
+
 public enum PersonalDebtRelationshipStatus
 {
     Active,

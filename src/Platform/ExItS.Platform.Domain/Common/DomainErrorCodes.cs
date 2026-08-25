@@ -191,6 +191,15 @@ public static class DomainErrorCodes
     public const string PersonalUtangInvitationRateLimited = "platform.personal.utang_invitation.rate_limited";
     public const string PersonalContactAlreadyLinked = "platform.personal.contact.already_linked";
     public const string PersonalContactLinkInvalid = "platform.personal.contact.link.invalid";
+    public const string PersonalContactNotResolved = "platform.personal.contact.not_resolved";
+    public const string PersonalContactBlocked = "platform.personal.contact.blocked";
+    public const string PersonalContactResolvedConflict = "platform.personal.contact.resolved.conflict";
+    public const string InvalidPersonalConnectionRequestId = "platform.personal.connection_request.id.invalid";
+    public const string PersonalConnectionRequestInvalid = "platform.personal.connection_request.invalid";
+    public const string PersonalConnectionRequestUnauthorized = "platform.personal.connection_request.unauthorized";
+    public const string InvalidPersonalConnectionRequestStatusTransition =
+        "platform.personal.connection_request.status.invalid";
+    public const string PersonalConnectionRequestExpired = "platform.personal.connection_request.expired";
 
     public const string InvalidPersonalReminderId = "platform.personal.reminder.id.invalid";
     public const string InvalidPersonalReminder = "platform.personal.reminder.invalid";

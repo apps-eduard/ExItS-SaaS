@@ -419,9 +419,136 @@ internal static class PersonalEndpoints
         });
 
         MapPersonalUtangEndpoints(personal);
+        MapPersonalConnectionEndpoints(personal);
         MapPersonalNotificationEndpoints(personal);
 
         return app;
+    }
+
+    private static void MapPersonalConnectionEndpoints(RouteGroupBuilder personal)
+    {
+        personal.MapGet("/connections", async (
+            HttpContext http,
+            ListPersonalConnectionRequests listRequests,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var list = await listRequests.ExecuteAsync(PlatformUserId.From(userId), ct).ConfigureAwait(false);
+            return Results.Ok(list);
+        });
+
+        personal.MapPost("/people/{contactId:guid}/connection-request", async (
+            HttpContext http,
+            Guid contactId,
+            RequestPersonalConnection requestConnection,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await requestConnection
+                .ExecuteAsync(PlatformUserId.From(userId), contactId, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(
+                result,
+                dto => Results.Created($"/api/v1/personal/connections/{dto.Id}", dto));
+        });
+
+        personal.MapPost("/connections/{requestId:guid}/accept", async (
+            HttpContext http,
+            Guid requestId,
+            AcceptPersonalConnectionRequest accept,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await accept.ExecuteAsync(PlatformUserId.From(userId), requestId, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        personal.MapPost("/connections/{requestId:guid}/decline", async (
+            HttpContext http,
+            Guid requestId,
+            DeclinePersonalConnectionRequest decline,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await decline.ExecuteAsync(PlatformUserId.From(userId), requestId, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        personal.MapPost("/connections/{requestId:guid}/revoke", async (
+            HttpContext http,
+            Guid requestId,
+            RevokePersonalConnectionRequest revoke,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await revoke.ExecuteAsync(PlatformUserId.From(userId), requestId, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        personal.MapPost("/people/{contactId:guid}/unlink", async (
+            HttpContext http,
+            Guid contactId,
+            UnlinkPersonalContact unlink,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await unlink.ExecuteAsync(PlatformUserId.From(userId), contactId, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        personal.MapPost("/people/{contactId:guid}/block", async (
+            HttpContext http,
+            Guid contactId,
+            BlockPersonalContact block,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await block.ExecuteAsync(PlatformUserId.From(userId), contactId, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        personal.MapPost("/people/{contactId:guid}/unblock", async (
+            HttpContext http,
+            Guid contactId,
+            UnblockPersonalContact unblock,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await unblock.ExecuteAsync(PlatformUserId.From(userId), contactId, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
     }
 
     private static void MapPersonalUtangEndpoints(RouteGroupBuilder personal)
