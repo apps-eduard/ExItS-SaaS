@@ -401,7 +401,9 @@ public sealed record PlatformAuthSessionInfoDto(
     int ActiveOrganizationCount,
     Guid? AccountProfileId = null,
     string? AccountClass = null,
-    string? AllowedScope = null);
+    string? AllowedScope = null,
+    Guid? HomeOrganizationId = null,
+    bool OrganizationContextLocked = false);
 
 public sealed record PlatformLoginResultDto(
     string SessionToken,
@@ -771,7 +773,8 @@ public sealed record AcceptOrganizationInvitationResultDto(
     string OrganizationDisplayName,
     Guid OrganizationId,
     Guid MembershipId,
-    string Role);
+    string Role,
+    Guid? LinkedPersonalUserId = null);
 
 public sealed record PersonalDashboardDto(
     Guid UserIdentityId,
@@ -893,9 +896,15 @@ public sealed record PersonalContactDto(
     string? Email,
     Guid? LinkedUserIdentityId,
     string Status,
-    DateTimeOffset CreatedAtUtc);
+    DateTimeOffset CreatedAtUtc,
+    string? PublicUserId = null);
 
-public sealed record CreatePersonalContactRequest(string DisplayName, string? Phone, string? Email);
+public sealed record CreatePersonalContactRequest(
+    string DisplayName,
+    string? Phone,
+    string? Email,
+    Guid? LinkedUserIdentityId = null,
+    string? PublicUserId = null);
 
 /// <summary>Personal-facing linked merchant metadata (no balances — balances come from POS projection).</summary>
 public sealed record LinkedMerchantDto(
@@ -1375,6 +1384,11 @@ public interface IPlatformAccessClient
         CancellationToken ct = default);
 
     Task<ApiResult<AcceptOrganizationInvitationResultDto>> AcceptOrganizationInvitationAsync(
+        string token,
+        string password,
+        CancellationToken ct = default);
+
+    Task<ApiResult<AcceptOrganizationInvitationResultDto>> AcceptOrganizationInvitationAsPersonalAsync(
         string token,
         string password,
         CancellationToken ct = default);

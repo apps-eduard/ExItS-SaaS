@@ -36,6 +36,15 @@ public static class DomainErrorCodes
     public const string RepaymentExceedsOutstanding = "pos.repayment.exceeds_outstanding";
     public const string RepaymentOutstandingZero = "pos.repayment.outstanding_zero";
 
+    public const string InvalidWriteOffId = "pos.write_off.id.invalid";
+    public const string InvalidWriteOffAmount = "pos.write_off.amount.invalid";
+    public const string InvalidWriteOffReason = "pos.write_off.reason.invalid";
+    public const string InvalidWriteOffReversalReason = "pos.write_off.reversal_reason.invalid";
+    public const string InvalidWriteOffStatusTransition = "pos.write_off.status.invalid_transition";
+    public const string InvalidWriteOffActor = "pos.write_off.actor.invalid";
+    public const string WriteOffExceedsOutstanding = "pos.write_off.exceeds_outstanding";
+    public const string WriteOffOutstandingZero = "pos.write_off.outstanding_zero";
+
     public const string InvalidCatalogProductId = "pos.catalog.product.id.invalid";
     public const string InvalidProductCategoryId = "pos.catalog.category.id.invalid";
     public const string InvalidUnitOfMeasure = "pos.catalog.unit_of_measure.invalid";
@@ -76,6 +85,7 @@ public static class DomainErrorCodes
     public const string InvalidSaleActor = "pos.sale.actor.invalid";
     public const string SaleRequiresAtLeastOneLine = "pos.sale.lines.required";
     public const string SaleTotalTooLarge = "pos.sale.total.too_large";
+    public const string SaleTotalMismatch = "pos.sale.total.mismatch";
     public const string InvalidSaleAmountTendered = "pos.sale.amount_tendered.invalid";
     public const string SaleAmountTenderedBelowTotal = "pos.sale.amount_tendered.below_total";
     public const string InvalidSaleGCashReference = "pos.sale.gcash_reference.invalid";
@@ -84,6 +94,29 @@ public static class DomainErrorCodes
         "pos.sale.awaiting_payment.cannot_finalize";
     public const string SaleNotAwaitingPayment = "pos.sale.not_awaiting_payment";
     public const string InvalidSaleStockReservation = "pos.sale.stock_reservation.invalid";
+
+    public const string InvalidSaleDiscountAdjustmentId = "pos.sale.discount_adjustment.id.invalid";
+    public const string SaleDiscountReasonRequired = "pos.sale.discount.reason_required";
+    public const string SaleDiscountInvalidPercent = "pos.sale.discount.invalid_percent";
+    public const string SaleDiscountInvalidAmount = "pos.sale.discount.invalid_amount";
+    public const string SaleDiscountInvalidScope = "pos.sale.discount.scope.invalid";
+    public const string SaleDiscountInvalidMethod = "pos.sale.discount.method.invalid";
+    public const string SaleDiscountInvalidSource = "pos.sale.discount.source.invalid";
+    public const string SaleDiscountExceedsEligible = "pos.sale.discount.exceeds_eligible";
+    public const string SaleDiscountLineUnmatched = "pos.sale.discount.line_unmatched";
+    public const string SaleDiscountLineAmbiguous = "pos.sale.discount.line_ambiguous";
+    public const string SaleDiscountTooMany = "pos.sale.discount.too_many";
+
+    public const string InvalidSalePriceOverrideAdjustmentId =
+        "pos.sale.price_override_adjustment.id.invalid";
+    public const string SalePriceOverrideReasonRequired = "pos.sale.price_override.reason_required";
+    public const string SalePriceOverrideInvalidAmount = "pos.sale.price_override.invalid_amount";
+    public const string SalePriceOverrideExceedsManagerLimit =
+        "pos.sale.price_override.exceeds_manager_limit";
+    public const string SalePriceOverrideStaleBaseline = "pos.sale.price_override.stale_baseline";
+    public const string SalePriceOverrideLineUnmatched = "pos.sale.price_override.line_unmatched";
+    public const string SalePriceOverrideLineAmbiguous = "pos.sale.price_override.line_ambiguous";
+    public const string SalePriceOverrideTooMany = "pos.sale.price_override.too_many";
 
     public const string InvalidPaymentAttemptId = "pos.payment_attempt.id.invalid";
     public const string PaymentGatewayIdempotencyConflict =
@@ -122,6 +155,8 @@ public static class DomainErrorCodes
     public const string SaleUtangCustomerRequired = "pos.sale.utang.customer_required";
     public const string SaleUtangLinkageInvalid = "pos.sale.utang.linkage_invalid";
     public const string SaleUtangTotalMustBePositive = "pos.sale.utang.total_must_be_positive";
+    public const string SaleElectronicTotalMustBePositive =
+        "pos.sale.electronic.total_must_be_positive";
     public const string SaleCashMustNotLinkCredit = "pos.sale.cash_must_not_link_credit";
     public const string InvalidSaleBuyerParty = "pos.sale.buyer_party.invalid";
     public const string InvalidCustomerExItsIdentityLink = "pos.customer.exits_identity_link.invalid";
@@ -327,6 +362,11 @@ public static class DomainErrorCodes
     public const string InvalidOperationalSetupContactPhone = "pos.operational_setup.contact_phone.invalid";
     public const string OperationalSetupIncomplete = "pos.operational_setup.incomplete";
     public const string OperationalSetupDefaultRegisterRequired = "pos.operational_setup.default_register.required";
+
+    public const string InvalidOnboardingStepStatus = "pos.onboarding.step_status.invalid";
+    public const string InvalidOnboardingOverallStatusTransition = "pos.onboarding.overall_status.invalid_transition";
+    public const string InvalidOnboardingCompletion = "pos.onboarding.completion.invalid";
+    public const string InvalidOnboardingPrimaryBusinessTypeId = "pos.onboarding.primary_business_type_id.invalid";
 
     public const string InvalidCatalogImportJobId = "pos.catalog_import.job.id.invalid";
     public const string InvalidCatalogImportItemId = "pos.catalog_import.item.id.invalid";

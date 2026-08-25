@@ -10,24 +10,41 @@ It does **not** authorize implementation.
 ## Status
 
 - Planning documentation: **FINAL APPROVED** (DOC-00 … DOC-08; AMEND-01, AMEND-02, AMEND-03)
-- React mobile implementation: **Gate C COMPLETE** (IMPL-01 / IMPL-01A)
-- PWA foundation: **Gate D AUTHORIZED + COMPLETE** (IMPL-02)
-- Browser session auth unblock: **IMPL-03A COMPLETE** (same-origin `/platform-api` + Local Validation HTTP cookie)
-- Product shell visual correction: **IMPL-02A COMPLETE**
-- IMPL-03 workspace UI: **NOT COMPLETE**
+- Implementation-readiness documentation: **COMPLETE** on `docs/pos-react-implementation-readiness` (does **not** authorize implementation)
+- React mobile implementation: **NOT AUTHORIZED**
+- MAUI retirement: **NOT AUTHORIZED**
 - PWA production rollout: **NOT AUTHORIZED**
 - Capacitor production rollout: **NOT AUTHORIZED**
-- MAUI retirement: **NOT AUTHORIZED**
-- Merge to `main`: **PERFORMED** (`MOBILE-REACT-DOC-MERGE-01`)
-- Gate E+: **NOT AUTHORIZED**
+- Merge to `main`: **PERFORMED** (`MOBILE-REACT-DOC-MERGE-01`) for the planning baseline — does **not** authorize implementation. This readiness branch is **not** authorized to merge to `main`.
 - MOBILE-D-060: **OPEN**
-- Current MAUI, Organization Web, Personal Web, and POS APIs: **unchanged**. Platform API session-cookie Secure flag now allows explicit Local Validation HTTP only.
+- Current MAUI, Organization Web, Personal Web, Platform APIs, and POS APIs: **unchanged**
 
-## Worktree
+## Authoritative domain + migration map (current)
+
+**Use this set for CURRENT domain contracts and the dependency-ordered React roadmap.**
+Historical planning/readiness docs below remain useful history; when they conflict on current behavior, prefer Authoritative after source verification.
+
+- [Authoritative/00-README.md](Authoritative/00-README.md) — evidence hierarchy, status taxonomy, index
+- [Authoritative/06-react-ui-ux-and-responsive-foundation.md](Authoritative/06-react-ui-ux-and-responsive-foundation.md) — mobile-first UI DoD
+- [Authoritative/Migration/capability-parity-matrix.md](Authoritative/Migration/capability-parity-matrix.md) — Backend / MAUI / React parity
+- [Authoritative/Migration/react-migration-roadmap.md](Authoritative/Migration/react-migration-roadmap.md) — proposed RMAP packages (incl. RMAP-00, RMAP-B00)
+- [Authoritative/Migration/master-run-execution-protocol.md](Authoritative/Migration/master-run-execution-protocol.md) — 10-WP batches / per-WP push
+- [Authoritative/Migration/owner-decision-register.md](Authoritative/Migration/owner-decision-register.md) — owner-confirmed requirements vs CURRENT
+
+Baseline for the Authoritative set origin: branch `feat/pos-react-client` @ `721cc946d61ccb193c8c69b76b6f1ff726526270` (later docs commits extend Authoritative).
+
+## Implementation readiness (current-main refresh)
+
+Against `origin/main` `5979a9ce008bb24a3257abd28ae79bc1a5a9b569`. Does not rewrite accepted MOBILE-D decisions.
+
+- [Implementation-Readiness/](Implementation-Readiness/) — current MAUI refresh, parity matrix, API/auth, PWA/offline/device sequence, master plan, open decisions
+- [Reports/POS-REACT-READINESS-05-final-master-plan.md](Reports/POS-REACT-READINESS-05-final-master-plan.md) — readiness closeout
+
+## Historical planning worktree
 
 - Branch: `docs/mobile-react-foundation`
 - Worktree: `C:/Users/speed/Desktop/ExItS-SaaS-Mobile`
-- Baseline `origin/main`: `5a9be9417b7a2217227ae93e9280102992861615`
+- Baseline `origin/main` at planning time: `5a9be9417b7a2217227ae93e9280102992861615`
 
 ## Contents
 
@@ -46,10 +63,17 @@ It does **not** authorize implementation.
 - [Reports/MOBILE-REACT-DOC-AMEND-03-smart-workspace-product-context.md](Reports/MOBILE-REACT-DOC-AMEND-03-smart-workspace-product-context.md) — AMEND-03 smart workspace + product launch context
 - [Reports/MOBILE-REACT-DOC-APPROVAL-record.md](Reports/MOBILE-REACT-DOC-APPROVAL-record.md) — Product Owner documentation approval (merge still awaiting authorization)
 - [Reports/MOBILE-REACT-DOC-MERGE-01-approved-planning-baseline.md](Reports/MOBILE-REACT-DOC-MERGE-01-approved-planning-baseline.md) — merge of approved planning baseline to `main`
-- [Reports/MOBILE-REACT-IMPL-01-react-foundation.md](Reports/MOBILE-REACT-IMPL-01-react-foundation.md) — Gate C client foundation
-- [Reports/MOBILE-REACT-IMPL-02-pwa-foundation.md](Reports/MOBILE-REACT-IMPL-02-pwa-foundation.md) — Gate D PWA static shell foundation
-- [Reports/MOBILE-REACT-IMPL-02A-product-shell-visual-correction.md](Reports/MOBILE-REACT-IMPL-02A-product-shell-visual-correction.md) — product shell visual correction
-- [Reports/MOBILE-REACT-IMPL-03A-browser-auth-unblock.md](Reports/MOBILE-REACT-IMPL-03A-browser-auth-unblock.md) — same-origin browser session auth unblock
+- [Implementation-Readiness/01-current-maui-implementation-refresh.md](Implementation-Readiness/01-current-maui-implementation-refresh.md) — current-main MAUI audit refresh
+- [Implementation-Readiness/02-feature-parity-matrix.md](Implementation-Readiness/02-feature-parity-matrix.md) — feature parity + first slice
+- [Implementation-Readiness/03-api-auth-security-readiness.md](Implementation-Readiness/03-api-auth-security-readiness.md) — API/auth/CORS/PWEB-20
+- [Implementation-Readiness/04-pwa-offline-device-migration.md](Implementation-Readiness/04-pwa-offline-device-migration.md) — PWA Phase A / offline Phase B / devices
+- [Implementation-Readiness/05-implementation-master-plan.md](Implementation-Readiness/05-implementation-master-plan.md) — gates C–K package map
+- [Implementation-Readiness/06-open-decisions-and-blockers.md](Implementation-Readiness/06-open-decisions-and-blockers.md) — unresolved items
+- [Reports/POS-REACT-READINESS-01-current-state-refresh.md](Reports/POS-REACT-READINESS-01-current-state-refresh.md)
+- [Reports/POS-REACT-READINESS-02-feature-parity.md](Reports/POS-REACT-READINESS-02-feature-parity.md)
+- [Reports/POS-REACT-READINESS-03-api-auth-security.md](Reports/POS-REACT-READINESS-03-api-auth-security.md)
+- [Reports/POS-REACT-READINESS-04-pwa-offline-device.md](Reports/POS-REACT-READINESS-04-pwa-offline-device.md)
+- [Reports/POS-REACT-READINESS-05-final-master-plan.md](Reports/POS-REACT-READINESS-05-final-master-plan.md)
 
 ## Canonical rule
 

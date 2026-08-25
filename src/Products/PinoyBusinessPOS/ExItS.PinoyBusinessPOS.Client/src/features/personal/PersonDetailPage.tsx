@@ -4,7 +4,7 @@ import { Link, useParams } from "react-router-dom";
 
 import { ApiClientError } from "@/api/http";
 
-import { useSession } from "@/auth/SessionProvider";
+import { useSession } from "@/session/SessionProvider";
 
 import { EmptyState } from "@/components/exits/EmptyState";
 
@@ -46,10 +46,6 @@ import { deriveConnectionStatus, formatShortDate } from "@/features/personal/peo
 
 import { useI18n } from "@/i18n/I18nProvider";
 
-import { usePreferences } from "@/hooks/usePreferences";
-
-import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
-
 
 
 function formatMoney(amount: number, currencyCode: string): string {
@@ -83,8 +79,6 @@ export function PersonDetailPage() {
   const { t } = useI18n();
 
   const { session } = useSession();
-
-  const { preferences } = usePreferences();
 
   const contactsQuery = usePersonalContactsQuery();
 
@@ -301,21 +295,9 @@ export function PersonDetailPage() {
     return (
 
       <ErrorState
-
         title={t("error.title")}
-
-        body={loadError instanceof ApiClientError ? loadError.message : t("error.body")}
-
-        record={normalizeDiagnosticError(loadError, {
-
-          locale: preferences.locale,
-
-          theme: preferences.theme,
-
-          pathname: `/personal/people/${contactId}`,
-
-        })}
-
+        detail={loadError instanceof ApiClientError ? loadError.message : t("error.body")}
+        error={loadError}
       />
 
     );
@@ -328,7 +310,7 @@ export function PersonDetailPage() {
 
     return (
 
-      <EmptyState title={t("people.detail.notFoundTitle")} body={t("people.detail.notFoundBody")} />
+      <EmptyState title={t("people.detail.notFoundTitle")} detail={t("people.detail.notFoundBody")} />
 
     );
 
@@ -392,7 +374,7 @@ export function PersonDetailPage() {
 
           </Button>
 
-          <Button type="button" variant="secondary" onClick={() => setMode("borrowed")}>
+          <Button type="button" variant="outline" onClick={() => setMode("borrowed")}>
 
             {t("people.detail.iBorrowed")}
 
@@ -434,7 +416,7 @@ export function PersonDetailPage() {
 
           <div className="flex flex-wrap gap-2">
 
-            <Button type="button" variant="secondary" onClick={() => setMode(null)}>
+            <Button type="button" variant="outline" onClick={() => setMode(null)}>
 
               {t("people.add.cancel")}
 
@@ -540,7 +522,7 @@ export function PersonDetailPage() {
 
               type="button"
 
-              variant="secondary"
+              variant="outline"
 
               disabled={revokeConnection.isPending}
 
@@ -590,7 +572,7 @@ export function PersonDetailPage() {
 
             {!confirmUnlink ? (
 
-              <Button type="button" variant="secondary" onClick={() => setConfirmUnlink(true)}>
+              <Button type="button" variant="outline" onClick={() => setConfirmUnlink(true)}>
 
                 {t("people.detail.unlink")}
 
@@ -614,7 +596,7 @@ export function PersonDetailPage() {
 
                 <div className="flex flex-wrap gap-2">
 
-                  <Button type="button" variant="secondary" onClick={() => setConfirmUnlink(false)}>
+                  <Button type="button" variant="outline" onClick={() => setConfirmUnlink(false)}>
 
                     {t("people.add.cancel")}
 
@@ -732,7 +714,7 @@ export function PersonDetailPage() {
 
               <div className="flex flex-wrap gap-2">
 
-                <Button type="button" variant="secondary" onClick={() => setConfirmBlock(false)}>
+                <Button type="button" variant="outline" onClick={() => setConfirmBlock(false)}>
 
                   {t("people.add.cancel")}
 

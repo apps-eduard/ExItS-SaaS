@@ -316,6 +316,63 @@ public sealed class UtangCapabilityPolicyTests
     {
         Assert.Contains(PosFeatureCodes.StoreDashboardView, UtangCapabilityPolicy.DefaultDevelopmentGrants);
         Assert.Contains(PosFeatureCodes.StoreReportsView, UtangCapabilityPolicy.DefaultDevelopmentGrants);
+        Assert.DoesNotContain(PosFeatureCodes.StoreAdvancedReports, UtangCapabilityPolicy.DefaultDevelopmentGrants);
+        Assert.DoesNotContain(PosFeatureCodes.StoreExport, UtangCapabilityPolicy.DefaultDevelopmentGrants);
+    }
+
+    [Fact]
+    public void Advanced_reports_require_store_advanced_reports_grant()
+    {
+        Assert.False(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.ViewAdvancedReports,
+            PosSubscriptionStatuses.Active,
+            [PosFeatureCodes.StoreReportsView]));
+        Assert.True(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.ViewAdvancedReports,
+            PosSubscriptionStatuses.Active,
+            [PosFeatureCodes.StoreAdvancedReports]));
+    }
+
+    [Fact]
+    public void Customer_ordering_requires_store_customer_ordering_grant()
+    {
+        Assert.False(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.PlaceCustomerOrders,
+            PosSubscriptionStatuses.Active,
+            [PosFeatureCodes.StoreSalesView]));
+        Assert.True(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.PlaceCustomerOrders,
+            PosSubscriptionStatuses.Active,
+            [PosFeatureCodes.StoreCustomerOrdering]));
+    }
+
+    [Fact]
+    public void Manage_customer_orders_requires_store_delivery_orders_grant()
+    {
+        Assert.False(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.ManageCustomerOrders,
+            PosSubscriptionStatuses.Active,
+            [PosFeatureCodes.StoreCustomerOrdering]));
+        Assert.True(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.ManageCustomerOrders,
+            PosSubscriptionStatuses.Active,
+            [
+                PosFeatureCodes.StoreCustomerOrdering,
+                PosFeatureCodes.StoreDeliveryOrders
+            ]));
+    }
+
+    [Fact]
+    public void Export_data_requires_store_export_grant()
+    {
+        Assert.False(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.ExportData,
+            PosSubscriptionStatuses.Active,
+            [PosFeatureCodes.StoreReportsView]));
+        Assert.True(UtangCapabilityPolicy.IsAllowed(
+            UtangCapability.ExportData,
+            PosSubscriptionStatuses.Active,
+            [PosFeatureCodes.StoreExport]));
     }
 
     private static readonly string[] SupplierGrants =

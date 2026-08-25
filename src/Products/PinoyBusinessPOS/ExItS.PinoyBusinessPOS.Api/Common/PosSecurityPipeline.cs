@@ -32,6 +32,9 @@ internal static class PosSecurityPipeline
 
         builder.Services.AddRateLimiter(options =>
         {
+            var localValidationEnabled = builder.Configuration.GetValue<bool>("LocalValidation:Enabled")
+                && !builder.Environment.IsProduction();
+
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             options.OnRejected = static async (context, cancellationToken) =>
             {
@@ -51,6 +54,20 @@ internal static class PosSecurityPipeline
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
             {
                 var partitionKey = ResolvePartitionKey(httpContext);
+                if (localValidationEnabled)
+                {
+                    return RateLimitPartition.GetFixedWindowLimiter(
+                        "lv:" + partitionKey,
+                        _ => new FixedWindowRateLimiterOptions
+                        {
+                            AutoReplenishment = true,
+                            // Local Validation sell/catalog flows issue many reads per minute; match Platform LV headroom.
+                            PermitLimit = 5_000,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueLimit = 50
+                        });
+                }
+
                 return RateLimitPartition.GetFixedWindowLimiter(
                     partitionKey,
                     _ => new FixedWindowRateLimiterOptions
@@ -70,9 +87,9 @@ internal static class PosSecurityPipeline
                     _ => new FixedWindowRateLimiterOptions
                     {
                         AutoReplenishment = true,
-                        PermitLimit = 60,
+                        PermitLimit = localValidationEnabled ? 500 : 60,
                         Window = TimeSpan.FromMinutes(1),
-                        QueueLimit = 0
+                        QueueLimit = localValidationEnabled ? 20 : 0
                     });
             });
         });

@@ -6016,6 +6016,24 @@
   <data name="Setup_CashCountSnapshotHint" xml:space="preserve">
     <value>Malalapat ang pagbabago sa susunod na shift. Ang kasalukuyang open shift ay pananatilihin ang policy nang ito ay nagbukas.</value>
   </data>
+  <data name="Setup_CashCountOpening" xml:space="preserve">
+    <value>Opening count</value>
+  </data>
+  <data name="Setup_CashCountClosing" xml:space="preserve">
+    <value>Closing count</value>
+  </data>
+  <data name="Setup_CashCountRequireOpening" xml:space="preserve">
+    <value>I-require ang opening cash count</value>
+  </data>
+  <data name="Setup_CashCountRequireClosing" xml:space="preserve">
+    <value>I-require ang closing cash count</value>
+  </data>
+  <data name="Setup_CashCountRequireOpeningHelp" xml:space="preserve">
+    <value>Kailangang bilangin ng cashier ang drawer cash bago maging active ang shift.</value>
+  </data>
+  <data name="Setup_CashCountRequireClosingHelp" xml:space="preserve">
+    <value>Kailangang bilangin ng cashier ang drawer cash bago maisara ang shift.</value>
+  </data>
   <data name="Setup_Denominations" xml:space="preserve">
     <value>Mga denomination ng pera</value>
   </data>
@@ -8828,7 +8846,7 @@
     <value>Paunawa</value>
   </data>
   <data name="SalesDocument_DisclaimerBody" xml:space="preserve">
-    <value>Ang buod ng transaksyong ito ay ginawa ng ExItS para sa rekord ng negosyo at customer. Hindi ito inilalarawan ng ExItS bilang tax invoice na awtorisado ng BIR.</value>
+    <value>Ang dokumentong ito ay para lamang sa rekord ng negosyo at customer. Hindi ito BIR-registered invoice at hindi nito pinapalitan ang anumang invoice o iba pang dokumento na maaaring legal na kailanganin ng nagbebenta. Hindi tinutukoy ng ExItS ang legal na obligasyon sa BIR invoicing ng nagbebenta.</value>
   </data>
   <data name="SalesDocument_TaxDocumentUnavailable" xml:space="preserve">
     <value>Hindi available ang pag-isyu ng tax document para sa organisasyong ito.</value>

@@ -56,10 +56,23 @@ public sealed class ApiStartBusinessAndUtangMigrationTests(PostgreSqlFixture fix
         return request;
     }
 
+    private async Task<Guid> ResolvePrimaryBusinessTypeIdAsync(string personalToken)
+    {
+        using var businessTypesRequest = Authed(
+            HttpMethod.Get,
+            "/api/v1/personal/onboarding/business-types",
+            personalToken);
+        var businessTypesResponse = await _client.SendAsync(businessTypesRequest);
+        businessTypesResponse.EnsureSuccessStatusCode();
+        var businessTypes = await businessTypesResponse.Content.ReadFromJsonAsync<JsonElement>();
+        return businessTypes.EnumerateArray().First().GetProperty("id").GetGuid();
+    }
+
     [Fact]
     public async Task Start_business_grants_owner_entitlement_and_pos_role_separately()
     {
         var (token, _, _, _) = await SeedPersonalUserAsync("sb");
+        var primaryBusinessTypeId = await ResolvePrimaryBusinessTypeIdAsync(token);
         var slug = Unique("biz");
         using var request = Authed(
             HttpMethod.Post,
@@ -69,6 +82,7 @@ public sealed class ApiStartBusinessAndUtangMigrationTests(PostgreSqlFixture fix
             {
                 displayName = "Ana Sari-Sari",
                 slug,
+                primaryBusinessTypeId,
                 activatePosEntitlement = true,
                 activateProductAccess = true,
                 assignPosOwnerRole = true
@@ -114,11 +128,12 @@ public sealed class ApiStartBusinessAndUtangMigrationTests(PostgreSqlFixture fix
         Assert.Equal(HttpStatusCode.Created, relResponse.StatusCode);
         var relationshipId = (await relResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 
+        var primaryBusinessTypeId = await ResolvePrimaryBusinessTypeIdAsync(personalToken);
         using var startRequest = Authed(
             HttpMethod.Post,
             "/api/v1/personal/start-business",
             personalToken,
-            new { displayName = "Migrated Biz", slug = Unique("mb") });
+            new { displayName = "Migrated Biz", slug = Unique("mb"), primaryBusinessTypeId });
         var startResponse = await _client.SendAsync(startRequest);
         Assert.Equal(HttpStatusCode.Created, startResponse.StatusCode);
         var start = await startResponse.Content.ReadFromJsonAsync<JsonElement>();
@@ -288,22 +303,28 @@ public sealed class ApiStartBusinessAndUtangMigrationTests(PostgreSqlFixture fix
         var relationshipId = (await (await _client.SendAsync(relRequest)).Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("id").GetGuid();
 
+        var primaryBusinessTypeIdA = await ResolvePrimaryBusinessTypeIdAsync(tokenA);
         using var startA = Authed(
             HttpMethod.Post,
             "/api/v1/personal/start-business",
             tokenA,
-            new { displayName = "Org A", slug = Unique("oa") });
-        var startABody = await (await _client.SendAsync(startA)).Content.ReadFromJsonAsync<JsonElement>();
+            new { displayName = "Org A", slug = Unique("oa"), primaryBusinessTypeId = primaryBusinessTypeIdA });
+        var startAResponse = await _client.SendAsync(startA);
+        Assert.Equal(HttpStatusCode.Created, startAResponse.StatusCode);
+        var startABody = await startAResponse.Content.ReadFromJsonAsync<JsonElement>();
         var orgA = startABody.GetProperty("organizationId").GetGuid();
         var tokenOrgA = startABody.GetProperty("sessionToken").GetString()!;
 
         var (tokenB, _, _, _) = await SeedPersonalUserAsync("wb");
+        var primaryBusinessTypeIdB = await ResolvePrimaryBusinessTypeIdAsync(tokenB);
         using var startB = Authed(
             HttpMethod.Post,
             "/api/v1/personal/start-business",
             tokenB,
-            new { displayName = "Org B", slug = Unique("ob") });
-        var startBBody = await (await _client.SendAsync(startB)).Content.ReadFromJsonAsync<JsonElement>();
+            new { displayName = "Org B", slug = Unique("ob"), primaryBusinessTypeId = primaryBusinessTypeIdB });
+        var startBResponse = await _client.SendAsync(startB);
+        Assert.Equal(HttpStatusCode.Created, startBResponse.StatusCode);
+        var startBBody = await startBResponse.Content.ReadFromJsonAsync<JsonElement>();
         var orgB = startBBody.GetProperty("organizationId").GetGuid();
 
         using var preview = Authed(
@@ -377,12 +398,15 @@ public sealed class ApiStartBusinessAndUtangMigrationTests(PostgreSqlFixture fix
         Assert.Equal(HttpStatusCode.Created, userRelResponse.StatusCode);
         var linkedRelationshipId = (await userRelResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 
+        var primaryBusinessTypeId = await ResolvePrimaryBusinessTypeIdAsync(lenderToken);
         using var start = Authed(
             HttpMethod.Post,
             "/api/v1/personal/start-business",
             lenderToken,
-            new { displayName = "Consent Biz", slug = Unique("cb") });
-        var startBody = await (await _client.SendAsync(start)).Content.ReadFromJsonAsync<JsonElement>();
+            new { displayName = "Consent Biz", slug = Unique("cb"), primaryBusinessTypeId });
+        var startResponse = await _client.SendAsync(start);
+        Assert.Equal(HttpStatusCode.Created, startResponse.StatusCode);
+        var startBody = await startResponse.Content.ReadFromJsonAsync<JsonElement>();
         var orgId = startBody.GetProperty("organizationId").GetGuid();
         var orgToken = startBody.GetProperty("sessionToken").GetString()!;
 

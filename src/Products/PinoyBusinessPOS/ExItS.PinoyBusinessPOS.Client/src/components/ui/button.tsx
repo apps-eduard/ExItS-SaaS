@@ -4,15 +4,16 @@ import type { ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-[var(--exits-radius-md)] text-[length:var(--exits-text-md)] font-semibold transition-[background-color,border-color,color,opacity] duration-[var(--exits-motion-fast)] ease-[var(--exits-ease)] focus-visible:outline-none disabled:pointer-events-none disabled:bg-[var(--exits-disabled-bg)] disabled:text-[var(--exits-disabled-text)] disabled:border-[var(--exits-disabled-border)]",
+  "inline-flex items-center justify-center gap-2 rounded-[var(--exits-radius-md)] text-[length:var(--exits-text-sm)] font-semibold transition-[background-color,color,box-shadow] duration-[var(--exits-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-[var(--exits-primary-hover)]",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-[var(--exits-secondary-hover)]",
-        outline: "border border-border bg-surface text-foreground hover:bg-surface-muted",
-        ghost: "bg-transparent text-foreground hover:bg-surface-muted",
-        destructive: "bg-destructive text-white hover:opacity-90",
+        ghost: "bg-transparent text-foreground hover:bg-[var(--exits-surface-muted)]",
+        outline:
+          "border border-border bg-surface text-foreground hover:bg-[var(--exits-surface-muted)]",
+        destructive:
+          "border border-destructive/35 bg-destructive/8 text-destructive hover:bg-destructive/14",
       },
       size: {
         default: "h-[var(--exits-control-height)] min-h-[var(--exits-touch-target-min)] px-4",

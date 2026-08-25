@@ -19,7 +19,12 @@ namespace ExItS.PinoyBusinessPOS.Api.Sales;
 /// supply immutable line snapshots (UnitPrice/UOM/SellingMode/LineTotal); the server validates
 /// arithmetic consistency without replacing those snapshots from the live catalog. Product-Based
 /// Utang checkout also creates a linked remarks credit. Tracked inventory is deducted atomically at
-/// checkout and restored on void. No discount, tax, refund, split tender, or gateway surface exists here.
+/// checkout and restored on void. No refund, split tender, or gateway surface exists here.
+///
+/// Manual commercial discounts require <c>ApplyCommercialDiscount</c> in addition to
+/// <c>CreateSale</c>, and are rejected outright on the offline snapshot path. Sale price overrides
+/// require <c>OverrideSalePrice</c> (and <c>OverrideSalePriceUnlimited</c> when the server-computed
+/// deviation exceeds the manager ceiling). Promotions and statutory discounts remain separate.
 /// </summary>
 internal static class SaleEndpoints
 {
@@ -73,7 +78,8 @@ internal static class SaleEndpoints
             if (isUtang)
             {
                 if (!TryAuthorize(request, access, UtangCapability.CreateSale, out var organizationId, out var problem)
-                    || !PosCommercialScope.TryAuthorize(access, UtangCapability.CreateCredit, out problem))
+                    || !PosCommercialScope.TryAuthorize(access, UtangCapability.CreateCredit, out problem)
+                    || !TryAuthorizeCheckoutAdjustments(access, body, out var allowUnlimited, out problem))
                 {
                     return problem!;
                 }
@@ -113,6 +119,9 @@ internal static class SaleEndpoints
                             body.BuyerOrganizationId,
                             body.BuyerPublicOrganizationId,
                             branchId,
+                            body.Discounts,
+                            body.PriceOverrides,
+                            allowUnlimited,
                             ct2),
                         SaleQueryService.Map,
                         dto => Results.Created($"/api/v1/pos/sales/{dto.SaleId:D}", dto),
@@ -120,7 +129,8 @@ internal static class SaleEndpoints
                     .ConfigureAwait(false);
             }
 
-            if (!TryAuthorize(request, access, UtangCapability.CreateSale, out var cashOrgId, out var cashProblem))
+            if (!TryAuthorize(request, access, UtangCapability.CreateSale, out var cashOrgId, out var cashProblem)
+                || !TryAuthorizeCheckoutAdjustments(access, body, out var cashAllowUnlimited, out cashProblem))
             {
                 return cashProblem!;
             }
@@ -160,11 +170,35 @@ internal static class SaleEndpoints
                         body.BuyerOrganizationId,
                         body.BuyerPublicOrganizationId,
                         cashBranchId,
+                        body.Discounts,
+                        body.PriceOverrides,
+                        cashAllowUnlimited,
                         ct2),
                     SaleQueryService.Map,
                     dto => Results.Created($"/api/v1/pos/sales/{dto.SaleId:D}", dto),
                     ct)
                 .ConfigureAwait(false);
+        });
+
+        // Preview only: prices the cart, applies overrides and discounts plus tax, persists nothing.
+        // Checkout revalidates independently, so a quote never authorizes the amounts it returns.
+        group.MapPost("/quote", async (
+            HttpRequest request,
+            CheckoutSaleRequest body,
+            CheckoutSale useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.CreateSale, out var organizationId, out var problem)
+                || !TryAuthorizeCheckoutAdjustments(access, body, out var allowUnlimited, out problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase
+                .QuoteAsync(organizationId, body.Lines, body.Discounts, body.PriceOverrides, allowUnlimited, ct)
+                .ConfigureAwait(false);
+            return PosApiResults.FromResult(result, Results.Ok);
         });
 
         group.MapGet("/{saleId:guid}", async (
@@ -228,6 +262,45 @@ internal static class SaleEndpoints
         });
 
         return app;
+    }
+
+    /// <summary>
+    /// Gates commercial discounts and sale price overrides. Unlimited is probed (not required) so
+    /// StoreManager can override within the server-enforced 100% ceiling; Owner/Admin with the
+    /// unlimited feature pass <c>allowUnlimited = true</c>. Client-claimed percentages are ignored.
+    /// </summary>
+    private static bool TryAuthorizeCheckoutAdjustments(
+        IPosCommercialAccessAccessor access,
+        CheckoutSaleRequest body,
+        out bool allowUnlimitedSalePriceOverride,
+        out IResult? problem)
+    {
+        allowUnlimitedSalePriceOverride = false;
+        problem = null;
+
+        if (body.Discounts is { Count: > 0 }
+            && !PosCommercialScope.TryAuthorize(access, UtangCapability.ApplyCommercialDiscount, out problem))
+        {
+            return false;
+        }
+
+        if (body.PriceOverrides is not { Count: > 0 })
+        {
+            return true;
+        }
+
+        if (!PosCommercialScope.TryAuthorize(access, UtangCapability.OverrideSalePrice, out problem))
+        {
+            return false;
+        }
+
+        // Soft probe: presence of unlimited capability widens the domain ceiling; absence does not
+        // deny the request here — domain still rejects deviations above the manager limit.
+        allowUnlimitedSalePriceOverride = PosCommercialScope.TryAuthorize(
+            access,
+            UtangCapability.OverrideSalePriceUnlimited,
+            out _);
+        return true;
     }
 
     private static bool TryAuthorize(

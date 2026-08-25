@@ -597,6 +597,11 @@ internal static class ReportingEndpoints
             return false;
         }
 
+        if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewAdvancedReports, out problem))
+        {
+            return false;
+        }
+
         if (!PosRoleRequestContext.HasActorHeader
             || (PosRoleRequestContext.CurrentRole is null
                 && !PosRoleRequestContext.OrganizationManagementAuthority))

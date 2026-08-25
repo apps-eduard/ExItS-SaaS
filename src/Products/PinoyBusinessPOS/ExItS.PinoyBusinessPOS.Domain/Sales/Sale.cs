@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
+using ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.OperationalSetup;
@@ -17,9 +18,15 @@ namespace ExItS.PinoyBusinessPOS.Domain.Sales;
 /// <c>CreditEntry</c>/<c>Repayment</c> convention so peso amounts reconcile across the product.
 ///
 /// Payment methods: Cash, ManualGCash, and Product-Based Utang (linked remarks credit). Out of scope
-/// by design: stock/inventory deduction, split or partial tender, discounts, tax/VAT, fees, tips,
+/// by design: stock/inventory deduction, split or partial tender, fees, tips,
 /// refunds/returns/exchanges, line voids, fiscal invoices, payment gateways, GCash verification,
 /// credit limits, and offline sale capture.
+///
+/// Commercial discounts (RMAP-B03) are additive and money-only: <see cref="GrossSubtotal"/> keeps the
+/// pre-discount amount, <see cref="Subtotal"/> stays the net pre-tax base, and tax is computed from
+/// the net subtotal. Sale price overrides (RMAP-B01) change line <see cref="SaleLine.UnitPrice"/>
+/// only for the recorded sale — never catalog SellingPrice / Today's Price — and run before
+/// commercial discounts. Promotions and statutory/regulatory discounts remain separate concepts.
 /// </summary>
 public sealed class Sale
 {
@@ -29,14 +36,31 @@ public sealed class Sale
     public const decimal MaxTotal = 999_999_999.99m;
 
     private readonly List<SaleLine> _lines;
+    private readonly List<SaleCommercialDiscountAdjustment> _commercialDiscounts;
+    private readonly List<SalePriceOverrideAdjustment> _priceOverrides;
 
     public SaleId Id { get; }
     public PosOrganizationId OrganizationId { get; }
     public string SaleNumber { get; }
     public SaleStatus Status { get; private set; }
     public SalePaymentMethod PaymentMethod { get; }
+
+    /// <summary>Net pre-tax subtotal (after commercial discounts). The tax base and DTO contract.</summary>
     public decimal Subtotal { get; }
+
     public decimal Total { get; }
+
+    /// <summary>Pre-discount subtotal: the sum of gross line totals. Equals Subtotal when undiscounted.</summary>
+    public decimal GrossSubtotal { get; }
+
+    /// <summary>Sum of commercial discounts applied directly to individual lines.</summary>
+    public decimal LineDiscountTotal { get; }
+
+    /// <summary>Sum of sale-level commercial discount allocated across lines.</summary>
+    public decimal SaleDiscountTotal { get; }
+
+    /// <summary>Total commercial discount taken off this sale.</summary>
+    public decimal DiscountTotal { get; }
 
     /// <summary>Sales tax amount recorded at checkout. Zero for legacy sales and when tax is not configured.</summary>
     public decimal TaxAmount { get; }
@@ -95,6 +119,18 @@ public sealed class Sale
 
     public IReadOnlyList<SaleLine> Lines => _lines;
 
+    /// <summary>
+    /// Audit snapshots of the commercial discounts applied at checkout — one per requested intent.
+    /// Empty for undiscounted and legacy sales.
+    /// </summary>
+    public IReadOnlyList<SaleCommercialDiscountAdjustment> CommercialDiscounts => _commercialDiscounts;
+
+    /// <summary>
+    /// Audit snapshots of per-sale unit-price overrides applied at checkout — one per requested intent.
+    /// Empty when no override was applied (including legacy sales).
+    /// </summary>
+    public IReadOnlyList<SalePriceOverrideAdjustment> PriceOverrides => _priceOverrides;
+
     private Sale(
         SaleId id,
         PosOrganizationId organizationId,
@@ -104,6 +140,9 @@ public sealed class Sale
         decimal subtotal,
         decimal total,
         decimal taxAmount,
+        decimal grossSubtotal,
+        decimal lineDiscountTotal,
+        decimal saleDiscountTotal,
         decimal? amountTendered,
         decimal? changeAmount,
         string? gcashReference,
@@ -120,7 +159,9 @@ public sealed class Sale
         string? voidReason,
         DateTimeOffset updatedAtUtc,
         List<SaleLine> lines,
-        SaleStockReservationState stockReservationState)
+        SaleStockReservationState stockReservationState,
+        List<SaleCommercialDiscountAdjustment> commercialDiscounts,
+        List<SalePriceOverrideAdjustment> priceOverrides)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -130,6 +171,10 @@ public sealed class Sale
         Subtotal = subtotal;
         Total = total;
         TaxAmount = taxAmount;
+        GrossSubtotal = grossSubtotal;
+        LineDiscountTotal = lineDiscountTotal;
+        SaleDiscountTotal = saleDiscountTotal;
+        DiscountTotal = SaleMoney.RoundMoney(lineDiscountTotal + saleDiscountTotal);
         AmountTendered = amountTendered;
         ChangeAmount = changeAmount;
         GCashReference = gcashReference;
@@ -147,11 +192,21 @@ public sealed class Sale
         UpdatedAtUtc = updatedAtUtc;
         StockReservationState = stockReservationState;
         _lines = lines;
+        _commercialDiscounts = commercialDiscounts;
+        _priceOverrides = priceOverrides;
     }
 
     /// <summary>
     /// Records a completed sale from validated snapshot line drafts. The sale number is allocated
     /// server-side before this call; clients never supply one.
+    ///
+    /// Order of money operations is fixed: apply optional per-sale unit-price overrides to draft
+    /// UnitPrice → build lines → apply commercial discounts on GrossLineTotal. When
+    /// <paramref name="commercialDiscounts"/> or <paramref name="priceOverrides"/> are supplied,
+    /// this method recomputes every peso from the intents independently of anything the application
+    /// layer already quoted. <paramref name="taxAmount"/> must already have been computed from the
+    /// net (post-discount) subtotal. <paramref name="allowUnlimitedSalePriceOverride"/> selects the
+    /// manager deviation ceiling versus Owner-unlimited positive prices.
     /// </summary>
     public static Sale Checkout(
         PosOrganizationId organizationId,
@@ -170,7 +225,10 @@ public sealed class Sale
         decimal taxAmount = 0,
         TaxPricingMode? taxPricingMode = null,
         SaleBuyerParty? buyerParty = null,
-        PosBranchId? branchId = null)
+        PosBranchId? branchId = null,
+        IReadOnlyList<CommercialDiscountIntent>? commercialDiscounts = null,
+        IReadOnlyList<SalePriceOverrideIntent>? priceOverrides = null,
+        bool allowUnlimitedSalePriceOverride = false)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(recordedBy);
@@ -189,34 +247,62 @@ public sealed class Sale
                 "Checkout requires a register inherited from the open shift.");
         }
 
-        if (lines is null || lines.Count == 0)
-        {
-            throw new DomainException(
-                DomainErrorCodes.SaleRequiresAtLeastOneLine,
-                "A sale must contain at least one line.");
-        }
-
-        if (lines.Count > MaxLineCount)
-        {
-            throw new DomainException(
-                DomainErrorCodes.SaleRequiresAtLeastOneLine,
-                $"A sale may contain at most {MaxLineCount} lines.");
-        }
+        EnsureLineCount(lines);
 
         var saleId = id ?? SaleId.New();
         var normalizedNumber = SaleNumbers.Normalize(saleNumber);
 
-        var saleLines = new List<SaleLine>(lines.Count);
-        for (var i = 0; i < lines.Count; i++)
-        {
-            saleLines.Add(SaleLine.Create(saleId, organizationId, i + 1, lines[i]));
-        }
+        var overrideResult = SalePriceOverrideApplier.Apply(
+            lines,
+            priceOverrides,
+            allowUnlimitedSalePriceOverride
+                ? null
+                : SalePriceOverrideRules.ManagerMaxDeviationRatio);
 
-        var subtotal = SaleMoney.RoundMoney(saleLines.Sum(l => l.LineTotal));
-        if (subtotal > MaxTotal)
+        var saleLines = BuildLines(saleId, organizationId, overrideResult.Drafts);
+
+        var grossSubtotal = SaleMoney.RoundMoney(saleLines.Sum(l => l.GrossLineTotal));
+        if (grossSubtotal > MaxTotal)
         {
             throw new DomainException(DomainErrorCodes.SaleTotalTooLarge, "The sale total is too large.");
         }
+
+        var discountResult = SaleCommercialDiscountCalculator.Apply(ToDiscountBases(saleLines), commercialDiscounts);
+
+        foreach (var outcome in discountResult.Lines)
+        {
+            saleLines[outcome.LineNumber - 1].ApplyCommercialDiscount(outcome);
+        }
+
+        var discountAdjustments = new List<SaleCommercialDiscountAdjustment>(discountResult.Adjustments.Count);
+        foreach (var draft in discountResult.Adjustments)
+        {
+            var lineId = draft.LineNumber is int lineNumber
+                ? saleLines[lineNumber - 1].Id
+                : null;
+
+            discountAdjustments.Add(SaleCommercialDiscountAdjustment.Create(
+                saleId,
+                organizationId,
+                draft,
+                lineId,
+                recordedBy,
+                utcNow));
+        }
+
+        var priceOverrideAdjustments = new List<SalePriceOverrideAdjustment>(overrideResult.Adjustments.Count);
+        foreach (var draft in overrideResult.Adjustments)
+        {
+            priceOverrideAdjustments.Add(SalePriceOverrideAdjustment.Create(
+                saleId,
+                organizationId,
+                draft,
+                saleLines[draft.LineNumber - 1].Id,
+                recordedBy,
+                utcNow));
+        }
+
+        var subtotal = SaleMoney.RoundMoney(saleLines.Sum(l => l.LineTotal));
 
         var normalizedTax = SaleMoney.RoundMoney(Math.Max(0m, taxAmount));
         var total = subtotal;
@@ -236,6 +322,9 @@ public sealed class Sale
             throw new DomainException(DomainErrorCodes.SaleTotalTooLarge, "The sale total is too large.");
         }
 
+        // A 100% commercial discount can legitimately drive the total to zero. Cash accepts that
+        // (tender 0, change 0); Utang still requires a positive total because a zero-peso credit
+        // entry would be meaningless. That existing rule is deliberately left in place.
         ValidatePaymentLinkage(paymentMethod, customerId, linkedCreditEntryId, total);
 
         var resolvedBuyer = buyerParty ?? SaleBuyerParty.FromLegacyCustomer(customerId);
@@ -256,6 +345,9 @@ public sealed class Sale
             subtotal,
             total,
             normalizedTax,
+            grossSubtotal,
+            discountResult.LineDiscountTotal,
+            discountResult.SaleDiscountTotal,
             tendered,
             change,
             reference,
@@ -272,8 +364,183 @@ public sealed class Sale
             null,
             utcNow,
             saleLines,
-            SaleStockReservationState.None);
+            SaleStockReservationState.None,
+            discountAdjustments,
+            priceOverrideAdjustments);
     }
+
+    /// <summary>
+    /// Records a completed Product-Based Utang sale for a fulfilled Personal customer order.
+    /// Inventory was already consumed via the customer-order stock path; this sale is accounting-only.
+    /// No cashier shift or register is required. <paramref name="authoritativeTotal"/> must match
+    /// <see cref="CustomerOrder.Total"/> exactly.
+    /// </summary>
+    public static Sale RecordCustomerOrderUtangSettlement(
+        PosOrganizationId organizationId,
+        string saleNumber,
+        CustomerOrder sourceOrder,
+        decimal authoritativeTotal,
+        IReadOnlyList<SaleLineDraft> lines,
+        Guid recordedBy,
+        DateTimeOffset utcNow,
+        POSCustomerId customerId,
+        CreditEntryId linkedCreditEntryId,
+        SaleBuyerParty? buyerParty = null,
+        PosBranchId? branchId = null,
+        SaleId? id = null)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+        SaleMoney.EnsureActor(recordedBy);
+        ArgumentNullException.ThrowIfNull(sourceOrder);
+        EnsureLineCount(lines);
+
+        var saleId = id ?? SaleId.New();
+        var normalizedNumber = SaleNumbers.Normalize(saleNumber);
+        var saleLines = BuildLines(saleId, organizationId, lines);
+        var grossSubtotal = SaleMoney.RoundMoney(saleLines.Sum(l => l.GrossLineTotal));
+        var subtotal = SaleMoney.RoundMoney(saleLines.Sum(l => l.LineTotal));
+        var total = subtotal;
+
+        if (total != SaleMoney.RoundMoney(authoritativeTotal))
+        {
+            throw new DomainException(
+                DomainErrorCodes.SaleTotalMismatch,
+                "Customer order Utang settlement total must match the authoritative order total.");
+        }
+
+        if (total > MaxTotal)
+        {
+            throw new DomainException(DomainErrorCodes.SaleTotalTooLarge, "The sale total is too large.");
+        }
+
+        ValidatePaymentLinkage(SalePaymentMethod.Utang, customerId, linkedCreditEntryId, total);
+
+        var resolvedBuyer = buyerParty ?? SaleBuyerParty.FromLegacyCustomer(customerId);
+        resolvedBuyer.EnsureConsistentWith(customerId);
+
+        return new Sale(
+            saleId,
+            organizationId,
+            normalizedNumber,
+            SaleStatus.Completed,
+            SalePaymentMethod.Utang,
+            subtotal,
+            total,
+            taxAmount: 0m,
+            grossSubtotal,
+            lineDiscountTotal: 0m,
+            saleDiscountTotal: 0m,
+            amountTendered: null,
+            changeAmount: null,
+            gcashReference: null,
+            customerId,
+            resolvedBuyer,
+            linkedCreditEntryId,
+            cashierShiftId: null,
+            registerId: null,
+            branchId,
+            utcNow,
+            recordedBy,
+            null,
+            null,
+            null,
+            utcNow,
+            saleLines,
+            SaleStockReservationState.Consumed,
+            [],
+            []);
+    }
+
+    /// <summary>
+    /// Runs the exact line-building, price-override, and discount math <see cref="Checkout"/> would
+    /// run, without creating or persisting a sale. Used by the quote endpoint so an operator can
+    /// preview overrides and discounts before committing. A quote is advisory only: checkout
+    /// recomputes from scratch and may legitimately reject or produce different numbers if prices
+    /// or the cart changed.
+    /// </summary>
+    public static SaleQuoteMoneyResult QuoteCheckoutMoney(
+        PosOrganizationId organizationId,
+        IReadOnlyList<SaleLineDraft> lines,
+        IReadOnlyList<CommercialDiscountIntent>? commercialDiscounts = null,
+        IReadOnlyList<SalePriceOverrideIntent>? priceOverrides = null,
+        bool allowUnlimitedSalePriceOverride = false)
+    {
+        EnsureLineCount(lines);
+
+        var overrideResult = SalePriceOverrideApplier.Apply(
+            lines,
+            priceOverrides,
+            allowUnlimitedSalePriceOverride
+                ? null
+                : SalePriceOverrideRules.ManagerMaxDeviationRatio);
+
+        var saleLines = BuildLines(SaleId.New(), organizationId, overrideResult.Drafts);
+        var grossSubtotal = SaleMoney.RoundMoney(saleLines.Sum(l => l.GrossLineTotal));
+        if (grossSubtotal > MaxTotal)
+        {
+            throw new DomainException(DomainErrorCodes.SaleTotalTooLarge, "The sale total is too large.");
+        }
+
+        var discountResult = SaleCommercialDiscountCalculator.Apply(ToDiscountBases(saleLines), commercialDiscounts);
+        return new SaleQuoteMoneyResult(overrideResult, discountResult, overrideResult.Drafts);
+    }
+
+    /// <summary>
+    /// Discount-only quote used by callers that already applied price overrides to the drafts.
+    /// Prefer <see cref="QuoteCheckoutMoney"/> when both override and discount intents are present.
+    /// </summary>
+    public static SaleCommercialDiscountResult QuoteCommercialDiscounts(
+        PosOrganizationId organizationId,
+        IReadOnlyList<SaleLineDraft> lines,
+        IReadOnlyList<CommercialDiscountIntent>? commercialDiscounts = null)
+    {
+        EnsureLineCount(lines);
+
+        var saleLines = BuildLines(SaleId.New(), organizationId, lines);
+        var grossSubtotal = SaleMoney.RoundMoney(saleLines.Sum(l => l.GrossLineTotal));
+        if (grossSubtotal > MaxTotal)
+        {
+            throw new DomainException(DomainErrorCodes.SaleTotalTooLarge, "The sale total is too large.");
+        }
+
+        return SaleCommercialDiscountCalculator.Apply(ToDiscountBases(saleLines), commercialDiscounts);
+    }
+
+    private static void EnsureLineCount(IReadOnlyList<SaleLineDraft>? lines)
+    {
+        if (lines is null || lines.Count == 0)
+        {
+            throw new DomainException(
+                DomainErrorCodes.SaleRequiresAtLeastOneLine,
+                "A sale must contain at least one line.");
+        }
+
+        if (lines.Count > MaxLineCount)
+        {
+            throw new DomainException(
+                DomainErrorCodes.SaleRequiresAtLeastOneLine,
+                $"A sale may contain at most {MaxLineCount} lines.");
+        }
+    }
+
+    private static List<SaleLine> BuildLines(
+        SaleId saleId,
+        PosOrganizationId organizationId,
+        IReadOnlyList<SaleLineDraft> lines)
+    {
+        var saleLines = new List<SaleLine>(lines.Count);
+        for (var i = 0; i < lines.Count; i++)
+        {
+            saleLines.Add(SaleLine.Create(saleId, organizationId, i + 1, lines[i]));
+        }
+
+        return saleLines;
+    }
+
+    private static SaleDiscountLineBasis[] ToDiscountBases(IReadOnlyList<SaleLine> saleLines) =>
+        saleLines
+            .Select(l => new SaleDiscountLineBasis(l.LineNumber, l.ProductId, l.GrossLineTotal))
+            .ToArray();
 
     /// <summary>
     /// Completes an electronic sale after an authoritative Paid payment attempt.
@@ -349,7 +616,12 @@ public sealed class Sale
         RegisterId? registerId = null,
         SaleBuyerParty? buyerParty = null,
         SaleStockReservationState stockReservationState = SaleStockReservationState.None,
-        PosBranchId? branchId = null) =>
+        PosBranchId? branchId = null,
+        decimal? grossSubtotal = null,
+        decimal lineDiscountTotal = 0m,
+        decimal saleDiscountTotal = 0m,
+        IEnumerable<SaleCommercialDiscountAdjustment>? commercialDiscounts = null,
+        IEnumerable<SalePriceOverrideAdjustment>? priceOverrides = null) =>
         new(
             id,
             organizationId,
@@ -359,6 +631,11 @@ public sealed class Sale
             subtotal,
             total,
             taxAmount,
+            // Sales recorded before commercial discounts existed carry no gross subtotal:
+            // their net subtotal is also their gross.
+            grossSubtotal ?? subtotal,
+            lineDiscountTotal,
+            saleDiscountTotal,
             amountTendered,
             changeAmount,
             gcashReference,
@@ -375,7 +652,9 @@ public sealed class Sale
             voidReason,
             updatedAtUtc,
             lines.OrderBy(l => l.LineNumber).ToList(),
-            stockReservationState);
+            stockReservationState,
+            commercialDiscounts?.ToList() ?? [],
+            priceOverrides?.ToList() ?? []);
 
     /// <summary>
     /// Marks inventory as reserved for an electronic sale awaiting payment.
@@ -602,6 +881,18 @@ public sealed class Sale
         CreditEntryId? linkedCreditEntryId,
         decimal total)
     {
+        // Provider-backed Card/GCash enter AwaitingPayment and create payment attempts with
+        // amount = sale.Total. Payment attempts require amount > 0. A fully discounted (₱0)
+        // electronic sale would reserve stock and then be permanently stuck — reject at checkout.
+        // Cash / ManualGCash may complete at ₱0. Utang still requires Total > 0 below.
+        if (SalePaymentMethods.IsElectronic(paymentMethod) && total <= 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.SaleElectronicTotalMustBePositive,
+                "Card and GCash checkouts require a total greater than zero. " +
+                "A fully discounted sale must use Cash or Manual GCash.");
+        }
+
         if (paymentMethod == SalePaymentMethod.Utang)
         {
             if (customerId is null)

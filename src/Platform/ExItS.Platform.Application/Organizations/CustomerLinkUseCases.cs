@@ -27,7 +27,10 @@ public sealed record CustomerLinkRequestDto(
     Guid? AcceptedByUserId,
     string? AcceptToken = null,
     Guid? TargetUserIdentityId = null,
-    string? TargetPublicUserId = null);
+    string? TargetPublicUserId = null,
+    int ReminderCount = 0,
+    DateTimeOffset? LastRemindedAtUtc = null,
+    DateTimeOffset? NextReminderEligibleAtUtc = null);
 
 public sealed record LinkedCustomerAppUserDto(
     Guid Id,
@@ -60,7 +63,11 @@ public sealed record CustomerLinkStatusDto(
     string Status,
     Guid? LinkedUserIdentityId,
     Guid? LatestLinkRequestId,
-    string? LatestLinkRequestStatus);
+    string? LatestLinkRequestStatus,
+    int ReminderCount = 0,
+    DateTimeOffset? LastRemindedAtUtc = null,
+    DateTimeOffset? NextReminderEligibleAtUtc = null,
+    DateTimeOffset? InvitationSentAtUtc = null);
 
 public sealed record CreateBusinessCustomerWithPersonalLinkResultDto(
     BusinessCustomerDto Customer,
@@ -165,7 +172,10 @@ public sealed class CustomerLinkRequestQueryService
             request.AcceptedByUserId?.Value,
             acceptToken,
             request.TargetUserIdentityId?.Value,
-            request.TargetPublicUserId);
+            request.TargetPublicUserId,
+            request.ReminderCount,
+            request.LastRemindedAtUtc,
+            request.NextReminderEligibleAtUtc);
 }
 
 public sealed class LinkedCustomerAppUserQueryService
@@ -226,15 +236,18 @@ public sealed class GetCustomerLinkStatusForBusinessCustomer
 {
     private readonly IBusinessCustomerRepository _customers;
     private readonly ICustomerLinkRequestRepository _requests;
+    private readonly IPersonalOrganizationConnectionBlockRepository _blocks;
     private readonly IClock _clock;
 
     public GetCustomerLinkStatusForBusinessCustomer(
         IBusinessCustomerRepository customers,
         ICustomerLinkRequestRepository requests,
+        IPersonalOrganizationConnectionBlockRepository blocks,
         IClock clock)
     {
         _customers = customers;
         _requests = requests;
+        _blocks = blocks;
         _clock = clock;
     }
 
@@ -282,6 +295,24 @@ public sealed class GetCustomerLinkStatusForBusinessCustomer
             };
         }
 
+        // Neutral Org-facing projection when Personal has blocked this Organization.
+        if (!string.Equals(status, "Linked", StringComparison.Ordinal))
+        {
+            var personalId = customer.LinkedUserIdentityId
+                ?? latest?.TargetUserIdentityId
+                ?? latest?.AcceptedByUserId
+                ?? history
+                    .Select(h => h.TargetUserIdentityId ?? h.AcceptedByUserId)
+                    .FirstOrDefault(id => id is not null);
+            if (personalId is not null
+                && await CustomerConnectionBlockSupport
+                    .IsBlockedAsync(_blocks, personalId, organizationId, cancellationToken)
+                    .ConfigureAwait(false))
+            {
+                status = "Unavailable";
+            }
+        }
+
         return ApplicationResult<CustomerLinkStatusDto>.Success(
             new CustomerLinkStatusDto(
                 customer.Id.Value,
@@ -293,7 +324,11 @@ public sealed class GetCustomerLinkStatusForBusinessCustomer
                     ? null
                     : latest.IsExpired(now)
                         ? nameof(CustomerLinkRequestStatus.Expired)
-                        : latest.Status.ToString()));
+                        : latest.Status.ToString(),
+                latest?.ReminderCount ?? 0,
+                latest?.LastRemindedAtUtc,
+                latest?.NextReminderEligibleAtUtc,
+                latest?.CreatedAtUtc));
     }
 }
 
@@ -307,6 +342,7 @@ public sealed class CreateCustomerLinkRequest
     private readonly IPlatformOrganizationRepository? _organizations;
     private readonly IPersonalAccountSettingsRepository? _personalSettings;
     private readonly IPersonalInAppNotificationRepository? _personalNotifications;
+    private readonly IPersonalOrganizationConnectionBlockRepository? _blocks;
 
     public CreateCustomerLinkRequest(
         IBusinessCustomerRepository customers,
@@ -316,7 +352,8 @@ public sealed class CreateCustomerLinkRequest
         IPlatformUserRepository? users = null,
         IPlatformOrganizationRepository? organizations = null,
         IPersonalAccountSettingsRepository? personalSettings = null,
-        IPersonalInAppNotificationRepository? personalNotifications = null)
+        IPersonalInAppNotificationRepository? personalNotifications = null,
+        IPersonalOrganizationConnectionBlockRepository? blocks = null)
     {
         _customers = customers;
         _requests = requests;
@@ -326,6 +363,7 @@ public sealed class CreateCustomerLinkRequest
         _organizations = organizations;
         _personalSettings = personalSettings;
         _personalNotifications = personalNotifications;
+        _blocks = blocks;
     }
 
     public Task<ApplicationResult<CustomerLinkRequestDto>> ExecuteAsync(
@@ -389,6 +427,15 @@ public sealed class CreateCustomerLinkRequest
             }
 
             var (resolvedEmail, targetId, targetPublicId) = resolved.Value!;
+
+            if (targetId is not null
+                && _blocks is not null
+                && await CustomerConnectionBlockSupport
+                    .IsBlockedAsync(_blocks, targetId, organizationId, cancellationToken)
+                    .ConfigureAwait(false))
+            {
+                return CustomerConnectionBlockSupport.UnavailableFailure<CustomerLinkRequestDto>();
+            }
 
             var pending = await _requests
                 .FindPendingByBusinessCustomerAsync(businessCustomerId, cancellationToken)
@@ -591,6 +638,7 @@ public sealed class ResendCustomerLinkRequest
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly CreateCustomerLinkRequest? _createHelper;
+    private readonly IPersonalOrganizationConnectionBlockRepository? _blocks;
 
     public ResendCustomerLinkRequest(
         ICustomerLinkRequestRepository requests,
@@ -600,11 +648,13 @@ public sealed class ResendCustomerLinkRequest
         IPlatformUserRepository? users = null,
         IPlatformOrganizationRepository? organizations = null,
         IPersonalAccountSettingsRepository? personalSettings = null,
-        IPersonalInAppNotificationRepository? personalNotifications = null)
+        IPersonalInAppNotificationRepository? personalNotifications = null,
+        IPersonalOrganizationConnectionBlockRepository? blocks = null)
     {
         _requests = requests;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _blocks = blocks;
         if (customers is not null)
         {
             _createHelper = new CreateCustomerLinkRequest(
@@ -615,7 +665,8 @@ public sealed class ResendCustomerLinkRequest
                 users,
                 organizations,
                 personalSettings,
-                personalNotifications);
+                personalNotifications,
+                blocks);
         }
     }
 
@@ -634,6 +685,15 @@ public sealed class ResendCustomerLinkRequest
 
         try
         {
+            if (request.TargetUserIdentityId is PlatformUserId target
+                && _blocks is not null
+                && await CustomerConnectionBlockSupport
+                    .IsBlockedAsync(_blocks, target, organizationId, cancellationToken)
+                    .ConfigureAwait(false))
+            {
+                return CustomerConnectionBlockSupport.UnavailableFailure<CustomerLinkRequestDto>();
+            }
+
             if (request.IsExpired(_clock.UtcNow))
             {
                 request.MarkExpired(_clock.UtcNow);

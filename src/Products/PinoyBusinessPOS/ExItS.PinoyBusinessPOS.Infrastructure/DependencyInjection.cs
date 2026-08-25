@@ -6,6 +6,7 @@ using ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Expenses;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
+using ExItS.PinoyBusinessPOS.Application.Onboarding;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Application.Statements;
@@ -39,6 +40,7 @@ public static class DependencyInjection
         services.AddScoped<ICreditEntryRepository, CreditEntryRepository>();
         services.AddScoped<ICreditDueDateChangeRepository, CreditDueDateChangeRepository>();
         services.AddScoped<IRepaymentRepository, RepaymentRepository>();
+        services.AddScoped<IWriteOffRepository, WriteOffRepository>();
         services.AddScoped<IPaymentAttemptRepository, PaymentAttemptRepository>();
         services.AddSingleton<IPaymentGateway, FakePaymentGateway>();
         services.AddScoped<IProductCategoryRepository, ProductCategoryRepository>();
@@ -50,8 +52,10 @@ public static class DependencyInjection
         services.AddSingleton<IProductImageObjectStore, LocalFileProductImageStore>();
         services.AddScoped<ICatalogImportJobRepository, CatalogImportJobRepository>();
         services.AddScoped<ISaleRepository, SaleRepository>();
+        services.AddScoped<ISaleMutationLock, PosSaleMutationLock>();
         services.AddScoped<ICustomerOrderRepository, CustomerOrderRepository>();
         services.AddScoped<ICustomerOrderStockService, CustomerOrderStockService>();
+        services.AddScoped<ICustomerOrderUtangLedgerService, CustomerOrderUtangLedgerService>();
         services.AddScoped<ISaleReturnRepository, SaleReturnRepository>();
         services.AddScoped<IInventoryRepository, InventoryRepository>();
         services.AddScoped<IInventoryLotRepository, InventoryLotRepository>();
@@ -75,6 +79,7 @@ public static class DependencyInjection
         services.AddScoped<IConnectedPurchaseOrderRepository, ConnectedPurchaseOrderRepository>();
         services.AddScoped<IRegisterRepository, RegisterRepository>();
         services.AddScoped<IPosOperationalSetupRepository, OperationalSetupRepository>();
+        services.AddScoped<IOrganizationOnboardingProgressRepository, OrganizationOnboardingProgressRepository>();
         services.AddScoped<IOrganizationCashDenominationRepository, OrganizationCashDenominationRepository>();
         services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
         services.AddScoped<ISaleStockService, SaleStockService>();

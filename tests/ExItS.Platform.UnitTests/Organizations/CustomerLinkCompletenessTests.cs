@@ -620,6 +620,21 @@ public sealed class CustomerLinkCompletenessTests
             return Task.FromResult(((IReadOnlyList<LinkedCustomerAppUser>)list.Skip(skip).Take(take).ToList(), list.Count));
         }
 
+        public Task<IReadOnlyList<LinkedCustomerAppUser>> ListActiveByUserAndOrganizationAsync(
+            PlatformUserId userIdentityId,
+            PlatformOrganizationId organizationId,
+            CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<LinkedCustomerAppUser> list = _items
+                .Where(l =>
+                    l.UserIdentityId == userIdentityId
+                    && l.OrganizationId == organizationId
+                    && l.Status == LinkedCustomerAppUserStatus.Active)
+                .OrderByDescending(l => l.LinkedAtUtc)
+                .ToList();
+            return Task.FromResult(list);
+        }
+
         public Task AddAsync(LinkedCustomerAppUser link, CancellationToken cancellationToken = default)
         {
             _items.Add(link);
@@ -772,6 +787,66 @@ public sealed class CustomerLinkCompletenessTests
             if (index >= 0)
             {
                 _items[index] = notification;
+            }
+
+            return Task.CompletedTask;
+        }
+    }
+
+    internal sealed class InMemoryPersonalOrganizationConnectionBlockRepository
+        : IPersonalOrganizationConnectionBlockRepository
+    {
+        private readonly List<PersonalOrganizationConnectionBlock> _items = [];
+
+        public Task<PersonalOrganizationConnectionBlock?> GetByIdAsync(
+            PersonalOrganizationConnectionBlockId id,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.FirstOrDefault(b => b.Id == id));
+
+        public Task<PersonalOrganizationConnectionBlock?> FindByPersonalAndOrganizationAsync(
+            PlatformUserId personalUserIdentityId,
+            PlatformOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.FirstOrDefault(b =>
+                b.PersonalUserIdentityId == personalUserIdentityId
+                && b.OrganizationId == organizationId));
+
+        public Task<PersonalOrganizationConnectionBlock?> FindActiveByPersonalAndOrganizationAsync(
+            PlatformUserId personalUserIdentityId,
+            PlatformOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.FirstOrDefault(b =>
+                b.PersonalUserIdentityId == personalUserIdentityId
+                && b.OrganizationId == organizationId
+                && b.IsActive));
+
+        public Task<IReadOnlyList<PersonalOrganizationConnectionBlock>> ListActiveByPersonalUserAsync(
+            PlatformUserId personalUserIdentityId,
+            CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<PersonalOrganizationConnectionBlock> list = _items
+                .Where(b => b.PersonalUserIdentityId == personalUserIdentityId && b.IsActive)
+                .OrderByDescending(b => b.BlockedAtUtc)
+                .ToList();
+            return Task.FromResult(list);
+        }
+
+        public Task AddAsync(
+            PersonalOrganizationConnectionBlock block,
+            CancellationToken cancellationToken = default)
+        {
+            _items.Add(block);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(
+            PersonalOrganizationConnectionBlock block,
+            CancellationToken cancellationToken = default)
+        {
+            var index = _items.FindIndex(b => b.Id == block.Id);
+            if (index >= 0)
+            {
+                _items[index] = block;
             }
 
             return Task.CompletedTask;

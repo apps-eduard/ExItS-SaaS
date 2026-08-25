@@ -36,6 +36,20 @@ Confirmed in code at starting SHA `457accc0`:
 
 No unexpected architecture required a schema change or a second customer authority.
 
+## Session forwarding (React Personal / POS proxy)
+
+Personal React keeps the Platform session in an **HttpOnly** cookie and calls POS with a **Bearer** access token (`credentials: include`).
+
+POS → Platform linked-customer authorization (and Personal feature entitlement checks) must forward:
+
+- Cookie (including `.ExItS.Platform.Auth`)
+- `X-ExItS-Session-Token` when present
+- `Authorization: PlatformSession …` when present
+
+and must **not** forward product `Authorization: Bearer …` as Platform credentials.
+
+If cookie/session is not forwarded, Platform auth fails closed and POS surfaces `Linked customer was not found.` even when Platform link + POS correlation are healthy. See [ORG-PERSONAL-CUSTOMER-CONNECTION-UX-AND-CORRELATION-01](ORG-PERSONAL-CUSTOMER-CONNECTION-UX-AND-CORRELATION-01.md).
+
 ## Authorization contract
 
 Two complementary application services, split on the ownership boundary:

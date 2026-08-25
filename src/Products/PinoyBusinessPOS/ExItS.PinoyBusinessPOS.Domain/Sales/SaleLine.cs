@@ -28,9 +28,15 @@ public sealed record SaleLineDraft(
 /// <summary>
 /// One immutable line of a recorded sale. Product name, SKU, barcode, unit of measure, selling mode,
 /// and unit price are snapshotted at checkout so later catalog edits never rewrite history. No stock
-/// movement, tax, discount, or line-level void exists in this scope.
+/// movement, tax, or line-level void exists in this scope.
 /// <see cref="Quantity"/> is always base inventory quantity. When conversion snapshots are present,
-/// <see cref="UnitPrice"/> is the price per selling unit and LineTotal = RoundMoney(UnitPrice × EnteredQuantity).
+/// <see cref="UnitPrice"/> is the price per selling unit and
+/// <see cref="GrossLineTotal"/> = RoundMoney(UnitPrice × EnteredQuantity).
+///
+/// Commercial discounts reduce money only: <see cref="GrossLineTotal"/> and <see cref="UnitPrice"/>
+/// stay at the sold price, <see cref="Quantity"/> is untouched (so stock and weighing are unaffected),
+/// and <see cref="LineTotal"/> carries the net amount. Legacy lines recorded before commercial
+/// discounts existed carry zero discount and therefore LineTotal == GrossLineTotal.
 /// </summary>
 public sealed class SaleLine
 {
@@ -59,7 +65,20 @@ public sealed class SaleLine
     /// <summary>Base inventory quantity (authoritative for stock). Always in base UOM terms.</summary>
     public decimal Quantity { get; }
 
-    public decimal LineTotal { get; }
+    /// <summary>Net line total after commercial discounts. Equals <see cref="GrossLineTotal"/> when undiscounted.</summary>
+    public decimal LineTotal { get; private set; }
+
+    /// <summary>Pre-discount line total: RoundMoney(UnitPrice × EnteredQuantity ?? Quantity).</summary>
+    public decimal GrossLineTotal { get; }
+
+    /// <summary>Commercial discount applied directly to this line.</summary>
+    public decimal LineDiscountAmount { get; private set; }
+
+    /// <summary>This line's proportional share of a sale-level commercial discount.</summary>
+    public decimal SaleDiscountAllocatedAmount { get; private set; }
+
+    public decimal TotalLineDiscount =>
+        SaleMoney.RoundMoney(LineDiscountAmount + SaleDiscountAllocatedAmount);
 
     public ProductUnitId? SellingUnitId { get; }
     public string? SellingUnitNameSnapshot { get; }
@@ -84,6 +103,9 @@ public sealed class SaleLine
         decimal unitPrice,
         decimal quantity,
         decimal lineTotal,
+        decimal grossLineTotal,
+        decimal lineDiscountAmount,
+        decimal saleDiscountAllocatedAmount,
         ProductUnitId? sellingUnitId,
         string? sellingUnitNameSnapshot,
         decimal? enteredQuantity,
@@ -102,6 +124,9 @@ public sealed class SaleLine
         UnitPrice = unitPrice;
         Quantity = quantity;
         LineTotal = lineTotal;
+        GrossLineTotal = grossLineTotal;
+        LineDiscountAmount = lineDiscountAmount;
+        SaleDiscountAllocatedAmount = saleDiscountAllocatedAmount;
         SellingUnitId = sellingUnitId;
         SellingUnitNameSnapshot = sellingUnitNameSnapshot;
         EnteredQuantity = enteredQuantity;
@@ -124,7 +149,7 @@ public sealed class SaleLine
         var usesConversion = UsesSellingUnitConversion(draft);
 
         decimal quantity;
-        decimal lineTotal;
+        decimal grossLineTotal;
         decimal? enteredQuantity;
         decimal? multiplierSnapshot;
 
@@ -140,7 +165,7 @@ public sealed class SaleLine
                 ProductUnitConversion.ToBaseQuantity(entered, multiplier),
                 draft.UnitOfMeasureSnapshot,
                 draft.SellingModeSnapshot);
-            lineTotal = SaleMoney.RoundMoney(unitPrice * entered);
+            grossLineTotal = SaleMoney.RoundMoney(unitPrice * entered);
             enteredQuantity = entered;
             multiplierSnapshot = multiplier;
         }
@@ -150,7 +175,7 @@ public sealed class SaleLine
                 draft.Quantity,
                 draft.UnitOfMeasureSnapshot,
                 draft.SellingModeSnapshot);
-            lineTotal = SaleMoney.RoundMoney(unitPrice * quantity);
+            grossLineTotal = SaleMoney.RoundMoney(unitPrice * quantity);
             enteredQuantity = draft.EnteredQuantity;
             multiplierSnapshot = draft.MultiplierToBaseSnapshot;
         }
@@ -168,11 +193,50 @@ public sealed class SaleLine
             draft.SellingModeSnapshot,
             unitPrice,
             quantity,
-            lineTotal,
+            grossLineTotal,
+            grossLineTotal,
+            0m,
+            0m,
             draft.SellingUnitId,
             NormalizeOptionalSnapshot(draft.SellingUnitNameSnapshot, SellingUnitNameSnapshotMaxLength),
             enteredQuantity,
             multiplierSnapshot);
+    }
+
+    /// <summary>
+    /// Applies the server-computed commercial discount outcome for this line. Called once, during
+    /// checkout, after every line has been created at its gross amount. Only money changes:
+    /// <see cref="UnitPrice"/>, <see cref="Quantity"/>, and <see cref="GrossLineTotal"/> are fixed.
+    /// </summary>
+    internal void ApplyCommercialDiscount(SaleDiscountLineOutcome outcome)
+    {
+        ArgumentNullException.ThrowIfNull(outcome);
+
+        if (outcome.LineNumber != LineNumber)
+        {
+            throw new DomainException(
+                DomainErrorCodes.SaleDiscountLineUnmatched,
+                "A commercial discount outcome was applied to the wrong sale line.");
+        }
+
+        if (outcome.LineDiscountAmount < 0m || outcome.SaleDiscountAllocatedAmount < 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.SaleDiscountInvalidAmount,
+                "A commercial discount amount cannot be negative.");
+        }
+
+        var net = SaleMoney.RoundMoney(GrossLineTotal - outcome.TotalLineDiscount);
+        if (net < 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.SaleDiscountExceedsEligible,
+                "A commercial discount cannot push a line total below zero.");
+        }
+
+        LineDiscountAmount = SaleMoney.RoundMoney(outcome.LineDiscountAmount);
+        SaleDiscountAllocatedAmount = SaleMoney.RoundMoney(outcome.SaleDiscountAllocatedAmount);
+        LineTotal = net;
     }
 
     public static SaleLine Rehydrate(
@@ -192,7 +256,10 @@ public sealed class SaleLine
         ProductUnitId? sellingUnitId = null,
         string? sellingUnitNameSnapshot = null,
         decimal? enteredQuantity = null,
-        decimal? multiplierToBaseSnapshot = null) =>
+        decimal? multiplierToBaseSnapshot = null,
+        decimal? grossLineTotal = null,
+        decimal lineDiscountAmount = 0m,
+        decimal saleDiscountAllocatedAmount = 0m) =>
         new(
             id,
             saleId,
@@ -207,6 +274,11 @@ public sealed class SaleLine
             unitPrice,
             quantity,
             lineTotal,
+            // Lines recorded before commercial discounts existed have no stored gross amount:
+            // their net line total is also their gross.
+            grossLineTotal ?? lineTotal,
+            lineDiscountAmount,
+            saleDiscountAllocatedAmount,
             sellingUnitId,
             sellingUnitNameSnapshot,
             enteredQuantity,

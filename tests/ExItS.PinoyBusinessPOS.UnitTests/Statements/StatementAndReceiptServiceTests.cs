@@ -121,8 +121,8 @@ public sealed class StatementAndReceiptServiceTests
                 Current = PosCommercialAccess.DevelopmentDefault
             };
             var clock = new FixedClock(T0.AddDays(30));
-            var outstanding = new OutstandingBalanceService(credits, repayments, clock);
-            var statements = new CustomerStatementService(customers, ledger, credits, repayments, outstanding, access, clock);
+            var outstanding = new OutstandingBalanceService(credits, repayments, new InMemoryWriteOffRepository(), clock);
+            var statements = new CustomerStatementService(customers, ledger, credits, repayments, new InMemoryWriteOffRepository(), outstanding, access, clock);
             var receipts = new RepaymentReceiptService(repayments, customers, ledger, access, clock);
             return Task.FromResult(new Harness
             {

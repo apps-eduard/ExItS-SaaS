@@ -12,8 +12,6 @@ import {
 } from "@/features/personal/people-queries";
 import { formatShortDate } from "@/features/personal/people-status";
 import { useI18n } from "@/i18n/I18nProvider";
-import { usePreferences } from "@/hooks/usePreferences";
-import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
 import { cn } from "@/lib/cn";
 
 function invitationDeepLink(relatedType: string): string {
@@ -31,7 +29,6 @@ function invitationDeepLink(relatedType: string): string {
 export function NotificationsPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const { preferences } = usePreferences();
   const notificationsQuery = usePersonalNotificationsQuery();
   const markRead = useMarkNotificationReadMutation();
 
@@ -44,12 +41,8 @@ export function NotificationsPage() {
     return (
       <ErrorState
         title={t("error.title")}
-        body={err instanceof ApiClientError ? err.message : t("error.body")}
-        record={normalizeDiagnosticError(err, {
-          locale: preferences.locale,
-          theme: preferences.theme,
-          pathname: "/personal/notifications",
-        })}
+        detail={err instanceof ApiClientError ? err.message : t("error.body")}
+        error={err}
       />
     );
   }
@@ -60,7 +53,7 @@ export function NotificationsPage() {
     <section className="flex flex-col gap-4">
       <PageHeader title={t("notifications.title")} />
       {items.length === 0 ? (
-        <EmptyState title={t("notifications.emptyTitle")} body={t("notifications.emptyBody")} />
+        <EmptyState title={t("notifications.emptyTitle")} detail={t("notifications.emptyBody")} />
       ) : (
         <ul className="m-0 flex list-none flex-col gap-2 p-0">
           {items.map((item) => (

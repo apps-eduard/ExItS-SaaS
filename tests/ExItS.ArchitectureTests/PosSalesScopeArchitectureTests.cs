@@ -4,15 +4,25 @@ namespace ExItS.ArchitectureTests;
 /// Guards the Product-Based Utang / simple-sales boundary: sales may record Cash, ManualGCash,
 /// Card, GCash, and online Utang checkouts — but must not host payment-gateway types inside the
 /// Sales slice (those live under Payments/). Still forbids suppliers, warehouses, costing,
-/// tax, discounts, refunds, split tender, and real GCash APIs in Sales. Offline cash capture lives
+/// refunds, split tender, and real GCash APIs in Sales. Offline cash capture lives
 /// in LocalStore/Maui outbox — not in Domain/Application Sales use cases.
+///
+/// Manual commercial sale discounts (RMAP-B03) and sale-line unit-price overrides (RMAP-B01) are in
+/// scope. Rule-driven promotions and statutory / regulatory discounts are not, and remain guarded
+/// below. Authorized override types use the <c>SalePriceOverride*</c> prefix consistently.
 /// </summary>
 public sealed class PosSalesScopeArchitectureTests
 {
     private static readonly string[] OutOfScopeConcepts =
     [
-        "DiscountAmount",
-        "DiscountRule",
+        // A rule-driven promotion engine stays out of scope. Note this deliberately does not forbid
+        // "DiscountRule": validation limits for the manual commercial discount are in scope.
+        "PromotionRule",
+        "DiscountEngine",
+        "PromotionId",
+        "PromoCode",
+        "RegulatoryDiscount",
+        "StatutoryDiscount",
         "RefundId",
         "SaleRefund",
         "SaleReturn",
@@ -29,7 +39,7 @@ public sealed class PosSalesScopeArchitectureTests
     ];
 
     [Fact]
-    public void Sales_slice_declares_no_tax_discount_refund_gateway_or_supplier_concepts()
+    public void Sales_slice_declares_no_promotion_override_refund_gateway_or_supplier_concepts()
     {
         foreach (var file in SalesSourceFiles())
         {
@@ -39,6 +49,15 @@ public sealed class PosSalesScopeArchitectureTests
                 Assert.DoesNotContain(concept, text, StringComparison.OrdinalIgnoreCase);
             }
         }
+    }
+
+    [Fact]
+    public void Sales_slice_hosts_SalePriceOverride_types_for_RMAP_B01()
+    {
+        var domainSales = Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Domain"), "Sales");
+        Assert.True(File.Exists(Path.Combine(domainSales, "SalePriceOverride.cs")));
+        Assert.True(File.Exists(Path.Combine(domainSales, "SalePriceOverrideAdjustment.cs")));
+        Assert.True(File.Exists(Path.Combine(domainSales, "SalePriceOverrideApplier.cs")));
     }
 
     [Fact]
@@ -67,11 +86,15 @@ public sealed class PosSalesScopeArchitectureTests
         Assert.Contains("\"sale_lines\"", context, StringComparison.Ordinal);
         Assert.Contains("\"sale_number_sequences\"", context, StringComparison.Ordinal);
         Assert.Contains("\"payment_attempts\"", context, StringComparison.Ordinal);
+        Assert.Contains("\"sale_commercial_discount_adjustments\"", context, StringComparison.Ordinal);
+        Assert.Contains("\"sale_price_override_adjustments\"", context, StringComparison.Ordinal);
 
+        // A generic discounts/promotions table stays out of scope: only the commercial discount
+        // and sale price override audit trails above exist, and they hang off a recorded sale.
         foreach (var table in new[]
                  {
-                     "\"carts\"", "\"taxes\"", "\"discounts\"", "\"sale_refunds\"", "\"sale_payments\"",
-                     "\"warehouses\""
+                     "\"carts\"", "\"taxes\"", "\"discounts\"", "\"promotions\"", "\"sale_refunds\"",
+                     "\"sale_payments\"", "\"warehouses\""
                  })
         {
             Assert.DoesNotContain(table, context, StringComparison.OrdinalIgnoreCase);

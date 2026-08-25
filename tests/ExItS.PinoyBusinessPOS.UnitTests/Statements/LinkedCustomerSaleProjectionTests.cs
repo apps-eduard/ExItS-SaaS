@@ -324,7 +324,7 @@ public sealed class LinkedCustomerSaleProjectionTests
             var credits = new InMemoryCredits();
             var repayments = new InMemoryRepayments();
             var clock = new MutableClock(T0.AddDays(1));
-            var outstanding = new OutstandingBalanceService(credits, repayments, clock);
+            var outstanding = new OutstandingBalanceService(credits, repayments, new InMemoryWriteOffRepository(), clock);
             var entitlements = new FakeEntitlements(active: false);
             var options = Microsoft.Extensions.Options.Options.Create(new PersonalStatementsOptions { FreeRecentMonths = 3 });
 
@@ -592,11 +592,17 @@ public sealed class LinkedCustomerSaleProjectionTests
         private readonly List<Sale> _items = [];
         public IReadOnlyList<Sale> All => _items;
 
-        public Task AddAsync(Sale sale)
+        public Task AddAsync(Sale sale, CancellationToken cancellationToken = default)
         {
             _items.Add(sale);
             return Task.CompletedTask;
         }
+
+        public Task<string> ReserveNextSaleNumberAsync(
+            PosOrganizationId organizationId,
+            DateOnly businessDateUtc,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult($"S-{businessDateUtc:yyyyMMdd}-001");
 
         public Task<Sale?> GetByIdAsync(
             PosOrganizationId organizationId,

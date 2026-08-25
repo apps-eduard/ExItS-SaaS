@@ -25,7 +25,9 @@ internal static class OperationalSetupEntityMapper
             record.CreatedBy,
             record.UpdatedAtUtc,
             record.UpdatedBy,
-            Enum.Parse<CashCountMode>(record.CashCountMode, ignoreCase: true));
+            cashCountMode: Enum.Parse<CashCountMode>(record.CashCountMode, ignoreCase: true),
+            openingCashCountMode: Enum.Parse<CashCountMode>(record.OpeningCashCountMode, ignoreCase: true),
+            closingCashCountMode: Enum.Parse<CashCountMode>(record.ClosingCashCountMode, ignoreCase: true));
 
     public static OperationalSetupRecord ToRecord(PosOperationalSetup setup) =>
         new()
@@ -41,6 +43,8 @@ internal static class OperationalSetupEntityMapper
             ContactPhone = setup.ContactPhone,
             DefaultRegisterId = setup.DefaultRegisterId?.Value,
             CashCountMode = setup.CashCountMode.ToString(),
+            OpeningCashCountMode = setup.OpeningCashCountMode.ToString(),
+            ClosingCashCountMode = setup.ClosingCashCountMode.ToString(),
             IsCompleted = setup.IsCompleted,
             CompletedAtUtc = setup.CompletedAtUtc,
             CreatedAtUtc = setup.CreatedAtUtc,
@@ -61,6 +65,8 @@ internal static class OperationalSetupEntityMapper
         record.ContactPhone = setup.ContactPhone;
         record.DefaultRegisterId = setup.DefaultRegisterId?.Value;
         record.CashCountMode = setup.CashCountMode.ToString();
+        record.OpeningCashCountMode = setup.OpeningCashCountMode.ToString();
+        record.ClosingCashCountMode = setup.ClosingCashCountMode.ToString();
         record.IsCompleted = setup.IsCompleted;
         record.CompletedAtUtc = setup.CompletedAtUtc;
         record.UpdatedAtUtc = setup.UpdatedAtUtc;

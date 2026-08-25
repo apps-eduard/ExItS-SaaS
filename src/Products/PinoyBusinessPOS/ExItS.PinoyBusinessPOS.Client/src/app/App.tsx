@@ -1,13 +1,17 @@
 import { RouterProvider } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import { router } from "@/app/router";
-import { PwaUpdateHost } from "@/pwa/PwaUpdateHost";
+import { GlobalErrorBoundary } from "@/diagnostics/GlobalErrorBoundary";
+import { GlobalRuntimeErrorHost } from "@/diagnostics/GlobalRuntimeErrorHost";
 
 export function App() {
   return (
-    <AppProviders>
-      <PwaUpdateHost />
-      <RouterProvider router={router} />
-    </AppProviders>
+    <GlobalErrorBoundary>
+      <AppProviders>
+        <GlobalRuntimeErrorHost>
+          <RouterProvider router={router} />
+        </GlobalRuntimeErrorHost>
+      </AppProviders>
+    </GlobalErrorBoundary>
   );
 }

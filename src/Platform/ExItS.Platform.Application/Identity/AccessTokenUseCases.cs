@@ -669,8 +669,12 @@ public sealed class BindPlatformAccessTokenProductContext
             // Do not bootstrap ProductLocalRoleGrant.Owner here — that would grant CreateSale.
             // Commercial entitlement is not required for management token bind.
             organizationManagementAuthority = true;
-            productLocalRole = null;
-            mappedPosRole = null;
+            if (!access.ProductLocalRoleGranted)
+            {
+                productLocalRole = null;
+                mappedPosRole = null;
+            }
+
             reasonCode = OrganizationManagementAuthority.ReasonCode;
         }
         else
@@ -893,8 +897,11 @@ public sealed class IntrospectPlatformAccessToken
                         allowed = true;
                         reason = OrganizationManagementAuthority.ReasonCode;
                         organizationManagementAuthority = true;
-                        productLocalRole = null;
-                        mappedPosRole = null;
+                        if (!access.ProductLocalRoleGranted)
+                        {
+                            productLocalRole = null;
+                            mappedPosRole = null;
+                        }
                     }
                     else
                     {

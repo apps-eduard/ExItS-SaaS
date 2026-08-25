@@ -39,6 +39,7 @@ internal static class CreditEntryEntityMapper
 
     public static void ApplyToRecord(CreditEntry entry, CreditEntryRecord record)
     {
+        record.Amount = entry.Amount;
         record.Status = entry.Status.ToString();
         record.ReversedAtUtc = entry.ReversedAtUtc;
         record.ReversalReason = entry.ReversalReason;

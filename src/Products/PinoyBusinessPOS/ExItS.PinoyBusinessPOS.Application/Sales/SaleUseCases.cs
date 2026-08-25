@@ -4,6 +4,7 @@ using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
+using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Application.OperationalSetup;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
@@ -115,7 +116,10 @@ public sealed class SaleQueryService
                     SellingModes.ToCode(l.SellingModeSnapshot),
                     l.UnitPrice,
                     l.Quantity,
-                    l.LineTotal))
+                    l.LineTotal,
+                    l.GrossLineTotal,
+                    l.LineDiscountAmount,
+                    l.SaleDiscountAllocatedAmount))
                 .ToList(),
             sale.CustomerId?.Value,
             sale.LinkedCreditEntryId?.Value,
@@ -126,7 +130,26 @@ public sealed class SaleQueryService
             BuyerOrganizationId: sale.BuyerParty.BuyerOrganizationId,
             BuyerPublicOrganizationId: sale.BuyerParty.BuyerPublicOrganizationId,
             DocumentKind: SalesDocumentWording.TransactionSummary,
-            BranchId: sale.BranchId?.Value);
+            BranchId: sale.BranchId?.Value,
+            GrossSubtotal: sale.GrossSubtotal,
+            LineDiscountTotal: sale.LineDiscountTotal,
+            SaleDiscountTotal: sale.SaleDiscountTotal,
+            DiscountTotal: sale.DiscountTotal,
+            PriceOverrides: sale.PriceOverrides.Count == 0
+                ? null
+                : sale.PriceOverrides
+                    .Select(o =>
+                    {
+                        var line = sale.Lines.FirstOrDefault(l => l.Id == o.SaleLineId);
+                        return new PosSaleQuotePriceOverrideDto(
+                            line?.LineNumber ?? 0,
+                            o.BaselineUnitPrice,
+                            o.AppliedUnitPrice,
+                            o.Reason);
+                    })
+                    .Where(o => o.LineNumber > 0)
+                    .OrderBy(o => o.LineNumber)
+                    .ToList());
 
     private async Task<PosSaleDto> MapEnrichedAsync(Sale sale, CancellationToken cancellationToken)
     {
@@ -251,6 +274,7 @@ public sealed class CheckoutSale
     private readonly ICashierShiftRepository _shifts;
     private readonly IPosOperationalSetupRepository _operationalSetups;
     private readonly IOrganizationTaxConfigurationCapabilityReader _taxConfiguration;
+    private readonly IOfflinePriceAuthorityService _priceAuthorities;
     private readonly IClock _clock;
 
     public CheckoutSale(
@@ -264,8 +288,10 @@ public sealed class CheckoutSale
         ICashierShiftRepository shifts,
         IPosOperationalSetupRepository operationalSetups,
         IOrganizationTaxConfigurationCapabilityReader taxConfiguration,
+        IOfflinePriceAuthorityService priceAuthorities,
         IClock clock)
     {
+        _priceAuthorities = priceAuthorities;
         _sales = sales;
         _products = products;
         _units = units;
@@ -297,6 +323,9 @@ public sealed class CheckoutSale
         Guid? buyerOrganizationId = null,
         string? buyerPublicOrganizationId = null,
         Guid? branchId = null,
+        IReadOnlyList<CommercialDiscountIntentRequest>? discounts = null,
+        IReadOnlyList<SalePriceOverrideIntentRequest>? priceOverrides = null,
+        bool allowUnlimitedSalePriceOverride = false,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
@@ -445,182 +474,42 @@ public sealed class CheckoutSale
                 }
             }
 
-            if (lines is null || lines.Count == 0)
-            {
-                return ApplicationResult<Sale>.Failure(
-                    DomainErrorCodes.SaleRequiresAtLeastOneLine,
-                    "A sale must contain at least one line.");
-            }
-
-            var productIds = lines
-                .Where(l => l is not null)
-                .Select(l => CatalogProductId.From(l.ProductId))
-                .Distinct()
-                .ToList();
-            var products = await _products
-                .ListByIdsAsync(orgId, productIds, cancellationToken)
+            var resolved = await ResolveDraftsAsync(
+                    orgId,
+                    lines,
+                    clientSaleId,
+                    discounts,
+                    priceOverrides,
+                    branchId,
+                    allowOfflinePriceAuthorities: true,
+                    cancellationToken)
                 .ConfigureAwait(false);
-            var byId = products.ToDictionary(p => p.Id.Value);
+            if (!resolved.IsSuccess)
+            {
+                return ApplicationResult<Sale>.Failure(resolved.ErrorCode!, resolved.ErrorMessage!);
+            }
 
-            var drafts = new List<SaleLineDraft>();
-            var usesTrustedSnapshots = CheckoutSaleLineSnapshots.RequestUsesTrustedSnapshots(lines);
-            if (usesTrustedSnapshots
-                && (clientSaleId is null || clientSaleId == Guid.Empty))
+            var drafts = resolved.Value!.Drafts;
+            var byId = resolved.Value!.ProductsById;
+
+            var intentsResult = TryParseIntents(discounts);
+            if (!intentsResult.IsSuccess)
+            {
+                return ApplicationResult<Sale>.Failure(intentsResult.ErrorCode!, intentsResult.ErrorMessage!);
+            }
+
+            var intents = intentsResult.Value!;
+
+            var overrideIntentsResult = TryParsePriceOverrideIntents(priceOverrides);
+            if (!overrideIntentsResult.IsSuccess)
             {
                 return ApplicationResult<Sale>.Failure(
-                    ApplicationErrorCodes.SaleSnapshotInvalid,
-                    "Trusted sale line snapshots require a client SaleId (offline sync). Online carts must omit snapshot fields.");
+                    overrideIntentsResult.ErrorCode!,
+                    overrideIntentsResult.ErrorMessage!);
             }
 
-            var unitIds = lines
-                .Where(l => l?.SellingUnitId is not null)
-                .Select(l => ProductUnitId.From(l!.SellingUnitId!.Value))
-                .Distinct()
-                .ToList();
-            var unitsById = new Dictionary<Guid, CatalogProductUnit>();
-            foreach (var unitId in unitIds)
-            {
-                var unit = await _units.GetByIdAsync(orgId, unitId, cancellationToken).ConfigureAwait(false);
-                if (unit is not null)
-                {
-                    unitsById[unit.Id.Value] = unit;
-                }
-            }
-
-            if (usesTrustedSnapshots)
-            {
-                foreach (var line in lines)
-                {
-                    if (line is null)
-                    {
-                        continue;
-                    }
-
-                    if (!byId.TryGetValue(line.ProductId, out var product))
-                    {
-                        return ApplicationResult<Sale>.Failure(
-                            ApplicationErrorCodes.SaleProductNotFound,
-                            "One or more products in the cart were not found in this organization.");
-                    }
-
-                    if (product.Status != CatalogProductStatus.Active)
-                    {
-                        return ApplicationResult<Sale>.Failure(
-                            ApplicationErrorCodes.SaleProductNotActive,
-                            $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
-                    }
-
-                    CatalogProductUnit? sellingUnit = null;
-                    if (line.SellingUnitId is not null)
-                    {
-                        unitsById.TryGetValue(line.SellingUnitId.Value, out sellingUnit);
-                    }
-
-                    var snapshotDraft = CheckoutSaleLineSnapshots.TryCreateDraftFromSnapshot(line, product, sellingUnit);
-                    if (!snapshotDraft.IsSuccess)
-                    {
-                        return ApplicationResult<Sale>.Failure(
-                            snapshotDraft.ErrorCode!,
-                            snapshotDraft.ErrorMessage!);
-                    }
-
-                    drafts.Add(snapshotDraft.Value!);
-                }
-
-                if (drafts.Count == 0)
-                {
-                    return ApplicationResult<Sale>.Failure(
-                        DomainErrorCodes.SaleRequiresAtLeastOneLine,
-                        "A sale must contain at least one line.");
-                }
-            }
-            else
-            {
-                var usesUnits = lines.Any(l => l?.SellingUnitId is not null || l?.EnteredQuantity is not null);
-                if (usesUnits)
-                {
-                    foreach (var line in lines)
-                    {
-                        if (line is null)
-                        {
-                            continue;
-                        }
-
-                        if (!byId.TryGetValue(line.ProductId, out var product))
-                        {
-                            return ApplicationResult<Sale>.Failure(
-                                ApplicationErrorCodes.SaleProductNotFound,
-                                "One or more products in the cart were not found in this organization.");
-                        }
-
-                        if (product.Status != CatalogProductStatus.Active)
-                        {
-                            return ApplicationResult<Sale>.Failure(
-                                ApplicationErrorCodes.SaleProductNotActive,
-                                $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
-                        }
-
-                        CatalogProductUnit? sellingUnit = null;
-                        if (line.SellingUnitId is not null)
-                        {
-                            unitsById.TryGetValue(line.SellingUnitId.Value, out sellingUnit);
-                        }
-
-                        var onlineDraft = CheckoutSaleLineSnapshots.TryCreateOnlineDraft(line, product, sellingUnit);
-                        if (!onlineDraft.IsSuccess)
-                        {
-                            return ApplicationResult<Sale>.Failure(onlineDraft.ErrorCode!, onlineDraft.ErrorMessage!);
-                        }
-
-                        drafts.Add(onlineDraft.Value!);
-                    }
-                }
-                else
-                {
-                    var requested = CombineRequestedQuantities(lines);
-                    if (requested.Count == 0)
-                    {
-                        return ApplicationResult<Sale>.Failure(
-                            DomainErrorCodes.SaleRequiresAtLeastOneLine,
-                            "A sale must contain at least one line.");
-                    }
-
-                    drafts = new List<SaleLineDraft>(requested.Count);
-                    foreach (var (productId, quantity) in requested)
-                    {
-                        if (!byId.TryGetValue(productId, out var product))
-                        {
-                            return ApplicationResult<Sale>.Failure(
-                                ApplicationErrorCodes.SaleProductNotFound,
-                                "One or more products in the cart were not found in this organization.");
-                        }
-
-                        if (product.Status != CatalogProductStatus.Active)
-                        {
-                            return ApplicationResult<Sale>.Failure(
-                                ApplicationErrorCodes.SaleProductNotActive,
-                                $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
-                        }
-
-                        drafts.Add(new SaleLineDraft(
-                            product.Id,
-                            product.Name,
-                            product.Sku,
-                            product.Barcode,
-                            product.UnitOfMeasure,
-                            product.SellingPrice,
-                            quantity,
-                            product.SellingMode));
-                    }
-                }
-
-                if (drafts.Count == 0)
-                {
-                    return ApplicationResult<Sale>.Failure(
-                        DomainErrorCodes.SaleRequiresAtLeastOneLine,
-                        "A sale must contain at least one line.");
-                }
-            }
+            var overrideIntents = overrideIntentsResult.Value!;
+            var allowUnlimited = allowUnlimitedSalePriceOverride;
 
             var utcNow = _clock.UtcNow;
             var capturedCustomerId = linkedCustomerId;
@@ -629,8 +518,14 @@ public sealed class CheckoutSale
             var capturedActorId = actorId;
             var productsById = byId;
 
-            var previewSubtotal = SaleMoney.RoundMoney(
-                drafts.Sum(d => SaleMoney.RoundMoney(d.UnitPrice * (d.EnteredQuantity ?? d.Quantity))));
+            // Tax must be computed from the NET (post-discount) subtotal, so override + discount math
+            // runs first. Sale.Checkout independently recomputes the same numbers from the same intents.
+            var moneyPreview = Sale.QuoteCheckoutMoney(
+                orgId,
+                drafts,
+                intents,
+                overrideIntents,
+                allowUnlimited);
 
             decimal taxAmount = 0;
             TaxPricingMode? taxPricingMode = null;
@@ -644,7 +539,7 @@ public sealed class CheckoutSale
             {
                 taxPricingMode = setup!.TaxPricingMode;
                 taxAmount = OperationalSetupTaxCalculator.ComputeTaxAmount(
-                    previewSubtotal,
+                    moneyPreview.Discounts.NetSubtotal,
                     setup.TaxRatePercent,
                     setup.TaxPricingMode);
             }
@@ -673,7 +568,10 @@ public sealed class CheckoutSale
                         capturedTaxAmount,
                         capturedTaxPricingMode,
                         resolvedBuyerParty,
-                        branchId is Guid saleBranch ? PosBranchId.From(saleBranch) : null),
+                        branchId is Guid saleBranch ? PosBranchId.From(saleBranch) : null,
+                        intents,
+                        overrideIntents,
+                        allowUnlimited),
                     async (createdSale, ct) =>
                     {
                         // Electronic Card/GCash sales await payment — reserve stock until Paid/Released.
@@ -742,6 +640,503 @@ public sealed class CheckoutSale
     }
 
     /// <summary>
+    /// Prices a cart and previews price overrides, commercial discounts, and tax without recording
+    /// anything: no sale, no sale number, no stock movement, no credit entry. Checkout revalidates
+    /// independently.
+    /// </summary>
+    public async Task<ApplicationResult<PosSaleQuoteDto>> QuoteAsync(
+        Guid organizationId,
+        IReadOnlyList<CheckoutSaleLineRequest>? lines,
+        IReadOnlyList<CommercialDiscountIntentRequest>? discounts = null,
+        IReadOnlyList<SalePriceOverrideIntentRequest>? priceOverrides = null,
+        bool allowUnlimitedSalePriceOverride = false,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var orgId = PosOrganizationId.From(organizationId);
+
+            var resolved = await ResolveDraftsAsync(
+                    orgId,
+                    lines,
+                    clientSaleId: null,
+                    discounts,
+                    priceOverrides,
+                    branchId: null,
+                    allowOfflinePriceAuthorities: false,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            if (!resolved.IsSuccess)
+            {
+                return ApplicationResult<PosSaleQuoteDto>.Failure(resolved.ErrorCode!, resolved.ErrorMessage!);
+            }
+
+            var intentsResult = TryParseIntents(discounts);
+            if (!intentsResult.IsSuccess)
+            {
+                return ApplicationResult<PosSaleQuoteDto>.Failure(
+                    intentsResult.ErrorCode!,
+                    intentsResult.ErrorMessage!);
+            }
+
+            var overrideIntentsResult = TryParsePriceOverrideIntents(priceOverrides);
+            if (!overrideIntentsResult.IsSuccess)
+            {
+                return ApplicationResult<PosSaleQuoteDto>.Failure(
+                    overrideIntentsResult.ErrorCode!,
+                    overrideIntentsResult.ErrorMessage!);
+            }
+
+            var baselineDrafts = resolved.Value!.Drafts;
+            var money = Sale.QuoteCheckoutMoney(
+                orgId,
+                baselineDrafts,
+                intentsResult.Value,
+                overrideIntentsResult.Value,
+                allowUnlimitedSalePriceOverride);
+
+            decimal taxAmount = 0;
+            TaxPricingMode? taxPricingMode = null;
+            var setup = await _operationalSetups
+                .GetByOrganizationIdAsync(orgId, cancellationToken)
+                .ConfigureAwait(false);
+            var taxConfigurationEnabled = await _taxConfiguration
+                .IsTaxConfigurationEnabledAsync(organizationId, cancellationToken)
+                .ConfigureAwait(false);
+            if (OperationalSetupTaxCalculator.ShouldApplyConfiguredTax(taxConfigurationEnabled, setup))
+            {
+                taxPricingMode = setup!.TaxPricingMode;
+                taxAmount = OperationalSetupTaxCalculator.ComputeTaxAmount(
+                    money.Discounts.NetSubtotal,
+                    setup.TaxRatePercent,
+                    setup.TaxPricingMode);
+            }
+
+            var total = taxPricingMode == TaxPricingMode.TaxExclusive
+                ? SaleMoney.RoundMoney(money.Discounts.NetSubtotal + taxAmount)
+                : money.Discounts.NetSubtotal;
+
+            var overridesByLine = money.PriceOverrides.Adjustments.ToDictionary(a => a.LineNumber);
+
+            var quoteLines = money.Discounts.Lines
+                .OrderBy(l => l.LineNumber)
+                .Select(l =>
+                {
+                    var draft = money.PricedDrafts[l.LineNumber - 1];
+                    var baseline = baselineDrafts[l.LineNumber - 1].UnitPrice;
+                    return new PosSaleQuoteLineDto(
+                        l.LineNumber,
+                        draft.ProductId.Value,
+                        draft.NameSnapshot,
+                        UnitOfMeasures.ToCode(draft.UnitOfMeasureSnapshot),
+                        SellingModes.ToCode(draft.SellingModeSnapshot),
+                        draft.UnitPrice,
+                        draft.EnteredQuantity ?? draft.Quantity,
+                        l.GrossLineTotal,
+                        l.LineDiscountAmount,
+                        l.SaleDiscountAllocatedAmount,
+                        l.NetLineTotal,
+                        BaselineUnitPrice: overridesByLine.ContainsKey(l.LineNumber) ? baseline : null);
+                })
+                .ToList();
+
+            return ApplicationResult<PosSaleQuoteDto>.Success(new PosSaleQuoteDto(
+                money.Discounts.GrossSubtotal,
+                money.Discounts.LineDiscountTotal,
+                money.Discounts.SaleDiscountTotal,
+                money.Discounts.DiscountTotal,
+                money.Discounts.NetSubtotal,
+                taxAmount,
+                total,
+                taxPricingMode?.ToString(),
+                quoteLines,
+                money.Discounts.Adjustments
+                    .Select(a => new PosSaleQuoteDiscountDto(
+                        SaleCommercialDiscountRules.ToCode(a.Scope),
+                        SaleCommercialDiscountRules.ToCode(a.Method),
+                        a.RequestedValue,
+                        a.CalculatedAmount,
+                        a.Reason,
+                        a.LineNumber))
+                    .ToList(),
+                money.PriceOverrides.Adjustments
+                    .Select(a => new PosSaleQuotePriceOverrideDto(
+                        a.LineNumber,
+                        a.BaselineUnitPrice,
+                        a.AppliedUnitPrice,
+                        a.Reason))
+                    .ToList()));
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<PosSaleQuoteDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Translates client discount intents into domain intents. Only scope/method/value/reason are
+    /// read; any amount the client believes applies is ignored.
+    /// </summary>
+    private static ApplicationResult<IReadOnlyList<CommercialDiscountIntent>?> TryParseIntents(
+        IReadOnlyList<CommercialDiscountIntentRequest>? discounts)
+    {
+        if (discounts is null || discounts.Count == 0)
+        {
+            return ApplicationResult<IReadOnlyList<CommercialDiscountIntent>?>.Success(null);
+        }
+
+        var intents = new List<CommercialDiscountIntent>(discounts.Count);
+        foreach (var requested in discounts)
+        {
+            if (requested is null)
+            {
+                return ApplicationResult<IReadOnlyList<CommercialDiscountIntent>?>.Failure(
+                    DomainErrorCodes.SaleDiscountInvalidScope,
+                    "A commercial discount entry was empty.");
+            }
+
+            try
+            {
+                intents.Add(new CommercialDiscountIntent(
+                    SaleCommercialDiscountRules.ParseScope(requested.Scope),
+                    SaleCommercialDiscountRules.ParseMethod(requested.Method),
+                    requested.Value,
+                    requested.Reason,
+                    requested.ProductId is Guid productId && productId != Guid.Empty
+                        ? CatalogProductId.From(productId)
+                        : null,
+                    requested.LineNumber));
+            }
+            catch (DomainException ex)
+            {
+                return ApplicationResult<IReadOnlyList<CommercialDiscountIntent>?>.Failure(
+                    ex.ErrorCode,
+                    ex.Message);
+            }
+        }
+
+        return ApplicationResult<IReadOnlyList<CommercialDiscountIntent>?>.Success(intents);
+    }
+
+    private static ApplicationResult<IReadOnlyList<SalePriceOverrideIntent>?> TryParsePriceOverrideIntents(
+        IReadOnlyList<SalePriceOverrideIntentRequest>? priceOverrides)
+    {
+        if (priceOverrides is null || priceOverrides.Count == 0)
+        {
+            return ApplicationResult<IReadOnlyList<SalePriceOverrideIntent>?>.Success(null);
+        }
+
+        var intents = new List<SalePriceOverrideIntent>(priceOverrides.Count);
+        foreach (var requested in priceOverrides)
+        {
+            if (requested is null)
+            {
+                return ApplicationResult<IReadOnlyList<SalePriceOverrideIntent>?>.Failure(
+                    DomainErrorCodes.SalePriceOverrideLineUnmatched,
+                    "A sale price override entry was empty.");
+            }
+
+            intents.Add(new SalePriceOverrideIntent(
+                requested.RequestedUnitPrice,
+                requested.Reason,
+                requested.ProductId is Guid productId && productId != Guid.Empty
+                    ? CatalogProductId.From(productId)
+                    : null,
+                requested.LineNumber,
+                requested.ExpectedBaselineUnitPrice));
+        }
+
+        return ApplicationResult<IReadOnlyList<SalePriceOverrideIntent>?>.Success(intents);
+    }
+
+    private async Task<ApplicationResult<ResolvedCheckoutDrafts>> ResolveDraftsAsync(
+        PosOrganizationId orgId,
+        IReadOnlyList<CheckoutSaleLineRequest>? lines,
+        Guid? clientSaleId,
+        IReadOnlyList<CommercialDiscountIntentRequest>? discounts,
+        IReadOnlyList<SalePriceOverrideIntentRequest>? priceOverrides,
+        Guid? branchId,
+        bool allowOfflinePriceAuthorities,
+        CancellationToken cancellationToken)
+    {
+        if (lines is null || lines.Count == 0)
+        {
+            return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                DomainErrorCodes.SaleRequiresAtLeastOneLine,
+                "A sale must contain at least one line.");
+        }
+
+        var productIds = lines
+            .Where(l => l is not null)
+            .Select(l => CatalogProductId.From(l.ProductId))
+            .Distinct()
+            .ToList();
+        var products = await _products
+            .ListByIdsAsync(orgId, productIds, cancellationToken)
+            .ConfigureAwait(false);
+        var byId = products.ToDictionary(p => p.Id.Value);
+
+        var drafts = new List<SaleLineDraft>();
+        var usesPriceAuthorities = CheckoutSaleLineAuthorities.RequestUsesOfflinePriceAuthorities(lines);
+        if (usesPriceAuthorities && !allowOfflinePriceAuthorities)
+        {
+            return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                ApplicationErrorCodes.OfflinePriceAuthorityOnlineNotSupported,
+                "Offline price authorities are accepted at checkout only; an online quote prices from the live catalog.");
+        }
+
+        if (usesPriceAuthorities && (clientSaleId is null || clientSaleId == Guid.Empty))
+        {
+            return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                ApplicationErrorCodes.OfflinePriceAuthorityRequestInvalid,
+                "An offline authority sale must carry the client SaleId it was queued under.");
+        }
+
+        // The lease path fails closed the same way the snapshot path does: neither carries the
+        // server-side discount or override math that would be needed to honour these intents.
+        if (usesPriceAuthorities && discounts is { Count: > 0 })
+        {
+            return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                ApplicationErrorCodes.SaleDiscountOfflineNotSupported,
+                "Commercial discounts cannot be applied to an offline sale. Record the sale online.");
+        }
+
+        if (usesPriceAuthorities && priceOverrides is { Count: > 0 })
+        {
+            return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                ApplicationErrorCodes.SalePriceOverrideOfflineNotSupported,
+                "Sale price overrides cannot be applied to an offline sale. Record the sale online.");
+        }
+
+        var usesTrustedSnapshots = !usesPriceAuthorities
+            && CheckoutSaleLineSnapshots.RequestUsesTrustedSnapshots(lines);
+        if (usesTrustedSnapshots
+            && (clientSaleId is null || clientSaleId == Guid.Empty))
+        {
+            return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                ApplicationErrorCodes.SaleSnapshotInvalid,
+                "Trusted sale line snapshots require a client SaleId (offline sync). Online carts must omit snapshot fields.");
+        }
+
+        // Fail closed: an offline snapshot payload arrives with client-computed line totals that were
+        // produced without any discount math, so its arithmetic and a discount request cannot both be
+        // honoured. Legacy offline sync without discounts keeps working unchanged.
+        if (usesTrustedSnapshots && discounts is { Count: > 0 })
+        {
+            return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                ApplicationErrorCodes.SaleDiscountOfflineNotSupported,
+                "Commercial discounts cannot be applied to an offline sale snapshot. Record the sale online.");
+        }
+
+        // Fail closed: offline snapshots also cannot carry unit-price overrides (same arithmetic
+        // fidelity constraint as commercial discounts).
+        if (usesTrustedSnapshots && priceOverrides is { Count: > 0 })
+        {
+            return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                ApplicationErrorCodes.SalePriceOverrideOfflineNotSupported,
+                "Sale price overrides cannot be applied to an offline sale snapshot. Record the sale online.");
+        }
+
+        var unitIds = lines
+            .Where(l => l?.SellingUnitId is not null)
+            .Select(l => ProductUnitId.From(l!.SellingUnitId!.Value))
+            .Distinct()
+            .ToList();
+        var unitsById = new Dictionary<Guid, CatalogProductUnit>();
+        foreach (var unitId in unitIds)
+        {
+            var unit = await _units.GetByIdAsync(orgId, unitId, cancellationToken).ConfigureAwait(false);
+            if (unit is not null)
+            {
+                unitsById[unit.Id.Value] = unit;
+            }
+        }
+
+        if (usesPriceAuthorities)
+        {
+            foreach (var line in lines)
+            {
+                if (line is null)
+                {
+                    continue;
+                }
+
+                if (!byId.TryGetValue(line.ProductId, out var product))
+                {
+                    return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                        ApplicationErrorCodes.SaleProductNotFound,
+                        "One or more products in the cart were not found in this organization.");
+                }
+
+                if (product.Status != CatalogProductStatus.Active)
+                {
+                    return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                        ApplicationErrorCodes.SaleProductNotActive,
+                        $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
+                }
+
+                CatalogProductUnit? authoritySellingUnit = null;
+                if (line.SellingUnitId is not null)
+                {
+                    unitsById.TryGetValue(line.SellingUnitId.Value, out authoritySellingUnit);
+                }
+
+                var authorityDraft = CheckoutSaleLineAuthorities.TryCreateDraftFromAuthority(
+                    line,
+                    product,
+                    authoritySellingUnit,
+                    _priceAuthorities,
+                    orgId.Value,
+                    branchId);
+                if (!authorityDraft.IsSuccess)
+                {
+                    return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                        authorityDraft.ErrorCode!,
+                        authorityDraft.ErrorMessage!);
+                }
+
+                drafts.Add(authorityDraft.Value!);
+            }
+        }
+        else if (usesTrustedSnapshots)
+        {
+            foreach (var line in lines)
+            {
+                if (line is null)
+                {
+                    continue;
+                }
+
+                if (!byId.TryGetValue(line.ProductId, out var product))
+                {
+                    return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                        ApplicationErrorCodes.SaleProductNotFound,
+                        "One or more products in the cart were not found in this organization.");
+                }
+
+                if (product.Status != CatalogProductStatus.Active)
+                {
+                    return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                        ApplicationErrorCodes.SaleProductNotActive,
+                        $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
+                }
+
+                CatalogProductUnit? sellingUnit = null;
+                if (line.SellingUnitId is not null)
+                {
+                    unitsById.TryGetValue(line.SellingUnitId.Value, out sellingUnit);
+                }
+
+                var snapshotDraft = CheckoutSaleLineSnapshots.TryCreateDraftFromSnapshot(line, product, sellingUnit);
+                if (!snapshotDraft.IsSuccess)
+                {
+                    return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                        snapshotDraft.ErrorCode!,
+                        snapshotDraft.ErrorMessage!);
+                }
+
+                drafts.Add(snapshotDraft.Value!);
+            }
+        }
+        else
+        {
+            var usesUnits = lines.Any(l => l?.SellingUnitId is not null || l?.EnteredQuantity is not null);
+            if (usesUnits)
+            {
+                foreach (var line in lines)
+                {
+                    if (line is null)
+                    {
+                        continue;
+                    }
+
+                    if (!byId.TryGetValue(line.ProductId, out var product))
+                    {
+                        return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                            ApplicationErrorCodes.SaleProductNotFound,
+                            "One or more products in the cart were not found in this organization.");
+                    }
+
+                    if (product.Status != CatalogProductStatus.Active)
+                    {
+                        return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                            ApplicationErrorCodes.SaleProductNotActive,
+                            $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
+                    }
+
+                    CatalogProductUnit? sellingUnit = null;
+                    if (line.SellingUnitId is not null)
+                    {
+                        unitsById.TryGetValue(line.SellingUnitId.Value, out sellingUnit);
+                    }
+
+                    var onlineDraft = CheckoutSaleLineSnapshots.TryCreateOnlineDraft(line, product, sellingUnit);
+                    if (!onlineDraft.IsSuccess)
+                    {
+                        return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                            onlineDraft.ErrorCode!,
+                            onlineDraft.ErrorMessage!);
+                    }
+
+                    drafts.Add(onlineDraft.Value!);
+                }
+            }
+            else
+            {
+                var requested = CombineRequestedQuantities(lines);
+                if (requested.Count == 0)
+                {
+                    return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                        DomainErrorCodes.SaleRequiresAtLeastOneLine,
+                        "A sale must contain at least one line.");
+                }
+
+                drafts = new List<SaleLineDraft>(requested.Count);
+                foreach (var (productId, quantity) in requested)
+                {
+                    if (!byId.TryGetValue(productId, out var product))
+                    {
+                        return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                            ApplicationErrorCodes.SaleProductNotFound,
+                            "One or more products in the cart were not found in this organization.");
+                    }
+
+                    if (product.Status != CatalogProductStatus.Active)
+                    {
+                        return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                            ApplicationErrorCodes.SaleProductNotActive,
+                            $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
+                    }
+
+                    drafts.Add(new SaleLineDraft(
+                        product.Id,
+                        product.Name,
+                        product.Sku,
+                        product.Barcode,
+                        product.UnitOfMeasure,
+                        product.SellingPrice,
+                        quantity,
+                        product.SellingMode));
+                }
+            }
+        }
+
+        if (drafts.Count == 0)
+        {
+            return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                DomainErrorCodes.SaleRequiresAtLeastOneLine,
+                "A sale must contain at least one line.");
+        }
+
+        return ApplicationResult<ResolvedCheckoutDrafts>.Success(new ResolvedCheckoutDrafts(drafts, byId));
+    }
+
+    /// <summary>Server-priced checkout lines plus the products they were priced from.</summary>
+    private sealed record ResolvedCheckoutDrafts(
+        List<SaleLineDraft> Drafts,
+        Dictionary<Guid, CatalogProduct> ProductsById);
+
+    /// <summary>
     /// Folds repeated scans of the same product into a single line by summing quantities, matching
     /// the cart behaviour clients present. Ordering follows first appearance in the request.
     /// </summary>
@@ -779,6 +1174,7 @@ public sealed class CheckoutSale
 public sealed class VoidSale
 {
     private readonly ISaleRepository _sales;
+    private readonly ISaleMutationLock _saleMutationLock;
     private readonly ICreditEntryRepository _credits;
     private readonly IOutstandingBalanceService _outstanding;
     private readonly ISaleStockService _saleStock;
@@ -787,6 +1183,7 @@ public sealed class VoidSale
 
     public VoidSale(
         ISaleRepository sales,
+        ISaleMutationLock saleMutationLock,
         ICreditEntryRepository credits,
         IOutstandingBalanceService outstanding,
         ISaleStockService saleStock,
@@ -794,6 +1191,7 @@ public sealed class VoidSale
         IClock clock)
     {
         _sales = sales;
+        _saleMutationLock = saleMutationLock;
         _credits = credits;
         _outstanding = outstanding;
         _saleStock = saleStock;
@@ -821,102 +1219,119 @@ public sealed class VoidSale
 
         try
         {
-            return await _unitOfWork
-                .ExecuteInSerializableTransactionAsync(async ct =>
+            PersistenceConflictException? lastConflict = null;
+            for (var attempt = 0; attempt < 8; attempt++)
+            {
+                try
                 {
-                    var current = await _sales.GetByIdAsync(orgId, id, ct).ConfigureAwait(false);
-                    if (current is null)
-                    {
-                        return ApplicationResult<Sale>.Failure(
-                            ApplicationErrorCodes.SaleNotFound,
-                            "Sale was not found.");
-                    }
-
-                    if (await _sales.HasReturnsForSaleAsync(orgId, id, ct).ConfigureAwait(false))
-                    {
-                        return ApplicationResult<Sale>.Failure(
-                            ApplicationErrorCodes.SaleVoidBlockedByReturns,
-                            "Voiding is blocked because this sale has one or more returns.");
-                    }
-
-                    if (current.PaymentMethod == SalePaymentMethod.Utang)
-                    {
-                        if (current.LinkedCreditEntryId is null || current.CustomerId is null)
+                    return await _unitOfWork
+                        .ExecuteInSerializableTransactionAsync(async ct =>
                         {
-                            return ApplicationResult<Sale>.Failure(
-                                DomainErrorCodes.SaleUtangLinkageInvalid,
-                                "Utang sale is missing customer or linked credit entry.");
-                        }
+                            await _saleMutationLock.AcquireAsync(orgId, id, ct).ConfigureAwait(false);
 
-                        var credit = await _credits
-                            .GetByIdAsync(orgId, current.CustomerId, current.LinkedCreditEntryId, ct)
-                            .ConfigureAwait(false);
-                        if (credit is null)
-                        {
-                            return ApplicationResult<Sale>.Failure(
-                                ApplicationErrorCodes.CreditEntryNotFound,
-                                "Linked credit entry was not found.");
-                        }
-
-                        if (credit.SourceSaleId is null || credit.SourceSaleId.Value != current.Id.Value)
-                        {
-                            return ApplicationResult<Sale>.Failure(
-                                DomainErrorCodes.SaleUtangLinkageInvalid,
-                                "Linked credit entry does not reference this sale.");
-                        }
-
-                        if (credit.Status == CreditEntryStatus.Reversed
-                            && current.Status == SaleStatus.Completed)
-                        {
-                            return ApplicationResult<Sale>.Failure(
-                                ApplicationErrorCodes.SaleVoidBlockedBySubsequentUtangActivity,
-                                "The linked Utang credit is already reversed; voiding this sale is blocked.");
-                        }
-
-                        if (credit.Status == CreditEntryStatus.Active)
-                        {
-                            var outstanding = await _outstanding
-                                .GetOutstandingAsync(orgId, current.CustomerId, ct)
-                                .ConfigureAwait(false);
-                            if (outstanding - credit.Amount < 0m)
+                            var current = await _sales.GetByIdAsync(orgId, id, ct).ConfigureAwait(false);
+                            if (current is null)
                             {
                                 return ApplicationResult<Sale>.Failure(
-                                    ApplicationErrorCodes.SaleVoidBlockedBySubsequentUtangActivity,
-                                    "Voiding this Utang sale would make outstanding negative because of subsequent repayments. Reverse those repayments first, or leave the sale as recorded.");
+                                    ApplicationErrorCodes.SaleNotFound,
+                                    "Sale was not found.");
                             }
-                        }
 
-                        current.Void(reason, actorId, _clock.UtcNow);
-                        await _sales.UpdateAsync(current, ct).ConfigureAwait(false);
+                            if (await _sales.HasReturnsForSaleAsync(orgId, id, ct).ConfigureAwait(false))
+                            {
+                                return ApplicationResult<Sale>.Failure(
+                                    ApplicationErrorCodes.SaleVoidBlockedByReturns,
+                                    "Voiding is blocked because this sale has one or more returns.");
+                            }
 
-                        if (credit.Status == CreditEntryStatus.Active)
-                        {
-                            credit.Reverse(reason, _clock.UtcNow);
-                            await _credits.UpdateAsync(credit, ct).ConfigureAwait(false);
-                        }
-                    }
-                    else
-                    {
-                        current.Void(reason, actorId, _clock.UtcNow);
-                        await _sales.UpdateAsync(current, ct).ConfigureAwait(false);
-                    }
+                            if (current.PaymentMethod == SalePaymentMethod.Utang)
+                            {
+                                if (current.LinkedCreditEntryId is null || current.CustomerId is null)
+                                {
+                                    return ApplicationResult<Sale>.Failure(
+                                        DomainErrorCodes.SaleUtangLinkageInvalid,
+                                        "Utang sale is missing customer or linked credit entry.");
+                                }
 
-                    if (current.StockReservationState == SaleStockReservationState.Reserved)
-                    {
-                        await _saleStock
-                            .ReleaseIfReservedAsync(current, _clock.UtcNow, ct)
-                            .ConfigureAwait(false);
-                        await _sales.UpdateAsync(current, ct).ConfigureAwait(false);
-                    }
+                                var credit = await _credits
+                                    .GetByIdAsync(orgId, current.CustomerId, current.LinkedCreditEntryId, ct)
+                                    .ConfigureAwait(false);
+                                if (credit is null)
+                                {
+                                    return ApplicationResult<Sale>.Failure(
+                                        ApplicationErrorCodes.CreditEntryNotFound,
+                                        "Linked credit entry was not found.");
+                                }
 
-                    await _saleStock
-                        .RestoreForSaleVoidAsync(orgId, current, actorId, reason, _clock.UtcNow, ct, branchId)
+                                if (credit.SourceSaleId is null || credit.SourceSaleId.Value != current.Id.Value)
+                                {
+                                    return ApplicationResult<Sale>.Failure(
+                                        DomainErrorCodes.SaleUtangLinkageInvalid,
+                                        "Linked credit entry does not reference this sale.");
+                                }
+
+                                if (credit.Status == CreditEntryStatus.Reversed
+                                    && current.Status == SaleStatus.Completed)
+                                {
+                                    return ApplicationResult<Sale>.Failure(
+                                        ApplicationErrorCodes.SaleVoidBlockedBySubsequentUtangActivity,
+                                        "The linked Utang credit is already reversed; voiding this sale is blocked.");
+                                }
+
+                                if (credit.Status == CreditEntryStatus.Active)
+                                {
+                                    var outstanding = await _outstanding
+                                        .GetOutstandingAsync(orgId, current.CustomerId, ct)
+                                        .ConfigureAwait(false);
+                                    if (outstanding - credit.Amount < 0m)
+                                    {
+                                        return ApplicationResult<Sale>.Failure(
+                                            ApplicationErrorCodes.SaleVoidBlockedBySubsequentUtangActivity,
+                                            "Voiding this Utang sale would make outstanding negative because of subsequent repayments. Reverse those repayments first, or leave the sale as recorded.");
+                                    }
+                                }
+
+                                current.Void(reason, actorId, _clock.UtcNow);
+                                await _sales.UpdateAsync(current, ct).ConfigureAwait(false);
+
+                                if (credit.Status == CreditEntryStatus.Active)
+                                {
+                                    credit.Reverse(reason, _clock.UtcNow);
+                                    await _credits.UpdateAsync(credit, ct).ConfigureAwait(false);
+                                }
+                            }
+                            else
+                            {
+                                current.Void(reason, actorId, _clock.UtcNow);
+                                await _sales.UpdateAsync(current, ct).ConfigureAwait(false);
+                            }
+
+                            if (current.StockReservationState == SaleStockReservationState.Reserved)
+                            {
+                                await _saleStock
+                                    .ReleaseIfReservedAsync(current, _clock.UtcNow, ct)
+                                    .ConfigureAwait(false);
+                                await _sales.UpdateAsync(current, ct).ConfigureAwait(false);
+                            }
+
+                            await _saleStock
+                                .RestoreForSaleVoidAsync(orgId, current, actorId, reason, _clock.UtcNow, ct, branchId)
+                                .ConfigureAwait(false);
+
+                            await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
+                            return ApplicationResult<Sale>.Success(current);
+                        }, cancellationToken)
                         .ConfigureAwait(false);
+                }
+                catch (PersistenceConflictException ex)
+                {
+                    lastConflict = ex;
+                }
+            }
 
-                    await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
-                    return ApplicationResult<Sale>.Success(current);
-                }, cancellationToken)
-                .ConfigureAwait(false);
+            return ApplicationResult<Sale>.Failure(
+                lastConflict!.ErrorCode,
+                lastConflict.Message);
         }
         catch (DomainException ex)
         {

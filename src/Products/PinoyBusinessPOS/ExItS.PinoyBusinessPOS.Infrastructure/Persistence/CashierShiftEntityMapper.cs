@@ -33,13 +33,15 @@ internal static class CashierShiftEntityMapper
             record.CancelledBy,
             record.CreatedAtUtc,
             record.UpdatedAtUtc,
-            Enum.Parse<CashCountMode>(record.EffectiveCashCountMode, ignoreCase: true),
-            record.OpeningCashCounted,
-            lines.Where(l => l.CountKind == CashCountKinds.Opening)
+            effectiveCashCountMode: Enum.Parse<CashCountMode>(record.EffectiveCashCountMode, ignoreCase: true),
+            effectiveOpeningCashCountMode: Enum.Parse<CashCountMode>(record.EffectiveOpeningCashCountMode, ignoreCase: true),
+            effectiveClosingCashCountMode: Enum.Parse<CashCountMode>(record.EffectiveClosingCashCountMode, ignoreCase: true),
+            openingCashCounted: record.OpeningCashCounted,
+            openingDenominationLines: lines.Where(l => l.CountKind == CashCountKinds.Opening)
                 .OrderByDescending(l => l.DenominationValue)
                 .Select(ToDomainLine)
                 .ToList(),
-            lines.Where(l => l.CountKind == CashCountKinds.Closing)
+            closingDenominationLines: lines.Where(l => l.CountKind == CashCountKinds.Closing)
                 .OrderByDescending(l => l.DenominationValue)
                 .Select(ToDomainLine)
                 .ToList());
@@ -87,6 +89,8 @@ internal static class CashierShiftEntityMapper
             Status = shift.Status.ToString(),
             BusinessDate = shift.BusinessDate,
             EffectiveCashCountMode = shift.EffectiveCashCountMode.ToString(),
+            EffectiveOpeningCashCountMode = shift.EffectiveOpeningCashCountMode.ToString(),
+            EffectiveClosingCashCountMode = shift.EffectiveClosingCashCountMode.ToString(),
             OpeningCashCounted = shift.OpeningCashCounted,
             OpeningCashAmount = shift.OpeningCashAmount,
             OpenedAtUtc = shift.OpenedAtUtc,

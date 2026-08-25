@@ -22,7 +22,7 @@ public sealed class RepaymentUseCaseTests
         var customers = new InMemoryCustomerRepository();
         var credits = new InMemoryCreditRepository();
         var repayments = new InMemoryRepaymentRepository();
-        var outstanding = new OutstandingBalanceService(credits, repayments, new FixedClock(Now));
+        var outstanding = new OutstandingBalanceService(credits, repayments, new InMemoryWriteOffRepository(), new FixedClock(Now));
         var uow = new ImmediateUnitOfWork();
         var clock = new FixedClock(Now);
 

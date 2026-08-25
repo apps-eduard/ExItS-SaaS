@@ -29,6 +29,11 @@ public sealed class CustomerOrder
     public Guid FulfillmentBranchId { get; }
     public string BranchNameSnapshot { get; }
     public CustomerOrderParty CustomerParty { get; }
+    /// <summary>
+    /// Snapshot of the Platform Business Customer linked to the Personal buyer at submit time.
+    /// Preserved for Utang settlement even if the live link changes later.
+    /// </summary>
+    public Guid? PlatformBusinessCustomerId { get; }
     public IReadOnlyList<CustomerOrderLine> Lines => _lines;
     public decimal MerchandiseSubtotal { get; }
     public decimal DeliveryFee { get; }
@@ -72,6 +77,7 @@ public sealed class CustomerOrder
         Guid fulfillmentBranchId,
         string branchNameSnapshot,
         CustomerOrderParty customerParty,
+        Guid? platformBusinessCustomerId,
         List<CustomerOrderLine> lines,
         decimal merchandiseSubtotal,
         decimal deliveryFee,
@@ -113,6 +119,7 @@ public sealed class CustomerOrder
         FulfillmentBranchId = fulfillmentBranchId;
         BranchNameSnapshot = branchNameSnapshot;
         CustomerParty = customerParty;
+        PlatformBusinessCustomerId = NormalizePlatformBusinessCustomerId(platformBusinessCustomerId);
         _lines = lines;
         MerchandiseSubtotal = merchandiseSubtotal;
         DeliveryFee = deliveryFee;
@@ -160,7 +167,8 @@ public sealed class CustomerOrder
         CustomerOrderDeliverySnapshot? deliverySnapshot = null,
         string? idempotencyKey = null,
         CustomerOrderId? id = null,
-        CustomerOrderPaymentMethod paymentMethod = CustomerOrderPaymentMethod.Cash)
+        CustomerOrderPaymentMethod paymentMethod = CustomerOrderPaymentMethod.Cash,
+        Guid? platformBusinessCustomerId = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureActor(submittedBy);
@@ -250,6 +258,7 @@ public sealed class CustomerOrder
             fulfillmentBranchId,
             NormalizeBranchName(branchNameSnapshot),
             customerParty,
+            platformBusinessCustomerId,
             orderLines,
             merchandiseSubtotal,
             deliveryFee,
@@ -321,7 +330,8 @@ public sealed class CustomerOrder
         Guid? deliveredBy,
         DateTimeOffset? collectedAtUtc,
         Guid? collectedBy,
-        DateTimeOffset updatedAtUtc) =>
+        DateTimeOffset updatedAtUtc,
+        Guid? platformBusinessCustomerId = null) =>
         new(
             id,
             sellerOrganizationId,
@@ -334,6 +344,7 @@ public sealed class CustomerOrder
             fulfillmentBranchId,
             branchNameSnapshot,
             customerParty,
+            platformBusinessCustomerId,
             lines.OrderBy(l => l.LineNumber).ToList(),
             merchandiseSubtotal,
             deliveryFee,
@@ -764,5 +775,15 @@ public sealed class CustomerOrder
         }
 
         return trimmed;
+    }
+
+    private static Guid? NormalizePlatformBusinessCustomerId(Guid? platformBusinessCustomerId)
+    {
+        if (platformBusinessCustomerId is null || platformBusinessCustomerId == Guid.Empty)
+        {
+            return null;
+        }
+
+        return platformBusinessCustomerId;
     }
 }

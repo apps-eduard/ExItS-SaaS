@@ -63,6 +63,37 @@ public sealed class POSCustomerQueryService
         return customer is null ? null : Map(customer);
     }
 
+    /// <summary>
+    /// Exact org-scoped lookup for checkout Personal QR/ID selection (Active customers only).
+    /// </summary>
+    public async Task<CheckoutCustomerSearchItemDto?> GetByLinkedPersonalPublicUserIdForCheckoutAsync(
+        Guid organizationId,
+        string personalPublicUserId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(personalPublicUserId))
+        {
+            return null;
+        }
+
+        var customer = await _customers
+            .FindByLinkedPersonalPublicUserIdAsync(
+                PosOrganizationId.From(organizationId),
+                personalPublicUserId,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (customer is null || customer.Status != CustomerStatus.Active)
+        {
+            return null;
+        }
+
+        return new CheckoutCustomerSearchItemDto(
+            customer.Id.Value,
+            customer.DisplayName,
+            customer.MobileNumber,
+            customer.Status.ToString());
+    }
+
     public async Task<PagedResult<POSCustomerDto>> ListAsync(
         Guid organizationId,
         CustomerStatus? status,
@@ -80,6 +111,40 @@ public sealed class POSCustomerQueryService
             items.Select(Map).ToList(),
             total,
             Math.Max(page ?? 1, 1),
+            take);
+    }
+
+    /// <summary>
+    /// Narrow Active-only customer search for checkout (CreateSale). pageSize capped at 20.
+    /// </summary>
+    public async Task<CheckoutCustomerSearchResult> SearchForCheckoutAsync(
+        Guid organizationId,
+        string search,
+        int? page,
+        int? pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var take = Math.Clamp(pageSize ?? 20, 1, 20);
+        var pageNumber = Math.Max(page ?? 1, 1);
+        var skip = (pageNumber - 1) * take;
+        var (items, total) = await _customers
+            .ListAsync(
+                PosOrganizationId.From(organizationId),
+                CustomerStatus.Active,
+                search,
+                skip,
+                take,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return new CheckoutCustomerSearchResult(
+            items.Select(c => new CheckoutCustomerSearchItemDto(
+                c.Id.Value,
+                c.DisplayName,
+                c.MobileNumber,
+                c.Status.ToString())).ToList(),
+            total,
+            pageNumber,
             take);
     }
 

@@ -1,61 +1,60 @@
-export const UI_PREFERENCES_STORAGE_KEY = "exits.mobile-client.ui-preferences.v1";
+import { z } from "zod";
 
-export const THEME_VALUES = ["system", "light", "dark"] as const;
-export type ThemePreference = (typeof THEME_VALUES)[number];
+export const UI_PREFERENCES_STORAGE_KEY = "exits.pos-client.ui-preferences.v1";
 
-export const LOCALE_VALUES = ["en", "fil-PH"] as const;
-export type LocalePreference = (typeof LOCALE_VALUES)[number];
+export const themePreferenceSchema = z.enum(["system", "light", "dark"]);
+export const localePreferenceSchema = z.enum(["en", "fil-PH", "ceb-PH", "ilo-PH", "hil-PH"]);
+export const densityPreferenceSchema = z.enum(["compact", "balance", "comfort"]);
 
-export type UiPreferences = {
-  theme: ThemePreference;
-  locale: LocalePreference;
-};
+export const uiPreferencesSchema = z.object({
+  theme: themePreferenceSchema,
+  locale: localePreferenceSchema,
+  /** Missing in older storage → balance (Expiring-stock chip baseline). */
+  density: densityPreferenceSchema.default("balance"),
+});
 
-export const DEFAULT_UI_PREFERENCES: UiPreferences = {
+export type ThemePreference = z.infer<typeof themePreferenceSchema>;
+export type LocalePreference = z.infer<typeof localePreferenceSchema>;
+export type DensityPreference = z.infer<typeof densityPreferenceSchema>;
+export type UiPreferences = z.infer<typeof uiPreferencesSchema>;
+
+export const defaultUiPreferences: UiPreferences = {
   theme: "system",
   locale: "en",
+  density: "balance",
 };
 
-export function isThemePreference(value: unknown): value is ThemePreference {
-  return value === "system" || value === "light" || value === "dark";
-}
-
-export function isLocalePreference(value: unknown): value is LocalePreference {
-  return value === "en" || value === "fil-PH";
-}
-
-export function readUiPreferences(storage: Pick<Storage, "getItem"> = localStorage): UiPreferences {
+export function parseUiPreferences(raw: string | null): UiPreferences {
+  if (!raw) {
+    return defaultUiPreferences;
+  }
   try {
-    const raw = storage.getItem(UI_PREFERENCES_STORAGE_KEY);
-    if (!raw) {
-      return { ...DEFAULT_UI_PREFERENCES };
-    }
-    const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== "object" || parsed === null) {
-      return { ...DEFAULT_UI_PREFERENCES };
-    }
-    const record = parsed as Record<string, unknown>;
-    return {
-      theme: isThemePreference(record.theme) ? record.theme : DEFAULT_UI_PREFERENCES.theme,
-      locale: isLocalePreference(record.locale) ? record.locale : DEFAULT_UI_PREFERENCES.locale,
-    };
+    const parsed = uiPreferencesSchema.safeParse(JSON.parse(raw) as unknown);
+    return parsed.success ? parsed.data : defaultUiPreferences;
   } catch {
-    return { ...DEFAULT_UI_PREFERENCES };
+    return defaultUiPreferences;
   }
 }
 
-export function writeUiPreferences(
-  preferences: UiPreferences,
-  storage: Pick<Storage, "setItem"> = localStorage,
-): void {
-  storage.setItem(UI_PREFERENCES_STORAGE_KEY, JSON.stringify(preferences));
+export function readUiPreferences(): UiPreferences {
+  if (typeof window === "undefined") {
+    return defaultUiPreferences;
+  }
+  return parseUiPreferences(window.localStorage.getItem(UI_PREFERENCES_STORAGE_KEY));
 }
 
-export function applyUiPreferences(
-  preferences: UiPreferences,
-  root = document.documentElement,
-): void {
-  root.setAttribute("data-theme", preferences.theme);
-  root.lang = preferences.locale;
-  root.setAttribute("data-density", "comfortable");
+export function writeUiPreferences(preferences: UiPreferences): void {
+  window.localStorage.setItem(UI_PREFERENCES_STORAGE_KEY, JSON.stringify(preferences));
+}
+
+export function applyTheme(theme: ThemePreference): void {
+  document.documentElement.dataset.theme = theme;
+}
+
+export function applyDensity(density: DensityPreference): void {
+  document.documentElement.dataset.density = density;
+}
+
+export function applyLocale(locale: LocalePreference): void {
+  document.documentElement.lang = locale;
 }

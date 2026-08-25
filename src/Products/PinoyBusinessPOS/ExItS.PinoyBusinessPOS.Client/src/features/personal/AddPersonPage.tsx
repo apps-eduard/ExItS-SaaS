@@ -234,7 +234,7 @@ export function AddPersonPage() {
 
           <div className="flex flex-wrap gap-2">
 
-            <Button type="button" variant="secondary" onClick={() => setResolved(null)}>
+            <Button type="button" variant="outline" onClick={() => setResolved(null)}>
 
               {t("people.add.cancel")}
 

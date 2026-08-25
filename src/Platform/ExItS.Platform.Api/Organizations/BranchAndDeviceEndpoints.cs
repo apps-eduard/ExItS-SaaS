@@ -452,6 +452,16 @@ internal static class BranchAndDeviceEndpoints
             var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
             return denied ?? Results.Ok(await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), ct).ConfigureAwait(false));
         });
+        // Governing/support history including revoked — not the normal customer Device Management list.
+        root.MapGet("/pos-devices/history", async (Guid organizationId, ListAllDevices useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
+        {
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(
+                organizationId,
+                PlatformAuditActions.PlatformAccessChecked,
+                ct).ConfigureAwait(false);
+            if (denied is not null) return denied;
+            return Results.Ok(await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), ct).ConfigureAwait(false));
+        });
         root.MapGet("/pos-devices/capacity", async (Guid organizationId, GetDeviceCapacity useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
         {
             var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
@@ -460,22 +470,39 @@ internal static class BranchAndDeviceEndpoints
         });
         root.MapPost("/pos-devices/register", async (Guid organizationId, RegisterPosDeviceRequest body, RegisterCurrentDevice useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
         {
-            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, PlatformAuditActions.PosDeviceRegistered, ct).ConfigureAwait(false);
+            // Any active org member may register *this* installation for POS execution.
+            // Capacity and branch rules stay authoritative in RegisterCurrentDevice.
+            // Governing-admin-only create-token remains for MAUI compatibility.
+            var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
             if (denied is not null) return denied;
             var result = await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId),
                 new(body.BranchId, body.InstallationDeviceId ?? string.Empty, body.FriendlyName ?? string.Empty, body.Platform, body.Model, body.AppVersion), ct).ConfigureAwait(false);
             if (result.IsSuccess && result.Value is not null)
             {
-                await OrganizationGovernanceAuditWriter.WriteDeviceAsync(
-                    authz,
-                    PlatformAuditActions.PosDeviceRegistered,
-                    result.Value,
-                    organizationId,
-                    OrganizationGovernanceAuditWriter.DeviceSummary(result.Value, "Registered"),
-                    ct).ConfigureAwait(false);
+                var auditAction = result.Value.Kind switch
+                {
+                    PosDeviceRegisterKind.Reactivated => PlatformAuditActions.PosDeviceReactivated,
+                    PosDeviceRegisterKind.New => PlatformAuditActions.PosDeviceRegistered,
+                    _ => null,
+                };
+                if (auditAction is not null)
+                {
+                    var summaryLabel = result.Value.Kind == PosDeviceRegisterKind.Reactivated ? "Reactivated" : "Registered";
+                    await OrganizationGovernanceAuditWriter.WriteDeviceAsync(
+                        authz,
+                        auditAction,
+                        result.Value.Device,
+                        organizationId,
+                        OrganizationGovernanceAuditWriter.DeviceSummary(result.Value.Device, summaryLabel),
+                        ct).ConfigureAwait(false);
+                }
             }
 
-            return PlatformApiResults.FromResult(result, Results.Ok);
+            return PlatformApiResults.FromResult(
+                result.IsSuccess && result.Value is not null
+                    ? ApplicationResult<PosDeviceDto>.Success(result.Value.Device)
+                    : ApplicationResult<PosDeviceDto>.Failure(result.ErrorCode!, result.ErrorMessage!),
+                Results.Ok);
         });
         root.MapPost("/pos-devices/registration-tokens", async (
             Guid organizationId,

@@ -83,7 +83,7 @@ export function AddLocalPersonPage() {
           ) : null}
 
           <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="secondary" asChild>
+            <Button type="button" variant="outline" asChild>
               <Link to="/personal/people">{t("people.add.cancel")}</Link>
             </Button>
             <Button type="submit" disabled={createMutation.isPending}>

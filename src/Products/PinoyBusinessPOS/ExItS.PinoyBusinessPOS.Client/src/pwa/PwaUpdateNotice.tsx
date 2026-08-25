@@ -19,17 +19,16 @@ export function PwaUpdateNotice({
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--exits-bottom-nav-height)+env(safe-area-inset-bottom)+0.5rem)] z-[var(--exits-z-notice)] flex justify-center px-[var(--exits-page-padding)] lg:bottom-[max(1rem,env(safe-area-inset-bottom))]"
+      className="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[1300] flex justify-center px-4"
       role="status"
       aria-live="polite"
     >
-      <div className="pointer-events-auto flex max-w-sm items-center gap-3 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2 shadow-[var(--exits-shadow-md)]">
+      <div className="pointer-events-auto flex max-w-sm min-w-0 items-center gap-3 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2 shadow-sm">
         <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
           {t("pwa.updateAvailable")}
         </p>
         <Button
           type="button"
-          size="default"
           onClick={() => {
             applyPwaUpdateIfAllowed(onRefresh, guard);
           }}

@@ -228,6 +228,15 @@ public sealed class SaleReportAggregateEquivalenceTests
         public Task UpdateAsync(Sale sale, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
+        public Task AddAsync(Sale sale, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task<string> ReserveNextSaleNumberAsync(
+            PosOrganizationId organizationId,
+            DateOnly businessDateUtc,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
         public Task<bool> HasReturnsForSaleAsync(
             PosOrganizationId organizationId,
             SaleId saleId,

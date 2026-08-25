@@ -28,31 +28,9 @@ internal static class CustomerOrderEntityMapper
                 l.LineTotal))
             .ToList();
 
-        CustomerOrderDeliverySnapshot? delivery = null;
-        if (string.Equals(record.FulfillmentType, nameof(CustomerOrderFulfillmentType.Delivery), StringComparison.Ordinal))
-        {
-            delivery = CustomerOrderDeliverySnapshot.Rehydrate(
-                record.DeliveryRecipientName!,
-                record.DeliveryRecipientPhone,
-                record.DeliveryAddressLine1!,
-                record.DeliveryAddressLine2,
-                record.DeliveryCity,
-                record.DeliveryNotes,
-                record.DeliveryDestinationLatitude!.Value,
-                record.DeliveryDestinationLongitude!.Value,
-                record.DeliveryBranchLatitudeSnapshot!.Value,
-                record.DeliveryBranchLongitudeSnapshot!.Value,
-                record.DeliveryDistanceKm!.Value,
-                record.DeliveryMinimumOrderAmountSnapshot!.Value,
-                record.DeliveryBaseFeeSnapshot!.Value,
-                record.DeliveryIncludedDistanceKmSnapshot!.Value,
-                record.DeliveryAdditionalFeePerKmSnapshot!.Value,
-                record.DeliveryMaximumDistanceKmSnapshot!.Value,
-                record.DeliveryFreeThresholdSnapshot,
-                record.DeliveryDistanceCharge!.Value,
-                record.DeliveryFinalFee!.Value,
-                record.DeliveryFreeApplied!.Value);
-        }
+        // Incomplete Delivery rows must not take down list/detail queries (NRE → HTTP 500).
+        // Prefer returning the order without a snapshot over failing the whole "My orders" page.
+        CustomerOrderDeliverySnapshot? delivery = TryMapDeliverySnapshot(record);
 
         return CustomerOrder.Rehydrate(
             orderId,
@@ -71,8 +49,8 @@ internal static class CustomerOrderEntityMapper
                 Enum.Parse<CustomerPartyType>(record.CustomerPartyType, ignoreCase: true),
                 record.CustomerDisplayNameSnapshot,
                 record.CustomerPlatformUserId,
-                record.CustomerBuyerOrganizationId,
-                record.CustomerBuyerPublicOrganizationId),
+            record.CustomerBuyerOrganizationId,
+            record.CustomerBuyerPublicOrganizationId),
             lines,
             record.MerchandiseSubtotal,
             record.DeliveryFee,
@@ -103,7 +81,8 @@ internal static class CustomerOrderEntityMapper
             record.DeliveredBy,
             record.CollectedAtUtc,
             record.CollectedBy,
-            record.UpdatedAtUtc);
+            record.UpdatedAtUtc,
+            record.PlatformBusinessCustomerId);
     }
 
     public static CustomerOrderRecord ToRecord(CustomerOrder order)
@@ -123,6 +102,7 @@ internal static class CustomerOrderEntityMapper
             CustomerPartyType = order.CustomerParty.PartyType.ToString(),
             CustomerDisplayNameSnapshot = order.CustomerParty.DisplayNameSnapshot,
             CustomerPlatformUserId = order.CustomerParty.PlatformUserId,
+            PlatformBusinessCustomerId = order.PlatformBusinessCustomerId,
             CustomerBuyerOrganizationId = order.CustomerParty.BuyerOrganizationId,
             CustomerBuyerPublicOrganizationId = order.CustomerParty.BuyerPublicOrganizationId,
             MerchandiseSubtotal = order.MerchandiseSubtotal,
@@ -229,5 +209,54 @@ internal static class CustomerOrderEntityMapper
         record.DeliveryDistanceCharge = snapshot.DistanceCharge;
         record.DeliveryFinalFee = snapshot.FinalDeliveryFee;
         record.DeliveryFreeApplied = snapshot.FreeDeliveryApplied;
+    }
+
+    internal static CustomerOrderDeliverySnapshot? TryMapDeliverySnapshot(CustomerOrderRecord record)
+    {
+        if (!string.Equals(record.FulfillmentType, nameof(CustomerOrderFulfillmentType.Delivery), StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(record.DeliveryRecipientName)
+            || string.IsNullOrWhiteSpace(record.DeliveryAddressLine1)
+            || record.DeliveryDestinationLatitude is null
+            || record.DeliveryDestinationLongitude is null
+            || record.DeliveryBranchLatitudeSnapshot is null
+            || record.DeliveryBranchLongitudeSnapshot is null
+            || record.DeliveryDistanceKm is null
+            || record.DeliveryMinimumOrderAmountSnapshot is null
+            || record.DeliveryBaseFeeSnapshot is null
+            || record.DeliveryIncludedDistanceKmSnapshot is null
+            || record.DeliveryAdditionalFeePerKmSnapshot is null
+            || record.DeliveryMaximumDistanceKmSnapshot is null
+            || record.DeliveryDistanceCharge is null
+            || record.DeliveryFinalFee is null
+            || record.DeliveryFreeApplied is null)
+        {
+            return null;
+        }
+
+        return CustomerOrderDeliverySnapshot.Rehydrate(
+            record.DeliveryRecipientName,
+            record.DeliveryRecipientPhone,
+            record.DeliveryAddressLine1,
+            record.DeliveryAddressLine2,
+            record.DeliveryCity,
+            record.DeliveryNotes,
+            record.DeliveryDestinationLatitude.Value,
+            record.DeliveryDestinationLongitude.Value,
+            record.DeliveryBranchLatitudeSnapshot.Value,
+            record.DeliveryBranchLongitudeSnapshot.Value,
+            record.DeliveryDistanceKm.Value,
+            record.DeliveryMinimumOrderAmountSnapshot.Value,
+            record.DeliveryBaseFeeSnapshot.Value,
+            record.DeliveryIncludedDistanceKmSnapshot.Value,
+            record.DeliveryAdditionalFeePerKmSnapshot.Value,
+            record.DeliveryMaximumDistanceKmSnapshot.Value,
+            record.DeliveryFreeThresholdSnapshot,
+            record.DeliveryDistanceCharge.Value,
+            record.DeliveryFinalFee.Value,
+            record.DeliveryFreeApplied.Value);
     }
 }

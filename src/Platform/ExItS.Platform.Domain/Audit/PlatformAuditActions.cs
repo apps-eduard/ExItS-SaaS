@@ -42,6 +42,7 @@ public static class PlatformAuditActions
     public const string OrganizationBranchDeliveryPolicyUpdated = "platform.organization.branch.delivery_policy_updated";
     public const string OrganizationBranchOrdersPaused = "platform.organization.branch.orders_paused";
     public const string PosDeviceRegistered = "platform.pos_device.registered";
+    public const string PosDeviceReactivated = "platform.pos_device.reactivated";
     public const string PosDeviceRevoked = "platform.pos_device.revoked";
     public const string PosDeviceRenamed = "platform.pos_device.renamed";
 
@@ -110,6 +111,8 @@ public static class PlatformAuditActions
     public const string InvitationResent = "platform.invitation.resent";
     public const string InvitationRevoked = "platform.invitation.revoked";
     public const string InvitationAccepted = "platform.invitation.accepted";
+    /// <summary>Formal same-human correlation recorded on an organization-scoped staff principal (not authorization).</summary>
+    public const string PersonLinkEstablished = "platform.user.person_link.established";
 
     public const string OwnershipTransferRequested = "platform.ownership_transfer.requested";
     public const string OwnershipTransferCancelled = "platform.ownership_transfer.cancelled";
@@ -233,6 +236,7 @@ public static class PlatformAuditActions
 
     public const string PersonalAccountSettingsUpdated = "platform.personal.account_settings.updated";
     public const string PersonalContactCreated = "platform.personal.contact.created";
+    public const string PersonalContactUpdated = "platform.personal.contact.updated";
     public const string PersonalContactLinked = "platform.personal.contact.linked";
     public const string PersonalContactUnlinked = "platform.personal.contact.unlinked";
     public const string PersonalContactBlocked = "platform.personal.contact.blocked";
@@ -244,6 +248,10 @@ public static class PlatformAuditActions
     public const string PersonalUtangRelationshipCreated = "platform.personal.utang_relationship.created";
     public const string PersonalUtangParticipantAuthorized = "platform.personal.utang_participant.authorized";
     public const string PersonalUtangEntryRecorded = "platform.personal.utang_entry.recorded";
+    public const string PersonalUtangEntryProposed = "platform.personal.utang_entry.proposed";
+    public const string PersonalUtangEntryConfirmed = "platform.personal.utang_entry.confirmed";
+    public const string PersonalUtangEntryDisputed = "platform.personal.utang_entry.disputed";
+    public const string PersonalUtangEntryCancelled = "platform.personal.utang_entry.cancelled";
     public const string PersonalUtangInvitationCreated = "platform.personal.utang_invitation.created";
     public const string PersonalUtangInvitationResent = "platform.personal.utang_invitation.resent";
     public const string PersonalUtangInvitationRevoked = "platform.personal.utang_invitation.revoked";
@@ -254,6 +262,12 @@ public static class PlatformAuditActions
     public const string PersonalReminderDelivered = "platform.personal.reminder.delivered";
     public const string PersonalReminderCancelled = "platform.personal.reminder.cancelled";
     public const string PersonalNotificationDelivered = "platform.personal.notification.delivered";
+    public const string PersonalTodoCreated = "platform.personal.todo.created";
+    public const string PersonalTodoUpdated = "platform.personal.todo.updated";
+    public const string PersonalTodoCompleted = "platform.personal.todo.completed";
+    public const string PersonalTodoReopened = "platform.personal.todo.reopened";
+    public const string PersonalTodoCancelled = "platform.personal.todo.cancelled";
+    public const string PersonalTodoReminderDelivered = "platform.personal.todo.reminder.delivered";
 
     public const string BusinessUpgradeStarted = "platform.business_upgrade.started";
     public const string BusinessUpgradeCompleted = "platform.business_upgrade.completed";

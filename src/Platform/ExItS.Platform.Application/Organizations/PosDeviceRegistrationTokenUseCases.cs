@@ -121,6 +121,7 @@ public sealed class RedeemPosDeviceRegistrationToken(
     IPosDeviceRepository devices,
     IOrganizationBranchRepository branches,
     IOrganizationMembershipRepository memberships,
+    IOrganizationBranchAccessService branchAccess,
     ISubscriptionRepository subscriptions,
     IPlanRepository plans,
     IPlatformUnitOfWork unitOfWork,
@@ -217,6 +218,51 @@ public sealed class RedeemPosDeviceRegistrationToken(
             return ApplicationResult<PosDeviceDto>.Failure(ex.ErrorCode, ex.Message);
         }
 
+        // Staff must only redeem into an Active branch they are authorized to access.
+        if (!await branchAccess
+                .CanAccessBranchAsync(actorUserId, organizationId, branch.Id, cancellationToken)
+                .ConfigureAwait(false))
+        {
+            return ApplicationResult<PosDeviceDto>.Failure(
+                ApplicationErrorCodes.BranchAccessDenied,
+                "You are not authorized to register a POS device for the selected branch.");
+        }
+
+        ApplicationResult<PosDeviceDto>? outcome = null;
+        try
+        {
+            await unitOfWork.ExecuteWithOrganizationLockAsync(
+                organizationId.Value,
+                async ct =>
+                {
+                    outcome = await RedeemLockedAsync(
+                        organizationId,
+                        actorUserId,
+                        branch,
+                        token,
+                        command,
+                        ct).ConfigureAwait(false);
+                },
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<PosDeviceDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+
+        return outcome ?? ApplicationResult<PosDeviceDto>.Failure(
+            ApplicationErrorCodes.PosDeviceNotAuthorized,
+            "POS device registration did not complete.");
+    }
+
+    private async Task<ApplicationResult<PosDeviceDto>> RedeemLockedAsync(
+        PlatformOrganizationId organizationId,
+        PlatformUserId actorUserId,
+        OrganizationBranch branch,
+        PosDeviceRegistrationToken token,
+        RedeemPosDeviceRegistrationTokenCommand command,
+        CancellationToken cancellationToken)
+    {
         PosDevice? existing;
         try
         {
@@ -231,6 +277,14 @@ public sealed class RedeemPosDeviceRegistrationToken(
 
         if (existing is not null && existing.Status == PosDeviceStatus.Active)
         {
+            if (existing.BranchId != branch.Id)
+            {
+                // Do not consume the one-time token when the installation cannot move.
+                return ApplicationResult<PosDeviceDto>.Failure(
+                    ApplicationErrorCodes.PosDeviceBranchConflict,
+                    "This POS installation is already registered to another branch. It cannot be moved silently.");
+            }
+
             try
             {
                 existing.TouchLastSeen(clock.UtcNow);
@@ -268,6 +322,13 @@ public sealed class RedeemPosDeviceRegistrationToken(
         {
             if (existing is not null)
             {
+                if (existing.BranchId != branch.Id)
+                {
+                    return ApplicationResult<PosDeviceDto>.Failure(
+                        ApplicationErrorCodes.PosDeviceBranchConflict,
+                        "This POS installation is already registered to another branch. It cannot be moved silently.");
+                }
+
                 existing.Reactivate(clock.UtcNow);
                 device = existing;
                 await devices.UpdateAsync(device, cancellationToken).ConfigureAwait(false);

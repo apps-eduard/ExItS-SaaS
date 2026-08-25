@@ -89,7 +89,7 @@ public sealed class PlatformEmailDeliveryOptions
     public bool UseSsl { get; set; }
     public string FromAddress { get; set; } = "noreply@exits.local";
     public string FromDisplayName { get; set; } = "ExItS";
-    /// <summary>Public Admin base URL used to build verification / reset links (e.g. http://localhost:8090).</summary>
+    /// <summary>Public Admin base URL used to build verification / reset links (e.g. http://127.0.0.1:8095 for React Admin).</summary>
     public string? AdminPublicBaseUrl { get; set; }
 
     public bool IsConfigured =>

@@ -1,35 +1,35 @@
 import { Monitor, Moon, Sun } from "lucide-react";
-import { SegmentedControl, SegmentedOption } from "@/components/ui/segmented-control";
-import { useI18n } from "@/i18n/I18nProvider";
+import { SettingsSelect } from "@/components/ui/settings-select";
 import { usePreferences } from "@/hooks/usePreferences";
+import { useI18n } from "@/i18n/I18nProvider";
 import type { ThemePreference } from "@/lib/preferences/ui-preferences";
-
-const OPTIONS: Array<{
-  value: ThemePreference;
-  icon: typeof Sun;
-  labelKey: "theme.system" | "theme.light" | "theme.dark";
-}> = [
-  { value: "system", icon: Monitor, labelKey: "theme.system" },
-  { value: "light", icon: Sun, labelKey: "theme.light" },
-  { value: "dark", icon: Moon, labelKey: "theme.dark" },
-];
 
 export function ThemeControl() {
   const { t } = useI18n();
   const { preferences, setTheme } = usePreferences();
 
   return (
-    <SegmentedControl label={t("theme.label")}>
-      {OPTIONS.map(({ value, icon: Icon, labelKey }) => (
-        <SegmentedOption
-          key={value}
-          selected={preferences.theme === value}
-          onSelect={() => setTheme(value)}
-        >
-          <Icon className="size-4 shrink-0" aria-hidden="true" />
-          <span className="truncate">{t(labelKey)}</span>
-        </SegmentedOption>
-      ))}
-    </SegmentedControl>
+    <SettingsSelect<ThemePreference>
+      label={t("theme.label")}
+      value={preferences.theme}
+      onChange={setTheme}
+      options={[
+        {
+          value: "system",
+          label: t("theme.system"),
+          icon: <Monitor className="size-3.5 shrink-0" aria-hidden="true" />,
+        },
+        {
+          value: "light",
+          label: t("theme.light"),
+          icon: <Sun className="size-3.5 shrink-0" aria-hidden="true" />,
+        },
+        {
+          value: "dark",
+          label: t("theme.dark"),
+          icon: <Moon className="size-3.5 shrink-0" aria-hidden="true" />,
+        },
+      ]}
+    />
   );
 }

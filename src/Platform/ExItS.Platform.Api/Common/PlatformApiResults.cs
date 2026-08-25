@@ -42,8 +42,13 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.ProductEntryDenied
             or ApplicationErrorCodes.ProductLocalRoleMissing
             or ApplicationErrorCodes.BranchAccessDenied
+            or ApplicationErrorCodes.PosDeviceNotAuthorized
+            or ApplicationErrorCodes.PosDeviceRegistrationRequired
+            or ApplicationErrorCodes.PosDeviceRevoked
             or ApplicationErrorCodes.PersonalUtangUnauthorized
+            or ApplicationErrorCodes.PersonalTodoUnauthorized
             or DomainErrorCodes.PersonalReminderUnauthorized
+            or DomainErrorCodes.PersonalTodoUnauthorized
             or DomainErrorCodes.CustomerToStaffConversionDenied
             or DomainErrorCodes.CustomerLinkMustNotCreateStaff
             or DomainErrorCodes.CustomerLinkPersonalIdentityRequired
@@ -85,6 +90,7 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.PersonalUtangInvitationNotFound
             or ApplicationErrorCodes.PersonalReminderNotFound
             or ApplicationErrorCodes.PersonalNotificationNotFound
+            or ApplicationErrorCodes.PersonalTodoNotFound
             or ApplicationErrorCodes.BusinessCustomerNotFound
             or ApplicationErrorCodes.CreditCustomerNotFound
             or ApplicationErrorCodes.CustomerLinkRequestNotFound
@@ -92,7 +98,8 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.UtangMigrationBatchNotFound
             or ApplicationErrorCodes.BusinessTypeActivationNotFound => StatusCodes.Status404NotFound,
 
-        ApplicationErrorCodes.SlugConflict
+        ApplicationErrorCodes.PosDeviceBranchConflict
+            or ApplicationErrorCodes.SlugConflict
             or ApplicationErrorCodes.EmailConflict
             or ApplicationErrorCodes.UsernameConflict
             or ApplicationErrorCodes.MembershipConflict
@@ -168,6 +175,8 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.UtangMigrationConfirmationMismatch
             or ApplicationErrorCodes.UtangMigrationPreviewRequired
             or ApplicationErrorCodes.ProductLocalRoleGrantConflict
+            or ApplicationErrorCodes.InvitationRequiresAuthenticatedPersonal
+            or ApplicationErrorCodes.InvitationPersonalEmailUnverified
             or DomainErrorCodes.PersonalUtangAlreadyMigrated => StatusCodes.Status409Conflict,
 
         ApplicationErrorCodes.PersonalReminderRateLimited

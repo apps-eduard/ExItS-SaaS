@@ -33,15 +33,18 @@ public sealed class OutstandingBalanceService : IOutstandingBalanceService
 {
     private readonly ICreditEntryRepository _credits;
     private readonly IRepaymentRepository _repayments;
+    private readonly IWriteOffRepository _writeOffs;
     private readonly IClock _clock;
 
     public OutstandingBalanceService(
         ICreditEntryRepository credits,
         IRepaymentRepository repayments,
+        IWriteOffRepository writeOffs,
         IClock clock)
     {
         _credits = credits;
         _repayments = repayments;
+        _writeOffs = writeOffs;
         _clock = clock;
     }
 
@@ -54,7 +57,9 @@ public sealed class OutstandingBalanceService : IOutstandingBalanceService
             .ConfigureAwait(false);
         var repayments = await _repayments.SumActiveAmountAsync(organizationId, customerId, cancellationToken)
             .ConfigureAwait(false);
-        return credits - repayments;
+        var writeOffs = await _writeOffs.SumActiveAmountAsync(organizationId, customerId, cancellationToken)
+            .ConfigureAwait(false);
+        return credits - repayments - writeOffs;
     }
 
     public async Task<CustomerUtangSummaryDto> GetSummaryAsync(
@@ -66,14 +71,17 @@ public sealed class OutstandingBalanceService : IOutstandingBalanceService
         var custId = POSCustomerId.From(customerId);
         var activeCredits = await _credits.SumActiveAmountAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
         var activeRepayments = await _repayments.SumActiveAmountAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
+        var activeWriteOffs = await _writeOffs.SumActiveAmountAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
         var activeCreditCount = await _credits.CountActiveAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
         var activeRepaymentCount = await _repayments.CountActiveAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
+        var activeWriteOffCount = await _writeOffs.CountActiveAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
         var (creditItems, creditTotal) = await _credits.ListByCustomerAsync(orgId, custId, 0, 10_000, cancellationToken).ConfigureAwait(false);
         var (_, repaymentTotal) = await _repayments.ListByCustomerAsync(orgId, custId, 0, 1, cancellationToken).ConfigureAwait(false);
+        var (_, writeOffTotal) = await _writeOffs.ListByCustomerAsync(orgId, custId, 0, 1, cancellationToken).ConfigureAwait(false);
 
         var aged = CreditFifoAging.AgeCredits(
             creditItems,
-            activeRepayments,
+            activeRepayments + activeWriteOffs,
             CreditFifoAging.EffectiveBusinessDateUtc(_clock.UtcNow));
         var overdueSummary = CreditFifoAging.BuildCustomerSummary(
             customerId,
@@ -83,7 +91,9 @@ public sealed class OutstandingBalanceService : IOutstandingBalanceService
             activeRepayments,
             activeCreditCount,
             activeRepaymentCount,
-            creditTotal + repaymentTotal);
+            creditTotal + repaymentTotal + writeOffTotal,
+            activeWriteOffs,
+            activeWriteOffCount);
 
         return new CustomerUtangSummaryDto(
             customerId,
@@ -98,7 +108,9 @@ public sealed class OutstandingBalanceService : IOutstandingBalanceService
             overdueSummary.OverdueCreditCount,
             overdueSummary.EarliestOverdueDate,
             overdueSummary.NextUpcomingDueDate,
-            overdueSummary.CreditsWithoutDueDateCount);
+            overdueSummary.CreditsWithoutDueDateCount,
+            overdueSummary.ActiveWriteOffTotal,
+            overdueSummary.ActiveWriteOffCount);
     }
 }
 

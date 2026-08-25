@@ -102,6 +102,50 @@ public sealed class LinkedCustomerPlatformAuthorizationClientTests
         Assert.Equal(LinkedCustomerPlatformAuthorizationOutcome.NotFound, result.Outcome);
     }
 
+    [Fact]
+    public async Task Authorize_forwards_platform_auth_cookie_as_session_when_bearer_only_inbound()
+    {
+        // React Personal: Bearer to POS + HttpOnly Platform cookie (no X-ExItS-Session-Token).
+        HttpRequestMessage? seen = null;
+        var json = JsonSerializer.Serialize(new
+        {
+            personalUserId = PersonalId,
+            organizationId = OrgId,
+            platformBusinessCustomerId = CustomerId,
+            linkedCustomerAppUserId = LinkId
+        });
+        var handler = new StubHandler((req, _) =>
+        {
+            seen = req;
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
+        });
+        var httpClient = new HttpClient(handler) { BaseAddress = new Uri("http://platform.test/") };
+        var accessor = new HttpContextAccessor { HttpContext = new DefaultHttpContext() };
+        accessor.HttpContext.Request.Headers.Authorization = "Bearer product-access-token";
+        // HttpOnly Platform session cookie (same-origin Vite proxy / browser credentials).
+        accessor.HttpContext.Request.Headers.Cookie = ".ExItS.Platform.Auth=cookie-session-token";
+
+        var client = new LinkedCustomerPlatformAuthorizationClient(
+            httpClient,
+            accessor,
+            Options.Create(new PlatformAuthOptions { BaseUrl = "http://platform.test" }));
+
+        var result = await client.VerifyAsync(OrgId, CustomerId);
+
+        Assert.Equal(LinkedCustomerPlatformAuthorizationOutcome.Authorized, result.Outcome);
+        Assert.NotNull(seen);
+        Assert.Equal("PlatformSession", seen!.Headers.Authorization!.Scheme);
+        Assert.Equal("cookie-session-token", seen.Headers.Authorization.Parameter);
+        Assert.False(
+            seen.Headers.Authorization.Parameter == "product-access-token",
+            "Product Bearer must not be forwarded as PlatformSession.");
+        Assert.True(seen.Headers.TryGetValues("Cookie", out var cookies));
+        Assert.Contains(cookies, c => c.Contains(".ExItS.Platform.Auth=cookie-session-token", StringComparison.Ordinal));
+    }
+
     private static LinkedCustomerPlatformAuthorizationClient CreateClient(
         HttpStatusCode status,
         string body,

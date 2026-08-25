@@ -539,7 +539,7 @@ public sealed class SaleDomainTests
     }
 
     [Fact]
-    public void Sale_exposes_tax_amount_but_no_inventory_or_discount_state()
+    public void Sale_exposes_tax_and_commercial_discount_amounts_but_no_inventory_or_refund_state()
     {
         var names = typeof(Sale).GetProperties().Select(p => p.Name)
             .Concat(typeof(SaleLine).GetProperties().Select(p => p.Name))
@@ -549,13 +549,25 @@ public sealed class SaleDomainTests
         Assert.Contains("LinkedCreditEntryId", names);
         Assert.Contains("TaxAmount", names);
 
+        // RMAP-B03 commercial discount: gross is kept alongside the net amounts the totals use.
+        Assert.Contains("GrossSubtotal", names);
+        Assert.Contains("LineDiscountTotal", names);
+        Assert.Contains("SaleDiscountTotal", names);
+        Assert.Contains("DiscountTotal", names);
+        Assert.Contains("GrossLineTotal", names);
+        Assert.Contains("LineDiscountAmount", names);
+        Assert.Contains("SaleDiscountAllocatedAmount", names);
+
         foreach (var forbidden in new[]
                  {
-                     "Stock", "QuantityOnHand", "Inventory", "Vat", "Discount",
-                     "Refund", "Tip", "Fee"
+                     "Stock", "QuantityOnHand", "Inventory", "Vat",
+                     "Refund", "Tip", "Fee",
+                     "PromotionId", "PromoCode", "RegulatoryDiscountKind"
                  })
         {
             Assert.DoesNotContain(forbidden, names);
         }
+
+        Assert.Contains("PriceOverrides", names);
     }
 }

@@ -23,6 +23,12 @@ internal sealed class PosDeviceRepository : IPosDeviceRepository
     public async Task<IReadOnlyList<PosDevice>> ListByOrganizationAsync(PlatformOrganizationId organizationId, CancellationToken cancellationToken = default) =>
         (await _db.PosDevices.AsNoTracking().Where(x => x.OrganizationId == organizationId.Value).OrderBy(x => x.FriendlyName).ToListAsync(cancellationToken).ConfigureAwait(false))
             .Select(OrganizationBranchDeviceEntityMapper.ToDomain).ToList();
+    public async Task<IReadOnlyList<PosDevice>> ListActiveByOrganizationAsync(PlatformOrganizationId organizationId, CancellationToken cancellationToken = default) =>
+        (await _db.PosDevices.AsNoTracking()
+            .Where(x => x.OrganizationId == organizationId.Value && x.Status == nameof(PosDeviceStatus.Active))
+            .OrderBy(x => x.FriendlyName)
+            .ToListAsync(cancellationToken).ConfigureAwait(false))
+            .Select(OrganizationBranchDeviceEntityMapper.ToDomain).ToList();
     public Task<int> CountActiveAsync(PlatformOrganizationId organizationId, CancellationToken cancellationToken = default) =>
         _db.PosDevices.AsNoTracking().CountAsync(x => x.OrganizationId == organizationId.Value && x.Status == nameof(PosDeviceStatus.Active), cancellationToken);
     public Task AddAsync(PosDevice device, CancellationToken cancellationToken = default) { _db.PosDevices.Add(OrganizationBranchDeviceEntityMapper.ToRecord(device)); return Task.CompletedTask; }

@@ -205,9 +205,9 @@ The resulting Organization session is newly issued or explicitly selected.
 | Role | Organization Web |
 |---|---|
 | Organization Owner / Administrator | Allowed (management center) |
-| StoreManager (POS) | Allowed (day-to-day; Owner-only surfaces denied) |
-| Cashier (POS) | **Denied** — use PinoyBusinessPOS MAUI |
-| InventoryStaff / ReportingUser | Allowed with limited navigation |
+| StoreManager (POS) alone | **Denied** — strong POS operations on React/MAUI; not automatic admin (RMAP-02R) |
+| Cashier (POS) | **Denied** — use PinoyBusinessPOS MAUI / React sell floor |
+| InventoryStaff / ReportingUser | Allowed with limited navigation (legacy/compat) |
 
 Identity comes from authenticated Platform session + selected Organization + product Bearer introspection. Development-only organization/actor/commercial headers are not required outside Development/Testing. Post-login workspace list includes Organization entries for **Owner / Administrator** only (Cashier `OrganizationMember` excluded). Development Test User fills username only. See [organization-web-role-and-workflow-matrix.md](organization-web-role-and-workflow-matrix.md), [organization-web-ui-responsive-standard.md](organization-web-ui-responsive-standard.md), and [owner checklist](../validation/organization-web-responsive-owner-checklist.md).
 
@@ -220,9 +220,11 @@ Identity comes from authenticated Platform session + selected Organization + pro
 - Owner/Administrator may select any **Active** branch in the current organization as management context (`SelectedBranchId`). That switch does not rebind the POS device and does not grant checkout. See [P28-WP13](../reports/P28-WP13-branch-operational-context-and-owner-switching.md).
 - Ownership transfer recomputes authority per selected Organization (never cache Owner globally per UserId).
 
-**Organization Manager** — day-to-day management subset; Owner-only surfaces (ownership transfer, sales-document acknowledgment, Owner subscription controls) denied.
+**OrganizationAdministrator** — explicit admin-side delegated authority; day-to-day admin subset; Owner-only surfaces denied. **Not** synonymous with POS StoreManager.
 
-**Connected ExItS supplier relationships** — Owner/Manager with `store-suppliers-manage` may request/accept/decline org↔org connections (server-enforced). Cashier cannot manage. Pending must be visible to buyer (outgoing) and supplier (incoming). See [connected-exits-suppliers.md](connected-exits-suppliers.md).
+**POS StoreManager / Manager** — operations on the POS client per `PosRoleMatrix` (includes CreateSale/EnterPos). Does **not** grant Organization Web admin host access alone (RMAP-02R).
+
+**Connected ExItS supplier relationships** — Owner/Administrator with `store-suppliers-manage` may request/accept/decline org↔org connections (server-enforced). Cashier cannot manage. Pending must be visible to buyer (outgoing) and supplier (incoming). See [connected-exits-suppliers.md](connected-exits-suppliers.md).
 
 **Cashier** — Organization Web host and management APIs denied.
 

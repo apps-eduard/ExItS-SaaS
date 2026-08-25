@@ -1,4 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Offline;
+using ExItS.PinoyBusinessPOS.Application.Options;
 
 namespace ExItS.PinoyBusinessPOS.Api.Common;
 
@@ -27,7 +29,10 @@ internal static class PosProductionSecurityGuard
     public static void ValidateOrThrow(WebApplicationBuilder builder)
     {
         var env = builder.Environment;
-        if (PosDevelopmentEnvironment.IsApprovedDevelopmentEnvironment(env))
+        var localValidationEnabled = builder.Configuration.GetValue<bool>("LocalValidation:Enabled")
+            && !env.IsProduction();
+
+        if (PosDevelopmentEnvironment.IsApprovedDevelopmentEnvironment(env) || localValidationEnabled)
         {
             return;
         }
@@ -45,15 +50,48 @@ internal static class PosProductionSecurityGuard
                 "Production must not use the documented development database password.");
         }
 
+        // An offline price lease is only as trustworthy as its signing key: with the published
+        // development key, any device could mint its own prices.
+        var priceAuthorityKey = builder.Configuration[
+            $"{OfflinePriceAuthorityOptions.SectionName}:{nameof(OfflinePriceAuthorityOptions.PriceAuthoritySigningKey)}"];
+        if (string.IsNullOrWhiteSpace(priceAuthorityKey))
+        {
+            throw new InvalidOperationException(
+                "Production requires PosOffline:PriceAuthoritySigningKey from an approved secure configuration provider.");
+        }
+
+        if (string.Equals(
+                priceAuthorityKey.Trim(),
+                OfflinePriceAuthorityOptions.DevelopmentSigningKey,
+                StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "Production must not use the documented development offline price authority signing key.");
+        }
+
+        var operatingGrantKey = builder.Configuration[
+            $"{OfflinePriceAuthorityOptions.SectionName}:{nameof(OfflinePriceAuthorityOptions.OperatingGrantSigningPrivateKeyPem)}"];
+        if (string.IsNullOrWhiteSpace(operatingGrantKey))
+        {
+            throw new InvalidOperationException(
+                "Production requires PosOffline:OperatingGrantSigningPrivateKeyPem from an approved secure configuration provider.");
+        }
+
+        if (string.Equals(
+                operatingGrantKey.Trim(),
+                OfflinePriceAuthorityOptions.DevelopmentOperatingGrantPrivateKeyPem.Trim(),
+                StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "Production must not use the documented development offline operating grant signing key.");
+        }
+
         var allowedHosts = builder.Configuration["AllowedHosts"];
         if (string.IsNullOrWhiteSpace(allowedHosts) || allowedHosts.Trim() == "*")
         {
             throw new InvalidOperationException(
                 "Production requires an explicit AllowedHosts value (wildcard '*' is not allowed).");
         }
-
-        var localValidationEnabled = builder.Configuration.GetValue<bool>("LocalValidation:Enabled")
-            && !env.IsProduction();
 
         var platformAuthBaseUrl = builder.Configuration[$"{PlatformAuthOptions.SectionName}:BaseUrl"];
         if (!string.IsNullOrWhiteSpace(platformAuthBaseUrl))
@@ -71,6 +109,16 @@ internal static class PosProductionSecurityGuard
                 throw new InvalidOperationException(
                     "Production requires PlatformAuth:BaseUrl to use HTTPS when configured.");
             }
+        }
+
+        // Device installation enforcement cannot be paused in Production (PWA preview uses non-Production only).
+        var deviceEnforcement = builder.Configuration.GetValue(
+            $"{PosDeviceAuthorizationOptions.SectionName}:{nameof(PosDeviceAuthorizationOptions.EnforcementEnabled)}",
+            defaultValue: true);
+        if (!deviceEnforcement)
+        {
+            throw new InvalidOperationException(
+                "POS device authorization cannot be disabled in Production. Set PosDeviceAuthorization:EnforcementEnabled=true.");
         }
     }
 }

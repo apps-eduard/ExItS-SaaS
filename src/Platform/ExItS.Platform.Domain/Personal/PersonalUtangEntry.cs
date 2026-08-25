@@ -11,11 +11,15 @@ public sealed class PersonalUtangEntry
     public PersonalUtangEntryType EntryType { get; }
     public decimal Amount { get; }
     public decimal SignedDelta { get; }
-    public decimal BalanceAfter { get; }
+    public decimal BalanceAfter { get; private set; }
     public string? Notes { get; }
     public DateTimeOffset? DueDateUtc { get; }
     public PlatformUserId CreatedByUserIdentityId { get; }
     public DateTimeOffset CreatedAtUtc { get; }
+    public PersonalUtangEntryStatus Status { get; private set; }
+    public PlatformUserId? ResolvedByUserIdentityId { get; private set; }
+    public DateTimeOffset? ResolvedAtUtc { get; private set; }
+    public string? DisputeReason { get; private set; }
 
     private PersonalUtangEntry(
         PersonalUtangEntryId id,
@@ -27,7 +31,11 @@ public sealed class PersonalUtangEntry
         string? notes,
         DateTimeOffset? dueDateUtc,
         PlatformUserId createdByUserIdentityId,
-        DateTimeOffset createdAtUtc)
+        DateTimeOffset createdAtUtc,
+        PersonalUtangEntryStatus status,
+        PlatformUserId? resolvedByUserIdentityId,
+        DateTimeOffset? resolvedAtUtc,
+        string? disputeReason)
     {
         Id = id;
         RelationshipId = relationshipId;
@@ -39,6 +47,10 @@ public sealed class PersonalUtangEntry
         DueDateUtc = dueDateUtc;
         CreatedByUserIdentityId = createdByUserIdentityId;
         CreatedAtUtc = createdAtUtc;
+        Status = status;
+        ResolvedByUserIdentityId = resolvedByUserIdentityId;
+        ResolvedAtUtc = resolvedAtUtc;
+        DisputeReason = disputeReason;
     }
 
     internal static PersonalUtangEntry Create(
@@ -50,6 +62,7 @@ public sealed class PersonalUtangEntry
         decimal balanceAfter,
         PlatformUserId createdByUserIdentityId,
         DateTimeOffset utcNow,
+        PersonalUtangEntryStatus status,
         string? notes,
         DateTimeOffset? dueDateUtc)
     {
@@ -73,7 +86,11 @@ public sealed class PersonalUtangEntry
             notes,
             dueDateUtc,
             createdByUserIdentityId,
-            utcNow);
+            utcNow,
+            status,
+            resolvedByUserIdentityId: null,
+            resolvedAtUtc: null,
+            disputeReason: null);
     }
 
     public static PersonalUtangEntry Rehydrate(
@@ -86,7 +103,11 @@ public sealed class PersonalUtangEntry
         string? notes,
         DateTimeOffset? dueDateUtc,
         PlatformUserId createdByUserIdentityId,
-        DateTimeOffset createdAtUtc) =>
+        DateTimeOffset createdAtUtc,
+        PersonalUtangEntryStatus status = PersonalUtangEntryStatus.Confirmed,
+        PlatformUserId? resolvedByUserIdentityId = null,
+        DateTimeOffset? resolvedAtUtc = null,
+        string? disputeReason = null) =>
         new(
             id,
             relationshipId,
@@ -97,7 +118,54 @@ public sealed class PersonalUtangEntry
             notes,
             dueDateUtc,
             createdByUserIdentityId,
-            createdAtUtc);
+            createdAtUtc,
+            status,
+            resolvedByUserIdentityId,
+            resolvedAtUtc,
+            disputeReason);
+
+    /// <summary>Applies confirmation metadata and the post-confirmation balance snapshot.</summary>
+    internal void MarkConfirmed(PlatformUserId resolvedBy, DateTimeOffset utcNow, decimal balanceAfter)
+    {
+        ArgumentNullException.ThrowIfNull(resolvedBy);
+        EnsureUtc(utcNow);
+        Status = PersonalUtangEntryStatus.Confirmed;
+        ResolvedByUserIdentityId = resolvedBy;
+        ResolvedAtUtc = utcNow;
+        DisputeReason = null;
+        BalanceAfter = balanceAfter;
+    }
+
+    internal void MarkDisputed(PlatformUserId resolvedBy, DateTimeOffset utcNow, string? disputeReason)
+    {
+        ArgumentNullException.ThrowIfNull(resolvedBy);
+        EnsureUtc(utcNow);
+        Status = PersonalUtangEntryStatus.Disputed;
+        ResolvedByUserIdentityId = resolvedBy;
+        ResolvedAtUtc = utcNow;
+        DisputeReason = NormalizeDisputeReason(disputeReason);
+    }
+
+    internal void MarkCancelled(PlatformUserId resolvedBy, DateTimeOffset utcNow)
+    {
+        ArgumentNullException.ThrowIfNull(resolvedBy);
+        EnsureUtc(utcNow);
+        Status = PersonalUtangEntryStatus.Cancelled;
+        ResolvedByUserIdentityId = resolvedBy;
+        ResolvedAtUtc = utcNow;
+        DisputeReason = null;
+    }
+
+    private static string? NormalizeDisputeReason(string? disputeReason)
+    {
+        if (string.IsNullOrWhiteSpace(disputeReason))
+        {
+            return null;
+        }
+
+        var trimmed = disputeReason.Trim();
+        return trimmed[..Math.Min(trimmed.Length, 256)];
+    }
 
     private static void EnsureUtc(DateTimeOffset value)
     {

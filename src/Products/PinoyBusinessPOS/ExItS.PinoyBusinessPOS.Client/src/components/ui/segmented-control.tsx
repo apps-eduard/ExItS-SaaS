@@ -8,7 +8,7 @@ export function SegmentedControl({ label, children }: { label: string; children:
         {label}
       </legend>
       <div
-        className="grid auto-cols-fr grid-flow-col gap-1 rounded-[var(--exits-radius-md)] bg-surface-muted p-1"
+        className="flex min-w-0 flex-wrap gap-0.5 rounded-[var(--exits-radius-md)] bg-background p-0.5"
         role="radiogroup"
         aria-label={label}
       >
@@ -34,7 +34,7 @@ export function SegmentedOption({
       aria-checked={selected}
       onClick={onSelect}
       className={cn(
-        "inline-flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-[calc(var(--exits-radius-md)-2px)] px-2 text-[length:var(--exits-text-sm)] font-semibold transition-[background-color,color,box-shadow] duration-[var(--exits-motion-fast)] ease-[var(--exits-ease)]",
+        "inline-flex min-h-[var(--exits-touch-target-min)] min-w-[5.25rem] flex-1 items-center justify-center gap-1 rounded-[calc(var(--exits-radius-md)-2px)] px-2 text-[length:var(--exits-text-xs)] font-semibold transition-[background-color,color,box-shadow] duration-[var(--exits-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:flex-none sm:min-w-[6.5rem] sm:text-[length:var(--exits-text-sm)]",
         selected
           ? "bg-surface text-foreground shadow-sm"
           : "bg-transparent text-muted hover:text-foreground",

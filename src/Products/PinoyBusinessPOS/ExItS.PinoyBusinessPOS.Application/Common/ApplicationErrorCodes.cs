@@ -3,6 +3,7 @@ namespace ExItS.PinoyBusinessPOS.Application.Common;
 public static class ApplicationErrorCodes
 {
     public const string CustomerNotFound = "pos.customer.not_found";
+    public const string CheckoutCustomerSearchRequired = "pos.customer.checkout_search.required";
     public const string LinkedCustomerNotFound = "pos.linked_customer.not_found";
     public const string LinkedCustomerDenied = "pos.linked_customer.denied";
     public const string ExtendedHistoryRequired = "pos.personal.extended_history_required";
@@ -12,6 +13,7 @@ public static class ApplicationErrorCodes
     public const string CustomerConcurrencyConflict = "pos.customer.concurrency_conflict";
     public const string CreditEntryNotFound = "pos.credit_entry.not_found";
     public const string RepaymentNotFound = "pos.repayment.not_found";
+    public const string WriteOffNotFound = "pos.write_off.not_found";
     public const string ActorRequired = "pos.actor.required";
     public const string ConcurrencyConflict = "pos.concurrency_conflict";
     public const string OrganizationRequired = "pos.organization.required";
@@ -19,6 +21,7 @@ public static class ApplicationErrorCodes
     public const string CommercialAccessUnknown = "pos.commercial.access_unknown";
     public const string CommercialCapabilityDenied = "pos.commercial.capability_denied";
     public const string DevelopmentHeadersUnavailable = "pos.development_headers.unavailable";
+    public const string PlatformAuthUnavailable = "pos.platform_auth.unavailable";
     public const string StatementInvalidPeriod = "pos.statement.invalid_period";
     public const string ReceiptNotFound = "pos.receipt.not_found";
 
@@ -45,7 +48,27 @@ public static class ApplicationErrorCodes
     public const string SaleSnapshotIncomplete = "pos.sale.snapshot.incomplete";
     public const string SaleSnapshotLineTotalMismatch = "pos.sale.snapshot.line_total_mismatch";
     public const string SaleSnapshotInvalid = "pos.sale.snapshot.invalid";
+    public const string SaleDiscountOfflineNotSupported = "pos.sale.discount.offline_not_supported";
+    public const string SalePriceOverrideOfflineNotSupported =
+        "pos.sale.price_override.offline_not_supported";
     public const string SaleNumberConflict = "pos.sale.number.conflict";
+    public const string OfflinePriceAuthorityRequestInvalid = "pos.offline_price_authority.request.invalid";
+    public const string OfflinePriceAuthorityTampered = "pos.offline_price_authority.tampered";
+    public const string OfflinePriceAuthorityExpired = "pos.offline_price_authority.expired";
+    public const string OfflinePriceAuthorityWrongOrganization = "pos.offline_price_authority.wrong_organization";
+    public const string OfflinePriceAuthorityWrongBranch = "pos.offline_price_authority.wrong_branch";
+    public const string OfflinePriceAuthorityWrongProduct = "pos.offline_price_authority.wrong_product";
+    public const string OfflinePriceAuthorityRequiredOnEveryLine =
+        "pos.offline_price_authority.required_on_every_line";
+    public const string OfflinePriceAuthorityLineMismatch = "pos.offline_price_authority.line_mismatch";
+    public const string OfflinePriceAuthorityOnlineNotSupported =
+        "pos.offline_price_authority.online_not_supported";
+    public const string OfflineOperatingGrantInvalidScope = "pos.offline_operating_grant.invalid_scope";
+    public const string OfflineOperatingGrantDeviceRequired = "pos.offline_operating_grant.device_required";
+    public const string OfflineOperatingGrantSigningUnavailable = "pos.offline_operating_grant.signing_unavailable";
+    public const string OfflineOperatingGrantTampered = "pos.offline_operating_grant.tampered";
+    public const string OfflineOperatingGrantExpired = "pos.offline_operating_grant.expired";
+    public const string OfflineOperatingGrantDenied = "pos.offline_operating_grant.denied";
     public const string CreditReversalRequiresSaleVoid = "pos.credit_entry.reversal.requires_sale_void";
     public const string SaleVoidBlockedBySubsequentUtangActivity = "pos.sale.void.blocked_by_subsequent_utang";
 
@@ -110,6 +133,15 @@ public static class ApplicationErrorCodes
     public const string SaleReturnNotFound = "pos.sale_return.not_found";
     public const string SaleReturnNumberConflict = "pos.sale_return.number.conflict";
     public const string SaleVoidBlockedByReturns = "pos.sale.void.blocked_by_returns";
+    /// <summary>
+    /// Prior ReturnToStock account restock exists for an expiration-tracked product without lot
+    /// SaleReturnRestock evidence — cannot safely allocate further lot restores.
+    /// </summary>
+    public const string ExpiryReturnHistoryReconciliationGap =
+        "RMAP14_EXPIRY_RETURN_HISTORY_RECONCILIATION_GAP";
+    public const string SaleReturnBranchRequired = "pos.sale_return.branch_required";
+    public const string SaleReturnLotRestoreInsufficient =
+        "pos.sale_return.lot_restore.insufficient";
 
     public const string RegisterNotFound = "pos.register.not_found";
     public const string RegisterNameConflict = "pos.register.name.conflict";
@@ -118,6 +150,9 @@ public static class ApplicationErrorCodes
 
     public const string OperationalSetupConcurrencyConflict = "pos.operational_setup.concurrency_conflict";
     public const string TaxConfigurationNotEnabled = "pos.operational_setup.tax_configuration_not_enabled";
+
+    public const string OnboardingProgressNotFound = "pos.onboarding.progress.not_found";
+    public const string OnboardingProgressConcurrencyConflict = "pos.onboarding.progress.concurrency_conflict";
 
     public const string CatalogImportJobNotFound = "pos.catalog_import.job.not_found";
     public const string CatalogImportIdempotencyConflict = "pos.catalog_import.idempotency.conflict";
@@ -137,6 +172,7 @@ public static class ApplicationErrorCodes
     public const string CustomerOrderPartyMismatch = "pos.customer_order.party.mismatch";
     public const string CustomerOrderDeliveryUnavailable = "pos.customer_order.delivery.unavailable";
     public const string CustomerOrderOrderingUnavailable = "pos.customer_order.ordering.unavailable";
+    public const string CustomerOrderLinkedCustomerRequired = "pos.customer_order.linked_customer.required";
 }
 
 public sealed class PersistenceConflictException : Exception

@@ -167,6 +167,9 @@ internal static class PosApiResults
             or ApplicationErrorCodes.CustomerOrderOrderingUnavailable
             or ApplicationErrorCodes.CustomerOrderPartyMismatch => StatusCodes.Status403Forbidden,
 
+        ApplicationErrorCodes.PlatformAuthUnavailable
+            or ApplicationErrorCodes.CatalogImportPlatformUnavailable => StatusCodes.Status503ServiceUnavailable,
+
         ApplicationErrorCodes.ReceiptNotFound => StatusCodes.Status404NotFound,
 
         _ when errorCode.Contains("not_found", StringComparison.OrdinalIgnoreCase) => StatusCodes.Status404NotFound,

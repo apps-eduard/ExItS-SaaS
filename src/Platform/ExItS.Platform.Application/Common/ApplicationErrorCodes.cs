@@ -7,6 +7,10 @@ public static class ApplicationErrorCodes
     public const string MembershipNotFound = "application.membership.not_found";
     public const string InvitationNotFound = "application.invitation.not_found";
     public const string InvitationConflict = "application.invitation.conflict";
+    public const string InvitationRequiresAuthenticatedPersonal =
+        "application.invitation.requires_authenticated_personal";
+    public const string InvitationPersonalEmailUnverified =
+        "application.invitation.personal_email_unverified";
     public const string OwnershipTransferNotFound = "application.ownership_transfer.not_found";
     public const string OwnershipTransferConflict = "application.ownership_transfer.conflict";
     public const string TaxDocumentIssuanceNotEnabled =
@@ -163,11 +167,8 @@ public static class ApplicationErrorCodes
 
     public const string PersonalContactNotFound = "application.personal.contact.not_found";
     public const string PersonalContactEmailConflict = "application.personal.contact.email.conflict";
-    public const string PersonalContactIdentityMismatch = "application.personal.contact.identity_mismatch";
-    public const string PersonalContactSelfNotAllowed = "application.personal.contact.self_not_allowed";
-    public const string PersonalConnectionRequestNotFound = "application.personal.connection_request.not_found";
-    public const string PersonalConnectionRequestConflict = "application.personal.connection_request.conflict";
-    public const string PersonalConnectionBlocked = "application.personal.connection.blocked";
+    public const string PersonalContactLinkConflict = "application.personal.contact.link.conflict";
+    public const string PersonalContactLinkInvalid = "application.personal.contact.link.invalid";
     public const string PersonalUtangRelationshipNotFound = "application.personal.utang_relationship.not_found";
     public const string PersonalUtangUnauthorized = "application.personal.utang.unauthorized";
     public const string PersonalUtangEntryInvalid = "application.personal.utang_entry.invalid";
@@ -177,12 +178,19 @@ public static class ApplicationErrorCodes
     public const string PersonalReminderNotFound = "application.personal.reminder.not_found";
     public const string PersonalReminderRateLimited = "application.personal.reminder.rate_limited";
     public const string PersonalNotificationNotFound = "application.personal.notification.not_found";
+    public const string PersonalTodoNotFound = "application.personal.todo.not_found";
+    public const string PersonalTodoUnauthorized = "application.personal.todo.unauthorized";
 
     public const string BusinessCustomerNotFound = "application.business_customer.not_found";
     public const string CreditCustomerNotFound = "application.credit_customer.not_found";
     public const string CreditCustomerConflict = "application.credit_customer.conflict";
     public const string CustomerLinkRequestNotFound = "application.customer_link_request.not_found";
     public const string CustomerLinkRequestConflict = "application.customer_link_request.conflict";
+    public const string CustomerConnectionUnavailable = "application.customer_connection.unavailable";
+    public const string CustomerLinkReminderTooSoon = "application.customer_link_request.reminder_too_soon";
+    public const string CustomerLinkRequestNotPending = "application.customer_link_request.not_pending";
+    public const string PersonalOrganizationConnectionBlockNotFound =
+        "application.personal_organization_connection_block.not_found";
     public const string LinkedCustomerAppUserNotFound = "application.linked_customer_app_user.not_found";
     public const string OrganizationNotificationNotFound = "application.organization.notification.not_found";
 
@@ -210,7 +218,14 @@ public static class ApplicationErrorCodes
     public const string PlanDowngradeBlockedByBusinessTypeCapacity =
         "application.plan_change.business_type_capacity_blocked";
     public const string PosDeviceNotAuthorized = "application.pos_device.not_authorized";
+    /// <summary>
+    /// Endpoint is authenticated but has no active POS device registration for sales execution.
+    /// Distinct from revoked; login/management may continue.
+    /// </summary>
+    public const string PosDeviceRegistrationRequired = "application.pos_device.registration_required";
     public const string PosDeviceRevoked = "application.pos_device.revoked";
+    /// <summary>Active installation is already bound to a different branch; no silent move.</summary>
+    public const string PosDeviceBranchConflict = "application.pos_device.branch_conflict";
     public const string PosDeviceRegistrationTokenNotFound =
         "application.pos_device.registration_token.not_found";
     public const string PosDeviceRegistrationTokenExpired =

@@ -135,24 +135,140 @@ public sealed class PosDeviceRegistrationTokenTests
         Assert.Equal(ApplicationErrorCodes.QrPurposeMismatch, orgMismatch.ErrorCode);
     }
 
+    [Fact]
+    public async Task Redeem_denied_when_staff_lacks_branch_access()
+    {
+        var harness = await Harness.CreateAsync(new DenyBranchAccess());
+        var created = await harness.CreateToken.ExecuteAsync(harness.OrgA.Id, harness.OwnerA.Id);
+        Assert.True(created.IsSuccess);
+
+        var denied = await harness.RedeemToken.ExecuteAsync(
+            harness.OrgA.Id,
+            harness.StaffA.Id,
+            new RedeemPosDeviceRegistrationTokenCommand(
+                created.Value!.Token,
+                harness.BranchA.Id.Value,
+                "device-install-denied",
+                "Front counter"));
+        Assert.False(denied.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.BranchAccessDenied, denied.ErrorCode);
+
+        var token = await harness.Tokens.GetByTokenHashAsync(
+            PosDeviceRegistrationToken.HashToken(created.Value.Token));
+        Assert.NotNull(token);
+        Assert.Equal(PosDeviceRegistrationTokenStatus.Active, token!.Status);
+    }
+
+    [Fact]
+    public async Task Redeem_rejects_active_device_bound_to_other_branch_without_consuming_token()
+    {
+        var harness = await Harness.CreateAsync();
+        const string installId = "device-install-conflict";
+        await harness.Devices.AddAsync(
+            PosDevice.Register(harness.OrgA.Id, harness.BranchA.Id, installId, "Counter A", T0));
+
+        var created = await harness.CreateToken.ExecuteAsync(harness.OrgA.Id, harness.OwnerA.Id);
+        Assert.True(created.IsSuccess);
+
+        var conflict = await harness.RedeemToken.ExecuteAsync(
+            harness.OrgA.Id,
+            harness.StaffA.Id,
+            new RedeemPosDeviceRegistrationTokenCommand(
+                created.Value!.Token,
+                harness.BranchASecondary.Id.Value,
+                installId,
+                "Secondary counter"));
+        Assert.False(conflict.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.PosDeviceBranchConflict, conflict.ErrorCode);
+
+        var token = await harness.Tokens.GetByTokenHashAsync(
+            PosDeviceRegistrationToken.HashToken(created.Value.Token));
+        Assert.NotNull(token);
+        Assert.Equal(PosDeviceRegistrationTokenStatus.Active, token!.Status);
+    }
+
+    [Fact]
+    public async Task Redeem_same_branch_active_device_is_idempotent()
+    {
+        var harness = await Harness.CreateAsync();
+        const string installId = "device-install-idempotent";
+        await harness.Devices.AddAsync(
+            PosDevice.Register(harness.OrgA.Id, harness.BranchA.Id, installId, "Counter A", T0));
+
+        var created = await harness.CreateToken.ExecuteAsync(harness.OrgA.Id, harness.OwnerA.Id);
+        Assert.True(created.IsSuccess);
+
+        var redeemed = await harness.RedeemToken.ExecuteAsync(
+            harness.OrgA.Id,
+            harness.StaffA.Id,
+            new RedeemPosDeviceRegistrationTokenCommand(
+                created.Value!.Token,
+                harness.BranchA.Id.Value,
+                installId,
+                "Counter A"));
+        Assert.True(redeemed.IsSuccess);
+        Assert.Equal(installId, redeemed.Value!.InstallationDeviceId);
+
+        var token = await harness.Tokens.GetByTokenHashAsync(
+            PosDeviceRegistrationToken.HashToken(created.Value.Token));
+        Assert.NotNull(token);
+        Assert.Equal(PosDeviceRegistrationTokenStatus.Redeemed, token!.Status);
+    }
+
+    private sealed class AllowAllBranchAccess : IOrganizationBranchAccessService
+    {
+        public Task<bool> CanAccessBranchAsync(
+            PlatformUserId userId,
+            PlatformOrganizationId organizationId,
+            OrganizationBranchId branchId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(true);
+
+        public Task<IReadOnlySet<Guid>?> ResolveAccessibleActiveBranchIdsAsync(
+            PlatformUserId userId,
+            PlatformOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlySet<Guid>?>(null);
+    }
+
+    private sealed class DenyBranchAccess : IOrganizationBranchAccessService
+    {
+        public Task<bool> CanAccessBranchAsync(
+            PlatformUserId userId,
+            PlatformOrganizationId organizationId,
+            OrganizationBranchId branchId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<IReadOnlySet<Guid>?> ResolveAccessibleActiveBranchIdsAsync(
+            PlatformUserId userId,
+            PlatformOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlySet<Guid>?>(new HashSet<Guid>());
+    }
+
     private sealed class Harness
     {
         public required InMemoryPlatformUserRepository Users { get; init; }
         public required InMemoryPlatformOrganizationRepository Organizations { get; init; }
         public required InMemoryPosDeviceRegistrationTokenRepository Tokens { get; init; }
+        public required InMemoryPosDeviceRepository Devices { get; init; }
+        public required InMemoryOrganizationBranchRepository Branches { get; init; }
         public required FixedClock Clock { get; init; }
         public required CreatePosDeviceRegistrationToken CreateToken { get; init; }
         public required RedeemPosDeviceRegistrationToken RedeemToken { get; init; }
         public required PlatformOrganization OrgA { get; init; }
         public required PlatformOrganization OrgB { get; init; }
         public required OrganizationBranch BranchA { get; init; }
+        public required OrganizationBranch BranchASecondary { get; init; }
         public required OrganizationBranch BranchB { get; init; }
         public required PlatformUser OwnerA { get; init; }
         public required PlatformUser StaffA { get; init; }
         public required PlatformUser StaffB { get; init; }
 
-        public static async Task<Harness> CreateAsync()
+        public static async Task<Harness> CreateAsync(IOrganizationBranchAccessService? branchAccess = null)
         {
+            branchAccess ??= new AllowAllBranchAccess();
             var clock = new FixedClock(T0);
             var users = new InMemoryPlatformUserRepository();
             var orgs = new InMemoryPlatformOrganizationRepository();
@@ -194,8 +310,10 @@ public sealed class PosDeviceRegistrationTokenTests
             await memberships.AddAsync(OrganizationMembership.Create(orgB.Id, staffB.Id, OrganizationRole.OrganizationMember, T0));
 
             var branchA = OrganizationBranch.CreateMainBranch(orgA.Id, T0);
+            var branchASecondary = OrganizationBranch.Create(orgA.Id, "SEC", "Secondary", T0);
             var branchB = OrganizationBranch.CreateMainBranch(orgB.Id, T0);
             await branches.AddAsync(branchA);
+            await branches.AddAsync(branchASecondary);
             await branches.AddAsync(branchB);
 
             subscriptions.Register(orgA.Id);
@@ -206,14 +324,17 @@ public sealed class PosDeviceRegistrationTokenTests
                 Users = users,
                 Organizations = orgs,
                 Tokens = tokens,
+                Devices = devices,
+                Branches = branches,
                 Clock = clock,
                 CreateToken = new CreatePosDeviceRegistrationToken(
                     tokens, devices, subscriptions, plans, tokenService, uow, clock, audit),
                 RedeemToken = new RedeemPosDeviceRegistrationToken(
-                    tokens, devices, branches, memberships, subscriptions, plans, uow, clock, audit),
+                    tokens, devices, branches, memberships, branchAccess, subscriptions, plans, uow, clock, audit),
                 OrgA = orgA,
                 OrgB = orgB,
                 BranchA = branchA,
+                BranchASecondary = branchASecondary,
                 BranchB = branchB,
                 OwnerA = ownerA,
                 StaffA = staffA,
@@ -284,6 +405,12 @@ public sealed class PosDeviceRegistrationTokenTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<PosDevice>>(_items.Where(x => x.OrganizationId == organizationId).ToList());
 
+        public Task<IReadOnlyList<PosDevice>> ListActiveByOrganizationAsync(
+            PlatformOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<PosDevice>>(
+                _items.Where(x => x.OrganizationId == organizationId && x.Status == PosDeviceStatus.Active).ToList());
+
         public Task<int> CountActiveAsync(
             PlatformOrganizationId organizationId,
             CancellationToken cancellationToken = default) =>
@@ -295,7 +422,20 @@ public sealed class PosDeviceRegistrationTokenTests
             return Task.CompletedTask;
         }
 
-        public Task UpdateAsync(PosDevice device, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task UpdateAsync(PosDevice device, CancellationToken cancellationToken = default)
+        {
+            var index = _items.FindIndex(x => x.Id == device.Id);
+            if (index >= 0)
+            {
+                _items[index] = device;
+            }
+            else
+            {
+                _items.Add(device);
+            }
+
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class InMemoryOrganizationBranchRepository : IOrganizationBranchRepository

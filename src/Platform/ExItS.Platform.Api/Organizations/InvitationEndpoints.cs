@@ -1,8 +1,10 @@
+using System.Security.Claims;
 using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
+using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
 
 namespace ExItS.Platform.Api.Organizations;
@@ -221,6 +223,33 @@ internal static class InvitationEndpoints
         })
         .AllowAnonymous();
 
+        app.MapPost("/api/v1/platform/invitations/accept-as-personal", async (
+            AcceptInvitationRequest body,
+            AcceptOrganizationInvitation useCase,
+            HttpContext http,
+            CancellationToken ct) =>
+        {
+            if (!TryGetAuthenticatedUserId(http, out var userId))
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Authentication is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var result = await useCase
+                .ExecuteForAuthenticatedPersonalAsync(
+                    PlatformUserId.From(userId),
+                    body.Token ?? string.Empty,
+                    body.Password ?? string.Empty,
+                    body.DisplayName,
+                    body.FirstName,
+                    body.LastName,
+                    ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
         return app;
     }
 
@@ -260,6 +289,18 @@ internal static class InvitationEndpoints
 
         parsed = value;
         return true;
+    }
+
+    private static bool TryGetAuthenticatedUserId(HttpContext http, out Guid userId)
+    {
+        userId = Guid.Empty;
+        if (http.User.Identity?.IsAuthenticated != true)
+        {
+            return false;
+        }
+
+        var raw = http.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return Guid.TryParse(raw, out userId) && userId != Guid.Empty;
     }
 }
 

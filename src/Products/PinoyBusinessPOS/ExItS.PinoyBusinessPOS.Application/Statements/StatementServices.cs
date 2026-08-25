@@ -16,6 +16,7 @@ public sealed class CustomerStatementService : ICustomerStatementService
     private readonly IUtangLedgerQuery _ledger;
     private readonly ICreditEntryRepository _credits;
     private readonly IRepaymentRepository _repayments;
+    private readonly IWriteOffRepository _writeOffs;
     private readonly IOutstandingBalanceService _outstanding;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly IClock _clock;
@@ -25,6 +26,7 @@ public sealed class CustomerStatementService : ICustomerStatementService
         IUtangLedgerQuery ledger,
         ICreditEntryRepository credits,
         IRepaymentRepository repayments,
+        IWriteOffRepository writeOffs,
         IOutstandingBalanceService outstanding,
         IPosCommercialAccessAccessor access,
         IClock clock)
@@ -33,6 +35,7 @@ public sealed class CustomerStatementService : ICustomerStatementService
         _ledger = ledger;
         _credits = credits;
         _repayments = repayments;
+        _writeOffs = writeOffs;
         _outstanding = outstanding;
         _access = access;
         _clock = clock;
@@ -94,9 +97,12 @@ public sealed class CustomerStatementService : ICustomerStatementService
         var activeRepaymentTotal = await _repayments
             .SumActiveAmountAsync(organizationId, customer.Id, cancellationToken)
             .ConfigureAwait(false);
+        var activeWriteOffTotal = await _writeOffs
+            .SumActiveAmountAsync(organizationId, customer.Id, cancellationToken)
+            .ConfigureAwait(false);
         var aged = CreditFifoAging.AgeCredits(
             credits,
-            activeRepaymentTotal,
+            activeRepaymentTotal + activeWriteOffTotal,
             CreditFifoAging.EffectiveBusinessDateUtc(_clock.UtcNow));
         var agedById = aged.ToDictionary(a => a.CreditEntryId);
 
@@ -104,13 +110,17 @@ public sealed class CustomerStatementService : ICustomerStatementService
         var lines = new List<CustomerStatementLineDto>(periodEntries.Count);
         decimal periodCredit = 0m;
         decimal periodRepayment = 0m;
+        decimal periodWriteOff = 0m;
         decimal periodRevCredit = 0m;
         decimal periodRevRepayment = 0m;
+        decimal periodRevWriteOff = 0m;
 
         foreach (var entry in periodEntries)
         {
             running += entry.SignedEffect;
             var isCredit = string.Equals(entry.EntryType, "Credit", StringComparison.OrdinalIgnoreCase);
+            var isRepayment = string.Equals(entry.EntryType, "Repayment", StringComparison.OrdinalIgnoreCase);
+            var isWriteOff = string.Equals(entry.EntryType, "WriteOff", StringComparison.OrdinalIgnoreCase);
             var isReversed = string.Equals(entry.Status, "Reversed", StringComparison.OrdinalIgnoreCase);
 
             if (isCredit)
@@ -124,7 +134,7 @@ public sealed class CustomerStatementService : ICustomerStatementService
                     periodCredit += entry.Amount;
                 }
             }
-            else
+            else if (isRepayment)
             {
                 if (isReversed)
                 {
@@ -133,6 +143,17 @@ public sealed class CustomerStatementService : ICustomerStatementService
                 else
                 {
                     periodRepayment += entry.Amount;
+                }
+            }
+            else if (isWriteOff)
+            {
+                if (isReversed)
+                {
+                    periodRevWriteOff += entry.Amount;
+                }
+                else
+                {
+                    periodWriteOff += entry.Amount;
                 }
             }
 
@@ -201,7 +222,9 @@ public sealed class CustomerStatementService : ICustomerStatementService
             _clock.UtcNow,
             string.IsNullOrWhiteSpace(currencyCode) ? "PHP" : currencyCode,
             string.IsNullOrWhiteSpace(cultureName) ? CultureInfo.CurrentCulture.Name : cultureName,
-            lines));
+            lines,
+            periodWriteOff,
+            periodRevWriteOff));
     }
 }
 

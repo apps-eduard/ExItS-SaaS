@@ -629,7 +629,6 @@ public sealed class InventoryTransferUseCaseTests
         public Task<(int ExpiredCount, int NearExpiryCount)> CountExpiryAsync(
             PosOrganizationId organizationId,
             DateOnly today,
-            int warningDays,
             CancellationToken cancellationToken = default) =>
             Task.FromResult((0, 0));
 

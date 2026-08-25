@@ -46,7 +46,7 @@ Flow:
 | Cart | In-memory MAUI session cart (cleared after successful place / leaving merchant) |
 | Quantity UX | Connected PO stepper: unadded `[+]` only (no qty 0); first `+` ⇒ qty 1 then `[−][+] ` + Added · Qty; `−` at qty 1 removes; same `ProductId` never duplicates; out-of-stock / at-cap tracked `+` disabled; untracked has no fake max; retail `SellingPrice` |
 | Fulfillment | Auto-select first eligible Active branch. One eligible branch ⇒ read-only branch text, never a blank dropdown. Selector only when more than one eligible branch. Pickup-only / Delivery-only ⇒ read-only mode; both ⇒ Pickup/Delivery toggle (default Pickup) |
-| Payment | Manual V1 only: Cash (default), GCash → `ManualGCash`, Utang. `PaymentStatus` stays Unpaid on submit. No gateway/`PaymentAttempt`. No automatic Utang debt/ledger posting |
+| Payment | Manual V1 only: Cash (default), GCash → `ManualGCash`, Utang. `PaymentStatus` stays Unpaid on submit. No gateway/`PaymentAttempt`. Utang is **not** charged at submit; Personal Utang debt posts once at seller **Completed** via the canonical Product-Based Utang sale + credit path (idempotent; rejected/cancelled-before-completion create no debt) |
 | Quote / place | Server-authoritative price, delivery quote, and revalidation on place |
 | Offline | Online-only storefront/place; compact offline alert; no offline customer-order queue |
 | After place | Navigate to Personal order history/detail (`/personal/orders/{id}`); Personal and seller detail show payment method + Unpaid status without implying collection |

@@ -362,7 +362,8 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("@layout Layout.AuthShell", accept, StringComparison.Ordinal);
         Assert.Contains("StoreHeaderBack", accept, StringComparison.Ordinal);
         Assert.Contains("pos-personal-invitation-accept__header", accept, StringComparison.Ordinal);
-        Assert.DoesNotContain("PageHeader", accept, StringComparison.Ordinal);
+        Assert.Contains("AcceptOrganizationInvitationAsPersonalAsync", accept, StringComparison.Ordinal);
+        Assert.Contains("ICurrentUserContext", accept, StringComparison.Ordinal);
 
         var profile = File.ReadAllText(Path.Combine(PersonalPagesDirectory(), "PersonalProfile.razor"));
         Assert.Contains("pos-personal-profile__header", profile, StringComparison.Ordinal);
@@ -401,6 +402,7 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("/api/v1/personal/utang/relationships/lent", client, StringComparison.Ordinal);
         Assert.Contains("/api/v1/personal/utang/relationships/borrowed", client, StringComparison.Ordinal);
         Assert.Contains("/api/v1/personal/utang/invitations/accept", client, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/platform/auth/organization-invitations/accept-as-personal", client, StringComparison.Ordinal);
         Assert.Contains("/api/v1/personal/utang/invitations/decline", client, StringComparison.Ordinal);
         Assert.Contains("/api/v1/personal/linked-merchants", client, StringComparison.Ordinal);
         Assert.Contains("/api/v1/personal/reward-points/balance", client, StringComparison.Ordinal);

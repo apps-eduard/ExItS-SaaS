@@ -1050,8 +1050,8 @@ public sealed class OperationalReportService(
             shift.ExpectedCashAmountSnapshot,
             shift.CashVarianceAmount,
             shift.Status == CashierShiftStatus.Closed
-                ? CashCountModes.ClosingState(shift.EffectiveCashCountMode, shift.ClosingCashAmount)
-                : CashCountModes.OpeningState(shift.EffectiveCashCountMode, shift.OpeningCashCounted),
+                ? CashCountModes.ClosingState(shift.EffectiveClosingCashCountMode, shift.ClosingCashAmount)
+                : CashCountModes.OpeningState(shift.EffectiveOpeningCashCountMode, shift.OpeningCashCounted),
             totals.NetCashSales,
             totals.CashRefundsTotal);
 

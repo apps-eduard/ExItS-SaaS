@@ -4,25 +4,19 @@ Program name: `ExItS Mobile React / PWA / Capacitor` (documentation-only plannin
 
 Target worktree branch: `docs/mobile-react-foundation`
 
-Baseline origin/main SHA: `5979a9ce008bb24a3257abd28ae79bc1a5a9b569`
+Baseline origin/main SHA: `5a9be9417b7a2217227ae93e9280102992861615`
 
 Documentation: `FINAL APPROVED` (DOC-00 … DOC-08; AMEND-01, AMEND-02, AMEND-03)
 
-React implementation: `Gate C COMPLETE` (MOBILE-REACT-IMPL-01 / IMPL-01A)
+React implementation: `RECOVERY COMPLETE THROUGH POS-REACT-IMPL-05 ON feat/pos-react-client; WP06 CHECKOUT REQUIRES SEPARATE AUTHORIZATION`
 
-PWA implementation: `Gate D FOUNDATION AUTHORIZED + COMPLETE` (MOBILE-REACT-IMPL-02)
-
-Browser session auth unblock: `MOBILE-REACT-IMPL-03A COMPLETE` (same-origin `/platform-api` + Local Validation HTTP cookie). IMPL-03 workspace UI is **not** complete.
-
-Product shell visual correction: `MOBILE-REACT-IMPL-02A COMPLETE` (demo/foundation copy removed from product routes; commercial chrome).
-
-PWA production rollout: `NOT AUTHORIZED`
+PWA implementation: `PHASE A STATIC SHELL + BROWSER SESSION + CATALOG/CART ON feat/pos-react-client; production rollout NOT AUTHORIZED`
 
 Capacitor implementation: `NOT AUTHORIZED`
 
 MAUI retirement: `NOT AUTHORIZED`
 
-Merge: `PERFORMED` (`MOBILE-REACT-DOC-MERGE-01`)
+Merge: `PERFORMED` (`MOBILE-REACT-DOC-MERGE-01`) — implementation branch is **not** merged to `main`
 
 Existing MAUI status: `Retained / Unmodified`
 
@@ -30,19 +24,45 @@ Existing Organization Web status: `Retained / Unmodified`
 
 Existing Personal Web status: `Retained / Unmodified`
 
-Existing .NET backends (Platform API + POS API + PostgreSQL): `Platform API session-cookie Secure policy aligned with Local Validation HTTP only; CORS unchanged`
+Existing .NET backends (Platform API + POS API + PostgreSQL): `Retained / Unmodified`
 
-Future React / PWA / Capacitor status: `Gate C complete; Gate D PWA foundation complete; IMPL-02A product shell complete; IMPL-03A browser auth foundation complete; IMPL-03 not complete; PWA production rollout and Capacitor locked`
+Future React / PWA / Capacitor status: `Gate C–E partial (scaffold, PWA, session, sell floor, catalog/cart) on feat/pos-react-client; cash checkout not started; not on main`
 
-React implementation presence: `Present` (`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/` — product shell + PWA static shell + same-origin cookie Sign In)
+React implementation presence: `Present` (foundation + static PWA + browser session/workspace + sell floor + catalog/session cart)
 
 Capacitor implementation presence: `Absent`
 
-PWA production presence: `Absent` (installable static-shell foundation only; production rollout not authorized)
+PWA production presence: `Absent`
 
-Queue state: `STOPPED AFTER MOBILE-REACT-IMPL-02A`
+Queue state: `HARD STOP AFTER WP06 READINESS AUDIT` (IMPL-06 not started)
+
+Implementation-readiness documentation queue: `STOPPED AFTER POS-REACT-READINESS-05`
+
+Readiness branch: `docs/pos-react-implementation-readiness`
+
+Readiness evidence SHA: `5979a9ce008bb24a3257abd28ae79bc1a5a9b569`
+
+Implementation branch: `feat/pos-react-client` (starts at readiness tip `0954c1d11e5b9130f8411afb3f086c7e116d76ff`)
+
+Gate C scaffold (`POS-REACT-IMPL-01`): `COMPLETE` on `feat/pos-react-client`
+
+Gate D Phase A PWA shell (`POS-REACT-IMPL-02`): `COMPLETE` on `feat/pos-react-client`
+
+Gate D browser auth / workspace (`POS-REACT-IMPL-03`): `COMPLETE` on `feat/pos-react-client`
+
+Gate D sell-floor shell (`POS-REACT-IMPL-04`): `COMPLETE` on `feat/pos-react-client`
+
+Gate D catalog search + session cart (`POS-REACT-IMPL-05`): `COMPLETE` on `feat/pos-react-client`
+
+Gate E cash checkout (`POS-REACT-IMPL-06`): `NOT STARTED` — `POS_REACT_WP06_BASELINE_READY=YES` (audit only)
 
 MOBILE-D-060: `OPEN`
+
+PWEB20_CSRF_COMPATIBILITY_REVIEW_REQUIRED: `SATISFIED FOR POS REACT CLIENT` (PWEB-20 contract applied; Platform Admin Web source not changed)
+
+PLM_PWA_PATTERN_REVIEW_REQUIRED: `SATISFIED FOR ENGINEERING PATTERNS`
+
+TYPED_CLIENT_GENERATION_CONTRACT_MISSING: `OPEN` (hand-typed Platform DTOs + validation)
 
 ## DOC queue
 
@@ -62,25 +82,31 @@ MOBILE-D-060: `OPEN`
 | MOBILE-REACT-DOC-AMEND-03 | Approved | Smart workspace + product context; AppTopBar shared context |
 | Product Owner approval | Recorded | [MOBILE-REACT-DOC-APPROVAL-record.md](Reports/MOBILE-REACT-DOC-APPROVAL-record.md) |
 | MOBILE-REACT-DOC-MERGE-01 | Complete | Approved planning baseline merged to `main` |
-| MOBILE-REACT-IMPL-01 | Complete | Gate C React Mobile Client foundation (shell, theme, i18n, HTTP stubs, diagnostics) |
-| MOBILE-REACT-IMPL-01A | Complete | Diagnostics/connectivity correction: no fabricated Online; Copy Diagnostics allowlist-safe |
-| MOBILE-REACT-IMPL-02 | Complete | Gate D PWA static shell foundation (manifest, prompt SW, no API/financial cache) |
-| MOBILE-REACT-IMPL-02A | Complete | Product shell visual correction; demo/foundation copy removed from product routes |
-| MOBILE-REACT-IMPL-03 | Blocked | Online auth + smart workspace — workspace UI not complete |
-| MOBILE-REACT-IMPL-03A | Complete | Browser same-origin `/platform-api` proxy + Local Validation HTTP cookie; no workspace UI |
+| POS-REACT-READINESS-01 | Complete | Current MAUI implementation refresh vs `5979a9ce` |
+| POS-REACT-READINESS-02 | Complete | Feature parity + UX migration matrix |
+| POS-REACT-READINESS-03 | Complete | API + auth + browser security readiness |
+| POS-REACT-READINESS-04 | Complete | PWA / offline / device migration sequence |
+| POS-REACT-READINESS-05 | Complete | Master plan + open decisions; implementation still unauthorized |
+| POS-REACT-IMPL-01 | Complete on `feat/pos-react-client` | React client scaffold; report [POS-REACT-IMPL-01-react-client-scaffold.md](Reports/POS-REACT-IMPL-01-react-client-scaffold.md) |
+| POS-REACT-IMPL-02 | Complete on `feat/pos-react-client` | PWA static shell (Phase A); report [POS-REACT-IMPL-02-pwa-static-shell.md](Reports/POS-REACT-IMPL-02-pwa-static-shell.md) |
+| POS-REACT-IMPL-03 | Complete on `feat/pos-react-client` | Browser session + workspace resolver; report [POS-REACT-IMPL-03-browser-session-workspace.md](Reports/POS-REACT-IMPL-03-browser-session-workspace.md) |
+| POS-REACT-IMPL-04 | Complete on `feat/pos-react-client` | POS sell-floor shell; report [POS-REACT-IMPL-04-sell-floor-shell.md](Reports/POS-REACT-IMPL-04-sell-floor-shell.md) |
+| POS-REACT-IMPL-05 | Complete on `feat/pos-react-client` | Catalog search + session cart; report [POS-REACT-IMPL-05-catalog-session-cart.md](Reports/POS-REACT-IMPL-05-catalog-session-cart.md) |
+| POS-REACT-WP06 readiness | Audit only — `POS_REACT_WP06_BASELINE_READY=YES` | [POS-REACT-WP06-baseline-readiness-audit.md](Reports/POS-REACT-WP06-baseline-readiness-audit.md); IMPL-06 **not** started |
 
 ## Authorization gates (locked)
 
+The table below remains the `main` planning-baseline lock for Capacitor / MAUI retirement / merge. Recovery delivered **POS-REACT-IMPL-03 → 05** on `feat/pos-react-client`. WP06 checkout requires a **new explicit authorization**. Do not merge to `main`.
+
 | Gate | Status |
 |---|---|
-| React mobile implementation | **Gate C COMPLETE** (IMPL-01 / IMPL-01A) |
-| PWA foundation (Gate D) | **AUTHORIZED + COMPLETE** (IMPL-02) |
-| PWA implementation / production rollout | **NOT AUTHORIZED** |
+| React mobile implementation | **PARTIAL** — Gate C–E partial (through catalog/cart) on `feat/pos-react-client`; cash checkout not started; not on `main` |
+| PWA implementation / production rollout | **NOT AUTHORIZED** for production; Gate D Phase A static shell is complete on `feat/pos-react-client` |
 | Capacitor implementation / production rollout | **NOT AUTHORIZED** |
 | MAUI retirement | **NOT AUTHORIZED** |
-| Merge to `main` | **PERFORMED** (`MOBILE-REACT-DOC-MERGE-01`) — does **not** authorize PWA production rollout, Capacitor, or MAUI retirement |
-| Gate E+ | **NOT AUTHORIZED** |
+| Merge to `main` | **NOT AUTHORIZED** for this implementation branch |
+| Merge of `docs/pos-react-implementation-readiness` | **NOT AUTHORIZED** |
 
-Do not add Capacitor, PIN, workspace chooser, selling, LocalStore/outbox, or MAUI changes in this package.
+Do not add Capacitor and do not modify MAUI in this queue.
 
-MOBILE-D-060 remains **Open**. Do not rewrite [DOC-08 closeout](Reports/MOBILE-REACT-DOC-08-final-closeout.md) as if it originally contained AMEND decisions or this implementation.
+MOBILE-D-060 remains **Open**. Do not rewrite [DOC-08 closeout](Reports/MOBILE-REACT-DOC-08-final-closeout.md) as if it originally contained AMEND decisions or this merge.

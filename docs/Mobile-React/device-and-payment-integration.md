@@ -61,9 +61,28 @@ Product requirements explicitly **defer** cash-drawer hardware, direct GCash API
 | Concept | What it is | What it is not |
 |---|---|---|
 | **Register** | Named org sales station (`REG-NNNNNN`) | Hardware, printer, drawer, payment terminal |
-| **PosDevice** | Platform-registered installation (`InstallationDeviceId`) with QR redeem / authorize | Bluetooth MAC, USB VID/PID, NFC chip |
+| **PosDevice** | Platform-registered POS endpoint (durable `InstallationDeviceId`). Customer Device Management lists **Active** devices only. Capacity = count(Active). Revoke/Remove is soft-state (record retained + audit); revoked devices leave the normal UI and free a slot. Browser/OS strings are metadata only. | Bluetooth MAC, USB VID/PID, NFC chip; browser name as the subscription unit |
 | **CashierShift / cash drawer movement** | Logical cash authority and recorded movements | Solenoid / printer-kick hardware |
 | **DeviceIdentity adapter (future)** | Install id + host labels for registration and LocalStore context | Proof of payment or entitlement |
+
+### 0.5 Canonical POS device management rules (React + Platform)
+
+1. Device capacity counts **ACTIVE** POS devices only.
+2. Normal Device Management shows **ACTIVE** devices only (`GET .../pos-devices`).
+3. Revoked devices disappear from the normal customer UI immediately after Remove/Revoke.
+4. Revocation is soft-state (`PosDeviceStatus.Revoked`) — **not** physical deletion.
+5. Revoked rows remain in the database for audit/history (`RevokedAtUtc` / `RevokedByUserId` + Platform audit events).
+6. Immutable audit history uses Platform audit actions (`platform.pos_device.registered` / `.revoked` / rename). Reactivation may clear current-state revoke fields; audit events must still retain history.
+7. Browser/client information is device metadata, not the subscription-count identity.
+8. Login and POS-device authorization remain separate concepts.
+9. Only registered **active** devices may execute POS sales (see device registration simplification / sales execution gate).
+10. Registration-code UX is not part of the normal React customer flow; MAUI may still use token APIs for compatibility.
+11. Governing/support history including revoked devices: `GET .../pos-devices/history` (edit-org authority).
+12. Login may succeed from any permitted endpoint without consuming a device slot.
+13. Unregistered endpoints may use authorized read/management surfaces; POS money execution is blocked client-side and server-side (`application.pos_device.registration_required`).
+14. React primary action is **Register this device** (`POST .../pos-devices/register`); do not auto-register on login.
+15. Capacity-consuming registration (register + MAUI redeem) runs under organization advisory lock so concurrent final-slot races cannot over-allocate Active devices.
+16. Web cannot expose permanent physical hardware identity across browsers; durable `InstallationDeviceId` is the registration identity (documented limitation).
 
 ---
 

@@ -98,7 +98,8 @@ public sealed class OrganizationOwnerManagementMatrixTests
             ]
         };
 
-        Assert.True(shell.IsOrgManager);
+        Assert.True(shell.HasOrganizationManagementAuthority);
+        Assert.True(shell.IsOrganizationAdministrator);
         Assert.True(shell.CanSee("overview"));
         Assert.True(shell.CanSee("branches"));
         Assert.True(shell.CanSee("staff"));
@@ -125,6 +126,25 @@ public sealed class OrganizationOwnerManagementMatrixTests
     }
 
     [Fact]
+    public void StoreManager_with_ordinary_membership_cannot_access_org_web()
+    {
+        var shell = new OrgWebShellState
+        {
+            MembershipRole = "OrganizationMember",
+            PosRole = PosRoleCodes.StoreManager,
+            AllowedCapabilities =
+            [
+                nameof(UtangCapability.CreateSale),
+                nameof(UtangCapability.ViewDashboard),
+                nameof(UtangCapability.ManageInventory)
+            ]
+        };
+
+        Assert.True(shell.IsPosOperationsManager);
+        Assert.False(shell.CanAccessOrganizationWeb);
+    }
+
+    [Fact]
     public void MultiOrgEffectiveAuthorization_recomputes_per_membership()
     {
         var ownerOrg = OwnerShell();
@@ -136,6 +156,9 @@ public sealed class OrganizationOwnerManagementMatrixTests
             PosRole = PosRoleCodes.StoreManager,
             AllowedCapabilities = [nameof(UtangCapability.ViewDashboard)]
         };
+        // Admin membership allows Org Web; POS StoreManager alone would not.
+        Assert.True(managerOrg.HasOrganizationManagementAuthority);
+        Assert.True(managerOrg.IsPosOperationsManager);
         Assert.True(managerOrg.CanAccessOrganizationWeb);
         Assert.False(managerOrg.CanSee("ownership-transfer"));
 

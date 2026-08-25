@@ -44,6 +44,9 @@ public static class DomainErrorCodes
     public const string HomeOrganizationImmutable = "platform.user.home_organization.immutable";
     public const string HomeOrganizationRequired = "platform.user.home_organization.required";
     public const string StaffOrganizationSwitchDenied = "platform.user.staff_organization_switch_denied";
+    public const string PersonLinkStaffRequired = "platform.user.person_link.staff_required";
+    public const string PersonLinkImmutable = "platform.user.person_link.immutable";
+    public const string PersonLinkSelfDenied = "platform.user.person_link.self_denied";
     public const string InvalidOrganizationSlug = "platform.organization.slug.invalid";
     public const string PrimaryBusinessTypeImmutable = "platform.organization.primary_business_type.immutable";
     public const string DuplicateBusinessTypeGrant = "platform.plan_version.business_type_grant.duplicate";
@@ -178,6 +181,7 @@ public static class DomainErrorCodes
     public const string InvalidPersonalDebtRelationship = "platform.personal.debt_relationship.invalid";
     public const string InvalidPersonalUtangEntryId = "platform.personal.utang_entry.id.invalid";
     public const string InvalidPersonalUtangEntryType = "platform.personal.utang_entry.type.invalid";
+    public const string PersonalUtangEntryInvalid = "platform.personal.utang_entry.invalid";
     public const string PersonalUtangAmountInvalid = "platform.personal.utang.amount.invalid";
     public const string PersonalUtangUnauthorized = "platform.personal.utang.unauthorized";
     public const string PersonalUtangConcurrencyConflict = "platform.personal.utang.concurrency_conflict";
@@ -206,6 +210,13 @@ public static class DomainErrorCodes
     public const string PersonalReminderRateLimited = "platform.personal.reminder.rate_limited";
     public const string PersonalReminderUnauthorized = "platform.personal.reminder.unauthorized";
 
+    public const string InvalidPersonalTodoId = "platform.personal.todo.id.invalid";
+    public const string InvalidPersonalTodo = "platform.personal.todo.invalid";
+    public const string InvalidPersonalTodoTitle = "platform.personal.todo.title.invalid";
+    public const string InvalidPersonalTodoStatusTransition = "platform.personal.todo.status.invalid_transition";
+    public const string PersonalTodoUnauthorized = "platform.personal.todo.unauthorized";
+    public const string PersonalTodoConcurrencyConflict = "platform.personal.todo.concurrency_conflict";
+
     public const string InvalidPersonalNotificationId = "platform.personal.notification.id.invalid";
 
     public const string InvalidBusinessCustomerId = "platform.business_customer.id.invalid";
@@ -222,6 +233,11 @@ public static class DomainErrorCodes
     public const string InvalidCustomerLinkRequestToken = "platform.customer_link_request.token.invalid";
     public const string CustomerLinkRequestEmailMismatch = "platform.customer_link_request.email_mismatch";
     public const string CustomerLinkRequestTargetMismatch = "platform.customer_link_request.target_mismatch";
+    public const string CustomerLinkReminderTooSoon = "platform.customer_link_request.reminder_too_soon";
+    public const string CustomerLinkRequestNotPending = "platform.customer_link_request.not_pending";
+    public const string CustomerConnectionUnavailable = "platform.customer_connection.unavailable";
+    public const string InvalidPersonalOrganizationConnectionBlockId =
+        "platform.personal_organization_connection_block.id.invalid";
     public const string InvalidLinkedCustomerAppUserId = "platform.linked_customer_app_user.id.invalid";
     public const string InvalidOrganizationNotificationId = "platform.organization.notification.id.invalid";
     public const string CustomerToStaffConversionDenied = "platform.customer.staff_conversion_denied";

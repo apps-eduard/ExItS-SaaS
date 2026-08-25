@@ -1,7 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/session/SessionProvider", () => ({
+  useSession: () => ({
+    session: { userId: "me", displayName: "Me" },
+    signOut: async () => ({ ok: true as const, nextRoute: "/sign-in" }),
+  }),
+}));
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { createMemoryRouter, RouterProvider } from "react-router-dom";
+import { createMemoryRouter, Outlet, RouterProvider } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import { AddLocalPersonPage } from "@/features/personal/AddLocalPersonPage";
 import { AddPersonPage } from "@/features/personal/AddPersonPage";
@@ -9,7 +16,6 @@ import { InvitationsPage } from "@/features/personal/InvitationsPage";
 import { NotificationsPage } from "@/features/personal/NotificationsPage";
 import { PeoplePage } from "@/features/personal/PeoplePage";
 import { PersonDetailPage } from "@/features/personal/PersonDetailPage";
-import { PersonalShell } from "@/features/personal/PersonalShell";
 import { buildPeopleRows, deriveConnectionStatus } from "@/features/personal/people-status";
 import type {
   PersonalConnectionRequestDto,
@@ -61,6 +67,10 @@ function jsonResponse(status: number, body: unknown) {
   };
 }
 
+function TestPersonalShell() {
+  return <Outlet />;
+}
+
 function renderPeopleApp(path: string) {
   const router = createMemoryRouter(
     [
@@ -70,7 +80,7 @@ function renderPeopleApp(path: string) {
       },
       {
         path: "/personal",
-        element: <PersonalShell />,
+        element: <TestPersonalShell />,
         children: [
           { path: "people", element: <PeoplePage /> },
           { path: "people/add/local", element: <AddLocalPersonPage /> },
@@ -137,7 +147,7 @@ describe("People lifecycle UX", () => {
     expect(await screen.findByText("How to add")).toBeInTheDocument();
     expect(screen.getByText("Without ExItS ID")).toBeInTheDocument();
     expect(screen.getByText("With ExItS Personal ID")).toBeInTheDocument();
-    expect(screen.getByText(/0 linked with ExItS ID · 0 without ExItS ID/)).toBeInTheDocument();
+    expect(screen.getByText(/0 with ExItS ID · 0 local only/)).toBeInTheDocument();
   });
 
   it("opens people info dialog from info button", async () => {

@@ -90,6 +90,23 @@ internal sealed class UtangLedgerQuery : IUtangLedgerQuery
                     r.reversed_by
                 FROM pos.repayments r
                 WHERE r.organization_id = @org AND r.customer_id = @customer
+                UNION ALL
+                SELECT
+                    w.id,
+                    'WriteOff'::text AS entry_type,
+                    w.organization_id,
+                    w.customer_id,
+                    w.amount,
+                    CASE WHEN w.status = 'Active' THEN -w.amount ELSE 0 END AS signed_effect,
+                    w.reason AS remarks,
+                    w.status,
+                    w.recorded_at_utc,
+                    w.recorded_by,
+                    w.reversed_at_utc,
+                    w.reversal_reason,
+                    w.reversed_by
+                FROM pos.write_offs w
+                WHERE w.organization_id = @org AND w.customer_id = @customer
             ) ledger
             ORDER BY recorded_at_utc ASC, id ASC
             """;

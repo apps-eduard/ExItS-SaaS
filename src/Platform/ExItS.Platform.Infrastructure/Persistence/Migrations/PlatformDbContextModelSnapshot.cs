@@ -2621,6 +2621,10 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("last_name");
 
+                    b.Property<Guid?>("LinkedPersonalUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("linked_personal_user_id");
+
                     b.Property<string>("NormalizedContactEmail")
                         .HasMaxLength(320)
                         .HasColumnType("character varying(320)")
@@ -2689,6 +2693,9 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                     b.HasIndex("HomeOrganizationId")
                         .HasDatabaseName("ix_platform_users_home_organization_id");
 
+                    b.HasIndex("LinkedPersonalUserId")
+                        .HasDatabaseName("ix_platform_users_linked_personal_user_id");
+
                     b.HasIndex("NormalizedContactEmail")
                         .HasDatabaseName("ix_platform_users_normalized_contact_email");
 
@@ -2710,7 +2717,10 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_platform_users_staff_number")
                         .HasFilter("staff_number IS NOT NULL");
 
-                    b.ToTable("platform_users", "platform");
+                    b.ToTable("platform_users", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_platform_users_linked_personal_staff_only", "linked_personal_user_id IS NULL OR (home_organization_id IS NOT NULL AND linked_personal_user_id <> id)");
+                        });
                 });
 
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.OrganizationComplianceProfileRecord", b =>
@@ -3184,6 +3194,10 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("invited_by_user_id");
 
+                    b.Property<DateTimeOffset?>("LastRemindedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_reminded_at_utc");
+
                     b.Property<string>("NormalizedEmail")
                         .IsRequired()
                         .HasMaxLength(320)
@@ -3193,6 +3207,12 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uuid")
                         .HasColumnName("organization_id");
+
+                    b.Property<int>("ReminderCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("reminder_count");
 
                     b.Property<DateTimeOffset?>("RevokedAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -3841,6 +3861,64 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_organization_ownership_transfers_to_user_status");
 
                     b.ToTable("organization_ownership_transfers", "platform");
+                });
+
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Organizations.PersonalOrganizationConnectionBlockRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("BlockedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("blocked_at_utc");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("PersonalUserIdentityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("personal_user_identity_id");
+
+                    b.Property<Guid?>("SourceCustomerLinkRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_customer_link_request_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("UnblockedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("unblocked_at_utc");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("PersonalUserIdentityId")
+                        .HasDatabaseName("ix_personal_org_connection_blocks_personal_active")
+                        .HasFilter("status = 'Active'");
+
+                    b.HasIndex("PersonalUserIdentityId", "OrganizationId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_personal_org_connection_blocks_pair");
+
+                    b.ToTable("personal_organization_connection_blocks", "platform");
                 });
 
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Organizations.PlatformOrganizationRecord", b =>
@@ -5141,6 +5219,102 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                     b.ToTable("personal_reward_transactions", "platform");
                 });
 
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Personal.PersonalTodoRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at_utc");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateTimeOffset?>("DueAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("due_at_utc");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid>("OwnerUserIdentityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_user_identity_id");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("priority");
+
+                    b.Property<Guid?>("RelatedEntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("related_entity_id");
+
+                    b.Property<string>("RelatedEntityType")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("related_entity_type");
+
+                    b.Property<DateTimeOffset?>("ReminderAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reminder_at_utc");
+
+                    b.Property<DateTimeOffset?>("ReminderNotifiedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reminder_notified_at_utc");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerUserIdentityId")
+                        .HasDatabaseName("ix_personal_todos_owner_user_identity_id");
+
+                    b.HasIndex("OwnerUserIdentityId", "DueAtUtc")
+                        .HasDatabaseName("ix_personal_todos_owner_due");
+
+                    b.HasIndex("OwnerUserIdentityId", "Status")
+                        .HasDatabaseName("ix_personal_todos_owner_status");
+
+                    b.HasIndex("Status", "ReminderAtUtc")
+                        .HasDatabaseName("ix_personal_todos_status_reminder")
+                        .HasFilter("reminder_at_utc IS NOT NULL AND reminder_notified_at_utc IS NULL");
+
+                    b.ToTable("personal_todos", "platform");
+                });
+
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Personal.PersonalUtangEntryRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5164,6 +5338,11 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by_user_identity_id");
 
+                    b.Property<string>("DisputeReason")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("dispute_reason");
+
                     b.Property<DateTimeOffset?>("DueDateUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("due_date_utc");
@@ -5183,15 +5362,33 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("relationship_id");
 
+                    b.Property<DateTimeOffset?>("ResolvedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at_utc");
+
+                    b.Property<Guid?>("ResolvedByUserIdentityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resolved_by_user_identity_id");
+
                     b.Property<decimal>("SignedDelta")
                         .HasColumnType("decimal(18,4)")
                         .HasColumnName("signed_delta");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserIdentityId");
 
                     b.HasIndex("RelationshipId");
+
+                    b.HasIndex("ResolvedByUserIdentityId");
+
+                    b.HasIndex("RelationshipId", "Status");
 
                     b.ToTable("personal_utang_entries", "platform", t =>
                         {
@@ -6233,6 +6430,15 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Identity.PlatformUserRecord", b =>
+                {
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Identity.PlatformUserRecord", null)
+                        .WithMany()
+                        .HasForeignKey("LinkedPersonalUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_platform_users_linked_personal_user");
+                });
+
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.OrganizationComplianceProfileRecord", b =>
                 {
                     b.HasOne("ExItS.Platform.Infrastructure.Persistence.Organizations.PlatformOrganizationRecord", null)
@@ -6478,6 +6684,21 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Organizations.PersonalOrganizationConnectionBlockRecord", b =>
+                {
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Organizations.PlatformOrganizationRecord", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Identity.PlatformUserRecord", null)
+                        .WithMany()
+                        .HasForeignKey("PersonalUserIdentityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Organizations.PlatformOrganizationRecord", b =>
                 {
                     b.HasOne("ExItS.Platform.Infrastructure.Persistence.GlobalCatalog.BusinessTypeRecord", null)
@@ -6715,6 +6936,15 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Personal.PersonalTodoRecord", b =>
+                {
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Identity.PlatformUserRecord", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerUserIdentityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Personal.PersonalUtangEntryRecord", b =>
                 {
                     b.HasOne("ExItS.Platform.Infrastructure.Persistence.Identity.PlatformUserRecord", null)
@@ -6728,6 +6958,11 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("RelationshipId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Identity.PlatformUserRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ResolvedByUserIdentityId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Personal.PersonalUtangInvitationRecord", b =>

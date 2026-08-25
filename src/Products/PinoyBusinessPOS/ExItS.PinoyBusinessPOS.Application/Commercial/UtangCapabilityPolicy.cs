@@ -11,12 +11,17 @@ public static class PosFeatureCodes
     public const string StoreSalesView = "store-sales-view";
     public const string StoreSalesCreate = "store-sales-create";
     public const string StoreSalesVoid = "store-sales-void";
+    public const string StoreSalesApplyCommercialDiscount = "store-sales-apply-commercial-discount";
+    public const string StoreSalesOverridePrice = "store-sales-override-price";
+    public const string StoreSalesOverridePriceUnlimited = "store-sales-override-price-unlimited";
     public const string StoreInventoryView = "store-inventory-view";
     public const string StoreInventoryManage = "store-inventory-manage";
     public const string StoreExpensesView = "store-expenses-view";
     public const string StoreExpensesManage = "store-expenses-manage";
     public const string StoreDashboardView = "store-dashboard-view";
     public const string StoreReportsView = "store-reports-view";
+    public const string StoreAdvancedReports = "store-advanced-reports";
+    public const string StoreExport = "store-export";
     public const string StoreSuppliersView = "store-suppliers-view";
     public const string StoreSuppliersManage = "store-suppliers-manage";
     public const string StorePurchasingView = "store-purchasing-view";
@@ -87,7 +92,37 @@ public enum UtangCapability
     ManageOperationalSetup = 35,
     ViewCustomerOrders = 36,
     ManageCustomerOrders = 37,
-    PlaceCustomerOrders = 38
+    PlaceCustomerOrders = 38,
+
+    /// <summary>
+    /// Apply a manual commercial sale discount at checkout. Distinct from a price override, a
+    /// promotion, and a statutory/regulatory discount — none of which this capability grants.
+    /// </summary>
+    ApplyCommercialDiscount = 39,
+
+    /// <summary>
+    /// Apply a per-sale unit-price override within the manager deviation ceiling (≤100% inclusive).
+    /// Does not grant unlimited overrides and does not change catalog SellingPrice / Today's Price.
+    /// </summary>
+    OverrideSalePrice = 40,
+
+    /// <summary>
+    /// Apply a per-sale unit-price override without a deviation ceiling (Owner / Admin equivalent).
+    /// Still requires a positive price and a reason; free items remain commercial-discount only.
+    /// </summary>
+    OverrideSalePriceUnlimited = 41,
+
+    /// <summary>Operational / advanced report endpoints beyond classic store-reports-view reports.</summary>
+    ViewAdvancedReports = 42,
+
+    /// <summary>Reserved for file export actions when implemented (Platform store-export).</summary>
+    ExportData = 43,
+
+    /// <summary>Recognize uncollectible Business Utang (not a repayment). Cashier DENY.</summary>
+    WriteOff = 44,
+
+    /// <summary>Reverse a prior write-off with an explicit reason. Cashier DENY.</summary>
+    ReverseWriteOff = 45
 }
 
 /// <summary>
@@ -151,6 +186,11 @@ public static class UtangCapabilityPolicy
                 IsFullCommercialState(status)
                 && HasFeature(grants, PosFeatureCodes.CustomerCreditRepay),
 
+            UtangCapability.WriteOff
+                or UtangCapability.ReverseWriteOff =>
+                IsFullCommercialState(status)
+                && HasFeature(grants, PosFeatureCodes.CustomerCreditView),
+
             UtangCapability.CreateCustomer
                 or UtangCapability.EditCustomer
                 or UtangCapability.CreateCredit
@@ -176,6 +216,20 @@ public static class UtangCapabilityPolicy
                 IsFullCommercialState(status)
                 && HasFeature(grants, PosFeatureCodes.StoreSalesVoid),
 
+            // Giving money away is a full-commercial-state operation: never available on a
+            // PastDue/Cancelled/Expired continuity read-only session.
+            UtangCapability.ApplyCommercialDiscount =>
+                IsFullCommercialState(status)
+                && HasFeature(grants, PosFeatureCodes.StoreSalesApplyCommercialDiscount),
+
+            UtangCapability.OverrideSalePrice =>
+                IsFullCommercialState(status)
+                && HasFeature(grants, PosFeatureCodes.StoreSalesOverridePrice),
+
+            UtangCapability.OverrideSalePriceUnlimited =>
+                IsFullCommercialState(status)
+                && HasFeature(grants, PosFeatureCodes.StoreSalesOverridePriceUnlimited),
+
             UtangCapability.ViewInventory =>
                 CanEnter(status, grants) && HasFeature(grants, PosFeatureCodes.StoreInventoryView),
 
@@ -196,6 +250,12 @@ public static class UtangCapabilityPolicy
 
             UtangCapability.ViewReports =>
                 CanEnter(status, grants) && HasFeature(grants, PosFeatureCodes.StoreReportsView),
+
+            UtangCapability.ViewAdvancedReports =>
+                CanEnter(status, grants) && HasFeature(grants, PosFeatureCodes.StoreAdvancedReports),
+
+            UtangCapability.ExportData =>
+                IsFullCommercialState(status) && HasFeature(grants, PosFeatureCodes.StoreExport),
 
             UtangCapability.ViewSuppliers =>
                 CanEnter(status, grants) && HasFeature(grants, PosFeatureCodes.StoreSuppliersView),
@@ -313,6 +373,9 @@ public static class UtangCapabilityPolicy
         PosFeatureCodes.StoreSalesView,
         PosFeatureCodes.StoreSalesCreate,
         PosFeatureCodes.StoreSalesVoid,
+        PosFeatureCodes.StoreSalesApplyCommercialDiscount,
+        PosFeatureCodes.StoreSalesOverridePrice,
+        PosFeatureCodes.StoreSalesOverridePriceUnlimited,
         PosFeatureCodes.StoreInventoryView,
         PosFeatureCodes.StoreInventoryManage,
         PosFeatureCodes.StoreExpensesView,

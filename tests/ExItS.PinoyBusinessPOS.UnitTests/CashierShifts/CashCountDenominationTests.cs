@@ -19,12 +19,12 @@ public sealed class CashCountDenominationTests
     public void Default_php_seed_includes_current_useful_denominations()
     {
         Assert.Equal(
-            [1000.00m, 500.00m, 200.00m, 100.00m, 50.00m, 20.00m, 10.00m, 5.00m, 1.00m, 0.25m, 0.10m, 0.05m, 0.01m],
+            [1000.00m, 500.00m, 200.00m, 100.00m, 50.00m, 20.00m, 10.00m, 5.00m, 1.00m, 0.25m, 0.10m, 0.05m],
             PhilippineCashDenominationDefaults.Values);
         Assert.Contains(0.25m, PhilippineCashDenominationDefaults.Values);
         Assert.Contains(0.10m, PhilippineCashDenominationDefaults.Values);
         Assert.Contains(0.05m, PhilippineCashDenominationDefaults.Values);
-        Assert.Contains(0.01m, PhilippineCashDenominationDefaults.Values);
+        Assert.DoesNotContain(0.01m, PhilippineCashDenominationDefaults.Values);
         Assert.DoesNotContain(0.50m, PhilippineCashDenominationDefaults.Values);
     }
 
@@ -256,13 +256,32 @@ public sealed class CashCountDenominationTests
         await DefaultCashDenominationSeeder.EnsureAsync(repo, Org, Now);
 
         var values = repo.Items.Select(d => d.Value).ToHashSet();
-        Assert.Equal(9 + 4, values.Count);
+        Assert.Equal(9 + 3, values.Count);
         Assert.Contains(0.25m, values);
         Assert.Contains(0.10m, values);
         Assert.Contains(0.05m, values);
-        Assert.Contains(0.01m, values);
+        Assert.DoesNotContain(0.01m, values);
         Assert.Contains(1000m, values);
         Assert.Equal(9, repo.Items.Count(d => d.SortOrder < 9));
+    }
+
+    [Fact]
+    public async Task Seeder_preserves_existing_custom_rows_including_0_01()
+    {
+        var repo = new InMemoryCashDenominationRepository();
+        var custom = PhilippineCashDenominationDefaults.Values
+            .Select((value, index) => OrganizationCashDenomination.Create(Org, value, index, Now))
+            .ToList();
+        custom.Add(OrganizationCashDenomination.Create(Org, 0.01m, custom.Count, Now));
+        await repo.ReplaceAsync(Org, custom);
+
+        await DefaultCashDenominationSeeder.EnsureAsync(repo, Org, Now);
+
+        var values = repo.Items.Select(d => d.Value).ToHashSet();
+        Assert.Contains(0.01m, values);
+        Assert.Contains(0.05m, values);
+        Assert.DoesNotContain(0.50m, values);
+        Assert.Equal(PhilippineCashDenominationDefaults.Values.Length + 1, values.Count);
     }
 
     [Fact]

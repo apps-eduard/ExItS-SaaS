@@ -1,16 +1,22 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { mockAuthenticatedSession } from "./helpers/session";
+import {
+  assertNoApiOrAuthTrafficInCaches,
+  assertNoHorizontalOverflow,
+  inspectServiceWorkerCaches,
+  waitForServiceWorker,
+} from "./helpers";
 
-async function assertNoHorizontalOverflow(page: import("@playwright/test").Page) {
-  const overflow = await page.evaluate(() => {
-    const root = document.scrollingElement ?? document.documentElement;
-    return root.scrollWidth - root.clientWidth;
+async function mockUnauthenticated(page: import("@playwright/test").Page) {
+  await page.route("**/platform-api/**", async (route) => {
+    if (route.request().url().includes("/auth/me")) {
+      return route.fulfill({ status: 401, contentType: "application/json", body: "{}" });
+    }
+    return route.fulfill({ status: 404, contentType: "application/json", body: "{}" });
   });
-  expect(overflow).toBeLessThanOrEqual(1);
 }
 
-test.describe("PWA foundation", () => {
+test.describe("PWA static shell", () => {
   test("serves a valid installable manifest and required icons", async ({ request }) => {
     const response = await request.get("/manifest.webmanifest");
     expect(response.ok()).toBeTruthy();
@@ -19,12 +25,14 @@ test.describe("PWA foundation", () => {
       short_name: string;
       start_url: string;
       display: string;
+      theme_color: string;
       icons: Array<{ src: string; sizes: string; purpose?: string }>;
     };
-    expect(manifest.name).toBe("ExItS Mobile");
-    expect(manifest.short_name).toBe("ExItS Mobile");
+    expect(manifest.name).toBe("Pinoy Business POS");
+    expect(manifest.short_name).toBe("ExItS POS");
     expect(manifest.start_url).toBe("/");
     expect(manifest.display).toBe("standalone");
+    expect(manifest.theme_color).toBe("#166534");
     expect(manifest.icons.some((icon) => icon.sizes === "192x192")).toBe(true);
     expect(manifest.icons.some((icon) => icon.sizes === "512x512")).toBe(true);
     expect(manifest.icons.some((icon) => icon.purpose?.includes("maskable"))).toBe(true);
@@ -34,56 +42,62 @@ test.describe("PWA foundation", () => {
     }
   });
 
-  test("enables a production service worker that does not cache API data", async ({ request }) => {
+  test("production service worker is NetworkOnly for APIs and has no Background Sync", async ({
+    request,
+  }) => {
     const response = await request.get("/sw.js");
     expect(response.ok()).toBeTruthy();
     const source = await response.text();
     expect(source).toContain("NetworkOnly");
-    expect(source).toMatch(/\\\/api\\\//);
-    expect(source).toMatch(/platform-api/);
+    expect(source).toMatch(/\/api\//);
+    const apiHandler = source.match(
+      /startsWith\("\/api\/"\)[\s\S]{0,180}?new e\.(NetworkOnly|CacheFirst|StaleWhileRevalidate)/,
+    );
+    expect(apiHandler?.[1]).toBe("NetworkOnly");
     expect(source).not.toMatch(/BackgroundSyncPlugin|workbox-background-sync/);
-    expect(source).not.toMatch(/CacheFirst[\s\S]{0,180}\/api\/|\/api\/[\s\S]{0,180}CacheFirst/);
+    expect(source).toMatch(/auth[\s\S]{0,160}NetworkOnly|\/\(auth\|session\)\//);
     expect(source).toMatch(/assets\/index-[A-Za-z0-9_-]+\.(js|css)/);
+    expect(source).toMatch(/platform-api/);
+    expect(source).toMatch(/platform-api[\s\S]{0,200}NetworkOnly/);
   });
 
-  test("standalone phone tablet and desktop shell do not overflow", async ({ page }) => {
-    await mockAuthenticatedSession(page);
-    await page.addInitScript(() => {
-      const original = window.matchMedia.bind(window);
-      window.matchMedia = ((query: string) => {
-        if (query.includes("display-mode: standalone")) {
-          return {
-            matches: true,
-            media: query,
-            onchange: null,
-            addEventListener: () => undefined,
-            removeEventListener: () => undefined,
-            addListener: () => undefined,
-            removeListener: () => undefined,
-            dispatchEvent: () => true,
-          } as MediaQueryList;
-        }
-        return original(query);
-      }) as typeof window.matchMedia;
-    });
+  test("runtime Cache Storage holds the shell and never caches API or auth traffic", async ({
+    page,
+  }) => {
+    await mockUnauthenticated(page);
+    await page.goto("/sign-in");
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+    const caches = await inspectServiceWorkerCaches(page);
+    expect(caches.urls.length).toBeGreaterThan(0);
+    assertNoApiOrAuthTrafficInCaches(caches.urls);
+    expect(caches.indexedDbNames.join(" ")).not.toMatch(
+      /sale|payment|customer|credit|sessionToken|LocalStore/i,
+    );
+  });
 
-    for (const viewport of [
-      { width: 375, height: 812 },
-      { width: 768, height: 1024 },
-      { width: 1280, height: 800 },
-    ] as const) {
-      await page.setViewportSize(viewport);
-      await page.goto("/");
-      await expect(page.getByRole("heading", { name: "ExItS Mobile" })).toBeVisible();
-      await expect(page.getByRole("banner")).toBeVisible();
-      await assertNoHorizontalOverflow(page);
-    }
+  test("registers a service worker and keeps the foundation shell", async ({ page }) => {
+    await mockUnauthenticated(page);
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/sign-in");
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+    await waitForServiceWorker(page);
+    const registered = await page.evaluate(async () => {
+      const registration = await navigator.serviceWorker.ready;
+      return Boolean(registration.active || registration.waiting || registration.installing);
+    });
+    expect(registered).toBe(true);
+    const storageKeys = await page.evaluate(() => Object.keys(window.localStorage));
+    expect(storageKeys.every((key) => key.startsWith("exits.pos-client.ui-preferences"))).toBe(
+      true,
+    );
+    await assertNoHorizontalOverflow(page);
   });
 
   test("axe has no serious or critical violations with the PWA shell", async ({ page }) => {
-    await mockAuthenticatedSession(page);
+    await mockUnauthenticated(page);
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto("/");
+    await page.goto("/sign-in");
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
     const results = await new AxeBuilder({ page }).analyze();
     const serious = results.violations.filter(
       (violation) => violation.impact === "serious" || violation.impact === "critical",

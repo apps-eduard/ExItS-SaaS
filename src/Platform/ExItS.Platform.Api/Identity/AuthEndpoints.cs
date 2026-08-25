@@ -23,7 +23,6 @@ internal static class AuthEndpoints
             LoginPlatformUser useCase,
             IOptions<PlatformSessionOptions> sessionOptions,
             IHostEnvironment env,
-            IConfiguration config,
             CancellationToken ct) =>
         {
             var result = await useCase.ExecuteAsync(
@@ -38,13 +37,7 @@ internal static class AuthEndpoints
                 return PlatformApiResults.FromResult(result, _ => Results.Ok());
             }
 
-            AppendSessionCookie(
-                http,
-                result.Value.SessionToken,
-                result.Value.ExpiresAtUtc,
-                sessionOptions.Value,
-                env,
-                config);
+            AppendSessionCookie(http, result.Value.SessionToken, result.Value.ExpiresAtUtc, sessionOptions.Value, env);
             return Results.Ok(result.Value);
         })
         .RequireRateLimiting(PlatformSecurityPipeline.AuthLoginRateLimitPolicy)
@@ -54,11 +47,12 @@ internal static class AuthEndpoints
             HttpContext http,
             LogoutPlatformSession useCase,
             IOptions<PlatformSessionOptions> sessionOptions,
+            IHostEnvironment env,
             CancellationToken ct) =>
         {
             var token = ExtractSessionToken(http, sessionOptions.Value);
             await useCase.ExecuteAsync(token, ct).ConfigureAwait(false);
-            DeleteSessionCookie(http, sessionOptions.Value);
+            DeleteSessionCookie(http, sessionOptions.Value, env);
             return Results.NoContent();
         })
         .AllowAnonymous();
@@ -124,6 +118,7 @@ internal static class AuthEndpoints
             HttpContext http,
             ChangePlatformUserPassword useCase,
             IOptions<PlatformSessionOptions> sessionOptions,
+            IHostEnvironment env,
             CancellationToken ct) =>
         {
             if (!TryGetAuthenticatedUserId(http, out var userId))
@@ -139,7 +134,7 @@ internal static class AuthEndpoints
                 .ConfigureAwait(false);
             if (result.IsSuccess)
             {
-                DeleteSessionCookie(http, sessionOptions.Value);
+                DeleteSessionCookie(http, sessionOptions.Value, env);
             }
 
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
@@ -451,7 +446,6 @@ internal static class AuthEndpoints
             SelectAccountProfileSession useCase,
             IOptions<PlatformSessionOptions> sessionOptions,
             IHostEnvironment env,
-            IConfiguration config,
             CancellationToken ct) =>
         {
             if (!TryGetAuthenticatedUserId(http, out var userId))
@@ -484,13 +478,7 @@ internal static class AuthEndpoints
                 return PlatformApiResults.FromResult(result, _ => Results.Ok());
             }
 
-            AppendSessionCookie(
-                http,
-                result.Value.SessionToken,
-                result.Value.ExpiresAtUtc,
-                sessionOptions.Value,
-                env,
-                config);
+            AppendSessionCookie(http, result.Value.SessionToken, result.Value.ExpiresAtUtc, sessionOptions.Value, env);
             return Results.Ok(result.Value);
         });
 
@@ -579,6 +567,33 @@ internal static class AuthEndpoints
             return PlatformApiResults.FromResult(result, Results.Ok);
         })
         .AllowAnonymous();
+
+        app.MapPost("/api/v1/platform/auth/organization-invitations/accept-as-personal", async (
+            AcceptInvitationTokenRequest body,
+            AcceptOrganizationInvitation useCase,
+            HttpContext http,
+            CancellationToken ct) =>
+        {
+            if (!TryGetAuthenticatedUserId(http, out var userId))
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Authentication is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var result = await useCase
+                .ExecuteForAuthenticatedPersonalAsync(
+                    PlatformUserId.From(userId),
+                    body.Token ?? string.Empty,
+                    body.Password ?? string.Empty,
+                    body.DisplayName,
+                    body.FirstName,
+                    body.LastName,
+                    ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
 
         app.MapPost("/api/v1/platform/auth/organization-invitations/{invitationId:guid}/accept", async (
             Guid invitationId,
@@ -772,10 +787,10 @@ internal static class AuthEndpoints
         string sessionToken,
         DateTimeOffset expiresAtUtc,
         PlatformSessionOptions options,
-        IHostEnvironment env,
-        IConfiguration configuration)
+        IHostEnvironment env)
     {
-        var secure = PlatformSessionCookiePolicy.IsSecure(env, configuration, http.Request.IsHttps);
+        var configuration = http.RequestServices.GetRequiredService<IConfiguration>();
+        var secure = PlatformSessionCookiePolicy.IsSecureSessionCookie(env, configuration, http.Request);
         http.Response.Cookies.Append(
             options.CookieName,
             sessionToken,
@@ -790,9 +805,19 @@ internal static class AuthEndpoints
             });
     }
 
-    internal static void DeleteSessionCookie(HttpContext http, PlatformSessionOptions options)
+    internal static void DeleteSessionCookie(HttpContext http, PlatformSessionOptions options, IHostEnvironment env)
     {
-        http.Response.Cookies.Delete(options.CookieName, new CookieOptions { Path = "/" });
+        var configuration = http.RequestServices.GetRequiredService<IConfiguration>();
+        var secure = PlatformSessionCookiePolicy.IsSecureSessionCookie(env, configuration, http.Request);
+        http.Response.Cookies.Delete(
+            options.CookieName,
+            new CookieOptions
+            {
+                Path = "/",
+                Secure = secure,
+                SameSite = SameSiteMode.Lax,
+                HttpOnly = true,
+            });
     }
 
     internal sealed record LoginRequest(string? UsernameOrEmail, string? Password);

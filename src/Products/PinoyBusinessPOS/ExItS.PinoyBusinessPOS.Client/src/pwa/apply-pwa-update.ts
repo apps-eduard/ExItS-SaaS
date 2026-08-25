@@ -1,14 +1,22 @@
-/**
- * Future cart/form dirty-state can return false to keep the user on the current
- * version. This package has no cart; the default always allows an explicit Refresh.
- */
 export type PwaUpdateApplyGuard = () => boolean;
 
-export const allowPwaUpdateApply: PwaUpdateApplyGuard = () => true;
+let cartLineCountGetter: (() => number) | null = null;
+
+export function registerCartLineCountGetter(getter: (() => number) | null): void {
+  cartLineCountGetter = getter;
+}
+
+/** Block PWA refresh while the session cart still has lines. */
+export function canApplyPwaUpdate(): boolean {
+  if (cartLineCountGetter && cartLineCountGetter() > 0) {
+    return false;
+  }
+  return true;
+}
 
 export function applyPwaUpdateIfAllowed(
   apply: () => void,
-  guard: PwaUpdateApplyGuard = allowPwaUpdateApply,
+  guard: PwaUpdateApplyGuard = canApplyPwaUpdate,
 ): boolean {
   if (!guard()) {
     return false;

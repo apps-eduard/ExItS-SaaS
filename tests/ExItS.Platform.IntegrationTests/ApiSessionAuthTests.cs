@@ -63,6 +63,12 @@ public sealed class ApiSessionAuthTests(PostgreSqlFixture fixture) : IAsyncLifet
         var meBody = await me.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(username, meBody.GetProperty("username").GetString());
         Assert.False(meBody.GetProperty("mfa").GetProperty("challengeRequired").GetBoolean());
+        // RMAP-01: /me must expose the same staff-lock fields as login so browser reload keeps AccountClass context.
+        Assert.True(meBody.TryGetProperty("accountClass", out var meAccountClass));
+        Assert.False(string.IsNullOrWhiteSpace(meAccountClass.GetString()));
+        Assert.True(meBody.TryGetProperty("organizationContextLocked", out var meLocked));
+        Assert.True(meLocked.ValueKind is JsonValueKind.True or JsonValueKind.False);
+        Assert.True(meBody.TryGetProperty("homeOrganizationId", out _));
 
         using var logoutRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/platform/auth/logout");
         logoutRequest.Headers.Add("X-ExItS-Session-Token", token);
@@ -188,7 +194,11 @@ internal sealed class SessionApiFactory(string connectionString) : WebApplicatio
                 ["ConnectionStrings:PlatformDatabase"] = connectionString,
                 ["Security:EnforceHttps"] = "false",
                 ["PlatformAuthentication:External:TestingEndpointEnabled"] = "true",
-                ["PlatformAuthentication:Lifecycle:ExposeDebugTokens"] = "true"
+                ["PlatformAuthentication:Lifecycle:ExposeDebugTokens"] = "true",
+                // Integration hosts must not inherit a developer LocalValidation__Enabled env var
+                // without SharedPassword — seed would fail host startup.
+                ["LocalValidation:Enabled"] = "false",
+                ["LocalValidation:RunHostedSeed"] = "false"
             });
         });
     }

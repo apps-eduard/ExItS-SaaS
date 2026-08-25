@@ -51,6 +51,19 @@ public sealed record PosCustomerPagedResult(
     int Page,
     int PageSize);
 
+/// <summary>Narrow checkout customer row — no notes, address, balances, links, or history.</summary>
+public sealed record CheckoutCustomerSearchItemDto(
+    Guid CustomerId,
+    string DisplayName,
+    string? MobileNumber,
+    string Status);
+
+public sealed record CheckoutCustomerSearchResult(
+    List<CheckoutCustomerSearchItemDto> Items,
+    int TotalCount,
+    int Page,
+    int PageSize);
+
 public sealed record PosCustomerSyncPageResult(
     List<PosCustomerDetailDto> Items,
     int TotalCount,

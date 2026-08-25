@@ -26,6 +26,15 @@ public sealed class PosRoleMatrixTests
     [InlineData(PosRole.Cashier, UtangCapability.ManageOperationalSetup, false)]
     [InlineData(PosRole.StoreManager, UtangCapability.ViewOperationalSetup, true)]
     [InlineData(PosRole.StoreManager, UtangCapability.ManageOperationalSetup, false)]
+    [InlineData(PosRole.Cashier, UtangCapability.ApplyCommercialDiscount, false)]
+    [InlineData(PosRole.StoreManager, UtangCapability.ApplyCommercialDiscount, true)]
+    [InlineData(PosRole.Cashier, UtangCapability.OverrideSalePrice, false)]
+    [InlineData(PosRole.Cashier, UtangCapability.OverrideSalePriceUnlimited, false)]
+    [InlineData(PosRole.StoreManager, UtangCapability.OverrideSalePrice, true)]
+    [InlineData(PosRole.StoreManager, UtangCapability.OverrideSalePriceUnlimited, false)]
+    [InlineData(PosRole.Owner, UtangCapability.OverrideSalePrice, true)]
+    [InlineData(PosRole.Owner, UtangCapability.OverrideSalePriceUnlimited, true)]
+    [InlineData(PosRole.Admin, UtangCapability.OverrideSalePriceUnlimited, true)]
     [InlineData(PosRole.InventoryStaff, UtangCapability.CreateSale, false)]
     [InlineData(PosRole.InventoryStaff, UtangCapability.ManageInventory, true)]
     [InlineData(PosRole.ReportingUser, UtangCapability.ViewReports, true)]
@@ -69,6 +78,10 @@ public sealed class PosRoleMatrixTests
     [InlineData(false, UtangCapability.ManagePermissions, false)]
     [InlineData(false, UtangCapability.CreateSale, false)]
     [InlineData(false, UtangCapability.EnterPos, false)]
+    [InlineData(false, UtangCapability.OverrideSalePrice, false)]
+    [InlineData(false, UtangCapability.OverrideSalePriceUnlimited, false)]
+    [InlineData(true, UtangCapability.OverrideSalePrice, false)]
+    [InlineData(true, UtangCapability.OverrideSalePriceUnlimited, false)]
     public void Organization_management_authority_excludes_checkout(
         bool isExactOwner,
         UtangCapability capability,

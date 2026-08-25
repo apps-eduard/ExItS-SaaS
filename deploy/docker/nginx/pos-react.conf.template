@@ -1,0 +1,72 @@
+# React POS static SPA + same-origin API proxies (Local Validation / Docker).
+# Browser uses http://127.0.0.1:5177 (or 10.0.2.2:5177 / adb reverse).
+# /platform-api and /pos-api stay same-origin so cookies avoid CORS.
+#
+# Local Validation is HTTP: strip Secure from Set-Cookie (matches Vite DEV proxy).
+# Production TLS front-ends must NOT use this nosecure rewrite.
+#
+# PLATFORM_API_PROXY_HOST / POS_API_PROXY_HOST must be AllowedHosts values
+# (e.g. platform-api:8080 in Compose DNS, or 127.0.0.1:8091 for host-run APIs).
+
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    client_max_body_size 25m;
+
+    # Do not cache the SPA shell — keep deployments honest.
+    location = /index.html {
+        add_header Cache-Control "no-cache";
+        try_files $uri =404;
+    }
+
+    location /platform-api/ {
+        proxy_http_version 1.1;
+        proxy_pass ${PLATFORM_API_UPSTREAM}/;
+        proxy_set_header Host ${PLATFORM_API_PROXY_HOST};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+        proxy_cookie_domain ~.+ "";
+        proxy_cookie_flags ~ nosecure;
+        proxy_pass_header Set-Cookie;
+        proxy_buffering off;
+    }
+
+    location = /platform-api {
+        return 308 /platform-api/;
+    }
+
+    location /pos-api/ {
+        proxy_http_version 1.1;
+        proxy_pass ${POS_API_UPSTREAM}/;
+        proxy_set_header Host ${POS_API_PROXY_HOST};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+        proxy_cookie_domain ~.+ "";
+        proxy_cookie_flags ~ nosecure;
+        proxy_pass_header Set-Cookie;
+        proxy_buffering off;
+    }
+
+    location = /pos-api {
+        return 308 /pos-api/;
+    }
+
+    # PWA / static assets
+    location /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        try_files $uri =404;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

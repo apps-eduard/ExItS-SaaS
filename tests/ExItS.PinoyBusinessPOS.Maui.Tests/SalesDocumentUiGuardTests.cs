@@ -16,7 +16,8 @@ public sealed class SalesDocumentUiGuardTests
 
         Assert.DoesNotContain("BIR compliant", value, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Official Receipt", value, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("not represented", value, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("not a BIR-registered invoice", value, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("does not determine the seller's legal BIR invoicing obligations", value, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

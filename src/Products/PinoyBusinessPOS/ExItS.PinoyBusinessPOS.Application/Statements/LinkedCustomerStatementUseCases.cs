@@ -111,7 +111,9 @@ public sealed record LinkedCustomerActivityRawRow(
     decimal SignedEffect,
     string Status,
     DateTimeOffset RecordedAtUtc,
-    Guid? SourceSaleId);
+    Guid? SourceSaleId,
+    string? SourceSaleNumber = null,
+    string? SourceRemarks = null);
 
 public sealed class GetLinkedCustomerStatementSummary
 {
@@ -536,9 +538,12 @@ internal static class LinkedCustomerActivityMapper
 
         var reference = isRepayment
             ? $"RCPT-{row.EntryId.ToString("N")[..12].ToUpperInvariant()}"
-            : row.SourceSaleId is Guid saleId
-                ? saleId.ToString("N")[..8].ToUpperInvariant()
-                : row.EntryId.ToString("N")[..8].ToUpperInvariant();
+            : TryCustomerOrderReference(row.SourceRemarks)
+                ?? (!string.IsNullOrWhiteSpace(row.SourceSaleNumber)
+                    ? row.SourceSaleNumber
+                    : row.SourceSaleId is Guid saleId
+                        ? saleId.ToString("N")[..8].ToUpperInvariant()
+                        : row.EntryId.ToString("N")[..8].ToUpperInvariant());
 
         var hasDetails = row.SourceSaleId is not null;
 
@@ -554,5 +559,18 @@ internal static class LinkedCustomerActivityMapper
             row.Status,
             hasDetails,
             row.SourceSaleId);
+    }
+
+    private static string? TryCustomerOrderReference(string? remarks)
+    {
+        const string prefix = "Online purchase Order ";
+        if (string.IsNullOrWhiteSpace(remarks)
+            || !remarks.StartsWith(prefix, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var orderNumber = remarks[prefix.Length..].Trim();
+        return string.IsNullOrWhiteSpace(orderNumber) ? null : orderNumber;
     }
 }

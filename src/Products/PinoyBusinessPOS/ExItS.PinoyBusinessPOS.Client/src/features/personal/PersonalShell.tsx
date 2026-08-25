@@ -1,61 +1,101 @@
-import { Bell, Home, Mail, Users } from "lucide-react";
-import { NavLink, Outlet } from "react-router-dom";
-import { AppTopBar } from "@/components/exits/AppTopBar";
+import { useState } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { AccountMenu } from "@/components/exits/AccountMenu";
+import { ShellConnectionButton } from "@/components/exits/ShellConnectionButton";
+import { ShellNotificationButton } from "@/components/exits/ShellNotificationButton";
+import { listPersonalNotifications } from "@/api/platform/personal-social-client";
+import { PersonalBottomNav } from "@/features/personal/PersonalBottomNav";
+import {
+  PERSONAL_NOTIFICATIONS_QUERY_KEY,
+  countUnreadPersonalNotifications,
+  formatUnreadNotificationBadge,
+} from "@/features/personal/personal-notifications";
+import {
+  rememberNotificationsReturnTo,
+  type NotificationsLocationState,
+} from "@/features/personal/notifications-return";
 import { useI18n } from "@/i18n/I18nProvider";
-import { cn } from "@/lib/cn";
-
-const items = [
-  { to: "/personal", end: true, icon: Home, labelKey: "nav.home" as const },
-  { to: "/personal/people", end: false, icon: Users, labelKey: "nav.people" as const },
-  { to: "/personal/invitations", end: false, icon: Mail, labelKey: "nav.invitations" as const },
-  { to: "/personal/notifications", end: false, icon: Bell, labelKey: "nav.notifications" as const },
-];
+import { useSession } from "@/session/SessionProvider";
+import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export function PersonalShell() {
   const { t } = useI18n();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { session, signOut } = useSession();
+  const { clearBoundWorkspace } = useWorkspace();
+  const [signingOut, setSigningOut] = useState(false);
+
+  const notificationsQuery = useQuery({
+    queryKey: PERSONAL_NOTIFICATIONS_QUERY_KEY,
+    queryFn: ({ signal }) => listPersonalNotifications(signal),
+  });
+  const unreadCount = countUnreadPersonalNotifications(notificationsQuery.data);
+  const badge = formatUnreadNotificationBadge(unreadCount);
+  const onNotificationsPage = location.pathname.startsWith("/personal/notifications");
+  const returnTo = onNotificationsPage
+    ? null
+    : `${location.pathname}${location.search}`;
+  const notificationsLinkState: NotificationsLocationState | undefined = returnTo
+    ? { returnTo }
+    : (location.state as NotificationsLocationState | null) ?? undefined;
+
+  async function handleSignOut() {
+    if (signingOut) {
+      return;
+    }
+    setSigningOut(true);
+    const result = await signOut();
+    if (!result.ok) {
+      setSigningOut(false);
+      return;
+    }
+    clearBoundWorkspace();
+    navigate(result.nextRoute, { replace: true });
+  }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-background pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
-      <a
-        href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-[var(--exits-z-notice)] focus:rounded-md focus:bg-surface focus:px-3 focus:py-2"
-      >
-        {t("app.skipToContent")}
-      </a>
-      <AppTopBar />
-      <main
-        id="main"
-        className="mx-auto w-full max-w-5xl flex-1 px-4 py-5 pb-[calc(4.75rem+env(safe-area-inset-bottom))]"
-      >
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col" data-testid="personal-shell">
+      <header className="app-top-bar app-top-bar--personal" data-testid="personal-top-bar">
+        <div className="app-top-bar__row">
+          <div className="app-top-bar__brand min-w-0 flex-1">
+            <div className="app-top-bar__brand-copy">
+              <p className="app-top-bar__workspace-org m-0 truncate">
+                {session?.displayName || t("personal.badge")}
+              </p>
+              <p className="app-top-bar__workspace-branch m-0 truncate">{t("personal.badge")}</p>
+            </div>
+          </div>
+          <div className="app-top-bar__actions">
+            <ShellConnectionButton className="app-top-bar__action" />
+            <ShellNotificationButton
+              to="/personal/notifications"
+              label={t("shell.notifications.label")}
+              unreadLabel={t("shell.notifications.unreadLabel")}
+              badge={badge}
+              testId="personal-notification-bell"
+              className="app-top-bar__action"
+              linkState={notificationsLinkState}
+              onNavigate={
+                onNotificationsPage || !returnTo
+                  ? undefined
+                  : () => {
+                      rememberNotificationsReturnTo(returnTo);
+                      navigate("/personal/notifications", { state: notificationsLinkState });
+                    }
+              }
+            />
+            <AccountMenu signingOut={signingOut} onSignOut={() => void handleSignOut()} compact />
+          </div>
+        </div>
+      </header>
+
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 pb-20 pt-4">
         <Outlet />
-      </main>
-      <nav
-        aria-label={t("nav.personal")}
-        className="fixed inset-x-0 bottom-0 z-[var(--exits-z-topbar)] border-t border-border bg-surface/95 backdrop-blur-sm"
-      >
-        <ul className="mx-auto grid max-w-5xl grid-cols-4 gap-1 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
-          {items.map((item) => {
-            const Icon = item.icon;
-            return (
-              <li key={item.to}>
-                <NavLink
-                  to={item.to}
-                  end={item.end}
-                  className={({ isActive }) =>
-                    cn(
-                      "flex min-h-[var(--exits-touch-target-min)] flex-col items-center justify-center gap-1 rounded-[var(--exits-radius-md)] px-1 text-[length:var(--exits-text-xs)] font-semibold text-muted",
-                      isActive && "bg-surface-muted text-foreground",
-                    )
-                  }
-                >
-                  <Icon className="size-5" aria-hidden="true" />
-                  <span className="truncate">{t(item.labelKey)}</span>
-                </NavLink>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+      </div>
+
+      <PersonalBottomNav />
     </div>
   );
 }

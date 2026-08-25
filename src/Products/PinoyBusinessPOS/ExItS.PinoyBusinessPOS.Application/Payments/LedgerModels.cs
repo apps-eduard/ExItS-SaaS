@@ -5,7 +5,8 @@ namespace ExItS.PinoyBusinessPOS.Application.Payments;
 public enum LedgerEntryType
 {
     Credit = 0,
-    Repayment = 1
+    Repayment = 1,
+    WriteOff = 2
 }
 
 public sealed record LedgerEntryDto(
@@ -37,7 +38,9 @@ public sealed record CustomerUtangSummaryDto(
     int OverdueCreditCount = 0,
     DateOnly? EarliestOverdueDate = null,
     DateOnly? NextUpcomingDueDate = null,
-    int CreditsWithoutDueDateCount = 0);
+    int CreditsWithoutDueDateCount = 0,
+    decimal ActiveWriteOffTotal = 0m,
+    int ActiveWriteOffCount = 0);
 
 public interface IUtangLedgerQuery
 {

@@ -2,7 +2,7 @@
 
 [Architecture scopes](../../architecture/saas-scopes-users-boundaries-navigation.md) | [Auth architecture](../../engineering/authentication-architecture.md) | [Client experience](../../architecture/client-experience-boundaries.md) | [P19 report](../../reports/P19-user-qr-public-id-linking.md)
 
-**Status:** Implemented (Platform + MAUI) · Phase 19 **Open** · Phone scenarios **Retest** · **Not Device Verified**
+**Status:** Implemented (Platform + MAUI + **React Personal My QR / Business QR / customer-link entry**) · Phase 19 **Open** · Phone scenarios **Retest** · React camera still-image path (not live viewfinder Device Verified)
 
 ---
 
@@ -152,6 +152,15 @@ Always show identity confirmation before the final action.
 - Contextual entry: People, I Lent / I Borrowed, Customers, Customer create, Sale checkout, Staff invite
 - **Customer link requests:** `/personal/customer-link-requests` (Accept/Decline pending merchant links)
 - **Notifications:** `/personal/notifications`
+
+## 7b. React surfaces (parity package)
+
+- **My QR:** Personal More → `/personal/my-qr` — visual QR + Copy/Share; canonical Personal envelope
+- **Business QR:** Org essentials → `/org/business-qr`
+- **Customer create:** Scan QR / Enter ExItS ID → confirm → `POST .../customers/with-personal-link` → POS customer with `platformBusinessCustomerId`; Personal Accept still required
+- **Customer-link inbox:** `/personal/customer-links` (existing)
+- **Linked merchants:** `/personal/linked-merchants` (existing RMAP-22F / RMAP-19)
+- **Not in React:** POS device-registration QR/code UX (intentionally removed); RMAP-B04 purchase history; RMAP-B05 public business landing
 
 Recommended More order: My QR → Invitations → Profile → Settings → Explore POS → Sign out.
 

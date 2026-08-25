@@ -18,7 +18,8 @@ public sealed record PersonalDashboardDto(
     int ContactCount,
     int ActiveRelationshipCount,
     decimal TotalLentBalance,
-    decimal TotalBorrowedBalance);
+    decimal TotalBorrowedBalance,
+    int PendingConfirmationCount);
 
 public sealed record PersonalProfileDto(
     Guid UserIdentityId,
@@ -48,23 +49,28 @@ public sealed record UpdatePersonalAccountSettingsRequest(
     bool ReminderNotificationsEnabled,
     int? ExpectedVersion);
 
+public sealed record UpdatePersonalProfileRequest(string DisplayName);
+
 public sealed class GetPersonalDashboard
 {
     private readonly IPlatformUserRepository _users;
     private readonly IAccountProfileRepository _profiles;
     private readonly IPersonalContactRepository _contacts;
     private readonly IPersonalDebtRelationshipRepository _relationships;
+    private readonly IPersonalUtangEntryRepository _entries;
 
     public GetPersonalDashboard(
         IPlatformUserRepository users,
         IAccountProfileRepository profiles,
         IPersonalContactRepository contacts,
-        IPersonalDebtRelationshipRepository relationships)
+        IPersonalDebtRelationshipRepository relationships,
+        IPersonalUtangEntryRepository entries)
     {
         _users = users;
         _profiles = profiles;
         _contacts = contacts;
         _relationships = relationships;
+        _entries = entries;
     }
 
     public async Task<ApplicationResult<PersonalDashboardDto>> ExecuteAsync(
@@ -114,6 +120,10 @@ public sealed class GetPersonalDashboard
             }
         }
 
+        var pendingConfirmationCount = await _entries
+            .CountPendingAwaitingConfirmationAsync(userIdentityId, cancellationToken)
+            .ConfigureAwait(false);
+
         return ApplicationResult<PersonalDashboardDto>.Success(new PersonalDashboardDto(
             userIdentityId.Value,
             accountProfileId.Value,
@@ -122,7 +132,8 @@ public sealed class GetPersonalDashboard
             contacts.Count,
             active.Count,
             lent,
-            borrowed));
+            borrowed,
+            pendingConfirmationCount));
     }
 }
 
@@ -183,6 +194,81 @@ public sealed class GetPersonalProfile
             publicUserId,
             qrPayload,
             user.Phone));
+    }
+}
+
+public sealed class UpdatePersonalProfile
+{
+    private readonly IPlatformUserRepository _users;
+    private readonly IAccountProfileRepository _profiles;
+    private readonly GetPersonalProfile _getProfile;
+    private readonly IAuditWriter _auditWriter;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public UpdatePersonalProfile(
+        IPlatformUserRepository users,
+        IAccountProfileRepository profiles,
+        GetPersonalProfile getProfile,
+        IAuditWriter auditWriter,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _users = users;
+        _profiles = profiles;
+        _getProfile = getProfile;
+        _auditWriter = auditWriter;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<PersonalProfileDto>> ExecuteAsync(
+        PlatformUserId userIdentityId,
+        AccountProfileId accountProfileId,
+        UpdatePersonalProfileRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await _users.GetByIdAsync(userIdentityId, cancellationToken).ConfigureAwait(false);
+        if (user is null)
+        {
+            return ApplicationResult<PersonalProfileDto>.Failure(
+                ApplicationErrorCodes.UserNotFound,
+                "User identity was not found.");
+        }
+
+        var profile = await _profiles.GetByIdAsync(accountProfileId, cancellationToken).ConfigureAwait(false);
+        if (profile is null || profile.UserIdentityId != userIdentityId || profile.AccountClass is not AccountClass.Personal)
+        {
+            return ApplicationResult<PersonalProfileDto>.Failure(
+                ApplicationErrorCodes.AccountProfileNotAvailable,
+                "Personal account profile is not available.");
+        }
+
+        try
+        {
+            // Keep email immutable on this self-service path; only DisplayName changes.
+            user.UpdateProfile(request.DisplayName, user.NormalizedEmail, _clock.UtcNow);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<PersonalProfileDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+
+        await _users.UpdateAsync(user, cancellationToken).ConfigureAwait(false);
+        await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        await _auditWriter.WriteAsync(
+            $"platform-user:{userIdentityId.Value:D}",
+            AuditActorType.PlatformUser,
+            PlatformAuditActions.PlatformUserProfileUpdated,
+            nameof(PlatformUser),
+            userIdentityId.Value.ToString("D"),
+            AuditOutcome.Succeeded,
+            summary: "Personal profile display name updated.",
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        return await _getProfile.ExecuteAsync(userIdentityId, accountProfileId, cancellationToken)
+            .ConfigureAwait(false);
     }
 }
 

@@ -88,6 +88,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<CreditCustomerRecord> CreditCustomers => Set<CreditCustomerRecord>();
     internal DbSet<CustomerLinkRequestRecord> CustomerLinkRequests => Set<CustomerLinkRequestRecord>();
     internal DbSet<LinkedCustomerAppUserRecord> LinkedCustomerAppUsers => Set<LinkedCustomerAppUserRecord>();
+    internal DbSet<PersonalOrganizationConnectionBlockRecord> PersonalOrganizationConnectionBlocks =>
+        Set<PersonalOrganizationConnectionBlockRecord>();
     internal DbSet<OrganizationInAppNotificationRecord> OrganizationInAppNotifications =>
         Set<OrganizationInAppNotificationRecord>();
     internal DbSet<BusinessCreditOpeningBalanceRecord> BusinessCreditOpeningBalances => Set<BusinessCreditOpeningBalanceRecord>();
@@ -125,6 +127,7 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<PersonalRewardBalanceRecord> PersonalRewardBalances => Set<PersonalRewardBalanceRecord>();
     internal DbSet<PersonalRewardTransactionRecord> PersonalRewardTransactions => Set<PersonalRewardTransactionRecord>();
     internal DbSet<PersonalRewardClaimRecord> PersonalRewardClaims => Set<PersonalRewardClaimRecord>();
+    internal DbSet<PersonalTodoRecord> PersonalTodos => Set<PersonalTodoRecord>();
     internal DbSet<ComplianceRequirementRecord> ComplianceRequirements => Set<ComplianceRequirementRecord>();
     internal DbSet<ComplianceEvidenceRecord> ComplianceEvidence => Set<ComplianceEvidenceRecord>();
     internal DbSet<ProcessingSystemRecordEntity> ProcessingSystems => Set<ProcessingSystemRecordEntity>();
@@ -952,6 +955,17 @@ public sealed class PlatformDbContext : DbContext
                 .HasFilter("public_user_id IS NOT NULL")
                 .HasDatabaseName("ux_platform_users_public_user_id");
             entity.Property(e => e.CreatedByUserId).HasColumnName("created_by_user_id");
+            entity.Property(e => e.LinkedPersonalUserId).HasColumnName("linked_personal_user_id");
+            entity.HasIndex(e => e.LinkedPersonalUserId)
+                .HasDatabaseName("ix_platform_users_linked_personal_user_id");
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.LinkedPersonalUserId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_platform_users_linked_personal_user");
+            entity.ToTable(t => t.HasCheckConstraint(
+                "ck_platform_users_linked_personal_staff_only",
+                "linked_personal_user_id IS NULL OR (home_organization_id IS NOT NULL AND linked_personal_user_id <> id)"));
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
                 .HasColumnType("xid")
@@ -1792,7 +1806,12 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.DueDateUtc).HasColumnName("due_date_utc");
             entity.Property(e => e.CreatedByUserIdentityId).HasColumnName("created_by_user_identity_id");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.ResolvedByUserIdentityId).HasColumnName("resolved_by_user_identity_id");
+            entity.Property(e => e.ResolvedAtUtc).HasColumnName("resolved_at_utc");
+            entity.Property(e => e.DisputeReason).HasColumnName("dispute_reason").HasMaxLength(256);
             entity.HasIndex(e => e.RelationshipId);
+            entity.HasIndex(e => new { e.RelationshipId, e.Status });
 
             entity.HasOne<PersonalDebtRelationshipRecord>()
                 .WithMany()
@@ -1802,6 +1821,11 @@ public sealed class PlatformDbContext : DbContext
             entity.HasOne<PlatformUserRecord>()
                 .WithMany()
                 .HasForeignKey(e => e.CreatedByUserIdentityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ResolvedByUserIdentityId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -2019,6 +2043,8 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.DeclinedAtUtc).HasColumnName("declined_at_utc");
             entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc");
             entity.Property(e => e.AcceptedByUserId).HasColumnName("accepted_by_user_id");
+            entity.Property(e => e.ReminderCount).HasColumnName("reminder_count").HasDefaultValue(0);
+            entity.Property(e => e.LastRemindedAtUtc).HasColumnName("last_reminded_at_utc");
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
                 .HasColumnType("xid")
@@ -2040,6 +2066,40 @@ public sealed class PlatformDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.BusinessCustomerId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PersonalOrganizationConnectionBlockRecord>(entity =>
+        {
+            entity.ToTable("personal_organization_connection_blocks");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.PersonalUserIdentityId).HasColumnName("personal_user_identity_id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.BlockedAtUtc).HasColumnName("blocked_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.UnblockedAtUtc).HasColumnName("unblocked_at_utc");
+            entity.Property(e => e.SourceCustomerLinkRequestId).HasColumnName("source_customer_link_request_id");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+            entity.HasIndex(e => new { e.PersonalUserIdentityId, e.OrganizationId })
+                .IsUnique()
+                .HasDatabaseName("ux_personal_org_connection_blocks_pair");
+            entity.HasIndex(e => e.PersonalUserIdentityId)
+                .HasFilter("status = 'Active'")
+                .HasDatabaseName("ix_personal_org_connection_blocks_personal_active");
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.PersonalUserIdentityId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<OrganizationInAppNotificationRecord>(entity =>
@@ -2360,6 +2420,47 @@ public sealed class PlatformDbContext : DbContext
             entity.HasOne<PlatformUserRecord>()
                 .WithMany()
                 .HasForeignKey(e => e.PersonalUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PersonalTodoRecord>(entity =>
+        {
+            entity.ToTable("personal_todos");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OwnerUserIdentityId).HasColumnName("owner_user_identity_id");
+            entity.Property(e => e.Title).HasColumnName("title").HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Notes).HasColumnName("notes").HasMaxLength(2000);
+            entity.Property(e => e.DueAtUtc).HasColumnName("due_at_utc");
+            entity.Property(e => e.ReminderAtUtc).HasColumnName("reminder_at_utc");
+            entity.Property(e => e.ReminderNotifiedAtUtc).HasColumnName("reminder_notified_at_utc");
+            entity.Property(e => e.Priority).HasColumnName("priority").HasMaxLength(16).IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(16).IsRequired();
+            entity.Property(e => e.RelatedEntityType).HasColumnName("related_entity_type").HasMaxLength(64);
+            entity.Property(e => e.RelatedEntityId).HasColumnName("related_entity_id");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.CompletedAtUtc).HasColumnName("completed_at_utc");
+            entity.Property(e => e.Version).HasColumnName("version").IsConcurrencyToken();
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => e.OwnerUserIdentityId)
+                .HasDatabaseName("ix_personal_todos_owner_user_identity_id");
+            entity.HasIndex(e => new { e.OwnerUserIdentityId, e.Status })
+                .HasDatabaseName("ix_personal_todos_owner_status");
+            entity.HasIndex(e => new { e.OwnerUserIdentityId, e.DueAtUtc })
+                .HasDatabaseName("ix_personal_todos_owner_due");
+            entity.HasIndex(e => new { e.Status, e.ReminderAtUtc })
+                .HasDatabaseName("ix_personal_todos_status_reminder")
+                .HasFilter("reminder_at_utc IS NOT NULL AND reminder_notified_at_utc IS NULL");
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OwnerUserIdentityId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

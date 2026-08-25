@@ -107,6 +107,7 @@ public static class DependencyInjection
         services.AddScoped<ICreditCustomerRepository, CreditCustomerRepository>();
         services.AddScoped<ICustomerLinkRequestRepository, CustomerLinkRequestRepository>();
         services.AddScoped<ILinkedCustomerAppUserRepository, LinkedCustomerAppUserRepository>();
+        services.AddScoped<IPersonalOrganizationConnectionBlockRepository, PersonalOrganizationConnectionBlockRepository>();
         services.AddScoped<IOrganizationInAppNotificationRepository, OrganizationInAppNotificationRepository>();
         services.AddScoped<IProductAccessAssignmentRepository, ProductAccessAssignmentRepository>();
         services.AddScoped<IPlatformRoleAssignmentRepository, PlatformRoleAssignmentRepository>();
@@ -136,6 +137,7 @@ public static class DependencyInjection
         services.AddScoped<IPersonalRewardBalanceRepository, PersonalRewardBalanceRepository>();
         services.AddScoped<IPersonalRewardTransactionRepository, PersonalRewardTransactionRepository>();
         services.AddScoped<IPersonalRewardClaimRepository, PersonalRewardClaimRepository>();
+        services.AddScoped<IPersonalTodoRepository, PersonalTodoRepository>();
         services.AddSingleton<IRewardedAdClaimVerifier, NullRewardedAdClaimVerifier>();
         services.AddScoped<IPersonalAdEligibility, DefaultPersonalAdEligibility>();
         services.Configure<PersonalRewardClaimOptions>(config.GetSection(PersonalRewardClaimOptions.SectionName));

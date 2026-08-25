@@ -35,7 +35,9 @@ public sealed record CustomerStatementDto(
     DateTimeOffset GeneratedAtUtc,
     string CurrencyCode,
     string CultureName,
-    IReadOnlyList<CustomerStatementLineDto> Lines);
+    IReadOnlyList<CustomerStatementLineDto> Lines,
+    decimal PeriodWriteOffTotal = 0m,
+    decimal PeriodReversalWriteOffTotal = 0m);
 
 public sealed record RepaymentReceiptDto(
     string ReceiptReference,

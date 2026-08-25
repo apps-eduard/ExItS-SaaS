@@ -3,9 +3,11 @@ using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.LocalValidation;
 using ExItS.Platform.Application.Organizations;
+using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Products;
 using ExItS.Platform.UnitTests.Support;
 using ExItS.Platform.UnitTests.TestSupport;
 using Microsoft.Extensions.Options;
@@ -131,6 +133,7 @@ public sealed class OrganizationScopedStaffIdentityTests
         Assert.StartsWith("ana@", accept.Value.StaffLogin, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(harness.OrgA.PublicOrganizationId!, accept.Value.StaffLogin, StringComparison.OrdinalIgnoreCase);
         Assert.True(staff.IsOrganizationScopedStaff);
+        Assert.Null(staff.LinkedPersonalUserId);
 
         var acceptedMail = harness.Messages.LastOfKind(
             PlatformAuthOutboundMessageKinds.OrganizationStaffInvitationAccepted);
@@ -245,12 +248,11 @@ public sealed class OrganizationScopedStaffIdentityTests
         var harness = await StaffInviteHarness.CreateAsync(createOrgB: true);
         const string contact = "multi.identity@example.com";
 
-        var personal = (await new CreatePlatformUser(
-                harness.Users,
-                harness.UnitOfWork,
-                harness.Clock,
-                new SequentialPublicUserIdGenerator())
-            .ExecuteAsync("personal_multi", "Personal Multi", contact)).Value!;
+        var personal = await harness.CreateVerifiedPersonalAsync(
+            "personal_multi",
+            "Personal Multi",
+            contact,
+            StaffPassword);
 
         var inviteA = await harness.CreateInvitation.ExecuteAsync(
             harness.OrgA.Id,
@@ -259,7 +261,10 @@ public sealed class OrganizationScopedStaffIdentityTests
             harness.Owner.Id,
             OrganizationRole.OrganizationOwner,
             actorHasPlatformManageMemberships: false);
-        var staffA = (await harness.AcceptInvitation.ExecuteAsync(inviteA.Value!.AcceptToken!, StaffPassword)).Value!;
+        var staffA = (await harness.AcceptInvitation.ExecuteForAuthenticatedPersonalAsync(
+            personal.Id,
+            inviteA.Value!.AcceptToken!,
+            StaffPassword + "A")).Value!;
 
         var inviteB = await harness.CreateInvitation.ExecuteAsync(
             harness.OrgB!.Id,
@@ -268,7 +273,10 @@ public sealed class OrganizationScopedStaffIdentityTests
             harness.Owner.Id,
             OrganizationRole.OrganizationOwner,
             actorHasPlatformManageMemberships: false);
-        var staffB = (await harness.AcceptInvitation.ExecuteAsync(inviteB.Value!.AcceptToken!, StaffPassword)).Value!;
+        var staffB = (await harness.AcceptInvitation.ExecuteForAuthenticatedPersonalAsync(
+            personal.Id,
+            inviteB.Value!.AcceptToken!,
+            StaffPassword + "B")).Value!;
 
         var orgAUser = (await harness.Users.GetByIdAsync(PlatformUserId.From(staffA.UserId)))!;
         orgAUser.Suspend(T0.AddMinutes(1), "org A only");
@@ -285,6 +293,553 @@ public sealed class OrganizationScopedStaffIdentityTests
         Assert.Equal(AccountStatus.Deactivated, (await harness.Users.GetByIdAsync(orgAUser.Id))!.Status);
         Assert.Equal(AccountStatus.Active, (await harness.Users.GetByIdAsync(personal.Id))!.Status);
         Assert.Equal(AccountStatus.Active, (await harness.Users.GetByIdAsync(PlatformUserId.From(staffB.UserId)))!.Status);
+    }
+
+    [Fact]
+    public async Task Authenticated_personal_accept_creates_linked_staff_without_converting_personal()
+    {
+        var harness = await StaffInviteHarness.CreateAsync();
+        const string email = "paul@gmail.com";
+        const string personalPassword = "SecurePass1!";
+        const string staffPassword = "SecurePass2!";
+        var personal = await harness.CreateVerifiedPersonalAsync("paul", "Paul", email, personalPassword);
+
+        var invite = await harness.CreateInvitation.ExecuteAsync(
+            harness.OrgA.Id,
+            email,
+            OrganizationRole.OrganizationMember,
+            harness.Owner.Id,
+            OrganizationRole.OrganizationOwner,
+            actorHasPlatformManageMemberships: false,
+            displayName: "Paul Staff");
+        Assert.True(invite.IsSuccess, invite.ErrorMessage);
+
+        var anonymous = await harness.AcceptInvitation.ExecuteAsync(invite.Value!.AcceptToken!, staffPassword);
+        Assert.False(anonymous.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.InvitationRequiresAuthenticatedPersonal, anonymous.ErrorCode);
+
+        var accept = await harness.AcceptInvitation.ExecuteForAuthenticatedPersonalAsync(
+            personal.Id,
+            invite.Value.AcceptToken!,
+            staffPassword);
+        Assert.True(accept.IsSuccess, accept.ErrorMessage);
+        Assert.NotEqual(personal.Id.Value, accept.Value!.UserId);
+        Assert.Equal(personal.Id.Value, accept.Value.LinkedPersonalUserId);
+        Assert.StartsWith("paul@", accept.Value.StaffLogin, StringComparison.OrdinalIgnoreCase);
+
+        var unchangedPersonal = (await harness.Users.GetByIdAsync(personal.Id))!;
+        Assert.Null(unchangedPersonal.HomeOrganizationId);
+        Assert.Equal(email, unchangedPersonal.NormalizedEmail);
+        Assert.Equal(AccountStatus.Active, unchangedPersonal.Status);
+
+        var staff = (await harness.Users.GetByIdAsync(PlatformUserId.From(accept.Value.UserId)))!;
+        Assert.Equal(harness.OrgA.Id, staff.HomeOrganizationId);
+        Assert.Equal(personal.Id, staff.LinkedPersonalUserId);
+        Assert.Equal(email, staff.NormalizedContactEmail);
+        Assert.NotEqual(personal.Id, staff.Id);
+
+        var login = harness.CreateLogin();
+        var personalLogin = await login.ExecuteAsync(email, personalPassword, null, null);
+        Assert.True(personalLogin.IsSuccess, personalLogin.ErrorMessage);
+        Assert.Equal(personal.Id.Value, personalLogin.Value!.UserId);
+
+        var personalAsStaff = await login.ExecuteAsync(accept.Value.StaffLogin, personalPassword, null, null);
+        Assert.False(personalAsStaff.IsSuccess);
+
+        var staffLogin = await login.ExecuteAsync(accept.Value.StaffLogin, staffPassword, null, null);
+        Assert.True(staffLogin.IsSuccess, staffLogin.ErrorMessage);
+        Assert.Equal(staff.Id.Value, staffLogin.Value!.UserId);
+
+        var staffAsPersonal = await login.ExecuteAsync(email, staffPassword, null, null);
+        Assert.False(staffAsPersonal.IsSuccess);
+
+        Assert.Contains(
+            harness.Audit.Entries,
+            e => e.Action == PlatformAuditActions.InvitationAccepted
+                 && e.Actor == $"platform-user:{personal.Id.Value:D}"
+                 && e.OrganizationId == harness.OrgA.Id
+                 && e.Summary is not null
+                 && e.Summary.Contains(accept.Value.UserId.ToString("D"), StringComparison.Ordinal)
+                 && e.Summary.Contains(personal.Id.Value.ToString("D"), StringComparison.Ordinal)
+                 && !e.Summary.Contains(staffPassword, StringComparison.Ordinal)
+                 && !e.Summary.Contains(invite.Value.AcceptToken!, StringComparison.Ordinal));
+        Assert.Contains(
+            harness.Audit.Entries,
+            e => e.Action == PlatformAuditActions.PersonLinkEstablished
+                 && e.TargetId == accept.Value.UserId.ToString("D")
+                 && e.Actor == $"platform-user:{personal.Id.Value:D}"
+                 && e.Summary is not null
+                 && e.Summary.Contains("not authorization", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task Platform_only_same_email_allows_anonymous_accept_without_person_link()
+    {
+        var harness = await StaffInviteHarness.CreateAsync();
+        const string email = "employee@company.com";
+        var platformUser = (await new CreatePlatformUser(
+            harness.Users,
+            harness.UnitOfWork,
+            harness.Clock,
+            new SequentialPublicUserIdGenerator())
+            .ExecuteAsync("platemp", "Platform Emp", email)).Value!;
+        var credential = PlatformUserCredential.Create(
+            platformUser.Id,
+            harness.Hasher.HashPassword(StaffPassword),
+            harness.Hasher.Algorithm,
+            harness.Clock.UtcNow);
+        credential.MarkEmailVerified(harness.Clock.UtcNow);
+        await harness.Credentials.AddAsync(credential);
+        await harness.EnsureProfiles.ExecuteAsync(
+            platformUser.Id,
+            AccountClass.Platform,
+            exclusivePreferredClass: true);
+
+        Assert.Null(await harness.Profiles.GetByUserAndClassAsync(platformUser.Id, AccountClass.Personal));
+
+        var invite = await harness.CreateInvitation.ExecuteAsync(
+            harness.OrgA.Id,
+            email,
+            OrganizationRole.OrganizationMember,
+            harness.Owner.Id,
+            OrganizationRole.OrganizationOwner,
+            actorHasPlatformManageMemberships: false);
+        Assert.True(invite.IsSuccess, invite.ErrorMessage);
+
+        var accept = await harness.AcceptInvitation.ExecuteAsync(invite.Value!.AcceptToken!, StaffPassword);
+        Assert.True(accept.IsSuccess, accept.ErrorMessage);
+        Assert.Null(accept.Value!.LinkedPersonalUserId);
+        Assert.NotEqual(platformUser.Id.Value, accept.Value.UserId);
+
+        var staff = (await harness.Users.GetByIdAsync(PlatformUserId.From(accept.Value.UserId)))!;
+        Assert.Null(staff.LinkedPersonalUserId);
+        Assert.Equal(harness.OrgA.Id, staff.HomeOrganizationId);
+        Assert.DoesNotContain(
+            harness.Audit.Entries,
+            e => e.Action == PlatformAuditActions.PersonLinkEstablished);
+    }
+
+    [Fact]
+    public async Task Authenticated_platform_user_without_personal_profile_cannot_accept_as_personal()
+    {
+        var harness = await StaffInviteHarness.CreateAsync();
+        const string email = "employee@company.com";
+        var platformUser = (await new CreatePlatformUser(
+            harness.Users,
+            harness.UnitOfWork,
+            harness.Clock,
+            new SequentialPublicUserIdGenerator())
+            .ExecuteAsync("platemp2", "Platform Emp2", email)).Value!;
+        var credential = PlatformUserCredential.Create(
+            platformUser.Id,
+            harness.Hasher.HashPassword(StaffPassword),
+            harness.Hasher.Algorithm,
+            harness.Clock.UtcNow);
+        credential.MarkEmailVerified(harness.Clock.UtcNow);
+        await harness.Credentials.AddAsync(credential);
+        await harness.EnsureProfiles.ExecuteAsync(
+            platformUser.Id,
+            AccountClass.Platform,
+            exclusivePreferredClass: true);
+
+        var invite = await harness.CreateInvitation.ExecuteAsync(
+            harness.OrgA.Id,
+            email,
+            OrganizationRole.OrganizationMember,
+            harness.Owner.Id,
+            OrganizationRole.OrganizationOwner,
+            actorHasPlatformManageMemberships: false);
+
+        var denied = await harness.AcceptInvitation.ExecuteForAuthenticatedPersonalAsync(
+            platformUser.Id,
+            invite.Value!.AcceptToken!,
+            StaffPassword);
+        Assert.False(denied.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.InvitationNotFound, denied.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Unverified_personal_authenticated_accept_is_rejected()
+    {
+        var harness = await StaffInviteHarness.CreateAsync();
+        const string email = "paul@gmail.com";
+        var personal = (await new CreatePlatformUser(
+            harness.Users,
+            harness.UnitOfWork,
+            harness.Clock,
+            new SequentialPublicUserIdGenerator())
+            .ExecuteAsync("pauluv", "Paul", email)).Value!;
+        await harness.Credentials.AddAsync(PlatformUserCredential.Create(
+            personal.Id,
+            harness.Hasher.HashPassword(StaffPassword),
+            harness.Hasher.Algorithm,
+            harness.Clock.UtcNow));
+        await harness.EnsureProfiles.ExecuteAsync(personal.Id, AccountClass.Personal, exclusivePreferredClass: true);
+
+        var invite = await harness.CreateInvitation.ExecuteAsync(
+            harness.OrgA.Id,
+            email,
+            OrganizationRole.OrganizationMember,
+            harness.Owner.Id,
+            OrganizationRole.OrganizationOwner,
+            actorHasPlatformManageMemberships: false);
+
+        var anonymous = await harness.AcceptInvitation.ExecuteAsync(invite.Value!.AcceptToken!, StaffPassword);
+        Assert.False(anonymous.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.InvitationRequiresAuthenticatedPersonal, anonymous.ErrorCode);
+
+        var denied = await harness.AcceptInvitation.ExecuteForAuthenticatedPersonalAsync(
+            personal.Id,
+            invite.Value.AcceptToken!,
+            StaffPassword);
+        Assert.False(denied.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.InvitationPersonalEmailUnverified, denied.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Staff_lockout_does_not_lock_personal_or_other_staff_principal()
+    {
+        var harness = await StaffInviteHarness.CreateAsync(createOrgB: true);
+        const string email = "paul@gmail.com";
+        const string personalPassword = "SecurePass1!";
+        var personal = await harness.CreateVerifiedPersonalAsync("paul", "Paul", email, personalPassword);
+
+        var inviteA = await harness.CreateInvitation.ExecuteAsync(
+            harness.OrgA.Id,
+            email,
+            OrganizationRole.OrganizationMember,
+            harness.Owner.Id,
+            OrganizationRole.OrganizationOwner,
+            actorHasPlatformManageMemberships: false);
+        var inviteB = await harness.CreateInvitation.ExecuteAsync(
+            harness.OrgB!.Id,
+            email,
+            OrganizationRole.OrganizationMember,
+            harness.Owner.Id,
+            OrganizationRole.OrganizationOwner,
+            actorHasPlatformManageMemberships: false);
+
+        var staffA = (await harness.AcceptInvitation.ExecuteForAuthenticatedPersonalAsync(
+            personal.Id, inviteA.Value!.AcceptToken!, "SecurePass2!")).Value!;
+        var staffB = (await harness.AcceptInvitation.ExecuteForAuthenticatedPersonalAsync(
+            personal.Id, inviteB.Value!.AcceptToken!, "SecurePass3!")).Value!;
+
+        var login = harness.CreateLogin();
+        for (var i = 0; i < 5; i++)
+        {
+            var failed = await login.ExecuteAsync(staffA.StaffLogin, "WrongPass1!!!!", null, null);
+            Assert.False(failed.IsSuccess);
+        }
+
+        var locked = await login.ExecuteAsync(staffA.StaffLogin, "SecurePass2!", null, null);
+        Assert.False(locked.IsSuccess);
+
+        var personalStill = await login.ExecuteAsync(email, personalPassword, null, null);
+        Assert.True(personalStill.IsSuccess, personalStill.ErrorMessage);
+        Assert.Equal(personal.Id.Value, personalStill.Value!.UserId);
+
+        var staffBStill = await login.ExecuteAsync(staffB.StaffLogin, "SecurePass3!", null, null);
+        Assert.True(staffBStill.IsSuccess, staffBStill.ErrorMessage);
+        Assert.Equal(staffB.UserId, staffBStill.Value!.UserId);
+    }
+
+    [Fact]
+    public async Task Multi_org_personal_accept_links_two_staff_principals_with_independent_home_orgs()
+    {
+        var harness = await StaffInviteHarness.CreateAsync(createOrgB: true);
+        const string email = "paul@gmail.com";
+        var personal = await harness.CreateVerifiedPersonalAsync("paul", "Paul", email, StaffPassword);
+
+        var inviteA = await harness.CreateInvitation.ExecuteAsync(
+            harness.OrgA.Id,
+            email,
+            OrganizationRole.OrganizationMember,
+            harness.Owner.Id,
+            OrganizationRole.OrganizationOwner,
+            actorHasPlatformManageMemberships: false);
+        var inviteB = await harness.CreateInvitation.ExecuteAsync(
+            harness.OrgB!.Id,
+            email,
+            OrganizationRole.OrganizationMember,
+            harness.Owner.Id,
+            OrganizationRole.OrganizationOwner,
+            actorHasPlatformManageMemberships: false);
+
+        var staffA = (await harness.AcceptInvitation.ExecuteForAuthenticatedPersonalAsync(
+            personal.Id, inviteA.Value!.AcceptToken!, StaffPassword + "A")).Value!;
+        var staffB = (await harness.AcceptInvitation.ExecuteForAuthenticatedPersonalAsync(
+            personal.Id, inviteB.Value!.AcceptToken!, StaffPassword + "B")).Value!;
+
+        Assert.NotEqual(staffA.UserId, staffB.UserId);
+        Assert.Equal(personal.Id.Value, staffA.LinkedPersonalUserId);
+        Assert.Equal(personal.Id.Value, staffB.LinkedPersonalUserId);
+
+        var userA = (await harness.Users.GetByIdAsync(PlatformUserId.From(staffA.UserId)))!;
+        var userB = (await harness.Users.GetByIdAsync(PlatformUserId.From(staffB.UserId)))!;
+        Assert.Equal(harness.OrgA.Id, userA.HomeOrganizationId);
+        Assert.Equal(harness.OrgB.Id, userB.HomeOrganizationId);
+
+        var login = harness.CreateLogin();
+        Assert.True((await login.ExecuteAsync(staffA.StaffLogin, StaffPassword + "A", null, null)).IsSuccess);
+        Assert.False((await login.ExecuteAsync(staffB.StaffLogin, StaffPassword + "A", null, null)).IsSuccess);
+        Assert.True((await login.ExecuteAsync(staffB.StaffLogin, StaffPassword + "B", null, null)).IsSuccess);
+
+        const string opaque = "staff-a-session";
+        var credentialA = (await harness.Credentials.GetByUserIdAsync(userA.Id))!;
+        await harness.Sessions.AddAsync(PlatformAuthSession.Create(
+            userA.Id,
+            AccountProfileId.New(),
+            AccountClass.Organization,
+            harness.Tokens.HashToken(opaque),
+            credentialA.SecurityStamp,
+            T0,
+            TimeSpan.FromMinutes(30),
+            TimeSpan.FromHours(12),
+            selectedOrganizationId: harness.OrgA.Id));
+        var setContext = new SetSessionOrganizationContext(
+            harness.Sessions,
+            harness.Tokens,
+            harness.Memberships,
+            harness.Organizations,
+            harness.Users,
+            harness.OrgPreferences,
+            new NoOpAuditWriter(),
+            harness.UnitOfWork,
+            harness.Clock,
+            new ListEligibleOrganizationsForSession(
+                harness.Sessions,
+                harness.Tokens,
+                harness.Memberships,
+                harness.Organizations));
+        var switchAway = await setContext.ExecuteAsync(opaque, harness.OrgB.Id.Value);
+        Assert.False(switchAway.IsSuccess);
+        Assert.Equal(DomainErrorCodes.StaffOrganizationSwitchDenied, switchAway.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Wrong_personal_cannot_accept_and_does_not_create_staff()
+    {
+        var harness = await StaffInviteHarness.CreateAsync();
+        var paul = await harness.CreateVerifiedPersonalAsync("paul", "Paul", "paul@gmail.com", StaffPassword);
+        var mary = await harness.CreateVerifiedPersonalAsync("mary", "Mary", "mary@gmail.com", StaffPassword);
+        var usersBefore = harness.Users.AddCount;
+
+        var invite = await harness.CreateInvitation.ExecuteAsync(
+            harness.OrgA.Id,
+            "paul@gmail.com",
+            OrganizationRole.OrganizationMember,
+            harness.Owner.Id,
+            OrganizationRole.OrganizationOwner,
+            actorHasPlatformManageMemberships: false);
+
+        var denied = await harness.AcceptInvitation.ExecuteForAuthenticatedPersonalAsync(
+            mary.Id,
+            invite.Value!.AcceptToken!,
+            StaffPassword);
+        Assert.False(denied.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.InvitationNotFound, denied.ErrorCode);
+        Assert.Equal(usersBefore, harness.Users.AddCount);
+        Assert.Null((await harness.Users.GetByIdAsync(paul.Id))!.HomeOrganizationId);
+        Assert.DoesNotContain("paul", denied.ErrorMessage ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Matching_contact_email_does_not_auto_link_legacy_staff()
+    {
+        var harness = await StaffInviteHarness.CreateAsync();
+        var personal = await harness.CreateVerifiedPersonalAsync("legacy", "Legacy", "legacy@example.com", StaffPassword);
+        var staff = PlatformUser.CreateOrganizationStaff(
+            "legacy_staff",
+            "legacy@ORG001111",
+            "legacy@example.com",
+            harness.OrgA.Id,
+            "Legacy Staff",
+            T0);
+        await harness.Users.AddAsync(staff);
+
+        Assert.Null(staff.LinkedPersonalUserId);
+        Assert.Null((await harness.Users.GetByIdAsync(staff.Id))!.LinkedPersonalUserId);
+        Assert.Equal(personal.Id, (await harness.Users.GetByNormalizedEmailAsync("legacy@example.com"))!.Id);
+        Assert.NotEqual(personal.Id, staff.Id);
+    }
+
+    [Fact]
+    public async Task Revoked_or_replayed_invitation_does_not_create_staff()
+    {
+        var harness = await StaffInviteHarness.CreateAsync();
+        var invited = await harness.CreateInvitation.ExecuteAsync(
+            harness.OrgA.Id,
+            "replay@example.com",
+            OrganizationRole.OrganizationMember,
+            harness.Owner.Id,
+            OrganizationRole.OrganizationOwner,
+            actorHasPlatformManageMemberships: false);
+        var token = invited.Value!.AcceptToken!;
+        var first = await harness.AcceptInvitation.ExecuteAsync(token, StaffPassword);
+        Assert.True(first.IsSuccess, first.ErrorMessage);
+        var usersAfterFirst = harness.Users.AddCount;
+
+        var replay = await harness.AcceptInvitation.ExecuteAsync(token, StaffPassword);
+        Assert.False(replay.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.InvitationNotFound, replay.ErrorCode);
+        Assert.Equal(usersAfterFirst, harness.Users.AddCount);
+
+        var revokedInvite = await harness.CreateInvitation.ExecuteAsync(
+            harness.OrgA.Id,
+            "revoked@example.com",
+            OrganizationRole.OrganizationMember,
+            harness.Owner.Id,
+            OrganizationRole.OrganizationOwner,
+            actorHasPlatformManageMemberships: false);
+        var revoke = new RevokeOrganizationInvitation(harness.Invitations, harness.UnitOfWork, harness.Clock);
+        Assert.True((await revoke.ExecuteAsync(OrganizationInvitationId.From(revokedInvite.Value!.Id))).IsSuccess);
+        var revokedAccept = await harness.AcceptInvitation.ExecuteAsync(
+            revokedInvite.Value.AcceptToken!,
+            StaffPassword);
+        Assert.False(revokedAccept.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.InvitationNotFound, revokedAccept.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Staff_membership_without_pos_grant_then_assign_and_revoke()
+    {
+        var harness = await StaffInviteHarness.CreateAsync();
+        var invite = await harness.CreateInvitation.ExecuteAsync(
+            harness.OrgA.Id,
+            "cashierless@example.com",
+            OrganizationRole.OrganizationMember,
+            harness.Owner.Id,
+            OrganizationRole.OrganizationOwner,
+            actorHasPlatformManageMemberships: false);
+        var accept = await harness.AcceptInvitation.ExecuteAsync(invite.Value!.AcceptToken!, StaffPassword);
+        Assert.True(accept.IsSuccess, accept.ErrorMessage);
+        var staffId = PlatformUserId.From(accept.Value!.UserId);
+
+        Assert.Null(await harness.RoleGrants.FindActiveByUserOrganizationProductAsync(
+            harness.OrgA.Id,
+            staffId,
+            ProductCode.PinoyBusinessPos));
+
+        var grant = ProductLocalRoleGrant.Create(
+            harness.OrgA.Id,
+            staffId,
+            ProductCode.PinoyBusinessPos,
+            ProductLocalRoleCodes.Cashier,
+            harness.Owner.Id,
+            T0);
+        await harness.RoleGrants.AddAsync(grant);
+        Assert.NotNull(await harness.RoleGrants.FindActiveByUserOrganizationProductAsync(
+            harness.OrgA.Id,
+            staffId,
+            ProductCode.PinoyBusinessPos));
+
+        var revoke = new RevokeProductLocalRole(harness.RoleGrants, harness.UnitOfWork, harness.Clock);
+        Assert.True((await revoke.ExecuteAsync(grant.Id, harness.Owner.Id, "remove POS")).IsSuccess);
+        Assert.Null(await harness.RoleGrants.FindActiveByUserOrganizationProductAsync(
+            harness.OrgA.Id,
+            staffId,
+            ProductCode.PinoyBusinessPos));
+    }
+
+    [Fact]
+    public async Task Person_link_does_not_attach_membership_to_personal_or_authorize_personal_as_staff()
+    {
+        var harness = await StaffInviteHarness.CreateAsync();
+        var personal = await harness.CreateVerifiedPersonalAsync("custpaul", "Paul", "custpaul@example.com", StaffPassword);
+        var invite = await harness.CreateInvitation.ExecuteAsync(
+            harness.OrgA.Id,
+            "custpaul@example.com",
+            OrganizationRole.OrganizationMember,
+            harness.Owner.Id,
+            OrganizationRole.OrganizationOwner,
+            actorHasPlatformManageMemberships: false);
+        var accept = await harness.AcceptInvitation.ExecuteForAuthenticatedPersonalAsync(
+            personal.Id,
+            invite.Value!.AcceptToken!,
+            StaffPassword);
+        Assert.True(accept.IsSuccess, accept.ErrorMessage);
+
+        var (personalMemberships, _) = await harness.Memberships.ListByUserAsync(personal.Id, status: null, skip: 0, take: 20);
+        Assert.Empty(personalMemberships);
+
+        var staffMembership = await harness.Memberships.FindActiveByUserAndOrganizationAsync(
+            PlatformUserId.From(accept.Value!.UserId),
+            harness.OrgA.Id);
+        Assert.NotNull(staffMembership);
+    }
+
+    [Fact]
+    public async Task Org_a_membership_removal_does_not_touch_personal_or_org_b()
+    {
+        var harness = await StaffInviteHarness.CreateAsync(createOrgB: true);
+        const string email = "remove@example.com";
+        var personal = await harness.CreateVerifiedPersonalAsync("remove", "Remove", email, StaffPassword);
+        var inviteA = await harness.CreateInvitation.ExecuteAsync(
+            harness.OrgA.Id,
+            email,
+            OrganizationRole.OrganizationMember,
+            harness.Owner.Id,
+            OrganizationRole.OrganizationOwner,
+            actorHasPlatformManageMemberships: false);
+        var inviteB = await harness.CreateInvitation.ExecuteAsync(
+            harness.OrgB!.Id,
+            email,
+            OrganizationRole.OrganizationMember,
+            harness.Owner.Id,
+            OrganizationRole.OrganizationOwner,
+            actorHasPlatformManageMemberships: false);
+        var staffA = (await harness.AcceptInvitation.ExecuteForAuthenticatedPersonalAsync(
+            personal.Id, inviteA.Value!.AcceptToken!, StaffPassword + "A")).Value!;
+        var staffB = (await harness.AcceptInvitation.ExecuteForAuthenticatedPersonalAsync(
+            personal.Id, inviteB.Value!.AcceptToken!, StaffPassword + "B")).Value!;
+
+        var revoke = new RevokeOrganizationMembership(
+            harness.Memberships,
+            new InMemoryProductAccessAssignmentRepository(),
+            harness.Sessions,
+            new InMemoryPlatformAccessTokenRepository(),
+            harness.UnitOfWork,
+            harness.Clock);
+        Assert.True((await revoke.ExecuteAsync(
+            OrganizationMembershipId.From(staffA.MembershipId),
+            "org A only")).IsSuccess);
+
+        var login = harness.CreateLogin();
+        Assert.True((await login.ExecuteAsync(email, StaffPassword, null, null)).IsSuccess);
+        Assert.True((await login.ExecuteAsync(staffB.StaffLogin, StaffPassword + "B", null, null)).IsSuccess);
+
+        var userA = (await harness.Users.GetByIdAsync(PlatformUserId.From(staffA.UserId)))!;
+        Assert.Equal(personal.Id, userA.LinkedPersonalUserId);
+        Assert.Equal(AccountStatus.Active, userA.Status);
+        Assert.Equal(AccountStatus.Active, (await harness.Users.GetByIdAsync(personal.Id))!.Status);
+        Assert.Equal(AccountStatus.Active, (await harness.Users.GetByIdAsync(PlatformUserId.From(staffB.UserId)))!.Status);
+    }
+
+    [Fact]
+    public void Person_link_is_staff_only_and_immutable()
+    {
+        var orgId = PlatformOrganizationId.New();
+        var personalId = PlatformUserId.New();
+        var staff = PlatformUser.CreateOrganizationStaff(
+            "linked_staff",
+            "linked@ORG009999",
+            "linked@example.com",
+            orgId,
+            "Linked Staff",
+            T0,
+            linkedPersonalUserId: personalId);
+        Assert.Equal(personalId, staff.LinkedPersonalUserId);
+
+        staff.LinkToPersonalPrincipal(personalId, T0.AddMinutes(1));
+        Assert.Equal(personalId, staff.LinkedPersonalUserId);
+
+        var other = PlatformUserId.New();
+        var ex = Assert.Throws<DomainException>(() => staff.LinkToPersonalPrincipal(other, T0.AddMinutes(2)));
+        Assert.Equal(DomainErrorCodes.PersonLinkImmutable, ex.ErrorCode);
+
+        var personal = PlatformUser.Create("personal_only", "Personal Only", "only@example.com", T0);
+        var personalEx = Assert.Throws<DomainException>(() => personal.LinkToPersonalPrincipal(personalId, T0));
+        Assert.Equal(DomainErrorCodes.PersonLinkStaffRequired, personalEx.ErrorCode);
     }
 
     [Fact]
@@ -378,7 +933,13 @@ public sealed class OrganizationScopedStaffIdentityTests
         public PlatformOrganization? OrgB { get; init; }
         public required CreateOrganizationInvitation CreateInvitation { get; init; }
         public required AcceptOrganizationInvitation AcceptInvitation { get; init; }
+        public required EnsureAccountProfilesForUser EnsureProfiles { get; init; }
+        public required IPlatformPasswordHasher Hasher { get; init; }
+        public required AssignProductLocalRole AssignRole { get; init; }
+        public required InMemoryProductLocalRoleGrantRepository RoleGrants { get; init; }
         public required CapturingAuthOutboundMessageSink Messages { get; init; }
+        public required RecordingAuditWriter Audit { get; init; }
+        public required InMemoryAccountProfileRepository Profiles { get; init; }
 
         public static async Task<StaffInviteHarness> CreateAsync(bool createOrgB = false)
         {
@@ -408,6 +969,7 @@ public sealed class OrganizationScopedStaffIdentityTests
                 users, orgs, memberships, products, roleGrants, grantAccess, uow, clock);
             var hasher = new StubPasswordHasher();
             var staffLogins = new FakeStaffLoginNameAllocator(users);
+            var audit = new RecordingAuditWriter();
 
             var owner = (await new CreatePlatformUser(users, uow, clock, new SequentialPublicUserIdGenerator())
                 .ExecuteAsync("owner", "Org Owner", "owner@example.com")).Value!;
@@ -439,6 +1001,7 @@ public sealed class OrganizationScopedStaffIdentityTests
                 orgs,
                 users,
                 credentials,
+                profiles,
                 staffLogins,
                 publicOrgIds,
                 hasher,
@@ -448,6 +1011,7 @@ public sealed class OrganizationScopedStaffIdentityTests
                 messages,
                 uow,
                 clock,
+                audit,
                 Options.Create(new PlatformPasswordOptions()));
 
             return new StaffInviteHarness
@@ -467,9 +1031,53 @@ public sealed class OrganizationScopedStaffIdentityTests
                 OrgB = orgB,
                 CreateInvitation = createInvitation,
                 AcceptInvitation = acceptInvitation,
-                Messages = messages
+                EnsureProfiles = ensure,
+                Hasher = hasher,
+                AssignRole = assignRole,
+                RoleGrants = roleGrants,
+                Messages = messages,
+                Audit = audit,
+                Profiles = profiles
             };
         }
+
+        public async Task<PlatformUser> CreateVerifiedPersonalAsync(
+            string username,
+            string displayName,
+            string email,
+            string password)
+        {
+            var user = (await new CreatePlatformUser(Users, UnitOfWork, Clock, new SequentialPublicUserIdGenerator())
+                .ExecuteAsync(username, displayName, email)).Value!;
+            var credential = PlatformUserCredential.Create(
+                user.Id,
+                Hasher.HashPassword(password),
+                Hasher.Algorithm,
+                Clock.UtcNow);
+            credential.MarkEmailVerified(Clock.UtcNow);
+            await Credentials.AddAsync(credential);
+            await EnsureProfiles.ExecuteAsync(user.Id, AccountClass.Personal, exclusivePreferredClass: true);
+            return (await Users.GetByIdAsync(user.Id))!;
+        }
+
+        public LoginPlatformUser CreateLogin() =>
+            new(
+                Users,
+                Credentials,
+                Sessions,
+                Memberships,
+                Organizations,
+                OrgPreferences,
+                EnsureProfiles,
+                Hasher,
+                Tokens,
+                new NoOpAuditWriter(),
+                UnitOfWork,
+                Clock,
+                Options.Create(new PlatformLockoutOptions()),
+                Options.Create(new PlatformSessionOptions()),
+                new NullPlatformMfaReadinessService(),
+                Options.Create(new LocalValidationOptions()));
     }
 
     private sealed class InMemoryProductLocalRoleGrantRepository : IProductLocalRoleGrantRepository

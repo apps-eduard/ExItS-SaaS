@@ -20,7 +20,7 @@ public static class CashCountModes
     public const string Optional = nameof(CashCountMode.Optional);
     public const string Required = nameof(CashCountMode.Required);
 
-    public const CashCountMode Default = CashCountMode.Required;
+    public const CashCountMode Default = CashCountMode.Optional;
 
     public static CashCountMode Parse(string? value, CashCountMode whenMissing = Default)
     {

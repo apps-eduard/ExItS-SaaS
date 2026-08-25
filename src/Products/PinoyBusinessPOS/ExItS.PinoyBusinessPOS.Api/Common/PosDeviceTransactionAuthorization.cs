@@ -8,17 +8,22 @@ namespace ExItS.PinoyBusinessPOS.Api.Common;
 
 /// <summary>
 /// Verifies that a money-affecting POS request originates from a registered active installation.
-/// Authorization remains authoritative in Platform; no role, including Owner, bypasses this check.
+/// Authorization remains authoritative in Platform; no role, including Owner, bypasses this check
+/// when <see cref="PosDeviceAuthorizationOptions.EnforcementEnabled"/> is true.
 /// </summary>
 internal interface IPosDeviceTransactionAuthorizer
 {
     Task<IResult?> EnsureAuthorizedAsync(HttpRequest request, Guid organizationId, CancellationToken ct);
+
+    /// <summary>Current enforcement flag (for POS runtime policy exposure).</summary>
+    bool EnforcementEnabled { get; }
 }
 
 internal sealed class PosDeviceTransactionAuthorizer(
     HttpClient client,
     IHttpContextAccessor httpContextAccessor,
     IOptions<PlatformAuthOptions> options,
+    IOptions<PosDeviceAuthorizationOptions> deviceAuthorizationOptions,
     IHostEnvironment environment) : IPosDeviceTransactionAuthorizer
 {
     internal const string DeviceHeaderName = "X-Pos-Installation-Device-Id";
@@ -28,8 +33,17 @@ internal sealed class PosDeviceTransactionAuthorizer(
         PropertyNameCaseInsensitive = true
     };
 
+    public bool EnforcementEnabled => deviceAuthorizationOptions.Value.EnforcementEnabled;
+
     public async Task<IResult?> EnsureAuthorizedAsync(HttpRequest request, Guid organizationId, CancellationToken ct)
     {
+        // Pure React PWA: Local Validation sets EnforcementEnabled=false so browsers need not register.
+        // Re-enable with PosDeviceAuthorization__EnforcementEnabled=true for Capacitor/native.
+        if (!deviceAuthorizationOptions.Value.EnforcementEnabled)
+        {
+            return null;
+        }
+
         var deviceId = request.Headers[DeviceHeaderName].FirstOrDefault()?.Trim();
         if (string.IsNullOrWhiteSpace(deviceId))
         {
@@ -40,7 +54,9 @@ internal sealed class PosDeviceTransactionAuthorizer(
                 return null;
             }
 
-            return Denied("application.pos_device.not_authorized", "A registered POS installation device is required.");
+            return Denied(
+                "application.pos_device.registration_required",
+                "Register this device before executing POS sales.");
         }
 
         if (client.BaseAddress is null)
@@ -76,11 +92,19 @@ internal sealed class PosDeviceTransactionAuthorizer(
 
             var errorCode = await ReadErrorCodeAsync(response, ct).ConfigureAwait(false);
             if (response.StatusCode == HttpStatusCode.Forbidden
-                && errorCode is "application.pos_device.not_authorized" or "application.pos_device.revoked")
+                && errorCode is "application.pos_device.not_authorized"
+                    or "application.pos_device.revoked"
+                    or "application.pos_device.registration_required")
             {
-                return Denied(errorCode, errorCode == "application.pos_device.revoked"
-                    ? "This POS device has been revoked."
-                    : "This POS device is not authorized for transactions.");
+                return Denied(
+                    errorCode,
+                    errorCode switch
+                    {
+                        "application.pos_device.revoked" => "This POS device has been revoked.",
+                        "application.pos_device.registration_required" =>
+                            "Register this device before executing POS sales.",
+                        _ => "This POS device is not authorized for transactions.",
+                    });
             }
 
             // Do not disguise a Platform outage as a device rejection. The mobile client must retain

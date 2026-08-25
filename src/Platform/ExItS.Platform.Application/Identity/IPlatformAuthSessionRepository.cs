@@ -82,7 +82,9 @@ public sealed record PlatformAuthSessionInfoDto(
     PlatformMfaReadinessDto? Mfa = null,
     Guid? AccountProfileId = null,
     string? AccountClass = null,
-    string? AllowedScope = null);
+    string? AllowedScope = null,
+    Guid? HomeOrganizationId = null,
+    bool OrganizationContextLocked = false);
 
 /// <summary>Returned only from login — includes the opaque session token once.</summary>
 public sealed record PlatformLoginResultDto(

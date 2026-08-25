@@ -1,0 +1,249 @@
+import { useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { canManageSuppliers, canViewPurchasing } from "@/access/pos-capabilities";
+import {
+  isRelationshipActive,
+  isRelationshipPending,
+  listRelationships,
+} from "@/api/pos/pos-connected-suppliers-client";
+import {
+  activateSupplier,
+  deactivateSupplier,
+  getSupplier,
+  isConnectedSupplier,
+} from "@/api/pos/pos-suppliers-client";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { ErrorState } from "@/components/exits/ErrorState";
+import { LoadingState } from "@/components/exits/LoadingState";
+import { PageHeader } from "@/components/exits/PageHeader";
+import { pageBackNav } from "@/navigation/page-back-nav";
+import { StatusChip } from "@/components/exits/StatusChip";
+import { describeSupplierError } from "@/features/suppliers/supplier-errors";
+import { useI18n } from "@/i18n/I18nProvider";
+import { useWorkspace } from "@/workspace/WorkspaceProvider";
+
+function displayValue(value: string | null | undefined): string {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : "—";
+}
+
+export function SupplierDetailPage() {
+  const { t } = useI18n();
+  const { supplierId } = useParams<{ supplierId: string }>();
+  const { boundWorkspace, sessionGrant } = useWorkspace();
+  const queryClient = useQueryClient();
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [acting, setActing] = useState(false);
+
+  const workspace = useMemo(
+    () =>
+      boundWorkspace?.branchId
+        ? { organizationId: boundWorkspace.organizationId, branchId: boundWorkspace.branchId }
+        : null,
+    [boundWorkspace],
+  );
+
+  const allowManage = canManageSuppliers(sessionGrant);
+  const allowViewPurchasing = canViewPurchasing(sessionGrant);
+
+  const supplierQuery = useQuery({
+    queryKey: ["suppliers", "detail", workspace?.organizationId, supplierId],
+    enabled: Boolean(workspace) && Boolean(supplierId),
+    queryFn: ({ signal }) => getSupplier(workspace!, supplierId!, signal),
+  });
+
+  const relationshipId = supplierQuery.data?.connectedRelationshipId ?? null;
+
+  const relationshipQuery = useQuery({
+    queryKey: ["connected-suppliers", "relationship", relationshipId],
+    enabled: Boolean(workspace) && Boolean(relationshipId),
+    queryFn: async ({ signal }) => {
+      const rows = await listRelationships(workspace!, "buyer", signal);
+      return rows.find((row) => row.relationshipId === relationshipId) ?? null;
+    },
+  });
+
+  if (!workspace || !supplierId) {
+    return <LoadingState label={t("session.loading")} />;
+  }
+
+  if (supplierQuery.isLoading) {
+    return <LoadingState label={t("loading.label")} />;
+  }
+
+  if (supplierQuery.isError || !supplierQuery.data) {
+    return (
+      <ErrorState
+        title={t("error.title")}
+        detail={
+          supplierQuery.error
+            ? describeSupplierError(supplierQuery.error, t)
+            : t("suppliers.notFound")
+        }
+      />
+    );
+  }
+
+  const supplier = supplierQuery.data;
+  const connected = isConnectedSupplier(supplier);
+  const isActive = supplier.status.toLowerCase() === "active";
+  const relationship = relationshipQuery.data;
+  const relationshipActive = relationship ? isRelationshipActive(relationship) : false;
+  const relationshipPending = relationship ? isRelationshipPending(relationship) : false;
+
+  async function toggleStatus() {
+    if (!allowManage || acting || !workspace || !supplierId) {
+      return;
+    }
+    setActing(true);
+    setActionError(null);
+    try {
+      if (isActive) {
+        await deactivateSupplier(workspace, supplierId);
+      } else {
+        await activateSupplier(workspace, supplierId);
+      }
+      await queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+    } catch (err) {
+      setActionError(describeSupplierError(err, t));
+    } finally {
+      setActing(false);
+    }
+  }
+
+  return (
+    <div className="flex min-w-0 flex-col gap-4" data-testid="supplier-detail-page">
+      <PageHeader
+        title={supplier.name}
+        description={t("suppliers.detailLede")}
+        backTo={pageBackNav.suppliers.to}
+        backLabel={t(pageBackNav.suppliers.labelKey)}
+        backTestId="page-header-back-suppliers"
+      />
+      <div className="flex flex-wrap items-center gap-2">
+        <StatusChip tone={isActive ? "success" : "warning"}>{supplier.status}</StatusChip>
+        <StatusChip tone={connected ? "info" : "warning"}>
+          {connected ? t("suppliers.connectionConnected") : t("suppliers.connectionManual")}
+        </StatusChip>
+      </div>
+
+      {actionError ? (
+        <Card data-testid="supplier-action-error">
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">
+            {actionError}
+          </p>
+        </Card>
+      ) : null}
+
+      <Card>
+        <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)]">
+          <div>
+            <dt className="text-muted">{t("suppliers.code")}</dt>
+            <dd className="m-0" data-testid="supplier-code">
+              {supplier.supplierCode}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-muted">{t("suppliers.contactPerson")}</dt>
+            <dd className="m-0">{displayValue(supplier.contactPerson)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted">{t("suppliers.mobile")}</dt>
+            <dd className="m-0">{displayValue(supplier.mobileNumber)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted">{t("suppliers.telephone")}</dt>
+            <dd className="m-0">{displayValue(supplier.telephoneNumber)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted">{t("suppliers.email")}</dt>
+            <dd className="m-0">{displayValue(supplier.email)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted">{t("suppliers.addressLine1")}</dt>
+            <dd className="m-0">{displayValue(supplier.addressLine1)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted">{t("suppliers.addressLine2")}</dt>
+            <dd className="m-0">{displayValue(supplier.addressLine2)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted">{t("suppliers.city")}</dt>
+            <dd className="m-0">{displayValue(supplier.cityMunicipality)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted">{t("suppliers.province")}</dt>
+            <dd className="m-0">{displayValue(supplier.province)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted">{t("suppliers.postalCode")}</dt>
+            <dd className="m-0">{displayValue(supplier.postalCode)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted">{t("suppliers.taxNumber")}</dt>
+            <dd className="m-0">{displayValue(supplier.taxOrRegistrationNumber)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted">{t("suppliers.notes")}</dt>
+            <dd className="m-0 whitespace-pre-wrap">{displayValue(supplier.notes)}</dd>
+          </div>
+        </dl>
+      </Card>
+
+      {connected && relationshipPending ? (
+        <Card data-testid="supplier-connected-pending">
+          <p className="m-0 text-[length:var(--exits-text-sm)]">
+            {t("connected.waitingForApproval")}
+          </p>
+        </Card>
+      ) : null}
+
+      {connected && relationshipActive && allowViewPurchasing ? (
+        <div
+          className="flex flex-wrap gap-2"
+          role="group"
+          aria-label={t("connected.browseProducts")}
+          data-testid="supplier-connected-actions"
+        >
+          <Button asChild className="min-h-11" data-testid="supplier-browse-catalog">
+            <Link to={`/suppliers/${supplierId}/connected-catalog`}>
+              {t("connected.browseProducts")}
+            </Link>
+          </Button>
+          <Button
+            asChild
+            variant="ghost"
+            className="min-h-11"
+            data-testid="supplier-linked-products"
+          >
+            <Link to={`/suppliers/${supplierId}/linked-products`}>
+              {t("connected.linkedTitle")}
+            </Link>
+          </Button>
+        </div>
+      ) : null}
+
+      <div className="flex flex-wrap gap-2">
+        {allowManage ? (
+          <Button asChild className="min-h-11" data-testid="supplier-edit">
+            <Link to={`/suppliers/${supplierId}/edit`}>{t("suppliers.edit")}</Link>
+          </Button>
+        ) : null}
+        {allowManage ? (
+          <Button
+            type="button"
+            variant="ghost"
+            className="min-h-11"
+            data-testid="supplier-toggle-status"
+            disabled={acting}
+            onClick={() => void toggleStatus()}
+          >
+            {isActive ? t("suppliers.deactivate") : t("suppliers.activate")}
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  );
+}

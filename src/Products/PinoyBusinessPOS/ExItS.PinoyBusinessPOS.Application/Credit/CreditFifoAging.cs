@@ -42,7 +42,9 @@ public sealed record CustomerOverdueSummaryDto(
     decimal ActiveRepaymentTotal,
     int ActiveCreditCount,
     int ActiveRepaymentCount,
-    int TotalLedgerEntryCount);
+    int TotalLedgerEntryCount,
+    decimal ActiveWriteOffTotal = 0m,
+    int ActiveWriteOffCount = 0);
 
 public sealed record OverdueCustomerListItemDto(
     Guid CustomerId,
@@ -167,9 +169,11 @@ public static class CreditFifoAging
         decimal activeRepaymentTotal,
         int activeCreditCount,
         int activeRepaymentCount,
-        int totalLedgerEntryCount)
+        int totalLedgerEntryCount,
+        decimal activeWriteOffTotal = 0m,
+        int activeWriteOffCount = 0)
     {
-        var outstanding = activeCreditTotal - activeRepaymentTotal;
+        var outstanding = activeCreditTotal - activeRepaymentTotal - activeWriteOffTotal;
         var overdue = aged.Where(a => a.IsOverdue).ToList();
         var upcoming = aged
             .Where(a => a.Status == nameof(CreditEntryStatus.Active)
@@ -196,6 +200,8 @@ public static class CreditFifoAging
             activeRepaymentTotal,
             activeCreditCount,
             activeRepaymentCount,
-            totalLedgerEntryCount);
+            totalLedgerEntryCount,
+            activeWriteOffTotal,
+            activeWriteOffCount);
     }
 }

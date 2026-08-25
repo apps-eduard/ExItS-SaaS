@@ -89,11 +89,16 @@ public sealed class PersonalFeatureEntitlementClient(
     private HttpRequestMessage CreateRequest(HttpMethod method, string relativePath)
     {
         var request = new HttpRequestMessage(method, relativePath);
+        PlatformCallerCredentialForwarder.CopyTo(httpContextAccessor.HttpContext?.Request, request);
+
         var token = ResolveSessionToken();
         if (!string.IsNullOrWhiteSpace(token))
         {
             request.Headers.Authorization = new AuthenticationHeaderValue("PlatformSession", token);
-            request.Headers.TryAddWithoutValidation("X-ExItS-Session-Token", token);
+            if (!request.Headers.Contains("X-ExItS-Session-Token"))
+            {
+                request.Headers.TryAddWithoutValidation("X-ExItS-Session-Token", token);
+            }
         }
 
         return request;
@@ -118,6 +123,12 @@ public sealed class PersonalFeatureEntitlementClient(
             && auth.StartsWith("PlatformSession ", StringComparison.OrdinalIgnoreCase))
         {
             return auth["PlatformSession ".Length..].Trim();
+        }
+
+        if (http.Request.Cookies.TryGetValue(".ExItS.Platform.Auth", out var cookieToken)
+            && !string.IsNullOrWhiteSpace(cookieToken))
+        {
+            return cookieToken.Trim();
         }
 
         return null;

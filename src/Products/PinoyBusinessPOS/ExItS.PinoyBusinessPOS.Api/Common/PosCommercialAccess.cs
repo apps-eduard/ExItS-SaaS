@@ -20,7 +20,8 @@ internal static class PosCommercialScope
     public static void BindFromRequest(
         HttpRequest request,
         IPosCommercialAccessAccessor accessor,
-        IHostEnvironment environment)
+        IHostEnvironment environment,
+        IConfiguration configuration)
     {
         // Bearer middleware may already bind commercial access from Platform introspection.
         if (accessor.Current.IsKnown
@@ -31,6 +32,14 @@ internal static class PosCommercialScope
 
         // Inactive bearer must not fall through to Dev header forge.
         if (request.HttpContext.Items.TryGetValue(PosAuthItems.Denied, out var denied) && denied is true)
+        {
+            accessor.Current = PosCommercialAccess.Unknown;
+            return;
+        }
+
+        // Infrastructure introspection failure — fail closed without forging Dev grants.
+        if (request.HttpContext.Items.TryGetValue(PosAuthItems.IntrospectionUnavailable, out var unavailable)
+            && unavailable is true)
         {
             accessor.Current = PosCommercialAccess.Unknown;
             return;
@@ -52,7 +61,9 @@ internal static class PosCommercialScope
 
         if (!hasStatus && !hasGrants)
         {
-            accessor.Current = PosCommercialAccess.DevelopmentDefault;
+            accessor.Current = PosCommercialValidation.AllowsDevelopmentDefaultHeaders(environment, configuration)
+                ? PosCommercialAccess.DevelopmentDefault
+                : PosCommercialAccess.Unknown;
             return;
         }
 
@@ -96,9 +107,10 @@ internal sealed class PosCommercialAccessMiddleware(RequestDelegate next)
     public async Task InvokeAsync(
         HttpContext context,
         IPosCommercialAccessAccessor accessor,
-        IHostEnvironment environment)
+        IHostEnvironment environment,
+        IConfiguration configuration)
     {
-        PosCommercialScope.BindFromRequest(context.Request, accessor, environment);
+        PosCommercialScope.BindFromRequest(context.Request, accessor, environment, configuration);
         await next(context).ConfigureAwait(false);
     }
 }

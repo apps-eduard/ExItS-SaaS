@@ -490,21 +490,48 @@ public sealed class OrgWebShellState
             OrganizationMembershipRoles.Owner,
             StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>Day-to-day Organization Manager (org Administrator membership or StoreManager POS role).</summary>
-    public bool IsOrgManager =>
-        string.Equals(MembershipRole, OrganizationMembershipRoles.Administrator, StringComparison.OrdinalIgnoreCase)
-        || string.Equals(PosRole, PosRoleCodes.StoreManager, StringComparison.OrdinalIgnoreCase)
+    /// <summary>
+    /// Explicit admin-side OrganizationAdministrator membership.
+    /// Not synonymous with POS StoreManager / Manager.
+    /// </summary>
+    public bool IsOrganizationAdministrator =>
+        string.Equals(
+            MembershipRole,
+            OrganizationMembershipRoles.Administrator,
+            StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Organization membership management authority (Owner or OrganizationAdministrator).
+    /// Independent of POS operational Manager role.
+    /// </summary>
+    public bool HasOrganizationManagementAuthority =>
+        IsOrgOwner || IsOrganizationAdministrator;
+
+    /// <summary>
+    /// POS StoreManager / Manager — strong OPERATIONS role.
+    /// Does NOT grant Organization Web admin host access by itself.
+    /// </summary>
+    public bool IsPosOperationsManager =>
+        string.Equals(PosRole, PosRoleCodes.StoreManager, StringComparison.OrdinalIgnoreCase)
         || string.Equals(PosRole, "Manager", StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>Cashier POS role without Owner/Manager authority — Organization Web denied.</summary>
+    /// <summary>
+    /// Obsolete conflation: previously mixed OrganizationAdministrator membership with POS StoreManager.
+    /// Prefer <see cref="HasOrganizationManagementAuthority"/> or <see cref="IsPosOperationsManager"/>.
+    /// </summary>
+    [Obsolete("Use HasOrganizationManagementAuthority (admin) or IsPosOperationsManager (POS ops).")]
+    public bool IsOrgManager => HasOrganizationManagementAuthority;
+
+    /// <summary>Cashier POS role without organization-management membership — Organization Web denied.</summary>
     public bool IsCashierDenied =>
-        !IsOrgOwner
-        && !IsOrgManager
+        !HasOrganizationManagementAuthority
         && string.Equals(PosRole, PosRoleCodes.Cashier, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
-    /// Organization Web is for Owner/Manager (and other management POS roles), not Cashier POS staff.
-    /// Org Owners may enter without POS commercial access (membership-only essentials).
+    /// Organization Web is the ADMIN / business-management host.
+    /// Allowed: OrganizationOwner, OrganizationAdministrator, and limited legacy POS admin-side roles
+    /// (Admin / InventoryStaff / ReportingUser). POS StoreManager/Manager alone is denied —
+    /// they use the React/PWA POS operations experience instead.
     /// </summary>
     public bool CanAccessOrganizationWeb
     {
@@ -515,27 +542,27 @@ public sealed class OrgWebShellState
                 return false;
             }
 
-            if (IsOrgOwner || IsOrgManager)
+            // POS operations Manager without explicit org-management membership: denied admin host.
+            if (IsPosOperationsManager && !HasOrganizationManagementAuthority)
+            {
+                return false;
+            }
+
+            if (HasOrganizationManagementAuthority)
             {
                 return true;
             }
 
-            // Inventory/Reporting staff: management center with limited nav — not cashiers.
+            // Legacy / advanced POS roles with limited Org Web nav — not default Owner/Manager/Cashier.
             if (string.Equals(PosRole, PosRoleCodes.InventoryStaff, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(PosRole, PosRoleCodes.ReportingUser, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(PosRole, PosRoleCodes.Owner, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(PosRole, PosRoleCodes.Admin, StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
 
-            // Capability-based fallback when role code is missing but grants are management-shaped.
-            return Can(UtangCapability.ViewDashboard)
-                   || Can(UtangCapability.ViewReports)
-                   || Can(UtangCapability.ManageCatalog)
-                   || Can(UtangCapability.ManageInventory)
-                   || Can(UtangCapability.ViewPurchasing)
-                   || Can(UtangCapability.ManageOperationalSetup);
+            // Do not grant admin host from operational capabilities (would re-admit StoreManager).
+            return false;
         }
     }
 
@@ -549,26 +576,28 @@ public sealed class OrgWebShellState
             return false;
         }
 
+        var orgAdmin = HasOrganizationManagementAuthority;
+
         return section switch
         {
-            "overview" => IsOrgOwner || IsOrgManager || Can(UtangCapability.ViewDashboard),
+            "overview" => orgAdmin || Can(UtangCapability.ViewDashboard),
             "ownership-transfer" or "sales-documents" or "subscription" => IsExactOrgOwner,
-            "tax-compliance" => IsOrgOwner || IsOrgManager,
+            "tax-compliance" => orgAdmin,
             "profile" => IsOrgOwner,
-            "notifications" => IsOrgOwner || IsOrgManager,
-            "audit" => IsOrgOwner || IsOrgManager,
-            "branches" or "staff" or "roles" => IsOrgOwner || IsOrgManager,
-            "products" => Can(UtangCapability.ViewCatalog) || IsOrgOwner || IsOrgManager,
-            "inventory" => Can(UtangCapability.ViewInventory) || IsOrgOwner || IsOrgManager,
-            "customers" => Can(UtangCapability.ViewCustomersAndHistory) || IsOrgOwner || IsOrgManager,
+            "notifications" => orgAdmin,
+            "audit" => orgAdmin,
+            "branches" or "staff" or "roles" => orgAdmin,
+            "products" => Can(UtangCapability.ViewCatalog) || orgAdmin,
+            "inventory" => Can(UtangCapability.ViewInventory) || orgAdmin,
+            "customers" => Can(UtangCapability.ViewCustomersAndHistory) || orgAdmin,
             "suppliers" or "purchasing" => Can(UtangCapability.ViewSuppliers) || Can(UtangCapability.ViewPurchasing)
-                                          || IsOrgOwner || IsOrgManager,
-            "devices" or "registers" => Can(UtangCapability.ViewRegisters) || IsOrgOwner || IsOrgManager,
-            "shifts" => Can(UtangCapability.ViewShifts) || IsOrgOwner || IsOrgManager,
+                                          || orgAdmin,
+            "devices" or "registers" => Can(UtangCapability.ViewRegisters) || orgAdmin,
+            "shifts" => Can(UtangCapability.ViewShifts) || orgAdmin,
             "reports" or "sales" => Can(UtangCapability.ViewReports) || Can(UtangCapability.ViewDashboard)
-                                    || IsOrgOwner || IsOrgManager,
-            "settings" => Can(UtangCapability.ViewOperationalSetup) || IsOrgOwner || IsOrgManager,
-            "privacy" => Can(UtangCapability.ViewOperationalSetup) || IsOrgOwner || IsOrgManager,
+                                    || orgAdmin,
+            "settings" => Can(UtangCapability.ViewOperationalSetup) || orgAdmin,
+            "privacy" => Can(UtangCapability.ViewOperationalSetup) || orgAdmin,
             _ => false
         };
     }
@@ -682,7 +711,7 @@ public sealed class OrgWebSessionHydrator(
                 && (managementAuthorityClaim
                     || tokenResult.Data!.ProductAccessAllowed != false
                     || shell.IsOrgOwner
-                    || shell.IsOrgManager);
+                    || shell.HasOrganizationManagementAuthority);
             var hasPos = issued && hasManagementAuthority;
 
             circuitSession.AccessToken = hasPos ? tokenResult.Data!.AccessToken : null;
@@ -690,13 +719,14 @@ public sealed class OrgWebSessionHydrator(
 
             // Safe diagnostics — never log session/access tokens or passwords.
             logger.LogInformation(
-                "OrgWeb hydrate user={UserId} org={OrganizationId} owner={IsOwner} manager={IsManager} " +
-                "membership={MembershipRole} tokenIssued={Issued} managementAuthorityClaim={MgmtClaim} " +
+                "OrgWeb hydrate user={UserId} org={OrganizationId} owner={IsOwner} orgAdmin={HasOrgAdmin} " +
+                "posOpsManager={IsPosOpsManager} membership={MembershipRole} tokenIssued={Issued} managementAuthorityClaim={MgmtClaim} " +
                 "bearerBound={BearerBound} reason={Reason} errorCode={ErrorCode}",
                 me.Data.UserId,
                 orgId,
                 shell.IsOrgOwner,
-                shell.IsOrgManager,
+                shell.HasOrganizationManagementAuthority,
+                shell.IsPosOperationsManager,
                 shell.MembershipRole,
                 issued,
                 managementAuthorityClaim,
@@ -735,7 +765,7 @@ public sealed class OrgWebSessionHydrator(
                         EnabledFeatureCodes = effective.Data.AllowedFeatureCodes
                     });
                 }
-                else if (shell.IsOrgOwner || shell.IsOrgManager)
+                else if (shell.HasOrganizationManagementAuthority)
                 {
                     shell.AllowedCapabilities = [];
                     shell.PosRole = tokenResult.Data?.OrganizationManagementAuthority == true

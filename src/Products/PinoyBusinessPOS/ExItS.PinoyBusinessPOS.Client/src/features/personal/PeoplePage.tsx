@@ -20,8 +20,6 @@ import {
   type PeopleConnectionStatus,
 } from "@/features/personal/people-status";
 import { useI18n } from "@/i18n/I18nProvider";
-import { usePreferences } from "@/hooks/usePreferences";
-import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
 import { cn } from "@/lib/cn";
 
 function statusTone(
@@ -38,7 +36,6 @@ function statusTone(
 
 export function PeoplePage() {
   const { t } = useI18n();
-  const { preferences } = usePreferences();
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [infoOpen, setInfoOpen] = useState(false);
@@ -93,28 +90,20 @@ export function PeoplePage() {
         ? (error.problem.detail ?? error.message)
         : t("people.loadError");
     return (
-      <ErrorState
-        title={t("error.title")}
-        body={detail}
-        record={normalizeDiagnosticError(error, {
-          locale: preferences.locale,
-          theme: preferences.theme,
-          pathname: "/personal/people",
-        })}
-        action={
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => {
-              void contactsQuery.refetch();
-              void connectionsQuery.refetch();
-              void utangQuery.refetch();
-            }}
-          >
-            {t("error.reset")}
-          </Button>
-        }
-      />
+      <div className="flex flex-col gap-3">
+        <ErrorState title={t("error.title")} detail={detail} error={error} />
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            void contactsQuery.refetch();
+            void connectionsQuery.refetch();
+            void utangQuery.refetch();
+          }}
+        >
+          {t("personal.home.retry")}
+        </Button>
+      </div>
     );
   }
 

@@ -239,11 +239,20 @@ internal sealed class CatalogProductRepository : ICatalogProductRepository
 
     public async Task UpdateAsync(CatalogProduct product, CancellationToken cancellationToken = default)
     {
-        var record = await _db.CatalogProducts
-            .FirstOrDefaultAsync(
-                p => p.Id == product.Id.Value && p.OrganizationId == product.OrganizationId.Value,
-                cancellationToken)
-            .ConfigureAwait(false);
+        // Prefer the change-tracker copy so create/stage flows that Add then Update before
+        // SaveChangesAsync still apply domain mutations (EF queries alone miss Added entities).
+        var record = _db.CatalogProducts.Local.FirstOrDefault(
+            p => p.Id == product.Id.Value && p.OrganizationId == product.OrganizationId.Value);
+
+        if (record is null)
+        {
+            record = await _db.CatalogProducts
+                .FirstOrDefaultAsync(
+                    p => p.Id == product.Id.Value && p.OrganizationId == product.OrganizationId.Value,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+
         if (record is null)
         {
             throw new PersistenceConflictException(

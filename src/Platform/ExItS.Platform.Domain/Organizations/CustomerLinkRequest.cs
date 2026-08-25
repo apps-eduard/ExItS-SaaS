@@ -32,6 +32,10 @@ public sealed class CustomerLinkRequest
     public DateTimeOffset? DeclinedAtUtc { get; private set; }
     public DateTimeOffset? RevokedAtUtc { get; private set; }
     public PlatformUserId? AcceptedByUserId { get; private set; }
+    public int ReminderCount { get; private set; }
+    public DateTimeOffset? LastRemindedAtUtc { get; private set; }
+
+    public static readonly TimeSpan ManualReminderCooldown = TimeSpan.FromHours(24);
 
     private CustomerLinkRequest(
         CustomerLinkRequestId id,
@@ -49,7 +53,9 @@ public sealed class CustomerLinkRequest
         DateTimeOffset? acceptedAtUtc,
         DateTimeOffset? declinedAtUtc,
         DateTimeOffset? revokedAtUtc,
-        PlatformUserId? acceptedByUserId)
+        PlatformUserId? acceptedByUserId,
+        int reminderCount = 0,
+        DateTimeOffset? lastRemindedAtUtc = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -67,6 +73,8 @@ public sealed class CustomerLinkRequest
         DeclinedAtUtc = declinedAtUtc;
         RevokedAtUtc = revokedAtUtc;
         AcceptedByUserId = acceptedByUserId;
+        ReminderCount = reminderCount;
+        LastRemindedAtUtc = lastRemindedAtUtc;
     }
 
     public static (CustomerLinkRequest Request, string AcceptToken) Create(
@@ -129,7 +137,9 @@ public sealed class CustomerLinkRequest
         DateTimeOffset? revokedAtUtc,
         PlatformUserId? acceptedByUserId,
         PlatformUserId? targetUserIdentityId = null,
-        string? targetPublicUserId = null) =>
+        string? targetPublicUserId = null,
+        int reminderCount = 0,
+        DateTimeOffset? lastRemindedAtUtc = null) =>
         new(
             id,
             organizationId,
@@ -146,7 +156,9 @@ public sealed class CustomerLinkRequest
             acceptedAtUtc,
             declinedAtUtc,
             revokedAtUtc,
-            acceptedByUserId);
+            acceptedByUserId,
+            reminderCount,
+            lastRemindedAtUtc);
 
     public string Resend(DateTimeOffset utcNow, TimeSpan? lifetime = null)
     {
@@ -158,6 +170,34 @@ public sealed class CustomerLinkRequest
         UpdatedAtUtc = utcNow;
         return acceptToken;
     }
+
+    /// <summary>
+    /// Manual Org reminder for a Pending request. Does not rotate the accept token.
+    /// Enforces a 24-hour cooldown between manual reminders.
+    /// </summary>
+    public int RecordReminder(DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        EnsurePendingUsable(utcNow);
+
+        if (LastRemindedAtUtc is DateTimeOffset last
+            && utcNow < last.Add(ManualReminderCooldown))
+        {
+            throw new DomainException(
+                DomainErrorCodes.CustomerLinkReminderTooSoon,
+                "A reminder was sent recently. Try again later.");
+        }
+
+        ReminderCount += 1;
+        LastRemindedAtUtc = utcNow;
+        UpdatedAtUtc = utcNow;
+        return ReminderCount;
+    }
+
+    public DateTimeOffset? NextReminderEligibleAtUtc =>
+        LastRemindedAtUtc is DateTimeOffset last
+            ? last.Add(ManualReminderCooldown)
+            : null;
 
     public void Revoke(DateTimeOffset utcNow)
     {

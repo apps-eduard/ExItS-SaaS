@@ -19,6 +19,7 @@ public sealed class InitializeLocalValidationPersonalUtangSeed
     private readonly IPlatformUserRepository _users;
     private readonly CreatePersonalDebtRelationship _createRelationship;
     private readonly RecordPersonalUtangEntry _recordEntry;
+    private readonly ConfirmPersonalUtangEntry _confirmEntry;
     private readonly CreatePersonalReminder _createReminder;
     private readonly IPersonalDebtRelationshipRepository _relationships;
     private readonly IPersonalUtangEntryRepository _entries;
@@ -31,6 +32,7 @@ public sealed class InitializeLocalValidationPersonalUtangSeed
         IPlatformUserRepository users,
         CreatePersonalDebtRelationship createRelationship,
         RecordPersonalUtangEntry recordEntry,
+        ConfirmPersonalUtangEntry confirmEntry,
         CreatePersonalReminder createReminder,
         IPersonalDebtRelationshipRepository relationships,
         IPersonalUtangEntryRepository entries,
@@ -42,6 +44,7 @@ public sealed class InitializeLocalValidationPersonalUtangSeed
         _users = users;
         _createRelationship = createRelationship;
         _recordEntry = recordEntry;
+        _confirmEntry = confirmEntry;
         _createReminder = createReminder;
         _relationships = relationships;
         _entries = entries;
@@ -148,7 +151,9 @@ public sealed class InitializeLocalValidationPersonalUtangSeed
                     e.EntryType == PersonalUtangEntryType.Loan
                     && string.Equals(e.Notes, notes, StringComparison.Ordinal)))
             {
-                return existing;
+                await ConfirmPendingByNotesAsync(debtorUserId, existing.Id.Value, notes, ct)
+                    .ConfigureAwait(false);
+                return (await _relationships.GetByIdAsync(existing.Id, ct).ConfigureAwait(false)) ?? existing;
             }
         }
 
@@ -181,6 +186,16 @@ public sealed class InitializeLocalValidationPersonalUtangSeed
             throw new InvalidOperationException("Local Validation Personal Utang relationship was created but not found.");
         }
 
+        // Shared ledger: initial loan starts Pending — counterparty confirms for deterministic seed balances.
+        await ConfirmPendingByNotesAsync(
+            confirmerUserId: debtorUserId,
+            relationshipId: reloaded.Id.Value,
+            notes: notes,
+            ct).ConfigureAwait(false);
+
+        reloaded = await _relationships.GetByIdAsync(reloaded.Id, ct).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("Local Validation Personal Utang relationship missing after confirm.");
+
         return reloaded;
     }
 
@@ -196,7 +211,8 @@ public sealed class InitializeLocalValidationPersonalUtangSeed
             .ConfigureAwait(false);
         if (entries.Any(e =>
                 e.EntryType == PersonalUtangEntryType.Payment
-                && string.Equals(e.Notes, notes, StringComparison.Ordinal)))
+                && string.Equals(e.Notes, notes, StringComparison.Ordinal)
+                && e.Status == PersonalUtangEntryStatus.Confirmed))
         {
             return;
         }
@@ -207,6 +223,20 @@ public sealed class InitializeLocalValidationPersonalUtangSeed
         if (relationship is null)
         {
             throw new InvalidOperationException("Local Validation Personal Utang payment target relationship missing.");
+        }
+
+        var pendingExisting = entries.FirstOrDefault(e =>
+            e.EntryType == PersonalUtangEntryType.Payment
+            && string.Equals(e.Notes, notes, StringComparison.Ordinal)
+            && e.Status == PersonalUtangEntryStatus.Pending);
+        if (pendingExisting is not null)
+        {
+            var counterparty = relationship.GetCounterpartyUserIdentityId(actingUserId)
+                ?? relationship.CreditorUserIdentityId
+                ?? throw new InvalidOperationException("Local Validation payment confirm requires counterparty.");
+            await ConfirmEntryAsync(counterparty, relationshipId, pendingExisting.Id.Value, relationship.Version, ct)
+                .ConfigureAwait(false);
+            return;
         }
 
         var recorded = await _recordEntry
@@ -223,10 +253,69 @@ public sealed class InitializeLocalValidationPersonalUtangSeed
                 ct)
             .ConfigureAwait(false);
 
-        if (!recorded.IsSuccess)
+        if (!recorded.IsSuccess || recorded.Value is null)
         {
             throw new InvalidOperationException(
                 $"Local Validation Personal Utang payment seed failed: {recorded.ErrorCode} {recorded.ErrorMessage}");
+        }
+
+        relationship = await _relationships
+            .GetByIdAsync(PersonalDebtRelationshipId.From(relationshipId), ct)
+            .ConfigureAwait(false)
+            ?? throw new InvalidOperationException("Local Validation Personal Utang payment target relationship missing.");
+
+        var confirmer = relationship.GetCounterpartyUserIdentityId(actingUserId)
+            ?? throw new InvalidOperationException("Local Validation payment confirm requires counterparty.");
+        await ConfirmEntryAsync(confirmer, relationshipId, recorded.Value.Id, relationship.Version, ct)
+            .ConfigureAwait(false);
+    }
+
+    private async Task ConfirmPendingByNotesAsync(
+        PlatformUserId confirmerUserId,
+        Guid relationshipId,
+        string notes,
+        CancellationToken ct)
+    {
+        var relationship = await _relationships
+            .GetByIdAsync(PersonalDebtRelationshipId.From(relationshipId), ct)
+            .ConfigureAwait(false);
+        if (relationship is null)
+        {
+            return;
+        }
+
+        var entries = await _entries.ListByRelationshipAsync(relationship.Id, ct).ConfigureAwait(false);
+        var pending = entries.FirstOrDefault(e =>
+            e.Status == PersonalUtangEntryStatus.Pending
+            && string.Equals(e.Notes, notes, StringComparison.Ordinal));
+        if (pending is null)
+        {
+            return;
+        }
+
+        await ConfirmEntryAsync(confirmerUserId, relationshipId, pending.Id.Value, relationship.Version, ct)
+            .ConfigureAwait(false);
+    }
+
+    private async Task ConfirmEntryAsync(
+        PlatformUserId confirmerUserId,
+        Guid relationshipId,
+        Guid entryId,
+        int expectedVersion,
+        CancellationToken ct)
+    {
+        var confirmed = await _confirmEntry
+            .ExecuteAsync(
+                confirmerUserId,
+                relationshipId,
+                entryId,
+                new ConfirmPersonalUtangEntryRequest(ExpectedVersion: expectedVersion),
+                ct)
+            .ConfigureAwait(false);
+        if (!confirmed.IsSuccess)
+        {
+            throw new InvalidOperationException(
+                $"Local Validation Personal Utang confirm seed failed: {confirmed.ErrorCode} {confirmed.ErrorMessage}");
         }
     }
 

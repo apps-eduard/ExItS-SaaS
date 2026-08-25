@@ -147,10 +147,10 @@ public sealed class OrganizationCashDenomination
 
 /// <summary>
 /// Default PHP bill/coin values seeded for PinoyBusinessPOS organizations.
-/// Practical current set: 1000, 500, 200, 100, 50, 20, 10, 5, 1, 0.25, 0.10, 0.05, 0.01.
-/// PHP 0.50 is not seeded as a current default; owners may still add it (or 5000)
-/// without a code deployment. Missing defaults are appended; custom rows and
-/// disabled denominations are preserved. Historical shift breakdowns are untouched.
+/// Practical current set: 1000, 500, 200, 100, 50, 20, 10, 5, 1, 0.25, 0.10, 0.05.
+/// PHP 0.01 is not seeded as a current default; owners may still add it (or 5000) manually.
+/// Missing defaults are appended; custom rows and disabled denominations are preserved.
+/// Historical shift breakdowns and cash-count math still accept any denomination value.
 /// </summary>
 public static class PhilippineCashDenominationDefaults
 {
@@ -167,7 +167,6 @@ public static class PhilippineCashDenominationDefaults
         1.00m,
         0.25m,
         0.10m,
-        0.05m,
-        0.01m
+        0.05m
     ];
 }

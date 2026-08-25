@@ -1,0 +1,520 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { RouterProvider, createMemoryRouter } from "react-router-dom";
+import { setPosSessionGrant } from "@/api/platform/pos-session-grant";
+import {
+  filterMockProducts,
+  mockCatalogCategories,
+  MOCK_COKE_PRODUCT_ID,
+  MOCK_DRINKS_CATEGORY_ID,
+  MOCK_MEAT_PRODUCT_ID,
+  MOCK_OOS_PRODUCT_ID,
+  MOCK_RICE_PRODUCT_ID,
+  MOCK_RICE_SACK_UNIT_ID,
+} from "@/test/mock-pos-catalog";
+import { AppProviders } from "@/app/providers";
+import { appRoutes } from "@/app/router";
+
+const orgId = "11111111-1111-1111-1111-111111111111";
+const branchId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+const installId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+const deviceId = "ffffffff-ffff-4fff-8fff-ffffffffffff";
+const shiftId = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+const registerId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+
+function mockBoundCashierApis() {
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const method = init?.method ?? "GET";
+
+    if (url.includes("/pos-api/")) {
+      if (url.includes("/operational-branch") && method === "PUT") {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            organizationId: orgId,
+            branchId,
+            name: "Main Branch",
+            deviceMatchesSelectedBranch: true,
+            deviceBoundBranchId: branchId,
+            openCashierShiftPresent: true,
+          }),
+          text: async () => "",
+        } as Response;
+      }
+
+      if (url.includes("/cashier-shifts/current") && method === "GET") {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            shiftId,
+            organizationId: orgId,
+            shiftNumber: "S-1",
+            status: "Open",
+            actorId: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+            registerId,
+            registerCode: "REG-1",
+            registerName: "Front",
+            businessDate: "2026-08-21",
+            openingCashAmount: 100,
+            openingCashCounted: true,
+            effectiveCashCountMode: "Required",
+            openedAtUtc: "2026-08-21T01:00:00Z",
+            openedBy: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+            createdAtUtc: "2026-08-21T01:00:00Z",
+            updatedAtUtc: "2026-08-21T01:00:00Z",
+          }),
+          text: async () => "",
+        } as Response;
+      }
+
+      if (url.includes("/catalog/categories")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => mockCatalogCategories,
+          text: async () => "",
+        } as Response;
+      }
+
+      if (url.includes("/catalog/products")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => filterMockProducts(url),
+          text: async () => "",
+        } as Response;
+      }
+
+      return {
+        ok: false,
+        status: 404,
+        json: async () => ({ detail: "not mocked" }),
+        text: async () => "",
+      } as Response;
+    }
+
+    if (url.includes("/pos-devices/authorize") && method === "POST") {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          posDeviceId: deviceId,
+          branchId,
+          installationDeviceId: installId,
+        }),
+        text: async () => "",
+      } as Response;
+    }
+
+    if (url.includes("/api/v1/platform/auth/me")) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          sessionId: "11111111-1111-1111-1111-111111111111",
+          username: "cashier",
+          displayName: "Cashier One",
+          selectedOrganizationId: orgId,
+          accountClass: "Organization",
+          homeOrganizationId: orgId,
+          organizationContextLocked: true,
+        }),
+        text: async () => "",
+      } as Response;
+    }
+
+    if (url.includes("/api/v1/platform/auth/organizations") && method === "GET") {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => [
+          {
+            organizationId: orgId,
+            displayName: "Kizy Store",
+            slug: "kizy-store",
+          },
+        ],
+        text: async () => "",
+      } as Response;
+    }
+
+    if (url.includes(`/organizations/${orgId}/branches`) && method === "GET") {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => [
+          {
+            id: branchId,
+            organizationId: orgId,
+            code: "MAIN",
+            name: "Main Branch",
+            isPrimary: true,
+            status: "Active",
+          },
+        ],
+        text: async () => "",
+      } as Response;
+    }
+
+    if (url.includes("/api/v1/platform/antiforgery/token")) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf-token" }),
+        text: async () => "",
+      } as Response;
+    }
+
+    if (url.includes("/api/v1/platform/auth/organization-context") && method === "PUT") {
+      return { ok: true, status: 204, json: async () => null, text: async () => "" } as Response;
+    }
+
+    if (url.includes(`/organizations/${orgId}/branch-context`) && method === "PUT") {
+      return { ok: true, status: 204, json: async () => null, text: async () => "" } as Response;
+    }
+
+    if (url.includes("/api/v1/platform/auth/token") && method === "POST") {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          accessToken: "in-memory-only",
+          productAccessAllowed: true,
+          mappedPosRoleCode: "Cashier",
+          productLocalRoleCode: "Cashier",
+          membershipRole: "OrganizationMember",
+        }),
+        text: async () => "",
+      } as Response;
+    }
+
+    return {
+      ok: false,
+      status: 404,
+      json: async () => ({ detail: "not mocked" }),
+      text: async () => "",
+    } as Response;
+  });
+}
+
+describe("SellFloorPage", () => {
+  beforeEach(() => {
+    window.localStorage.setItem("exits.pos-client.installation-device-id.v1", installId);
+    setPosSessionGrant({
+      accessToken: "in-memory-only",
+      productAccessAllowed: true,
+      mappedPosRoleCode: "Cashier",
+      productLocalRoleCode: "Cashier",
+    });
+    vi.stubGlobal("fetch", mockBoundCashierApis());
+  });
+
+  it("renders sell-floor regions with disabled pay and catalog products", async () => {
+    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
+    render(
+      <AppProviders>
+        <RouterProvider router={memoryRouter} />
+      </AppProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("sell-floor")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("sell-search")).toBeInTheDocument();
+    expect(screen.getByTestId("sell-categories")).toBeInTheDocument();
+    expect(screen.getByTestId("sell-category-active")).toHaveTextContent("All");
+    expect(screen.getByTestId("sell-products")).toBeInTheDocument();
+    expect(screen.getByTestId("sell-cart-landscape")).toBeInTheDocument();
+    expect(screen.queryByTestId("sell-cart-bar")).not.toBeInTheDocument();
+    expect(screen.getByTestId("sell-cart-sheet")).toBeInTheDocument();
+    expect(screen.queryByTestId("checkout-readiness")).not.toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`)).toBeInTheDocument();
+    });
+
+    const payButtons = screen.getAllByTestId("sell-pay");
+    expect(payButtons.length).toBeGreaterThan(0);
+    for (const button of payButtons) {
+      expect(button).toBeDisabled();
+    }
+  });
+
+  it("shows floating cart bar after adding a line", async () => {
+    const user = userEvent.setup();
+    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
+    render(
+      <AppProviders>
+        <RouterProvider router={memoryRouter} />
+      </AppProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`));
+    await waitFor(() => {
+      expect(screen.getByTestId("sell-cart-bar")).toBeInTheDocument();
+    });
+  });
+
+  it("adds to cart and keeps lines when switching category", async () => {
+    const user = userEvent.setup();
+    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
+    render(
+      <AppProviders>
+        <RouterProvider router={memoryRouter} />
+      </AppProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`));
+
+    const landscapeCart = screen.getByTestId("sell-cart-landscape");
+    await waitFor(() => {
+      expect(
+        within(landscapeCart).getByTestId(`sell-cart-line-${MOCK_COKE_PRODUCT_ID}::base`),
+      ).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId(`sell-category-${MOCK_DRINKS_CATEGORY_ID}`));
+
+    expect(
+      within(landscapeCart).getByTestId(`sell-cart-line-${MOCK_COKE_PRODUCT_ID}::base`),
+    ).toBeInTheDocument();
+    expect(within(landscapeCart).getByTestId("sell-cart-subtotal")).toHaveTextContent("25");
+  });
+
+  it("opens sell-unit picker for multi-UOM products and adds sack line", async () => {
+    const user = userEvent.setup();
+    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
+    render(
+      <AppProviders>
+        <RouterProvider router={memoryRouter} />
+      </AppProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`sell-product-${MOCK_RICE_PRODUCT_ID}`)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId(`sell-product-${MOCK_RICE_PRODUCT_ID}`));
+    expect(screen.getByTestId("sell-unit-entry")).toBeInTheDocument();
+    await user.click(screen.getByTestId(`sell-unit-option-${MOCK_RICE_SACK_UNIT_ID}`));
+    await user.click(screen.getByTestId("sell-unit-add"));
+
+    const landscapeCart = screen.getByTestId("sell-cart-landscape");
+    await waitFor(() => {
+      expect(
+        within(landscapeCart).getByTestId(
+          `sell-cart-line-${MOCK_RICE_PRODUCT_ID}::${MOCK_RICE_SACK_UNIT_ID}`,
+        ),
+      ).toBeInTheDocument();
+    });
+    expect(within(landscapeCart).getByTestId("sell-cart-subtotal")).toHaveTextContent("2,600");
+  });
+
+  it("opens weight entry for ByWeight products and clears cart with confirmation", async () => {
+    const user = userEvent.setup();
+    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
+    render(
+      <AppProviders>
+        <RouterProvider router={memoryRouter} />
+      </AppProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`sell-product-${MOCK_MEAT_PRODUCT_ID}`)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId(`sell-product-${MOCK_MEAT_PRODUCT_ID}`));
+    expect(screen.getByTestId("sell-weight-entry")).toBeInTheDocument();
+    await user.clear(screen.getByTestId("sell-weight-input"));
+    await user.type(screen.getByTestId("sell-weight-input"), "2");
+    await user.click(screen.getByTestId("sell-weight-confirm"));
+
+    const landscapeCart = screen.getByTestId("sell-cart-landscape");
+    await waitFor(() => {
+      expect(
+        within(landscapeCart).getByTestId(`sell-cart-line-${MOCK_MEAT_PRODUCT_ID}::base`),
+      ).toBeInTheDocument();
+    });
+    expect(within(landscapeCart).getByTestId("sell-cart-subtotal")).toHaveTextContent("120");
+
+    await user.click(within(landscapeCart).getByTestId("sell-cart-clear"));
+    await user.click(
+      within(screen.getByTestId("sell-cart-clear-confirm")).getByRole("button", {
+        name: "Clear cart",
+      }),
+    );
+    await waitFor(() => {
+      expect(
+        within(landscapeCart).queryByTestId(`sell-cart-line-${MOCK_MEAT_PRODUCT_ID}::base`),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it("shows New Sale heading and toggles info panel", async () => {
+    const user = userEvent.setup();
+    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
+    render(
+      <AppProviders>
+        <RouterProvider router={memoryRouter} />
+      </AppProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("sell-floor")).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole("heading", { name: "New Sale" })).toBeInTheDocument();
+    expect(screen.getByTestId("sell-info-toggle")).toHaveTextContent("Info");
+    expect(screen.getByTestId("sell-out-of-stock-toggle")).toHaveTextContent("Out of stock");
+    expect(screen.queryByTestId("sell-info-panel")).not.toBeInTheDocument();
+
+    const toggle = screen.getByTestId("sell-info-toggle");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByTestId("sell-info-panel")).toBeInTheDocument();
+    expect(
+      screen.getByText("Search or select products to start a sale."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Open a shift before checkout.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Quantities in this cart are not reserved. Other registers still see committed on-hand until checkout.",
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("sell-info-close"));
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByTestId("sell-info-panel")).not.toBeInTheDocument();
+  });
+
+  it("hides out-of-stock products until the cashier shows them", async () => {
+    const user = userEvent.setup();
+    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
+    render(
+      <AppProviders>
+        <RouterProvider router={memoryRouter} />
+      </AppProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`)).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId(`sell-product-${MOCK_OOS_PRODUCT_ID}`)).not.toBeInTheDocument();
+    expect(screen.getByTestId(`sell-product-stock-${MOCK_COKE_PRODUCT_ID}`)).toHaveTextContent(
+      "On hand: 48 Bottle",
+    );
+
+    const oosToggle = screen.getByTestId("sell-out-of-stock-toggle");
+    expect(oosToggle).toHaveTextContent("Out of stock");
+    expect(oosToggle).toHaveAttribute("aria-pressed", "false");
+    await user.click(oosToggle);
+    expect(oosToggle).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`)).not.toBeInTheDocument();
+
+    const oosCard = screen.getByTestId(`sell-product-${MOCK_OOS_PRODUCT_ID}`);
+    expect(oosCard).toBeDisabled();
+    expect(screen.getByTestId(`sell-product-stock-${MOCK_OOS_PRODUCT_ID}`)).toHaveTextContent(
+      "On hand: 0 Bottle",
+    );
+    expect(screen.getByTestId(`sell-product-stock-${MOCK_OOS_PRODUCT_ID}`)).toHaveTextContent(
+      "Out of stock",
+    );
+
+    await user.click(oosCard);
+    expect(screen.queryByTestId(`sell-cart-line-${MOCK_OOS_PRODUCT_ID}::base`)).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("sell-category-all"));
+    expect(oosToggle).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`)).toBeInTheDocument();
+    expect(screen.queryByTestId(`sell-product-${MOCK_OOS_PRODUCT_ID}`)).not.toBeInTheDocument();
+
+    await user.click(oosToggle);
+    expect(screen.getByTestId(`sell-product-${MOCK_OOS_PRODUCT_ID}`)).toBeInTheDocument();
+    await user.click(screen.getByTestId(`sell-category-${MOCK_DRINKS_CATEGORY_ID}`));
+    expect(oosToggle).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`)).toBeInTheDocument();
+    expect(screen.queryByTestId(`sell-product-${MOCK_OOS_PRODUCT_ID}`)).not.toBeInTheDocument();
+  });
+
+  it("reduces displayed on-hand when this register adds to cart and restores it on remove", async () => {
+    const user = userEvent.setup();
+    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
+    render(
+      <AppProviders>
+        <RouterProvider router={memoryRouter} />
+      </AppProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`)).toBeInTheDocument();
+    });
+    expect(screen.getByTestId(`sell-product-stock-${MOCK_COKE_PRODUCT_ID}`)).toHaveTextContent(
+      "On hand: 48 Bottle",
+    );
+
+    await user.click(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`));
+    const landscapeCart = screen.getByTestId("sell-cart-landscape");
+    await waitFor(() => {
+      expect(
+        within(landscapeCart).getByTestId(`sell-cart-line-${MOCK_COKE_PRODUCT_ID}::base`),
+      ).toBeInTheDocument();
+    });
+    expect(screen.getByTestId(`sell-product-stock-${MOCK_COKE_PRODUCT_ID}`)).toHaveTextContent(
+      "On hand: 47 Bottle",
+    );
+
+    await user.click(
+      within(landscapeCart).getByTestId(`sell-cart-remove-${MOCK_COKE_PRODUCT_ID}::base`),
+    );
+    await waitFor(() => {
+      expect(
+        within(landscapeCart).queryByTestId(`sell-cart-line-${MOCK_COKE_PRODUCT_ID}::base`),
+      ).not.toBeInTheDocument();
+    });
+    expect(screen.getByTestId(`sell-product-stock-${MOCK_COKE_PRODUCT_ID}`)).toHaveTextContent(
+      "On hand: 48 Bottle",
+    );
+  });
+
+  it("blocks weight that exceeds available stock", async () => {
+    const user = userEvent.setup();
+    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
+    render(
+      <AppProviders>
+        <RouterProvider router={memoryRouter} />
+      </AppProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`sell-product-${MOCK_MEAT_PRODUCT_ID}`)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId(`sell-product-${MOCK_MEAT_PRODUCT_ID}`));
+    await user.clear(screen.getByTestId("sell-weight-input"));
+    await user.type(screen.getByTestId("sell-weight-input"), "20");
+    await user.click(screen.getByTestId("sell-weight-confirm"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("sell-stock-error")).toHaveTextContent(
+        "Only 12.50 kg available.",
+      );
+    });
+    expect(
+      screen.queryByTestId(`sell-cart-line-${MOCK_MEAT_PRODUCT_ID}::base`),
+    ).not.toBeInTheDocument();
+  });
+});

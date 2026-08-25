@@ -1,34 +1,37 @@
-import { afterEach } from "vitest";
-import { cleanup } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
+import { cleanup } from "@testing-library/react";
+import { afterEach, vi } from "vitest";
 import { UI_PREFERENCES_STORAGE_KEY } from "@/lib/preferences/ui-preferences";
 
-if (typeof window.matchMedia !== "function") {
-  window.matchMedia = (query: string) =>
-    ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addEventListener: () => undefined,
-      removeEventListener: () => undefined,
-      addListener: () => undefined,
-      removeListener: () => undefined,
-      dispatchEvent: () => true,
-    }) as MediaQueryList;
-}
+vi.mock("virtual:pwa-register", () => ({
+  registerSW: () => async () => undefined,
+}));
 
-if (!navigator.clipboard) {
-  Object.assign(navigator, {
-    clipboard: {
-      writeText: async () => undefined,
-    },
-  });
-}
+// Node 24 + jsdom: React Router may pass jsdom's AbortSignal into undici Request.
+// Fall back to constructing Request without the incompatible signal (vitest#8374).
+const NativeRequest = globalThis.Request;
+globalThis.Request = class CompatibleRequest extends NativeRequest {
+  constructor(input: RequestInfo | URL, init?: RequestInit) {
+    try {
+      super(input, init);
+    } catch (error) {
+      if (init?.signal) {
+        const { signal, ...rest } = init;
+        void signal;
+        super(input, rest);
+        return;
+      }
+      throw error;
+    }
+  }
+} as typeof Request;
 
-afterEach(() => {
+afterEach(async () => {
   cleanup();
+  // Let React Router finish any aborted navigations before the next test stubs fetch.
+  await Promise.resolve();
+  vi.unstubAllGlobals();
   window.localStorage.removeItem(UI_PREFERENCES_STORAGE_KEY);
-  document.documentElement.lang = "en";
   document.documentElement.dataset.theme = "system";
-  document.documentElement.dataset.density = "comfortable";
+  document.documentElement.lang = "en";
 });

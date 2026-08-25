@@ -1,29 +1,53 @@
 import { describe, expect, it } from "vitest";
 import {
-  DEFAULT_UI_PREFERENCES,
-  readUiPreferences,
-  writeUiPreferences,
+  defaultUiPreferences,
+  parseUiPreferences,
+  UI_PREFERENCES_STORAGE_KEY,
 } from "@/lib/preferences/ui-preferences";
 
-class MemoryStorage implements Pick<Storage, "getItem" | "setItem"> {
-  private readonly values = new Map<string, string>();
-  getItem(key: string): string | null {
-    return this.values.get(key) ?? null;
-  }
-  setItem(key: string, value: string): void {
-    this.values.set(key, value);
-  }
-}
-
 describe("ui preferences", () => {
-  it("defaults to System theme and English", () => {
-    expect(DEFAULT_UI_PREFERENCES).toEqual({ theme: "system", locale: "en" });
-    expect(readUiPreferences(new MemoryStorage())).toEqual(DEFAULT_UI_PREFERENCES);
+  it("defaults to System, English, and Balance density", () => {
+    expect(defaultUiPreferences).toEqual({ theme: "system", locale: "en", density: "balance" });
+    expect(parseUiPreferences(null)).toEqual(defaultUiPreferences);
   });
 
-  it("persists theme and locale", () => {
-    const storage = new MemoryStorage();
-    writeUiPreferences({ theme: "dark", locale: "fil-PH" }, storage);
-    expect(readUiPreferences(storage)).toEqual({ theme: "dark", locale: "fil-PH" });
+  it("rejects malformed storage values", () => {
+    expect(parseUiPreferences("{")).toEqual(defaultUiPreferences);
+    expect(parseUiPreferences(JSON.stringify({ theme: "neon", locale: "en" }))).toEqual(
+      defaultUiPreferences,
+    );
+  });
+
+  it("uses a POS-client storage key and never stores tokens", () => {
+    expect(UI_PREFERENCES_STORAGE_KEY).toBe("exits.pos-client.ui-preferences.v1");
+    expect(UI_PREFERENCES_STORAGE_KEY).not.toMatch(/token|session|auth/i);
+  });
+
+  it("accepts Philippine locales and rejects unknown ones", () => {
+    expect(parseUiPreferences(JSON.stringify({ theme: "light", locale: "ceb-PH" }))).toEqual({
+      theme: "light",
+      locale: "ceb-PH",
+      density: "balance",
+    });
+    expect(parseUiPreferences(JSON.stringify({ theme: "light", locale: "ar" }))).toEqual(
+      defaultUiPreferences,
+    );
+  });
+
+  it("defaults missing density from older storage to balance", () => {
+    expect(parseUiPreferences(JSON.stringify({ theme: "dark", locale: "en" }))).toEqual({
+      theme: "dark",
+      locale: "en",
+      density: "balance",
+    });
+  });
+
+  it("accepts compact and comfort density", () => {
+    expect(
+      parseUiPreferences(JSON.stringify({ theme: "light", locale: "en", density: "comfort" })),
+    ).toEqual({ theme: "light", locale: "en", density: "comfort" });
+    expect(
+      parseUiPreferences(JSON.stringify({ theme: "light", locale: "en", density: "compact" })),
+    ).toEqual({ theme: "light", locale: "en", density: "compact" });
   });
 });

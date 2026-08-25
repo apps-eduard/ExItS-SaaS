@@ -284,10 +284,19 @@ public sealed class PlatformMerchantCatalogClient(
         var token = platformSessionToken;
         if (string.IsNullOrWhiteSpace(token))
         {
-            var header = httpContextAccessor.HttpContext?.Request.Headers["X-ExItS-Session-Token"].FirstOrDefault();
-            if (!string.IsNullOrWhiteSpace(header))
+            var http = httpContextAccessor.HttpContext?.Request;
+            if (http is not null)
             {
-                token = header.Trim();
+                var header = http.Headers["X-ExItS-Session-Token"].FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(header))
+                {
+                    token = header.Trim();
+                }
+                else if (http.Cookies.TryGetValue(".ExItS.Platform.Auth", out var cookieToken)
+                         && !string.IsNullOrWhiteSpace(cookieToken))
+                {
+                    token = cookieToken.Trim();
+                }
             }
         }
 

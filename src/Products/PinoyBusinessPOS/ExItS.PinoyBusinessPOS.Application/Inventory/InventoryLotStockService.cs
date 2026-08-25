@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
@@ -205,6 +206,153 @@ public sealed class InventoryLotStockService
                     stockMovementId: null,
                     cancellationToken)
                 .ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Partial sale-return restock onto original sale-consumed lots only (earliest expiration first).
+    /// Never exceeds each lot's original consumed quantity net of prior SaleReturnRestock restores.
+    /// Expired lots may receive quantity but remain expired / not sellable.
+    /// </summary>
+    public async Task RestoreForSaleReturnAsync(
+        PosOrganizationId organizationId,
+        Guid saleId,
+        Guid saleReturnId,
+        CatalogProductId productId,
+        decimal quantityToRestore,
+        IReadOnlyList<Guid> priorSaleReturnIds,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken = default)
+    {
+        if (quantityToRestore <= 0m)
+        {
+            return;
+        }
+
+        var existingForReturn = await _lots
+            .ListBySourceAsync(organizationId, saleReturnId, StockMovementType.SaleReturnRestock, cancellationToken)
+            .ConfigureAwait(false);
+        if (existingForReturn.Any(m => m.ProductId == productId))
+        {
+            return;
+        }
+
+        var deductions = (await _lots
+                .ListBySourceAsync(organizationId, saleId, StockMovementType.SaleDeduction, cancellationToken)
+                .ConfigureAwait(false))
+            .Where(m => m.ProductId == productId)
+            .ToList();
+
+        var consumedByLot = new Dictionary<Guid, decimal>();
+        foreach (var movement in deductions)
+        {
+            var lotKey = movement.LotId.Value;
+            consumedByLot.TryGetValue(lotKey, out var prior);
+            consumedByLot[lotKey] = prior + Math.Abs(movement.QuantityEffect);
+        }
+
+        var restoredByLot = new Dictionary<Guid, decimal>();
+        foreach (var priorReturnId in priorSaleReturnIds)
+        {
+            if (priorReturnId == saleReturnId || priorReturnId == Guid.Empty)
+            {
+                continue;
+            }
+
+            var priorRestocks = await _lots
+                .ListBySourceAsync(
+                    organizationId,
+                    priorReturnId,
+                    StockMovementType.SaleReturnRestock,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            foreach (var movement in priorRestocks.Where(m => m.ProductId == productId))
+            {
+                var lotKey = movement.LotId.Value;
+                restoredByLot.TryGetValue(lotKey, out var prior);
+                restoredByLot[lotKey] = prior + Math.Abs(movement.QuantityEffect);
+            }
+        }
+
+        var remainingByLot = new Dictionary<Guid, decimal>();
+        foreach (var (lotKey, consumed) in consumedByLot)
+        {
+            restoredByLot.TryGetValue(lotKey, out var restored);
+            var remaining = consumed - restored;
+            if (remaining > 0m)
+            {
+                remainingByLot[lotKey] = remaining;
+            }
+        }
+
+        if (remainingByLot.Count == 0)
+        {
+            throw new DomainException(
+                ApplicationErrorCodes.SaleReturnLotRestoreInsufficient,
+                "No remaining original sale lots are available to restore for this return quantity.");
+        }
+
+        var lots = new List<InventoryLot>();
+        foreach (var lotKey in remainingByLot.Keys)
+        {
+            var lot = await _lots
+                .GetByIdAsync(organizationId, InventoryLotId.From(lotKey), cancellationToken)
+                .ConfigureAwait(false);
+            if (lot is null || lot.ProductId != productId)
+            {
+                throw new DomainException(
+                    ApplicationErrorCodes.SaleReturnLotRestoreInsufficient,
+                    "An original sale lot required for return restock is missing.");
+            }
+
+            lots.Add(lot);
+        }
+
+        var ordered = lots
+            .OrderBy(l => l.ExpirationDate)
+            .ThenBy(l => l.NormalizedLotNumber, StringComparer.Ordinal)
+            .ThenBy(l => l.Id.Value)
+            .ToList();
+
+        var remainingToAllocate = quantityToRestore;
+        foreach (var lot in ordered)
+        {
+            if (remainingToAllocate <= 0m)
+            {
+                break;
+            }
+
+            var restorable = remainingByLot[lot.Id.Value];
+            var take = Math.Min(restorable, remainingToAllocate);
+            if (take <= 0m)
+            {
+                continue;
+            }
+
+            lot.Apply(take, utcNow);
+            await _lots.UpdateAsync(lot, cancellationToken).ConfigureAwait(false);
+            await AddMovementAsync(
+                    organizationId,
+                    lot.Id,
+                    productId,
+                    StockMovementType.SaleReturnRestock,
+                    take,
+                    StockMovementSourceType.SaleReturn,
+                    actorId,
+                    utcNow,
+                    saleReturnId,
+                    stockMovementId: null,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            remainingToAllocate -= take;
+        }
+
+        if (remainingToAllocate > 0m)
+        {
+            throw new DomainException(
+                ApplicationErrorCodes.SaleReturnLotRestoreInsufficient,
+                $"Cannot restore {quantityToRestore} to original sale lots; insufficient remaining restorable quantity.");
         }
     }
 

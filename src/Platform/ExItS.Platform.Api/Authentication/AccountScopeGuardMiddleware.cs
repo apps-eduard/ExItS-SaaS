@@ -80,6 +80,13 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
             return true;
         }
 
+        // Browser CSRF bootstrap must be reachable for every authenticated account class
+        // that performs cookie-session mutations (Organization staff POS bind, Personal, etc.).
+        if (path.Equals("/api/v1/platform/antiforgery/token", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
         // Authenticated commercial catalog (any account class); endpoint enforces session auth.
         if (path.StartsWith("/api/v1/commercial", StringComparison.OrdinalIgnoreCase))
         {
@@ -168,6 +175,11 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
                 return accountClass is AccountClass.Personal or AccountClass.Organization;
             }
 
+            if (IsPersonalStaffInvitationAcceptPath(path))
+            {
+                return accountClass is AccountClass.Personal;
+            }
+
             // Owner cancel lives under /ownership-transfers/{id}/cancel (not /organizations/...).
             if (IsOwnershipTransferCancelPath(path))
             {
@@ -191,6 +203,12 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
 
         return false;
     }
+
+    private static bool IsPersonalStaffInvitationAcceptPath(string path) =>
+        path.Equals("/api/v1/platform/invitations/accept-as-personal", StringComparison.OrdinalIgnoreCase)
+        || path.Equals(
+            "/api/v1/platform/auth/organization-invitations/accept-as-personal",
+            StringComparison.OrdinalIgnoreCase);
 
     private static bool IsOwnershipTransferRecipientPath(string path)
     {

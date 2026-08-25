@@ -257,6 +257,16 @@ public sealed class DeliverPersonalReminder
     public async Task<ApplicationResult<PersonalReminderDto>> ExecuteAsync(
         PlatformUserId actingUserIdentityId,
         Guid reminderId,
+        CancellationToken cancellationToken = default) =>
+        await ExecuteCoreAsync(actingUserIdentityId, reminderId, requireCreator: true, cancellationToken)
+            .ConfigureAwait(false);
+
+    /// <summary>
+    /// System/worker delivery path: uses the reminder creator as the acting principal for
+    /// recipient resolution, without requiring an end-user JWT match.
+    /// </summary>
+    public async Task<ApplicationResult<PersonalReminderDto>> ExecuteSystemAsync(
+        Guid reminderId,
         CancellationToken cancellationToken = default)
     {
         var reminder = await _reminders.GetByIdAsync(PersonalReminderId.From(reminderId), cancellationToken)
@@ -268,7 +278,30 @@ public sealed class DeliverPersonalReminder
                 "Reminder was not found.");
         }
 
-        if (reminder.CreatedByUserIdentityId != actingUserIdentityId)
+        return await ExecuteCoreAsync(
+                reminder.CreatedByUserIdentityId,
+                reminderId,
+                requireCreator: false,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    private async Task<ApplicationResult<PersonalReminderDto>> ExecuteCoreAsync(
+        PlatformUserId actingUserIdentityId,
+        Guid reminderId,
+        bool requireCreator,
+        CancellationToken cancellationToken)
+    {
+        var reminder = await _reminders.GetByIdAsync(PersonalReminderId.From(reminderId), cancellationToken)
+            .ConfigureAwait(false);
+        if (reminder is null)
+        {
+            return ApplicationResult<PersonalReminderDto>.Failure(
+                ApplicationErrorCodes.PersonalReminderNotFound,
+                "Reminder was not found.");
+        }
+
+        if (requireCreator && reminder.CreatedByUserIdentityId != actingUserIdentityId)
         {
             return ApplicationResult<PersonalReminderDto>.Failure(
                 ApplicationErrorCodes.PersonalUtangUnauthorized,
@@ -313,9 +346,9 @@ public sealed class DeliverPersonalReminder
                         recipient,
                         title,
                         preview,
-                        relatedType: "PersonalReminder",
+                        relatedType: "PersonalDebtRelationship",
                         _clock.UtcNow,
-                        relatedId: reminder.Id.Value.ToString("D"));
+                        relatedId: relationship.Id.Value.ToString("D"));
                     await _notifications.AddAsync(notification, cancellationToken).ConfigureAwait(false);
 
                     var inAppDelivery = PersonalNotificationDelivery.Create(
@@ -372,9 +405,12 @@ public sealed class DeliverPersonalReminder
             await _reminders.UpdateAsync(reminder, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
+            var actor = requireCreator
+                ? $"platform-user:{actingUserIdentityId.Value:D}"
+                : "system:personal-reminder-worker";
             await _auditWriter.WriteAsync(
-                $"platform-user:{actingUserIdentityId.Value:D}",
-                AuditActorType.PlatformUser,
+                actor,
+                requireCreator ? AuditActorType.PlatformUser : AuditActorType.System,
                 PlatformAuditActions.PersonalReminderDelivered,
                 nameof(PersonalReminder),
                 reminder.Id.Value.ToString("D"),
@@ -619,4 +655,62 @@ public sealed class ListPersonalNotificationDeliveries
             delivery.AttemptedAtUtc,
             delivery.DeliveredAtUtc,
             delivery.FailureReason);
+}
+
+/// <summary>
+/// One worker tick: deliver due Utang relationship reminders and due Personal To-do reminders.
+/// </summary>
+public sealed class ProcessDuePersonalReminders
+{
+    private readonly IPersonalReminderRepository _reminders;
+    private readonly IPersonalTodoRepository _todos;
+    private readonly DeliverPersonalReminder _deliverUtang;
+    private readonly DeliverPersonalTodoReminder _deliverTodo;
+    private readonly IClock _clock;
+
+    public ProcessDuePersonalReminders(
+        IPersonalReminderRepository reminders,
+        IPersonalTodoRepository todos,
+        DeliverPersonalReminder deliverUtang,
+        DeliverPersonalTodoReminder deliverTodo,
+        IClock clock)
+    {
+        _reminders = reminders;
+        _todos = todos;
+        _deliverUtang = deliverUtang;
+        _deliverTodo = deliverTodo;
+        _clock = clock;
+    }
+
+    public async Task<int> ExecuteOnceAsync(int take = 50, CancellationToken cancellationToken = default)
+    {
+        var limit = Math.Clamp(take, 1, 200);
+        var delivered = 0;
+
+        var dueUtang = await _reminders.ListDueAsync(_clock.UtcNow, limit, cancellationToken)
+            .ConfigureAwait(false);
+        foreach (var reminder in dueUtang)
+        {
+            var result = await _deliverUtang.ExecuteSystemAsync(reminder.Id.Value, cancellationToken)
+                .ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                delivered++;
+            }
+        }
+
+        var dueTodos = await _todos.ListDueRemindersAsync(_clock.UtcNow, limit, cancellationToken)
+            .ConfigureAwait(false);
+        foreach (var todo in dueTodos)
+        {
+            var result = await _deliverTodo.ExecuteAsync(todo.Id.Value, cancellationToken)
+                .ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                delivered++;
+            }
+        }
+
+        return delivered;
+    }
 }

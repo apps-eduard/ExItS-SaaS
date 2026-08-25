@@ -40,6 +40,11 @@ public sealed class PlatformUser
     public string? StaffNumber { get; private set; }
     public string? PublicUserId { get; private set; }
     public PlatformUserId? CreatedByUserId { get; private set; }
+    /// <summary>
+    /// Formal same-human correlation to a Personal PlatformUser. Identity correlation only — not authorization.
+    /// Null for standalone organization staff (no Personal principal, or legacy unlinked staff).
+    /// </summary>
+    public PlatformUserId? LinkedPersonalUserId { get; private set; }
     public AccountStatus Status { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
@@ -63,12 +68,29 @@ public sealed class PlatformUser
         string? staffNumber,
         string? publicUserId,
         PlatformUserId? createdByUserId,
+        PlatformUserId? linkedPersonalUserId,
         AccountStatus status,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
         DateTimeOffset? suspendedAtUtc,
         string? suspensionReason)
     {
+        if (linkedPersonalUserId is not null)
+        {
+            if (homeOrganizationId is null)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.PersonLinkStaffRequired,
+                    "A formal person link can only be set on an organization-scoped staff principal.");
+            }
+
+            if (linkedPersonalUserId.Equals(id))
+            {
+                throw new DomainException(
+                    DomainErrorCodes.PersonLinkSelfDenied,
+                    "A staff principal cannot be linked to itself.");
+            }
+        }
         Id = id;
         Username = username;
         NormalizedUsername = normalizedUsername;
@@ -83,6 +105,7 @@ public sealed class PlatformUser
         StaffNumber = staffNumber;
         PublicUserId = publicUserId;
         CreatedByUserId = createdByUserId;
+        LinkedPersonalUserId = linkedPersonalUserId;
         Status = status;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
@@ -117,6 +140,7 @@ public sealed class PlatformUser
             staffNumber: null,
             publicUserId: null,
             createdByUserId: null,
+            linkedPersonalUserId: null,
             AccountStatus.Active,
             utcNow,
             utcNow,
@@ -152,6 +176,7 @@ public sealed class PlatformUser
             staffNumber: null,
             publicUserId: null,
             createdByUserId: null,
+            linkedPersonalUserId: null,
             AccountStatus.PendingVerification,
             utcNow,
             utcNow,
@@ -199,6 +224,7 @@ public sealed class PlatformUser
             normalizedStaffNumber,
             publicUserId: null,
             createdByUserId,
+            linkedPersonalUserId: null,
             requireEmailVerification ? AccountStatus.PendingVerification : AccountStatus.Active,
             utcNow,
             utcNow,
@@ -222,6 +248,7 @@ public sealed class PlatformUser
         string? phone = null,
         string? employeeCode = null,
         PlatformUserId? createdByUserId = null,
+        PlatformUserId? linkedPersonalUserId = null,
         PlatformUserId? id = null)
     {
         EnsureUtc(utcNow);
@@ -230,9 +257,10 @@ public sealed class PlatformUser
         var login = NormalizeEmail(staffLogin);
         var contact = NormalizeEmail(contactEmail);
         var normalizedName = NormalizeDisplayName(displayName);
+        var assignedId = id ?? PlatformUserId.New();
 
         return new PlatformUser(
-            id ?? PlatformUserId.New(),
+            assignedId,
             displayUsername,
             normalizedUsername,
             normalizedName,
@@ -246,6 +274,7 @@ public sealed class PlatformUser
             staffNumber: null,
             publicUserId: null,
             createdByUserId,
+            linkedPersonalUserId,
             AccountStatus.Active,
             utcNow,
             utcNow,
@@ -273,7 +302,8 @@ public sealed class PlatformUser
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
         DateTimeOffset? suspendedAtUtc,
-        string? suspensionReason) =>
+        string? suspensionReason,
+        PlatformUserId? linkedPersonalUserId = null) =>
         new(
             id,
             username,
@@ -289,6 +319,7 @@ public sealed class PlatformUser
             staffNumber,
             publicUserId,
             createdByUserId,
+            linkedPersonalUserId,
             status,
             createdAtUtc,
             updatedAtUtc,
@@ -313,6 +344,44 @@ public sealed class PlatformUser
         }
 
         PublicUserId = normalized;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Records an explicit same-human correlation to a Personal principal.
+    /// Does not grant membership, product role, or session authority.
+    /// </summary>
+    public void LinkToPersonalPrincipal(PlatformUserId personalUserId, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        ArgumentNullException.ThrowIfNull(personalUserId);
+        if (!IsOrganizationScopedStaff)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonLinkStaffRequired,
+                "A formal person link can only be set on an organization-scoped staff principal.");
+        }
+
+        if (personalUserId.Equals(Id))
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonLinkSelfDenied,
+                "A staff principal cannot be linked to itself.");
+        }
+
+        if (LinkedPersonalUserId is not null)
+        {
+            if (!LinkedPersonalUserId.Equals(personalUserId))
+            {
+                throw new DomainException(
+                    DomainErrorCodes.PersonLinkImmutable,
+                    "A formal person link cannot be changed once recorded.");
+            }
+
+            return;
+        }
+
+        LinkedPersonalUserId = personalUserId;
         UpdatedAtUtc = utcNow;
     }
 

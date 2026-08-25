@@ -109,20 +109,37 @@ internal sealed class InventoryLotRepository : IInventoryLotRepository
     public async Task<(int ExpiredCount, int NearExpiryCount)> CountExpiryAsync(
         PosOrganizationId organizationId,
         DateOnly today,
-        int warningDays,
         CancellationToken cancellationToken = default)
     {
-        var onHand = _db.InventoryLots.Where(l =>
-            l.OrganizationId == organizationId.Value && l.QuantityOnHand > 0m);
+        var org = organizationId.Value;
+        var defaultWarning = InventoryLot.DefaultWarningDays;
+
+        var onHand =
+            from lot in _db.InventoryLots.AsNoTracking()
+            join product in _db.CatalogProducts.AsNoTracking()
+                on new { Org = lot.OrganizationId, Id = lot.ProductId }
+                equals new { Org = product.OrganizationId, Id = product.Id }
+            where lot.OrganizationId == org && lot.QuantityOnHand > 0m
+            select new { lot.ExpirationDate, product.TracksExpiration, product.ExpirationWarningDays };
+
         var expired = await onHand
-            .CountAsync(l => l.ExpirationDate < today, cancellationToken)
+            .CountAsync(row => row.ExpirationDate < today, cancellationToken)
             .ConfigureAwait(false);
-        var nearUntil = today.AddDays(warningDays);
-        var near = await onHand
-            .CountAsync(
-                l => l.ExpirationDate >= today && l.ExpirationDate <= nearUntil,
-                cancellationToken)
+
+        // Near-expiry window is per product (EffectiveExpirationWarningDays). DateOnly.AddDays with a
+        // column does not reliably translate; project warning days then evaluate the window in-memory.
+        var candidates = await onHand
+            .Where(row => row.ExpirationDate >= today)
+            .Select(row => new
+            {
+                row.ExpirationDate,
+                WarningDays = row.TracksExpiration && row.ExpirationWarningDays != null
+                    ? row.ExpirationWarningDays.Value
+                    : defaultWarning
+            })
+            .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+        var near = candidates.Count(row => row.ExpirationDate <= today.AddDays(row.WarningDays));
         return (expired, near);
     }
 

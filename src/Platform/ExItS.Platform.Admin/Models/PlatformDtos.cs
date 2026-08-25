@@ -659,7 +659,8 @@ public sealed record AcceptOrganizationInvitationResultDto(
     string OrganizationDisplayName,
     Guid OrganizationId,
     Guid MembershipId,
-    string Role);
+    string Role,
+    Guid? LinkedPersonalUserId = null);
 
 public sealed record ProductAccessAssignmentDto(
     Guid Id,
@@ -1128,7 +1129,8 @@ public sealed record PersonalContactDto(
     string? Email,
     Guid? LinkedUserIdentityId,
     string Status,
-    DateTimeOffset CreatedAtUtc);
+    DateTimeOffset CreatedAtUtc,
+    string? PublicUserId = null);
 
 public sealed record PersonalDebtRelationshipSummaryDto(
     Guid Id,

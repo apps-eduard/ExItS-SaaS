@@ -15,43 +15,90 @@ public sealed record PosDeviceCapacityDto(int Used, int Allowed);
 public sealed record RegisterPosDeviceCommand(Guid BranchId, string InstallationDeviceId, string FriendlyName,
     string? Platform = null, string? Model = null, string? AppVersion = null);
 public sealed record PosDeviceAuthorizationDto(Guid PosDeviceId, Guid BranchId, string InstallationDeviceId);
+public enum PosDeviceRegisterKind { New, Reload, Reactivated }
+public sealed record RegisterPosDeviceOutcome(PosDeviceDto Device, PosDeviceRegisterKind Kind);
 
 public sealed class RegisterCurrentDevice(
     IPosDeviceRepository devices, IOrganizationBranchRepository branches, ISubscriptionRepository subscriptions,
     IPlanRepository plans, IPlatformUnitOfWork unitOfWork, IClock clock)
 {
-    public async Task<ApplicationResult<PosDeviceDto>> ExecuteAsync(
+    public async Task<ApplicationResult<RegisterPosDeviceOutcome>> ExecuteAsync(
         PlatformOrganizationId organizationId, RegisterPosDeviceCommand command, CancellationToken cancellationToken = default)
     {
         var branch = await branches.GetByIdAsync(OrganizationBranchId.From(command.BranchId), cancellationToken).ConfigureAwait(false);
         if (branch is null || branch.OrganizationId != organizationId)
-            return ApplicationResult<PosDeviceDto>.Failure(ApplicationErrorCodes.BranchNotFound, "The selected branch was not found.");
-        try { branch.EnsureActive(); } catch (DomainException ex) { return ApplicationResult<PosDeviceDto>.Failure(ex.ErrorCode, ex.Message); }
+            return ApplicationResult<RegisterPosDeviceOutcome>.Failure(ApplicationErrorCodes.BranchNotFound, "The selected branch was not found.");
+        try { branch.EnsureActive(); } catch (DomainException ex) { return ApplicationResult<RegisterPosDeviceOutcome>.Failure(ex.ErrorCode, ex.Message); }
 
+        ApplicationResult<RegisterPosDeviceOutcome>? outcome = null;
+        try
+        {
+            // Capacity check + insert must be serialized per organization so two final-slot
+            // registrations cannot both succeed (PostgreSQL advisory lock in PlatformUnitOfWork).
+            await unitOfWork.ExecuteWithOrganizationLockAsync(
+                organizationId.Value,
+                async ct =>
+                {
+                    outcome = await ExecuteLockedAsync(organizationId, branch, command, ct).ConfigureAwait(false);
+                },
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<RegisterPosDeviceOutcome>.Failure(ex.ErrorCode, ex.Message);
+        }
+
+        return outcome ?? ApplicationResult<RegisterPosDeviceOutcome>.Failure(
+            ApplicationErrorCodes.PosDeviceNotAuthorized,
+            "POS device registration did not complete.");
+    }
+
+    private async Task<ApplicationResult<RegisterPosDeviceOutcome>> ExecuteLockedAsync(
+        PlatformOrganizationId organizationId,
+        OrganizationBranch branch,
+        RegisterPosDeviceCommand command,
+        CancellationToken cancellationToken)
+    {
         PosDevice? existing;
         try { existing = await devices.GetByInstallationDeviceIdAsync(organizationId, command.InstallationDeviceId, cancellationToken).ConfigureAwait(false); }
-        catch (DomainException ex) { return ApplicationResult<PosDeviceDto>.Failure(ex.ErrorCode, ex.Message); }
+        catch (DomainException ex) { return ApplicationResult<RegisterPosDeviceOutcome>.Failure(ex.ErrorCode, ex.Message); }
 
         if (existing is not null && existing.Status == PosDeviceStatus.Active)
         {
+            if (existing.BranchId != branch.Id)
+            {
+                return ApplicationResult<RegisterPosDeviceOutcome>.Failure(
+                    ApplicationErrorCodes.PosDeviceBranchConflict,
+                    "This POS installation is already registered to another branch. It cannot be moved silently.");
+            }
+
             try { existing.TouchLastSeen(clock.UtcNow); }
-            catch (DomainException ex) { return ApplicationResult<PosDeviceDto>.Failure(ex.ErrorCode, ex.Message); }
+            catch (DomainException ex) { return ApplicationResult<RegisterPosDeviceOutcome>.Failure(ex.ErrorCode, ex.Message); }
             await devices.UpdateAsync(existing, cancellationToken).ConfigureAwait(false);
             await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<PosDeviceDto>.Success(DeviceMapper.ToDto(existing));
+            return ApplicationResult<RegisterPosDeviceOutcome>.Success(
+                new RegisterPosDeviceOutcome(DeviceMapper.ToDto(existing), PosDeviceRegisterKind.Reload));
         }
 
         var limit = await PosOrganizationPlanLimits.ResolveAsync(organizationId, subscriptions, plans, cancellationToken).ConfigureAwait(false);
         if (!limit.IsSuccess || limit.Value is null)
-            return ApplicationResult<PosDeviceDto>.Failure(limit.ErrorCode!, limit.ErrorMessage!);
+            return ApplicationResult<RegisterPosDeviceOutcome>.Failure(limit.ErrorCode!, limit.ErrorMessage!);
         if (await devices.CountActiveAsync(organizationId, cancellationToken).ConfigureAwait(false) >= limit.Value.MaxActivePosDevices)
-            return ApplicationResult<PosDeviceDto>.Failure(ApplicationErrorCodes.PosDeviceCapacityExceeded, "The active POS plan device limit has been reached.");
+            return ApplicationResult<RegisterPosDeviceOutcome>.Failure(ApplicationErrorCodes.PosDeviceCapacityExceeded, "The active POS plan device limit has been reached.");
 
         PosDevice device;
         try
         {
             if (existing is not null)
             {
+                // Revoked devices keep their original BranchId; refuse silent rebinding.
+                if (existing.BranchId != branch.Id)
+                {
+                    return ApplicationResult<RegisterPosDeviceOutcome>.Failure(
+                        ApplicationErrorCodes.PosDeviceBranchConflict,
+                        "This POS installation is already registered to another branch. It cannot be moved silently.");
+                }
+
                 existing.Reactivate(clock.UtcNow);
                 device = existing;
                 await devices.UpdateAsync(device, cancellationToken).ConfigureAwait(false);
@@ -63,14 +110,24 @@ public sealed class RegisterCurrentDevice(
                 await devices.AddAsync(device, cancellationToken).ConfigureAwait(false);
             }
         }
-        catch (DomainException ex) { return ApplicationResult<PosDeviceDto>.Failure(ex.ErrorCode, ex.Message); }
+        catch (DomainException ex) { return ApplicationResult<RegisterPosDeviceOutcome>.Failure(ex.ErrorCode, ex.Message); }
 
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        return ApplicationResult<PosDeviceDto>.Success(DeviceMapper.ToDto(device));
+        var kind = existing is not null ? PosDeviceRegisterKind.Reactivated : PosDeviceRegisterKind.New;
+        return ApplicationResult<RegisterPosDeviceOutcome>.Success(
+            new RegisterPosDeviceOutcome(DeviceMapper.ToDto(device), kind));
     }
 }
 
 public sealed class ListDevices(IPosDeviceRepository devices)
+{
+    /// <summary>Customer Device Management — active POS devices only.</summary>
+    public async Task<IReadOnlyList<PosDeviceDto>> ExecuteAsync(PlatformOrganizationId organizationId, CancellationToken cancellationToken = default) =>
+        (await devices.ListActiveByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false)).Select(DeviceMapper.ToDto).ToList();
+}
+
+/// <summary>Audit/support — all devices including revoked. Does not delete history.</summary>
+public sealed class ListAllDevices(IPosDeviceRepository devices)
 {
     public async Task<IReadOnlyList<PosDeviceDto>> ExecuteAsync(PlatformOrganizationId organizationId, CancellationToken cancellationToken = default) =>
         (await devices.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false)).Select(DeviceMapper.ToDto).ToList();
@@ -120,7 +177,7 @@ public sealed class AuthorizeForTransactions(IPosDeviceRepository devices)
         PosDevice? device;
         try { device = await devices.GetByInstallationDeviceIdAsync(organizationId, installationDeviceId, cancellationToken).ConfigureAwait(false); }
         catch (DomainException ex) { return ApplicationResult<PosDeviceAuthorizationDto>.Failure(ApplicationErrorCodes.PosDeviceNotAuthorized, ex.Message); }
-        if (device is null) return ApplicationResult<PosDeviceAuthorizationDto>.Failure(ApplicationErrorCodes.PosDeviceNotAuthorized, "This POS installation is not registered.");
+        if (device is null) return ApplicationResult<PosDeviceAuthorizationDto>.Failure(ApplicationErrorCodes.PosDeviceRegistrationRequired, "This POS installation is not registered for sales.");
         if (device.Status == PosDeviceStatus.Revoked) return ApplicationResult<PosDeviceAuthorizationDto>.Failure(ApplicationErrorCodes.PosDeviceRevoked, "This POS device has been revoked.");
         if (expectedBranchId is not null && device.BranchId != expectedBranchId)
             return ApplicationResult<PosDeviceAuthorizationDto>.Failure(ApplicationErrorCodes.PosDeviceNotAuthorized, "This device is not authorized for the selected branch.");
