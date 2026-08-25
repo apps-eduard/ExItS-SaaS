@@ -186,7 +186,22 @@ describe("OrgPosDevicesPage this-device awareness", () => {
     await screen.findByTestId("devices-list");
     expect(screen.queryByText(/registration code/i)).toBeNull();
     expect(screen.queryByText(/register with a code/i)).toBeNull();
-    expect(screen.getByTestId("devices-open-register")).toHaveTextContent(/register this browser/i);
+    // Active browser under optional PWA: no register push CTA.
+    expect(screen.queryByTestId("devices-open-register")).toBeNull();
+    expect(screen.queryByTestId("devices-register-optional")).toBeNull();
+  });
+
+  it("keeps unregistered registration optional without auto-opening the form", async () => {
+    registrationStatus = "unregistered";
+    listPosDevices.mockResolvedValue({ ok: true, value: [] });
+    renderPage();
+
+    expect(await screen.findByTestId("devices-enforcement-paused-hint")).toBeVisible();
+    expect(screen.queryByTestId("devices-register-form")).not.toBeInTheDocument();
+    expect(screen.getByTestId("devices-register-optional")).toHaveTextContent(/register this browser/i);
+
+    await userEvent.setup().click(screen.getByTestId("devices-register-optional"));
+    expect(screen.getByTestId("devices-register-form")).toBeVisible();
   });
 
   it("hides revoked devices from the normal active list", async () => {
@@ -356,6 +371,7 @@ describe("OrgPosDevicesPage registration metadata", () => {
     renderPage();
 
     const user = userEvent.setup();
+    await user.click(await screen.findByTestId("devices-register-optional"));
     await user.selectOptions(await screen.findByTestId("devices-branch-select"), BRANCH_ID);
     await user.click(screen.getByTestId("devices-register-browser"));
 
@@ -375,6 +391,7 @@ describe("OrgPosDevicesPage registration metadata", () => {
     getPosDeviceCapacity.mockResolvedValue({ ok: true, value: { used: 5, allowed: 5 } });
     renderPage();
 
+    await userEvent.setup().click(await screen.findByTestId("devices-register-optional"));
     expect(await screen.findByTestId("devices-register-blocked")).toBeVisible();
     expect(screen.getByTestId("devices-register-browser")).toBeDisabled();
     expect(

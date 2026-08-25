@@ -146,7 +146,13 @@ export function OrgPosDevicesPage() {
     [devices, localInstallationId, posDevice.registrationStatus],
   );
 
-  const showRegisterForm = currentBrowser.state === "unregistered" || registerFormOpen;
+  // PWA optional: do not auto-expand the register form for unregistered browsers.
+  // Strict enforcement (future Capacitor) keeps the form visible until registered.
+  const showRegisterForm =
+    registerFormOpen ||
+    (currentBrowser.state === "unregistered" && deviceEnforcementEnabled !== false);
+  const showRegisterToolbar =
+    currentBrowser.state === "unregistered" || currentBrowser.state === "revoked";
 
   function formatTimestamp(value: string | null | undefined): string | null {
     return formatRelativeOrDate(value, new Date(), preferences.locale);
@@ -342,22 +348,24 @@ export function OrgPosDevicesPage() {
         </p>
       ) : null}
 
-      <ExitsChipBar
-        variant="actions"
-        ariaLabel={t("devices.listTitle")}
-        testId="devices-toolbar"
-        className="exits-animate-toolbar"
-        items={[
-          {
-            key: "register",
-            label: t("devices.registerThisDevice"),
-            icon: <Plus />,
-            href: "/devices/register",
-            testId: "devices-open-register",
-            emphasis: deviceEnforcementEnabled === false ? "default" : "primary",
-          },
-        ]}
-      />
+      {showRegisterToolbar ? (
+        <ExitsChipBar
+          variant="actions"
+          ariaLabel={t("devices.listTitle")}
+          testId="devices-toolbar"
+          className="exits-animate-toolbar"
+          items={[
+            {
+              key: "register",
+              label: t("devices.registerThisDevice"),
+              icon: <Plus />,
+              href: "/devices/register",
+              testId: "devices-open-register",
+              emphasis: deviceEnforcementEnabled === false ? "default" : "primary",
+            },
+          ]}
+        />
+      ) : null}
 
       {capacity ? (
         <section
@@ -482,8 +490,19 @@ export function OrgPosDevicesPage() {
           </p>
         ) : null}
 
-        {currentBrowser.state !== "unregistered" && !registerFormOpen ? (
+        {!showRegisterForm ? (
           <div className="flex flex-wrap gap-2">
+            {currentBrowser.state === "unregistered" ? (
+              <Button
+                type="button"
+                variant={deviceEnforcementEnabled === false ? "outline" : "default"}
+                className="min-h-11"
+                data-testid="devices-register-optional"
+                onClick={() => openRegisterForm(boundWorkspace?.branchId ?? null)}
+              >
+                {t("devices.registerThisDevice")}
+              </Button>
+            ) : null}
             {currentBrowser.state === "revoked" ? (
               <Button
                 type="button"
@@ -533,7 +552,7 @@ export function OrgPosDevicesPage() {
               </p>
             ) : null}
             <div className="device-register-actions">
-              {registerFormOpen ? (
+              {registerFormOpen || deviceEnforcementEnabled === false ? (
                 <Button
                   type="button"
                   variant="outline"

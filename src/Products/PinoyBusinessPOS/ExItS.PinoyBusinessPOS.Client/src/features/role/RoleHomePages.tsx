@@ -94,7 +94,8 @@ export function RoleHomeShell({
   const { t } = useI18n();
   const navigate = useNavigate();
   const { enter } = useSellingMode();
-  const { sessionGrant } = useWorkspace();
+  const { sessionGrant, deviceEnforcementEnabled } = useWorkspace();
+  const showHomeDeviceRegister = deviceEnforcementEnabled !== false;
 
   const canAdmin = canUseAdminExperience(sessionGrant);
   const canOps = canUseOperationsExperience(sessionGrant);
@@ -276,13 +277,16 @@ export function RoleHomeShell({
       to: "/org/branches",
     });
   }
-  deviceTiles.push({
-    key: "register-browser",
-    label: t("devices.registerThisDevice"),
-    icon: MonitorSmartphone,
-    testId: "open-device-register",
-    to: "/devices/register",
-  });
+  // PWA optional: keep registration inside Device Management (/org/devices), not home CTAs.
+  if (showHomeDeviceRegister) {
+    deviceTiles.push({
+      key: "register-browser",
+      label: t("devices.registerThisDevice"),
+      icon: MonitorSmartphone,
+      testId: "open-device-register",
+      to: "/devices/register",
+    });
+  }
 
   if (dashboardGuide) {
     return (
@@ -422,9 +426,11 @@ export function RoleHomeShell({
           <Link to="/org/branches">{t("org.branchesLink")}</Link>
         </Button>
       ) : null}
-      <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-device-register">
-        <Link to="/devices/register">{t("devices.registerThisDevice")}</Link>
-      </Button>
+      {showHomeDeviceRegister ? (
+        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-device-register">
+          <Link to="/devices/register">{t("devices.registerThisDevice")}</Link>
+        </Button>
+      ) : null}
       {canCatalog ? (
         <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-catalog">
           <Link to="/catalog">{t("catalog.openCatalog")}</Link>

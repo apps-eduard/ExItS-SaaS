@@ -936,7 +936,7 @@ export const en = {
   "sell.infoChip": "Info",
   "sell.info.search": "Search or select products to start a sale.",
   "sell.info.shift": "Open a shift before checkout.",
-  "sell.info.device": "Register this device before posting sales.",
+  "sell.info.device": "When device checks are required, register this browser under Authorized devices before posting sales.",
   "sell.info.weighted": "Weighted products use the entered weight to calculate the line total.",
   "sell.info.close": "Close",
   "sell.info.cartNotHeld":
@@ -1297,7 +1297,7 @@ export const en = {
   "devices.listLede":
     "Optional list of phones, tablets, or browsers marked for this organization. Separate from cash registers used for shifts.",
   "devices.enforcementPausedHint":
-    "Web version: device registration is optional. Selling does not require a registered browser. Capacity and registration remain for testing and for the future installed app.",
+    "Web version: device registration is optional. Selling, cash registers, and shifts do not require a registered browser. Use Manage devices only when you want device history or testing.",
   "devices.deniedDetail": "Only organization owners and administrators can manage authorized devices.",
   "devices.backOrg": "Back to organization",
   "devices.backDevices": "Back to authorized devices",

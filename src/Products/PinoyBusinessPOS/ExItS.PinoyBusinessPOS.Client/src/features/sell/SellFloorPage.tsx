@@ -887,7 +887,9 @@ export function SellFloorPage() {
               <ul className="m-0 min-w-0 flex-1 list-disc space-y-1 pl-4 text-[length:var(--exits-text-xs)] text-muted">
                 <li>{t("sell.info.search")}</li>
                 <li>{t("sell.info.shift")}</li>
-                <li>{t("sell.info.device")}</li>
+                {deviceEnforcementEnabled !== false ? (
+                  <li>{t("sell.info.device")}</li>
+                ) : null}
                 <li>{t("sell.info.weighted")}</li>
                 <li>{t("sell.info.cartNotHeld")}</li>
               </ul>

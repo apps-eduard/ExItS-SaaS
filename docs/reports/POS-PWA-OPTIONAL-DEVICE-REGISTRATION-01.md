@@ -54,11 +54,13 @@ Device gate via `IPosDeviceTransactionAuthorizer.EnsureAuthorizedAsync` (no-ops 
 
 “No cash registers yet” blocks **Open Shift** correctly and is **not** a device-registration failure.
 
-## UI
+## UI policy (PWA)
 
-- Routes retained: `/org/devices`, `/devices/register`
-- Copy: Authorized devices vs Cash registers; optional registration messaging when enforcement paused
-- Onboarding: no required device-registration step
+- Device registration messaging stays in **Authorized devices** (`/org/devices`, `/devices/register`)
+- Normal POS screens (Sell, Shift, Registers, Orders, Customers, Inventory, Payments, Utang, Expenses, Returns) must not show register-device banners while `EnforcementEnabled=false`
+- Home “Register this browser” CTA is hidden while enforcement is paused; **Authorized devices** remains available
+- Unregistered browser on Devices: optional CTA only (form does not auto-open)
+- Active registered browser: status + capacity + manage/revoke — no register push CTA
 
 ## Explicit exclusions
 

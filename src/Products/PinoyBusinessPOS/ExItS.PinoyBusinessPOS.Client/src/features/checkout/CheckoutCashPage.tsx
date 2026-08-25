@@ -120,7 +120,7 @@ export function CheckoutCashPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
-  const { boundWorkspace, sessionGrant } = useWorkspace();
+  const { boundWorkspace, sessionGrant, deviceEnforcementEnabled } = useWorkspace();
   const cart = useSessionCart();
   const { readiness, currentShift, refresh } = useShiftContext();
   const sellReadiness = useSellOfflineReadiness();
@@ -551,7 +551,8 @@ export function CheckoutCashPage() {
   }
 
   if (!moneyReady || !deviceReady || !shiftGateReady || !shiftId) {
-    const deviceBlocked = !deviceReady;
+    // While PWA device enforcement is paused, never present a register-device block.
+    const deviceBlocked = !deviceReady && deviceEnforcementEnabled !== false;
     return (
       <div data-testid="checkout-blocked" className="flex min-w-0 flex-col gap-4">
         <PageHeader title={t("checkout.title")} description={t("checkout.blockedLede")} />
