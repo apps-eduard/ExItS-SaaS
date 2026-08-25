@@ -1,4 +1,6 @@
+import { Link } from "react-router-dom";
 import { useSession } from "@/auth/SessionProvider";
+import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
 
 export function HomePage() {
@@ -18,6 +20,11 @@ export function HomePage() {
           {`${t("home.welcome")} ${session.displayName}`}
         </p>
       ) : null}
+      <div className="pt-2">
+        <Button asChild>
+          <Link to="/personal/people">{t("home.openPeople")}</Link>
+        </Button>
+      </div>
     </section>
   );
 }

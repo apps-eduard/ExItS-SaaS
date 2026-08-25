@@ -9,7 +9,7 @@ import { AppTopBar } from "@/components/exits/AppTopBar";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { AppearancePage } from "@/features/appearance/AppearancePage";
 import { HomePage } from "@/features/home/HomePage";
-import { AppShell } from "@/layouts/AppShell";
+import { PersonalShell } from "@/features/personal/PersonalShell";
 import { UI_PREFERENCES_STORAGE_KEY } from "@/lib/preferences/ui-preferences";
 import { motionDurationMs } from "@/lib/motion";
 import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
@@ -58,9 +58,12 @@ describe("product chrome", () => {
     expect(header).not.toHaveTextContent("workspace");
   });
 
-  it("does not render primary bottom navigation or fake business destinations", () => {
-    renderShell(<AppShell />);
-    expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+  it("renders personal bottom navigation without POS business destinations", () => {
+    renderShell(<PersonalShell />);
+    expect(screen.getByRole("navigation", { name: "Personal navigation" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "People" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Invitations" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Alerts" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Appearance" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Sell" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Orders" })).not.toBeInTheDocument();
