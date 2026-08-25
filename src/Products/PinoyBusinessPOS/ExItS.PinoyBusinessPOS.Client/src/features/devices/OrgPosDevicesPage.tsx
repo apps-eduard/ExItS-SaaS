@@ -354,7 +354,7 @@ export function OrgPosDevicesPage() {
             icon: <Plus />,
             href: "/devices/register",
             testId: "devices-open-register",
-            emphasis: "primary",
+            emphasis: deviceEnforcementEnabled === false ? "default" : "primary",
           },
         ]}
       />
@@ -454,7 +454,9 @@ export function OrgPosDevicesPage() {
             ) : null}
             {currentBrowser.state === "unregistered" ? (
               <p className="mt-0.5 mb-0 text-[length:var(--exits-text-xs)] text-muted">
-                {posDevice.detail}
+                {deviceEnforcementEnabled === false
+                  ? t("devices.currentDevice.unregisteredDetailOptional")
+                  : (posDevice.detail ?? t("devices.registerLede"))}
               </p>
             ) : null}
             <p
@@ -659,7 +661,12 @@ export function OrgPosDevicesPage() {
 
       {devices.length === 0 && !devicesQuery.isLoading ? (
         <div data-testid="devices-empty">
-          <EmptyState title={t("devices.empty")} detail="" />
+          <EmptyState
+            title={t("devices.empty")}
+            detail={
+              deviceEnforcementEnabled === false ? t("devices.emptyOptionalDetail") : ""
+            }
+          />
         </div>
       ) : null}
 
@@ -688,7 +695,11 @@ export function OrgPosDevicesPage() {
                   data-testid="devices-revoke-warning"
                 >
                   {revokeTargetIsCurrent
-                    ? t("devices.remove.warningCurrentDevice")
+                    ? t(
+                        deviceEnforcementEnabled === false
+                          ? "devices.remove.warningCurrentDeviceOptional"
+                          : "devices.remove.warningCurrentDevice",
+                      )
                     : t("devices.remove.warning")}
                 </p>
               </div>

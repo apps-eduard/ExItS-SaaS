@@ -37,8 +37,8 @@ internal sealed class PosDeviceTransactionAuthorizer(
 
     public async Task<IResult?> EnsureAuthorizedAsync(HttpRequest request, Guid organizationId, CancellationToken ct)
     {
-        // Temporary PWA preview/dev pause — Local Validation sets EnforcementEnabled=false.
-        // Re-enable with PosDeviceAuthorization__EnforcementEnabled=true for Capacitor.
+        // Pure React PWA: Local Validation sets EnforcementEnabled=false so browsers need not register.
+        // Re-enable with PosDeviceAuthorization__EnforcementEnabled=true for Capacitor/native.
         if (!deviceAuthorizationOptions.Value.EnforcementEnabled)
         {
             return null;

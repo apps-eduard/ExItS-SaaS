@@ -85,6 +85,7 @@ vi.mock("@/workspace/WorkspaceProvider", () => ({
       durableIdentityAvailable: true,
     },
     refreshPosDevice,
+    deviceEnforcementEnabled: false,
   }),
 }));
 
@@ -185,7 +186,7 @@ describe("OrgPosDevicesPage this-device awareness", () => {
     await screen.findByTestId("devices-list");
     expect(screen.queryByText(/registration code/i)).toBeNull();
     expect(screen.queryByText(/register with a code/i)).toBeNull();
-    expect(screen.getByTestId("devices-open-register")).toHaveTextContent(/register this device/i);
+    expect(screen.getByTestId("devices-open-register")).toHaveTextContent(/register this browser/i);
   });
 
   it("hides revoked devices from the normal active list", async () => {

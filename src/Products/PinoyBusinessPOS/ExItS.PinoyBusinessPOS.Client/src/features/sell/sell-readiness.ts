@@ -20,7 +20,7 @@ export function evaluateSellEntryReadiness(input: {
   shiftReadiness: CheckoutShiftReadiness;
   /** When true, unregistered endpoints may browse Sell in view-only mode. */
   allowViewOnlyWithoutDevice?: boolean;
-  /** When false, temporary PWA pause — device gate does not block money UX. */
+  /** When false, pure PWA optional registration — device gate does not block money UX. */
   deviceEnforcementEnabled?: boolean | null;
 }): SellEntryReadiness {
   const deviceLoading =

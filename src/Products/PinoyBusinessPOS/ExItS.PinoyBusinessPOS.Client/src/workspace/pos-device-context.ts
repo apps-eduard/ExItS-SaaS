@@ -1,7 +1,7 @@
 /**
  * Browser/PWA POS device authorization context (RMAP-10b).
  * Does not invent an authorized terminal — status comes from durable identity + Platform authorize.
- * When POS API reports device transaction enforcement paused (Local Validation PWA preview),
+ * When POS API reports device transaction enforcement paused (pure PWA Local Validation),
  * money-post UX gates treat the device check as satisfied; server remains authoritative.
  */
 
@@ -69,7 +69,7 @@ export function isPosDeviceReadyForMoney(
   device: PosDeviceContext | null | undefined,
   options?: { enforcementEnabled?: boolean | null },
 ): boolean {
-  // Temporary PWA Local Validation: server PosDeviceAuthorization.EnforcementEnabled=false.
+  // Pure React PWA: server PosDeviceAuthorization.EnforcementEnabled=false.
   if (options?.enforcementEnabled === false) {
     return true;
   }

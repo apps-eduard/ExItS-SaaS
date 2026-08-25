@@ -5,11 +5,11 @@ namespace ExItS.PinoyBusinessPOS.Application.Options;
 /// (<c>X-Pos-Installation-Device-Id</c> + Platform <c>/pos-devices/authorize</c>).
 /// </summary>
 /// <remarks>
-/// Temporary PWA preview/dev pause: set <see cref="EnforcementEnabled"/> to false only in
-/// Local Validation / non-Production so the intermediate React PWA can transact without a
-/// Capacitor-wrapped installation identity.
-/// Re-enable registered installation enforcement when the React Capacitor native shell becomes
-/// the transactional production client:
+/// Pure React PWA current policy: set <see cref="EnforcementEnabled"/> to false only in
+/// Local Validation / non-Production so the web PWA can operate without requiring browser
+/// registration. Device registration endpoints, capacity, history, and revoke remain available
+/// for optional/manual use and for future Capacitor.
+/// Future Capacitor / native transactional client should set
 /// <c>PosDeviceAuthorization__EnforcementEnabled=true</c>
 /// (reuse DeviceIdentityProvider, installation GUID, registration, revocation, and Platform authorize).
 /// Production startup fails closed if this is disabled.

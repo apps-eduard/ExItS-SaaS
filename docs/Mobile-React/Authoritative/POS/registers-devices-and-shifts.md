@@ -41,13 +41,18 @@ API: `/api/v1/pos/cashier-shifts`
 
 Register list + open/close shift UX and open-shift **checkout readiness gate**: **PROVEN_CURRENT** (RMAP-10). Browser PosDevice registration/authorization: **PROVEN_CURRENT** (RMAP-10b) via durable installation identity, `/org/devices`, `/devices/register`, Platform authorize, and `X-Pos-Installation-Device-Id`. `moneyPostReady` is true only when shift gate is ready **and** the browser device is authorized for the selected branch — **except** when Local Validation / PWA preview sets `PosDeviceAuthorization:EnforcementEnabled=false` (server gate skipped; UX follows runtime policy). Online Cash sale POST: **PROVEN_CURRENT** (RMAP-11).
 
-### CURRENT PWA PHASE (temporary)
+### PURE REACT PWA — CURRENT POLICY (POS-PWA-OPTIONAL-DEVICE-REGISTRATION-01)
 
-Transaction device enforcement is temporarily disabled by environment config for the intermediate React PWA:
+Device registration infrastructure is retained; **registration is optional** for the web PWA. Transaction device enforcement is paused only via trusted server config:
 
 - Local Validation launcher: `PosDeviceAuthorization__EnforcementEnabled=false`
 - Default / Production: `EnforcementEnabled=true` (Production startup **fails** if disabled)
+- Subscription `MaxActivePosDevices` unchanged — capacity still applies to **explicit** registration
+- Unregistered browsers may use POS while enforcement is disabled; browsers are **not** auto-registered
+- Cash registers / shifts remain separate operational requirements
+
+See `docs/reports/POS-PWA-OPTIONAL-DEVICE-REGISTRATION-01.md`.
 
 ### FUTURE CAPACITOR
 
-Re-enable with `PosDeviceAuthorization__EnforcementEnabled=true` and reuse existing installation identity, registration, revocation, Platform authorize, and offline grant — do not rebuild the device model.
+Re-enable with `PosDeviceAuthorization__EnforcementEnabled=true` and reuse existing installation identity, SecureStorage, registration, revocation, Platform authorize, and offline grant — do not rebuild the device model. At that stage subscription device capacity becomes strict enforcement again.

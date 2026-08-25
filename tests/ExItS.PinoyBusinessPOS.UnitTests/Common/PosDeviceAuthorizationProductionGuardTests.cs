@@ -20,6 +20,7 @@ public sealed class PosDeviceAuthorizationProductionGuardTests
                 ["PosOffline:PriceAuthoritySigningKey"] = "production-signing-key-not-dev-marker-xx",
                 ["PosOffline:OperatingGrantSigningPrivateKeyPem"] =
                     "-----BEGIN PRIVATE KEY-----\nprod-only-key-material\n-----END PRIVATE KEY-----",
+                ["PlatformAuth:BaseUrl"] = "https://platform.example.com/",
                 ["PosDeviceAuthorization:EnforcementEnabled"] = "false",
             });
 
@@ -44,6 +45,7 @@ public sealed class PosDeviceAuthorizationProductionGuardTests
                 ["PosOffline:PriceAuthoritySigningKey"] = "production-signing-key-not-dev-marker-xx",
                 ["PosOffline:OperatingGrantSigningPrivateKeyPem"] =
                     "-----BEGIN PRIVATE KEY-----\nprod-only-key-material\n-----END PRIVATE KEY-----",
+                ["PlatformAuth:BaseUrl"] = "https://platform.example.com/",
                 ["PosDeviceAuthorization:EnforcementEnabled"] = "true",
             });
 

@@ -32,7 +32,7 @@ export type EvaluateCheckoutShiftReadinessInput = {
   canViewShifts: boolean;
   currentShift: PosCashierShiftDto | null;
   posDevice?: PosDeviceContext | null;
-  /** When false, temporary PWA pause — device gate does not block moneyPostReady. */
+  /** When false, pure PWA optional registration — device gate does not block moneyPostReady. */
   deviceEnforcementEnabled?: boolean | null;
 };
 
