@@ -99,6 +99,7 @@ export function QrScanOrEnter({ expectedPurpose, onResolvedPayload, disabled }: 
 
       <ExitsChipBar
         variant="filter"
+        className="exits-chip-bar--equal"
         ariaLabel={t("qr.modeToggleAria")}
         testId="qr-entry-mode"
         items={[

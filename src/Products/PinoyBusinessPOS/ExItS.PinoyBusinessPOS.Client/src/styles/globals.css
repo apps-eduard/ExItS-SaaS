@@ -5513,6 +5513,24 @@ a.dashboard-metric-card:focus-visible {
   min-width: 0;
 }
 
+.exits-chip-bar--equal {
+  flex-wrap: nowrap;
+  width: 100%;
+}
+
+.exits-chip-bar--equal .exits-chip {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: center;
+  text-align: center;
+}
+
+.exits-chip-bar--equal .exits-chip__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 420px) {
   .exits-chip-bar {
     flex-wrap: nowrap;

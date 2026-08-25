@@ -51,6 +51,7 @@ describe("QrScanOrEnter", () => {
     renderInput();
 
     expect(screen.getByTestId("qr-scan-or-enter")).toHaveAttribute("data-mode", "manual");
+    expect(screen.getByTestId("qr-entry-mode")).toHaveClass("exits-chip-bar--equal");
     expect(screen.getByTestId("qr-manual-panel")).toBeInTheDocument();
     expect(screen.getByTestId("qr-manual-id")).toBeInTheDocument();
     expect(screen.queryByTestId("qr-live-camera-button")).not.toBeInTheDocument();

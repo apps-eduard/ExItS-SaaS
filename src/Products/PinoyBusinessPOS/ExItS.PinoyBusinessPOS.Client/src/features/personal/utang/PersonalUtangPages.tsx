@@ -598,9 +598,6 @@ export function PersonalContactsPage() {
             </span>
             <div className="min-w-0 flex-1">
               <h2 className="catalog-form-section__title">{t("personal.utang.addByExitsTitle")}</h2>
-              <p className="mb-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
-                {t("personal.utang.addByExitsHint")}
-              </p>
             </div>
           </div>
 
