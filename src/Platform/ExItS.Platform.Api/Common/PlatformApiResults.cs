@@ -156,6 +156,8 @@ internal static class PlatformApiResults
             or DomainErrorCodes.OwnershipTransferSelfDenied
             or DomainErrorCodes.PersonalUtangInvitationExpired
             or ApplicationErrorCodes.PersonalUtangInvitationConflict
+            or ApplicationErrorCodes.PersonalConnectionRequestConflict
+            or ApplicationErrorCodes.PersonalConnectionBlocked
             or ApplicationErrorCodes.OwnershipTransferConflict
             or ApplicationErrorCodes.PersonalContactEmailConflict
             or ApplicationErrorCodes.CreditCustomerConflict

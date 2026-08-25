@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
+import { AddLocalPersonPage } from "@/features/personal/AddLocalPersonPage";
 import { AddPersonPage } from "@/features/personal/AddPersonPage";
 import { InvitationsPage } from "@/features/personal/InvitationsPage";
 import { NotificationsPage } from "@/features/personal/NotificationsPage";
@@ -72,6 +73,7 @@ function renderPeopleApp(path: string) {
         element: <PersonalShell />,
         children: [
           { path: "people", element: <PeoplePage /> },
+          { path: "people/add/local", element: <AddLocalPersonPage /> },
           { path: "people/add", element: <AddPersonPage /> },
           { path: "people/:contactId", element: <PersonDetailPage /> },
           { path: "invitations", element: <InvitationsPage /> },
@@ -113,7 +115,7 @@ describe("People lifecycle UX", () => {
     vi.unstubAllGlobals();
   });
 
-  it("renders empty People state", async () => {
+  it("renders How to add and empty people list", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo | URL) => {
@@ -132,9 +134,78 @@ describe("People lifecycle UX", () => {
     );
 
     renderPeopleApp("/personal/people");
-    expect(await screen.findByRole("heading", { name: "People" })).toBeInTheDocument();
-    expect(screen.getByText("No people yet")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Add person" })).toBeInTheDocument();
+    expect(await screen.findByText("How to add")).toBeInTheDocument();
+    expect(screen.getByText("Without ExItS ID")).toBeInTheDocument();
+    expect(screen.getByText("With ExItS Personal ID")).toBeInTheDocument();
+    expect(screen.getByText(/0 linked with ExItS ID · 0 without ExItS ID/)).toBeInTheDocument();
+  });
+
+  it("opens people info dialog from info button", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("/utang/contacts")) {
+          return jsonResponse(200, []);
+        }
+        if (url.includes("/personal/connections")) {
+          return jsonResponse(200, []);
+        }
+        if (url.includes("/relationships/")) {
+          return jsonResponse(200, []);
+        }
+        return jsonResponse(404, {});
+      }),
+    );
+
+    const user = userEvent.setup();
+    renderPeopleApp("/personal/people");
+    await user.click(await screen.findByRole("button", { name: "About People" }));
+    expect(await screen.findByRole("heading", { name: "About People" })).toBeInTheDocument();
+    expect(screen.getByText(/Connection consent and Utang records are separate/i)).toBeInTheDocument();
+  });
+
+  it("submits local contact form without connection request", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/utang/contacts") && init?.method === "POST") {
+        const body = JSON.parse(String(init.body)) as { displayName: string };
+        expect(body.displayName).toBe("Pedro Cruz");
+        return jsonResponse(201, {
+          id: "c-local",
+          displayName: "Pedro Cruz",
+          linkedUserIdentityId: null,
+          status: "Active",
+          createdAtUtc: "2026-08-25T00:00:00.000Z",
+        });
+      }
+      if (url.includes("/utang/contacts")) {
+        return jsonResponse(200, []);
+      }
+      if (url.includes("/personal/connections")) {
+        return jsonResponse(200, []);
+      }
+      if (url.includes("/relationships/")) {
+        return jsonResponse(200, []);
+      }
+      return jsonResponse(404, {});
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const user = userEvent.setup();
+    renderPeopleApp("/personal/people/add/local");
+    await user.type(screen.getByLabelText(/^Name/i), "Pedro Cruz");
+    await user.click(screen.getByRole("button", { name: "Add person" }));
+    await waitFor(() => {
+      expect(
+        fetchMock.mock.calls.some(
+          (call) => String(call[0]).includes("/utang/contacts") && call[1]?.method === "POST",
+        ),
+      ).toBe(true);
+    });
+    expect(
+      fetchMock.mock.calls.some((call) => String(call[0]).includes("/connection-request")),
+    ).toBe(false);
   });
 
   it("renders people rows without destructive list actions", async () => {

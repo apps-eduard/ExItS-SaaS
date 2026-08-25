@@ -124,6 +124,19 @@ export function buildPeopleRows(input: {
     .sort((a, b) => a.contact.displayName.localeCompare(b.contact.displayName));
 }
 
+export function summarizePeopleContacts(contacts: PersonalContactDto[]): {
+  identified: number;
+  local: number;
+  total: number;
+} {
+  const active = contacts.filter((c) => c.status.toLowerCase() !== "archived");
+  const identified = active.filter(
+    (c) => c.resolvedUserIdentityId || c.resolvedPublicUserId,
+  ).length;
+  const local = active.length - identified;
+  return { identified, local, total: active.length };
+}
+
 export function initialsFor(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) {

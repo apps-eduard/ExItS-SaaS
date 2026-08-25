@@ -283,4 +283,90 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
                 item.GetProperty("id").GetGuid() == requestId &&
                 item.GetProperty("status").GetString() == "Pending");
     }
+
+    [Fact]
+    public async Task Local_contact_creation_without_identity_request_or_notification()
+    {
+        var (tokenA, _) = await SeedPersonalUserAsync("loc-a");
+
+        using var create = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/contacts",
+            tokenA,
+            new { displayName = "Pedro Cruz", phone = "+639170000001", email = "pedro@example.com" });
+        var createResponse = await _client.SendAsync(create);
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        var body = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(body!.GetProperty("resolvedUserIdentityId").ValueKind is JsonValueKind.Null);
+        Assert.True(body.GetProperty("linkedUserIdentityId").ValueKind is JsonValueKind.Null);
+
+        using var connections = Authed(HttpMethod.Get, "/api/v1/personal/connections", tokenA);
+        Assert.Empty((await (await _client.SendAsync(connections)).Content.ReadFromJsonAsync<JsonElement>())!.EnumerateArray());
+
+        using var notifications = Authed(HttpMethod.Get, "/api/v1/personal/notifications", tokenA);
+        Assert.Empty((await (await _client.SendAsync(notifications)).Content.ReadFromJsonAsync<JsonElement>())!.EnumerateArray());
+    }
+
+    [Fact]
+    public async Task Unlink_preserves_active_financial_history()
+    {
+        var (tokenA, userA) = await SeedPersonalUserAsync("fin-a");
+        var (tokenB, userB) = await SeedPersonalUserAsync("fin-b");
+        var publicB = await GetPublicUserIdAsync(_client, tokenB);
+        var contactId = await CreateIdentifiedContactAsync(tokenA, "Borrower Friend", userB, publicB);
+
+        using var relationshipRequest = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/relationships",
+            tokenA,
+            new
+            {
+                creditorUserIdentityId = userA,
+                debtorContactId = contactId,
+                currencyCode = "PHP",
+                initialLoanAmount = 500m,
+            });
+        var relationshipResponse = await _client.SendAsync(relationshipRequest);
+        relationshipResponse.EnsureSuccessStatusCode();
+        var relationshipId = (await relationshipResponse.Content.ReadFromJsonAsync<JsonElement>())!
+            .GetProperty("id").GetGuid();
+
+        using var requestConnection = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/people/{contactId}/connection-request",
+            tokenA);
+        var requestId = (await (await _client.SendAsync(requestConnection)).Content.ReadFromJsonAsync<JsonElement>())!
+            .GetProperty("id").GetGuid();
+
+        using var accept = Authed(HttpMethod.Post, $"/api/v1/personal/connections/{requestId}/accept", tokenB);
+        (await _client.SendAsync(accept)).EnsureSuccessStatusCode();
+
+        using var unlink = Authed(HttpMethod.Post, $"/api/v1/personal/people/{contactId}/unlink", tokenA);
+        (await _client.SendAsync(unlink)).EnsureSuccessStatusCode();
+
+        using var lent = Authed(HttpMethod.Get, "/api/v1/personal/utang/relationships/lent", tokenA);
+        var lentBody = await (await _client.SendAsync(lent)).Content.ReadFromJsonAsync<JsonElement>();
+        var rel = lentBody!.EnumerateArray().Single(r => r.GetProperty("id").GetGuid() == relationshipId);
+        Assert.Equal("Active", rel.GetProperty("status").GetString());
+        Assert.Equal(500m, rel.GetProperty("currentBalance").GetDecimal());
+    }
+
+    [Fact]
+    public async Task Block_prevents_new_connection_request()
+    {
+        var (tokenA, _) = await SeedPersonalUserAsync("blk-a");
+        var (tokenB, userB) = await SeedPersonalUserAsync("blk-b");
+        var publicB = await GetPublicUserIdAsync(_client, tokenB);
+        var contactId = await CreateIdentifiedContactAsync(tokenA, "User B", userB, publicB);
+
+        using var block = Authed(HttpMethod.Post, $"/api/v1/personal/people/{contactId}/block", tokenA);
+        (await _client.SendAsync(block)).EnsureSuccessStatusCode();
+
+        using var request = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/people/{contactId}/connection-request",
+            tokenA);
+        var blockedRequest = await _client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Conflict, blockedRequest.StatusCode);
+    }
 }

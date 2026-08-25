@@ -52,6 +52,25 @@ export type MessageKey =
   | "people.emptyBody"
   | "people.loadError"
   | "people.localContact"
+  | "people.summary"
+  | "people.howToAdd.title"
+  | "people.howToAdd.lede"
+  | "people.howToAdd.withoutId"
+  | "people.howToAdd.withoutIdHelp"
+  | "people.howToAdd.withId"
+  | "people.howToAdd.withIdHelp"
+  | "people.localAdd.title"
+  | "people.localAdd.subtitle"
+  | "people.localAdd.name"
+  | "people.localAdd.nameRequired"
+  | "people.localAdd.phone"
+  | "people.localAdd.email"
+  | "people.info.open"
+  | "people.info.title"
+  | "people.info.body1"
+  | "people.info.body2"
+  | "people.info.body3"
+  | "people.info.close"
   | "people.status.notConnected"
   | "people.status.requestPending"
   | "people.status.connected"
@@ -176,6 +195,25 @@ export const en: Record<MessageKey, string> = {
     "Add someone you lend to, borrow from, or want to keep track of.",
   "people.loadError": "Unable to load people.",
   "people.localContact": "Local contact",
+  "people.summary": "{identified} linked with ExItS ID · {local} without ExItS ID",
+  "people.howToAdd.title": "How to add",
+  "people.howToAdd.lede": "Choose without ExItS ID or link a Personal ExItS identity.",
+  "people.howToAdd.withoutId": "Without ExItS ID",
+  "people.howToAdd.withoutIdHelp": "Name and optional contact only. No ExItS account link.",
+  "people.howToAdd.withId": "With ExItS Personal ID",
+  "people.howToAdd.withIdHelp": "Scan or enter their Personal ExItS ID to add them to your list.",
+  "people.localAdd.title": "Add local contact",
+  "people.localAdd.subtitle": "Keep someone in People without linking an ExItS account.",
+  "people.localAdd.name": "Name",
+  "people.localAdd.nameRequired": "Name is required.",
+  "people.localAdd.phone": "Phone (optional)",
+  "people.localAdd.email": "Email (optional)",
+  "people.info.open": "About People",
+  "people.info.title": "About People",
+  "people.info.body1": "People can be local contacts or identified ExItS users.",
+  "people.info.body2": "Connecting is optional and requires approval from the other person.",
+  "people.info.body3": "Connection consent and Utang records are separate.",
+  "people.info.close": "Got it",
   "people.status.notConnected": "Not connected",
   "people.status.requestPending": "Request pending",
   "people.status.connected": "Connected",
@@ -306,6 +344,25 @@ export const filPH: Record<MessageKey, string> = {
     "Magdagdag ng taong pinapahiram, hinuhiram, o sinusubaybayan mo.",
   "people.loadError": "Hindi ma-load ang mga tao.",
   "people.localContact": "Lokal na contact",
+  "people.summary": "{identified} may ExItS ID · {local} walang ExItS ID",
+  "people.howToAdd.title": "Paano magdagdag",
+  "people.howToAdd.lede": "Pumili ng walang ExItS ID o i-link ang Personal ExItS identity.",
+  "people.howToAdd.withoutId": "Walang ExItS ID",
+  "people.howToAdd.withoutIdHelp": "Pangalan at opsyonal na contact lang. Walang ExItS account link.",
+  "people.howToAdd.withId": "May ExItS Personal ID",
+  "people.howToAdd.withIdHelp": "I-scan o ilagay ang Personal ExItS ID para idagdag sa listahan.",
+  "people.localAdd.title": "Magdagdag ng lokal na contact",
+  "people.localAdd.subtitle": "Itago ang tao sa Mga tao nang hindi nagli-link ng ExItS account.",
+  "people.localAdd.name": "Pangalan",
+  "people.localAdd.nameRequired": "Kailangan ang pangalan.",
+  "people.localAdd.phone": "Telepono (opsyonal)",
+  "people.localAdd.email": "Email (opsyonal)",
+  "people.info.open": "Tungkol sa Mga tao",
+  "people.info.title": "Tungkol sa Mga tao",
+  "people.info.body1": "Ang mga tao ay maaaring lokal na contact o identified ExItS user.",
+  "people.info.body2": "Opsyonal ang pagkonekta at kailangan ng pag-apruba ng kabilang tao.",
+  "people.info.body3": "Hiwalay ang connection consent at mga Utang record.",
+  "people.info.close": "Sige",
   "people.status.notConnected": "Hindi konektado",
   "people.status.requestPending": "Nakabinbing request",
   "people.status.connected": "Konektado",

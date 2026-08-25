@@ -2,6 +2,7 @@ import { Navigate, createBrowserRouter } from "react-router-dom";
 import { SessionGate } from "@/auth/SessionGate";
 import { SignInPage } from "@/auth/SignInPage";
 import { AppearancePage } from "@/features/appearance/AppearancePage";
+import { AddLocalPersonPage } from "@/features/personal/AddLocalPersonPage";
 import { AddPersonPage } from "@/features/personal/AddPersonPage";
 import { HomePage } from "@/features/home/HomePage";
 import { InvitationsPage } from "@/features/personal/InvitationsPage";
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="people" replace /> },
           { path: "people", element: <PeoplePage /> },
+          { path: "people/add/local", element: <AddLocalPersonPage /> },
           { path: "people/add", element: <AddPersonPage /> },
           { path: "people/:contactId", element: <PersonDetailPage /> },
           { path: "invitations", element: <InvitationsPage /> },
