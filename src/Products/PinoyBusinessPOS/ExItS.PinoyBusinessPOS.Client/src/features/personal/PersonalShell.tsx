@@ -5,7 +5,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 
 const items = [
-  { to: "/", end: true, icon: Home, labelKey: "nav.home" as const },
+  { to: "/personal", end: true, icon: Home, labelKey: "nav.home" as const },
   { to: "/personal/people", end: false, icon: Users, labelKey: "nav.people" as const },
   { to: "/personal/invitations", end: false, icon: Mail, labelKey: "nav.invitations" as const },
   { to: "/personal/notifications", end: false, icon: Bell, labelKey: "nav.notifications" as const },

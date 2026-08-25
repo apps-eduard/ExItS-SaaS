@@ -11,7 +11,7 @@ export type MessageKey =
   | "home.title"
   | "home.tagline"
   | "home.welcome"
-  | "home.openPeople"
+  | "home.openPersonal"
   | "empty.title"
   | "empty.body"
   | "loading.label"
@@ -118,7 +118,7 @@ export const en: Record<MessageKey, string> = {
   "home.tagline":
     "Your business and personal ExItS experience, designed for phone, tablet, and desktop.",
   "home.welcome": "Welcome,",
-  "home.openPeople": "Open People",
+  "home.openPersonal": "Open Personal",
   "empty.title": "Nothing to show yet",
   "empty.body": "There is nothing to display right now.",
   "loading.label": "Loading",
@@ -229,7 +229,7 @@ export const filPH: Record<MessageKey, string> = {
   "home.tagline":
     "Ang iyong personal at business na karanasan sa ExItS, para sa telepono, tablet, at desktop.",
   "home.welcome": "Maligayang pagdating,",
-  "home.openPeople": "Buksan ang Mga tao",
+  "home.openPersonal": "Buksan ang Personal",
   "empty.title": "Wala pang ipapakita",
   "empty.body": "Walang ipinapakitang listahan sa ngayon.",
   "loading.label": "Naglo-load",

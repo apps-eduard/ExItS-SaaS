@@ -9,6 +9,7 @@ import { NotificationsPage } from "@/features/personal/NotificationsPage";
 import { PeoplePage } from "@/features/personal/PeoplePage";
 import { PersonDetailPage } from "@/features/personal/PersonDetailPage";
 import { PersonalShell } from "@/features/personal/PersonalShell";
+import { AppShell } from "@/layouts/AppShell";
 
 export const router = createBrowserRouter([
   {
@@ -17,16 +18,24 @@ export const router = createBrowserRouter([
       { path: "/sign-in", element: <SignInPage /> },
       {
         path: "/",
-        element: <PersonalShell />,
+        element: <AppShell />,
         children: [
           { index: true, element: <HomePage /> },
           { path: "appearance", element: <AppearancePage /> },
-          { path: "personal/people", element: <PeoplePage /> },
-          { path: "personal/people/add", element: <AddPersonPage /> },
-          { path: "personal/people/:contactId", element: <PersonDetailPage /> },
-          { path: "personal/invitations", element: <InvitationsPage /> },
-          { path: "personal/notifications", element: <NotificationsPage /> },
           { path: "*", element: <Navigate to="/" replace /> },
+        ],
+      },
+      {
+        path: "/personal",
+        element: <PersonalShell />,
+        children: [
+          { index: true, element: <Navigate to="people" replace /> },
+          { path: "people", element: <PeoplePage /> },
+          { path: "people/add", element: <AddPersonPage /> },
+          { path: "people/:contactId", element: <PersonDetailPage /> },
+          { path: "invitations", element: <InvitationsPage /> },
+          { path: "notifications", element: <NotificationsPage /> },
+          { path: "*", element: <Navigate to="/personal/people" replace /> },
         ],
       },
     ],

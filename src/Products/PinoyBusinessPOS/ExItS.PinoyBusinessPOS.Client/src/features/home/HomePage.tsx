@@ -22,7 +22,7 @@ export function HomePage() {
       ) : null}
       <div className="pt-2">
         <Button asChild>
-          <Link to="/personal/people">{t("home.openPeople")}</Link>
+          <Link to="/personal">{t("home.openPersonal")}</Link>
         </Button>
       </div>
     </section>

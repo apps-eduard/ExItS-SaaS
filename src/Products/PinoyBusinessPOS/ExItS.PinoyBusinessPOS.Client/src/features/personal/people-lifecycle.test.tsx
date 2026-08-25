@@ -59,13 +59,17 @@ function renderPeopleApp(path: string) {
     [
       {
         path: "/",
+        element: <div data-testid="generic-root">root</div>,
+      },
+      {
+        path: "/personal",
         element: <PersonalShell />,
         children: [
-          { path: "personal/people", element: <PeoplePage /> },
-          { path: "personal/people/add", element: <AddPersonPage /> },
-          { path: "personal/people/:contactId", element: <PersonDetailPage /> },
-          { path: "personal/invitations", element: <InvitationsPage /> },
-          { path: "personal/notifications", element: <NotificationsPage /> },
+          { path: "people", element: <PeoplePage /> },
+          { path: "people/add", element: <AddPersonPage /> },
+          { path: "people/:contactId", element: <PersonDetailPage /> },
+          { path: "invitations", element: <InvitationsPage /> },
+          { path: "notifications", element: <NotificationsPage /> },
         ],
       },
     ],

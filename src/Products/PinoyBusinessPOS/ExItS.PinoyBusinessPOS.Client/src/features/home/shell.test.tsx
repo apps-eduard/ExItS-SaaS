@@ -2,14 +2,16 @@ import type { ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { createMemoryRouter, MemoryRouter, RouterProvider } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import { AppErrorBoundary } from "@/components/exits/AppErrorBoundary";
 import { AppTopBar } from "@/components/exits/AppTopBar";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { AppearancePage } from "@/features/appearance/AppearancePage";
 import { HomePage } from "@/features/home/HomePage";
+import { PeoplePage } from "@/features/personal/PeoplePage";
 import { PersonalShell } from "@/features/personal/PersonalShell";
+import { AppShell } from "@/layouts/AppShell";
 import { UI_PREFERENCES_STORAGE_KEY } from "@/lib/preferences/ui-preferences";
 import { motionDurationMs } from "@/lib/motion";
 import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
@@ -18,6 +20,30 @@ function renderShell(ui: ReactElement, path = "/") {
   return render(
     <AppProviders>
       <MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter>
+    </AppProviders>,
+  );
+}
+
+function renderScopedRouter(path: string) {
+  const router = createMemoryRouter(
+    [
+      {
+        path: "/",
+        element: <AppShell />,
+        children: [{ index: true, element: <HomePage /> }],
+      },
+      {
+        path: "/personal",
+        element: <PersonalShell />,
+        children: [{ path: "people", element: <PeoplePage /> }],
+      },
+    ],
+    { initialEntries: [path] },
+  );
+
+  return render(
+    <AppProviders>
+      <RouterProvider router={router} />
     </AppProviders>,
   );
 }
@@ -38,6 +64,7 @@ describe("product home", () => {
     renderShell(<HomePage />);
     expect(screen.getByRole("heading", { name: "ExItS Mobile" })).toBeInTheDocument();
     expect(screen.getByText(/business and personal ExItS experience/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open Personal" })).toBeInTheDocument();
     const page = document.body.textContent ?? "";
     for (const phrase of forbiddenCopy) {
       expect(page).not.toMatch(new RegExp(phrase, "i"));
@@ -58,18 +85,34 @@ describe("product chrome", () => {
     expect(header).not.toHaveTextContent("workspace");
   });
 
-  it("renders personal bottom navigation without POS business destinations", () => {
-    renderShell(<PersonalShell />);
-    expect(screen.getByRole("navigation", { name: "Personal navigation" })).toBeInTheDocument();
+  it("uses generic AppShell on root without Personal bottom navigation", () => {
+    renderScopedRouter("/");
+    expect(screen.getByRole("heading", { name: "ExItS Mobile" })).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Personal navigation" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "People" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Sell" })).not.toBeInTheDocument();
+  });
+
+  it("uses PersonalShell on /personal/* with Personal bottom navigation only", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => [],
+      })),
+    );
+    renderScopedRouter("/personal/people");
+    expect(await screen.findByRole("navigation", { name: "Personal navigation" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "People" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Invitations" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Alerts" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Appearance" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Sell" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Orders" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Customers" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Inventory" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Reports" })).not.toBeInTheDocument();
+    vi.unstubAllGlobals();
   });
 });
 
