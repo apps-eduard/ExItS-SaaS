@@ -6,27 +6,29 @@
 @if (LocalValidationOptions.Value.Enabled)
 {
     <InlineMessage Tone="InlineMessageTone.Info">
-        MAUI Mailpit (registration / reset mail): @MailpitUiUrl
-        — not React Mailpit :8025
+        MAUI Mailpit: @MailpitUiUrl (not React :8025).
+        Activation / reset links: @AdminUiUrl (Blazor — not React Admin :8095).
+        Prefer in-app Activate / Reset when a token is shown.
     </InlineMessage>
 }
 #endif
 
 @code {
-    private string MailpitUiUrl
-    {
-        get
-        {
-            var opts = LocalValidationOptions.Value;
-            var port = opts.MailpitUiPort > 0 ? opts.MailpitUiPort : 8125;
-            var host = string.IsNullOrWhiteSpace(opts.PublicHost) ? "127.0.0.1" : opts.PublicHost.Trim();
-            // Emulator PublicHost is 10.0.2.2 for APIs; Mailpit UI is opened on the PC browser.
-            if (string.Equals(host, "10.0.2.2", StringComparison.Ordinal))
-            {
-                host = "127.0.0.1";
-            }
+    private string MailpitUiUrl => FormatUiUrl(LocalValidationOptions.Value.MailpitUiPort, 8125, preferLoopback: true);
 
-            return $"http://{host}:{port}";
+    private string AdminUiUrl => FormatUiUrl(LocalValidationOptions.Value.AdminUiPort, 8190, preferLoopback: false);
+
+    private string FormatUiUrl(int configuredPort, int fallbackPort, bool preferLoopback)
+    {
+        var opts = LocalValidationOptions.Value;
+        var port = configuredPort > 0 ? configuredPort : fallbackPort;
+        var host = string.IsNullOrWhiteSpace(opts.PublicHost) ? "127.0.0.1" : opts.PublicHost.Trim();
+        if (string.Equals(host, "10.0.2.2", StringComparison.Ordinal)
+            || (preferLoopback && string.IsNullOrWhiteSpace(opts.PublicHost)))
+        {
+            host = "127.0.0.1";
         }
+
+        return $"http://{host}:{port}";
     }
 }

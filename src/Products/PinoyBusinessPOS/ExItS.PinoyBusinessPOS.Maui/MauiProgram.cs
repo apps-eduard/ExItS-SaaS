@@ -79,6 +79,7 @@ public static class MauiProgram
             ["LocalValidation:SharedPassword"] = "LivePreviewLocal1!",
             // MAUI Mailpit UI host port (compose maps 8125→8025). React stack uses 8025.
             ["LocalValidation:MailpitUiPort"] = "8125",
+            ["LocalValidation:AdminUiPort"] = "8190",
 #else
             // Production/Release: API base URLs must be HTTPS (ApiClient MAUI-HTTPS validation).
             ["Security:RequireHttpsApiUrls"] = "true",

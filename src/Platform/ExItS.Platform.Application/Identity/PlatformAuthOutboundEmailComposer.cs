@@ -10,10 +10,12 @@ public static class PlatformAuthOutboundEmailComposer
 {
     public static (string Subject, string HtmlBody) Compose(
         PlatformAuthOutboundMessage message,
-        string adminPublicBaseUrl)
+        string adminPublicBaseUrl,
+        string? linkGuidanceHtml = null)
     {
         var baseUrl = adminPublicBaseUrl.TrimEnd('/');
         var encodedToken = WebUtility.UrlEncode(message.OpaqueToken ?? string.Empty);
+        var guidance = AppendGuidance(linkGuidanceHtml);
 
         return message.Kind switch
         {
@@ -25,9 +27,10 @@ public static class PlatformAuthOutboundEmailComposer
                  <p><a href="{baseUrl}/admin/activate-account?token={encodedToken}">Activate your account</a></p>
                  <p>This link expires at {message.ExpiresAtUtc:u} (UTC).</p>
                  <p>If you did not expect this message, you can ignore it.</p>
+                 {guidance}
                  """),
             PlatformAuthOutboundMessageKinds.OrganizationStaffInvitation =>
-                ComposeStaffInvitation(message, baseUrl, encodedToken),
+                ComposeStaffInvitation(message, baseUrl, encodedToken, guidance),
             PlatformAuthOutboundMessageKinds.OrganizationStaffInvitationAccepted =>
                 ComposeStaffInvitationAccepted(message),
             PlatformAuthOutboundMessageKinds.PasswordReset => (
@@ -36,6 +39,7 @@ public static class PlatformAuthOutboundEmailComposer
                  <p>A password reset was requested for your ExItS account.</p>
                  <p><a href="{baseUrl}/admin/reset-password?token={encodedToken}">Reset password</a></p>
                  <p>This link expires at {message.ExpiresAtUtc:u} (UTC).</p>
+                 {guidance}
                  """),
             PlatformAuthOutboundMessageKinds.RecoveryEmailVerification => (
                 "Confirm your ExItS recovery email",
@@ -43,17 +47,29 @@ public static class PlatformAuthOutboundEmailComposer
                  <p>Confirm your recovery email for ExItS.</p>
                  <p><a href="{baseUrl}/admin/confirm-recovery-email?token={encodedToken}">Confirm recovery email</a></p>
                  <p>This link expires at {message.ExpiresAtUtc:u} (UTC).</p>
+                 {guidance}
                  """),
             _ => (
                 "ExItS account message",
-                $"<p>ExItS account message ({WebUtility.HtmlEncode(message.Kind)}).</p><p>Token expires at {message.ExpiresAtUtc:u} (UTC).</p>")
+                $"<p>ExItS account message ({WebUtility.HtmlEncode(message.Kind)}).</p><p>Token expires at {message.ExpiresAtUtc:u} (UTC).</p>{guidance}")
         };
+    }
+
+    private static string AppendGuidance(string? linkGuidanceHtml)
+    {
+        if (string.IsNullOrWhiteSpace(linkGuidanceHtml))
+        {
+            return string.Empty;
+        }
+
+        return $"<p><em>{linkGuidanceHtml.Trim()}</em></p>";
     }
 
     private static (string Subject, string HtmlBody) ComposeStaffInvitation(
         PlatformAuthOutboundMessage message,
         string baseUrl,
-        string encodedToken)
+        string encodedToken,
+        string guidance)
     {
         var orgName = WebUtility.HtmlEncode(
             string.IsNullOrWhiteSpace(message.OrganizationName) ? "an organization" : message.OrganizationName);
@@ -77,6 +93,7 @@ public static class PlatformAuthOutboundEmailComposer
              <p>The contact email above is for invitation and recovery only — it is not your staff login.</p>
              <p><a href="{baseUrl}/admin/accept-organization-invitation?token={encodedToken}">Accept invitation</a></p>
              <p>This link expires at {message.ExpiresAtUtc:u} (UTC).</p>
+             {guidance}
              """);
     }
 

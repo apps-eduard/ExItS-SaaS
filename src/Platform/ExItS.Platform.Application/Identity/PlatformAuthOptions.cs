@@ -92,6 +92,11 @@ public sealed class PlatformEmailDeliveryOptions
     /// <summary>Public Admin base URL used to build verification / reset links (e.g. http://localhost:8090).</summary>
     public string? AdminPublicBaseUrl { get; set; }
 
+    /// <summary>
+    /// Optional HTML footnote appended to auth emails (Local Validation stack isolation hints).
+    /// </summary>
+    public string? LinkGuidanceHtml { get; set; }
+
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(SmtpHost)
         && SmtpPort > 0

@@ -24,6 +24,12 @@ public sealed class LocalValidationClientOptions
     /// </summary>
     public int MailpitUiPort { get; init; } = 8125;
 
+    /// <summary>
+    /// Blazor Admin host port for MAUI Local Validation activation/reset links (default 8190).
+    /// React Admin is 8095 — email links must never use React for the MAUI stack.
+    /// </summary>
+    public int AdminUiPort { get; init; } = 8190;
+
     public bool IsQuickLoginAvailable =>
         Enabled
         && !string.IsNullOrWhiteSpace(SharedPassword)

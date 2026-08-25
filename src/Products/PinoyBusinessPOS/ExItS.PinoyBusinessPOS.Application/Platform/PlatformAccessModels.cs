@@ -380,6 +380,8 @@ public sealed record PlatformLoginRequest(string UsernameOrEmail, string Passwor
 
 public sealed record ForgotPasswordRequest(string UsernameOrEmail);
 
+public sealed record ResetPasswordRequest(string Token, string NewPassword);
+
 public sealed record CredentialWorkflowAckDto(
     string Message,
     string? DebugToken,
@@ -1291,6 +1293,10 @@ public interface IPlatformAccessClient
 
     Task<ApiResult<CredentialWorkflowAckDto>> ForgotPasswordAsync(
         ForgotPasswordRequest request,
+        CancellationToken ct = default);
+
+    Task<ApiResult<object>> ResetPasswordAsync(
+        ResetPasswordRequest request,
         CancellationToken ct = default);
 
     Task<ApiResult<object>> LogoutSessionAsync(CancellationToken ct = default);

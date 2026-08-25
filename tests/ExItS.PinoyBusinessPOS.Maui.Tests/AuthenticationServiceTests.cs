@@ -2962,6 +2962,9 @@ public sealed class AuthenticationServiceTests
         public Task<ApiResult<CredentialWorkflowAckDto>> ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<CredentialWorkflowAckDto>.Unavailable());
 
+        public Task<ApiResult<object>> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<object>.Unavailable());
+
         public Task<ApiResult<object>> LogoutSessionAsync(CancellationToken ct = default) =>
             Task.FromResult(ApiResult<object>.Success(new object()));
 
