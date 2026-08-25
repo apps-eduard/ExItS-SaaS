@@ -328,7 +328,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "staffAssign.validation": "Buksan ang Assign mula sa Manage staff page.",
   "staffAssign.unknownName": "Miyembro",
   "staffAssign.submit": "I-assign ang role",
-  "staffAssign.submitting": "Nag-a-assign…",
+  "staffAssign.submitting": "Nag-a-assign?",
   "staffAssign.error": "Hindi ma-assign ang POS role.",
   "staffAssign.ownerConfirmTitle": "I-assign ang Owner role?",
   "staffAssign.ownerConfirmMessage":
@@ -431,6 +431,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.utang.name": "Pangalan",
   "personal.utang.phone": "Telepono (opsyonal)",
   "personal.utang.email": "Email (opsyonal)",
+  "personal.utang.emailLinkedReadonly": "Email mula sa naka-link na ExItS account (read-only)",
+  "personal.utang.phoneLinkedReadonly": "Telepono mula sa naka-link na ExItS account (read-only)",
   "personal.utang.addPerson": "Magdagdag ng tao",
   "personal.utang.addPersonKindTitle": "Paano magdagdag",
   "personal.utang.addPersonKindLede":
@@ -445,7 +447,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.utang.addPersonManualTitle": "Magdagdag nang walang ExItS ID",
   "personal.utang.addByExitsTitle": "Magdagdag gamit ang ExItS ID / QR",
   "personal.utang.addByExitsHint":
-    "Personal ExItS ID (EX-…) lang, hindi organization ID (ORG…). Hanapin ang tao, kumpirmahin, tapos gumawa ng contact.",
+    "Personal ExItS ID (EX-?) lang, hindi organization ID (ORG?). Hanapin ang tao, kumpirmahin, tapos gumawa ng contact.",
   "personal.utang.addPersonExits": "Magdagdag ng tao gamit ang ExItS ID",
   "personal.utang.addByExitsRequiresOnline":
     "Kailangan ng internet para magdagdag gamit ang ExItS ID.",
@@ -578,7 +580,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "org.action.businessQrDetail": "Show the public Business QR for this organization",
   "org.notifications.title": "Mga notification",
   "org.notifications.lede":
-    "Mga alerto ng negosyo para sa organisasyong ito — suppliers, orders, at customer links.",
+    "Mga alerto ng negosyo para sa organisasyong ito ? suppliers, orders, at customer links.",
   "org.notifications.close": "Isara ang mga notification",
   "org.notifications.tabUnread": "Hindi pa nabasa",
   "org.notifications.tabAll": "Lahat",
@@ -628,9 +630,9 @@ export const filPH: Record<keyof typeof en, string> = {
   "qr.invalidPayload": "That is not a valid ExItS QR or public ID.",
   "qr.wrongPurpose": "This QR code can't be used here.",
   "qr.organizationNotAllowedHere":
-    "Ito ay organization ExItS ID (ORG…). Personal ExItS ID (EX-…) lang ang puwedeng idagdag dito.",
+    "Ito ay organization ExItS ID (ORG?). Personal ExItS ID (EX-?) lang ang puwedeng idagdag dito.",
   "qr.personalNotAllowedHere":
-    "Ito ay personal ExItS ID (EX-…). Organization ExItS ID (ORG…) lang ang puwede dito.",
+    "Ito ay personal ExItS ID (EX-?). Organization ExItS ID (ORG?) lang ang puwede dito.",
   "customers.personalLink.title": "Link ExItS Personal user",
   "customers.personalLink.lede":
     "Scan or enter a Personal ExItS ID. The person must Accept before the link becomes active.",
@@ -1251,7 +1253,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "register.noOpenShift": "Walang open shift",
   "org.title": "Manage business",
   "org.lede":
-    "Home ng Owner at administrator — tingnan ang araw na ito, insights, at organization tools.",
+    "Home ng Owner at administrator ? tingnan ang araw na ito, insights, at organization tools.",
   "org.badge": "Admin",
   "org.body":
     "Hiwalay ang Organization Web / admin experience sa POS Manager operations. Kailangan ng Owner membership authority para mag-invite ng staff.",
@@ -1519,7 +1521,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "catalog.rename": "I-rename",
   "catalog.renamePrompt": "Pangalan ng category",
   "catalog.addCategory": "Magdagdag ng category",
-  "catalog.addingCategory": "Nagdadagdag…",
+  "catalog.addingCategory": "Nagdadagdag?",
   "catalog.newCategoryPlaceholder": "Pangalan ng bagong category",
   "catalog.openCatalog": "Catalog",
   "catalog.conflict": "Binago ang product sa ibang lugar. I-reload at subukan ulit.",
@@ -1606,7 +1608,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "inventory.customFrom": "Mula",
   "inventory.customTo": "Hanggang",
   "inventory.customRangeInvalid": "Pumili ng wastong From at To date.",
-  "inventory.expiryCounts": "Expired lots: {expired} · Near expiry lots: {near}",
+  "inventory.expiryCounts": "Expired lots: {expired} ? Near expiry lots: {near}",
   "inventory.expiryCountExpired": "Expired lots: {count}",
   "inventory.expiryCountNear": "Near expiry lots: {count}",
   "inventory.expirationEmpty": "Walang lots sa window na ito",
@@ -1653,7 +1655,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.editTitle": "I-edit ang customer",
   "customers.formLede": "Kailangan ang display name. Opsyonal ang mobile, address, at notes.",
   "customers.formLedeWalkIn":
-    "Walk-in customer — kailangan ang pangalan. Walang ExItS Personal link. Opsyonal ang mobile, address, at notes.",
+    "Walk-in customer ? kailangan ang pangalan. Walang ExItS Personal link. Opsyonal ang mobile, address, at notes.",
   "customers.formLedeExits":
     "I-link ang ExItS Personal ID pagkatapos ilagay ang display name. Kailangang i-Accept ng Personal user ang link request.",
   "customers.createKindTitle": "Uri ng customer",
@@ -1699,7 +1701,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.linkStatus.unavailableOffline": "Link status unavailable offline",
   "customers.linkPendingTitle": "Personal link pending",
   "customers.linkPendingBanner": "Waiting for the Personal user to accept this customer link request.",
-  "customers.linkPendingAfterCreate": "Customer added. Personal link request sent � waiting for acceptance.",
+  "customers.linkPendingAfterCreate": "Customer added. Personal link request sent ? waiting for acceptance.",
   "customers.creditsTitle": "Mga utang charge",
   "customers.creditsEmpty": "Wala pang charges",
   "customers.creditsEmptyDetail": "Lalabas dito ang Utang sales para sa customer na ito.",
@@ -2010,7 +2012,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "shift.useTotal": "Gamitin ang total",
   "shift.resetCount": "I-reset",
   "shift.denomHelper": "Cash denomination helper",
-  "shift.denomHelperHint": "I-tap ang bill o coin para magdagdag. Gamitin ang − para magbawas.",
+  "shift.denomHelperHint": "I-tap ang bill o coin para magdagdag. Gamitin ang ? para magbawas.",
   "shift.denomTapToAdd": "I-tap para magdagdag",
   "shift.denomIncreaseAria": "Magdagdag ng isang {denom}",
   "shift.denomDecreaseAria": "Bawasan ng isang {denom}",
@@ -2063,7 +2065,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.receiptsFilter": "Receive status",
   "purchasing.receiptsNoMatch": "No matching orders",
   "purchasing.receiptsNoMatchDetail": "Try another search or filter.",
-  "purchasing.outstandingSummary": "{qty} outstanding · {count} lines",
+  "purchasing.outstandingSummary": "{qty} outstanding ? {count} lines",
   "purchasing.directPurchases": "Mga direktang bili",
   "purchasing.directPurchasesLede": "Nakaraang direct purchase receipts na nagdagdag ng stock.",
   "purchasing.searchDirect": "Search direct purchases",
@@ -2525,12 +2527,12 @@ export const filPH: Record<keyof typeof en, string> = {
   "dashboard.transactions": "txns",
   "dashboard.salesByDay": "Sales by day",
   "dashboard.salesByDayEmpty": "No daily sales in this period.",
-  "dashboard.vsPriorPeriod": "vs {from} → {to}",
+  "dashboard.vsPriorPeriod": "vs {from} ? {to}",
   "dashboard.pctUnavailable": "change % n/a",
   "dashboard.utangOutstanding": "Utang outstanding",
   "dashboard.overdueUtang": "Overdue utang",
   "reports.title": "Reports",
-  "reports.lede": "Operational and classic reports. Online only — no invented accounting.",
+  "reports.lede": "Operational and classic reports. Online only ? no invented accounting.",
   "reports.open": "Reports",
   "reports.back": "Back to reports",
   "reports.operationalLede": "Server-authoritative operational totals.",

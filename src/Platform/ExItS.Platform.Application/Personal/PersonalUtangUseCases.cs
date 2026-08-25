@@ -17,6 +17,8 @@ public sealed record PersonalContactDto(
     string? Email,
     Guid? LinkedUserIdentityId,
     string? PublicUserId,
+    string? LinkedMaskedEmail,
+    string? LinkedMaskedPhone,
     string Status,
     DateTimeOffset CreatedAtUtc);
 
@@ -216,7 +218,11 @@ public sealed class CreatePersonalContact
                 if (existingLinked is not null)
                 {
                     return ApplicationResult<PersonalContactDto>.Success(
-                        ToDto(existingLinked, linkedUser.PublicUserId));
+                        ToDto(
+                            existingLinked,
+                            linkedUser.PublicUserId,
+                            MaskLinkedEmail(linkedUser.NormalizedEmail),
+                            MaskLinkedPhone(linkedUser.Phone)));
                 }
 
                 // Repair prior Add-by-ExItS-ID that saved name only without linking.
@@ -257,7 +263,11 @@ public sealed class CreatePersonalContact
                         cancellationToken).ConfigureAwait(false);
 
                     return ApplicationResult<PersonalContactDto>.Success(
-                        ToDto(orphan, linkedUser.PublicUserId));
+                        ToDto(
+                            orphan,
+                            linkedUser.PublicUserId,
+                            MaskLinkedEmail(linkedUser.NormalizedEmail),
+                            MaskLinkedPhone(linkedUser.Phone)));
                 }
             }
 
@@ -336,7 +346,11 @@ public sealed class CreatePersonalContact
             }
 
             return ApplicationResult<PersonalContactDto>.Success(
-                ToDto(contact, linkedUser?.PublicUserId));
+                ToDto(
+                    contact,
+                    linkedUser?.PublicUserId,
+                    MaskLinkedEmail(linkedUser?.NormalizedEmail),
+                    MaskLinkedPhone(linkedUser?.Phone)));
         }
         catch (PersistenceConflictException ex)
         {
@@ -412,7 +426,11 @@ public sealed class CreatePersonalContact
         await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    internal static PersonalContactDto ToDto(PersonalContact contact, string? publicUserId = null) =>
+    internal static PersonalContactDto ToDto(
+        PersonalContact contact,
+        string? publicUserId = null,
+        string? linkedMaskedEmail = null,
+        string? linkedMaskedPhone = null) =>
         new(
             contact.Id.Value,
             contact.DisplayName,
@@ -420,8 +438,47 @@ public sealed class CreatePersonalContact
             contact.Email,
             contact.LinkedUserIdentityId?.Value,
             publicUserId,
+            linkedMaskedEmail,
+            linkedMaskedPhone,
             contact.Status.ToString(),
             contact.CreatedAtUtc);
+
+    internal static string? MaskLinkedEmail(string? normalizedEmail)
+    {
+        if (string.IsNullOrWhiteSpace(normalizedEmail))
+        {
+            return null;
+        }
+
+        var at = normalizedEmail.IndexOf('@');
+        if (at <= 1)
+        {
+            return "***";
+        }
+
+        return normalizedEmail[0] + "***" + normalizedEmail[at..];
+    }
+
+    /// <summary>
+    /// Privacy-minimized phone for linked People edit: keep last 4 characters only.
+    /// </summary>
+    internal static string? MaskLinkedPhone(string? phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone))
+        {
+            return null;
+        }
+
+        var value = phone.Trim();
+        if (value.Length <= 4)
+        {
+            return "****";
+        }
+
+        var visible = Math.Min(4, value.Length);
+        var maskedCount = Math.Min(value.Length - visible, 8);
+        return new string('*', maskedCount) + value[^visible..];
+    }
 }
 
 public sealed record LinkPersonalContactRequest(
@@ -496,7 +553,11 @@ public sealed class LinkPersonalContact
                 var existingLinked = await _users.GetByIdAsync(contact.LinkedUserIdentityId!, cancellationToken)
                     .ConfigureAwait(false);
                 return ApplicationResult<PersonalContactDto>.Success(
-                    CreatePersonalContact.ToDto(contact, existingLinked?.PublicUserId));
+                    CreatePersonalContact.ToDto(
+                        contact,
+                        existingLinked?.PublicUserId,
+                        CreatePersonalContact.MaskLinkedEmail(existingLinked?.NormalizedEmail),
+                        CreatePersonalContact.MaskLinkedPhone(existingLinked?.Phone)));
             }
 
             var target = await PersonalContactLinkSupport.ResolvePersonalLinkTargetAsync(
@@ -566,7 +627,11 @@ public sealed class LinkPersonalContact
             }
 
             return ApplicationResult<PersonalContactDto>.Success(
-                CreatePersonalContact.ToDto(contact, linkedUser.PublicUserId));
+                CreatePersonalContact.ToDto(
+                    contact,
+                    linkedUser.PublicUserId,
+                    CreatePersonalContact.MaskLinkedEmail(linkedUser.NormalizedEmail),
+                    CreatePersonalContact.MaskLinkedPhone(linkedUser.Phone)));
         }
         catch (DomainException ex)
         {
@@ -584,17 +649,20 @@ public sealed class LinkPersonalContact
 public sealed class UpdatePersonalContact
 {
     private readonly IPersonalContactRepository _contacts;
+    private readonly IPlatformUserRepository _users;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public UpdatePersonalContact(
         IPersonalContactRepository contacts,
+        IPlatformUserRepository users,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _contacts = contacts;
+        _users = users;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -618,7 +686,26 @@ public sealed class UpdatePersonalContact
                     "Personal contact was not found.");
             }
 
-            contact.UpdateDetails(request.DisplayName, request.Phone, request.Email, _clock.UtcNow);
+            PlatformUser? linkedUser = null;
+            if (contact.LinkedUserIdentityId is not null)
+            {
+                linkedUser = await _users.GetByIdAsync(contact.LinkedUserIdentityId, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            if (contact.IsLinked)
+            {
+                // Linked account email is never editable. Phone is locked when the contact or
+                // linked account already has a phone; otherwise a local phone may still be set.
+                var lockPhone = !string.IsNullOrWhiteSpace(contact.Phone)
+                    || !string.IsNullOrWhiteSpace(linkedUser?.Phone);
+                var phone = lockPhone ? contact.Phone : request.Phone;
+                contact.UpdateDetails(request.DisplayName, phone, contact.Email, _clock.UtcNow);
+            }
+            else
+            {
+                contact.UpdateDetails(request.DisplayName, request.Phone, request.Email, _clock.UtcNow);
+            }
 
             if (contact.Email is not null)
             {
@@ -649,7 +736,12 @@ public sealed class UpdatePersonalContact
                 summary: $"Personal contact '{contact.DisplayName}' updated.",
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
-            return ApplicationResult<PersonalContactDto>.Success(CreatePersonalContact.ToDto(contact));
+            return ApplicationResult<PersonalContactDto>.Success(
+                CreatePersonalContact.ToDto(
+                    contact,
+                    linkedUser?.PublicUserId,
+                    CreatePersonalContact.MaskLinkedEmail(linkedUser?.NormalizedEmail),
+                    CreatePersonalContact.MaskLinkedPhone(linkedUser?.Phone)));
         }
         catch (PersistenceConflictException ex)
         {
@@ -682,14 +774,18 @@ public sealed class ListPersonalContacts
         foreach (var contact in list)
         {
             string? publicUserId = null;
+            string? linkedMaskedEmail = null;
+            string? linkedMaskedPhone = null;
             if (contact.LinkedUserIdentityId is not null)
             {
                 var linked = await _users.GetByIdAsync(contact.LinkedUserIdentityId, cancellationToken)
                     .ConfigureAwait(false);
                 publicUserId = linked?.PublicUserId;
+                linkedMaskedEmail = CreatePersonalContact.MaskLinkedEmail(linked?.NormalizedEmail);
+                linkedMaskedPhone = CreatePersonalContact.MaskLinkedPhone(linked?.Phone);
             }
 
-            results.Add(CreatePersonalContact.ToDto(contact, publicUserId));
+            results.Add(CreatePersonalContact.ToDto(contact, publicUserId, linkedMaskedEmail, linkedMaskedPhone));
         }
 
         return results;

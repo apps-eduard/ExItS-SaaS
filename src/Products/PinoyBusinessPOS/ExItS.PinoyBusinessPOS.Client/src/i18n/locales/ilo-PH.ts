@@ -329,7 +329,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "staffAssign.validation": "Lukatan ti Assign manipud iti Manage staff page.",
   "staffAssign.unknownName": "Miembro",
   "staffAssign.submit": "I-assign ti role",
-  "staffAssign.submitting": "Ag-aassign…",
+  "staffAssign.submitting": "Ag-aassign?",
   "staffAssign.error": "Saan a ma-assign ti POS role.",
   "staffAssign.ownerConfirmTitle": "I-assign ti Owner role?",
   "staffAssign.ownerConfirmMessage":
@@ -437,6 +437,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.utang.name": "Nagan",
   "personal.utang.phone": "Telepono (opsyonal)",
   "personal.utang.email": "Email (opsyonal)",
+  "personal.utang.emailLinkedReadonly": "Email manipud iti naka-link nga ExItS account (read-only)",
+  "personal.utang.phoneLinkedReadonly": "Telepono manipud iti naka-link nga ExItS account (read-only)",
   "personal.utang.addPerson": "Agnayon ti tao",
   "personal.utang.addPersonKindTitle": "Kasano agnayon",
   "personal.utang.addPersonKindLede":
@@ -451,7 +453,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.utang.addPersonManualTitle": "Agnayon nga awan ExItS ID",
   "personal.utang.addByExitsTitle": "Agnayon babaen ti ExItS ID / QR",
   "personal.utang.addByExitsHint":
-    "Use a personal ExItS ID (EX-…), not an organization ID (ORG…). Resolve the person, confirm identity, then create a contact.",
+    "Use a personal ExItS ID (EX-?), not an organization ID (ORG?). Resolve the person, confirm identity, then create a contact.",
   "personal.utang.addPersonExits": "Agnayon ti tao babaen ti ExItS ID",
   "personal.utang.addByExitsRequiresOnline":
     "Masapul ti internet tapno agnayon babaen ti ExItS ID.",
@@ -584,7 +586,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "org.action.businessQrDetail": "Show the public Business QR for this organization",
   "org.notifications.title": "Dagiti notipikasion",
   "org.notifications.lede":
-    "Dagiti alerto ti negosio para iti daytoy nga organisasion — suppliers, orders, ken customer links.",
+    "Dagiti alerto ti negosio para iti daytoy nga organisasion ? suppliers, orders, ken customer links.",
   "org.notifications.close": "Iserra dagiti notipikasion",
   "org.notifications.tabUnread": "Di pay nabasa",
   "org.notifications.tabAll": "Amin",
@@ -634,9 +636,9 @@ export const iloPH: Record<keyof typeof en, string> = {
   "qr.invalidPayload": "That is not a valid ExItS QR or public ID.",
   "qr.wrongPurpose": "This QR code can't be used here.",
   "qr.organizationNotAllowedHere":
-    "This is an organization ExItS ID (ORG…). Only a personal ExItS ID (EX-…) can be added here.",
+    "This is an organization ExItS ID (ORG?). Only a personal ExItS ID (EX-?) can be added here.",
   "qr.personalNotAllowedHere":
-    "This is a personal ExItS ID (EX-…). Only an organization ExItS ID (ORG…) is allowed here.",
+    "This is a personal ExItS ID (EX-?). Only an organization ExItS ID (ORG?) is allowed here.",
   "customers.personalLink.title": "Link ExItS Personal user",
   "customers.personalLink.lede":
     "Scan or enter a Personal ExItS ID. The person must Accept before the link becomes active.",
@@ -1267,7 +1269,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "register.noOpenShift": "Awan ti nakalukat a shift",
   "org.title": "Manage business",
   "org.lede":
-    "Home ti Owner ken administrator — kitaen ti aldaw ita, insights, ken organization tools.",
+    "Home ti Owner ken administrator ? kitaen ti aldaw ita, insights, ken organization tools.",
   "org.badge": "Admin",
   "org.body":
     "Ti Organization Web / admin experience naisina iti POS Manager operations. Ti Invite staff masapul ti Owner membership authority.",
@@ -1535,7 +1537,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "catalog.rename": "Ilisan ti nagan",
   "catalog.renamePrompt": "Nagan iti category",
   "catalog.addCategory": "Manginayon iti category",
-  "catalog.addingCategory": "Agnaynayon…",
+  "catalog.addingCategory": "Agnaynayon?",
   "catalog.newCategoryPlaceholder": "Bag-ong nagan iti category",
   "catalog.openCatalog": "Catalog",
   "catalog.conflict": "Giilisan ti product iti laing dapit. I-reload ken padasen manen.",
@@ -1622,7 +1624,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "inventory.customFrom": "Manipud",
   "inventory.customTo": "Agingga",
   "inventory.customRangeInvalid": "Agpili ti umiso a From ken To date.",
-  "inventory.expiryCounts": "Expired lots: {expired} · Near expiry lots: {near}",
+  "inventory.expiryCounts": "Expired lots: {expired} ? Near expiry lots: {near}",
   "inventory.expiryCountExpired": "Expired lots: {count}",
   "inventory.expiryCountNear": "Near expiry lots: {count}",
   "inventory.expirationEmpty": "Awan ti lots iti daytoy a window",
@@ -1669,7 +1671,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "customers.editTitle": "Sukatan ti customer",
   "customers.formLede": "Gimasapul ti display name. Opsional ti mobile, address, ken notes.",
   "customers.formLedeWalkIn":
-    "Walk-in customer — gimasapul ti nagan. Awan ExItS Personal link. Opsional ti mobile, address, ken notes.",
+    "Walk-in customer ? gimasapul ti nagan. Awan ExItS Personal link. Opsional ti mobile, address, ken notes.",
   "customers.formLedeExits":
     "I-link ti ExItS Personal ID kalpasan nga maikabil ti display name. Masapul nga i-Accept ti Personal user ti link request.",
   "customers.createKindTitle": "Kita ti customer",
@@ -1715,7 +1717,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "customers.linkStatus.unavailableOffline": "Link status unavailable offline",
   "customers.linkPendingTitle": "Personal link pending",
   "customers.linkPendingBanner": "Waiting for the Personal user to accept this customer link request.",
-  "customers.linkPendingAfterCreate": "Customer added. Personal link request sent � waiting for acceptance.",
+  "customers.linkPendingAfterCreate": "Customer added. Personal link request sent ? waiting for acceptance.",
   "customers.creditsTitle": "Utti charges",
   "customers.creditsEmpty": "Awan pay ti charges",
   "customers.creditsEmptyDetail": "Makita ditoy ti Utti sales iti daytoy a customer.",
@@ -2024,7 +2026,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "shift.useTotal": "Gamita ti total",
   "shift.resetCount": "I-reset",
   "shift.denomHelper": "Cash denomination helper",
-  "shift.denomHelperHint": "I-tap ti bill wenno coin tapno agnayon. Usaren ti − tapno agkurang.",
+  "shift.denomHelperHint": "I-tap ti bill wenno coin tapno agnayon. Usaren ti ? tapno agkurang.",
   "shift.denomTapToAdd": "I-tap tapno agnayon",
   "shift.denomIncreaseAria": "Agnayon iti maysa a {denom}",
   "shift.denomDecreaseAria": "Agkurang iti maysa a {denom}",
@@ -2078,7 +2080,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "purchasing.receiptsFilter": "Receive status",
   "purchasing.receiptsNoMatch": "No matching orders",
   "purchasing.receiptsNoMatchDetail": "Try another search or filter.",
-  "purchasing.outstandingSummary": "{qty} outstanding · {count} lines",
+  "purchasing.outstandingSummary": "{qty} outstanding ? {count} lines",
   "purchasing.directPurchases": "Direct purchases",
   "purchasing.directPurchasesLede": "Past direct purchase receipts that increased stock.",
   "purchasing.searchDirect": "Search direct purchases",
@@ -2531,12 +2533,12 @@ export const iloPH: Record<keyof typeof en, string> = {
   "dashboard.transactions": "txns",
   "dashboard.salesByDay": "Sales by day",
   "dashboard.salesByDayEmpty": "No daily sales in this period.",
-  "dashboard.vsPriorPeriod": "vs {from} → {to}",
+  "dashboard.vsPriorPeriod": "vs {from} ? {to}",
   "dashboard.pctUnavailable": "change % n/a",
   "dashboard.utangOutstanding": "Utang outstanding",
   "dashboard.overdueUtang": "Overdue utang",
   "reports.title": "Reports",
-  "reports.lede": "Operational and classic reports. Online only — no invented accounting.",
+  "reports.lede": "Operational and classic reports. Online only ? no invented accounting.",
   "reports.open": "Reports",
   "reports.back": "Back to reports",
   "reports.operationalLede": "Server-authoritative operational totals.",

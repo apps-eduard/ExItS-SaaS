@@ -421,6 +421,8 @@ export const en = {
   "personal.utang.name": "Name",
   "personal.utang.phone": "Phone (optional)",
   "personal.utang.email": "Email (optional)",
+  "personal.utang.emailLinkedReadonly": "Email from linked ExItS account (read-only)",
+  "personal.utang.phoneLinkedReadonly": "Phone from linked ExItS account (read-only)",
   "personal.utang.addPerson": "Add person",
   "personal.utang.addPersonKindTitle": "How to add",
   "personal.utang.addPersonKindLede":

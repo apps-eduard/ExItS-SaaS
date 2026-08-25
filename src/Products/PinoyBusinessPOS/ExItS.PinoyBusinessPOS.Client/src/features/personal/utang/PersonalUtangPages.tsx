@@ -305,8 +305,9 @@ export function PersonalContactsPage() {
   function startEdit(contact: PersonalContactDto) {
     setEditingId(contact.id);
     setDisplayName(contact.displayName);
-    setPhone(contact.phone ?? "");
-    setEmail(contact.email ?? "");
+    setPhone(contact.phone?.trim() || contact.linkedMaskedPhone?.trim() || "");
+    const linkedEmail = contact.email?.trim() || contact.linkedMaskedEmail?.trim() || "";
+    setEmail(linkedEmail);
     setFormError(null);
     setResolvedUser(null);
     setResolveError(null);
@@ -316,7 +317,7 @@ export function PersonalContactsPage() {
     if (!editingId) {
       return;
     }
-    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    formRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
     const focusTimer = window.setTimeout(() => {
       nameInputRef.current?.focus();
       nameInputRef.current?.select();
@@ -440,10 +441,24 @@ export function PersonalContactsPage() {
         await saveOffline();
         return;
       }
+      const editingLinkedContact =
+        editingId != null
+          ? contacts.find((contact) => contact.id === editingId)
+          : undefined;
+      const linkedContactLocked =
+        Boolean(editingLinkedContact && isPersonalContactLinked(editingLinkedContact));
+      const phoneLocked =
+        linkedContactLocked &&
+        Boolean(
+          editingLinkedContact?.phone?.trim() ||
+            editingLinkedContact?.linkedMaskedPhone?.trim(),
+        );
       const body = {
         displayName: displayName.trim(),
-        phone: phone.trim() || null,
-        email: email.trim() || null,
+        phone: phoneLocked ? (editingLinkedContact?.phone ?? null) : phone.trim() || null,
+        email: linkedContactLocked
+          ? editingLinkedContact?.email ?? null
+          : email.trim() || null,
       };
       if (editingId) {
         await updatePersonalContact(editingId, body);
@@ -501,6 +516,10 @@ export function PersonalContactsPage() {
   const editingContact = isEditing
     ? contacts.find((contact) => contact.id === editingId)
     : undefined;
+  const editingLinked = Boolean(editingContact && isPersonalContactLinked(editingContact));
+  const editingPhoneReadonly =
+    editingLinked &&
+    Boolean(editingContact?.phone?.trim() || editingContact?.linkedMaskedPhone?.trim());
 
   return (
     <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="personal-utang-people">
@@ -716,27 +735,49 @@ export function PersonalContactsPage() {
           />
         </label>
         <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]" htmlFor="utang-contact-phone">
-          {t("personal.utang.phone")}
+          {editingPhoneReadonly
+            ? t("personal.utang.phoneLinkedReadonly")
+            : t("personal.utang.phone")}
           <input
             id="utang-contact-phone"
             data-testid="utang-contact-phone"
             autoComplete="tel"
             inputMode="tel"
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className={cn(
+              "min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3",
+              editingPhoneReadonly && "cursor-default text-muted",
+            )}
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            readOnly={editingPhoneReadonly}
+            aria-readonly={editingPhoneReadonly || undefined}
+            onChange={(e) => {
+              if (!editingPhoneReadonly) {
+                setPhone(e.target.value);
+              }
+            }}
           />
         </label>
         <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]" htmlFor="utang-contact-email">
-          {t("personal.utang.email")}
+          {editingLinked && email
+            ? t("personal.utang.emailLinkedReadonly")
+            : t("personal.utang.email")}
           <input
             id="utang-contact-email"
             data-testid="utang-contact-email"
             type="email"
             autoComplete="email"
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className={cn(
+              "min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3",
+              editingLinked && "cursor-default text-muted",
+            )}
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            readOnly={editingLinked}
+            aria-readonly={editingLinked || undefined}
+            onChange={(e) => {
+              if (!editingLinked) {
+                setEmail(e.target.value);
+              }
+            }}
           />
         </label>
         {!online && !isEditing ? (

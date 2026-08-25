@@ -328,7 +328,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "staffAssign.validation": "Ablihi ang Assign gikan sa Manage staff page.",
   "staffAssign.unknownName": "Miyembro",
   "staffAssign.submit": "I-assign ang role",
-  "staffAssign.submitting": "Nag-assign…",
+  "staffAssign.submitting": "Nag-assign?",
   "staffAssign.error": "Dili ma-assign ang POS role.",
   "staffAssign.ownerConfirmTitle": "I-assign ang Owner role?",
   "staffAssign.ownerConfirmMessage":
@@ -435,6 +435,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.utang.name": "Ngalan",
   "personal.utang.phone": "Telepono (opsyonal)",
   "personal.utang.email": "Email (opsyonal)",
+  "personal.utang.emailLinkedReadonly": "Email gikan sa naka-link nga ExItS account (read-only)",
+  "personal.utang.phoneLinkedReadonly": "Telepono gikan sa naka-link nga ExItS account (read-only)",
   "personal.utang.addPerson": "Pagdugang og tawo",
   "personal.utang.addPersonKindTitle": "Unsaon pagdugang",
   "personal.utang.addPersonKindLede":
@@ -449,7 +451,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.utang.addPersonManualTitle": "Pagdugang nga walay ExItS ID",
   "personal.utang.addByExitsTitle": "Pagdugang gamit ang ExItS ID / QR",
   "personal.utang.addByExitsHint":
-    "Use a personal ExItS ID (EX-…), not an organization ID (ORG…). Resolve the person, confirm identity, then create a contact.",
+    "Use a personal ExItS ID (EX-?), not an organization ID (ORG?). Resolve the person, confirm identity, then create a contact.",
   "personal.utang.addPersonExits": "Pagdugang og tawo gamit ang ExItS ID",
   "personal.utang.addByExitsRequiresOnline":
     "Kinahanglan og internet aron magdugang gamit ang ExItS ID.",
@@ -582,7 +584,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "org.action.businessQrDetail": "Show the public Business QR for this organization",
   "org.notifications.title": "Mga pahibalo",
   "org.notifications.lede":
-    "Mga alerto sa negosyo para niini nga organisasyon — suppliers, orders, ug customer links.",
+    "Mga alerto sa negosyo para niini nga organisasyon ? suppliers, orders, ug customer links.",
   "org.notifications.close": "Isira ang mga pahibalo",
   "org.notifications.tabUnread": "Wala pa mabasa",
   "org.notifications.tabAll": "Tanan",
@@ -632,9 +634,9 @@ export const cebPH: Record<keyof typeof en, string> = {
   "qr.invalidPayload": "That is not a valid ExItS QR or public ID.",
   "qr.wrongPurpose": "This QR code can't be used here.",
   "qr.organizationNotAllowedHere":
-    "This is an organization ExItS ID (ORG…). Only a personal ExItS ID (EX-…) can be added here.",
+    "This is an organization ExItS ID (ORG?). Only a personal ExItS ID (EX-?) can be added here.",
   "qr.personalNotAllowedHere":
-    "This is a personal ExItS ID (EX-…). Only an organization ExItS ID (ORG…) is allowed here.",
+    "This is a personal ExItS ID (EX-?). Only an organization ExItS ID (ORG?) is allowed here.",
   "customers.personalLink.title": "Link ExItS Personal user",
   "customers.personalLink.lede":
     "Scan or enter a Personal ExItS ID. The person must Accept before the link becomes active.",
@@ -1263,7 +1265,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "register.noOpenShift": "Walay abierto nga shift",
   "org.title": "Manage business",
   "org.lede":
-    "Home sa Owner ug administrator — tan-awa ang adlaw karon, insights, ug organization tools.",
+    "Home sa Owner ug administrator ? tan-awa ang adlaw karon, insights, ug organization tools.",
   "org.badge": "Admin",
   "org.body":
     "Ang Organization Web / admin experience bulag sa POS Manager operations. Ang Invite staff kinahanglan og Owner membership authority.",
@@ -1531,7 +1533,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "catalog.rename": "Ilisan ang ngalan",
   "catalog.renamePrompt": "Ngalan sa category",
   "catalog.addCategory": "Pagdugang og category",
-  "catalog.addingCategory": "Nagdugang…",
+  "catalog.addingCategory": "Nagdugang?",
   "catalog.newCategoryPlaceholder": "Bag-ong ngalan sa category",
   "catalog.openCatalog": "Catalog",
   "catalog.conflict": "Giilisan ang product sa laing dapit. I-reload ug sulayi pag-usab.",
@@ -1619,7 +1621,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "inventory.customFrom": "Gikan",
   "inventory.customTo": "Hangtud",
   "inventory.customRangeInvalid": "Pilia ang sakto nga From ug To date.",
-  "inventory.expiryCounts": "Expired lots: {expired} · Near expiry lots: {near}",
+  "inventory.expiryCounts": "Expired lots: {expired} ? Near expiry lots: {near}",
   "inventory.expiryCountExpired": "Expired lots: {count}",
   "inventory.expiryCountNear": "Near expiry lots: {count}",
   "inventory.expirationEmpty": "Walay lots niining window",
@@ -1666,7 +1668,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "customers.editTitle": "Usba ang customer",
   "customers.formLede": "Gikinahanglan ang display name. Opsyonal ang mobile, address, ug notes.",
   "customers.formLedeWalkIn":
-    "Walk-in customer — gikinahanglan ang ngalan. Walay ExItS Personal link. Opsyonal ang mobile, address, ug notes.",
+    "Walk-in customer ? gikinahanglan ang ngalan. Walay ExItS Personal link. Opsyonal ang mobile, address, ug notes.",
   "customers.formLedeExits":
     "I-link ang ExItS Personal ID human ibutang ang display name. Kinahanglan i-Accept sa Personal user ang link request.",
   "customers.createKindTitle": "Klase sa customer",
@@ -1712,7 +1714,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "customers.linkStatus.unavailableOffline": "Link status unavailable offline",
   "customers.linkPendingTitle": "Personal link pending",
   "customers.linkPendingBanner": "Waiting for the Personal user to accept this customer link request.",
-  "customers.linkPendingAfterCreate": "Customer added. Personal link request sent � waiting for acceptance.",
+  "customers.linkPendingAfterCreate": "Customer added. Personal link request sent ? waiting for acceptance.",
   "customers.creditsTitle": "Utang charges",
   "customers.creditsEmpty": "Wala pay charges",
   "customers.creditsEmptyDetail": "Makita dinhi ang Utang sales niining customer.",
@@ -2020,7 +2022,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "shift.useTotal": "Gamita ang total",
   "shift.resetCount": "I-reset",
   "shift.denomHelper": "Cash denomination helper",
-  "shift.denomHelperHint": "I-tap ang bill o coin aron magdugang. Gamita ang − aron magkunhod.",
+  "shift.denomHelperHint": "I-tap ang bill o coin aron magdugang. Gamita ang ? aron magkunhod.",
   "shift.denomTapToAdd": "I-tap aron magdugang",
   "shift.denomIncreaseAria": "Pagdugang og usa ka {denom}",
   "shift.denomDecreaseAria": "Pagkunhod og usa ka {denom}",
@@ -2073,7 +2075,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "purchasing.receiptsFilter": "Receive status",
   "purchasing.receiptsNoMatch": "No matching orders",
   "purchasing.receiptsNoMatchDetail": "Try another search or filter.",
-  "purchasing.outstandingSummary": "{qty} outstanding · {count} lines",
+  "purchasing.outstandingSummary": "{qty} outstanding ? {count} lines",
   "purchasing.directPurchases": "Direct purchases",
   "purchasing.directPurchasesLede": "Past direct purchase receipts that increased stock.",
   "purchasing.searchDirect": "Search direct purchases",
@@ -2526,12 +2528,12 @@ export const cebPH: Record<keyof typeof en, string> = {
   "dashboard.transactions": "txns",
   "dashboard.salesByDay": "Sales by day",
   "dashboard.salesByDayEmpty": "No daily sales in this period.",
-  "dashboard.vsPriorPeriod": "vs {from} → {to}",
+  "dashboard.vsPriorPeriod": "vs {from} ? {to}",
   "dashboard.pctUnavailable": "change % n/a",
   "dashboard.utangOutstanding": "Utang outstanding",
   "dashboard.overdueUtang": "Overdue utang",
   "reports.title": "Reports",
-  "reports.lede": "Operational and classic reports. Online only — no invented accounting.",
+  "reports.lede": "Operational and classic reports. Online only ? no invented accounting.",
   "reports.open": "Reports",
   "reports.back": "Back to reports",
   "reports.operationalLede": "Server-authoritative operational totals.",

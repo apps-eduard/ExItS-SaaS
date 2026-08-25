@@ -90,6 +90,8 @@ vi.mock("@/api/platform/personal-utang-client", async () => {
         email: null,
         linkedUserIdentityId: otherId,
         publicUserId: "EX-1111-2222",
+        linkedMaskedEmail: "b***@example.com",
+        linkedMaskedPhone: "****4567",
         status: "Active",
         createdAtUtc: "2026-08-20T00:00:00Z",
       },
@@ -307,6 +309,21 @@ describe("Personal Utang shared-ledger UI", () => {
     );
     expect(cards[0]).toHaveAttribute("data-testid", `utang-contact-${linkedContactId}`);
     expect(cards[1]).toHaveAttribute("data-testid", `utang-contact-${contactId}`);
+  });
+
+  it("fills linked email as read-only when editing a linked person", async () => {
+    const user = userEvent.setup();
+    renderPath("/personal/utang/people");
+    const card = await screen.findByTestId(`utang-contact-${linkedContactId}`);
+    await user.click(within(card).getByRole("button", { name: /Edit person/i }));
+    const email = await screen.findByTestId("utang-contact-email");
+    expect(email).toHaveValue("b***@example.com");
+    expect(email).toHaveAttribute("readonly");
+    expect(screen.getByLabelText(/Email from linked ExItS account/i)).toBeInTheDocument();
+    const phone = screen.getByTestId("utang-contact-phone");
+    expect(phone).toHaveValue("****4567");
+    expect(phone).toHaveAttribute("readonly");
+    expect(screen.getByLabelText(/Phone from linked ExItS account/i)).toBeInTheDocument();
   });
 
   it("uses owes-you wording and linked vs private labels on I Lent", async () => {

@@ -12,6 +12,8 @@ export const personalContactSchema = z.object({
   email: z.string().nullable().optional().default(null),
   linkedUserIdentityId: guidSchema.nullable().optional().default(null),
   publicUserId: z.string().nullable().optional().default(null),
+  linkedMaskedEmail: z.string().nullable().optional().default(null),
+  linkedMaskedPhone: z.string().nullable().optional().default(null),
   status: z.string(),
   createdAtUtc: z.string(),
 });
@@ -127,6 +129,8 @@ function normalizeContact(raw: unknown): unknown {
     email: pick(r, "email", "Email") ?? null,
     linkedUserIdentityId: pick(r, "linkedUserIdentityId", "LinkedUserIdentityId") ?? null,
     publicUserId: pick(r, "publicUserId", "PublicUserId") ?? null,
+    linkedMaskedEmail: pick(r, "linkedMaskedEmail", "LinkedMaskedEmail") ?? null,
+    linkedMaskedPhone: pick(r, "linkedMaskedPhone", "LinkedMaskedPhone") ?? null,
     status: pick(r, "status", "Status"),
     createdAtUtc: pick(r, "createdAtUtc", "CreatedAtUtc"),
   };
