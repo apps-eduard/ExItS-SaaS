@@ -6,16 +6,44 @@ function readRuntimeApiBaseUrl(): string {
   return typeof runtime === "string" ? runtime.trim() : "";
 }
 
+function isLoopbackHostname(hostname: string): boolean {
+  const host = hostname.trim().toLowerCase();
+  return host === "localhost" || host === "127.0.0.1" || host === "[::1]" || host === "::1";
+}
+
+/**
+ * Vite DEV on Tailscale/LAN: call Platform API on the same host at :8091.
+ * Loopback keeps empty base URL so Vite proxies /api → 127.0.0.1:8091.
+ */
+export function resolveDevLanPlatformApiBaseUrl(
+  hostname: string,
+  protocol: string,
+  apiPort = 8091,
+): string {
+  const host = hostname.trim();
+  if (!host || isLoopbackHostname(host)) {
+    return "";
+  }
+  const scheme = protocol === "https:" ? "https:" : "http:";
+  return `${scheme}//${host}:${apiPort}`;
+}
+
 export function isLocalValidationToolsEnabled(): boolean {
-  if (typeof window === "undefined") {
-    return false;
+  if (typeof window !== "undefined" && window.__EXITS_PLATFORM_ADMIN_WEB__?.localValidationToolsEnabled === true) {
+    return true;
   }
 
-  return window.__EXITS_PLATFORM_ADMIN_WEB__?.localValidationToolsEnabled === true;
+  // Vite DEV / Local Validation: allow weak passwords (1 char) to match Platform API Start env.
+  return import.meta.env.VITE_LOCAL_VALIDATION_TOOLS === "true";
 }
 
 export function isPlatformApiSameOrigin(): boolean {
   if (typeof window === "undefined") {
+    return false;
+  }
+
+  // Tailscale/LAN pages must not force same-origin (Vite /api proxy is unreliable from phones).
+  if (!isLoopbackHostname(window.location.hostname)) {
     return false;
   }
 
@@ -31,10 +59,16 @@ export function resolvePlatformApiBaseUrl(): string {
   if (isPlatformApiSameOrigin()) {
     return "";
   }
+
   const runtime = readRuntimeApiBaseUrl();
-  if (runtime.length > 0) {
+  if (runtime.length > 0 && runtime.toLowerCase() !== "same-origin") {
     return runtime.replace(/\/+$/, "");
   }
+
+  if (import.meta.env.DEV && typeof window !== "undefined") {
+    return resolveDevLanPlatformApiBaseUrl(window.location.hostname, window.location.protocol);
+  }
+
   const compiled = import.meta.env.VITE_PLATFORM_API_BASE_URL ?? "";
   return compiled.trim().replace(/\/+$/, "");
 }

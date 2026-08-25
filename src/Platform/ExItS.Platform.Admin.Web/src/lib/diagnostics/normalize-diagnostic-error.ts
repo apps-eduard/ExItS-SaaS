@@ -55,7 +55,14 @@ function resolveEnvironmentLabel(): string {
 }
 
 function resolveApiMode(): string {
-  return isPlatformApiSameOrigin() ? "same-origin" : "direct";
+  if (isPlatformApiSameOrigin()) {
+    return "same-origin";
+  }
+  // Empty base URL also means relative /api (Vite proxy) in DEV.
+  if (resolvePlatformApiBaseUrl().length === 0) {
+    return "same-origin";
+  }
+  return "direct";
 }
 
 function safeApiMessage(error: PlatformApiError): string {

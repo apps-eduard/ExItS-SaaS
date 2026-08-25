@@ -11,7 +11,7 @@ import {
   normalizeDiagnosticError,
 } from "@/lib/diagnostics/normalize-diagnostic-error";
 import type { DiagnosticRecord } from "@/lib/diagnostics/diagnostic-types";
-import { env, isLocalValidationToolsEnabled } from "@/lib/env";
+import { env, displayPlatformApiBaseUrl, isLocalValidationToolsEnabled } from "@/lib/env";
 
 type ToolsStatus =
   | { kind: "loading" }
@@ -92,6 +92,9 @@ export function DevelopmentTestUserTools({
       <Separator className="mb-3" />
       <p className="text-[length:var(--exits-text-xs)] font-semibold tracking-wide text-muted uppercase">
         {title}
+      </p>
+      <p className="mt-1 text-[length:var(--exits-text-xs)] text-muted">
+        {t("auth.devTools.apiBaseUrl")}: {displayPlatformApiBaseUrl()}
       </p>
 
       {status.kind === "loading" ? (
