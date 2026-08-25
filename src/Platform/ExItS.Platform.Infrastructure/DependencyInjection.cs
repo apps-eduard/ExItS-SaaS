@@ -107,6 +107,7 @@ public static class DependencyInjection
         services.AddScoped<ICreditCustomerRepository, CreditCustomerRepository>();
         services.AddScoped<ICustomerLinkRequestRepository, CustomerLinkRequestRepository>();
         services.AddScoped<ILinkedCustomerAppUserRepository, LinkedCustomerAppUserRepository>();
+        services.AddScoped<IPersonalOrganizationConnectionBlockRepository, PersonalOrganizationConnectionBlockRepository>();
         services.AddScoped<IOrganizationInAppNotificationRepository, OrganizationInAppNotificationRepository>();
         services.AddScoped<IProductAccessAssignmentRepository, ProductAccessAssignmentRepository>();
         services.AddScoped<IPlatformRoleAssignmentRepository, PlatformRoleAssignmentRepository>();

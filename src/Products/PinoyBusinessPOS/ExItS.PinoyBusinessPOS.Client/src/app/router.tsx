@@ -30,6 +30,7 @@ import {
   PersonalRelationshipDetailPage,
 } from "@/features/personal/utang/PersonalUtangPages";
 import { PersonalCustomerLinksPage } from "@/features/personal/customer-links/PersonalCustomerLinksPage";
+import { PersonalBlockedBusinessesPage } from "@/features/personal/customer-links/PersonalBlockedBusinessesPage";
 import { LinkedMerchantsPage } from "@/features/customer-ordering/LinkedMerchantsPage";
 import { LinkedMerchantReceiptPage } from "@/features/personal/linked-merchants/LinkedMerchantReceiptPage";
 import { LinkedMerchantStatementPage } from "@/features/personal/linked-merchants/LinkedMerchantStatementPage";
@@ -261,6 +262,7 @@ export const appRoutes = [
                 element: <PersonalStartBusinessPage />,
               },
               { path: "customer-links", element: <PersonalCustomerLinksPage /> },
+              { path: "blocked-businesses", element: <PersonalBlockedBusinessesPage /> },
               { path: "linked-merchants", element: <LinkedMerchantsPage /> },
               {
                 path: "linked-merchants/:organizationId/:businessCustomerId",

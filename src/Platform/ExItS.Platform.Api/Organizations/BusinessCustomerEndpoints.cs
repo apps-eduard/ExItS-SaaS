@@ -452,6 +452,40 @@ internal static class BusinessCustomerEndpoints
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
 
+        app.MapPost("/api/v1/organizations/{organizationId:guid}/customer-link-requests/{requestId:guid}/remind", async (
+            Guid organizationId,
+            Guid requestId,
+            RemindCustomerLinkRequest useCase,
+            PlatformMembershipAuthz membershipAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
+                PlatformAuditActions.CustomerLinkRequestResent,
+                nameof(CustomerLinkRequest),
+                requestId.ToString("D"),
+                organizationId,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(CustomerLinkRequestId.From(requestId), PlatformOrganizationId.From(organizationId), ct)
+                .ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await membershipAuthz.Inner.AuditSucceededAsync(
+                    PlatformAuditActions.CustomerLinkRequestResent,
+                    nameof(CustomerLinkRequest),
+                    requestId.ToString("D"),
+                    organizationId,
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
         app.MapPost("/api/v1/organizations/{organizationId:guid}/customer-link-requests/{requestId:guid}/revoke", async (
             Guid organizationId,
             Guid requestId,

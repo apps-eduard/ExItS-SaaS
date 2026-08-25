@@ -34,6 +34,8 @@ export function mapPlatformCustomerLinkStatus(raw: string | null | undefined): C
       return "Expired";
     case "revoked":
       return "Revoked";
+    case "unavailable":
+      return "Unavailable";
     default:
       return "Unavailable";
   }

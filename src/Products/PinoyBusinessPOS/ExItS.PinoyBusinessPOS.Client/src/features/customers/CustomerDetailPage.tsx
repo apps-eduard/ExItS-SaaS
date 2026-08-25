@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { canEditCustomer, canRecordRepayment, canViewStatement } from "@/access/pos-capabilities";
-import { getCustomerLinkStatus } from "@/api/platform/customer-link-status-client";
+import { getCustomerLinkStatus, remindCustomerLinkRequest, revokeCustomerLinkRequest, createCustomerLinkRequestForCustomer } from "@/api/platform/customer-link-status-client";
+import { useMutation } from "@tanstack/react-query";
 import {
   deactivateCustomer,
   getCustomer,
@@ -81,6 +82,85 @@ export function CustomerDetailPage() {
     queryFn: ({ signal }) => getCustomerCreditSummary(workspace!, customerId!, signal),
   });
 
+  const platformCustomerId = customerQuery.data?.platformBusinessCustomerId ?? null;
+  const linkStatusQuery = useQuery({
+    queryKey: [
+      "customers",
+      "platform-link-status",
+      workspace?.organizationId,
+      platformCustomerId,
+    ],
+    enabled: enabledOnline && Boolean(platformCustomerId),
+    queryFn: ({ signal }) =>
+      getCustomerLinkStatus(workspace!.organizationId, platformCustomerId!, signal),
+    refetchOnWindowFocus: true,
+  });
+
+  const remindMutation = useMutation({
+    mutationFn: async () => {
+      const requestId = linkStatusQuery.data?.latestLinkRequestId;
+      if (!workspace || !requestId) {
+        throw new Error("missing-request");
+      }
+      return remindCustomerLinkRequest(workspace.organizationId, requestId);
+    },
+    onSuccess: async () => {
+      setActionError(null);
+      await queryClient.invalidateQueries({
+        queryKey: ["customers", "platform-link-status", workspace?.organizationId, platformCustomerId],
+      });
+    },
+    onError: (error) => {
+      setActionError(error instanceof Error ? error.message : t("error.detail"));
+    },
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: async () => {
+      const requestId = linkStatusQuery.data?.latestLinkRequestId;
+      if (!workspace || !requestId) {
+        throw new Error("missing-request");
+      }
+      await revokeCustomerLinkRequest(workspace.organizationId, requestId);
+    },
+    onSuccess: async () => {
+      setActionError(null);
+      await queryClient.invalidateQueries({
+        queryKey: ["customers", "platform-link-status", workspace?.organizationId, platformCustomerId],
+      });
+    },
+    onError: (error) => {
+      setActionError(error instanceof Error ? error.message : t("error.detail"));
+    },
+  });
+
+  const inviteAgainMutation = useMutation({
+    mutationFn: async () => {
+      const row = customerQuery.data;
+      if (!workspace || !row?.platformBusinessCustomerId) {
+        throw new Error("missing-customer");
+      }
+      const publicUserId =
+        row.linkedPersonalPublicUserId?.trim() ||
+        extractPersonalExItsIdFromNotes(row.notes).exItsId ||
+        null;
+      await createCustomerLinkRequestForCustomer({
+        organizationId: workspace.organizationId,
+        platformBusinessCustomerId: row.platformBusinessCustomerId,
+        publicUserId,
+      });
+    },
+    onSuccess: async () => {
+      setActionError(null);
+      await queryClient.invalidateQueries({
+        queryKey: ["customers", "platform-link-status", workspace?.organizationId, platformCustomerId],
+      });
+    },
+    onError: (error) => {
+      setActionError(error instanceof Error ? error.message : t("error.detail"));
+    },
+  });
+
   const creditsQuery = useQuery({
     queryKey: ["customers", "credits", workspace?.organizationId, customerId],
     enabled: enabledOnline,
@@ -93,24 +173,6 @@ export function CustomerDetailPage() {
     enabled: enabledOnline,
     queryFn: ({ signal }) =>
       listCustomerRepayments(workspace!, customerId!, { pageSize: 20 }, signal),
-  });
-
-  const platformBusinessCustomerId =
-    customerQuery.data?.platformBusinessCustomerId?.trim() ||
-    cachedCustomer?.platformBusinessCustomerId?.trim() ||
-    null;
-
-  const linkStatusQuery = useQuery({
-    queryKey: [
-      "customers",
-      "platform-link-status",
-      workspace?.organizationId,
-      platformBusinessCustomerId,
-    ],
-    enabled: enabledOnline && Boolean(platformBusinessCustomerId),
-    queryFn: ({ signal }) =>
-      getCustomerLinkStatus(workspace!.organizationId, platformBusinessCustomerId!, signal),
-    refetchOnWindowFocus: true,
   });
 
   useEffect(() => {
@@ -198,6 +260,15 @@ export function CustomerDetailPage() {
   const showPendingBanner = linkUiStatus === "Pending";
   const showAfterCreateHint =
     pendingLinkHint && (linkUiStatus === "Pending" || (linkStatusQuery.isLoading && !linkStatusQuery.data));
+  const showUnavailableBanner =
+    online &&
+    Boolean(linkStatusQuery.data) &&
+    mapPlatformCustomerLinkStatus(linkStatusQuery.data.status) === "Unavailable";
+  const linkMeta = linkStatusQuery.data;
+  const reminderCooldownActive =
+    linkUiStatus === "Pending" &&
+    Boolean(linkMeta?.nextReminderEligibleAtUtc) &&
+    new Date(linkMeta!.nextReminderEligibleAtUtc!).getTime() > Date.now();
 
   const personalExItsId = resolveDisplayedPersonalExItsId({
     linkedPersonalPublicUserId: customer.linkedPersonalPublicUserId,
@@ -257,6 +328,77 @@ export function CustomerDetailPage() {
               ? t("customers.linkPendingAfterCreate")
               : t("customers.linkPendingBanner")}
           </p>
+          {linkMeta?.invitationSentAtUtc ? (
+            <p className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-muted" data-testid="customer-link-invitation-sent">
+              {t("customers.linkInvitationSent", {
+                date: new Date(linkMeta.invitationSentAtUtc).toLocaleString(),
+              })}
+            </p>
+          ) : null}
+          {(linkMeta?.reminderCount ?? 0) > 0 && linkMeta?.lastRemindedAtUtc ? (
+            <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted" data-testid="customer-link-last-reminder">
+              {t("customers.linkLastReminder", {
+                date: new Date(linkMeta.lastRemindedAtUtc).toLocaleString(),
+              })}{" "}
+              · {t("customers.linkRemindersCount", { count: String(linkMeta.reminderCount) })}
+            </p>
+          ) : null}
+          {showPendingBanner && online && allowEdit && linkMeta?.latestLinkRequestId ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                data-testid="customer-link-remind"
+                disabled={reminderCooldownActive || remindMutation.isPending}
+                onClick={() => remindMutation.mutate()}
+              >
+                {t("customers.linkRemind")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                data-testid="customer-link-cancel-invitation"
+                disabled={revokeMutation.isPending}
+                onClick={() => revokeMutation.mutate()}
+              >
+                {t("customers.linkCancelInvitation")}
+              </Button>
+              {reminderCooldownActive ? (
+                <p className="m-0 w-full text-[length:var(--exits-text-sm)] text-muted">
+                  {t("customers.linkRemindCooldown")}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+        </Card>
+      ) : null}
+
+      {showUnavailableBanner ? (
+        <Card data-testid="customer-link-unavailable-banner">
+          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("customers.linkStatus.unavailable")}
+          </p>
+          <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+            {t("customers.linkConnectionUnavailableDetail")}
+          </p>
+        </Card>
+      ) : null}
+
+      {(linkUiStatus === "Declined" || linkUiStatus === "Expired" || linkUiStatus === "Revoked") &&
+      online &&
+      allowEdit &&
+      customer.platformBusinessCustomerId &&
+      (customer.linkedPersonalPublicUserId || extractPersonalExItsIdFromNotes(customer.notes).exItsId) ? (
+        <Card data-testid="customer-link-invite-again-card">
+          <Button
+            type="button"
+            data-testid="customer-link-invite-again"
+            disabled={inviteAgainMutation.isPending}
+            onClick={() => inviteAgainMutation.mutate()}
+          >
+            {linkUiStatus === "Expired"
+              ? t("customers.linkSendNewInvite")
+              : t("customers.linkInviteAgain")}
+          </Button>
         </Card>
       ) : null}
 

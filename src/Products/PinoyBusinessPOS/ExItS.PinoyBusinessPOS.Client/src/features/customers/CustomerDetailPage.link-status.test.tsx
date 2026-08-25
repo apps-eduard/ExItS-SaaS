@@ -180,7 +180,30 @@ describe("CustomerDetailPage Platform link status", () => {
   it("shows unavailable on Platform fetch error and does not invent Linked", async () => {
     vi.mocked(linkStatusClient.getCustomerLinkStatus).mockRejectedValue(new Error("boom"));
     renderDetail();
-    await expectStatus(/Link status unavailable/i);
+    await expectStatus(/Connection unavailable/i);
+  });
+
+  it("shows Connection unavailable from Platform without saying blocked", async () => {
+    vi.mocked(linkStatusClient.getCustomerLinkStatus).mockResolvedValue({
+      businessCustomerId: platformBusinessCustomerId,
+      organizationId,
+      status: "Unavailable",
+      linkedUserIdentityId: null,
+      latestLinkRequestId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+      latestLinkRequestStatus: "Declined",
+      reminderCount: 0,
+      lastRemindedAtUtc: null,
+      nextReminderEligibleAtUtc: null,
+      invitationSentAtUtc: "2026-08-20T00:00:00Z",
+    });
+    renderDetail();
+    await waitFor(() => {
+      expect(screen.getByTestId("customer-link-unavailable-banner")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("customer-link-status")).toHaveTextContent(/Connection unavailable/i);
+    expect(screen.queryByText(/blocked you/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("customer-link-remind")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("customer-link-invite-again")).not.toBeInTheDocument();
   });
 
   it("lets Platform Linked win over pendingLink=1 query hint", async () => {

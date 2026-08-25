@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import {
   acceptCustomerLinkRequest,
+  blockBusinessFromCustomerLinkRequest,
   declineCustomerLinkRequest,
   listPendingCustomerLinkRequests,
 } from "@/api/platform/customer-link-requests-client";
@@ -73,6 +74,21 @@ export function PersonalCustomerLinksPage() {
       ),
   });
 
+  const blockBusiness = useMutation({
+    mutationFn: (id: string) => blockBusinessFromCustomerLinkRequest(id),
+    onSuccess: async () => {
+      setActionError(null);
+      await invalidateAfterDecision();
+      await queryClient.invalidateQueries({ queryKey: ["personal", "blocked-businesses"] });
+    },
+    onError: (error) =>
+      setActionError(
+        error instanceof PlatformApiError
+          ? error.message
+          : t("personal.customerLinks.blockFailed"),
+      ),
+  });
+
   if (query.isPending) {
     return (
       <div className="personal-page customer-links-page exits-page flex min-w-0 flex-col gap-3">
@@ -121,9 +137,10 @@ export function PersonalCustomerLinksPage() {
     );
   }
 
-  const busy = accept.isPending || decline.isPending;
+  const busy = accept.isPending || decline.isPending || blockBusiness.isPending;
   const acceptingId = accept.isPending ? accept.variables : null;
   const decliningId = decline.isPending ? decline.variables : null;
+  const blockingId = blockBusiness.isPending ? blockBusiness.variables : null;
   const items = query.data;
 
   return (
@@ -184,12 +201,13 @@ export function PersonalCustomerLinksPage() {
             {items.map((request) => {
               const isAccepting = acceptingId === request.id;
               const isDeclining = decliningId === request.id;
+              const isBlocking = blockingId === request.id;
               return (
                 <li key={request.id}>
                   <article
                     className="exits-list__card customer-link-card"
                     data-testid={`customer-link-request-${request.id}`}
-                    data-busy={isAccepting || isDeclining ? "true" : "false"}
+                    data-busy={isAccepting || isDeclining || isBlocking ? "true" : "false"}
                   >
                     <div className="customer-link-card__header">
                       <span className="customer-link-card__avatar" aria-hidden>
@@ -256,6 +274,23 @@ export function PersonalCustomerLinksPage() {
                           <X className="size-4 shrink-0" aria-hidden />
                         )}
                         {t("personal.customerLinks.decline")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="min-h-11 text-destructive"
+                        disabled={busy}
+                        data-testid={`customer-link-block-${request.id}`}
+                        onClick={() => {
+                          if (window.confirm(t("personal.customerLinks.blockConfirm"))) {
+                            blockBusiness.mutate(request.id);
+                          }
+                        }}
+                      >
+                        {isBlocking ? (
+                          <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                        ) : null}
+                        {t("personal.customerLinks.blockBusiness")}
                       </Button>
                     </div>
                   </article>

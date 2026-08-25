@@ -46,6 +46,8 @@ internal sealed class CustomerLinkRequestRecord
     public DateTimeOffset? DeclinedAtUtc { get; set; }
     public DateTimeOffset? RevokedAtUtc { get; set; }
     public Guid? AcceptedByUserId { get; set; }
+    public int ReminderCount { get; set; }
+    public DateTimeOffset? LastRemindedAtUtc { get; set; }
     public uint Xmin { get; set; }
 }
 
@@ -108,4 +110,17 @@ internal sealed class ProductLocalRoleGrantRecord
     public DateTimeOffset? RevokedAtUtc { get; set; }
     public Guid? RevokedByUserIdentityId { get; set; }
     public string? Reason { get; set; }
+}
+
+internal sealed class PersonalOrganizationConnectionBlockRecord
+{
+    public Guid Id { get; set; }
+    public Guid PersonalUserIdentityId { get; set; }
+    public Guid OrganizationId { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public DateTimeOffset BlockedAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+    public DateTimeOffset? UnblockedAtUtc { get; set; }
+    public Guid? SourceCustomerLinkRequestId { get; set; }
+    public uint Xmin { get; set; }
 }

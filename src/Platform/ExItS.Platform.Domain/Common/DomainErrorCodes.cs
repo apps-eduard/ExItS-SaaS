@@ -224,6 +224,11 @@ public static class DomainErrorCodes
     public const string InvalidCustomerLinkRequestToken = "platform.customer_link_request.token.invalid";
     public const string CustomerLinkRequestEmailMismatch = "platform.customer_link_request.email_mismatch";
     public const string CustomerLinkRequestTargetMismatch = "platform.customer_link_request.target_mismatch";
+    public const string CustomerLinkReminderTooSoon = "platform.customer_link_request.reminder_too_soon";
+    public const string CustomerLinkRequestNotPending = "platform.customer_link_request.not_pending";
+    public const string CustomerConnectionUnavailable = "platform.customer_connection.unavailable";
+    public const string InvalidPersonalOrganizationConnectionBlockId =
+        "platform.personal_organization_connection_block.id.invalid";
     public const string InvalidLinkedCustomerAppUserId = "platform.linked_customer_app_user.id.invalid";
     public const string InvalidOrganizationNotificationId = "platform.organization.notification.id.invalid";
     public const string CustomerToStaffConversionDenied = "platform.customer.staff_conversion_denied";

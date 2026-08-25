@@ -350,6 +350,8 @@ internal sealed class CustomerLinkRequestRepository(PlatformDbContext db) : ICus
         record.DeclinedAtUtc = request.DeclinedAtUtc;
         record.RevokedAtUtc = request.RevokedAtUtc;
         record.AcceptedByUserId = request.AcceptedByUserId?.Value;
+        record.ReminderCount = request.ReminderCount;
+        record.LastRemindedAtUtc = request.LastRemindedAtUtc;
     }
 
     private static CustomerLinkRequest ToDomain(CustomerLinkRequestRecord record) =>
@@ -369,7 +371,9 @@ internal sealed class CustomerLinkRequestRepository(PlatformDbContext db) : ICus
             record.RevokedAtUtc,
             record.AcceptedByUserId is null ? null : PlatformUserId.From(record.AcceptedByUserId.Value),
             record.TargetUserIdentityId is null ? null : PlatformUserId.From(record.TargetUserIdentityId.Value),
-            record.TargetPublicUserId);
+            record.TargetPublicUserId,
+            record.ReminderCount,
+            record.LastRemindedAtUtc);
 
     private static CustomerLinkRequestRecord ToRecord(CustomerLinkRequest request) =>
         new()
@@ -389,7 +393,9 @@ internal sealed class CustomerLinkRequestRepository(PlatformDbContext db) : ICus
             AcceptedAtUtc = request.AcceptedAtUtc,
             DeclinedAtUtc = request.DeclinedAtUtc,
             RevokedAtUtc = request.RevokedAtUtc,
-            AcceptedByUserId = request.AcceptedByUserId?.Value
+            AcceptedByUserId = request.AcceptedByUserId?.Value,
+            ReminderCount = request.ReminderCount,
+            LastRemindedAtUtc = request.LastRemindedAtUtc
         };
 }
 
@@ -601,6 +607,23 @@ internal sealed class LinkedCustomerAppUserRepository(PlatformDbContext db) : IL
         return (records.Select(ToDomain).ToList(), total);
     }
 
+    public async Task<IReadOnlyList<LinkedCustomerAppUser>> ListActiveByUserAndOrganizationAsync(
+        PlatformUserId userIdentityId,
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var active = nameof(LinkedCustomerAppUserStatus.Active);
+        var records = await db.LinkedCustomerAppUsers.AsNoTracking()
+            .Where(x =>
+                x.UserIdentityId == userIdentityId.Value
+                && x.OrganizationId == organizationId.Value
+                && x.Status == active)
+            .OrderByDescending(x => x.LinkedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(ToDomain).ToList();
+    }
+
     public Task AddAsync(LinkedCustomerAppUser link, CancellationToken cancellationToken = default)
     {
         db.LinkedCustomerAppUsers.Add(ToRecord(link));
@@ -646,5 +669,117 @@ internal sealed class LinkedCustomerAppUserRepository(PlatformDbContext db) : IL
             LinkedAtUtc = link.LinkedAtUtc,
             UpdatedAtUtc = link.UpdatedAtUtc,
             RevokedAtUtc = link.RevokedAtUtc
+        };
+}
+
+internal sealed class PersonalOrganizationConnectionBlockRepository(PlatformDbContext db)
+    : IPersonalOrganizationConnectionBlockRepository
+{
+    public async Task<PersonalOrganizationConnectionBlock?> GetByIdAsync(
+        PersonalOrganizationConnectionBlockId id,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalOrganizationConnectionBlocks.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public async Task<PersonalOrganizationConnectionBlock?> FindByPersonalAndOrganizationAsync(
+        PlatformUserId personalUserIdentityId,
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalOrganizationConnectionBlocks.AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.PersonalUserIdentityId == personalUserIdentityId.Value
+                     && x.OrganizationId == organizationId.Value,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public async Task<PersonalOrganizationConnectionBlock?> FindActiveByPersonalAndOrganizationAsync(
+        PlatformUserId personalUserIdentityId,
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var active = nameof(PersonalOrganizationConnectionBlockStatus.Active);
+        var record = await db.PersonalOrganizationConnectionBlocks.AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.PersonalUserIdentityId == personalUserIdentityId.Value
+                     && x.OrganizationId == organizationId.Value
+                     && x.Status == active,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public async Task<IReadOnlyList<PersonalOrganizationConnectionBlock>> ListActiveByPersonalUserAsync(
+        PlatformUserId personalUserIdentityId,
+        CancellationToken cancellationToken = default)
+    {
+        var active = nameof(PersonalOrganizationConnectionBlockStatus.Active);
+        var records = await db.PersonalOrganizationConnectionBlocks.AsNoTracking()
+            .Where(x => x.PersonalUserIdentityId == personalUserIdentityId.Value && x.Status == active)
+            .OrderByDescending(x => x.BlockedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(ToDomain).ToList();
+    }
+
+    public Task AddAsync(
+        PersonalOrganizationConnectionBlock block,
+        CancellationToken cancellationToken = default)
+    {
+        db.PersonalOrganizationConnectionBlocks.Add(ToRecord(block));
+        return Task.CompletedTask;
+    }
+
+    public async Task UpdateAsync(
+        PersonalOrganizationConnectionBlock block,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalOrganizationConnectionBlocks
+            .FirstOrDefaultAsync(x => x.Id == block.Id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (record is null)
+        {
+            return;
+        }
+
+        record.Status = block.Status.ToString();
+        record.BlockedAtUtc = block.BlockedAtUtc;
+        record.UpdatedAtUtc = block.UpdatedAtUtc;
+        record.UnblockedAtUtc = block.UnblockedAtUtc;
+        record.SourceCustomerLinkRequestId = block.SourceCustomerLinkRequestId?.Value;
+    }
+
+    private static PersonalOrganizationConnectionBlock ToDomain(
+        PersonalOrganizationConnectionBlockRecord record) =>
+        PersonalOrganizationConnectionBlock.Rehydrate(
+            PersonalOrganizationConnectionBlockId.From(record.Id),
+            PlatformUserId.From(record.PersonalUserIdentityId),
+            PlatformOrganizationId.From(record.OrganizationId),
+            Enum.Parse<PersonalOrganizationConnectionBlockStatus>(record.Status),
+            record.BlockedAtUtc,
+            record.UpdatedAtUtc,
+            record.UnblockedAtUtc,
+            record.SourceCustomerLinkRequestId is null
+                ? null
+                : CustomerLinkRequestId.From(record.SourceCustomerLinkRequestId.Value));
+
+    private static PersonalOrganizationConnectionBlockRecord ToRecord(
+        PersonalOrganizationConnectionBlock block) =>
+        new()
+        {
+            Id = block.Id.Value,
+            PersonalUserIdentityId = block.PersonalUserIdentityId.Value,
+            OrganizationId = block.OrganizationId.Value,
+            Status = block.Status.ToString(),
+            BlockedAtUtc = block.BlockedAtUtc,
+            UpdatedAtUtc = block.UpdatedAtUtc,
+            UnblockedAtUtc = block.UnblockedAtUtc,
+            SourceCustomerLinkRequestId = block.SourceCustomerLinkRequestId?.Value
         };
 }

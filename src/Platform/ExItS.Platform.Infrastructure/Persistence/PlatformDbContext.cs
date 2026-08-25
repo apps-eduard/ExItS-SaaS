@@ -88,6 +88,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<CreditCustomerRecord> CreditCustomers => Set<CreditCustomerRecord>();
     internal DbSet<CustomerLinkRequestRecord> CustomerLinkRequests => Set<CustomerLinkRequestRecord>();
     internal DbSet<LinkedCustomerAppUserRecord> LinkedCustomerAppUsers => Set<LinkedCustomerAppUserRecord>();
+    internal DbSet<PersonalOrganizationConnectionBlockRecord> PersonalOrganizationConnectionBlocks =>
+        Set<PersonalOrganizationConnectionBlockRecord>();
     internal DbSet<OrganizationInAppNotificationRecord> OrganizationInAppNotifications =>
         Set<OrganizationInAppNotificationRecord>();
     internal DbSet<BusinessCreditOpeningBalanceRecord> BusinessCreditOpeningBalances => Set<BusinessCreditOpeningBalanceRecord>();
@@ -1994,6 +1996,8 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.DeclinedAtUtc).HasColumnName("declined_at_utc");
             entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc");
             entity.Property(e => e.AcceptedByUserId).HasColumnName("accepted_by_user_id");
+            entity.Property(e => e.ReminderCount).HasColumnName("reminder_count").HasDefaultValue(0);
+            entity.Property(e => e.LastRemindedAtUtc).HasColumnName("last_reminded_at_utc");
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
                 .HasColumnType("xid")
@@ -2015,6 +2019,40 @@ public sealed class PlatformDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.BusinessCustomerId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PersonalOrganizationConnectionBlockRecord>(entity =>
+        {
+            entity.ToTable("personal_organization_connection_blocks");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.PersonalUserIdentityId).HasColumnName("personal_user_identity_id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.BlockedAtUtc).HasColumnName("blocked_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.UnblockedAtUtc).HasColumnName("unblocked_at_utc");
+            entity.Property(e => e.SourceCustomerLinkRequestId).HasColumnName("source_customer_link_request_id");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+            entity.HasIndex(e => new { e.PersonalUserIdentityId, e.OrganizationId })
+                .IsUnique()
+                .HasDatabaseName("ux_personal_org_connection_blocks_pair");
+            entity.HasIndex(e => e.PersonalUserIdentityId)
+                .HasFilter("status = 'Active'")
+                .HasDatabaseName("ix_personal_org_connection_blocks_personal_active");
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.PersonalUserIdentityId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<OrganizationInAppNotificationRecord>(entity =>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
   CalendarClock,
@@ -11,7 +11,12 @@ import {
   Truck,
 } from "lucide-react";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
+import {
+  disconnectAndBlockLinkedMerchant,
+  disconnectLinkedMerchant,
+} from "@/api/platform/customer-link-requests-client";
 import { listLinkedMerchants, type LinkedMerchantDto } from "@/api/platform/linked-merchants-client";
+import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
 import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -43,10 +48,30 @@ function LinkedMerchantStoreCard({
   ordering: MerchantOrderingProbe;
 }) {
   const { t } = useI18n();
+  const queryClient = useQueryClient();
+  const [connError, setConnError] = useState<string | null>(null);
   const statementTo = `/personal/linked-merchants/${merchant.organizationId}/${merchant.businessCustomerId}`;
   const shopTo = `/personal/linked-merchants/${merchant.organizationId}/shop`;
   const canCustomerOrder = ordering.resolved && ordering.canCustomerOrder;
   const canCustomerDelivery = ordering.resolved && ordering.canCustomerDelivery;
+
+  const disconnect = useMutation({
+    mutationFn: (mode: "disconnect" | "block") =>
+      mode === "block"
+        ? disconnectAndBlockLinkedMerchant(merchant.organizationId)
+        : disconnectLinkedMerchant(merchant.organizationId),
+    onSuccess: async () => {
+      setConnError(null);
+      await queryClient.invalidateQueries({ queryKey: ["personal", "linked-merchants"] });
+      await queryClient.invalidateQueries({ queryKey: ["personal", "blocked-businesses"] });
+    },
+    onError: (error) =>
+      setConnError(
+        error instanceof PlatformApiError
+          ? error.message
+          : t("personal.merchants.disconnectFailed"),
+      ),
+  });
 
   return (
     <li
@@ -136,6 +161,41 @@ function LinkedMerchantStoreCard({
               </Link>
             </Button>
           )}
+        </div>
+        {connError ? (
+          <p className="m-0 mt-2 text-[length:var(--exits-text-sm)] text-destructive" role="alert">
+            {connError}
+          </p>
+        ) : null}
+        <div className="mt-2 flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-10"
+            disabled={disconnect.isPending}
+            data-testid={`disconnect-merchant-${merchant.organizationId}`}
+            onClick={() => {
+              if (window.confirm(t("personal.merchants.disconnectConfirm"))) {
+                disconnect.mutate("disconnect");
+              }
+            }}
+          >
+            {t("personal.merchants.disconnect")}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="min-h-10 text-destructive"
+            disabled={disconnect.isPending}
+            data-testid={`disconnect-block-merchant-${merchant.organizationId}`}
+            onClick={() => {
+              if (window.confirm(t("personal.merchants.disconnectBlockConfirm"))) {
+                disconnect.mutate("block");
+              }
+            }}
+          >
+            {t("personal.merchants.disconnectAndBlock")}
+          </Button>
         </div>
       </article>
     </li>

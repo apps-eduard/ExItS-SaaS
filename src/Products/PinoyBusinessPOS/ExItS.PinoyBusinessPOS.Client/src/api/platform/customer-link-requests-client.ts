@@ -62,3 +62,57 @@ export async function declineCustomerLinkRequest(requestId: string): Promise<voi
     path: `${BASE}/${requestId}/decline`,
   });
 }
+
+export async function blockBusinessFromCustomerLinkRequest(requestId: string): Promise<void> {
+  await platformRequest<unknown>({
+    method: "POST",
+    path: `${BASE}/${requestId}/block-business`,
+  });
+}
+
+const blockedBusinessSchema = z.object({
+  organizationId: guidSchema,
+  organizationDisplayName: z.string(),
+  blockedAtUtc: z.string(),
+});
+
+export type PersonalBlockedBusinessDto = z.infer<typeof blockedBusinessSchema>;
+
+export async function listPersonalBlockedBusinesses(
+  signal?: AbortSignal,
+): Promise<PersonalBlockedBusinessDto[]> {
+  const raw = await platformRequest<unknown>({
+    path: "/api/v1/personal/blocked-businesses",
+    signal,
+  });
+  const list = Array.isArray(raw) ? raw : [];
+  return list.map((item) => {
+    const r = (item ?? {}) as Record<string, unknown>;
+    return blockedBusinessSchema.parse({
+      organizationId: pick(r, "organizationId", "OrganizationId"),
+      organizationDisplayName: pick(r, "organizationDisplayName", "OrganizationDisplayName"),
+      blockedAtUtc: pick(r, "blockedAtUtc", "BlockedAtUtc"),
+    });
+  });
+}
+
+export async function unblockPersonalBusiness(organizationId: string): Promise<void> {
+  await platformRequest<unknown>({
+    method: "POST",
+    path: `/api/v1/personal/blocked-businesses/${organizationId}/unblock`,
+  });
+}
+
+export async function disconnectLinkedMerchant(organizationId: string): Promise<void> {
+  await platformRequest<unknown>({
+    method: "POST",
+    path: `/api/v1/personal/linked-merchants/by-organization/${organizationId}/disconnect`,
+  });
+}
+
+export async function disconnectAndBlockLinkedMerchant(organizationId: string): Promise<void> {
+  await platformRequest<unknown>({
+    method: "POST",
+    path: `/api/v1/personal/linked-merchants/by-organization/${organizationId}/disconnect-and-block`,
+  });
+}

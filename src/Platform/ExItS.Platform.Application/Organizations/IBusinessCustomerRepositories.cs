@@ -145,7 +145,37 @@ public interface ILinkedCustomerAppUserRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<LinkedCustomerAppUser>> ListActiveByUserAndOrganizationAsync(
+        PlatformUserId userIdentityId,
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(LinkedCustomerAppUser link, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(LinkedCustomerAppUser link, CancellationToken cancellationToken = default);
+}
+
+public interface IPersonalOrganizationConnectionBlockRepository
+{
+    Task<PersonalOrganizationConnectionBlock?> GetByIdAsync(
+        PersonalOrganizationConnectionBlockId id,
+        CancellationToken cancellationToken = default);
+
+    Task<PersonalOrganizationConnectionBlock?> FindByPersonalAndOrganizationAsync(
+        PlatformUserId personalUserIdentityId,
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default);
+
+    Task<PersonalOrganizationConnectionBlock?> FindActiveByPersonalAndOrganizationAsync(
+        PlatformUserId personalUserIdentityId,
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PersonalOrganizationConnectionBlock>> ListActiveByPersonalUserAsync(
+        PlatformUserId personalUserIdentityId,
+        CancellationToken cancellationToken = default);
+
+    Task AddAsync(PersonalOrganizationConnectionBlock block, CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(PersonalOrganizationConnectionBlock block, CancellationToken cancellationToken = default);
 }

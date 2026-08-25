@@ -160,6 +160,7 @@ public sealed class OrganizationInAppNotificationId : IEquatable<OrganizationInA
 public static class CustomerLinkNotificationTypes
 {
     public const string PersonalPendingRequest = "CustomerLinkRequest";
+    public const string PersonalCustomerLinkReminder = "PersonalCustomerLinkReminder";
     public const string OrganizationAccepted = "CustomerLinkAccepted";
     public const string OrganizationDeclined = "CustomerLinkDeclined";
 }

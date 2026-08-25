@@ -186,6 +186,11 @@ public static class ApplicationErrorCodes
     public const string CreditCustomerConflict = "application.credit_customer.conflict";
     public const string CustomerLinkRequestNotFound = "application.customer_link_request.not_found";
     public const string CustomerLinkRequestConflict = "application.customer_link_request.conflict";
+    public const string CustomerConnectionUnavailable = "application.customer_connection.unavailable";
+    public const string CustomerLinkReminderTooSoon = "application.customer_link_request.reminder_too_soon";
+    public const string CustomerLinkRequestNotPending = "application.customer_link_request.not_pending";
+    public const string PersonalOrganizationConnectionBlockNotFound =
+        "application.personal_organization_connection_block.not_found";
     public const string LinkedCustomerAppUserNotFound = "application.linked_customer_app_user.not_found";
     public const string OrganizationNotificationNotFound = "application.organization.notification.not_found";
 
