@@ -580,7 +580,7 @@ $platformEnv = @{
     PlatformEmail__UseSsl = 'false'
     PlatformEmail__FromAddress = 'noreply@exits.local'
     PlatformEmail__FromDisplayName = 'ExItS Local Validation'
-    # Must match React Admin (:8095) — hosts /admin/activate-account and /admin/reset-password.
+    # Must match React Admin (:8095) - hosts /admin/activate-account and /admin/reset-password.
     PlatformEmail__AdminPublicBaseUrl = $authPublicBaseUrl
 }
 for ($i = 0; $i -lt $corsOrigins.Count; $i++) {
@@ -619,7 +619,7 @@ catch {
 Write-Step 'Starting Platform Admin (dotnet watch)...'
 # Admin runs Development so Ant Design / Blazor static assets load without Staging SWA hacks.
 # Local Validation identity dropdown uses normal Platform /auth/login server-side
-# (SharedPassword stays in Admin process env — never sent to the browser).
+# (SharedPassword stays in Admin process env - never sent to the browser).
 # PlatformApi__BaseUrl is browser-visible (OAuth challenge links) and server HttpClient base.
 $adminEnv = @{
     ASPNETCORE_ENVIRONMENT = 'Development'
@@ -718,7 +718,7 @@ $healthOk = (Invoke-HttpCheck -Label 'Personal Web /health' -Url "$loopbackPerso
 Write-Host ''
 Write-Host '======== Local Validation local ready ========' -ForegroundColor Green
 Write-Host "  Blazor Admin: $publicAdminUrl"
-Write-Host "  React Admin:  $authPublicBaseUrl  (register / activate / reset — start Vite separately if needed)"
+Write-Host "  React Admin:  $authPublicBaseUrl  (register / activate / reset - start Vite separately if needed)"
 Write-Host "  React POS:    http://127.0.0.1:$reactPosPort"
 Write-Host "  Platform API: $publicPlatformApiUrl"
 Write-Host "  POS API:      $publicPosApiUrl"

@@ -63,6 +63,11 @@ function Resolve-LocalValidationAuthPublicBaseUrl {
         return $override.TrimEnd('/')
     }
 
+    # Prefer Tailscale/LAN PublicHost so Mailpit activate/reset links open on phone/other devices.
+    if (-not [string]::IsNullOrWhiteSpace($ResolvedPublicHost)) {
+        return "http://$($ResolvedPublicHost.Trim()):$ReactAdminPort"
+    }
+
     $fromEnv = if ($EnvMap -and $EnvMap['LOCAL_VALIDATION_REACT_ADMIN_ORIGIN']) {
         [string]$EnvMap['LOCAL_VALIDATION_REACT_ADMIN_ORIGIN']
     } else {
@@ -70,10 +75,6 @@ function Resolve-LocalValidationAuthPublicBaseUrl {
     }
     if (-not [string]::IsNullOrWhiteSpace($fromEnv)) {
         return $fromEnv.TrimEnd('/')
-    }
-
-    if (-not [string]::IsNullOrWhiteSpace($ResolvedPublicHost)) {
-        return "http://$($ResolvedPublicHost.Trim()):$ReactAdminPort"
     }
 
     return "http://127.0.0.1:$ReactAdminPort"
@@ -125,10 +126,10 @@ function Add-LocalValidationReactCorsOrigins {
     }
 
     if (-not [string]::IsNullOrWhiteSpace($ResolvedPublicHost)) {
-        $host = $ResolvedPublicHost.Trim()
+        $lanHost = $ResolvedPublicHost.Trim()
         $candidates += @(
-            "http://${host}:$ReactPosPort",
-            "http://${host}:$ReactAdminPort"
+            "http://${lanHost}:$ReactPosPort",
+            "http://${lanHost}:$ReactAdminPort"
         )
     }
 
@@ -525,6 +526,23 @@ function Get-LocalValidationCrossWorktreeHostProcesses {
     return @($byPid.Values)
 }
 
+function Invoke-DockerQuiet {
+    param(
+        [Parameter(Mandatory)][string[]]$DockerArgs
+    )
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $output = & docker @DockerArgs 2>$null
+        return [pscustomobject]@{
+            ExitCode = [int]$LASTEXITCODE
+            Output   = $output
+        }
+    } finally {
+        $ErrorActionPreference = $previous
+    }
+}
+
 function Get-LocalValidationDockerAppContainers {
     $names = @(
         $LocalValidationStack.PlatformApiContainer,
@@ -536,16 +554,17 @@ function Get-LocalValidationDockerAppContainers {
     )
     $results = @()
     foreach ($name in $names) {
-        $state = (& docker inspect -f '{{.State.Status}}' $name 2>$null)
-        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($state)) { continue }
-        $labelsJson = (& docker inspect -f '{{json .Config.Labels}}' $name 2>$null)
+        $stateResult = Invoke-DockerQuiet -DockerArgs @('inspect', '-f', '{{.State.Status}}', $name)
+        if ($stateResult.ExitCode -ne 0 -or [string]::IsNullOrWhiteSpace([string]$stateResult.Output)) { continue }
+        $state = [string]$stateResult.Output
+        $labelsResult = Invoke-DockerQuiet -DockerArgs @('inspect', '-f', '{{json .Config.Labels}}', $name)
         $labels = $null
-        if ($labelsJson) {
-            try { $labels = $labelsJson | ConvertFrom-Json } catch { }
+        if ($labelsResult.ExitCode -eq 0 -and $labelsResult.Output) {
+            try { $labels = ([string]$labelsResult.Output) | ConvertFrom-Json } catch { }
         }
         $results += [pscustomobject]@{
             Name              = $name
-            Status            = [string]$state
+            Status            = $state
             ComposeWorkingDir = if ($labels) { [string]$labels.'com.docker.compose.project.working_dir' } else { $null }
             ComposeConfigFile = if ($labels) { [string]$labels.'com.docker.compose.project.config_files' } else { $null }
             ComposeService    = if ($labels) { [string]$labels.'com.docker.compose.service' } else { $null }
@@ -559,7 +578,11 @@ function Resolve-LocalValidationDockerContainerForPort {
 
     foreach ($container in @(Get-LocalValidationDockerAppContainers)) {
         if ($container.Status -ne 'running') { continue }
-        $portLines = @(& docker port $container.Name 2>$null)
+        $portResult = Invoke-DockerQuiet -DockerArgs @('port', $container.Name)
+        $portLines = @()
+        if ($portResult.ExitCode -eq 0 -and $null -ne $portResult.Output) {
+            $portLines = @($portResult.Output)
+        }
         foreach ($line in $portLines) {
             if ($line -match ":$Port`$") {
                 return $container

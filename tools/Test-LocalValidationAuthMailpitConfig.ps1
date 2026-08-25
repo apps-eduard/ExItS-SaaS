@@ -25,6 +25,12 @@ $withEnv = Resolve-LocalValidationAuthPublicBaseUrl -EnvMap @{
 } -ResolvedPublicHost '' -ReactAdminPort 8095
 Assert-True ($withEnv -eq 'http://localhost:8095') "Env override failed: $withEnv"
 
+$withPublicHost = Resolve-LocalValidationAuthPublicBaseUrl -EnvMap @{
+    LOCAL_VALIDATION_REACT_ADMIN_ORIGIN = 'http://127.0.0.1:8095'
+} -ResolvedPublicHost '100.120.79.81' -ReactAdminPort 8095
+Assert-True ($withPublicHost -eq 'http://100.120.79.81:8095') `
+    "PublicHost must win over localhost REACT_ADMIN_ORIGIN for Tailscale Mailpit links, got $withPublicHost"
+
 $cors = Add-LocalValidationReactCorsOrigins -CorsOrigins @('http://localhost:8090') -EnvMap @{} -ResolvedPublicHost ''
 Assert-True ($cors -contains 'http://127.0.0.1:5177') 'CORS missing React POS 127.0.0.1:5177'
 Assert-True ($cors -contains 'http://localhost:5177') 'CORS missing React POS localhost:5177'

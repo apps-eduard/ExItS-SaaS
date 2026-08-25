@@ -21,12 +21,16 @@
 
 .EXAMPLE
   .\tools\Reset-LocalValidation.ps1 -ConfirmReset
+
+.EXAMPLE
+  .\tools\Reset-LocalValidation.ps1 -ConfirmReset -PublicHost 100.120.79.81
 #>
 [CmdletBinding()]
 param(
     [switch]$ConfirmReset,
     [switch]$SkipStart,
-    [int]$VerifySeconds = 180
+    [int]$VerifySeconds = 180,
+    [string]$PublicHost = ''
 )
 
 Set-StrictMode -Version Latest
@@ -104,6 +108,7 @@ if (-not $ConfirmReset) {
     Write-Host @'
 Usage:
   .\tools\Reset-LocalValidation.ps1 -ConfirmReset
+  .\tools\Reset-LocalValidation.ps1 -ConfirmReset -PublicHost 100.120.79.81
 
 This removes ONLY:
   - docker volume exits_local_validation_platform_db_data
@@ -208,7 +213,15 @@ if ($SkipStart) {
 
 Write-Step 'Starting Local Validation (migrate + seed PlatformAdministratorsOnly + PurgeTransactional)...'
 Remove-Item Env:LocalValidation__SeedScope -ErrorAction SilentlyContinue
-& $startScript -SeedScope PlatformAdministratorsOnly -PurgeTransactional
+$startArgs = @{
+    SeedScope         = 'PlatformAdministratorsOnly'
+    PurgeTransactional = $true
+}
+if (-not [string]::IsNullOrWhiteSpace($PublicHost)) {
+    $startArgs['PublicHost'] = $PublicHost.Trim()
+    Write-Ok ("Forwarding PublicHost to Start: {0}" -f $startArgs['PublicHost'])
+}
+& $startScript @startArgs
 if ($LASTEXITCODE -ne 0) { throw "Start-LocalValidation.ps1 failed ($LASTEXITCODE)." }
 
 Write-Step "Verifying seed identities at http://localhost:8091 (up to $VerifySeconds s)..."
