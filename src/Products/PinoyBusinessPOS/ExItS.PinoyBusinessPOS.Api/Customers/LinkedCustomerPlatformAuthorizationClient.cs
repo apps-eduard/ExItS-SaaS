@@ -120,11 +120,19 @@ public sealed class LinkedCustomerPlatformAuthorizationClient(
     private HttpRequestMessage CreateRequest(HttpMethod method, string relativePath)
     {
         var request = new HttpRequestMessage(method, relativePath);
+        // React Personal keeps the Platform session in an HttpOnly cookie and sends
+        // product Bearer to POS. Forward Cookie / PlatformSession / session header —
+        // never product Bearer — so Platform linked-customer proof can authenticate.
+        PlatformCallerCredentialForwarder.CopyTo(httpContextAccessor.HttpContext?.Request, request);
+
         var token = ResolveSessionToken();
         if (!string.IsNullOrWhiteSpace(token))
         {
             request.Headers.Authorization = new AuthenticationHeaderValue("PlatformSession", token);
-            request.Headers.TryAddWithoutValidation("X-ExItS-Session-Token", token);
+            if (!request.Headers.Contains("X-ExItS-Session-Token"))
+            {
+                request.Headers.TryAddWithoutValidation("X-ExItS-Session-Token", token);
+            }
         }
 
         return request;
@@ -149,6 +157,13 @@ public sealed class LinkedCustomerPlatformAuthorizationClient(
             && auth.StartsWith("PlatformSession ", StringComparison.OrdinalIgnoreCase))
         {
             return auth["PlatformSession ".Length..].Trim();
+        }
+
+        // Same cookie name Platform uses for browser sessions (HttpOnly).
+        if (http.Request.Cookies.TryGetValue(".ExItS.Platform.Auth", out var cookieToken)
+            && !string.IsNullOrWhiteSpace(cookieToken))
+        {
+            return cookieToken.Trim();
         }
 
         return null;

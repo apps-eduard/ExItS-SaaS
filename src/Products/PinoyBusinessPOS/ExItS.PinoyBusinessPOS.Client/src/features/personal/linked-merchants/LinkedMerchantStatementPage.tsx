@@ -26,6 +26,7 @@ import {
   formatLinkedCustomerActivityReference,
 } from "@/features/personal/linked-merchants/format-linked-customer-activity";
 import { MerchantStatementStatusPanel } from "@/features/personal/linked-merchants/MerchantStatementStatusPanel";
+import { ConnectionStatusChip } from "@/features/customer-connection/ConnectionStatusChip";
 import { cn } from "@/lib/cn";
 import { useI18n } from "@/i18n/I18nProvider";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
@@ -150,9 +151,19 @@ export function LinkedMerchantStatementPage() {
   }
 
   function statementStatusShell(
-    variant: "notFound" | "forbidden" | "error" | "offline",
+    variant:
+      | "notFound"
+      | "historyNotReady"
+      | "historyLoadError"
+      | "forbidden"
+      | "error"
+      | "offline",
     detail?: string,
-    options?: { onRetry?: () => void; includeShop?: boolean },
+    options?: {
+      onRetry?: () => void;
+      includeShop?: boolean;
+      showConnectedRelationship?: boolean;
+    },
   ) {
     return (
       <div className={pageShell} data-testid="linked-merchant-statement-page">
@@ -162,6 +173,7 @@ export function LinkedMerchantStatementPage() {
           variant={variant}
           storeName={storeName}
           relationshipLabel={relationshipLabel}
+          showConnectedRelationship={options?.showConnectedRelationship}
           detail={detail}
           onRetry={options?.onRetry}
           shopTo={options?.includeShop === false ? null : shopTo}
@@ -223,13 +235,24 @@ export function LinkedMerchantStatementPage() {
           return;
         }
         if (err.status === 404) {
-          setState({ kind: "notFound", detail: err.message });
+          // Linked-merchants route implies Platform Active link; 404 is projection/correlation,
+          // not "not connected". Never surface raw "Linked customer was not found." as relationship copy.
+          setState({ kind: "notFound", detail: "" });
           return;
         }
       }
+      if (import.meta.env.DEV) {
+        console.warn("[linked-merchant-statement] load failed", {
+          organizationId,
+          businessCustomerId,
+          errorClass: err instanceof Error ? err.name : typeof err,
+          status: err instanceof PosApiError ? err.status : undefined,
+          errorCode: err instanceof PosApiError ? err.errorCode : undefined,
+        });
+      }
       setState({
         kind: "error",
-        detail: err instanceof Error ? err.message : t("personal.merchantStatement.loadFailed"),
+        detail: "",
       });
     }
   }, [businessCustomerId, online, organizationId, t]);
@@ -342,15 +365,23 @@ export function LinkedMerchantStatementPage() {
   }
 
   if (state.kind === "forbidden") {
-    return statementStatusShell("forbidden", state.detail, { includeShop: false });
+    return statementStatusShell("forbidden", undefined, { includeShop: false });
   }
 
   if (state.kind === "notFound") {
-    return statementStatusShell("notFound", state.detail, { onRetry: () => void loadInitial() });
+    // On this Personal route, Platform listed the merchant as linked — treat 404 as
+    // history-not-ready (correlation / projection), not a broken relationship.
+    return statementStatusShell("historyNotReady", undefined, {
+      onRetry: () => void loadInitial(),
+      showConnectedRelationship: true,
+    });
   }
 
   if (state.kind === "error") {
-    return statementStatusShell("error", state.detail, { onRetry: () => void loadInitial() });
+    return statementStatusShell("historyLoadError", undefined, {
+      onRetry: () => void loadInitial(),
+      showConnectedRelationship: true,
+    });
   }
 
   const { summary, openDebt, openDebtHasMore, recent, recentHasMore } = state;
@@ -361,6 +392,13 @@ export function LinkedMerchantStatementPage() {
     <div className={pageShell} data-testid="linked-merchant-statement-page">
       {statementPageHeader(summary.merchantDisplayName ?? undefined)}
       <PersonalCommerceNav active="stores" />
+
+      <div className="flex flex-wrap items-center gap-2" data-testid="linked-merchant-connection-row">
+        <ConnectionStatusChip state="Linked" audience="personal" />
+        <span className="text-[length:var(--exits-text-sm)] text-muted">
+          {t("connection.detail.personal.connected")}
+        </span>
+      </div>
 
       <section className="pc-balance-hero exits-animate-panel" data-testid="linked-merchant-outstanding">
         <p className="pc-balance-hero__label">{t("personal.merchantStatement.outstandingLabel")}</p>
@@ -380,6 +418,7 @@ export function LinkedMerchantStatementPage() {
           variant="empty"
           storeName={summary.merchantDisplayName ?? storeName}
           relationshipLabel={summary.customerDisplayName}
+          showConnectedRelationship
           shopTo={shopTo}
         />
       ) : (

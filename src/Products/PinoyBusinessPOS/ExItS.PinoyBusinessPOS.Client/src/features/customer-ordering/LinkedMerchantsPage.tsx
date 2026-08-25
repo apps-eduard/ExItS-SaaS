@@ -29,6 +29,7 @@ import {
   storeDisplayInitial,
 } from "@/features/customer-ordering/personal-commerce-ui";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
+import { ConnectionStatusChip } from "@/features/customer-connection/ConnectionStatusChip";
 import {
   type MerchantOrderingProbe,
   useLinkedMerchantsOrderingProbes,
@@ -89,7 +90,12 @@ function LinkedMerchantStoreCard({
               <Link2 className="pc-store-card__link-icon size-3.5 shrink-0" aria-hidden />
               <span className="pc-store-card__relationship">{merchant.customerDisplayName}</span>
             </div>
-            <div className="pc-store-card__badge-row">
+            <div className="pc-store-card__badge-row flex flex-wrap items-center gap-2">
+              <ConnectionStatusChip
+                state="Linked"
+                audience="personal"
+                testId="linked-merchant-connection-chip"
+              />
               <MerchantOrderingBadge
                 available={canCustomerOrder}
                 pending={ordering.pending}

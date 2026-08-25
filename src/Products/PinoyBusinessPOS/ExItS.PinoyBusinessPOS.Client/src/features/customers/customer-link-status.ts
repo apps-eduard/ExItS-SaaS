@@ -71,10 +71,10 @@ export function customerLinkStatusTone(
     case "Declined":
     case "Expired":
     case "Revoked":
-      return "warning";
-    case "Unavailable":
-      return "danger";
     case "NotLinked":
+      return "info";
+    case "Unavailable":
+      return "info";
     default:
       return "info";
   }

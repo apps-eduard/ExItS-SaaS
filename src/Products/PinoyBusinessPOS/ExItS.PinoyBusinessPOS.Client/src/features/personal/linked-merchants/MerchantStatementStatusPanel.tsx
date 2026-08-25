@@ -11,6 +11,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConnectionStatusChip } from "@/features/customer-connection/ConnectionStatusChip";
 import { storeDisplayInitial } from "@/features/customer-ordering/personal-commerce-ui";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
@@ -19,6 +20,8 @@ import { personalPageBackNav } from "@/navigation/page-back-nav";
 
 export type MerchantStatementStatusVariant =
   | "notFound"
+  | "historyNotReady"
+  | "historyLoadError"
   | "forbidden"
   | "error"
   | "offline"
@@ -28,6 +31,8 @@ type MerchantStatementStatusPanelProps = {
   variant: MerchantStatementStatusVariant;
   storeName?: string;
   relationshipLabel?: string | null;
+  /** When true, show Connected chip — relationship is Linked; panel is only about data load. */
+  showConnectedRelationship?: boolean;
   detail?: string | null;
   onRetry?: () => void;
   shopTo?: string | null;
@@ -47,6 +52,22 @@ function variantMeta(variant: MerchantStatementStatusVariant): {
         detailKey: "personal.merchantStatement.missing",
         hintKey: "personal.merchantStatement.missingHint",
         Icon: FileQuestion,
+        tone: "warning",
+      };
+    case "historyNotReady":
+      return {
+        titleKey: "personal.merchantStatement.historyNotReadyTitle",
+        detailKey: "personal.merchantStatement.historyNotReady",
+        hintKey: "personal.merchantStatement.historyNotReadyHint",
+        Icon: FileQuestion,
+        tone: "info",
+      };
+    case "historyLoadError":
+      return {
+        titleKey: "personal.merchantStatement.historyLoadErrorTitle",
+        detailKey: "personal.merchantStatement.historyLoadError",
+        hintKey: "personal.merchantStatement.historyLoadErrorHint",
+        Icon: AlertCircle,
         tone: "warning",
       };
     case "forbidden":
@@ -86,6 +107,7 @@ export function MerchantStatementStatusPanel({
   variant,
   storeName,
   relationshipLabel,
+  showConnectedRelationship = false,
   detail,
   onRetry,
   shopTo,
@@ -113,7 +135,20 @@ export function MerchantStatementStatusPanel({
           <h2 id="merchant-statement-status-title" className="pc-statement-status__store">
             {displayName}
           </h2>
-          {relationshipLabel ? (
+          {showConnectedRelationship ? (
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <ConnectionStatusChip
+                state="Linked"
+                audience="personal"
+                testId="merchant-statement-connection-chip"
+              />
+              {relationshipLabel ? (
+                <span className="pc-statement-status__relationship text-[length:var(--exits-text-sm)] text-muted">
+                  {relationshipLabel}
+                </span>
+              ) : null}
+            </div>
+          ) : relationshipLabel ? (
             <>
               <Link2 className="pc-statement-status__link-icon size-3.5 shrink-0" aria-hidden />
               <span className="pc-statement-status__relationship">{relationshipLabel}</span>
@@ -121,6 +156,12 @@ export function MerchantStatementStatusPanel({
           ) : null}
         </div>
       </div>
+
+      {showConnectedRelationship ? (
+        <p className="pc-statement-status__connected-copy m-0 text-[length:var(--exits-text-sm)] text-muted">
+          {t("connection.detail.personal.connected")}
+        </p>
+      ) : null}
 
       <div className="pc-statement-status__message">
         <span className="pc-statement-status__icon-wrap" aria-hidden>

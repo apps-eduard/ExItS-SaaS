@@ -1,10 +1,11 @@
+import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 export function StatusChip({
   children,
   tone = "info",
 }: {
-  children: string;
+  children: ReactNode;
   tone?: "info" | "success" | "warning" | "danger";
 }) {
   return (

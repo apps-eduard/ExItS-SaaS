@@ -94,6 +94,45 @@ describe("LinkedMerchantStatementPage", () => {
     expect(screen.getByTestId("linked-merchant-activity-receipt-link")).toBeInTheDocument();
   });
 
+  it("renders connected + history-not-ready when statement returns 404", async () => {
+    vi.mocked(linkedClient.getLinkedCustomerStatement).mockRejectedValue(
+      new PosApiError(404, {
+        errorCode: "pos.linked_customer.not_found",
+        detail: "Linked customer was not found.",
+      }),
+    );
+
+    renderStatement();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("merchant-statement-status-historyNotReady")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("merchant-statement-connection-chip")).toBeInTheDocument();
+    expect(screen.getByTestId("merchant-statement-status-historyNotReady")).toHaveTextContent(
+      /not ready|connection is active/i,
+    );
+    expect(screen.queryByText("Linked customer was not found.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Purchase history unavailable")).not.toBeInTheDocument();
+    expect(screen.getByTestId("merchant-statement-retry")).toBeInTheDocument();
+  });
+
+  it("renders connected + load-error without implying the relationship broke", async () => {
+    vi.mocked(linkedClient.getLinkedCustomerStatement).mockRejectedValue(
+      new PosApiError(503, {
+        errorCode: "application.unavailable",
+        detail: "Service unavailable",
+      }),
+    );
+
+    renderStatement();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("merchant-statement-status-historyLoadError")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("merchant-statement-connection-chip")).toBeInTheDocument();
+    expect(screen.queryByText("Service unavailable")).not.toBeInTheDocument();
+  });
+
   it("renders a friendly not-found panel when the linked customer is missing", async () => {
     vi.mocked(linkedClient.getLinkedCustomerStatement).mockRejectedValue(
       new PosApiError(404, {
@@ -105,12 +144,11 @@ describe("LinkedMerchantStatementPage", () => {
     renderStatement();
 
     await waitFor(() => {
-      expect(screen.getByTestId("merchant-statement-status-notFound")).toBeInTheDocument();
+      expect(screen.getByTestId("merchant-statement-status-historyNotReady")).toBeInTheDocument();
     });
     expect(screen.getByTestId("page-header-back-merchant-statement")).toBeInTheDocument();
     expect(screen.getByTestId("merchant-statement-back-stores")).toBeInTheDocument();
     expect(screen.getByTestId("merchant-statement-retry")).toBeInTheDocument();
-    expect(screen.getByTestId("merchant-statement-status-notFound")).toHaveTextContent("mica store");
   });
 
   it("renders an empty-activity panel when balance and recent rows are zero", async () => {

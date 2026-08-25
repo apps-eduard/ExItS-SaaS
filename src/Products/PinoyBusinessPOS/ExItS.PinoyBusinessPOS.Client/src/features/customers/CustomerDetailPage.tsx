@@ -25,12 +25,16 @@ import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import {
   customerLinkStatusLabelKey,
-  customerLinkStatusTone,
   extractPersonalExItsIdFromNotes,
   mapPlatformCustomerLinkStatus,
   resolveDisplayedPersonalExItsId,
   type CustomerLinkUiStatus,
 } from "@/features/customers/customer-link-status";
+import { ConnectionStatusChip } from "@/features/customer-connection/ConnectionStatusChip";
+import {
+  connectionStatusDetailKey,
+  mapOrgLinkStatusToRelationship,
+} from "@/features/customer-connection/connection-state";
 import { useI18n } from "@/i18n/I18nProvider";
 import {
   cacheCustomer,
@@ -312,11 +316,22 @@ export function CustomerDetailPage() {
       <div className="flex flex-wrap items-center gap-2">
         <StatusChip tone={isActive ? "success" : "warning"}>{customer.status}</StatusChip>
         <span data-testid="customer-link-status">
-          <StatusChip tone={customerLinkStatusTone(linkUiStatus)}>
-            {t(customerLinkStatusLabelKey(linkUiStatus))}
-          </StatusChip>
+          <ConnectionStatusChip
+            state={mapOrgLinkStatusToRelationship(linkUiStatus)}
+            audience="organization"
+            testId="customer-connection-status-chip"
+          />
         </span>
       </div>
+
+      <Card data-testid="customer-connection-section">
+        <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+          {t("connection.sectionTitle")}
+        </p>
+        <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+          {t(connectionStatusDetailKey(mapOrgLinkStatusToRelationship(linkUiStatus), "organization"))}
+        </p>
+      </Card>
 
       {showAfterCreateHint || showPendingBanner ? (
         <Card data-testid="customer-link-pending-banner" className="border-[color-mix(in_srgb,var(--exits-info)_35%,var(--exits-border))]">
