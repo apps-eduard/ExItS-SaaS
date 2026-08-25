@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { findCommercialPlan, listCommercialPlans } from "@/api/platform/commercial-plans-client";
@@ -54,6 +54,21 @@ export function PersonalStartBusinessPage() {
   const [postalCode, setPostalCode] = useState("");
   const [countryCode, setCountryCode] = useState("PH");
   const [formError, setFormError] = useState<string | null>(null);
+  const displayNameInputRef = useRef<HTMLInputElement>(null);
+
+  function selectPrimaryBusinessType(typeId: string) {
+    setPrimaryBusinessTypeId(typeId);
+    // After a long business-type list (especially mobile), move focus to Business name
+    // so the next field is on-screen and ready to type.
+    requestAnimationFrame(() => {
+      const input = displayNameInputRef.current;
+      if (!input || input.disabled) {
+        return;
+      }
+      input.focus({ preventScroll: false });
+      input.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }
 
   const plansQuery = useQuery({
     queryKey: ["commercial", "plans", "pinoy-business-pos"],
@@ -266,7 +281,7 @@ export function PersonalStartBusinessPage() {
                       ? "border-primary bg-[var(--exits-surface-muted)]"
                       : "border-border bg-surface hover:bg-[var(--exits-surface-muted)]"
                   }`}
-                  onClick={() => setPrimaryBusinessTypeId(type.id)}
+                  onClick={() => selectPrimaryBusinessType(type.id)}
                 >
                   <span className="block font-semibold">{type.name}</span>
                   {type.description ? (
@@ -293,6 +308,7 @@ export function PersonalStartBusinessPage() {
             {t("personal.startBusiness.displayName")}
           </span>
           <input
+            ref={displayNameInputRef}
             data-testid="start-business-display-name"
             className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
             value={displayName}
