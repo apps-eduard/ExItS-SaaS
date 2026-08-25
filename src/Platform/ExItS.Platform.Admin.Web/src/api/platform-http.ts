@@ -1,5 +1,6 @@
 import { PlatformAntiforgeryDefaults } from "@/api/platform-antiforgery";
 
+import { createCorrelationId } from "@/lib/create-correlation-id";
 import { sanitizeApiPath } from "@/lib/diagnostics/diagnostic-redaction";
 
 
@@ -142,32 +143,7 @@ export class PlatformNetworkError extends Error {
 
 
 
-/**
- * Correlation ids for Platform API calls.
- * Prefer crypto.randomUUID; fall back to getRandomValues UUID v4 when randomUUID is
- * missing (common on Tailscale/LAN HTTP — not a secure context).
- */
-export function createCorrelationId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    try {
-      return crypto.randomUUID();
-    } catch {
-      // Some browsers expose randomUUID but reject it outside secure contexts.
-    }
-  }
-
-  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
-    const bytes = new Uint8Array(16);
-    crypto.getRandomValues(bytes);
-    bytes[6] = (bytes[6]! & 0x0f) | 0x40;
-    bytes[8] = (bytes[8]! & 0x3f) | 0x80;
-    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
-  }
-
-  throw new Error("Secure randomness is unavailable for Platform API correlation ids.");
-}
-
+export { createCorrelationId } from "@/lib/create-correlation-id";`n`n
 
 
 function readStringField(record: Record<string, unknown>, key: string): string | undefined {
