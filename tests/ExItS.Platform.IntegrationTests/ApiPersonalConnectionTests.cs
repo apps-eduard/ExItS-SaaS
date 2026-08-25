@@ -559,4 +559,122 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
             tokenB);
         Assert.Equal(HttpStatusCode.Conflict, (await _client.SendAsync(reverseRequest)).StatusCode);
     }
+
+    [Fact]
+    public async Task Second_pending_request_same_direction_is_rejected()
+    {
+        var (tokenA, _) = await SeedPersonalUserAsync("dup-a");
+        var (tokenB, userB) = await SeedPersonalUserAsync("dup-b");
+        var publicB = await GetPublicUserIdAsync(_client, tokenB);
+        var contactId = await CreateIdentifiedContactAsync(tokenA, "User B", userB, publicB);
+        await RequestConnectionAsync(tokenA, contactId);
+
+        using var duplicate = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/people/{contactId}/connection-request",
+            tokenA);
+        Assert.Equal(HttpStatusCode.Conflict, (await _client.SendAsync(duplicate)).StatusCode);
+    }
+
+    [Fact]
+    public async Task Fresh_pending_request_allowed_after_decline()
+    {
+        var (tokenA, _) = await SeedPersonalUserAsync("fresh-a");
+        var (tokenB, userB) = await SeedPersonalUserAsync("fresh-b");
+        var publicB = await GetPublicUserIdAsync(_client, tokenB);
+        var contactId = await CreateIdentifiedContactAsync(tokenA, "User B", userB, publicB);
+        var firstId = await RequestConnectionAsync(tokenA, contactId);
+
+        using var decline = Authed(HttpMethod.Post, $"/api/v1/personal/connections/{firstId}/decline", tokenB);
+        (await _client.SendAsync(decline)).EnsureSuccessStatusCode();
+
+        var secondId = await RequestConnectionAsync(tokenA, contactId);
+        Assert.NotEqual(firstId, secondId);
+    }
+
+    [Fact]
+    public async Task Concurrent_opposite_pending_requests_persist_at_most_one_pending_row()
+    {
+        var (tokenA, userA) = await SeedPersonalUserAsync("race-a");
+        var (tokenB, userB) = await SeedPersonalUserAsync("race-b");
+        var publicA = await GetPublicUserIdAsync(_client, tokenA);
+        var publicB = await GetPublicUserIdAsync(_client, tokenB);
+        var contactAForB = await CreateIdentifiedContactAsync(tokenA, "User B", userB, publicB);
+        var contactBForA = await CreateIdentifiedContactAsync(tokenB, "User A", userA, publicA);
+
+        async Task<HttpResponseMessage> RequestFromAAsync()
+        {
+            var request = Authed(
+                HttpMethod.Post,
+                $"/api/v1/personal/people/{contactAForB}/connection-request",
+                tokenA);
+            return await _client.SendAsync(request);
+        }
+
+        async Task<HttpResponseMessage> RequestFromBAsync()
+        {
+            var request = Authed(
+                HttpMethod.Post,
+                $"/api/v1/personal/people/{contactBForA}/connection-request",
+                tokenB);
+            return await _client.SendAsync(request);
+        }
+
+        var responses = await Task.WhenAll(RequestFromAAsync(), RequestFromBAsync());
+        var statusCodes = responses.Select(r => r.StatusCode).ToArray();
+        Assert.Contains(HttpStatusCode.Created, statusCodes);
+        Assert.Contains(HttpStatusCode.Conflict, statusCodes);
+
+        var pendingIds = new HashSet<Guid>();
+        foreach (var token in new[] { tokenA, tokenB })
+        {
+            using var list = Authed(HttpMethod.Get, "/api/v1/personal/connections", token);
+            var items = (await (await _client.SendAsync(list)).Content.ReadFromJsonAsync<JsonElement>())!
+                .EnumerateArray();
+            foreach (var item in items)
+            {
+                if (item.GetProperty("status").GetString() == "Pending")
+                {
+                    pendingIds.Add(item.GetProperty("id").GetGuid());
+                }
+            }
+        }
+
+        Assert.Single(pendingIds);
+
+        foreach (var response in responses)
+        {
+            response.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task Identified_contact_public_id_probing_is_rate_limited_while_local_add_remains_usable()
+    {
+        var (tokenA, _) = await SeedPersonalUserAsync("rl-a");
+        HttpStatusCode? rateLimited = null;
+
+        for (var i = 0; i < 31; i++)
+        {
+            using var response = await TryCreateIdentifiedContactAsync(
+                tokenA,
+                $"Probe {i}",
+                null,
+                "EX-9999-9999");
+            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                rateLimited = response.StatusCode;
+                break;
+            }
+        }
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, rateLimited);
+
+        using var local = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/contacts",
+            tokenA,
+            new { displayName = "Local Friend", phone = "+639170000099" });
+        Assert.Equal(HttpStatusCode.Created, (await _client.SendAsync(local)).StatusCode);
+    }
 }

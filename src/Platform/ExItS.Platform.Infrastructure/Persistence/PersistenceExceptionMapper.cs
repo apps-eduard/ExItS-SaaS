@@ -132,6 +132,16 @@ public static class PersistenceExceptionMapper
             return true;
         }
 
+        if (detail.Contains("ux_personal_connection_requests_pending_user_pair", StringComparison.OrdinalIgnoreCase)
+            || (detail.Contains("personal_connection_requests", StringComparison.OrdinalIgnoreCase)
+                && detail.Contains("pending", StringComparison.OrdinalIgnoreCase)
+                && detail.Contains("duplicate key", StringComparison.OrdinalIgnoreCase)))
+        {
+            errorCode = ApplicationErrorCodes.PersonalConnectionRequestConflict;
+            message = "A pending connection request already exists.";
+            return true;
+        }
+
         if (detail.Contains("ux_platform_role_assignments", StringComparison.OrdinalIgnoreCase)
             || detail.Contains("platform_role_assignments", StringComparison.OrdinalIgnoreCase))
         {

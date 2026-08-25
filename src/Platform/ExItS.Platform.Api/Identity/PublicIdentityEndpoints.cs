@@ -3,7 +3,6 @@ using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Domain.Identity;
-using Microsoft.AspNetCore.RateLimiting;
 
 namespace ExItS.Platform.Api.Identity;
 
@@ -44,7 +43,7 @@ internal static class PublicIdentityEndpoints
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         })
         .RequireAuthorization()
-        .RequireRateLimiting(PlatformSecurityPipeline.PublicIdResolveRateLimitPolicy);
+        .AddEndpointFilter<PublicIdResolveRateLimitFilter>();
 
         return app;
     }

@@ -569,7 +569,8 @@ internal static class PersonalEndpoints
             var result = await createContact.ExecuteAsync(PlatformUserId.From(userId), body, ct)
                 .ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, dto => Results.Created($"/api/v1/personal/utang/contacts/{dto.Id}", dto));
-        });
+        })
+        .AddEndpointFilter<IdentifiedPersonalContactRateLimitFilter>();
 
         utang.MapGet("/contacts", async (
             HttpContext http,

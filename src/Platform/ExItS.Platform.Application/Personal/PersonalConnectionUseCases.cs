@@ -344,6 +344,11 @@ public sealed class RequestPersonalConnection
             return ApplicationResult<PersonalConnectionRequestDto>.Success(
                 await _lister.ToDtoAsync(request, requesterUserIdentityId, cancellationToken).ConfigureAwait(false));
         }
+        catch (PersistenceConflictException ex) when (
+            ex.ErrorCode == ApplicationErrorCodes.PersonalConnectionRequestConflict)
+        {
+            return ApplicationResult<PersonalConnectionRequestDto>.Failure(ex.ErrorCode, ex.Message);
+        }
         catch (DomainException ex)
         {
             return ApplicationResult<PersonalConnectionRequestDto>.Failure(ex.ErrorCode, ex.Message);

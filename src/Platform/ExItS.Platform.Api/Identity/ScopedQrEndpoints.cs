@@ -5,7 +5,6 @@ using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Qr;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
-using Microsoft.AspNetCore.RateLimiting;
 
 namespace ExItS.Platform.Api.Identity;
 
@@ -48,7 +47,7 @@ internal static class ScopedQrEndpoints
             return PlatformApiResults.FromResult(result, Results.Ok);
         })
         .RequireAuthorization()
-        .RequireRateLimiting(PlatformSecurityPipeline.PublicIdResolveRateLimitPolicy);
+        .AddEndpointFilter<PublicIdResolveRateLimitFilter>();
 
         app.MapPost("/api/v1/qr/resolve", async (
             HttpContext http,
@@ -67,7 +66,7 @@ internal static class ScopedQrEndpoints
             return PlatformApiResults.FromResult(result, Results.Ok);
         })
         .RequireAuthorization()
-        .RequireRateLimiting(PlatformSecurityPipeline.PublicIdResolveRateLimitPolicy);
+        .AddEndpointFilter<PublicIdResolveRateLimitFilter>();
 
         return app;
     }

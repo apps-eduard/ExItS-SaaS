@@ -1698,6 +1698,7 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.RespondedByUserIdentityId).HasColumnName("responded_by_user_identity_id");
             entity.HasIndex(e => new { e.RequesterUserIdentityId, e.TargetUserIdentityId, e.Status })
                 .HasDatabaseName("ix_personal_connection_requests_requester_target_status");
+            // Pending unordered pair uniqueness enforced by ux_personal_connection_requests_pending_user_pair (see migration).
             entity.HasIndex(e => e.RequesterContactId);
 
             entity.HasOne<PersonalContactRecord>()
