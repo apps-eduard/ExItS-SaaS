@@ -60,6 +60,7 @@ describe("QrScanOrEnter", () => {
 
     expect(screen.getByTestId("qr-scan-or-enter")).toHaveAttribute("data-mode", "qr");
     expect(screen.getByTestId("qr-scan-panel")).toBeInTheDocument();
+    expect(screen.getByTestId("qr-scan-actions")).toHaveClass("exits-chip-bar--equal");
     expect(screen.getByTestId("qr-live-camera-button")).toBeInTheDocument();
     expect(screen.getByTestId("qr-upload-button")).toBeInTheDocument();
     expect(screen.queryByTestId("qr-manual-id")).not.toBeInTheDocument();
@@ -142,7 +143,6 @@ describe("QrScanOrEnter", () => {
 
     await user.click(screen.getByTestId("qr-mode-scan"));
     await user.click(screen.getByTestId("qr-live-camera-button"));
-    await user.click(screen.getByTestId("live-qr-open-camera"));
     await vi.advanceTimersByTimeAsync(200);
 
     await waitFor(() => {

@@ -237,10 +237,15 @@ export function LiveQrCameraScanner({
       return;
     }
 
+    // Open sheet → start camera immediately (no second “Open camera” step).
+    void startCamera();
+
     return () => {
       stopCamera();
     };
-  }, [open, resetScanLock, stopCamera]);
+    // Only re-run when the sheet opens/closes — not when startCamera identity changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open-gated auto-start
+  }, [open]);
 
   useEffect(() => {
     if (!open) {

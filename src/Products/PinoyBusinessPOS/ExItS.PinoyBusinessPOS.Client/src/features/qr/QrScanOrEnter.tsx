@@ -181,6 +181,7 @@ export function QrScanOrEnter({ expectedPurpose, onResolvedPayload, disabled }: 
           <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("qr.scanHint")}</p>
           <ExitsChipBar
             variant="actions"
+            className="exits-chip-bar--equal"
             ariaLabel={t("qr.scanWithCamera")}
             testId="qr-scan-actions"
             items={[

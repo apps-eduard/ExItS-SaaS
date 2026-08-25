@@ -83,8 +83,6 @@ describe("LiveQrCameraScanner", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderScanner();
 
-    await user.click(screen.getByTestId("live-qr-open-camera"));
-
     expect(await screen.findByText("Camera access is blocked.")).toBeInTheDocument();
     expect(screen.getByTestId("live-qr-upload-fallback")).toBeInTheDocument();
     expect(screen.getByTestId("live-qr-manual-fallback")).toBeInTheDocument();
@@ -100,8 +98,6 @@ describe("LiveQrCameraScanner", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderScanner();
 
-    await user.click(screen.getByTestId("live-qr-open-camera"));
-
     expect(await screen.findByText("No camera is available on this device.")).toBeInTheDocument();
     expect(screen.getByTestId("live-qr-upload-fallback")).toBeInTheDocument();
   });
@@ -111,8 +107,6 @@ describe("LiveQrCameraScanner", () => {
 
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderScanner();
-
-    await user.click(screen.getByTestId("live-qr-open-camera"));
 
     expect(
       await screen.findByText("Live scanning isn't supported in this browser."),
@@ -137,8 +131,6 @@ describe("LiveQrCameraScanner", () => {
 
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderScanner({ onScan });
-
-    await user.click(screen.getByTestId("live-qr-open-camera"));
     await waitFor(() => expect(screen.getByTestId("live-qr-preview")).toBeInTheDocument());
 
     await vi.advanceTimersByTimeAsync(200);
@@ -170,8 +162,6 @@ describe("LiveQrCameraScanner", () => {
 
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderScanner({ onScan });
-
-    await user.click(screen.getByTestId("live-qr-open-camera"));
     await vi.advanceTimersByTimeAsync(200);
 
     await waitFor(() => expect(onScan).toHaveBeenCalledTimes(1));
@@ -196,8 +186,6 @@ describe("LiveQrCameraScanner", () => {
 
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderScanner({ onScan });
-
-    await user.click(screen.getByTestId("live-qr-open-camera"));
     await vi.advanceTimersByTimeAsync(200);
 
     expect(await screen.findByTestId("live-qr-inline-error")).toHaveTextContent(
@@ -224,8 +212,6 @@ describe("LiveQrCameraScanner", () => {
 
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderScanner({ onScan });
-
-    await user.click(screen.getByTestId("live-qr-open-camera"));
     await vi.advanceTimersByTimeAsync(200);
 
     expect(await screen.findByTestId("live-qr-inline-error")).toHaveTextContent(
@@ -252,8 +238,6 @@ describe("LiveQrCameraScanner", () => {
 
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderScanner({ onScan });
-
-    await user.click(screen.getByTestId("live-qr-open-camera"));
     await vi.advanceTimersByTimeAsync(600);
 
     expect(onScan).toHaveBeenCalledTimes(1);
@@ -274,8 +258,6 @@ describe("LiveQrCameraScanner", () => {
 
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const { onClose } = renderScanner();
-
-    await user.click(screen.getByTestId("live-qr-open-camera"));
     await waitFor(() => expect(screen.getByTestId("live-qr-preview")).toBeInTheDocument());
     await user.click(screen.getByRole("button", { name: "Close" }));
 
@@ -304,8 +286,6 @@ describe("LiveQrCameraScanner", () => {
         </I18nProvider>
       </PreferencesProvider>,
     );
-
-    await user.click(screen.getByTestId("live-qr-open-camera"));
     await waitFor(() => expect(screen.getByTestId("live-qr-preview")).toBeInTheDocument());
     unmount();
 
@@ -341,8 +321,6 @@ describe("LiveQrCameraScanner", () => {
         </I18nProvider>
       </PreferencesProvider>,
     );
-
-    await user.click(screen.getByTestId("live-qr-open-camera"));
     await vi.advanceTimersByTimeAsync(200);
 
     await waitFor(() => expect(onScan).toHaveBeenCalledTimes(1));
@@ -377,8 +355,6 @@ describe("LiveQrCameraScanner", () => {
         </I18nProvider>
       </PreferencesProvider>,
     );
-
-    await user.click(screen.getByTestId("live-qr-open-camera"));
     await vi.advanceTimersByTimeAsync(200);
 
     await waitFor(() => expect(onScan).toHaveBeenCalledTimes(1));
