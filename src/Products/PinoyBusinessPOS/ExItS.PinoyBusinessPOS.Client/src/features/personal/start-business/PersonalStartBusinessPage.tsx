@@ -127,6 +127,14 @@ export function PersonalStartBusinessPage() {
       const orgId = result.organizationId;
       const workspace = { organizationId: orgId, branchId: result.primaryBranchId };
       const orgLabel = displayName.trim() || t("onboarding.ready.businessFallback");
+      const selectedType = typesQuery.data?.find((item) => item.id === primaryBusinessTypeId);
+      const pendingPayload = JSON.stringify({
+        organizationId: orgId,
+        primaryBusinessTypeId: result.primaryBusinessTypeId,
+        businessTypeCode: selectedType?.code ?? null,
+        businessTypeName: selectedType?.name ?? null,
+        businessTypeDescription: selectedType?.description ?? null,
+      });
       try {
         await bindDestination({
           organizationId: orgId,
@@ -140,22 +148,10 @@ export function PersonalStartBusinessPage() {
         await ensureOnboardingProgress(workspace, {
           primaryBusinessTypeId: result.primaryBusinessTypeId,
         });
-        sessionStorage.setItem(
-          "exits.postSubscriptionOnboarding",
-          JSON.stringify({
-            organizationId: orgId,
-            primaryBusinessTypeId: result.primaryBusinessTypeId,
-          }),
-        );
+        sessionStorage.setItem("exits.postSubscriptionOnboarding", pendingPayload);
       } catch {
         // Still enter onboarding; page can ensure progress again from session flag.
-        sessionStorage.setItem(
-          "exits.postSubscriptionOnboarding",
-          JSON.stringify({
-            organizationId: orgId,
-            primaryBusinessTypeId: result.primaryBusinessTypeId,
-          }),
-        );
+        sessionStorage.setItem("exits.postSubscriptionOnboarding", pendingPayload);
       }
       navigate("/onboarding", { replace: true });
     },

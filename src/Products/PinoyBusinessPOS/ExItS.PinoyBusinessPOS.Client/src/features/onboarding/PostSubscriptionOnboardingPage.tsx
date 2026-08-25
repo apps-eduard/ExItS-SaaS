@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronRight, Loader2, Package, SkipForward, Store } from "lucide-react";
-import { listOnboardingBusinessTypes } from "@/api/platform/start-business-client";
 import {
   getOrganization,
   updateOrganizationProfile,
@@ -298,7 +297,10 @@ function OrganizationSetupStep({
         countryCode: nullIfBlank(countryCode),
         expectedUpdatedAtUtc: orgQuery.data.updatedAtUtc,
       });
-      if (setupQuery.data) {
+      // New orgs often have incomplete POS operational setup — PUT update requires completed setup.
+      // Platform organization profile is the authoritative onboarding write for step 1.
+      const setupComplete = Boolean(setupQuery.data?.isComplete ?? setupQuery.data?.isCompleted);
+      if (setupQuery.data && setupComplete) {
         try {
           await updateOperationalSetup(workspace, {
             storeDisplayName: displayName.trim() || setupQuery.data.storeDisplayName,
@@ -459,6 +461,29 @@ function OrganizationSetupStep({
   );
 }
 
+function readPendingBusinessTypeHint(): {
+  code: string | null;
+  name: string | null;
+  description: string | null;
+} {
+  try {
+    const raw = sessionStorage.getItem("exits.postSubscriptionOnboarding");
+    if (!raw) return { code: null, name: null, description: null };
+    const pending = JSON.parse(raw) as {
+      businessTypeCode?: string | null;
+      businessTypeName?: string | null;
+      businessTypeDescription?: string | null;
+    };
+    return {
+      code: pending.businessTypeCode?.trim() || null,
+      name: pending.businessTypeName?.trim() || null,
+      description: pending.businessTypeDescription?.trim() || null,
+    };
+  } catch {
+    return { code: null, name: null, description: null };
+  }
+}
+
 function BusinessSetupStep({
   workspace,
   progress,
@@ -469,32 +494,15 @@ function BusinessSetupStep({
   onAdvanced: () => Promise<void>;
 }) {
   const { t } = useI18n();
-  const typesQuery = useQuery({
-    queryKey: ["personal", "onboarding", "business-types"],
-    queryFn: ({ signal }) => listOnboardingBusinessTypes(signal),
-    // Organization sessions cannot call Personal onboarding endpoints (403).
-    // Ready/business steps still work from progress.primaryBusinessTypeId + presets.
-    retry: false,
-    throwOnError: false,
-  });
   const [error, setError] = useState<string | null>(null);
-
-  const selectedType = useMemo(() => {
-    const types = typesQuery.data ?? [];
-    return (
-      types.find((item) => item.id === progress.primaryBusinessTypeId) ??
-      types[0] ??
-      null
-    );
-  }, [progress.primaryBusinessTypeId, typesQuery.data]);
-
-  const preset = resolveBusinessSetupPreset(selectedType?.code ?? selectedType?.name);
+  const hint = useMemo(() => readPendingBusinessTypeHint(), []);
+  const preset = resolveBusinessSetupPreset(hint.code ?? hint.name);
 
   const applyMutation = useMutation({
     mutationFn: async () => {
       await updateOnboardingProgress(workspace, {
         businessSetupStatus: "Completed",
-        primaryBusinessTypeId: selectedType?.id ?? progress.primaryBusinessTypeId,
+        primaryBusinessTypeId: progress.primaryBusinessTypeId,
       });
     },
     onSuccess: async () => {
@@ -525,11 +533,11 @@ function BusinessSetupStep({
         <div className="mb-2 flex items-center gap-2">
           <Store className="size-5 text-[var(--exits-primary)]" aria-hidden />
           <h3 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-            {selectedType?.name ?? t(preset.titleKey as MessageKey)}
+            {hint.name ?? t(preset.titleKey as MessageKey)}
           </h3>
         </div>
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-          {selectedType?.description?.trim() || t(preset.blurbKey as MessageKey)}
+          {hint.description || t(preset.blurbKey as MessageKey)}
         </p>
         <ul className="mt-3 mb-0 grid list-none gap-1.5 p-0">
           {preset.bulletKeys.map((key) => (
