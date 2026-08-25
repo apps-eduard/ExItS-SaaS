@@ -65,6 +65,51 @@ public sealed class LinkedCustomerAuthorizationUseCaseTests
         Assert.Equal("Linked customer access is denied.", result.ErrorMessage);
     }
 
+    /// <summary>
+    /// Personal Business Utang statement visibility still requires an Active Platform link.
+    /// Non-linked connection states are represented here as Platform NotFound / Denied outcomes.
+    /// </summary>
+    [Theory]
+    [InlineData("NotLinked")]
+    [InlineData("Pending")]
+    [InlineData("Declined")]
+    [InlineData("Revoked")]
+    [InlineData("Blocked")]
+    [InlineData("Unavailable")]
+    public async Task Personal_statement_visibility_denied_without_active_link(string connectionState)
+    {
+        _ = connectionState;
+        var repo = new InMemoryCustomerRepository();
+        await repo.AddAsync(POSCustomer.Create(
+            PosOrganizationId.From(OrgA),
+            "Rosa Customer",
+            T0,
+            platformBusinessCustomerId: PlatformCustomer));
+        var useCase = new AuthorizeLinkedCustomerStatementAccess(FakePlatform.NotFound(), repo);
+
+        var result = await useCase.ExecuteAsync(OrgA, PlatformCustomer);
+
+        AssertNotFound(result);
+    }
+
+    [Fact]
+    public async Task Personal_statement_visibility_allowed_when_platform_link_is_active()
+    {
+        var repo = new InMemoryCustomerRepository();
+        var created = POSCustomer.Create(
+            PosOrganizationId.From(OrgA),
+            "Rosa Customer",
+            T0,
+            platformBusinessCustomerId: PlatformCustomer);
+        await repo.AddAsync(created);
+        var useCase = new AuthorizeLinkedCustomerStatementAccess(FakePlatform.Authorized(), repo);
+
+        var result = await useCase.ExecuteAsync(OrgA, PlatformCustomer);
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal(created.Id.Value, result.Value!.PosCustomerId);
+    }
+
     [Fact]
     public async Task Missing_pos_customer_is_not_found()
     {

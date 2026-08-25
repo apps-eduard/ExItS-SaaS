@@ -233,4 +233,26 @@ describe("CustomerDetailPage Platform link status", () => {
     await expectStatus(/Declined/i);
     expect(screen.queryByTestId("customer-link-pending-banner")).not.toBeInTheDocument();
   });
+
+  it.each([
+    "Pending",
+    "Linked",
+    "Declined",
+    "Expired",
+    "Revoked",
+    "Unavailable",
+  ] as const)("keeps Record payment available when link status is %s", async (status) => {
+    vi.mocked(linkStatusClient.getCustomerLinkStatus).mockResolvedValue({
+      businessCustomerId: platformBusinessCustomerId,
+      organizationId,
+      status,
+      linkedUserIdentityId: status === "Linked" ? "ffffffff-ffff-4fff-8fff-ffffffffffff" : null,
+      latestLinkRequestId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+      latestLinkRequestStatus: status === "Linked" ? "Active" : status,
+    });
+    renderDetail();
+    await waitFor(() => {
+      expect(screen.getByTestId("customer-repay")).toBeInTheDocument();
+    });
+  });
 });

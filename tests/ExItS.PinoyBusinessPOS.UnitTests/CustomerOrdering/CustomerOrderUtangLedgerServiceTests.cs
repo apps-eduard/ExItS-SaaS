@@ -60,6 +60,30 @@ public sealed class CustomerOrderUtangLedgerServiceTests
             credits.Added[0].Remarks);
     }
 
+    /// <summary>
+    /// Seller Utang posting needs POS correlation (platformBusinessCustomerId), not an Active Personal link.
+    /// </summary>
+    [Theory]
+    [InlineData("Pending")]
+    [InlineData("Declined")]
+    [InlineData("Revoked")]
+    [InlineData("Blocked")]
+    [InlineData("Unavailable")]
+    public async Task Completed_utang_order_posts_without_requiring_active_personal_link(string connectionState)
+    {
+        _ = connectionState;
+        var order = CreateOrder(CustomerOrderStatus.Completed, CustomerOrderPaymentMethod.Utang, total: 250m);
+        var sales = new FakeSales();
+        var credits = new FakeCredits();
+        var service = CreateService(sales, credits);
+
+        await service.PostOnCompleteIfNeededAsync(order, Actor, Utc);
+
+        Assert.Single(sales.Added);
+        Assert.Single(credits.Added);
+        Assert.Equal(250m, credits.Added[0].Amount);
+    }
+
     [Fact]
     public async Task Completed_cash_order_creates_no_utang_posting()
     {
