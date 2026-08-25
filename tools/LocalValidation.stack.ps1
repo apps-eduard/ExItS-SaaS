@@ -36,7 +36,109 @@ $script:LocalValidationStack = [pscustomobject]@{
     DefaultOrgWebPort      = 8093
     DefaultPersonalWebPort = 8094
     DefaultReactPosPort    = 5177
+    # React Platform Admin (Vite) — owns Mailpit activation/reset pages (/admin/activate-account, etc.)
+    DefaultReactAdminPort  = 8095
     DefaultSeedScope       = 'PlatformAdministratorsOnly'
+}
+
+function Resolve-LocalValidationAuthPublicBaseUrl {
+    <#
+    .SYNOPSIS
+      Public base URL embedded in PlatformEmail activation/reset links.
+      Must point at the frontend that hosts /admin/activate-account and /admin/reset-password
+      (React Admin Vite on :8095), not Blazor Admin :8090.
+    #>
+    param(
+        [hashtable]$EnvMap,
+        [string]$ResolvedPublicHost = '',
+        [int]$ReactAdminPort = 0
+    )
+
+    if ($ReactAdminPort -le 0) {
+        $ReactAdminPort = [int]$LocalValidationStack.DefaultReactAdminPort
+    }
+
+    $override = [string]$env:EXITS_ADMIN_PUBLIC_BASE_URL
+    if (-not [string]::IsNullOrWhiteSpace($override)) {
+        return $override.TrimEnd('/')
+    }
+
+    $fromEnv = if ($EnvMap -and $EnvMap['LOCAL_VALIDATION_REACT_ADMIN_ORIGIN']) {
+        [string]$EnvMap['LOCAL_VALIDATION_REACT_ADMIN_ORIGIN']
+    } else {
+        ''
+    }
+    if (-not [string]::IsNullOrWhiteSpace($fromEnv)) {
+        return $fromEnv.TrimEnd('/')
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($ResolvedPublicHost)) {
+        return "http://$($ResolvedPublicHost.Trim()):$ReactAdminPort"
+    }
+
+    return "http://127.0.0.1:$ReactAdminPort"
+}
+
+function Add-LocalValidationReactCorsOrigins {
+    <#
+    .SYNOPSIS
+      Ensures React POS (:5177) and React Admin (:8095) origins are allowed for Platform/POS APIs.
+    #>
+    param(
+        [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
+        [string[]]$CorsOrigins,
+        [hashtable]$EnvMap,
+        [string]$ResolvedPublicHost = '',
+        [int]$ReactPosPort = 0,
+        [int]$ReactAdminPort = 0
+    )
+
+    if ($ReactPosPort -le 0) { $ReactPosPort = [int]$LocalValidationStack.DefaultReactPosPort }
+    if ($ReactAdminPort -le 0) { $ReactAdminPort = [int]$LocalValidationStack.DefaultReactAdminPort }
+
+    $list = [System.Collections.Generic.List[string]]::new()
+    foreach ($o in @($CorsOrigins)) {
+        if (-not [string]::IsNullOrWhiteSpace($o) -and -not $list.Contains($o)) {
+            [void]$list.Add($o)
+        }
+    }
+
+    $candidates = @(
+        "http://127.0.0.1:$ReactPosPort",
+        "http://localhost:$ReactPosPort",
+        "http://127.0.0.1:$ReactAdminPort",
+        "http://localhost:$ReactAdminPort",
+        "http://10.0.2.2:$ReactPosPort"
+    )
+
+    if ($EnvMap) {
+        foreach ($key in @(
+                'LOCAL_VALIDATION_REACT_POS_ORIGIN',
+                'LOCAL_VALIDATION_REACT_POS_ORIGIN_LOCALHOST',
+                'LOCAL_VALIDATION_REACT_POS_ORIGIN_EMULATOR',
+                'LOCAL_VALIDATION_REACT_ADMIN_ORIGIN',
+                'LOCAL_VALIDATION_ADMIN_ORIGIN'
+            )) {
+            if ($EnvMap[$key]) { $candidates += [string]$EnvMap[$key] }
+        }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($ResolvedPublicHost)) {
+        $host = $ResolvedPublicHost.Trim()
+        $candidates += @(
+            "http://${host}:$ReactPosPort",
+            "http://${host}:$ReactAdminPort"
+        )
+    }
+
+    foreach ($c in $candidates) {
+        $n = [string]$c
+        if ([string]::IsNullOrWhiteSpace($n)) { continue }
+        if (-not $list.Contains($n)) { [void]$list.Add($n) }
+    }
+
+    return ,$list.ToArray()
 }
 
 function Get-LocalValidationRepoRoot {

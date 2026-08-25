@@ -69,11 +69,19 @@ Docker
 └── Mailpit              UI http://localhost:8025 · SMTP 1025
 
 Local .NET (dotnet watch)
-├── Platform API         http://localhost:8091  (PlatformEmail → Mailpit)
+├── Platform API         http://localhost:8091  (PlatformEmail → Mailpit SMTP :1025)
 ├── POS API              http://localhost:8092
-├── Platform Admin Web   http://localhost:8090
+├── Platform Admin Web   http://localhost:8090  (Blazor; optional legacy shell)
 ├── Organization Web     http://localhost:8093
 └── Personal Web         http://localhost:8094
+
+Separately (common daily React workflow — not started by Start-LocalValidation.ps1):
+├── React POS            http://127.0.0.1:5177  (register + forgot-password UI)
+└── React Platform Admin http://127.0.0.1:8095  (activate-account + reset-password pages)
+
+**Auth / Mailpit:** `PlatformEmail__AdminPublicBaseUrl` must be the React Admin origin (`http://127.0.0.1:8095` by default, or `LOCAL_VALIDATION_REACT_ADMIN_ORIGIN`). Activation and password-reset emails open `/admin/activate-account` and `/admin/reset-password` on that host. Running Platform API **without** `PlatformEmail__*` silently drops outbound mail (null sink) while register/forgot still return success.
+
+API-only helper with Mailpit + React Admin links: `.\tools\Start-PlatformApiOnly.ps1`.
 
 FULL Docker mode
 Docker Compose

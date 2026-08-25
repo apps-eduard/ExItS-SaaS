@@ -329,7 +329,7 @@ function Get-LocalValidationAllowedHosts([string]$PublicHostValue, $EnvMap) {
 }
 
 function Show-LocalValidationFirewallGuidance {
-    Write-Note 'Windows Firewall: allow inbound TCP 8090/8091/8092/8093/8094 for Tailscale/LAN Admin+APIs+Org Web+Personal Web. Do not open 15533/15534 (DB).'
+    Write-Note 'Windows Firewall: allow inbound TCP 8090/8091/8092/8093/8094/8095/5177 for Tailscale/LAN (Blazor Admin, APIs, Org/Personal Web, React Admin, React POS). Do not open 15533/15534 (DB).'
     Write-Host @'
   New-NetFirewallRule -DisplayName "ExItS Local Validation Admin 8090" -Direction Inbound -Protocol TCP -LocalPort 8090 -Action Allow -Profile Any
   New-NetFirewallRule -DisplayName "ExItS Local Validation Platform API 8091" -Direction Inbound -Protocol TCP -LocalPort 8091 -Action Allow -Profile Any
@@ -491,14 +491,35 @@ if ($resolvedPublicHost) {
     $corsOrigins += "http://${resolvedPublicHost}:$orgWebPort"
     $corsOrigins += "http://${resolvedPublicHost}:$personalWebPort"
 }
-$envAdminOrigin = if ($envMap['LOCAL_VALIDATION_ADMIN_ORIGIN']) { [string]$envMap['LOCAL_VALIDATION_ADMIN_ORIGIN'] } else { $null }
-if (-not [string]::IsNullOrWhiteSpace($envAdminOrigin) -and ($corsOrigins -notcontains $envAdminOrigin)) {
-    $corsOrigins += $envAdminOrigin
+
+$reactAdminPort = if ($envMap['LOCAL_VALIDATION_REACT_ADMIN_HOST_PORT']) {
+    [int]$envMap['LOCAL_VALIDATION_REACT_ADMIN_HOST_PORT']
+} else {
+    [int]$LocalValidationStack.DefaultReactAdminPort
 }
+$reactPosPort = if ($envMap['LOCAL_VALIDATION_REACT_POS_HOST_PORT']) {
+    [int]$envMap['LOCAL_VALIDATION_REACT_POS_HOST_PORT']
+} else {
+    [int]$LocalValidationStack.DefaultReactPosPort
+}
+
+# Auth emails (activate/reset) must open React Admin Vite pages, not Blazor :8090.
+$authPublicBaseUrl = Resolve-LocalValidationAuthPublicBaseUrl `
+    -EnvMap $envMap `
+    -ResolvedPublicHost $resolvedPublicHost `
+    -ReactAdminPort $reactAdminPort
+
+$corsOrigins = Add-LocalValidationReactCorsOrigins `
+    -CorsOrigins $corsOrigins `
+    -EnvMap $envMap `
+    -ResolvedPublicHost $resolvedPublicHost `
+    -ReactPosPort $reactPosPort `
+    -ReactAdminPort $reactAdminPort
 
 Write-Ok "Kestrel bind URLs: $bindAdminUrl | $bindPlatformApiUrl | $bindPosApiUrl | $bindOrgWebUrl | $bindPersonalWebUrl"
 Write-Ok "AllowedHosts: $allowedHosts"
 Write-Ok ("CORS origins: {0}" -f ($corsOrigins -join ', '))
+Write-Ok "Auth email / activation base URL: $authPublicBaseUrl"
 if ($resolvedPublicHost) {
     Write-Ok "PublicHost browser URLs use $resolvedPublicHost"
 }
@@ -559,7 +580,8 @@ $platformEnv = @{
     PlatformEmail__UseSsl = 'false'
     PlatformEmail__FromAddress = 'noreply@exits.local'
     PlatformEmail__FromDisplayName = 'ExItS Local Validation'
-    PlatformEmail__AdminPublicBaseUrl = $publicAdminUrl
+    # Must match React Admin (:8095) — hosts /admin/activate-account and /admin/reset-password.
+    PlatformEmail__AdminPublicBaseUrl = $authPublicBaseUrl
 }
 for ($i = 0; $i -lt $corsOrigins.Count; $i++) {
     $platformEnv["Cors__AllowedOrigins__$i"] = $corsOrigins[$i]
@@ -693,7 +715,9 @@ $healthOk = (Invoke-HttpCheck -Label 'Personal Web /health' -Url "$loopbackPerso
 
 Write-Host ''
 Write-Host '======== Local Validation local ready ========' -ForegroundColor Green
-Write-Host "  Admin:        $publicAdminUrl"
+Write-Host "  Blazor Admin: $publicAdminUrl"
+Write-Host "  React Admin:  $authPublicBaseUrl  (register / activate / reset — start Vite separately if needed)"
+Write-Host "  React POS:    http://127.0.0.1:$reactPosPort"
 Write-Host "  Platform API: $publicPlatformApiUrl"
 Write-Host "  POS API:      $publicPosApiUrl"
 Write-Host "  Org Web:      $publicOrgWebUrl"
@@ -703,12 +727,15 @@ Write-Host "  Platform DB:  127.0.0.1:$platformDbPort"
 Write-Host "  POS DB:       127.0.0.1:$posDbPort"
 Write-Host "  Mailpit UI:   http://localhost:$mailpitUiPort"
 Write-Host "  Mailpit SMTP: 127.0.0.1:$mailpitSmtpPort"
+Write-Host "  Auth emails:  $authPublicBaseUrl/admin/activate-account|reset-password"
 Write-Host "  DP keys:      $dpKeys"
 Write-Host '=========================================' -ForegroundColor Green
 Show-LocalValidationFirewallGuidance
+Write-Note 'Activation/reset Mailpit links open React Admin (:8095), not Blazor Admin (:8090).'
 Write-Note 'If the browser still has an old localhost antiforgery cookie, open an Incognito window or clear localhost site data once.'
 Write-Host 'Stop apps:  .\tools\Stop-LocalValidation.ps1'
 Write-Host 'Stop DBs:   .\tools\Stop-LocalValidation.ps1 -StopDatabases   (volumes preserved)'
+Write-Host 'API-only + Mailpit auth: .\tools\Start-PlatformApiOnly.ps1'
 
 if (-not $healthOk) {
     Write-Fail 'One or more health checks failed - see messages above.'
