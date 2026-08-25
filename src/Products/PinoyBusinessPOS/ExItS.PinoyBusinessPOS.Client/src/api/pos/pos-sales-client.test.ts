@@ -127,6 +127,51 @@ describe("pos-sales-client", () => {
     expect(body.discounts).toBeUndefined();
   });
 
+  it("parses checkout 2xx when server emits priceOverrides:null (SaleQueryService.Map)", async () => {
+    // ASP.NET serializes Map()'s null PriceOverrides as JSON null — not omitted.
+    // Zod .optional() rejects null; this previously surfaced as "Could not record the sale".
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify(
+          saleJson({
+            paymentMethod: "Utang",
+            amountTendered: null,
+            changeAmount: null,
+            customerId: "820ed3b3-0ab6-4509-b48b-a6f825b926e3",
+            linkedCreditEntryId: "6c6f99cf-7c31-46c7-bab5-4a1c0faaf27a",
+            customerDisplayName: null,
+            linkedCreditDueDate: "2026-09-01",
+            customerOutstandingAfter: 205,
+            buyerPartyKind: "WalkIn",
+            documentKind: "TransactionSummary",
+            grossSubtotal: 25,
+            lineDiscountTotal: 0,
+            saleDiscountTotal: 0,
+            discountTotal: 0,
+            priceOverrides: null,
+          }),
+        ),
+        {
+          status: 201,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    );
+
+    const sale = await checkoutSale(workspace, {
+      lines: [{ productId, quantity: 1 }],
+      paymentMethod: "Utang",
+      saleId,
+      shiftId,
+      customerId: "820ed3b3-0ab6-4509-b48b-a6f825b926e3",
+    });
+
+    expect(sale.saleId).toBe(saleId);
+    expect(sale.paymentMethod).toBe("Utang");
+    expect(sale.priceOverrides).toBeNull();
+    expect(sale.linkedCreditEntryId).toBe("6c6f99cf-7c31-46c7-bab5-4a1c0faaf27a");
+  });
+
   it("sends sale idempotency headers keyed on saleId with the payload hash", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(
       new Response(JSON.stringify(saleJson()), {

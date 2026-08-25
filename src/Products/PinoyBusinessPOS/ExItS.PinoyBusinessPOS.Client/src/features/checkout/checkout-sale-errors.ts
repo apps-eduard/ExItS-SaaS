@@ -169,6 +169,12 @@ export function mapCheckoutSaleErrorKey(error: unknown): MessageKey {
 }
 
 export function describeCheckoutSaleError(error: unknown, t: (key: MessageKey) => string): string {
+  if (import.meta.env.DEV && !(error instanceof PosApiError)) {
+    const name = error instanceof Error ? error.name : typeof error;
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn("[checkout] non-PosApiError failure", { name, message });
+  }
+
   const commercial = describeCommercialAccessError(error, t);
   if (commercial) {
     return commercial;

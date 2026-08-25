@@ -17,6 +17,10 @@
 
 API: `/api/v1/pos/sales`
 
+### React checkout response contract
+
+`POST /api/v1/pos/sales` returns **201 Created** with a `PosSaleDto` JSON body (idempotent replay may return the same DTO). React `posSaleDtoSchema` must accept the server’s nullability — notably `priceOverrides: null` when `SaleQueryService.Map` has no overrides (Zod `.optional()` alone rejects JSON null). A successful server write with a client parse failure previously showed “Could not record the sale. Try again.” Retry with the same `saleId` is idempotent and must not create a duplicate sale/credit.
+
 ## CURRENT — Returns / refunds
 
 | Topic | Status | Evidence |

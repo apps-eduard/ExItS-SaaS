@@ -173,7 +173,8 @@ export const posSaleDtoSchema = z.object({
   discountTotal: z.number().optional(),
   lineDiscountTotal: z.number().optional(),
   saleDiscountTotal: z.number().optional(),
-  priceOverrides: z.array(posSaleQuotePriceOverrideDtoSchema).optional(),
+  // Server Map() emits null when no overrides were applied (not omitted).
+  priceOverrides: z.array(posSaleQuotePriceOverrideDtoSchema).nullable().optional(),
 });
 
 export type PosSaleLineDto = z.infer<typeof posSaleLineDtoSchema>;
@@ -246,7 +247,20 @@ function appendQuery(
 }
 
 function parseSale(payload: unknown): PosSaleDto {
-  return posSaleDtoSchema.parse(payload);
+  try {
+    return posSaleDtoSchema.parse(payload);
+  } catch (error) {
+    if (import.meta.env.DEV && error instanceof z.ZodError) {
+      console.warn("[pos-sales] sale response contract mismatch", {
+        issues: error.issues.map((issue) => ({
+          path: issue.path.join("."),
+          code: issue.code,
+          message: issue.message,
+        })),
+      });
+    }
+    throw error;
+  }
 }
 
 function serializeLines(lines: CheckoutSaleLineRequest[]): Record<string, unknown>[] {
