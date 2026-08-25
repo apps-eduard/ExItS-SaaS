@@ -23,4 +23,24 @@ describe("organization-slug", () => {
     const slug = ensureOrganizationSlug("A");
     expect(isValidOrganizationSlugFormat(slug)).toBe(true);
   });
+
+  it("ensures a valid slug when crypto.randomUUID is unavailable", () => {
+    const original = globalThis.crypto;
+    Object.defineProperty(globalThis, "crypto", {
+      configurable: true,
+      value: {
+        getRandomValues: (bytes: Uint8Array) => {
+          for (let i = 0; i < bytes.length; i += 1) bytes[i] = (i * 17 + 3) % 256;
+          return bytes;
+        },
+      },
+    });
+    try {
+      const slug = ensureOrganizationSlug("A");
+      expect(isValidOrganizationSlugFormat(slug)).toBe(true);
+      expect(slug.startsWith("a-") || slug.startsWith("business-")).toBe(true);
+    } finally {
+      Object.defineProperty(globalThis, "crypto", { configurable: true, value: original });
+    }
+  });
 });
