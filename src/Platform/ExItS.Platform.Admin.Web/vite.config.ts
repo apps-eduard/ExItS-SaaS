@@ -47,6 +47,7 @@ export default defineConfig({
     ),
   },
   server: {
+    // Bind all interfaces so Tailscale/LAN can open :8095; /api still proxies to loopback API.
     host: true,
     port: 8095,
     strictPort: true,
@@ -65,6 +66,20 @@ export default defineConfig({
       "/api": {
         target: resolveDevApiProxyTarget(),
         changeOrigin: true,
+        secure: false,
+        // Preserve cookies/credentials through the proxy for session auth.
+        configure: (proxy) => {
+          proxy.on("proxyRes", (proxyRes) => {
+            const cookies = proxyRes.headers["set-cookie"];
+            if (!cookies) {
+              return;
+            }
+            // Local Validation is HTTP — strip Secure so cookies work on localhost and Tailscale HTTP.
+            proxyRes.headers["set-cookie"] = cookies.map((cookie) =>
+              cookie.replace(/;\s*Secure/gi, "").replace(/;\s*SameSite=None/gi, "; SameSite=Lax"),
+            );
+          });
+        },
       },
     },
   },

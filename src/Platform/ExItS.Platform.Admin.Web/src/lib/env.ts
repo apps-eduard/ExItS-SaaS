@@ -6,28 +6,6 @@ function readRuntimeApiBaseUrl(): string {
   return typeof runtime === "string" ? runtime.trim() : "";
 }
 
-function isLoopbackHostname(hostname: string): boolean {
-  const host = hostname.trim().toLowerCase();
-  return host === "localhost" || host === "127.0.0.1" || host === "[::1]" || host === "::1";
-}
-
-/**
- * Vite DEV on Tailscale/LAN: call Platform API on the same host at :8091.
- * Loopback keeps empty base URL so Vite proxies /api → 127.0.0.1:8091.
- */
-export function resolveDevLanPlatformApiBaseUrl(
-  hostname: string,
-  protocol: string,
-  apiPort = 8091,
-): string {
-  const host = hostname.trim();
-  if (!host || isLoopbackHostname(host)) {
-    return "";
-  }
-  const scheme = protocol === "https:" ? "https:" : "http:";
-  return `${scheme}//${host}:${apiPort}`;
-}
-
 export function isLocalValidationToolsEnabled(): boolean {
   if (typeof window !== "undefined" && window.__EXITS_PLATFORM_ADMIN_WEB__?.localValidationToolsEnabled === true) {
     return true;
@@ -42,11 +20,6 @@ export function isPlatformApiSameOrigin(): boolean {
     return false;
   }
 
-  // Tailscale/LAN pages must not force same-origin (Vite /api proxy is unreliable from phones).
-  if (!isLoopbackHostname(window.location.hostname)) {
-    return false;
-  }
-
   const runtime = window.__EXITS_PLATFORM_ADMIN_WEB__;
   if (runtime?.platformApiSameOrigin === true) {
     return true;
@@ -55,7 +28,17 @@ export function isPlatformApiSameOrigin(): boolean {
   return readRuntimeApiBaseUrl().toLowerCase() === "same-origin";
 }
 
+/**
+ * Local Validation Vite DEV: always same-origin /api.
+ * Vite proxies /api → 127.0.0.1:8091 for both localhost and Tailscale page hosts.
+ * Do NOT route browser calls to http://<tailscale>:8091 (firewall / remote clients).
+ */
 export function resolvePlatformApiBaseUrl(): string {
+  // DEV Local Validation: prefer Vite same-origin proxy regardless of page hostname.
+  if (import.meta.env.DEV && import.meta.env.VITE_LOCAL_VALIDATION_TOOLS === "true") {
+    return "";
+  }
+
   if (isPlatformApiSameOrigin()) {
     return "";
   }
@@ -65,8 +48,9 @@ export function resolvePlatformApiBaseUrl(): string {
     return runtime.replace(/\/+$/, "");
   }
 
-  if (import.meta.env.DEV && typeof window !== "undefined") {
-    return resolveDevLanPlatformApiBaseUrl(window.location.hostname, window.location.protocol);
+  if (import.meta.env.DEV) {
+    // Generic Vite DEV without LV tools flag: still prefer same-origin when no explicit base.
+    return "";
   }
 
   const compiled = import.meta.env.VITE_PLATFORM_API_BASE_URL ?? "";
