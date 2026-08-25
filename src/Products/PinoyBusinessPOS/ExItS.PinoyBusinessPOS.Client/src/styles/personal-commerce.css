@@ -1095,6 +1095,124 @@
   font-variant-numeric: tabular-nums;
 }
 
+.pc-receipt-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  padding: 1rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-lg);
+  background: var(--exits-surface);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 40%, transparent);
+}
+
+.pc-receipt-card__meta-list {
+  display: grid;
+  gap: 0.5rem;
+  font-size: var(--exits-text-sm);
+}
+
+.pc-receipt-card__meta-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.pc-receipt-card__meta-row dt {
+  margin: 0;
+  color: var(--exits-text-muted);
+}
+
+.pc-receipt-card__meta-row dd {
+  margin: 0;
+  text-align: right;
+  color: var(--exits-text);
+}
+
+.pc-receipt-card__line-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--exits-border);
+}
+
+.pc-receipt-card__line {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.pc-receipt-card__totals {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--exits-border);
+  font-size: var(--exits-text-sm);
+}
+
+.pc-receipt-card__total-row {
+  display: flex;
+  margin: 0;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.pc-receipt-card__total-row--emphasis {
+  font-size: var(--exits-text-md);
+  font-weight: 600;
+}
+
+.pc-receipt-disclaimer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+}
+
+.pc-receipt-disclaimer__toggle {
+  display: flex;
+  width: 100%;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-size: var(--exits-text-sm);
+  font-weight: 600;
+  color: var(--exits-text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.pc-receipt-disclaimer__chevron {
+  transition: transform 160ms ease;
+}
+
+.pc-receipt-disclaimer__chevron--open {
+  transform: rotate(180deg);
+}
+
+.pc-receipt-disclaimer__body {
+  margin: 0;
+  font-size: var(--exits-text-xs);
+  line-height: 1.45;
+  color: var(--exits-text-muted);
+}
+
 .pc-receipt-line {
   display: flex;
   min-width: 0;

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronDown } from "lucide-react";
 import { canProcessReturn, canVoidSale } from "@/access/pos-capabilities";
 import {
   formatPaymentMethodLabel,
@@ -15,6 +16,7 @@ import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
 import { useI18n } from "@/i18n/I18nProvider";
+import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 /**
@@ -30,6 +32,7 @@ export function TransactionSummaryPage() {
   const [voidReason, setVoidReason] = useState("");
   const [voidError, setVoidError] = useState<string | null>(null);
   const [voiding, setVoiding] = useState(false);
+  const [disclaimerOpen, setDisclaimerOpen] = useState(true);
 
   const workspaceScope =
     boundWorkspace?.branchId && boundWorkspace.organizationId
@@ -125,13 +128,31 @@ export function TransactionSummaryPage() {
         </Card>
       ) : null}
 
-      <Card data-testid="transaction-summary-disclaimer">
-        <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-          {t("summary.disclaimerTitle")}
-        </h2>
-        <p className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-muted">
-          {t("summary.disclaimerBody")}
-        </p>
+      <Card data-testid="transaction-summary-disclaimer" className="flex flex-col gap-2">
+        <button
+          type="button"
+          className="flex w-full min-h-11 items-center justify-between gap-3 border-0 bg-transparent p-0 text-left font-semibold text-[length:var(--exits-text-sm)] text-foreground"
+          aria-expanded={disclaimerOpen}
+          data-testid="transaction-summary-disclaimer-toggle"
+          onClick={() => setDisclaimerOpen((open) => !open)}
+        >
+          <span>{t("summary.disclaimerTitle")}</span>
+          <ChevronDown
+            className={cn(
+              "size-4 shrink-0 transition-transform duration-150",
+              disclaimerOpen && "rotate-180",
+            )}
+            aria-hidden
+          />
+        </button>
+        {disclaimerOpen ? (
+          <p
+            className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+            data-testid="transaction-summary-disclaimer-body"
+          >
+            {t("summary.disclaimerBody")}
+          </p>
+        ) : null}
       </Card>
 
       <Card>
@@ -140,6 +161,12 @@ export function TransactionSummaryPage() {
             <dt className="text-muted">{t("summary.saleNumber")}</dt>
             <dd className="m-0 font-semibold" data-testid="summary-sale-number">
               {sale.saleNumber}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-2">
+            <dt className="text-muted">{t("summary.dateTime")}</dt>
+            <dd className="m-0" data-testid="summary-date-time">
+              {new Date(sale.recordedAtUtc).toLocaleString()}
             </dd>
           </div>
           <div className="flex justify-between gap-2">

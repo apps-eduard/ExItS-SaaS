@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { ChevronDown } from "lucide-react";
 import {
   getLinkedCustomerSaleReceipt,
   isExtendedHistoryRequiredError,
@@ -9,9 +10,11 @@ import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
+import { cn } from "@/lib/cn";
 
 type ReceiptState =
   | { kind: "loading" }
@@ -35,6 +38,7 @@ export function LinkedMerchantReceiptPage() {
     saleId: string;
   }>();
   const [state, setState] = useState<ReceiptState>({ kind: "loading" });
+  const [disclaimerOpen, setDisclaimerOpen] = useState(true);
 
   const backHref = `/personal/linked-merchants/${organizationId}/${businessCustomerId}`;
   const pageShell =
@@ -153,6 +157,7 @@ export function LinkedMerchantReceiptPage() {
   }
 
   const { receipt } = state;
+  const subtotal = receipt.subtotal;
 
   return (
     <div className={pageShell} data-testid="linked-merchant-receipt-page">
@@ -164,39 +169,100 @@ export function LinkedMerchantReceiptPage() {
         backTestId="page-header-back-merchant-receipt"
       />
 
-      <section className="pc-receipt-hero exits-animate-panel" data-testid="linked-merchant-receipt-summary">
-        <p className="pc-receipt-hero__number">{receipt.receiptNumber}</p>
-        <p className="pc-receipt-hero__meta">
-          {new Date(receipt.occurredAtUtc).toLocaleString()} · {receipt.paymentMethod} ·{" "}
-          {receipt.status}
-        </p>
-        <p className="pc-receipt-hero__total">
-          {receipt.total.toFixed(2)} {receipt.currency}
-        </p>
+      <section
+        className="pc-receipt-disclaimer exits-animate-panel"
+        data-testid="linked-merchant-receipt-disclaimer"
+      >
+        <button
+          type="button"
+          className="pc-receipt-disclaimer__toggle"
+          aria-expanded={disclaimerOpen}
+          data-testid="linked-merchant-receipt-disclaimer-toggle"
+          onClick={() => setDisclaimerOpen((open) => !open)}
+        >
+          <span>{t("summary.disclaimerTitle")}</span>
+          <ChevronDown
+            className={cn(
+              "pc-receipt-disclaimer__chevron size-4 shrink-0",
+              disclaimerOpen && "pc-receipt-disclaimer__chevron--open",
+            )}
+            aria-hidden
+          />
+        </button>
+        {disclaimerOpen ? (
+          <p
+            className="pc-receipt-disclaimer__body"
+            data-testid="linked-merchant-receipt-disclaimer-body"
+          >
+            {t("summary.disclaimerBody")}
+          </p>
+        ) : null}
       </section>
 
-      <section className="pc-checkout-section exits-animate-panel">
-        <p className="pc-checkout-section__title">{t("summary.disclaimerTitle")}</p>
-        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("summary.disclaimerBody")}</p>
-      </section>
+      <section
+        className="pc-receipt-card exits-animate-panel"
+        data-testid="linked-merchant-receipt-summary"
+      >
+        <dl className="pc-receipt-card__meta-list m-0">
+          <div className="pc-receipt-card__meta-row">
+            <dt>{t("summary.saleNumber")}</dt>
+            <dd className="font-semibold" data-testid="linked-merchant-receipt-number">
+              {receipt.receiptNumber}
+            </dd>
+          </div>
+          <div className="pc-receipt-card__meta-row">
+            <dt>{t("summary.dateTime")}</dt>
+            <dd data-testid="linked-merchant-receipt-datetime">
+              {new Date(receipt.occurredAtUtc).toLocaleString()}
+            </dd>
+          </div>
+          <div className="pc-receipt-card__meta-row">
+            <dt>{t("summary.paymentMethod")}</dt>
+            <dd data-testid="linked-merchant-receipt-payment">{receipt.paymentMethod}</dd>
+          </div>
+          <div className="pc-receipt-card__meta-row">
+            <dt>{t("summary.status")}</dt>
+            <dd data-testid="linked-merchant-receipt-status">{receipt.status}</dd>
+          </div>
+          {receipt.merchantDisplayName ? (
+            <div className="pc-receipt-card__meta-row">
+              <dt>{t("personal.merchantReceipt.store")}</dt>
+              <dd data-testid="linked-merchant-receipt-store">{receipt.merchantDisplayName}</dd>
+            </div>
+          ) : null}
+          {receipt.customerDisplayName ? (
+            <div className="pc-receipt-card__meta-row">
+              <dt>{t("summary.customer")}</dt>
+              <dd data-testid="linked-merchant-receipt-customer">{receipt.customerDisplayName}</dd>
+            </div>
+          ) : null}
+        </dl>
 
-      <section className="flex flex-col gap-2 exits-animate-panel">
-        <h2 className="pc-section-heading">{t("personal.merchantReceipt.linesSection")}</h2>
-        <ul className="flex flex-col gap-2 m-0 p-0 list-none">
+        <ul className="pc-receipt-card__line-list m-0 list-none p-0">
           {receipt.lines.map((line) => (
-            <li key={line.lineNumber}>
-              <div className="pc-receipt-line">
-                <div className="min-w-0">
-                  <p className="pc-receipt-line__name">{line.productNameSnapshot}</p>
-                  <p className="pc-receipt-line__detail">
-                    {line.quantity.toFixed(3)} {line.unitOfMeasure}
-                  </p>
-                </div>
-                <span className="pc-receipt-line__total">{line.lineTotal.toFixed(2)}</span>
-              </div>
+            <li
+              key={line.lineNumber}
+              className="pc-receipt-card__line"
+              data-testid={`linked-merchant-receipt-line-${line.lineNumber}`}
+            >
+              <span className="min-w-0 truncate text-[length:var(--exits-text-sm)]">
+                {line.productNameSnapshot} × {line.quantity} {line.unitOfMeasure}
+              </span>
+              <MoneyDisplay amount={line.lineTotal} className="pc-receipt-line__total" />
             </li>
           ))}
         </ul>
+
+        <div className="pc-receipt-card__totals">
+          <p className="pc-receipt-card__total-row">
+            <span className="text-muted">{t("summary.subtotal")}</span>
+            <MoneyDisplay amount={subtotal} />
+          </p>
+          <p className="pc-receipt-card__total-row pc-receipt-card__total-row--emphasis">
+            <span>{t("summary.total")}</span>
+            <MoneyDisplay amount={receipt.total} testId="linked-merchant-receipt-total" />
+          </p>
+        </div>
       </section>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, History } from "lucide-react";
 import {
   getLinkedCustomerStatement,
   isExtendedHistoryRequiredError,
@@ -496,19 +496,20 @@ export function LinkedMerchantStatementPage() {
             <p className="m-0 text-[length:var(--exits-text-sm)]">
               {t("personal.merchantStatement.historyLocked")}
             </p>
-            <Button asChild className="min-h-11 w-fit">
+            <Button asChild className="min-h-11 w-full">
               <Link to="/personal/rewards">{t("personal.merchantStatement.historyUnlock")}</Link>
             </Button>
           </div>
         ) : olderItems.length === 0 && !olderLoadAttempted ? (
           <Button
             type="button"
-            className="min-h-11 w-fit"
+            className="min-h-11 w-full"
             disabled={busyOlder}
             data-testid="linked-merchant-older-load"
             onClick={() => void loadOlder()}
           >
-            {t("personal.merchantStatement.olderLoad")}
+            <History className="size-4 shrink-0" aria-hidden />
+            {busyOlder ? t("loading.label") : t("personal.merchantStatement.olderLoad")}
           </Button>
         ) : olderItems.length === 0 ? (
           <EmptyState

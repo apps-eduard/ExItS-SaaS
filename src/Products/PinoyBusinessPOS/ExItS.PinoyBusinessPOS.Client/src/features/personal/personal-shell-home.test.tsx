@@ -1,10 +1,19 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import { appRoutes } from "@/app/router";
 import { clearPlatformAntiforgeryToken } from "@/api/platform/platform-http";
+import * as storesToPay from "@/features/personal/stores-to-pay";
+
+vi.mock("@/features/personal/stores-to-pay", async (importOriginal) => {
+  const actual = await importOriginal<typeof storesToPay>();
+  return {
+    ...actual,
+    loadStoresToPayPreview: vi.fn(),
+  };
+});
 
 const personalUserId = "11111111-1111-1111-1111-111111111111";
 const personalProfileId = "22222222-2222-2222-2222-222222222222";
@@ -155,6 +164,14 @@ function renderAt(path: string) {
 }
 
 describe("Personal shell and home (RMAP-22B)", () => {
+  beforeEach(() => {
+    vi.mocked(storesToPay.loadStoresToPayPreview).mockResolvedValue({
+      storeCount: 0,
+      activeCount: 0,
+      preview: [],
+    });
+  });
+
   afterEach(async () => {
     // WorkspaceProvider may still be resolving org list when the assertion finishes.
     await new Promise((resolve) => setTimeout(resolve, 25));
@@ -188,11 +205,57 @@ describe("Personal shell and home (RMAP-22B)", () => {
     await waitFor(() => {
       expect(screen.getByTestId("personal-utang-summary")).toBeInTheDocument();
     });
+    expect(screen.getByText("Personal Tracker")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-stores-to-pay")).toBeInTheDocument();
+    expect(screen.getByText("Stores to Pay")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId("personal-stat-stores")).toHaveTextContent("0");
+    });
     expect(screen.getByTestId("personal-quick-actions")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-qa-start-business")).toBeInTheDocument();
     expect(screen.getByTestId("personal-qa-lent")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-qa-owe")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-qa-stores")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-qa-people")).toBeInTheDocument();
+    expect(screen.queryByTestId("personal-qa-todo")).not.toBeInTheDocument();
     expect(screen.getByTestId("personal-stat-people")).toHaveTextContent("2");
     expect(await screen.findByTestId("personal-needs-attention")).toBeInTheDocument();
     expect(screen.getByTestId("personal-attention-pendingConfirmation")).toBeInTheDocument();
+  });
+
+  it("shows Stores to Pay preview rows from linked merchant balances", async () => {
+    vi.mocked(storesToPay.loadStoresToPayPreview).mockResolvedValue({
+      storeCount: 3,
+      activeCount: 2,
+      preview: [
+        {
+          organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          businessCustomerId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+          displayName: "Store A",
+          outstandingBalance: 2000,
+          currency: "PHP",
+          href: "/personal/linked-merchants/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        },
+        {
+          organizationId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+          businessCustomerId: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+          displayName: "Store B",
+          outstandingBalance: 1500,
+          currency: "PHP",
+          href: "/personal/linked-merchants/cccccccc-cccc-cccc-cccc-cccccccccccc/dddddddd-dddd-dddd-dddd-dddddddddddd",
+        },
+      ],
+    });
+    vi.stubGlobal("fetch", createPersonalFetchMock());
+    renderAt("/personal");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("personal-stores-to-pay-list")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Store A")).toBeInTheDocument();
+    expect(screen.getByText("Store B")).toBeInTheDocument();
+    expect(screen.getByTestId("personal-stat-stores")).toHaveTextContent("3");
+    expect(screen.getByTestId("personal-stat-stores-active")).toHaveTextContent("2");
   });
 
   it("opens Stores and customer link requests under Personal More", async () => {

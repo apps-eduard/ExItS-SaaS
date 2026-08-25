@@ -27,6 +27,13 @@ export function ActionTileGrid({
     return null;
   }
 
+  const nonHeroIndexes = tiles
+    .map((tile, index) => ({ tile, index }))
+    .filter(({ tile }) => !(emphasizePrimary && tile.primary))
+    .map(({ index }) => index);
+  const lastNonHeroIndex = nonHeroIndexes[nonHeroIndexes.length - 1];
+  const stretchLastNonHero = nonHeroIndexes.length % 2 === 1;
+
   return (
     <div className="role-action-tile-grid grid min-w-0 grid-cols-2 gap-2" role="group">
       {tiles.map((tile, index) => {
@@ -35,7 +42,7 @@ export function ActionTileGrid({
         const fullWidth =
           isPrimaryHero ||
           tiles.length === 1 ||
-          (tiles.length % 2 === 1 && index === tiles.length - 1);
+          (stretchLastNonHero && index === lastNonHeroIndex);
         const tileClassName = cn(
           fullWidth && "col-span-2 role-action-tile--center",
           isPrimaryHero && "role-action-tile--hero",

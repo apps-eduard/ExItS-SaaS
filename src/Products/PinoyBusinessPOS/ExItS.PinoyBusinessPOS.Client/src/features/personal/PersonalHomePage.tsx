@@ -2,14 +2,18 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
+  Building2,
   ChevronRight,
   HandCoins,
   Home,
   ListPlus,
   ListTodo,
   RefreshCw,
+  Store,
   UserPlus,
   Wallet,
+  WalletCards,
+  Zap,
 } from "lucide-react";
 import { getPersonalDashboard } from "@/api/platform/personal-dashboard-client";
 import {
@@ -25,12 +29,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
-import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { DashboardMetricCard } from "@/features/reports/DashboardMetricCards";
+import { loadStoresToPayPreview } from "@/features/personal/stores-to-pay";
 import {
   buildHomeAttentionItems,
   isActiveUtangAccount,
@@ -64,6 +68,11 @@ export function PersonalHomePage() {
   const oweQuery = useQuery({
     queryKey: ["personal", "utang", "owe"],
     queryFn: ({ signal }) => listBorrowedRelationships(signal),
+    enabled: online,
+  });
+  const storesToPayQuery = useQuery({
+    queryKey: ["personal", "home", "stores-to-pay"],
+    queryFn: ({ signal }) => loadStoresToPayPreview(signal),
     enabled: online,
   });
 
@@ -110,12 +119,6 @@ export function PersonalHomePage() {
   }
 
   const dashboard = dashboardQuery.data;
-  const hasActivity =
-    dashboard.contactCount > 0 ||
-    dashboard.activeRelationshipCount > 0 ||
-    dashboard.totalLentBalance > 0 ||
-    dashboard.totalBorrowedBalance > 0;
-
   const counts = todosQuery.isSuccess ? summarizeTodoCounts(todosQuery.data) : null;
 
   function attentionTitle(item: (typeof attentionItems)[number]): string {
@@ -147,10 +150,16 @@ export function PersonalHomePage() {
 
       <section
         className="catalog-form-section exits-animate-panel personal-section gap-3"
-        aria-label={t("personal.home.utangSummary")}
+        aria-label={t("personal.home.personalTracker")}
         data-testid="personal-utang-summary"
       >
-        <h2 className="catalog-form-section__title text-muted">{t("personal.home.utangSnapshot")}</h2>
+        <h2 className="catalog-form-section__title personal-todo-create-form__title text-muted">
+          <WalletCards
+            className="personal-todo-create-form__title-icon size-[1.1rem] shrink-0"
+            aria-hidden
+          />
+          {t("personal.home.personalTracker")}
+        </h2>
         <div className="personal-summary-grid personal-summary-grid--balances" role="list">
           <DashboardMetricCard
             label={t("personal.home.owedToMe")}
@@ -186,6 +195,85 @@ export function PersonalHomePage() {
             </span>
           </Link>
         </div>
+      </section>
+
+      <section
+        className="catalog-form-section exits-animate-panel personal-section gap-3"
+        aria-label={t("personal.home.storesToPay")}
+        data-testid="personal-stores-to-pay"
+      >
+        <h2 className="catalog-form-section__title personal-todo-create-form__title text-muted">
+          <Store
+            className="personal-todo-create-form__title-icon size-[1.1rem] shrink-0"
+            aria-hidden
+          />
+          {t("personal.home.storesToPay")}
+        </h2>
+        {(!online && !storesToPayQuery.data) || storesToPayQuery.isError ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("personal.home.storesUnavailable")}
+          </p>
+        ) : storesToPayQuery.isLoading ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("personal.home.storesLoading")}
+          </p>
+        ) : storesToPayQuery.data ? (
+          <>
+            {storesToPayQuery.data.preview.length > 0 ? (
+              <ul
+                className="personal-stores-to-pay-list m-0 grid list-none gap-2 p-0"
+                data-testid="personal-stores-to-pay-list"
+              >
+                {storesToPayQuery.data.preview.map((store) => (
+                  <li key={`${store.organizationId}:${store.businessCustomerId}`}>
+                    <Link
+                      to={store.href}
+                      className="personal-stores-to-pay-row exits-list__card flex min-h-11 items-center justify-between gap-3 text-foreground no-underline"
+                      data-testid={`personal-store-row-${store.organizationId}`}
+                    >
+                      <span className="min-w-0 truncate text-[length:var(--exits-text-sm)] font-medium">
+                        {store.displayName}
+                      </span>
+                      <span className="shrink-0 tabular-nums text-[length:var(--exits-text-sm)] font-semibold">
+                        <MoneyDisplay amount={store.outstandingBalance} />
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p
+                className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                data-testid="personal-stores-to-pay-empty"
+              >
+                {storesToPayQuery.data.storeCount === 0
+                  ? t("personal.home.storesEmptyNone")
+                  : t("personal.home.storesEmptyClear")}
+              </p>
+            )}
+            <div
+              className="personal-home-meta flex flex-wrap gap-x-4 gap-y-1 text-[length:var(--exits-text-sm)] text-muted"
+              data-testid="personal-stores-to-pay-meta"
+            >
+              <Link
+                to="/personal/linked-merchants"
+                className="text-muted no-underline hover:underline"
+              >
+                <span data-testid="personal-stat-stores">
+                  {t("personal.home.stores")}: {storesToPayQuery.data.storeCount}
+                </span>
+              </Link>
+              <Link
+                to="/personal/linked-merchants"
+                className="text-muted no-underline hover:underline"
+              >
+                <span data-testid="personal-stat-stores-active">
+                  {t("personal.home.active")}: {storesToPayQuery.data.activeCount}
+                </span>
+              </Link>
+            </div>
+          </>
+        ) : null}
       </section>
 
       {attentionItems.length > 0 ? (
@@ -228,17 +316,30 @@ export function PersonalHomePage() {
         aria-label={t("personal.home.quickActions")}
         data-testid="personal-quick-actions"
       >
-        <h2 className="catalog-form-section__title text-muted">{t("personal.home.quickActions")}</h2>
+        <h2 className="catalog-form-section__title personal-todo-create-form__title text-muted">
+          <Zap
+            className="personal-todo-create-form__title-icon size-[1.1rem] shrink-0"
+            aria-hidden
+          />
+          {t("personal.home.quickActions")}
+        </h2>
         <ActionTileGrid
           emphasizePrimary
           tiles={[
+            {
+              key: "start-business",
+              label: t("personal.home.actionStartBusiness"),
+              icon: Building2,
+              testId: "personal-qa-start-business",
+              to: "/personal/explore-pos",
+              primary: true,
+            },
             {
               key: "lent",
               label: t("personal.home.actionLent"),
               icon: HandCoins,
               testId: "personal-qa-lent",
               to: "/personal/utang/lent",
-              primary: true,
             },
             {
               key: "owe",
@@ -248,28 +349,22 @@ export function PersonalHomePage() {
               to: "/personal/utang/owe",
             },
             {
+              key: "stores",
+              label: t("personal.home.actionStores"),
+              icon: Store,
+              testId: "personal-qa-stores",
+              to: "/personal/linked-merchants",
+            },
+            {
               key: "people",
               label: t("personal.home.actionPeople"),
               icon: UserPlus,
               testId: "personal-qa-people",
               to: "/personal/utang/people",
             },
-            {
-              key: "todo",
-              label: t("personal.home.actionTodo"),
-              icon: ListTodo,
-              testId: "personal-qa-todo",
-              to: "/personal/todo?add=1",
-            },
           ]}
         />
       </section>
-
-      {!hasActivity ? (
-        <div className="exits-animate-panel">
-          <EmptyState title={t("personal.emptyTitle")} detail={t("personal.emptyDetail")} />
-        </div>
-      ) : null}
 
       <section
         className="catalog-form-section exits-animate-panel personal-section gap-3"

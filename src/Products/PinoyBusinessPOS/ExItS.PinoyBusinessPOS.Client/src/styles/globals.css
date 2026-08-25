@@ -6318,6 +6318,10 @@ a.exits-chip--primary:hover {
   width: 100%;
 }
 
+.personal-stores-to-pay-row {
+  width: 100%;
+}
+
 @media (min-width: 640px) {
   .personal-summary-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
