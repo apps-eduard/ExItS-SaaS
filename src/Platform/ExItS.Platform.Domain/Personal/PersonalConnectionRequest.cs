@@ -138,6 +138,19 @@ public sealed class PersonalConnectionRequest
         RespondedByUserIdentityId = RequesterUserIdentityId;
     }
 
+    public void InvalidatePending(DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        if (Status != PersonalConnectionRequestStatus.Pending)
+        {
+            return;
+        }
+
+        Status = PersonalConnectionRequestStatus.Revoked;
+        RevokedAtUtc = utcNow;
+        UpdatedAtUtc = utcNow;
+    }
+
     public void Decline(PlatformUserId decliningUserIdentityId, DateTimeOffset utcNow)
     {
         ArgumentNullException.ThrowIfNull(decliningUserIdentityId);

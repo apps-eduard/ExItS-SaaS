@@ -1,6 +1,7 @@
 using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
@@ -141,20 +142,72 @@ internal static class PersonalUtangAccess
     }
 }
 
+internal static class PersonalContactIdentityVerification
+{
+    internal static async Task<ApplicationResult<(PlatformUserId UserId, string PublicUserId)>> ResolveVerifiedIdentityAsync(
+        PlatformUserId ownerUserIdentityId,
+        string publicUserIdInput,
+        Guid? clientSuppliedUserIdentityId,
+        IPlatformUserRepository users,
+        CancellationToken cancellationToken)
+    {
+        string normalized;
+        try
+        {
+            normalized = PublicUserIdRules.TryExtractFromQrPayload(publicUserIdInput);
+        }
+        catch (DomainException)
+        {
+            return ApplicationResult<(PlatformUserId, string)>.Failure(
+                DomainErrorCodes.InvalidPublicUserId,
+                "ExItS ID format is invalid.");
+        }
+
+        var target = await users.GetByPublicUserIdAsync(normalized, cancellationToken).ConfigureAwait(false);
+        if (target is null || target.Status is not AccountStatus.Active)
+        {
+            return ApplicationResult<(PlatformUserId, string)>.Failure(
+                ApplicationErrorCodes.UserNotFound,
+                "No active user matched that ExItS ID.");
+        }
+
+        if (target.Id == ownerUserIdentityId)
+        {
+            return ApplicationResult<(PlatformUserId, string)>.Failure(
+                ApplicationErrorCodes.PersonalContactSelfNotAllowed,
+                "You cannot add yourself as a contact.");
+        }
+
+        if (clientSuppliedUserIdentityId is Guid supplied
+            && supplied != Guid.Empty
+            && supplied != target.Id.Value)
+        {
+            return ApplicationResult<(PlatformUserId, string)>.Failure(
+                ApplicationErrorCodes.PersonalContactIdentityMismatch,
+                "ExItS ID does not match the supplied user identity.");
+        }
+
+        return ApplicationResult<(PlatformUserId, string)>.Success((target.Id, target.PublicUserId!));
+    }
+}
+
 public sealed class CreatePersonalContact
 {
     private readonly IPersonalContactRepository _contacts;
+    private readonly IPlatformUserRepository _users;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public CreatePersonalContact(
         IPersonalContactRepository contacts,
+        IPlatformUserRepository users,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _contacts = contacts;
+        _users = users;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -174,7 +227,8 @@ public sealed class CreatePersonalContact
                 request.Email,
                 _clock.UtcNow);
 
-            if (request.ResolvedUserIdentityId is Guid resolvedUserId && resolvedUserId != Guid.Empty)
+            if (!string.IsNullOrWhiteSpace(request.ResolvedPublicUserId)
+                || (request.ResolvedUserIdentityId is Guid suppliedId && suppliedId != Guid.Empty))
             {
                 if (string.IsNullOrWhiteSpace(request.ResolvedPublicUserId))
                 {
@@ -183,10 +237,25 @@ public sealed class CreatePersonalContact
                         "Resolved public user id is required when resolving identity.");
                 }
 
+                var verified = await PersonalContactIdentityVerification.ResolveVerifiedIdentityAsync(
+                    ownerUserIdentityId,
+                    request.ResolvedPublicUserId,
+                    request.ResolvedUserIdentityId,
+                    _users,
+                    cancellationToken).ConfigureAwait(false);
+                if (!verified.IsSuccess)
+                {
+                    return ApplicationResult<PersonalContactDto>.Failure(
+                        verified.ErrorCode!,
+                        verified.ErrorMessage!);
+                }
+
+                var (resolvedUserId, resolvedPublicUserId) = verified.Value;
+
                 var duplicate = await _contacts
                     .FindActiveByOwnerAndResolvedUserAsync(
                         ownerUserIdentityId,
-                        PlatformUserId.From(resolvedUserId),
+                        resolvedUserId,
                         cancellationToken)
                     .ConfigureAwait(false);
                 if (duplicate is not null)
@@ -197,8 +266,8 @@ public sealed class CreatePersonalContact
                 }
 
                 contact.ResolveIdentity(
-                    PlatformUserId.From(resolvedUserId),
-                    request.ResolvedPublicUserId.Trim(),
+                    resolvedUserId,
+                    resolvedPublicUserId,
                     _clock.UtcNow);
             }
 

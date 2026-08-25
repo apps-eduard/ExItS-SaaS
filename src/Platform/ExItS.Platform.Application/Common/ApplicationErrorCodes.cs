@@ -163,6 +163,8 @@ public static class ApplicationErrorCodes
 
     public const string PersonalContactNotFound = "application.personal.contact.not_found";
     public const string PersonalContactEmailConflict = "application.personal.contact.email.conflict";
+    public const string PersonalContactIdentityMismatch = "application.personal.contact.identity_mismatch";
+    public const string PersonalContactSelfNotAllowed = "application.personal.contact.self_not_allowed";
     public const string PersonalConnectionRequestNotFound = "application.personal.connection_request.not_found";
     public const string PersonalConnectionRequestConflict = "application.personal.connection_request.conflict";
     public const string PersonalConnectionBlocked = "application.personal.connection.blocked";

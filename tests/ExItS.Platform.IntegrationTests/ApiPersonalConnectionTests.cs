@@ -81,6 +81,44 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
         return body.GetProperty("id").GetGuid();
     }
 
+    private async Task<HttpResponseMessage> TryCreateIdentifiedContactAsync(
+        string token,
+        string displayName,
+        Guid? resolvedUserIdentityId,
+        string resolvedPublicUserId)
+    {
+        using var request = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/contacts",
+            token,
+            new
+            {
+                displayName,
+                resolvedUserIdentityId,
+                resolvedPublicUserId,
+            });
+        return await _client.SendAsync(request);
+    }
+
+    private async Task<int> CountContactsAsync(string token)
+    {
+        using var listContacts = Authed(HttpMethod.Get, "/api/v1/personal/utang/contacts", token);
+        var contacts = await _client.SendAsync(listContacts);
+        contacts.EnsureSuccessStatusCode();
+        return (await contacts.Content.ReadFromJsonAsync<JsonElement>())!.EnumerateArray().Count();
+    }
+
+    private async Task<Guid> RequestConnectionAsync(string token, Guid contactId)
+    {
+        using var requestConnection = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/people/{contactId}/connection-request",
+            token);
+        var response = await _client.SendAsync(requestConnection);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        return (await response.Content.ReadFromJsonAsync<JsonElement>())!.GetProperty("id").GetGuid();
+    }
+
     [Fact]
     public async Task Add_identified_contact_persists_resolved_identity_without_request_or_notification()
     {
@@ -368,5 +406,157 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
             tokenA);
         var blockedRequest = await _client.SendAsync(request);
         Assert.Equal(HttpStatusCode.Conflict, blockedRequest.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_identified_contact_rejects_forged_user_identity()
+    {
+        var (tokenA, _) = await SeedPersonalUserAsync("forge-a");
+        var (tokenB, _) = await SeedPersonalUserAsync("forge-b");
+        var (_, userC) = await SeedPersonalUserAsync("forge-c");
+        var publicB = await GetPublicUserIdAsync(_client, tokenB);
+        var before = await CountContactsAsync(tokenA);
+
+        using var response = await TryCreateIdentifiedContactAsync(
+            tokenA,
+            "Forged Target",
+            userC,
+            publicB);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        Assert.Equal(before, await CountContactsAsync(tokenA));
+    }
+
+    [Fact]
+    public async Task Create_identified_contact_rejects_unknown_public_id_and_self()
+    {
+        var (tokenA, userA) = await SeedPersonalUserAsync("self-a");
+        var publicA = await GetPublicUserIdAsync(_client, tokenA);
+        var before = await CountContactsAsync(tokenA);
+
+        using var unknown = await TryCreateIdentifiedContactAsync(
+            tokenA,
+            "Ghost",
+            null,
+            "EX-9999-9999");
+        Assert.Equal(HttpStatusCode.NotFound, unknown.StatusCode);
+
+        using var self = await TryCreateIdentifiedContactAsync(
+            tokenA,
+            "Myself",
+            userA,
+            publicA);
+        Assert.Equal(HttpStatusCode.BadRequest, self.StatusCode);
+
+        Assert.Equal(before, await CountContactsAsync(tokenA));
+    }
+
+    [Fact]
+    public async Task Received_connection_request_identifies_requester_from_platform_not_contact_label()
+    {
+        var (tokenA, userA) = await SeedPersonalUserAsync("req-a");
+        var (tokenB, userB) = await SeedPersonalUserAsync("req-b");
+        var publicA = await GetPublicUserIdAsync(_client, tokenA);
+        var publicB = await GetPublicUserIdAsync(_client, tokenB);
+
+        var contactId = await CreateIdentifiedContactAsync(tokenA, "Mislabeled As B", userB, publicB);
+        var requestId = await RequestConnectionAsync(tokenA, contactId);
+
+        using var listIncoming = Authed(HttpMethod.Get, "/api/v1/personal/connections", tokenB);
+        var incoming = await _client.SendAsync(listIncoming);
+        incoming.EnsureSuccessStatusCode();
+        var item = (await incoming.Content.ReadFromJsonAsync<JsonElement>())!
+            .EnumerateArray()
+            .Single(r => r.GetProperty("id").GetGuid() == requestId);
+
+        Assert.Equal(userA, item.GetProperty("requesterUserIdentityId").GetGuid());
+        Assert.Equal("Personal User", item.GetProperty("requesterDisplayName").GetString());
+        Assert.Equal(publicA, item.GetProperty("requesterPublicUserId").GetString());
+        Assert.Equal(publicB, item.GetProperty("targetPublicUserId").GetString());
+        Assert.NotEqual(userB, item.GetProperty("requesterUserIdentityId").GetGuid());
+        Assert.NotEqual(publicB, item.GetProperty("requesterPublicUserId").GetString());
+        Assert.NotEqual("Mislabeled As B", item.GetProperty("requesterDisplayName").GetString());
+    }
+
+    [Fact]
+    public async Task Connection_request_notification_uses_requester_platform_display_name()
+    {
+        var (tokenA, _) = await SeedPersonalUserAsync("nreq-a");
+        var (tokenB, userB) = await SeedPersonalUserAsync("nreq-b");
+        var publicB = await GetPublicUserIdAsync(_client, tokenB);
+        var contactId = await CreateIdentifiedContactAsync(tokenA, "Wrong Contact Label", userB, publicB);
+        await RequestConnectionAsync(tokenA, contactId);
+
+        using var notificationsReq = Authed(HttpMethod.Get, "/api/v1/personal/notifications", tokenB);
+        var notifications = await (await _client.SendAsync(notificationsReq)).Content.ReadFromJsonAsync<JsonElement>();
+        var notification = notifications!.EnumerateArray().First(n =>
+            string.Equals(
+                n.GetProperty("relatedType").GetString(),
+                "PersonalConnectionRequest",
+                StringComparison.Ordinal));
+
+        Assert.Equal("Connection request", notification.GetProperty("title").GetString());
+        Assert.Equal("Personal User sent you a connection request", notification.GetProperty("preview").GetString());
+        Assert.DoesNotContain("Wrong Contact Label", notification.GetProperty("preview").GetString()!);
+    }
+
+    [Fact]
+    public async Task Block_invalidates_pending_request_and_stale_accept_requires_fresh_request()
+    {
+        var (tokenA, _) = await SeedPersonalUserAsync("blkp-a");
+        var (tokenB, userB) = await SeedPersonalUserAsync("blkp-b");
+        var publicB = await GetPublicUserIdAsync(_client, tokenB);
+        var contactId = await CreateIdentifiedContactAsync(tokenA, "User B", userB, publicB);
+        var oldRequestId = await RequestConnectionAsync(tokenA, contactId);
+
+        using var block = Authed(HttpMethod.Post, $"/api/v1/personal/people/{contactId}/block", tokenA);
+        (await _client.SendAsync(block)).EnsureSuccessStatusCode();
+
+        using var listAfterBlock = Authed(HttpMethod.Get, "/api/v1/personal/connections", tokenB);
+        var afterBlock = await (await _client.SendAsync(listAfterBlock)).Content.ReadFromJsonAsync<JsonElement>();
+        var blockedItem = afterBlock!.EnumerateArray().Single(r => r.GetProperty("id").GetGuid() == oldRequestId);
+        Assert.Equal("Revoked", blockedItem.GetProperty("status").GetString());
+
+        using var unblock = Authed(HttpMethod.Post, $"/api/v1/personal/people/{contactId}/unblock", tokenA);
+        (await _client.SendAsync(unblock)).EnsureSuccessStatusCode();
+
+        using var staleAccept = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/connections/{oldRequestId}/accept",
+            tokenB);
+        Assert.Equal(HttpStatusCode.BadRequest, (await _client.SendAsync(staleAccept)).StatusCode);
+
+        var newRequestId = await RequestConnectionAsync(tokenA, contactId);
+
+        using var accept = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/connections/{newRequestId}/accept",
+            tokenB);
+        (await _client.SendAsync(accept)).EnsureSuccessStatusCode();
+
+        using var contactsAfter = Authed(HttpMethod.Get, "/api/v1/personal/utang/contacts", tokenA);
+        var linked = (await (await _client.SendAsync(contactsAfter)).Content.ReadFromJsonAsync<JsonElement>())!
+            .EnumerateArray()
+            .Single(c => c.GetProperty("id").GetGuid() == contactId);
+        Assert.Equal(userB, linked.GetProperty("linkedUserIdentityId").GetGuid());
+    }
+
+    [Fact]
+    public async Task Opposite_direction_pending_connection_request_is_rejected()
+    {
+        var (tokenA, userA) = await SeedPersonalUserAsync("opp-a");
+        var (tokenB, userB) = await SeedPersonalUserAsync("opp-b");
+        var publicA = await GetPublicUserIdAsync(_client, tokenA);
+        var publicB = await GetPublicUserIdAsync(_client, tokenB);
+
+        var contactAForB = await CreateIdentifiedContactAsync(tokenA, "User B", userB, publicB);
+        await RequestConnectionAsync(tokenA, contactAForB);
+
+        var contactBForA = await CreateIdentifiedContactAsync(tokenB, "User A", userA, publicA);
+        using var reverseRequest = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/people/{contactBForA}/connection-request",
+            tokenB);
+        Assert.Equal(HttpStatusCode.Conflict, (await _client.SendAsync(reverseRequest)).StatusCode);
     }
 }

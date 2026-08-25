@@ -229,6 +229,40 @@ internal sealed class PersonalConnectionRequestRepository(PlatformDbContext db) 
         return record is null ? null : ToDomain(record);
     }
 
+    public async Task<PersonalConnectionRequest?> FindPendingBetweenUsersAsync(
+        PlatformUserId userA,
+        PlatformUserId userB,
+        CancellationToken cancellationToken = default)
+    {
+        var a = userA.Value;
+        var b = userB.Value;
+        var record = await db.PersonalConnectionRequests.AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.Status == nameof(PersonalConnectionRequestStatus.Pending)
+                     && ((x.RequesterUserIdentityId == a && x.TargetUserIdentityId == b)
+                         || (x.RequesterUserIdentityId == b && x.TargetUserIdentityId == a)),
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public async Task<IReadOnlyList<PersonalConnectionRequest>> ListPendingBetweenUsersAsync(
+        PlatformUserId userA,
+        PlatformUserId userB,
+        CancellationToken cancellationToken = default)
+    {
+        var a = userA.Value;
+        var b = userB.Value;
+        var records = await db.PersonalConnectionRequests.AsNoTracking()
+            .Where(
+                x => x.Status == nameof(PersonalConnectionRequestStatus.Pending)
+                     && ((x.RequesterUserIdentityId == a && x.TargetUserIdentityId == b)
+                         || (x.RequesterUserIdentityId == b && x.TargetUserIdentityId == a)))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(ToDomain).ToList();
+    }
+
     public async Task<PersonalConnectionRequest?> FindPendingForContactAsync(
         PersonalContactId requesterContactId,
         CancellationToken cancellationToken = default)

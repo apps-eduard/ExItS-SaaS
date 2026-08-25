@@ -76,6 +76,41 @@ internal static class PersonalConnectionSupport
             await contacts.UpdateAsync(contactB, cancellationToken).ConfigureAwait(false);
         }
     }
+
+    public static async Task InvalidatePendingRequestsBetweenAsync(
+        PlatformUserId userA,
+        PlatformUserId userB,
+        IPersonalConnectionRequestRepository requests,
+        IClock clock,
+        CancellationToken cancellationToken)
+    {
+        var pending = await requests
+            .ListPendingBetweenUsersAsync(userA, userB, cancellationToken)
+            .ConfigureAwait(false);
+        foreach (var request in pending)
+        {
+            request.InvalidatePending(clock.UtcNow);
+            await requests.UpdateAsync(request, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    internal static async Task<(string DisplayName, string? PublicUserId)> ResolveUserPresentationAsync(
+        PlatformUserId userIdentityId,
+        IPlatformUserRepository users,
+        GetOrAssignPublicIdentity publicIdentity,
+        CancellationToken cancellationToken)
+    {
+        var user = await users.GetByIdAsync(userIdentityId, cancellationToken).ConfigureAwait(false);
+        var displayName = user?.DisplayName ?? "Someone";
+        string? publicUserId = null;
+        var identity = await publicIdentity.ExecuteAsync(userIdentityId, cancellationToken).ConfigureAwait(false);
+        if (identity.IsSuccess)
+        {
+            publicUserId = identity.Value!.PublicUserId;
+        }
+
+        return (displayName, publicUserId);
+    }
 }
 
 public sealed class ListPersonalConnectionRequests
@@ -136,19 +171,21 @@ public sealed class ListPersonalConnectionRequests
         PlatformUserId viewerUserIdentityId,
         CancellationToken cancellationToken)
     {
-        var requesterContact = await _contacts
-            .GetByIdAsync(request.RequesterContactId, cancellationToken)
+        var (requesterName, requesterPublic) = await PersonalConnectionSupport
+            .ResolveUserPresentationAsync(
+                request.RequesterUserIdentityId,
+                _users,
+                _publicIdentity,
+                cancellationToken)
             .ConfigureAwait(false);
-        var requesterName = requesterContact?.DisplayName ?? "Someone";
-        var requesterPublic = requesterContact?.ResolvedPublicUserId;
-        string? targetPublic = null;
-        var targetIdentity = await _publicIdentity
-            .ExecuteAsync(request.TargetUserIdentityId, cancellationToken)
+
+        var (_, targetPublic) = await PersonalConnectionSupport
+            .ResolveUserPresentationAsync(
+                request.TargetUserIdentityId,
+                _users,
+                _publicIdentity,
+                cancellationToken)
             .ConfigureAwait(false);
-        if (targetIdentity.IsSuccess)
-        {
-            targetPublic = targetIdentity.Value!.PublicUserId;
-        }
 
         var direction = request.TargetUserIdentityId == viewerUserIdentityId ? "Received" : "Sent";
         return new PersonalConnectionRequestDto(
@@ -175,6 +212,8 @@ public sealed class RequestPersonalConnection
     private readonly IPersonalContactRepository _contacts;
     private readonly IPersonalConnectionRequestRepository _requests;
     private readonly IPersonalInAppNotificationRepository _notifications;
+    private readonly IPlatformUserRepository _users;
+    private readonly GetOrAssignPublicIdentity _publicIdentity;
     private readonly ListPersonalConnectionRequests _lister;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
@@ -184,6 +223,8 @@ public sealed class RequestPersonalConnection
         IPersonalContactRepository contacts,
         IPersonalConnectionRequestRepository requests,
         IPersonalInAppNotificationRepository notifications,
+        IPlatformUserRepository users,
+        GetOrAssignPublicIdentity publicIdentity,
         ListPersonalConnectionRequests lister,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
@@ -192,6 +233,8 @@ public sealed class RequestPersonalConnection
         _contacts = contacts;
         _requests = requests;
         _notifications = notifications;
+        _users = users;
+        _publicIdentity = publicIdentity;
         _lister = lister;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
@@ -250,7 +293,7 @@ public sealed class RequestPersonalConnection
         }
 
         var existingPending = await _requests
-            .FindPendingByRequesterAndTargetAsync(requesterUserIdentityId, targetUserIdentityId, cancellationToken)
+            .FindPendingBetweenUsersAsync(requesterUserIdentityId, targetUserIdentityId, cancellationToken)
             .ConfigureAwait(false);
         if (existingPending is not null)
         {
@@ -269,10 +312,18 @@ public sealed class RequestPersonalConnection
 
             await _requests.AddAsync(request, cancellationToken).ConfigureAwait(false);
 
+            var (requesterName, _) = await PersonalConnectionSupport
+                .ResolveUserPresentationAsync(
+                    requesterUserIdentityId,
+                    _users,
+                    _publicIdentity,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
             var notification = PersonalInAppNotification.Create(
                 targetUserIdentityId,
                 "Connection request",
-                $"{contact.DisplayName} sent you a connection request",
+                $"{requesterName} sent you a connection request",
                 PersonalConnectionSupport.NotificationRelatedType,
                 _clock.UtcNow,
                 request.Id.Value.ToString("D"));
@@ -369,6 +420,24 @@ public sealed class AcceptPersonalConnectionRequest
                     "Connection request has expired.");
             }
 
+            if (request.Status != PersonalConnectionRequestStatus.Pending)
+            {
+                return ApplicationResult<PersonalConnectionRequestDto>.Failure(
+                    DomainErrorCodes.InvalidPersonalConnectionRequestStatusTransition,
+                    "Connection request is no longer pending.");
+            }
+
+            if (await PersonalConnectionSupport.IsBlockedEitherWayAsync(
+                    request.RequesterUserIdentityId,
+                    acceptingUserIdentityId,
+                    _contacts,
+                    cancellationToken).ConfigureAwait(false))
+            {
+                return ApplicationResult<PersonalConnectionRequestDto>.Failure(
+                    ApplicationErrorCodes.PersonalConnectionBlocked,
+                    "Connection is blocked.");
+            }
+
             request.Accept(acceptingUserIdentityId, _clock.UtcNow);
             await _requests.UpdateAsync(request, cancellationToken).ConfigureAwait(false);
 
@@ -385,10 +454,19 @@ public sealed class AcceptPersonalConnectionRequest
             requesterContact.LinkUser(acceptingUserIdentityId, _clock.UtcNow);
             await _contacts.UpdateAsync(requesterContact, cancellationToken).ConfigureAwait(false);
 
+            var (requesterPlatformName, requesterPublicUserId) = await PersonalConnectionSupport
+                .ResolveUserPresentationAsync(
+                    request.RequesterUserIdentityId,
+                    _users,
+                    _publicIdentity,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
             await EnsureReciprocalContactAsync(
                 acceptingUserIdentityId,
                 request.RequesterUserIdentityId,
-                requesterContact.DisplayName,
+                requesterPlatformName,
+                requesterPublicUserId,
                 cancellationToken).ConfigureAwait(false);
 
             var accepter = await _users.GetByIdAsync(acceptingUserIdentityId, cancellationToken).ConfigureAwait(false);
@@ -427,14 +505,19 @@ public sealed class AcceptPersonalConnectionRequest
         PlatformUserId ownerUserIdentityId,
         PlatformUserId peerUserIdentityId,
         string peerDisplayName,
+        string? peerPublicUserId,
         CancellationToken cancellationToken)
     {
         var existing = await _contacts
             .FindActiveByOwnerAndResolvedUserAsync(ownerUserIdentityId, peerUserIdentityId, cancellationToken)
             .ConfigureAwait(false);
 
-        var publicIdentity = await _publicIdentity.ExecuteAsync(peerUserIdentityId, cancellationToken).ConfigureAwait(false);
-        var publicUserId = publicIdentity.IsSuccess ? publicIdentity.Value!.PublicUserId : string.Empty;
+        var publicUserId = peerPublicUserId ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(publicUserId))
+        {
+            var publicIdentity = await _publicIdentity.ExecuteAsync(peerUserIdentityId, cancellationToken).ConfigureAwait(false);
+            publicUserId = publicIdentity.IsSuccess ? publicIdentity.Value!.PublicUserId : string.Empty;
+        }
 
         if (existing is null)
         {
@@ -666,17 +749,20 @@ public sealed class UnlinkPersonalContact
 public sealed class BlockPersonalContact
 {
     private readonly IPersonalContactRepository _contacts;
+    private readonly IPersonalConnectionRequestRepository _requests;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public BlockPersonalContact(
         IPersonalContactRepository contacts,
+        IPersonalConnectionRequestRepository requests,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _contacts = contacts;
+        _requests = requests;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -713,6 +799,13 @@ public sealed class BlockPersonalContact
                 ownerUserIdentityId,
                 contact.ResolvedUserIdentityId,
                 _contacts,
+                _clock,
+                cancellationToken).ConfigureAwait(false);
+
+            await PersonalConnectionSupport.InvalidatePendingRequestsBetweenAsync(
+                ownerUserIdentityId,
+                contact.ResolvedUserIdentityId,
+                _requests,
                 _clock,
                 cancellationToken).ConfigureAwait(false);
         }

@@ -55,6 +55,16 @@ public interface IPersonalConnectionRequestRepository
         PlatformUserId targetUserIdentityId,
         CancellationToken cancellationToken = default);
 
+    Task<PersonalConnectionRequest?> FindPendingBetweenUsersAsync(
+        PlatformUserId userA,
+        PlatformUserId userB,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PersonalConnectionRequest>> ListPendingBetweenUsersAsync(
+        PlatformUserId userA,
+        PlatformUserId userB,
+        CancellationToken cancellationToken = default);
+
     Task<PersonalConnectionRequest?> FindPendingForContactAsync(
         PersonalContactId requesterContactId,
         CancellationToken cancellationToken = default);
