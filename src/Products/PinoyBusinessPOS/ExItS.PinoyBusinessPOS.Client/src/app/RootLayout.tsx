@@ -10,10 +10,14 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 export function RootLayout() {
   const location = useLocation();
   const isPersonal = location.pathname.startsWith("/personal");
+  const isOnboarding = location.pathname.startsWith("/onboarding");
   const { status: sessionStatus } = useSession();
   const { boundWorkspace } = useWorkspace();
   const showOrgBottomNav =
-    !isPersonal && isAuthenticatedOrColdStartOffline(sessionStatus) && boundWorkspace != null;
+    !isPersonal &&
+    !isOnboarding &&
+    isAuthenticatedOrColdStartOffline(sessionStatus) &&
+    boundWorkspace != null;
 
   return (
     <>

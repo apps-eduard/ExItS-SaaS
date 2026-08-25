@@ -472,6 +472,10 @@ function BusinessSetupStep({
   const typesQuery = useQuery({
     queryKey: ["personal", "onboarding", "business-types"],
     queryFn: ({ signal }) => listOnboardingBusinessTypes(signal),
+    // Organization sessions cannot call Personal onboarding endpoints (403).
+    // Ready/business steps still work from progress.primaryBusinessTypeId + presets.
+    retry: false,
+    throwOnError: false,
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -760,45 +764,65 @@ function ReadyStep({
 }) {
   const { t } = useI18n();
   const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const orgName =
     workspaces.find((item) => item.organizationId === organizationId)?.displayName ??
     t("onboarding.ready.businessFallback");
 
   async function startSelling() {
+    if (busy) return;
     setBusy(true);
+    setActionError(null);
     try {
       try {
         await updateOnboardingProgress(workspace, { overallStatus: "Completed" });
       } catch {
-        // Already completed is fine; still enter Sell.
+        // Already completed / transient failure — still enter Sell.
       }
+
       const ws = workspaces.find((item) => item.organizationId === organizationId);
       const branch = ws?.branches[0] ?? null;
+      // Prefer a selling bind when a branch exists, but never block leaving the wizard
+      // if org-context/bind fails (common on first-run Local Validation).
       if (ws && branch) {
-        await bindDestination({
-          organizationId,
-          organizationDisplayName: ws.displayName,
-          branchId: branch.branchId,
-          branchName: branch.name,
-          experience: "start_selling",
-          route: "/sell",
-          labelKey: "experience.startSelling",
-        });
+        try {
+          await bindDestination({
+            organizationId,
+            organizationDisplayName: ws.displayName,
+            branchId: branch.branchId,
+            branchName: branch.name,
+            experience: "start_selling",
+            route: "/sell",
+            labelKey: "experience.startSelling",
+          });
+        } catch {
+          // Keep current org bind and continue.
+        }
       }
       onDone();
+    } catch {
+      setActionError(t("onboarding.ready.actionFailed"));
     } finally {
       setBusy(false);
     }
   }
 
   async function finishLater() {
+    if (busy) return;
     setBusy(true);
+    setActionError(null);
     try {
       if (progress.overallStatus !== "Completed") {
-        await updateOnboardingProgress(workspace, { overallStatus: "FinishedLater" });
+        try {
+          await updateOnboardingProgress(workspace, { overallStatus: "FinishedLater" });
+        } catch {
+          // Still leave the wizard — setup remains available from More.
+        }
       }
       onFinishLater();
+    } catch {
+      setActionError(t("onboarding.ready.actionFailed"));
     } finally {
       setBusy(false);
     }
@@ -845,32 +869,45 @@ function ReadyStep({
         </li>
       </ul>
 
-      <Button
-        type="button"
-        className="min-h-11 w-full"
-        disabled={busy}
-        data-testid="onboarding-start-selling"
-        onClick={() => void startSelling()}
+      {actionError ? (
+        <p className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]" role="alert">
+          {actionError}
+        </p>
+      ) : null}
+
+      <div
+        className="sticky bottom-0 z-40 -mx-1 mt-1 flex flex-col gap-2 border-t border-border bg-surface px-1 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+        data-testid="onboarding-ready-actions"
       >
-        {t("onboarding.ready.startSelling")}
-        <ChevronRight className="size-4" aria-hidden />
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        className="min-h-11 w-full"
-        disabled={busy}
-        data-testid="onboarding-finish-later"
-        onClick={() => void finishLater()}
-      >
-        {t("onboarding.ready.finishLater")}
-      </Button>
-      <Link
-        to="/catalog/products"
-        className="text-center text-[length:var(--exits-text-sm)] text-[var(--exits-primary)] no-underline"
-      >
-        {t("onboarding.ready.addProducts")}
-      </Link>
+        <Button
+          type="button"
+          className="min-h-11 w-full"
+          disabled={busy}
+          data-testid="onboarding-start-selling"
+          onClick={() => void startSelling()}
+        >
+          {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
+          {t("onboarding.ready.startSelling")}
+          <ChevronRight className="size-4" aria-hidden />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          className="min-h-11 w-full"
+          disabled={busy}
+          data-testid="onboarding-finish-later"
+          onClick={() => void finishLater()}
+        >
+          {t("onboarding.ready.finishLater")}
+        </Button>
+        <Link
+          to="/catalog/products"
+          className="inline-flex min-h-11 items-center justify-center text-[length:var(--exits-text-sm)] font-semibold text-primary no-underline"
+          data-testid="onboarding-add-products"
+        >
+          {t("onboarding.ready.addProducts")}
+        </Link>
+      </div>
     </section>
   );
 }

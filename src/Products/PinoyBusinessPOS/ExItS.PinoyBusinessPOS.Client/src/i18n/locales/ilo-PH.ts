@@ -2774,6 +2774,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "onboarding.ready.productsAdded": "Starter products added",
   "onboarding.ready.productsEmpty": "Started with an empty catalog",
   "onboarding.ready.startSelling": "Start selling",
+  "onboarding.ready.actionFailed": "Something went wrong. Try again, or use Finish later.",
   "onboarding.ready.finishLater": "Finish later",
   "onboarding.ready.addProducts": "Add products",
   "personal.customerLinks.blockBusiness": "Block this business",

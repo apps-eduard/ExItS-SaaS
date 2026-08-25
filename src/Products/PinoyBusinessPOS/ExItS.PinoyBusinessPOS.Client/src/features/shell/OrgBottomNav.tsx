@@ -32,6 +32,10 @@ export function OrgBottomNav() {
     return null;
   }
 
+  if (location.pathname.startsWith("/onboarding")) {
+    return null;
+  }
+
   const experience = boundWorkspace.experience ?? "operations";
   const tabs = buildOrgBottomNavTabs({ grant: sessionGrant, experience });
   const activeId = matchOrgNavTab(location.pathname, tabs);

@@ -2768,6 +2768,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "onboarding.ready.productsAdded": "Naidagdag ang starter products",
   "onboarding.ready.productsEmpty": "Nagsimula nang walang produkto",
   "onboarding.ready.startSelling": "Magsimulang magbenta",
+  "onboarding.ready.actionFailed": "May nangyaring mali. Subukan ulit, o gamitin ang Tapusin mamaya.",
   "onboarding.ready.finishLater": "Tapusin mamaya",
   "onboarding.ready.addProducts": "Magdagdag ng produkto",
   "personal.customerLinks.blockBusiness": "Block this business",

@@ -2680,7 +2680,7 @@ export const en = {
   "onboarding.title": "Set up your business",
   "onboarding.lede": "A few optional steps help your store start selling faster. You can skip any step.",
   "onboarding.progressLabel": "Setup progress",
-  "onboarding.loading": "Loading setup…",
+  "onboarding.loading": "Loading setupï¿½",
   "onboarding.retry": "Try again",
   "onboarding.skipForNow": "Skip for now",
   "onboarding.missingOrgTitle": "Business context required",
@@ -2746,6 +2746,7 @@ export const en = {
   "onboarding.ready.productsAdded": "Starter products added",
   "onboarding.ready.productsEmpty": "Started with an empty catalog",
   "onboarding.ready.startSelling": "Start selling",
+  "onboarding.ready.actionFailed": "Something went wrong. Try again, or use Finish later.",
   "onboarding.ready.finishLater": "Finish later",
   "onboarding.ready.addProducts": "Add products",
 };
