@@ -1248,6 +1248,14 @@ export const cebPH: Record<keyof typeof en, string> = {
   "shift.openingCashPreview": "Opening cash: {amount}",
   "shift.noRegisterTitle": "Walay available nga register",
   "shift.goToRegisters": "Adto sa registers",
+  "shift.pwaRegisterTitle": "Preparing web cash register",
+  "shift.pwaRegisterDetail":
+    "Web POS creates cash register {name} automatically so you can open a shift without manual register setup.",
+  "shift.pwaRegisterPreparing": "Creating PWA-0001…",
+  "shift.pwaRegisterRetry": "Create PWA-0001",
+  "shift.pwaRegisterError": "Could not create the web cash register.",
+  "shift.pwaRegisterBusy":
+    "PWA-0001 already has an open shift. Close that shift first, or use another cash register.",
   "shift.closeTitle": "Sirado ang shift",
   "shift.closeConfirm": "Sirado ang shift",
   "shift.closing": "Ginasirado?",

@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Play, RotateCcw } from "lucide-react";
-import { canManageShifts, canViewShifts } from "@/access/pos-capabilities";
+import { canManageRegisters, canManageShifts, canViewShifts } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
 import {
   getOperationalSetup,
@@ -26,6 +26,10 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { DenominationCountHelper } from "@/features/shifts/DenominationCountHelper";
+import {
+  ensurePwaDefaultCashRegister,
+  PWA_DEFAULT_REGISTER_NAME,
+} from "@/features/shifts/ensure-pwa-default-register";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatPeso } from "@/lib/format-money";
@@ -36,11 +40,14 @@ export function ShiftOpenPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const fromSell = searchParams.get("from") === "sell";
-  const { boundWorkspace, sessionGrant } = useWorkspace();
+  const { boundWorkspace, sessionGrant, deviceEnforcementEnabled } = useWorkspace();
   const { refresh } = useShiftContext();
 
   const canView = canViewShifts(sessionGrant);
   const canManage = canManageShifts(sessionGrant);
+  const canCreateRegister = canManageRegisters(sessionGrant);
+  // Pure React PWA: device enforcement paused → allow auto cash register PWA-0001.
+  const pwaOptionalCashRegister = deviceEnforcementEnabled === false;
 
   const workspaceScope = useMemo(() => {
     if (!boundWorkspace?.branchId) {
@@ -58,6 +65,9 @@ export function ShiftOpenPage() {
   const [openingCashError, setOpeningCashError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [ensuringPwaRegister, setEnsuringPwaRegister] = useState(false);
+  const [pwaRegisterError, setPwaRegisterError] = useState<string | null>(null);
+  const pwaEnsureAttemptedRef = useRef(false);
 
   const registersQuery = useQuery({
     queryKey: ["pos-registers-available", workspaceScope?.organizationId, workspaceScope?.branchId],
@@ -100,7 +110,6 @@ export function ShiftOpenPage() {
       setSelectedRegisterId("");
       return;
     }
-    // Auto-select the only register, or keep/select the first available when none chosen.
     setSelectedRegisterId((current) => {
       if (current && registers.some((register) => register.registerId === current)) {
         return current;
@@ -108,6 +117,64 @@ export function ShiftOpenPage() {
       return registers[0]!.registerId;
     });
   }, [registers]);
+
+  // PWA: auto-provision cash register PWA-0001 when none are available for shift.
+  useEffect(() => {
+    if (
+      !pwaOptionalCashRegister ||
+      !canCreateRegister ||
+      !workspaceScope ||
+      !registersQuery.isSuccess ||
+      registers.length > 0 ||
+      pwaEnsureAttemptedRef.current
+    ) {
+      return;
+    }
+
+    pwaEnsureAttemptedRef.current = true;
+    let cancelled = false;
+    setEnsuringPwaRegister(true);
+    setPwaRegisterError(null);
+    void (async () => {
+      try {
+        const created = await ensurePwaDefaultCashRegister(workspaceScope);
+        if (cancelled) {
+          return;
+        }
+        await registersQuery.refetch();
+        setSelectedRegisterId(created.registerId);
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+        pwaEnsureAttemptedRef.current = false;
+        const message =
+          error instanceof Error && error.message === "PWA_DEFAULT_REGISTER_BUSY"
+            ? t("shift.pwaRegisterBusy")
+            : error instanceof PosApiError
+              ? (error.problem.detail ?? error.message)
+              : error instanceof Error
+                ? error.message
+                : t("shift.pwaRegisterError");
+        setPwaRegisterError(message);
+      } finally {
+        if (!cancelled) {
+          setEnsuringPwaRegister(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot ensure when empty
+  }, [
+    pwaOptionalCashRegister,
+    canCreateRegister,
+    workspaceScope,
+    registersQuery.isSuccess,
+    registers.length,
+  ]);
 
   useEffect(() => {
     if (!workspaceScope || !canView) {
@@ -227,19 +294,20 @@ export function ShiftOpenPage() {
 
   const startBlocked =
     saving ||
+    ensuringPwaRegister ||
     !selectedRegisterId ||
     registers.length === 0 ||
     registersQuery.isLoading ||
     Boolean(registersQuery.error) ||
     !openingCashValid;
 
-  const startBlockedReason = !selectedRegisterId
-    ? t("shift.openSelectRegisterHint")
-    : !openingCashValid
-      ? t("shift.openingCashRequired")
-      : selectedRegisterId
-        ? t("shift.openReadyHint")
-        : t("shift.openSelectRegisterHint");
+  const startBlockedReason = ensuringPwaRegister
+    ? t("shift.pwaRegisterPreparing")
+    : !selectedRegisterId
+      ? t("shift.openSelectRegisterHint")
+      : !openingCashValid
+        ? t("shift.openingCashRequired")
+        : t("shift.openReadyHint");
 
   return (
     <div
@@ -278,10 +346,81 @@ export function ShiftOpenPage() {
         ) : null}
         {registersQuery.isSuccess && registers.length === 0 ? (
           <div data-testid="shift-open-no-register">
+            {/*
+              FUTURE CAPACITOR / strict cash-register required:
+              Uncomment this block and remove the PWA auto-provision path below
+              when PosDeviceAuthorization:EnforcementEnabled=true for native installs.
+
             <EmptyState title={t("shift.noRegisterTitle")} detail={t("shift.noRegisterMessage")} />
             <Button asChild variant="outline" className="mt-3 min-h-11">
               <Link to="/registers">{t("shift.goToRegisters")}</Link>
             </Button>
+            */}
+
+            {pwaOptionalCashRegister ? (
+              <div className="flex flex-col gap-2" data-testid="shift-open-pwa-register">
+                <EmptyState
+                  title={t("shift.pwaRegisterTitle")}
+                  detail={t("shift.pwaRegisterDetail").replace(
+                    "{name}",
+                    PWA_DEFAULT_REGISTER_NAME,
+                  )}
+                />
+                {ensuringPwaRegister ? (
+                  <LoadingState label={t("shift.pwaRegisterPreparing")} />
+                ) : null}
+                {pwaRegisterError ? (
+                  <p
+                    className="mb-0 text-[length:var(--exits-text-sm)] text-destructive"
+                    role="alert"
+                    data-testid="shift-open-pwa-register-error"
+                  >
+                    {pwaRegisterError}
+                  </p>
+                ) : null}
+                {!ensuringPwaRegister && canCreateRegister ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="mt-1 min-h-11"
+                    data-testid="shift-open-pwa-register-retry"
+                    onClick={() => {
+                      pwaEnsureAttemptedRef.current = false;
+                      setPwaRegisterError(null);
+                      setEnsuringPwaRegister(true);
+                      pwaEnsureAttemptedRef.current = true;
+                      void ensurePwaDefaultCashRegister(workspaceScope!)
+                        .then(async (created) => {
+                          await registersQuery.refetch();
+                          setSelectedRegisterId(created.registerId);
+                        })
+                        .catch((error: unknown) => {
+                          pwaEnsureAttemptedRef.current = false;
+                          const message =
+                            error instanceof Error && error.message === "PWA_DEFAULT_REGISTER_BUSY"
+                              ? t("shift.pwaRegisterBusy")
+                              : error instanceof PosApiError
+                                ? (error.problem.detail ?? error.message)
+                                : error instanceof Error
+                                  ? error.message
+                                  : t("shift.pwaRegisterError");
+                          setPwaRegisterError(message);
+                        })
+                        .finally(() => setEnsuringPwaRegister(false));
+                    }}
+                  >
+                    {t("shift.pwaRegisterRetry")}
+                  </Button>
+                ) : null}
+              </div>
+            ) : (
+              <>
+                <EmptyState title={t("shift.noRegisterTitle")} detail={t("shift.noRegisterMessage")} />
+                <Button asChild variant="outline" className="mt-3 min-h-11">
+                  <Link to="/registers">{t("shift.goToRegisters")}</Link>
+                </Button>
+              </>
+            )}
           </div>
         ) : null}
         {registers.length > 0 ? (
@@ -322,7 +461,7 @@ export function ShiftOpenPage() {
         ) : null}
       </section>
 
-      {showOpeningCash && selectedRegisterId ? (
+      {showOpeningCash ? (
         <section className="catalog-form-section exits-animate-panel">
           <h2 className="catalog-form-section__title">{t("shift.openingCashSection")}</h2>
           <p className="m-0 text-[length:var(--exits-text-sm)] leading-relaxed text-muted">
@@ -337,7 +476,7 @@ export function ShiftOpenPage() {
               total={openingCash}
               onTotalChange={setOpeningCash}
               onLinesChange={setDenomLines}
-              disabled={saving}
+              disabled={saving || ensuringPwaRegister}
               testIdPrefix="opening-denom"
             />
           </div>

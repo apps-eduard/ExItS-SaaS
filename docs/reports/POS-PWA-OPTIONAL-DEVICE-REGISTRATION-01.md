@@ -44,15 +44,13 @@ Device gate via `IPosDeviceTransactionAuthorizer.EnsureAuthorizedAsync` (no-ops 
 - Offline operating grant still requires a device authorization path separate from the pause flag’s money endpoints
 - Business Utang / write-off endpoints (if any) without `EnsureAuthorizedAsync` today — document for native hardening; do **not** invent coverage here solely for PWA pause
 
-## Distinction
+## Cash registers vs devices (PWA)
 
-| Concept | Meaning |
-|--------|---------|
-| Authorized device | Installation/browser identity for future security |
-| Cash register | Operational till for opening shifts |
-| Shift | Cashier session on a cash register |
-
-“No cash registers yet” blocks **Open Shift** correctly and is **not** a device-registration failure.
+- **Device registration** remains optional while `EnforcementEnabled=false` (logic retained for Capacitor).
+- **Cash register** is still required by the shift domain. For pure PWA, when none are available,
+  Open Shift auto-creates/reuses a cash register named `PWA-0001` (server code remains `REG-NNNNNN`).
+- The previous blocking “No register available / Go to registers” UI is **commented in place** in
+  `ShiftOpenPage` for easy restore when Capacitor re-enables strict register setup.
 
 ## UI policy (PWA)
 

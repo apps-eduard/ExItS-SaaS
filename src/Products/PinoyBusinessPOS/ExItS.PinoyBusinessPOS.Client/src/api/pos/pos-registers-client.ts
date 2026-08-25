@@ -97,3 +97,33 @@ export function getRegister(
     path: `${REGISTERS_PATH}/${registerId}`,
   });
 }
+
+export type CreateRegisterBody = {
+  name: string;
+  description?: string | null;
+};
+
+/** Requires ManageRegisters. Server allocates REG-NNNNNN code. */
+export function createRegister(
+  workspace: PosWorkspaceScope,
+  body: CreateRegisterBody,
+  signal?: AbortSignal,
+): Promise<PosRegisterDto> {
+  const idempotencyKey =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `reg-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return posRequest({
+    method: "POST",
+    workspace,
+    signal,
+    path: REGISTERS_PATH,
+    body: {
+      name: body.name,
+      description: body.description ?? null,
+    },
+    headers: {
+      "Idempotency-Key": idempotencyKey,
+    },
+  });
+}
