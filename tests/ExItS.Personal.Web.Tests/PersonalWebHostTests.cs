@@ -52,6 +52,10 @@ public sealed class PersonalWebHostTests
         Assert.Contains("CancelEditProfile", combined, StringComparison.Ordinal);
         Assert.Contains("_profileSaving", combined, StringComparison.Ordinal);
 
+        var layout = File.ReadAllText(Path.Combine(FindPages(), "Layout", "MainLayout.razor"));
+        Assert.Contains("Edit profile", layout, StringComparison.Ordinal);
+        Assert.Contains("NavigateTo(\"/profile\")", layout, StringComparison.Ordinal);
+
         var apiClient = File.ReadAllText(Path.Combine(
             FindRepo(), "src", "Platform", "ExItS.Personal.Web", "Services", "PersonalWebSession.cs"));
         Assert.Contains("UpdateProfileAsync", apiClient, StringComparison.Ordinal);
