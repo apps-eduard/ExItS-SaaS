@@ -59,5 +59,6 @@ Desktop.ini
 # Portfolio safety is enforced by architecture tests that reject nested foreign product trees.
 
 tools/node_modules/
+node_modules/
 artifacts/
 

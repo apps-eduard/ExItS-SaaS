@@ -1,18 +1,23 @@
-using System;
-using Microsoft.EntityFrameworkCore.Infrastructure;
+﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using ExItS.Platform.Infrastructure.Persistence;
 
 #nullable disable
 
 namespace ExItS.Platform.Infrastructure.Persistence.Migrations
 {
-    [DbContext(typeof(PlatformDbContext))]
-    [Migration("20260825060000_AddCustomerConnectionRemindersAndBlocks")]
+    /// <inheritdoc />
     public partial class AddCustomerConnectionRemindersAndBlocks : Migration
     {
+        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "last_reminded_at_utc",
+                schema: "platform",
+                table: "customer_link_requests",
+                type: "timestamp with time zone",
+                nullable: true);
+
             migrationBuilder.AddColumn<int>(
                 name: "reminder_count",
                 schema: "platform",
@@ -20,13 +25,6 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                 type: "integer",
                 nullable: false,
                 defaultValue: 0);
-
-            migrationBuilder.AddColumn<DateTimeOffset>(
-                name: "last_reminded_at_utc",
-                schema: "platform",
-                table: "customer_link_requests",
-                type: "timestamp with time zone",
-                nullable: true);
 
             migrationBuilder.CreateTable(
                 name: "personal_organization_connection_blocks",
@@ -47,27 +45,20 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                 {
                     table.PrimaryKey("PK_personal_organization_connection_blocks", x => x.id);
                     table.ForeignKey(
-                        name: "FK_personal_org_connection_blocks_users",
-                        column: x => x.personal_user_identity_id,
-                        principalSchema: "platform",
-                        principalTable: "platform_users",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_personal_org_connection_blocks_organizations",
+                        name: "FK_personal_organization_connection_blocks_organizations_organ~",
                         column: x => x.organization_id,
                         principalSchema: "platform",
                         principalTable: "organizations",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_personal_organization_connection_blocks_platform_users_pers~",
+                        column: x => x.personal_user_identity_id,
+                        principalSchema: "platform",
+                        principalTable: "platform_users",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
                 });
-
-            migrationBuilder.CreateIndex(
-                name: "ux_personal_org_connection_blocks_pair",
-                schema: "platform",
-                table: "personal_organization_connection_blocks",
-                columns: new[] { "personal_user_identity_id", "organization_id" },
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_personal_org_connection_blocks_personal_active",
@@ -75,8 +66,22 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                 table: "personal_organization_connection_blocks",
                 column: "personal_user_identity_id",
                 filter: "status = 'Active'");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_personal_organization_connection_blocks_organization_id",
+                schema: "platform",
+                table: "personal_organization_connection_blocks",
+                column: "organization_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_personal_org_connection_blocks_pair",
+                schema: "platform",
+                table: "personal_organization_connection_blocks",
+                columns: new[] { "personal_user_identity_id", "organization_id" },
+                unique: true);
         }
 
+        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
