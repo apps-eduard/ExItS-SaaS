@@ -11,11 +11,16 @@ export function RootLayout() {
   const location = useLocation();
   const isPersonal = location.pathname.startsWith("/personal");
   const isOnboarding = location.pathname.startsWith("/onboarding");
+  // Focused cash forms: sticky primary actions must not sit under the org bottom nav.
+  const isShiftFocusForm =
+    location.pathname === "/shifts/open" ||
+    /\/shifts\/[^/]+\/close\/?$/.test(location.pathname);
   const { status: sessionStatus } = useSession();
   const { boundWorkspace } = useWorkspace();
   const showOrgBottomNav =
     !isPersonal &&
     !isOnboarding &&
+    !isShiftFocusForm &&
     isAuthenticatedOrColdStartOffline(sessionStatus) &&
     boundWorkspace != null;
 

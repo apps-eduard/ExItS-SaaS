@@ -36,6 +36,13 @@ export function OrgBottomNav() {
     return null;
   }
 
+  if (
+    location.pathname === "/shifts/open" ||
+    /\/shifts\/[^/]+\/close\/?$/.test(location.pathname)
+  ) {
+    return null;
+  }
+
   const experience = boundWorkspace.experience ?? "operations";
   const tabs = buildOrgBottomNavTabs({ grant: sessionGrant, experience });
   const activeId = matchOrgNavTab(location.pathname, tabs);

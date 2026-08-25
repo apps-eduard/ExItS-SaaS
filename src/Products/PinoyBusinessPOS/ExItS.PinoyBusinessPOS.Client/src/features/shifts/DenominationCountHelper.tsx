@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Coins, Minus, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -48,11 +48,16 @@ export function DenominationCountHelper({
     [sorted],
   );
 
+  const onTotalChangeRef = useRef(onTotalChange);
+  const onLinesChangeRef = useRef(onLinesChange);
+  onTotalChangeRef.current = onTotalChange;
+  onLinesChangeRef.current = onLinesChange;
+
   useEffect(() => {
     setQuantities({});
-    onTotalChange("");
-    onLinesChange?.([]);
-  }, [denominationSignature, onLinesChange, onTotalChange]);
+    onTotalChangeRef.current("");
+    onLinesChangeRef.current?.([]);
+  }, [denominationSignature]);
 
   function emit(next: Record<string, number>) {
     setQuantities(next);

@@ -96,9 +96,17 @@ export function ShiftOpenPage() {
       : null;
 
   useEffect(() => {
-    if (registers.length === 1) {
-      setSelectedRegisterId(registers[0]!.registerId);
+    if (registers.length === 0) {
+      setSelectedRegisterId("");
+      return;
     }
+    // Auto-select the only register, or keep/select the first available when none chosen.
+    setSelectedRegisterId((current) => {
+      if (current && registers.some((register) => register.registerId === current)) {
+        return current;
+      }
+      return registers[0]!.registerId;
+    });
   }, [registers]);
 
   useEffect(() => {
@@ -210,12 +218,28 @@ export function ShiftOpenPage() {
     }
   }
 
+  const openingCashValid =
+    !showOpeningCash ||
+    !openingRequired ||
+    (openingCash.trim().length > 0 &&
+      Number.isFinite(Number(openingCash)) &&
+      Number(openingCash) >= 0);
+
   const startBlocked =
     saving ||
     !selectedRegisterId ||
     registers.length === 0 ||
     registersQuery.isLoading ||
-    Boolean(registersQuery.error);
+    Boolean(registersQuery.error) ||
+    !openingCashValid;
+
+  const startBlockedReason = !selectedRegisterId
+    ? t("shift.openSelectRegisterHint")
+    : !openingCashValid
+      ? t("shift.openingCashRequired")
+      : selectedRegisterId
+        ? t("shift.openReadyHint")
+        : t("shift.openSelectRegisterHint");
 
   return (
     <div
@@ -298,7 +322,7 @@ export function ShiftOpenPage() {
         ) : null}
       </section>
 
-      {showOpeningCash ? (
+      {showOpeningCash && selectedRegisterId ? (
         <section className="catalog-form-section exits-animate-panel">
           <h2 className="catalog-form-section__title">{t("shift.openingCashSection")}</h2>
           <p className="m-0 text-[length:var(--exits-text-sm)] leading-relaxed text-muted">
@@ -355,15 +379,24 @@ export function ShiftOpenPage() {
               type="button"
               variant="outline"
               className="catalog-form-actions__restore min-h-11 w-full sm:w-auto"
-              disabled={startBlocked}
+              disabled={
+                saving ||
+                !selectedRegisterId ||
+                registers.length === 0 ||
+                registersQuery.isLoading ||
+                Boolean(registersQuery.error)
+              }
               data-testid="shift-open-skip-cash"
               onClick={() => void onOpen(true)}
             >
               {t("shift.skipOpeningCash")}
             </Button>
           ) : (
-            <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted">
-              {selectedRegisterId ? t("shift.openReadyHint") : t("shift.openSelectRegisterHint")}
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted"
+              data-testid="shift-open-hint"
+            >
+              {startBlockedReason}
             </p>
           )}
         </div>
@@ -373,6 +406,8 @@ export function ShiftOpenPage() {
             className="catalog-form-actions__save min-h-11"
             disabled={startBlocked}
             data-testid="shift-open-confirm"
+            data-blocked={startBlocked ? "true" : "false"}
+            title={startBlocked ? startBlockedReason : undefined}
             onClick={() => void onOpen(!showOpeningCash)}
           >
             {saving ? (
