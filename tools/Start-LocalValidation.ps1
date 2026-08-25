@@ -600,6 +600,8 @@ $posEnv = @{
     # Server-to-server on the same host: keep loopback (DB also stays on localhost).
     LocalValidation__PlatformApiBaseUrl = $loopbackPlatformApiUrl
     PlatformAuth__BaseUrl = $loopbackPlatformApiUrl
+    # Temporary React PWA preview: pause installation-device transaction gate (re-enable for Capacitor).
+    PosDeviceAuthorization__EnforcementEnabled = 'false'
 }
 for ($i = 0; $i -lt $corsOrigins.Count; $i++) {
     $posEnv["Cors__AllowedOrigins__$i"] = $corsOrigins[$i]

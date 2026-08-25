@@ -33,7 +33,7 @@ type ShiftContextValue = {
 const ShiftContext = createContext<ShiftContextValue | null>(null);
 
 export function ShiftContextProvider({ children }: { children: ReactNode }) {
-  const { boundWorkspace, sessionGrant, posDevice } = useWorkspace();
+  const { boundWorkspace, sessionGrant, posDevice, deviceEnforcementEnabled } = useWorkspace();
   const [currentShift, setCurrentShift] = useState<PosCashierShiftDto | null>(null);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -94,8 +94,9 @@ export function ShiftContextProvider({ children }: { children: ReactNode }) {
         canViewShifts: allowView && !denied,
         currentShift,
         posDevice,
+        deviceEnforcementEnabled,
       }),
-    [allowView, currentShift, denied, loading, posDevice],
+    [allowView, currentShift, denied, deviceEnforcementEnabled, loading, posDevice],
   );
 
   const value = useMemo<ShiftContextValue>(

@@ -8,17 +8,22 @@ namespace ExItS.PinoyBusinessPOS.Api.Common;
 
 /// <summary>
 /// Verifies that a money-affecting POS request originates from a registered active installation.
-/// Authorization remains authoritative in Platform; no role, including Owner, bypasses this check.
+/// Authorization remains authoritative in Platform; no role, including Owner, bypasses this check
+/// when <see cref="PosDeviceAuthorizationOptions.EnforcementEnabled"/> is true.
 /// </summary>
 internal interface IPosDeviceTransactionAuthorizer
 {
     Task<IResult?> EnsureAuthorizedAsync(HttpRequest request, Guid organizationId, CancellationToken ct);
+
+    /// <summary>Current enforcement flag (for POS runtime policy exposure).</summary>
+    bool EnforcementEnabled { get; }
 }
 
 internal sealed class PosDeviceTransactionAuthorizer(
     HttpClient client,
     IHttpContextAccessor httpContextAccessor,
     IOptions<PlatformAuthOptions> options,
+    IOptions<PosDeviceAuthorizationOptions> deviceAuthorizationOptions,
     IHostEnvironment environment) : IPosDeviceTransactionAuthorizer
 {
     internal const string DeviceHeaderName = "X-Pos-Installation-Device-Id";
@@ -28,9 +33,18 @@ internal sealed class PosDeviceTransactionAuthorizer(
         PropertyNameCaseInsensitive = true
     };
 
+    public bool EnforcementEnabled => deviceAuthorizationOptions.Value.EnforcementEnabled;
+
     public async Task<IResult?> EnsureAuthorizedAsync(HttpRequest request, Guid organizationId, CancellationToken ct)
     {
-            var deviceId = request.Headers[DeviceHeaderName].FirstOrDefault()?.Trim();
+        // Temporary PWA preview/dev pause — Local Validation sets EnforcementEnabled=false.
+        // Re-enable with PosDeviceAuthorization__EnforcementEnabled=true for Capacitor.
+        if (!deviceAuthorizationOptions.Value.EnforcementEnabled)
+        {
+            return null;
+        }
+
+        var deviceId = request.Headers[DeviceHeaderName].FirstOrDefault()?.Trim();
         if (string.IsNullOrWhiteSpace(deviceId))
         {
             // Integration WebApplicationFactory has no Platform device service. Production and real

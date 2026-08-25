@@ -1282,6 +1282,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "devices.listTitle": "Mga POS device",
   "devices.listLede":
     "Irehistro ang mga telepono, tablet, laptop, ukon computer nga ginatugutan magbaligya sa POS.",
+  "devices.enforcementPausedHint":
+    "Local preview: temporary paused ang registered-device check sa pagbaligya. Available pa ang device registration; kinahanglan liwat ini para sa Capacitor.",
   "devices.deniedDetail":
     "Organization owners kag administrators lang ang makadumala sang POS devices.",
   "devices.backOrg": "Balik sa organization",

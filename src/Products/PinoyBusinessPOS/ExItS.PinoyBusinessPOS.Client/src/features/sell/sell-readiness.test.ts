@@ -92,6 +92,20 @@ describe("evaluateSellEntryReadiness", () => {
     expect(result.shiftReady).toBe(false);
   });
 
+  it("treats device gate as ready when enforcement is paused", () => {
+    const result = evaluateSellEntryReadiness({
+      posDevice: unregisteredPosDeviceContext(
+        "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+        "unregistered",
+      ),
+      shiftReadiness: readyShift,
+      deviceEnforcementEnabled: false,
+    });
+    expect(result.kind).toBe("ready");
+    expect(result.deviceReady).toBe(true);
+    expect(result.moneyPostReady).toBe(true);
+  });
+
   it("is ready when device and shift gate pass", () => {
     const result = evaluateSellEntryReadiness({
       posDevice: authorizedDevice,
@@ -119,6 +133,16 @@ describe("evaluateMidSessionSellBlock", () => {
         shiftReadiness: readyShift,
       }).kind,
     ).toBe("device_lost");
+  });
+
+  it("does not report device_lost when enforcement is paused", () => {
+    expect(
+      evaluateMidSessionSellBlock({
+        posDevice: unregisteredPosDeviceContext("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee", "revoked"),
+        shiftReadiness: readyShift,
+        deviceEnforcementEnabled: false,
+      }).kind,
+    ).toBe("none");
   });
 
   it("reports shift_lost when shift gate falls", () => {

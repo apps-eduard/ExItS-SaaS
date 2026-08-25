@@ -65,6 +65,8 @@ builder.Services.AddPosPersistence(builder.Configuration);
 
 builder.Services.AddScoped<IPosCommercialAccessAccessor, PosCommercialAccessAccessor>();
 builder.Services.Configure<PlatformAuthOptions>(builder.Configuration.GetSection(PlatformAuthOptions.SectionName));
+builder.Services.Configure<PosDeviceAuthorizationOptions>(
+    builder.Configuration.GetSection(PosDeviceAuthorizationOptions.SectionName));
 builder.Services.AddHttpClient<IPosDeviceTransactionAuthorizer, PosDeviceTransactionAuthorizer>((provider, client) =>
 {
     var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
@@ -393,6 +395,7 @@ app.UseMiddleware<PosRoleResolutionMiddleware>();
 
 app.MapPosRootEndpoint();
 app.MapPosHealthEndpoints();
+app.MapPosRuntimePolicyEndpoints();
 app.MapCustomerEndpoints();
 app.MapCreditEndpoints();
 app.MapCustomerCreditSyncEndpoints();

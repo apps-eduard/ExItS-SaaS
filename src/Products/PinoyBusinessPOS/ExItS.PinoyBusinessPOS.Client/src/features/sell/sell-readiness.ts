@@ -20,11 +20,14 @@ export function evaluateSellEntryReadiness(input: {
   shiftReadiness: CheckoutShiftReadiness;
   /** When true, unregistered endpoints may browse Sell in view-only mode. */
   allowViewOnlyWithoutDevice?: boolean;
+  /** When false, temporary PWA pause — device gate does not block money UX. */
+  deviceEnforcementEnabled?: boolean | null;
 }): SellEntryReadiness {
   const deviceLoading =
-    input.posDevice == null ||
-    input.posDevice.status === "loading" ||
-    input.posDevice.registrationStatus === "loading";
+    input.deviceEnforcementEnabled !== false &&
+    (input.posDevice == null ||
+      input.posDevice.status === "loading" ||
+      input.posDevice.registrationStatus === "loading");
   const shiftLoading = input.shiftReadiness.status === "loading";
 
   if (deviceLoading || shiftLoading) {
@@ -36,7 +39,9 @@ export function evaluateSellEntryReadiness(input: {
     };
   }
 
-  const deviceReady = isPosDeviceReadyForMoney(input.posDevice);
+  const deviceReady = isPosDeviceReadyForMoney(input.posDevice, {
+    enforcementEnabled: input.deviceEnforcementEnabled,
+  });
   if (!deviceReady) {
     if (input.allowViewOnlyWithoutDevice !== false) {
       return {
@@ -78,11 +83,16 @@ export type MidSessionSellBlock =
 export function evaluateMidSessionSellBlock(input: {
   posDevice: PosDeviceContext | null | undefined;
   shiftReadiness: CheckoutShiftReadiness;
+  deviceEnforcementEnabled?: boolean | null;
 }): MidSessionSellBlock {
   if (input.shiftReadiness.status === "loading") {
     return { kind: "none" };
   }
-  if (!isPosDeviceReadyForMoney(input.posDevice)) {
+  if (
+    !isPosDeviceReadyForMoney(input.posDevice, {
+      enforcementEnabled: input.deviceEnforcementEnabled,
+    })
+  ) {
     return { kind: "device_lost" };
   }
   if (!input.shiftReadiness.shiftGateReady) {

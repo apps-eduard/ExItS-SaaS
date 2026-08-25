@@ -1260,6 +1260,8 @@ export const en = {
   "devices.listTitle": "POS devices",
   "devices.listLede":
     "Register the phones, tablets, laptops, or computers that are allowed to make POS sales.",
+  "devices.enforcementPausedHint":
+    "Local preview: registered-device checks for selling are paused on the server. Device registration is still available and will be required again for Capacitor.",
   "devices.deniedDetail": "Only organization owners and administrators can manage POS devices.",
   "devices.backOrg": "Back to organization",
   "devices.backDevices": "Back to POS devices",

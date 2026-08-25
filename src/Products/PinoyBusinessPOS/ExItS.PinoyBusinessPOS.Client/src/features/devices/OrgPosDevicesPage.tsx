@@ -69,7 +69,8 @@ export function OrgPosDevicesPage() {
   const { t } = useI18n();
   const { preferences } = usePreferences();
   const queryClient = useQueryClient();
-  const { boundWorkspace, sessionGrant, workspaces, posDevice, refreshPosDevice } = useWorkspace();
+  const { boundWorkspace, sessionGrant, workspaces, posDevice, refreshPosDevice, deviceEnforcementEnabled } =
+    useWorkspace();
   const canManage = hasOrganizationManagementAuthority(sessionGrant);
   const organizationId = boundWorkspace?.organizationId ?? null;
 
@@ -331,6 +332,15 @@ export function OrgPosDevicesPage() {
         backLabel={t(pageBackNav.org.labelKey)}
         backTestId="page-header-back-org"
       />
+
+      {deviceEnforcementEnabled === false ? (
+        <p
+          className="m-0 rounded-md border border-border bg-muted/40 px-3 py-2 text-[length:var(--exits-text-sm)] text-muted"
+          data-testid="devices-enforcement-paused-hint"
+        >
+          {t("devices.enforcementPausedHint")}
+        </p>
+      ) : null}
 
       <ExitsChipBar
         variant="actions"

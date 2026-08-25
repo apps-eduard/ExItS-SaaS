@@ -1282,6 +1282,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "devices.listTitle": "Dagiti POS device",
   "devices.listLede":
     "Irehistro dagiti telepono, tablet, laptop, wenno computer a mapalubosan nga agilako iti POS.",
+  "devices.enforcementPausedHint":
+    "Local preview: temporary a napa-pause ti registered-device check iti panagilako. Available pay ti device registration; masapul manen daytoy para iti Capacitor.",
   "devices.deniedDetail":
     "Organization owners ken administrators lti ti makadumala iti POS devices.",
   "devices.backOrg": "Agsubli iti organization",

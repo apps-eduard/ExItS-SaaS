@@ -39,4 +39,15 @@ API: `/api/v1/pos/cashier-shifts`
 
 ## React
 
-Register list + open/close shift UX and open-shift **checkout readiness gate**: **PROVEN_CURRENT** (RMAP-10). Browser PosDevice registration/authorization: **PROVEN_CURRENT** (RMAP-10b) via durable installation identity, `/org/devices`, `/devices/register`, Platform authorize, and `X-Pos-Installation-Device-Id`. `moneyPostReady` is true only when shift gate is ready **and** the browser device is authorized for the selected branch. Online Cash sale POST: **PROVEN_CURRENT** (RMAP-11).
+Register list + open/close shift UX and open-shift **checkout readiness gate**: **PROVEN_CURRENT** (RMAP-10). Browser PosDevice registration/authorization: **PROVEN_CURRENT** (RMAP-10b) via durable installation identity, `/org/devices`, `/devices/register`, Platform authorize, and `X-Pos-Installation-Device-Id`. `moneyPostReady` is true only when shift gate is ready **and** the browser device is authorized for the selected branch — **except** when Local Validation / PWA preview sets `PosDeviceAuthorization:EnforcementEnabled=false` (server gate skipped; UX follows runtime policy). Online Cash sale POST: **PROVEN_CURRENT** (RMAP-11).
+
+### CURRENT PWA PHASE (temporary)
+
+Transaction device enforcement is temporarily disabled by environment config for the intermediate React PWA:
+
+- Local Validation launcher: `PosDeviceAuthorization__EnforcementEnabled=false`
+- Default / Production: `EnforcementEnabled=true` (Production startup **fails** if disabled)
+
+### FUTURE CAPACITOR
+
+Re-enable with `PosDeviceAuthorization__EnforcementEnabled=true` and reuse existing installation identity, registration, revocation, Platform authorize, and offline grant — do not rebuild the device model.

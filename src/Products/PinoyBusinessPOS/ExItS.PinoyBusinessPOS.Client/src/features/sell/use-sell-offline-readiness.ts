@@ -33,12 +33,14 @@ export type SellOfflineReadiness = {
 
 export function useSellOfflineReadiness(): SellOfflineReadiness {
   const online = useBrowserOnline();
-  const { posDevice } = useWorkspace();
+  const { posDevice, deviceEnforcementEnabled } = useWorkspace();
   const { readiness, currentShift } = useShiftContext();
   const offlineContext = useSellOfflineContext();
   const [snapshot, setSnapshot] = useState<SellReadinessSnapshot | null>(null);
 
-  const liveDeviceReady = isPosDeviceReadyForMoney(posDevice);
+  const liveDeviceReady = isPosDeviceReadyForMoney(posDevice, {
+    enforcementEnabled: deviceEnforcementEnabled,
+  });
   const liveShiftId = readiness.shiftId;
   const liveOpenShiftNumber = currentShift?.shiftNumber ?? null;
   const liveReady =

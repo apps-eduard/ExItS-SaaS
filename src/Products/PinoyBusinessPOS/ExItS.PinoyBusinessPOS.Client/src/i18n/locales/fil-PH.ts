@@ -1266,6 +1266,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "devices.listTitle": "Mga POS device",
   "devices.listLede":
     "Irehistro ang mga telepono, tablet, laptop, o computer na pinapayagang magbenta sa POS.",
+  "devices.enforcementPausedHint":
+    "Local preview: pansamantalang naka-pause ang registered-device check sa pagbebenta. Available pa rin ang device registration; kailangan ulit ito para sa Capacitor.",
   "devices.deniedDetail":
     "Owner at administrator lang ng organization ang puwedeng mag-manage ng POS devices.",
   "devices.backOrg": "Bumalik sa organization",

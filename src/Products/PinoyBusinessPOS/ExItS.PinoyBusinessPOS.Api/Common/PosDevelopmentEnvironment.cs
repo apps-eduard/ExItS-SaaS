@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Offline;
+using ExItS.PinoyBusinessPOS.Application.Options;
 
 namespace ExItS.PinoyBusinessPOS.Api.Common;
 
@@ -108,6 +109,16 @@ internal static class PosProductionSecurityGuard
                 throw new InvalidOperationException(
                     "Production requires PlatformAuth:BaseUrl to use HTTPS when configured.");
             }
+        }
+
+        // Device installation enforcement cannot be paused in Production (PWA preview uses non-Production only).
+        var deviceEnforcement = builder.Configuration.GetValue(
+            $"{PosDeviceAuthorizationOptions.SectionName}:{nameof(PosDeviceAuthorizationOptions.EnforcementEnabled)}",
+            defaultValue: true);
+        if (!deviceEnforcement)
+        {
+            throw new InvalidOperationException(
+                "POS device authorization cannot be disabled in Production. Set PosDeviceAuthorization:EnforcementEnabled=true.");
         }
     }
 }

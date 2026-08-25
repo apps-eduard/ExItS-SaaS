@@ -24,7 +24,7 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
  */
 export function SellReadinessGate() {
   const { t } = useI18n();
-  const { boundWorkspace, posDevice, sessionGrant } = useWorkspace();
+  const { boundWorkspace, posDevice, sessionGrant, deviceEnforcementEnabled } = useWorkspace();
   const { readiness } = useShiftContext();
   const sellReadiness = useSellOfflineReadiness();
   const canManageDevices = hasOrganizationManagementAuthority(sessionGrant);
@@ -39,6 +39,7 @@ export function SellReadinessGate() {
         posDevice,
         shiftReadiness: readiness,
         allowViewOnlyWithoutDevice: true,
+        deviceEnforcementEnabled,
       });
   const branchLabel = boundWorkspace?.branchName ?? t("devices.branchFallback");
   const [sellEntered, setSellEntered] = useState(false);

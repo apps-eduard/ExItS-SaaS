@@ -109,7 +109,7 @@ export function SellFloorPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { returnRoute, exit } = useSellingMode();
-  const { boundWorkspace, sessionGrant, posDevice } = useWorkspace();
+  const { boundWorkspace, sessionGrant, posDevice, deviceEnforcementEnabled } = useWorkspace();
   const cart = useSessionCart();
   const { readiness, hasOpenShift, currentShift } = useShiftContext();
   const sellReadiness = useSellOfflineReadiness();
@@ -124,6 +124,7 @@ export function SellFloorPage() {
     : evaluateMidSessionSellBlock({
         posDevice,
         shiftReadiness: readiness,
+        deviceEnforcementEnabled,
       });
   const effectiveReadiness: CheckoutShiftReadiness = continuedOffline
     ? {

@@ -29,6 +29,7 @@ import {
 } from "@/api/platform/platform-auth-client";
 import { clearPlatformAntiforgeryToken } from "@/api/platform/platform-http";
 import { selectOperationalBranch } from "@/api/pos/operational-branch-client";
+import { getPosDeviceAuthorizationPolicy } from "@/api/pos/pos-runtime-policy-client";
 import { issueOfflineOperatingGrant } from "@/api/pos/pos-offline-operating-grant-client";
 import {
   buildBoundWorkspaceFromGrant,
@@ -86,6 +87,12 @@ type WorkspaceContextValue = {
   grantProbeFailureByOrganizationId: ReadonlyMap<string, WorkspaceGrantProbeFailure>;
   /** Honest device state — never invents an authorized POS terminal. */
   posDevice: PosDeviceContext;
+  /**
+   * Server PosDeviceAuthorization.EnforcementEnabled.
+   * null = not loaded yet (UX treats enforcement as on / fail-closed).
+   * false = temporary PWA Local Validation pause — money UX skips device gate.
+   */
+  deviceEnforcementEnabled: boolean | null;
   /** Re-run durable identity + Platform authorize for the bound org/branch. */
   refreshPosDevice: (options?: { branchId?: string | null }) => Promise<void>;
   accessDeniedDetail: string | null;
@@ -212,6 +219,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const grantProbeFailureByOrganizationIdRef = useRef(grantProbeFailureByOrganizationId);
   grantProbeFailureByOrganizationIdRef.current = grantProbeFailureByOrganizationId;
   const [posDevice, setPosDevice] = useState<PosDeviceContext>(INITIAL_POS_DEVICE_CONTEXT);
+  /** null until policy hydrate; fail-closed UX treats null as enforced. */
+  const [deviceEnforcementEnabled, setDeviceEnforcementEnabled] = useState<boolean | null>(null);
   const [accessDeniedDetail, setAccessDeniedDetail] = useState<string | null>(null);
   const [bindFailureKind, setBindFailureKind] = useState<WorkspaceBindFailureKind | null>(null);
   const [failureDiagnostic, setFailureDiagnostic] = useState<PosErrorReportInput | null>(null);
@@ -247,10 +256,42 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
     if (!isAuthenticatedOrColdStartOffline(sessionStatus)) {
       setPosDevice(INITIAL_POS_DEVICE_CONTEXT);
+      setDeviceEnforcementEnabled(null);
       return;
     }
     void refreshPosDevice();
   }, [boundWorkspace?.organizationId, boundWorkspace?.branchId, refreshPosDevice, sessionStatus]);
+
+  useEffect(() => {
+    if (sessionStatus === "cold_start_offline") {
+      return;
+    }
+    if (!isAuthenticatedOrColdStartOffline(sessionStatus) || !boundWorkspace?.organizationId) {
+      setDeviceEnforcementEnabled(null);
+      return;
+    }
+
+    let cancelled = false;
+    void getPosDeviceAuthorizationPolicy({
+      organizationId: boundWorkspace.organizationId,
+      branchId: boundWorkspace.branchId,
+    })
+      .then((policy) => {
+        if (!cancelled) {
+          setDeviceEnforcementEnabled(policy.enforcementEnabled);
+        }
+      })
+      .catch(() => {
+        // Fail closed: assume enforcement until the server policy is known.
+        if (!cancelled) {
+          setDeviceEnforcementEnabled(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [boundWorkspace?.organizationId, boundWorkspace?.branchId, sessionStatus]);
 
   useEffect(() => {
     if (sessionStatus !== "cold_start_offline" || !coldStartGrant) {
@@ -893,6 +934,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       grantByOrganizationId,
       grantProbeFailureByOrganizationId,
       posDevice,
+      deviceEnforcementEnabled,
       refreshPosDevice,
       accessDeniedDetail,
       bindFailureKind,
@@ -912,6 +954,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       bindWorkspace,
       boundWorkspace,
       clearBoundWorkspace,
+      deviceEnforcementEnabled,
       ensureOrganizationGrantHint,
       grantByOrganizationId,
       grantProbeFailureByOrganizationId,

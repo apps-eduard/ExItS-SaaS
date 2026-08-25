@@ -1278,6 +1278,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "devices.listTitle": "Mga POS device",
   "devices.listLede":
     "Irehistro ang mga telepono, tablet, laptop, o computer nga gitugotan nga mobaligya sa POS.",
+  "devices.enforcementPausedHint":
+    "Local preview: temporary paused ang registered-device check sa pagbaligya. Available pa ang device registration; kinahanglan usab kini para sa Capacitor.",
   "devices.deniedDetail":
     "Organization owners ug administrators lang ang makadumala og POS devices.",
   "devices.backOrg": "Balik sa organization",
