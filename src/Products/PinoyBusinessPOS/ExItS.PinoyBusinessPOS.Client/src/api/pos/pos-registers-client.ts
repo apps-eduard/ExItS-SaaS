@@ -1,7 +1,9 @@
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { posRequest } from "@/api/pos/pos-http";
+import { buildPosMutationIdempotencyHeaders } from "@/api/pos/pos-mutation-idempotency";
 
 const REGISTERS_PATH = "/api/v1/pos/registers";
+const CREATE_REGISTER_OPERATION = "pos.register.create";
 
 export type PosRegisterSummaryDto = {
   registerId: string;
@@ -104,26 +106,31 @@ export type CreateRegisterBody = {
 };
 
 /** Requires ManageRegisters. Server allocates REG-NNNNNN code. */
-export function createRegister(
+export async function createRegister(
   workspace: PosWorkspaceScope,
   body: CreateRegisterBody,
   signal?: AbortSignal,
 ): Promise<PosRegisterDto> {
-  const idempotencyKey =
+  const operationId =
     typeof crypto !== "undefined" && "randomUUID" in crypto
       ? crypto.randomUUID()
-      : `reg-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      : `00000000-0000-4000-8000-${Date.now().toString(16).padStart(12, "0").slice(-12)}`;
+  const payload = {
+    name: body.name,
+    description: body.description ?? null,
+  };
+  const payloadJson = JSON.stringify(payload);
+  const headers = await buildPosMutationIdempotencyHeaders(
+    operationId,
+    payloadJson,
+    CREATE_REGISTER_OPERATION,
+  );
   return posRequest({
     method: "POST",
     workspace,
     signal,
     path: REGISTERS_PATH,
-    body: {
-      name: body.name,
-      description: body.description ?? null,
-    },
-    headers: {
-      "Idempotency-Key": idempotencyKey,
-    },
+    body: payload,
+    headers,
   });
 }
