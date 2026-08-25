@@ -8,6 +8,7 @@ import {
   QrCode,
   Search,
   Settings,
+  UserPen,
   UserPlus,
   Users,
   Wallet,
@@ -458,6 +459,13 @@ export function PersonalMorePage() {
               icon: Settings,
               testId: "more-open-preferences",
               to: "/settings/preferences",
+            },
+            {
+              key: "profile",
+              label: t("personal.profile.edit"),
+              icon: UserPen,
+              testId: "more-open-profile",
+              to: "/personal/profile?edit=1",
             },
             {
               key: "start",

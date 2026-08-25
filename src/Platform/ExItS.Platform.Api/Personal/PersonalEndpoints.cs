@@ -473,6 +473,25 @@ internal static class PersonalEndpoints
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         });
 
+        personal.MapPut("/profile", async (
+            HttpContext http,
+            UpdatePersonalProfileRequest body,
+            UpdatePersonalProfile updateProfile,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out var accountProfileId, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await updateProfile.ExecuteAsync(
+                PlatformUserId.From(userId),
+                AccountProfileId.From(accountProfileId),
+                body,
+                ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
         personal.MapGet("/settings", async (
             HttpContext http,
             GetPersonalAccountSettings getSettings,

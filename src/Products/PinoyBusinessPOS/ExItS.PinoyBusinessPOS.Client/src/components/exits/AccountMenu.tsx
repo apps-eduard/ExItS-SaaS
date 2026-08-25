@@ -1,4 +1,4 @@
-import { Building2, ChevronDown, Home, LogOut, RefreshCw, Settings, User } from "lucide-react";
+import { Building2, ChevronDown, Home, LogOut, RefreshCw, Settings, User, UserPen } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DropdownMenu, MenuHeader, MenuItem, MenuSeparator } from "@/components/ui/dropdown-menu";
@@ -85,7 +85,8 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
   const currentExperience = experienceLabel(boundWorkspace?.experience, t);
   const canReturnToPersonal =
     sessionAccountClass(session) === "Organization" && !isOrganizationContextLocked(session);
-  const showSwitchToBusiness = sessionAccountClass(session) === "Personal" && canSwitchToBusiness;
+  const isPersonal = sessionAccountClass(session) === "Personal";
+  const showSwitchToBusiness = isPersonal && canSwitchToBusiness;
 
   const accountLabel = `${t("account.menu")}: ${displayName}`;
 
@@ -237,6 +238,18 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
           </MenuItem>
           <MenuSeparator />
         </>
+      ) : null}
+      {isPersonal ? (
+        <MenuItem
+          data-testid="account-edit-profile"
+          onSelect={() => {
+            setOpen(false);
+            navigate("/personal/profile?edit=1");
+          }}
+        >
+          <UserPen className="size-4 shrink-0" aria-hidden="true" />
+          {t("topbar.editProfile")}
+        </MenuItem>
       ) : null}
       <MenuItem
         onSelect={() => {

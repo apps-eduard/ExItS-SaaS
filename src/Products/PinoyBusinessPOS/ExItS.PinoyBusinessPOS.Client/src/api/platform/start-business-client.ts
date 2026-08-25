@@ -168,6 +168,19 @@ export async function getPersonalProfile(signal?: AbortSignal): Promise<Personal
   return personalProfileSchema.parse(normalizeProfile(raw));
 }
 
+export async function updatePersonalProfile(
+  displayName: string,
+  signal?: AbortSignal,
+): Promise<PersonalProfileDto> {
+  const raw = await platformRequest<unknown>({
+    method: "PUT",
+    path: "/api/v1/personal/profile",
+    body: { displayName },
+    signal,
+  });
+  return personalProfileSchema.parse(normalizeProfile(raw));
+}
+
 export async function startBusiness(
   request: StartBusinessRequest,
   signal?: AbortSignal,

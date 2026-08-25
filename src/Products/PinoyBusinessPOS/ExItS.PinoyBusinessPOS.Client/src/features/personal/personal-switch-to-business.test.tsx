@@ -361,6 +361,7 @@ describe("Personal avatar account menu switch to business", () => {
         "Switch to business",
       );
     });
+    expect(screen.getByTestId("account-edit-profile")).toHaveTextContent("Edit profile");
   });
 
   it("keeps Personal More switch to business as a convenient entry", async () => {
