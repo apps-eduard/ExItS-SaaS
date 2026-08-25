@@ -324,7 +324,7 @@ public sealed class LinkedCustomerSaleProjectionTests
             var credits = new InMemoryCredits();
             var repayments = new InMemoryRepayments();
             var clock = new MutableClock(T0.AddDays(1));
-            var outstanding = new OutstandingBalanceService(credits, repayments, clock);
+            var outstanding = new OutstandingBalanceService(credits, repayments, new InMemoryWriteOffRepository(), clock);
             var entitlements = new FakeEntitlements(active: false);
             var options = Microsoft.Extensions.Options.Options.Create(new PersonalStatementsOptions { FreeRecentMonths = 3 });
 

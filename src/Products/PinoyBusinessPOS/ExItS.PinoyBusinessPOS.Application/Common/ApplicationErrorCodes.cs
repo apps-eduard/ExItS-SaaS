@@ -13,6 +13,7 @@ public static class ApplicationErrorCodes
     public const string CustomerConcurrencyConflict = "pos.customer.concurrency_conflict";
     public const string CreditEntryNotFound = "pos.credit_entry.not_found";
     public const string RepaymentNotFound = "pos.repayment.not_found";
+    public const string WriteOffNotFound = "pos.write_off.not_found";
     public const string ActorRequired = "pos.actor.required";
     public const string ConcurrencyConflict = "pos.concurrency_conflict";
     public const string OrganizationRequired = "pos.organization.required";

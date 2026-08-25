@@ -116,7 +116,13 @@ public enum UtangCapability
     ViewAdvancedReports = 42,
 
     /// <summary>Reserved for file export actions when implemented (Platform store-export).</summary>
-    ExportData = 43
+    ExportData = 43,
+
+    /// <summary>Recognize uncollectible Business Utang (not a repayment). Cashier DENY.</summary>
+    WriteOff = 44,
+
+    /// <summary>Reverse a prior write-off with an explicit reason. Cashier DENY.</summary>
+    ReverseWriteOff = 45
 }
 
 /// <summary>
@@ -179,6 +185,11 @@ public static class UtangCapabilityPolicy
             UtangCapability.ReverseRepayment =>
                 IsFullCommercialState(status)
                 && HasFeature(grants, PosFeatureCodes.CustomerCreditRepay),
+
+            UtangCapability.WriteOff
+                or UtangCapability.ReverseWriteOff =>
+                IsFullCommercialState(status)
+                && HasFeature(grants, PosFeatureCodes.CustomerCreditView),
 
             UtangCapability.CreateCustomer
                 or UtangCapability.EditCustomer

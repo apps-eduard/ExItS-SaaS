@@ -301,6 +301,14 @@ export function canRecordRepayment(grant: PosSessionGrantFacts | null | undefine
 }
 
 /**
+ * WriteOff / ReverseWriteOff UI gate — Owner/Admin/StoreManager. Cashier DENY.
+ * Online-only; server remains authoritative.
+ */
+export function canWriteOff(grant: PosSessionGrantFacts | null | undefined): boolean {
+  return canRecordRepayment(grant);
+}
+
+/**
  * ViewGenerateStatement UI gate — Owner/Admin/StoreManager (+ ReportingUser).
  */
 export function canViewStatement(grant: PosSessionGrantFacts | null | undefined): boolean {

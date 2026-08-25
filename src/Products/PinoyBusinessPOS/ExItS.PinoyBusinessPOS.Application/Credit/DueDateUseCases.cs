@@ -12,17 +12,20 @@ public sealed class OverdueQueryService
 {
     private readonly ICreditEntryRepository _credits;
     private readonly IRepaymentRepository _repayments;
+    private readonly IWriteOffRepository _writeOffs;
     private readonly IPOSCustomerRepository _customers;
     private readonly IClock _clock;
 
     public OverdueQueryService(
         ICreditEntryRepository credits,
         IRepaymentRepository repayments,
+        IWriteOffRepository writeOffs,
         IPOSCustomerRepository customers,
         IClock clock)
     {
         _credits = credits;
         _repayments = repayments;
+        _writeOffs = writeOffs;
         _customers = customers;
         _clock = clock;
     }
@@ -42,14 +45,17 @@ public sealed class OverdueQueryService
 
         var (credits, creditTotal) = await _credits.ListByCustomerAsync(orgId, custId, 0, 10_000, cancellationToken).ConfigureAwait(false);
         var activeRepayments = await _repayments.SumActiveAmountAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
+        var activeWriteOffs = await _writeOffs.SumActiveAmountAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
         var activeCreditTotal = await _credits.SumActiveAmountAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
         var activeCreditCount = await _credits.CountActiveAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
         var activeRepaymentCount = await _repayments.CountActiveAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
+        var activeWriteOffCount = await _writeOffs.CountActiveAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
         var (_, repaymentTotal) = await _repayments.ListByCustomerAsync(orgId, custId, 0, 1, cancellationToken).ConfigureAwait(false);
+        var (_, writeOffTotal) = await _writeOffs.ListByCustomerAsync(orgId, custId, 0, 1, cancellationToken).ConfigureAwait(false);
 
         var aged = CreditFifoAging.AgeCredits(
             credits,
-            activeRepayments,
+            activeRepayments + activeWriteOffs,
             CreditFifoAging.EffectiveBusinessDateUtc(_clock.UtcNow));
 
         return CreditFifoAging.BuildCustomerSummary(
@@ -60,7 +66,9 @@ public sealed class OverdueQueryService
             activeRepayments,
             activeCreditCount,
             activeRepaymentCount,
-            creditTotal + repaymentTotal);
+            creditTotal + repaymentTotal + writeOffTotal,
+            activeWriteOffs,
+            activeWriteOffCount);
     }
 
     public async Task<PagedResult<AgedCreditDto>> ListCustomerCreditsAsync(
@@ -75,9 +83,10 @@ public sealed class OverdueQueryService
         var custId = POSCustomerId.From(customerId);
         var (credits, _) = await _credits.ListByCustomerAsync(orgId, custId, 0, 10_000, cancellationToken).ConfigureAwait(false);
         var activeRepayments = await _repayments.SumActiveAmountAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
+        var activeWriteOffs = await _writeOffs.SumActiveAmountAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
         var aged = CreditFifoAging.AgeCredits(
             credits,
-            activeRepayments,
+            activeRepayments + activeWriteOffs,
             CreditFifoAging.EffectiveBusinessDateUtc(_clock.UtcNow));
 
         var filtered = ApplyFilter(aged, filter).ToList();
@@ -105,7 +114,8 @@ public sealed class OverdueQueryService
         {
             var custId = POSCustomerId.From(group.Key);
             var activeRepayments = await _repayments.SumActiveAmountAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
-            var aged = CreditFifoAging.AgeCredits(group, activeRepayments, effective);
+            var activeWriteOffs = await _writeOffs.SumActiveAmountAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
+            var aged = CreditFifoAging.AgeCredits(group, activeRepayments + activeWriteOffs, effective);
             overdue.AddRange(aged.Where(a => a.IsOverdue));
         }
 
@@ -145,8 +155,9 @@ public sealed class OverdueQueryService
             }
 
             var activeRepayments = await _repayments.SumActiveAmountAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
+            var activeWriteOffs = await _writeOffs.SumActiveAmountAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
             var activeCredits = await _credits.SumActiveAmountAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
-            var aged = CreditFifoAging.AgeCredits(group, activeRepayments, effective);
+            var aged = CreditFifoAging.AgeCredits(group, activeRepayments + activeWriteOffs, effective);
             var overdue = aged.Where(a => a.IsOverdue).ToList();
             if (overdue.Count == 0)
             {
@@ -157,7 +168,7 @@ public sealed class OverdueQueryService
                 customer.Id.Value,
                 organizationId,
                 customer.DisplayName,
-                activeCredits - activeRepayments,
+                activeCredits - activeRepayments - activeWriteOffs,
                 overdue.Sum(a => a.RemainingUnpaidAmount),
                 overdue.Count,
                 overdue.Select(a => a.CurrentDueDate).Where(d => d is not null).Cast<DateOnly>().OrderBy(d => d).Cast<DateOnly?>().FirstOrDefault()));

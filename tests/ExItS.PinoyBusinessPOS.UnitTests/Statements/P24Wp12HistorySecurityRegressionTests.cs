@@ -148,7 +148,7 @@ public sealed class P24Wp12HistorySecurityRegressionTests
             var credits = new InMemoryCredits();
             var repayments = new InMemoryRepayments();
             var clock = new FixedClock(T0.AddDays(1));
-            var outstanding = new OutstandingBalanceService(credits, repayments, clock);
+            var outstanding = new OutstandingBalanceService(credits, repayments, new InMemoryWriteOffRepository(), clock);
             var posCustomer = POSCustomer.Create(
                 PosOrganizationId.From(OrgA), "Rosa", T0, platformBusinessCustomerId: PlatformCustomer);
             await customers.AddAsync(posCustomer);
@@ -186,7 +186,7 @@ public sealed class P24Wp12HistorySecurityRegressionTests
             var credits = new InMemoryCredits();
             var repayments = new InMemoryRepayments();
             var clock = new FixedClock(T0.AddDays(1));
-            var outstanding = new OutstandingBalanceService(credits, repayments, clock);
+            var outstanding = new OutstandingBalanceService(credits, repayments, new InMemoryWriteOffRepository(), clock);
             var entitlements = new FailClosedEntitlements();
             var options = Microsoft.Extensions.Options.Options.Create(new PersonalStatementsOptions { FreeRecentMonths = 3 });
             var posCustomer = POSCustomer.Create(

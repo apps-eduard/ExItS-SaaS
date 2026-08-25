@@ -563,7 +563,7 @@ public sealed class LinkedCustomerStatementUseCaseTests
             var credits = new InMemoryCredits();
             var repayments = new InMemoryRepayments();
             var clock = new FixedClock(T0.AddDays(1));
-            var outstanding = new OutstandingBalanceService(credits, repayments, clock);
+            var outstanding = new OutstandingBalanceService(credits, repayments, new InMemoryWriteOffRepository(), clock);
             var posCustomer = POSCustomer.Create(
                 PosOrganizationId.From(OrgA),
                 "Rosa Customer",

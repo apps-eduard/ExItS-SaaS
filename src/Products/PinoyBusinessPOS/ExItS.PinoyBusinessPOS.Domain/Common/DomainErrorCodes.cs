@@ -36,6 +36,15 @@ public static class DomainErrorCodes
     public const string RepaymentExceedsOutstanding = "pos.repayment.exceeds_outstanding";
     public const string RepaymentOutstandingZero = "pos.repayment.outstanding_zero";
 
+    public const string InvalidWriteOffId = "pos.write_off.id.invalid";
+    public const string InvalidWriteOffAmount = "pos.write_off.amount.invalid";
+    public const string InvalidWriteOffReason = "pos.write_off.reason.invalid";
+    public const string InvalidWriteOffReversalReason = "pos.write_off.reversal_reason.invalid";
+    public const string InvalidWriteOffStatusTransition = "pos.write_off.status.invalid_transition";
+    public const string InvalidWriteOffActor = "pos.write_off.actor.invalid";
+    public const string WriteOffExceedsOutstanding = "pos.write_off.exceeds_outstanding";
+    public const string WriteOffOutstandingZero = "pos.write_off.outstanding_zero";
+
     public const string InvalidCatalogProductId = "pos.catalog.product.id.invalid";
     public const string InvalidProductCategoryId = "pos.catalog.category.id.invalid";
     public const string InvalidUnitOfMeasure = "pos.catalog.unit_of_measure.invalid";

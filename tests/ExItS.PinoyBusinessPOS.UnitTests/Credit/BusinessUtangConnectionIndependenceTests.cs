@@ -128,7 +128,7 @@ public sealed class BusinessUtangConnectionIndependenceTests
             var entries = new InMemoryCreditRepository();
             var repayments = new InMemoryRepaymentRepository();
             var clock = new FixedClock(Now);
-            var outstanding = new OutstandingBalanceService(entries, repayments, clock);
+            var outstanding = new OutstandingBalanceService(entries, repayments, new InMemoryWriteOffRepository(), clock);
             var uow = new ImmediateUnitOfWork();
 
             var customer = POSCustomer.Create(

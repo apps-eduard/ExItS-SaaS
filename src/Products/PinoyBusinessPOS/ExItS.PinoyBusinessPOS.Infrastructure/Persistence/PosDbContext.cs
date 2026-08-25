@@ -46,6 +46,7 @@ public sealed class PosDbContext : DbContext
     internal DbSet<CreditEntryRecord> CreditEntries => Set<CreditEntryRecord>();
     internal DbSet<CreditDueDateChangeRecord> CreditDueDateChanges => Set<CreditDueDateChangeRecord>();
     internal DbSet<RepaymentRecord> Repayments => Set<RepaymentRecord>();
+    internal DbSet<WriteOffRecord> WriteOffs => Set<WriteOffRecord>();
     internal DbSet<PaymentAttemptRecord> PaymentAttempts => Set<PaymentAttemptRecord>();
     internal DbSet<PosIdempotencyRecord> IdempotencyRecords => Set<PosIdempotencyRecord>();
     internal DbSet<ProductCategoryRecord> ProductCategories => Set<ProductCategoryRecord>();
@@ -338,6 +339,60 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.CustomerId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_repayments_customers");
+        });
+
+        modelBuilder.Entity<WriteOffRecord>(entity =>
+        {
+            entity.ToTable("write_offs", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_write_offs_status",
+                    "status IN ('Active', 'Reversed')");
+                tb.HasCheckConstraint(
+                    "ck_write_offs_amount_positive",
+                    "amount > 0");
+                tb.HasCheckConstraint(
+                    "ck_write_offs_reversal_consistency",
+                    "(status = 'Active' AND reversed_at_utc IS NULL AND reversal_reason IS NULL AND reversed_by IS NULL) OR (status = 'Reversed' AND reversed_at_utc IS NOT NULL AND reversal_reason IS NOT NULL AND reversed_by IS NOT NULL)");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.CustomerId).HasColumnName("customer_id").IsRequired();
+            entity.Property(e => e.Amount).HasColumnName("amount").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.Reason)
+                .HasColumnName("reason")
+                .HasMaxLength(WriteOff.ReasonMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.RecordedAtUtc).HasColumnName("recorded_at_utc");
+            entity.Property(e => e.RecordedBy).HasColumnName("recorded_by").IsRequired();
+            entity.Property(e => e.ReversedAtUtc).HasColumnName("reversed_at_utc");
+            entity.Property(e => e.ReversalReason)
+                .HasColumnName("reversal_reason")
+                .HasMaxLength(WriteOff.ReversalReasonMaxLength);
+            entity.Property(e => e.ReversedBy).HasColumnName("reversed_by");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.CustomerId, e.RecordedAtUtc })
+                .HasDatabaseName("ix_write_offs_org_customer_recorded");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.CustomerId, e.Status })
+                .HasDatabaseName("ix_write_offs_org_customer_status");
+
+            entity.HasIndex(e => e.OrganizationId)
+                .HasDatabaseName("ix_write_offs_organization_id");
+
+            entity.HasOne<POSCustomerRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_write_offs_customers");
         });
 
         modelBuilder.Entity<PaymentAttemptRecord>(entity =>

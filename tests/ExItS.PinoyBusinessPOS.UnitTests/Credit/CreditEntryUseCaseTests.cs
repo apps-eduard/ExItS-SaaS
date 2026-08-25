@@ -21,7 +21,7 @@ public sealed class CreditEntryUseCaseTests
         var customers = new InMemoryCustomerRepository();
         var entries = new InMemoryCreditRepository();
         var repayments = new InMemoryRepaymentRepository();
-        var outstanding = new OutstandingBalanceService(entries, repayments, new FixedClock(Now));
+        var outstanding = new OutstandingBalanceService(entries, repayments, new InMemoryWriteOffRepository(), new FixedClock(Now));
         var clock = new FixedClock(Now);
         var customer = POSCustomer.Create(PosOrganizationId.From(OrgId), "Rosa", Now);
         await customers.AddAsync(customer);
