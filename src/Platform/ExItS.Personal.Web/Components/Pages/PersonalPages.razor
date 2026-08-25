@@ -8,6 +8,7 @@
 @attribute [Authorize]
 @inject PersonalApiClient Api
 @inject NavigationManager Nav
+@inject IMessageService Message
 
 <PageTitle>@_title</PageTitle>
 <ExitsPageHeader Title="@_title" Subtitle="Personal account data from existing Platform Personal APIs." />
@@ -54,12 +55,45 @@ else if (_mode == "notifications")
 }
 else if (_mode == "profile" && _profile is not null)
 {
-    <Descriptions Bordered Size="@DescriptionsSize.Small" Column="1">
-        <DescriptionsItem Title="Name">@_profile.DisplayName</DescriptionsItem>
-        <DescriptionsItem Title="Username">@_profile.Username</DescriptionsItem>
-        <DescriptionsItem Title="Email">@_profile.Email</DescriptionsItem>
-        <DescriptionsItem Title="Account class">@_profile.AccountClass</DescriptionsItem>
-    </Descriptions>
+    @if (!string.IsNullOrWhiteSpace(_profileEditError))
+    {
+        <Alert Type="@AlertType.Error" Message="@_profileEditError" ShowIcon="true" Style="margin-bottom:16px;" />
+    }
+
+    @if (_editingProfile)
+    {
+        <div style="max-width:480px;width:100%;">
+            <div style="margin-bottom:16px;">
+                <div style="font-weight:600;margin-bottom:4px;">Name</div>
+                <Input @bind-Value="_editDisplayName"
+                       Disabled="_profileSaving"
+                       Placeholder="Display name"
+                       MaxLength="100"
+                       OnPressEnter="SaveProfileAsync" />
+            </div>
+            <Descriptions Bordered Size="@DescriptionsSize.Small" Column="1" Style="margin-bottom:16px;">
+                <DescriptionsItem Title="Username">@_profile.Username</DescriptionsItem>
+                <DescriptionsItem Title="Email">@_profile.Email</DescriptionsItem>
+                <DescriptionsItem Title="Account class">@_profile.AccountClass</DescriptionsItem>
+            </Descriptions>
+            <Space Wrap>
+                <Button Disabled="_profileSaving" OnClick="CancelEditProfile">Cancel</Button>
+                <Button Type="@ButtonType.Primary" Loading="_profileSaving" Disabled="_profileSaving" OnClick="SaveProfileAsync">
+                    Save changes
+                </Button>
+            </Space>
+        </div>
+    }
+    else
+    {
+        <Descriptions Bordered Size="@DescriptionsSize.Small" Column="1" Style="margin-bottom:16px;">
+            <DescriptionsItem Title="Name">@_profile.DisplayName</DescriptionsItem>
+            <DescriptionsItem Title="Username">@_profile.Username</DescriptionsItem>
+            <DescriptionsItem Title="Email">@_profile.Email</DescriptionsItem>
+            <DescriptionsItem Title="Account class">@_profile.AccountClass</DescriptionsItem>
+        </Descriptions>
+        <Button Type="@ButtonType.Primary" OnClick="BeginEditProfile">Edit profile</Button>
+    }
 }
 else if (_mode == "settings" && _settings is not null)
 {
@@ -82,6 +116,10 @@ else if (_mode == "settings" && _settings is not null)
     private IReadOnlyList<PersonalInAppNotificationDto> _notifications = [];
     private PersonalProfileDto? _profile;
     private PersonalAccountSettingsDto? _settings;
+    private bool _editingProfile;
+    private bool _profileSaving;
+    private string _editDisplayName = "";
+    private string? _profileEditError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -117,6 +155,63 @@ else if (_mode == "settings" && _settings is not null)
         finally
         {
             _loading = false;
+        }
+    }
+
+    private void BeginEditProfile()
+    {
+        if (_profile is null || _profileSaving)
+        {
+            return;
+        }
+
+        _editDisplayName = _profile.DisplayName;
+        _profileEditError = null;
+        _editingProfile = true;
+    }
+
+    private void CancelEditProfile()
+    {
+        if (_profileSaving)
+        {
+            return;
+        }
+
+        _editDisplayName = _profile?.DisplayName ?? "";
+        _profileEditError = null;
+        _editingProfile = false;
+    }
+
+    private async Task SaveProfileAsync()
+    {
+        if (_profile is null || _profileSaving)
+        {
+            return;
+        }
+
+        _profileSaving = true;
+        _profileEditError = null;
+        try
+        {
+            var (ok, data, error) = await Api.UpdateProfileAsync(_editDisplayName);
+            if (!ok || data is null)
+            {
+                _profileEditError = error ?? "Could not save profile.";
+                return;
+            }
+
+            _profile = data;
+            _editDisplayName = data.DisplayName;
+            _editingProfile = false;
+            await Message.SuccessAsync("Profile updated.");
+        }
+        catch (Exception ex)
+        {
+            _profileEditError = ex.Message;
+        }
+        finally
+        {
+            _profileSaving = false;
         }
     }
 }

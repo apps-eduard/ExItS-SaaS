@@ -290,6 +290,7 @@ builder.Services.AddScoped<InitializePhase16AccountSeed>();
 builder.Services.AddScoped<InitializePhase16PersonalUtangSeed>();
 builder.Services.AddScoped<GetPersonalDashboard>();
 builder.Services.AddScoped<GetPersonalProfile>();
+builder.Services.AddScoped<UpdatePersonalProfile>();
 builder.Services.AddScoped<GetPersonalAccountSettings>();
 builder.Services.AddScoped<UpdatePersonalAccountSettings>();
 builder.Services.AddScoped<PlatformSettingsProvisioner>();

@@ -46,6 +46,16 @@ public sealed class PersonalWebHostTests
         Assert.Contains("@page \"/utang/invitations\"", combined, StringComparison.Ordinal);
         Assert.Contains("@page \"/notifications\"", combined, StringComparison.Ordinal);
         Assert.Contains("@page \"/profile\"", combined, StringComparison.Ordinal);
+        Assert.Contains("Edit profile", combined, StringComparison.Ordinal);
+        Assert.Contains("Save changes", combined, StringComparison.Ordinal);
+        Assert.Contains("BeginEditProfile", combined, StringComparison.Ordinal);
+        Assert.Contains("CancelEditProfile", combined, StringComparison.Ordinal);
+        Assert.Contains("_profileSaving", combined, StringComparison.Ordinal);
+
+        var apiClient = File.ReadAllText(Path.Combine(
+            FindRepo(), "src", "Platform", "ExItS.Personal.Web", "Services", "PersonalWebSession.cs"));
+        Assert.Contains("UpdateProfileAsync", apiClient, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/personal/profile", apiClient, StringComparison.Ordinal);
         Assert.Contains("@page \"/settings\"", combined, StringComparison.Ordinal);
         Assert.Contains("@page \"/start-business\"", combined, StringComparison.Ordinal);
         Assert.Contains("CanonicalLoginUrl", combined, StringComparison.Ordinal);

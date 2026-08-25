@@ -165,6 +165,11 @@ public sealed class PersonalApiClient(IHttpClientFactory httpClientFactory, Pers
     public Task<PersonalProfileDto?> GetProfileAsync(CancellationToken ct = default) =>
         GetAsync<PersonalProfileDto>("/api/v1/personal/profile", ct);
 
+    public Task<(bool Ok, PersonalProfileDto? Data, string? Error)> UpdateProfileAsync(
+        string displayName,
+        CancellationToken ct = default) =>
+        PutAsync<PersonalProfileDto>("/api/v1/personal/profile", new UpdatePersonalProfileRequest(displayName), ct);
+
     public Task<PersonalAccountSettingsDto?> GetSettingsAsync(CancellationToken ct = default) =>
         GetAsync<PersonalAccountSettingsDto>("/api/v1/personal/settings", ct);
 
@@ -194,10 +199,20 @@ public sealed class PersonalApiClient(IHttpClientFactory httpClientFactory, Pers
         CancellationToken ct = default) =>
         PostAsync<StartBusinessResultDto>("/api/v1/personal/start-business", request, ct);
 
-    private async Task<(bool Ok, T? Data, string? Error)> PostAsync<T>(string path, object body, CancellationToken ct)
+    private async Task<(bool Ok, T? Data, string? Error)> PostAsync<T>(string path, object body, CancellationToken ct) =>
+        await SendJsonAsync<T>(HttpMethod.Post, path, body, ct).ConfigureAwait(false);
+
+    private async Task<(bool Ok, T? Data, string? Error)> PutAsync<T>(string path, object body, CancellationToken ct) =>
+        await SendJsonAsync<T>(HttpMethod.Put, path, body, ct).ConfigureAwait(false);
+
+    private async Task<(bool Ok, T? Data, string? Error)> SendJsonAsync<T>(
+        HttpMethod method,
+        string path,
+        object body,
+        CancellationToken ct)
     {
         var client = httpClientFactory.CreateClient("PlatformApi");
-        using var request = new HttpRequestMessage(HttpMethod.Post, path)
+        using var request = new HttpRequestMessage(method, path)
         {
             Content = JsonContent.Create(body)
         };
@@ -230,6 +245,11 @@ public sealed class PersonalApiClient(IHttpClientFactory httpClientFactory, Pers
             if (doc.RootElement.TryGetProperty("title", out var title))
             {
                 return title.GetString();
+            }
+
+            if (doc.RootElement.TryGetProperty("errorCode", out var errorCode))
+            {
+                return errorCode.GetString();
             }
         }
         catch
