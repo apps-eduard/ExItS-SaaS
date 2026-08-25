@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Play, RotateCcw } from "lucide-react";
 import { canManageRegisters, canManageShifts, canViewShifts } from "@/access/pos-capabilities";
@@ -38,8 +38,6 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 export function ShiftOpenPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const fromSell = searchParams.get("from") === "sell";
   const { boundWorkspace, sessionGrant, deviceEnforcementEnabled } = useWorkspace();
   const { refresh } = useShiftContext();
 
@@ -185,7 +183,8 @@ export function ShiftOpenPage() {
       try {
         const current = await getCurrentCashierShift(workspaceScope);
         if (!cancelled && current && current.status.toLowerCase() === "open") {
-          navigate(`/shifts/${current.shiftId}`, { replace: true });
+          // Already open — go sell; close lives on Shifts hub / shift detail.
+          navigate("/sell", { replace: true });
         }
       } catch {
         // Stay on open form; submit path will surface errors.
@@ -260,17 +259,18 @@ export function ShiftOpenPage() {
       const existing = await getCurrentCashierShift(workspaceScope!);
       if (existing && existing.status.toLowerCase() === "open") {
         await refresh();
-        navigate(fromSell ? "/sell" : `/shifts/${existing.shiftId}`, { replace: true });
+        navigate("/sell", { replace: true });
         return;
       }
 
-      const opened = await openCashierShift(workspaceScope!, {
+      await openCashierShift(workspaceScope!, {
         registerId: selectedRegisterId,
         openingCashAmount: amount,
         denominationLines: amount !== null && denomLines.length > 0 ? denomLines : null,
       });
       await refresh();
-      navigate(fromSell ? "/sell" : `/shifts/${opened.shiftId}`, { replace: true });
+      // After open, land on Sell — not shift detail (close is available from Shifts).
+      navigate("/sell", { replace: true });
     } catch (error) {
       const message =
         error instanceof PosApiError
