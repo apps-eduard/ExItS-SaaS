@@ -147,6 +147,14 @@ public sealed class CatalogImportWizardTests
             "ExItS.PinoyBusinessPOS.Api",
             "Catalog",
             "CatalogImportEndpoints.cs")), StringComparison.Ordinal);
+        Assert.Contains(".ExItS.Platform.Auth", File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Api",
+            "Catalog",
+            "CatalogImportEndpoints.cs")), StringComparison.Ordinal);
     }
 
     [Fact]

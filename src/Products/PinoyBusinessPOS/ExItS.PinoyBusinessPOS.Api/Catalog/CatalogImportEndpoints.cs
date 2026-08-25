@@ -273,20 +273,29 @@ internal static class CatalogImportEndpoints
             return values.FirstOrDefault()!.Trim();
         }
 
-        if (!request.Headers.TryGetValue("Authorization", out var authValues))
+        if (request.Headers.TryGetValue("Authorization", out var authValues))
         {
-            return null;
+            var header = authValues.FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(header)
+                && header.StartsWith("PlatformSession ", StringComparison.OrdinalIgnoreCase))
+            {
+                var token = header["PlatformSession ".Length..].Trim();
+                if (!string.IsNullOrWhiteSpace(token))
+                {
+                    return token;
+                }
+            }
         }
 
-        var header = authValues.FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(header)
-            || !header.StartsWith("PlatformSession ", StringComparison.OrdinalIgnoreCase))
+        // React POS keeps the Platform session in an HttpOnly cookie and sends product
+        // Bearer to POS. Accept the same cookie Platform uses for browser sessions.
+        if (request.Cookies.TryGetValue(".ExItS.Platform.Auth", out var cookieToken)
+            && !string.IsNullOrWhiteSpace(cookieToken))
         {
-            return null;
+            return cookieToken.Trim();
         }
 
-        var token = header["PlatformSession ".Length..].Trim();
-        return string.IsNullOrWhiteSpace(token) ? null : token;
+        return null;
     }
 }
 
