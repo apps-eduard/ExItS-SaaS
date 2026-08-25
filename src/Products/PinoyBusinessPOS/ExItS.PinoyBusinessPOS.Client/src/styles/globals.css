@@ -5531,6 +5531,45 @@ a.dashboard-metric-card:focus-visible {
   white-space: nowrap;
 }
 
+.qr-manual-entry__field {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.qr-manual-entry__input {
+  padding-right: 2.5rem;
+}
+
+.qr-manual-entry__clear {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--exits-radius-md);
+  background: transparent;
+  color: var(--exits-text-muted, var(--exits-muted, #6b7280));
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.qr-manual-entry__clear:hover:not(:disabled) {
+  color: var(--exits-text, inherit);
+  background: color-mix(in srgb, var(--exits-border) 55%, transparent);
+}
+
+.qr-manual-entry__clear:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 @media (max-width: 420px) {
   .exits-chip-bar {
     flex-wrap: nowrap;

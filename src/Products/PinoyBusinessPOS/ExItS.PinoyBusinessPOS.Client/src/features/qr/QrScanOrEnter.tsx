@@ -133,21 +133,39 @@ export function QrScanOrEnter({ expectedPurpose, onResolvedPayload, disabled }: 
               {t("qr.enterId")}
             </span>
             <div className="qr-manual-entry flex min-w-0 gap-2">
-              <input
-                ref={manualInputRef}
-                className="min-h-11 min-w-0 flex-1 rounded border border-[var(--exits-border)] bg-transparent px-3 uppercase"
-                data-testid="qr-manual-id"
-                value={manual}
-                disabled={disabled}
-                placeholder={expectedPurpose === "personal" ? "EX-4827-1936" : "ORG000001"}
-                onChange={(event) => setManual(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    applyRaw(manual);
-                  }
-                }}
-              />
+              <div className="qr-manual-entry__field min-w-0 flex-1">
+                <input
+                  ref={manualInputRef}
+                  className="qr-manual-entry__input min-h-11 w-full rounded border border-[var(--exits-border)] bg-transparent px-3 uppercase"
+                  data-testid="qr-manual-id"
+                  value={manual}
+                  disabled={disabled}
+                  placeholder={expectedPurpose === "personal" ? "EX-4827-1936" : "ORG000001"}
+                  onChange={(event) => setManual(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      applyRaw(manual);
+                    }
+                  }}
+                />
+                {manual || error ? (
+                  <button
+                    type="button"
+                    className="qr-manual-entry__clear"
+                    data-testid="qr-manual-clear"
+                    aria-label={t("qr.clear")}
+                    disabled={Boolean(disabled)}
+                    onClick={() => {
+                      setManual("");
+                      setError(null);
+                      window.setTimeout(() => manualInputRef.current?.focus(), 0);
+                    }}
+                  >
+                    <X className="size-4" aria-hidden />
+                  </button>
+                ) : null}
+              </div>
               <Button
                 type="button"
                 variant="outline"
@@ -161,20 +179,6 @@ export function QrScanOrEnter({ expectedPurpose, onResolvedPayload, disabled }: 
               </Button>
             </div>
           </label>
-          <Button
-            type="button"
-            variant="ghost"
-            className="min-h-11 w-full"
-            data-testid="qr-clear-button"
-            disabled={Boolean(disabled) || (!manual && !error)}
-            onClick={() => {
-              setManual("");
-              setError(null);
-            }}
-          >
-            <X className="size-4 shrink-0" aria-hidden />
-            {t("qr.clear")}
-          </Button>
         </div>
       ) : (
         <div className="flex min-w-0 flex-col gap-2" data-testid="qr-scan-panel">
