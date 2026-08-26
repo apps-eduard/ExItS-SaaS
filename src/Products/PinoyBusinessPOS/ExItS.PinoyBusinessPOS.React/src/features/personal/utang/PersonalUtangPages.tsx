@@ -61,22 +61,18 @@ import {
   enqueuePersonalRelationshipCreate,
   enqueuePersonalUtangEntry,
 } from "@/offline/personal-utang-offline";
+import { resolveRelationshipContactName } from "@/features/personal/utang/utang-workspace";
 
 const UTANG_NOTES_MAX_LENGTH = 512;
 const EM_DASH = "\u2014";
 
 function contactLabel(
-  contacts: PersonalContactDto[],
+  contacts: ReadonlyArray<
+    Pick<PersonalContactDto, "id" | "displayName" | "linkedUserIdentityId">
+  >,
   relationship: PersonalDebtRelationshipSummaryDto,
 ): string {
-  const contactId =
-    relationship.perspective === "Borrowed"
-      ? relationship.creditorContactId
-      : relationship.debtorContactId;
-  if (contactId) {
-    return contacts.find((c) => c.id === contactId)?.displayName ?? EM_DASH;
-  }
-  return EM_DASH;
+  return resolveRelationshipContactName(contacts, relationship);
 }
 
 function loanActivityLabel(
