@@ -14,9 +14,9 @@ From repository root:
 .\tools\Start-LocalValidation.ps1
 ```
 
-This keeps PostgreSQL and Mailpit in Docker while the five .NET apps run with `dotnet watch`
-and the React Admin production image listens on 8095 (parallel to Blazor Admin on 8090).
-React POS (`:5177`) is commonly started separately (`npm run dev` or Docker `--profile react-pos`).
+This keeps PostgreSQL and Mailpit in Docker while the five .NET apps run with `dotnet watch`,
+React Admin on 8095 (Docker production image, parallel to Blazor Admin on 8090), and
+canonical React POS Vite on `:5177` (`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React`).
 
 After start, the launcher prints:
 
