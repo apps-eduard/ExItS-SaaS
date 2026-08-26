@@ -34,6 +34,10 @@ $env:ASPNETCORE_URLS = 'http://0.0.0.0:8091'
 $env:ConnectionStrings__PlatformDatabase = $platformCs
 $env:LocalValidation__Enabled = 'true'
 $env:Security__EnforceHttps = 'false'
+# Staging requires a writable data-protection key ring (same path as Start-LocalValidation.ps1).
+$dpKeys = Join-Path $env:LOCALAPPDATA 'ExItS\LocalValidation\DataProtectionKeys'
+New-Item -ItemType Directory -Force -Path $dpKeys | Out-Null
+$env:DataProtection__KeysPath = $dpKeys
 $allowedHosts = 'localhost;127.0.0.1;10.0.2.2'
 if ($publicHost) { $allowedHosts = "$allowedHosts;$publicHost" }
 $env:AllowedHosts = $allowedHosts
