@@ -372,7 +372,7 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
     }
 
     [Fact]
-    public async Task Add_by_exits_id_links_contact_and_notifies_counterparty()
+    public async Task Add_by_exits_id_resolves_identity_without_auto_link_or_notification()
     {
         var (ownerToken, _) = await SeedPersonalUserAsync("adlnk");
         var (targetToken, targetId, _) = await SeedPersonalUserWithEmailAsync("tgtlk");
@@ -402,23 +402,19 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
                 publicUserId = resolved.GetProperty("publicUserId").GetString()
             });
         var created = await contactResponse(await _client.SendAsync(createRequest));
-        Assert.Equal(targetId, created.GetProperty("linkedUserIdentityId").GetGuid());
+        // Add-by-ExItS-ID resolves identity only — connection/link is a separate step.
+        Assert.True(created.TryGetProperty("linkedUserIdentityId", out var linked)
+            && linked.ValueKind is JsonValueKind.Null);
+        Assert.Equal(targetId, created.GetProperty("resolvedUserIdentityId").GetGuid());
+        Assert.Equal(publicUserId, created.GetProperty("resolvedPublicUserId").GetString());
         Assert.Equal(publicUserId, created.GetProperty("publicUserId").GetString());
-        Assert.NotEqual("Should Be Overridden", created.GetProperty("displayName").GetString());
-
-        using var listRequest = Authed(HttpMethod.Get, "/api/v1/personal/utang/contacts", ownerToken);
-        var list = await contactResponse(await _client.SendAsync(listRequest));
-        Assert.Contains(
-            list.EnumerateArray(),
-            c => c.GetProperty("linkedUserIdentityId").GetGuid() == targetId
-                 && c.GetProperty("publicUserId").GetString() == publicUserId);
 
         using var notificationsRequest = Authed(
             HttpMethod.Get,
             "/api/v1/personal/notifications",
             targetToken);
         var notifications = await contactResponse(await _client.SendAsync(notificationsRequest));
-        Assert.Contains(
+        Assert.DoesNotContain(
             notifications.EnumerateArray(),
             n => n.GetProperty("relatedType").GetString() == "personal_contact"
                  && n.GetProperty("title").GetString() == "Added to People");
@@ -557,6 +553,14 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
         var contactId = (await contactResponse(await _client.SendAsync(createContact)))
             .GetProperty("id").GetGuid();
 
+        using var linkContact = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/utang/contacts/{contactId}/link",
+            ownerToken,
+            new { linkedUserIdentityId = targetId, publicUserId });
+        Assert.Equal(targetId, (await contactResponse(await _client.SendAsync(linkContact)))
+            .GetProperty("linkedUserIdentityId").GetGuid());
+
         using var createRel = Authed(
             HttpMethod.Post,
             "/api/v1/personal/utang/relationships",
@@ -604,6 +608,14 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
             new { displayName = "Creditor B", linkedUserIdentityId = targetId, publicUserId });
         var contactId = (await contactResponse(await _client.SendAsync(createContact)))
             .GetProperty("id").GetGuid();
+
+        using var linkContact = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/utang/contacts/{contactId}/link",
+            ownerToken,
+            new { linkedUserIdentityId = targetId, publicUserId });
+        Assert.Equal(targetId, (await contactResponse(await _client.SendAsync(linkContact)))
+            .GetProperty("linkedUserIdentityId").GetGuid());
 
         using var createRel = Authed(
             HttpMethod.Post,

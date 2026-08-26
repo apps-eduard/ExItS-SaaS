@@ -245,7 +245,7 @@ describe("CheckoutPersonalCustomerPicker", () => {
 
     await user.click(screen.getByTestId("qr-mode-scan"));
     await user.click(screen.getByTestId("qr-live-camera-button"));
-    await user.click(screen.getByTestId("live-qr-open-camera"));
+    // LiveQrCameraScanner auto-starts the camera when the sheet opens.
     await vi.advanceTimersByTimeAsync(200);
 
     await waitFor(() => {

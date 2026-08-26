@@ -2,6 +2,7 @@ using ExItS.Platform.Api.Identity;
 using ExItS.Platform.Application.Identity;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 
@@ -93,14 +94,16 @@ public sealed class PlatformSessionCookieAppendTests
                 ["LocalValidation:Enabled"] = localValidationEnabled ? "true" : "false"
             })
             .Build();
+        http.RequestServices = new ServiceCollection()
+            .AddSingleton<IConfiguration>(config)
+            .BuildServiceProvider();
 
         AuthEndpoints.AppendSessionCookie(
             http,
             "opaque-session-token",
             DateTimeOffset.UtcNow.AddHours(1),
             Options,
-            env,
-            config);
+            env);
 
         return http.Response.Headers.SetCookie.ToString();
     }

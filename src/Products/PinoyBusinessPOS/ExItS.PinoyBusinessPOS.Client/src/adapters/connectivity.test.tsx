@@ -1,9 +1,24 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import { AppTopBar } from "@/components/exits/AppTopBar";
 import { getBrowserNetworkReachability } from "@/adapters/connectivity";
+
+vi.mock("@/session/SessionProvider", () => ({
+  useSession: () => ({
+    session: null,
+    signOut: async () => ({ ok: true as const, nextRoute: "/sign-in" }),
+  }),
+}));
+
+vi.mock("@/workspace/WorkspaceProvider", () => ({
+  useWorkspace: () => ({
+    boundWorkspace: null,
+    clearBoundWorkspace: () => undefined,
+    workspaces: [],
+  }),
+}));
 
 describe("connectivity foundation", () => {
   it("does not treat navigator.onLine as API-health Online status", () => {
@@ -11,7 +26,7 @@ describe("connectivity foundation", () => {
     expect(["unknown", true, false]).toContain(getBrowserNetworkReachability());
   });
 
-  it("AppTopBar does not claim Online or Offline", () => {
+  it("AppTopBar does not claim Online or Offline in the closed chrome", () => {
     render(
       <AppProviders>
         <MemoryRouter>
@@ -20,9 +35,10 @@ describe("connectivity foundation", () => {
       </AppProviders>,
     );
     const header = screen.getByRole("banner");
-    expect(header).toHaveTextContent("ExItS Mobile");
-    expect(header).not.toHaveTextContent("Online");
-    expect(header).not.toHaveTextContent("Offline");
+    expect(header).toHaveTextContent("Pinoy Business POS");
+    // Closed connection control must not surface Online/Offline as chrome copy.
+    expect(header.textContent ?? "").not.toMatch(/\bOnline\b/);
+    expect(header.textContent ?? "").not.toMatch(/\bOffline\b/);
     expect(header).not.toHaveTextContent("Syncing");
   });
 });

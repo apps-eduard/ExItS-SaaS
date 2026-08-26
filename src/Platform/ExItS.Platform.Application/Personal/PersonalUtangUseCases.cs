@@ -1,4 +1,4 @@
-using ExItS.Platform.Application.Audit;
+﻿using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
@@ -18,6 +18,7 @@ public sealed record PersonalContactDto(
     Guid? LinkedUserIdentityId,
     Guid? ResolvedUserIdentityId,
     string? ResolvedPublicUserId,
+    string? PublicUserId,
     DateTimeOffset? ConnectedAtUtc,
     DateTimeOffset? BlockedAtUtc,
     string Status,
@@ -27,8 +28,11 @@ public sealed record CreatePersonalContactRequest(
     string DisplayName,
     string? Phone,
     string? Email,
-    Guid? ResolvedUserIdentityId,
-    string? ResolvedPublicUserId);
+    Guid? ResolvedUserIdentityId = null,
+    string? ResolvedPublicUserId = null,
+    // Legacy POS JSON aliases — resolve identity only; do not auto-link/connect.
+    Guid? LinkedUserIdentityId = null,
+    string? PublicUserId = null);
 
 public sealed record PersonalDebtRelationshipSummaryDto(
     Guid Id,
@@ -42,7 +46,9 @@ public sealed record PersonalDebtRelationshipSummaryDto(
     DateTimeOffset? DueDateUtc,
     string Status,
     int Version,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    bool IsSharedLedger,
+    bool IsPrivate);
 
 public sealed record CreatePersonalDebtRelationshipRequest(
     Guid? CreditorUserIdentityId,
@@ -62,6 +68,18 @@ public sealed record RecordPersonalUtangEntryRequest(
     string? Notes,
     DateTimeOffset? DueDateUtc);
 
+public sealed record ConfirmPersonalUtangEntryRequest(int? ExpectedVersion);
+
+public sealed record DisputePersonalUtangEntryRequest(int? ExpectedVersion, string? Reason);
+
+public sealed record CancelPersonalUtangEntryRequest(int? ExpectedVersion);
+
+public sealed record UpdatePersonalContactRequest(string DisplayName, string? Phone, string? Email);
+
+public sealed record LinkPersonalContactRequest(
+    Guid? LinkedUserIdentityId = null,
+    string? PublicUserId = null);
+
 public sealed record PersonalUtangEntryDto(
     Guid Id,
     Guid RelationshipId,
@@ -72,7 +90,16 @@ public sealed record PersonalUtangEntryDto(
     string? Notes,
     DateTimeOffset? DueDateUtc,
     Guid CreatedByUserIdentityId,
-    DateTimeOffset CreatedAtUtc);
+    DateTimeOffset CreatedAtUtc,
+    string Status,
+    Guid? ResolvedByUserIdentityId,
+    DateTimeOffset? ResolvedAtUtc,
+    string? DisputeReason,
+    bool CanConfirm,
+    bool CanDispute,
+    bool CanCancel,
+    bool AffectsBalance,
+    bool IsSharedLedger);
 
 public sealed record PersonalUtangBalanceDto(
     Guid RelationshipId,
@@ -227,10 +254,12 @@ public sealed class CreatePersonalContact
                 request.Email,
                 _clock.UtcNow);
 
-            if (!string.IsNullOrWhiteSpace(request.ResolvedPublicUserId)
-                || (request.ResolvedUserIdentityId is Guid suppliedId && suppliedId != Guid.Empty))
+            var resolvedPublicInput = request.ResolvedPublicUserId ?? request.PublicUserId;
+            var resolvedUserInput = request.ResolvedUserIdentityId ?? request.LinkedUserIdentityId;
+            if (!string.IsNullOrWhiteSpace(resolvedPublicInput)
+                || (resolvedUserInput is Guid suppliedId && suppliedId != Guid.Empty))
             {
-                if (string.IsNullOrWhiteSpace(request.ResolvedPublicUserId))
+                if (string.IsNullOrWhiteSpace(resolvedPublicInput))
                 {
                     return ApplicationResult<PersonalContactDto>.Failure(
                         ApplicationErrorCodes.PersonalContactNotFound,
@@ -239,8 +268,8 @@ public sealed class CreatePersonalContact
 
                 var verified = await PersonalContactIdentityVerification.ResolveVerifiedIdentityAsync(
                     ownerUserIdentityId,
-                    request.ResolvedPublicUserId,
-                    request.ResolvedUserIdentityId,
+                    resolvedPublicInput,
+                    resolvedUserInput,
                     _users,
                     cancellationToken).ConfigureAwait(false);
                 if (!verified.IsSuccess)
@@ -250,7 +279,7 @@ public sealed class CreatePersonalContact
                         verified.ErrorMessage!);
                 }
 
-                var (resolvedUserId, resolvedPublicUserId) = verified.Value;
+                var (resolvedUserId, verifiedPublicUserId) = verified.Value;
 
                 var duplicate = await _contacts
                     .FindActiveByOwnerAndResolvedUserAsync(
@@ -267,7 +296,7 @@ public sealed class CreatePersonalContact
 
                 contact.ResolveIdentity(
                     resolvedUserId,
-                    resolvedPublicUserId,
+                    verifiedPublicUserId,
                     _clock.UtcNow);
             }
 
@@ -320,6 +349,7 @@ public sealed class CreatePersonalContact
             contact.Email,
             contact.LinkedUserIdentityId?.Value,
             contact.ResolvedUserIdentityId?.Value,
+            contact.ResolvedPublicUserId,
             contact.ResolvedPublicUserId,
             contact.ConnectedAtUtc,
             contact.BlockedAtUtc,
@@ -394,6 +424,13 @@ public sealed class CreatePersonalDebtRelationship
                 return ApplicationResult<PersonalDebtRelationshipSummaryDto>.Failure(
                     owned.ErrorCode!, owned.ErrorMessage!);
             }
+
+            // Linked People contact → canonicalize to Personal user participant (shared ledger).
+            if (owned.Value!.LinkedUserIdentityId is PlatformUserId linkedCreditor)
+            {
+                creditorUser = linkedCreditor;
+                creditorContact = null;
+            }
         }
 
         if (debtorContact is not null)
@@ -404,6 +441,12 @@ public sealed class CreatePersonalDebtRelationship
             {
                 return ApplicationResult<PersonalDebtRelationshipSummaryDto>.Failure(
                     owned.ErrorCode!, owned.ErrorMessage!);
+            }
+
+            if (owned.Value!.LinkedUserIdentityId is PlatformUserId linkedDebtor)
+            {
+                debtorUser = linkedDebtor;
+                debtorContact = null;
             }
         }
 
@@ -498,6 +541,7 @@ public sealed class CreatePersonalDebtRelationship
         PlatformUserId viewerUserIdentityId)
     {
         var perspective = relationship.DebtorUserIdentityId == viewerUserIdentityId ? "Borrowed" : "Lent";
+        var isShared = relationship.IsSharedLinked;
         return new PersonalDebtRelationshipSummaryDto(
             relationship.Id.Value,
             perspective,
@@ -510,7 +554,9 @@ public sealed class CreatePersonalDebtRelationship
             relationship.DueDateUtc,
             relationship.Status.ToString(),
             relationship.Version,
-            relationship.UpdatedAtUtc);
+            relationship.UpdatedAtUtc,
+            IsSharedLedger: isShared,
+            IsPrivate: !isShared);
     }
 }
 
@@ -763,7 +809,8 @@ public sealed class RecordPersonalUtangEntry
                 summary: $"{entryType} entry recorded.",
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
-            return ApplicationResult<PersonalUtangEntryDto>.Success(ToDto(entry));
+            return ApplicationResult<PersonalUtangEntryDto>.Success(
+                ToDto(entry, actingUserIdentityId, relationship.IsSharedLinked));
         }
         catch (PersistenceConflictException ex)
         {
@@ -782,7 +829,20 @@ public sealed class RecordPersonalUtangEntry
     }
 
     internal static PersonalUtangEntryDto ToDto(PersonalUtangEntry entry) =>
-        new(
+        ToDto(entry, viewerUserIdentityId: null, isSharedLedger: false);
+
+    internal static PersonalUtangEntryDto ToDto(
+        PersonalUtangEntry entry,
+        PlatformUserId? viewerUserIdentityId,
+        bool isSharedLedger)
+    {
+        var isPending = entry.Status is PersonalUtangEntryStatus.Pending;
+        var isProposer = viewerUserIdentityId is not null
+            && entry.CreatedByUserIdentityId == viewerUserIdentityId;
+        var canResolve = isPending && isSharedLedger && viewerUserIdentityId is not null && !isProposer;
+        var canCancel = isPending && isProposer;
+
+        return new PersonalUtangEntryDto(
             entry.Id.Value,
             entry.RelationshipId.Value,
             entry.EntryType.ToString(),
@@ -792,5 +852,15 @@ public sealed class RecordPersonalUtangEntry
             entry.Notes,
             entry.DueDateUtc,
             entry.CreatedByUserIdentityId.Value,
-            entry.CreatedAtUtc);
+            entry.CreatedAtUtc,
+            entry.Status.ToString(),
+            entry.ResolvedByUserIdentityId?.Value,
+            entry.ResolvedAtUtc,
+            entry.DisputeReason,
+            CanConfirm: canResolve,
+            CanDispute: canResolve,
+            CanCancel: canCancel,
+            AffectsBalance: entry.Status is PersonalUtangEntryStatus.Confirmed,
+            IsSharedLedger: isSharedLedger);
+    }
 }

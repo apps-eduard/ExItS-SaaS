@@ -104,8 +104,7 @@ internal static class ExternalAuthEndpoints
                 result.Value.SessionToken,
                 result.Value.ExpiresAtUtc,
                 sessionOptions.Value,
-                env,
-                config);
+                env);
 
             var returnUrl = auth.Properties?.Items.TryGetValue(
                 PlatformExternalAuthDefaults.ReturnUrlItemKey,
@@ -160,8 +159,7 @@ internal static class ExternalAuthEndpoints
                 result.Value.SessionToken,
                 result.Value.ExpiresAtUtc,
                 sessionOptions.Value,
-                env,
-                config);
+                env);
             return Results.Ok(result.Value);
         })
         .RequireRateLimiting(PlatformSecurityPipeline.AuthLoginRateLimitPolicy)

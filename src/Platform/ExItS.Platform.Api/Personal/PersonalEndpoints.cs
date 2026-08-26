@@ -572,6 +572,42 @@ internal static class PersonalEndpoints
         })
         .AddEndpointFilter<IdentifiedPersonalContactRateLimitFilter>();
 
+        utang.MapPost("/contacts/{contactId:guid}/link", async (
+            HttpContext http,
+            Guid contactId,
+            LinkPersonalContactRequest body,
+            LinkPersonalContact linkContact,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await linkContact
+                .ExecuteAsync(PlatformUserId.From(userId), contactId, body, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        utang.MapPut("/contacts/{contactId:guid}", async (
+            HttpContext http,
+            Guid contactId,
+            UpdatePersonalContactRequest body,
+            UpdatePersonalContact updateContact,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await updateContact
+                .ExecuteAsync(PlatformUserId.From(userId), contactId, body, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
         utang.MapGet("/contacts", async (
             HttpContext http,
             ListPersonalContacts listContacts,
@@ -702,6 +738,64 @@ internal static class PersonalEndpoints
                     $"/api/v1/personal/utang/relationships/{relationshipId}/history",
                     dto));
         });
+
+        utang.MapPost("/relationships/{relationshipId:guid}/entries/{entryId:guid}/confirm", async (
+            HttpContext http,
+            Guid relationshipId,
+            Guid entryId,
+            ConfirmPersonalUtangEntryRequest body,
+            ConfirmPersonalUtangEntry confirmEntry,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await confirmEntry
+                .ExecuteAsync(PlatformUserId.From(userId), relationshipId, entryId, body, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        utang.MapPost("/relationships/{relationshipId:guid}/entries/{entryId:guid}/dispute", async (
+            HttpContext http,
+            Guid relationshipId,
+            Guid entryId,
+            DisputePersonalUtangEntryRequest body,
+            DisputePersonalUtangEntry disputeEntry,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await disputeEntry
+                .ExecuteAsync(PlatformUserId.From(userId), relationshipId, entryId, body, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        utang.MapPost("/relationships/{relationshipId:guid}/entries/{entryId:guid}/cancel", async (
+            HttpContext http,
+            Guid relationshipId,
+            Guid entryId,
+            CancelPersonalUtangEntryRequest body,
+            CancelPersonalUtangEntry cancelEntry,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await cancelEntry
+                .ExecuteAsync(PlatformUserId.From(userId), relationshipId, entryId, body, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
 
         utang.MapPost("/relationships/{relationshipId:guid}/invitations", async (
             HttpContext http,

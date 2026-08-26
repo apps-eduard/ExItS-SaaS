@@ -1,4 +1,4 @@
-using ExItS.Platform.Domain.Identity;
+﻿using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Personal;
 
@@ -39,6 +39,10 @@ public interface IPersonalContactRepository
         PlatformUserId blockedUserIdentityId,
         CancellationToken cancellationToken = default);
 
+    Task<PersonalContact?> FindActiveByOwnerAndLinkedUserAsync(
+        PlatformUserId ownerUserIdentityId,
+        PlatformUserId linkedUserIdentityId,
+        CancellationToken cancellationToken = default);
     Task AddAsync(PersonalContact contact, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(PersonalContact contact, CancellationToken cancellationToken = default);
@@ -93,11 +97,25 @@ public interface IPersonalDebtRelationshipRepository
 
 public interface IPersonalUtangEntryRepository
 {
+    Task<PersonalUtangEntry?> GetByIdAsync(
+        PersonalUtangEntryId id,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<PersonalUtangEntry>> ListByRelationshipAsync(
         PersonalDebtRelationshipId relationshipId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Counts Pending entries across relationships where <paramref name="userIdentityId"/> is a linked
+    /// participant but not the proposer (awaiting this user's confirmation).
+    /// </summary>
+    Task<int> CountPendingAwaitingConfirmationAsync(
+        PlatformUserId userIdentityId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(PersonalUtangEntry entry, CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(PersonalUtangEntry entry, CancellationToken cancellationToken = default);
 }
 
 public interface IPersonalUtangInvitationRepository
@@ -122,6 +140,24 @@ public interface IPersonalUtangInvitationRepository
     Task AddAsync(PersonalUtangInvitation invitation, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(PersonalUtangInvitation invitation, CancellationToken cancellationToken = default);
+}
+
+public interface IPersonalTodoRepository
+{
+    Task<PersonalTodo?> GetByIdAsync(PersonalTodoId id, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PersonalTodo>> ListByOwnerAsync(
+        PlatformUserId ownerUserIdentityId,
+        CancellationToken cancellationToken = default);
+
+    Task AddAsync(PersonalTodo todo, CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(PersonalTodo todo, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PersonalTodo>> ListDueRemindersAsync(
+        DateTimeOffset asOfUtc,
+        int take,
+        CancellationToken cancellationToken = default);
 }
 
 public interface IPersonalReminderRepository
