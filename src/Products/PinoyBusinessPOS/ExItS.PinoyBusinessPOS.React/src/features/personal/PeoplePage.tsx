@@ -1,7 +1,7 @@
 import { ArrowLeft, ChevronRight, IdCard, Info, Link2, Search, UserRound } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ApiClientError } from "@/api/http";
+import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
 import { StatusChip } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -86,7 +86,7 @@ export function PeoplePage() {
 
   if (error) {
     const detail =
-      error instanceof ApiClientError
+      error instanceof PlatformApiError
         ? (error.problem.detail ?? error.message)
         : t("people.loadError");
     return (

@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ApiClientError } from "@/api/http";
+import { PlatformApiError } from "@/api/platform/platform-http";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -41,7 +41,7 @@ export function NotificationsPage() {
     return (
       <ErrorState
         title={t("error.title")}
-        detail={err instanceof ApiClientError ? err.message : t("error.body")}
+        detail={err instanceof PlatformApiError ? err.message : t("error.body")}
         error={err}
       />
     );

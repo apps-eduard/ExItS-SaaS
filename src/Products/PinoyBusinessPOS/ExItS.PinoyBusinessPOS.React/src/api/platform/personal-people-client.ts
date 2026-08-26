@@ -1,4 +1,4 @@
-import { platformRequest } from "@/api/http";
+import { platformRequest } from "@/api/platform/platform-http";
 import type {
   CreatePersonalContactRequest,
   CreatePersonalDebtRelationshipRequest,

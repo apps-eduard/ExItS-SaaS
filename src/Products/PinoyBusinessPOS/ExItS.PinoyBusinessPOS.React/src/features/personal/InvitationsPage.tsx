@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 
 import { Link } from "react-router-dom";
 
-import { ApiClientError } from "@/api/http";
+import { PlatformApiError } from "@/api/platform/platform-http";
 
 import { EmptyState } from "@/components/exits/EmptyState";
 
@@ -119,7 +119,7 @@ export function InvitationsPage() {
 
       <ErrorState
         title={t("error.title")}
-        detail={err instanceof ApiClientError ? err.message : t("error.body")}
+        detail={err instanceof PlatformApiError ? err.message : t("error.body")}
         error={err}
       />
 

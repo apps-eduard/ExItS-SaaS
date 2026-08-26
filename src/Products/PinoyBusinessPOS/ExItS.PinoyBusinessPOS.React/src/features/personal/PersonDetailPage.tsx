@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 
 import { Link, useParams } from "react-router-dom";
 
-import { ApiClientError } from "@/api/http";
+import { PlatformApiError } from "@/api/platform/platform-http";
 
 import { useSession } from "@/session/SessionProvider";
 
@@ -296,7 +296,7 @@ export function PersonDetailPage() {
 
       <ErrorState
         title={t("error.title")}
-        detail={loadError instanceof ApiClientError ? loadError.message : t("error.body")}
+        detail={loadError instanceof PlatformApiError ? loadError.message : t("error.body")}
         error={loadError}
       />
 
