@@ -103,7 +103,8 @@ public sealed class PlatformSessionCookieAppendTests
             "opaque-session-token",
             DateTimeOffset.UtcNow.AddHours(1),
             Options,
-            env);
+            env,
+            config);
 
         return http.Response.Headers.SetCookie.ToString();
     }
