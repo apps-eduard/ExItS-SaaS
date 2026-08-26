@@ -6,8 +6,8 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Plan status | Draft — PLM-00 documentation complete; not product-owner approved; PLM-01 not started |
-| Implementation present | No |
+| Plan status | PLM-00 accepted; PLM-01 product shell scaffolded; PLM-01A client architecture approved |
+| Implementation present | Product shell only — no lending domain |
 
 ## Delivery approach
 
@@ -22,6 +22,7 @@
 |---|---|---|
 | PLM-00 Foundation & Product Decisions | Documentation, identity, isolation, operating-model through technical-boundary planning, closeout, and owner-decision register | Canonical docs exist; closeout filed; open decisions listed; no implementation claimed |
 | PLM-01 Product Scaffold & Isolation | Authorized source/test/deploy skeleton and isolation guards | Projects exist without Loan domain; solution isolation proven; layout: [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md) |
+| PLM-01A React / PWA / Capacitor client architecture | Close PLM-D-00-09; record one React client for Browser/PWA/Capacitor | ADR accepted; Client **not created**; Web retained as future host/BFF |
 | PLM-02 Identity / Organization / Product Access | Consume Platform actor/org/product access without Platform table reads | Access intersection entry gates exist; D-P12-03 not invented |
 | PLM-03 Loan Product Authorization | Product-local roles/grants | Matrix implemented only after PLM-D-00-06 |
 | PLM-04 Borrower Foundation | Product-local borrower records; optional Personal link | Borrower exists without requiring Personal; no POS Customer reads |
@@ -33,7 +34,7 @@
 | PLM-10 Collections / Delinquency | Arrears and collections | Only after collections policy exists |
 | PLM-11 Reporting / Documents | Product reports and documents | Only after report contents are decided |
 | PLM-12 Security / Audit / Privacy | Product audit, privacy, consent hardening | Evidence against this product’s security docs |
-| PLM-13 Offline / Mobile Field Capabilities | MAUI/offline/field capabilities | Only after PLM-D-00-09 and owner authorization |
+| PLM-13 Offline / Mobile Field Capabilities | Optional LocalStore / field offline against the React/PWA/Capacitor track | Only after dedicated PLM-13 authorization; LocalStore not created by PLM-D-00-09 |
 | PLM-14 Production Validation / Closeout | Production-readiness evidence | Blocked while R-091 / other portfolio production risks remain |
 
 Detail per current phase: [roadmap.md](roadmap.md).
@@ -48,24 +49,25 @@ Report template: `docs/Product-Foundation/Templates/work-package-report.md` → 
 
 Stop when any of these are missing without an approved decision:
 
-- [ ] Product definition approved (draft plus operating-model direction exists; owner approval open — PLM-D-00-10)
+- [x] Product documentation baseline accepted (PLM-D-00-10 Closed / Product Owner Accepted; financial/legal/production decisions remain open)
 - [ ] Roles/grants matrix draft (presets and grant **intent** recorded; identifiers open — PLM-D-00-06)
 - [ ] Operational-money definition (boundary and ledger-vs-cash direction — PLM-D-00-07)
 - [ ] DB name/schema (name proposed; schema open — PLM-D-00-02)
 - [x] Privacy classification (PHI default none) — recorded
 - [x] Explicit exclusions — recorded in [product-definition.md](product-definition.md)
 
-Do not start PLM-01 until PLM-00 owner decisions needed for scaffold are resolved or explicitly deferred.
+PLM-01A is documentation only. Do not start PLM-02, Gate B, or Capacitor until separately authorized. LocalStore remains deferred. MAUI is not the preferred client path (PLM-D-00-09).
 
 ## Dependencies
 
 | Dependency | Type | Notes |
 |---|---|---|
-| Platform catalog / subscription | Platform | Independent subscription required; slug registration open (PLM-D-00-01) |
+| Platform catalog / subscription | Platform | Independent subscription required; catalog code `pinoy-loan-manager` **FINAL / PRODUCT OWNER APPROVED** (PLM-D-00-01). Production commercial policy remains open. |
 | Commercial-state transport | **DECISION D-P12-03** | Provisional patterns only; do not invent final |
 | Production authentication | **R-091** | Keep Dev/Testing language honest (D-P12-05) |
 | Personal / cross-product relationship model | Platform + product | Open (PLM-D-00-04, PLM-D-00-05) |
 | Loan owner policy | Product owner | Open (PLM-D-00-06, PLM-D-00-07, PLM-D-00-08) |
+| Organization/field client strategy | Product owner | **Closed / Product Owner Approved** (PLM-D-00-09) |
 
 ## Testing expectations
 

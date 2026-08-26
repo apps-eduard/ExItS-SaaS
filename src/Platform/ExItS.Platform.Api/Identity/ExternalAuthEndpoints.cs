@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Facebook;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace ExItS.Platform.Api.Identity;
@@ -50,7 +51,7 @@ internal static class ExternalAuthEndpoints
             IOptions<PlatformSessionOptions> sessionOptions,
             IOptions<PlatformExternalAuthOptions> options,
             IHostEnvironment env,
-            IConfiguration config,
+            IConfiguration configuration,
             CancellationToken ct) =>
         {
             if (!TryResolveScheme(provider, options.Value, out var scheme, out var error))
@@ -104,7 +105,8 @@ internal static class ExternalAuthEndpoints
                 result.Value.SessionToken,
                 result.Value.ExpiresAtUtc,
                 sessionOptions.Value,
-                env);
+                env,
+                configuration);
 
             var returnUrl = auth.Properties?.Items.TryGetValue(
                 PlatformExternalAuthDefaults.ReturnUrlItemKey,
@@ -125,7 +127,7 @@ internal static class ExternalAuthEndpoints
             IOptions<PlatformSessionOptions> sessionOptions,
             IOptions<PlatformExternalAuthOptions> options,
             IHostEnvironment env,
-            IConfiguration config,
+            IConfiguration configuration,
             CancellationToken ct) =>
         {
             if (!(env.IsDevelopment() || env.IsEnvironment("Testing")) || !options.Value.TestingEndpointEnabled)
@@ -159,7 +161,8 @@ internal static class ExternalAuthEndpoints
                 result.Value.SessionToken,
                 result.Value.ExpiresAtUtc,
                 sessionOptions.Value,
-                env);
+                env,
+                configuration);
             return Results.Ok(result.Value);
         })
         .RequireRateLimiting(PlatformSecurityPipeline.AuthLoginRateLimitPolicy)

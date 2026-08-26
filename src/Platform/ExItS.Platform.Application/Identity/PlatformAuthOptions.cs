@@ -97,6 +97,18 @@ public sealed class PlatformEmailDeliveryOptions
     /// </summary>
     public string? LinkGuidanceHtml { get; set; }
 
+    /// <summary>
+    /// Explicit Pinoy Loan Manager Browser/PWA public origin for EmailVerification and PasswordReset only.
+    /// Never derived from request Host/Origin/Referer.
+    /// </summary>
+    public string? PinoyLoanManagerPublicBaseUrl { get; set; }
+
+    /// <summary>
+    /// When true, http://localhost and http://127.0.0.1 are allowed for the PLM public base URL (Local Validation).
+    /// Production must keep this false so only HTTPS PLM origins are accepted.
+    /// </summary>
+    public bool AllowHttpLoopbackPublicUrls { get; set; }
+
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(SmtpHost)
         && SmtpPort > 0

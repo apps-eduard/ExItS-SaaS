@@ -1,63 +1,68 @@
 # Pinoy Loan Manager — Source and Project Layout
 
-**Status:** Planning / architecture baseline (documentation only)
-**Implementation present:** No
+**Status:** PLM-01 scaffold; Gates B–D3 React Client + PWA + cookie Sign In + account lifecycle + org/product access
+**Implementation present:** Product shell + React Client + PWA + Sign In + Personal Register/Activate/Forgot/Reset + D3 org/product-access gate — no lending domain
 **Last updated:** 2026-08-19
 
-Future **implementation target** for Pinoy Loan Manager source layout. **Do not create these projects in this package.**
+Physical layout after **PLM-01** through **PLM-CLIENT-GATE-D3**. PLM-D-00-03 is **Closed**. PLM-D-00-09 is **Closed / Product Owner Approved**. `ExItS.PinoyLoanManager.Client` is the Browser + PWA host with same-origin `/platform-api` transport, cookie Sign In, Personal account lifecycle, and the D3 organization/product-access gate. LocalStore remains **intentionally deferred** (not authorized). MAUI is not the preferred future architecture. Capacitor is not started.
 
-Related: [api-and-contract-boundary.md](api-and-contract-boundary.md), [persistence-and-database-boundary.md](persistence-and-database-boundary.md), [mobile-offline-boundary.md](mobile-offline-boundary.md), [../architecture.md](../architecture.md).
+Related: [react-pwa-capacitor-client.md](react-pwa-capacitor-client.md), [api-and-contract-boundary.md](api-and-contract-boundary.md), [persistence-and-database-boundary.md](persistence-and-database-boundary.md), [mobile-offline-boundary.md](mobile-offline-boundary.md), [../architecture.md](../architecture.md), [../Reports/PLM-01-product-scaffold-and-isolation.md](../Reports/PLM-01-product-scaffold-and-isolation.md), [../Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md](../Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md).
 
 ---
 
-## Target tree
-
-Subject to repository Product Foundation conventions (`src/Products/<ProductName>/` plus `Docs/`):
+## Tree
 
 ```text
 src/Products/PinoyLoanManager/
 ├── Docs/
-├── ExItS.PinoyLoanManager.Domain/
-├── ExItS.PinoyLoanManager.Application/
-├── ExItS.PinoyLoanManager.Infrastructure/
-├── ExItS.PinoyLoanManager.Api/
-├── ExItS.PinoyLoanManager.ApiClient/
-├── ExItS.PinoyLoanManager.Web/
-├── ExItS.PinoyLoanManager.Maui/
-└── ExItS.PinoyLoanManager.LocalStore/   only if/when justified
+├── ExItS.PinoyLoanManager.Domain/            created
+├── ExItS.PinoyLoanManager.Application/       created
+├── ExItS.PinoyLoanManager.Infrastructure/    created (no EF/Npgsql)
+├── ExItS.PinoyLoanManager.Api/               created (health only)
+├── ExItS.PinoyLoanManager.ApiClient/         created (marker only)
+├── ExItS.PinoyLoanManager.Web/               created (identity shell; future host/BFF)
+├── ExItS.PinoyLoanManager.Client/            created (Gates B–D3 React + PWA + Sign In + account lifecycle + org/product access)
+└── ExItS.PinoyLoanManager.LocalStore/        FUTURE ONLY IF AUTHORIZED
 ```
 
-Tests should follow repository Product Foundation / existing solution conventions (typically `tests/ExItS.PinoyLoanManager.*.Tests` when authorized). Exact test-project names remain for the scaffold WP.
+Do **not** physically create Capacitor Android/iOS projects in Gate C. PWA lives in this Client Vite application.
 
-This matches Product Foundation section 9 (product folder with Domain, Application, Infrastructure, Api, clients, UI as authorized). **No Product Foundation conflict.** PLM-D-00-03 remains open until an authorized scaffold creates the projects.
+Tests:
+
+- `tests/ExItS.PinoyLoanManager.UnitTests/` — assembly-load smoke tests
+- `tests/ExItS.ArchitectureTests/PinoyLoanManagerArchitectureTests.cs` — isolation guards
+
+All created projects are registered in `ExItS.slnx` under `/src/Products/PinoyLoanManager/`.
+
+This matches Product Foundation section 9 for the scaffolded shell. **No Product Foundation document was modified in PLM-01 or PLM-01A.**
 
 ---
 
 ## Layering
 
-| Project | Responsibility |
-|---|---|
-| **Domain** | Persistence-independent domain model and invariants |
-| **Application** | Use cases and contracts; **no** Infrastructure reference |
-| **Infrastructure** | Persistence and integrations |
-| **Api** | HTTP / API host |
-| **ApiClient** | Typed client contracts / consumer utilities as appropriate |
-| **Web** | PLM Organization Web (full operations) |
-| **Maui** | Limited field operational client |
-| **LocalStore** | Future mobile / offline persistence **if needed** |
+| Project | Responsibility | References |
+|---|---|---|
+| **Domain** | Persistence-independent domain (marker only in PLM-01) | none |
+| **Application** | Future use cases/contracts | Domain |
+| **Infrastructure** | Future persistence/integrations | Application, Domain |
+| **Api** | HTTP host; Loan operational authority | Application, Infrastructure |
+| **ApiClient** | Future typed HTTP client | Application |
+| **Web** | Future ASP.NET Core browser host / BFF / reverse-proxy / static hosting for the React Client. Current PLM-01 identity shell is scaffold evidence only. Must not own authoritative loan calculations, duplicated authorization, or a second Blazor lending UI. | ApiClient, Application, DesignSystem (current scaffold) |
+| **Client** | React + TypeScript presentation (Browser now; PWA/Capacitor later). Gate B scaffold only. Must not own authoritative financial or grant rules. | none (no PLM .NET refs) |
 
 UI projects must not reference Infrastructure, EF Core, or Npgsql. Domain remains persistence-independent.
 
-**No project may reference PinoyBusinessPOS.**
+**No project may reference PinoyBusinessPOS.** No PLM project may reference Platform Infrastructure.
 
-Do **not** introduce a new application framework merely because this is a new product. Follow existing ExItS solution technology direction (.NET, Blazor Web, MAUI Blazor Hybrid). No NuGet / package additions in this WP.
-
-Web / MAUI component-sharing remains **OPEN** (PLM-D-00-09).
+Do not copy PinoyBusinessPOS React source into PinoyLoanManager.
 
 ---
 
-## Explicit non-goals
+## Explicit non-goals (still true)
 
-- Creating directories, `.csproj`, or `ExItS.slnx` entries
-- Copying POS domain projects
-- Authorizing LocalStore by default
+- PWA, service worker, Capacitor, or Android projects in this package
+- Database, DbContext, EF configuration, migrations, connection strings, secrets
+- Platform catalog registration of `pinoy-loan-manager`
+- Borrower/Loan/authorization/business screens
+- Copying POS domain, use cases, roles, money, React client, or migrations
+- Deleting or refactoring `ExItS.PinoyLoanManager.Web` in this package

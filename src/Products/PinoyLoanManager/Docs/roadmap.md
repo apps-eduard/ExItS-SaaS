@@ -6,32 +6,35 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Current phase | PLM-00 Foundation & Product Decisions (documentation complete) |
-| Current work package | PLM-00-WP10 complete; **product implementation paused** |
-| Status | **PLM-D-00-10 Closed / Product Owner Accepted** (documentation baseline). Implementation is deliberately paused while ExItS scale architecture and remaining PLM business/policy decisions are finalized |
+| Current phase | PLM-01 Product Scaffold & Isolation (complete); PLM-01A client architecture (this package) |
+| Current work package | PLM-CLIENT-GATE-D3 organization discovery + product access gate |
+| Status | PLM-00 accepted; PLM-01 scaffolded; PLM-01A approved; Gates B, C, D0, D1, D2, and D3 complete; PLM-D3-PRE complete; Gate E and PLM-02 not started |
 
 ## Phase objective
 
-Establish product documentation, architecture boundaries, Personal/Borrower intent, operating-model, financial-lifecycle, authorization/cash-control, origination, reporting, technical layout, and an honest open-decision register. No Loan implementation on `main`.
+Create the isolated Pinoy Loan Manager product shell (projects, solution registration, architecture guards) without lending business functionality, persistence, Platform catalog registration, or a native field client. PLM-01A records the approved React + PWA + Capacitor client architecture without creating that client.
 
 ## Scope
 
 ### Included
 
-- Canonical Product Foundation documents under `Docs/`
-- Isolation and Personal/Borrower planning rules
-- Operating-model, financial, authorization, cash, origination, reporting, and technical-boundary planning (WP01–WP09)
-- Foundation closeout and implementation-readiness gates (WP10)
-- Planning buckets PLM-00 through PLM-14
+- Domain / Application / Infrastructure / Api / ApiClient / Web project scaffold
+- Solution registration and isolation tests
+- Intentional deferral of LocalStore; MAUI preferred path superseded (PLM-D-00-09)
+- PLM-01 evidence report
+- PLM-01A client architecture ADR (documentation only; Client not created)
 
 ### Excluded
 
-- Code, projects, database objects, migrations, APIs, UI, Docker, deployment, solution changes **on main**
-- Merging parked `feat/plm-01-scaffold` (unmerged; not accepted mainline state)
-- Final grant identifiers, calculation formulas, peso/percent rates, rounding mode, component allocation order
-- Generic Platform relationship schema
-- Production authentication (R-091) unless a later phase explicitly delivers it
-- Final commercial-state transport (D-P12-03) unless explicitly authorized
+- Loan / Quick Loan / Borrower domain implementation
+- Database, DbContext, migrations, connection strings, secrets
+- Platform catalog / subscriptions / entitlements / Personal linking
+- Authorization implementation
+- MAUI / Android workload / Capacitor
+- Final grant identifiers, calculation formulas, peso/percent rates, rounding mode
+- Production authentication (R-091)
+- Final commercial-state transport (D-P12-03)
+- Starting PLM-02 from this package
 
 ## Work packages (current phase)
 
@@ -48,15 +51,14 @@ Establish product documentation, architecture boundaries, Personal/Borrower inte
 | PLM-00-WP09 | Technical Product Layout & Integration Boundary | Completed | PLM-00-WP08 |
 | PLM-00-WP10 | Foundation Closeout & Implementation Readiness | Completed | PLM-00-WP09 |
 
-PLM-00 documentation phase is complete. Product implementation is **not** currently authorized.
-
-`feat/plm-01-scaffold` exists as an **unmerged parked** implementation branch. It is **not** part of accepted mainline product state. Do not merge or delete it from this documentation package. Do **not** use it as evidence to close **PLM-D-00-03**.
+PLM-00 documentation phase is complete. PLM-01 scaffold is complete. PLM-01A is the current documentation package.
 
 ## Planning buckets (later phases)
 
 | Phase | Status |
 |---|---|
-| PLM-01 Product Scaffold & Isolation | **Paused** — not currently authorized on mainline |
+| PLM-01 Product Scaffold & Isolation | **Complete** (shell) |
+| PLM-01A React / PWA / Capacitor client architecture | **Complete** (documentation; Gate A) |
 | PLM-02 Identity / Organization / Product Access | Not started |
 | PLM-03 Loan Product Authorization | Not started |
 | PLM-04 Borrower Foundation | Not started |
@@ -71,33 +73,13 @@ PLM-00 documentation phase is complete. Product implementation is **not** curren
 | PLM-13 Offline / Mobile Field Capabilities | Not started |
 | PLM-14 Production Validation / Closeout | Not started |
 
-## Remaining documentation before implementation resumes
-
-Before product implementation resumes, documentation still needs **final decisions** for (do **not** invent them in a scale-architecture package):
-
-- product slug (PLM-D-00-01)
-- database name (PLM-D-00-02)
-- physical source/test/deploy layout on mainline (PLM-D-00-03; remains open)
-- Personal/Borrower linking contract (PLM-D-00-04, PLM-D-00-05)
-- final grants (PLM-D-00-06)
-- financial model (PLM-D-00-07)
-- interest calculation methods, rounding, payment allocation, fee model, penalty policies, excused-day schedule treatment, settlement (PLM-D-00-08, PLM-D-00-12)
-- high-risk separation of duties (PLM-D-00-13)
-- cash variance close policy
-- refund/reversal workflow
-- legal/compliance validation (PLM-D-00-11)
-- Platform commercial-state transport dependencies (D-P12-03)
-
-Portfolio: R-091 remains open. Scale architecture: [exits-scale-and-growth-architecture.md](../../../../docs/Product-Foundation/exits-scale-and-growth-architecture.md).
-
 ## Dependencies
 
 | Dependency | Notes |
 |---|---|
-| Platform subscription for `pinoy-loan-manager` | Required; registration open (PLM-D-00-01) |
-| Product-owner decisions | PLM-D-00-01 through PLM-D-00-09, PLM-D-00-11 through PLM-D-00-13 (PLM-D-00-10 closed) |
+| Platform subscription for `pinoy-loan-manager` | Catalog code **FINAL / PRODUCT OWNER APPROVED** (PLM-D-00-01). Independent Local Validation fixture exists. Production commercial policy and D-P12-03 transport remain open. |
+| Product-owner decisions | PLM-D-00-02, PLM-D-00-04 through PLM-D-00-08, PLM-D-00-11 through PLM-D-00-13 (PLM-D-00-03, PLM-D-00-09, and PLM-D-00-10 closed) |
 | D-P12-03 / R-091 / D-P12-05 | Portfolio-open; do not invent |
-| ExItS scale architecture | Documented on `docs/exits-scale-foundation`; implementation of stamps/shards not required to resume docs work |
 
 ## Acceptance criteria (phase)
 
@@ -112,10 +94,9 @@ Portfolio: R-091 remains open. Scale architecture: [exits-scale-and-growth-archi
 - [x] Technical product layout and integration boundary recorded (WP09)
 - [x] Foundation closeout and readiness checklist recorded (WP10)
 - [x] Product-owner approval of documentation baseline (PLM-D-00-10 Closed / Product Owner Accepted)
-- [ ] Remaining business/financial/legal decisions listed above
-- [ ] Isolation contract preserved in any later implementation (separate DB; no Platform table reads; product-local roles)
-- [ ] Docs match implementation (no implementation on `main`)
-- [ ] Tests green; `main = origin/main` (not applicable until implementation and authorized push)
+- [x] Isolation contract preserved in scaffold (no POS refs; no Platform Infrastructure; no EF/migrations)
+- [x] Docs match scaffold (no lending implementation claimed)
+- [ ] Tests green on `feat/plm-01-scaffold` (recorded in PLM-01 report; not merged to main)
 
 ## Risks
 
@@ -127,13 +108,37 @@ Portfolio: R-091 remains open. Scale architecture: [exits-scale-and-growth-archi
 | PLM-D-00-05 | Auto-link from EX ID / QR | Consent required; resolution identifies only |
 | R-091 | Claiming production-ready identity | Honest Dev/Testing vs Production language |
 | D-P12-03 | Copying POS Dev commercial headers as PLM production design | Leave transport Open |
-| PLM-D-00-03 | Treating parked scaffold as mainline | Leave PLM-D-00-03 open until authorized scaffold lands on `main` |
+
+## Frontend delivery track (cross-cutting)
+
+Does **not** replace the core business roadmap above. Detail: [Architecture/react-pwa-capacitor-client.md](Architecture/react-pwa-capacitor-client.md).
+
+| Gate | Status |
+|---|---|
+| PLM-CLIENT-GATE A Architecture decision | **Complete** (PLM-01A) |
+| PLM-CLIENT-GATE B React scaffold | **Complete** |
+| PLM-CLIENT-GATE C Browser/PWA foundation | **Complete** |
+| PLM-CLIENT-GATE D0 Browser session auth transport | **Complete** |
+| PLM-CLIENT-GATE D1 Sign In / session UI + Local Validation Test User | **Complete** |
+| PLM-CLIENT-GATE D2 Register/Activate/Forgot/Reset + Mailpit callback routing | **Complete** |
+| PLM-D3-PRE Product registration + session-bound access prerequisite | **Complete** |
+| PLM-CLIENT-GATE D3 Auth + org/product access | **Complete** |
+| PLM-CLIENT-GATE E First lending slice + visual review | **NOT STARTED** — requires real authorized lending API |
+| PLM-CLIENT-GATE F Responsive/field workflows | Not started |
+| PLM-CLIENT-GATE G Capacitor Android shell | Not started |
+| PLM-CLIENT-GATE H Physical Android validation | Not started |
+| PLM-CLIENT-GATE I Performance/reliability assessment | Not started |
+| PLM-CLIENT-GATE J Production readiness/cutover | Not started |
+
+Offline financial operation remains **PLM-13**.
 
 ## Exact next package
 
-**Finalize remaining PLM business and financial decisions** (and complete review of ExItS scale architecture) **before any product implementation**.
+**STOPPED AFTER PLM-CLIENT-GATE-D3.** Gate E prerequisite: confirm a real authorized lending API exists in PLM Domain/Application/Api. If none exists, stop with `REAL_LENDING_CONTRACT_MISSING`. Do not start Capacitor or PLM-02 from this package.
 
-Do **not** start or merge PLM-01 from this documentation state.
+Recommended later order when separately authorized: Gate E (if lending contract exists), then PLM-02.
+
+PLM-02 still consumes Platform actor/org/product access without Platform table reads. Do not invent D-P12-03.
 
 ## Phase closeout requirements
 
@@ -142,5 +147,4 @@ Do **not** start or merge PLM-01 from this documentation state.
 - [x] No invented unresolved policy
 - [x] Closeout report filed ([Reports/PLM-00-foundation-closeout.md](Reports/PLM-00-foundation-closeout.md))
 - [ ] Portfolio / phase status updated (outside this product Docs tree; not done here)
-- [x] Product-owner acceptance of documentation baseline (PLM-D-00-10 Closed / Product Owner Accepted)
-- [x] Implementation pause recorded (current Product Owner direction)
+- [x] Product-owner acceptance (PLM-D-00-10 Closed / Product Owner Accepted)

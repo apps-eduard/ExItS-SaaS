@@ -2,11 +2,13 @@
 
 **Purpose:** Architecture Decision Records (ADRs) explaining important architectural or business choices and **WHY**.
 **Canonical register:** [../risks-and-decisions.md](../risks-and-decisions.md)
-**Status:** Foundation / planning only
-**Implementation present:** No
+**Status:** PLM-D-00-09 accepted; remaining register items as listed
+**Implementation present:** No React Client
 
-No ADR is approved in this package. PLM-00-WP03 through WP10 record agreed **product direction** in Product / Architecture / Security docs; that is not an ADR close-out.
+| ADR | Status |
+|---|---|
+| [PLM-D-00-09-react-pwa-capacitor-client-strategy.md](PLM-D-00-09-react-pwa-capacitor-client-strategy.md) | Accepted / Product Owner Approved |
 
-Major irreversible or cross-product choices must eventually receive an ADR here.
+PLM-D-00-01 is Closed / Product Owner Approved (`pinoy-loan-manager`). Do not close PLM-D-00-02, PLM-D-00-04 through PLM-D-00-08, PLM-D-00-11 through PLM-D-00-13, D-P12-03, R-091, or D-P12-05 without explicit approval.
 
-Do not close PLM-D-00-01 through PLM-D-00-13, D-P12-03, R-091, or D-P12-05 without explicit approval.
+PLM-D-00-03 is Closed (scaffold layout). PLM-D-00-09 is Closed / Product Owner Approved. PLM-D-00-10 is Closed / Product Owner Accepted (documentation baseline only).

@@ -5,10 +5,10 @@
 
 | Field | Value |
 |---|---|
-| Product | Pinoy Loan Manager / `pinoy-loan-manager` (proposed, PLM-D-00-01) |
+| Product | Pinoy Loan Manager / `pinoy-loan-manager` (**FINAL / PRODUCT OWNER APPROVED**, PLM-D-00-01) |
 | Database | `ExItS_PinoyLoanManager` (proposed) / schema **Status: Open / Product Owner Decision Required** (PLM-D-00-02) |
-| Status | Draft — PLM-00 documentation complete; not product-owner approved; no implementation |
-| Implementation present | No |
+| Status | PLM-00 accepted; PLM-01 shell scaffolded; PLM-01A client architecture approved; no lending implementation |
+| Implementation present | Product shell + React Client + online-first PWA + cookie Sign In + Personal account lifecycle + D3 org/product-access gate — no lending/Capacitor |
 
 ## System context
 
@@ -20,7 +20,7 @@
          ExItS_PinoyLoanManager (product only; not created)
 ```
 
-Surfaces (agreed direction, not implemented): Platform Admin (SaaS only) · Organization Web (full ops) · MAUI Hybrid (field subset) · ExItS Personal (borrower presentation). Detail: [Architecture/application-surface-model.md](Architecture/application-surface-model.md).
+Surfaces (Gate B/C Client present; Capacitor later): Platform Admin (SaaS only) · Organization Web/PWA (full ops) · Capacitor Android (same app, field subset later) · ExItS Personal (borrower presentation). Detail: [Architecture/application-surface-model.md](Architecture/application-surface-model.md), [Architecture/react-pwa-capacitor-client.md](Architecture/react-pwa-capacitor-client.md).
 
 Pinoy Loan Manager must never take a project or database dependency on PinoyBusinessPOS.
 
@@ -37,7 +37,7 @@ Pinoy Loan Manager must never take a project or database dependency on PinoyBusi
 | Loan operational financial state | No | Yes (future) — loan ledger separate from collector cash |
 | Product-local authorization | No | Yes (future; presets + grant intent recorded; identifiers open) |
 | Product DB / migrations | No | Yes (future) |
-| Product API / Web UI / MAUI UI / reports / product audit | No | Yes (future) |
+| Product API / Web host / React Client / reports / product audit | No | Yes (future) — Client presentation only; Web is host/BFF |
 
 ## Personal / Borrower model (requirement — not implemented)
 
@@ -94,7 +94,7 @@ Planning modules only. None are designed or implemented. Exact formulas remain o
 | Collections / delinquency | Arrears, exceptions, waivers, reversals | Separate from lifecycle; no hard-coded rate |
 | Reporting / documents | Product reports and documents | Contents: [Product/reporting-baseline.md](Product/reporting-baseline.md); KPI formulas open |
 | Security / audit / privacy | Product audit, consent, classification | See [security.md](security.md) |
-| Offline / MAUI field capabilities | Later native/offline support | Server remains authoritative; not authorized |
+| Offline / field capabilities | Later PWA/Capacitor field + optional LocalStore | Server remains authoritative; LocalStore not authorized; PLM-13 |
 
 ## Data ownership
 
@@ -123,27 +123,24 @@ Recorded as required intent. Not implemented.
 - [x] No shared authoritative operational database
 - [x] No direct POS database reads (additional PLM rule)
 
-## Client direction (proposed — not authorized)
+## Client direction (approved — PLM-D-00-09)
 
-Agreed split (not implemented). Detail: [Architecture/application-surface-model.md](Architecture/application-surface-model.md).
+One shared React + TypeScript client. Detail: [Architecture/application-surface-model.md](Architecture/application-surface-model.md), [Architecture/react-pwa-capacitor-client.md](Architecture/react-pwa-capacitor-client.md).
 
-| Surface | Proposed direction |
+| Surface | Approved direction |
 |---|---|
 | Platform Admin Web | Existing unified Platform Admin — SaaS control plane only |
-| Organization Web | Blazor Web — full operational application |
-| Mobile / Desktop | .NET MAUI Blazor Hybrid — limited field / collector application |
+| Organization Web / PWA | Full operational application — `ExItS.PinoyLoanManager.Client` (not created) hosted through `ExItS.PinoyLoanManager.Web` as host/BFF |
+| Capacitor Android | Same React Client in a thin native host; role-optimized subset later; Android first |
 | ExItS Personal | Existing Personal — borrower presentation only |
 
-Possible later native MAUI capabilities (not designed):
+The previous Blazor Organization Web + MAUI Blazor Hybrid preferred path is **superseded**. MAUI is not part of the approved preferred implementation path. Existing Web is not deleted.
 
-- secure storage
-- camera / document capture
-- biometrics
-- connectivity
-- notifications
-- SQLite / offline support
+`ExItS.PinoyLoanManager.Client` does **not** exist yet. Do not create it in PLM-01A.
 
-Web / MAUI component-sharing strategy is **Status: Open / Product Owner Decision Required** (PLM-D-00-09). No client project is authorized. Future project names: [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md). Offline: [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md). Contracts: [Architecture/api-and-contract-boundary.md](Architecture/api-and-contract-boundary.md). Persistence: [Architecture/persistence-and-database-boundary.md](Architecture/persistence-and-database-boundary.md). Commercial: [Architecture/platform-commercial-integration.md](Architecture/platform-commercial-integration.md).
+Possible later native Capacitor capabilities (not designed here): secure storage, camera / document capture, biometrics, connectivity, notifications. SQLite / LocalStore / offline financial posting are **not authorized**.
+
+Offline: [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md). Layout: [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md). Contracts: [Architecture/api-and-contract-boundary.md](Architecture/api-and-contract-boundary.md). Persistence: [Architecture/persistence-and-database-boundary.md](Architecture/persistence-and-database-boundary.md). Commercial: [Architecture/platform-commercial-integration.md](Architecture/platform-commercial-integration.md).
 
 ## External integrations
 
@@ -161,7 +158,7 @@ Web / MAUI component-sharing strategy is **Status: Open / Product Owner Decision
 | Platform images | Separate — do not fork per customer |
 | Persistent DB | `ExItS_PinoyLoanManager` (proposed, PLM-D-00-02) |
 | Config | Environment / secrets — not source forks |
-| Physical layout | **Planning target recorded** — [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md); projects not created (PLM-D-00-03) |
+| Physical layout | PLM-01 shell created; future React Client path recorded and not created — [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md) |
 
 Detail: `deployment-notes.md` when packaging begins. Not created in this package.
 

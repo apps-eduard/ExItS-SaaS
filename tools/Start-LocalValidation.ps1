@@ -633,6 +633,8 @@ $platformEnv = @{
     PlatformEmail__FromDisplayName = 'ExItS Local Validation'
     # Must match React Admin (:8095) - hosts /admin/activate-account and /admin/reset-password.
     PlatformEmail__AdminPublicBaseUrl = $authPublicBaseUrl
+    PlatformEmail__PinoyLoanManagerPublicBaseUrl = 'http://localhost:4176'
+    PlatformEmail__AllowHttpLoopbackPublicUrls = 'true'
     DataProtection__KeysPath = $dpKeys
 }
 for ($i = 0; $i -lt $corsOrigins.Count; $i++) {

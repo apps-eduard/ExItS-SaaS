@@ -1,8 +1,8 @@
 # Pinoy Loan Manager — File Manifest
 
-**Status:** Foundation / planning only
-**Implementation present:** No
-**Current work package:** PLM-00-WP10 — Foundation Closeout & Implementation Readiness
+**Status:** PLM-01 scaffold; Gates B–D3 complete; PLM-D3-PRE Platform product registration + current-session access
+**Implementation present:** Product shell + React Client + online-first PWA + cookie Sign In + Personal account lifecycle + organization/product-access gate; Platform catalog code `pinoy-loan-manager` + Local Validation fixture + current-session access API; no lending/Capacitor
+**Current work package:** PLM-CLIENT-GATE-D3 organization discovery + product access gate
 
 This file is the navigation map for future Cursor work. Load this product’s `Docs/` after the shared Product Foundation reference. Do not scan PinoyBusinessPOS implementation by default.
 
@@ -34,7 +34,7 @@ Shared contracts to load with this product:
 | `Docs/Product/quick-loan-model.md` | Templates, snapshot, eligibility, Personal flow | Agreed direction / not a spec | No |
 | `Docs/Product/collector-cash-and-reconciliation.md` | Loan ledger vs collector cash | Agreed direction / not a spec | No |
 | `Docs/Product/penalty-exception-and-waiver-model.md` | Penalty, exception, waiver, reversal, post-maturity | Agreed direction / not a spec | No |
-| `Docs/Architecture/application-surface-model.md` | Platform Admin, Org Web, MAUI, Personal | Agreed direction / not a spec | No |
+| `Docs/Architecture/application-surface-model.md` | Platform Admin, Org Web/PWA, Capacitor Android, Personal | Agreed direction / not a spec | No |
 
 ## Financial / lifecycle planning (PLM-00-WP04)
 
@@ -89,11 +89,25 @@ Shared contracts to load with this product:
 
 | Path | Purpose | Status | Implementation present |
 |---|---|---|---|
-| `Docs/Architecture/source-and-project-layout.md` | Future project tree; not created | Planning target / not a spec | No |
+| `Docs/Architecture/source-and-project-layout.md` | Physical layout; Client Gate B scaffold | PLM-01 + Gate B | Product shell + React Client |
+| `Docs/Architecture/react-pwa-capacitor-client.md` | Shared React + PWA + Capacitor architecture | Accepted (PLM-D-00-09); Gate B scaffold | React foundation |
 | `Docs/Architecture/api-and-contract-boundary.md` | API consumers; Personal contracts | Planning target / not a spec | No |
 | `Docs/Architecture/persistence-and-database-boundary.md` | Separate DB isolation | Planning target / not a spec | No |
-| `Docs/Architecture/mobile-offline-boundary.md` | Online-first MAUI; offline not authorized | Planning target / not a spec | No |
+| `Docs/Architecture/mobile-offline-boundary.md` | Online-first; LocalStore not authorized | Planning target / not a spec | No |
 | `Docs/Architecture/platform-commercial-integration.md` | Platform contracts; D-P12-03 open | Planning target / not a spec | No |
+| `Docs/Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md` | ADR: one React + PWA + Capacitor client | Accepted / Product Owner Approved | No |
+| `Docs/Reports/PLM-01A-react-pwa-capacitor-architecture-decision.md` | PLM-01A evidence | Architecture decision complete | No |
+| `Docs/Reports/PLM-CLIENT-GATE-B-react-client-scaffold.md` | Gate B React Client scaffold | Complete after validation | React foundation |
+| `Docs/Reports/PLM-CLIENT-GATE-C-browser-pwa-foundation.md` | Gate C Browser + PWA foundation | Complete after validation | Online-first PWA |
+| `Docs/Reports/PLM-CLIENT-GATE-D0-browser-auth-transport.md` | Gate D0 browser session auth transport | Complete after validation | Same-origin `/platform-api` + cookie policy |
+| `Docs/Reports/PLM-CLIENT-GATE-D1-mobile-sign-in-session.md` | Gate D1 Sign In + session UI | Complete after validation | Cookie Sign In; Test User double-gated |
+| `Docs/Reports/impl-gate-d2-account-lifecycle/` | Gate D2 screenshots | Complete after validation | No tokens/passwords in frames |
+| `Docs/Reports/PLM-CLIENT-GATE-D3-organization-product-access.md` | Gate D3 org discovery + product access gate | Complete after validation | Fail-closed workspace gate |
+| `Docs/Reports/impl-gate-d3-organization-product-access/` | Gate D3 screenshots | Complete after validation | Org select, denied, subscription, scope, workspace |
+| `Docs/Reports/PLM-PWA-H1-cache-storage-security.md` | PWA cache/storage security proof | Complete after validation | NetworkOnly APIs; no auth cache |
+| `Docs/Reports/PLM-PWA-H2-install-update-lifecycle.md` | PWA install/update lifecycle | Complete after validation | User-triggered refresh |
+| `Docs/Reports/PLM-PWA-H3-connectivity-fail-closed.md` | Fail-closed connectivity UX | Complete after validation | No financial offline |
+| `Docs/Reports/PLM-PWA-H4-production-preview-reliability.md` | Production-preview PWA reliability | Complete after validation | Evidence before lending |
 
 ## Foundation closeout (PLM-00-WP10)
 
@@ -113,25 +127,40 @@ Shared contracts to load with this product:
 | `Docs/Product/README.md` | Index for product-policy docs | Foundation / Planning Only | No |
 | `Docs/Architecture/README.md` | Index for architecture docs | Foundation / Planning Only | No |
 | `Docs/Security/README.md` | Index for security docs | Foundation / Planning Only | No |
-| `Docs/Decisions/README.md` | Index for future ADRs | Foundation / Planning Only | No |
+| `Docs/Decisions/README.md` | Index for ADRs | Foundation / Planning Only | No |
 | `Docs/Phases/README.md` | Index for phase sequencing | Foundation / Planning Only | No |
 | `Docs/Reports/README.md` | Index for WP evidence | Foundation / Planning Only | No |
+| `Docs/Reports/PLM-01-product-scaffold-and-isolation.md` | PLM-01 scaffold evidence | Scaffold complete / no lending domain | Product shell |
+| `Docs/Reports/PLM-D3-PRE-product-registration-self-access.md` | Product code + Local Validation fixture + current-session access API | PLM-D3-PRE complete; Gate D3 React complete | Platform prerequisite |
 | `Docs/Validation/README.md` | Index for validation evidence | Foundation / Planning Only | No |
 | `Docs/Operations/README.md` | Index for operations docs | Foundation / Planning Only | No |
 
 ---
 
+## Implemented projects (PLM-01 shell)
+
+| Item | Status |
+|---|---|
+| `ExItS.PinoyLoanManager.Domain` | Created — no lending entities |
+| `ExItS.PinoyLoanManager.Application` | Created — no use cases |
+| `ExItS.PinoyLoanManager.Infrastructure` | Created — no EF/Npgsql/DbContext |
+| `ExItS.PinoyLoanManager.Api` | Created — `/health` only |
+| `ExItS.PinoyLoanManager.ApiClient` | Created — marker only |
+| `ExItS.PinoyLoanManager.Web` | Created — identity shell only; future host/BFF |
+| `ExItS.PinoyLoanManager.Client` | Created — Gates B–D3 React + PWA + cookie Sign In + Personal account lifecycle + org/product-access gate |
+| `tests/ExItS.PinoyLoanManager.UnitTests` | Created |
+| `ExItS.slnx` PLM entries | Registered |
+
 ## Not present (intentionally)
 
 | Item | Reason |
 |---|---|
-| `ExItS.PinoyLoanManager.Domain` (and other .NET projects) | Code projects not authorized |
-| Test projects | Not authorized |
-| Database / migration folders | Persistence not authorized |
+| `ExItS.PinoyLoanManager.Maui` | Preferred path superseded (PLM-D-00-09); not created |
+| `ExItS.PinoyLoanManager.LocalStore` | Not justified until offline is authorized |
+| Database / migration folders | Persistence not authorized (PLM-D-00-02 remains open) |
 | Docker / deploy implementation | Not authorized |
-| `ExItS.slnx` entries | Not authorized |
+| Platform catalog code `pinoy-loan-manager` | **FINAL / PRODUCT OWNER APPROVED** (PLM-D-00-01). Local Validation fixture is test-only. D-P12-03 remains open. |
 | `Docs/deployment-notes.md` | Optional until packaging |
-| `Docs/Reports/<WP-id>.md` | In-tree WP report not required except PLM-00 closeout |
 | Exact grant identifiers / custom roles | Open (PLM-D-00-06) |
 | Small-org vs two-person high-risk approval | Open (PLM-D-00-13) |
 | Exact rounding mode | Open (PLM-D-00-12) |

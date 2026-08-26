@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using ExItS.Platform.Api.Authentication;
 using ExItS.Platform.Api.Common;
+using ExItS.Platform.Application.Access;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Organizations;
@@ -9,6 +10,7 @@ using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -24,6 +26,7 @@ internal static class AuthEndpoints
             LoginPlatformUser useCase,
             IOptions<PlatformSessionOptions> sessionOptions,
             IHostEnvironment env,
+            IConfiguration configuration,
             CancellationToken ct) =>
         {
             var result = await useCase.ExecuteAsync(
@@ -38,7 +41,13 @@ internal static class AuthEndpoints
                 return PlatformApiResults.FromResult(result, _ => Results.Ok());
             }
 
-            AppendSessionCookie(http, result.Value.SessionToken, result.Value.ExpiresAtUtc, sessionOptions.Value, env);
+            AppendSessionCookie(
+                http,
+                result.Value.SessionToken,
+                result.Value.ExpiresAtUtc,
+                sessionOptions.Value,
+                env,
+                configuration);
             return Results.Ok(result.Value);
         })
         .RequireRateLimiting(PlatformSecurityPipeline.AuthLoginRateLimitPolicy)
@@ -114,6 +123,21 @@ internal static class AuthEndpoints
         })
         .AllowAnonymous();
 
+        // Browser self-access: binds only productCode. Never bind or trust userId/organizationId.
+        app.MapGet("/api/v1/platform/auth/product-access/effective", async (
+            string? productCode,
+            HttpContext http,
+            EvaluateCurrentSessionProductAccess useCase,
+            IOptions<PlatformSessionOptions> sessionOptions,
+            CancellationToken ct) =>
+        {
+            var token = ExtractSessionToken(http, sessionOptions.Value);
+            var result = await useCase.ExecuteAsync(token, productCode, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        })
+        .AllowAnonymous()
+        .DisableRateLimiting();
+
         app.MapPost("/api/v1/platform/auth/change-password", async (
             ChangePasswordRequest body,
             HttpContext http,
@@ -146,7 +170,7 @@ internal static class AuthEndpoints
             RequestPasswordReset useCase,
             CancellationToken ct) =>
         {
-            var result = await useCase.ExecuteAsync(body.UsernameOrEmail, ct).ConfigureAwait(false);
+            var result = await useCase.ExecuteAsync(body.UsernameOrEmail, body.PublicSurface, ct).ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         })
         .RequireRateLimiting(PlatformSecurityPipeline.AuthPasswordResetRateLimitPolicy)
@@ -172,6 +196,7 @@ internal static class AuthEndpoints
                 .ExecuteAsync(
                     body.DisplayName ?? string.Empty,
                     body.Email ?? string.Empty,
+                    body.PublicSurface,
                     ct)
                 .ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
@@ -447,6 +472,7 @@ internal static class AuthEndpoints
             SelectAccountProfileSession useCase,
             IOptions<PlatformSessionOptions> sessionOptions,
             IHostEnvironment env,
+            IConfiguration configuration,
             CancellationToken ct) =>
         {
             if (!TryGetAuthenticatedUserId(http, out var userId))
@@ -479,7 +505,13 @@ internal static class AuthEndpoints
                 return PlatformApiResults.FromResult(result, _ => Results.Ok());
             }
 
-            AppendSessionCookie(http, result.Value.SessionToken, result.Value.ExpiresAtUtc, sessionOptions.Value, env);
+            AppendSessionCookie(
+                http,
+                result.Value.SessionToken,
+                result.Value.ExpiresAtUtc,
+                sessionOptions.Value,
+                env,
+                configuration);
             return Results.Ok(result.Value);
         });
 
@@ -788,9 +820,9 @@ internal static class AuthEndpoints
         string sessionToken,
         DateTimeOffset expiresAtUtc,
         PlatformSessionOptions options,
-        IHostEnvironment env)
+        IHostEnvironment env,
+        IConfiguration configuration)
     {
-        var configuration = http.RequestServices.GetRequiredService<IConfiguration>();
         var secure = PlatformAuthCookiePolicy.SessionCookieSecure(http.Request, env, configuration);
         http.Response.Cookies.Append(
             options.CookieName,
@@ -823,9 +855,9 @@ internal static class AuthEndpoints
 
     internal sealed record LoginRequest(string? UsernameOrEmail, string? Password);
     internal sealed record ChangePasswordRequest(string? CurrentPassword, string? NewPassword);
-    internal sealed record ForgotPasswordRequest(string? UsernameOrEmail);
+    internal sealed record ForgotPasswordRequest(string? UsernameOrEmail, string? PublicSurface = null);
     internal sealed record ResetPasswordRequest(string? Token, string? NewPassword);
-    internal sealed record RegisterPersonalAccountRequest(string? DisplayName, string? Email);
+    internal sealed record RegisterPersonalAccountRequest(string? DisplayName, string? Email, string? PublicSurface = null);
     internal sealed record ActivatePersonalAccountRequest(string? Token, string? Password);
     internal sealed record ConfirmEmailVerificationRequest(string? Token);
     internal sealed record RequestRecoveryEmailRequest(string? RecoveryEmail);

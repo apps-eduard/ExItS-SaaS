@@ -6,11 +6,11 @@
 | Field | Value |
 |---|---|
 | Product name | Pinoy Loan Manager |
-| Platform product code | `pinoy-loan-manager` (proposed — **Status: Open / Product Owner Decision Required**, PLM-D-00-01) |
+| Platform product code | `pinoy-loan-manager` (**FINAL / PRODUCT OWNER APPROVED**, PLM-D-00-01) |
 | Docs root | `src/Products/PinoyLoanManager/Docs/` |
-| Status | Draft — PLM-00 documentation complete; not product-owner approved; no implementation |
-| Last updated | 2026-08-19 |
-| Implementation present | No |
+| Status | PLM-00 accepted; PLM-01 shell scaffolded; PLM-01A client architecture approved; no lending implementation |
+| Last updated | 2026-08-20 |
+| Implementation present | Product shell + React Client + online-first PWA + cookie Sign In + Personal account lifecycle + D3 org/product-access gate — no lending/Capacitor |
 
 ## Purpose and users
 
@@ -33,7 +33,7 @@ ExItS Platform
 |---|---|---|
 | Identity / production auth | Platform | **DECISION:** R-091 open — do not claim production-secure auth. Keep Dev/Testing vs Production language honest (D-P12-05). |
 | Organizations | Platform | Product will store organization id as a `Guid` reference / contract only. Field name **Status: Open / Product Owner Decision Required**. |
-| Catalog / plans / subscription | Platform | **Required:** independent subscription for this product only. Catalog registration of `pinoy-loan-manager` is not done (PLM-D-00-01). |
+| Catalog / plans / subscription | Platform | **Required:** independent subscription for this product only. Catalog code `pinoy-loan-manager` is **FINAL / PRODUCT OWNER APPROVED** (PLM-D-00-01). Local Validation may seed a test-only commercial fixture; that fixture is not production pricing/plans/grants. |
 | Entitlements / commercial access | Platform facts | **DECISION:** D-P12-03 commercial-state transport — do not invent. Platform entitlement does not replace Loan product-local authorization. |
 | SaaS billing payments | Platform | Never store product operational money in Platform SaaS billing. |
 | Operational workflows / roles / money | **This product** | Not implemented. Role presets + grant **intent** recorded; identifiers open (PLM-D-00-06). Cashier Session and collector cash accountability recorded; schema open (PLM-D-00-07). |
@@ -64,8 +64,8 @@ Additional isolation (required intent):
 |---|---|---|
 | API | Product | Intended. No API project authorized. Personal/Loan API shape remains open. |
 | Platform Admin Web | Platform | Unified SaaS control plane. Must **not** become the normal borrower-loan operations UI. |
-| Organization Web UI | Product | Full operational lending application (proposed Blazor Web). No client project authorized (PLM-D-00-09). |
-| MAUI Hybrid UI | Product | Limited field / collector application. Not a duplicate of Organization Web. Native/offline capabilities not authorized. |
+| Organization Web UI | Product | Full operational lending application via the shared React Client (Browser/PWA). Client project not created (PLM-CLIENT-GATE B). |
+| Capacitor Android | Product | Same React Client in a thin native host; role-optimized subset later. Not created. MAUI is not the preferred path (PLM-D-00-09). |
 | ExItS Personal | Platform (presentation) | Customer/borrower experience. Not a separate borrower app. Loan operational data remains this product’s authority. |
 | Reports | Product | Intended. Report contents **Status: Open / Product Owner Decision Required**. |
 
@@ -150,7 +150,7 @@ No loan MVP **implementation** is approved. Calculation algorithms, peso/percent
 - ExItS remains one Platform plus independently subscribed products.
 - Pinoy Loan Manager remains operationally isolated from PinoyBusinessPOS.
 - Documentation in this `Docs/` root is the product documentation authority (D-P12-02).
-- Physical source/test/deploy layout beside `Docs/` has a recorded **planning target**; projects are not created (PLM-D-00-03).
+- Physical source/test/deploy layout beside `Docs/` is proven for the PLM-01 shell (PLM-D-00-03). Future React Client path is recorded and **not created** (PLM-D-00-09).
 
 ## Unresolved decisions
 
@@ -158,14 +158,14 @@ No loan MVP **implementation** is approved. Calculation algorithms, peso/percent
 |---|---|---|
 | PLM-D-00-01 | Final product code / slug registration | Platform catalog, subscription bootstrap |
 | PLM-D-00-02 | Final database name / schema | Persistence, migrations |
-| PLM-D-00-03 | Physical source / test / deploy layout (planning target recorded; projects not created) | Scaffold (PLM-01) |
+| PLM-D-00-03 | Physical source / test / deploy layout | **Closed** (PLM-01 scaffold; MAUI/LocalStore deferred) |
 | PLM-D-00-04 | Generic Platform cross-product relationship model | Personal multi-product participation |
 | PLM-D-00-05 | Personal-to-Borrower linking mechanism (lifecycle intent recorded; schema open) | Borrower identity design (PLM-04) |
 | PLM-D-00-06 | Loan roles and grants (presets + grant intent recorded; identifiers open) | Authorization (PLM-03) |
 | PLM-D-00-07 | Operational financial model (ledger vs cash; subledger principles recorded; schema open) | Origination, payments, collections |
 | PLM-D-00-08 | Loan business / calculation rules (modes recorded; formulas/rates open) | Product configuration through collections |
-| PLM-D-00-09 | Web / MAUI component-sharing strategy | Client scaffold |
-| PLM-D-00-10 | Product documentation baseline completion / owner approval | Closing PLM-00 |
+| PLM-D-00-09 | Organization/field client strategy | **Closed / Product Owner Approved** — one React + PWA + Capacitor client; Web host/BFF |
+| PLM-D-00-10 | Product documentation baseline completion / owner approval | **Closed / Product Owner Accepted** |
 | PLM-D-00-11 | External legal/compliance validation before Production | Production use |
 | PLM-D-00-12 | Exact money rounding mode | Calculation engine |
 | PLM-D-00-13 | Small-org vs two-person high-risk approval | Operational SoD |
@@ -208,6 +208,9 @@ No loan MVP **implementation** is approved. Calculation algorithms, peso/percent
 | Personal Loan experience | [Product/personal-loan-experience.md](Product/personal-loan-experience.md) |
 | Audit / history | [Security/audit-and-history-baseline.md](Security/audit-and-history-baseline.md) |
 | Source / project layout | [Architecture/source-and-project-layout.md](Architecture/source-and-project-layout.md) |
+| React / PWA / Capacitor client | [Architecture/react-pwa-capacitor-client.md](Architecture/react-pwa-capacitor-client.md) |
+| PLM-D-00-09 ADR | [Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md](Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md) |
+| PLM-01A report | [Reports/PLM-01A-react-pwa-capacitor-architecture-decision.md](Reports/PLM-01A-react-pwa-capacitor-architecture-decision.md) |
 | API / contract boundary | [Architecture/api-and-contract-boundary.md](Architecture/api-and-contract-boundary.md) |
 | Persistence / database boundary | [Architecture/persistence-and-database-boundary.md](Architecture/persistence-and-database-boundary.md) |
 | Mobile / offline boundary | [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md) |

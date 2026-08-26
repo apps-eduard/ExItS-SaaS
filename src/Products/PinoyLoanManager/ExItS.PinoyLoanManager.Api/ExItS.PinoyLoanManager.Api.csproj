@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>ExItS.PinoyLoanManager.Api</RootNamespace>
+    <AssemblyName>ExItS.PinoyLoanManager.Api</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ExItS.PinoyLoanManager.Application\ExItS.PinoyLoanManager.Application.csproj" />
+    <ProjectReference Include="..\ExItS.PinoyLoanManager.Infrastructure\ExItS.PinoyLoanManager.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

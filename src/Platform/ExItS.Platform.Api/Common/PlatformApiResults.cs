@@ -193,7 +193,9 @@ internal static class PlatformApiResults
             or DomainErrorCodes.PersonalUtangInvitationRateLimited
             or DomainErrorCodes.PersonalUtangDailyLimitReached => StatusCodes.Status429TooManyRequests,
 
-        ApplicationErrorCodes.PaymentAmountInvalid
+        ApplicationErrorCodes.OrganizationContextRequired
+            or ApplicationErrorCodes.AuthPublicSurfaceInvalid
+            or ApplicationErrorCodes.PaymentAmountInvalid
             or ApplicationErrorCodes.PaymentCurrencyInvalid
             or ApplicationErrorCodes.PaymentAmountMismatch
             or ApplicationErrorCodes.PaymentCurrencyMismatch

@@ -5,7 +5,7 @@
 
 | Field | Value |
 |---|---|
-| Product | Pinoy Loan Manager / `pinoy-loan-manager` (proposed) |
+| Product | Pinoy Loan Manager / `pinoy-loan-manager` (**FINAL / PRODUCT OWNER APPROVED**) |
 | Status | Draft — role presets and grant **intent** recorded; identifiers **Open** (PLM-D-00-06) |
 | Implementation present | No |
 
