@@ -8,7 +8,7 @@ const CUSTOMER_LINK_PREVIEW_EN_SUFFIX =
   " added you as a customer and wants to link your ExItS account.";
 
 export function countUnreadPersonalNotifications(
-  items: PersonalInAppNotificationDto[] | null | undefined,
+  items: ReadonlyArray<{ isRead: boolean }> | null | undefined,
 ): number {
   if (!items?.length) {
     return 0;
@@ -168,7 +168,7 @@ function extractLeadingName(preview: string): string | null {
   if (!trimmed) {
     return null;
   }
-  const match = /^(.*?)\s+(sent you|accepted|declined|invited you)/i.exec(trimmed);
+  const match = /^(.*?)\s+(sent you|accepted|declined|invited you|wants to connect)/i.exec(trimmed);
   const name = match?.[1]?.trim();
   return name && name.length > 0 ? name : null;
 }

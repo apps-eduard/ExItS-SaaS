@@ -228,9 +228,10 @@ export function PersonDetailPage() {
 
         return t("people.status.connected");
 
-      case "request_pending":
-
-        return t("people.status.requestPending");
+      case "request_sent":
+        return t("people.status.requestSent");
+      case "request_received":
+        return t("people.status.requestReceived");
 
       case "blocked":
 
@@ -262,7 +263,7 @@ export function PersonDetailPage() {
 
     }
 
-    if (status === "request_pending") {
+    if (status === "request_sent" || status === "request_received") {
 
       return "warning";
 
@@ -364,7 +365,7 @@ export function PersonDetailPage() {
 
 
 
-      {connection.status !== "request_pending" && connection.status !== "blocked" ? (
+      {connection.status !== "request_sent" && connection.status !== "request_received" && connection.status !== "blocked" ? (
 
         <div className="flex flex-col gap-2">
 
@@ -490,7 +491,7 @@ export function PersonDetailPage() {
 
 
 
-        {connection.status === "request_pending" && connection.pendingConnectionRequest ? (
+        {connection.status === "request_sent" && connection.pendingConnectionRequest ? (
 
           <>
 

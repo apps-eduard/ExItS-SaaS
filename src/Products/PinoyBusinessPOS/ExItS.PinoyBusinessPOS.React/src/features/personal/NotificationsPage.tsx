@@ -51,6 +51,8 @@ export function NotificationsPage() {
           {items.map((item) => {
             const localized = localizePersonalNotification(item, t);
             const unread = !item.isRead;
+            const destination = resolveNotificationDeepLink(item.relatedType);
+            const hasActionDestination = destination !== "/personal/notifications";
             return (
               <li key={item.id}>
                 <Card
@@ -61,14 +63,13 @@ export function NotificationsPage() {
                 >
                   <button
                     type="button"
-                    className="flex min-h-[var(--exits-touch-target-min)] flex-col items-start gap-1 bg-transparent p-0 text-left text-inherit"
+                    className="flex min-h-[var(--exits-touch-target-min)] w-full flex-col items-start gap-1 bg-transparent p-0 text-left text-inherit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     aria-label={
                       unread
-                        ? `${localized.title}. ${t("notifications.unread")}`
-                        : localized.title
+                        ? `${localized.title}. ${t("notifications.unread")}. ${localized.preview}`
+                        : `${localized.title}. ${localized.preview}`
                     }
                     onClick={() => {
-                      const destination = resolveNotificationDeepLink(item.relatedType);
                       if (!item.isRead) {
                         markRead.mutate(item.id);
                       }
@@ -90,7 +91,7 @@ export function NotificationsPage() {
                       ) : null}
                     </span>
                   </button>
-                  {unread ? (
+                  {unread && !hasActionDestination ? (
                     <Button
                       type="button"
                       variant="ghost"

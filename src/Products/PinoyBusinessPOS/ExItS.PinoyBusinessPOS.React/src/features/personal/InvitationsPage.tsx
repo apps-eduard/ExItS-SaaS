@@ -170,7 +170,7 @@ export function InvitationsPage() {
 
               <p className="m-0 text-muted">{t("invitations.connectionRequestBody")}</p>
 
-              <StatusChip tone="warning">{t("people.status.requestPending")}</StatusChip>
+              <StatusChip tone="warning">{t("people.status.requestSent")}</StatusChip>
 
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
 

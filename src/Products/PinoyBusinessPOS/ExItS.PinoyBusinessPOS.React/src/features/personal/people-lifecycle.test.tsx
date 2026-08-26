@@ -116,8 +116,20 @@ function renderPeopleApp(path: string) {
 describe("people status derivation", () => {
   it("marks resolved unlinked contacts as Not connected and pending requests as Request pending", () => {
     expect(deriveConnectionStatus(contactA, []).status).toBe("not_connected");
-    expect(deriveConnectionStatus(contactA, [pendingConnection]).status).toBe("request_pending");
+    expect(deriveConnectionStatus(contactA, [pendingConnection]).status).toBe("request_sent");
     expect(deriveConnectionStatus(contactConnected, []).status).toBe("connected");
+  });
+
+  it("marks incoming pending requests as Request received for the peer contact", () => {
+    const incoming: PersonalConnectionRequestDto = {
+      ...pendingConnection,
+      id: "req-in",
+      direction: "Received",
+      requesterUserIdentityId: "user-b",
+      targetUserIdentityId: "me",
+      requesterContactId: "other-side-contact",
+    };
+    expect(deriveConnectionStatus(contactA, [incoming]).status).toBe("request_received");
   });
 
   it("does not put unlink or block actions into list row models", () => {
@@ -264,7 +276,7 @@ describe("People lifecycle UX", () => {
 
     renderPeopleApp("/personal/people");
     expect(await screen.findByText("Juan Dela Cruz")).toBeInTheDocument();
-    expect(screen.getByText("Request pending")).toBeInTheDocument();
+    expect(screen.getByText("Request sent")).toBeInTheDocument();
     expect(screen.getByText("Ana Cruz")).toBeInTheDocument();
     expect(screen.getByText("Connected")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /unlink/i })).not.toBeInTheDocument();
@@ -477,5 +489,36 @@ describe("People lifecycle UX", () => {
     expect(screen.getByText("Eduard")).toBeInTheDocument();
     expect(screen.getByText("wants to connect with you")).toBeInTheDocument();
     expect(connections[0]?.status).toBe("Pending");
+    expect(notifications[0]?.isRead).toBe(true);
+  });
+
+  it("People row shows Request sent after outgoing pending request without treating it as Utang invitation", async () => {
+    const connections: PersonalConnectionRequestDto[] = [pendingConnection];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        withAntiforgery(async (input: RequestInfo | URL) => {
+          const url = String(input);
+          if (url.includes("/personal/connections")) {
+            return jsonResponse(200, connections);
+          }
+          if (url.includes("/utang/contacts")) {
+            return jsonResponse(200, [contactA]);
+          }
+          if (url.includes("/utang/relationships/")) {
+            return jsonResponse(200, []);
+          }
+          if (url.includes("/utang/invitations")) {
+            return jsonResponse(200, [{ id: "utang-only", status: "Pending" }]);
+          }
+          return jsonResponse(404, {});
+        }),
+      ),
+    );
+
+    renderPeopleApp("/personal/people");
+    expect(await screen.findByText("Juan Dela Cruz")).toBeInTheDocument();
+    expect(screen.getByText("Request sent")).toBeInTheDocument();
+    expect(screen.queryByText(/Utang invitation/i)).not.toBeInTheDocument();
   });
 });

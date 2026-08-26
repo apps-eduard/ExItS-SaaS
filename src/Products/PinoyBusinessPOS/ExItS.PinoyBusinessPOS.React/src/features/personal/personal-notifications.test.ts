@@ -116,14 +116,14 @@ describe("localizePersonalNotification", () => {
       localizePersonalNotification(
         note({
           title: "Connection",
-          preview: "Maria sent you a connection request.",
+          preview: "Maria wants to connect with you.",
           relatedType: "PersonalConnectionRequest",
         }),
         tEn,
       ),
     ).toEqual({
       title: "Connection",
-      preview: "Maria sent you a connection request.",
+      preview: "Maria wants to connect with you.",
     });
     expect(
       localizePersonalNotification(

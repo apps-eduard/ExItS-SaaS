@@ -28,7 +28,7 @@ function statusTone(
   if (status === "connected") {
     return "success";
   }
-  if (status === "request_pending" || status === "blocked") {
+  if (status === "request_sent" || status === "request_received" || status === "blocked") {
     return "warning";
   }
   return "neutral";
@@ -69,8 +69,10 @@ export function PeoplePage() {
     switch (status) {
       case "connected":
         return t("people.status.connected");
-      case "request_pending":
-        return t("people.status.requestPending");
+      case "request_sent":
+        return t("people.status.requestSent");
+      case "request_received":
+        return t("people.status.requestReceived");
       case "blocked":
         return t("people.status.blocked");
       case "local":

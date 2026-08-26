@@ -323,7 +323,7 @@ public sealed class RequestPersonalConnection
             var notification = PersonalInAppNotification.Create(
                 targetUserIdentityId,
                 "Connection request",
-                $"{requesterName} sent you a connection request",
+                $"{requesterName} wants to connect with you.",
                 PersonalConnectionSupport.NotificationRelatedType,
                 _clock.UtcNow,
                 request.Id.Value.ToString("D"));
@@ -479,7 +479,7 @@ public sealed class AcceptPersonalConnectionRequest
             var notification = PersonalInAppNotification.Create(
                 request.RequesterUserIdentityId,
                 "Connection accepted",
-                $"{accepterName} accepted your connection request",
+                $"{accepterName} accepted your connection request.",
                 PersonalConnectionSupport.NotificationRelatedType,
                 _clock.UtcNow,
                 request.Id.Value.ToString("D"));

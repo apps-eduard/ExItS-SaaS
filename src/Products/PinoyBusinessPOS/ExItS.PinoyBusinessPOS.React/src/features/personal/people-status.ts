@@ -7,7 +7,8 @@ import type {
 export type PeopleConnectionStatus =
   | "local"
   | "not_connected"
-  | "request_pending"
+  | "request_sent"
+  | "request_received"
   | "connected"
   | "blocked";
 
@@ -24,6 +25,21 @@ export function isPendingConnectionRequest(request: PersonalConnectionRequestDto
   return request.status.toLowerCase() === "pending";
 }
 
+function sameId(a: string | null | undefined, b: string | null | undefined): boolean {
+  if (!a || !b) {
+    return false;
+  }
+  return a.localeCompare(b, undefined, { sensitivity: "accent" }) === 0;
+}
+
+function isSentDirection(request: PersonalConnectionRequestDto): boolean {
+  return request.direction.toLowerCase() === "sent";
+}
+
+function isReceivedDirection(request: PersonalConnectionRequestDto): boolean {
+  return request.direction.toLowerCase() === "received";
+}
+
 export function deriveConnectionStatus(
   contact: PersonalContactDto,
   connectionRequests: PersonalConnectionRequestDto[],
@@ -38,11 +54,25 @@ export function deriveConnectionStatus(
 
   const pendingOutgoing = connectionRequests.find(
     (request) =>
-      request.requesterContactId === contact.id && isPendingConnectionRequest(request),
+      isPendingConnectionRequest(request) &&
+      isSentDirection(request) &&
+      (sameId(request.requesterContactId, contact.id) ||
+        sameId(request.targetUserIdentityId, contact.resolvedUserIdentityId)),
   );
 
   if (pendingOutgoing) {
-    return { status: "request_pending", pendingConnectionRequest: pendingOutgoing };
+    return { status: "request_sent", pendingConnectionRequest: pendingOutgoing };
+  }
+
+  const pendingIncoming = connectionRequests.find(
+    (request) =>
+      isPendingConnectionRequest(request) &&
+      isReceivedDirection(request) &&
+      sameId(request.requesterUserIdentityId, contact.resolvedUserIdentityId),
+  );
+
+  if (pendingIncoming) {
+    return { status: "request_received", pendingConnectionRequest: pendingIncoming };
   }
 
   if (!contact.resolvedUserIdentityId && !contact.resolvedPublicUserId) {

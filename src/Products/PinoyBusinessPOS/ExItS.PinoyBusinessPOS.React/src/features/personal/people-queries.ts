@@ -84,10 +84,23 @@ export function useCreateContactMutation() {
 }
 
 export function useRequestConnectionMutation() {
+  const queryClient = useQueryClient();
   const invalidate = useInvalidatePersonalPeople();
   return useMutation({
     mutationFn: (contactId: string) => requestPersonalConnection(contactId),
-    onSuccess: async () => {
+    onSuccess: async (created) => {
+      queryClient.setQueryData(
+        personalPeopleKeys.connections(),
+        (previous: Awaited<ReturnType<typeof listPersonalConnectionRequests>> | undefined) => {
+          if (!previous) {
+            return [created];
+          }
+          if (previous.some((item) => item.id === created.id)) {
+            return previous.map((item) => (item.id === created.id ? created : item));
+          }
+          return [created, ...previous];
+        },
+      );
       await invalidate();
     },
   });

@@ -305,6 +305,11 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
                 "PersonalConnectionRequest",
                 StringComparison.Ordinal));
         Assert.NotEqual(default, notification);
+        Assert.False(notification.GetProperty("isRead").GetBoolean());
+        Assert.Contains(
+            "wants to connect with you",
+            notification.GetProperty("preview").GetString()!,
+            StringComparison.OrdinalIgnoreCase);
 
         var notificationId = notification.GetProperty("id").GetGuid();
         using var markRead = Authed(
@@ -312,6 +317,42 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
             $"/api/v1/personal/notifications/{notificationId}/read",
             tokenB);
         (await _client.SendAsync(markRead)).EnsureSuccessStatusCode();
+
+        using var notificationsAfterRead = Authed(HttpMethod.Get, "/api/v1/personal/notifications", tokenA);
+        var requesterNotifications = await (await _client.SendAsync(notificationsAfterRead)).Content
+            .ReadFromJsonAsync<JsonElement>();
+        Assert.DoesNotContain(
+            requesterNotifications!.EnumerateArray(),
+            n =>
+                string.Equals(
+                    n.GetProperty("relatedType").GetString(),
+                    "PersonalConnectionRequest",
+                    StringComparison.Ordinal) &&
+                string.Equals(
+                    n.GetProperty("relatedId").GetString(),
+                    requestId.ToString("D"),
+                    StringComparison.OrdinalIgnoreCase));
+
+        using var duplicateRequest = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/people/{contactId}/connection-request",
+            tokenA);
+        var duplicateResponse = await _client.SendAsync(duplicateRequest);
+        Assert.Equal(HttpStatusCode.Conflict, duplicateResponse.StatusCode);
+
+        using var notificationsAfterDup = Authed(HttpMethod.Get, "/api/v1/personal/notifications", tokenB);
+        var afterDup = await (await _client.SendAsync(notificationsAfterDup)).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(
+            1,
+            afterDup!.EnumerateArray().Count(n =>
+                string.Equals(
+                    n.GetProperty("relatedType").GetString(),
+                    "PersonalConnectionRequest",
+                    StringComparison.Ordinal) &&
+                string.Equals(
+                    n.GetProperty("relatedId").GetString(),
+                    requestId.ToString("D"),
+                    StringComparison.OrdinalIgnoreCase)));
 
         using var listPending = Authed(HttpMethod.Get, "/api/v1/personal/connections", tokenB);
         var pending = await (await _client.SendAsync(listPending)).Content.ReadFromJsonAsync<JsonElement>();
@@ -496,7 +537,7 @@ public sealed class ApiPersonalConnectionTests(PostgreSqlFixture fixture) : IAsy
                 StringComparison.Ordinal));
 
         Assert.Equal("Connection request", notification.GetProperty("title").GetString());
-        Assert.Equal("Personal User sent you a connection request", notification.GetProperty("preview").GetString());
+        Assert.Equal("Personal User wants to connect with you.", notification.GetProperty("preview").GetString());
         Assert.DoesNotContain("Wrong Contact Label", notification.GetProperty("preview").GetString()!);
     }
 

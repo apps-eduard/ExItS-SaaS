@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AccountMenu } from "@/components/exits/AccountMenu";
 import { ShellConnectionButton } from "@/components/exits/ShellConnectionButton";
 import { ShellNotificationButton } from "@/components/exits/ShellNotificationButton";
-import { listPersonalNotifications } from "@/api/platform/personal-social-client";
+import { listPersonalNotifications } from "@/api/platform/personal-people-client";
 import { PersonalBottomNav } from "@/features/personal/PersonalBottomNav";
 import {
   PERSONAL_NOTIFICATIONS_QUERY_KEY,
