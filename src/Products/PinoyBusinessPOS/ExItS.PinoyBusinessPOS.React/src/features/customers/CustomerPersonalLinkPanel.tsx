@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, UserRoundCheck } from "lucide-react";
 import {
-  createBusinessCustomerWithPersonalLink,
   resolvePublicUserId,
   type ResolvedPublicUserDto,
 } from "@/api/platform/public-identity-client";
@@ -10,62 +9,59 @@ import { Button } from "@/components/ui/button";
 import { QrScanOrEnter } from "@/features/qr/QrScanOrEnter";
 import { useI18n } from "@/i18n/I18nProvider";
 
-export type PendingPersonalCustomerLink = {
+export type SelectedPersonalIdentity = {
   publicUserId: string;
   userIdentityId: string;
   displayName: string;
-  platformBusinessCustomerId: string;
-  linkRequestId: string | null;
+  maskedEmail: string | null;
 };
 
-/** @deprecated Use PendingPersonalCustomerLink — create sends a pending request, not an active link. */
+/** @deprecated Use SelectedPersonalIdentity — resolve is identification-only until Save & send. */
+export type PendingPersonalCustomerLink = SelectedPersonalIdentity & {
+  platformBusinessCustomerId?: string;
+  linkRequestId?: string | null;
+};
+
+/** @deprecated Use SelectedPersonalIdentity */
 export type ConfirmedPersonalLink = PendingPersonalCustomerLink;
 
 type Props = {
-  organizationId: string;
-  displayName: string;
-  phone: string;
-  notes: string;
   disabled?: boolean;
   initialSubject?: string | null;
+  selected: SelectedPersonalIdentity | null;
   /** When lookup succeeds, parent may prefill Basics from the resolved Personal profile. */
   onResolved?: (user: ResolvedPublicUserDto) => void;
-  onLinkRequestCreated: (link: PendingPersonalCustomerLink) => void;
+  onSelected: (identity: SelectedPersonalIdentity) => void;
   onCleared: () => void;
 };
 
 /**
- * Organization customer create: resolve Personal QR/ID → confirm → pending CustomerLinkRequest.
- * Does not activate LinkedCustomerAppUser (Personal must Accept).
+ * Organization customer create: resolve Personal QR/ID → select identity for later Save & send.
+ * Does not create BusinessCustomer or CustomerLinkRequest (Save on the form does that).
  */
 export function CustomerPersonalLinkPanel({
-  organizationId,
-  displayName,
-  phone,
-  notes,
   disabled,
   initialSubject,
+  selected,
   onResolved,
-  onLinkRequestCreated,
+  onSelected,
   onCleared,
 }: Props) {
   const { t } = useI18n();
-  const [resolved, setResolved] = useState<ResolvedPublicUserDto | null>(null);
+  const [preview, setPreview] = useState<ResolvedPublicUserDto | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [requestSent, setRequestSent] = useState(false);
   const seededInitialSubject = useRef(false);
 
   async function onPayload(subjectOrPayload: string) {
     setBusy(true);
     setError(null);
-    setRequestSent(false);
     try {
       const user = await resolvePublicUserId(subjectOrPayload, "SaleCustomer");
-      setResolved(user);
+      setPreview(user);
       onResolved?.(user);
     } catch (err) {
-      setResolved(null);
+      setPreview(null);
       setError(
         err instanceof PlatformApiError ? err.message : t("customers.personalLink.resolveFailed"),
       );
@@ -81,48 +77,21 @@ export function CustomerPersonalLinkPanel({
     }
     seededInitialSubject.current = true;
     void onPayload(seed);
-    // Seed once from checkout deep-link; onPayload is stable for the initial resolve only.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional one-shot seed
   }, [initialSubject]);
 
-  async function confirmLink() {
-    if (!resolved) return;
-    // Prefer the Basics field when filled; otherwise use the looked-up Personal display name.
-    const name = displayName.trim() || resolved.displayName.trim();
-    if (!name) {
-      setError(t("customers.personalLink.nameRequired"));
-      return;
-    }
-    setBusy(true);
+  function useAccount() {
+    if (!preview) return;
+    onSelected({
+      publicUserId: preview.publicUserId,
+      userIdentityId: preview.userIdentityId,
+      displayName: preview.displayName.trim(),
+      maskedEmail: preview.maskedEmail ?? null,
+    });
     setError(null);
-    try {
-      const taggedNotes = notes.trim()
-        ? `${notes.trim()}\nexits-id:${resolved.publicUserId}`
-        : `exits-id:${resolved.publicUserId}`;
-      const result = await createBusinessCustomerWithPersonalLink(organizationId, {
-        displayName: name,
-        phone: phone.trim() || null,
-        notes: taggedNotes,
-        owningProductCode: "PinoyBusinessPOS",
-        publicUserId: resolved.publicUserId,
-        targetUserIdentityId: resolved.userIdentityId,
-      });
-      setRequestSent(true);
-      onLinkRequestCreated({
-        publicUserId: resolved.publicUserId,
-        userIdentityId: resolved.userIdentityId,
-        displayName: name,
-        platformBusinessCustomerId: result.customerId,
-        linkRequestId: result.linkRequestId,
-      });
-    } catch (err) {
-      setError(
-        err instanceof PlatformApiError ? err.message : t("customers.personalLink.createFailed"),
-      );
-    } finally {
-      setBusy(false);
-    }
   }
+
+  const showLookup = !selected;
 
   return (
     <section className="catalog-form-section exits-animate-panel" data-testid="customer-personal-link-panel">
@@ -138,7 +107,7 @@ export function CustomerPersonalLinkPanel({
         </div>
       </div>
 
-      {!requestSent ? (
+      {showLookup ? (
         <QrScanOrEnter
           expectedPurpose="personal"
           disabled={disabled || busy}
@@ -146,24 +115,23 @@ export function CustomerPersonalLinkPanel({
         />
       ) : null}
 
-      {resolved && !requestSent ? (
+      {preview && !selected ? (
         <div
           className="customer-personal-link__confirm"
           data-testid="customer-personal-link-confirm"
         >
           <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-            {resolved.displayName}
+            {t("customers.personalLink.foundTitle")}
           </p>
+          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">{preview.displayName}</p>
           <p className="m-0 break-all text-[length:var(--exits-text-xs)] text-muted">
-            {resolved.publicUserId}
+            {preview.publicUserId}
           </p>
-          {resolved.maskedEmail ? (
-            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-              {resolved.maskedEmail}
-            </p>
+          {preview.maskedEmail ? (
+            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{preview.maskedEmail}</p>
           ) : null}
           <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-            {t("customers.personalLink.confirmHint")}
+            {t("customers.personalLink.confirmHint").replace("{name}", preview.displayName)}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <Button
@@ -172,14 +140,14 @@ export function CustomerPersonalLinkPanel({
               className="min-h-11"
               data-testid="customer-personal-link-confirm-btn"
               disabled={disabled || busy}
-              onClick={() => void confirmLink()}
+              onClick={useAccount}
             >
               {busy ? (
                 <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
               ) : (
                 <UserRoundCheck className="size-4 shrink-0" aria-hidden />
               )}
-              {busy ? t("customers.personalLink.sending") : t("customers.personalLink.confirm")}
+              {t("customers.personalLink.useAccount")}
             </Button>
             <Button
               type="button"
@@ -188,7 +156,7 @@ export function CustomerPersonalLinkPanel({
               data-testid="customer-personal-link-cancel"
               disabled={busy}
               onClick={() => {
-                setResolved(null);
+                setPreview(null);
                 onCleared();
               }}
             >
@@ -198,13 +166,35 @@ export function CustomerPersonalLinkPanel({
         </div>
       ) : null}
 
-      {requestSent ? (
-        <p
-          className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-success)]"
-          data-testid="customer-personal-link-sent"
+      {selected ? (
+        <div
+          className="customer-personal-link__confirm"
+          data-testid="customer-personal-link-selected"
         >
-          {t("customers.personalLink.sent")}
-        </p>
+          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("customers.personalLink.selectedTitle")}
+          </p>
+          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">{selected.displayName}</p>
+          <p className="m-0 break-all text-[length:var(--exits-text-xs)] text-muted">
+            {selected.publicUserId}
+          </p>
+          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+            {t("customers.personalLink.confirmHint").replace("{name}", selected.displayName)}
+          </p>
+          <Button
+            type="button"
+            variant="ghost"
+            className="mt-2 min-h-11"
+            data-testid="customer-personal-link-change"
+            disabled={disabled || busy}
+            onClick={() => {
+              setPreview(null);
+              onCleared();
+            }}
+          >
+            {t("customers.personalLink.changeAccount")}
+          </Button>
+        </div>
       ) : null}
 
       {error ? (

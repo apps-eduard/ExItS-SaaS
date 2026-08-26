@@ -2,7 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { canEditCustomer, canRecordRepayment, canViewStatement } from "@/access/pos-capabilities";
-import { getCustomerLinkStatus, remindCustomerLinkRequest, revokeCustomerLinkRequest, createCustomerLinkRequestForCustomer } from "@/api/platform/customer-link-status-client";
+import {
+  createCustomerLinkRequestForCustomer,
+  getCustomerLinkStatus,
+  listCustomerLinkRequestHistory,
+  remindCustomerLinkRequest,
+  revokeCustomerLinkRequest,
+} from "@/api/platform/customer-link-status-client";
 import { useMutation } from "@tanstack/react-query";
 import {
   deactivateCustomer,
@@ -100,6 +106,29 @@ export function CustomerDetailPage() {
     refetchOnWindowFocus: true,
   });
 
+  const linkHistoryQuery = useQuery({
+    queryKey: [
+      "customers",
+      "platform-link-history",
+      workspace?.organizationId,
+      platformCustomerId,
+    ],
+    enabled: enabledOnline && Boolean(platformCustomerId),
+    queryFn: ({ signal }) =>
+      listCustomerLinkRequestHistory(workspace!.organizationId, platformCustomerId!, signal),
+  });
+
+  async function invalidateLinkQueries() {
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: ["customers", "platform-link-status", workspace?.organizationId, platformCustomerId],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["customers", "platform-link-history", workspace?.organizationId, platformCustomerId],
+      }),
+    ]);
+  }
+
   const remindMutation = useMutation({
     mutationFn: async () => {
       const requestId = linkStatusQuery.data?.latestLinkRequestId;
@@ -110,9 +139,7 @@ export function CustomerDetailPage() {
     },
     onSuccess: async () => {
       setActionError(null);
-      await queryClient.invalidateQueries({
-        queryKey: ["customers", "platform-link-status", workspace?.organizationId, platformCustomerId],
-      });
+      await invalidateLinkQueries();
     },
     onError: (error) => {
       setActionError(error instanceof Error ? error.message : t("error.detail"));
@@ -129,9 +156,7 @@ export function CustomerDetailPage() {
     },
     onSuccess: async () => {
       setActionError(null);
-      await queryClient.invalidateQueries({
-        queryKey: ["customers", "platform-link-status", workspace?.organizationId, platformCustomerId],
-      });
+      await invalidateLinkQueries();
     },
     onError: (error) => {
       setActionError(error instanceof Error ? error.message : t("error.detail"));
@@ -156,9 +181,7 @@ export function CustomerDetailPage() {
     },
     onSuccess: async () => {
       setActionError(null);
-      await queryClient.invalidateQueries({
-        queryKey: ["customers", "platform-link-status", workspace?.organizationId, platformCustomerId],
-      });
+      await invalidateLinkQueries();
     },
     onError: (error) => {
       setActionError(error instanceof Error ? error.message : t("error.detail"));
@@ -274,6 +297,8 @@ export function CustomerDetailPage() {
     linkUiStatus === "Pending" &&
     Boolean(linkMeta?.nextReminderEligibleAtUtc) &&
     new Date(linkMeta!.nextReminderEligibleAtUtc!).getTime() > Date.now();
+
+  const linkHistoryItems = (linkHistoryQuery.data ?? []).slice(0, 8);
 
   const personalExItsId = resolveDisplayedPersonalExItsId({
     linkedPersonalPublicUserId: customer.linkedPersonalPublicUserId,
@@ -421,6 +446,32 @@ export function CustomerDetailPage() {
               : t("customers.linkInviteAgain")}
           </Button>
         </Card>
+      ) : null}
+
+      {linkHistoryItems.length > 0 ? (
+        <section data-testid="customer-link-history" className="min-w-0">
+          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("customers.linkHistoryTitle")}
+          </p>
+          <ul className="mb-0 mt-2 list-none space-y-1 p-0">
+            {linkHistoryItems.map((item) => {
+              const statusLabel = t(
+                customerLinkStatusLabelKey(mapPlatformCustomerLinkStatus(item.status)),
+              );
+              return (
+                <li
+                  key={item.id}
+                  className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 text-[length:var(--exits-text-sm)]"
+                >
+                  <span className="text-muted">
+                    {new Date(item.createdAtUtc).toLocaleString()}
+                  </span>
+                  <span>{statusLabel}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       ) : null}
 
       {usingCachedCustomer ? (

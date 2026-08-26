@@ -65,6 +65,14 @@ public interface ICustomerLinkRequestRepository
         PlatformUserId targetUserIdentityId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Non-pending requests targeting the Personal user (Accepted/Active, Declined, Expired, Revoked), newest first.
+    /// </summary>
+    Task<IReadOnlyList<CustomerLinkRequest>> ListResolvedForTargetUserAsync(
+        PlatformUserId targetUserIdentityId,
+        int take,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<CustomerLinkRequest>> ListByBusinessCustomerAsync(
         BusinessCustomerId businessCustomerId,
         CancellationToken cancellationToken = default);

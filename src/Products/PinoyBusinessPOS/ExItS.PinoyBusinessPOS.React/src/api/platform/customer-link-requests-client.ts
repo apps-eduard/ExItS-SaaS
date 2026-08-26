@@ -49,6 +49,14 @@ export async function listPendingCustomerLinkRequests(
   return list.map((item) => pendingCustomerLinkRequestSchema.parse(normalizeRequest(item)));
 }
 
+export async function listResolvedCustomerLinkRequests(
+  signal?: AbortSignal,
+): Promise<PendingCustomerLinkRequestDto[]> {
+  const raw = await platformRequest<unknown>({ path: `${BASE}/history`, signal });
+  const list = Array.isArray(raw) ? raw : [];
+  return list.map((item) => pendingCustomerLinkRequestSchema.parse(normalizeRequest(item)));
+}
+
 export async function acceptCustomerLinkRequest(requestId: string): Promise<void> {
   await platformRequest<unknown>({
     method: "POST",

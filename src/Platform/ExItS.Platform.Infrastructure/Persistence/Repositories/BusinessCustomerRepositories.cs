@@ -285,6 +285,22 @@ internal sealed class CustomerLinkRequestRepository(PlatformDbContext db) : ICus
         return records.Select(ToDomain).ToList();
     }
 
+    public async Task<IReadOnlyList<CustomerLinkRequest>> ListResolvedForTargetUserAsync(
+        PlatformUserId targetUserIdentityId,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var pending = nameof(CustomerLinkRequestStatus.Pending);
+        var limit = Math.Clamp(take, 1, 100);
+        var records = await db.CustomerLinkRequests.AsNoTracking()
+            .Where(x => x.TargetUserIdentityId == targetUserIdentityId.Value && x.Status != pending)
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .Take(limit)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(ToDomain).ToList();
+    }
+
     public async Task<IReadOnlyList<CustomerLinkRequest>> ListByBusinessCustomerAsync(
         BusinessCustomerId businessCustomerId,
         CancellationToken cancellationToken = default)

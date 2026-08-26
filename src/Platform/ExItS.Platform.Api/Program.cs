@@ -448,6 +448,7 @@ builder.Services.AddScoped<DeclineCustomerLinkRequestById>();
 builder.Services.AddScoped<AcceptCustomerLinkRequest>();
 builder.Services.AddScoped<AcceptCustomerLinkRequestById>();
 builder.Services.AddScoped<ListPendingCustomerLinkRequestsForPersonalUser>();
+builder.Services.AddScoped<ListResolvedCustomerLinkRequestsForPersonalUser>();
 builder.Services.AddScoped<BlockBusinessFromCustomerLinkRequest>();
 builder.Services.AddScoped<ListPersonalBlockedBusinesses>();
 builder.Services.AddScoped<UnblockPersonalOrganizationConnection>();

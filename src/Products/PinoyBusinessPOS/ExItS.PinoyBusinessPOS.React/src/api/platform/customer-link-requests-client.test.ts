@@ -3,6 +3,7 @@ import {
   acceptCustomerLinkRequest,
   declineCustomerLinkRequest,
   listPendingCustomerLinkRequests,
+  listResolvedCustomerLinkRequests,
 } from "@/api/platform/customer-link-requests-client";
 import { clearPlatformAntiforgeryToken } from "@/api/platform/platform-http";
 
@@ -44,6 +45,39 @@ describe("customer-link-requests-client", () => {
     expect(items[0]?.organizationDisplayName).toBe("Sari-Sari Ni Ana");
     expect(items[0]?.status).toBe("Pending");
     expect(items[0]?.targetPublicUserId).toBe("EXITS-ANA");
+  });
+
+  it("listResolvedCustomerLinkRequests GETs history path", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      expect(url).toContain("/api/v1/personal/customer-link-requests/history");
+      return {
+        ok: true,
+        status: 200,
+        json: async () => [
+          {
+            Id: requestId,
+            OrganizationId: orgId,
+            OrganizationDisplayName: "Corner Store",
+            BusinessCustomerId: customerId,
+            Status: "Active",
+            CreatedAtUtc: "2026-08-20T00:00:00Z",
+            ExpiresAtUtc: "2026-08-27T00:00:00Z",
+            TargetPublicUserId: "EXITS-ANA",
+          },
+        ],
+        text: async () => "",
+      };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const items = await listResolvedCustomerLinkRequests();
+    expect(items).toHaveLength(1);
+    expect(items[0]?.status).toBe("Active");
+    expect(fetchMock).toHaveBeenCalled();
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain(
+      "/api/v1/personal/customer-link-requests/history",
+    );
   });
 
   it("posts accept and decline by request id", async () => {

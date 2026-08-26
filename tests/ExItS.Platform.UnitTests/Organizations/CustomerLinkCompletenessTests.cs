@@ -520,6 +520,22 @@ public sealed class CustomerLinkCompletenessTests
                         && r.TargetUserIdentityId == targetUserIdentityId)
                     .ToList());
 
+        public Task<IReadOnlyList<CustomerLinkRequest>> ListResolvedForTargetUserAsync(
+            PlatformUserId targetUserIdentityId,
+            int take,
+            CancellationToken cancellationToken = default)
+        {
+            var limit = Math.Clamp(take, 1, 100);
+            return Task.FromResult<IReadOnlyList<CustomerLinkRequest>>(
+                _items
+                    .Where(r =>
+                        r.TargetUserIdentityId == targetUserIdentityId
+                        && r.Status != CustomerLinkRequestStatus.Pending)
+                    .OrderByDescending(r => r.CreatedAtUtc)
+                    .Take(limit)
+                    .ToList());
+        }
+
         public Task<IReadOnlyList<CustomerLinkRequest>> ListByBusinessCustomerAsync(
             BusinessCustomerId businessCustomerId,
             CancellationToken cancellationToken = default) =>

@@ -11,6 +11,7 @@ vi.mock("@/api/platform/customer-link-status-client", async (importOriginal) => 
   return {
     ...actual,
     getCustomerLinkStatus: vi.fn(),
+    listCustomerLinkRequestHistory: vi.fn(),
   };
 });
 
@@ -126,6 +127,7 @@ describe("CustomerDetailPage Platform link status", () => {
       page: 1,
       pageSize: 20,
     });
+    vi.mocked(linkStatusClient.listCustomerLinkRequestHistory).mockResolvedValue([]);
   });
 
   async function expectStatus(label: RegExp | string) {
@@ -134,7 +136,7 @@ describe("CustomerDetailPage Platform link status", () => {
     });
   }
 
-  it("shows Not connected when platformBusinessCustomerId is missing", async () => {
+  it("shows Local customer when platformBusinessCustomerId is missing", async () => {
     vi.mocked(customersClient.getCustomer).mockResolvedValue({
       ...baseCustomer,
       platformBusinessCustomerId: null,
@@ -142,11 +144,11 @@ describe("CustomerDetailPage Platform link status", () => {
       notes: null,
     });
     renderDetail();
-    await expectStatus(/Not connected/i);
+    await expectStatus(/Local customer/i);
     expect(linkStatusClient.getCustomerLinkStatus).not.toHaveBeenCalled();
   });
 
-  it("shows Awaiting customer from Platform even when EX-ID is stored", async () => {
+  it("shows Request sent from Platform even when EX-ID is stored", async () => {
     vi.mocked(linkStatusClient.getCustomerLinkStatus).mockResolvedValue(
       linkStatus({
         latestLinkRequestId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
@@ -154,14 +156,14 @@ describe("CustomerDetailPage Platform link status", () => {
       }),
     );
     renderDetail();
-    await expectStatus(/Awaiting customer/i);
+    await expectStatus(/Request sent/i);
     expect(screen.getByTestId("customer-link-pending-banner")).toBeInTheDocument();
     expect(screen.getByTestId("customer-exits-id")).toHaveTextContent("EX-1234-5678");
-    expect(screen.getByTestId("customer-link-status")).not.toHaveTextContent(/^Connected$/);
+    expect(screen.getByTestId("customer-link-status")).not.toHaveTextContent(/^Linked$/);
     expect(screen.queryByText(platformBusinessCustomerId)).not.toBeInTheDocument();
   });
 
-  it("shows Connected from Platform", async () => {
+  it("shows Linked from Platform", async () => {
     vi.mocked(linkStatusClient.getCustomerLinkStatus).mockResolvedValue(
       linkStatus({
         status: "Linked",
@@ -171,15 +173,55 @@ describe("CustomerDetailPage Platform link status", () => {
       }),
     );
     renderDetail();
-    await expectStatus(/^Connected$/);
+    await expectStatus(/^Linked$/);
     expect(screen.queryByTestId("customer-link-pending-banner")).not.toBeInTheDocument();
+  });
+
+  it("shows compact connection history when Platform returns link-requests", async () => {
+    vi.mocked(linkStatusClient.getCustomerLinkStatus).mockResolvedValue(
+      linkStatus({
+        status: "Linked",
+        linkedUserIdentityId: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+        latestLinkRequestId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+        latestLinkRequestStatus: "Active",
+      }),
+    );
+    vi.mocked(linkStatusClient.listCustomerLinkRequestHistory).mockResolvedValue([
+      {
+        id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+        status: "Active",
+        createdAtUtc: "2026-08-18T08:00:00Z",
+        resolvedAtUtc: null,
+      },
+      {
+        id: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+        status: "Pending",
+        createdAtUtc: "2026-08-10T08:00:00Z",
+        resolvedAtUtc: null,
+      },
+    ]);
+    renderDetail();
+    await waitFor(() => {
+      expect(screen.getByTestId("customer-link-history")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("customer-link-history")).toHaveTextContent(/Connection history/i);
+    expect(screen.getByTestId("customer-link-history")).toHaveTextContent(/Linked/i);
+    expect(screen.getByTestId("customer-link-history")).toHaveTextContent(/Request sent/i);
+  });
+
+  it("hides connection history when Platform returns an empty list", async () => {
+    vi.mocked(linkStatusClient.getCustomerLinkStatus).mockResolvedValue(linkStatus());
+    vi.mocked(linkStatusClient.listCustomerLinkRequestHistory).mockResolvedValue([]);
+    renderDetail();
+    await expectStatus(/Request sent/i);
+    expect(screen.queryByTestId("customer-link-history")).not.toBeInTheDocument();
   });
 
   it.each([
     ["Declined", /Declined/i],
     ["Expired", /Expired/i],
-    ["Revoked", /Disconnected/i],
-  ] as const)("maps Platform %s without showing Connected", async (status, label) => {
+    ["Revoked", /Revoked/i],
+  ] as const)("maps Platform %s without showing Linked", async (status, label) => {
     vi.mocked(linkStatusClient.getCustomerLinkStatus).mockResolvedValue(
       linkStatus({
         status,
@@ -189,16 +231,16 @@ describe("CustomerDetailPage Platform link status", () => {
     );
     renderDetail();
     await expectStatus(label);
-    expect(screen.getByTestId("customer-link-status")).not.toHaveTextContent(/^Connected$/);
+    expect(screen.getByTestId("customer-link-status")).not.toHaveTextContent(/^Linked$/);
   });
 
   it("shows unavailable on Platform fetch error and does not invent Linked", async () => {
     vi.mocked(linkStatusClient.getCustomerLinkStatus).mockRejectedValue(new Error("boom"));
     renderDetail();
-    await expectStatus(/Connection unavailable/i);
+    await expectStatus(/Unavailable/i);
   });
 
-  it("shows Connection unavailable from Platform without saying blocked", async () => {
+  it("shows Unavailable from Platform without saying blocked", async () => {
     vi.mocked(linkStatusClient.getCustomerLinkStatus).mockResolvedValue(
       linkStatus({
         status: "Unavailable",
@@ -211,13 +253,13 @@ describe("CustomerDetailPage Platform link status", () => {
     await waitFor(() => {
       expect(screen.getByTestId("customer-link-unavailable-banner")).toBeInTheDocument();
     });
-    expect(screen.getByTestId("customer-link-status")).toHaveTextContent(/Connection unavailable/i);
+    expect(screen.getByTestId("customer-link-status")).toHaveTextContent(/Unavailable/i);
     expect(screen.queryByText(/blocked you/i)).not.toBeInTheDocument();
     expect(screen.queryByTestId("customer-link-remind")).not.toBeInTheDocument();
     expect(screen.queryByTestId("customer-link-invite-again")).not.toBeInTheDocument();
   });
 
-  it("lets Platform Connected win over pendingLink=1 query hint", async () => {
+  it("lets Platform Linked win over pendingLink=1 query hint", async () => {
     vi.mocked(linkStatusClient.getCustomerLinkStatus).mockResolvedValue(
       linkStatus({
         status: "Linked",
@@ -227,7 +269,7 @@ describe("CustomerDetailPage Platform link status", () => {
       }),
     );
     renderDetail(`/customers/${customerId}?pendingLink=1`);
-    await expectStatus(/^Connected$/);
+    await expectStatus(/^Linked$/);
     expect(screen.queryByTestId("customer-link-pending-banner")).not.toBeInTheDocument();
   });
 

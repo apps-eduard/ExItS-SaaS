@@ -112,3 +112,46 @@ export async function createCustomerLinkRequestForCustomer(input: {
     },
   });
 }
+
+/**
+ * Compact history row from GET .../customers/{platformBusinessCustomerId}/link-requests.
+ * Full CustomerLinkRequestDto has more fields; UI only needs id/status/createdAtUtc.
+ */
+export const customerLinkRequestHistoryItemSchema = z.object({
+  id: guidSchema,
+  status: z.string(),
+  createdAtUtc: z.string(),
+  resolvedAtUtc: z.string().nullable().optional().default(null),
+});
+
+export type CustomerLinkRequestHistoryItemDto = z.infer<
+  typeof customerLinkRequestHistoryItemSchema
+>;
+
+function normalizeHistoryItem(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object") {
+    return raw;
+  }
+  const r = raw as Record<string, unknown>;
+  return {
+    id: pick(r, "id", "Id"),
+    status: pick(r, "status", "Status"),
+    createdAtUtc: pick(r, "createdAtUtc", "CreatedAtUtc"),
+    resolvedAtUtc: pick(r, "resolvedAtUtc", "ResolvedAtUtc") ?? null,
+  };
+}
+
+export async function listCustomerLinkRequestHistory(
+  organizationId: string,
+  platformBusinessCustomerId: string,
+  signal?: AbortSignal,
+): Promise<CustomerLinkRequestHistoryItemDto[]> {
+  const raw = await platformRequest<unknown>({
+    path: `/api/v1/organizations/${organizationId}/customers/${platformBusinessCustomerId}/link-requests`,
+    signal,
+  });
+  const list = Array.isArray(raw) ? raw : [];
+  return list.map((item) =>
+    customerLinkRequestHistoryItemSchema.parse(normalizeHistoryItem(item)),
+  );
+}
