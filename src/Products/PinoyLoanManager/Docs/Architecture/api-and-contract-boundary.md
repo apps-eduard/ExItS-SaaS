@@ -57,5 +57,5 @@ No endpoint implementation in this package.
 ## Explicit non-goals
 
 - OpenAPI / route design
-- Authentication scheme (R-091)
+- Authentication scheme (**R-091 Closed for Phase 13 scope**; consume trusted Platform actor only)
 - Inventing D-P12-03 transport

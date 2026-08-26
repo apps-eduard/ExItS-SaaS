@@ -1,6 +1,8 @@
 # Pinoy Loan Manager — PLM-00 Readiness Checklist
 
-**Status:** Documentation-only validation
+> **Superseded for final MVP Product documentation status by** [PLM-final-documentation-readiness-checklist.md](PLM-final-documentation-readiness-checklist.md) **and** [../Decisions/PLM-decision-status-summary.md](../Decisions/PLM-decision-status-summary.md). Gate rows below retain PLM-00 baseline context; auth and decision IDs updated at final review.
+
+**Status:** Historical baseline checklist (PLM-00)
 **Implementation present:** No
 **Last updated:** 2026-08-19
 
@@ -42,9 +44,9 @@ Authoritative closeout: [../Reports/PLM-00-foundation-closeout.md](../Reports/PL
 
 | Gate | Ready? |
 |---|---|
-| A. Scaffold (PLM-01) | **Paused** — documentation baseline accepted (PLM-D-00-10); product implementation is deliberately paused; PLM-D-00-03 remains open on mainline |
-| B. Early domain (no rates) | **Yes, after scaffold + access** — concepts recorded |
-| C. Financial engine | **No** — formulas, rounding, allocation, fees, penalties, settlement still open |
-| D. Production | **No** — R-091, D-P12-03, PLM-D-00-11, ops/security still open |
+| A. Scaffold (PLM-01) | **Paused** — documentation baseline accepted (PLM-D-00-10); **PLM-D-00-03 Closed for approved layout**; implementation deliberately paused |
+| B. Early domain (no rates) | **Yes** — concepts and MVP Product policy documented |
+| C. Financial engine | **Product policy documented** — persistence/calculation engine implementation remains future work |
+| D. Production | **No** — portfolio Production readiness, **D-P12-03**, **PLM-D-00-11**, ops/security residuals remain |
 
 PLM-00 documentation baseline is **accepted** (PLM-D-00-10). Product implementation is **paused**. Do **not** treat this as authorization of PLM-01 on mainline, or as approval of rates, formulas, or legal compliance. Parked branch `feat/plm-01-scaffold` is not accepted mainline state.

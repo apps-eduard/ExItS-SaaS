@@ -12,7 +12,7 @@ Authoritative concise reference for creating or modifying ExItS SaaS products:
 
 Portfolio-wide **planning** documents. They do **not** implement stamps, sharding, queues, or microservices. They do **not** claim millions of users are currently supported.
 
-After this pack is reviewed and merged to `main`, it is **authoritative architecture guidance** for future product and Platform work. Until merge, treat it as the proposed scale pack on `docs/exits-scale-foundation`.
+After this pack is reviewed and merged to `main`, it is **authoritative architecture guidance** for future product and Platform work. The EXITS-SCALE-00 pack is **merged**.
 
 - **[exits-scale-and-growth-architecture.md](exits-scale-and-growth-architecture.md)** — index, D-SCALE-01–10, honesty gates
 - **[unified-control-plane-and-product-plane.md](unified-control-plane-and-product-plane.md)** — one logical control plane; independent product planes
@@ -22,6 +22,20 @@ After this pack is reviewed and merged to `main`, it is **authoritative architec
 - **[capacity-slos-observability-and-disaster-recovery.md](capacity-slos-observability-and-disaster-recovery.md)** — capacity stages, SLI/SLO, backup/DR
 - **[service-evolution-and-extraction-strategy.md](service-evolution-and-extraction-strategy.md)** — modularity-first
 - **[scale-readiness-checklist.md](scale-readiness-checklist.md)** — review checklist
+
+## Hosting and deployment operating model (EXITS-ARCH-01)
+
+Portfolio **planning** documents. They do **not** implement hosted SaaS, stamps, sharding, or multi-region. They do **not** claim Production Ready.
+
+After review and merge to `main`, this pack is **authoritative hosting-direction** guidance. Until merge, it is the proposed pack on `docs/exits-hosting-foundation`.
+
+- **[hosting-and-deployment-operating-model.md](hosting-and-deployment-operating-model.md)** — index, D-HOST-01–10, D-P14-01 relationship
+- **[deployment-mode-contract.md](deployment-mode-contract.md)** — same product across modes; no forks
+- **[hosted-saas-tenant-placement-model.md](hosted-saas-tenant-placement-model.md)** — Mode A placement
+- **[dedicated-and-on-prem-deployment-model.md](dedicated-and-on-prem-deployment-model.md)** — Modes B and C
+- **[hosting-readiness-checklist.md](hosting-readiness-checklist.md)** — review checklist
+
+**Portfolio default:** hosted multi-tenant SaaS (**D-HOST-01**). **On-prem** remains a supported special mode (**D-HOST-03**); topology **D-P14-01**.
 
 Related:
 

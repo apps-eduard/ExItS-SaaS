@@ -6,7 +6,7 @@
 
 Office and field disbursement / payment workflows, receipts, failed collection attempts, and disbursement assignment safety.
 
-Related: [loan-lifecycle-model.md](loan-lifecycle-model.md), [payment-and-allocation-model.md](payment-and-allocation-model.md), [cashier-and-collector-control-model.md](cashier-and-collector-control-model.md), [disbursement-readiness-model.md](disbursement-readiness-model.md), [../Security/role-and-grant-baseline.md](../Security/role-and-grant-baseline.md).
+Related: [loan-lifecycle-model.md](loan-lifecycle-model.md), [payment-and-allocation-model.md](payment-and-allocation-model.md), [cashier-and-collector-control-model.md](cashier-and-collector-control-model.md), [disbursement-readiness-model.md](disbursement-readiness-model.md), [disbursement-cancellation-and-reversal-policy.md](disbursement-cancellation-and-reversal-policy.md), [../Security/role-and-grant-baseline.md](../Security/role-and-grant-baseline.md).
 
 ---
 
@@ -48,7 +48,7 @@ Cashier accountable cash decreases
 
 No silent editing of Loan amount during disbursement. If amount / terms are wrong, do **not** “fix” them during cash release. Use the authorized loan correction / cancellation process.
 
-Exact disbursement cancellation / reversal workflow remains **OPEN**.
+Exact disbursement cancellation / reversal workflow: [disbursement-cancellation-and-reversal-policy.md](disbursement-cancellation-and-reversal-policy.md). Platform usage-signal reversal remains D-P12-03.
 
 ---
 

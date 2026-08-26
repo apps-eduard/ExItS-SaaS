@@ -1,12 +1,10 @@
 # Pinoy Loan Manager — Mobile Offline Boundary
 
-**Status:** Planning / architecture baseline (documentation only); aligned with PLM-D-00-09
+**Status:** Accepted architecture policy (PLM-DOC-09); not implemented
 **Implementation present:** No
 **Last updated:** 2026-08-19
 
-The organization/field client is **online / server-authoritative initially**. Do not enable offline financial operations until a dedicated **PLM-13** package explicitly authorizes and designs them.
-
-Related: [react-pwa-capacitor-client.md](react-pwa-capacitor-client.md), [source-and-project-layout.md](source-and-project-layout.md), [../Product/daily-operational-workflow.md](../Product/daily-operational-workflow.md), [../architecture.md](../architecture.md), [../Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md](../Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md).
+Summary boundary for MAUI offline posture. Canonical detail: [mobile-and-offline-operating-model.md](mobile-and-offline-operating-model.md). Related: [source-and-project-layout.md](source-and-project-layout.md), [../Product/daily-operational-workflow.md](../Product/daily-operational-workflow.md), [../architecture.md](../architecture.md).
 
 ---
 
@@ -16,22 +14,17 @@ Server remains authoritative for final financial authorization / posting.
 
 Do **not** treat queued device activity as immediately authoritative.
 
-`ExItS.PinoyLoanManager.LocalStore` is **not** justified yet. Create it only if/when an authorized offline package requires local persistence.
+MVP allows **read-only cache** and **offline drafts** in planning only. **Offline final financial posting is not authorized.**
 
-PWA service worker may cache the static application shell and required assets. It must **not** cache as authoritative state: Loan API responses, borrower financial state, loan balances, payment/collection/cash records, authorization responses, session tokens, or sensitive financial payloads.
-
-No Background Sync for financial commands initially. No offline financial posting.
-
-Architecture must leave a clean adapter seam for later PLM-13 work. Do not define IndexedDB/SQLite financial schemas now. Do not queue payments, collections, disbursements, or financial postings.
+`ExItS.PinoyLoanManager.LocalStore` is **not** justified yet. Create it only if/when an authorized offline posting package requires local persistence.
 
 ---
 
-## Future offline architecture (if authorized later — PLM-13)
+## Future offline architecture (if authorized later)
 
 Must explicitly handle:
 
-- encryption
-- device trust / secure device identity
+- secure device identity ([../Security/collector-device-security-policy.md](../Security/collector-device-security-policy.md))
 - local encrypted storage
 - queued commands
 - idempotency
@@ -39,16 +32,16 @@ Must explicitly handle:
 - conflict handling
 - revoked permissions
 - duplicate submission
-- cash reconciliation
 - offline receipt state
+- cash reconciliation
 
-Collector device security remains **OPEN**.
+Offline financial posting remains **deferred** beyond PLM-DOC-09.
 
 ---
 
 ## Explicit non-goals
 
-- Offline financial posting in this package
-- SQLite / IndexedDB financial schema
+- Offline final financial posting in MVP
+- SQLite schema
 - Choosing LocalStore by default
-- Creating Capacitor or PWA code here
+- Claiming offline sync is implemented

@@ -14,7 +14,7 @@ Related: [source-and-project-layout.md](source-and-project-layout.md), [../archi
 
 Separate product database.
 
-**Proposed name:** `ExItS_PinoyLoanManager` (PLM-D-00-02 — still **Open** for final owner approval; **not created**).
+**Logical name (Closed, PLM-D-00-02):** `ExItS_PinoyLoanManager`. Database is **not created**. Schema, connections, partitions, stamps, backups, and migrations remain **deferred**.
 
 Schema name remains **OPEN**.
 

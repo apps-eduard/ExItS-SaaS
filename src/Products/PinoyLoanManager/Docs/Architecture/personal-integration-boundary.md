@@ -6,7 +6,7 @@
 
 How ExItS Personal and Pinoy Loan Manager interact. Not an API specification, schema, or generic Platform relationship design.
 
-Related: [../Product/personal-borrower-linking.md](../Product/personal-borrower-linking.md), [../Product/borrower-model.md](../Product/borrower-model.md), [application-surface-model.md](application-surface-model.md), [../architecture.md](../architecture.md).
+Related: [../Product/personal-borrower-linking.md](../Product/personal-borrower-linking.md), [../Product/personal-linking-lifecycle-and-visibility.md](../Product/personal-linking-lifecycle-and-visibility.md), [../Product/borrower-model.md](../Product/borrower-model.md), [application-surface-model.md](application-surface-model.md), [../architecture.md](../architecture.md).
 
 ---
 
@@ -35,13 +35,15 @@ Resolution is **not** a relationship. It never auto-links. Consent: [../Product/
 
 ## Data that may cross the boundary
 
-PLM may receive only approved identity / relationship information required for this product (for example: Personal identifier after consent, consent state).
+PLM may receive only approved identity / relationship information required for identity resolution, consent, active relationship reference, customer-facing Loan presentation, and approved notifications.
 
-PLM must **not** receive or store unrelated Personal activity from:
+PLM must **not** receive:
 
-- PinoyBusinessPOS
-- another lending organization
-- other ExItS products
+- unrelated POS purchase history
+- another lender’s Borrower data
+- another organization’s Loans
+- unrelated product activity
+- unrestricted Personal profile data
 
 Personal must **not** expose one lender’s private operational data to another lender.
 
@@ -70,7 +72,7 @@ PLM remains the source of truth. Stale Personal cache, if ever used, is not auth
 
 ## Unlink
 
-Unlink changes Personal access / relationship only. Borrower, Loan, and payment history remain in PLM. See [../Product/personal-borrower-linking.md](../Product/personal-borrower-linking.md).
+Unlink changes Personal access / relationship only. Borrower, Loan, and payment history remain in PLM. See [../Product/personal-linking-lifecycle-and-visibility.md](../Product/personal-linking-lifecycle-and-visibility.md).
 
 ---
 

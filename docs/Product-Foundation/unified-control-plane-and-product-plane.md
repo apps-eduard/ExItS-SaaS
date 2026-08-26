@@ -212,7 +212,7 @@ Future needs (none claimed complete by this pack):
 - rate limiting and abuse detection
 - session / token revocation
 
-**R-091 remains open** until production authentication is accepted as Production-ready. Do not claim security readiness from this documentation pack.
+**R-091 is Closed for Phase 13 scope.** Residual MFA enforcement, enterprise SSO/AD, outbound auth delivery, step-up authentication, and overall portfolio Production-readiness work remain separate gates and do not reopen R-091. Do not claim security readiness from this documentation pack.
 
 ### Privileged support
 
